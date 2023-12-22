@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/parser/symbols"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/symbols"
 )
 
 type Label int
@@ -21,7 +21,6 @@ const (
 	CleanStart0R0
 	CleanStart0R1
 	CleanStart0R2
-	CleanStart0R3
 	CleanStart1R0
 	CleanStart1R1
 	CleanStart1R2
@@ -67,8 +66,15 @@ const (
 	Proposer1R0
 	Proposer1R1
 	Proposer1R2
+	Recovery0R0
+	Recovery0R1
+	Recovery0R2
+	Recovery1R0
+	Recovery1R1
 	Start0R0
 	Start0R1
+	Start1R0
+	Start1R1
 	StateSync0R0
 	StateSync0R1
 	StateSync0R2
@@ -232,7 +238,6 @@ var slots = map[Label]*Slot{
 		symbols.NT_CleanStart, 0, 0,
 		symbols.Symbols{
 			symbols.NT_InitChain,
-			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart0R0,
@@ -241,7 +246,6 @@ var slots = map[Label]*Slot{
 		symbols.NT_CleanStart, 0, 1,
 		symbols.Symbols{
 			symbols.NT_InitChain,
-			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart0R1,
@@ -250,24 +254,14 @@ var slots = map[Label]*Slot{
 		symbols.NT_CleanStart, 0, 2,
 		symbols.Symbols{
 			symbols.NT_InitChain,
-			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart0R2,
 	},
-	CleanStart0R3: {
-		symbols.NT_CleanStart, 0, 3,
-		symbols.Symbols{
-			symbols.NT_InitChain,
-			symbols.NT_StateSync,
-			symbols.NT_ConsensusExec,
-		},
-		CleanStart0R3,
-	},
 	CleanStart1R0: {
 		symbols.NT_CleanStart, 1, 0,
 		symbols.Symbols{
-			symbols.NT_InitChain,
+			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart1R0,
@@ -275,7 +269,7 @@ var slots = map[Label]*Slot{
 	CleanStart1R1: {
 		symbols.NT_CleanStart, 1, 1,
 		symbols.Symbols{
-			symbols.NT_InitChain,
+			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart1R1,
@@ -283,7 +277,7 @@ var slots = map[Label]*Slot{
 	CleanStart1R2: {
 		symbols.NT_CleanStart, 1, 2,
 		symbols.Symbols{
-			symbols.NT_InitChain,
+			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart1R2,
@@ -602,6 +596,44 @@ var slots = map[Label]*Slot{
 		},
 		Proposer1R2,
 	},
+	Recovery0R0: {
+		symbols.NT_Recovery, 0, 0,
+		symbols.Symbols{
+			symbols.NT_InitChain,
+			symbols.NT_ConsensusExec,
+		},
+		Recovery0R0,
+	},
+	Recovery0R1: {
+		symbols.NT_Recovery, 0, 1,
+		symbols.Symbols{
+			symbols.NT_InitChain,
+			symbols.NT_ConsensusExec,
+		},
+		Recovery0R1,
+	},
+	Recovery0R2: {
+		symbols.NT_Recovery, 0, 2,
+		symbols.Symbols{
+			symbols.NT_InitChain,
+			symbols.NT_ConsensusExec,
+		},
+		Recovery0R2,
+	},
+	Recovery1R0: {
+		symbols.NT_Recovery, 1, 0,
+		symbols.Symbols{
+			symbols.NT_ConsensusExec,
+		},
+		Recovery1R0,
+	},
+	Recovery1R1: {
+		symbols.NT_Recovery, 1, 1,
+		symbols.Symbols{
+			symbols.NT_ConsensusExec,
+		},
+		Recovery1R1,
+	},
 	Start0R0: {
 		symbols.NT_Start, 0, 0,
 		symbols.Symbols{
@@ -615,6 +647,20 @@ var slots = map[Label]*Slot{
 			symbols.NT_CleanStart,
 		},
 		Start0R1,
+	},
+	Start1R0: {
+		symbols.NT_Start, 1, 0,
+		symbols.Symbols{
+			symbols.NT_Recovery,
+		},
+		Start1R0,
+	},
+	Start1R1: {
+		symbols.NT_Start, 1, 1,
+		symbols.Symbols{
+			symbols.NT_Recovery,
+		},
+		Start1R1,
 	},
 	StateSync0R0: {
 		symbols.NT_StateSync, 0, 0,
@@ -767,7 +813,6 @@ var slotIndex = map[Index]Label{
 	{symbols.NT_CleanStart, 0, 0}:        CleanStart0R0,
 	{symbols.NT_CleanStart, 0, 1}:        CleanStart0R1,
 	{symbols.NT_CleanStart, 0, 2}:        CleanStart0R2,
-	{symbols.NT_CleanStart, 0, 3}:        CleanStart0R3,
 	{symbols.NT_CleanStart, 1, 0}:        CleanStart1R0,
 	{symbols.NT_CleanStart, 1, 1}:        CleanStart1R1,
 	{symbols.NT_CleanStart, 1, 2}:        CleanStart1R2,
@@ -813,8 +858,15 @@ var slotIndex = map[Index]Label{
 	{symbols.NT_Proposer, 1, 0}:          Proposer1R0,
 	{symbols.NT_Proposer, 1, 1}:          Proposer1R1,
 	{symbols.NT_Proposer, 1, 2}:          Proposer1R2,
+	{symbols.NT_Recovery, 0, 0}:          Recovery0R0,
+	{symbols.NT_Recovery, 0, 1}:          Recovery0R1,
+	{symbols.NT_Recovery, 0, 2}:          Recovery0R2,
+	{symbols.NT_Recovery, 1, 0}:          Recovery1R0,
+	{symbols.NT_Recovery, 1, 1}:          Recovery1R1,
 	{symbols.NT_Start, 0, 0}:             Start0R0,
 	{symbols.NT_Start, 0, 1}:             Start0R1,
+	{symbols.NT_Start, 1, 0}:             Start1R0,
+	{symbols.NT_Start, 1, 1}:             Start1R1,
 	{symbols.NT_StateSync, 0, 0}:         StateSync0R0,
 	{symbols.NT_StateSync, 0, 1}:         StateSync0R1,
 	{symbols.NT_StateSync, 0, 2}:         StateSync0R2,
@@ -836,13 +888,14 @@ var slotIndex = map[Index]Label{
 }
 
 var alternates = map[symbols.NT][]Label{
-	symbols.NT_Start:             {Start0R0},
+	symbols.NT_Start:             {Start0R0, Start1R0},
 	symbols.NT_CleanStart:        {CleanStart0R0, CleanStart1R0},
 	symbols.NT_StateSync:         {StateSync0R0, StateSync1R0},
 	symbols.NT_StateSyncAttempts: {StateSyncAttempts0R0, StateSyncAttempts1R0},
 	symbols.NT_StateSyncAttempt:  {StateSyncAttempt0R0, StateSyncAttempt1R0},
 	symbols.NT_SuccessSync:       {SuccessSync0R0},
 	symbols.NT_ApplyChunks:       {ApplyChunks0R0, ApplyChunks1R0},
+	symbols.NT_Recovery:          {Recovery0R0, Recovery1R0},
 	symbols.NT_ConsensusExec:     {ConsensusExec0R0},
 	symbols.NT_ConsensusHeights:  {ConsensusHeights0R0, ConsensusHeights1R0},
 	symbols.NT_ConsensusHeight:   {ConsensusHeight0R0, ConsensusHeight1R0},

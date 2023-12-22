@@ -14,11 +14,11 @@ func TestCheckABCIGrammar(t *testing.T) {
 		if !node.Testnet.ABCITestsEnabled {
 			return
 		}
-		reqs, err := fetchABCIRequests(t, node.Name)
+		executions, err := fetchABCIRequests(t, node.Name)
 		require.NoError(t, err)
-		for i, r := range reqs {
+		for i, e := range executions {
 			isCleanStart := i == 0
-			_, err := checker.Verify(r, isCleanStart)
+			_, err := checker.Verify(e, isCleanStart)
 			require.NoError(t, err)
 		}
 	})

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/token"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/token"
 )
 
 type state int

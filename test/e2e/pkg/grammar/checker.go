@@ -175,12 +175,11 @@ func (g *Checker) verify(execution string, isCleanStart bool) []*Error {
 		}
 	}
 	e := &Error{
-		description: fmt.Sprintf("The execution is not of valid type."),
+		description: "The execution is not of valid type.",
 		height:      0,
 	}
 	errors = append(errors, e)
 	return errors
-
 }
 
 // addHeightNumbersToTheExecution adds height numbers to the execution. This is used just when printing the execution so we can find the height with error more easily.

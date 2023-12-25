@@ -57,7 +57,7 @@ require (
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/sync v0.5.0
 	gonum.org/v1/gonum v0.14.0
-	google.golang.org/protobuf v1.31.1-0.20231027082548-f4a6c1f6e5c1
+	google.golang.org/protobuf v1.32.0
 )
 
 require (

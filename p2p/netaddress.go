@@ -6,7 +6,6 @@ package p2p
 
 import (
 	"encoding/hex"
-	"errors"
 	"flag"
 	"fmt"
 	"net"
@@ -89,7 +88,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	if len(host) == 0 {
 		return nil, ErrNetAddressInvalid{
 			addrWithoutProtocol,
-			errors.New("host is empty"),
+			errEmptyHost,
 		}
 	}
 
@@ -141,10 +140,10 @@ func NewNetAddressIPPort(ip net.IP, port uint16) *NetAddress {
 func NetAddressFromProto(pb tmp2p.NetAddress) (*NetAddress, error) {
 	ip := net.ParseIP(pb.IP)
 	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address %v", pb.IP)
+		return nil, ErrInvalidIP{pb.IP}
 	}
 	if pb.Port >= 1<<16 {
-		return nil, fmt.Errorf("invalid port number %v", pb.Port)
+		return nil, ErrInvalidPort{pb.Port}
 	}
 	return &NetAddress{
 		ID:   ID(pb.ID),
@@ -264,14 +263,14 @@ func (na *NetAddress) Routable() bool {
 // address or one that matches the RFC3849 documentation address format.
 func (na *NetAddress) Valid() error {
 	if err := validateID(na.ID); err != nil {
-		return fmt.Errorf("invalid ID: %w", err)
+		return ErrInvalidPeerID{na.ID, err}
 	}
 
 	if na.IP == nil {
-		return errors.New("no IP")
+		return ErrNoIPFound
 	}
 	if na.IP.IsUnspecified() || na.RFC3849() || na.IP.Equal(net.IPv4bcast) {
-		return errors.New("invalid IP")
+		return ErrInvalidIP{na.IP.String()}
 	}
 	return nil
 }
@@ -408,14 +407,14 @@ func removeProtocolIfDefined(addr string) string {
 
 func validateID(id ID) error {
 	if len(id) == 0 {
-		return errors.New("no ID")
+		return ErrNoIPFound
 	}
 	idBytes, err := hex.DecodeString(string(id))
 	if err != nil {
 		return err
 	}
 	if len(idBytes) != IDByteLength {
-		return fmt.Errorf("invalid hex length - got %d, expected %d", len(idBytes), IDByteLength)
+		return fmt.Errorf("invalid peer ID length expected %d, got %d", IDByteLength, len(idBytes))
 	}
 	return nil
 }

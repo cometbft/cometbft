@@ -45,9 +45,10 @@ const (
 )
 
 var (
-	ErrSmallOrderRemotePubKey = errors.New("detected low order point from remote peer")
-
-	secretConnKeyAndChallengeGen = []byte("TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN")
+	ErrSmallOrderRemotePubKey      = errors.New("detected low order point from remote peer")
+	errNonceOverflow               = errors.New("nonce overflow")
+	errFailedToGenEphemeralKeyPair = errors.New("failed to generate ephemeral key-pair")
+	secretConnKeyAndChallengeGen   = []byte("TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN")
 )
 
 // SecretConnection implements net.Conn.
@@ -132,11 +133,12 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 
 	sendAead, err := chacha20poly1305.New(sendSecret[:])
 	if err != nil {
-		return nil, errors.New("invalid send SecretConnection Key")
+		return nil, ErrSendInvalidSecreteConnKey
 	}
+
 	recvAead, err := chacha20poly1305.New(recvSecret[:])
 	if err != nil {
-		return nil, errors.New("invalid receive SecretConnection Key")
+		return nil, ErrRecvInvalidSecreteConnKey
 	}
 
 	sc := &SecretConnection{
@@ -161,11 +163,16 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	}
 
 	remPubKey, remSignature := authSigMsg.Key, authSigMsg.Sig
+	// Usage in your function
 	if _, ok := remPubKey.(ed25519.PubKey); !ok {
-		return nil, fmt.Errorf("expected ed25519 pubkey, got %T", remPubKey)
+		return nil, ErrUnexpectedPubKeyType{
+			Expected: ed25519.KeyType,
+			Got:      fmt.Sprintf("%T", remPubKey),
+		}
 	}
+
 	if !remPubKey.VerifySignature(challenge[:], remSignature) {
-		return nil, errors.New("challenge verification failed")
+		return nil, ErrChallengeVerification
 	}
 
 	// We've authorized.
@@ -213,6 +220,7 @@ func (sc *SecretConnection) Write(data []byte) (n int, err error) {
 			if err != nil {
 				return err
 			}
+
 			n += len(chunk)
 			return nil
 		}(); err != nil {
@@ -248,8 +256,9 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	defer pool.Put(frame)
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
-		return n, fmt.Errorf("failed to decrypt SecretConnection: %w", err)
+		return n, ErrDecryptConnection{Err: err}
 	}
+
 	incrNonce(sc.recvNonce)
 	// end decryption
 
@@ -257,8 +266,9 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	// set recvBuffer to the rest.
 	chunkLength := binary.LittleEndian.Uint32(frame) // read the first four bytes
 	if chunkLength > dataMaxSize {
-		return 0, errors.New("chunkLength is greater than dataMaxSize")
+		return 0, ErrChunkLength
 	}
+
 	chunk := frame[dataLenSize : dataLenSize+chunkLength]
 	n = copy(data, chunk)
 	if n < len(chunk) {
@@ -288,7 +298,7 @@ func genEphKeys() (ephPub, ephPriv *[32]byte) {
 	// see: https://github.com/dalek-cryptography/x25519-dalek/blob/34676d336049df2bba763cc076a75e47ae1f170f/src/x25519.rs#L56-L74
 	ephPub, ephPriv, err = box.GenerateKey(crand.Reader)
 	if err != nil {
-		panic("Could not generate ephemeral key-pair")
+		panic(errFailedToGenEphemeralKeyPair)
 	}
 	return
 }
@@ -439,7 +449,7 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 	return _recvMsg, nil
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // Increment nonce little-endian by 1 with wraparound.
 // Due to chacha20poly1305 expecting a 12 byte nonce we do not use the first four
@@ -450,7 +460,7 @@ func incrNonce(nonce *[aeadNonceSize]byte) {
 	if counter == math.MaxUint64 {
 		// Terminates the session and makes sure the nonce would not re-used.
 		// See https://github.com/tendermint/tendermint/issues/3531
-		panic("can't increase nonce without overflow")
+		panic(errNonceOverflow)
 	}
 	counter++
 	binary.LittleEndian.PutUint64(nonce[4:], counter)

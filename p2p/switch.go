@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sync"
@@ -43,7 +44,7 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 	return mConfig
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // An AddrBook represents an address book from the pex package, which is used
 // to store peer addresses.
@@ -62,7 +63,7 @@ type AddrBook interface {
 // fully setup.
 type PeerFilterFunc func(IPeerSet, Peer) error
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // Switch handles peer connections and exposes an API to receive incoming messages
 // on `Reactors`.  Each `Reactor` is responsible for handling incoming messages of one
@@ -156,7 +157,7 @@ func WithMetrics(metrics *Metrics) SwitchOption {
 	return func(sw *Switch) { sw.metrics = metrics }
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Switch setup
 
 // AddReactor adds the given reactor to the switch.
@@ -225,7 +226,7 @@ func (sw *Switch) SetNodeKey(nodeKey *NodeKey) {
 	sw.nodeKey = nodeKey
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Service start/stop
 
 // OnStart implements BaseService. It starts all the reactors and peers.
@@ -234,7 +235,7 @@ func (sw *Switch) OnStart() error {
 	for _, reactor := range sw.reactors {
 		err := reactor.Start()
 		if err != nil {
-			return fmt.Errorf("failed to start %v: %w", reactor, err)
+			return ErrFailedToStart{reactor, err}
 		}
 	}
 
@@ -260,7 +261,7 @@ func (sw *Switch) OnStop() {
 	}
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Peers
 
 // Broadcast runs a go routine for each attempted send, which will block trying
@@ -455,7 +456,7 @@ func (sw *Switch) MarkPeerAsGood(peer Peer) {
 	}
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Dialing
 
 type privateAddr interface {
@@ -480,7 +481,8 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 	}
 	// return first non-ErrNetAddressLookup error
 	for _, err := range errs {
-		if _, ok := err.(ErrNetAddressLookup); ok {
+		var errNetAddressLookup ErrNetAddressLookup
+		if errors.As(err, &errNetAddressLookup) {
 			continue
 		}
 		return err
@@ -583,7 +585,8 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 	}
 	// return first non-ErrNetAddressLookup error
 	for _, err := range errs {
-		if _, ok := err.(ErrNetAddressLookup); ok {
+		var errNetAddressLookup ErrNetAddressLookup
+		if errors.As(err, &errNetAddressLookup) {
 			continue
 		}
 		return err
@@ -597,8 +600,9 @@ func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 	for i, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return fmt.Errorf("wrong ID #%d: %w", i, err)
+			return ErrInvalidPeerID{ID: ID(id), err: fmt.Errorf("wrong ID #%d: %w", i, err)}
 		}
+
 		sw.unconditionalPeerIDs[ID(id)] = struct{}{}
 	}
 	return nil
@@ -609,7 +613,7 @@ func (sw *Switch) AddPrivatePeerIDs(ids []string) error {
 	for i, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return fmt.Errorf("wrong ID #%d: %w", i, err)
+			return ErrInvalidPeerID{ID: ID(id), err: fmt.Errorf("wrong ID #%d: %w", i, err)}
 		}
 		validIDs = append(validIDs, id)
 	}
@@ -731,7 +735,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 	// XXX(xla): Remove the leakage of test concerns in implementation.
 	if cfg.TestDialFail {
 		go sw.reconnectToPeer(addr)
-		return fmt.Errorf("dial err (peerConfig.DialFail == true)")
+		return errPeerConfigDailFail
 	}
 
 	p, err := sw.transport.Dial(*addr, peerConfig{

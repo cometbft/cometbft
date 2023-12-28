@@ -52,23 +52,6 @@ const (
 	defaultBanTime = 24 * time.Hour
 )
 
-type errMaxAttemptsToDial struct{}
-
-func (e errMaxAttemptsToDial) Error() string {
-	return fmt.Sprintf("reached max attempts %d to dial", maxAttemptsToDial)
-}
-
-type errTooEarlyToDial struct {
-	backoffDuration time.Duration
-	lastDialed      time.Time
-}
-
-func (e errTooEarlyToDial) Error() string {
-	return fmt.Sprintf(
-		"too early to dial (backoff duration: %d, last dialed: %v, time since: %v)",
-		e.backoffDuration, e.lastDialed, time.Since(e.lastDialed))
-}
-
 // Reactor handles PEX (peer exchange) and ensures that an
 // adequate number of peers are connected to the switch.
 //
@@ -143,7 +126,7 @@ func NewReactor(b AddrBook, config *ReactorConfig) *Reactor {
 // OnStart implements BaseService.
 func (r *Reactor) OnStart() error {
 	err := r.book.Start()
-	if err != nil && err != service.ErrAlreadyStarted {
+	if err != nil && !errors.Is(err, service.ErrAlreadyStarted) {
 		return err
 	}
 
@@ -151,7 +134,7 @@ func (r *Reactor) OnStart() error {
 	if err != nil {
 		return err
 	} else if numOnline == 0 && r.book.Empty() {
-		return errors.New("address book is empty and couldn't resolve any seed nodes")
+		return ErrEmptyAddressBook
 	}
 
 	r.seedAddrs = seedAddrs
@@ -318,13 +301,12 @@ func (r *Reactor) receiveRequest(src Peer) error {
 	now := time.Now()
 	minInterval := r.minReceiveRequestInterval()
 	if now.Sub(lastReceived) < minInterval {
-		return fmt.Errorf(
-			"peer (%v) sent next PEX request too soon. lastReceived: %v, now: %v, minInterval: %v. Disconnecting",
-			src.ID(),
-			lastReceived,
-			now,
-			minInterval,
-		)
+		return ErrReceivedRequestTooSoon{
+			Peer:         src.ID(),
+			LastReceived: lastReceived,
+			Now:          now,
+			MinInterval:  minInterval,
+		}
 	}
 	r.lastReceivedRequests.Set(id, now)
 	return nil
@@ -560,7 +542,8 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 
 	err := r.Switch.DialPeerWithAddress(addr)
 	if err != nil {
-		if _, ok := err.(p2p.ErrCurrentlyDialingOrExistingAddress); ok {
+		var errCurrentlyDialingOrExistingAddress p2p.ErrCurrentlyDialingOrExistingAddress
+		if errors.As(err, &errCurrentlyDialingOrExistingAddress) {
 			return err
 		}
 
@@ -572,7 +555,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 		default:
 			r.attemptsToDial.Store(addr.DialString(), _attemptsToDial{attempts + 1, time.Now()})
 		}
-		return fmt.Errorf("dialing failed (attempts: %d): %w", attempts+1, err)
+		return errFailedToDial{attempts + 1, err}
 	}
 
 	// cleanup any history
@@ -607,7 +590,7 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*p2p.NetAddress, err e
 		case p2p.ErrNetAddressLookup:
 			r.Logger.Error("Connecting to seed failed", "err", e)
 		default:
-			return 0, nil, fmt.Errorf("seed node configuration has error: %w", e)
+			return 0, nil, errSeedNodeConfig{err: err}
 		}
 	}
 	return numOnline, netAddrs, nil
@@ -644,7 +627,7 @@ func (r *Reactor) AttemptsToDial(addr *p2p.NetAddress) int {
 	return 0
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // Explores the network searching for more peers. (continuous)
 // Seed/Crawler Mode causes this node to quickly disconnect

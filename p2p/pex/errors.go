@@ -3,8 +3,16 @@ package pex
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cometbft/cometbft/p2p"
+)
+
+var (
+	errUnexpectedBucketType = errors.New("unexpected bucket type")
+	ErrEmptyAddressBook     = errors.New("address book is empty and couldn't resolve any seed nodes")
+	// ErrUnsolicitedList is thrown when a peer provides a list of addresses that have not been asked for.
+	ErrUnsolicitedList = errors.New("unsolicited pexAddrsMessage")
 )
 
 type ErrAddrBookNonRoutable struct {
@@ -85,5 +93,49 @@ func (err ErrAddressBanned) Error() string {
 	return fmt.Sprintf("Address: %v is currently banned", err.Addr)
 }
 
-// ErrUnsolicitedList is thrown when a peer provides a list of addresses that have not been asked for.
-var ErrUnsolicitedList = errors.New("unsolicited pexAddrsMessage")
+// ErrReceivedRequestTooSoon is thrown when a peer sends a PEX request too soon after the last one.
+type ErrReceivedRequestTooSoon struct {
+	Peer         p2p.ID
+	LastReceived time.Time
+	Now          time.Time
+	MinInterval  time.Duration
+}
+
+func (err ErrReceivedRequestTooSoon) Error() string {
+	return fmt.Sprintf("received PEX request from peer %v too soon (last received %v, now %v, min interval %v), Disconnecting peer",
+		err.Peer, err.LastReceived, err.Now, err.MinInterval)
+}
+
+type errMaxAttemptsToDial struct{}
+
+func (e errMaxAttemptsToDial) Error() string {
+	return fmt.Sprintf("reached max attempts %d to dial", maxAttemptsToDial)
+}
+
+type errTooEarlyToDial struct {
+	backoffDuration time.Duration
+	lastDialed      time.Time
+}
+
+func (e errTooEarlyToDial) Error() string {
+	return fmt.Sprintf(
+		"too early to dial (backoff duration: %d, last dialed: %v, time since: %v)",
+		e.backoffDuration, e.lastDialed, time.Since(e.lastDialed))
+}
+
+type errFailedToDial struct {
+	totalAttempts int
+	err           error
+}
+
+func (e errFailedToDial) Error() string {
+	return fmt.Sprintf("failed to dial after %d attempts: %v", e.totalAttempts, e.err)
+}
+
+type errSeedNodeConfig struct {
+	err any
+}
+
+func (e errSeedNodeConfig) Error() string {
+	return fmt.Sprintf("failed to parse seed node config: %v", e.err)
+}

@@ -7,6 +7,7 @@ import (
 
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/light/provider"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -27,13 +28,18 @@ Check logs for full evidence and trace`,
 
 	// ErrNoWitnesses means that there are not enough witnesses connected to
 	// continue running the light client.
-	ErrNoWitnesses             = errors.New("no witnesses connected. please reset light client")
-	ErrNilOrSinglePrimaryTrace = errors.New("nil or single block primary trace")
-	ErrHeaderHeightAdjacent    = errors.New("headers must be non adjacent in height")
-	ErrHeaderHeightNotAdjacent = errors.New("headers must be adjacent in height")
-	ErrNegativeOrZeroPeriod    = errors.New("negative or zero period")
-	ErrNegativeOrZeroHeight    = errors.New("zero or negative height")
-	ErrBlockTimeSanityCheck    = errors.New("sanity check failed: expected traceblock to have a lesser time than the target block")
+	ErrNoWitnesses               = errors.New("no witnesses connected. please reset light client")
+	ErrNilOrSinglePrimaryTrace   = errors.New("nil or single block primary trace")
+	ErrHeaderHeightAdjacent      = errors.New("headers must be non adjacent in height")
+	ErrHeaderHeightNotAdjacent   = errors.New("headers must be adjacent in height")
+	ErrNegativeOrZeroPeriod      = errors.New("negative or zero period")
+	ErrNegativeHeight            = errors.New("negative height")
+	ErrZeroOrNegativeHeight      = errors.New("zero or negative height")
+	ErrNegativeOrZeroHeight      = errors.New("negative or zero height")
+	ErrBlockTimeSanityCheck      = errors.New("sanity check failed: expected traceblock to have a lesser time than the target block")
+	ErrRemoveStoredBlocksRefused = errors.New("refused to remove the stored light blocks despite hashes mismatch")
+	ErrNoHeadersExist            = errors.New("no headers exist")
+	ErrNilHeader                 = errors.New("nil header")
 )
 
 // ErrOldHeaderExpired means the old (trusted) header has expired according to
@@ -85,6 +91,14 @@ func (e ErrHeaderTimeExceedMaxClockDrift) Error() string {
 	return fmt.Sprintf("new header has a time from the future %v (now: %v; max clock drift: %v)", e.Ti, e.Now, e.Drift)
 }
 
+type ErrUnverifiedHeight struct {
+	Height int64
+}
+
+func (e ErrUnverifiedHeight) Error() string {
+	return fmt.Sprintf("unverified header/valset requested (latest: %d)", e.Height)
+}
+
 type ErrInvalidTrustLevel struct {
 	Level cmtmath.Fraction
 }
@@ -121,6 +135,33 @@ func (e ErrBlockHashMismatch) Error() string {
 	return fmt.Sprintf("trusted block is different to the source's first block (%X = %X)", e.TH, e.SH)
 }
 
+type ErrHeaderHashMismatch struct {
+	Want cmtbytes.HexBytes
+	Get  cmtbytes.HexBytes
+}
+
+func (e ErrHeaderHashMismatch) Error() string {
+	return fmt.Sprintf("expected header's hash %X, but got %X", e.Want, e.Get)
+}
+
+type ErrExistingHeaderHashMismatch struct {
+	Existing cmtbytes.HexBytes
+	New      cmtbytes.HexBytes
+}
+
+func (e ErrExistingHeaderHashMismatch) Error() string {
+	return fmt.Sprintf("existing trusted header %X does not match newHeader %X", e.Existing, e.New)
+}
+
+type ErrLightHeaderHashMismatch struct {
+	Light cmtbytes.HexBytes
+	New   cmtbytes.HexBytes
+}
+
+func (e ErrLightHeaderHashMismatch) Error() string {
+	return fmt.Sprintf("light block header %X does not match newHeader %X", e.Light, e.New)
+}
+
 type ErrHashSizeMismatch struct {
 	Want int
 	Get  int
@@ -128,6 +169,17 @@ type ErrHashSizeMismatch struct {
 
 func (e ErrHashSizeMismatch) Error() string {
 	return fmt.Sprintf("expected hash size to be %d bytes, got %d bytes", e.Want, e.Get)
+}
+
+type ErrUnexpectedChainID struct {
+	Index   int
+	Witness provider.Provider
+	Get     string
+	Want    string
+}
+
+func (e ErrUnexpectedChainID) Error() string {
+	return fmt.Sprintf("witness #%d: %v is on another chain %s, expected %s", e.Index, e.Witness, e.Get, e.Want)
 }
 
 // ErrNewValSetCantBeTrusted means the new validator set cannot be trusted
@@ -187,6 +239,190 @@ func (e ErrHeaderValidateBasic) Error() string {
 }
 
 func (e ErrHeaderValidateBasic) Unwrap() error {
+	return e.Err
+}
+
+type ErrInvalidTrustOptions struct {
+	Err error
+}
+
+func (e ErrInvalidTrustOptions) Error() string {
+	return fmt.Sprintf("invalid TrustOptions: %v", e.Err)
+}
+
+func (e ErrInvalidTrustOptions) Unwrap() error {
+	return e.Err
+}
+
+type ErrGetTrustedBlock struct {
+	Err error
+}
+
+func (e ErrGetTrustedBlock) Error() string {
+	return fmt.Sprintf("can't get last trusted light block: %v", e.Err)
+}
+
+func (e ErrGetTrustedBlock) Unwrap() error {
+	return e.Err
+}
+
+type ErrGetTrustedBlockHeight struct {
+	Err error
+}
+
+func (e ErrGetTrustedBlockHeight) Error() string {
+	return fmt.Sprintf("can't get last trusted light block height: %v", e.Err)
+}
+
+func (e ErrGetTrustedBlockHeight) Unwrap() error {
+	return e.Err
+}
+
+type ErrCleanup struct {
+	Err error
+}
+
+func (e ErrCleanup) Error() string {
+	return fmt.Sprintf("failed to cleanup: %v", e.Err)
+}
+
+func (e ErrCleanup) Unwrap() error {
+	return e.Err
+}
+
+type ErrRetrieveBlock struct {
+	Err error
+}
+
+func (e ErrRetrieveBlock) Error() string {
+	return fmt.Sprintf("failed to retrieve light block from primary to verify against: %v", e.Err)
+}
+
+func (e ErrRetrieveBlock) Unwrap() error {
+	return e.Err
+}
+
+type ErrGetFirstBlock struct {
+	Err error
+}
+
+func (e ErrGetFirstBlock) Error() string {
+	return fmt.Sprintf("can't get first light block: %v", e.Err)
+}
+
+func (e ErrGetFirstBlock) Unwrap() error {
+	return e.Err
+}
+
+type ErrGetFirstBlockHeight struct {
+	Err error
+}
+
+func (e ErrGetFirstBlockHeight) Error() string {
+	return fmt.Sprintf("can't get first light block height: %v", e.Err)
+}
+
+func (e ErrGetFirstBlockHeight) Unwrap() error {
+	return e.Err
+}
+
+type ErrInvalidCommit struct {
+	Err error
+}
+
+func (e ErrInvalidCommit) Error() string {
+	return fmt.Sprintf("invalid commit: %v", e.Err)
+}
+
+func (e ErrInvalidCommit) Unwrap() error {
+	return e.Err
+}
+
+type ErrGetLastTrustedHeight struct {
+	Err error
+}
+
+func (e ErrGetLastTrustedHeight) Error() string {
+	return fmt.Sprintf("can't get last trusted height: %v", e.Err)
+}
+
+func (e ErrGetLastTrustedHeight) Unwrap() error {
+	return e.Err
+}
+
+type ErrPrune struct {
+	Err error
+}
+
+func (e ErrPrune) Error() string {
+	return fmt.Sprintf("prune: %v", e.Err)
+}
+
+func (e ErrPrune) Unwrap() error {
+	return e.Err
+}
+
+type ErrSaveTrustedHeader struct {
+	Err error
+}
+
+func (e ErrSaveTrustedHeader) Error() string {
+	return fmt.Sprintf("failed to save trusted header: %v", e.Err)
+}
+
+func (e ErrSaveTrustedHeader) Unwrap() error {
+	return e.Err
+}
+
+type ErrCleanupAfter struct {
+	Height int64
+	Err    error
+}
+
+func (e ErrCleanupAfter) Error() string {
+	return fmt.Sprintf("cleanupAfter(%d): %v", e.Height, e.Err)
+}
+
+func (e ErrCleanupAfter) Unwrap() error {
+	return e.Err
+}
+
+type ErrGetSignedHeaderBeforeHeight struct {
+	Height int64
+	Err    error
+}
+
+func (e ErrGetSignedHeaderBeforeHeight) Error() string {
+	return fmt.Sprintf("can't get signed header before height %d: %v", e.Height, e.Err)
+}
+
+func (e ErrGetSignedHeaderBeforeHeight) Unwrap() error {
+	return e.Err
+}
+
+type ErrGetHeaderBeforeHeight struct {
+	Height int64
+	Err    error
+}
+
+func (e ErrGetHeaderBeforeHeight) Error() string {
+	return fmt.Sprintf("failed to get header before %d: %v", e.Height, e.Err)
+}
+
+func (e ErrGetHeaderBeforeHeight) Unwrap() error {
+	return e.Err
+}
+
+type ErrObtainHeaderAtHeight struct {
+	Height int64
+	Err    error
+}
+
+func (e ErrObtainHeaderAtHeight) Error() string {
+	return fmt.Sprintf("failed to obtain the header at height #%d: %v", e.Height, e.Err)
+}
+
+func (e ErrObtainHeaderAtHeight) Unwrap() error {
 	return e.Err
 }
 

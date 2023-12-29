@@ -39,7 +39,7 @@ func (opts TrustOptions) ValidateBasic() error {
 		return ErrNegativeOrZeroPeriod
 	}
 	if opts.Height <= 0 {
-		return ErrNegativeOrZeroHeight
+		return ErrZeroOrNegativeHeight
 	}
 	if len(opts.Hash) != tmhash.Size {
 		return ErrHashSizeMismatch{Want: tmhash.Size, Get: len(opts.Hash)}

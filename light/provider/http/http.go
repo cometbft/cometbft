@@ -211,7 +211,7 @@ func (p *http) signedHeader(ctx context.Context, height *int64) (*types.SignedHe
 
 func validateHeight(height int64) (*int64, error) {
 	if height < 0 {
-		return nil, fmt.Errorf("expected height >= 0, got height %d", height)
+		return nil, provider.ErrNegativeHeight{Height: height}
 	}
 
 	h := &height

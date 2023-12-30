@@ -131,7 +131,7 @@ func (pv MockPV) String() string {
 }
 
 // XXX: Implement.
-func (*MockPV) DisableChecks() {
+func (MockPV) DisableChecks() {
 	// Currently this does nothing,
 	// as MockPV has no safety checks at all.
 }

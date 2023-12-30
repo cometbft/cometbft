@@ -33,15 +33,15 @@ func (es *EventSink) TxIndexer() BackportTxIndexer {
 // indexing operations to an underlying PostgreSQL event sink.
 type BackportTxIndexer struct{ psql *EventSink }
 
-func (b BackportTxIndexer) GetRetainHeight() (int64, error) {
+func (BackportTxIndexer) GetRetainHeight() (int64, error) {
 	return 0, nil
 }
 
-func (b BackportTxIndexer) SetRetainHeight(_ int64) error {
+func (BackportTxIndexer) SetRetainHeight(_ int64) error {
 	return nil
 }
 
-func (b BackportTxIndexer) Prune(_ int64) (int64, int64, error) {
+func (BackportTxIndexer) Prune(_ int64) (int64, int64, error) {
 	// Not implemented
 	return 0, 0, nil
 }
@@ -80,15 +80,15 @@ func (es *EventSink) BlockIndexer() BackportBlockIndexer {
 // delegating indexing operations to an underlying PostgreSQL event sink.
 type BackportBlockIndexer struct{ psql *EventSink }
 
-func (b BackportBlockIndexer) SetRetainHeight(_ int64) error {
+func (BackportBlockIndexer) SetRetainHeight(_ int64) error {
 	return nil
 }
 
-func (b BackportBlockIndexer) GetRetainHeight() (int64, error) {
+func (BackportBlockIndexer) GetRetainHeight() (int64, error) {
 	return 0, nil
 }
 
-func (b BackportBlockIndexer) Prune(_ int64) (int64, int64, error) {
+func (BackportBlockIndexer) Prune(_ int64) (int64, int64, error) {
 	// Not implemented
 	return 0, 0, nil
 }

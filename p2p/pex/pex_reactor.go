@@ -54,7 +54,7 @@ const (
 
 type errMaxAttemptsToDial struct{}
 
-func (e errMaxAttemptsToDial) Error() string {
+func (errMaxAttemptsToDial) Error() string {
 	return fmt.Sprintf("reached max attempts %d to dial", maxAttemptsToDial)
 }
 
@@ -174,7 +174,7 @@ func (r *Reactor) OnStop() {
 }
 
 // GetChannels implements Reactor.
-func (r *Reactor) GetChannels() []*conn.ChannelDescriptor {
+func (*Reactor) GetChannels() []*conn.ChannelDescriptor {
 	return []*conn.ChannelDescriptor{
 		{
 			ID:                  PexChannel,

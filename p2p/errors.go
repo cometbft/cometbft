@@ -141,14 +141,14 @@ func (e ErrSwitchAuthenticationFailure) Error() string {
 // ErrTransportClosed is raised when the Transport has been closed.
 type ErrTransportClosed struct{}
 
-func (e ErrTransportClosed) Error() string {
+func (ErrTransportClosed) Error() string {
 	return "transport has been closed"
 }
 
 // ErrPeerRemoval is raised when attempting to remove a peer results in an error.
 type ErrPeerRemoval struct{}
 
-func (e ErrPeerRemoval) Error() string {
+func (ErrPeerRemoval) Error() string {
 	return "peer removal failed"
 }
 

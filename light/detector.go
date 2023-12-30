@@ -374,7 +374,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 // getTargetBlockOrLatest gets the latest height, if it is greater than the target height then it queries
 // the target height else it returns the latest. returns true if it successfully managed to acquire the target
 // height.
-func (c *Client) getTargetBlockOrLatest(
+func (*Client) getTargetBlockOrLatest(
 	ctx context.Context,
 	height int64,
 	witness provider.Provider,

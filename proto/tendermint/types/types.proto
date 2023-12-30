@@ -76,6 +76,30 @@ message Data {
   // NOTE: not all txs here are valid.  We're just agreeing on the order first.
   // This means that block.AppHash does not include these txs.
   repeated bytes txs = 1;
+
+  reserved 2, 3, 4;
+  // field number 2 is reserved for intermediate state roots
+  // field number 3 is reserved for evidence
+  // field number 4 is reserved for blobs
+
+  // SquareSize is the number of rows or columns in the original data square.
+  uint64 square_size = 5;
+
+  // Hash is the root of a binary Merkle tree where the leaves of the tree are
+  // the row and column roots of an extended data square. Hash is often referred
+  // to as the "data root".
+  bytes hash = 6;
+}
+
+// Blob (named after binary large object) is a chunk of data submitted by a user
+// to be published to the Celestia blockchain. The data of a Blob is published
+// to a namespace and is encoded into shares based on the format specified by
+// share_version.
+message Blob {
+  bytes  namespace_id      = 1;
+  bytes  data              = 2;
+  uint32 share_version     = 3;
+  uint32 namespace_version = 4;
 }
 
 // Vote represents a prevote or precommit vote from validators for
@@ -171,8 +195,78 @@ message BlockMeta {
 }
 
 // TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
+//
+// <celestia-core>
+// Note: TxProof is not used in celestia-core because of modifications to the
+// data root. In a normal Cosmos chain, the data root is the root of a Merkle
+// tree of transactions in the block. However, in Celestia the data root is the
+// root of the row and column roots in the extended data square. See
+// https://github.com/celestiaorg/celestia-app/blob/852a229f11f0f269021b36f7621609f432bb858b/pkg/da/data_availability_header.go
+// for more details. Therefore, TxProof isn't sufficient to prove the existence
+// of a transaction in a Celestia block and ShareProof was defined instead. See
+// ShareProof for more details.
 message TxProof {
   bytes                   root_hash = 1;
   bytes                   data      = 2;
   tendermint.crypto.Proof proof     = 3;
 }
+
+// IndexWrapper adds index metadata to a transaction. This is used to track
+// transactions that pay for blobs, and where the blobs start in the square.
+message IndexWrapper {
+  bytes           tx            = 1;
+  repeated uint32 share_indexes = 2;
+  string          type_id       = 3;
+}
+
+// BlobTx wraps an encoded sdk.Tx with a second field to contain blobs of data.
+// The raw bytes of the blobs are not signed over, instead we verify each blob
+// using the relevant MsgPayForBlobs that is signed over in the encoded sdk.Tx.
+message BlobTx {
+  bytes         tx      = 1;
+  repeated Blob blobs   = 2;
+  string        type_id = 3;
+}
+
+// ShareProof is an NMT proof that a set of shares exist in a set of rows and a
+// Merkle proof that those rows exist in a Merkle tree with a given data root.
+message ShareProof {
+  repeated bytes    data              = 1;
+  repeated NMTProof share_proofs      = 2;
+  bytes             namespace_id      = 3;
+  RowProof          row_proof         = 4;
+  uint32            namespace_version = 5;
+}
+
+// RowProof is a Merkle proof that a set of rows exist in a Merkle tree with a
+// given data root.
+message RowProof {
+  repeated bytes row_roots                   = 1;
+  repeated tendermint.crypto.Proof proofs    = 2;
+  bytes                            root      = 3;
+  uint32                           start_row = 4;
+  uint32                           end_row   = 5;
+}
+
+// NMTProof is a proof of a namespace.ID in an NMT.
+// In case this proof proves the absence of a namespace.ID
+// in a tree it also contains the leaf hashes of the range
+// where that namespace would be.
+message NMTProof {
+  // Start index of this proof.
+  int32 start = 1;
+  // End index of this proof.
+  int32 end = 2;
+  // Nodes that together with the corresponding leaf values can be used to
+  // recompute the root and verify this proof. Nodes should consist of the max
+  // and min namespaces along with the actual hash, resulting in each being 48
+  // bytes each
+  repeated bytes nodes = 3;
+  // leafHash are nil if the namespace is present in the NMT. In case the
+  // namespace to be proved is in the min/max range of the tree but absent, this
+  // will contain the leaf hash necessary to verify the proof of absence. Leaf
+  // hashes should consist of the namespace along with the actual hash,
+  // resulting 40 bytes total.
+  bytes leaf_hash = 4;
+}
+// </celestia-core>

@@ -77,6 +77,8 @@ message Data {
   // This means that block.AppHash does not include these txs.
   repeated bytes txs = 1;
 
+  // <celestia-core>
+
   reserved 2, 3, 4;
   // field number 2 is reserved for intermediate state roots
   // field number 3 is reserved for evidence
@@ -89,8 +91,11 @@ message Data {
   // the row and column roots of an extended data square. Hash is often referred
   // to as the "data root".
   bytes hash = 6;
+
+  // </celestia-core>
 }
 
+// <celestia-core>
 // Blob (named after binary large object) is a chunk of data submitted by a user
 // to be published to the Celestia blockchain. The data of a Blob is published
 // to a namespace and is encoded into shares based on the format specified by
@@ -101,6 +106,7 @@ message Blob {
   uint32 share_version     = 3;
   uint32 namespace_version = 4;
 }
+// </celestia-core>
 
 // Vote represents a prevote or precommit vote from validators for
 // consensus.

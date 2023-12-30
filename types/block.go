@@ -1284,11 +1284,13 @@ type Data struct {
 	// This means that block.AppHash does not include these txs.
 	Txs Txs `json:"txs"`
 
+	// <celestia-core>
 	// SquareSize is the size of the square after splitting all the block data
 	// into shares. The erasure data is discarded after generation, and keeping this
 	// value avoids unnecessarily regenerating all of the shares when returning
 	// proofs that some element was included in the block
 	SquareSize uint64 `json:"square_size"`
+	// </celestia-core>
 
 	// Volatile
 	hash cmtbytes.HexBytes
@@ -1311,7 +1313,6 @@ func (data *Data) Hash() cmtbytes.HexBytes {
 }
 
 // <celestia-core>
-
 type Blob struct {
 	// NamespaceVersion is the version of the namespace. Used in conjunction
 	// with NamespaceID to determine the namespace of this blob.

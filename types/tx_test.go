@@ -101,6 +101,7 @@ func TestTxProofUnchangable(t *testing.T) {
 }
 
 func testTxProofUnchangable(t *testing.T) {
+	t.Helper()
 	// make some proof
 	txs := makeTxs(randInt(2, 100), randInt(16, 128))
 	root := txs.Hash()
@@ -124,6 +125,7 @@ func testTxProofUnchangable(t *testing.T) {
 
 // assertBadProof makes sure that the proof doesn't deserialize into something valid.
 func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
+	t.Helper()
 	var (
 		proof   TxProof
 		pbProof cmtproto.TxProof

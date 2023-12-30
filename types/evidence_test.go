@@ -26,6 +26,7 @@ func TestEvidenceList(t *testing.T) {
 }
 
 func randomDuplicateVoteEvidence(t *testing.T) *DuplicateVoteEvidence {
+	t.Helper()
 	val := NewMockPV()
 	blockID := makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := makeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))

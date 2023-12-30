@@ -694,6 +694,14 @@ func fireEvents(
 	}
 
 	for i, tx := range block.Data.Txs {
+		// <celestia-core>
+		// Unwrap the blob tx and just publish the PFB without the blobs. We want
+		// the tx indexer to only be concerned with PFBs.
+		blobTx, isBlobTx := types.UnmarshalBlobTx(tx)
+		if isBlobTx {
+			tx = blobTx.Tx
+		}
+		// </celestia-core>
 		if err := eventBus.PublishEventTx(types.EventDataTx{TxResult: abci.TxResult{
 			Height: block.Height,
 			Index:  uint32(i),

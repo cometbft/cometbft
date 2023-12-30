@@ -1274,11 +1274,21 @@ func ExtendedCommitFromProto(ecp *cmtproto.ExtendedCommit) (*ExtendedCommit, err
 //-------------------------------------
 
 // Data contains the set of transactions included in the block
+// <celestia-core>
+// Data with reserved namespaces (Txs, IntermediateStateRoots, Evidence) and
+// Celestia application specific Blobs.
+// </celestia-core>
 type Data struct {
 	// Txs that will be applied by state @ block.Height+1.
 	// NOTE: not all txs here are valid.  We're just agreeing on the order first.
 	// This means that block.AppHash does not include these txs.
 	Txs Txs `json:"txs"`
+
+	// SquareSize is the size of the square after splitting all the block data
+	// into shares. The erasure data is discarded after generation, and keeping this
+	// value avoids unnecessarily regenerating all of the shares when returning
+	// proofs that some element was included in the block
+	SquareSize uint64 `json:"square_size"`
 
 	// Volatile
 	hash cmtbytes.HexBytes
@@ -1292,8 +1302,40 @@ func (data *Data) Hash() cmtbytes.HexBytes {
 	if data.hash == nil {
 		data.hash = data.Txs.Hash() // NOTE: leaves of merkle tree are TxIDs
 	}
+
+	// <celestia-core>
+	// this is the expected behavior where `data.hash` was set by celestia-app
+	// in PrepareProposal
+	// </celestia-core>
 	return data.hash
 }
+
+// <celestia-core>
+
+type Blob struct {
+	// NamespaceVersion is the version of the namespace. Used in conjunction
+	// with NamespaceID to determine the namespace of this blob.
+	NamespaceVersion uint8
+
+	// NamespaceID defines the namespace ID of this blob. Used in conjunction
+	// with NamespaceVersion to determine the namespace of this blob.
+	NamespaceID []byte
+
+	// Data is the actual data of the blob.
+	// (e.g. a block of a virtual sidechain).
+	Data []byte
+
+	// ShareVersion is the version of the share format that this blob should use
+	// when encoded into shares.
+	ShareVersion uint8
+}
+
+// Namespace returns the namespace of this blob encoded as a byte slice.
+func (b Blob) Namespace() []byte {
+	return append([]byte{b.NamespaceVersion}, b.NamespaceID...)
+}
+
+// </celestia-core>
 
 // StringIndented returns an indented string representation of the transactions.
 func (data *Data) StringIndented(indent string) string {
@@ -1327,6 +1369,12 @@ func (data *Data) ToProto() cmtproto.Data {
 		tp.Txs = txBzs
 	}
 
+	// <celestia-core>
+	tp.SquareSize = data.SquareSize
+
+	tp.Hash = data.hash
+	// </celestia-core>
+
 	return *tp
 }
 
@@ -1347,6 +1395,11 @@ func DataFromProto(dp *cmtproto.Data) (Data, error) {
 	} else {
 		data.Txs = Txs{}
 	}
+
+	// <celestia-core>
+	data.SquareSize = dp.SquareSize
+	data.hash = dp.Hash
+	// </celestia-core>
 
 	return *data, nil
 }

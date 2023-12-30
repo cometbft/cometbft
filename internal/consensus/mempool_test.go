@@ -7,20 +7,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sm "github.com/cometbft/cometbft/internal/state"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// for testing
+// for testing.
 func assertMempool(txn txNotifier) mempl.Mempool {
 	return txn.(mempl.Mempool)
 }

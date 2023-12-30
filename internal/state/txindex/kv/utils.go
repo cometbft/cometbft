@@ -119,7 +119,7 @@ func int64ToBytes(i int64) []byte {
 	return buf[:n]
 }
 
-//nolint:deadcode,unused
+//nolint:unused
 func getKeys(indexer *TxIndex) [][]byte {
 	var keys [][]byte
 

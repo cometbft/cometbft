@@ -88,7 +88,7 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	return batch.WriteSync()
 }
 
-//nolint:deadcode,unused
+//nolint:unused
 func getKeys(indexer BlockerIndexer) [][]byte {
 	var keys [][]byte
 

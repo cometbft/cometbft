@@ -5,12 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
@@ -21,6 +16,9 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -93,7 +91,7 @@ func TestEvidencePoolBasic(t *testing.T) {
 	assert.Equal(t, 1, len(evs))
 }
 
-// Tests inbound evidence for the right time and height
+// Tests inbound evidence for the right time and height.
 func TestAddExpiredEvidence(t *testing.T) {
 	var (
 		val                 = types.NewMockPV()
@@ -243,7 +241,7 @@ func TestVerifyDuplicatedEvidenceFails(t *testing.T) {
 }
 
 // check that valid light client evidence is correctly validated and stored in
-// evidence pool
+// evidence pool.
 func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 	var (
 		height       int64 = 100
@@ -304,7 +302,7 @@ func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 }
 
 // Tests that restarting the evidence pool after a potential failure will recover the
-// pending evidence and continue to gossip it
+// pending evidence and continue to gossip it.
 func TestRecoverPendingEvidence(t *testing.T) {
 	height := int64(10)
 	val := types.NewMockPV()

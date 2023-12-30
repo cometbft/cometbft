@@ -74,7 +74,7 @@ func (drw kvstoreConn) Close() (err error) {
 	return err1
 }
 
-// Each returned ReadWriteCloser is akin to a net.Connection
+// Each returned ReadWriteCloser is akin to a net.Connection.
 func makeKVStoreConnPair() (fooConn, barConn kvstoreConn) {
 	barReader, fooWriter := io.Pipe()
 	fooReader, barWriter := io.Pipe()

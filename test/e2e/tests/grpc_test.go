@@ -6,12 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/rpc/grpc/client/privileged"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGRPC_Version(t *testing.T) {
@@ -34,7 +33,6 @@ func TestGRPC_Version(t *testing.T) {
 
 func TestGRPC_Block_GetByHeight(t *testing.T) {
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
-
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
@@ -60,7 +58,6 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, lastBlock.BlockID)
 		require.Equal(t, lastBlock.Block.Height, last)
-
 	})
 }
 

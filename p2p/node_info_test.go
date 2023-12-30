@@ -3,13 +3,11 @@ package p2p
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNodeInfoValidate(t *testing.T) {
-
 	// empty fails
 	ni := DefaultNodeInfo{}
 	assert.Error(t, ni.Validate())
@@ -85,11 +83,9 @@ func TestNodeInfoValidate(t *testing.T) {
 			assert.NoError(t, err, tc.testName)
 		}
 	}
-
 }
 
 func TestNodeInfoCompatible(t *testing.T) {
-
 	nodeKey1 := NodeKey{PrivKey: ed25519.GenPrivKey()}
 	nodeKey2 := NodeKey{PrivKey: ed25519.GenPrivKey()}
 	name := "testing"

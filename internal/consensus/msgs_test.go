@@ -6,10 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -17,6 +13,9 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMsgToProto(t *testing.T) {

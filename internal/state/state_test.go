@@ -8,11 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
@@ -20,6 +16,8 @@ import (
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // setupTestCase does setup common to all test cases.
@@ -383,7 +381,7 @@ func TestProposerFrequency(t *testing.T) {
 	}
 }
 
-// new val set with given powers and random initial priorities
+// new val set with given powers and random initial priorities.
 func genValSetWithPowers(powers []int64) *types.ValidatorSet {
 	size := len(powers)
 	vals := make([]*types.Validator, size)
@@ -399,7 +397,7 @@ func genValSetWithPowers(powers []int64) *types.ValidatorSet {
 	return valSet
 }
 
-// test a proposer appears as frequently as expected
+// test a proposer appears as frequently as expected.
 func testProposerFreq(t *testing.T, caseNum int, valSet *types.ValidatorSet) {
 	N := valSet.Size()
 	totalPower := valSet.TotalVotingPower()
@@ -1020,7 +1018,6 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 	for i := 1; i < N+1; i++ {
 		params[i] = *types.DefaultConsensusParams()
 		params[i].Block.MaxBytes += int64(i)
-
 	}
 
 	// Build the params history by running updateState

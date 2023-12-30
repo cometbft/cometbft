@@ -5,13 +5,9 @@ import (
 	"crypto/rand"
 	"os"
 	"path/filepath"
-
-	// "sync"
+	// "sync".
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/merkle"
@@ -21,6 +17,8 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (

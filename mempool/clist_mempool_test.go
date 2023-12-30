@@ -9,12 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	gogotypes "github.com/cosmos/gogoproto/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	abciclient "github.com/cometbft/cometbft/abci/client"
 	abciclimocks "github.com/cometbft/cometbft/abci/client/mocks"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
@@ -27,6 +21,11 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
+	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 // A cleanupFunc cleans up any config / test files created for a particular
@@ -111,7 +110,7 @@ func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
 	}
 }
 
-// Generate a list of random transactions
+// Generate a list of random transactions.
 func NewRandomTxs(numTxs int, txLen int) types.Txs {
 	txs := make(types.Txs, numTxs)
 	for i := 0; i < numTxs; i++ {
@@ -728,7 +727,7 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	require.NoError(t, mp.FlushAppConn())
 }
 
-// caller must close server
+// caller must close server.
 func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
 	clientCreator, err := abciclient.NewClient(addr, "socket", true)
 	require.NoError(t, err)

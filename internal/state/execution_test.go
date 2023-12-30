@@ -6,12 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
@@ -32,6 +27,9 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -236,7 +234,6 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		for i, v := range app.CommitVotes {
 			if ctr < len(tc.expectedAbsentValidators) &&
 				tc.expectedAbsentValidators[ctr] == i {
-
 				assert.Equal(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
 				ctr++
 			} else {
@@ -664,7 +661,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 }
 
 // TestFinalizeBlockValidatorUpdatesResultingInEmptySet checks that processing validator updates that
-// would result in empty set causes no panic, an error is raised and NextValidators is not updated
+// would result in empty set causes no panic, an error is raised and NextValidators is not updated.
 func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	app := &testApp{}
 	cc := proxy.NewLocalClientCreator(app)

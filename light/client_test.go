@@ -7,11 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
@@ -19,6 +15,8 @@ import (
 	mockp "github.com/cometbft/cometbft/light/provider/mock"
 	dbs "github.com/cometbft/cometbft/light/store/db"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -32,10 +30,10 @@ var (
 	bTime, _ = time.Parse(time.RFC3339, "2006-01-02T15:04:05Z")
 	h1       = keys.GenSignedHeader(chainID, 1, bTime, nil, vals, vals,
 		hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys))
-	// 3/3 signed
+	// 3/3 signed.
 	h2 = keys.GenSignedHeaderLastBlockID(chainID, 2, bTime.Add(30*time.Minute), nil, vals, vals,
 		hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys), types.BlockID{Hash: h1.Hash()})
-	// 3/3 signed
+	// 3/3 signed.
 	h3 = keys.GenSignedHeaderLastBlockID(chainID, 3, bTime.Add(1*time.Hour), nil, vals, vals,
 		hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys), types.BlockID{Hash: h2.Hash()})
 	trustPeriod  = 4 * time.Hour
@@ -379,7 +377,7 @@ func TestClient_SkippingVerification(t *testing.T) {
 }
 
 // start from a large light block to make sure that the pivot height doesn't select a height outside
-// the appropriate range
+// the appropriate range.
 func TestClientLargeBisectionVerification(t *testing.T) {
 	veryLargeFullNode := mockp.New(genMockNode(chainID, 100, 3, 0, bTime))
 	trustedLightBlock, err := veryLargeFullNode.LightBlock(ctx, 5)
@@ -456,7 +454,7 @@ func TestClient_Cleanup(t *testing.T) {
 	assert.Nil(t, l)
 }
 
-// trustedHeader.Height == options.Height
+// trustedHeader.Height == options.Height.
 func TestClientRestoresTrustedHeaderAfterStartup1(t *testing.T) {
 	// 1. options.Hash == trustedHeader.Hash
 	{
@@ -525,7 +523,7 @@ func TestClientRestoresTrustedHeaderAfterStartup1(t *testing.T) {
 	}
 }
 
-// trustedHeader.Height < options.Height
+// trustedHeader.Height < options.Height.
 func TestClientRestoresTrustedHeaderAfterStartup2(t *testing.T) {
 	// 1. options.Hash == trustedHeader.Hash
 	{
@@ -601,7 +599,7 @@ func TestClientRestoresTrustedHeaderAfterStartup2(t *testing.T) {
 	}
 }
 
-// trustedHeader.Height > options.Height
+// trustedHeader.Height > options.Height.
 func TestClientRestoresTrustedHeaderAfterStartup3(t *testing.T) {
 	// 1. options.Hash == trustedHeader.Hash
 	{
@@ -829,7 +827,6 @@ func TestClient_BackwardsVerification(t *testing.T) {
 		// so expect error
 		_, err = c.VerifyLightBlockAtHeight(ctx, 8, bTime.Add(12*time.Minute))
 		assert.Error(t, err)
-
 	}
 	{
 		testCases := []struct {

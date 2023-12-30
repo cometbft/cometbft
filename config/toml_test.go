@@ -5,11 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/test"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func ensureFiles(t *testing.T, rootDir string, files ...string) {
@@ -62,7 +61,7 @@ func TestEnsureTestRoot(t *testing.T) {
 func assertValidConfig(t *testing.T, configFile string) {
 	t.Helper()
 	// list of words we expect in the config
-	var elems = []string{
+	elems := []string{
 		"moniker",
 		"seeds",
 		"proxy_app",

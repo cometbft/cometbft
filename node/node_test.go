@@ -12,11 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -37,6 +33,8 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNodeStartStop(t *testing.T) {
@@ -209,7 +207,7 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
 
-// address without a protocol must result in error
+// address without a protocol must result in error.
 func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	addrNoPrefix := testFreeAddr(t)
 
@@ -485,7 +483,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 }
 
 // Simple test to confirm that an existing genesis file will be deleted from the DB
-// TODO Confirm that the deletion of a very big file does not crash the machine
+// TODO Confirm that the deletion of a very big file does not crash the machine.
 func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
 	defer os.RemoveAll(config.RootDir)

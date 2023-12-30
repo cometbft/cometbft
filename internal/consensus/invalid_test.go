@@ -17,7 +17,7 @@ import (
 // byzantine failures
 
 // one byz val sends a precommit for a random block at each height
-// Ensure a testnet makes blocks
+// Ensure a testnet makes blocks.
 func TestReactorInvalidPrecommit(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
@@ -32,7 +32,6 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 		ticker := NewTimeoutTicker()
 		ticker.SetLogger(css[i].Logger)
 		css[i].SetTimeoutTicker(ticker)
-
 	}
 
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)

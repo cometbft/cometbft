@@ -8,16 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var cfg *config.P2PConfig
@@ -580,7 +579,7 @@ func assertPeersWithTimeout(
 	}
 }
 
-// Creates a peer with the provided config
+// Creates a peer with the provided config.
 func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Switch {
 	peer := p2p.MakeSwitch(
 		cfg,
@@ -604,13 +603,13 @@ func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Sw
 	return peer
 }
 
-// Creates a peer with the default config
+// Creates a peer with the default config.
 func testCreateDefaultPeer(dir string, id int) *p2p.Switch {
 	return testCreatePeerWithConfig(dir, id, &ReactorConfig{})
 }
 
 // Creates a seed which knows about the provided addresses / source address pairs.
-// Starting and stopping the seed is left to the caller
+// Starting and stopping the seed is left to the caller.
 func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*p2p.NetAddress) *p2p.Switch {
 	seed := p2p.MakeSwitch(
 		cfg,
@@ -636,7 +635,7 @@ func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*p2p.NetAddress) 
 }
 
 // Creates a peer which knows about the provided seed.
-// Starting and stopping the peer is left to the caller
+// Starting and stopping the peer is left to the caller.
 func testCreatePeerWithSeed(dir string, id int, seed *p2p.Switch) *p2p.Switch {
 	conf := &ReactorConfig{
 		Seeds: []string{seed.NetAddress().String()},

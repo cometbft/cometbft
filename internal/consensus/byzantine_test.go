@@ -9,31 +9,28 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/service"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/store"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
-	"github.com/cometbft/cometbft/proxy"
-
-	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //----------------------------------------------
 // byzantine failures
 
-// Byzantine node sends two different prevotes (nil and blockID) to the same validator
+// Byzantine node sends two different prevotes (nil and blockID) to the same validator.
 func TestByzantinePrevoteEquivocation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -295,7 +292,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 // byzantine validator sends conflicting proposals into A and B,
 // and prevotes/precommits on both of them.
 // B sees a commit, A doesn't.
-// Heal partition and ensure A sees the commit
+// Heal partition and ensure A sees the commit.
 func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	N := 4
 	logger := consensusLogger().With("test", "byzantine")
@@ -327,7 +324,6 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	blocksSubs := make([]types.Subscription, N)
 	reactors := make([]p2p.Reactor, N)
 	for i := 0; i < N; i++ {
-
 		// enable txs so we can create different proposals
 		assertMempool(css[i].txNotifier).EnableTxsAvailable()
 		// make first val byzantine

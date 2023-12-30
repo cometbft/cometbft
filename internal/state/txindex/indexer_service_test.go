@@ -5,17 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	db "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/internal/state/indexer"
-
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/internal/state/txindex/kv"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIndexerServiceIndexesBlocks(t *testing.T) {

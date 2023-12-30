@@ -7,20 +7,17 @@ import (
 	"os"
 	"testing"
 
+	db "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/internal/state/txindex"
+	"github.com/cometbft/cometbft/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
-
-	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"
-
-	db "github.com/cometbft/cometbft-db"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/state/txindex"
-	"github.com/cometbft/cometbft/types"
 )
 
 func TestTxIndex(t *testing.T) {
@@ -327,7 +324,6 @@ func TestTxSearchEventMatch(t *testing.T) {
 }
 
 func TestTxSearchEventMatchByHeight(t *testing.T) {
-
 	indexer := NewTxIndex(db.NewMemDB())
 
 	txResult := txResultWithEvents([]abci.Event{
@@ -585,7 +581,6 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 		}
 		assert.Len(t, results, n)
 		assert.True(t, !tc.found || proto.Equal(txResult, results[0]))
-
 	}
 }
 

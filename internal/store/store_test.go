@@ -8,32 +8,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/state/indexer"
-	"github.com/cometbft/cometbft/internal/state/indexer/block"
-	"github.com/cometbft/cometbft/internal/state/txindex"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/state/indexer"
+	"github.com/cometbft/cometbft/internal/state/indexer/block"
+	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // make an extended commit with a single vote containing just the height and a
-// timestamp
+// timestamp.
 func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit {
 	extCommitSigs := []types.ExtendedCommitSig{{
 		CommitSig: types.CommitSig{
@@ -558,7 +555,7 @@ func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
 // This test tests the pruning service and its pruning of the blockstore
 // The state store cannot be pruned here because we do not have proper
 // state stored. The test is expected to pass even though the log should
-// inform about the inability to prune the state store
+// inform about the inability to prune the state store.
 func TestPruningService(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
 	defer os.RemoveAll(config.RootDir)

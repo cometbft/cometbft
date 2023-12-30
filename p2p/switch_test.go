@@ -14,17 +14,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	p2pproto "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p/conn"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var cfg *config.P2PConfig
@@ -88,7 +87,7 @@ func (tr *TestReactor) getMsgs(chID byte) []PeerMessage {
 //-----------------------------------------------------------------------------
 
 // convenience method for creating two switches connected to each other.
-// XXX: note this uses net.Pipe and not a proper TCP conn
+// XXX: note this uses net.Pipe and not a proper TCP conn.
 func MakeSwitchPair(initSwitch func(int, *Switch) *Switch) (*Switch, *Switch) {
 	// Create two switches that will be interconnected.
 	switches := MakeConnectedSwitches(cfg, 2, initSwitch, Connect2Switches)
@@ -764,7 +763,7 @@ func (r *mockReactor) InitCalledBeforeRemoveFinished() bool {
 	return atomic.LoadUint32(&r.initCalledBeforeRemoveFinished) == 1
 }
 
-// see stopAndRemovePeer
+// see stopAndRemovePeer.
 func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	// make reactor
 	reactor := &mockReactor{}

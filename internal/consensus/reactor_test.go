@@ -9,12 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -37,6 +32,9 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 //----------------------------------------------
@@ -107,7 +105,7 @@ func stopConsensusNet(logger log.Logger, reactors []*Reactor, eventBuses []*type
 	logger.Info("stopConsensusNet: DONE", "n", len(reactors))
 }
 
-// Ensure a testnet makes blocks
+// Ensure a testnet makes blocks.
 func TestReactorBasic(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
@@ -120,7 +118,7 @@ func TestReactorBasic(t *testing.T) {
 	})
 }
 
-// Ensure we can process blocks with evidence
+// Ensure we can process blocks with evidence.
 func TestReactorWithEvidence(t *testing.T) {
 	nValidators := 4
 	testName := "consensus_reactor_test"
@@ -220,7 +218,7 @@ func TestReactorWithEvidence(t *testing.T) {
 
 //------------------------------------
 
-// Ensure a testnet makes blocks when there are txs
+// Ensure a testnet makes blocks when there are txs.
 func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
@@ -632,7 +630,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	})
 }
 
-// Check we can make blocks with skip_timeout_commit=false
+// Check we can make blocks with skip_timeout_commit=false.
 func TestReactorWithTimeoutCommit(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_with_timeout_commit_test", newMockTickerFunc(false), newKVStore)

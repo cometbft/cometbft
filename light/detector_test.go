@@ -4,17 +4,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/light/provider"
 	mockp "github.com/cometbft/cometbft/light/provider/mock"
 	dbs "github.com/cometbft/cometbft/light/store/db"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
@@ -332,7 +330,7 @@ func TestClientDivergentTraces1(t *testing.T) {
 }
 
 // 2. Two out of three nodes don't respond but the third has a header that matches
-// => verification should be successful and all the witnesses should remain
+// => verification should be successful and all the witnesses should remain.
 func TestClientDivergentTraces2(t *testing.T) {
 	primary := mockp.New(genMockNode(chainID, 10, 5, 2, bTime))
 	firstBlock, err := primary.LightBlock(ctx, 1)
@@ -359,7 +357,7 @@ func TestClientDivergentTraces2(t *testing.T) {
 }
 
 // 3. witness has the same first header, but different second header
-// => creation should succeed, but the verification should fail
+// => creation should succeed, but the verification should fail.
 func TestClientDivergentTraces3(t *testing.T) {
 	_, primaryHeaders, primaryVals := genMockNode(chainID, 10, 5, 2, bTime)
 	primary := mockp.New(chainID, primaryHeaders, primaryVals)
@@ -394,7 +392,7 @@ func TestClientDivergentTraces3(t *testing.T) {
 }
 
 // 4. Witness has a divergent header but can not produce a valid trace to back it up.
-// It should be ignored
+// It should be ignored.
 func TestClientDivergentTraces4(t *testing.T) {
 	_, primaryHeaders, primaryVals := genMockNode(chainID, 10, 5, 2, bTime)
 	primary := mockp.New(chainID, primaryHeaders, primaryVals)

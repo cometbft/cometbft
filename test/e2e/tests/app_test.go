@@ -8,11 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Tests that any initial state given in genesis has made it into the app.
@@ -101,7 +100,6 @@ func TestApp_Tx(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, key, string(abciResp.Response.Key))
 		assert.Equal(t, value, string(abciResp.Response.Value))
-
 	})
 }
 
@@ -120,7 +118,6 @@ func TestApp_VoteExtensions(t *testing.T) {
 		// the app to have any extension value set (via a normal tx).
 		if node.Testnet.VoteExtensionsEnableHeight != 0 &&
 			info.Response.LastBlockHeight > node.Testnet.VoteExtensionsEnableHeight {
-
 			parts := bytes.Split(resp.Response.Value, []byte("|"))
 			require.Len(t, parts, 2)
 			extSum, err := strconv.Atoi(string(parts[0]))

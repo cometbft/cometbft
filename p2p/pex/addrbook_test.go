@@ -9,13 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // FIXME These tests should not rely on .(*addrBook) assertions
@@ -773,7 +772,7 @@ func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nO
 // Analyze the layout of the selection specified by 'addrs'
 // Returns:
 // - seqLens - the lengths of the sequences of addresses of same type
-// - seqTypes - the types of sequences in selection
+// - seqTypes - the types of sequences in selection.
 func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, seqTypes []int, err error) {
 	// address types are: 0 - nil, 1 - new, 2 - old
 	var (

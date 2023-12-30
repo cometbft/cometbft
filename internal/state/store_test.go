@@ -6,24 +6,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/internal/state/indexer/block"
 	"github.com/cometbft/cometbft/internal/state/txindex"
-
-	dbm "github.com/cometbft/cometbft-db"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStoreLoadValidators(t *testing.T) {

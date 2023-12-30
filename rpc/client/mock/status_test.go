@@ -4,12 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/rpc/client/mock"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStatus(t *testing.T) {
@@ -23,7 +22,8 @@ func TestStatus(t *testing.T) {
 					LatestAppHash:     bytes.HexBytes("app"),
 					LatestBlockHeight: 10,
 				},
-			}},
+			},
+		},
 	}
 
 	r := mock.NewStatusRecorder(m)

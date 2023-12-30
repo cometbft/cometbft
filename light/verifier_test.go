@@ -5,11 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -166,7 +165,6 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestVerifyNonAdjacentHeaders(t *testing.T) {

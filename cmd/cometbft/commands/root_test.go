@@ -7,14 +7,13 @@ import (
 	"strconv"
 	"testing"
 
+	cfg "github.com/cometbft/cometbft/config"
+	cmtos "github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/libs/cli"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	cfg "github.com/cometbft/cometbft/config"
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/libs/cli"
 )
 
 // clearConfig clears env vars, the given root dir, and resets viper.
@@ -27,7 +26,7 @@ func clearConfig(t *testing.T, dir string) {
 	config = cfg.DefaultConfig()
 }
 
-// prepare new rootCmd
+// prepare new rootCmd.
 func testRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:               RootCmd.Use,

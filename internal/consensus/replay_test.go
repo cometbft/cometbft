@@ -12,13 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/types/mocks"
@@ -34,6 +28,10 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -319,10 +317,10 @@ const numBlocks = 6
 // 0 - all synced up
 // 1 - saved block but app and state are behind by one height
 // 2 - save block and committed (i.e. app got `Commit`) but state is behind
-// 3 - same as 2 but with a truncated block store
+// 3 - same as 2 but with a truncated block store.
 var modes = []uint{0, 1, 2, 3}
 
-// This is actually not a test, it's for storing validator change tx data for testHandshakeReplay
+// This is actually not a test, it's for storing validator change tx data for testHandshakeReplay.
 func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*cfg.Config, []*types.Block, []*types.ExtendedCommit, sm.State) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -561,7 +559,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	return config, chain, extCommits, genesisState
 }
 
-// Sync from scratch
+// Sync from scratch.
 func TestHandshakeReplayAll(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -573,7 +571,7 @@ func TestHandshakeReplayAll(t *testing.T) {
 	}
 }
 
-// Sync many, not from scratch
+// Sync many, not from scratch.
 func TestHandshakeReplaySome(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -585,7 +583,7 @@ func TestHandshakeReplaySome(t *testing.T) {
 	}
 }
 
-// Sync from lagging by one
+// Sync from lagging by one.
 func TestHandshakeReplayOne(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -597,7 +595,7 @@ func TestHandshakeReplayOne(t *testing.T) {
 	}
 }
 
-// Sync from caught up
+// Sync from caught up.
 func TestHandshakeReplayNone(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -625,7 +623,7 @@ func tempWALWithData(data []byte) string {
 }
 
 // Make some blocks. Start a fresh app and apply nBlocks blocks.
-// Then restart the app and sync it up with the remaining blocks
+// Then restart the app and sync it up with the remaining blocks.
 func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uint, testValidatorsChange bool) {
 	var (
 		testConfig   *cfg.Config
@@ -1142,7 +1140,7 @@ func readPieceFromWAL(msg *TimedWALMessage) interface{} {
 	return nil
 }
 
-// fresh state and mock store
+// fresh state and mock store.
 func stateAndStore(
 	t *testing.T,
 	config *cfg.Config,

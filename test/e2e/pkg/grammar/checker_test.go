@@ -2,9 +2,10 @@ package grammar
 
 import (
 	"fmt"
+	"testing"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 var (

@@ -12,19 +12,17 @@ import (
 	"time"
 
 	"github.com/adlio/schema"
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/ory/dockertest"
-	"github.com/ory/dockertest/docker"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	tmlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
-
+	"github.com/cosmos/gogoproto/proto"
 	// Register the Postgres database driver.
 	_ "github.com/lib/pq"
+	"github.com/ory/dockertest"
+	"github.com/ory/dockertest/docker"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -271,7 +269,7 @@ func newTestBlockEvents() types.EventDataNewBlockEvents {
 	}
 }
 
-// readSchema loads the indexing database schema file
+// readSchema loads the indexing database schema file.
 func readSchema() ([]*schema.Migration, error) {
 	const filename = "schema.sql"
 	contents, err := os.ReadFile(filename)

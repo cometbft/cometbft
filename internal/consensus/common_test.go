@@ -12,12 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/log/term"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -38,6 +33,9 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/go-kit/log/term"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -48,7 +46,7 @@ const (
 // test.
 type cleanupFunc func()
 
-// genesis, chain_id, priv_val
+// genesis, chain_id, priv_val.
 var (
 	config                *cfg.Config // NOTE: must be reset for each _test.go file
 	consensusReplayConfig *cfg.Config
@@ -131,7 +129,7 @@ func (vs *validatorStub) signVote(
 	return vote, err
 }
 
-// Sign vote for type/hash/header
+// Sign vote for type/hash/header.
 func signVote(vs *validatorStub, voteType types.SignedMsgType, hash []byte, header types.PartSetHeader, extEnabled bool) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
@@ -798,7 +796,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 	}
 }
 
-// nPeers = nValidators + nNotValidator
+// nPeers = nValidators + nNotValidator.
 func randConsensusNetWithPeers(
 	t *testing.T,
 	nValidators,
@@ -924,7 +922,7 @@ func newMockTickerFunc(onlyOnce bool) func() TimeoutTicker {
 }
 
 // mock ticker only fires on RoundStepNewHeight
-// and only once if onlyOnce=true
+// and only once if onlyOnce=true.
 type mockTicker struct {
 	c chan timeoutInfo
 

@@ -7,9 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
-
 	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
@@ -20,6 +17,8 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 )
 
 func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
@@ -224,7 +223,7 @@ func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxR
 }
 
 // When trying to prune the only block in the store it should not succeed
-// State should also not be pruned
+// State should also not be pruned.
 func TestPruningWithHeight1(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
 	defer os.RemoveAll(config.RootDir)
@@ -274,5 +273,4 @@ func TestPruningWithHeight1(t *testing.T) {
 	pruned, _, err := pruner.PruneBlocksToHeight(1)
 	require.Equal(t, pruned, uint64(0))
 	require.NoError(t, err)
-
 }

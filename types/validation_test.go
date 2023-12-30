@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
+	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
 
 // Check VerifyCommit, VerifyCommitLight and VerifyCommitLightTrusting basic
@@ -71,7 +70,6 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				vi++
 			}
 			for i := 0; i < tc.blockVotes+tc.nilVotes; i++ {
-
 				pubKey, err := vals[vi%len(vals)].GetPubKey()
 				require.NoError(t, err)
 				vote := &Vote{

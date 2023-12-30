@@ -51,10 +51,10 @@ func TestParallel(t *testing.T) {
 }
 
 func TestParallelAbort(t *testing.T) {
-	var flow1 = make(chan struct{}, 1)
-	var flow2 = make(chan struct{}, 1)
-	var flow3 = make(chan struct{}, 1) // Cap must be > 0 to prevent blocking.
-	var flow4 = make(chan struct{}, 1)
+	flow1 := make(chan struct{}, 1)
+	flow2 := make(chan struct{}, 1)
+	flow3 := make(chan struct{}, 1) // Cap must be > 0 to prevent blocking.
+	flow4 := make(chan struct{}, 1)
 
 	// Create tasks.
 	tasks := []Task{

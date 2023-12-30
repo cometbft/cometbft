@@ -7,14 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fortytw2/leaktest"
-	"github.com/go-kit/log/term"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -26,6 +19,11 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
 	"github.com/cometbft/cometbft/types"
+	"github.com/fortytw2/leaktest"
+	"github.com/go-kit/log/term"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -112,7 +110,7 @@ func TestReactorSelectiveBroadcast(t *testing.T) {
 // not ready for the peer through three scenarios.
 // First, committed evidence to a newly connected peer
 // Second, evidence to a peer that is behind
-// Third, evidence that was pending and became committed just before the peer caught up
+// Third, evidence that was pending and became committed just before the peer caught up.
 func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	config := cfg.TestConfig()
 
@@ -239,7 +237,7 @@ func evidenceLogger() log.Logger {
 	})
 }
 
-// connect N evidence reactors through N switches
+// connect N evidence reactors through N switches.
 func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor,
 	[]*evidence.Pool,
 ) {
@@ -273,7 +271,7 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 	return reactors, pools
 }
 
-// wait for all evidence on all reactors
+// wait for all evidence on all reactors.
 func waitForEvidence(t *testing.T, evs types.EvidenceList, pools []*evidence.Pool) {
 	// wait for the evidence in all evpools
 	wg := new(sync.WaitGroup)
@@ -296,7 +294,7 @@ func waitForEvidence(t *testing.T, evs types.EvidenceList, pools []*evidence.Poo
 	}
 }
 
-// wait for all evidence on a single evpool
+// wait for all evidence on a single evpool.
 func _waitForEvidence(
 	t *testing.T,
 	wg *sync.WaitGroup,
@@ -415,6 +413,5 @@ func TestEvidenceVectors(t *testing.T) {
 		require.NoError(t, err, tc.testName)
 
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
-
 	}
 }

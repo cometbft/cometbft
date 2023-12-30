@@ -185,7 +185,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 		genNodeRunner("foo", fooConn, fooWrites, &fooReads),
 		genNodeRunner("bar", barConn, barWrites, &barReads),
 	)
-	require.Nil(t, trs.FirstError())
+	require.NoError(t, trs.FirstError())
 	require.True(t, ok, "unexpected task abortion")
 
 	// A helper to ensure that the writes and reads match.
@@ -241,15 +241,15 @@ func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
 		line := scanner.Text()
 		params := strings.Split(line, ",")
 		randSecretVector, err := hex.DecodeString(params[0])
-		require.Nil(t, err)
+		require.NoError(t, err)
 		randSecret := new([32]byte)
 		copy((*randSecret)[:], randSecretVector)
 		locIsLeast, err := strconv.ParseBool(params[1])
-		require.Nil(t, err)
+		require.NoError(t, err)
 		expectedRecvSecret, err := hex.DecodeString(params[2])
-		require.Nil(t, err)
+		require.NoError(t, err)
 		expectedSendSecret, err := hex.DecodeString(params[3])
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		recvSecret, sendSecret := deriveSecrets(randSecret, locIsLeast)
 		require.Equal(t, expectedRecvSecret, (*recvSecret)[:], "Recv Secrets aren't equal")
@@ -377,7 +377,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 		},
 	)
 
-	require.Nil(tb, trs.FirstError())
+	require.NoError(tb, trs.FirstError())
 	require.True(tb, ok, "Unexpected task abortion")
 
 	return fooSecConn, barSecConn

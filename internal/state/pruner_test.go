@@ -22,7 +22,7 @@ import (
 )
 
 func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
-	pruner, _, blockIndexer, _ := createTestSetup(t)
+	pruner, _, blockIndexer := createTestSetup(t)
 
 	for height := int64(1); height <= 4; height++ {
 		events, _, _ := getEventsAndResults(height)
@@ -79,7 +79,7 @@ func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
 }
 
 func TestPruneTxIndexerToRetainHeight(t *testing.T) {
-	pruner, txIndexer, _, _ := createTestSetup(t)
+	pruner, txIndexer, _ := createTestSetup(t)
 
 	for height := int64(1); height <= 4; height++ {
 		_, txResult1, txResult2 := getEventsAndResults(height)
@@ -150,7 +150,7 @@ func containsAllTxs(results []*abci.TxResult, txs []string) bool {
 	return true
 }
 
-func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerIndexer, *types.EventBus) {
+func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerIndexer) {
 	t.Helper()
 	config := test.ResetTestRoot("pruner_test")
 	t.Cleanup(func() {
@@ -188,7 +188,7 @@ func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerI
 	bs := store.NewBlockStore(blockDB)
 	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger())
 
-	return pruner, txIndexer, *blockIndexer, eventBus
+	return pruner, txIndexer, *blockIndexer
 }
 
 func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxResult, *abci.TxResult) {

@@ -55,7 +55,7 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.mtx.RUnlock()
 
 		res := json.RawMessage(`{}`)
-		emptyRespBytes, _ := json.Marshal(types.RPCResponse{Result: res, ID: req.ID})
+		emptyRespBytes, err := json.Marshal(types.RPCResponse{Result: res, ID: req.ID})
 		if err := conn.WriteMessage(messageType, emptyRespBytes); err != nil {
 			return
 		}

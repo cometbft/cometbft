@@ -750,7 +750,7 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 	}
 }
 
-func benchmarkTxIndex(txsCount int64, b *testing.B) {
+func benchmarkTxIndex(b *testing.B, txsCount int64) {
 	dir, err := os.MkdirTemp("", "tx_index_db")
 	require.NoError(b, err)
 	defer os.RemoveAll(dir)
@@ -869,11 +869,24 @@ func TestBigInt(t *testing.T) {
 	}
 }
 
-func BenchmarkTxIndex1(b *testing.B)     { benchmarkTxIndex(1, b) }
-func BenchmarkTxIndex500(b *testing.B)   { benchmarkTxIndex(500, b) }
-func BenchmarkTxIndex1000(b *testing.B)  { benchmarkTxIndex(1000, b) }
-func BenchmarkTxIndex2000(b *testing.B)  { benchmarkTxIndex(2000, b) }
-func BenchmarkTxIndex10000(b *testing.B) { benchmarkTxIndex(10000, b) }
+func BenchmarkTxIndex(b *testing.B) {
+	testCases := []struct {
+		name     string
+		txsCount int64
+	}{
+		{"1", 1},
+		{"500", 500},
+		{"1000", 1000},
+		{"2000", 2000},
+		{"10000", 10000},
+	}
+
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			benchmarkTxIndex(b, tc.txsCount)
+		})
+	}
+}
 
 func isSubset(smaller [][]byte, bigger [][]byte) bool {
 	for _, elem := range smaller {

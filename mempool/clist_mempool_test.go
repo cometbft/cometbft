@@ -423,15 +423,15 @@ func TestSerialReap(t *testing.T) {
 			_, err := mp.CheckTx(txBytes)
 			_, cached := cacheMap[string(txBytes)]
 			if cached {
-				require.NotNil(t, err, "expected error for cached tx")
+				require.Error(t, err, "expected error for cached tx")
 			} else {
-				require.Nil(t, err, "expected no err for uncached tx")
+				require.NoError(t, err, "expected no err for uncached tx")
 			}
 			cacheMap[string(txBytes)] = struct{}{}
 
 			// Duplicates are cached and should return error
 			_, err = mp.CheckTx(txBytes)
-			require.NotNil(t, err, "Expected error after CheckTx on duplicated tx")
+			require.Error(t, err, "Expected error after CheckTx on duplicated tx")
 		}
 	}
 

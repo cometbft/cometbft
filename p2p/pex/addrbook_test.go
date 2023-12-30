@@ -632,7 +632,7 @@ func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
 	// This should just be ignored, and not error.
 	for i := 0; i < numOverrideAttempts; i++ {
 		err = book.AddAddress(peerOverrideAttemptAddr, src)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 	// Now check that the IP was not overridden.
 	// This is done by sampling several peers from addr book

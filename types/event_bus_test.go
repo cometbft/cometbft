@@ -430,12 +430,12 @@ func BenchmarkEventBus(b *testing.B) {
 	for _, bm := range benchmarks {
 		bm := bm
 		b.Run(bm.name, func(b *testing.B) {
-			benchmarkEventBus(bm.numClients, bm.randQueries, bm.randEvents, b)
+			benchmarkEventBus(b, bm.numClients, bm.randQueries, bm.randEvents)
 		})
 	}
 }
 
-func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *testing.B) {
+func benchmarkEventBus(b *testing.B, numClients int, randQueries bool, randEvents bool) {
 	// for random* functions
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 

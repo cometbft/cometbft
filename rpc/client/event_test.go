@@ -100,6 +100,7 @@ func TestTxEventsSentWithBroadcastTxAsync(t *testing.T) { testTxEventsSent(t, "a
 func TestTxEventsSentWithBroadcastTxSync(t *testing.T)  { testTxEventsSent(t, "sync") }
 
 func testTxEventsSent(t *testing.T, broadcastMethod string) {
+	t.Helper()
 	for _, c := range GetClients() {
 		c := c
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {

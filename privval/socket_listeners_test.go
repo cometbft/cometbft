@@ -39,6 +39,7 @@ func testUnixAddr() (string, error) {
 }
 
 func tcpListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Duration) listenerTestCase {
+	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -55,6 +56,7 @@ func tcpListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Dura
 }
 
 func unixListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Duration) listenerTestCase {
+	t.Helper()
 	addr, err := testUnixAddr()
 	if err != nil {
 		t.Fatal(err)
@@ -75,6 +77,7 @@ func unixListenerTestCase(t *testing.T, timeoutAccept, timeoutReadWrite time.Dur
 }
 
 func listenerTestCases(t *testing.T, timeoutAccept, timeoutReadWrite time.Duration) []listenerTestCase {
+	t.Helper()
 	return []listenerTestCase{
 		tcpListenerTestCase(t, timeoutAccept, timeoutReadWrite),
 		unixListenerTestCase(t, timeoutAccept, timeoutReadWrite),

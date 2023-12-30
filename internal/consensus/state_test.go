@@ -3094,12 +3094,14 @@ func signAddPrecommitWithExtension(
 	extension []byte,
 	stub *validatorStub,
 ) {
+	t.Helper()
 	v, err := stub.signVote(types.PrecommitType, hash, header, extension, true)
 	require.NoError(t, err, "failed to sign vote")
 	addVotes(cs, v)
 }
 
 func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSize uint32, oversized bool) (*types.Block, *types.PartSet) {
+	t.Helper()
 	var offset int64
 	if !oversized {
 		offset = -2

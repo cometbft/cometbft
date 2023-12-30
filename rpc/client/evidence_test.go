@@ -30,6 +30,7 @@ func newEvidence(t *testing.T, val *privval.FilePV,
 	vote *types.Vote, vote2 *types.Vote,
 	chainID string,
 ) *types.DuplicateVoteEvidence {
+	t.Helper()
 	var err error
 
 	v := vote.ToProto()
@@ -54,6 +55,7 @@ func makeEvidences(
 	val *privval.FilePV,
 	chainID string,
 ) (correct *types.DuplicateVoteEvidence, fakes []*types.DuplicateVoteEvidence) {
+	t.Helper()
 	vote := types.Vote{
 		ValidatorAddress: val.Key.Address,
 		ValidatorIndex:   0,

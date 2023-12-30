@@ -665,6 +665,7 @@ func TestBatchedJSONRPCCalls(t *testing.T) {
 }
 
 func testBatchedJSONRPCCalls(t *testing.T, c *rpchttp.HTTP) {
+	t.Helper()
 	k1, v1, tx1 := MakeTxKV()
 	k2, v2, tx2 := MakeTxKV()
 

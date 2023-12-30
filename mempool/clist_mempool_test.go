@@ -78,6 +78,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 }
 
 func ensureNoFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
+	t.Helper()
 	timer := time.NewTimer(time.Duration(timeoutMS) * time.Millisecond)
 	select {
 	case <-ch:
@@ -87,6 +88,7 @@ func ensureNoFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 }
 
 func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
+	t.Helper()
 	timer := time.NewTimer(time.Duration(timeoutMS) * time.Millisecond)
 	select {
 	case <-ch:
@@ -97,6 +99,7 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 
 // Call CheckTx on a given mempool on each transaction in the list.
 func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
+	t.Helper()
 	for i, tx := range txs {
 		if _, err := mp.CheckTx(tx); err != nil {
 			// Skip invalid txs.
@@ -123,6 +126,7 @@ func NewRandomTxs(numTxs int, txLen int) types.Txs {
 // Generate a list of random transactions of a given size and call CheckTx on
 // each of them.
 func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
+	t.Helper()
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
 	return txs
@@ -695,6 +699,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 // TODO: all of the tests should probably also run using the remote proxy app
 // since otherwise we're not actually testing the concurrency of the mempool here!
 func TestMempoolRemoteAppConcurrency(t *testing.T) {
+	t.Helper()
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
 	_, server := newRemoteApp(t, sockPath, app)
@@ -729,6 +734,7 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 
 // caller must close server.
 func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
+	t.Helper()
 	clientCreator, err := abciclient.NewClient(addr, "socket", true)
 	require.NoError(t, err)
 

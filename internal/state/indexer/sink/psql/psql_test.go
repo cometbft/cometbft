@@ -17,6 +17,7 @@ import (
 	tmlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cosmos/gogoproto/proto"
+
 	// Register the Postgres database driver.
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest"

@@ -180,6 +180,7 @@ func assertMsgReceivedWithTimeout(
 	checkPeriod,
 	timeout time.Duration,
 ) {
+	t.Helper()
 	ticker := time.NewTicker(checkPeriod)
 	for {
 		select {
@@ -361,6 +362,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 }
 
 func assertNoPeersAfterTimeout(t *testing.T, sw *Switch, timeout time.Duration) {
+	t.Helper()
 	time.Sleep(timeout)
 	if sw.Peers().Size() != 0 {
 		t.Fatalf("Expected %v to not connect to some peers, got %d", sw, sw.Peers().Size())

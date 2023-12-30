@@ -35,13 +35,17 @@ func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 	err = stateStore.Save(state)
 	require.NoError(t, err)
 
-	tearDown := func(t *testing.T) { os.RemoveAll(config.RootDir) }
+	tearDown := func(t *testing.T) {
+		t.Helper()
+		os.RemoveAll(config.RootDir)
+	}
 
 	return tearDown, stateDB, state
 }
 
 // TestStateCopy tests the correct copying behavior of State.
 func TestStateCopy(t *testing.T) {
+	t.Helper()
 	tearDown, _, state := setupTestCase(t)
 	defer tearDown(t)
 	assert := assert.New(t)

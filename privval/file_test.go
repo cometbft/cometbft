@@ -389,6 +389,7 @@ func newProposal(height int64, round int32, blockID types.BlockID) *types.Propos
 }
 
 func newTestFilePV(t *testing.T) (*FilePV, string, string) {
+	t.Helper()
 	tempKeyFile, err := os.CreateTemp(t.TempDir(), "priv_validator_key_")
 	require.NoError(t, err)
 	tempStateFile, err := os.CreateTemp(t.TempDir(), "priv_validator_state_")

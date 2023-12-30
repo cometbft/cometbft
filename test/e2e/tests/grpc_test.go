@@ -35,6 +35,7 @@ func TestGRPC_Version(t *testing.T) {
 
 func TestGRPC_Block_GetByHeight(t *testing.T) {
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
@@ -180,7 +181,9 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 }
 
 func TestGRPC_BlockRetainHeight(t *testing.T) {
+	t.Helper()
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if !node.EnableCompanionPruning {
 			return
 		}
@@ -220,6 +223,7 @@ func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
 
 func TestGRPC_TxIndexerRetainHeight(t *testing.T) {
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if !node.EnableCompanionPruning {
 			return
 		}

@@ -513,6 +513,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 // Check that the mempool has exactly the given list of txs and, if it's not the
 // first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
 func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
+	t.Helper()
 	r.txSendersMtx.Lock()
 	defer r.txSendersMtx.Unlock()
 
@@ -602,6 +603,7 @@ func newUniqueTxs(n int) types.Txs {
 // Wait for all reactors to finish applying a testing function to a list of
 // transactions.
 func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc func(*testing.T, types.Txs, *Reactor, int)) {
+	t.Helper()
 	wg := new(sync.WaitGroup)
 	for i, reactor := range reactors {
 		wg.Add(1)
@@ -635,6 +637,7 @@ func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 // Wait until all txs are in the mempool and check that the number of txs in the
 // mempool is as expected.
 func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
+	t.Helper()
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
@@ -645,6 +648,7 @@ func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
 // Wait until all txs are in the mempool and check that they are in the same
 // order as given.
 func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+	t.Helper()
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	// Check that all transactions in the mempool are in the same order as txs.
@@ -656,6 +660,7 @@ func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex
 }
 
 func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs types.Txs) {
+	t.Helper()
 	allTxs := append(validTxs, invalidTxs...)
 
 	validTxResponses := abciResponses(len(validTxs), abci.CodeTypeOK)
@@ -671,6 +676,7 @@ func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs type
 
 // ensure no txs on reactor after some timeout.
 func ensureNoTxs(t *testing.T, reactor *Reactor, timeout time.Duration) {
+	t.Helper()
 	time.Sleep(timeout) // wait for the txs in all mempools
 	assert.Zero(t, reactor.mempool.Size())
 }

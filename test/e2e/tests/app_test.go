@@ -17,6 +17,7 @@ import (
 // Tests that any initial state given in genesis has made it into the app.
 func TestApp_InitialState(t *testing.T) {
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if len(node.Testnet.InitialState) == 0 {
 			return
 		}
@@ -35,7 +36,9 @@ func TestApp_InitialState(t *testing.T) {
 // Tests that the app hash (as reported by the app) matches the last
 // block and the node sync status.
 func TestApp_Hash(t *testing.T) {
+	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 

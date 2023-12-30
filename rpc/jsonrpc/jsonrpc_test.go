@@ -302,12 +302,12 @@ func testWithWSClient(t *testing.T, cl *client.WSClient) {
 	t.Helper()
 	val := testVal
 	got, err := echoViaWS(cl, val)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, got, val)
 
 	val2 := randBytes(t)
 	got2, err := echoBytesViaWS(cl, val2)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, got2, val2)
 }
 
@@ -317,20 +317,20 @@ func TestServersAndClientsBasic(t *testing.T) {
 	serverAddrs := [...]string{tcpAddr, unixAddr}
 	for _, addr := range serverAddrs {
 		cl1, err := client.NewURI(addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		fmt.Printf("=== testing server on %s using URI client", addr)
 		testWithHTTPClient(t, cl1)
 
 		cl2, err := client.New(addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		fmt.Printf("=== testing server on %s using JSONRPC client", addr)
 		testWithHTTPClient(t, cl2)
 
 		cl3, err := client.NewWS(addr, websocketEndpoint)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		cl3.SetLogger(log.TestingLogger())
 		err = cl3.Start()
-		require.Nil(t, err)
+		require.NoError(t, err)
 		fmt.Printf("=== testing server on %s using WS client", addr)
 		testWithWSClient(t, cl3)
 		err = cl3.Stop()
@@ -342,20 +342,20 @@ func TestServersAndClientsBasicV1(t *testing.T) {
 	serverAddrs := [...]string{tcpAddr, unixAddr}
 	for _, addr := range serverAddrs {
 		cl1, err := client.NewURI(addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		fmt.Printf("=== testing server on %s using URI client", addr)
 		testWithHTTPClient(t, cl1)
 
 		cl2, err := client.New(addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		fmt.Printf("=== testing server on %s using JSONRPC client", addr)
 		testWithHTTPClient(t, cl2)
 
 		cl3, err := client.NewWS(addr, "/v1"+websocketEndpoint)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		cl3.SetLogger(log.TestingLogger())
 		err = cl3.Start()
-		require.Nil(t, err)
+		require.NoError(t, err)
 		fmt.Printf("=== testing server on %s using WS client", addr)
 		testWithWSClient(t, cl3)
 		err = cl3.Stop()
@@ -365,30 +365,30 @@ func TestServersAndClientsBasicV1(t *testing.T) {
 
 func TestHexStringArg(t *testing.T) {
 	cl, err := client.NewURI(tcpAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// should NOT be handled as hex
 	val := "0xabc"
 	got, err := echoViaHTTP(cl, val)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, got, val)
 }
 
 func TestQuotedStringArg(t *testing.T) {
 	cl, err := client.NewURI(tcpAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// should NOT be unquoted
 	val := "\"abc\""
 	got, err := echoViaHTTP(cl, val)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, got, val)
 }
 
 func TestWSNewWSRPCFunc(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -400,7 +400,7 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 		"arg": val,
 	}
 	err = cl.Call(context.Background(), "echo_ws", params)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
@@ -408,17 +408,17 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	got := result.Value
 	assert.Equal(t, got, val)
 }
 
 func TestWSNewWSRPCFuncV1(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -430,7 +430,7 @@ func TestWSNewWSRPCFuncV1(t *testing.T) {
 		"arg": val,
 	}
 	err = cl.Call(context.Background(), "echo_ws", params)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
@@ -438,17 +438,17 @@ func TestWSNewWSRPCFuncV1(t *testing.T) {
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	got := result.Value
 	assert.Equal(t, got, val)
 }
 
 func TestWSHandlesArrayParams(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -458,7 +458,7 @@ func TestWSHandlesArrayParams(t *testing.T) {
 	val := testVal
 	params := []interface{}{val}
 	err = cl.CallWithArrayParams(context.Background(), "echo_ws", params)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
@@ -466,17 +466,17 @@ func TestWSHandlesArrayParams(t *testing.T) {
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	got := result.Value
 	assert.Equal(t, got, val)
 }
 
 func TestWSHandlesArrayParamsV1(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -486,7 +486,7 @@ func TestWSHandlesArrayParamsV1(t *testing.T) {
 	val := testVal
 	params := []interface{}{val}
 	err = cl.CallWithArrayParams(context.Background(), "echo_ws", params)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
@@ -494,7 +494,7 @@ func TestWSHandlesArrayParamsV1(t *testing.T) {
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	got := result.Value
 	assert.Equal(t, got, val)
 }
@@ -503,10 +503,10 @@ func TestWSHandlesArrayParamsV1(t *testing.T) {
 // & pongs so connection stays alive.
 func TestWSClientPingPong(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -518,10 +518,10 @@ func TestWSClientPingPong(t *testing.T) {
 
 func TestWSClientPingPongV1(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -607,6 +607,6 @@ func randBytes(t *testing.T) []byte {
 	n := cmtrand.Intn(10) + 2
 	buf := make([]byte, n)
 	_, err := crand.Read(buf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	return bytes.ReplaceAll(buf, []byte("="), []byte{100})
 }

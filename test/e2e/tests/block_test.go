@@ -13,6 +13,7 @@ func TestBlock_Header(t *testing.T) {
 	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
 			return
 		}

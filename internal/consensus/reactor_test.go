@@ -658,6 +658,7 @@ func waitForAndValidateBlock(
 	css []*State,
 	txs ...[]byte,
 ) {
+	t.Helper()
 	timeoutWaitGroup(n, func(j int) {
 		css[j].Logger.Debug("waitForAndValidateBlock")
 		msg := <-blocksSubs[j].Out()
@@ -683,6 +684,7 @@ func waitForAndValidateBlockWithTx(
 	css []*State,
 	txs ...[]byte,
 ) {
+	t.Helper()
 	timeoutWaitGroup(n, func(j int) {
 		ntxs := 0
 	BLOCK_TX_LOOP:
@@ -716,6 +718,7 @@ func waitForBlockWithUpdatedValsAndValidateIt(
 	blocksSubs []types.Subscription,
 	css []*State,
 ) {
+	t.Helper()
 	timeoutWaitGroup(n, func(j int) {
 		var newBlock *types.Block
 	LOOP:

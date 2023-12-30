@@ -540,6 +540,7 @@ func assertPeersWithTimeout(
 	checkPeriod, timeout time.Duration,
 	nPeers int,
 ) {
+	t.Helper()
 	var (
 		ticker    = time.NewTicker(checkPeriod)
 		remaining = timeout

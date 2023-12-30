@@ -11,6 +11,7 @@ import (
 func TestCheckABCIGrammar(t *testing.T) {
 	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if !node.Testnet.ABCITestsEnabled {
 			return
 		}
@@ -26,6 +27,7 @@ func TestCheckABCIGrammar(t *testing.T) {
 
 func TestNodeNameExtracting(t *testing.T) {
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if !node.Testnet.ABCITestsEnabled {
 			return
 		}

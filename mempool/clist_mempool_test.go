@@ -642,7 +642,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	_, err = mp.CheckTx(tx1)
 	require.NoError(t, err)
 	assert.EqualValues(t, 20, mp.SizeBytes())
-	assert.Error(t, mp.RemoveTxByKey(types.Tx([]byte{0x07}).Key()))
+	require.Error(t, mp.RemoveTxByKey(types.Tx([]byte{0x07}).Key()))
 	assert.EqualValues(t, 20, mp.SizeBytes())
 	assert.NoError(t, mp.RemoveTxByKey(types.Tx(tx1).Key()))
 	assert.EqualValues(t, 10, mp.SizeBytes())

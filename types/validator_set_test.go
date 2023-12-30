@@ -129,7 +129,7 @@ func TestValidatorSetValidateBasic(t *testing.T) {
 				assert.Equal(t, tc.msg, err.Error())
 			}
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	}
 }
@@ -720,10 +720,10 @@ func TestEmptySet(t *testing.T) {
 	v1 = newValidator([]byte("v1"), 0)
 	v2 = newValidator([]byte("v2"), 0)
 	delList := []*Validator{v1, v2}
-	assert.Error(t, valSet.UpdateWithChangeSet(delList))
+	require.Error(t, valSet.UpdateWithChangeSet(delList))
 
 	// Attempt delete from empty set
-	assert.Error(t, valSet.UpdateWithChangeSet(delList))
+	require.Error(t, valSet.UpdateWithChangeSet(delList))
 }
 
 func TestUpdatesForNewValidatorSet(t *testing.T) {
@@ -849,7 +849,7 @@ func executeValSetErrTestCase(t *testing.T, idx int, tt valSetErrTestCase) {
 	err := valSet.UpdateWithChangeSet(valList)
 
 	// for errors check the validator set has not been changed
-	assert.Error(t, err, "test %d", idx)
+	require.Error(t, err, "test %d", idx)
 	assert.Equal(t, valSet, valSetCopy, "test %v", idx)
 
 	// check the parameter list has not changed
@@ -1238,7 +1238,7 @@ func applyChangesToValSet(t *testing.T, expErr error, valSet *ValidatorSet, vals
 	if expErr != nil {
 		assert.Equal(t, expErr, err)
 	} else {
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -1337,7 +1337,7 @@ func TestNewValidatorSetFromExistingValidators(t *testing.T) {
 	assert.NotEqual(t, valSet, newValSet)
 
 	existingValSet, err := ValidatorSetFromExistingValidators(valSet.Validators)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, valSet, existingValSet)
 	assert.Equal(t, valSet.CopyIncrementProposerPriority(3), existingValSet.CopyIncrementProposerPriority(3))
 }
@@ -1590,7 +1590,7 @@ func TestVerifyCommitWithInvalidProposerKey(t *testing.T) {
 	var bid BlockID
 	cid := ""
 	err := vs.VerifyCommit(cid, bid, 100, commit)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
@@ -1611,5 +1611,5 @@ func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
 	count := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagCommit }
 
 	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true)
-	assert.Error(t, err)
+	require.Error(t, err)
 }

@@ -158,10 +158,10 @@ func TestPprofServer(t *testing.T) {
 
 	// should not work yet
 	_, err := http.Get("http://" + config.RPC.PprofListenAddress) //nolint: bodyclose
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	n, err := DefaultNewNode(config, log.TestingLogger())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NoError(t, n.Start())
 	defer func() {
 		require.NoError(t, n.Stop())
@@ -169,7 +169,7 @@ func TestPprofServer(t *testing.T) {
 	assert.NotNil(t, n.pprofSrv)
 
 	resp, err := http.Get("http://" + config.RPC.PprofListenAddress + "/debug/pprof")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer resp.Body.Close()
 	assert.Equal(t, 200, resp.StatusCode)
 }
@@ -216,7 +216,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
 	_, err := DefaultNewNode(config, log.TestingLogger())
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestNodeSetPrivValIPC(t *testing.T) {
@@ -328,7 +328,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	for i := 0; i <= int(maxBytes)/txLength; i++ {
 		tx := cmtrand.Bytes(txLength)
 		_, err := mempool.CheckTx(tx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	blockExec := sm.NewBlockExecutor(
@@ -364,7 +364,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	assert.EqualValues(t, partSetFromHeader.ByteSize(), partSet.ByteSize())
 
 	err = blockExec.ValidateBlock(state, block)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestMaxProposalBlockSize(t *testing.T) {
@@ -406,7 +406,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))
 	tx := cmtrand.Bytes(txLength - 4) // to account for the varint
 	_, err = mempool.CheckTx(tx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	blockExec := sm.NewBlockExecutor(
 		stateStore,

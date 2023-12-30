@@ -9,6 +9,7 @@ import (
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -161,7 +162,7 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			case tc.expErrText != "":
 				assert.Contains(t, err.Error(), tc.expErrText)
 			default:
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -277,7 +278,7 @@ func TestVerifyNonAdjacentHeaders(t *testing.T) {
 			case tc.expErrText != "":
 				assert.Contains(t, err.Error(), tc.expErrText)
 			default:
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -300,7 +301,7 @@ func TestVerifyReturnsErrorIfTrustLevelIsInvalid(t *testing.T) {
 
 	err := light.Verify(header, vals, header, vals, 2*time.Hour, time.Now(), maxClockDrift,
 		cmtmath.Fraction{Numerator: 2, Denominator: 1})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestValidateTrustLevel(t *testing.T) {
@@ -325,9 +326,9 @@ func TestValidateTrustLevel(t *testing.T) {
 	for _, tc := range testCases {
 		err := light.ValidateTrustLevel(tc.lvl)
 		if !tc.valid {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	}
 }

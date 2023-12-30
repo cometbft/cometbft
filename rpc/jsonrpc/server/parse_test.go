@@ -10,6 +10,7 @@ import (
 	"github.com/cometbft/cometbft/libs/bytes"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseJSONMap(t *testing.T) {
@@ -195,7 +196,7 @@ func TestParseURI(t *testing.T) {
 			"test.com/method?height=%v&name=%v",
 			tc.raw[0], tc.raw[1])
 		req, err := http.NewRequest(http.MethodGet, url, nil)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		vals, err := httpParamsToArgs(call, req)
 		if tc.fail {
 			assert.NotNil(t, err, i)

@@ -302,7 +302,7 @@ func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 	readBuffer := make([]byte, dataMaxSize)
 	for i := 0; i < n; i++ {
 		_, err := conn.Read(readBuffer)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 	wg.Done()
 }

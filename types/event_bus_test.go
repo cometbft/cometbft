@@ -54,7 +54,7 @@ func TestEventBusPublishEventTx(t *testing.T) {
 		Tx:     tx,
 		Result: result,
 	}})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -106,7 +106,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 		},
 		ResultFinalizeBlock: resultFinalizeBlock,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -208,7 +208,7 @@ func TestEventBusPublishEventTxDuplicateKeys(t *testing.T) {
 			Tx:     tx,
 			Result: result,
 		}})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		select {
 		case <-done:
@@ -250,7 +250,7 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 	err = eventBus.PublishEventNewBlockHeader(EventDataNewBlockHeader{
 		Header: block.Header,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -292,7 +292,7 @@ func TestEventBusPublishEventNewBlockEvents(t *testing.T) {
 			}},
 		}},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -331,7 +331,7 @@ func TestEventBusPublishEventNewEvidence(t *testing.T) {
 		Evidence: ev,
 		Height:   4,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:

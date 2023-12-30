@@ -161,14 +161,14 @@ func TestHTTPReturnsErrorIfClientIsNotRunning(t *testing.T) {
 	// on Subscribe
 	_, err := c.Subscribe(context.Background(), "TestHeaderEvents",
 		types.QueryForEvent(types.EventNewBlockHeader).String())
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// on Unsubscribe
 	err = c.Unsubscribe(context.Background(), "TestHeaderEvents",
 		types.QueryForEvent(types.EventNewBlockHeader).String())
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// on UnsubscribeAll
 	err = c.UnsubscribeAll(context.Background(), "TestHeaderEvents")
-	assert.Error(t, err)
+	require.Error(t, err)
 }

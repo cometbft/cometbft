@@ -5,12 +5,13 @@ import (
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNodeInfoValidate(t *testing.T) {
 	// empty fails
 	ni := DefaultNodeInfo{}
-	assert.Error(t, ni.Validate())
+	require.Error(t, ni.Validate())
 
 	channels := make([]byte, maxNumChannels)
 	for i := 0; i < maxNumChannels; i++ {
@@ -78,7 +79,7 @@ func TestNodeInfoValidate(t *testing.T) {
 		tc.malleateNodeInfo(&ni)
 		err := ni.Validate()
 		if tc.expectErr {
-			assert.Error(t, err, tc.testName)
+			require.Error(t, err, tc.testName)
 		} else {
 			assert.NoError(t, err, tc.testName)
 		}
@@ -105,7 +106,7 @@ func TestNodeInfoCompatible(t *testing.T) {
 	// wrong NodeInfo type is not compatible
 	_, netAddr := CreateRoutableAddr()
 	ni3 := mockNodeInfo{netAddr}
-	assert.Error(t, ni1.CompatibleWith(ni3))
+	require.Error(t, ni1.CompatibleWith(ni3))
 
 	testCases := []struct {
 		testName         string
@@ -119,6 +120,6 @@ func TestNodeInfoCompatible(t *testing.T) {
 	for _, tc := range testCases {
 		ni := testNodeInfo(nodeKey2.ID(), name).(DefaultNodeInfo)
 		tc.malleateNodeInfo(&ni)
-		assert.Error(t, ni1.CompatibleWith(ni))
+		require.Error(t, ni1.CompatibleWith(ni))
 	}
 }

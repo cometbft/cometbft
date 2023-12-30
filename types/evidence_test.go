@@ -219,7 +219,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			}
 			tc.malleateEvidence(lcae)
 			if tc.expectErr {
-				assert.Error(t, lcae.ValidateBasic(), tc.testName)
+				require.Error(t, lcae.ValidateBasic(), tc.testName)
 			} else {
 				assert.NoError(t, lcae.ValidateBasic(), tc.testName)
 			}
@@ -294,14 +294,14 @@ func TestEvidenceProto(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := EvidenceToProto(tt.evidence)
 			if tt.toProtoErr {
-				assert.Error(t, err, tt.testName)
+				require.Error(t, err, tt.testName)
 				return
 			}
 			assert.NoError(t, err, tt.testName)
 
 			evi, err := EvidenceFromProto(pb)
 			if tt.fromProtoErr {
-				assert.Error(t, err, tt.testName)
+				require.Error(t, err, tt.testName)
 				return
 			}
 			require.Equal(t, tt.evidence, evi, tt.testName)

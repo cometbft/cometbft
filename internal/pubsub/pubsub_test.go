@@ -45,13 +45,13 @@ func TestSubscribe(t *testing.T) {
 		defer close(published)
 
 		err := s.Publish(ctx, "Quicksilver")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = s.Publish(ctx, "Asylum")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = s.Publish(ctx, "Ivan")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 
 	select {
@@ -110,10 +110,10 @@ func TestSubscribeUnbuffered(t *testing.T) {
 		defer close(published)
 
 		err := s.Publish(ctx, "Ultron")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = s.Publish(ctx, "Darkhawk")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 
 	select {
@@ -450,6 +450,7 @@ func benchmarkNClients(b *testing.B, n int) {
 }
 
 func benchmarkNClientsOneQuery(b *testing.B, n int) {
+	b.Helper()
 	s := pubsub.NewServer()
 	err := s.Start()
 	require.NoError(b, err)

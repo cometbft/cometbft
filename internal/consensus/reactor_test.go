@@ -550,9 +550,9 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 
 	t.Run("Testing adding one validator", func(t *testing.T) {
 		newValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		valPubKey1ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey1)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		newValidatorTx1 := kvstore.MakeValSetChangeTx(valPubKey1ABCI, testMinPower)
 
 		// wait till everyone makes block 2

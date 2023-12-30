@@ -14,6 +14,7 @@ import (
 	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -263,7 +264,7 @@ func TestMakeSecretConnection(t *testing.T) {
 					assert.Contains(t, err.Error(), tc.errMsg)
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

@@ -9,11 +9,12 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMarshalJSON(t *testing.T) {
 	b, err := json.Marshal(&ExecTxResult{Code: 1})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// include empty fields.
 	assert.True(t, strings.Contains(string(b), "code"))
 	r1 := CheckTxResponse{

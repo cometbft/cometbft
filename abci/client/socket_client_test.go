@@ -14,7 +14,6 @@ import (
 	"github.com/cometbft/cometbft/abci/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/service"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -71,7 +70,7 @@ func TestHangingAsyncCalls(t *testing.T) {
 		require.Fail(t, "No response arrived")
 	case err, ok := <-resp:
 		require.True(t, ok, "Must not close channel")
-		assert.Error(t, err, "We should get EOF error")
+		require.Error(t, err, "We should get EOF error")
 	}
 }
 

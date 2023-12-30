@@ -309,7 +309,7 @@ func TestDifferByTimestamp(t *testing.T) {
 func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	privVal, _, _ := newTestFilePV(t)
 	pubKey, err := privVal.GetPubKey()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	block := types.BlockID{
 		Hash:          cmtrand.Bytes(tmhash.Size),

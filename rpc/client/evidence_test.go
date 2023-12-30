@@ -162,6 +162,6 @@ func TestBroadcastEvidence_DuplicateVoteEvidence(t *testing.T) {
 func TestBroadcastEmptyEvidence(t *testing.T) {
 	for _, c := range GetClients() {
 		_, err := c.BroadcastEvidence(context.Background(), nil)
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }

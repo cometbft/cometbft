@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPaginationPage(t *testing.T) {
@@ -42,7 +43,7 @@ func TestPaginationPage(t *testing.T) {
 	for _, c := range cases {
 		p, err := validatePage(&c.page, c.perPage, c.totalCount)
 		if c.expErr {
-			assert.Error(t, err)
+			require.Error(t, err)
 			continue
 		}
 

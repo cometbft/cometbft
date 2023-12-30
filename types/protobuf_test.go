@@ -14,7 +14,7 @@ import (
 func TestABCIPubKey(t *testing.T) {
 	pkEd := ed25519.GenPrivKey().PubKey()
 	err := testABCIPubKey(t, pkEd)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func testABCIPubKey(t *testing.T, pk crypto.PubKey) error {

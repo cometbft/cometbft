@@ -94,7 +94,7 @@ func TestValidatorValidateBasic(t *testing.T) {
 				assert.Equal(t, tc.msg, err.Error())
 			}
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	}
 }

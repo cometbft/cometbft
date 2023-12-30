@@ -341,8 +341,8 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 			continue
 		}
 
-		assert.Nil(t, panicErr, "#%d: unexpected panic", i)
-		assert.Nil(t, err, "#%d: expecting a non-nil error", i)
+		assert.NoError(t, panicErr, "#%d: unexpected panic", i)
+		assert.NoError(t, err, "#%d: expecting a non-nil error", i)
 		qua, ok := res.(*quad)
 		if !ok || qua == nil {
 			t.Errorf("#%d: got nil quad back; gotType=%T", i, res)
@@ -679,7 +679,7 @@ func TestPruningService(t *testing.T) {
 	require.NoError(t, err)
 
 	err = pruner.SetCompanionBlockRetainHeight(1350)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-obs.prunedBlocksResInfoCh:

@@ -431,7 +431,7 @@ func TestBanBadPeers(t *testing.T) {
 
 	err := book.AddAddress(addr, addr)
 	// book should not add address from the blacklist
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	time.Sleep(1 * time.Second)
 	book.ReinstateBadPeers()

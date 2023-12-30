@@ -299,7 +299,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = c.Update(ctx, bTime.Add(time.Duration(forgedHeight)*time.Minute))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 // 1. Different nodes therefore a divergent header is produced.
@@ -352,7 +352,7 @@ func TestClientDivergentTraces2(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 3, len(c.Witnesses()))
 }
 
@@ -387,7 +387,7 @@ func TestClientDivergentTraces3(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, 1, len(c.Witnesses()))
 }
 
@@ -423,6 +423,6 @@ func TestClientDivergentTraces4(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, 1, len(c.Witnesses()))
 }

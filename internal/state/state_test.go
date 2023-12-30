@@ -1090,7 +1090,7 @@ func TestStateProto(t *testing.T) {
 		tt := tt
 		pbs, err := tt.state.ToProto()
 		if !tt.expPass1 {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
 			assert.NoError(t, err, tt.testName)
 		}

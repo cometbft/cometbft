@@ -157,9 +157,9 @@ func TestNetAddressProperties(t *testing.T) {
 
 		err = addr.Valid()
 		if tc.valid {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		} else {
-			assert.Error(t, err)
+			require.Error(t, err)
 		}
 		assert.Equal(t, tc.local, addr.Local())
 		assert.Equal(t, tc.routable, addr.Routable())

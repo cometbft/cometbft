@@ -136,9 +136,9 @@ func TestAddExpiredEvidence(t *testing.T) {
 			require.NoError(t, err)
 			err = pool.AddEvidence(ev)
 			if tc.expErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -225,7 +225,7 @@ func TestVerifyPendingEvidencePasses(t *testing.T) {
 	require.NoError(t, err)
 
 	err = pool.CheckEvidence(types.EvidenceList{ev})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestVerifyDuplicatedEvidenceFails(t *testing.T) {
@@ -271,7 +271,7 @@ func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 	pool.SetLogger(log.TestingLogger())
 
 	err = pool.AddEvidence(ev)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	hash := ev.Hash()
 
@@ -346,7 +346,7 @@ func TestRecoverPendingEvidence(t *testing.T) {
 		},
 	}, nil)
 	newPool, err := evidence.NewPool(evidenceDB, newStateStore, blockStore)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	evList, _ := newPool.PendingEvidence(defaultEvidenceMaxBytes)
 	assert.Equal(t, 1, len(evList))
 	next := newPool.EvidenceFront()

@@ -301,7 +301,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 		vote := withValidator(voteProto, val0Addr, 0)
 		added, err := signAddVote(privValidators[0], withBlockHash(vote, blockHash1), voteSet)
 		assert.False(t, added, "conflicting vote")
-		assert.Error(t, err, "conflicting vote")
+		require.Error(t, err, "conflicting vote")
 	}
 
 	// start tracking blockHash1
@@ -313,7 +313,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 		vote := withValidator(voteProto, val0Addr, 0)
 		added, err := signAddVote(privValidators[0], withBlockHash(vote, blockHash1), voteSet)
 		assert.True(t, added, "called SetPeerMaj23()")
-		assert.Error(t, err, "conflicting vote")
+		require.Error(t, err, "conflicting vote")
 	}
 
 	// attempt tracking blockHash2, should fail because already set for peerA.
@@ -325,13 +325,13 @@ func TestVoteSet_Conflicts(t *testing.T) {
 		vote := withValidator(voteProto, val0Addr, 0)
 		added, err := signAddVote(privValidators[0], withBlockHash(vote, blockHash2), voteSet)
 		assert.False(t, added, "duplicate SetPeerMaj23() from peerA")
-		assert.Error(t, err, "conflicting vote")
+		require.Error(t, err, "conflicting vote")
 	}
 
 	// val1 votes for blockHash1.
 	{
 		pv, err := privValidators[1].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 1)
 		added, err := signAddVote(privValidators[1], withBlockHash(vote, blockHash1), voteSet)
@@ -351,7 +351,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	// val2 votes for blockHash2.
 	{
 		pv, err := privValidators[2].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 2)
 		added, err := signAddVote(privValidators[2], withBlockHash(vote, blockHash2), voteSet)
@@ -375,12 +375,12 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	// val2 votes for blockHash1.
 	{
 		pv, err := privValidators[2].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 2)
 		added, err := signAddVote(privValidators[2], withBlockHash(vote, blockHash1), voteSet)
 		assert.True(t, added)
-		assert.Error(t, err, "conflicting vote")
+		require.Error(t, err, "conflicting vote")
 	}
 
 	// check
@@ -410,7 +410,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	// 6 out of 10 voted for some block.
 	for i := int32(0); i < 6; i++ {
 		pv, err := privValidators[i].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, i)
 		_, err = signAddVote(privValidators[i], vote, voteSet)
@@ -426,7 +426,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	// 7th voted for some other block.
 	{
 		pv, err := privValidators[6].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 6)
 		vote = withBlockHash(vote, cmtrand.Bytes(32))
@@ -439,7 +439,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	// The 8th voted like everyone else.
 	{
 		pv, err := privValidators[7].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 7)
 		_, err = signAddVote(privValidators[7], vote, voteSet)
@@ -449,7 +449,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	// The 9th voted for nil.
 	{
 		pv, err := privValidators[8].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 8)
 		vote.BlockID = BlockID{}

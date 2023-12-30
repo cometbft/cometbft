@@ -104,7 +104,7 @@ func TestValidateTrustOptions(t *testing.T) {
 	for _, tc := range testCases {
 		err := tc.to.ValidateBasic()
 		if tc.err {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
 		}
@@ -244,7 +244,7 @@ func TestClient_SequentialVerification(t *testing.T) {
 
 			_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(3*time.Hour))
 			if tc.verifyErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
@@ -368,7 +368,7 @@ func TestClient_SkippingVerification(t *testing.T) {
 
 			_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(3*time.Hour))
 			if tc.verifyErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
@@ -450,7 +450,7 @@ func TestClient_Cleanup(t *testing.T) {
 
 	// Check no light blocks exist after Cleanup.
 	l, err := c.TrustedLightBlock(1)
-	assert.Error(t, err)
+	require.Error(t, err)
 	require.Nil(t, l)
 }
 
@@ -594,7 +594,7 @@ func TestClientRestoresTrustedHeaderAfterStartup2(t *testing.T) {
 
 		// Check we no longer have the invalid 1st header (+header+).
 		l, err := c.TrustedLightBlock(1)
-		assert.Error(t, err)
+		require.Error(t, err)
 		require.Nil(t, l)
 	}
 }
@@ -631,11 +631,11 @@ func TestClientRestoresTrustedHeaderAfterStartup3(t *testing.T) {
 
 		// Check we no longer have 2nd light block.
 		l, err = c.TrustedLightBlock(2)
-		assert.Error(t, err)
+		require.Error(t, err)
 		require.Nil(t, l)
 
 		l, err = c.TrustedLightBlock(3)
-		assert.Error(t, err)
+		require.Error(t, err)
 		require.Nil(t, l)
 	}
 
@@ -690,7 +690,7 @@ func TestClientRestoresTrustedHeaderAfterStartup3(t *testing.T) {
 
 		// Check we no longer have invalid 2nd light block (+lightblock2+).
 		l, err = c.TrustedLightBlock(2)
-		assert.Error(t, err)
+		require.Error(t, err)
 		require.Nil(t, l)
 	}
 }
@@ -821,12 +821,12 @@ func TestClient_BackwardsVerification(t *testing.T) {
 		require.NoError(t, err)
 		// shouldn't have verified this header in the process
 		_, err = c.TrustedLightBlock(8)
-		assert.Error(t, err)
+		require.Error(t, err)
 
 		// 5) Try bisection method, but closest header (at 7) has expired
 		// so expect error
 		_, err = c.VerifyLightBlockAtHeight(ctx, 8, bTime.Add(12*time.Minute))
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 	{
 		testCases := []struct {
@@ -877,7 +877,7 @@ func TestClient_BackwardsVerification(t *testing.T) {
 			require.NoError(t, err, idx)
 
 			_, err = c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(1*time.Hour).Add(1*time.Second))
-			assert.Error(t, err, idx)
+			require.Error(t, err, idx)
 		}
 	}
 }
@@ -1022,7 +1022,7 @@ func TestClientPrunesHeadersAndValidatorSets(t *testing.T) {
 	require.Equal(t, int64(3), h.Height)
 
 	_, err = c.TrustedLightBlock(1)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestClientEnsureValidHeadersAndValSets(t *testing.T) {
@@ -1089,7 +1089,7 @@ func TestClientEnsureValidHeadersAndValSets(t *testing.T) {
 
 		_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(2*time.Hour))
 		if tc.err {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
 		}

@@ -46,20 +46,20 @@ func TestVerifyLightClientAttack_Lunatic(t *testing.T) {
 	// trusted and conflicting hashes are the same -> an error should be returned
 	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, ev.ConflictingBlock.SignedHeader, common.ValidatorSet,
 		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// evidence with different total validator power should fail
 	ev.TotalVotingPower = 1 * defaultVotingPower
 	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet,
 		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// evidence without enough malicious votes should fail
 	ev, trusted, common = makeLunaticEvidence(
 		t, height, commonHeight, totalVals, byzVals-1, totalVals-byzVals, defaultEvidenceTime, attackTime)
 	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet,
 		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestVerify_LunaticAttackAgainstState(t *testing.T) {
@@ -105,7 +105,7 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 	// should return an error
 	ev.ByzantineValidators = ev.ByzantineValidators[:1]
 	t.Log(evList)
-	assert.Error(t, pool.CheckEvidence(evList))
+	require.Error(t, pool.CheckEvidence(evList))
 	// restore original byz vals
 	ev.ByzantineValidators = ev.GetByzantineValidators(common.ValidatorSet, trusted.SignedHeader)
 
@@ -113,20 +113,20 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 	evList = types.EvidenceList{ev, ev}
 	pool, err = evidence.NewPool(dbm.NewMemDB(), stateStore, blockStore)
 	require.NoError(t, err)
-	assert.Error(t, pool.CheckEvidence(evList))
+	require.Error(t, pool.CheckEvidence(evList))
 
 	// If evidence is submitted with an altered timestamp it should return an error
 	ev.Timestamp = defaultEvidenceTime.Add(1 * time.Minute)
 	pool, err = evidence.NewPool(dbm.NewMemDB(), stateStore, blockStore)
 	require.NoError(t, err)
-	assert.Error(t, pool.AddEvidence(ev))
+	require.Error(t, pool.AddEvidence(ev))
 	ev.Timestamp = defaultEvidenceTime
 
 	// Evidence submitted with a different validator power should fail
 	ev.TotalVotingPower = 1
 	pool, err = evidence.NewPool(dbm.NewMemDB(), stateStore, blockStore)
 	require.NoError(t, err)
-	assert.Error(t, pool.AddEvidence(ev))
+	require.Error(t, pool.AddEvidence(ev))
 	ev.TotalVotingPower = common.ValidatorSet.TotalVotingPower()
 }
 
@@ -185,7 +185,7 @@ func TestVerify_ForwardLunaticAttack(t *testing.T) {
 
 	pool, err = evidence.NewPool(dbm.NewMemDB(), stateStore, oldBlockStore)
 	require.NoError(t, err)
-	assert.Error(t, pool.CheckEvidence(types.EvidenceList{ev}))
+	require.Error(t, pool.CheckEvidence(types.EvidenceList{ev}))
 }
 
 func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
@@ -238,14 +238,14 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 	// trusted and conflicting hashes are the same -> an error should be returned
 	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, ev.ConflictingBlock.SignedHeader, conflictingVals,
 		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// conflicting header has different next validators hash which should have been correctly derived from
 	// the previous round
 	ev.ConflictingBlock.Header.NextValidatorsHash = crypto.CRandBytes(tmhash.Size)
 	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, nil,
 		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
-	assert.Error(t, err)
+	require.Error(t, err)
 	// revert next validators hash
 	ev.ConflictingBlock.Header.NextValidatorsHash = trustedHeader.NextValidatorsHash
 
@@ -322,7 +322,7 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	// trusted and conflicting hashes are the same -> an error should be returned
 	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, ev.ConflictingBlock.SignedHeader, conflictingVals,
 		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	state := sm.State{
 		LastBlockTime:   defaultEvidenceTime.Add(1 * time.Minute),
@@ -443,12 +443,12 @@ func TestVerifyDuplicateVoteEvidence(t *testing.T) {
 	// evidence with a different validator power should fail
 	evList = types.EvidenceList{badEv}
 	err = pool.CheckEvidence(evList)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// evidence with a different timestamp should fail
 	evList = types.EvidenceList{badTimeEv}
 	err = pool.CheckEvidence(evList)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func makeLunaticEvidence(

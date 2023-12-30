@@ -34,7 +34,7 @@ func TestLoadNodeKey(t *testing.T) {
 	require.NoError(t, err)
 
 	nodeKey, err := LoadNodeKey(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, nodeKey)
 }
 
@@ -48,7 +48,7 @@ func TestNodeKeySaveAs(t *testing.T) {
 		PrivKey: privKey,
 	}
 	err := nodeKey.SaveAs(filePath)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.FileExists(t, filePath)
 }
 

@@ -110,7 +110,7 @@ func TestBlockHash(t *testing.T) {
 
 func TestBlockMakePartSet(t *testing.T) {
 	bps, err := (*Block)(nil).MakePartSet(2)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, bps)
 
 	partSet, err := MakeBlock(int64(3), []Tx{Tx("Hello World")}, nil, nil).MakePartSet(1024)
@@ -121,7 +121,7 @@ func TestBlockMakePartSet(t *testing.T) {
 
 func TestBlockMakePartSetWithEvidence(t *testing.T) {
 	bps, err := (*Block)(nil).MakePartSet(2)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, bps)
 
 	lastID := makeBlockIDRandom()
@@ -616,7 +616,7 @@ func TestExtendedCommitToVoteSet(t *testing.T) {
 
 			voteSet, valSet, vals := randVoteSet(h-1, 1, PrecommitType, 10, 1, true)
 			extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), true)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			if !testCase.includeExtension {
 				for i := 0; i < len(vals); i++ {
@@ -692,7 +692,7 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 				}
 
 				added, err := signAddVote(vals[vi], vote, voteSet)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.True(t, added)
 
 				vi++

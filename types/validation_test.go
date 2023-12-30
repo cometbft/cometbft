@@ -104,7 +104,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 
 			err := valSet.VerifyCommit(chainID, blockID, height, commit)
 			if tc.expErr {
-				if assert.Error(t, err, "VerifyCommit") {
+				if require.Error(t, err, "VerifyCommit") {
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommit")
 				}
 			} else {
@@ -117,7 +117,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				err = valSet.VerifyCommitLight(chainID, blockID, height, commit)
 			}
 			if tc.expErr {
-				if assert.Error(t, err, "VerifyCommitLight") {
+				if require.Error(t, err, "VerifyCommitLight") {
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommitLight")
 				}
 			} else {
@@ -135,7 +135,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel)
 			}
 			if expErr {
-				if assert.Error(t, err, "VerifyCommitLightTrusting") {
+				if require.Error(t, err, "VerifyCommitLightTrusting") {
 					errStr := tc.description2
 					if len(errStr) == 0 {
 						errStr = tc.description
@@ -194,7 +194,7 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajOfVotingPowerSignedIff
 	require.NoError(t, valSet.VerifyCommit(chainID, blockID, h, commit))
 
 	err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, h, commit)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// malleate 4th signature (3 signatures are enough for 2/3+)
 	vote := voteSet.GetByIndex(3)
@@ -206,9 +206,9 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajOfVotingPowerSignedIff
 	commit.Signatures[3] = vote.CommitSig()
 
 	err = valSet.VerifyCommitLight(chainID, blockID, h, commit)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, h, commit)
-	assert.Error(t, err) // counting all signatures detects the malleated signature
+	require.Error(t, err) // counting all signatures detects the malleated signature
 }
 
 func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelSignedIffNotAllSigs(t *testing.T) {
@@ -229,7 +229,7 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelSignedI
 		commit,
 		cmtmath.Fraction{Numerator: 1, Denominator: 3},
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// malleate 3rd signature (2 signatures are enough for 1/3+ trust level)
 	vote := voteSet.GetByIndex(2)
@@ -241,13 +241,13 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelSignedI
 	commit.Signatures[2] = vote.CommitSig()
 
 	err = valSet.VerifyCommitLightTrusting(chainID, commit, cmtmath.Fraction{Numerator: 1, Denominator: 3})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = valSet.VerifyCommitLightTrustingAllSignatures(
 		chainID,
 		commit,
 		cmtmath.Fraction{Numerator: 1, Denominator: 3},
 	)
-	assert.Error(t, err) // counting all signatures detects the malleated signature
+	require.Error(t, err) // counting all signatures detects the malleated signature
 }
 
 func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
@@ -285,9 +285,9 @@ func TestValidatorSet_VerifyCommitLightTrusting(t *testing.T) {
 		err = tc.valSet.VerifyCommitLightTrusting("test_chain_id", commit,
 			cmtmath.Fraction{Numerator: 1, Denominator: 3})
 		if tc.err {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	}
 }

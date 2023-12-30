@@ -660,7 +660,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 	one := make([]byte, 1)
 	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
 	_, err = conn.Read(one)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, cfg.MaxNumInboundPeers, sw.Peers().Size())
 	peer.Stop()
 

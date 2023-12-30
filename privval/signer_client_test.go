@@ -57,10 +57,10 @@ func getSignerTestCases(t *testing.T) []signerTestCase {
 func TestSignerClose(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		err := tc.signerClient.Close()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = tc.signerServer.Stop()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -79,7 +79,7 @@ func TestSignerPing(t *testing.T) {
 		})
 
 		err := tc.signerClient.Ping()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 

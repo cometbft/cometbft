@@ -153,14 +153,14 @@ func TestRotateFile(t *testing.T) {
 
 	// Read g.Head.Path+"000"
 	body1, err := os.ReadFile(g.Head.Path + ".000")
-	assert.NoError(t, err, "Failed to read first rolled file")
+	require.NoError(t, err)
 	if string(body1) != "Line 1\nLine 2\nLine 3\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body1))
 	}
 
 	// Read g.Head.Path
 	body2, err := os.ReadFile(g.Head.Path)
-	assert.NoError(t, err, "Failed to read first rolled file")
+	require.NoError(t, err)
 	if string(body2) != "Line 4\nLine 5\nLine 6\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body2))
 	}
@@ -188,7 +188,7 @@ func TestWrite(t *testing.T) {
 	require.NoError(t, err, "failed to create reader")
 
 	_, err = gr.Read(read)
-	assert.NoError(t, err, "failed to read data")
+	require.NoError(t, err, "failed to read data")
 	assert.Equal(t, written, read)
 
 	// Cleanup

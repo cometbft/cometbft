@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseFraction(t *testing.T) {
@@ -75,7 +76,7 @@ func TestParseFraction(t *testing.T) {
 	for idx, tc := range testCases {
 		output, err := ParseFraction(tc.f)
 		if tc.err {
-			assert.Error(t, err, idx)
+			require.Error(t, err, idx)
 		} else {
 			assert.NoError(t, err, idx)
 		}

@@ -48,7 +48,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -72,7 +72,7 @@ func TestReactorConcurrency(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -98,7 +98,7 @@ func TestReactorConcurrency(t *testing.T) {
 			defer reactors[0].mempool.Unlock()
 
 			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}()
 
 		// 1. submit a bunch of txs
@@ -110,7 +110,7 @@ func TestReactorConcurrency(t *testing.T) {
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}()
 
 		// 1. flush the mempool
@@ -129,7 +129,7 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -162,7 +162,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -202,7 +202,7 @@ func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -242,7 +242,7 @@ func TestReactorTxSendersLocal(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -279,7 +279,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -343,7 +343,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -380,7 +380,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -426,7 +426,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -474,7 +474,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()

@@ -43,11 +43,12 @@ func TestBlockAddEvidence(t *testing.T) {
 
 	block := MakeBlock(h, txs, extCommit.ToCommit(), evList)
 	require.NotNil(t, block)
-	require.Equal(t, 1, len(block.Evidence.Evidence))
+	require.Len(t, 1, len(block.Evidence.Evidence))
 	require.NotNil(t, block.EvidenceHash)
 }
 
 func TestBlockValidateBasic(t *testing.T) {
+	t.Helper()
 	require.Error(t, (*Block)(nil).ValidateBasic())
 
 	txs := []Tx{Tx("foo"), Tx("bar")}

@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -59,8 +60,8 @@ func TestApp_Hash(t *testing.T) {
 		block, err := client.Block(ctx, &requestedHeight)
 		require.NoError(t, err)
 		require.Equal(t,
-			fmt.Sprintf("%x", info.Response.LastBlockAppHash),
-			fmt.Sprintf("%x", block.Block.AppHash.Bytes()),
+			hex.EncodeToString(info.Response.LastBlockAppHash),
+			hex.EncodeToString(block.Block.AppHash.Bytes()),
 			"app hash does not match last block's app hash")
 	})
 }
@@ -81,7 +82,7 @@ func TestApp_Tx(t *testing.T) {
 		require.NoError(t, err)
 
 		key := fmt.Sprintf("testapp-tx-%v", node.Name)
-		value := fmt.Sprintf("%x", bz)
+		value := hex.EncodeToString(bz)
 		tx := types.Tx(fmt.Sprintf("%v=%v", key, value))
 
 		_, err = client.BroadcastTxSync(ctx, tx)

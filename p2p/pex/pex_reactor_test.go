@@ -71,7 +71,7 @@ func TestPEXReactorRunning(t *testing.T) {
 
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	books := make([]AddrBook, N)
@@ -107,7 +107,7 @@ func TestPEXReactorRunning(t *testing.T) {
 
 	for _, sw := range switches {
 		err := sw.Start() // start switch and reactors
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	assertPeersWithTimeout(t, switches, 10*time.Millisecond, 10*time.Second, N-1)
@@ -204,12 +204,12 @@ func TestPEXReactorAddrsMessageAbuse(t *testing.T) {
 func TestCheckSeeds(t *testing.T) {
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	// 1. test creating peer with no seeds works
 	peerSwitch := testCreateDefaultPeer(dir, 0)
-	require.Nil(t, peerSwitch.Start())
+	require.NoError(t, peerSwitch.Start())
 	peerSwitch.Stop() //nolint:errcheck // ignore for tests
 
 	// 2. create seed
@@ -217,7 +217,7 @@ func TestCheckSeeds(t *testing.T) {
 
 	// 3. test create peer with online seed works
 	peerSwitch = testCreatePeerWithSeed(dir, 2, seed)
-	require.Nil(t, peerSwitch.Start())
+	require.NoError(t, peerSwitch.Start())
 	peerSwitch.Stop() //nolint:errcheck // ignore for tests
 
 	// 4. test create peer with all seeds having unresolvable DNS fails
@@ -240,24 +240,24 @@ func TestCheckSeeds(t *testing.T) {
 		},
 	}
 	peerSwitch = testCreatePeerWithConfig(dir, 2, badPeerConfig)
-	require.Nil(t, peerSwitch.Start())
+	require.NoError(t, peerSwitch.Start())
 	peerSwitch.Stop() //nolint:errcheck // ignore for tests
 }
 
 func TestPEXReactorUsesSeedsIfNeeded(t *testing.T) {
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	// 1. create seed
 	seed := testCreateSeed(dir, 0, []*p2p.NetAddress{}, []*p2p.NetAddress{})
-	require.Nil(t, seed.Start())
+	require.NoError(t, seed.Start())
 	defer seed.Stop() //nolint:errcheck // ignore for tests
 
 	// 2. create usual peer with only seed configured.
 	peer := testCreatePeerWithSeed(dir, 1, seed)
-	require.Nil(t, peer.Start())
+	require.NoError(t, peer.Start())
 	defer peer.Stop() //nolint:errcheck // ignore for tests
 
 	// 3. check that the peer connects to seed immediately
@@ -267,23 +267,23 @@ func TestPEXReactorUsesSeedsIfNeeded(t *testing.T) {
 func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	// 1. create peer
 	peerSwitch := testCreateDefaultPeer(dir, 1)
-	require.Nil(t, peerSwitch.Start())
+	require.NoError(t, peerSwitch.Start())
 	defer peerSwitch.Stop() //nolint:errcheck // ignore for tests
 
 	// 2. Create seed which knows about the peer
 	peerAddr := peerSwitch.NetAddress()
 	seed := testCreateSeed(dir, 2, []*p2p.NetAddress{peerAddr}, []*p2p.NetAddress{peerAddr})
-	require.Nil(t, seed.Start())
+	require.NoError(t, seed.Start())
 	defer seed.Stop() //nolint:errcheck // ignore for tests
 
 	// 3. create another peer with only seed configured.
 	secondPeer := testCreatePeerWithSeed(dir, 3, seed)
-	require.Nil(t, secondPeer.Start())
+	require.NoError(t, secondPeer.Start())
 	defer secondPeer.Stop() //nolint:errcheck // ignore for tests
 
 	// 4. check that the second peer connects to seed immediately
@@ -296,7 +296,7 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 func TestPEXReactorSeedMode(t *testing.T) {
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	pexRConfig := &ReactorConfig{SeedMode: true, SeedDisconnectWaitPeriod: 10 * time.Millisecond}
@@ -335,7 +335,7 @@ func TestPEXReactorSeedMode(t *testing.T) {
 func TestPEXReactorDoesNotDisconnectFromPersistentPeerInSeedMode(t *testing.T) {
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	pexRConfig := &ReactorConfig{SeedMode: true, SeedDisconnectWaitPeriod: 1 * time.Millisecond}
@@ -373,7 +373,7 @@ func TestPEXReactorDoesNotDisconnectFromPersistentPeerInSeedMode(t *testing.T) {
 func TestPEXReactorDialsPeerUpToMaxAttemptsInSeedMode(t *testing.T) {
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	pexR, book := createReactor(&ReactorConfig{SeedMode: true})
@@ -409,7 +409,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
 	books := make([]AddrBook, N)
@@ -440,7 +440,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 
 	for _, sw := range switches {
 		err := sw.Start() // start switch and reactors
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	reactor := switches[0].Reactors()["pex"].(*Reactor)

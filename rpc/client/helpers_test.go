@@ -44,7 +44,7 @@ func TestWaitForHeight(t *testing.T) {
 
 	// waiting for the past returns immediately
 	err = client.WaitForHeight(r, 5, nil)
-	require.Nil(err)
+	require.NoError(err)
 	// we called status once more to check
 	require.Equal(3, len(r.Calls))
 
@@ -58,18 +58,18 @@ func TestWaitForHeight(t *testing.T) {
 
 	// we wait for a few blocks
 	err = client.WaitForHeight(r, 12, myWaiter)
-	require.Nil(err)
+	require.NoError(err)
 	// we called status once to check
 	require.Equal(5, len(r.Calls))
 
 	pre := r.Calls[3]
-	require.Nil(pre.Error)
+	require.NoError(pre.Error)
 	prer, ok := pre.Response.(*ctypes.ResultStatus)
 	require.True(ok)
 	assert.Equal(int64(10), prer.SyncInfo.LatestBlockHeight)
 
 	post := r.Calls[4]
-	require.Nil(post.Error)
+	require.NoError(post.Error)
 	postr, ok := post.Response.(*ctypes.ResultStatus)
 	require.True(ok)
 	assert.Equal(int64(15), postr.SyncInfo.LatestBlockHeight)

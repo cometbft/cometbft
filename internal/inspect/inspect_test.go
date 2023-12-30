@@ -568,10 +568,10 @@ func TestBlockSearch(t *testing.T) {
 	stateStoreMock.AssertExpectations(t)
 }
 
-func requireConnect(t testing.TB, addr string, retries int) {
+func requireConnect(tb testing.TB, addr string, retries int) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		t.Fatalf("malformed address to dial: %s", addr)
+		tb.Fatalf("malformed address to dial: %s", addr)
 	}
 	var err error
 	for i := 0; i < retries; i++ {
@@ -584,5 +584,5 @@ func requireConnect(t testing.TB, addr string, retries int) {
 		// FIXME attempt to yield and let the other goroutine continue execution.
 		time.Sleep(time.Microsecond * 100)
 	}
-	t.Fatalf("unable to connect to server %s after %d tries: %s", addr, retries, err)
+	tb.Fatalf("unable to connect to server %s after %d tries: %s", addr, retries, err)
 }

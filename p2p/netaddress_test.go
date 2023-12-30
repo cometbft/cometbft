@@ -114,7 +114,7 @@ func TestNewNetAddressString(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			addr, err := NewNetAddressString(tc.addr)
 			if tc.correct {
-				if assert.Nil(t, err, tc.addr) {
+				if assert.NoError(t, err, tc.addr) {
 					assert.Equal(t, tc.expected, addr.String())
 				}
 			} else {

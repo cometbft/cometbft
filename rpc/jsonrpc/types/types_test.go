@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type SampleResult struct {
@@ -34,17 +35,20 @@ func TestResponses(t *testing.T) {
 	for _, tt := range responseTests {
 		jsonid := tt.id
 		a := NewRPCSuccessResponse(jsonid, &SampleResult{"hello"})
-		b, _ := json.Marshal(a)
+		b, err := json.Marshal(a)
+		require.NoError(t, err)
 		s := fmt.Sprintf(`{"jsonrpc":"2.0","id":%v,"result":{"Value":"hello"}}`, tt.expected)
 		assert.Equal(s, string(b))
 
 		d := RPCParseError(errors.New("hello world"))
-		e, _ := json.Marshal(d)
+		e, err := json.Marshal(d)
+		require.NoError(t, err)
 		f := `{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error. Invalid JSON","data":"hello world"}}`
 		assert.Equal(f, string(e))
 
 		g := RPCMethodNotFoundError(jsonid)
-		h, _ := json.Marshal(g)
+		h, err := json.Marshal(g)
+		require.NoError(t, err)
 		i := fmt.Sprintf(`{"jsonrpc":"2.0","id":%v,"error":{"code":-32601,"message":"Method not found"}}`, tt.expected)
 		assert.Equal(string(h), i)
 	}

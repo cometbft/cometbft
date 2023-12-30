@@ -54,13 +54,13 @@ func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
 
 	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 4"))
 	require.NoError(t, err)
-	require.Equal(t, heights, []int64{2, 3, 4})
+	require.Equal(t, []int64{2, 3, 4}, heights)
 
 	pruner.PruneBlockIndexerToRetainHeight(2)
 
 	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 4"))
 	require.NoError(t, err)
-	require.Equal(t, heights, []int64{4})
+	require.Equal(t, []int64{4}, heights)
 
 	events, _, _ := getEventsAndResults(1)
 

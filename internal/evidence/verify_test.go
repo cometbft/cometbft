@@ -41,7 +41,7 @@ func TestVerifyLightClientAttack_Lunatic(t *testing.T) {
 	// good pass -> no error
 	err := evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet,
 		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// trusted and conflicting hashes are the same -> an error should be returned
 	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, ev.ConflictingBlock.SignedHeader, common.ValidatorSet,
@@ -94,7 +94,7 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 
 	evList := types.EvidenceList{ev}
 	// check that the evidence pool correctly verifies the evidence
-	assert.NoError(t, pool.CheckEvidence(evList))
+	require.NoError(t, pool.CheckEvidence(evList))
 
 	// as it was not originally in the pending bucket, it should now have been added
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
@@ -169,7 +169,7 @@ func TestVerify_ForwardLunaticAttack(t *testing.T) {
 	require.NoError(t, err)
 
 	// check that the evidence pool correctly verifies the evidence
-	assert.NoError(t, pool.CheckEvidence(types.EvidenceList{ev}))
+	require.NoError(t, pool.CheckEvidence(types.EvidenceList{ev}))
 
 	// now we use a time which isn't able to contradict the FLA - thus we can't verify the evidence
 	oldBlockStore := &mocks.BlockStore{}
@@ -233,7 +233,7 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 	// good pass -> no error
 	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, conflictingVals,
 		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// trusted and conflicting hashes are the same -> an error should be returned
 	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, ev.ConflictingBlock.SignedHeader, conflictingVals,
@@ -267,7 +267,7 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 
 	evList := types.EvidenceList{ev}
 	err = pool.CheckEvidence(evList)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
 	assert.Equal(t, 1, len(pendingEvs))
@@ -317,7 +317,7 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	// good pass -> no error
 	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, conflictingVals,
 		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// trusted and conflicting hashes are the same -> an error should be returned
 	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, ev.ConflictingBlock.SignedHeader, conflictingVals,
@@ -342,7 +342,7 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 
 	evList := types.EvidenceList{ev}
 	err = pool.CheckEvidence(evList)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
 	assert.Equal(t, 1, len(pendingEvs))
@@ -438,7 +438,7 @@ func TestVerifyDuplicateVoteEvidence(t *testing.T) {
 
 	evList := types.EvidenceList{goodEv}
 	err = pool.CheckEvidence(evList)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// evidence with a different validator power should fail
 	evList = types.EvidenceList{badEv}

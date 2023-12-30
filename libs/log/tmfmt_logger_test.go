@@ -74,6 +74,7 @@ func TestTMFmtLoggerConcurrency(t *testing.T) {
 }
 
 func benchmarkRunnerKitlog(b *testing.B, logger kitlog.Logger, f func(kitlog.Logger)) {
+	b.Helper()
 	lc := kitlog.With(logger, "common_key", "common_value")
 	b.ReportAllocs()
 	b.ResetTimer()

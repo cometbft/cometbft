@@ -104,7 +104,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 
 			err := valSet.VerifyCommit(chainID, blockID, height, commit)
 			if tc.expErr {
-				if require.Error(t, err, "VerifyCommit") {
+				if assert.Error(t, err, "VerifyCommit") {
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommit")
 				}
 			} else {
@@ -117,7 +117,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				err = valSet.VerifyCommitLight(chainID, blockID, height, commit)
 			}
 			if tc.expErr {
-				if require.Error(t, err, "VerifyCommitLight") {
+				if assert.Error(t, err, "VerifyCommitLight") {
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommitLight")
 				}
 			} else {
@@ -135,7 +135,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel)
 			}
 			if expErr {
-				if require.Error(t, err, "VerifyCommitLightTrusting") {
+				if assert.Error(t, err, "VerifyCommitLightTrusting") {
 					errStr := tc.description2
 					if len(errStr) == 0 {
 						errStr = tc.description

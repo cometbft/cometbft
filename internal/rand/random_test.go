@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"testing"
 	"time"
@@ -54,7 +55,10 @@ func testThemAll() string {
 	// Use it.
 	out := new(bytes.Buffer)
 	perm := Perm(10)
-	blob, _ := json.Marshal(perm)
+	blob, err := json.Marshal(perm)
+	if err != nil {
+		log.Fatalf("couldn't unmarshal perm: %v", err)
+	}
 	fmt.Fprintf(out, "perm: %s\n", blob)
 	fmt.Fprintf(out, "randInt: %d\n", Int())
 	fmt.Fprintf(out, "randUint: %d\n", Uint())

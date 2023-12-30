@@ -16,7 +16,6 @@ import (
 )
 
 func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
-
 	// primary performs a lunatic attack
 	var (
 		latestHeight      = int64(10)
@@ -89,7 +88,6 @@ func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
 }
 
 func TestLightClientAttackEvidence_Equivocation(t *testing.T) {
-
 	verificationOptions := map[string]light.Option{
 		"sequential": light.SequentialVerification(),
 		"skipping":   light.SkippingVerification(light.DefaultTrustLevel),
@@ -173,7 +171,6 @@ func TestLightClientAttackEvidence_Equivocation(t *testing.T) {
 }
 
 func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
-
 	// primary performs a lunatic attack but changes the time of the header to
 	// something in the future relative to the blockchain
 	var (
@@ -309,7 +306,6 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 // => light client returns an error upon creation because primary and witness
 // have a different view.
 func TestClientDivergentTraces1(t *testing.T) {
-
 	primary := mockp.New(genMockNode(chainID, 10, 5, 2, bTime))
 	firstBlock, err := primary.LightBlock(ctx, 1)
 	require.NoError(t, err)

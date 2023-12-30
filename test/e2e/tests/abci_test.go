@@ -9,7 +9,6 @@ import (
 )
 
 func TestCheckABCIGrammar(t *testing.T) {
-
 	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		t.Helper()

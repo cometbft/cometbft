@@ -10,7 +10,6 @@ import (
 
 // Tests that block headers are identical across nodes where present.
 func TestBlock_Header(t *testing.T) {
-
 	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {

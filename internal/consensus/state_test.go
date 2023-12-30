@@ -8,10 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
@@ -26,6 +22,9 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 /*
@@ -109,7 +108,7 @@ func TestStateProposerSelection0(t *testing.T) {
 	}
 }
 
-// Now let's do it all again, but starting from round 2 instead of 0
+// Now let's do it all again, but starting from round 2 instead of 0.
 func TestStateProposerSelection2(t *testing.T) {
 	cs1, vss := randState(4) // test needs more work for more than 3 validators
 	height := cs1.Height
@@ -144,7 +143,7 @@ func TestStateProposerSelection2(t *testing.T) {
 	}
 }
 
-// a non-validator should timeout into the prevote round
+// a non-validator should timeout into the prevote round.
 func TestStateEnterProposeNoPrivValidator(t *testing.T) {
 	cs, _ := randState(1)
 	cs.SetPrivValidator(nil)
@@ -351,7 +350,7 @@ func TestStateOversizedBlock(t *testing.T) {
 //----------------------------------------------------------------------------------------------------
 // FullRoundSuite
 
-// propose, prevote, and precommit a block
+// propose, prevote, and precommit a block.
 func TestStateFullRound1(t *testing.T) {
 	cs, vss := randState(1)
 	height, round := cs.Height, cs.Round
@@ -391,7 +390,7 @@ func TestStateFullRound1(t *testing.T) {
 	validateLastPrecommit(t, cs, vss[0], propBlockHash)
 }
 
-// nil is proposed, so prevote and precommit nil
+// nil is proposed, so prevote and precommit nil.
 func TestStateFullRoundNil(t *testing.T) {
 	cs, _ := randState(1)
 	height, round := cs.Height, cs.Round
@@ -406,7 +405,7 @@ func TestStateFullRoundNil(t *testing.T) {
 }
 
 // run through propose, prevote, precommit commit with two validators
-// where the first validator has to wait for votes from the second
+// where the first validator has to wait for votes from the second.
 func TestStateFullRound2(t *testing.T) {
 	cs1, vss := randState(2)
 	vs2 := vss[1]
@@ -446,7 +445,7 @@ func TestStateFullRound2(t *testing.T) {
 // LockSuite
 
 // two validators, 4 rounds.
-// two vals take turns proposing. val1 locks on first one, precommits nil on everything else
+// two vals take turns proposing. val1 locks on first one, precommits nil on everything else.
 func TestStateLockNoPOL(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -1402,7 +1401,7 @@ func TestStateLockDoesNotLockOnOldProposal(t *testing.T) {
 // 4 vals
 // a polka at round 1 but we miss it
 // then a polka at round 2 that we lock on
-// then we see the polka from round 1 but shouldn't unlock
+// then we see the polka from round 1 but shouldn't unlock.
 func TestStateLockPOLSafety1(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -1522,7 +1521,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 // then we should make sure we don't lock using P1
 
 // What we want:
-// dont see P0, lock on P1 at R1, dont unlock using P0 at R2
+// dont see P0, lock on P1 at R1, dont unlock using P0 at R2.
 func TestStateLockPOLSafety2(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -2484,7 +2483,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 
 // 4 vals, 3 Nil Precommits at P0
 // What we want:
-// P0 waits for timeoutPrecommit before starting next round
+// P0 waits for timeoutPrecommit before starting next round.
 func TestWaitingTimeoutOnNilPolka(*testing.T) {
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -2505,7 +2504,7 @@ func TestWaitingTimeoutOnNilPolka(*testing.T) {
 
 // 4 vals, 3 Prevotes for nil from the higher round.
 // What we want:
-// P0 waits for timeoutPropose in the next round before entering prevote
+// P0 waits for timeoutPropose in the next round before entering prevote.
 func TestWaitingTimeoutProposeOnNewRound(t *testing.T) {
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -2541,7 +2540,7 @@ func TestWaitingTimeoutProposeOnNewRound(t *testing.T) {
 
 // 4 vals, 3 Precommits for nil from the higher round.
 // What we want:
-// P0 jump to higher round, precommit and start precommit wait
+// P0 jump to higher round, precommit and start precommit wait.
 func TestRoundSkipOnNilPolkaFromHigherRound(t *testing.T) {
 	cs1, vss := randState(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -2604,7 +2603,7 @@ func TestWaitTimeoutProposeOnNilPolkaForTheCurrentRound(t *testing.T) {
 }
 
 // What we want:
-// P0 emit NewValidBlock event upon receiving 2/3+ Precommit for B but hasn't received block B yet
+// P0 emit NewValidBlock event upon receiving 2/3+ Precommit for B but hasn't received block B yet.
 func TestEmitNewValidBlockEventOnCommitWithoutBlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -2698,7 +2697,7 @@ func (n *fakeTxNotifier) Notify() {
 
 // 2 vals precommit votes for a block but node times out waiting for the third. Move to next round
 // and third precommit arrives which leads to the commit of that header and the correct
-// start of the next round
+// start of the next round.
 func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	config.Consensus.SkipTimeoutCommit = false
 	cs1, vss := randState(4)

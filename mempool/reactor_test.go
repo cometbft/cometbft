@@ -8,11 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fortytw2/leaktest"
-	"github.com/go-kit/log/term"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
@@ -21,6 +16,10 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/fortytw2/leaktest"
+	"github.com/go-kit/log/term"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -550,7 +549,7 @@ func mempoolLogger() log.Logger {
 	})
 }
 
-// connect N mempool reactors through N switches
+// connect N mempool reactors through N switches.
 func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switch) {
 	reactors := make([]*Reactor, n)
 	logger := mempoolLogger()
@@ -571,7 +570,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 	return reactors, switches
 }
 
-// connect N mempool reactors through N switches as a star centered in c
+// connect N mempool reactors through N switches as a star centered in c.
 func makeAndConnectReactorsStar(config *cfg.Config, c, n int) ([]*Reactor, []*p2p.Switch) {
 	reactors := make([]*Reactor, n)
 	logger := mempoolLogger()
@@ -670,7 +669,7 @@ func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs type
 	require.NoError(t, err)
 }
 
-// ensure no txs on reactor after some timeout
+// ensure no txs on reactor after some timeout.
 func ensureNoTxs(t *testing.T, reactor *Reactor, timeout time.Duration) {
 	time.Sleep(timeout) // wait for the txs in all mempools
 	assert.Zero(t, reactor.mempool.Size())

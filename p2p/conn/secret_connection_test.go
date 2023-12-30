@@ -53,7 +53,6 @@ func (pk privKeyWithNilPubKey) Equals(pk2 crypto.PrivKey) bool  { return pk.orig
 func (pk privKeyWithNilPubKey) Type() string                    { return "privKeyWithNilPubKey" }
 
 func TestSecretConnectionHandshake(t *testing.T) {
-
 	fooSecConn, barSecConn := makeSecretConnPair(t)
 	if err := fooSecConn.Close(); err != nil {
 		t.Error(err)
@@ -64,7 +63,6 @@ func TestSecretConnectionHandshake(t *testing.T) {
 }
 
 func TestConcurrentWrite(t *testing.T) {
-
 	fooSecConn, barSecConn := makeSecretConnPair(t)
 	fooWriteText := cmtrand.Str(dataMaxSize)
 
@@ -87,7 +85,6 @@ func TestConcurrentWrite(t *testing.T) {
 }
 
 func TestConcurrentRead(t *testing.T) {
-
 	fooSecConn, barSecConn := makeSecretConnPair(t)
 	fooWriteText := cmtrand.Str(dataMaxSize)
 	n := 100
@@ -110,7 +107,6 @@ func TestConcurrentRead(t *testing.T) {
 }
 
 func TestSecretConnectionReadWrite(t *testing.T) {
-
 	fooConn, barConn := makeKVStoreConnPair()
 	fooWrites, barWrites := []string{}, []string{}
 	fooReads, barReads := []string{}, []string{}
@@ -228,7 +224,6 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 }
 
 func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
-
 	goldenFilepath := filepath.Join("testdata", t.Name()+".golden")
 	if *update {
 		t.Logf("Updating golden test vector file %s", goldenFilepath)
@@ -263,7 +258,6 @@ func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
 }
 
 func TestNilPubkey(t *testing.T) {
-
 	fooConn, barConn := makeKVStoreConnPair()
 	defer fooConn.Close()
 	defer barConn.Close()
@@ -278,7 +272,6 @@ func TestNilPubkey(t *testing.T) {
 }
 
 func TestNonEd25519Pubkey(t *testing.T) {
-
 	fooConn, barConn := makeKVStoreConnPair()
 	defer fooConn.Close()
 	defer barConn.Close()

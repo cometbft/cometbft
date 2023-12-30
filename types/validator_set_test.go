@@ -9,14 +9,13 @@ import (
 	"testing"
 	"testing/quick"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidatorSetBasic(t *testing.T) {
@@ -1023,7 +1022,6 @@ func TestValSetUpdatesBasicTestsExecute(t *testing.T) {
 		if len(valList) > 0 {
 			valList[0].VotingPower++
 			assert.Equal(t, toTestValList(valListCopy), toTestValList(valSet.Validators), "test %v", i)
-
 		}
 
 		// check the final validator list is as expected and the set is properly scaled and centered.
@@ -1093,7 +1091,7 @@ func TestValSetUpdatesOrderIndependenceTestsExecute(t *testing.T) {
 }
 
 // This tests the private function validator_set.go:applyUpdates() function, used only for additions and changes.
-// Should perform a proper merge of updatedVals and startVals
+// Should perform a proper merge of updatedVals and startVals.
 func TestValSetApplyUpdatesTestsExecute(t *testing.T) {
 	valSetUpdatesBasicTests := []struct {
 		startVals    []testVal
@@ -1282,7 +1280,6 @@ func TestValSetUpdatePriorityOrderTests(t *testing.T) {
 	}
 
 	for _, cfg := range testCases {
-
 		// create a new validator set
 		valSet := createNewValidatorSet(cfg.startVals)
 		verifyValidatorSet(t, valSet)
@@ -1509,7 +1506,7 @@ func TestValidatorSetProtoBuf(t *testing.T) {
 }
 
 // ---------------------
-// Sort validators by priority and address
+// Sort validators by priority and address.
 type validatorsByPriority []*Validator
 
 func (valz validatorsByPriority) Len() int {
@@ -1550,7 +1547,7 @@ func (tvals testValsByVotingPower) Swap(i, j int) {
 }
 
 // -------------------------------------
-// Benchmark tests
+// Benchmark tests.
 func BenchmarkUpdates(b *testing.B) {
 	const (
 		n = 100

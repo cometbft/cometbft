@@ -31,7 +31,7 @@ func TestPeerBasic(t *testing.T) {
 	require.NoError(err)
 
 	err = p.Start()
-	require.NoError(err)
+	require.Nil(err)
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {
 			t.Error(err)

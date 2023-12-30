@@ -11,7 +11,6 @@ import (
 )
 
 func TestKeyPath(t *testing.T) {
-
 	var path KeyPath
 	keys := make([][]byte, 10)
 	alphanum := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

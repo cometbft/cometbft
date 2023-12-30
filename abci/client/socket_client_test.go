@@ -38,7 +38,7 @@ func TestCalls(t *testing.T) {
 		require.Fail(t, "No response arrived")
 	case err, ok := <-resp:
 		require.True(t, ok, "Must not close channel")
-		assert.NoError(t, err, "This should return success")
+		require.NoError(t, err)
 	}
 }
 

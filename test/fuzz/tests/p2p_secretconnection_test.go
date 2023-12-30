@@ -69,7 +69,7 @@ func (drw kvstoreConn) Close() (err error) {
 	err2 := drw.PipeWriter.CloseWithError(io.EOF)
 	err1 := drw.PipeReader.Close()
 	if err2 != nil {
-		return err
+		return err //nolint:nilerr // this is a false positive
 	}
 	return err1
 }

@@ -8,6 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fortytw2/leaktest"
+	"github.com/go-kit/log/term"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
@@ -16,10 +21,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
-	"github.com/fortytw2/leaktest"
-	"github.com/go-kit/log/term"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -513,7 +514,6 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 // Check that the mempool has exactly the given list of txs and, if it's not the
 // first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
 func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
-	t.Helper()
 	r.txSendersMtx.Lock()
 	defer r.txSendersMtx.Unlock()
 
@@ -550,7 +550,7 @@ func mempoolLogger() log.Logger {
 	})
 }
 
-// connect N mempool reactors through N switches.
+// connect N mempool reactors through N switches
 func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switch) {
 	reactors := make([]*Reactor, n)
 	logger := mempoolLogger()
@@ -571,7 +571,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 	return reactors, switches
 }
 
-// connect N mempool reactors through N switches as a star centered in c.
+// connect N mempool reactors through N switches as a star centered in c
 func makeAndConnectReactorsStar(config *cfg.Config, c, n int) ([]*Reactor, []*p2p.Switch) {
 	reactors := make([]*Reactor, n)
 	logger := mempoolLogger()
@@ -603,7 +603,6 @@ func newUniqueTxs(n int) types.Txs {
 // Wait for all reactors to finish applying a testing function to a list of
 // transactions.
 func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc func(*testing.T, types.Txs, *Reactor, int)) {
-	t.Helper()
 	wg := new(sync.WaitGroup)
 	for i, reactor := range reactors {
 		wg.Add(1)
@@ -637,7 +636,6 @@ func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 // Wait until all txs are in the mempool and check that the number of txs in the
 // mempool is as expected.
 func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
-	t.Helper()
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
@@ -648,7 +646,6 @@ func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
 // Wait until all txs are in the mempool and check that they are in the same
 // order as given.
 func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
-	t.Helper()
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	// Check that all transactions in the mempool are in the same order as txs.
@@ -660,7 +657,6 @@ func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex
 }
 
 func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs types.Txs) {
-	t.Helper()
 	allTxs := append(validTxs, invalidTxs...)
 
 	validTxResponses := abciResponses(len(validTxs), abci.CodeTypeOK)
@@ -674,9 +670,8 @@ func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs type
 	require.NoError(t, err)
 }
 
-// ensure no txs on reactor after some timeout.
+// ensure no txs on reactor after some timeout
 func ensureNoTxs(t *testing.T, reactor *Reactor, timeout time.Duration) {
-	t.Helper()
 	time.Sleep(timeout) // wait for the txs in all mempools
 	assert.Zero(t, reactor.mempool.Size())
 }

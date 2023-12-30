@@ -9,13 +9,14 @@ import (
 	"testing"
 	"testing/quick"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestValidatorSetBasic(t *testing.T) {
@@ -794,7 +795,6 @@ func valSetTotalProposerPriority(valSet *ValidatorSet) int64 {
 }
 
 func verifyValidatorSet(t *testing.T, valSet *ValidatorSet) {
-	t.Helper()
 	// verify that the capacity and length of validators is the same
 	assert.Equal(t, len(valSet.Validators), cap(valSet.Validators))
 
@@ -840,7 +840,6 @@ type valSetErrTestCase struct {
 }
 
 func executeValSetErrTestCase(t *testing.T, idx int, tt valSetErrTestCase) {
-	t.Helper()
 	// create a new set and apply updates, keeping copies for the checks
 	valSet := createNewValidatorSet(tt.startVals)
 	valSetCopy := valSet.Copy()
@@ -1024,6 +1023,7 @@ func TestValSetUpdatesBasicTestsExecute(t *testing.T) {
 		if len(valList) > 0 {
 			valList[0].VotingPower++
 			assert.Equal(t, toTestValList(valListCopy), toTestValList(valSet.Validators), "test %v", i)
+
 		}
 
 		// check the final validator list is as expected and the set is properly scaled and centered.
@@ -1093,7 +1093,7 @@ func TestValSetUpdatesOrderIndependenceTestsExecute(t *testing.T) {
 }
 
 // This tests the private function validator_set.go:applyUpdates() function, used only for additions and changes.
-// Should perform a proper merge of updatedVals and startVals.
+// Should perform a proper merge of updatedVals and startVals
 func TestValSetApplyUpdatesTestsExecute(t *testing.T) {
 	valSetUpdatesBasicTests := []struct {
 		startVals    []testVal
@@ -1228,7 +1228,6 @@ func randTestVSetCfg(nBase, nAddMax int) testVSetCfg {
 }
 
 func applyChangesToValSet(t *testing.T, expErr error, valSet *ValidatorSet, valsLists ...[]testVal) {
-	t.Helper()
 	changes := make([]testVal, 0)
 	for _, valsList := range valsLists {
 		changes = append(changes, valsList...)
@@ -1283,6 +1282,7 @@ func TestValSetUpdatePriorityOrderTests(t *testing.T) {
 	}
 
 	for _, cfg := range testCases {
+
 		// create a new validator set
 		valSet := createNewValidatorSet(cfg.startVals)
 		verifyValidatorSet(t, valSet)
@@ -1293,7 +1293,6 @@ func TestValSetUpdatePriorityOrderTests(t *testing.T) {
 }
 
 func verifyValSetUpdatePriorityOrder(t *testing.T, valSet *ValidatorSet, cfg testVSetCfg, nMaxElections int32) {
-	t.Helper()
 	// Run election up to nMaxElections times, sort validators by priorities
 	valSet.IncrementProposerPriority(cmtrand.Int31()%nMaxElections + 1)
 
@@ -1510,7 +1509,7 @@ func TestValidatorSetProtoBuf(t *testing.T) {
 }
 
 // ---------------------
-// Sort validators by priority and address.
+// Sort validators by priority and address
 type validatorsByPriority []*Validator
 
 func (valz validatorsByPriority) Len() int {
@@ -1551,7 +1550,7 @@ func (tvals testValsByVotingPower) Swap(i, j int) {
 }
 
 // -------------------------------------
-// Benchmark tests.
+// Benchmark tests
 func BenchmarkUpdates(b *testing.B) {
 	const (
 		n = 100

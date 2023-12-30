@@ -47,7 +47,6 @@ func newMockPeer(ip net.IP) *mockPeer {
 }
 
 func TestPeerSetAddRemoveOne(t *testing.T) {
-	t.Parallel()
 
 	peerSet := NewPeerSet()
 
@@ -94,7 +93,7 @@ func TestPeerSetAddRemoveOne(t *testing.T) {
 }
 
 func TestPeerSetAddRemoveMany(t *testing.T) {
-	t.Parallel()
+
 	peerSet := NewPeerSet()
 
 	peers := []Peer{}
@@ -123,7 +122,7 @@ func TestPeerSetAddRemoveMany(t *testing.T) {
 }
 
 func TestPeerSetAddDuplicate(t *testing.T) {
-	t.Parallel()
+
 	peerSet := NewPeerSet()
 	peer := newMockPeer(nil)
 
@@ -163,7 +162,6 @@ func TestPeerSetAddDuplicate(t *testing.T) {
 }
 
 func TestPeerSetGet(t *testing.T) {
-	t.Parallel()
 
 	var (
 		peerSet = NewPeerSet()

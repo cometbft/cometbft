@@ -62,13 +62,13 @@ func TestUnmarshallResponses(t *testing.T) {
 			[]byte(fmt.Sprintf(`{"jsonrpc":"2.0","id":%v,"result":{"Value":"hello"}}`, tt.expected)),
 			response,
 		)
-		assert.Nil(err)
+		require.NoError(t, err)
 		a := NewRPCSuccessResponse(tt.id, &SampleResult{"hello"})
 		assert.Equal(*response, a)
 	}
 	response := &RPCResponse{}
 	err := json.Unmarshal([]byte(`{"jsonrpc":"2.0","id":true,"result":{"Value":"hello"}}`), response)
-	assert.NotNil(err)
+	require.Error(t, err)
 }
 
 func TestRPCError(t *testing.T) {

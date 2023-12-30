@@ -5,14 +5,15 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/proxy"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkReap(b *testing.B) {
@@ -125,6 +126,7 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
+
 		tx := kvstore.NewTxFromID(i)
 
 		_, e := mp.CheckTx(tx)

@@ -43,6 +43,7 @@ func TestHeaderEvents(t *testing.T) {
 
 			evtTyp := types.EventNewBlockHeader
 			evt, err := client.WaitForOneEvent(c, evtTyp, waitForEventTimeout)
+			require.NoError(t, err)
 			require.Nil(t, err, "%d: %+v", i, err)
 			_, ok := evt.(types.EventDataNewBlockHeader)
 			require.True(t, ok, "%d: %#v", i, evt)
@@ -60,7 +61,7 @@ func TestBlockEvents(t *testing.T) {
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.
 				err := c.Start()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				t.Cleanup(func() {
 					if err := c.Stop(); err != nil {
 						t.Error(err)
@@ -108,7 +109,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.
 				err := c.Start()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				t.Cleanup(func() {
 					if err := c.Stop(); err != nil {
 						t.Error(err)
@@ -141,7 +142,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 
 			// and wait for confirmation
 			evt, err := client.WaitForOneEvent(c, types.EventTx, waitForEventTimeout)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// and make sure it has the proper info
 			txe, ok := evt.(types.EventDataTx)

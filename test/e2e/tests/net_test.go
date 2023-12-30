@@ -9,6 +9,7 @@ import (
 
 // Tests that all nodes have peered with each other, regardless of discovery method.
 func TestNet_Peers(t *testing.T) {
+
 	// FIXME Skip test since nodes aren't always able to fully mesh
 	t.SkipNow()
 

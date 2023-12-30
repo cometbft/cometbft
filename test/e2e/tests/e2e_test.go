@@ -59,7 +59,7 @@ func testNode(t *testing.T, testFunc func(*testing.T, e2e.Node)) {
 
 		node := *node
 		t.Run(node.Name, func(t *testing.T) {
-			t.Parallel()
+
 			testFunc(t, node)
 		})
 	}
@@ -91,7 +91,7 @@ func testFullNodesOrValidators(t *testing.T, maxNodes int, testFunc func(*testin
 		if node.Mode == e2e.ModeFull || node.Mode == e2e.ModeValidator {
 			node := *node
 			t.Run(node.Name, func(t *testing.T) {
-				t.Parallel()
+
 				testFunc(t, node)
 			})
 			nodeCount++

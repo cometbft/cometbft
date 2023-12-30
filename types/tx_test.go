@@ -5,11 +5,12 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	ctest "github.com/cometbft/cometbft/libs/test"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func makeTxs(cnt, size int) Txs {
@@ -101,7 +102,6 @@ func TestTxProofUnchangable(t *testing.T) {
 }
 
 func testTxProofUnchangable(t *testing.T) {
-	t.Helper()
 	// make some proof
 	txs := makeTxs(randInt(2, 100), randInt(16, 128))
 	root := txs.Hash()
@@ -125,7 +125,6 @@ func testTxProofUnchangable(t *testing.T) {
 
 // assertBadProof makes sure that the proof doesn't deserialize into something valid.
 func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
-	t.Helper()
 	var (
 		proof   TxProof
 		pbProof cmtproto.TxProof

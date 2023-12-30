@@ -20,6 +20,7 @@ linters:
     - forcetypeassert
     - funlen
     - gochecknoglobals
+    - goimports 
     - gochecknoinits
     - gocognit
     - gocyclo
@@ -38,17 +39,20 @@ linters:
     - maligned
     - nestif
     - nilnil
+    - noctx
     - nlreturn
     - nonamedreturns
+    - testpackage
+    - paralleltest
     - nosnakecase
     - predeclared
     - tagliatelle
     - typecheck
     - varnamelen
     - wrapcheck
+    - tparallel
     - wsl
     - scopelint
-    - unparam
     - revive
 
 issues:

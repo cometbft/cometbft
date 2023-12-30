@@ -14,7 +14,7 @@ import (
 )
 
 func TestTMFmtLogger(t *testing.T) {
-	t.Parallel()
+
 	buf := &bytes.Buffer{}
 	logger := log.NewTMFmtLogger(buf)
 
@@ -69,7 +69,7 @@ func BenchmarkTMFmtLoggerContextual(b *testing.B) {
 }
 
 func TestTMFmtLoggerConcurrency(t *testing.T) {
-	t.Parallel()
+
 	testConcurrency(t, log.NewTMFmtLogger(io.Discard), 10000)
 }
 

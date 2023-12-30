@@ -203,7 +203,7 @@ func randIPv4Address(t *testing.T) *p2p.NetAddress {
 		id := p2p.ID(hex.EncodeToString(cmtrand.Bytes(p2p.IDByteLength)))
 		idAddr := p2p.IDAddressString(id, fmt.Sprintf("%v:%v", ip, port))
 		addr, err := p2p.NewNetAddressString(idAddr)
-		assert.Nil(t, err, "error generating rand network address")
+		require.NoError(t, err)
 		if addr.Routable() {
 			return addr
 		}
@@ -609,24 +609,24 @@ func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
 	numOverrideAttempts := 10
 
 	peerRealAddr, err := p2p.NewNetAddressString(peerID + "@" + peerRealIP)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	peerOverrideAttemptAddr, err := p2p.NewNetAddressString(peerID + "@" + peerOverrideAttemptIP)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	src, err := p2p.NewNetAddressString(SrcAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	book := NewAddrBook(fname, true)
 	book.SetLogger(log.TestingLogger())
 	err = book.AddAddress(peerRealAddr, src)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	book.MarkAttempt(peerRealAddr)
 	book.MarkGood(peerRealAddr.ID)
 
 	// Double check that adding a peer again doesn't error
 	err = book.AddAddress(peerRealAddr, src)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Try changing ip but keeping the same node id. (change 1.1.1.1 to 2.2.2.2)
 	// This should just be ignored, and not error.

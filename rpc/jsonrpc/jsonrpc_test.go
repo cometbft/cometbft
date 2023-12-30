@@ -293,7 +293,7 @@ func echoBytesViaWS(cl *client.WSClient, bytes []byte) ([]byte, error) {
 	result := new(ResultEchoBytes)
 	err = json.Unmarshal(msg.Result, result)
 	if err != nil {
-		return []byte{}, nil
+		return []byte{}, err
 	}
 	return result.Value, nil
 }

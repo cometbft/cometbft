@@ -391,13 +391,12 @@ func TestTxSearchEventMatchByHeight(t *testing.T) {
 			assert.Len(t, results, tc.resultsLength)
 			if tc.resultsLength > 0 {
 				for _, txr := range results {
-					switch txr.Height {
-					case 1:
+					if txr.Height == 1 {
 						assert.True(t, proto.Equal(txResult, txr))
-					case 10:
+					} else if txr.Height == 10 {
 						assert.True(t, proto.Equal(txResult10, txr))
-					default:
-						assert.Fail(t, "unexpected height")
+					} else {
+						assert.True(t, false)
 					}
 				}
 			}

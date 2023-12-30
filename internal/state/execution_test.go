@@ -446,9 +446,9 @@ func TestValidateValidatorUpdates(t *testing.T) {
 	pubkey1 := ed25519.GenPrivKey().PubKey()
 	pubkey2 := ed25519.GenPrivKey().PubKey()
 	pk1, err := cryptoenc.PubKeyToProto(pubkey1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	pk2, err := cryptoenc.PubKeyToProto(pubkey2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	defaultValidatorParams := types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519}}
 
@@ -491,9 +491,9 @@ func TestValidateValidatorUpdates(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := sm.ValidateValidatorUpdates(tc.abciUpdates, tc.validatorParams)
 			if tc.shouldErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -553,12 +553,12 @@ func TestUpdateValidators(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			updates, err := types.PB2TM.ValidatorUpdates(tc.abciUpdates)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			err = tc.currentSet.UpdateWithChangeSet(updates)
 			if tc.shouldErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				require.Equal(t, tc.resultingSet.Size(), tc.currentSet.Size())
 
 				assert.Equal(t, tc.resultingSet.TotalVotingPower(), tc.currentSet.TotalVotingPower())
@@ -697,7 +697,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	}
 
 	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block) })
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.NotEmpty(t, state.NextValidators.Validators)
 }
 

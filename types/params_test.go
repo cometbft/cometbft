@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 )
 
 var (
@@ -230,5 +231,6 @@ func TestProto(t *testing.T) {
 		oriParams := ConsensusParamsFromProto(pbParams)
 
 		assert.Equal(t, params[i], oriParams)
+
 	}
 }

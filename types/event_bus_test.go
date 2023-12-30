@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEventBusPublishEventTx(t *testing.T) {
@@ -430,12 +431,12 @@ func BenchmarkEventBus(b *testing.B) {
 	for _, bm := range benchmarks {
 		bm := bm
 		b.Run(bm.name, func(b *testing.B) {
-			benchmarkEventBus(b, bm.numClients, bm.randQueries, bm.randEvents)
+			benchmarkEventBus(bm.numClients, bm.randQueries, bm.randEvents, b)
 		})
 	}
 }
 
-func benchmarkEventBus(b *testing.B, numClients int, randQueries bool, randEvents bool) {
+func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *testing.B) {
 	// for random* functions
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 

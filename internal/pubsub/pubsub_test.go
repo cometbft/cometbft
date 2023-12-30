@@ -395,15 +395,16 @@ func TestBufferCapacity(t *testing.T) {
 	}
 }
 
-func Benchmark10Clients(b *testing.B)   { benchmarkNClients(10, b) }
-func Benchmark100Clients(b *testing.B)  { benchmarkNClients(100, b) }
-func Benchmark1000Clients(b *testing.B) { benchmarkNClients(1000, b) }
+func Benchmark10Clients(b *testing.B)   { benchmarkNClients(b, 10) }
+func Benchmark100Clients(b *testing.B)  { benchmarkNClients(b, 100) }
+func Benchmark1000Clients(b *testing.B) { benchmarkNClients(b, 1000) }
 
 func Benchmark10ClientsOneQuery(b *testing.B)   { benchmarkNClientsOneQuery(10, b) }
 func Benchmark100ClientsOneQuery(b *testing.B)  { benchmarkNClientsOneQuery(100, b) }
 func Benchmark1000ClientsOneQuery(b *testing.B) { benchmarkNClientsOneQuery(1000, b) }
 
-func benchmarkNClients(n int, b *testing.B) {
+func benchmarkNClients(b *testing.B, n int) {
+	b.Helper()
 	s := pubsub.NewServer()
 	err := s.Start()
 	require.NoError(b, err)

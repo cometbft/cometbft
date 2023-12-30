@@ -462,7 +462,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates(abciResponses.ValidatorUpdates)
 	require.NoError(t, err)
 	updatedState, err := sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	curTotal := val1VotingPower
 	// one increment step and one validator: 0 + power - total_power == 0
 	assert.Equal(t, 0+val1VotingPower-curTotal, updatedState.NextValidators.Validators[0].ProposerPriority)
@@ -475,9 +475,9 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 
 	updateAddVal := abci.ValidatorUpdate{PubKey: fvp, Power: val2VotingPower}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateAddVal})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	updatedState2, err := sm.UpdateState(updatedState, blockID, &block.Header, abciResponses, validatorUpdates)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	require.Equal(t, len(updatedState2.NextValidators.Validators), 2)
 	_, updatedVal1 := updatedState2.NextValidators.GetByAddress(val1PubKey.Address())
@@ -511,12 +511,12 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	updatedVotingPowVal2 := int64(1)
 	updateVal := abci.ValidatorUpdate{PubKey: fvp, Power: updatedVotingPowVal2}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateVal})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// this will cause the diff of priorities (77)
 	// to be larger than threshold == 2*totalVotingPower (22):
 	updatedState3, err := sm.UpdateState(updatedState2, blockID, &block.Header, abciResponses, validatorUpdates)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	require.Equal(t, len(updatedState3.NextValidators.Validators), 2)
 	_, prevVal1 := updatedState3.Validators.GetByAddress(val1PubKey.Address())
@@ -577,7 +577,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	require.NoError(t, err)
 
 	updatedState, err := sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// 0 + 10 (initial prio) - 10 (avg) - 10 (mostest - total) = -10
 	totalPower := val1VotingPower
@@ -591,10 +591,10 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	require.NoError(t, err)
 	updateAddVal := abci.ValidatorUpdate{PubKey: fvp, Power: val1VotingPower}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateAddVal})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	updatedState2, err := sm.UpdateState(updatedState, blockID, &block.Header, abciResponses, validatorUpdates)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	require.Equal(t, len(updatedState2.NextValidators.Validators), 2)
 	assert.Equal(t, updatedState2.Validators, updatedState.NextValidators)
@@ -637,7 +637,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	require.NoError(t, err)
 
 	updatedState3, err := sm.UpdateState(updatedState2, blockID, &block.Header, abciResponses, validatorUpdates)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, updatedState3.Validators.Proposer.Address, updatedState3.NextValidators.Proposer.Address)
 
@@ -677,7 +677,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	require.NoError(t, err)
 
 	oldState, err = sm.UpdateState(oldState, blockID, &block.Header, abciResponses, validatorUpdates)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedVal1Prio2 = 1
 	expectedVal2Prio2 = -1
 	expectedVal1Prio = -9
@@ -690,7 +690,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 		require.NoError(t, err)
 
 		updatedState, err := sm.UpdateState(oldState, blockID, &block.Header, abciResponses, validatorUpdates)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		// alternate (and cyclic priorities):
 		assert.NotEqual(
 			t,
@@ -770,7 +770,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	require.NoError(t, err)
 	firstAddedVal := abci.ValidatorUpdate{PubKey: fvp, Power: firstAddedValVotingPower}
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{firstAddedVal})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	abciResponses := &abci.FinalizeBlockResponse{
 		ValidatorUpdates: []abci.ValidatorUpdate{firstAddedVal},
 	}
@@ -821,7 +821,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 		require.NoError(t, err)
 		addedVal := abci.ValidatorUpdate{PubKey: ap, Power: firstAddedValVotingPower}
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{addedVal})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		abciResponses := &abci.FinalizeBlockResponse{
 			ValidatorUpdates: []abci.ValidatorUpdate{addedVal},

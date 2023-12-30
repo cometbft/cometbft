@@ -182,7 +182,7 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return false
 }
 
-func (pubKey PubKey) Type() string {
+func (PubKey) Type() string {
 	return KeyType
 }
 

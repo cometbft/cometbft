@@ -220,7 +220,7 @@ func OfflineStateSyncHeight(height int64) StateOption {
 }
 
 // String returns a string.
-func (cs *State) String() string {
+func (*State) String() string {
 	// better not to access shared variables
 	return "ConsensusState"
 }

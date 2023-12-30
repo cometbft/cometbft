@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 const (

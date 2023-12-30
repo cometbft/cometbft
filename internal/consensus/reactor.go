@@ -149,7 +149,7 @@ conR:
 }
 
 // GetChannels implements Reactor.
-func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	// TODO optimize
 	return []*p2p.ChannelDescriptor{
 		{
@@ -830,7 +830,7 @@ OUTER_LOOP:
 	}
 }
 
-func (conR *Reactor) gossipVotesForHeight(
+func (*Reactor) gossipVotesForHeight(
 	logger log.Logger,
 	rs *cstypes.RoundState,
 	prs *cstypes.PeerRoundState,
@@ -1030,7 +1030,7 @@ func (conR *Reactor) peerStatsRoutine() {
 // String returns a string representation of the Reactor.
 // NOTE: For now, it is just a hard-coded string to avoid accessing unprotected shared variables.
 // TODO: improve!
-func (conR *Reactor) String() string {
+func (*Reactor) String() string {
 	// better not to access shared variables
 	return "ConsensusReactor" // conR.StringIndented("")
 }

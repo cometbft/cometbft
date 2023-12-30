@@ -190,7 +190,7 @@ func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeyEd25519{%X}", []byte(pubKey))
 }
 
-func (pubKey PubKey) Type() string {
+func (PubKey) Type() string {
 	return KeyType
 }
 

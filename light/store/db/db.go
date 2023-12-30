@@ -304,7 +304,7 @@ func parseKey(key []byte) (part string, prefix string, height int64, ok bool) {
 		return "", "", 0, false
 	}
 	ok = true // good!
-	return
+	return part, prefix, height, ok
 }
 
 func parseLbKey(key []byte) (height int64, ok bool) {

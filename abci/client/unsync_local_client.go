@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	types "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/service"
 )
 

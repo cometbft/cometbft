@@ -48,6 +48,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 }
 
 func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexer.BlockIndexer, *types.EventBus) {
+	t.Helper()
 	// event bus
 	eventBus := types.NewEventBus()
 	eventBus.SetLogger(log.TestingLogger())

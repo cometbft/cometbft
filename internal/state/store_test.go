@@ -279,6 +279,7 @@ func initStateStoreRetainHeights(stateStore sm.Store, appBlockRH, dcBlockRH, dcB
 }
 
 func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.FinalizeBlockResponse) {
+	t.Helper()
 	if response1 != nil {
 		for h := int64(1); h <= height; h++ {
 			err := stateStore.SaveFinalizeBlockResponse(h, response1)

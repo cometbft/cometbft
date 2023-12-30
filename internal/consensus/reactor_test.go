@@ -47,6 +47,7 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 	[]types.Subscription,
 	[]*types.EventBus,
 ) {
+	t.Helper()
 	reactors := make([]*Reactor, n)
 	blocksSubs := make([]types.Subscription, 0)
 	eventBuses := make([]*types.EventBus, n)

@@ -338,6 +338,7 @@ SELECT DISTINCT %[1]s.created_at
 }
 
 func verifyBlock(t *testing.T, height int64) {
+	t.Helper()
 	// Check that the blocks table contains an entry for this height.
 	if err := testDB().QueryRow(`
 SELECT height FROM `+tableBlocks+` WHERE height = $1;

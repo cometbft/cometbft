@@ -64,7 +64,9 @@ func TestApp_Hash(t *testing.T) {
 
 // Tests that we can set a value and retrieve it.
 func TestApp_Tx(t *testing.T) {
+	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 
@@ -104,7 +106,9 @@ func TestApp_Tx(t *testing.T) {
 }
 
 func TestApp_VoteExtensions(t *testing.T) {
+	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 		info, err := client.ABCIInfo(ctx)

@@ -10,6 +10,7 @@ import (
 
 // Tests that block headers are identical across nodes where present.
 func TestBlock_Header(t *testing.T) {
+	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
@@ -48,7 +49,9 @@ func TestBlock_Header(t *testing.T) {
 
 // Tests that the node contains the expected block range.
 func TestBlock_Range(t *testing.T) {
+	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		// We do not run this test on seed nodes or nodes with data
 		// companion-related pruning enabled.
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {

@@ -61,6 +61,7 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 }
 
 func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.PrivValidator) {
+	t.Helper()
 	// routine to:
 	// - precommit for a random block
 	// - send precommit to all peers

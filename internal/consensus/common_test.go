@@ -224,6 +224,7 @@ func decideProposal(
 	height int64,
 	round int32,
 ) (*types.Proposal, *types.Block) {
+	t.Helper()
 	cs1.mtx.Lock()
 	block, err := cs1.createProposalBlock(ctx)
 	require.NoError(t, err)
@@ -268,6 +269,7 @@ func signAddVotes(
 }
 
 func validatePrevote(t *testing.T, cs *State, round int32, privVal *validatorStub, blockHash []byte) {
+	t.Helper()
 	prevotes := cs.Votes.Prevotes(round)
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(t, err)
@@ -288,6 +290,7 @@ func validatePrevote(t *testing.T, cs *State, round int32, privVal *validatorStu
 }
 
 func validateLastPrecommit(t *testing.T, cs *State, privVal *validatorStub, blockHash []byte) {
+	t.Helper()
 	votes := cs.LastCommit
 	pv, err := privVal.GetPubKey()
 	require.NoError(t, err)
@@ -310,6 +313,7 @@ func validatePrecommit(
 	votedBlockHash,
 	lockedBlockHash []byte,
 ) {
+	t.Helper()
 	precommits := cs.Votes.Precommits(thisRound)
 	pv, err := privVal.GetPubKey()
 	require.NoError(t, err)
@@ -805,6 +809,7 @@ func randConsensusNetWithPeers(
 	tickerFunc func() TimeoutTicker,
 	appFunc func(string) abci.Application,
 ) ([]*State, *types.GenesisDoc, *cfg.Config, cleanupFunc) {
+	t.Helper()
 	c := test.ConsensusParams()
 	genDoc, privVals := randGenesisDoc(nValidators, false, testMinPower, c)
 	css := make([]*State, nPeers)

@@ -18,6 +18,7 @@ func TestABCIPubKey(t *testing.T) {
 }
 
 func testABCIPubKey(t *testing.T, pk crypto.PubKey) error {
+	t.Helper()
 	abciPubKey, err := cryptoenc.PubKeyToProto(pk)
 	require.NoError(t, err)
 	pk2, err := cryptoenc.PubKeyFromProto(abciPubKey)

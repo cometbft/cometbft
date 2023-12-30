@@ -31,6 +31,7 @@ func TestKVStoreKV(t *testing.T) {
 }
 
 func testKVStore(ctx context.Context, t *testing.T, app types.Application, tx []byte, key, value string) {
+	t.Helper()
 	checkTxResp, err := app.CheckTx(ctx, &types.CheckTxRequest{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK})
 	require.NoError(t, err)
 	require.Equal(t, uint32(0), checkTxResp.Code)
@@ -256,6 +257,7 @@ func makeApplyBlock(
 	diff []types.ValidatorUpdate,
 	txs ...[]byte,
 ) {
+	t.Helper()
 	// make and apply block
 	height := int64(heightInt)
 	hash := []byte("foo")
@@ -290,6 +292,7 @@ func valsEqual(t *testing.T, vals1, vals2 []types.ValidatorUpdate) {
 }
 
 func makeClientServer(t *testing.T, app types.Application, name, transport string) (abcicli.Client, service.Service, error) {
+	t.Helper()
 	// Start the listener
 	addr := fmt.Sprintf("unix://%s.sock", name)
 	logger := log.TestingLogger()
@@ -325,6 +328,7 @@ func makeClientServer(t *testing.T, app types.Application, name, transport strin
 }
 
 func runClientTests(ctx context.Context, t *testing.T, client abcicli.Client) {
+	t.Helper()
 	// run some tests....
 	tx := []byte(testKey + ":" + testValue)
 	testKVStore(ctx, t, client, tx, testKey, testValue)

@@ -61,6 +61,7 @@ func newReactor(
 	privVals []types.PrivValidator,
 	maxBlockHeight int64,
 ) ReactorPair {
+	t.Helper()
 	if len(privVals) != 1 {
 		panic("only support one validator")
 	}

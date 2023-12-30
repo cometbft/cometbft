@@ -12,6 +12,7 @@ import (
 )
 
 func ensureFiles(t *testing.T, rootDir string, files ...string) {
+	t.Helper()
 	for _, f := range files {
 		p := filepath.Join(rootDir, f)
 		_, err := os.Stat(p)

@@ -201,6 +201,7 @@ func TestNotBlockingOnStop(t *testing.T) {
 }
 
 func startClient(t *testing.T, addr string) *WSClient {
+	t.Helper()
 	c, err := NewWS(addr, "/websocket")
 	require.Nil(t, err)
 	err = c.Start()
@@ -210,11 +211,13 @@ func startClient(t *testing.T, addr string) *WSClient {
 }
 
 func call(t *testing.T, method string, c *WSClient) {
+	t.Helper()
 	err := c.Call(context.Background(), method, make(map[string]interface{}))
 	require.NoError(t, err)
 }
 
 func callWgDoneOnResult(t *testing.T, c *WSClient, wg *sync.WaitGroup) {
+	t.Helper()
 	for {
 		select {
 		case resp := <-c.ResponsesCh:

@@ -286,6 +286,7 @@ func TestNonEd25519Pubkey(t *testing.T) {
 }
 
 func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n int) {
+	t.Helper()
 	defer wg.Done()
 	for i := 0; i < n; i++ {
 		_, err := conn.Write([]byte(txt))
@@ -297,6 +298,7 @@ func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n i
 }
 
 func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
+	t.Helper()
 	readBuffer := make([]byte, dataMaxSize)
 	for i := 0; i < n; i++ {
 		_, err := conn.Read(readBuffer)

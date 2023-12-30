@@ -90,6 +90,7 @@ var (
 // These test are designed to be run with the race detector.
 
 func testConcurrency(t *testing.T, logger kitlog.Logger, total int) {
+	t.Helper()
 	n := int(math.Sqrt(float64(total)))
 	share := total / n
 

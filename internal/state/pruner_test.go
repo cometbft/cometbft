@@ -151,6 +151,7 @@ func containsAllTxs(results []*abci.TxResult, txs []string) bool {
 }
 
 func createTestSetup(t *testing.T) (*sm.Pruner, *kv.TxIndex, blockidxkv.BlockerIndexer, *types.EventBus) {
+	t.Helper()
 	config := test.ResetTestRoot("pruner_test")
 	t.Cleanup(func() {
 		err := os.RemoveAll(config.RootDir)

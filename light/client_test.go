@@ -774,7 +774,7 @@ func TestClientReplacesPrimaryWithWitnessIfPrimaryIsUnavailable(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotEqual(t, c.Primary(), deadNode)
-	assert.Equal(t, 2, len(c.Witnesses()))
+	assert.Len(t, 2, len(c.Witnesses()))
 }
 
 func TestClient_BackwardsVerification(t *testing.T) {

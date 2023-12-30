@@ -94,13 +94,14 @@ func TestSub(t *testing.T) {
 	for _, tc := range testCases {
 		var bA *BitArray
 		err := json.Unmarshal([]byte(tc.initBA), &bA)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		var o *BitArray
 		err = json.Unmarshal([]byte(tc.subtractingBA), &o)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
-		got, _ := json.Marshal(bA.Sub(o))
+		got, err := json.Marshal(bA.Sub(o))
+		require.NoError(t, err)
 		require.Equal(
 			t,
 			tc.expectedBA,

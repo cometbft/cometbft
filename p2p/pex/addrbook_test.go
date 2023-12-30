@@ -542,8 +542,7 @@ func testAddrBookAddressSelection(t *testing.T, bookSize int) {
 
 		// Verify that the order of addresses is as expected
 		// Get the sequence types and lengths of the selection
-		seqLens, seqTypes, err := analyseSelectionLayout(book, addrs)
-		assert.NoError(t, err, "%s", dbgStr)
+		seqLens, seqTypes := analyseSelectionLayout(book, addrs)
 
 		// Build a list with the expected lengths of partitions and another with the expected types, e.g.:
 		// expSeqLens = [10, 22], expSeqTypes = [1, 2]
@@ -779,7 +778,7 @@ func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nO
 // Returns:
 // - seqLens - the lengths of the sequences of addresses of same type
 // - seqTypes - the types of sequences in selection.
-func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, seqTypes []int, err error) {
+func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, seqTypes []int) {
 	// address types are: 0 - nil, 1 - new, 2 - old
 	var (
 		prevType      = 0

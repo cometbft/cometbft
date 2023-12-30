@@ -37,7 +37,7 @@ func TestWaitForHeight(t *testing.T) {
 
 	// we will not wait for more than 10 blocks
 	err = client.WaitForHeight(r, 40, nil)
-	require.NotNil(err)
+	require.Error(err)
 	require.True(strings.Contains(err.Error(), "aborting"))
 	// we called status once more to check
 	require.Equal(2, len(r.Calls))

@@ -118,7 +118,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 	}
 
 	// A helper that will run with (fooConn, fooWrites, fooReads) and vice versa
-	genNodeRunner := func(id string, nodeConn kvstoreConn, nodeWrites []string, nodeReads *[]string) async.Task {
+	genNodeRunner := func(nodeConn kvstoreConn, nodeWrites []string, nodeReads *[]string) async.Task {
 		return func(_ int) (interface{}, bool, error) {
 			// Initiate cryptographic private key and secret connection through nodeConn.
 			nodePrvKey := ed25519.GenPrivKey()
@@ -182,8 +182,8 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 
 	// Run foo & bar in parallel
 	trs, ok := async.Parallel(
-		genNodeRunner("foo", fooConn, fooWrites, &fooReads),
-		genNodeRunner("bar", barConn, barWrites, &barReads),
+		genNodeRunner(fooConn, fooWrites, &fooReads),
+		genNodeRunner(barConn, barWrites, &barReads),
 	)
 	require.NoError(t, trs.FirstError())
 	require.True(t, ok, "unexpected task abortion")

@@ -492,11 +492,11 @@ func benchmarkNClientsOneQuery(b *testing.B, n int) {
 
 // HELPERS
 
-func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message, msgAndArgs ...interface{}) {
+func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message) {
 	t.Helper()
 	select {
 	case actual := <-ch:
-		assert.Equal(t, expected, actual.Data(), msgAndArgs...)
+		assert.Equal(t, expected, actual.Data())
 	case <-time.After(1 * time.Second):
 		t.Errorf("expected to receive %v from the channel, got nothing after 1s", expected)
 		debug.PrintStack()

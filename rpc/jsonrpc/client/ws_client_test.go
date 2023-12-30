@@ -203,9 +203,9 @@ func TestNotBlockingOnStop(t *testing.T) {
 func startClient(t *testing.T, addr string) *WSClient {
 	t.Helper()
 	c, err := NewWS(addr, "/websocket")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = c.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	c.SetLogger(log.TestingLogger())
 	return c
 }

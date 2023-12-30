@@ -751,6 +751,7 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 }
 
 func benchmarkTxIndex(b *testing.B, txsCount int64) {
+	b.Helper()
 	dir, err := os.MkdirTemp("", "tx_index_db")
 	require.NoError(b, err)
 	defer os.RemoveAll(dir)

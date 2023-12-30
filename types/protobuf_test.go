@@ -13,17 +13,16 @@ import (
 
 func TestABCIPubKey(t *testing.T) {
 	pkEd := ed25519.GenPrivKey().PubKey()
-	err := testABCIPubKey(t, pkEd)
-	require.NoError(t, err)
+	testABCIPubKey(t, pkEd)
 }
 
-func testABCIPubKey(t *testing.T, pk crypto.PubKey) error {
+func testABCIPubKey(t *testing.T, pk crypto.PubKey) {
+	t.Helper()
 	abciPubKey, err := cryptoenc.PubKeyToProto(pk)
 	require.NoError(t, err)
 	pk2, err := cryptoenc.PubKeyFromProto(abciPubKey)
 	require.NoError(t, err)
 	require.Equal(t, pk, pk2)
-	return nil
 }
 
 func TestABCIValidators(t *testing.T) {

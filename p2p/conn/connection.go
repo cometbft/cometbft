@@ -664,9 +664,6 @@ FOR_LOOP:
 	// Cleanup
 	close(c.pong)
 
-	for range c.pong {
-		// Drain
-	}
 }
 
 // not goroutine-safe.

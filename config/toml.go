@@ -24,7 +24,7 @@ func init() {
 	}
 }
 
-/****** these are for production settings ***********/
+// ****** these are for production settings *********** //
 
 // EnsureRoot creates the root, config, and data directories if they don't exist,
 // and panics if it fails.

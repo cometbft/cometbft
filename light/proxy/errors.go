@@ -2,16 +2,16 @@ package proxy
 
 import "fmt"
 
-type ErrCreateHttpClient struct {
+type ErrCreateHTTPClient struct {
 	Addr string
 	Err  error
 }
 
-func (e ErrCreateHttpClient) Error() string {
+func (e ErrCreateHTTPClient) Error() string {
 	return fmt.Sprintf("failed to create http client for %s: %v", e.Addr, e.Err)
 }
 
-func (e ErrCreateHttpClient) Unwrap() error {
+func (e ErrCreateHTTPClient) Unwrap() error {
 	return e.Err
 }
 

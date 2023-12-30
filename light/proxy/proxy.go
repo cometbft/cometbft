@@ -33,7 +33,7 @@ func NewProxy(
 ) (*Proxy, error) {
 	rpcClient, err := rpchttp.NewWithTimeout(providerAddr, uint(config.WriteTimeout.Seconds()))
 	if err != nil {
-		return nil, ErrCreateHttpClient{Addr: providerAddr, Err: err}
+		return nil, ErrCreateHTTPClient{Addr: providerAddr, Err: err}
 	}
 
 	return &Proxy{

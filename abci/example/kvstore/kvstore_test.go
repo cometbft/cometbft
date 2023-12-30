@@ -9,7 +9,6 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/stretchr/testify/require"
 )
@@ -238,13 +237,13 @@ func TestClientServer(t *testing.T) {
 	defer cancel()
 	// set up socket app
 	kvstore := NewInMemoryApplication()
-	client, _, err := makeClientServer(t, kvstore, "kvstore-socket", "socket")
+	client, err := makeClientServer(t, kvstore, "kvstore-socket", "socket")
 	require.NoError(t, err)
 	runClientTests(ctx, t, client)
 
 	// set up grpc app
 	kvstore = NewInMemoryApplication()
-	gclient, _, err := makeClientServer(t, kvstore, t.TempDir(), "grpc")
+	gclient, err := makeClientServer(t, kvstore, t.TempDir(), "grpc")
 	require.NoError(t, err)
 	runClientTests(ctx, t, gclient)
 }
@@ -291,7 +290,7 @@ func valsEqual(t *testing.T, vals1, vals2 []types.ValidatorUpdate) {
 	}
 }
 
-func makeClientServer(t *testing.T, app types.Application, name, transport string) (abcicli.Client, service.Service, error) {
+func makeClientServer(t *testing.T, app types.Application, name, transport string) (abcicli.Client, error) {
 	t.Helper()
 	// Start the listener
 	addr := fmt.Sprintf("unix://%s.sock", name)
@@ -301,7 +300,7 @@ func makeClientServer(t *testing.T, app types.Application, name, transport strin
 	require.NoError(t, err)
 	server.SetLogger(logger.With("module", "abci-server"))
 	if err := server.Start(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	t.Cleanup(func() {
@@ -315,7 +314,7 @@ func makeClientServer(t *testing.T, app types.Application, name, transport strin
 	require.NoError(t, err)
 	client.SetLogger(logger.With("module", "abci-client"))
 	if err := client.Start(); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	t.Cleanup(func() {
@@ -324,7 +323,7 @@ func makeClientServer(t *testing.T, app types.Application, name, transport strin
 		}
 	})
 
-	return client, server, nil
+	return client, nil
 }
 
 func runClientTests(ctx context.Context, t *testing.T, client abcicli.Client) {

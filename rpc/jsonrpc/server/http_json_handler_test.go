@@ -59,7 +59,7 @@ func TestRPCParams(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		req, _ := http.NewRequest("POST", "http://localhost/", strings.NewReader(tt.payload))
+		req, _ := http.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(tt.payload))
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
@@ -107,7 +107,7 @@ func TestJSONRPCID(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		req, _ := http.NewRequest("POST", "http://localhost/", strings.NewReader(tt.payload))
+		req, _ := http.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(tt.payload))
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
@@ -136,7 +136,7 @@ func TestJSONRPCID(t *testing.T) {
 func TestRPCNotification(t *testing.T) {
 	mux := testMux()
 	body := strings.NewReader(`{"jsonrpc": "2.0"}`)
-	req, _ := http.NewRequest("POST", "http://localhost/", body)
+	req, _ := http.NewRequest(http.MethodPost, "http://localhost/", body)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res := rec.Result()
@@ -173,7 +173,7 @@ func TestRPCNotificationInBatch(t *testing.T) {
 		},
 	}
 	for i, tt := range tests {
-		req, _ := http.NewRequest("POST", "http://localhost/", strings.NewReader(tt.payload))
+		req, _ := http.NewRequest(http.MethodPost, "http://localhost/", strings.NewReader(tt.payload))
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 		res := rec.Result()
@@ -217,7 +217,7 @@ func TestRPCNotificationInBatch(t *testing.T) {
 
 func TestUnknownRPCPath(t *testing.T) {
 	mux := testMux()
-	req, _ := http.NewRequest("GET", "http://localhost/unknownrpcpath", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://localhost/unknownrpcpath", nil)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res := rec.Result()
@@ -230,7 +230,7 @@ func TestUnknownRPCPath(t *testing.T) {
 func TestRPCResponseCache(t *testing.T) {
 	mux := testMux()
 	body := strings.NewReader(`{"jsonrpc": "2.0","method":"block","id": 0, "params": ["1"]}`)
-	req, _ := http.NewRequest("Get", "http://localhost/", body)
+	req, _ := http.NewRequest(http.MethodGet, "http://localhost/", body)
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res := rec.Result()
@@ -245,7 +245,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	// send a request with default height.
 	body = strings.NewReader(`{"jsonrpc": "2.0","method":"block","id": 0, "params": ["0"]}`)
-	req, _ = http.NewRequest("Get", "http://localhost/", body)
+	req, _ = http.NewRequest(http.MethodGet, "http://localhost/", body)
 	rec = httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res = rec.Result()
@@ -261,7 +261,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	// send a request with default height, but as empty set of parameters.
 	body = strings.NewReader(`{"jsonrpc": "2.0","method":"block","id": 0, "params": []}`)
-	req, _ = http.NewRequest("Get", "http://localhost/", body)
+	req, _ = http.NewRequest(http.MethodGet, "http://localhost/", body)
 	rec = httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
 	res = rec.Result()

@@ -194,7 +194,7 @@ func TestParseURI(t *testing.T) {
 		url := fmt.Sprintf(
 			"test.com/method?height=%v&name=%v",
 			tc.raw[0], tc.raw[1])
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		assert.NoError(t, err)
 		vals, err := httpParamsToArgs(call, req)
 		if tc.fail {

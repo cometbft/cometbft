@@ -1541,7 +1541,7 @@ func (tvals testValsByVotingPower) Len() int {
 
 func (tvals testValsByVotingPower) Less(i, j int) bool {
 	if tvals[i].power == tvals[j].power {
-		return bytes.Compare([]byte(tvals[i].name), []byte(tvals[j].name)) == -1
+		return strings.Compare(tvals[i].name, tvals[j].name) == -1
 	}
 	return tvals[i].power > tvals[j].power
 }

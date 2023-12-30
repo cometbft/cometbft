@@ -496,7 +496,7 @@ func (app *Application) getValidators() (validators []types.ValidatorUpdate) {
 	if err = itr.Error(); err != nil {
 		panic(err)
 	}
-	return
+	return validators
 }
 
 // -----------------------------

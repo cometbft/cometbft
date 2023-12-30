@@ -149,5 +149,5 @@ func (prt *ProofRuntime) Verify(proof *cmtcrypto.ProofOps, root []byte, keypath 
 func DefaultProofRuntime() (prt *ProofRuntime) {
 	prt = NewProofRuntime()
 	prt.RegisterOpDecoder(ProofOpValue, ValueOpDecoder)
-	return
+	return prt
 }

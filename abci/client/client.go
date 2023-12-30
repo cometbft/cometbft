@@ -53,7 +53,7 @@ func NewClient(addr, transport string, mustConnect bool) (client Client, err err
 	default:
 		err = ErrUnknownAbciTransport{Transport: transport}
 	}
-	return
+	return client, err
 }
 
 type Callback func(*types.Request, *types.Response)
@@ -128,5 +128,5 @@ func (r *ReqRes) GetCallback() func(*types.Response) {
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
-	return
+	return wg
 }

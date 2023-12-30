@@ -32,7 +32,7 @@ func encodeByteSlice(w io.Writer, bz []byte) (err error) {
 	n := binary.PutUvarint(buf[:], uint64(len(bz)))
 	_, err = w.Write(buf[0:n])
 	if err != nil {
-		return
+		return err
 	}
 	_, err = w.Write(bz)
 	return err

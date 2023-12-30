@@ -204,7 +204,7 @@ func (pool *BlockPool) PeekTwoBlocks() (first, second *types.Block, firstExtComm
 	if r := pool.requesters[pool.height+1]; r != nil {
 		second = r.getBlock()
 	}
-	return
+	return first, second, firstExtCommit
 }
 
 // PopRequest pops the first block at pool.height.

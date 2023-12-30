@@ -46,7 +46,7 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 	if len(p) > 0 {
 		n, err = r.IO(r.Reader.Read(p))
 	}
-	return
+	return n, err
 }
 
 // SetLimit changes the transfer rate limit to new bytes per second and returns

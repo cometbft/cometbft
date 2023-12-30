@@ -58,7 +58,7 @@ func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
 	return false
 }
 
-func (privKey PrivKey) Type() string {
+func (PrivKey) Type() string {
 	return KeyType
 }
 
@@ -136,7 +136,7 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	return sig[1:], nil
 }
 
-//-------------------------------------
+// -------------------------------------
 
 var _ crypto.PubKey = PubKey{}
 

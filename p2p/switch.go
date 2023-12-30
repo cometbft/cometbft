@@ -43,7 +43,7 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 	return mConfig
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // An AddrBook represents an address book from the pex package, which is used
 // to store peer addresses.
@@ -62,7 +62,7 @@ type AddrBook interface {
 // fully setup.
 type PeerFilterFunc func(IPeerSet, Peer) error
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // Switch handles peer connections and exposes an API to receive incoming messages
 // on `Reactors`.  Each `Reactor` is responsible for handling incoming messages of one
@@ -156,7 +156,7 @@ func WithMetrics(metrics *Metrics) SwitchOption {
 	return func(sw *Switch) { sw.metrics = metrics }
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Switch setup
 
 // AddReactor adds the given reactor to the switch.
@@ -225,7 +225,7 @@ func (sw *Switch) SetNodeKey(nodeKey *NodeKey) {
 	sw.nodeKey = nodeKey
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Service start/stop
 
 // OnStart implements BaseService. It starts all the reactors and peers.
@@ -260,7 +260,7 @@ func (sw *Switch) OnStop() {
 	}
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Peers
 
 // Broadcast runs a go routine for each attempted send, which will block trying
@@ -455,7 +455,7 @@ func (sw *Switch) MarkPeerAsGood(peer Peer) {
 	}
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Dialing
 
 type privateAddr interface {

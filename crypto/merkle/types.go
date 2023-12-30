@@ -24,7 +24,7 @@ type Tree interface {
 	IterateRange(start []byte, end []byte, ascending bool, fx func(key []byte, value []byte) (stop bool)) (stopped bool)
 }
 
-//-----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 
 // Uvarint length prefixed byteslice.
 func encodeByteSlice(w io.Writer, bz []byte) (err error) {
@@ -35,5 +35,5 @@ func encodeByteSlice(w io.Writer, bz []byte) (err error) {
 		return
 	}
 	_, err = w.Write(bz)
-	return
+	return err
 }

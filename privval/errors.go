@@ -9,9 +9,9 @@ import (
 type EndpointTimeoutError struct{}
 
 // Implement the net.Error interface.
-func (e EndpointTimeoutError) Error() string   { return "endpoint connection timed out" }
-func (e EndpointTimeoutError) Timeout() bool   { return true }
-func (e EndpointTimeoutError) Temporary() bool { return true }
+func (EndpointTimeoutError) Error() string   { return "endpoint connection timed out" }
+func (EndpointTimeoutError) Timeout() bool   { return true }
+func (EndpointTimeoutError) Temporary() bool { return true }
 
 // Socket errors.
 var (

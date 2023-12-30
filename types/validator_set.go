@@ -726,7 +726,7 @@ func (vals *ValidatorSet) findPreviousProposer() *Validator {
 	return previousProposer
 }
 
-//-----------------
+// -----------------
 
 // IsErrNotEnoughVotingPowerSigned returns true if err is
 // ErrNotEnoughVotingPowerSigned.
@@ -745,7 +745,7 @@ func (e ErrNotEnoughVotingPowerSigned) Error() string {
 	return fmt.Sprintf("invalid commit -- insufficient voting power: got %d, needed more than %d", e.Got, e.Needed)
 }
 
-//----------------
+// ----------------
 
 // String returns a string representation of ValidatorSet.
 //
@@ -777,7 +777,7 @@ func (vals *ValidatorSet) StringIndented(indent string) string {
 		indent)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // ValidatorsByVotingPower implements sort.Interface for []*Validator based on
 // the VotingPower and Address fields.
@@ -900,7 +900,7 @@ func ValidatorSetFromExistingValidators(valz []*Validator) (*ValidatorSet, error
 	return vals, nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // RandValidatorSet returns a randomized validator set (size: +numValidators+),
 // where each validator has a voting power of +votingPower+.

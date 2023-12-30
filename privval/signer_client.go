@@ -48,7 +48,7 @@ func (sc *SignerClient) WaitForConnection(maxWait time.Duration) error {
 	return sc.endpoint.WaitForConnection(maxWait)
 }
 
-//--------------------------------------------------------
+// --------------------------------------------------------
 // Implement PrivValidator
 
 // Ping sends a ping request to the remote signer.

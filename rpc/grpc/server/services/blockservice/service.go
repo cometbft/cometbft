@@ -1,7 +1,7 @@
 package blockservice
 
 import (
-	context "context"
+	"context"
 	"fmt"
 
 	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"

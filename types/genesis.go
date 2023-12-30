@@ -20,7 +20,7 @@ const (
 	MaxChainIDLen = 50
 )
 
-//------------------------------------------------------------
+// ------------------------------------------------------------
 // core types for a genesis definition
 // NOTE: any changes to the genesis definition should
 // be reflected in the documentation:
@@ -105,7 +105,7 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 	return nil
 }
 
-//------------------------------------------------------------
+// ------------------------------------------------------------
 // Make genesis state from file
 
 // GenesisDocFromJSON unmarshalls JSON data into a GenesisDoc.

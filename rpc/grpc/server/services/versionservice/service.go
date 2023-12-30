@@ -1,7 +1,7 @@
 package versionservice
 
 import (
-	context "context"
+	"context"
 
 	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 	"github.com/cometbft/cometbft/version"
@@ -15,7 +15,7 @@ func New() pbsvc.VersionServiceServer {
 }
 
 // GetVersion implements v1.VersionServiceServer.
-func (s *versionServiceServer) GetVersion(context.Context, *pbsvc.GetVersionRequest) (*pbsvc.GetVersionResponse, error) {
+func (*versionServiceServer) GetVersion(context.Context, *pbsvc.GetVersionRequest) (*pbsvc.GetVersionResponse, error) {
 	return &pbsvc.GetVersionResponse{
 		Node:  version.CMTSemVer,
 		Abci:  version.ABCIVersion,

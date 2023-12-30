@@ -305,7 +305,7 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 }
 
 // Pull responses from 'responses' and write them to conn.
-func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, responses <-chan *types.Response) {
+func (*SocketServer) handleResponses(closeConn chan error, conn io.Writer, responses <-chan *types.Response) {
 	var count int
 	bufWriter := bufio.NewWriter(conn)
 	for {

@@ -176,12 +176,12 @@ func (cfg *Config) ValidateBasic() error {
 }
 
 // CheckDeprecated returns any deprecation warnings. These are printed to the operator on startup.
-func (cfg *Config) CheckDeprecated() []string {
+func (*Config) CheckDeprecated() []string {
 	var warnings []string
 	return warnings
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BaseConfig
 
 // BaseConfig defines the base configuration for a CometBFT node.
@@ -324,7 +324,7 @@ func (cfg BaseConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // RPCConfig
 
 // RPCConfig defines the configuration options for the CometBFT RPC server.
@@ -520,7 +520,7 @@ func (cfg RPCConfig) IsTLSEnabled() bool {
 	return cfg.TLSCertFile != "" && cfg.TLSKeyFile != ""
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // GRPCConfig
 
 // GRPCConfig defines the configuration for the CometBFT gRPC server.
@@ -620,7 +620,7 @@ func TestGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // GRPCPrivilegedConfig
 
 // GRPCPrivilegedConfig defines the configuration for the CometBFT gRPC server
@@ -665,7 +665,7 @@ func TestGRPCPruningServiceConfig() *GRPCPruningServiceConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // P2PConfig
 
 // P2PConfig defines the configuration options for the CometBFT peer-to-peer networking layer.
@@ -830,7 +830,7 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // MempoolConfig
 
 // MempoolConfig defines the configuration options for the CometBFT mempool
@@ -970,7 +970,7 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // StateSyncConfig
 
 // StateSyncConfig defines the configuration for the CometBFT state sync service.
@@ -1060,7 +1060,7 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BlockSyncConfig
 
 // BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service.
@@ -1092,7 +1092,7 @@ func (cfg *BlockSyncConfig) ValidateBasic() error {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // ConsensusConfig
 
 // ConsensusConfig defines the configuration for the Tendermint consensus algorithm, adopted by CometBFT,
@@ -1258,7 +1258,7 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // StorageConfig
 
 // StorageConfig allows more fine-grained control over certain storage-related
@@ -1347,7 +1347,7 @@ func TestTxIndexConfig() *TxIndexConfig {
 	return DefaultTxIndexConfig()
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // InstrumentationConfig
 
 // InstrumentationConfig defines the configuration for metrics reporting.
@@ -1400,7 +1400,7 @@ func (cfg *InstrumentationConfig) IsPrometheusEnabled() bool {
 	return cfg.Prometheus && cfg.PrometheusListenAddr != ""
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Utils
 
 // helper function to make config creation independent of root dir.
@@ -1411,7 +1411,7 @@ func rootify(path, root string) string {
 	return filepath.Join(root, path)
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Moniker
 
 var defaultMoniker = getDefaultMoniker()
@@ -1426,7 +1426,7 @@ func getDefaultMoniker() string {
 	return moniker
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // PruningConfig
 
 type PruningConfig struct {
@@ -1460,7 +1460,7 @@ func (cfg *PruningConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // DataCompanionPruningConfig
 
 type DataCompanionPruningConfig struct {

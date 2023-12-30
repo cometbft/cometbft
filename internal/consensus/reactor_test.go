@@ -39,7 +39,7 @@ import (
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
-//----------------------------------------------
+// ----------------------------------------------
 // in-process testnets
 
 var defaultTestTime = time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -218,7 +218,7 @@ func TestReactorWithEvidence(t *testing.T) {
 	}
 }
 
-//------------------------------------
+// ------------------------------------
 
 // Ensure a testnet makes blocks when there are txs
 func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
@@ -435,7 +435,7 @@ func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 	assert.Greater(t, ps.BlockPartsSent(), 0, "number of votes sent should have increased")
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 // ensure we can make blocks despite cycling a validator set
 
 func TestReactorVotingPowerChange(t *testing.T) {
@@ -465,7 +465,7 @@ func TestReactorVotingPowerChange(t *testing.T) {
 		<-blocksSubs[j].Out()
 	})
 
-	//---------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
 	logger.Debug("---------------------------- Testing changing the voting power of one validator a few times")
 
 	val1PubKey, err := css[0].privValidator.GetPubKey()
@@ -783,7 +783,7 @@ func timeoutWaitGroup(n int, f func(int)) {
 	}
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 // Ensure basic validation of structs is functioning
 
 func TestNewRoundStepMessageValidateBasic(t *testing.T) {

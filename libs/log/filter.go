@@ -124,7 +124,7 @@ func (l *filter) With(keyvals ...interface{}) Logger {
 	}
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // Option sets a parameter for the filter.
 type Option func(*filter)

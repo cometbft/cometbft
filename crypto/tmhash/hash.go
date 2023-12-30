@@ -21,7 +21,7 @@ func Sum(bz []byte) []byte {
 	return h[:]
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 const (
 	TruncatedSize = 20
@@ -44,7 +44,7 @@ func (h sha256trunc) Reset() {
 	h.sha256.Reset()
 }
 
-func (h sha256trunc) Size() int {
+func (sha256trunc) Size() int {
 	return TruncatedSize
 }
 

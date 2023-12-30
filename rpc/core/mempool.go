@@ -14,7 +14,7 @@ import (
 
 var ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is catching up")
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // NOTE: tx should be signed, but this is only checked at the app level (not by CometBFT!)
 
 // BroadcastTxAsync returns right away, with no response. Does not wait for

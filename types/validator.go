@@ -174,7 +174,7 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 	return v, nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 // RandValidator
 
 // RandValidator returns a randomized validator, useful for testing.

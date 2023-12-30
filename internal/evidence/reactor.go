@@ -50,7 +50,7 @@ func (evR *Reactor) SetLogger(l log.Logger) {
 
 // GetChannels implements Reactor.
 // It returns the list of channels for this reactor.
-func (evR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  EvidenceChannel,

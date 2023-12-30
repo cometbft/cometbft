@@ -28,7 +28,7 @@ var (
 	ErrInvalidHeightValue = errors.New("invalid height value")
 )
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 func calcValidatorsKey(height int64) []byte {
 	return []byte(fmt.Sprintf("validatorsKey:%v", height))
@@ -42,7 +42,7 @@ func calcABCIResponsesKey(height int64) []byte {
 	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
 }
 
-//----------------------
+// ----------------------
 
 var (
 	lastABCIResponseKey              = []byte("lastABCIResponseKey")
@@ -467,7 +467,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 	return pruned + batchPruned, targetRetainHeight, batch.WriteSync()
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 // TxResultsHash returns the root hash of a Merkle tree of
 // ExecTxResulst responses (see ABCIResults.Hash)
@@ -685,7 +685,7 @@ func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 	return store.db.SetSync(lastABCIResponsesRetainHeightKey, int64ToBytes(height))
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
@@ -792,7 +792,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // ConsensusParamsInfo represents the latest consensus params, or the last height it changed
 

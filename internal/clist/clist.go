@@ -211,7 +211,7 @@ func (e *CElement) SetRemoved() {
 	e.mtx.Unlock()
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // CList represents a linked list.
 // The zero value for CList is an empty list ready to use.
@@ -403,5 +403,5 @@ func (l *CList) Remove(e *CElement) interface{} {
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
-	return
+	return wg
 }

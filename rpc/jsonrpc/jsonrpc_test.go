@@ -309,7 +309,7 @@ func testWithWSClient(t *testing.T, cl *client.WSClient) {
 	assert.Equal(t, got2, val2)
 }
 
-//-------------
+// -------------
 
 func TestServersAndClientsBasic(t *testing.T) {
 	serverAddrs := [...]string{tcpAddr, unixAddr}

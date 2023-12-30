@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 // the `Handshake Tests` are for failures in applying the block.
 // With the help of the WAL, we can recover from it all!
 
-//------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 // WAL Tests
 
 // TODO: It would be better to verify explicitly which states we can recover from without the wal
@@ -313,7 +313,7 @@ func (w *crashingWAL) Wait()        { w.next.Wait() }
 
 const numBlocks = 6
 
-//---------------------------------------
+// ---------------------------------------
 // Test handshake/replay
 
 // 0 - all synced up
@@ -1011,7 +1011,7 @@ func (app *badApp) FinalizeBlock(context.Context, *abci.FinalizeBlockRequest) (*
 	panic("either allHashesAreWrong or onlyLastHashIsWrong must be set")
 }
 
-//--------------------------
+// --------------------------
 // utils for making blocks
 
 func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, error) {
@@ -1161,7 +1161,7 @@ func stateAndStore(
 	return stateDB, state, store
 }
 
-//----------------------------------
+// ----------------------------------
 // mock block store
 
 type mockBlockStore struct {
@@ -1240,7 +1240,7 @@ func (bs *mockBlockStore) PruneBlocks(height int64, _ sm.State) (uint64, int64, 
 func (bs *mockBlockStore) DeleteLatestBlock() error { return nil }
 func (bs *mockBlockStore) Close() error             { return nil }
 
-//---------------------------------------
+// ---------------------------------------
 // Test handshake/init chain
 
 func TestHandshakeUpdatesValidators(t *testing.T) {

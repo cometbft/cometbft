@@ -16,7 +16,7 @@ import (
 
 const testCh = 0x01
 
-//------------------------------------------------
+// ------------------------------------------------
 
 type mockNodeInfo struct {
 	addr *NetAddress
@@ -66,7 +66,7 @@ func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
 	return
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // Connects switches via arbitrary net.Conn. Used for testing.
 
 const TestHost = "localhost"
@@ -283,7 +283,7 @@ func testPeerConn(
 	return newPeerConn(outbound, persistent, conn, socketAddr), nil
 }
 
-//----------------------------------------------------------------
+// ----------------------------------------------------------------
 // rand node info
 
 func testNodeInfo(id ID, name string) NodeInfo {

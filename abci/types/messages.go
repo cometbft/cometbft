@@ -26,7 +26,7 @@ func ReadMessage(r io.Reader, msg proto.Message) error {
 	return err
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func ToEchoRequest(message string) *Request {
 	return &Request{
@@ -124,7 +124,7 @@ func ToFinalizeBlockRequest(req *FinalizeBlockRequest) *Request {
 	}
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func ToExceptionResponse(errStr string) *Response {
 	return &Response{

@@ -110,7 +110,7 @@ func (b *EventBus) Publish(eventType string, eventData TMEventData) error {
 // map of stringified events where each key is composed of the event
 // type and each of the event's attributes keys in the form of
 // "{event.Type}.{attribute.Key}" and the value is each attribute's value.
-func (b *EventBus) validateAndStringifyEvents(events []types.Event, logger log.Logger) map[string][]string {
+func (*EventBus) validateAndStringifyEvents(events []types.Event, logger log.Logger) map[string][]string {
 	result := make(map[string][]string)
 	for _, event := range events {
 		if len(event.Type) == 0 {

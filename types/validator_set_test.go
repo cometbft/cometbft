@@ -182,7 +182,7 @@ func BenchmarkValidatorSetCopy(b *testing.B) {
 	}
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestProposerSelection1(t *testing.T) {
 	vset := NewValidatorSet([]*Validator{
@@ -423,7 +423,7 @@ func (vals *ValidatorSet) fromBytes(b []byte) *ValidatorSet {
 	return vs
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestValidatorSetTotalVotingPowerPanicsOnOverflow(t *testing.T) {
 	// NewValidatorSet calls IncrementProposerPriority which calls TotalVotingPower()
@@ -699,7 +699,7 @@ func TestSafeSubClip(t *testing.T) {
 	assert.EqualValues(t, math.MaxInt64, safeSubClip(math.MaxInt64, -10))
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestEmptySet(t *testing.T) {
 	var valList []*Validator
@@ -1530,7 +1530,7 @@ func (valz validatorsByPriority) Swap(i, j int) {
 	valz[i], valz[j] = valz[j], valz[i]
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type testValsByVotingPower []testVal
 

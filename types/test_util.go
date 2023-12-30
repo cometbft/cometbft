@@ -61,7 +61,7 @@ func MakeVote(
 	round int32,
 	step SignedMsgType,
 	blockID BlockID,
-	time time.Time,
+	votetime time.Time,
 ) (*Vote, error) {
 	pubKey, err := val.GetPubKey()
 	if err != nil {
@@ -75,7 +75,7 @@ func MakeVote(
 		Round:            round,
 		Type:             step,
 		BlockID:          blockID,
-		Timestamp:        time,
+		Timestamp:        votetime,
 	}
 
 	extensionsEnabled := step == PrecommitType

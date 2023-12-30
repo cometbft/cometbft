@@ -70,7 +70,7 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 			Aunts:    trail.FlattenAunts(),
 		}
 	}
-	return
+	return rootHash, proofs
 }
 
 // Verify that the Proof proves the root hash.

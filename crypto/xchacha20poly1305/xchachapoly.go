@@ -52,11 +52,11 @@ func New(key []byte) (cipher.AEAD, error) {
 	return ret, nil
 }
 
-func (c *xchacha20poly1305) NonceSize() int {
+func (*xchacha20poly1305) NonceSize() int {
 	return NonceSize
 }
 
-func (c *xchacha20poly1305) Overhead() int {
+func (*xchacha20poly1305) Overhead() int {
 	return TagSize
 }
 

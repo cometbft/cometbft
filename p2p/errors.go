@@ -8,7 +8,7 @@ import (
 // ErrFilterTimeout indicates that a filter operation timed out.
 type ErrFilterTimeout struct{}
 
-func (e ErrFilterTimeout) Error() string {
+func (ErrFilterTimeout) Error() string {
 	return "filter timed out"
 }
 
@@ -152,7 +152,7 @@ func (e ErrPeerRemoval) Error() string {
 	return "peer removal failed"
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 type ErrNetAddressNoID struct {
 	Addr string

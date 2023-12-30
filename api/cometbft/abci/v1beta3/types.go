@@ -39,7 +39,7 @@ func (r ResponseVerifyVoteExtension) IsStatusUnknown() bool {
 	return r.Status == ResponseVerifyVoteExtension_UNKNOWN
 }
 
-//---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // override JSON marshaling so we emit defaults (ie. disable omitempty)
 
 var (

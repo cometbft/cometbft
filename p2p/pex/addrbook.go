@@ -179,7 +179,7 @@ func (a *addrBook) FilePath() string {
 	return a.filePath
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
 // AddOurAddress one of our addresses.
 func (a *addrBook) AddOurAddress(addr *p2p.NetAddress) {
@@ -472,7 +472,7 @@ func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddre
 	return selection
 }
 
-//------------------------------------------------
+// ------------------------------------------------
 
 // Size returns the number of addresses in the book.
 func (a *addrBook) Size() int {
@@ -486,7 +486,7 @@ func (a *addrBook) size() int {
 	return a.nNew + a.nOld
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // Save persists the address book to disk.
 func (a *addrBook) Save() {
@@ -510,7 +510,7 @@ out:
 	a.saveToFile(a.filePath)
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAddress {
 	switch bucketType {
@@ -625,7 +625,7 @@ func (a *addrBook) removeFromAllBuckets(ka *knownAddress) {
 	delete(a.addrLookup, ka.ID())
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 	bucket := a.getBucket(bucketType, bucketIdx)
@@ -773,10 +773,8 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 	ka.BucketType = bucketTypeOld
 
 	// Try to add it to its oldBucket destination.
-	oldBucketIdx, err := a.calcOldBucket(ka.Addr)
-	if err != nil {
-		return err
-	}
+	oldBucketIdx := a.calcOldBucket(ka.Addr)
+
 	added := a.addToOldBucket(ka, oldBucketIdx)
 	if !added {
 		// No room; move the oldest to a new bucket
@@ -825,7 +823,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 	return true
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // calculate bucket placements
 
 // hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.
@@ -834,10 +832,8 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(a.groupKey(addr))...)
 	data1 = append(data1, []byte(a.groupKey(src))...)
-	hash1, err := a.hash(data1)
-	if err != nil {
-		return 0, err
-	}
+	hash1 := a.hash(data1)
+
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= newBucketsPerGroup
 	var hashbuf [8]byte
@@ -847,23 +843,19 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	data2 = append(data2, a.groupKey(src)...)
 	data2 = append(data2, hashbuf[:]...)
 
-	hash2, err := a.hash(data2)
-	if err != nil {
-		return 0, err
-	}
+	hash2 := a.hash(data2)
+
 	result := int(binary.BigEndian.Uint64(hash2) % newBucketCount)
 	return result, nil
 }
 
 // hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets.
-func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
+func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) int {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(addr.String())...)
-	hash1, err := a.hash(data1)
-	if err != nil {
-		return 0, err
-	}
+	hash1 := a.hash(data1)
+
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= oldBucketsPerGroup
 	var hashbuf [8]byte
@@ -873,12 +865,9 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
 	data2 = append(data2, a.groupKey(addr)...)
 	data2 = append(data2, hashbuf[:]...)
 
-	hash2, err := a.hash(data2)
-	if err != nil {
-		return 0, err
-	}
+	hash2 := a.hash(data2)
 	result := int(binary.BigEndian.Uint64(hash2) % oldBucketCount)
-	return result, nil
+	return result
 }
 
 // Return a string representing the network group of this address.
@@ -939,8 +928,8 @@ func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
 	return na.IP.Mask(ipv6Mask).String()
 }
 
-func (a *addrBook) hash(b []byte) ([]byte, error) {
+func (a *addrBook) hash(b []byte) []byte {
 	a.hasher.Reset()
 	a.hasher.Write(b)
-	return a.hasher.Sum(nil), nil
+	return a.hasher.Sum(nil)
 }

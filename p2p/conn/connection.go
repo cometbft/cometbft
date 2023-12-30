@@ -724,7 +724,7 @@ func (c *MConnection) Status() ConnectionStatus {
 	return status
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 type ChannelDescriptor struct {
 	ID                  byte
@@ -890,7 +890,7 @@ func (ch *Channel) updateStats() {
 	atomic.StoreInt64(&ch.recentlySent, int64(float64(atomic.LoadInt64(&ch.recentlySent))*0.8))
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Packet
 
 // mustWrapPacket takes a packet kind (oneof) and wraps it in a tmp2p.Packet message.

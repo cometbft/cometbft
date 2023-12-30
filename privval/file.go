@@ -40,7 +40,7 @@ func voteToStep(vote *cmtproto.Vote) int8 {
 	}
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 // FilePVKey stores the immutable part of PrivValidator.
 type FilePVKey struct {
@@ -68,7 +68,7 @@ func (pvKey FilePVKey) Save() {
 	}
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 // FilePVLastSignState stores the mutable part of PrivValidator.
 type FilePVLastSignState struct {
@@ -145,7 +145,7 @@ func (lss *FilePVLastSignState) Save() {
 	}
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 // FilePV implements PrivValidator using data persisted to disk
 // to prevent double signing.
@@ -297,7 +297,7 @@ func (pv *FilePV) String() string {
 	)
 }
 
-//------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------
 
 // signVote checks if the vote is good to sign and sets the vote signature.
 // It may need to set the timestamp as well if the vote is otherwise the same as
@@ -419,7 +419,7 @@ func (pv *FilePV) saveSigned(height int64, round int32, step int8,
 	pv.LastSignState.Save()
 }
 
-//-----------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------
 
 // Returns the timestamp from the lastSignBytes.
 // Returns true if the only difference in the votes is their timestamp.

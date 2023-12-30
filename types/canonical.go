@@ -12,7 +12,7 @@ import (
 // TimeFormat is used for generating the sigs.
 const TimeFormat = time.RFC3339Nano
 
-//-----------------------------------
+// -----------------------------------
 // Canonicalize the structs
 
 func CanonicalizeBlockID(bid cmtproto.BlockID) *cmtproto.CanonicalBlockID {

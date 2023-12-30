@@ -475,7 +475,7 @@ func TestSerialReap(t *testing.T) {
 		}
 	}
 
-	//----------------------------------------
+	// ----------------------------------------
 
 	// Deliver some txs.
 	deliverTxsRange(0, 100)

@@ -126,7 +126,7 @@ func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
 	return false
 }
 
-func (privKey PrivKey) Type() string {
+func (PrivKey) Type() string {
 	return KeyType
 }
 
@@ -157,7 +157,7 @@ func GenPrivKeyFromSecret(secret []byte) PrivKey {
 	return PrivKey(ed25519.NewKeyFromSeed(seed))
 }
 
-//-------------------------------------
+// -------------------------------------
 
 var _ crypto.PubKey = PubKey{}
 
@@ -202,7 +202,7 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return false
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // BatchVerifier implements batch verification for ed25519.
 type BatchVerifier struct {

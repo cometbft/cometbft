@@ -450,7 +450,7 @@ func (pool *BlockPool) debug() string {
 	return str
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type bpPeer struct {
 	didTimeout  bool
@@ -524,7 +524,7 @@ func (peer *bpPeer) onTimeout() {
 	peer.didTimeout = true
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type bpRequester struct {
 	service.BaseService

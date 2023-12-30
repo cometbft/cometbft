@@ -40,7 +40,7 @@ type Client interface {
 	CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error)
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // NewClient returns a new ABCI client of the specified transport type.
 // It returns an error if the transport is not "socket" or "grpc".

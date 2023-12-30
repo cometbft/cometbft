@@ -140,7 +140,7 @@ func funcReturnTypes(f interface{}) []reflect.Type {
 	return typez
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // NOTE: assume returns is result struct and error. If error is not nil, return it.
 func unreflectResult(returns []reflect.Value) (interface{}, error) {

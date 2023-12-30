@@ -16,7 +16,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BlockExecutor handles block execution and state updates.
 // It exposes ApplyBlock(), which validates & executes the block, updates state w/ ABCI responses,
 // then commits and updates the mempool atomically, then saves state.
@@ -418,7 +418,7 @@ func (blockExec *BlockExecutor) Commit(
 	return res.RetainHeight, err
 }
 
-//---------------------------------------------------------
+// ---------------------------------------------------------
 // Helper functions for executing blocks and updating state
 
 func buildLastCommitInfoFromStore(block *types.Block, store Store, initialHeight int64) abci.CommitInfo {
@@ -715,7 +715,7 @@ func fireEvents(
 	}
 }
 
-//----------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // Execute block without state. TODO: eliminate
 
 // ExecCommitBlock executes and commits a block on the proxyApp without validating or mutating the state.

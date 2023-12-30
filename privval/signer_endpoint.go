@@ -92,7 +92,7 @@ func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 
 	err = se.conn.SetReadDeadline(deadline)
 	if err != nil {
-		return
+		return msg, err
 	}
 	const maxRemoteSignerMsgSize = 1024 * 10
 	protoReader := protoio.NewDelimitedReader(se.conn, maxRemoteSignerMsgSize)

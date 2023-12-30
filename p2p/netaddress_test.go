@@ -11,7 +11,7 @@ import (
 
 func TestNetAddress_String(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	netAddr := NewNetAddress("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
 

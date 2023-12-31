@@ -469,6 +469,30 @@ func (c *Client) Commit(ctx context.Context, height *int64) (*ctypes.ResultCommi
 	}, nil
 }
 
+// <celestia-core>
+
+func (c *Client) DataCommitment(
+	ctx context.Context,
+	start uint64,
+	end uint64,
+) (*ctypes.ResultDataCommitment, error) {
+	return c.next.DataCommitment(ctx, start, end)
+}
+
+// DataRootInclusionProof calls rpcclient#DataRootInclusionProof method and returns
+// a merkle proof for the data root of block height `height` to the set of blocks
+// defined by `start` and `end`.
+func (c *Client) DataRootInclusionProof(
+	ctx context.Context,
+	height uint64,
+	start uint64,
+	end uint64,
+) (*ctypes.ResultDataRootInclusionProof, error) {
+	return c.next.DataRootInclusionProof(ctx, height, start, end)
+}
+
+// </celestia-core>
+
 // Tx calls rpcclient#Tx method and then verifies the proof if such was
 // requested.
 func (c *Client) Tx(ctx context.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
@@ -491,6 +515,23 @@ func (c *Client) Tx(ctx context.Context, hash []byte, prove bool) (*ctypes.Resul
 	// Validate the proof.
 	return res, res.Proof.Validate(l.DataHash)
 }
+
+// <celestia-core>
+
+// ProveShares calls rpcclient#ProveShares method and returns an NMT proof for a set
+// of shares, defined by `startShare` and `endShare`, to the corresponding rows.
+// Then, a binary merkle inclusion proof from the latter rows to the data root.
+func (c *Client) ProveShares(
+	ctx context.Context,
+	height uint64,
+	startShare uint64,
+	endShare uint64,
+) (types.ShareProof, error) {
+	res, err := c.next.ProveShares(ctx, height, startShare, endShare)
+	return res, err
+}
+
+// </celestia-core>
 
 func (c *Client) TxSearch(
 	ctx context.Context,

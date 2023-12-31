@@ -174,6 +174,27 @@ func (c Client) Commit(_ context.Context, height *int64) (*ctypes.ResultCommit, 
 	return c.env.Commit(&rpctypes.Context{}, height)
 }
 
+// <celestia-core>
+
+func (c Client) DataCommitment(
+	_ context.Context,
+	start uint64,
+	end uint64,
+) (*ctypes.ResultDataCommitment, error) {
+	return c.env.DataCommitment(&rpctypes.Context{}, start, end)
+}
+
+func (c Client) DataRootInclusionProof(
+	_ context.Context,
+	height uint64,
+	start uint64,
+	end uint64,
+) (*ctypes.ResultDataRootInclusionProof, error) {
+	return c.env.DataRootInclusionProof(&rpctypes.Context{}, int64(height), start, end)
+}
+
+// </celestia-core>
+
 func (c Client) Validators(_ context.Context, height *int64, page, perPage *int) (*ctypes.ResultValidators, error) {
 	return c.env.Validators(&rpctypes.Context{}, height, page, perPage)
 }

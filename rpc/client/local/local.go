@@ -180,6 +180,27 @@ func (c *Local) Commit(_ context.Context, height *int64) (*ctypes.ResultCommit, 
 	return c.env.Commit(c.ctx, height)
 }
 
+// <celestia-core>
+
+func (c *Local) DataCommitment(
+	_ context.Context,
+	start uint64,
+	end uint64,
+) (*ctypes.ResultDataCommitment, error) {
+	return c.env.DataCommitment(c.ctx, start, end)
+}
+
+func (c *Local) DataRootInclusionProof(
+	_ context.Context,
+	height uint64,
+	start uint64,
+	end uint64,
+) (*ctypes.ResultDataRootInclusionProof, error) {
+	return c.env.DataRootInclusionProof(c.ctx, int64(height), start, end)
+}
+
+// </celestia-core>
+
 func (c *Local) Validators(_ context.Context, height *int64, page, perPage *int) (*ctypes.ResultValidators, error) {
 	return c.env.Validators(c.ctx, height, page, perPage)
 }
@@ -187,6 +208,19 @@ func (c *Local) Validators(_ context.Context, height *int64, page, perPage *int)
 func (c *Local) Tx(_ context.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	return c.env.Tx(c.ctx, hash, prove)
 }
+
+// <celestia-core>
+
+func (c *Local) ProveShares(
+	_ context.Context,
+	height uint64,
+	startShare uint64,
+	endShare uint64,
+) (types.ShareProof, error) {
+	return c.env.ProveShares(c.ctx, int64(height), startShare, endShare)
+}
+
+// </celestia-core>
 
 func (c *Local) TxSearch(
 	_ context.Context,

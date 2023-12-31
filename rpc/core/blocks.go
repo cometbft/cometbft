@@ -5,6 +5,13 @@ import (
 	"fmt"
 	"sort"
 
+	// <celestia-core>
+	"encoding/hex"
+	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/pkg/consts"
+	"strconv"
+	// </celestia-core>
+
 	"github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
@@ -174,6 +181,217 @@ func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.R
 	return ctypes.NewResultCommit(&header, commit, true), nil
 }
 
+// <celestia>
+
+// DataCommitment collects the data roots over a provided ordered range of blocks,
+// and then creates a new Merkle root of those data roots. The range is end exclusive.
+func (env *Environment) DataCommitment(ctx *rpctypes.Context, start, end uint64) (*ctypes.ResultDataCommitment, error) {
+	err := env.validateDataCommitmentRange(start, end)
+	if err != nil {
+		return nil, err
+	}
+	tuples, err := env.fetchDataRootTuples(start, end)
+	if err != nil {
+		return nil, err
+	}
+	root, err := hashDataRootTuples(tuples)
+	if err != nil {
+		return nil, err
+	}
+	// Create data commitment
+	return &ctypes.ResultDataCommitment{DataCommitment: root}, nil
+}
+
+// DataRootInclusionProof creates an inclusion proof for the data root of block
+// height `height` in the set of blocks defined by `start` and `end`. The range
+// is end exclusive.
+func (env *Environment) DataRootInclusionProof(
+	ctx *rpctypes.Context,
+	height int64,
+	start,
+	end uint64,
+) (*ctypes.ResultDataRootInclusionProof, error) {
+	err := env.validateDataRootInclusionProofRequest(uint64(height), start, end)
+	if err != nil {
+		return nil, err
+	}
+	tuples, err := env.fetchDataRootTuples(start, end)
+	if err != nil {
+		return nil, err
+	}
+	proof, err := proveDataRootTuples(tuples, height)
+	if err != nil {
+		return nil, err
+	}
+	return &ctypes.ResultDataRootInclusionProof{Proof: *proof}, nil
+}
+
+// padBytes Pad bytes to given length
+func padBytes(byt []byte, length int) ([]byte, error) {
+	l := len(byt)
+	if l > length {
+		return nil, fmt.Errorf(
+			"cannot pad bytes because length of bytes array: %d is greater than given length: %d",
+			l,
+			length,
+		)
+	}
+	if l == length {
+		return byt, nil
+	}
+	tmp := make([]byte, length)
+	copy(tmp[length-l:], byt)
+	return tmp, nil
+}
+
+// To32PaddedHexBytes takes a number and returns its hex representation padded to 32 bytes.
+// Used to mimic the result of `abi.encode(number)` in Ethereum.
+func To32PaddedHexBytes(number uint64) ([]byte, error) {
+	hexRepresentation := strconv.FormatUint(number, 16)
+	// Make sure hex representation has even length.
+	// The `strconv.FormatUint` can return odd length hex encodings.
+	// For example, `strconv.FormatUint(10, 16)` returns `a`.
+	// Thus, we need to pad it.
+	if len(hexRepresentation)%2 == 1 {
+		hexRepresentation = "0" + hexRepresentation
+	}
+	hexBytes, hexErr := hex.DecodeString(hexRepresentation)
+	if hexErr != nil {
+		return nil, hexErr
+	}
+	paddedBytes, padErr := padBytes(hexBytes, 32)
+	if padErr != nil {
+		return nil, padErr
+	}
+	return paddedBytes, nil
+}
+
+// DataRootTuple contains the data that will be used to create the QGB commitments.
+// The commitments will be signed by orchestrators and submitted to an EVM chain via a relayer.
+// For more information: https://github.com/celestiaorg/quantum-gravity-bridge/blob/master/src/DataRootTuple.sol
+type DataRootTuple struct {
+	height   uint64
+	dataRoot [32]byte
+}
+
+// EncodeDataRootTuple takes a height and a data root, and returns the equivalent of
+// `abi.encode(...)` in Ethereum.
+// The encoded type is a DataRootTuple, which has the following ABI:
+//
+//	{
+//	  "components":[
+//	     {
+//	        "internalType":"uint256",
+//	        "name":"height",
+//	        "type":"uint256"
+//	     },
+//	     {
+//	        "internalType":"bytes32",
+//	        "name":"dataRoot",
+//	        "type":"bytes32"
+//	     },
+//	     {
+//	        "internalType":"structDataRootTuple",
+//	        "name":"_tuple",
+//	        "type":"tuple"
+//	     }
+//	  ]
+//	}
+//
+// padding the hex representation of the height padded to 32 bytes concatenated to the data root.
+// For more information, refer to:
+// https://github.com/celestiaorg/quantum-gravity-bridge/blob/master/src/DataRootTuple.sol
+func EncodeDataRootTuple(height uint64, dataRoot [32]byte) ([]byte, error) {
+	paddedHeight, err := To32PaddedHexBytes(height)
+	if err != nil {
+		return nil, err
+	}
+	return append(paddedHeight, dataRoot[:]...), nil
+}
+
+// validateDataCommitmentRange runs basic checks on the asc sorted list of
+// heights that will be used subsequently in generating data commitments over
+// the defined set of heights.
+func (env *Environment) validateDataCommitmentRange(start uint64, end uint64) error {
+	if start == 0 {
+		return fmt.Errorf("the first block is 0")
+	}
+	heightsRange := end - start
+	if heightsRange > uint64(consts.DataCommitmentBlocksLimit) {
+		return fmt.Errorf("the query exceeds the limit of allowed blocks %d", consts.DataCommitmentBlocksLimit)
+	}
+	if heightsRange == 0 {
+		return fmt.Errorf("cannot create the data commitments for an empty set of blocks")
+	}
+	if start >= end {
+		return fmt.Errorf("last block is smaller than first block")
+	}
+	// the data commitment range is end exclusive
+	if end > uint64(env.BlockStore.Height())+1 {
+		return fmt.Errorf(
+			"end block %d is higher than current chain height %d",
+			end,
+			env.BlockStore.Height(),
+		)
+	}
+	return nil
+}
+
+// hashDataRootTuples hashes a list of blocks data root tuples, i.e. height, data root and square size,
+// then returns their merkle root.
+func hashDataRootTuples(tuples []DataRootTuple) ([]byte, error) {
+	dataRootEncodedTuples := make([][]byte, 0, len(tuples))
+	for _, tuple := range tuples {
+		encodedTuple, err := EncodeDataRootTuple(
+			tuple.height,
+			tuple.dataRoot,
+		)
+		if err != nil {
+			return nil, err
+		}
+		dataRootEncodedTuples = append(dataRootEncodedTuples, encodedTuple)
+	}
+	root := merkle.HashFromByteSlices(dataRootEncodedTuples)
+	return root, nil
+}
+
+// validateDataRootInclusionProofRequest validates the request to generate a data root
+// inclusion proof.
+func (env *Environment) validateDataRootInclusionProofRequest(height uint64, start uint64, end uint64) error {
+	err := env.validateDataCommitmentRange(start, end)
+	if err != nil {
+		return err
+	}
+	if height < start || height >= end {
+		return fmt.Errorf(
+			"height %d should be in the end exclusive interval first_block %d last_block %d",
+			height,
+			start,
+			end,
+		)
+	}
+	return nil
+}
+
+// proveDataRootTuples returns the merkle inclusion proof for a height.
+func proveDataRootTuples(tuples []DataRootTuple, height int64) (*merkle.Proof, error) {
+	dataRootEncodedTuples := make([][]byte, 0, len(tuples))
+	for _, tuple := range tuples {
+		encodedTuple, err := EncodeDataRootTuple(
+			tuple.height,
+			tuple.dataRoot,
+		)
+		if err != nil {
+			return nil, err
+		}
+		dataRootEncodedTuples = append(dataRootEncodedTuples, encodedTuple)
+	}
+	_, proofs := merkle.ProofsFromByteSlices(dataRootEncodedTuples)
+	return proofs[height-int64(tuples[0].height)], nil
+}
+
+// </celestia-core>
+
 // BlockResults gets ABCIResults at a given height.
 // If no height is provided, it will fetch results for the latest block.
 //
@@ -264,3 +482,24 @@ func (env *Environment) BlockSearch(
 
 	return &ctypes.ResultBlockSearch{Blocks: apiResults, TotalCount: totalCount}, nil
 }
+
+// <celestia-core>
+
+// fetchDataRootTuples takes an end exclusive range of heights and fetches its
+// corresponding data root tuples.
+func (env *Environment) fetchDataRootTuples(start, end uint64) ([]DataRootTuple, error) {
+	tuples := make([]DataRootTuple, 0, end-start)
+	for height := start; height < end; height++ {
+		block := env.BlockStore.LoadBlock(int64(height))
+		if block == nil {
+			return nil, fmt.Errorf("couldn't load block %d", height)
+		}
+		tuples = append(tuples, DataRootTuple{
+			height:   uint64(block.Height),
+			dataRoot: *(*[32]byte)(block.DataHash),
+		})
+	}
+	return tuples, nil
+}
+
+// </celestia-core>

@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	// <celestia-core>
+	"github.com/cometbft/cometbft/crypto/merkle"
+	// </celestia-core>
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/bytes"
@@ -59,6 +63,18 @@ type ResultBlockResults struct {
 	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
 	AppHash               []byte                    `json:"app_hash"`
 }
+
+// <celestia-core>
+
+type ResultDataCommitment struct {
+	DataCommitment bytes.HexBytes `json:"data_commitment"`
+}
+
+type ResultDataRootInclusionProof struct {
+	Proof merkle.Proof `json:"proof"`
+}
+
+// </celestia-core>
 
 // NewResultCommit is a helper to initialize the ResultCommit with
 // the embedded struct
@@ -201,7 +217,7 @@ type ResultTx struct {
 	Index    uint32            `json:"index"`
 	TxResult abci.ExecTxResult `json:"tx_result"`
 	Tx       types.Tx          `json:"tx"`
-	Proof    types.TxProof     `json:"proof,omitempty"`
+	Proof    types.ShareProof  `json:"proof,omitempty"` // <celestia-core />
 }
 
 // Result of searching for txs

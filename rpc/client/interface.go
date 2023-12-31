@@ -70,8 +70,23 @@ type SignClient interface {
 	Header(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
 	HeaderByHash(ctx context.Context, hash bytes.HexBytes) (*ctypes.ResultHeader, error)
 	Commit(ctx context.Context, height *int64) (*ctypes.ResultCommit, error)
+
+	// <celestia-core>
+	DataCommitment(ctx context.Context, start, end uint64) (*ctypes.ResultDataCommitment, error)
+	DataRootInclusionProof(
+		ctx context.Context,
+		height uint64,
+		start,
+		end uint64,
+	) (*ctypes.ResultDataRootInclusionProof, error)
+	// </celestia-core>
+
 	Validators(ctx context.Context, height *int64, page, perPage *int) (*ctypes.ResultValidators, error)
 	Tx(ctx context.Context, hash []byte, prove bool) (*ctypes.ResultTx, error)
+
+	// <celestia-core>
+	ProveShares(_ context.Context, height uint64, startShare uint64, endShare uint64) (types.ShareProof, error)
+	// </celestia-core>
 
 	// TxSearch defines a method to search for a paginated set of transactions by
 	// transaction event search criteria.

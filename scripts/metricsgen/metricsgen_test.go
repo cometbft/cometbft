@@ -36,6 +36,7 @@ func TestSimpleTemplate(t *testing.T) {
 	}
 }
 
+// TestFromData tests that the metricsgen tool can parse a directory of metrics and generate a file
 func TestFromData(t *testing.T) {
 	infos, err := os.ReadDir(testDataDir)
 	if err != nil {

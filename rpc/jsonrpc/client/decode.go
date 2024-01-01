@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func unmarshalResponseBytes(

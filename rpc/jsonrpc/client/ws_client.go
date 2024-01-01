@@ -13,7 +13,7 @@ import (
 	"github.com/cometbft/cometbft/internal/service"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/gorilla/websocket"
 	metrics "github.com/rcrowley/go-metrics"
 )

@@ -10,7 +10,7 @@ import (
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // HTTP + URI handler

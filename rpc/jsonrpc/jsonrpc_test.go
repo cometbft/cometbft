@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -18,9 +17,9 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/client"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	client "github.com/cometbft/cometbft/rpc/jsonrpc/client"
+	server "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/go-kit/log/term"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -226,7 +225,6 @@ func echoWithDefaultViaHTTP(cl client.Caller, v *int) (int, error) {
 }
 
 func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
-	t.Helper()
 	val := testVal
 	got, err := echoViaHTTP(cl, val)
 	require.NoError(t, err)
@@ -249,7 +247,7 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 
 	got5, err := echoWithDefaultViaHTTP(cl, nil)
 	require.NoError(t, err)
-	assert.Equal(t, -1, got5)
+	assert.Equal(t, got5, -1)
 
 	val6 := cmtrand.Intn(10000)
 	got6, err := echoWithDefaultViaHTTP(cl, &val6)
@@ -273,7 +271,7 @@ func echoViaWS(cl *client.WSClient, val string) (string, error) {
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 	return result.Value, nil
 }
@@ -294,44 +292,43 @@ func echoBytesViaWS(cl *client.WSClient, bytes []byte) ([]byte, error) {
 	result := new(ResultEchoBytes)
 	err = json.Unmarshal(msg.Result, result)
 	if err != nil {
-		return []byte{}, err
+		return []byte{}, nil
 	}
 	return result.Value, nil
 }
 
 func testWithWSClient(t *testing.T, cl *client.WSClient) {
-	t.Helper()
 	val := testVal
 	got, err := echoViaWS(cl, val)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	assert.Equal(t, got, val)
 
 	val2 := randBytes(t)
 	got2, err := echoBytesViaWS(cl, val2)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	assert.Equal(t, got2, val2)
 }
 
-// -------------
+//-------------
 
 func TestServersAndClientsBasic(t *testing.T) {
 	serverAddrs := [...]string{tcpAddr, unixAddr}
 	for _, addr := range serverAddrs {
 		cl1, err := client.NewURI(addr)
-		require.NoError(t, err)
+		require.Nil(t, err)
 		fmt.Printf("=== testing server on %s using URI client", addr)
 		testWithHTTPClient(t, cl1)
 
 		cl2, err := client.New(addr)
-		require.NoError(t, err)
+		require.Nil(t, err)
 		fmt.Printf("=== testing server on %s using JSONRPC client", addr)
 		testWithHTTPClient(t, cl2)
 
 		cl3, err := client.NewWS(addr, websocketEndpoint)
-		require.NoError(t, err)
+		require.Nil(t, err)
 		cl3.SetLogger(log.TestingLogger())
 		err = cl3.Start()
-		require.NoError(t, err)
+		require.Nil(t, err)
 		fmt.Printf("=== testing server on %s using WS client", addr)
 		testWithWSClient(t, cl3)
 		err = cl3.Stop()
@@ -343,20 +340,20 @@ func TestServersAndClientsBasicV1(t *testing.T) {
 	serverAddrs := [...]string{tcpAddr, unixAddr}
 	for _, addr := range serverAddrs {
 		cl1, err := client.NewURI(addr)
-		require.NoError(t, err)
+		require.Nil(t, err)
 		fmt.Printf("=== testing server on %s using URI client", addr)
 		testWithHTTPClient(t, cl1)
 
 		cl2, err := client.New(addr)
-		require.NoError(t, err)
+		require.Nil(t, err)
 		fmt.Printf("=== testing server on %s using JSONRPC client", addr)
 		testWithHTTPClient(t, cl2)
 
 		cl3, err := client.NewWS(addr, "/v1"+websocketEndpoint)
-		require.NoError(t, err)
+		require.Nil(t, err)
 		cl3.SetLogger(log.TestingLogger())
 		err = cl3.Start()
-		require.NoError(t, err)
+		require.Nil(t, err)
 		fmt.Printf("=== testing server on %s using WS client", addr)
 		testWithWSClient(t, cl3)
 		err = cl3.Stop()
@@ -366,30 +363,30 @@ func TestServersAndClientsBasicV1(t *testing.T) {
 
 func TestHexStringArg(t *testing.T) {
 	cl, err := client.NewURI(tcpAddr)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	// should NOT be handled as hex
 	val := "0xabc"
 	got, err := echoViaHTTP(cl, val)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	assert.Equal(t, got, val)
 }
 
 func TestQuotedStringArg(t *testing.T) {
 	cl, err := client.NewURI(tcpAddr)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	// should NOT be unquoted
 	val := "\"abc\""
 	got, err := echoViaHTTP(cl, val)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	assert.Equal(t, got, val)
 }
 
 func TestWSNewWSRPCFunc(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.NoError(t, err)
+	require.Nil(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -401,7 +398,7 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 		"arg": val,
 	}
 	err = cl.Call(context.Background(), "echo_ws", params)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
@@ -409,17 +406,17 @@ func TestWSNewWSRPCFunc(t *testing.T) {
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	got := result.Value
 	assert.Equal(t, got, val)
 }
 
 func TestWSNewWSRPCFuncV1(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.NoError(t, err)
+	require.Nil(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -431,7 +428,7 @@ func TestWSNewWSRPCFuncV1(t *testing.T) {
 		"arg": val,
 	}
 	err = cl.Call(context.Background(), "echo_ws", params)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
@@ -439,17 +436,17 @@ func TestWSNewWSRPCFuncV1(t *testing.T) {
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	got := result.Value
 	assert.Equal(t, got, val)
 }
 
 func TestWSHandlesArrayParams(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.NoError(t, err)
+	require.Nil(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -459,7 +456,7 @@ func TestWSHandlesArrayParams(t *testing.T) {
 	val := testVal
 	params := []interface{}{val}
 	err = cl.CallWithArrayParams(context.Background(), "echo_ws", params)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
@@ -467,17 +464,17 @@ func TestWSHandlesArrayParams(t *testing.T) {
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	got := result.Value
 	assert.Equal(t, got, val)
 }
 
 func TestWSHandlesArrayParamsV1(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.NoError(t, err)
+	require.Nil(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -487,7 +484,7 @@ func TestWSHandlesArrayParamsV1(t *testing.T) {
 	val := testVal
 	params := []interface{}{val}
 	err = cl.CallWithArrayParams(context.Background(), "echo_ws", params)
-	require.NoError(t, err)
+	require.Nil(t, err)
 
 	msg := <-cl.ResponsesCh
 	if msg.Error != nil {
@@ -495,7 +492,7 @@ func TestWSHandlesArrayParamsV1(t *testing.T) {
 	}
 	result := new(ResultEcho)
 	err = json.Unmarshal(msg.Result, result)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	got := result.Value
 	assert.Equal(t, got, val)
 }
@@ -504,10 +501,10 @@ func TestWSHandlesArrayParamsV1(t *testing.T) {
 // & pongs so connection stays alive.
 func TestWSClientPingPong(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, websocketEndpoint)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.NoError(t, err)
+	require.Nil(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -519,10 +516,10 @@ func TestWSClientPingPong(t *testing.T) {
 
 func TestWSClientPingPongV1(t *testing.T) {
 	cl, err := client.NewWS(tcpAddr, "/v1"+websocketEndpoint)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	cl.SetLogger(log.TestingLogger())
 	err = cl.Start()
-	require.NoError(t, err)
+	require.Nil(t, err)
 	t.Cleanup(func() {
 		if err := cl.Stop(); err != nil {
 			t.Error(err)
@@ -559,7 +556,6 @@ func TestJSONRPCCaching(t *testing.T) {
 }
 
 func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req interface{}) (*http.Response, error) {
-	t.Helper()
 	reqBytes, err := json.Marshal(req)
 	require.NoError(t, err)
 
@@ -573,7 +569,6 @@ func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req interface{
 }
 
 func TestURICaching(t *testing.T) {
-	t.Helper()
 	httpAddr := strings.Replace(tcpAddr, "tcp://", "http://", 1)
 	cl, err := client.DefaultHTTPClient(httpAddr)
 	require.NoError(t, err)
@@ -586,7 +581,7 @@ func TestURICaching(t *testing.T) {
 	assert.Equal(t, "", res1.Header.Get("Cache-control"))
 
 	// Supplying the arg should result in caching
-	args.Set("arg", strconv.Itoa(cmtrand.Intn(10000)))
+	args.Set("arg", fmt.Sprintf("%d", cmtrand.Intn(10000)))
 	res2, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res2.Body.Close() }()
 	require.NoError(t, err)
@@ -594,7 +589,6 @@ func TestURICaching(t *testing.T) {
 }
 
 func rawURIRequest(t *testing.T, cl *http.Client, url string, args url.Values) (*http.Response, error) {
-	t.Helper()
 	req, err := http.NewRequest(http.MethodPost, url, strings.NewReader(args.Encode()))
 	require.NoError(t, err)
 
@@ -604,10 +598,9 @@ func rawURIRequest(t *testing.T, cl *http.Client, url string, args url.Values) (
 }
 
 func randBytes(t *testing.T) []byte {
-	t.Helper()
 	n := cmtrand.Intn(10) + 2
 	buf := make([]byte, n)
 	_, err := crand.Read(buf)
-	require.NoError(t, err)
+	require.Nil(t, err)
 	return bytes.ReplaceAll(buf, []byte("="), []byte{100})
 }

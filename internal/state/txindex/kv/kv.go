@@ -517,7 +517,7 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 	return
 }
 
-func (txi *TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
+func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
 	eventSeq := extractEventSeqFromKey(it.Key())
 	tmpHeights[string(it.Value())+eventSeq] = it.Value()
 }

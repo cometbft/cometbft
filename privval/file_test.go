@@ -58,9 +58,9 @@ func TestLoadOrGenValidator(t *testing.T) {
 	assert := assert.New(t)
 
 	tempKeyFile, err := os.CreateTemp("", "priv_validator_key_")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	tempKeyFilePath := tempKeyFile.Name()
 	if err := os.Remove(tempKeyFilePath); err != nil {
@@ -244,9 +244,9 @@ func TestSignProposal(t *testing.T) {
 
 func TestDifferByTimestamp(t *testing.T) {
 	tempKeyFile, err := os.CreateTemp("", "priv_validator_key_")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	privVal := GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
 	randbytes := cmtrand.Bytes(tmhash.Size)

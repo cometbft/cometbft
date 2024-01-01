@@ -72,7 +72,7 @@ func TestNilCustomHTTPClient(t *testing.T) {
 func TestCustomHTTPClient(t *testing.T) {
 	remote := rpctest.GetConfig().RPC.ListenAddress
 	c, err := rpchttp.NewWithClient(remote, http.DefaultClient)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	status, err := c.Status(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, status)
@@ -507,7 +507,7 @@ func TestTxSearchWithTimeout(t *testing.T) {
 
 	// query using a compositeKey (see kvstore application)
 	result, err := timeoutClient.TxSearch(context.Background(), "app.creator='Cosmoshi Netowoko'", false, nil, nil, "asc")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
 }
 
@@ -559,7 +559,7 @@ func TestTxSearch(t *testing.T) {
 	for _, c := range GetClients() {
 		// now we query for the tx.
 		result, err := c.TxSearch(context.Background(), fmt.Sprintf("tx.hash='%v'", find.Hash), true, nil, nil, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Len(t, result.Txs, 1)
 		require.Equal(t, find.Hash, result.Txs[0].Hash)
 
@@ -577,51 +577,51 @@ func TestTxSearch(t *testing.T) {
 
 		// query by height
 		result, err = c.TxSearch(context.Background(), fmt.Sprintf("tx.height=%d", find.Height), true, nil, nil, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Len(t, result.Txs, 1)
 
 		// query for non existing tx
 		result, err = c.TxSearch(context.Background(), fmt.Sprintf("tx.hash='%X'", anotherTxHash), false, nil, nil, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Len(t, result.Txs, 0)
 
 		// query using a compositeKey (see kvstore application)
 		result, err = c.TxSearch(context.Background(), "app.creator='Cosmoshi Netowoko'", false, nil, nil, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
 
 		// query using an index key
 		result, err = c.TxSearch(context.Background(), "app.index_key='index is working'", false, nil, nil, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
 
 		// query using an noindex key
 		result, err = c.TxSearch(context.Background(), "app.noindex_key='index is working'", false, nil, nil, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, len(result.Txs), 0, "expected a lot of transactions")
 
 		// query using a compositeKey (see kvstore application) and height
 		result, err = c.TxSearch(context.Background(),
 			"app.creator='Cosmoshi Netowoko' AND tx.height<10000", true, nil, nil, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
 
 		// query a non existing tx with page 1 and txsPerPage 1
 		perPage := 1
 		result, err = c.TxSearch(context.Background(), "app.creator='Cosmoshi Neetowoko'", true, nil, &perPage, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Len(t, result.Txs, 0)
 
 		// check sorting
 		result, err = c.TxSearch(context.Background(), "tx.height >= 1", false, nil, nil, "asc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		for k := 0; k < len(result.Txs)-1; k++ {
 			require.LessOrEqual(t, result.Txs[k].Height, result.Txs[k+1].Height)
 			require.LessOrEqual(t, result.Txs[k].Index, result.Txs[k+1].Index)
 		}
 
 		result, err = c.TxSearch(context.Background(), "tx.height >= 1", false, nil, nil, "desc")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		for k := 0; k < len(result.Txs)-1; k++ {
 			require.GreaterOrEqual(t, result.Txs[k].Height, result.Txs[k+1].Height)
 			require.GreaterOrEqual(t, result.Txs[k].Index, result.Txs[k+1].Index)

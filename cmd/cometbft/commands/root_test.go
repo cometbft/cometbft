@@ -142,12 +142,12 @@ func TestRootConfig(t *testing.T) {
 		// XXX: path must match cfg.defaultConfigPath
 		configFilePath := filepath.Join(root, "config")
 		err := cmtos.EnsureDir(configFilePath, 0o700)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// write the non-defaults to a different path
 		// TODO: support writing sub configs so we can test that too
 		err = WriteConfigVals(configFilePath, cvals)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		rootCmd := testRootCmd()
 		cmd := cli.PrepareBaseCmd(rootCmd, "CMT", root)

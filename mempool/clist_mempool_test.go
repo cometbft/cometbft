@@ -287,7 +287,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// Calling update to remove the first transaction from the mempool.
 	// This call also triggers the mempool to recheck its remaining transactions.
 	err = mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// The mempool has now sent its requests off to the client to be rechecked
 	// and is waiting for the corresponding callbacks to be called.
@@ -412,7 +412,7 @@ func TestSerialReap(t *testing.T) {
 	appConnCon, _ := cc.NewABCIConsensusClient()
 	appConnCon.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "consensus"))
 	err := appConnCon.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	cacheMap := make(map[string]struct{})
 	deliverTxsRange := func(start, end int) {
@@ -617,7 +617,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	appConnCon, _ := cc.NewABCIConsensusClient()
 	appConnCon.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "consensus"))
 	err = appConnCon.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		if err := appConnCon.Stop(); err != nil {
 			t.Error(err)
@@ -758,13 +758,13 @@ func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Tx
 		rfb.Txs[i] = tx
 	}
 	_, e := app.FinalizeBlock(context.Background(), rfb)
-	require.Equal(t, nil, e)
+	require.NoError(t, e)
 	mp.Lock()
 	e = mp.FlushAppConn()
-	require.Equal(t, nil, e)
+	require.NoError(t, e)
 	_, e = app.Commit(context.Background(), &abci.CommitRequest{})
-	require.Equal(t, nil, e)
+	require.NoError(t, e)
 	e = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
-	require.Equal(t, nil, e)
+	require.NoError(t, e)
 	mp.Unlock()
 }

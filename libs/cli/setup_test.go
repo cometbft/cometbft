@@ -71,7 +71,7 @@ func TestSetupConfig(t *testing.T) {
 	cval1 := "fubble"
 	conf1 := tempDir()
 	err := WriteConfigVals(conf1, map[string]string{"boo": cval1})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	cases := []struct {
 		args        []string
@@ -130,11 +130,11 @@ func TestSetupUnmarshal(t *testing.T) {
 	cval1, cval2 := "someone", "else"
 	conf1 := tempDir()
 	err := WriteConfigVals(conf1, map[string]string{"name": cval1})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// even with some ignored fields, should be no problem
 	conf2 := tempDir()
 	err = WriteConfigVals(conf2, map[string]string{"name": cval2, "foo": "bar"})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// unused is not declared on a flag and remains from base
 	base := DemoConfig{

@@ -33,7 +33,7 @@ func TestNetAddress_String(t *testing.T) {
 
 func TestNewNetAddress(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Panics(t, func() {
 		NewNetAddress("", tcpAddr)
@@ -153,7 +153,7 @@ func TestNetAddressProperties(t *testing.T) {
 
 	for _, tc := range testCases {
 		addr, err := NewNetAddressString(tc.addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		err = addr.Valid()
 		if tc.valid {
@@ -183,10 +183,10 @@ func TestNetAddressReachabilityTo(t *testing.T) {
 
 	for _, tc := range testCases {
 		addr, err := NewNetAddressString(tc.addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		other, err := NewNetAddressString(tc.other)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		assert.Equal(t, tc.reachability, addr.ReachabilityTo(other))
 	}

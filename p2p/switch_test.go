@@ -485,7 +485,7 @@ func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
 	require.NoError(t, err)
 
 	err = sw.DialPeerWithAddress(rp.Addr())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 
 	p := sw.Peers().List()[0]

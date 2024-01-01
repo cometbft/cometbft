@@ -70,7 +70,7 @@ func TestMakeGenesisStateNilValidators(t *testing.T) {
 	}
 	require.Nil(t, doc.ValidateAndComplete())
 	state, err := sm.MakeGenesisState(&doc)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 0, len(state.Validators.Validators))
 	require.Equal(t, 0, len(state.NextValidators.Validators))
 }
@@ -964,7 +964,7 @@ func TestManyValidatorChangesSaveLoad(t *testing.T) {
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates(responses.ValidatorUpdates)
 	require.NoError(t, err)
 	state, err = sm.UpdateState(state, blockID, &header, responses, validatorUpdates)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	nextHeight := state.LastBlockHeight + 1
 	err = stateStore.Save(state)
 	require.NoError(t, err)

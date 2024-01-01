@@ -34,7 +34,7 @@ func (b *buffer) Bytes() []byte {
 	return b.next.Bytes()
 }
 
-func (b *buffer) Close() error {
+func (*buffer) Close() error {
 	return nil
 }
 
@@ -176,7 +176,7 @@ func (c *evilConn) Write(data []byte) (n int, err error) {
 	}
 }
 
-func (c *evilConn) Close() error {
+func (*evilConn) Close() error {
 	return nil
 }
 

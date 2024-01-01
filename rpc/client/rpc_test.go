@@ -133,7 +133,7 @@ func TestDumpConsensusState(t *testing.T) {
 		nc, ok := c.(client.NetworkClient)
 		require.True(t, ok, "%d", i)
 		cons, err := nc.DumpConsensusState(context.Background())
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 		assert.NotEmpty(t, cons.RoundState)
 		assert.Empty(t, cons.Peers)
 	}
@@ -359,7 +359,7 @@ func TestBroadcastTxCommit(t *testing.T) {
 	for i, c := range GetClients() {
 		_, _, tx := MakeTxKV()
 		bres, err := c.BroadcastTxCommit(context.Background(), tx)
-		require.Nil(err, "%d: %+v", i, err)
+		require.NoError(err, "%d: %+v", i, err)
 		require.True(bres.CheckTx.IsOK())
 		require.True(bres.TxResult.IsOK())
 
@@ -478,9 +478,9 @@ func TestTx(t *testing.T) {
 			ptx, err := c.Tx(context.Background(), tc.hash, tc.prove)
 
 			if !tc.valid {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				require.Nil(t, err, "%+v", err)
+				require.NoError(t, err, "%+v", err)
 				assert.EqualValues(t, txHeight, ptx.Height)
 				assert.EqualValues(t, tx, ptx.Tx)
 				assert.Zero(t, ptx.Index)

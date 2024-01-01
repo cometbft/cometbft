@@ -73,7 +73,7 @@ func TestRPCParams(t *testing.T) {
 		}
 
 		recv := new(types.RPCResponse)
-		assert.Nil(t, json.Unmarshal(blob, recv), "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
+		require.NoError(t, json.Unmarshal(blob, recv), "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
 		assert.NotEqual(t, recv, new(types.RPCResponse), "#%d: not expecting a blank RPCResponse", i)
 		assert.Equal(t, tt.expectedID, recv.ID, "#%d: expected ID not matched in RPCResponse", i)
 		if tt.wantErr == "" {
@@ -122,13 +122,13 @@ func TestJSONRPCID(t *testing.T) {
 
 		recv := new(types.RPCResponse)
 		err = json.Unmarshal(blob, recv)
-		assert.Nil(t, err, "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
+		require.NoError(t, err, "#%d: expecting successful parsing of an RPCResponse:\nblob: %s", i, blob)
 		if !tt.wantErr {
 			assert.NotEqual(t, recv, new(types.RPCResponse), "#%d: not expecting a blank RPCResponse", i)
 			assert.Equal(t, tt.expectedID, recv.ID, "#%d: expected ID not matched in RPCResponse", i)
 			assert.Nil(t, recv.Error, "#%d: not expecting an error", i)
 		} else {
-			assert.True(t, recv.Error.Code < 0, "#%d: not expecting a positive JSONRPC code", i)
+			assert.Less(t, recv.Error.Code, 0, "#%d: not expecting a positive JSONRPC code", i)
 		}
 	}
 }
@@ -273,5 +273,5 @@ func TestRPCResponseCache(t *testing.T) {
 	_, err = io.ReadAll(res.Body)
 
 	res.Body.Close()
-	require.Nil(t, err, "reading from the body should not give back an error")
+	require.NoError(t, err, "reading from the body should not give back an error")
 }

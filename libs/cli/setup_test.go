@@ -191,7 +191,7 @@ func TestSetupUnmarshal(t *testing.T) {
 		viper.Reset()
 		args := append([]string{cmd.Use}, tc.args...)
 		err := RunWithArgs(cmd, args, tc.env)
-		require.Nil(t, err, i)
+		require.NoError(t, err, i)
 		assert.Equal(t, tc.expected, cfg, i)
 	}
 }
@@ -224,7 +224,7 @@ func TestSetupTrace(t *testing.T) {
 		viper.Reset()
 		args := append([]string{cmd.Use}, tc.args...)
 		stdout, stderr, err := RunCaptureWithArgs(cmd, args, tc.env)
-		require.NotNil(t, err, i)
+		require.Error(t, err, i)
 		require.Equal(t, "", stdout, i)
 		require.NotEqual(t, "", stderr, i)
 		msg := strings.Split(stderr, "\n")

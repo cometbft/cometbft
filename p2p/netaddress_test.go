@@ -118,7 +118,7 @@ func TestNewNetAddressString(t *testing.T) {
 					assert.Equal(t, tc.expected, addr.String())
 				}
 			} else {
-				require.NotNil(t, err, tc.addr)
+				require.Error(t, err, tc.addr)
 			}
 		})
 	}

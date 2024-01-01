@@ -46,7 +46,7 @@ func TestProvider(t *testing.T) {
 		chainID := genDoc.ChainID
 
 		c, err := rpchttp.New(rpcAddr + path)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		p := lighthttp.NewWithClient(chainID, c)
 		require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestProvider(t *testing.T) {
 		assert.True(t, lb.Height >= 10)
 
 		// let's check this is valid somehow
-		assert.Nil(t, lb.ValidateBasic(chainID))
+		assert.NoError(t, lb.ValidateBasic(chainID))
 
 		// historical queries now work :)
 		lb, err = p.LightBlock(context.Background(), 0)

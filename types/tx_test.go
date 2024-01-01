@@ -70,8 +70,8 @@ func TestValidTxProof(t *testing.T) {
 			assert.EqualValues(t, root, proof.RootHash, "%d: %d", h, i)
 			assert.EqualValues(t, tx, proof.Data, "%d: %d", h, i)
 			assert.EqualValues(t, txs[i].Hash(), proof.Leaf(), "%d: %d", h, i)
-			assert.Nil(t, proof.Validate(root), "%d: %d", h, i)
-			assert.NotNil(t, proof.Validate([]byte("foobar")), "%d: %d", h, i)
+			require.NoError(t, proof.Validate(root), "%d: %d", h, i)
+			require.Error(t, proof.Validate([]byte("foobar")), "%d: %d", h, i)
 
 			// read-write must also work
 			var (
@@ -86,8 +86,8 @@ func TestValidTxProof(t *testing.T) {
 			require.NoError(t, err)
 
 			p2, err = TxProofFromProto(pb2)
-			if assert.Nil(t, err, "%d: %d: %+v", h, i, err) {
-				assert.Nil(t, p2.Validate(root), "%d: %d", h, i)
+			if assert.NoError(t, err, "%d: %d: %+v", h, i, err) {
+				require.NoError(t, p2.Validate(root), "%d: %d", h, i)
 			}
 		}
 	}
@@ -109,7 +109,7 @@ func testTxProofUnchangable(t *testing.T) {
 	proof := txs.Proof(i)
 
 	// make sure it is valid to start with
-	assert.Nil(t, proof.Validate(root))
+	require.NoError(t, proof.Validate(root))
 	pbProof := proof.ToProto()
 	bin, err := pbProof.Marshal()
 	require.NoError(t, err)

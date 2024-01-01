@@ -28,14 +28,14 @@ func TestCacheRemove(t *testing.T) {
 		cache.Push(txBytes)
 
 		// make sure its added to both the linked list and the map
-		require.Equal(t, i+1, len(cache.cacheMap))
+		require.Len(t, cache.cacheMap, i+1)
 		require.Equal(t, i+1, cache.list.Len())
 	}
 
 	for i := 0; i < numTxs; i++ {
 		cache.Remove(txs[i])
 		// make sure its removed from both the map and the linked list
-		require.Equal(t, numTxs-(i+1), len(cache.cacheMap))
+		require.Len(t, cache.cacheMap, numTxs-(i+1))
 		require.Equal(t, numTxs-(i+1), cache.list.Len())
 	}
 }
@@ -106,7 +106,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 			counter++
 			node = node.Next()
 		}
-		require.Equal(t, len(tc.txsInCache), counter,
+		require.Len(t, tc.txsInCache, counter,
 			"cache smaller than expected on testcase %d", tcIndex)
 		mp.Flush()
 	}

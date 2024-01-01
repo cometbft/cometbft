@@ -856,7 +856,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	updatedState, err = sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
 	require.NoError(t, err)
 	// only the first added val (not the genesis val) should be left
-	assert.Equal(t, 11, len(updatedState.NextValidators.Validators))
+	require.Len(t, updatedState.NextValidators.Validators, 11)
 
 	// call update state until the effect for the 3rd added validator
 	// being proposer for a long time after the genesis validator left wears off:
@@ -1092,7 +1092,7 @@ func TestStateProto(t *testing.T) {
 		if !tt.expPass1 {
 			require.Error(t, err)
 		} else {
-			assert.NoError(t, err, tt.testName)
+			require.NoError(t, err, tt.testName)
 		}
 
 		smt, err := sm.FromProto(pbs)

@@ -544,7 +544,7 @@ func TestMempool_CheckTxChecksTxSize(t *testing.T) {
 		bv := gogotypes.BytesValue{Value: tx}
 		bz, err2 := bv.Marshal()
 		require.NoError(t, err2)
-		require.Equal(t, len(bz), proto.Size(&bv), caseString)
+		require.Len(t, bz, proto.Size(&bv), caseString)
 
 		if !testCase.err {
 			require.NoError(t, err, caseString)

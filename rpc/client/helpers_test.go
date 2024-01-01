@@ -60,7 +60,7 @@ func TestWaitForHeight(t *testing.T) {
 	err = client.WaitForHeight(r, 12, myWaiter)
 	require.NoError(err)
 	// we called status once to check
-	require.Equal(5, len(r.Calls))
+	require.Len(r.Calls, 5)
 
 	pre := r.Calls[3]
 	require.NoError(pre.Error)

@@ -36,7 +36,7 @@ func TestStatus(t *testing.T) {
 	assert.EqualValues(10, status.SyncInfo.LatestBlockHeight)
 
 	// make sure recorder works properly
-	require.Equal(1, len(r.Calls))
+	require.Len(r.Calls, 1)
 	rs := r.Calls[0]
 	assert.Equal("status", rs.Name)
 	assert.Nil(rs.Args)

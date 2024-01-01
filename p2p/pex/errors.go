@@ -54,7 +54,7 @@ func (err ErrAddrBookPrivateSrc) Error() string {
 	return fmt.Sprintf("Cannot add peer coming from private peer with address %v", err.Src)
 }
 
-func (err ErrAddrBookPrivateSrc) PrivateAddr() bool {
+func (ErrAddrBookPrivateSrc) PrivateAddr() bool {
 	return true
 }
 

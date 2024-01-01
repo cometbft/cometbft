@@ -811,8 +811,8 @@ func TestLargeGenesisValidator(t *testing.T) {
 	_, addedOldVal := oldState.NextValidators.GetByAddress(firstAddedValPubKey.Address())
 	_, addedNewVal := state.NextValidators.GetByAddress(firstAddedValPubKey.Address())
 	// expect large negative proposer priority for both (genesis validator decreased, 2nd validator increased):
-	assert.True(t, oldGenesisVal.ProposerPriority > newGenesisVal.ProposerPriority)
-	assert.True(t, addedOldVal.ProposerPriority < addedNewVal.ProposerPriority)
+	assert.Greater(t, oldGenesisVal.ProposerPriority, newGenesisVal.ProposerPriority)
+	assert.Less(t, addedOldVal.ProposerPriority, addedNewVal.ProposerPriority)
 
 	// add 10 validators with the same voting power as the one added directly after genesis:
 	for i := 0; i < 10; i++ {

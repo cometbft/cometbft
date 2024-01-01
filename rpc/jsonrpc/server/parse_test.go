@@ -158,7 +158,7 @@ func TestParseJSONRPC(t *testing.T) {
 		data := []byte(tc.raw)
 		vals, err := jsonParamsToArgs(call, data)
 		if tc.fail {
-			require.NoError(t, err, i)
+			require.Error(t, err)
 		} else {
 			require.NoError(t, err, "%s: %+v", i, err)
 			if assert.Len(t, vals, 2, i) {

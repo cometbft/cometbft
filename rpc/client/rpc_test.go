@@ -598,7 +598,7 @@ func TestTxSearch(t *testing.T) {
 		// query using an noindex key
 		result, err = c.TxSearch(context.Background(), "app.noindex_key='index is working'", false, nil, nil, "asc")
 		require.NoError(t, err)
-		require.Empty(t, result.Txs, "expected a lot of transactions")
+		require.Empty(t, result.Txs)
 
 		// query using a compositeKey (see kvstore application) and height
 		result, err = c.TxSearch(context.Background(),

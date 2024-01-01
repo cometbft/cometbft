@@ -67,8 +67,9 @@ func TestUnmarshallResponses(t *testing.T) {
 		assert.Equal(*response, a)
 	}
 	response := &RPCResponse{}
-	err := json.Unmarshal([]byte(`{"jsonrpc":"2.0","id":true,"result":{"Value":"hello"}}`), response)
+	err := json.Unmarshal([]byte(`{"jsonrpc":"2.0","id":"valid_id","result":{"Value":"hello"}}`), response)
 	require.NoError(t, err)
+
 }
 
 func TestRPCError(t *testing.T) {

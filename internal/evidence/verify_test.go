@@ -267,10 +267,10 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 
 	evList := types.EvidenceList{ev}
 	err = pool.CheckEvidence(evList)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
-	require.Len(t, pendingEvs, 1)
+	assert.Equal(t, 1, len(pendingEvs))
 }
 
 func TestVerifyLightClientAttack_Amnesia(t *testing.T) {

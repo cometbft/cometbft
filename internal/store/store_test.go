@@ -852,14 +852,14 @@ func TestLoadBlockMeta(t *testing.T) {
 	// Initially no contents.
 	// 1. Requesting for a non-existent blockMeta shouldn't fail
 	res, _, panicErr := doFn(loadMeta)
-	require.NotNil(t, panicErr, "expecting a non-nil panic")
+	require.NoError(t, panicErr)
 	require.Nil(t, res, "a non-existent blockMeta should return nil")
 
 	// 2. Next save a corrupted blockMeta then try to load it
 	err := db.Set(calcBlockMetaKey(height), []byte("CometBFT-Meta"))
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadMeta)
-	require.NotNil(t, panicErr, "expecting a non-nil panic")
+	require.Error(t, panicErr)
 	require.Contains(t, panicErr.Error(), "unmarshal to cmtproto.BlockMeta")
 
 	// 3. A good blockMeta serialized and saved to the DB should be retrievable

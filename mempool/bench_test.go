@@ -93,7 +93,7 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 		b.Fatal(err)
 	}
 	e := mp.FlushAppConn()
-	require.NoError(b, nil, e)
+	require.NotErrorIs(b, nil, e)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

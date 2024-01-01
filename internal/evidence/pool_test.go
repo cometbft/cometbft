@@ -69,7 +69,7 @@ func TestEvidencePoolBasic(t *testing.T) {
 	}()
 
 	// evidence seen but not yet committed:
-	assert.NoError(t, pool.AddEvidence(ev))
+	require.NoError(t, pool.AddEvidence(ev))
 
 	select {
 	case <-evAdded:

@@ -60,7 +60,6 @@ linters:
     - tparallel
     - wsl
     - scopelint
-    - revive
 
 issues:
   exclude-rules:
@@ -186,8 +185,7 @@ linters-settings:
         disabled: true
       - name: defer
         disabled: true
-      # Disabled in favour of unparam.
-      - name: unused-parameter
+      - name: unused-parameter        # Disabled in favour of unparam.
         disabled: true
       - name: unchecked-type-assertion
         disabled: true

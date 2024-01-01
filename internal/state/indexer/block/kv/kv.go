@@ -464,7 +464,6 @@ LOOP:
 
 		select {
 		case <-ctx.Done():
-			break
 
 		default:
 		}
@@ -497,7 +496,6 @@ LOOP:
 
 			select {
 			case <-ctx.Done():
-				break
 
 			default:
 			}
@@ -682,7 +680,6 @@ func (idx *BlockerIndexer) match(
 
 			select {
 			case <-ctx.Done():
-				break
 
 			default:
 			}

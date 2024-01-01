@@ -32,7 +32,7 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestConfigValidateBasic(t *testing.T) {
 	cfg := config.DefaultConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	// tamper with timeout_propose
 	cfg.Consensus.TimeoutPropose = -10 * time.Second
@@ -62,7 +62,7 @@ func TestTLSConfiguration(t *testing.T) {
 
 func TestBaseConfigValidateBasic(t *testing.T) {
 	cfg := config.TestBaseConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	// tamper with log format
 	cfg.LogFormat = "invalid"
@@ -71,7 +71,7 @@ func TestBaseConfigValidateBasic(t *testing.T) {
 
 func TestRPCConfigValidateBasic(t *testing.T) {
 	cfg := config.TestRPCConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	fieldsToTest := []string{
 		"MaxOpenConnections",
@@ -91,7 +91,7 @@ func TestRPCConfigValidateBasic(t *testing.T) {
 
 func TestP2PConfigValidateBasic(t *testing.T) {
 	cfg := config.TestP2PConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	fieldsToTest := []string{
 		"MaxNumInboundPeers",
@@ -111,7 +111,7 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 
 func TestMempoolConfigValidateBasic(t *testing.T) {
 	cfg := config.TestMempoolConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	fieldsToTest := []string{
 		"Size",
@@ -137,7 +137,7 @@ func TestStateSyncConfigValidateBasic(t *testing.T) {
 
 func TestBlockSyncConfigValidateBasic(t *testing.T) {
 	cfg := config.TestBlockSyncConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	// tamper with version
 	cfg.Version = "v1"
@@ -191,7 +191,7 @@ func TestConsensusConfig_ValidateBasic(t *testing.T) {
 
 func TestInstrumentationConfigValidateBasic(t *testing.T) {
 	cfg := config.TestInstrumentationConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	// tamper with maximum open connections
 	cfg.MaxOpenConnections = -1

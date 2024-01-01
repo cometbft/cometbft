@@ -141,7 +141,7 @@ func checkResult(t *testing.T, taskResultSet *TaskResultSet, index int,
 	case pnk != nil:
 		assert.Contains(t, taskResult.Error.Error(), pnk, taskName)
 	default:
-		assert.Nil(t, taskResult.Error, taskName)
+		require.NoError(t, taskResult.Error, taskName)
 	}
 }
 

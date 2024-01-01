@@ -431,9 +431,9 @@ func testProposerFreq(t *testing.T, caseNum int, valSet *types.ValidatorSet) {
 		// https://github.com/cwgoes/tm-proposer-idris
 		// and inferred to generalize to N-1
 		bound := N - 1
-		require.True(
+		require.LessOrEqual(
 			t,
-			abs <= bound,
+			abs, bound,
 			fmt.Sprintf("Case %d val %d (%d): got %d, expected %d", caseNum, i, N, gotFreq, expectFreq),
 		)
 	}

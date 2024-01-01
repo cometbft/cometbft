@@ -108,10 +108,12 @@ func BenchmarkRandBytes100KiB(b *testing.B) {
 }
 
 func BenchmarkRandBytes1MiB(b *testing.B) {
+	b.Helper()
 	benchmarkRandBytes(b, 1024*1024)
 }
 
 func benchmarkRandBytes(b *testing.B, n int) {
+	b.Helper()
 	for i := 0; i < b.N; i++ {
 		_ = Bytes(n)
 	}

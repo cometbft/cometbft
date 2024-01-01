@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"os"
 	"path/filepath"
+
 	// "sync".
 	"testing"
 	"time"
@@ -237,6 +238,7 @@ func nBytes(n int) []byte {
 }
 
 func benchmarkWalDecode(b *testing.B, n int) {
+	b.Helper()
 	// registerInterfacesOnce()
 
 	buf := new(bytes.Buffer)

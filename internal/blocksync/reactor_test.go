@@ -215,9 +215,9 @@ func TestNoBlockResponse(t *testing.T) {
 	for _, tt := range tests {
 		block, _ := reactorPairs[1].reactor.store.LoadBlock(tt.height)
 		if tt.existent {
-			assert.True(t, block != nil)
+			assert.NotNil(t, block)
 		} else {
-			assert.True(t, block == nil)
+			assert.Nil(t, block)
 		}
 	}
 }

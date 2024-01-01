@@ -154,7 +154,7 @@ func TestMempoolRmBadTx(t *testing.T) {
 	res, err := app.FinalizeBlock(context.Background(), &abci.FinalizeBlockRequest{Txs: [][]byte{txBytes}})
 	require.NoError(t, err)
 	assert.False(t, res.TxResults[0].IsErr())
-	assert.Greater(t, len(res.AppHash), 0)
+	assert.NotEmpty(t, res.AppHash)
 
 	_, err = app.Commit(context.Background(), &abci.CommitRequest{})
 	require.NoError(t, err)

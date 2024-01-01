@@ -227,5 +227,5 @@ func TestVsa2022_100(t *testing.T) {
 	// the nil root
 	var root []byte
 
-	assert.NotNil(t, ProofOperators{op}.Verify(root, "/"+string(key), [][]byte{value}))
+	require.Error(t, ProofOperators{op}.Verify(root, "/"+string(key), [][]byte{value}))
 }

@@ -74,7 +74,7 @@ func TestRootHome(t *testing.T) {
 		idxString := "idx: " + strconv.Itoa(i)
 
 		err := testSetup(t, root, tc.args, tc.env)
-		require.Nil(t, err, idxString)
+		require.NoError(t, err, idxString)
 
 		assert.Equal(t, tc.root, config.RootDir, idxString)
 		assert.Equal(t, tc.root, config.P2P.RootDir, idxString)
@@ -109,7 +109,7 @@ func TestRootFlagsEnv(t *testing.T) {
 		idxString = "idx: " + idxString
 		defer clearConfig(t, root)
 		err := testSetup(t, root, tc.args, tc.env)
-		require.Nil(t, err, idxString)
+		require.NoError(t, err, idxString)
 
 		assert.Equal(t, tc.logLevel, config.LogLevel, idxString)
 	}
@@ -155,7 +155,7 @@ func TestRootConfig(t *testing.T) {
 		// run with the args and env
 		tc.args = append([]string{rootCmd.Use}, tc.args...)
 		err = cli.RunWithArgs(cmd, tc.args, tc.env)
-		require.Nil(t, err, idxString)
+		require.NoError(t, err, idxString)
 
 		assert.Equal(t, tc.logLvl, config.LogLevel, idxString)
 	}

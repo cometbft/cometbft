@@ -33,7 +33,7 @@ func TestHeaderEvents(t *testing.T) {
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.
 				err := c.Start()
-				require.Nil(t, err, "%d: %+v", i, err)
+				require.NoError(t, err, "%d: %+v", i, err)
 				t.Cleanup(func() {
 					if err := c.Stop(); err != nil {
 						t.Error(err)

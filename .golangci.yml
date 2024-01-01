@@ -21,6 +21,7 @@ linters:
     - funlen
     - gochecknoglobals
     - goimports 
+    - gocritic
     - gochecknoinits
     - gocognit
     - gocyclo

@@ -133,12 +133,12 @@ func (af *AutoFile) Write(b []byte) (n int, err error) {
 
 	if af.file == nil {
 		if err = af.openFile(); err != nil {
-			return 0, err
+			return
 		}
 	}
 
 	n, err = af.file.Write(b)
-	return n, err
+	return
 }
 
 // Sync commits the current contents of the file to stable storage. Typically,

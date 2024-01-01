@@ -31,7 +31,7 @@ func parseFlags() (headPath string, chopSize int64, limitSize int64, version boo
 	}
 	chopSize = parseBytesize(chopSizeStr)
 	limitSize = parseBytesize(limitSizeStr)
-	return headPath, chopSize, limitSize, version
+	return
 }
 
 type fmtLogger struct{}

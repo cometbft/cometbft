@@ -205,15 +205,15 @@ func (w *byteBufferWAL) WriteSync(m WALMessage) error {
 	return w.Write(m)
 }
 
-func (*byteBufferWAL) FlushAndSync() error { return nil }
+func (w *byteBufferWAL) FlushAndSync() error { return nil }
 
-func (*byteBufferWAL) SearchForEndHeight(
+func (w *byteBufferWAL) SearchForEndHeight(
 	int64,
 	*WALSearchOptions,
 ) (rd io.ReadCloser, found bool, err error) {
 	return nil, false, nil
 }
 
-func (*byteBufferWAL) Start() error { return nil }
-func (*byteBufferWAL) Stop() error  { return nil }
-func (*byteBufferWAL) Wait()        {}
+func (w *byteBufferWAL) Start() error { return nil }
+func (w *byteBufferWAL) Stop() error  { return nil }
+func (w *byteBufferWAL) Wait()        {}

@@ -221,7 +221,7 @@ func (m *Monitor) SetTransferSize(bytes int64) {
 // sample is done.
 func (m *Monitor) update(n int) (now time.Duration) {
 	if !m.active {
-		return m.sLast
+		return
 	}
 	if now = clock(); n > 0 {
 		m.tLast = now
@@ -243,7 +243,7 @@ func (m *Monitor) update(n int) (now time.Duration) {
 		}
 		m.reset(now)
 	}
-	return now
+	return
 }
 
 // reset clears the current sample state in preparation for the next sample.

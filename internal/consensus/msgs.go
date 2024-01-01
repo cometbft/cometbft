@@ -227,15 +227,15 @@ func MsgFromProto(p proto.Message) (Message, error) {
 		if err != nil {
 			return nil, cmterrors.ErrMsgToProto{MessageName: "VoteSetBits", Err: err}
 		}
-		bitarray := new(bits.BitArray)
-		bitarray.FromProto(&msg.Votes)
+		bits := new(bits.BitArray)
+		bits.FromProto(&msg.Votes)
 
 		pb = &VoteSetBitsMessage{
 			Height:  msg.Height,
 			Round:   msg.Round,
 			Type:    msg.Type,
 			BlockID: *bi,
-			Votes:   bitarray,
+			Votes:   bits,
 		}
 	default:
 		return nil, ErrConsensusMessageNotRecognized{msg}

@@ -330,11 +330,7 @@ func (a *addrBook) MarkGood(id p2p.ID) {
 		return
 	}
 	ka.markGood()
-	if ka.isNew() {
-		if err := a.moveToOld(ka); err != nil {
-			a.Logger.Error("Error moving address to old", "err", err)
-		}
-	}
+
 }
 
 // MarkAttempt implements AddrBook - it marks that an attempt was made to connect to the address.
@@ -749,15 +745,13 @@ func (a *addrBook) expireNew(bucketIdx int) {
 // Promotes an address from new to old. If the destination bucket is full,
 // demote the oldest one to a "new" bucket.
 // TODO: Demote more probabilistically?
-func (a *addrBook) moveToOld(ka *knownAddress) error {
+func (a *addrBook) moveToOld(ka *knownAddress) {
 	// Sanity check
 	if ka.isOld() {
 		a.Logger.Error(fmt.Sprintf("Cannot promote address that is already old %v", ka))
-		return nil
 	}
 	if len(ka.Buckets) == 0 {
 		a.Logger.Error(fmt.Sprintf("Cannot promote address that isn't in any new buckets %v", ka))
-		return nil
 	}
 
 	// Remove from all (new) buckets.
@@ -785,7 +779,6 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 			a.Logger.Error(fmt.Sprintf("Could not re-add ka %v to oldBucketIdx %v", ka, oldBucketIdx))
 		}
 	}
-	return nil
 }
 
 func (a *addrBook) removeAddress(addr *p2p.NetAddress) {

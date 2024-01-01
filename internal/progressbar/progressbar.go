@@ -36,6 +36,6 @@ func (bar *Bar) Play(cur int64) {
 	fmt.Printf("\r[%-50s]%3d%% %8d/%d", bar.rate, bar.percent, bar.cur, bar.total)
 }
 
-func (*Bar) Finish() {
+func (bar *Bar) Finish() {
 	fmt.Println()
 }

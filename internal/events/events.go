@@ -68,11 +68,11 @@ func NewEventSwitch() EventSwitch {
 	return evsw
 }
 
-func (*eventSwitch) OnStart() error {
+func (evsw *eventSwitch) OnStart() error {
 	return nil
 }
 
-func (*eventSwitch) OnStop() {}
+func (evsw *eventSwitch) OnStop() {}
 
 func (evsw *eventSwitch) AddListenerForEvent(listenerID, event string, cb EventCallback) error {
 	// Get/Create eventCell and listener.
@@ -158,7 +158,7 @@ func (evsw *eventSwitch) FireEvent(event string, data EventData) {
 	eventCell.FireEvent(data)
 }
 
-// -----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 // eventCell handles keeping track of listener callbacks for a given event.
 type eventCell struct {
@@ -199,7 +199,7 @@ func (cell *eventCell) FireEvent(data EventData) {
 	}
 }
 
-// -----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 type EventCallback func(data EventData)
 

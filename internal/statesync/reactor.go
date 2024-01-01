@@ -61,7 +61,7 @@ func NewReactor(
 }
 
 // GetChannels implements p2p.Reactor.
-func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (r *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  SnapshotChannel,
@@ -81,7 +81,7 @@ func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 }
 
 // OnStart implements p2p.Reactor.
-func (*Reactor) OnStart() error {
+func (r *Reactor) OnStart() error {
 	return nil
 }
 

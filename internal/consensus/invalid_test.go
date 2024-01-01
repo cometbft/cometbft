@@ -13,7 +13,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// ----------------------------------------------
+//----------------------------------------------
 // byzantine failures
 
 // one byz val sends a precommit for a random block at each height

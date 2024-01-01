@@ -257,7 +257,6 @@ func (spn *ProofNode) FlattenAunts() [][]byte {
 		case spn.Right != nil:
 			innerHashes = append(innerHashes, spn.Right.Hash)
 		default:
-
 		}
 		spn = spn.Parent
 	}

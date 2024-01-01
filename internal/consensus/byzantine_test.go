@@ -30,7 +30,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// ----------------------------------------------
+//----------------------------------------------
 // byzantine failures
 
 // Byzantine node sends two different prevotes (nil and blockID) to the same validator
@@ -452,7 +452,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	}
 }
 
-// -------------------------------
+//-------------------------------
 // byzantine consensus functions
 
 func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64, round int32, cs *State, sw *p2p.Switch) {
@@ -552,7 +552,7 @@ func sendProposalAndParts(
 	})
 }
 
-// ----------------------------------------
+//----------------------------------------
 // byzantine consensus reactor
 
 type ByzantineReactor struct {

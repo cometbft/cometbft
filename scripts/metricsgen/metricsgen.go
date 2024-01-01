@@ -171,8 +171,6 @@ func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 	var pkg *ast.Package
 	// TODO(thane): Figure out a more readable way of implementing this.
 
-	for pkgName, pkg = range d {
-	}
 	td := TemplateData{
 		Package: pkgName,
 	}

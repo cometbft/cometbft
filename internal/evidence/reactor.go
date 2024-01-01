@@ -5,7 +5,7 @@ import (
 	"time"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	"github.com/cometbft/cometbft/internal/clist"
+	clist "github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
@@ -50,7 +50,7 @@ func (evR *Reactor) SetLogger(l log.Logger) {
 
 // GetChannels implements Reactor.
 // It returns the list of channels for this reactor.
-func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (evR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  EvidenceChannel,

@@ -573,8 +573,8 @@ func testAddrBookAddressSelection(t *testing.T, bookSize int) {
 
 func TestMultipleAddrBookAddressSelection(t *testing.T) {
 	// test books with smaller size, < N
-	const N = 32
-	for bookSize := 1; bookSize < N; bookSize++ {
+	const n = 32
+	for bookSize := 1; bookSize < n; bookSize++ {
 		testAddrBookAddressSelection(t, bookSize)
 	}
 

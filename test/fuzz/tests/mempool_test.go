@@ -9,7 +9,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/config"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
-	mempool "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/mempool"
 )
 
 func FuzzMempool(f *testing.F) {

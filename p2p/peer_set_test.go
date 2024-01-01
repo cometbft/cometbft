@@ -86,7 +86,7 @@ func TestPeerSetAddRemoveOne(t *testing.T) {
 		peerAtEnd := peerList[i]
 		removed := peerSet.Remove(peerAtEnd)
 		assert.True(t, removed)
-		assert.Equal(t, false, peerSet.Has(peerAtEnd.ID()), "#%d: failed to remove item at end", i)
+		assert.False(t, false, peerSet.Has(peerAtEnd.ID()), "#%d: failed to remove item at end", i)
 		assert.Equal(t, i, peerSet.Size(), "#%d: differing sizes after peerSet.Remove(atEndPeer)", i)
 	}
 }

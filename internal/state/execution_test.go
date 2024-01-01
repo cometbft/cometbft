@@ -740,7 +740,7 @@ func TestEmptyPrepareProposal(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	_, err = blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.NoError(t, err)
@@ -785,7 +785,7 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.NoError(t, err)
@@ -840,7 +840,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.NoError(t, err)
@@ -896,7 +896,7 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.Nil(t, block)
@@ -953,7 +953,7 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.Nil(t, block)
@@ -1007,7 +1007,7 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.Nil(t, block)
@@ -1101,7 +1101,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 			require.NoError(t, err)
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 			pa, _ := state.Validators.GetByIndex(0)
-			lastCommit, _, _ := makeValidCommit(testCase.height-1, blockID, state.Validators, privVals)
+			lastCommit, _ := makeValidCommit(testCase.height-1, blockID, state.Validators, privVals)
 			stripSignatures(lastCommit)
 			if testCase.expectPanic {
 				require.Panics(t, func() {

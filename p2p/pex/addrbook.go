@@ -766,10 +766,8 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 	ka.BucketType = bucketTypeOld
 
 	// Try to add it to its oldBucket destination.
-	oldBucketIdx, err := a.calcOldBucket(ka.Addr)
-	if err != nil {
-		return err
-	}
+	oldBucketIdx := a.calcOldBucket(ka.Addr)
+
 	added := a.addToOldBucket(ka, oldBucketIdx)
 	if !added {
 		// No room; move the oldest to a new bucket
@@ -840,7 +838,7 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) int {
 }
 
 // hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets.
-func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
+func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) int {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(addr.String())...)
@@ -856,7 +854,7 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
 
 	hash2 := a.hash(data2)
 	result := int(binary.BigEndian.Uint64(hash2) % oldBucketCount)
-	return result, nil
+	return result
 }
 
 // Return a string representing the network group of this address.

@@ -230,7 +230,7 @@ func TestMempoolUpdate(t *testing.T) {
 		err := mp.Update(1, []types.Tx{tx1}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
 		_, err = mp.CheckTx(tx1)
-		if assert.Error(t, err) {
+		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 			assert.Equal(t, ErrTxInCache, err)
 		}
 	}
@@ -336,13 +336,13 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 
 		// a must be added to the cache
 		_, err = mp.CheckTx(a)
-		if assert.Error(t, err) {
+		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 			assert.Equal(t, ErrTxInCache, err)
 		}
 
 		// b must remain in the cache
 		_, err = mp.CheckTx(b)
-		if assert.Error(t, err) {
+		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 			assert.Equal(t, ErrTxInCache, err)
 		}
 	}
@@ -599,7 +599,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 	tx4 := kvstore.NewRandomTx(10)
 	_, err = mp.CheckTx(tx4)
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.IsType(t, ErrMempoolIsFull{}, err)
 	}
 
@@ -645,7 +645,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.EqualValues(t, 20, mp.SizeBytes())
 	require.Error(t, mp.RemoveTxByKey(types.Tx([]byte{0x07}).Key()))
 	assert.EqualValues(t, 20, mp.SizeBytes())
-	assert.NoError(t, mp.RemoveTxByKey(types.Tx(tx1).Key()))
+	require.NoError(t, mp.RemoveTxByKey(types.Tx(tx1).Key()))
 	assert.EqualValues(t, 10, mp.SizeBytes())
 }
 

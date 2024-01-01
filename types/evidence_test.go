@@ -177,7 +177,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 		Timestamp:           header.Time,
 		ByzantineValidators: valSet.Validators[:nValidators/2],
 	}
-	assert.NoError(t, lcae.ValidateBasic())
+	require.NoError(t, lcae.ValidateBasic())
 
 	testCases := []struct {
 		testName         string
@@ -221,7 +221,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			if tc.expectErr {
 				require.Error(t, lcae.ValidateBasic(), tc.testName)
 			} else {
-				assert.NoError(t, lcae.ValidateBasic(), tc.testName)
+				require.NoError(t, lcae.ValidateBasic(), tc.testName)
 			}
 		})
 	}
@@ -230,7 +230,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 func TestMockEvidenceValidateBasic(t *testing.T) {
 	goodEvidence, err := NewMockDuplicateVoteEvidence(int64(1), time.Now(), "mock-chain-id")
 	require.NoError(t, err)
-	assert.Nil(t, goodEvidence.ValidateBasic())
+	require.NoError(t, goodEvidence.ValidateBasic())
 }
 
 func makeHeaderRandom() *Header {
@@ -297,7 +297,7 @@ func TestEvidenceProto(t *testing.T) {
 				require.Error(t, err, tt.testName)
 				return
 			}
-			assert.NoError(t, err, tt.testName)
+			require.NoError(t, err, tt.testName)
 
 			evi, err := EvidenceFromProto(pb)
 			if tt.fromProtoErr {

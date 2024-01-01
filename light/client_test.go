@@ -957,7 +957,7 @@ func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 
 	// remaining witnesses don't have light block -> error
 	_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(2*time.Hour))
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, light.ErrFailedHeaderCrossReferencing, err)
 	}
 	// witness does not have a light block -> left in the list

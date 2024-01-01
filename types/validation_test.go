@@ -104,7 +104,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 
 			err := valSet.VerifyCommit(chainID, blockID, height, commit)
 			if tc.expErr {
-				if assert.Error(t, err, "VerifyCommit") {
+				if assert.Error(t, err, "VerifyCommit") { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommit")
 				}
 			} else {
@@ -117,7 +117,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				err = valSet.VerifyCommitLight(chainID, blockID, height, commit)
 			}
 			if tc.expErr {
-				if assert.Error(t, err, "VerifyCommitLight") {
+				if assert.Error(t, err, "VerifyCommitLight") { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommitLight")
 				}
 			} else {
@@ -135,7 +135,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel)
 			}
 			if expErr {
-				if assert.Error(t, err, "VerifyCommitLightTrusting") {
+				if assert.Error(t, err, "VerifyCommitLightTrusting") { //nolint:testifylint // require.Error doesn't work with the conditional here
 					errStr := tc.description2
 					if len(errStr) == 0 {
 						errStr = tc.description
@@ -143,7 +143,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 					assert.Contains(t, err.Error(), errStr, "VerifyCommitLightTrusting")
 				}
 			} else {
-				assert.NoError(t, err, "VerifyCommitLightTrusting")
+				require.NoError(t, err, "VerifyCommitLightTrusting")
 			}
 		}
 		t.Run(tc.description+"/"+strconv.FormatBool(countAllSignatures), f)
@@ -175,7 +175,7 @@ func TestValidatorSet_VerifyCommit_CheckAllSignatures(t *testing.T) {
 	commit.Signatures[3] = vote.CommitSig()
 
 	err = valSet.VerifyCommit(chainID, blockID, h, commit)
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Contains(t, err.Error(), "wrong signature (#3)")
 	}
 }
@@ -302,7 +302,7 @@ func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 
 	err = valSet.VerifyCommitLightTrusting("test_chain_id", extCommit.ToCommit(),
 		cmtmath.Fraction{Numerator: 25, Denominator: 55})
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Contains(t, err.Error(), "int64 overflow")
 	}
 }

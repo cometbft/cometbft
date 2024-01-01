@@ -299,12 +299,12 @@ func TestVoteVerify(t *testing.T) {
 	vote.ValidatorAddress = pubkey.Address()
 
 	err = vote.Verify("test_chain_id", ed25519.GenPrivKey().PubKey())
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, ErrVoteInvalidValidatorAddress, err)
 	}
 
 	err = vote.Verify("test_chain_id", pubkey)
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, ErrVoteInvalidSignature, err)
 	}
 }

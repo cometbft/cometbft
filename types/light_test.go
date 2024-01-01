@@ -51,7 +51,7 @@ func TestLightBlockValidateBasic(t *testing.T) {
 		if tc.expectErr {
 			require.Error(t, err, tc.name)
 		} else {
-			assert.NoError(t, err, tc.name)
+			require.NoError(t, err, tc.name)
 		}
 	}
 }
@@ -95,14 +95,14 @@ func TestLightBlockProtobuf(t *testing.T) {
 		if tc.toProtoErr {
 			require.Error(t, err, tc.name)
 		} else {
-			assert.NoError(t, err, tc.name)
+			require.NoError(t, err, tc.name)
 		}
 
 		lb, err := LightBlockFromProto(lbp)
 		if tc.toBlockErr {
 			require.Error(t, err, tc.name)
 		} else {
-			assert.NoError(t, err, tc.name)
+			require.NoError(t, err, tc.name)
 			assert.Equal(t, lightBlock, lb)
 		}
 	}

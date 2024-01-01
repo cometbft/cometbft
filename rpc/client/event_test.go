@@ -135,8 +135,8 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 				default:
 					panic(fmt.Sprintf("Unknown broadcastMethod %s", broadcastMethod))
 				}
-				if assert.NoError(t, err) {
-					assert.Equal(t, abci.CodeTypeOK, txres.Code)
+				if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+					require.Equal(t, abci.CodeTypeOK, txres.Code)
 				}
 			}()
 

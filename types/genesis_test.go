@@ -73,7 +73,7 @@ func TestGenesisGood(t *testing.T) {
 		}`,
 	)
 	_, err := GenesisDocFromJSON(genDocBytes)
-	assert.NoError(t, err, "expected no error for good genDoc json")
+	require.NoError(t, err, "expected no error for good genDoc json")
 
 	pubkey := ed25519.GenPrivKey().PubKey()
 	// create a base gendoc from struct
@@ -82,11 +82,11 @@ func TestGenesisGood(t *testing.T) {
 		Validators: []GenesisValidator{{pubkey.Address(), pubkey, 10, "myval"}},
 	}
 	genDocBytes, err = cmtjson.Marshal(baseGenDoc)
-	assert.NoError(t, err, "error marshaling genDoc")
+	require.NoError(t, err, "error marshaling genDoc")
 
 	// test base gendoc and check consensus params were filled
 	genDoc, err := GenesisDocFromJSON(genDocBytes)
-	assert.NoError(t, err, "expected no error for valid genDoc json")
+	require.NoError(t, err, "expected no error for valid genDoc json")
 	assert.NotNil(t, genDoc.ConsensusParams, "expected consensus params to be filled in")
 
 	// check validator's address is filled
@@ -94,14 +94,14 @@ func TestGenesisGood(t *testing.T) {
 
 	// create json with consensus params filled
 	genDocBytes, err = cmtjson.Marshal(genDoc)
-	assert.NoError(t, err, "error marshaling genDoc")
+	require.NoError(t, err, "error marshaling genDoc")
 	genDoc, err = GenesisDocFromJSON(genDocBytes)
-	assert.NoError(t, err, "expected no error for valid genDoc json")
+	require.NoError(t, err, "expected no error for valid genDoc json")
 
 	// test with invalid consensus params
 	genDoc.ConsensusParams.Block.MaxBytes = 0
 	genDocBytes, err = cmtjson.Marshal(genDoc)
-	assert.NoError(t, err, "error marshaling genDoc")
+	require.NoError(t, err, "error marshaling genDoc")
 	_, err = GenesisDocFromJSON(genDocBytes)
 	require.Error(t, err, "expected error for genDoc json with block size of 0")
 

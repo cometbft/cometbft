@@ -210,7 +210,7 @@ func TestEvidencePoolUpdate(t *testing.T) {
 
 	// b) If we try to check this evidence again it should fail because it has already been committed
 	err = pool.CheckEvidence(types.EvidenceList{ev})
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, evidence.ErrEvidenceAlreadyCommitted.Error(), err.(*types.ErrInvalidEvidence).Reason.Error())
 	}
 }
@@ -235,7 +235,7 @@ func TestVerifyDuplicatedEvidenceFails(t *testing.T) {
 		val, evidenceChainID)
 	require.NoError(t, err)
 	err = pool.CheckEvidence(types.EvidenceList{ev, ev})
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, evidence.ErrDuplicateEvidence.Error(), err.(*types.ErrInvalidEvidence).Reason.Error())
 	}
 }

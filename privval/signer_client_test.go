@@ -433,6 +433,6 @@ func TestSignerUnexpectedResponse(t *testing.T) {
 		want := &types.Vote{Timestamp: ts, Type: types.PrecommitType}
 
 		e := tc.signerClient.SignVote(tc.chainID, want.ToProto())
-		assert.ErrorIs(t, e, cmterrors.ErrRequiredField{Field: "response"})
+		require.ErrorIs(t, e, cmterrors.ErrRequiredField{Field: "response"})
 	}
 }

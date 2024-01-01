@@ -231,7 +231,7 @@ func TestSignProposal(t *testing.T) {
 
 	for _, c := range cases {
 		err = privVal.SignProposal("mychainid", c.ToProto())
-		assert.Error(err, "expected error on signing conflicting proposal")
+		require.Error(t, err, "expected error on signing conflicting proposal")
 	}
 
 	// try signing a proposal with a different time stamp

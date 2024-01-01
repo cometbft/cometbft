@@ -390,7 +390,7 @@ func TestBufferCapacity(t *testing.T) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
 	err = s.Publish(ctx, "Ironclad")
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, context.DeadlineExceeded, err)
 	}
 }

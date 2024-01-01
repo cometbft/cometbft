@@ -162,7 +162,7 @@ func TestPprofServer(t *testing.T) {
 
 	n, err := DefaultNewNode(config, log.TestingLogger())
 	require.NoError(t, err)
-	assert.NoError(t, n.Start())
+	require.NoError(t, n.Start())
 	defer func() {
 		require.NoError(t, n.Stop())
 	}()

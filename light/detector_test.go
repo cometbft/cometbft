@@ -60,7 +60,7 @@ func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
 
 	// Check verification returns an error.
 	_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, light.ErrLightClientAttack, err)
 	}
 
@@ -143,7 +143,7 @@ func TestLightClientAttackEvidence_Equivocation(t *testing.T) {
 
 		// Check verification returns an error.
 		_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
-		if assert.Error(t, err) {
+		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 			assert.Equal(t, light.ErrLightClientAttack, err)
 		}
 
@@ -257,7 +257,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 	// Now assert that verification returns an error. We craft the light clients time to be a little ahead of the chain
 	// to allow a window for the attack to manifest itself.
 	_, err = c.Update(ctx, bTime.Add(time.Duration(forgedHeight)*time.Minute))
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, light.ErrLightClientAttack, err)
 	}
 
@@ -274,7 +274,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 	// We attempt the same call but now the supporting witness has a block which should
 	// immediately conflict in time with the primary
 	_, err = c.VerifyLightBlockAtHeight(ctx, forgedHeight, bTime.Add(time.Duration(forgedHeight)*time.Minute))
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, light.ErrLightClientAttack, err)
 	}
 	assert.True(t, witness.HasEvidence(evAgainstPrimary))

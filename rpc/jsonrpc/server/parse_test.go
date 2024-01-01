@@ -19,7 +19,7 @@ func TestParseJSONMap(t *testing.T) {
 	// naive is float,string
 	var p1 map[string]interface{}
 	err := json.Unmarshal(input, &p1)
-	if assert.NoError(t, err) {
+	if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		h, ok := p1["height"].(float64)
 		if assert.True(t, ok, "%#v", p1["height"]) {
 			assert.EqualValues(t, 22, h)
@@ -37,7 +37,7 @@ func TestParseJSONMap(t *testing.T) {
 		"height": &tmp,
 	}
 	err = json.Unmarshal(input, &p2)
-	if assert.NoError(t, err) {
+	if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		h, ok := p2["height"].(float64)
 		if assert.True(t, ok, "%#v", p2["height"]) {
 			assert.EqualValues(t, 22, h)
@@ -59,7 +59,7 @@ func TestParseJSONMap(t *testing.T) {
 		Value:  &bytes.HexBytes{},
 	}
 	err = json.Unmarshal(input, &p3)
-	if assert.NoError(t, err) {
+	if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		h, ok := p3.Height.(*int)
 		if assert.True(t, ok, "%#v", p3.Height) {
 			assert.Equal(t, 22, *h)
@@ -76,7 +76,7 @@ func TestParseJSONMap(t *testing.T) {
 		Height int            `json:"height"`
 	}{}
 	err = json.Unmarshal(input, &p4)
-	if assert.NoError(t, err) {
+	if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.EqualValues(t, 22, p4.Height)
 		assert.EqualValues(t, []byte{0x12, 0x34}, p4.Value)
 	}
@@ -85,16 +85,16 @@ func TestParseJSONMap(t *testing.T) {
 	// dynamic keys on map, and we can deserialize to the desired types
 	var p5 map[string]*json.RawMessage
 	err = json.Unmarshal(input, &p5)
-	if assert.NoError(t, err) {
+	if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		var h int
 		err = json.Unmarshal(*p5["height"], &h)
-		if assert.NoError(t, err) {
+		if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 			assert.Equal(t, 22, h)
 		}
 
 		var v bytes.HexBytes
 		err = json.Unmarshal(*p5["value"], &v)
-		if assert.NoError(t, err) {
+		if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 			assert.Equal(t, bytes.HexBytes{0x12, 0x34}, v)
 		}
 	}
@@ -106,7 +106,7 @@ func TestParseJSONArray(t *testing.T) {
 	// naive is float,string
 	var p1 []interface{}
 	err := json.Unmarshal(input, &p1)
-	if assert.NoError(t, err) {
+	if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		v, ok := p1[0].(string)
 		if assert.True(t, ok, "%#v", p1[0]) {
 			assert.EqualValues(t, "1234", v)
@@ -121,7 +121,7 @@ func TestParseJSONArray(t *testing.T) {
 	tmp := 0
 	p2 := []interface{}{&bytes.HexBytes{}, &tmp}
 	err = json.Unmarshal(input, &p2)
-	if assert.NoError(t, err) {
+	if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		v, ok := p2[0].(*bytes.HexBytes)
 		if assert.True(t, ok, "%#v", p2[0]) {
 			assert.EqualValues(t, []byte{0x12, 0x34}, *v)

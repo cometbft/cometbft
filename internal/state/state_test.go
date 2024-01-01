@@ -206,7 +206,7 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 	for i, tc := range cases {
 		h := int64(i + 1)
 		res, err := stateStore.LoadFinalizeBlockResponse(h)
-		if assert.NoError(err, "%d", i) {
+		if assert.NoError(err, "%d", i) { //nolint:testifylint // require.Error doesn't work with the conditional here
 			t.Log(res)
 			responses := &abci.FinalizeBlockResponse{
 				TxResults: tc.expected,

@@ -145,7 +145,7 @@ func TestWALWrite(t *testing.T) {
 	err = wal.Write(msgInfo{
 		Msg: msg,
 	})
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Contains(t, err.Error(), "msg is too big")
 	}
 }

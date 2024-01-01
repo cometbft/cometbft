@@ -220,7 +220,7 @@ func TestABCIQuery(t *testing.T) {
 		require.NoError(t, err)
 		res, err := c.ABCIQuery(context.Background(), "/key", k)
 		qres := res.Response
-		if assert.NoError(t, err) && assert.True(t, qres.IsOK()) {
+		if assert.NoError(t, err) && assert.True(t, qres.IsOK()) { //nolint:testifylint // require.Error doesn't work with the conditional here
 			assert.EqualValues(t, v, qres.Value)
 		}
 	}
@@ -490,7 +490,7 @@ func TestTx(t *testing.T) {
 				// time to verify the proof
 				proof := ptx.Proof
 				if tc.prove && assert.EqualValues(t, tx, proof.Data) {
-					assert.NoError(t, proof.Proof.Verify(proof.RootHash, txHash))
+					require.NoError(t, proof.Proof.Verify(proof.RootHash, txHash))
 				}
 			}
 		}
@@ -572,7 +572,7 @@ func TestTxSearch(t *testing.T) {
 
 		// time to verify the proof
 		if assert.EqualValues(t, find.Tx, ptx.Proof.Data) {
-			assert.NoError(t, ptx.Proof.Proof.Verify(ptx.Proof.RootHash, find.Hash))
+			require.NoError(t, ptx.Proof.Proof.Verify(ptx.Proof.RootHash, find.Hash))
 		}
 
 		// query by height

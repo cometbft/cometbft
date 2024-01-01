@@ -157,7 +157,7 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			err := light.VerifyAdjacent(header, tc.newHeader, tc.newVals, tc.trustingPeriod, tc.now, maxClockDrift)
 			switch {
-			case tc.expErr != nil && assert.Error(t, err):
+			case tc.expErr != nil && assert.Error(t, err): //nolint:testifylint // require.Error doesn't work with the logic here
 				assert.Equal(t, tc.expErr, err)
 			case tc.expErrText != "":
 				assert.Contains(t, err.Error(), tc.expErrText)
@@ -273,7 +273,7 @@ func TestVerifyNonAdjacentHeaders(t *testing.T) {
 				light.DefaultTrustLevel)
 
 			switch {
-			case tc.expErr != nil && assert.Error(t, err):
+			case tc.expErr != nil && assert.Error(t, err): //nolint:testifylint // require.Error doesn't work with the logic here
 				assert.Equal(t, tc.expErr, err)
 			case tc.expErrText != "":
 				assert.Contains(t, err.Error(), tc.expErrText)

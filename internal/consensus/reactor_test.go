@@ -900,7 +900,7 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
+			if tc.expErr != "" && assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 				assert.Contains(t, err.Error(), tc.expErr)
 			}
 		})
@@ -933,7 +933,7 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
+			if tc.expErr != "" && assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 				assert.Contains(t, err.Error(), tc.expErr)
 			}
 		})
@@ -1091,7 +1091,7 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
+			if tc.expErr != "" && assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 				assert.Contains(t, err.Error(), tc.expErr)
 			}
 		})

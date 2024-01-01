@@ -71,7 +71,7 @@ func TestNodeInfoValidate(t *testing.T) {
 	// test case passes
 	ni = testNodeInfo(nodeKey.ID(), name).(DefaultNodeInfo)
 	ni.Channels = channels
-	assert.NoError(t, ni.Validate())
+	require.NoError(t, ni.Validate())
 
 	for _, tc := range testCases {
 		ni := testNodeInfo(nodeKey.ID(), name).(DefaultNodeInfo)
@@ -81,7 +81,7 @@ func TestNodeInfoValidate(t *testing.T) {
 		if tc.expectErr {
 			require.Error(t, err, tc.testName)
 		} else {
-			assert.NoError(t, err, tc.testName)
+			require.NoError(t, err, tc.testName)
 		}
 	}
 }
@@ -96,12 +96,12 @@ func TestNodeInfoCompatible(t *testing.T) {
 	// test NodeInfo is compatible
 	ni1 := testNodeInfo(nodeKey1.ID(), name).(DefaultNodeInfo)
 	ni2 := testNodeInfo(nodeKey2.ID(), name).(DefaultNodeInfo)
-	assert.NoError(t, ni1.CompatibleWith(ni2))
+	require.NoError(t, ni1.CompatibleWith(ni2))
 
 	// add another channel; still compatible
 	ni2.Channels = append(ni2.Channels, newTestChannel)
 	assert.True(t, ni2.HasChannel(newTestChannel))
-	assert.NoError(t, ni1.CompatibleWith(ni2))
+	require.NoError(t, ni1.CompatibleWith(ni2))
 
 	// wrong NodeInfo type is not compatible
 	_, netAddr := CreateRoutableAddr()

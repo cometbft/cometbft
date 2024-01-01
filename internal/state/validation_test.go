@@ -327,7 +327,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 			block := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
 
 			err := blockExec.ValidateBlock(state, block)
-			if assert.Error(t, err) {
+			if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 				_, ok := err.(*types.ErrEvidenceOverflow)
 				require.True(t, ok, "expected error to be of type ErrEvidenceOverflow at height %d but got %v", height, err)
 			}

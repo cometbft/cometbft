@@ -78,7 +78,7 @@ func TestParseFraction(t *testing.T) {
 		if tc.err {
 			require.Error(t, err, idx)
 		} else {
-			assert.NoError(t, err, idx)
+			require.Nil(t, err, idx)
 		}
 		assert.Equal(t, tc.exp, output, idx)
 	}

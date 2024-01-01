@@ -260,7 +260,7 @@ func TestMakeSecretConnection(t *testing.T) {
 			privKey := ed25519.GenPrivKey()
 			_, err := MakeSecretConnection(tc.conn, privKey)
 			if tc.errMsg != "" {
-				if assert.Error(t, err) {
+				if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Contains(t, err.Error(), tc.errMsg)
 				}
 			} else {

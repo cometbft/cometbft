@@ -114,11 +114,11 @@ func TestNewNetAddressString(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			addr, err := NewNetAddressString(tc.addr)
 			if tc.correct {
-				if assert.NoError(t, err, tc.addr) {
+				if assert.NoError(t, err, tc.addr) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Equal(t, tc.expected, addr.String())
 				}
 			} else {
-				assert.NotNil(t, err, tc.addr)
+				require.NotNil(t, err, tc.addr)
 			}
 		})
 	}

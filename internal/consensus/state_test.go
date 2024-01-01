@@ -2633,7 +2633,7 @@ func TestEmitNewValidBlockEventOnCommitWithoutBlock(t *testing.T) {
 	ensureNewValidBlock(validBlockCh, height, round)
 
 	rs := cs1.GetRoundState()
-	assert.Equal(t, rs.Step, cstypes.RoundStepCommit) //nolint:testifycheck // this will tell us to reverse the items beinc compared no matter what
+	assert.Equal(t, rs.Step, cstypes.RoundStepCommit) //nolint:testifylint // this will tell us to reverse the items beinc compared no matter what
 	assert.Nil(t, rs.ProposalBlock)
 	assert.True(t, rs.ProposalBlockParts.Header().Equals(propBlockParts.Header()))
 }

@@ -786,7 +786,7 @@ func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, s
 	)
 
 	for _, addr := range addrs {
-		addrType := 0
+		var addrType int
 		if book.IsGood(addr) {
 			addrType = 2
 		} else {

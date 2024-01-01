@@ -42,7 +42,7 @@ func TestResetValidator(t *testing.T) {
 	voteType := types.PrevoteType
 	randBytes := cmtrand.Bytes(tmhash.Size)
 	blockID := types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}}
-	vote := newVote(privVal.Key.Address, 0, height, round, voteType, blockID)
+	vote := newVote(privVal.Key.Address, height, round, voteType, blockID)
 	err := privVal.SignVote("mychainid", vote.ToProto())
 	require.NoError(t, err, "expected no error signing vote")
 
@@ -162,7 +162,7 @@ func TestSignVote(t *testing.T) {
 	voteType := types.PrevoteType
 
 	// sign a vote for first time
-	vote := newVote(privVal.Key.Address, 0, height, round, voteType, block1)
+	vote := newVote(privVal.Key.Address, height, round, voteType, block1)
 	v := vote.ToProto()
 	err := privVal.SignVote("mychainid", v)
 	require.NoError(t, err, "expected no error signing vote")
@@ -173,10 +173,10 @@ func TestSignVote(t *testing.T) {
 
 	// now try some bad votes
 	cases := []*types.Vote{
-		newVote(privVal.Key.Address, 0, height, round-1, voteType, block1),   // round regression
-		newVote(privVal.Key.Address, 0, height-1, round, voteType, block1),   // height regression
-		newVote(privVal.Key.Address, 0, height-2, round+4, voteType, block1), // height regression and different round
-		newVote(privVal.Key.Address, 0, height, round, voteType, block2),     // different block
+		newVote(privVal.Key.Address, height, round-1, voteType, block1),   // round regression
+		newVote(privVal.Key.Address, height-1, round, voteType, block1),   // height regression
+		newVote(privVal.Key.Address, height-2, round+4, voteType, block1), // height regression and different round
+		newVote(privVal.Key.Address, height, round, voteType, block2),     // different block
 	}
 
 	for _, c := range cases {
@@ -281,7 +281,7 @@ func TestDifferByTimestamp(t *testing.T) {
 	{
 		voteType := types.PrevoteType
 		blockID := types.BlockID{Hash: randbytes, PartSetHeader: types.PartSetHeader{}}
-		vote := newVote(privVal.Key.Address, 0, height, round, voteType, blockID)
+		vote := newVote(privVal.Key.Address, height, round, voteType, blockID)
 		v := vote.ToProto()
 		err := privVal.SignVote("mychainid", v)
 		require.NoError(t, err, "expected no error signing vote")
@@ -320,7 +320,7 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	voteType := types.PrecommitType
 
 	// We initially sign this vote without an extension
-	vote1 := newVote(privVal.Key.Address, 0, height, round, voteType, block)
+	vote1 := newVote(privVal.Key.Address, height, round, voteType, block)
 	vpb1 := vote1.ToProto()
 
 	err = privVal.SignVote("mychainid", vpb1)
@@ -364,12 +364,12 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	assert.False(t, pubKey.VerifySignature(vesb1, vpb2.ExtensionSignature))
 }
 
-func newVote(addr types.Address, idx int32, height int64, round int32,
+func newVote(addr types.Address, height int64, round int32,
 	typ types.SignedMsgType, blockID types.BlockID,
 ) *types.Vote {
 	return &types.Vote{
 		ValidatorAddress: addr,
-		ValidatorIndex:   idx,
+		ValidatorIndex:   0,
 		Height:           height,
 		Round:            round,
 		Type:             typ,

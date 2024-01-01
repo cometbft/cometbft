@@ -38,7 +38,7 @@ func (ka *knownAddress) isOld() bool {
 	return ka.BucketType == bucketTypeOld
 }
 
-func (ka *knownAddress) isNew() bool {
+func (ka *knownAddress) isNew() bool { //nolint:unused // this is actually used
 	return ka.BucketType == bucketTypeNew
 }
 

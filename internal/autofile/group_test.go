@@ -35,9 +35,9 @@ func destroyTestGroup(t *testing.T, g *Group) {
 	require.NoError(t, err, "Error removing test Group directory")
 }
 
-func assertGroupInfo(t *testing.T, gInfo GroupInfo, minIndex, maxIndex int, totalSize, headSize int64) {
+func assertGroupInfo(t *testing.T, gInfo GroupInfo, maxIndex int, totalSize, headSize int64) {
 	t.Helper()
-	assert.Equal(t, minIndex, gInfo.MinIndex)
+	assert.Equal(t, 0, gInfo.MinIndex)
 	assert.Equal(t, maxIndex, gInfo.MaxIndex)
 	assert.Equal(t, totalSize, gInfo.TotalSize)
 	assert.Equal(t, headSize, gInfo.HeadSize)
@@ -47,7 +47,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	g := createTestGroupWithHeadSizeLimit(t, 1000*1000)
 
 	// At first, there are no files.
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 0, 0)
+	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 0)
 
 	// Write 1000 bytes 999 times.
 	for i := 0; i < 999; i++ {
@@ -56,11 +56,11 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	}
 	err := g.FlushAndSync()
 	require.NoError(t, err)
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 999000, 999000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 0, 999000, 999000)
 
 	// Even calling checkHeadSizeLimit manually won't rotate it.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 999000, 999000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 0, 999000, 999000)
 
 	// Write 1000 more bytes.
 	err = g.WriteLine(cmtrand.Str(999))
@@ -70,7 +70,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 
 	// Calling checkHeadSizeLimit this time rolls it.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 1, 1000000, 0)
+	assertGroupInfo(t, g.ReadGroupInfo(), 1, 1000000, 0)
 
 	// Write 1000 more bytes.
 	err = g.WriteLine(cmtrand.Str(999))
@@ -80,7 +80,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 
 	// Calling checkHeadSizeLimit does nothing.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 1, 1001000, 1000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 1, 1001000, 1000)
 
 	// Write 1000 bytes 999 times.
 	for i := 0; i < 999; i++ {
@@ -89,22 +89,22 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	}
 	err = g.FlushAndSync()
 	require.NoError(t, err)
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 1, 2000000, 1000000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 1, 2000000, 1000000)
 
 	// Calling checkHeadSizeLimit rolls it again.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 2, 2000000, 0)
+	assertGroupInfo(t, g.ReadGroupInfo(), 2, 2000000, 0)
 
 	// Write 1000 more bytes.
 	_, err = g.Head.Write([]byte(cmtrand.Str(999) + "\n"))
 	require.NoError(t, err, "Error appending to head")
 	err = g.FlushAndSync()
 	require.NoError(t, err)
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 2, 2001000, 1000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 2, 2001000, 1000)
 
 	// Calling checkHeadSizeLimit does nothing.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 2, 2001000, 1000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 2, 2001000, 1000)
 
 	// Cleanup
 	destroyTestGroup(t, g)

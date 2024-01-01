@@ -406,7 +406,7 @@ func (vals *ValidatorSet) toBytes() []byte {
 	return bz
 }
 
-func (vals *ValidatorSet) fromBytes(b []byte) *ValidatorSet {
+func (*ValidatorSet) fromBytes(b []byte) *ValidatorSet {
 	pbvs := new(cmtproto.ValidatorSet)
 	err := pbvs.Unmarshal(b)
 	if err != nil {

@@ -233,7 +233,7 @@ func TestRollbackDifferentStateHeight(t *testing.T) {
 
 	_, _, err := state.Rollback(blockStore, stateStore, false)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "statestore height (100) is not one below or equal to blockstore height (102)")
+	require.Equal(t, "statestore height (100) is not one below or equal to blockstore height (102)", err.Error())
 }
 
 func setupStateStore(t *testing.T, height int64) state.Store {

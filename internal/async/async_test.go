@@ -45,8 +45,8 @@ func TestParallel(t *testing.T) {
 		// Good!
 		// }
 	}
-	assert.Equal(t, failedTasks, 0, "No task should have failed")
-	assert.Nil(t, trs.FirstError(), "There should be no errors")
+	assert.Equal(t, 0, failedTasks, "No task should have failed")
+	assert.Nil(t, "There should be no errors", trs.FirstError())
 	assert.Equal(t, 0, trs.FirstValue(), "First value should be 0")
 }
 
@@ -59,22 +59,22 @@ func TestParallelAbort(t *testing.T) {
 	// Create tasks.
 	tasks := []Task{
 		func(i int) (res interface{}, abort bool, err error) {
-			assert.Equal(t, i, 0)
+			assert.Equal(t, 0, i)
 			flow1 <- struct{}{}
 			return 0, false, nil
 		},
 		func(i int) (res interface{}, abort bool, err error) {
-			assert.Equal(t, i, 1)
+			assert.Equal(t, 1, i)
 			flow2 <- <-flow1
 			return 1, false, errors.New("some error")
 		},
 		func(i int) (res interface{}, abort bool, err error) {
-			assert.Equal(t, i, 2)
+			assert.Equal(t, 2, i)
 			flow3 <- <-flow2
 			return 2, true, nil
 		},
 		func(i int) (res interface{}, abort bool, err error) {
-			assert.Equal(t, i, 3)
+			assert.Equal(t, 3, i)
 			<-flow4
 			return 3, false, nil
 		},

@@ -1157,7 +1157,7 @@ func TestValSetApplyUpdatesTestsExecute(t *testing.T) {
 		valSet.applyUpdates(valList)
 
 		// check the new list of validators for proper merge
-		assert.Equal(t, toTestValList(valSet.Validators), tt.expectedVals, "test %v", i)
+		assert.Equal(t, tt.expectedVals, toTestValList(valSet.Validators), "test %v", i)
 	}
 }
 

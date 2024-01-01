@@ -247,7 +247,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	reactorPairs := make([]ReactorPair, 0, 4)
+	reactorPairs := make([]ReactorPair, 4)
 
 	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, maxBlockHeight)
 	reactorPairs[1] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
@@ -290,7 +290,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	reactorPairs[3].reactor.store = otherChain.reactor.store
 
 	lastReactorPair := newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
-	reactorPairs = append(reactorPairs, lastReactorPair)
+	reactorPairs = append(reactorPairs, lastReactorPair) //nolint:makezero // when initializaing with 0, the test breaks.
 
 	switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("BLOCKSYNC", reactorPairs[len(reactorPairs)-1].reactor)

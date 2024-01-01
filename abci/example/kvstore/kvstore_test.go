@@ -24,13 +24,16 @@ func TestKVStoreKV(t *testing.T) {
 
 	kvstore := NewInMemoryApplication()
 	tx := []byte(testKey + ":" + testValue)
-	testKVStore(ctx, t, kvstore, tx, testKey, testValue)
+	testKVStore(ctx, t, kvstore, tx)
 	tx = []byte(testKey + "=" + testValue)
-	testKVStore(ctx, t, kvstore, tx, testKey, testValue)
+	testKVStore(ctx, t, kvstore, tx)
 }
 
-func testKVStore(ctx context.Context, t *testing.T, app types.Application, tx []byte, key, value string) {
+func testKVStore(ctx context.Context, t *testing.T, app types.Application, tx []byte) {
 	t.Helper()
+
+	value := "def"
+	key := "abc"
 	checkTxResp, err := app.CheckTx(ctx, &types.CheckTxRequest{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK})
 	require.NoError(t, err)
 	require.Equal(t, uint32(0), checkTxResp.Code)
@@ -101,7 +104,7 @@ func TestPersistentKVStoreKV(t *testing.T) {
 	kvstore := NewPersistentApplication(t.TempDir())
 	key := testKey
 	value := testValue
-	testKVStore(ctx, t, kvstore, NewTx(key, value), key, value)
+	testKVStore(ctx, t, kvstore, NewTx(key, value))
 }
 
 func TestPersistentKVStoreInfo(t *testing.T) {
@@ -330,9 +333,9 @@ func runClientTests(ctx context.Context, t *testing.T, client abcicli.Client) {
 	t.Helper()
 	// run some tests....
 	tx := []byte(testKey + ":" + testValue)
-	testKVStore(ctx, t, client, tx, testKey, testValue)
+	testKVStore(ctx, t, client, tx)
 	tx = []byte(testKey + "=" + testValue)
-	testKVStore(ctx, t, client, tx, testKey, testValue)
+	testKVStore(ctx, t, client, tx)
 }
 
 func TestTxGeneration(t *testing.T) {

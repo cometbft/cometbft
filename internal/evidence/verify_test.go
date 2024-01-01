@@ -35,7 +35,7 @@ func TestVerifyLightClientAttack_Lunatic(t *testing.T) {
 	attackTime := defaultEvidenceTime.Add(1 * time.Hour)
 	// create valid lunatic evidence
 	ev, trusted, common := makeLunaticEvidence(
-		t, height, commonHeight, totalVals, byzVals, totalVals-byzVals, defaultEvidenceTime, attackTime)
+		t, height, commonHeight, byzVals, totalVals-byzVals, defaultEvidenceTime, attackTime)
 	require.NoError(t, ev.ValidateBasic())
 
 	// good pass -> no error
@@ -56,7 +56,7 @@ func TestVerifyLightClientAttack_Lunatic(t *testing.T) {
 
 	// evidence without enough malicious votes should fail
 	ev, trusted, common = makeLunaticEvidence(
-		t, height, commonHeight, totalVals, byzVals-1, totalVals-byzVals, defaultEvidenceTime, attackTime)
+		t, height, commonHeight, byzVals-1, totalVals-byzVals, defaultEvidenceTime, attackTime)
 	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet,
 		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
 	require.Error(t, err)
@@ -72,7 +72,7 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 	attackTime := defaultEvidenceTime.Add(1 * time.Hour)
 	// create valid lunatic evidence
 	ev, trusted, common := makeLunaticEvidence(
-		t, height, commonHeight, totalVals, byzVals, totalVals-byzVals, defaultEvidenceTime, attackTime)
+		t, height, commonHeight, byzVals, totalVals-byzVals, defaultEvidenceTime, attackTime)
 
 	// now we try to test verification against state
 	state := sm.State{
@@ -142,7 +142,7 @@ func TestVerify_ForwardLunaticAttack(t *testing.T) {
 
 	// create a forward lunatic attack
 	ev, trusted, common := makeLunaticEvidence(
-		t, attackHeight, commonHeight, totalVals, byzVals, totalVals-byzVals, defaultEvidenceTime, attackTime)
+		t, attackHeight, commonHeight, byzVals, totalVals-byzVals, defaultEvidenceTime, attackTime)
 
 	// now we try to test verification against state
 	state := sm.State{
@@ -454,10 +454,11 @@ func TestVerifyDuplicateVoteEvidence(t *testing.T) {
 func makeLunaticEvidence(
 	t *testing.T,
 	height, commonHeight int64,
-	totalVals, byzVals, phantomVals int,
+	byzVals, phantomVals int,
 	commonTime, attackTime time.Time,
 ) (ev *types.LightClientAttackEvidence, trusted *types.LightBlock, common *types.LightBlock) {
 	t.Helper()
+	totalVals := 10
 	commonValSet, commonPrivVals := types.RandValidatorSet(totalVals, defaultVotingPower)
 
 	require.Greater(t, totalVals, byzVals)

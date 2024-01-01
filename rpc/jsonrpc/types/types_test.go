@@ -72,16 +72,25 @@ func TestUnmarshallResponses(t *testing.T) {
 }
 
 func TestRPCError(t *testing.T) {
-	assert.Equal(t, "RPC error 12 - Badness: One worse than a code 11",
-		fmt.Sprintf("%v", &RPCError{
-			Code:    12,
-			Message: "Badness",
-			Data:    "One worse than a code 11",
-		}))
+	// Define the expected errors as variables for clarity and reusability
+	expectedErrorWithData := "RPC error 12 - Badness: One worse than a code 11"
+	expectedErrorWithoutData := "RPC error 12 - Badness"
 
-	assert.Equal(t, "RPC error 12 - Badness",
-		fmt.Sprintf("%v", &RPCError{
-			Code:    12,
-			Message: "Badness",
-		}))
+	// Use the New() method from the assert package for creating an assert object
+	assertion := assert.New(t)
+
+	// Test case with Data field
+	rpcErrorWithData := &RPCError{
+		Code:    12,
+		Message: "Badness",
+		Data:    "One worse than a code 11",
+	}
+	assertion.Equal(expectedErrorWithData, rpcErrorWithData.Error())
+
+	// Test case without Data field
+	rpcErrorWithoutData := &RPCError{
+		Code:    12,
+		Message: "Badness",
+	}
+	assertion.Equal(expectedErrorWithoutData, rpcErrorWithoutData.Error())
 }

@@ -197,7 +197,7 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 		h := int64(i + 1) // last block height, one below what we save
 		responses := &abci.FinalizeBlockResponse{
 			TxResults: tc.added,
-			AppHash:   []byte(fmt.Sprintf("%d", h)),
+			AppHash:   []byte(strconv.Itoa(int(h))),
 		}
 		err := stateStore.SaveFinalizeBlockResponse(h, responses)
 		require.NoError(t, err)

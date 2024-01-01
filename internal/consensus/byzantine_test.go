@@ -42,7 +42,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	tickerFunc := newMockTickerFunc(true)
 	appFunc := newKVStore
 
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
 	css := make([]*State, nValidators)
 
 	for i := 0; i < nValidators; i++ {
@@ -54,7 +54,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		defer os.RemoveAll(thisConfig.RootDir)
-		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
+		ensureDir(path.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
@@ -471,7 +471,7 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	proposal1.Signature = p1.Signature
 
 	// some new transactions come in (this ensures that the proposals are different)
-	deliverTxsRange(t, cs, 0, 1)
+	deliverTxsRange(t, cs, 1)
 
 	// Create a new proposal block from state/txs from the mempool.
 	block2, err := cs.createProposalBlock(ctx)

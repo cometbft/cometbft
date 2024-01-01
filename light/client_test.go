@@ -62,7 +62,7 @@ var (
 		valSet,
 	)
 	deadNode      = mockp.NewDeadMock(chainID)
-	largeFullNode = mockp.New(genMockNode(chainID, 10, 3, 0, bTime))
+	largeFullNode = mockp.New(genMockNode(10, 3, 0, bTime))
 )
 
 func TestValidateTrustOptions(t *testing.T) {
@@ -378,7 +378,7 @@ func TestClient_SkippingVerification(t *testing.T) {
 // start from a large light block to make sure that the pivot height doesn't select a height outside
 // the appropriate range.
 func TestClientLargeBisectionVerification(t *testing.T) {
-	veryLargeFullNode := mockp.New(genMockNode(chainID, 100, 3, 0, bTime))
+	veryLargeFullNode := mockp.New(genMockNode(100, 3, 0, bTime))
 	trustedLightBlock, err := veryLargeFullNode.LightBlock(ctx, 5)
 	require.NoError(t, err)
 	c, err := light.NewClient(
@@ -1096,7 +1096,7 @@ func TestClientEnsureValidHeadersAndValSets(t *testing.T) {
 }
 
 func TestClientHandlesContexts(t *testing.T) {
-	p := mockp.New(genMockNode(chainID, 100, 10, 1, bTime))
+	p := mockp.New(genMockNode(100, 10, 1, bTime))
 	genBlock, err := p.LightBlock(ctx, 1)
 	require.NoError(t, err)
 

@@ -323,8 +323,9 @@ func TestVoteString(t *testing.T) {
 	}
 }
 
-func signVote(t *testing.T, pv PrivValidator, chainID string, vote *Vote) {
+func signVote(t *testing.T, pv PrivValidator, vote *Vote) {
 	t.Helper()
+	chainID := "test_chain_id"
 
 	v := vote.ToProto()
 	require.NoError(t, pv.SignVote(chainID, v))
@@ -345,7 +346,7 @@ func TestValidVotes(t *testing.T) {
 		{"good precommit with vote extension", examplePrecommit(), func(v *Vote) { v.Extension = []byte("extension") }},
 	}
 	for _, tc := range testCases {
-		signVote(t, privVal, "test_chain_id", tc.vote)
+		signVote(t, privVal, tc.vote)
 		tc.malleateVote(tc.vote)
 		require.NoError(t, tc.vote.ValidateBasic(), "ValidateBasic for %s", tc.name)
 		require.NoError(t, tc.vote.EnsureExtension(), "EnsureExtension for %s", tc.name)
@@ -370,13 +371,13 @@ func TestInvalidVotes(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		prevote := examplePrevote()
-		signVote(t, privVal, "test_chain_id", prevote)
+		signVote(t, privVal, prevote)
 		tc.malleateVote(prevote)
 		require.Error(t, prevote.ValidateBasic(), "ValidateBasic for %s in invalid prevote", tc.name)
 		require.NoError(t, prevote.EnsureExtension(), "EnsureExtension for %s in invalid prevote", tc.name)
 
 		precommit := examplePrecommit()
-		signVote(t, privVal, "test_chain_id", precommit)
+		signVote(t, privVal, precommit)
 		tc.malleateVote(precommit)
 		require.Error(t, precommit.ValidateBasic(), "ValidateBasic for %s in invalid precommit", tc.name)
 		require.NoError(t, precommit.EnsureExtension(), "EnsureExtension for %s in invalid precommit", tc.name)
@@ -395,7 +396,7 @@ func TestInvalidPrevotes(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		prevote := examplePrevote()
-		signVote(t, privVal, "test_chain_id", prevote)
+		signVote(t, privVal, prevote)
 		tc.malleateVote(prevote)
 		require.Error(t, prevote.ValidateBasic(), "ValidateBasic for %s", tc.name)
 		require.NoError(t, prevote.EnsureExtension(), "EnsureExtension for %s", tc.name)
@@ -417,7 +418,7 @@ func TestInvalidPrecommitExtensions(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		precommit := examplePrecommit()
-		signVote(t, privVal, "test_chain_id", precommit)
+		signVote(t, privVal, precommit)
 		tc.malleateVote(precommit)
 		// ValidateBasic ensures that vote extensions, if present, are well formed
 		require.Error(t, precommit.ValidateBasic(), "ValidateBasic for %s", tc.name)
@@ -442,7 +443,7 @@ func TestEnsureVoteExtension(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		precommit := examplePrecommit()
-		signVote(t, privVal, "test_chain_id", precommit)
+		signVote(t, privVal, precommit)
 		tc.malleateVote(precommit)
 		if tc.expectError {
 			require.Error(t, precommit.EnsureExtension(), "EnsureExtension for %s", tc.name)

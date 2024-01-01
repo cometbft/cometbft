@@ -20,7 +20,7 @@ import (
 // FIXME These tests should not rely on .(*addrBook) assertions
 
 func TestAddrBookPickAddress(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	// 0 addresses
@@ -57,7 +57,7 @@ func TestAddrBookPickAddress(t *testing.T) {
 }
 
 func TestAddrBookSaveLoad(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	// 0 addresses
@@ -92,7 +92,7 @@ func TestAddrBookSaveLoad(t *testing.T) {
 }
 
 func TestAddrBookLookup(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	randAddrs := randNetAddressPairs(t, 100)
@@ -111,7 +111,7 @@ func TestAddrBookLookup(t *testing.T) {
 }
 
 func TestAddrBookPromoteToOld(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	randAddrs := randNetAddressPairs(t, 100)
@@ -155,7 +155,7 @@ func TestAddrBookPromoteToOld(t *testing.T) {
 }
 
 func TestAddrBookHandlesDuplicates(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	book := NewAddrBook(fname, true)
@@ -211,7 +211,7 @@ func randIPv4Address(t *testing.T) *p2p.NetAddress {
 }
 
 func TestAddrBookRemoveAddress(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	book := NewAddrBook(fname, true)
@@ -259,7 +259,7 @@ func TestAddrBookGetSelectionReturnsNilWhenAddrBookIsEmpty(t *testing.T) {
 }
 
 func TestAddrBookGetSelection(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	book := NewAddrBook(fname, true)
@@ -301,7 +301,7 @@ func TestAddrBookGetSelection(t *testing.T) {
 func TestAddrBookGetSelectionWithBias(t *testing.T) {
 	const biasTowardsNewAddrs = 30
 
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	book := NewAddrBook(fname, true)
@@ -384,7 +384,7 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 }
 
 func TestAddrBookHasAddress(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	book := NewAddrBook(fname, true)
@@ -415,7 +415,7 @@ func testCreatePrivateAddrs(t *testing.T, numAddrs int) ([]*p2p.NetAddress, []st
 }
 
 func TestBanBadPeers(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	book := NewAddrBook(fname, true)
@@ -442,7 +442,7 @@ func TestBanBadPeers(t *testing.T) {
 }
 
 func TestAddrBookEmpty(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	book := NewAddrBook(fname, true)
@@ -464,7 +464,7 @@ func TestAddrBookEmpty(t *testing.T) {
 }
 
 func TestPrivatePeers(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	book := NewAddrBook(fname, true)
@@ -591,7 +591,7 @@ func TestMultipleAddrBookAddressSelection(t *testing.T) {
 }
 
 func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
-	fname := createTempFileName("addrbook_test")
+	fname := createTempFileName()
 	defer deleteTempFile(fname)
 
 	// This test creates adds a peer to the address book and marks it good
@@ -719,7 +719,8 @@ func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []*p2p.NetA
 	assert.Equal(t, n, nNew, "new addresses")
 }
 
-func createTempFileName(prefix string) string {
+func createTempFileName() string {
+	prefix := "addrbook_test"
 	f, err := os.CreateTemp("", prefix)
 	if err != nil {
 		panic(err)
@@ -741,7 +742,7 @@ func deleteTempFile(fname string) {
 
 func createAddrBookWithMOldAndNNewAddrs(t *testing.T, nOld, nNew int) (book *addrBook, fname string) {
 	t.Helper()
-	fname = createTempFileName("addrbook_test")
+	fname = createTempFileName()
 
 	book = NewAddrBook(fname, true).(*addrBook)
 	book.SetLogger(log.TestingLogger())

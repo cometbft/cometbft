@@ -110,7 +110,7 @@ func TestPEXReactorRunning(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	assertPeersWithTimeout(t, switches, 10*time.Millisecond, 10*time.Second, N-1)
+	assertPeersWithTimeout(t, switches, 10*time.Second, N-1)
 
 	// stop them
 	for _, s := range switches {
@@ -261,7 +261,7 @@ func TestPEXReactorUsesSeedsIfNeeded(t *testing.T) {
 	defer peer.Stop() //nolint:errcheck // ignore for tests
 
 	// 3. check that the peer connects to seed immediately
-	assertPeersWithTimeout(t, []*p2p.Switch{peer}, 10*time.Millisecond, 3*time.Second, 1)
+	assertPeersWithTimeout(t, []*p2p.Switch{peer}, 3*time.Second, 1)
 }
 
 func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
@@ -287,10 +287,10 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	defer secondPeer.Stop() //nolint:errcheck // ignore for tests
 
 	// 4. check that the second peer connects to seed immediately
-	assertPeersWithTimeout(t, []*p2p.Switch{secondPeer}, 10*time.Millisecond, 3*time.Second, 1)
+	assertPeersWithTimeout(t, []*p2p.Switch{secondPeer}, 3*time.Second, 1)
 
 	// 5. check that the second peer connects to the first peer immediately
-	assertPeersWithTimeout(t, []*p2p.Switch{secondPeer}, 10*time.Millisecond, 1*time.Second, 2)
+	assertPeersWithTimeout(t, []*p2p.Switch{secondPeer}, 1*time.Second, 2)
 }
 
 func TestPEXReactorSeedMode(t *testing.T) {
@@ -537,10 +537,12 @@ func TestPEXReactorDialPeer(t *testing.T) {
 func assertPeersWithTimeout(
 	t *testing.T,
 	switches []*p2p.Switch,
-	checkPeriod, timeout time.Duration,
+	timeout time.Duration,
 	nPeers int,
 ) {
 	t.Helper()
+	checkPeriod := 10 * time.Millisecond
+
 	var (
 		ticker    = time.NewTicker(checkPeriod)
 		remaining = timeout

@@ -249,7 +249,7 @@ func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 	)
 
 	ev, trusted, common := makeLunaticEvidence(t, height, commonHeight,
-		10, 5, 5, defaultEvidenceTime, defaultEvidenceTime.Add(1*time.Hour))
+		5, 5, defaultEvidenceTime, defaultEvidenceTime.Add(1*time.Hour))
 
 	state := sm.State{
 		LastBlockTime:   defaultEvidenceTime.Add(2 * time.Hour),

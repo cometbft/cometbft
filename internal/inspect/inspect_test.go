@@ -88,7 +88,7 @@ func TestBlock(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	resultBlock, err := cli.Block(context.Background(), &testHeight)
@@ -140,7 +140,7 @@ func TestTxSearch(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
@@ -188,7 +188,7 @@ func TestTx(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
@@ -237,7 +237,7 @@ func TestConsensusParams(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	params, err := cli.ConsensusParams(context.Background(), &testHeight)
@@ -287,7 +287,7 @@ func TestBlockResults(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockResults(context.Background(), &testHeight)
@@ -334,7 +334,7 @@ func TestCommit(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.Commit(context.Background(), &testHeight)
@@ -386,7 +386,7 @@ func TestBlockByHash(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockByHash(context.Background(), testHash)
@@ -438,7 +438,7 @@ func TestBlockchain(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockchainInfo(context.Background(), 0, 100)
@@ -490,7 +490,7 @@ func TestValidators(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
@@ -549,7 +549,7 @@ func TestBlockSearch(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
@@ -568,7 +568,9 @@ func TestBlockSearch(t *testing.T) {
 	stateStoreMock.AssertExpectations(t)
 }
 
-func requireConnect(tb testing.TB, addr string, retries int) {
+func requireConnect(tb testing.TB, addr string) {
+	tb.Helper()
+	retries := 20
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
 		tb.Fatalf("malformed address to dial: %s", addr)

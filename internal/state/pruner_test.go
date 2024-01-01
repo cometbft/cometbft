@@ -234,7 +234,7 @@ func TestPruningWithHeight1(t *testing.T) {
 	require.EqualValues(t, 0, bs.Height())
 	require.EqualValues(t, 0, bs.Size())
 
-	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
+	err := initStateStoreRetainHeights(stateStore)
 	require.NoError(t, err)
 
 	obs := newPrunerObserver(1)

@@ -25,7 +25,7 @@ func TestLightClientAttackEvidence_Lunatic(t *testing.T) {
 		primaryValidators = make(map[int64]*types.ValidatorSet, latestHeight)
 	)
 
-	witnessHeaders, witnessValidators, chainKeys := genMockNodeWithKeys(chainID, latestHeight, valSize, 2, bTime)
+	witnessHeaders, witnessValidators, chainKeys := genMockNodeWithKeys(latestHeight, valSize, 2, bTime)
 	witness := mockp.New(chainID, witnessHeaders, witnessValidators)
 	forgedKeys := chainKeys[divergenceHeight-1].ChangeKeys(3) // we change 3 out of the 5 validators (still 2/5 remain)
 	forgedVals := forgedKeys.ToValidators(2, 0)
@@ -105,7 +105,7 @@ func TestLightClientAttackEvidence_Equivocation(t *testing.T) {
 			primaryValidators = make(map[int64]*types.ValidatorSet, latestHeight)
 		)
 		// validators don't change in this network (however we still use a map just for convenience)
-		witnessHeaders, witnessValidators, chainKeys := genMockNodeWithKeys(chainID, latestHeight+2, valSize, 2, bTime)
+		witnessHeaders, witnessValidators, chainKeys := genMockNodeWithKeys(latestHeight+2, valSize, 2, bTime)
 		witness := mockp.New(chainID, witnessHeaders, witnessValidators)
 
 		for height := int64(1); height <= latestHeight; height++ {
@@ -182,7 +182,7 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 		primaryValidators = make(map[int64]*types.ValidatorSet, forgedHeight)
 	)
 
-	witnessHeaders, witnessValidators, chainKeys := genMockNodeWithKeys(chainID, latestHeight, valSize, 2, bTime)
+	witnessHeaders, witnessValidators, chainKeys := genMockNodeWithKeys(latestHeight, valSize, 2, bTime)
 
 	// primary has the exact same headers except it forges one extra header in the future using keys from 2/5ths of
 	// the validators
@@ -306,10 +306,10 @@ func TestLightClientAttackEvidence_ForwardLunatic(t *testing.T) {
 // => light client returns an error upon creation because primary and witness
 // have a different view.
 func TestClientDivergentTraces1(t *testing.T) {
-	primary := mockp.New(genMockNode(chainID, 10, 5, 2, bTime))
+	primary := mockp.New(genMockNode(10, 5, 2, bTime))
 	firstBlock, err := primary.LightBlock(ctx, 1)
 	require.NoError(t, err)
-	witness := mockp.New(genMockNode(chainID, 10, 5, 2, bTime))
+	witness := mockp.New(genMockNode(10, 5, 2, bTime))
 
 	_, err = light.NewClient(
 		ctx,
@@ -332,7 +332,7 @@ func TestClientDivergentTraces1(t *testing.T) {
 // 2. Two out of three nodes don't respond but the third has a header that matches
 // => verification should be successful and all the witnesses should remain.
 func TestClientDivergentTraces2(t *testing.T) {
-	primary := mockp.New(genMockNode(chainID, 10, 5, 2, bTime))
+	primary := mockp.New(genMockNode(10, 5, 2, bTime))
 	firstBlock, err := primary.LightBlock(ctx, 1)
 	require.NoError(t, err)
 	c, err := light.NewClient(
@@ -359,13 +359,13 @@ func TestClientDivergentTraces2(t *testing.T) {
 // 3. witness has the same first header, but different second header
 // => creation should succeed, but the verification should fail.
 func TestClientDivergentTraces3(t *testing.T) {
-	_, primaryHeaders, primaryVals := genMockNode(chainID, 10, 5, 2, bTime)
+	_, primaryHeaders, primaryVals := genMockNode(10, 5, 2, bTime)
 	primary := mockp.New(chainID, primaryHeaders, primaryVals)
 
 	firstBlock, err := primary.LightBlock(ctx, 1)
 	require.NoError(t, err)
 
-	_, mockHeaders, mockVals := genMockNode(chainID, 10, 5, 2, bTime)
+	_, mockHeaders, mockVals := genMockNode(10, 5, 2, bTime)
 	mockHeaders[1] = primaryHeaders[1]
 	mockVals[1] = primaryVals[1]
 	witness := mockp.New(chainID, mockHeaders, mockVals)
@@ -394,13 +394,13 @@ func TestClientDivergentTraces3(t *testing.T) {
 // 4. Witness has a divergent header but can not produce a valid trace to back it up.
 // It should be ignored.
 func TestClientDivergentTraces4(t *testing.T) {
-	_, primaryHeaders, primaryVals := genMockNode(chainID, 10, 5, 2, bTime)
+	_, primaryHeaders, primaryVals := genMockNode(10, 5, 2, bTime)
 	primary := mockp.New(chainID, primaryHeaders, primaryVals)
 
 	firstBlock, err := primary.LightBlock(ctx, 1)
 	require.NoError(t, err)
 
-	_, mockHeaders, mockVals := genMockNode(chainID, 10, 5, 2, bTime)
+	_, mockHeaders, mockVals := genMockNode(10, 5, 2, bTime)
 	witness := primary.Copy(chainID)
 	witness.AddLightBlock(&types.LightBlock{
 		SignedHeader: mockHeaders[10],

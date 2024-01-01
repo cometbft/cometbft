@@ -54,23 +54,23 @@ func TestNodeKeySaveAs(t *testing.T) {
 
 //----------------------------------------------------------
 
-func padBytes(bz []byte, targetBytes int) []byte {
+func padBytes(bz []byte) []byte {
+	targetBytes := 20
 	return append(bz, bytes.Repeat([]byte{0xFF}, targetBytes-len(bz))...)
 }
 
 func TestPoWTarget(t *testing.T) {
-	targetBytes := 20
 	cases := []struct {
 		difficulty uint
 		target     []byte
 	}{
-		{0, padBytes([]byte{}, targetBytes)},
-		{1, padBytes([]byte{127}, targetBytes)},
-		{8, padBytes([]byte{0}, targetBytes)},
-		{9, padBytes([]byte{0, 127}, targetBytes)},
-		{10, padBytes([]byte{0, 63}, targetBytes)},
-		{16, padBytes([]byte{0, 0}, targetBytes)},
-		{17, padBytes([]byte{0, 0, 127}, targetBytes)},
+		{0, padBytes([]byte{})},
+		{1, padBytes([]byte{127})},
+		{8, padBytes([]byte{0})},
+		{9, padBytes([]byte{0, 127})},
+		{10, padBytes([]byte{0, 63})},
+		{16, padBytes([]byte{0, 0})},
+		{17, padBytes([]byte{0, 0, 127})},
 	}
 
 	for _, c := range cases {

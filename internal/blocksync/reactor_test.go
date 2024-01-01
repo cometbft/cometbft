@@ -26,11 +26,13 @@ import (
 
 var config *cfg.Config
 
-func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.GenesisDoc, []types.PrivValidator) {
+func randGenesisDoc() (*types.GenesisDoc, []types.PrivValidator) {
+	minPower := int64(30)
+	numValidators := 1
 	validators := make([]types.GenesisValidator, numValidators)
 	privValidators := make([]types.PrivValidator, numValidators)
 	for i := 0; i < numValidators; i++ {
-		val, privVal := types.RandValidator(randPower, minPower)
+		val, privVal := types.RandValidator(false, minPower)
 		validators[i] = types.GenesisValidator{
 			PubKey: val.PubKey,
 			Power:  val.VotingPower,
@@ -169,7 +171,7 @@ func newReactor(
 func TestNoBlockResponse(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := randGenesisDoc()
 
 	maxBlockHeight := int64(65)
 
@@ -230,12 +232,12 @@ func TestNoBlockResponse(t *testing.T) {
 func TestBadBlockStopsPeer(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := randGenesisDoc()
 
 	maxBlockHeight := int64(148)
 
 	// Other chain needs a different validator set
-	otherGenDoc, otherPrivVals := randGenesisDoc(1, false, 30)
+	otherGenDoc, otherPrivVals := randGenesisDoc()
 	otherChain := newReactor(t, log.TestingLogger(), otherGenDoc, otherPrivVals, maxBlockHeight)
 
 	defer func() {
@@ -245,7 +247,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	reactorPairs := make([]ReactorPair, 4)
+	reactorPairs := make([]ReactorPair, 0, 4)
 
 	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, maxBlockHeight)
 	reactorPairs[1] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
@@ -315,7 +317,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := randGenesisDoc()
 
 	reactorPairs := make([]ReactorPair, 1, 2)
 	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)

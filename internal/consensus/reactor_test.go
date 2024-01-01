@@ -130,7 +130,7 @@ func TestReactorWithEvidence(t *testing.T) {
 	// to unroll unwieldy abstractions. Here we duplicate the code from:
 	// css := randConsensusNet(N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
 
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	for i := 0; i < nValidators; i++ {
@@ -141,7 +141,7 @@ func TestReactorWithEvidence(t *testing.T) {
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		defer os.RemoveAll(thisConfig.RootDir)
-		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
+		ensureDir(path.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})

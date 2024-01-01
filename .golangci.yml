@@ -62,7 +62,8 @@ issues:
         - goimports
         - govet
         - stylecheck
-  max-same-issues: 50
+  max-same-issues: 10000
+  max-issues-per-linter: 10000
 
 linters-settings:
   dogsled:

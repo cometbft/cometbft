@@ -216,7 +216,7 @@ func (hvs *HeightVoteSet) SetPeerMaj23(
 	return voteSet.SetPeerMaj23(types.P2PID(peerID), blockID)
 }
 
-//---------------------------------------------------------
+// ---------------------------------------------------------
 // string and json
 
 func (hvs *HeightVoteSet) String() string {

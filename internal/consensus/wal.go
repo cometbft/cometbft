@@ -28,7 +28,7 @@ const (
 	walDefaultFlushInterval = 2 * time.Second
 )
 
-//--------------------------------------------------------
+// --------------------------------------------------------
 // types and functions for savings consensus messages
 
 // TimedWALMessage wraps WALMessage and adds Time for debugging purposes.
@@ -51,7 +51,7 @@ func init() {
 	cmtjson.RegisterType(EndHeightMessage{}, "tendermint/wal/EndHeightMessage")
 }
 
-//--------------------------------------------------------
+// --------------------------------------------------------
 // Simple write-ahead logger
 
 // WAL is an interface for any write-ahead logger.

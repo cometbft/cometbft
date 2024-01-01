@@ -158,7 +158,7 @@ func (evsw *eventSwitch) FireEvent(event string, data EventData) {
 	eventCell.FireEvent(data)
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // eventCell handles keeping track of listener callbacks for a given event.
 type eventCell struct {
@@ -199,7 +199,7 @@ func (cell *eventCell) FireEvent(data EventData) {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 type EventCallback func(data EventData)
 

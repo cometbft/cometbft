@@ -9,7 +9,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-//-----------------------------------------------------
+// -----------------------------------------------------
 // Validate block
 
 func validateBlock(state State, block *types.Block) error {

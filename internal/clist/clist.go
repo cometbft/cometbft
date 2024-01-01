@@ -211,7 +211,7 @@ func (e *CElement) SetRemoved() {
 	e.mtx.Unlock()
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // CList represents a linked list.
 // The zero value for CList is an empty list ready to use.

@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-//----------------------------------------
+// ----------------------------------------
 // Task
 
 // val: the value returned after task execution.
@@ -116,7 +116,7 @@ func (trs *TaskResultSet) FirstError() error {
 	return nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Parallel
 
 // Run tasks in parallel, with ability to abort early.

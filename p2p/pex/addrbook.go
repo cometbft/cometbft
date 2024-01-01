@@ -330,7 +330,6 @@ func (a *addrBook) MarkGood(id p2p.ID) {
 		return
 	}
 	ka.markGood()
-
 }
 
 // MarkAttempt implements AddrBook - it marks that an attempt was made to connect to the address.

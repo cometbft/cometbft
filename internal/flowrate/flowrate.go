@@ -243,7 +243,7 @@ func (m *Monitor) update(n int) (now time.Duration) {
 		}
 		m.reset(now)
 	}
-	return
+	return now
 }
 
 // reset clears the current sample state in preparation for the next sample.

@@ -53,7 +53,7 @@ func (r *Rand) reset(seed int64) {
 	r.rand = mrand.New(mrand.NewSource(seed))
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Global functions
 
 func Seed(seed int64) {
@@ -140,7 +140,7 @@ func Perm(n int) []int {
 	return grand.Perm(n)
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Rand methods
 
 func (r *Rand) Seed(seed int64) {

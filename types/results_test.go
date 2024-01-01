@@ -3,10 +3,9 @@ package types
 import (
 	"testing"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 func TestABCIResults(t *testing.T) {
@@ -49,6 +48,6 @@ func TestABCIResults(t *testing.T) {
 
 		proof := results.ProveResult(i)
 		valid := proof.Verify(root, bz)
-		assert.NoError(t, valid, "%d", i)
+		require.NoError(t, valid, "%d", i)
 	}
 }

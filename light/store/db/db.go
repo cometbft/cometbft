@@ -292,24 +292,23 @@ func (s *dbs) lbKey(height int64) []byte {
 
 var keyPattern = regexp.MustCompile(`^(lb)/([^/]*)/([0-9]+)$`)
 
-func parseKey(key []byte) (part string, prefix string, height int64, ok bool) {
+func parseKey(key []byte) (part string, height int64, ok bool) {
 	submatch := keyPattern.FindSubmatch(key)
 	if submatch == nil {
-		return "", "", 0, false
+		return "", 0, false
 	}
 	part = string(submatch[1])
-	prefix = string(submatch[2])
 	height, err := strconv.ParseInt(string(submatch[3]), 10, 64)
 	if err != nil {
-		return "", "", 0, false
+		return "", 0, false
 	}
 	ok = true // good!
-	return part, prefix, height, ok
+	return part, height, ok
 }
 
 func parseLbKey(key []byte) (height int64, ok bool) {
 	var part string
-	part, _, height, ok = parseKey(key)
+	part, height, ok = parseKey(key)
 	if part != "lb" {
 		return 0, false
 	}

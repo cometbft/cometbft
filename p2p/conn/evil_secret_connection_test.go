@@ -14,6 +14,7 @@ import (
 	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -259,11 +260,11 @@ func TestMakeSecretConnection(t *testing.T) {
 			privKey := ed25519.GenPrivKey()
 			_, err := MakeSecretConnection(tc.conn, privKey)
 			if tc.errMsg != "" {
-				if assert.Error(t, err) {
+				if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Contains(t, err.Error(), tc.errMsg)
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

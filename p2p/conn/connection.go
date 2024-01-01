@@ -663,6 +663,10 @@ FOR_LOOP:
 
 	// Cleanup
 	close(c.pong)
+
+	for range c.pong {
+		// Drain
+	}
 }
 
 // not goroutine-safe.
@@ -720,7 +724,7 @@ func (c *MConnection) Status() ConnectionStatus {
 	return status
 }
 
-// -----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
 type ChannelDescriptor struct {
 	ID                  byte
@@ -742,7 +746,7 @@ func (chDesc ChannelDescriptor) FillDefaults() (filled ChannelDescriptor) {
 		chDesc.RecvMessageCapacity = defaultRecvMessageCapacity
 	}
 	filled = chDesc
-	return filled
+	return
 }
 
 // TODO: lowercase.
@@ -852,7 +856,7 @@ func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 	packet := ch.nextPacketMsg()
 	n, err = protoio.NewDelimitedWriter(w).WriteMsg(mustWrapPacket(&packet))
 	atomic.AddInt64(&ch.recentlySent, int64(n))
-	return n, err
+	return
 }
 
 // Handles incoming PacketMsgs. It returns a message bytes if message is
@@ -886,7 +890,7 @@ func (ch *Channel) updateStats() {
 	atomic.StoreInt64(&ch.recentlySent, int64(float64(atomic.LoadInt64(&ch.recentlySent))*0.8))
 }
 
-// ----------------------------------------
+//----------------------------------------
 // Packet
 
 // mustWrapPacket takes a packet kind (oneof) and wraps it in a tmp2p.Packet message.

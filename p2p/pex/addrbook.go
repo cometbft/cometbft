@@ -179,7 +179,7 @@ func (a *addrBook) FilePath() string {
 	return a.filePath
 }
 
-// -------------------------------------------------------
+//-------------------------------------------------------
 
 // AddOurAddress one of our addresses.
 func (a *addrBook) AddOurAddress(addr *p2p.NetAddress) {
@@ -330,6 +330,9 @@ func (a *addrBook) MarkGood(id p2p.ID) {
 		return
 	}
 	ka.markGood()
+	if ka.isNew() {
+		a.moveToOld(ka)
+	}
 }
 
 // MarkAttempt implements AddrBook - it marks that an attempt was made to connect to the address.
@@ -462,7 +465,7 @@ func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddre
 	return selection
 }
 
-// ------------------------------------------------
+//------------------------------------------------
 
 // Size returns the number of addresses in the book.
 func (a *addrBook) Size() int {
@@ -476,7 +479,7 @@ func (a *addrBook) size() int {
 	return a.nNew + a.nOld
 }
 
-// ----------------------------------------------------------
+//----------------------------------------------------------
 
 // Save persists the address book to disk.
 func (a *addrBook) Save() {
@@ -500,7 +503,7 @@ out:
 	a.saveToFile(a.filePath)
 }
 
-// ----------------------------------------------------------
+//----------------------------------------------------------
 
 func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAddress {
 	switch bucketType {
@@ -615,7 +618,7 @@ func (a *addrBook) removeFromAllBuckets(ka *knownAddress) {
 	delete(a.addrLookup, ka.ID())
 }
 
-// ----------------------------------------------------------
+//----------------------------------------------------------
 
 func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 	bucket := a.getBucket(bucketType, bucketIdx)
@@ -748,9 +751,11 @@ func (a *addrBook) moveToOld(ka *knownAddress) {
 	// Sanity check
 	if ka.isOld() {
 		a.Logger.Error(fmt.Sprintf("Cannot promote address that is already old %v", ka))
+		return
 	}
 	if len(ka.Buckets) == 0 {
 		a.Logger.Error(fmt.Sprintf("Cannot promote address that isn't in any new buckets %v", ka))
+		return
 	}
 
 	// Remove from all (new) buckets.
@@ -806,7 +811,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 	return true
 }
 
-// ---------------------------------------------------------------------
+//---------------------------------------------------------------------
 // calculate bucket placements
 
 // hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.
@@ -816,7 +821,6 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) int {
 	data1 = append(data1, []byte(a.groupKey(addr))...)
 	data1 = append(data1, []byte(a.groupKey(src))...)
 	hash1 := a.hash(data1)
-
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= newBucketsPerGroup
 	var hashbuf [8]byte
@@ -827,7 +831,6 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) int {
 	data2 = append(data2, hashbuf[:]...)
 
 	hash2 := a.hash(data2)
-
 	result := int(binary.BigEndian.Uint64(hash2) % newBucketCount)
 	return result
 }
@@ -849,6 +852,7 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) int {
 	data2 = append(data2, hashbuf[:]...)
 
 	hash2 := a.hash(data2)
+
 	result := int(binary.BigEndian.Uint64(hash2) % oldBucketCount)
 	return result
 }
@@ -911,6 +915,7 @@ func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
 	return na.IP.Mask(ipv6Mask).String()
 }
 
+// hash returns the hash of b.
 func (a *addrBook) hash(b []byte) []byte {
 	a.hasher.Reset()
 	a.hasher.Write(b)

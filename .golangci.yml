@@ -1,6 +1,6 @@
 run:
-  tests: false
-  timeout: 5m
+  tests: true
+  timeout: 10m
   sort-results: true
   allow-parallel-runners: true
 
@@ -11,15 +11,19 @@ linters:
     - contextcheck
     - cyclop
     - dupword
+    - deadcode
     - errname
     - errorlint
     - exhaustive
     - exhaustivestruct
     - exhaustruct
     - forbidigo
+    - varcheck
     - forcetypeassert
     - funlen
     - gochecknoglobals
+    - goimports
+    - gocritic
     - gochecknoinits
     - gocognit
     - gocyclo
@@ -27,18 +31,23 @@ linters:
     - goerr113
     - golint
     - gomnd
+    - gofmt
     - gomoddirectives
     - ifshort
     - interfacebloat
     - interfacer
     - ireturn
     - lll
+    - structcheck
     - maintidx
     - maligned
     - nestif
     - nilnil
+    - noctx
     - nlreturn
     - nonamedreturns
+    - testpackage
+    - paralleltest
     - nosnakecase
     - predeclared
     - tagliatelle
@@ -48,8 +57,10 @@ linters:
     - typecheck
     - varnamelen
     - wrapcheck
+    - tparallel
     - wsl
     - scopelint
+    - revive
 
 issues:
   exclude-rules:
@@ -64,7 +75,6 @@ issues:
         - stylecheck
   max-same-issues: 10000
   max-issues-per-linter: 10000
-
 linters-settings:
   dogsled:
     max-blank-identifiers: 3

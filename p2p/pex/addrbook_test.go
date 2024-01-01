@@ -713,6 +713,7 @@ func TestAddrBookGroupKey(t *testing.T) {
 }
 
 func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []*p2p.NetAddress, book *addrBook) {
+	t.Helper()
 	nOld, nNew := countOldAndNewAddrsInSelection(addrs, book)
 	assert.Equal(t, m, nOld, "old addresses")
 	assert.Equal(t, n, nNew, "new addresses")

@@ -604,7 +604,7 @@ func TestTxSearch(t *testing.T) {
 		result, err = c.TxSearch(context.Background(),
 			"app.creator='Cosmoshi Netowoko' AND tx.height<10000", true, nil, nil, "asc")
 		require.NoError(t, err)
-		require.Empty(t, result.Txs)
+		require.NotEmpty(t, result.Txs)
 
 		// query a non existing tx with page 1 and txsPerPage 1
 		perPage := 1

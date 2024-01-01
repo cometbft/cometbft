@@ -795,7 +795,7 @@ func valSetTotalProposerPriority(valSet *ValidatorSet) int64 {
 
 func verifyValidatorSet(t *testing.T, valSet *ValidatorSet) {
 	// verify that the capacity and length of validators is the same
-	assert.Equal(t, len(valSet.Validators), cap(valSet.Validators))
+	assert.Len(t, valSet.Validators, cap(valSet.Validators))
 
 	// verify that the set's total voting power has been updated
 	tvp := valSet.totalVotingPower

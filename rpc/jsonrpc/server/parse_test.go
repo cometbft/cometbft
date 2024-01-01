@@ -161,7 +161,7 @@ func TestParseJSONRPC(t *testing.T) {
 			assert.NotNil(t, err, i)
 		} else {
 			require.Nil(t, err, "%s: %+v", i, err)
-			if assert.Equal(t, 2, len(vals), i) {
+			if assert.Len(t, vals, 2, i) {
 				assert.Equal(t, tc.height, vals[0].Int(), i)
 				assert.Equal(t, tc.name, vals[1].String(), i)
 			}
@@ -202,7 +202,7 @@ func TestParseURI(t *testing.T) {
 			assert.NotNil(t, err, i)
 		} else {
 			assert.Nil(t, err, "%s: %+v", i, err)
-			if assert.Equal(t, 2, len(vals), i) {
+			if assert.Len(t, vals, 2, i) {
 				assert.Equal(t, tc.height, vals[0].Int(), i)
 				assert.Equal(t, tc.name, vals[1].String(), i)
 			}

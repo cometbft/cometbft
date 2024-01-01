@@ -28,6 +28,7 @@ linters:
     - goerr113
     - golint
     - gomnd
+    - gofmt
     - gomoddirectives
     - ifshort
     - interfacebloat

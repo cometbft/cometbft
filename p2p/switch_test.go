@@ -863,7 +863,7 @@ func TestSwitchRemovalErr(t *testing.T) {
 	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
 		return initSwitchFunc(i, sw)
 	})
-	assert.Equal(t, len(sw1.Peers().List()), 1)
+	require.Len(t, sw1.Peers().List(), 1)
 	p := sw1.Peers().List()[0]
 
 	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))

@@ -20,7 +20,7 @@ linters:
     - forcetypeassert
     - funlen
     - gochecknoglobals
-    - goimports 
+    - goimports
     - gocritic
     - gochecknoinits
     - gocognit

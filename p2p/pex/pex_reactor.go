@@ -534,7 +534,7 @@ func (r *Reactor) ensurePeers() {
 func (r *Reactor) dialAttemptsInfo(addr *p2p.NetAddress) (attempts int, lastDialed time.Time) {
 	_attempts, ok := r.attemptsToDial.Load(addr.DialString())
 	if !ok {
-		return
+		return 0, time.Time{}
 	}
 	atd := _attempts.(_attemptsToDial)
 	return atd.number, atd.lastDialed

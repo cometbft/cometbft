@@ -179,7 +179,7 @@ func (a *addrBook) FilePath() string {
 	return a.filePath
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
 // AddOurAddress one of our addresses.
 func (a *addrBook) AddOurAddress(addr *p2p.NetAddress) {
@@ -465,7 +465,7 @@ func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddre
 	return selection
 }
 
-//------------------------------------------------
+// ------------------------------------------------
 
 // Size returns the number of addresses in the book.
 func (a *addrBook) Size() int {
@@ -479,7 +479,7 @@ func (a *addrBook) size() int {
 	return a.nNew + a.nOld
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // Save persists the address book to disk.
 func (a *addrBook) Save() {
@@ -503,7 +503,7 @@ out:
 	a.saveToFile(a.filePath)
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAddress {
 	switch bucketType {
@@ -618,7 +618,7 @@ func (a *addrBook) removeFromAllBuckets(ka *knownAddress) {
 	delete(a.addrLookup, ka.ID())
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 	bucket := a.getBucket(bucketType, bucketIdx)
@@ -811,7 +811,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 	return true
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // calculate bucket placements
 
 // hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.

@@ -761,7 +761,7 @@ func createAddrBookWithMOldAndNNewAddrs(t *testing.T, nOld, nNew int) (book *add
 		require.NoError(t, err)
 	}
 
-	return
+	return book, fname
 }
 
 func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nOld, nNew int) {
@@ -772,7 +772,7 @@ func countOldAndNewAddrsInSelection(addrs []*p2p.NetAddress, book *addrBook) (nO
 			nNew++
 		}
 	}
-	return
+	return nOld, nNew
 }
 
 // Analyze the layout of the selection specified by 'addrs'
@@ -805,5 +805,5 @@ func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, s
 	seqLens = append(seqLens, currentSeqLen)
 	seqTypes = append(seqTypes, prevType)
 
-	return
+	return seqLens, seqTypes
 }

@@ -63,7 +63,7 @@ func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
 			break
 		}
 	}
-	return
+	return addr, netAddr
 }
 
 // ------------------------------------------------------------------

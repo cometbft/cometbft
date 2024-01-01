@@ -746,7 +746,7 @@ func (chDesc ChannelDescriptor) FillDefaults() (filled ChannelDescriptor) {
 		chDesc.RecvMessageCapacity = defaultRecvMessageCapacity
 	}
 	filled = chDesc
-	return
+	return filled
 }
 
 // TODO: lowercase.
@@ -856,7 +856,7 @@ func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 	packet := ch.nextPacketMsg()
 	n, err = protoio.NewDelimitedWriter(w).WriteMsg(mustWrapPacket(&packet))
 	atomic.AddInt64(&ch.recentlySent, int64(n))
-	return
+	return n, err
 }
 
 // Handles incoming PacketMsgs. It returns a message bytes if message is

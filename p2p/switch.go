@@ -309,7 +309,7 @@ func (sw *Switch) NumPeers() (outbound, inbound, dialing int) {
 		}
 	}
 	dialing = sw.dialing.Size()
-	return
+	return outbound, inbound, dialing
 }
 
 func (sw *Switch) IsPeerUnconditional(id ID) bool {

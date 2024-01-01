@@ -657,7 +657,7 @@ func createReactor(conf *ReactorConfig) (r *Reactor, book AddrBook) {
 
 	r = NewReactor(book, conf)
 	r.SetLogger(log.TestingLogger())
-	return
+	return r, book
 }
 
 func teardownReactor(book AddrBook) {

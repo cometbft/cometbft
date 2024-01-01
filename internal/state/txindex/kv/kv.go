@@ -514,7 +514,7 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 			return decoded, true, err
 		}
 	}
-	return
+	return nil, false, nil
 }
 
 func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {

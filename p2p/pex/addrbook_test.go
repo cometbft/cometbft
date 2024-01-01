@@ -600,7 +600,7 @@ func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
 	peerID := "678503e6c8f50db7279c7da3cb9b072aac4bc0d5"
 	peerRealIP := "1.1.1.1:26656"
 	peerOverrideAttemptIP := "2.2.2.2:26656"
-	SrcAddr := "b0dd378c3fbc4c156cd6d302a799f0d2e4227201@159.89.121.174:26656"
+	srcAddr := "b0dd378c3fbc4c156cd6d302a799f0d2e4227201@159.89.121.174:26656"
 
 	// There is a chance that AddAddress will ignore the new peer its given.
 	// So we repeat trying to override the peer several times,
@@ -613,7 +613,7 @@ func TestAddrBookAddDoesNotOverwriteOldIP(t *testing.T) {
 	peerOverrideAttemptAddr, err := p2p.NewNetAddressString(peerID + "@" + peerOverrideAttemptIP)
 	require.NoError(t, err)
 
-	src, err := p2p.NewNetAddressString(SrcAddr)
+	src, err := p2p.NewNetAddressString(srcAddr)
 	require.NoError(t, err)
 
 	book := NewAddrBook(fname, true)

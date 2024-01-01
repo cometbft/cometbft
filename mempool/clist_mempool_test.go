@@ -98,6 +98,7 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 
 // Call CheckTx on a given mempool on each transaction in the list.
 func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
+	t.Helper()
 	for i, tx := range txs {
 		if _, err := mp.CheckTx(tx); err != nil {
 			// Skip invalid txs.

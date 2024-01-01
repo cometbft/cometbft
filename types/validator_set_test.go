@@ -794,6 +794,7 @@ func valSetTotalProposerPriority(valSet *ValidatorSet) int64 {
 }
 
 func verifyValidatorSet(t *testing.T, valSet *ValidatorSet) {
+	t.Helper()
 	// verify that the capacity and length of validators is the same
 	assert.Len(t, valSet.Validators, cap(valSet.Validators))
 
@@ -839,6 +840,7 @@ type valSetErrTestCase struct {
 }
 
 func executeValSetErrTestCase(t *testing.T, idx int, tt valSetErrTestCase) {
+	t.Helper()
 	// create a new set and apply updates, keeping copies for the checks
 	valSet := createNewValidatorSet(tt.startVals)
 	valSetCopy := valSet.Copy()
@@ -1291,6 +1293,7 @@ func TestValSetUpdatePriorityOrderTests(t *testing.T) {
 }
 
 func verifyValSetUpdatePriorityOrder(t *testing.T, valSet *ValidatorSet, cfg testVSetCfg, nMaxElections int32) {
+	t.Helper()
 	// Run election up to nMaxElections times, sort validators by priorities
 	valSet.IncrementProposerPriority(cmtrand.Int31()%nMaxElections + 1)
 

@@ -33,18 +33,18 @@ func (txi *TxIndex) Get(_ []byte) (*abci.TxResult, error) {
 }
 
 // AddBatch is a noop and always returns nil.
-func (txi *TxIndex) AddBatch(_ *txindex.Batch) error {
+func (*TxIndex) AddBatch(_ *txindex.Batch) error {
 	return nil
 }
 
 // Index is a noop and always returns nil.
-func (txi *TxIndex) Index(_ *abci.TxResult) error {
+func (*TxIndex) Index(_ *abci.TxResult) error {
 	return nil
 }
 
-func (txi *TxIndex) Search(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
+func (*TxIndex) Search(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
 	return []*abci.TxResult{}, nil
 }
 
-func (txi *TxIndex) SetLogger(log.Logger) {
+func (*TxIndex) SetLogger(log.Logger) {
 }

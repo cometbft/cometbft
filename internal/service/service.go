@@ -193,7 +193,7 @@ func (bs *BaseService) Stop() error {
 // OnStop implements Service by doing nothing.
 // NOTE: Do not put anything in here,
 // that way users don't need to call BaseService.OnStop().
-func (bs *BaseService) OnStop() {}
+func (*BaseService) OnStop() {}
 
 // Reset implements Service by calling OnReset callback (if defined). An error
 // will be returned if the service is running.

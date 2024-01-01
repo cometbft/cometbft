@@ -156,7 +156,7 @@ func (txi *TxIndex) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (txi *TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
+func (*TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastTxIndexerRetainHeightKey, int64ToBytes(height))
 }
 

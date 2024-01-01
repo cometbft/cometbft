@@ -195,7 +195,7 @@ func (idx *BlockerIndexer) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (idx *BlockerIndexer) setLastRetainHeight(height int64, batch dbm.Batch) error {
+func (*BlockerIndexer) setLastRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastBlockIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -364,7 +364,6 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 
 		select {
 		case <-ctx.Done():
-			break
 
 		default:
 		}

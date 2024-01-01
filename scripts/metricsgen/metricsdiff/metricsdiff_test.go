@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/cometbft/cometbft/scripts/metricsgen/metricsdiff"
+	metricsdiff "github.com/cometbft/cometbft/scripts/metricsgen/metricsdiff"
 	"github.com/stretchr/testify/require"
 )
 

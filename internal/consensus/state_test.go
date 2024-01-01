@@ -66,7 +66,7 @@ x * TestHalt1 - if we see +2/3 precommits after timing out into new round, we sh
 
 */
 
-//----------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // ProposeSuite
 
 func TestStateProposerSelection0(t *testing.T) {
@@ -347,7 +347,7 @@ func TestStateOversizedBlock(t *testing.T) {
 	}
 }
 
-//----------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------
 // FullRoundSuite
 
 // propose, prevote, and precommit a block.
@@ -441,7 +441,7 @@ func TestStateFullRound2(t *testing.T) {
 	ensureNewBlock(newBlockCh, height)
 }
 
-//------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 // LockSuite
 
 // two validators, 4 rounds.
@@ -500,7 +500,7 @@ func TestStateLockNoPOL(t *testing.T) {
 	// but with invalid args. then we enterPrecommitWait, and the timeout to new round
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
 
-	///
+	//
 
 	round++ // moving to the next round
 	ensureNewRound(newRoundCh, height, round)
@@ -1460,7 +1460,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
-	/*Round2
+	/* Round2
 	// we timeout and prevote our lock
 	// a polka happened but we didn't see it!
 	*/
@@ -1494,7 +1494,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	t.Log("### ONTO ROUND 2")
-	/*Round3
+	/* Round3
 	we see the polka from round 1 but we shouldn't unlock!
 	*/
 
@@ -1607,7 +1607,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 
 	ensureNewRound(newRoundCh, height, round)
 	t.Log("### ONTO Round 2")
-	/*Round2
+	/* Round2
 	// now we see the polka from round 1, but we shouldn't unlock
 	*/
 	ensureNewProposal(proposalCh, height, round)
@@ -2820,7 +2820,7 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 		"triggeredTimeoutPrecommit should be false at the beginning of each height")
 }
 
-//------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 // SlashingSuite
 // TODO: Slashing
 
@@ -2897,10 +2897,10 @@ func TestStateSlashingPrecommits(t *testing.T) {
 }
 */
 
-//------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 // CatchupSuite
 
-//------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 // HaltSuite
 
 // 4 vals.
@@ -2954,7 +2954,7 @@ func TestStateHalt1(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	t.Log("### ONTO ROUND 1")
-	/*Round2
+	/* Round2
 	// we timeout and prevote
 	// a polka happened but we didn't see it!
 	*/

@@ -68,11 +68,11 @@ func NewEventSwitch() EventSwitch {
 	return evsw
 }
 
-func (evsw *eventSwitch) OnStart() error {
+func (*eventSwitch) OnStart() error {
 	return nil
 }
 
-func (evsw *eventSwitch) OnStop() {}
+func (*eventSwitch) OnStop() {}
 
 func (evsw *eventSwitch) AddListenerForEvent(listenerID, event string, cb EventCallback) error {
 	// Get/Create eventCell and listener.

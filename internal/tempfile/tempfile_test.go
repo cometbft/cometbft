@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	testing "testing"
+	"testing"
 
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/require"

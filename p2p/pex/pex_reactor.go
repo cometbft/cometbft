@@ -54,7 +54,7 @@ const (
 
 type errMaxAttemptsToDial struct{}
 
-func (e errMaxAttemptsToDial) Error() string {
+func (errMaxAttemptsToDial) Error() string {
 	return fmt.Sprintf("reached max attempts %d to dial", maxAttemptsToDial)
 }
 
@@ -174,7 +174,7 @@ func (r *Reactor) OnStop() {
 }
 
 // GetChannels implements Reactor.
-func (r *Reactor) GetChannels() []*conn.ChannelDescriptor {
+func (*Reactor) GetChannels() []*conn.ChannelDescriptor {
 	return []*conn.ChannelDescriptor{
 		{
 			ID:                  PexChannel,
@@ -399,7 +399,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 }
 
 // SendAddrs sends addrs to the peer.
-func (r *Reactor) SendAddrs(p Peer, netAddrs []*p2p.NetAddress) {
+func (*Reactor) SendAddrs(p Peer, netAddrs []*p2p.NetAddress) {
 	e := p2p.Envelope{
 		ChannelID: PexChannel,
 		Message:   &tmp2p.PexAddrs{Addrs: p2p.NetAddressesToProto(netAddrs)},

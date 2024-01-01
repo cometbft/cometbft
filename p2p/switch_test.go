@@ -441,7 +441,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 		return initSwitchFunc(i, sw)
 	})
 
-	assert.Equal(t, len(sw1.Peers().List()), 1)
+	assert.Len(t, sw1.Peers().List(), 1)
 	assert.EqualValues(t, 1, peersMetricValue())
 
 	// send messages to the peer from sw1

@@ -130,8 +130,8 @@ func TestNewNetAddressStrings(t *testing.T) {
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080",
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeed@127.0.0.2:8080",
 	})
-	assert.Len(t, len(addrs), 2)
-	assert.Len(t, len(errs), 1)
+	assert.Len(t, addrs, 2)
+	assert.Len(t, errs, 1)
 }
 
 func TestNewNetAddressIPPort(t *testing.T) {

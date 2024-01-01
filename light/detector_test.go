@@ -353,7 +353,7 @@ func TestClientDivergentTraces2(t *testing.T) {
 
 	_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
 	require.NoError(t, err)
-	assert.Equal(t, 3, len(c.Witnesses()))
+	assert.Len(t, c.Witnesses(), 3)
 }
 
 // 3. witness has the same first header, but different second header
@@ -388,7 +388,7 @@ func TestClientDivergentTraces3(t *testing.T) {
 
 	_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
 	require.Error(t, err)
-	assert.Equal(t, 1, len(c.Witnesses()))
+	assert.Len(t, c.Witnesses(), 1)
 }
 
 // 4. Witness has a divergent header but can not produce a valid trace to back it up.

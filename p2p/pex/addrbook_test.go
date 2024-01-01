@@ -317,7 +317,7 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 	require.NoError(t, err)
 
 	selection = book.GetSelectionWithBias(biasTowardsNewAddrs)
-	assert.Equal(t, 1, len(selection))
+	assert.Len(t, selection, 1)
 	assert.Equal(t, addr, selection[0])
 
 	// 3) add a bunch of addresses

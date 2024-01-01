@@ -43,7 +43,7 @@ func TestBlockAddEvidence(t *testing.T) {
 
 	block := MakeBlock(h, txs, extCommit.ToCommit(), evList)
 	require.NotNil(t, block)
-	require.Equal(t, 1, len(block.Evidence.Evidence))
+	require.Len(t, block.Evidence.Evidence, 1)
 	require.NotNil(t, block.EvidenceHash)
 }
 

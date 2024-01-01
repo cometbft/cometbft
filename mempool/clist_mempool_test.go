@@ -33,11 +33,11 @@ import (
 // test.
 type cleanupFunc func()
 
-func newMempoolWithAppMock(client abciclient.Client) (*CListMempool, cleanupFunc, error) {
+func newMempoolWithAppMock(client abciclient.Client) (*CListMempool, cleanupFunc) {
 	conf := test.ResetTestRoot("mempool_test")
 
 	mp, cu := newMempoolWithAppAndConfigMock(conf, client)
-	return mp, cu, nil
+	return mp, cu
 }
 
 func newMempoolWithAppAndConfigMock(
@@ -268,8 +268,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	mockClient.On("Error").Return(nil).Times(4)
 	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
 
-	mp, cleanup, err := newMempoolWithAppMock(mockClient)
-	require.NoError(t, err)
+	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
 
 	// Add 4 transactions to the mempool by calling the mempool's `CheckTx` on each of them.
@@ -288,7 +287,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 
 	// Calling update to remove the first transaction from the mempool.
 	// This call also triggers the mempool to recheck its remaining transactions.
-	err = mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+	err := mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 	require.NoError(t, err)
 
 	// The mempool has now sent its requests off to the client to be rechecked

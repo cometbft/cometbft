@@ -2530,7 +2530,7 @@ func TestWaitingTimeoutProposeOnNewRound(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	rs := cs1.GetRoundState()
-	assert.Equal(t, rs.Step, cstypes.RoundStepPropose) // P0 does not prevote before timeoutPropose expires
+	assert.Equal(t, cstypes.RoundStepPropose, rs.Step) // P0 does not prevote before timeoutPropose expires
 
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Propose(round).Nanoseconds())
 
@@ -2633,8 +2633,8 @@ func TestEmitNewValidBlockEventOnCommitWithoutBlock(t *testing.T) {
 	ensureNewValidBlock(validBlockCh, height, round)
 
 	rs := cs1.GetRoundState()
-	assert.True(t, rs.Step == cstypes.RoundStepCommit)
-	assert.True(t, rs.ProposalBlock == nil)
+	assert.Equal(t, rs.Step, cstypes.RoundStepCommit) //nolint:testifycheck // this will tell us to reverse the items beinc compared no matter what
+	assert.Nil(t, rs.ProposalBlock)
 	assert.True(t, rs.ProposalBlockParts.Header().Equals(propBlockParts.Header()))
 }
 

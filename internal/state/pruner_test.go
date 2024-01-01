@@ -119,6 +119,7 @@ func TestPruneTxIndexerToRetainHeight(t *testing.T) {
 	pruner.PruneTxIndexerToRetainHeight(2)
 
 	results, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 4"))
+	require.NoError(t, err)
 	require.Empty(t, results)
 
 	_, txResult1, txResult2 := getEventsAndResults(1)

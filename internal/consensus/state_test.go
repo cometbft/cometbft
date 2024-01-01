@@ -1906,7 +1906,7 @@ func TestSetValidBlockOnDelayedPrevote(t *testing.T) {
 
 	assert.True(t, bytes.Equal(rs.ValidBlock.Hash(), propBlockHash))
 	assert.True(t, rs.ValidBlockParts.Header().Equals(propBlockParts.Header()))
-	assert.True(t, rs.ValidRound == round)
+	assert.Equal(t, rs.ValidRound, round)
 }
 
 // What we want:
@@ -1966,7 +1966,7 @@ func TestSetValidBlockOnDelayedProposal(t *testing.T) {
 
 	assert.True(t, bytes.Equal(rs.ValidBlock.Hash(), propBlockHash))
 	assert.True(t, rs.ValidBlockParts.Header().Equals(propBlockParts.Header()))
-	assert.True(t, rs.ValidRound == round)
+	assert.Equal(t, rs.ValidRound, round)
 }
 
 func TestProcessProposalAccept(t *testing.T) {

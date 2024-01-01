@@ -1895,7 +1895,7 @@ func TestSetValidBlockOnDelayedPrevote(t *testing.T) {
 
 	assert.Nil(t, rs.ValidBlock)
 	assert.Nil(t, rs.ValidBlockParts)
-	assert.Equal(t, -1, rs.ValidRound)
+	assert.Equal(t, int32(-1), rs.ValidRound)
 
 	// vs2 send (delayed) prevote for propBlock
 	signAddVotes(cs1, types.PrevoteType, propBlockHash, propBlockParts.Header(), false, vs4)

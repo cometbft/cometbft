@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -585,7 +586,7 @@ func TestURICaching(t *testing.T) {
 	assert.Equal(t, "", res1.Header.Get("Cache-control"))
 
 	// Supplying the arg should result in caching
-	args.Set("arg", fmt.Sprintf("%d", cmtrand.Intn(10000)))
+	args.Set("arg", strconv.Itoa(cmtrand.Intn(10000)))
 	res2, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res2.Body.Close() }()
 	require.NoError(t, err)

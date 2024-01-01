@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -141,7 +142,7 @@ func TestBlockIndexer(t *testing.T) {
 					Attributes: []abci.EventAttribute{
 						{
 							Key:   "foo",
-							Value: fmt.Sprintf("%d", i),
+							Value: strconv.Itoa(i),
 							Index: index,
 						},
 					},

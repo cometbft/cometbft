@@ -6,6 +6,7 @@ import (
 	"fmt"
 	mrand "math/rand"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -419,7 +420,7 @@ func TestSerialReap(t *testing.T) {
 	deliverTxsRange := func(start, end int) {
 		// Deliver some txs.
 		for i := start; i < end; i++ {
-			txBytes := kvstore.NewTx(fmt.Sprintf("%d", i), "true")
+			txBytes := kvstore.NewTx(strconv.Itoa(i), "true")
 			_, err := mp.CheckTx(txBytes)
 			_, cached := cacheMap[string(txBytes)]
 			if cached {
@@ -443,7 +444,7 @@ func TestSerialReap(t *testing.T) {
 	updateRange := func(start, end int) {
 		txs := make(types.Txs, end-start)
 		for i := start; i < end; i++ {
-			txs[i-start] = kvstore.NewTx(fmt.Sprintf("%d", i), "true")
+			txs[i-start] = kvstore.NewTx(strconv.Itoa(i), "true")
 		}
 		if err := mp.Update(0, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil); err != nil {
 			t.Error(err)
@@ -454,7 +455,7 @@ func TestSerialReap(t *testing.T) {
 		// Deliver some txs in a block
 		txs := make([][]byte, end-start)
 		for i := start; i < end; i++ {
-			txs[i-start] = kvstore.NewTx(fmt.Sprintf("%d", i), "true")
+			txs[i-start] = kvstore.NewTx(strconv.Itoa(i), "true")
 		}
 
 		res, err := appConnCon.FinalizeBlock(context.Background(), &abci.FinalizeBlockRequest{Txs: txs})

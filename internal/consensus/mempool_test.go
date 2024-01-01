@@ -2,8 +2,8 @@ package consensus
 
 import (
 	"context"
-	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -109,7 +109,7 @@ func deliverTxsRange(t *testing.T, cs *State, start, end int) {
 	t.Helper()
 	// Deliver some txs.
 	for i := start; i < end; i++ {
-		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"))
+		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(i), "true"))
 		require.NoError(t, err)
 		require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	}

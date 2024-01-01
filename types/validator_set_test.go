@@ -51,7 +51,7 @@ func TestValidatorSetBasic(t *testing.T) {
 	}, vset.Hash())
 	// add
 	val = randValidator(vset.TotalVotingPower())
-	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}))
+	require.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}))
 
 	assert.True(t, vset.HasAddress(val.Address))
 	idx, _ = vset.GetByAddress(val.Address)

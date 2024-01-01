@@ -165,14 +165,14 @@ func TestGenesisAndValidators(t *testing.T) {
 		gen, err := c.Genesis(context.Background())
 		require.Nil(t, err, "%d: %+v", i, err)
 		// get the genesis validator
-		require.Equal(t, 1, len(gen.Genesis.Validators))
+		require.Len(t, gen.Genesis.Validators, 1)
 		gval := gen.Genesis.Validators[0]
 
 		// get the current validators
 		h := int64(1)
 		vals, err := c.Validators(context.Background(), &h, nil, nil)
 		require.Nil(t, err, "%d: %+v", i, err)
-		require.Equal(t, 1, len(vals.Validators))
+		require.Len(t, vals.Validators, 1)
 		require.Equal(t, 1, vals.Count)
 		require.Equal(t, 1, vals.Total)
 		val := vals.Validators[0]

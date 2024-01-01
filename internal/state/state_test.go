@@ -479,7 +479,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	updatedState2, err := sm.UpdateState(updatedState, blockID, &block.Header, abciResponses, validatorUpdates)
 	require.NoError(t, err)
 
-	require.Equal(t, len(updatedState2.NextValidators.Validators), 2)
+	require.Len(t, updatedState2.NextValidators.Validators, 2)
 	_, updatedVal1 := updatedState2.NextValidators.GetByAddress(val1PubKey.Address())
 	_, addedVal2 := updatedState2.NextValidators.GetByAddress(val2PubKey.Address())
 
@@ -518,7 +518,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	updatedState3, err := sm.UpdateState(updatedState2, blockID, &block.Header, abciResponses, validatorUpdates)
 	require.NoError(t, err)
 
-	require.Equal(t, len(updatedState3.NextValidators.Validators), 2)
+	require.Len(t, updatedState3.NextValidators.Validators, 2)
 	_, prevVal1 := updatedState3.Validators.GetByAddress(val1PubKey.Address())
 	_, prevVal2 := updatedState3.Validators.GetByAddress(val2PubKey.Address())
 	_, updatedVal1 = updatedState3.NextValidators.GetByAddress(val1PubKey.Address())
@@ -596,7 +596,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 	updatedState2, err := sm.UpdateState(updatedState, blockID, &block.Header, abciResponses, validatorUpdates)
 	require.NoError(t, err)
 
-	require.Equal(t, len(updatedState2.NextValidators.Validators), 2)
+	require.Len(t, updatedState2.NextValidators.Validators, 2)
 	assert.Equal(t, updatedState2.Validators, updatedState.NextValidators)
 
 	// val1 will still be proposer as val2 just got added:
@@ -733,7 +733,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	// reset state validators to above validator
 	state.Validators = types.NewValidatorSet([]*types.Validator{genesisVal})
 	state.NextValidators = state.Validators
-	require.True(t, len(state.Validators.Validators) == 1)
+	require.Len(t, state.Validators.Validators, 1)
 
 	// update state a few times with no validator updates
 	// asserts that the single validator's ProposerPrio stays the same
@@ -834,7 +834,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 		state, err = sm.UpdateState(state, blockID, &block.Header, abciResponses, validatorUpdates)
 		require.NoError(t, err)
 	}
-	require.Equal(t, 10+2, len(state.NextValidators.Validators))
+	require.Len(t, state.NextValidators.Validators, 10+2)
 
 	// remove genesis validator:
 	gp, err := cryptoenc.PubKeyToProto(genesisPubKey)

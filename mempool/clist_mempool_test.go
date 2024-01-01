@@ -436,7 +436,7 @@ func TestSerialReap(t *testing.T) {
 
 	reapCheck := func(exp int) {
 		txs := mp.ReapMaxBytesMaxGas(-1, -1)
-		require.Equal(t, len(txs), exp, fmt.Sprintf("Expected to reap %v txs but got %v", exp, len(txs)))
+		require.Len(t, txs, exp)
 	}
 
 	updateRange := func(start, end int) {

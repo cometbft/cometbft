@@ -41,7 +41,7 @@ func testKVStore(ctx context.Context, t *testing.T, app types.Application, tx []
 	req := &types.FinalizeBlockRequest{Height: 1, Txs: ppResp.Txs}
 	ar, err := app.FinalizeBlock(ctx, req)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(ar.TxResults))
+	require.Len(t, ar.TxResults, 1)
 	require.False(t, ar.TxResults[0].IsErr())
 	// commit
 	_, err = app.Commit(ctx, &types.CommitRequest{})

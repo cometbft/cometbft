@@ -111,7 +111,7 @@ func TestBulk(t *testing.T) {
 	// Send bulk request
 	res, err := client.FinalizeBlock(context.Background(), rfb)
 	require.NoError(t, err)
-	require.Equal(t, numTxs, len(res.TxResults), "Number of txs doesn't match")
+	require.Len(t, res.TxResults, numTxs, "Number of txs doesn't match")
 	for _, tx := range res.TxResults {
 		require.Equal(t, uint32(0), tx.Code, "Tx failed")
 	}

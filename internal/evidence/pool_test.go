@@ -279,7 +279,7 @@ func TestLightClientAttackEvidenceLifecycle(t *testing.T) {
 	require.NoError(t, pool.AddEvidence(ev))
 
 	pendingEv, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
-	require.Equal(t, 1, len(pendingEv))
+	require.Len(t, pendingEv, 1)
 	require.Equal(t, ev, pendingEv[0])
 
 	require.NoError(t, pool.CheckEvidence(pendingEv))

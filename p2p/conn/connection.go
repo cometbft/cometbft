@@ -663,7 +663,6 @@ FOR_LOOP:
 
 	// Cleanup
 	close(c.pong)
-
 }
 
 // not goroutine-safe.

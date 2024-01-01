@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	metricsdiff "github.com/cometbft/cometbft/scripts/metricsgen/metricsdiff"
+	metricsdiff "github.com/cometbft/cometbft/scripts/metricsgen/metricsdiff" //nolint:revive // this is a test file
 	"github.com/stretchr/testify/require"
 )
 

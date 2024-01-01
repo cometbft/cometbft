@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
+	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen" //nolint:revive // this is a test file
 	"github.com/stretchr/testify/require"
 )
 

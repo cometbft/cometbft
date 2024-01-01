@@ -50,7 +50,7 @@ func TestNewChunkQueue_TempDir(t *testing.T) {
 
 	files, err = os.ReadDir(dir)
 	require.NoError(t, err)
-	assert.Len(t, files, 0)
+	assert.Empty(t, files)
 }
 
 func TestChunkQueue(t *testing.T) {

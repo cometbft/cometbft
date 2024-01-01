@@ -907,7 +907,7 @@ func TestLoadBlockMetaByHash(t *testing.T) {
 func TestBlockFetchAtHeight(t *testing.T) {
 	state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
 	defer cleanup()
-	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
+	require.Equal(t, int64(0), bs.Height(), "initially the height should be zero")
 	block := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
 
 	partSet, err := block.MakePartSet(2)

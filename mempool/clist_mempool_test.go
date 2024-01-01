@@ -652,7 +652,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 func TestMempoolNoCacheOverflow(t *testing.T) {
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
-	_, server := newRemoteApp(t, sockPath, app)
+	server := newRemoteApp(t, sockPath, app)
 	t.Cleanup(func() {
 		if err := server.Stop(); err != nil {
 			t.Error(err)
@@ -691,7 +691,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 			found++
 		}
 	}
-	assert.True(t, found == 1)
+	assert.Equal(t, 1, found)
 }
 
 // This will non-deterministically catch some concurrency failures like
@@ -701,7 +701,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
-	_, server := newRemoteApp(t, sockPath, app)
+	server := newRemoteApp(t, sockPath, app)
 	t.Cleanup(func() {
 		if err := server.Stop(); err != nil {
 			t.Error(err)
@@ -732,8 +732,9 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 }
 
 // caller must close server.
-func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
-	clientCreator, err := abciclient.NewClient(addr, "socket", true)
+func newRemoteApp(t *testing.T, addr string, app abci.Application) service.Service {
+	t.Helper()
+	_, err := abciclient.NewClient(addr, "socket", true)
 	require.NoError(t, err)
 
 	// Start server
@@ -743,7 +744,7 @@ func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.C
 		t.Fatalf("Error starting socket server: %v", err.Error())
 	}
 
-	return clientCreator, server
+	return server
 }
 
 func abciResponses(n int, code uint32) []*abci.ExecTxResult {

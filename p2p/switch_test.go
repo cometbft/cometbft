@@ -462,7 +462,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	// now call StopPeerForError explicitly, eg. from a reactor
 	sw1.StopPeerForError(p, fmt.Errorf("some err"))
 
-	assert.Equal(t, len(sw1.Peers().List()), 0)
+	require.Empty(t, len(sw1.Peers().List()), 0)
 	assert.EqualValues(t, 0, peersMetricValue())
 }
 

@@ -123,7 +123,7 @@ func TestNetInfo(t *testing.T) {
 		netinfo, err := nc.NetInfo(context.Background())
 		require.NoError(t, err, "%d: %+v", i, err)
 		assert.True(t, netinfo.Listening)
-		assert.Len(t, netinfo.Peers, 0)
+		assert.Empty(t, netinfo.Peers)
 	}
 }
 
@@ -271,7 +271,7 @@ func TestAppCalls(t *testing.T) {
 		block, err := c.Block(context.Background(), &apph)
 		require.NoError(err)
 		appHash := block.Block.Header.AppHash
-		assert.Greater(len(appHash), 0)
+		assert.NotEmpty(appHash)
 		assert.EqualValues(apph, block.Block.Header.Height)
 
 		blockByHash, err := c.BlockByHash(context.Background(), block.BlockID.Hash)
@@ -508,7 +508,7 @@ func TestTxSearchWithTimeout(t *testing.T) {
 	// query using a compositeKey (see kvstore application)
 	result, err := timeoutClient.TxSearch(context.Background(), "app.creator='Cosmoshi Netowoko'", false, nil, nil, "asc")
 	require.NoError(t, err)
-	require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
+	require.NotEmpty(t, result.Txs, "expected a lot of transactions")
 }
 
 // This test does nothing if we do not call app.SetGenBlockEvents() within main_test.go

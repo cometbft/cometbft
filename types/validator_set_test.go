@@ -813,7 +813,7 @@ func verifyValidatorSet(t *testing.T, valSet *ValidatorSet) {
 
 	// verify that priorities are scaled
 	dist := computeMaxMinPriorityDiff(valSet)
-	assert.True(t, dist <= PriorityWindowSizeFactor*tvp,
+	assert.LessOrEqual(t, dist, PriorityWindowSizeFactor*tvp,
 		"expected priority distance < %d. Got %d", PriorityWindowSizeFactor*tvp, dist)
 }
 

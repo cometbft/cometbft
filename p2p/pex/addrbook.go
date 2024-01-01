@@ -371,12 +371,7 @@ func (a *addrBook) ReinstateBadPeers() {
 			continue
 		}
 
-		bucket, err := a.calcNewBucket(ka.Addr, ka.Src)
-		if err != nil {
-			a.Logger.Error("Failed to calculate new bucket (bad peer won't be reinstantiated)",
-				"addr", ka.Addr, "err", err)
-			continue
-		}
+		bucket := a.calcNewBucket(ka.Addr, ka.Src)
 
 		if err := a.addToNewBucket(ka, bucket); err != nil {
 			a.Logger.Error("Error adding peer to new bucket", "err", err)
@@ -691,10 +686,8 @@ func (a *addrBook) addAddress(addr, src *p2p.NetAddress) error {
 		ka = newKnownAddress(addr, src)
 	}
 
-	bucket, err := a.calcNewBucket(addr, src)
-	if err != nil {
-		return err
-	}
+	bucket := a.calcNewBucket(addr, src)
+
 	return a.addToNewBucket(ka, bucket)
 }
 
@@ -782,10 +775,7 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 		// No room; move the oldest to a new bucket
 		oldest := a.pickOldest(bucketTypeOld, oldBucketIdx)
 		a.removeFromBucket(oldest, bucketTypeOld, oldBucketIdx)
-		newBucketIdx, err := a.calcNewBucket(oldest.Addr, oldest.Src)
-		if err != nil {
-			return err
-		}
+		newBucketIdx := a.calcNewBucket(oldest.Addr, oldest.Src)
 		if err := a.addToNewBucket(oldest, newBucketIdx); err != nil {
 			a.Logger.Error("Error adding peer to old bucket", "err", err)
 		}
@@ -829,7 +819,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 // calculate bucket placements
 
 // hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.
-func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
+func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) int {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(a.groupKey(addr))...)
@@ -846,7 +836,7 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 
 	hash2 := a.hash(data2)
 	result := int(binary.BigEndian.Uint64(hash2) % newBucketCount)
-	return result, nil
+	return result
 }
 
 // hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets.

@@ -65,7 +65,7 @@ func TestPeerSetAddRemoveOne(t *testing.T) {
 		assert.True(t, removed)
 		wantSize := n - i - 1
 		for j := 0; j < 2; j++ {
-			assert.Equal(t, false, peerSet.Has(peerAtFront.ID()), "#%d Run #%d: failed to remove peer", i, j)
+			assert.False(t, false, peerSet.Has(peerAtFront.ID()), "#%d Run #%d: failed to remove peer", i, j)
 			assert.Equal(t, wantSize, peerSet.Size(), "#%d Run #%d: failed to remove peer and decrement size", i, j)
 			// Test the route of removing the now non-existent element
 			removed := peerSet.Remove(peerAtFront)

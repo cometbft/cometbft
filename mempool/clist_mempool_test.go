@@ -87,7 +87,6 @@ func ensureNoFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 }
 
 func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
-	t.Helper()
 	timer := time.NewTimer(time.Duration(timeoutMS) * time.Millisecond)
 	select {
 	case <-ch:
@@ -98,7 +97,6 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 
 // Call CheckTx on a given mempool on each transaction in the list.
 func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
-	t.Helper()
 	for i, tx := range txs {
 		if _, err := mp.CheckTx(tx); err != nil {
 			// Skip invalid txs.
@@ -125,7 +123,6 @@ func NewRandomTxs(numTxs int, txLen int) types.Txs {
 // Generate a list of random transactions of a given size and call CheckTx on
 // each of them.
 func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
-	t.Helper()
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
 	return txs

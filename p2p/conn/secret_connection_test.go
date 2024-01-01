@@ -334,7 +334,6 @@ func makeKVStoreConnPair() (fooConn, barConn kvstoreConn) {
 }
 
 func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection) {
-	tb.Helper()
 	var (
 		fooConn, barConn = makeKVStoreConnPair()
 		fooPrvKey        = ed25519.GenPrivKey()

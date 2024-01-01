@@ -124,6 +124,7 @@ func NewRandomTxs(numTxs int, txLen int) types.Txs {
 // Generate a list of random transactions of a given size and call CheckTx on
 // each of them.
 func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
+	t.Helper()
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
 	return txs
@@ -757,13 +758,13 @@ func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Tx
 		rfb.Txs[i] = tx
 	}
 	_, e := app.FinalizeBlock(context.Background(), rfb)
-	require.True(t, e == nil)
+	require.Equal(t, nil, e)
 	mp.Lock()
 	e = mp.FlushAppConn()
-	require.True(t, e == nil)
+	require.Equal(t, nil, e)
 	_, e = app.Commit(context.Background(), &abci.CommitRequest{})
-	require.True(t, e == nil)
+	require.Equal(t, nil, e)
 	e = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
-	require.True(t, e == nil)
+	require.Equal(t, nil, e)
 	mp.Unlock()
 }

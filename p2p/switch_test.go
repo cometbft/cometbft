@@ -394,10 +394,10 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 		isPersistent: sw.IsPeerPersistent,
 		reactorsByCh: sw.reactorsByCh,
 	})
-	require.Nil(err)
+	require.NoError(err)
 
 	err = sw.addPeer(p)
-	require.Nil(err)
+	require.NoError(err)
 
 	require.NotNil(sw.Peers().Get(rp.ID()))
 

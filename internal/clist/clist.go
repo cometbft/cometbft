@@ -403,5 +403,5 @@ func (l *CList) Remove(e *CElement) interface{} {
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
-	return
+	return wg
 }

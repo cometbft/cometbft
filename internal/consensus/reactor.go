@@ -532,7 +532,7 @@ func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep)
 		SecondsSinceStartTime: int64(time.Since(rs.StartTime).Seconds()),
 		LastCommitRound:       rs.LastCommit.GetRound(),
 	}
-	return
+	return nrsMsg
 }
 
 func (conR *Reactor) sendNewRoundStepMessage(peer p2p.Peer) {

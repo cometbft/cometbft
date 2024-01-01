@@ -147,8 +147,8 @@ func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
 func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
 	defer cleanup()
-	require.Equal(t, 0, bs.Base(), "initially the base should be zero")
-	require.Equal(t, 0, bs.Height(), "initially the height should be zero")
+	require.Equal(t, int64(0), bs.Base(), "initially the base should be zero")
+	require.Equal(t, int64(0), bs.Height(), "initially the height should be zero")
 
 	// check there are no blocks at various heights
 	noBlockHeights := []int64{0, -1, 100, 1000, 2}

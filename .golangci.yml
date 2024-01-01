@@ -70,7 +70,6 @@ issues:
         - stylecheck
   max-same-issues: 10000
   max-issues-per-linter: 10000
-
 linters-settings:
   dogsled:
     max-blank-identifiers: 3

@@ -234,10 +234,10 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		for i, v := range app.CommitVotes {
 			if ctr < len(tc.expectedAbsentValidators) &&
 				tc.expectedAbsentValidators[ctr] == i {
-				assert.Equal(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
+				assert.Equal(t, cmtproto.BlockIDFlagAbsent, v.BlockIdFlag)
 				ctr++
 			} else {
-				assert.NotEqual(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
+				assert.NotEqual(t, cmtproto.BlockIDFlagAbsent, v.BlockIdFlag)
 			}
 		}
 	}

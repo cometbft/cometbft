@@ -341,8 +341,8 @@ func TestBroadcastTxSync(t *testing.T) {
 	for i, c := range GetClients() {
 		_, _, tx := MakeTxKV()
 		bres, err := c.BroadcastTxSync(context.Background(), tx)
-		require.Nil(err, "%d: %+v", i, err)
-		require.Equal(bres.Code, abci.CodeTypeOK) // FIXME
+		require.NoError(err, "%d: %+v", i, err)
+		require.Equal(abci.CodeTypeOK, bres.Code) // FIXME
 
 		require.Equal(initMempoolSize+1, mempool.Size())
 
@@ -533,7 +533,7 @@ func TestBlockSearch(t *testing.T) {
 	// require.GreaterOrEqual(t, blockCount, 5)
 
 	// otherwise it is 0
-	require.Equal(t, blockCount, 0)
+	require.Equal(t, 0, blockCount)
 }
 
 func TestTxSearch(t *testing.T) {

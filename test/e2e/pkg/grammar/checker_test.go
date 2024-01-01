@@ -111,5 +111,5 @@ func TestFilterLastHeight(t *testing.T) {
 	reqs = append(reqs, finalizeBlock)
 	rrr, n := checker.filterLastHeight(reqs)
 	require.Equal(t, len(rr), len(rrr))
-	require.Equal(t, n, 1)
+	require.Equal(t, 1, n)
 }

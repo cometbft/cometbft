@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParallel(t *testing.T) {
@@ -46,7 +47,7 @@ func TestParallel(t *testing.T) {
 		// }
 	}
 	assert.Equal(t, 0, failedTasks, "No task should have failed")
-	assert.Nil(t, "There should be no errors", trs.FirstError())
+	require.NoError(t, trs.FirstError(), "There should be no errors")
 	assert.Equal(t, 0, trs.FirstValue(), "First value should be 0")
 }
 

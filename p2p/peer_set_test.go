@@ -178,7 +178,7 @@ func TestPeerSetGet(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			have, want := peerSet.Get(peer.ID()), peer
-			assert.Equal(t, have, want, "%d: have %v, want %v", i, have, want)
+			assert.Equal(t, want, have, "%d: have %v, want %v", i, want, have)
 		}(i)
 	}
 	wg.Wait()

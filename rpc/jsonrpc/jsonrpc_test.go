@@ -248,7 +248,7 @@ func testWithHTTPClient(t *testing.T, cl client.HTTPClient) {
 
 	got5, err := echoWithDefaultViaHTTP(cl, nil)
 	require.NoError(t, err)
-	assert.Equal(t, got5, -1)
+	assert.Equal(t, -1, got5)
 
 	val6 := cmtrand.Intn(10000)
 	got6, err := echoWithDefaultViaHTTP(cl, &val6)

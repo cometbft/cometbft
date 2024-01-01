@@ -1079,12 +1079,12 @@ func TestValSetUpdatesOrderIndependenceTestsExecute(t *testing.T) {
 			valList := createNewValidatorList(permutation(tt.updateVals))
 
 			// check there was no error and the set is properly scaled and centered.
-			assert.NoError(t, valSetCopy.UpdateWithChangeSet(valList),
+			require.NoError(t, valSetCopy.UpdateWithChangeSet(valList),
 				"test %v failed for permutation %v", i, valList)
 			verifyValidatorSet(t, valSetCopy)
 
 			// verify the resulting test is same as the expected
-			assert.Equal(t, valSetCopy, valSetExp,
+			assert.Equal(t, valSetExp, valSetCopy,
 				"test %v failed for permutation %v", i, valList)
 		}
 	}

@@ -110,7 +110,7 @@ func TestCompanionInitialHeightSetup(t *testing.T) {
 
 	companionRetainHeight, err := n.stateStore.GetCompanionBlockRetainHeight()
 	require.NoError(t, err)
-	require.Equal(t, companionRetainHeight, int64(1))
+	require.Equal(t, int64(1), companionRetainHeight)
 }
 
 func TestNodeDelayedStart(t *testing.T) {

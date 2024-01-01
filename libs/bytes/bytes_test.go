@@ -50,7 +50,7 @@ func TestJSONMarshal(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, string(jsonBytes), tc.expected)
+			assert.Equal(t, tc.expected, string(jsonBytes))
 
 			// TODO do fuzz testing to ensure that unmarshal fails
 

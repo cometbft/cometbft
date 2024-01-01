@@ -305,8 +305,8 @@ func TestOneValidatorChangesSaveLoad(t *testing.T) {
 
 	for i, power := range testCases {
 		v, err := stateStore.LoadValidators(int64(i + 1 + 1)) // +1 because vset changes delayed by 1 block.
-		assert.Nil(t, err, fmt.Sprintf("expected no err at height %d", i))
-		assert.Equal(t, v.Size(), 1, "validator set size is greater than 1: %d", v.Size())
+		require.NoError(t, err, fmt.Sprintf("expected no err at height %d", i))
+		assert.Equal(t, 1, v.Size(), fmt.Sprintf("validator set size is greater than 1: %d", v.Size()))
 		_, val := v.GetByIndex(0)
 
 		assert.Equal(t, val.VotingPower, power, fmt.Sprintf(`unexpected powerat

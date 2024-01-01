@@ -37,14 +37,14 @@ func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
 
 	heights, err := blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 2"))
 	require.NoError(t, err)
-	require.Equal(t, heights, []int64{1, 2})
+	require.Equal(t, []int64{1, 2}, heights)
 
 	newRetainHeight := pruner.PruneBlockIndexerToRetainHeight(0)
 	require.Equal(t, int64(2), newRetainHeight)
 
 	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 2"))
 	require.NoError(t, err)
-	require.Equal(t, heights, []int64{2})
+	require.Equal(t, []int64{2}, heights)
 
 	err = pruner.SetBlockIndexerRetainHeight(int64(4))
 	require.NoError(t, err)
@@ -69,13 +69,13 @@ func TestPruneBlockIndexerToRetainHeight(t *testing.T) {
 
 	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 4"))
 	require.NoError(t, err)
-	require.Equal(t, heights, []int64{1, 4})
+	require.Equal(t, []int64{1, 4}, heights)
 
 	pruner.PruneBlockIndexerToRetainHeight(4)
 
 	heights, err = blockIndexer.Search(context.Background(), query.MustCompile("block.height <= 4"))
 	require.NoError(t, err)
-	require.Equal(t, heights, []int64{1, 4})
+	require.Equal(t, []int64{1, 4}, heights)
 }
 
 func TestPruneTxIndexerToRetainHeight(t *testing.T) {
@@ -272,6 +272,6 @@ func TestPruningWithHeight1(t *testing.T) {
 	require.NoError(t, err)
 
 	pruned, _, err := pruner.PruneBlocksToHeight(1)
-	require.Equal(t, pruned, uint64(0))
+	require.Equal(t, uint64(0), pruned)
 	require.NoError(t, err)
 }

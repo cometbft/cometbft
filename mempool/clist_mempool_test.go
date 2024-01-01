@@ -549,10 +549,10 @@ func TestMempool_CheckTxChecksTxSize(t *testing.T) {
 		if !testCase.err {
 			require.NoError(t, err, caseString)
 		} else {
-			require.Equal(t, err, ErrTxTooLarge{
+			require.Equal(t, ErrTxTooLarge{
 				Max:    maxTxSize,
 				Actual: testCase.len,
-			}, caseString)
+			}, err, caseString)
 		}
 	}
 }

@@ -151,7 +151,7 @@ func TestAddrBookPromoteToOld(t *testing.T) {
 		t.Errorf("selection with bias could not be bigger than the book")
 	}
 
-	assert.Equal(t, book.Size(), 100, "expecting book size to be 100")
+	assert.Equal(t, 100, book.Size(), "expecting book size to be 100")
 }
 
 func TestAddrBookHandlesDuplicates(t *testing.T) {

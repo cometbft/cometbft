@@ -171,7 +171,7 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 			require.NoError(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
 			require.NotNil(t, res)
-			require.Equal(t, res.Height, tc.expectedHeight)
+			require.Equal(t, tc.expectedHeight, res.Height)
 		}
 		for _, tc := range errorCases {
 			_, err = gRPCClient.GetBlockResults(ctx, tc.requestHeight)

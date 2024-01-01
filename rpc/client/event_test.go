@@ -136,7 +136,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 					panic(fmt.Sprintf("Unknown broadcastMethod %s", broadcastMethod))
 				}
 				if assert.NoError(t, err) {
-					assert.Equal(t, txres.Code, abci.CodeTypeOK)
+					assert.Equal(t, abci.CodeTypeOK, txres.Code)
 				}
 			}()
 

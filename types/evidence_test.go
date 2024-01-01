@@ -45,7 +45,7 @@ func TestDuplicateVoteEvidence(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, ev.Hash(), tmhash.Sum(ev.Bytes()))
 	assert.NotNil(t, ev.String())
-	assert.Equal(t, ev.Height(), height)
+	assert.Equal(t, height, ev.Height())
 }
 
 func TestDuplicateVoteEvidenceValidation(t *testing.T) {

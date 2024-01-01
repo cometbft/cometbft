@@ -91,7 +91,7 @@ func TestPersistentKVStoreEmptyTX(t *testing.T) {
 	reqPrepare := types.PrepareProposalRequest{Txs: txs, MaxTxBytes: 10 * 1024}
 	resPrepare, err := kvstore.PrepareProposal(ctx, &reqPrepare)
 	require.NoError(t, err)
-	require.Len(t, len(resPrepare.Txs), len(reqPrepare.Txs)-1, "Empty transaction not properly removed")
+	require.Len(t, resPrepare.Txs, len(reqPrepare.Txs)-1, "Empty transaction not properly removed")
 }
 
 func TestPersistentKVStoreKV(t *testing.T) {

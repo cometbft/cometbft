@@ -273,7 +273,7 @@ func TestAddrBookGetSelection(t *testing.T) {
 	err := book.AddAddress(addr, addr)
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(book.GetSelection()))
+	assert.Len(t, book.GetSelection(), 1)
 	assert.Equal(t, addr, book.GetSelection()[0])
 
 	// 3) add a bunch of addresses
@@ -317,7 +317,7 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 	require.NoError(t, err)
 
 	selection = book.GetSelectionWithBias(biasTowardsNewAddrs)
-	assert.Equal(t, 1, len(selection))
+	assert.Len(t, selection, 1)
 	assert.Equal(t, addr, selection[0])
 
 	// 3) add a bunch of addresses
@@ -787,7 +787,7 @@ func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, s
 	)
 
 	for _, addr := range addrs {
-		addrType := 0
+		var addrType int
 		if book.IsGood(addr) {
 			addrType = 2
 		} else {

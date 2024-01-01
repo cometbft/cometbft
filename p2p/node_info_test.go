@@ -19,7 +19,7 @@ func TestNodeInfoValidate(t *testing.T) {
 	}
 	dupChannels := make([]byte, 5)
 	copy(dupChannels, channels[:5])
-	dupChannels = append(dupChannels, testCh)
+	dupChannels = append(dupChannels, testCh) //nolint:makezero // huge errors when we don't do it the "wrong" way
 
 	nonASCII := "¢§µ"
 	emptyTab := "\t"

@@ -481,7 +481,7 @@ func randStateWithAppImpl(
 	consensusParams *types.ConsensusParams,
 ) (*State, []*validatorStub) {
 	// Get State
-	state, privVals := randGenesisState(nValidators, false, 10, consensusParams)
+	state, privVals := randGenesisState(nValidators, consensusParams)
 
 	vss := make([]*validatorStub, nValidators)
 
@@ -768,7 +768,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 	appFunc func() abci.Application, configOpts ...func(*cfg.Config),
 ) ([]*State, cleanupFunc) {
 	t.Helper()
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	configRootDirs := make([]string, 0, nValidators)
@@ -811,7 +811,7 @@ func randConsensusNetWithPeers(
 ) ([]*State, *types.GenesisDoc, *cfg.Config, cleanupFunc) {
 	t.Helper()
 	c := test.ConsensusParams()
-	genDoc, privVals := randGenesisDoc(nValidators, false, testMinPower, c)
+	genDoc, privVals := randGenesisDoc(nValidators, testMinPower, c)
 	css := make([]*State, nPeers)
 	logger := consensusLogger()
 	var peer0Config *cfg.Config
@@ -878,10 +878,10 @@ func getSwitchIndex(switches []*p2p.Switch, peer p2p.Peer) int {
 // genesis
 
 func randGenesisDoc(numValidators int,
-	randPower bool,
 	minPower int64,
 	consensusParams *types.ConsensusParams,
 ) (*types.GenesisDoc, []types.PrivValidator) {
+	randPower := false
 	validators := make([]types.GenesisValidator, numValidators)
 	privValidators := make([]types.PrivValidator, numValidators)
 	for i := 0; i < numValidators; i++ {
@@ -905,11 +905,10 @@ func randGenesisDoc(numValidators int,
 
 func randGenesisState(
 	numValidators int,
-	randPower bool,
-	minPower int64,
 	consensusParams *types.ConsensusParams,
 ) (sm.State, []types.PrivValidator) {
-	genDoc, privValidators := randGenesisDoc(numValidators, randPower, minPower, consensusParams)
+	minPower := int64(10)
+	genDoc, privValidators := randGenesisDoc(numValidators, minPower, consensusParams)
 	s0, _ := sm.MakeGenesisState(genDoc)
 	return s0, privValidators
 }

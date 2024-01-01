@@ -72,16 +72,33 @@ func TestUnmarshallResponses(t *testing.T) {
 }
 
 func TestRPCError(t *testing.T) {
-	assert.Equal(t, "RPC error 12 - Badness: One worse than a code 11",
-		fmt.Sprintf("%v", &RPCError{
-			Code:    12,
-			Message: "Badness",
-			Data:    "One worse than a code 11",
-		}))
+	testCases := []struct {
+		name     string
+		err      *RPCError
+		expected string
+	}{
+		{
+			name: "With data",
+			err: &RPCError{
+				Code:    12,
+				Message: "Badness",
+				Data:    "One worse than a code 11",
+			},
+			expected: "RPC error 12 - Badness: One worse than a code 11",
+		},
+		{
+			name: "Without data",
+			err: &RPCError{
+				Code:    12,
+				Message: "Badness",
+			},
+			expected: "RPC error 12 - Badness",
+		},
+	}
 
-	assert.Equal(t, "RPC error 12 - Badness",
-		fmt.Sprintf("%v", &RPCError{
-			Code:    12,
-			Message: "Badness",
-		}))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, tc.err.Error())
+		})
+	}
 }

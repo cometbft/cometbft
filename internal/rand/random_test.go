@@ -28,7 +28,7 @@ func TestRandIntn(t *testing.T) {
 	n := 243
 	for i := 0; i < 100; i++ {
 		x := Intn(n)
-		assert.True(t, x < n)
+		assert.Less(t, x, n)
 	}
 }
 

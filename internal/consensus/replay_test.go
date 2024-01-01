@@ -820,7 +820,7 @@ func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm
 			// update the kvstore height and apphash
 			// as if we ran commit but not
 			// here we expect a dummy state store to be used
-			state = applyBlock(t, stateStore, mempool, evpool, state, chain[nBlocks-1], proxyApp, bs)
+			_ = applyBlock(t, stateStore, mempool, evpool, state, chain[nBlocks-1], proxyApp, bs)
 		}
 	default:
 		panic(fmt.Sprintf("unknown mode %v", mode))

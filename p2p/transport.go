@@ -10,7 +10,9 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/p2p/conn"
+	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 	"github.com/cosmos/gogoproto/proto"
+	kcp "github.com/xtaci/kcp-go/v5"
 	"golang.org/x/net/netutil"
 )
 
@@ -253,7 +255,8 @@ func (mt *MultiplexTransport) Close() error {
 
 // Listen implements transportLifecycle.
 func (mt *MultiplexTransport) Listen(addr NetAddress) error {
-	ln, err := net.Listen("tcp", addr.DialString())
+
+	ln, err := kcp.Listen("0.0.0.0:26656")
 	if err != nil {
 		return err
 	}
@@ -285,6 +288,7 @@ func (mt *MultiplexTransport) AddChannel(chID byte) {
 
 func (mt *MultiplexTransport) acceptPeers() {
 	for {
+		fmt.Println("awaiting connection")
 		c, err := mt.listener.Accept()
 		if err != nil {
 			// If Close() has been called, silently exit.

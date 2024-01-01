@@ -15,6 +15,7 @@ import (
 	"time"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	kcp "github.com/xtaci/kcp-go/v5"
 )
 
 // EmptyNetAddress defines the string representation of an empty NetAddress.
@@ -41,10 +42,10 @@ func IDAddressString(id ID, protocolHostPort string) string {
 // panic. Panics if ID is invalid.
 // TODO: socks proxies?
 func NewNetAddress(id ID, addr net.Addr) *NetAddress {
-	tcpAddr, ok := addr.(*net.TCPAddr)
+	tcpAddr, ok := addr.(*net.UDPAddr)
 	if !ok {
 		if flag.Lookup("test.v") == nil { // normal run
-			panic(fmt.Sprintf("Only TCPAddrs are supported. Got: %v", addr))
+			panic(fmt.Sprintf("Only UDPAddrs are supported. Got: %v", addr))
 		}
 		// in testing
 		netAddr := NewNetAddressIPPort(net.IP("127.0.0.1"), 0)
@@ -234,7 +235,7 @@ func (na *NetAddress) DialString() string {
 
 // Dial calls net.Dial on the address.
 func (na *NetAddress) Dial() (net.Conn, error) {
-	conn, err := net.Dial("tcp", na.DialString())
+	conn, err := kcp.Dial(na.DialString())
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +244,7 @@ func (na *NetAddress) Dial() (net.Conn, error) {
 
 // DialTimeout calls net.DialTimeout on the address.
 func (na *NetAddress) DialTimeout(timeout time.Duration) (net.Conn, error) {
-	conn, err := net.DialTimeout("tcp", na.DialString(), timeout)
+	conn, err := kcp.Dial(na.DialString())
 	if err != nil {
 		return nil, err
 	}

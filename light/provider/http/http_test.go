@@ -63,7 +63,7 @@ func TestProvider(t *testing.T) {
 		assert.GreaterOrEqual(t, lb.Height, 10)
 
 		// let's check this is valid somehow
-		assert.NoError(t, lb.ValidateBasic(chainID))
+		assert.Nil(t, lb.ValidateBasic(chainID))
 
 		// historical queries now work :)
 		lb, err = p.LightBlock(context.Background(), 0)

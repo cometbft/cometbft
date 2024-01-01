@@ -315,7 +315,7 @@ func (s *Server) OnStart() error {
 }
 
 // OnReset implements Service.OnReset.
-func (s *Server) OnReset() error {
+func (*Server) OnReset() error {
 	return nil
 }
 

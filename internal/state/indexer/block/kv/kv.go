@@ -507,7 +507,7 @@ LOOP:
 	return filteredHeights, nil
 }
 
-func (idx *BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
+func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
 	// If we return attributes that occur within the same events, then store the event sequence in the
 	// result map as well
 	eventSeq, _ := parseEventSeqFromEventKey(it.Key())

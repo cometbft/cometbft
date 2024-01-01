@@ -6,11 +6,10 @@ import (
 	"net"
 	"time"
 
-	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	"github.com/cometbft/cometbft/crypto"
+	tmp2p "github.com/cometbft/cometbft//p2p"
+=	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/p2p/conn"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 	"github.com/cosmos/gogoproto/proto"
 	kcp "github.com/xtaci/kcp-go/v5"
 	"golang.org/x/net/netutil"

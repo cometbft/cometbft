@@ -341,8 +341,8 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 			continue
 		}
 
-		assert.NoError(t, panicErr, "#%d: unexpected panic", i)
-		assert.NoError(t, err, "#%d: expecting a non-nil error", i)
+		require.NoError(t, panicErr, "#%d: unexpected panic", i)
+		require.NoError(t, err, "#%d: expecting a non-nil error", i)
 		qua, ok := res.(*quad)
 		if !ok || qua == nil {
 			t.Errorf("#%d: got nil quad back; gotType=%T", i, res)
@@ -504,14 +504,14 @@ func TestLoadBlockPart(t *testing.T) {
 	// Initially no contents.
 	// 1. Requesting for a non-existent block shouldn't fail
 	res, _, panicErr := doFn(loadPart)
-	require.Nil(t, panicErr, "a non-existent block part shouldn't cause a panic")
+	require.NoError(t, panicErr, "a non-existent block part shouldn't cause a panic")
 	require.Nil(t, res, "a non-existent block part should return nil")
 
 	// 2. Next save a corrupted block then try to load it
 	err = db.Set(calcBlockPartKey(height, index), []byte("CometBFT"))
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadPart)
-	require.NotNil(t, panicErr, "expecting a non-nil panic")
+	require.NoError(t, panicErr, "expecting a non-nil panic")
 	require.Contains(t, panicErr.Error(), "unmarshal to cmtproto.Part failed")
 
 	// 3. A good block serialized and saved to the DB should be retrievable
@@ -525,7 +525,7 @@ func TestLoadBlockPart(t *testing.T) {
 	err = db.Set(calcBlockPartKey(height, index), mustEncode(pb1))
 	require.NoError(t, err)
 	gotPart, _, panicErr := doFn(loadPart)
-	require.Nil(t, panicErr, "an existent and proper block should not panic")
+	require.NoError(t, panicErr, "an existent and proper block should not panic")
 	require.Nil(t, res, "a properly saved block should return a proper block")
 	require.Equal(t, gotPart.(*types.Part), part1,
 		"expecting successful retrieval of previously saved block")
@@ -852,14 +852,14 @@ func TestLoadBlockMeta(t *testing.T) {
 	// Initially no contents.
 	// 1. Requesting for a non-existent blockMeta shouldn't fail
 	res, _, panicErr := doFn(loadMeta)
-	require.Nil(t, panicErr, "a non-existent blockMeta shouldn't cause a panic")
+	require.NoError(t, panicErr, "a non-existent blockMeta shouldn't cause a panic")
 	require.Nil(t, res, "a non-existent blockMeta should return nil")
 
 	// 2. Next save a corrupted blockMeta then try to load it
 	err := db.Set(calcBlockMetaKey(height), []byte("CometBFT-Meta"))
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadMeta)
-	require.NotNil(t, panicErr, "expecting a non-nil panic")
+	require.NoError(t, panicErr, "expecting a non-nil panic")
 	require.Contains(t, panicErr.Error(), "unmarshal to cmtproto.BlockMeta")
 
 	// 3. A good blockMeta serialized and saved to the DB should be retrievable

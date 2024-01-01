@@ -44,7 +44,7 @@ func TestResetValidator(t *testing.T) {
 	blockID := types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}}
 	vote := newVote(privVal.Key.Address, 0, height, round, voteType, blockID)
 	err := privVal.SignVote("mychainid", vote.ToProto())
-	assert.NoError(t, err, "expected no error signing vote")
+	require.NoError(t, err, "expected no error signing vote")
 
 	// priv val after signing is not same as empty
 	assert.NotEqual(t, privVal.LastSignState, emptyState)
@@ -165,11 +165,11 @@ func TestSignVote(t *testing.T) {
 	vote := newVote(privVal.Key.Address, 0, height, round, voteType, block1)
 	v := vote.ToProto()
 	err := privVal.SignVote("mychainid", v)
-	assert.NoError(err, "expected no error signing vote")
+	require.NoError(t, err, "expected no error signing vote")
 
 	// try to sign the same vote again; should be fine
 	err = privVal.SignVote("mychainid", v)
-	assert.NoError(err, "expected no error on signing same vote")
+	require.NoError(t, err, "expected no error on signing same vote")
 
 	// now try some bad votes
 	cases := []*types.Vote{
@@ -182,14 +182,14 @@ func TestSignVote(t *testing.T) {
 	for _, c := range cases {
 		cpb := c.ToProto()
 		err = privVal.SignVote("mychainid", cpb)
-		assert.Error(err, "expected error on signing conflicting vote")
+		require.Error(t, err, "expected error on signing conflicting vote")
 	}
 
 	// try signing a vote with a different time stamp
 	sig := vote.Signature
 	vote.Timestamp = vote.Timestamp.Add(time.Duration(1000))
 	err = privVal.SignVote("mychainid", v)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal(sig, vote.Signature)
 }
 
@@ -215,11 +215,11 @@ func TestSignProposal(t *testing.T) {
 	proposal := newProposal(height, round, block1)
 	pbp := proposal.ToProto()
 	err := privVal.SignProposal("mychainid", pbp)
-	assert.NoError(err, "expected no error signing proposal")
+	require.NoError(t, err, "expected no error signing proposal")
 
 	// try to sign the same proposal again; should be fine
 	err = privVal.SignProposal("mychainid", pbp)
-	assert.NoError(err, "expected no error on signing same proposal")
+	require.NoError(t, err, "expected no error on signing same proposal")
 
 	// now try some bad Proposals
 	cases := []*types.Proposal{
@@ -238,7 +238,7 @@ func TestSignProposal(t *testing.T) {
 	sig := proposal.Signature
 	proposal.Timestamp = proposal.Timestamp.Add(time.Duration(1000))
 	err = privVal.SignProposal("mychainid", pbp)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal(sig, proposal.Signature)
 }
 
@@ -259,7 +259,7 @@ func TestDifferByTimestamp(t *testing.T) {
 		proposal := newProposal(height, round, block1)
 		pb := proposal.ToProto()
 		err := privVal.SignProposal(chainID, pb)
-		assert.NoError(t, err, "expected no error signing proposal")
+		require.NoError(t, err, "expected no error signing proposal")
 		signBytes := types.ProposalSignBytes(chainID, pb)
 
 		sig := proposal.Signature
@@ -270,7 +270,7 @@ func TestDifferByTimestamp(t *testing.T) {
 		var emptySig []byte
 		proposal.Signature = emptySig
 		err = privVal.SignProposal("mychainid", pb)
-		assert.NoError(t, err, "expected no error on signing same proposal")
+		require.NoError(t, err, "expected no error on signing same proposal")
 
 		assert.Equal(t, timeStamp, pb.Timestamp)
 		assert.Equal(t, signBytes, types.ProposalSignBytes(chainID, pb))
@@ -284,7 +284,7 @@ func TestDifferByTimestamp(t *testing.T) {
 		vote := newVote(privVal.Key.Address, 0, height, round, voteType, blockID)
 		v := vote.ToProto()
 		err := privVal.SignVote("mychainid", v)
-		assert.NoError(t, err, "expected no error signing vote")
+		require.NoError(t, err, "expected no error signing vote")
 
 		signBytes := types.VoteSignBytes(chainID, v)
 		sig := v.Signature
@@ -297,7 +297,7 @@ func TestDifferByTimestamp(t *testing.T) {
 		v.Signature = emptySig
 		v.ExtensionSignature = emptySig
 		err = privVal.SignVote("mychainid", v)
-		assert.NoError(t, err, "expected no error on signing same vote")
+		require.NoError(t, err, "expected no error on signing same vote")
 
 		assert.Equal(t, timeStamp, v.Timestamp)
 		assert.Equal(t, signBytes, types.VoteSignBytes(chainID, v))
@@ -324,7 +324,7 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	vpb1 := vote1.ToProto()
 
 	err = privVal.SignVote("mychainid", vpb1)
-	assert.NoError(t, err, "expected no error signing vote")
+	require.NoError(t, err, "expected no error signing vote")
 	assert.NotNil(t, vpb1.ExtensionSignature)
 
 	vesb1 := types.VoteExtensionSignBytes("mychainid", vpb1)
@@ -337,7 +337,7 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	vpb2 := vote2.ToProto()
 
 	err = privVal.SignVote("mychainid", vpb2)
-	assert.NoError(t, err, "expected no error signing same vote with manipulated vote extension")
+	require.NoError(t, err, "expected no error signing same vote with manipulated vote extension")
 
 	// We need to ensure that a valid new extension signature has been created
 	// that validates against the vote extension sign bytes with the new
@@ -356,7 +356,7 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	vpb2.ExtensionSignature = nil
 
 	err = privVal.SignVote("mychainid", vpb2)
-	assert.NoError(t, err, "expected no error signing same vote with manipulated timestamp and vote extension")
+	require.NoError(t, err, "expected no error signing same vote with manipulated timestamp and vote extension")
 	assert.Equal(t, expectedTimestamp, vpb2.Timestamp)
 
 	vesb3 := types.VoteExtensionSignBytes("mychainid", vpb2)

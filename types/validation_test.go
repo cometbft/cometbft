@@ -108,7 +108,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommit")
 				}
 			} else {
-				assert.NoError(t, err, "VerifyCommit")
+				require.NoError(t, err, "VerifyCommit")
 			}
 
 			if countAllSignatures {
@@ -121,7 +121,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 					assert.Contains(t, err.Error(), tc.description, "VerifyCommitLight")
 				}
 			} else {
-				assert.NoError(t, err, "VerifyCommitLight")
+				require.NoError(t, err, "VerifyCommitLight")
 			}
 
 			// only a subsection of the tests apply to VerifyCommitLightTrusting

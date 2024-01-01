@@ -234,7 +234,7 @@ func TestTxResultsHash(t *testing.T) {
 	proof := results.ProveResult(0)
 	bz, err := results[0].Marshal()
 	require.NoError(t, err)
-	assert.NoError(t, proof.Verify(root, bz))
+	require.NoError(t, proof.Verify(root, bz))
 }
 
 func sliceToMap(s []int64) map[int64]bool {

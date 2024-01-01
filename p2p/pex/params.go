@@ -9,9 +9,6 @@ const (
 	// interval used to dump the address cache to disk for future use.
 	dumpAddressInterval = time.Minute * 2
 
-	// max addresses in each old address bucket.
-	oldBucketSize = 64
-
 	// buckets we split old addresses over.
 	oldBucketCount = 64
 
@@ -20,9 +17,6 @@ const (
 
 	// buckets that we spread new addresses over.
 	newBucketCount = 256
-
-	// old buckets over which an address group will be spread.
-	oldBucketsPerGroup = 4
 
 	// new buckets over which a source address group will be spread.
 	newBucketsPerGroup = 32

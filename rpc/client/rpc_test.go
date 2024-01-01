@@ -83,11 +83,11 @@ func TestCorsEnabled(t *testing.T) {
 	remote := strings.ReplaceAll(rpctest.GetConfig().RPC.ListenAddress, "tcp", "http")
 
 	req, err := http.NewRequest(http.MethodGet, remote, nil)
-	require.Nil(t, err, "%+v", err)
+	require.NoError(t, err, "%+v", err)
 	req.Header.Set("Origin", origin)
 	c := &http.Client{}
 	resp, err := c.Do(req)
-	require.Nil(t, err, "%+v", err)
+	require.NoError(t, err, "%+v", err)
 	defer resp.Body.Close()
 
 	assert.Equal(t, resp.Header.Get("Access-Control-Allow-Origin"), origin)
@@ -98,7 +98,7 @@ func TestStatus(t *testing.T) {
 	for i, c := range GetClients() {
 		moniker := rpctest.GetConfig().Moniker
 		status, err := c.Status(context.Background())
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 		assert.Equal(t, moniker, status.NodeInfo.Moniker)
 	}
 }
@@ -109,7 +109,7 @@ func TestInfo(t *testing.T) {
 		// status, err := c.Status()
 		// require.Nil(t, err, "%+v", err)
 		info, err := c.ABCIInfo(context.Background())
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 		// TODO: this is not correct - fix merkleeyes!
 		// assert.EqualValues(t, status.SyncInfo.LatestBlockHeight, info.Response.LastBlockHeight)
 		assert.True(t, strings.Contains(info.Response.Data, "size"))
@@ -121,9 +121,9 @@ func TestNetInfo(t *testing.T) {
 		nc, ok := c.(client.NetworkClient)
 		require.True(t, ok, "%d", i)
 		netinfo, err := nc.NetInfo(context.Background())
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 		assert.True(t, netinfo.Listening)
-		assert.Equal(t, 0, len(netinfo.Peers))
+		assert.Len(t, netinfo.Peers, 0)
 	}
 }
 
@@ -145,7 +145,7 @@ func TestConsensusState(t *testing.T) {
 		nc, ok := c.(client.NetworkClient)
 		require.True(t, ok, "%d", i)
 		cons, err := nc.ConsensusState(context.Background())
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 		assert.NotEmpty(t, cons.RoundState)
 	}
 }
@@ -155,7 +155,7 @@ func TestHealth(t *testing.T) {
 		nc, ok := c.(client.NetworkClient)
 		require.True(t, ok, "%d", i)
 		_, err := nc.Health(context.Background())
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 	}
 }
 
@@ -163,7 +163,7 @@ func TestGenesisAndValidators(t *testing.T) {
 	for i, c := range GetClients() {
 		// make sure this is the right genesis file
 		gen, err := c.Genesis(context.Background())
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 		// get the genesis validator
 		require.Len(t, gen.Genesis.Validators, 1)
 		gval := gen.Genesis.Validators[0]
@@ -171,7 +171,7 @@ func TestGenesisAndValidators(t *testing.T) {
 		// get the current validators
 		h := int64(1)
 		vals, err := c.Validators(context.Background(), &h, nil, nil)
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 		require.Len(t, vals.Validators, 1)
 		require.Equal(t, 1, vals.Count)
 		require.Equal(t, 1, vals.Total)
@@ -212,7 +212,7 @@ func TestABCIQuery(t *testing.T) {
 		// write something
 		k, v, tx := MakeTxKV()
 		bres, err := c.BroadcastTxCommit(context.Background(), tx)
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 		apph := bres.Height + 1 // this is where the tx will be applied to the state
 
 		// wait before querying
@@ -419,7 +419,7 @@ func TestNumUnconfirmedTxs(t *testing.T) {
 		mc, ok := c.(client.MempoolClient)
 		require.True(t, ok, "%d", i)
 		res, err := mc.NumUnconfirmedTxs(context.Background())
-		require.Nil(t, err, "%d: %+v", i, err)
+		require.NoError(t, err, "%d: %+v", i, err)
 
 		assert.Equal(t, mempoolSize, res.Count)
 		assert.Equal(t, mempoolSize, res.Total)

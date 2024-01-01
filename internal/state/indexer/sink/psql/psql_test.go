@@ -17,6 +17,7 @@ import (
 	tmlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cosmos/gogoproto/proto"
+
 	// Register the Postgres database driver.
 	_ "github.com/lib/pq"
 	"github.com/ory/dockertest"
@@ -369,7 +370,7 @@ func verifyNotImplemented(t *testing.T, label string, f func() (bool, error)) {
 	want := label + " is not supported via the postgres event sink"
 	ok, err := f()
 	assert.False(t, ok)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	assert.Equal(t, want, err.Error())
 }
 

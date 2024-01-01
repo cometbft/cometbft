@@ -89,7 +89,7 @@ func TestUnmarshalValidatorState(t *testing.T) {
 
 	val := FilePVLastSignState{}
 	err := cmtjson.Unmarshal([]byte(serialized), &val)
-	require.Nil(err, "%+v", err)
+	require.NoError(err, "%+v", err)
 
 	// make sure the values match
 	assert.EqualValues(val.Height, 1)
@@ -98,7 +98,7 @@ func TestUnmarshalValidatorState(t *testing.T) {
 
 	// export it and make sure it is the same
 	out, err := cmtjson.Marshal(val)
-	require.Nil(err, "%+v", err)
+	require.NoError(err, "%+v", err)
 	assert.JSONEq(serialized, string(out))
 }
 
@@ -128,7 +128,7 @@ func TestUnmarshalValidatorKey(t *testing.T) {
 
 	val := FilePVKey{}
 	err := cmtjson.Unmarshal([]byte(serialized), &val)
-	require.Nil(err, "%+v", err)
+	require.NoError(err, "%+v", err)
 
 	// make sure the values match
 	assert.EqualValues(addr, val.Address)
@@ -137,7 +137,7 @@ func TestUnmarshalValidatorKey(t *testing.T) {
 
 	// export it and make sure it is the same
 	out, err := cmtjson.Marshal(val)
-	require.Nil(err, "%+v", err)
+	require.NoError(err, "%+v", err)
 	assert.JSONEq(serialized, string(out))
 }
 

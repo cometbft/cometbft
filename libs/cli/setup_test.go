@@ -112,7 +112,7 @@ func TestSetupConfig(t *testing.T) {
 		viper.Reset()
 		args := append([]string{cmd.Use}, tc.args...)
 		err := RunWithArgs(cmd, args, tc.env)
-		require.Nil(t, err, i)
+		require.NoError(t, err, i)
 		assert.Equal(t, tc.expected, foo, i)
 		assert.Equal(t, tc.expectedTwo, two, i)
 	}

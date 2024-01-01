@@ -1843,7 +1843,7 @@ func TestProposeValidBlock(t *testing.T) {
 	rs = cs1.GetRoundState()
 	assert.True(t, bytes.Equal(rs.ProposalBlock.Hash(), propBlockHash))
 	assert.True(t, bytes.Equal(rs.ProposalBlock.Hash(), rs.ValidBlock.Hash()))
-	assert.True(t, rs.Proposal.POLRound == rs.ValidRound)
+	assert.Equal(t, rs.Proposal.POLRound, rs.ValidRound)
 	assert.True(t, bytes.Equal(rs.Proposal.BlockID.Hash, rs.ValidBlock.Hash()))
 }
 
@@ -2530,7 +2530,7 @@ func TestWaitingTimeoutProposeOnNewRound(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	rs := cs1.GetRoundState()
-	assert.True(t, rs.Step == cstypes.RoundStepPropose) // P0 does not prevote before timeoutPropose expires
+	assert.Equal(t, rs.Step, cstypes.RoundStepPropose) // P0 does not prevote before timeoutPropose expires
 
 	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Propose(round).Nanoseconds())
 
@@ -2670,9 +2670,9 @@ func TestCommitFromPreviousRound(t *testing.T) {
 	ensureNewValidBlock(validBlockCh, height, round)
 
 	rs := cs1.GetRoundState()
-	assert.True(t, rs.Step == cstypes.RoundStepCommit)
-	assert.True(t, rs.CommitRound == vs2.Round)
-	assert.True(t, rs.ProposalBlock == nil)
+	assert.Equal(t, cstypes.RoundStepCommit, rs.Step)
+	assert.Equal(t, vs2.Round, rs.CommitRound)
+	assert.Nil(t, rs.ProposalBlock, nil)
 	assert.True(t, rs.ProposalBlockParts.Header().Equals(propBlockParts.Header()))
 
 	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {

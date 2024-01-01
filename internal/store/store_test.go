@@ -504,14 +504,14 @@ func TestLoadBlockPart(t *testing.T) {
 	// Initially no contents.
 	// 1. Requesting for a non-existent block shouldn't fail
 	res, _, panicErr := doFn(loadPart)
-	require.Nil(t, panicErr, "a non-existent block part shouldn't cause a panic")
+	require.NoError(t, panicErr, "a non-existent block part shouldn't cause a panic")
 	require.Nil(t, res, "a non-existent block part should return nil")
 
 	// 2. Next save a corrupted block then try to load it
 	err = db.Set(calcBlockPartKey(height, index), []byte("CometBFT"))
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadPart)
-	require.NotNil(t, panicErr, "expecting a non-nil panic")
+	require.Error(t, panicErr, "expecting a non-nil panic")
 	require.Contains(t, panicErr.Error(), "unmarshal to cmtproto.Part failed")
 
 	// 3. A good block serialized and saved to the DB should be retrievable

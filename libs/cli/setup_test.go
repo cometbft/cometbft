@@ -231,7 +231,7 @@ func TestSetupTrace(t *testing.T) {
 		desired := fmt.Sprintf("ERROR: %s", tc.expected)
 		assert.Equal(t, desired, msg[0], i)
 		t.Log(msg)
-		if tc.long && assert.True(t, len(msg) > 2, i) {
+		if tc.long && assert.Greater(t, len(msg), 2, i) {
 			// the next line starts the stack trace...
 			assert.Contains(t, stderr, "TestSetupTrace", i)
 			assert.Contains(t, stderr, "setup_test.go", i)

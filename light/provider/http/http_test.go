@@ -60,10 +60,10 @@ func TestProvider(t *testing.T) {
 		lb, err := p.LightBlock(context.Background(), 0)
 		require.NoError(t, err)
 		require.NotNil(t, lb)
-		assert.True(t, lb.Height >= 10)
+		assert.GreaterOrEqual(t, lb.Height, 10)
 
 		// let's check this is valid somehow
-		assert.Nil(t, lb.ValidateBasic(chainID))
+		assert.NoError(t, lb.ValidateBasic(chainID))
 
 		// historical queries now work :)
 		lb, err = p.LightBlock(context.Background(), 0)

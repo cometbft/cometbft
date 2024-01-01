@@ -271,7 +271,7 @@ func TestAppCalls(t *testing.T) {
 		block, err := c.Block(context.Background(), &apph)
 		require.NoError(err)
 		appHash := block.Block.Header.AppHash
-		assert.True(len(appHash) > 0)
+		assert.Greater(len(appHash), 0)
 		assert.EqualValues(apph, block.Block.Header.Height)
 
 		blockByHash, err := c.BlockByHash(context.Background(), block.BlockID.Hash)
@@ -299,7 +299,7 @@ func TestAppCalls(t *testing.T) {
 		// check blockchain info, now that we know there is info
 		info, err := c.BlockchainInfo(context.Background(), apph, apph)
 		require.NoError(err)
-		assert.True(info.LastHeight >= apph)
+		assert.GreaterOrEqual(info.LastHeight, apph)
 		if assert.Equal(1, len(info.BlockMetas)) {
 			lastMeta := info.BlockMetas[0]
 			assert.EqualValues(apph, lastMeta.Header.Height)

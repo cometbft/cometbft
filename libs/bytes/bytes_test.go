@@ -27,8 +27,8 @@ func TestMarshal(t *testing.T) {
 // Test that the hex encoding works.
 func TestJSONMarshal(t *testing.T) {
 	type TestStruct struct {
-		B1 []byte   `json:"b1" yaml:"b1"` // normal bytes
-		B2 HexBytes `json:"b2" yaml:"b2"` // hex bytes
+		B1 []byte   `json:"B1" yaml:"B1"` // normal bytes
+		B2 HexBytes `json:"B2" yaml:"B2"` // hex bytes
 	}
 
 	cases := []struct {

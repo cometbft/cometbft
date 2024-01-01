@@ -330,6 +330,11 @@ func (a *addrBook) MarkGood(id p2p.ID) {
 		return
 	}
 	ka.markGood()
+	if ka.isNew() {
+		if err := a.moveToOld(ka); err != nil {
+			a.Logger.Error("Error moving address to old", "err", err)
+		}
+	}
 }
 
 // MarkAttempt implements AddrBook - it marks that an attempt was made to connect to the address.
@@ -547,6 +552,43 @@ func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 	return nil
 }
 
+// Adds ka to old bucket. Returns false if it couldn't do it cuz buckets full.
+func (a *addrBook) addToOldBucket(ka *knownAddress, bucketIdx int) bool {
+	// Sanity check
+	if ka.isNew() {
+		a.Logger.Error(fmt.Sprintf("Cannot add new address to old bucket: %v", ka))
+		return false
+	}
+	if len(ka.Buckets) != 0 {
+		a.Logger.Error(fmt.Sprintf("Cannot add already old address to another old bucket: %v", ka))
+		return false
+	}
+
+	addrStr := ka.Addr.String()
+	bucket := a.getBucket(bucketTypeOld, bucketIdx)
+
+	// Already exists?
+	if _, ok := bucket[addrStr]; ok {
+		return true
+	}
+
+	// Enforce max addresses.
+	if len(bucket) > oldBucketSize {
+		return false
+	}
+
+	// Add to bucket.
+	bucket[addrStr] = ka
+	if ka.addBucketRef(bucketIdx) == 1 {
+		a.nOld++
+	}
+
+	// Ensure in addrLookup
+	a.addrLookup[ka.ID()] = ka
+
+	return true
+}
+
 func (a *addrBook) removeFromBucket(ka *knownAddress, bucketType byte, bucketIdx int) {
 	if ka.BucketType != bucketType {
 		a.Logger.Error(fmt.Sprintf("Bucket type mismatch: %v", ka))
@@ -704,6 +746,50 @@ func (a *addrBook) expireNew(bucketIdx int) {
 	a.removeFromBucket(oldest, bucketTypeNew, bucketIdx)
 }
 
+// Promotes an address from new to old. If the destination bucket is full,
+// demote the oldest one to a "new" bucket.
+// TODO: Demote more probabilistically?
+func (a *addrBook) moveToOld(ka *knownAddress) error {
+	// Sanity check
+	if ka.isOld() {
+		a.Logger.Error(fmt.Sprintf("Cannot promote address that is already old %v", ka))
+		return nil
+	}
+	if len(ka.Buckets) == 0 {
+		a.Logger.Error(fmt.Sprintf("Cannot promote address that isn't in any new buckets %v", ka))
+		return nil
+	}
+
+	// Remove from all (new) buckets.
+	a.removeFromAllBuckets(ka)
+	// It's officially old now.
+	ka.BucketType = bucketTypeOld
+
+	// Try to add it to its oldBucket destination.
+	oldBucketIdx, err := a.calcOldBucket(ka.Addr)
+	if err != nil {
+		return err
+	}
+	added := a.addToOldBucket(ka, oldBucketIdx)
+	if !added {
+		// No room; move the oldest to a new bucket
+		oldest := a.pickOldest(bucketTypeOld, oldBucketIdx)
+		a.removeFromBucket(oldest, bucketTypeOld, oldBucketIdx)
+		newBucketIdx := a.calcNewBucket(oldest.Addr, oldest.Src)
+
+		if err := a.addToNewBucket(oldest, newBucketIdx); err != nil {
+			a.Logger.Error("Error adding peer to old bucket", "err", err)
+		}
+
+		// Finally, add our ka to old bucket again.
+		added = a.addToOldBucket(ka, oldBucketIdx)
+		if !added {
+			a.Logger.Error(fmt.Sprintf("Could not re-add ka %v to oldBucketIdx %v", ka, oldBucketIdx))
+		}
+	}
+	return nil
+}
+
 func (a *addrBook) removeAddress(addr *p2p.NetAddress) {
 	ka := a.addrLookup[addr.ID]
 	if ka == nil {
@@ -752,6 +838,28 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) int {
 	hash2 := a.hash(data2)
 	result := int(binary.BigEndian.Uint64(hash2) % newBucketCount)
 	return result
+}
+
+// hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets.
+func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
+	data1 := []byte{}
+	data1 = append(data1, []byte(a.key)...)
+	data1 = append(data1, []byte(addr.String())...)
+	hash1 := a.hash(data1)
+
+	hash64 := binary.BigEndian.Uint64(hash1)
+	hash64 %= oldBucketsPerGroup
+	var hashbuf [8]byte
+	binary.BigEndian.PutUint64(hashbuf[:], hash64)
+	data2 := []byte{}
+	data2 = append(data2, []byte(a.key)...)
+	data2 = append(data2, a.groupKey(addr)...)
+	data2 = append(data2, hashbuf[:]...)
+
+	hash2 := a.hash(data2)
+
+	result := int(binary.BigEndian.Uint64(hash2) % oldBucketCount)
+	return result, nil
 }
 
 // Return a string representing the network group of this address.
@@ -812,6 +920,7 @@ func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
 	return na.IP.Mask(ipv6Mask).String()
 }
 
+// hash returns the hash of b.
 func (a *addrBook) hash(b []byte) []byte {
 	a.hasher.Reset()
 	a.hasher.Write(b)

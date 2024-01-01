@@ -53,7 +53,7 @@ func TestAddrBookPickAddress(t *testing.T) {
 
 	// in this case, nNew==0 but we biased 100% to new, so we return nil
 	addr = book.PickAddress(100)
-	assert.Nil(t, addr, "did not expected an address")
+	assert.Nil(t, addr, "did not expect an address")
 }
 
 func TestAddrBookSaveLoad(t *testing.T) {
@@ -273,7 +273,7 @@ func TestAddrBookGetSelection(t *testing.T) {
 	err := book.AddAddress(addr, addr)
 	require.NoError(t, err)
 
-	assert.Len(t, book.GetSelection(), 1)
+	assert.Equal(t, 1, len(book.GetSelection()))
 	assert.Equal(t, addr, book.GetSelection()[0])
 
 	// 3) add a bunch of addresses
@@ -317,7 +317,7 @@ func TestAddrBookGetSelectionWithBias(t *testing.T) {
 	require.NoError(t, err)
 
 	selection = book.GetSelectionWithBias(biasTowardsNewAddrs)
-	assert.Len(t, selection, 1)
+	assert.Equal(t, 1, len(selection))
 	assert.Equal(t, addr, selection[0])
 
 	// 3) add a bunch of addresses
@@ -713,7 +713,6 @@ func TestAddrBookGroupKey(t *testing.T) {
 }
 
 func assertMOldAndNNewAddrsInSelection(t *testing.T, m, n int, addrs []*p2p.NetAddress, book *addrBook) {
-	t.Helper()
 	nOld, nNew := countOldAndNewAddrsInSelection(addrs, book)
 	assert.Equal(t, m, nOld, "old addresses")
 	assert.Equal(t, n, nNew, "new addresses")
@@ -787,7 +786,7 @@ func analyseSelectionLayout(book *addrBook, addrs []*p2p.NetAddress) (seqLens, s
 	)
 
 	for _, addr := range addrs {
-		var addrType int
+		addrType := 0
 		if book.IsGood(addr) {
 			addrType = 2
 		} else {

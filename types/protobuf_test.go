@@ -35,7 +35,7 @@ func TestABCIValidators(t *testing.T) {
 
 	abciVal := TM2PB.ValidatorUpdate(cmtVal)
 	cmtVals, err := PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, cmtValExpected, cmtVals[0])
 
 	abciVals := TM2PB.ValidatorUpdates(NewValidatorSet(cmtVals))
@@ -46,7 +46,7 @@ func TestABCIValidators(t *testing.T) {
 
 	abciVal = TM2PB.ValidatorUpdate(cmtVal)
 	cmtVals, err = PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, cmtValExpected, cmtVals[0])
 }
 

@@ -485,7 +485,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 
 	removeValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, 0)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rs = css[0].GetRoundState()
 	for i := 0; i < nVals+1; i++ {

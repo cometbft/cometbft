@@ -80,9 +80,9 @@ func TestProofOperators(t *testing.T) {
 	// Good
 	popz := ProofOperators([]ProofOperator{op1, op2, op3, op4})
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = popz.VerifyValue(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", bz("INPUT1"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// BAD INPUT
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1_WRONG")})

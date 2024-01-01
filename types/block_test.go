@@ -704,7 +704,7 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 			extCommit := voteSet.MakeExtendedCommit(veHeightParam) // panics without > 2/3 valid votes
 			assert.NotNil(t, extCommit)
 			err := valSet.VerifyCommit(voteSet.ChainID(), blockID, height-1, extCommit.ToCommit())
-			assert.Nil(t, err)
+			require.NoError(t, err)
 		} else {
 			assert.Panics(t, func() { voteSet.MakeExtendedCommit(veHeightParam) })
 		}

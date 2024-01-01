@@ -737,7 +737,7 @@ func waitForBlockWithUpdatedValsAndValidateIt(
 		}
 
 		err := validateBlock(newBlock, updatedVals)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 }
 

@@ -927,11 +927,11 @@ func TestStoreLoadValidatorsIncrementsProposerPriority(t *testing.T) {
 	nextHeight := state.LastBlockHeight + 1
 
 	v0, err := stateStore.LoadValidators(nextHeight)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	acc0 := v0.Validators[0].ProposerPriority
 
 	v1, err := stateStore.LoadValidators(nextHeight + 1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	acc1 := v1.Validators[0].ProposerPriority
 
 	assert.NotEqual(t, acc1, acc0, "expected ProposerPriority value to change between heights")
@@ -971,7 +971,7 @@ func TestManyValidatorChangesSaveLoad(t *testing.T) {
 
 	// Load nextheight, it should be the oldpubkey.
 	v0, err := stateStore.LoadValidators(nextHeight)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, valSetSize, v0.Size())
 	index, val := v0.GetByAddress(pubkeyOld.Address())
 	assert.NotNil(t, val)
@@ -981,7 +981,7 @@ func TestManyValidatorChangesSaveLoad(t *testing.T) {
 
 	// Load nextheight+1, it should be the new pubkey.
 	v1, err := stateStore.LoadValidators(nextHeight + 1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, valSetSize, v1.Size())
 	index, val = v1.GetByAddress(pubkey.Address())
 	assert.NotNil(t, val)

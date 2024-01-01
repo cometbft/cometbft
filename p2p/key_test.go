@@ -16,10 +16,10 @@ func TestLoadOrGenNodeKey(t *testing.T) {
 	filePath := filepath.Join(os.TempDir(), cmtrand.Str(12)+"_peer_id.json")
 
 	nodeKey, err := LoadOrGenNodeKey(filePath)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	nodeKey2, err := LoadOrGenNodeKey(filePath)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, nodeKey, nodeKey2)
 }

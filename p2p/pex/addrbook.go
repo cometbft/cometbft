@@ -834,10 +834,7 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(a.groupKey(addr))...)
 	data1 = append(data1, []byte(a.groupKey(src))...)
-	hash1, err := a.hash(data1)
-	if err != nil {
-		return 0, err
-	}
+	hash1 := a.hash(data1)
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= newBucketsPerGroup
 	var hashbuf [8]byte
@@ -847,10 +844,7 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	data2 = append(data2, a.groupKey(src)...)
 	data2 = append(data2, hashbuf[:]...)
 
-	hash2, err := a.hash(data2)
-	if err != nil {
-		return 0, err
-	}
+	hash2 := a.hash(data2)
 	result := int(binary.BigEndian.Uint64(hash2) % newBucketCount)
 	return result, nil
 }
@@ -860,10 +854,7 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(addr.String())...)
-	hash1, err := a.hash(data1)
-	if err != nil {
-		return 0, err
-	}
+	hash1 := a.hash(data1)
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= oldBucketsPerGroup
 	var hashbuf [8]byte
@@ -873,10 +864,7 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
 	data2 = append(data2, a.groupKey(addr)...)
 	data2 = append(data2, hashbuf[:]...)
 
-	hash2, err := a.hash(data2)
-	if err != nil {
-		return 0, err
-	}
+	hash2 := a.hash(data2)
 	result := int(binary.BigEndian.Uint64(hash2) % oldBucketCount)
 	return result, nil
 }
@@ -939,8 +927,8 @@ func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
 	return na.IP.Mask(ipv6Mask).String()
 }
 
-func (a *addrBook) hash(b []byte) ([]byte, error) {
+func (a *addrBook) hash(b []byte) []byte {
 	a.hasher.Reset()
 	a.hasher.Write(b)
-	return a.hasher.Sum(nil), nil
+	return a.hasher.Sum(nil)
 }

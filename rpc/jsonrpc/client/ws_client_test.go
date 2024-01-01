@@ -56,6 +56,9 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		res := json.RawMessage(`{}`)
 		emptyRespBytes, err := json.Marshal(types.RPCResponse{Result: res, ID: req.ID})
+		if err != nil {
+			panic(err)
+		}
 		if err := conn.WriteMessage(messageType, emptyRespBytes); err != nil {
 			return
 		}

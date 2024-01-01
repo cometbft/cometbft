@@ -359,7 +359,7 @@ func TestSyncer_SyncAny_abciError(t *testing.T) {
 	}).Once().Return(nil, errBoom)
 
 	_, _, err = syncer.SyncAny(0, func() {})
-	assert.True(t, errors.Is(err, errBoom))
+	require.ErrorIs(t, err, errBoom)
 	connSnapshot.AssertExpectations(t)
 }
 

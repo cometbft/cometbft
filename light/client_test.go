@@ -2,7 +2,6 @@ package light_test
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -1118,7 +1117,7 @@ func TestClientHandlesContexts(t *testing.T) {
 	)
 	require.Error(t, ctxTimeOut.Err())
 	require.Error(t, err)
-	require.True(t, errors.Is(err, context.DeadlineExceeded))
+	require.ErrorIs(t, err, context.DeadlineExceeded)
 
 	// instantiate the client for real
 	c, err := light.NewClient(
@@ -1141,7 +1140,7 @@ func TestClientHandlesContexts(t *testing.T) {
 	_, err = c.VerifyLightBlockAtHeight(ctxTimeOutBlock, 100, bTime.Add(100*time.Minute))
 	require.Error(t, ctxTimeOutBlock.Err())
 	require.Error(t, err)
-	require.True(t, errors.Is(err, context.DeadlineExceeded))
+	require.ErrorIs(t, err, context.DeadlineExceeded)
 
 	// verify a block with a cancel
 	ctxCancel, cancel := context.WithCancel(ctx)
@@ -1150,5 +1149,5 @@ func TestClientHandlesContexts(t *testing.T) {
 	_, err = c.VerifyLightBlockAtHeight(ctxCancel, 100, bTime.Add(100*time.Minute))
 	require.Error(t, ctxCancel.Err())
 	require.Error(t, err)
-	require.True(t, errors.Is(err, context.Canceled))
+	require.ErrorIs(t, err, context.Canceled)
 }

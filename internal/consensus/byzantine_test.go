@@ -42,7 +42,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	tickerFunc := newMockTickerFunc(true)
 	appFunc := newKVStore
 
-	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
 	css := make([]*State, nValidators)
 
 	for i := 0; i < nValidators; i++ {
@@ -471,7 +471,7 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	proposal1.Signature = p1.Signature
 
 	// some new transactions come in (this ensures that the proposals are different)
-	deliverTxsRange(t, cs, 1)
+	deliverTxsRange(t, cs, 0, 1)
 
 	// Create a new proposal block from state/txs from the mempool.
 	block2, err := cs.createProposalBlock(ctx)

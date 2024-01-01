@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/big"
 	"os"
+	"strconv"
 	"testing"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -210,7 +211,7 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 			t.Log(res)
 			responses := &abci.FinalizeBlockResponse{
 				TxResults: tc.expected,
-				AppHash:   []byte(fmt.Sprintf("%d", h)),
+				AppHash:   []byte(strconv.Itoa(int(h))),
 			}
 			assert.Equal(sm.TxResultsHash(responses.TxResults), sm.TxResultsHash(res.TxResults), "%d", i)
 		}

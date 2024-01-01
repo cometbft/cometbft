@@ -583,34 +583,34 @@ func TestTxSearch(t *testing.T) {
 		// query for non existing tx
 		result, err = c.TxSearch(context.Background(), fmt.Sprintf("tx.hash='%X'", anotherTxHash), false, nil, nil, "asc")
 		require.NoError(t, err)
-		require.Len(t, result.Txs, 0)
+		require.Empty(t, result.Txs)
 
 		// query using a compositeKey (see kvstore application)
 		result, err = c.TxSearch(context.Background(), "app.creator='Cosmoshi Netowoko'", false, nil, nil, "asc")
 		require.NoError(t, err)
-		require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
+		require.NotEmpty(t, result.Txs, "expected a lot of transactions")
 
 		// query using an index key
 		result, err = c.TxSearch(context.Background(), "app.index_key='index is working'", false, nil, nil, "asc")
 		require.NoError(t, err)
-		require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
+		require.NotEmpty(t, len(result.Txs), "expected a lot of transactions")
 
 		// query using an noindex key
 		result, err = c.TxSearch(context.Background(), "app.noindex_key='index is working'", false, nil, nil, "asc")
 		require.NoError(t, err)
-		require.Equal(t, len(result.Txs), 0, "expected a lot of transactions")
+		require.Empty(t, result.Txs, "expected a lot of transactions")
 
 		// query using a compositeKey (see kvstore application) and height
 		result, err = c.TxSearch(context.Background(),
 			"app.creator='Cosmoshi Netowoko' AND tx.height<10000", true, nil, nil, "asc")
 		require.NoError(t, err)
-		require.Greater(t, len(result.Txs), 0, "expected a lot of transactions")
+		require.Empty(t, result.Txs, "expected a lot of transactions")
 
 		// query a non existing tx with page 1 and txsPerPage 1
 		perPage := 1
 		result, err = c.TxSearch(context.Background(), "app.creator='Cosmoshi Neetowoko'", true, nil, &perPage, "asc")
 		require.NoError(t, err)
-		require.Len(t, result.Txs, 0)
+		require.Empty(t, result.Txs)
 
 		// check sorting
 		result, err = c.TxSearch(context.Background(), "tx.height >= 1", false, nil, nil, "asc")

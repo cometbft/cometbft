@@ -128,7 +128,7 @@ func TestNodeDelayedStart(t *testing.T) {
 	defer n.Stop() //nolint:errcheck // ignore for tests
 
 	startTime := cmttime.Now()
-	assert.Equal(t, true, startTime.After(n.GenesisDoc().GenesisTime))
+	assert.True(t, true, startTime.After(n.GenesisDoc().GenesisTime))
 }
 
 func TestNodeSetAppVersion(t *testing.T) {

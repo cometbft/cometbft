@@ -273,7 +273,7 @@ func TestAddrBookGetSelection(t *testing.T) {
 	err := book.AddAddress(addr, addr)
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(book.GetSelection()))
+	assert.Len(t, book.GetSelection(), 1)
 	assert.Equal(t, addr, book.GetSelection()[0])
 
 	// 3) add a bunch of addresses

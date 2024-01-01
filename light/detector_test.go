@@ -424,5 +424,5 @@ func TestClientDivergentTraces4(t *testing.T) {
 
 	_, err = c.VerifyLightBlockAtHeight(ctx, 10, bTime.Add(1*time.Hour))
 	require.Error(t, err)
-	assert.Equal(t, 1, len(c.Witnesses()))
+	assert.Len(t, c.Witnesses(), 1)
 }

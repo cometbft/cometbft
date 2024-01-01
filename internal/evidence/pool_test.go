@@ -82,13 +82,13 @@ func TestEvidencePoolBasic(t *testing.T) {
 
 	const evidenceBytes int64 = 372
 	evs, size = pool.PendingEvidence(evidenceBytes)
-	assert.Equal(t, 1, len(evs))
+	assert.Len(t, evs, 1)
 	assert.Equal(t, evidenceBytes, size) // check that the size of the single evidence in bytes is correct
 
 	// shouldn't be able to add evidence twice
-	assert.NoError(t, pool.AddEvidence(ev))
+	require.NoError(t, pool.AddEvidence(ev))
 	evs, _ = pool.PendingEvidence(defaultEvidenceMaxBytes)
-	assert.Equal(t, 1, len(evs))
+	assert.Len(t, evs, 1)
 }
 
 // Tests inbound evidence for the right time and height.
@@ -348,9 +348,9 @@ func TestRecoverPendingEvidence(t *testing.T) {
 	newPool, err := evidence.NewPool(evidenceDB, newStateStore, blockStore)
 	require.NoError(t, err)
 	evList, _ := newPool.PendingEvidence(defaultEvidenceMaxBytes)
-	assert.Equal(t, 1, len(evList))
+	require.Len(t, evList, 1)
 	next := newPool.EvidenceFront()
-	assert.Equal(t, goodEvidence, next.Value.(types.Evidence))
+	require.Equal(t, goodEvidence, next.Value.(types.Evidence))
 }
 
 func initializeStateFromValidatorSet(valSet *types.ValidatorSet, height int64) sm.Store {

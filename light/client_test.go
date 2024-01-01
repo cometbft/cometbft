@@ -773,7 +773,7 @@ func TestClientReplacesPrimaryWithWitnessIfPrimaryIsUnavailable(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.NotEqual(t, c.Primary(), deadNode)
-	assert.Equal(t, 2, len(c.Witnesses()))
+	assert.Len(t, c.Witnesses(), 2)
 }
 
 func TestClient_BackwardsVerification(t *testing.T) {
@@ -994,11 +994,11 @@ func TestClient_TrustedValidatorSet(t *testing.T) {
 		light.Logger(log.TestingLogger()),
 	)
 	require.NoError(t, err)
-	assert.Equal(t, 2, len(c.Witnesses()))
+	assert.Len(t, c.Witnesses(), 2)
 
 	_, err = c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(2*time.Hour).Add(1*time.Second))
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(c.Witnesses()))
+	assert.Len(t, c.Witnesses(), 1)
 }
 
 func TestClientPrunesHeadersAndValidatorSets(t *testing.T) {

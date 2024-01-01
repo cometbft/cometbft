@@ -461,7 +461,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	extCommit := voteSet.MakeExtendedCommit(veHeightParam)
 
 	// Commit should have 10 elements
-	assert.Equal(t, 10, len(extCommit.ExtendedSignatures))
+	assert.Len(t, extCommit.ExtendedSignatures, 10)
 
 	// Ensure that Commit is good.
 	if err := extCommit.ValidateBasic(); err != nil {

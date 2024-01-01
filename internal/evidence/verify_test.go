@@ -98,7 +98,7 @@ func TestVerify_LunaticAttackAgainstState(t *testing.T) {
 
 	// as it was not originally in the pending bucket, it should now have been added
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
-	assert.Equal(t, 1, len(pendingEvs))
+	assert.Len(t, pendingEvs, 1)
 	assert.Equal(t, ev, pendingEvs[0])
 
 	// if we submit evidence only against a single byzantine validator when we see there are more validators then this
@@ -270,7 +270,7 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 	require.NoError(t, err)
 
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
-	assert.Equal(t, 1, len(pendingEvs))
+	require.Len(t, pendingEvs, 1)
 }
 
 func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
@@ -345,7 +345,7 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	require.NoError(t, err)
 
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
-	assert.Equal(t, 1, len(pendingEvs))
+	assert.Equal(t, pendingEvs, 1)
 }
 
 type voteData struct {

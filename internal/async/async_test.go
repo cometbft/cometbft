@@ -27,7 +27,7 @@ func TestParallel(t *testing.T) {
 	assert.True(t, ok)
 
 	// Verify.
-	assert.Equal(t, int(*counter), len(tasks), "Each task should have incremented the counter already")
+	assert.Len(t, tasks, int(*counter), "Each task should have incremented the counter already")
 	var failedTasks int
 	for i := 0; i < len(tasks); i++ {
 		taskResult, ok := trs.LatestResult(i)

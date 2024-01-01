@@ -15,13 +15,13 @@ import (
 func TestRandStr(t *testing.T) {
 	l := 243
 	s := Str(l)
-	assert.Equal(t, l, len(s))
+	assert.Len(t, s, l)
 }
 
 func TestRandBytes(t *testing.T) {
 	l := 243
 	b := Bytes(l)
-	assert.Equal(t, l, len(b))
+	assert.Len(t, b, l)
 }
 
 func TestRandIntn(t *testing.T) {

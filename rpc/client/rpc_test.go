@@ -291,7 +291,7 @@ func TestAppCalls(t *testing.T) {
 		blockResults, err := c.BlockResults(context.Background(), &txh)
 		require.Nil(err, "%d: %+v", i, err)
 		assert.Equal(txh, blockResults.Height)
-		if assert.Equal(1, len(blockResults.TxResults)) {
+		if assert.Len(blockResults.TxResults, 1) {
 			// check success code
 			assert.EqualValues(0, blockResults.TxResults[0].Code)
 		}
@@ -300,7 +300,7 @@ func TestAppCalls(t *testing.T) {
 		info, err := c.BlockchainInfo(context.Background(), apph, apph)
 		require.NoError(err)
 		assert.GreaterOrEqual(info.LastHeight, apph)
-		if assert.Equal(1, len(info.BlockMetas)) {
+		if assert.Len(info.BlockMetas, 1) {
 			lastMeta := info.BlockMetas[0]
 			assert.EqualValues(apph, lastMeta.Header.Height)
 			blockData := block.Block

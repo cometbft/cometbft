@@ -103,7 +103,7 @@ func TestReactorSelectiveBroadcast(t *testing.T) {
 
 	// peers should still be connected
 	peers := reactors[1].Switch.Peers().List()
-	assert.Equal(t, 1, len(peers))
+	assert.Len(t, peers, 1)
 }
 
 // This tests aims to ensure that reactors don't send evidence that they have committed or that ar

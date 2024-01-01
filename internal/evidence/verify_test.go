@@ -267,10 +267,10 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 
 	evList := types.EvidenceList{ev}
 	err = pool.CheckEvidence(evList)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
-	assert.Equal(t, 1, len(pendingEvs))
+	assert.Len(t, pendingEvs, 1)
 }
 
 func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
@@ -404,9 +404,9 @@ func TestVerifyDuplicateVoteEvidence(t *testing.T) {
 			Timestamp:        defaultEvidenceTime,
 		}
 		if c.valid {
-			assert.Nil(t, evidence.VerifyDuplicateVote(ev, chainID, valSet), "evidence should be valid")
+			require.NoError(t, evidence.VerifyDuplicateVote(ev, chainID, valSet), "evidence should be valid")
 		} else {
-			assert.NotNil(t, evidence.VerifyDuplicateVote(ev, chainID, valSet), "evidence should be invalid")
+			require.Error(t, evidence.VerifyDuplicateVote(ev, chainID, valSet), "evidence should be invalid")
 		}
 	}
 

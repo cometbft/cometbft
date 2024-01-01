@@ -31,7 +31,7 @@ func TestPeerBasic(t *testing.T) {
 	require.NoError(err)
 
 	err = p.Start()
-	require.Nil(err)
+	require.NoError(err)
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {
 			t.Error(err)
@@ -58,10 +58,10 @@ func TestPeerSend(t *testing.T) {
 	t.Cleanup(rp.Stop)
 
 	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), config, cmtconn.DefaultMConnConfig())
-	require.Nil(err)
+	require.NoError(err)
 
 	err = p.Start()
-	require.Nil(err)
+	require.NoError(err)
 
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {

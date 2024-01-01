@@ -145,8 +145,8 @@ func TestRPCNotification(t *testing.T) {
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
 	blob, err := io.ReadAll(res.Body)
 	res.Body.Close()
-	require.Nil(t, err, "reading from the body should not give back an error")
-	require.Equal(t, len(blob), 0, "a notification SHOULD NOT be responded to by the server")
+	require.NoError(t, err, "reading from the body should not give back an error")
+	require.Empty(t, blob, "a notification SHOULD NOT be responded to by the server")
 }
 
 func TestRPCNotificationInBatch(t *testing.T) {
@@ -241,7 +241,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	_, err := io.ReadAll(res.Body)
 	res.Body.Close()
-	require.Nil(t, err, "reading from the body should not give back an error")
+	require.NoError(t, err, "reading from the body should not give back an error")
 
 	// send a request with default height.
 	body = strings.NewReader(`{"jsonrpc": "2.0","method":"block","id": 0, "params": ["0"]}`)
@@ -257,7 +257,7 @@ func TestRPCResponseCache(t *testing.T) {
 	_, err = io.ReadAll(res.Body)
 
 	res.Body.Close()
-	require.Nil(t, err, "reading from the body should not give back an error")
+	require.NoError(t, err, "reading from the body should not give back an error")
 
 	// send a request with default height, but as empty set of parameters.
 	body = strings.NewReader(`{"jsonrpc": "2.0","method":"block","id": 0, "params": []}`)

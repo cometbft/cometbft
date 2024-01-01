@@ -158,9 +158,9 @@ func TestParseJSONRPC(t *testing.T) {
 		data := []byte(tc.raw)
 		vals, err := jsonParamsToArgs(call, data)
 		if tc.fail {
-			assert.NotNil(t, err, i)
+			require.NoError(t, err, i)
 		} else {
-			require.Nil(t, err, "%s: %+v", i, err)
+			require.NoError(t, err, "%s: %+v", i, err)
 			if assert.Len(t, vals, 2, i) {
 				assert.Equal(t, tc.height, vals[0].Int(), i)
 				assert.Equal(t, tc.name, vals[1].String(), i)
@@ -199,9 +199,9 @@ func TestParseURI(t *testing.T) {
 		require.NoError(t, err)
 		vals, err := httpParamsToArgs(call, req)
 		if tc.fail {
-			assert.NotNil(t, err, i)
+			require.Error(t, err, i)
 		} else {
-			assert.Nil(t, err, "%s: %+v", i, err)
+			require.NoError(t, err, "%s: %+v", i, err)
 			if assert.Len(t, vals, 2, i) {
 				assert.Equal(t, tc.height, vals[0].Int(), i)
 				assert.Equal(t, tc.name, vals[1].String(), i)

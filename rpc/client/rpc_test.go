@@ -289,7 +289,7 @@ func TestAppCalls(t *testing.T) {
 
 		// now check the results
 		blockResults, err := c.BlockResults(context.Background(), &txh)
-		require.Nil(err, "%d: %+v", i, err)
+		require.NoError(err, "%d: %+v", i, err)
 		assert.Equal(txh, blockResults.Height)
 		if assert.Len(blockResults.TxResults, 1) {
 			// check success code
@@ -448,7 +448,7 @@ func TestTx(t *testing.T) {
 	c := getHTTPClient()
 	_, _, tx := MakeTxKV()
 	bres, err := c.BroadcastTxCommit(context.Background(), tx)
-	require.Nil(t, err, "%+v", err)
+	require.NoError(t, err, "%+v", err)
 
 	txHeight := bres.Height
 	txHash := bres.Hash

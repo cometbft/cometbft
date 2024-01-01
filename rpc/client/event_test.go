@@ -44,7 +44,7 @@ func TestHeaderEvents(t *testing.T) {
 			evtTyp := types.EventNewBlockHeader
 			evt, err := client.WaitForOneEvent(c, evtTyp, waitForEventTimeout)
 			require.NoError(t, err)
-			require.Nil(t, err, "%d: %+v", i, err)
+			require.NoError(t, err, "%d: %+v", i, err)
 			_, ok := evt.(types.EventDataNewBlockHeader)
 			require.True(t, ok, "%d: %#v", i, evt)
 			// TODO: more checks...

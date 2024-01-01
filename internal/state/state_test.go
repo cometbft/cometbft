@@ -68,7 +68,7 @@ func TestMakeGenesisStateNilValidators(t *testing.T) {
 		ChainID:    "dummy",
 		Validators: nil,
 	}
-	require.Nil(t, doc.ValidateAndComplete())
+	require.NoError(t, doc.ValidateAndComplete())
 	state, err := sm.MakeGenesisState(&doc)
 	require.NoError(t, err)
 	require.Empty(t, state.Validators.Validators)

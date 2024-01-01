@@ -218,7 +218,7 @@ func TestGroupReaderRead(t *testing.T) {
 	require.NoError(t, err, "failed to create reader")
 
 	n, err := gr.Read(read)
-	assert.NoError(t, err, "failed to read data")
+	require.NoError(t, err, "failed to read data")
 	assert.Equal(t, totalWrittenLength, n, "not enough bytes read")
 	professorPlusFrankenstein := professor
 	professorPlusFrankenstein = append(professorPlusFrankenstein, frankenstein...)

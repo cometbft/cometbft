@@ -55,8 +55,8 @@ func TestEvidencePoolBasic(t *testing.T) {
 
 	// evidence not seen yet:
 	evs, size := pool.PendingEvidence(defaultEvidenceMaxBytes)
-	assert.Equal(t, 0, len(evs))
-	assert.Zero(t, size)
+	require.Empty(t, evs)
+	require.Zero(t, size)
 
 	ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, defaultEvidenceTime, privVals[0], evidenceChainID)
 	require.NoError(t, err)

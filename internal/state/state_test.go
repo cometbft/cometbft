@@ -71,8 +71,8 @@ func TestMakeGenesisStateNilValidators(t *testing.T) {
 	require.Nil(t, doc.ValidateAndComplete())
 	state, err := sm.MakeGenesisState(&doc)
 	require.NoError(t, err)
-	require.Equal(t, 0, len(state.Validators.Validators))
-	require.Equal(t, 0, len(state.NextValidators.Validators))
+	require.Empty(t, state.Validators.Validators)
+	require.Empty(t, state.NextValidators.Validators)
 }
 
 // TestStateSaveLoad tests saving and loading State from a db.

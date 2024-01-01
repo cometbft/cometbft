@@ -345,7 +345,7 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	require.NoError(t, err)
 
 	pendingEvs, _ := pool.PendingEvidence(state.ConsensusParams.Evidence.MaxBytes)
-	assert.Equal(t, pendingEvs, 1)
+	assert.Len(t, pendingEvs, 1)
 }
 
 type voteData struct {

@@ -31,7 +31,7 @@ func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 	})
 	require.NoError(t, err)
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
-	assert.NoError(t, err, "expected no error on LoadStateFromDBOrGenesisFile")
+	require.NoError(t, err, "expected no error on LoadStateFromDBOrGenesisFile")
 	err = stateStore.Save(state)
 	require.NoError(t, err)
 
@@ -123,7 +123,7 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 	err := stateStore.SaveFinalizeBlockResponse(block.Height, abciResponses)
 	require.NoError(t, err)
 	loadedABCIResponses, err := stateStore.LoadFinalizeBlockResponse(block.Height)
-	assert.NoError(err)
+	require.NoError(t, err)
 	assert.Equal(abciResponses, loadedABCIResponses)
 }
 
@@ -188,7 +188,7 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 	for i := range cases {
 		h := int64(i + 1)
 		res, err := stateStore.LoadFinalizeBlockResponse(h)
-		assert.Error(err, "%d: %#v", i, res)
+		require.Error(t, err, "%d: %#v", i, res)
 	}
 
 	// Add all cases.

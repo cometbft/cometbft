@@ -66,13 +66,13 @@ func TestValidatorSetBasic(t *testing.T) {
 
 	// update
 	val = randValidator(vset.TotalVotingPower())
-	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}))
+	require.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}))
 	_, val = vset.GetByAddress(val.Address)
 	val.VotingPower += 100
 	proposerPriority := val.ProposerPriority
 
 	val.ProposerPriority = 0
-	assert.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}))
+	require.NoError(t, vset.UpdateWithChangeSet([]*Validator{val}))
 	_, val = vset.GetByAddress(val.Address)
 	assert.Equal(t, proposerPriority, val.ProposerPriority)
 }
@@ -713,7 +713,7 @@ func TestEmptySet(t *testing.T) {
 	v1 := newValidator([]byte("v1"), 100)
 	v2 := newValidator([]byte("v2"), 100)
 	valList = []*Validator{v1, v2}
-	assert.NoError(t, valSet.UpdateWithChangeSet(valList))
+	require.NoError(t, valSet.UpdateWithChangeSet(valList))
 	verifyValidatorSet(t, valSet)
 
 	// Delete all validators from set
@@ -1015,7 +1015,7 @@ func TestValSetUpdatesBasicTestsExecute(t *testing.T) {
 		valSet := createNewValidatorSet(tt.startVals)
 		valList := createNewValidatorList(tt.updateVals)
 		err := valSet.UpdateWithChangeSet(valList)
-		assert.NoError(t, err, "test %d", i)
+		require.NoError(t, err, "test %d", i)
 
 		valListCopy := validatorListCopy(valSet.Validators)
 		// check that the voting power in the set's validators is not changing if the voting power
@@ -1067,7 +1067,7 @@ func TestValSetUpdatesOrderIndependenceTestsExecute(t *testing.T) {
 		valSet := createNewValidatorSet(tt.startVals)
 		valSetCopy := valSet.Copy()
 		valList := createNewValidatorList(tt.updateVals)
-		assert.NoError(t, valSetCopy.UpdateWithChangeSet(valList))
+		require.NoError(t, valSetCopy.UpdateWithChangeSet(valList))
 
 		// save the result as expected for next updates
 		valSetExp := valSetCopy.Copy()
@@ -1575,7 +1575,7 @@ func BenchmarkUpdates(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Add m validators to valSetCopy
 		valSetCopy := valSet.Copy()
-		assert.NoError(b, valSetCopy.UpdateWithChangeSet(newValList))
+		require.NoError(b, valSetCopy.UpdateWithChangeSet(newValList))
 	}
 }
 

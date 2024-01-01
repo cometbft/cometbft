@@ -3,7 +3,7 @@ package clist
 import (
 	"fmt"
 	"runtime"
-	"sync/atomic"
+	"sync"
 	"testing"
 	"time"
 
@@ -64,11 +64,9 @@ func TestSmall(t *testing.T) {
 	}
 }
 
-// This test is quite hacky because it relies on SetFinalizer
-// which isn't guaranteed to run at all.
-//
-//nolint:unused,deadcode
-func _TestGCFifo(t *testing.T) {
+// This test was quite hacky because it relies on SetFinalizer
+// it has been made less hacky (I think) by using a WaitGroup.
+func TestGCFifo(t *testing.T) {
 	t.Helper()
 	if runtime.GOARCH != "amd64" {
 		t.Skipf("Skipping on non-amd64 machine")
@@ -76,50 +74,41 @@ func _TestGCFifo(t *testing.T) {
 
 	const numElements = 1000000
 	l := New()
-	gcCount := new(uint64)
 
-	// SetFinalizer doesn't work well with circular structures,
-	// so we construct a trivial non-circular structure to
-	// track.
+	// Use a WaitGroup to wait for all finalizers to run.
+	var wg sync.WaitGroup
+	wg.Add(numElements)
+
 	type value struct {
 		Int int
 	}
-	done := make(chan struct{})
 
 	for i := 0; i < numElements; i++ {
 		v := new(value)
 		v.Int = i
 		l.PushBack(v)
 		runtime.SetFinalizer(v, func(v *value) {
-			atomic.AddUint64(gcCount, 1)
+			wg.Done()
 		})
 	}
 
 	for el := l.Front(); el != nil; {
+		next := el.Next()
 		l.Remove(el)
-		// oldEl := el
-		el = el.Next()
-		// oldEl.DetachPrev()
-		// oldEl.DetachNext()
+		el = next
 	}
 
-	runtime.GC()
-	time.Sleep(time.Second * 3)
-	runtime.GC()
-	time.Sleep(time.Second * 3)
-	_ = done
+	// Wait for all finalizers to run.
+	wg.Wait()
 
-	if *gcCount != numElements {
-		t.Errorf("expected gcCount to be %v, got %v", numElements,
-			*gcCount)
+	if l.Len() != 0 {
+		t.Errorf("expected list to be empty, got %v elements", l.Len())
 	}
 }
 
 // This test is quite hacky because it relies on SetFinalizer
 // which isn't guaranteed to run at all.
-//
-//nolint:unused,deadcode
-func _TestGCRandom(t *testing.T) {
+func TestGCRandom(t *testing.T) {
 	t.Helper()
 	if runtime.GOARCH != "amd64" {
 		t.Skipf("Skipping on non-amd64 machine")
@@ -127,11 +116,11 @@ func _TestGCRandom(t *testing.T) {
 
 	const numElements = 1000000
 	l := New()
-	gcCount := 0
 
-	// SetFinalizer doesn't work well with circular structures,
-	// so we construct a trivial non-circular structure to
-	// track.
+	// Use a WaitGroup to wait for all finalizers to run.
+	var wg sync.WaitGroup
+	wg.Add(numElements)
+
 	type value struct {
 		Int int
 	}
@@ -141,7 +130,7 @@ func _TestGCRandom(t *testing.T) {
 		v.Int = i
 		l.PushBack(v)
 		runtime.SetFinalizer(v, func(v *value) {
-			gcCount++
+			wg.Done()
 		})
 	}
 
@@ -156,12 +145,11 @@ func _TestGCRandom(t *testing.T) {
 		_ = el.Next()
 	}
 
-	runtime.GC()
-	time.Sleep(time.Second * 3)
+	// Wait for all finalizers to run.
+	wg.Wait()
 
-	if gcCount != numElements {
-		t.Errorf("expected gcCount to be %v, got %v", numElements,
-			gcCount)
+	if l.Len() != 0 {
+		t.Errorf("expected list to be empty, got %v elements", l.Len())
 	}
 }
 

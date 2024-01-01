@@ -439,7 +439,7 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 	return _recvMsg, nil
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // Increment nonce little-endian by 1 with wraparound.
 // Due to chacha20poly1305 expecting a 12 byte nonce we do not use the first four

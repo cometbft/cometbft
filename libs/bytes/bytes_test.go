@@ -66,6 +66,7 @@ func TestJSONMarshal(t *testing.T) {
 	}
 }
 
+// Test that the hex encoding works.
 func TestHexBytes_String(t *testing.T) {
 	hs := HexBytes([]byte("test me"))
 	if _, err := strconv.ParseInt(hs.String(), 16, 64); err != nil {

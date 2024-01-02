@@ -548,50 +548,23 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	config.DBBackend = string(dbm.GoLevelDBBackend)
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to load or generate node key")
 
-	n, err := NewNode(
-		context.Background(),
-		config,
-		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
-		nodeKey,
-		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
-		DefaultGenesisDocProviderFunc(config),
-		cfg.DefaultDBProvider,
-		DefaultMetricsProvider(config.Instrumentation),
-		log.TestingLogger(),
-	)
-	require.NoError(t, err)
-
-	// Start and stop to close the db for later reading
-	err = n.Start()
-	require.NoError(t, err)
-
-	err = n.Stop()
-	require.NoError(t, err)
+	// Create and start a new node
+	_, err = createAndStartNode(config, nodeKey)
+	require.NoError(t, err, "Failed to create and start a new node")
 
 	// Ensure the genesis doc hash is saved to db
-	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
-	require.NoError(t, err)
-
-	genDocHash, err := stateDB.Get(genesisDocHashKey)
-	require.NoError(t, err)
+	genDocHash, err := getGenesisDocHashFromDB(config)
+	require.NoError(t, err, "Failed to get genesis doc hash from DB")
 	require.NotNil(t, genDocHash, "genesis doc hash should be saved in db")
-	require.Len(t, genDocHash, tmhash.Size)
-
-	err = stateDB.Close()
-	require.NoError(t, err)
+	require.Len(t, genDocHash, tmhash.Size, "Invalid genesis doc hash size")
 
 	// Modify the genesis file chain ID to get a different hash
-	genBytes := cmtos.MustReadFile(config.GenesisFile())
-	var genesisDoc types.GenesisDoc
-	err = cmtjson.Unmarshal(genBytes, &genesisDoc)
-	require.NoError(t, err)
+	err = modifyGenesisFileChainID(config)
+	require.NoError(t, err, "Failed to modify genesis file chain ID")
 
-	genesisDoc.ChainID = "different-chain-id"
-	err = genesisDoc.SaveAs(config.GenesisFile())
-	require.NoError(t, err)
-
+	// Attempt to create a new node with the modified genesis file
 	_, err = NewNode(
 		context.Background(),
 		config,
@@ -605,6 +578,68 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	)
 	require.Error(t, err, "NewNode should error when genesisDoc is changed")
 	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
+}
+
+func createAndStartNode(config *cfg.Config, nodeKey *p2p.NodeKey) (*Node, error) {
+	n, err := NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = n.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	err = n.Stop()
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
+
+func getGenesisDocHashFromDB(config *cfg.Config) ([]byte, error) {
+	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	if err != nil {
+		return nil, err
+	}
+	defer stateDB.Close()
+
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return genDocHash, nil
+}
+
+func modifyGenesisFileChainID(config *cfg.Config) error {
+	genBytes := cmtos.MustReadFile(config.GenesisFile())
+	var genesisDoc types.GenesisDoc
+	err := cmtjson.Unmarshal(genBytes, &genesisDoc)
+	if err != nil {
+		return err
+	}
+
+	genesisDoc.ChainID = "different-chain-id"
+	err = genesisDoc.SaveAs(config.GenesisFile())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func TestNodeGenesisHashFlagMatch(t *testing.T) {

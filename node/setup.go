@@ -534,7 +534,7 @@ func startStateSync(
 	}
 
 	go func() {
-		state, commit, err := ssR.Sync(stateProvider, config.DiscoveryTime)
+		state, commit, err := ssR.Sync(stateProvider, config.TargetHeight, config.DiscoveryTime)
 		if err != nil {
 			ssR.Logger.Error("State sync failed", "err", err)
 			return

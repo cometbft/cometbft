@@ -2,6 +2,7 @@ package statesync
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/rand"
 	"sort"
@@ -124,6 +125,19 @@ func (p *snapshotPool) Best() *snapshot {
 		return nil
 	}
 	return ranked[0]
+}
+
+// At returns the known snapshot at the height.
+// If there are multiple snapshots or no snapshot at the height, it will return nil.
+func (p *snapshotPool) At(height uint64) (*snapshot, error) {
+	keys := p.heightIndex[height]
+	if len(keys) > 1 {
+		return nil, errors.New("multiple snapshots at height")
+	}
+	for key := range keys {
+		return p.snapshots[key], nil
+	}
+	return nil, errors.New("no snapshot at height")
 }
 
 // GetPeer returns a random peer for a snapshot, if any.

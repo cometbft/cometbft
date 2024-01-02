@@ -984,6 +984,7 @@ type StateSyncConfig struct {
 	DiscoveryTime       time.Duration `mapstructure:"discovery_time"`
 	ChunkRequestTimeout time.Duration `mapstructure:"chunk_request_timeout"`
 	ChunkFetchers       int32         `mapstructure:"chunk_fetchers"`
+	TargetHeight 	  	int64         `mapstructure:"target_height"`
 }
 
 func (cfg *StateSyncConfig) TrustHashBytes() []byte {

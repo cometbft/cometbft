@@ -141,7 +141,7 @@ func (s *syncer) RemovePeer(peer p2p.Peer) {
 // SyncAny tries to sync any of the snapshots in the snapshot pool, waiting to discover further
 // snapshots if none were found and discoveryTime > 0. It returns the latest state and block commit
 // which the caller must use to bootstrap the node.
-func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.State, *types.Commit, error) {
+func (s *syncer) SyncAny(discoveryTime time.Duration, targetHeight int64, retryHook func()) (sm.State, *types.Commit, error) {
 	if discoveryTime != 0 && discoveryTime < minimumDiscoveryTime {
 		discoveryTime = 5 * minimumDiscoveryTime
 	}
@@ -161,7 +161,14 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 	for {
 		// If not nil, we're going to retry restoration of the same snapshot.
 		if snapshot == nil {
-			snapshot = s.snapshots.Best()
+			if targetHeight > 0 {
+				snapshot, err = s.snapshots.At(uint64(targetHeight))
+				if err != nil {
+					return sm.State{}, nil, fmt.Errorf("failed to find snapshot at height %d: %w", targetHeight, err)
+				}
+			} else {
+				snapshot = s.snapshots.Best()
+			}
 			chunks = nil
 		}
 		if snapshot == nil {

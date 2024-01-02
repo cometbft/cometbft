@@ -11,8 +11,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen" //nolint:revive // this is a test file
 	"github.com/stretchr/testify/require"
+
+	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen" //nolint:revive // this is a test file
 )
 
 const testDataDir = "./testdata"

@@ -75,6 +75,14 @@ issues:
   max-same-issues: 10000
   max-issues-per-linter: 10000
 linters-settings:
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - blank # blank imports
+      - dot # dot imports
+      - prefix(github.com/cometbft/cometbft)
+    custom-order: true
   dogsled:
     max-blank-identifiers: 3
   goconst:

@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
-	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
 	"os"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq" // provide the psql db driver
+	_ "net/http/pprof"    //nolint: gosec // securely exposed on separate, optional port
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -34,7 +36,6 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
-	_ "github.com/lib/pq" // provide the psql db driver
 )
 
 const readHeaderTimeout = 10 * time.Second

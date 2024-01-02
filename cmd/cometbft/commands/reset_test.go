@@ -4,9 +4,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/privval"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_ResetAll(t *testing.T) {

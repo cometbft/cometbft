@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/version"
-	"github.com/stretchr/testify/require"
 )
 
 func MakeExtCommit(blockID BlockID, height int64, round int32,

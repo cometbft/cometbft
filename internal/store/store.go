@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	dbm "github.com/cometbft/cometbft-db"
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -13,7 +15,6 @@ import (
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 // Assuming the length of a block part is 64kB (`types.BlockPartSizeBytes`),

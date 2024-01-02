@@ -306,7 +306,7 @@ func (pool *BlockPool) MaxPeerHeight() int64 {
 }
 
 // SetPeerRange sets the peer's alleged blockchain base and height.
-func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
+func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base, height int64) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
@@ -466,7 +466,7 @@ type bpPeer struct {
 	logger log.Logger
 }
 
-func newBPPeer(pool *BlockPool, peerID p2p.ID, base int64, height int64) *bpPeer {
+func newBPPeer(pool *BlockPool, peerID p2p.ID, base, height int64) *bpPeer {
 	peer := &bpPeer{
 		pool:       pool,
 		id:         peerID,

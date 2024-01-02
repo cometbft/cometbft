@@ -189,7 +189,7 @@ func (PubKey) Type() string {
 
 // VerifySignature verifies a signature of the form R || S.
 // It rejects signatures which are not in lower-S form.
-func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
+func (pubKey PubKey) VerifySignature(msg, sigStr []byte) bool {
 	if len(sigStr) != 64 {
 		return false
 	}

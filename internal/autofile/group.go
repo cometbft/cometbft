@@ -410,7 +410,7 @@ func (g *Group) readGroupInfo() GroupInfo {
 	return GroupInfo{minIndex, maxIndex, totalSize, headSize}
 }
 
-func filePathForIndex(headPath string, index int, maxIndex int) string {
+func filePathForIndex(headPath string, index, maxIndex int) string {
 	if index == maxIndex {
 		return headPath
 	}

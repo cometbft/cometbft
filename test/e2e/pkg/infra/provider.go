@@ -26,11 +26,11 @@ type Provider interface {
 	StopTestnet(ctx context.Context) error
 
 	// Disconnects the node from the network
-	Disconnect(ctx context.Context, name string, ip string) error
+	Disconnect(ctx context.Context, name, ip string) error
 
 	// Reconnects the node to the network.
 	// This should only be called after Disconnect
-	Reconnect(ctx context.Context, name string, ip string) error
+	Reconnect(ctx context.Context, name, ip string) error
 
 	// Returns the provider's infrastructure data
 	GetInfrastructureData() *e2e.InfrastructureData

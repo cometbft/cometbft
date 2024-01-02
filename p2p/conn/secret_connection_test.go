@@ -191,7 +191,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 
 	// A helper to ensure that the writes and reads match.
 	// Additionally, small writes (<= dataMaxSize) must be atomically read.
-	compareWritesReads := func(writes []string, reads []string) {
+	compareWritesReads := func(writes, reads []string) {
 		for {
 			// Pop next write & corresponding reads
 			read := ""

@@ -116,7 +116,7 @@ func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
 }
 
 // Generate a list of random transactions.
-func NewRandomTxs(numTxs int, txLen int) types.Txs {
+func NewRandomTxs(numTxs, txLen int) types.Txs {
 	txs := make(types.Txs, numTxs)
 	for i := 0; i < numTxs; i++ {
 		txBytes := kvstore.NewRandomTx(txLen)

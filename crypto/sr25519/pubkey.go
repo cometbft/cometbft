@@ -46,7 +46,7 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return false
 }
 
-func (pubKey PubKey) VerifySignature(msg []byte, sigBytes []byte) bool {
+func (pubKey PubKey) VerifySignature(msg, sigBytes []byte) bool {
 	var srpk sr25519.PublicKey
 	if err := srpk.UnmarshalBinary(pubKey); err != nil {
 		return false

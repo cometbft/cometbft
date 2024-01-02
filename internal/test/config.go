@@ -13,7 +13,7 @@ func ResetTestRoot(testName string) *config.Config {
 	return ResetTestRootWithChainID(testName, "")
 }
 
-func ResetTestRootWithChainID(testName string, chainID string) *config.Config {
+func ResetTestRootWithChainID(testName, chainID string) *config.Config {
 	// create a unique, concurrency-safe test directory under os.TempDir()
 	rootDir, err := os.MkdirTemp("", fmt.Sprintf("%s-%s_", chainID, testName))
 	if err != nil {

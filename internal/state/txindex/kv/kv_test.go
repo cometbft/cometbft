@@ -890,7 +890,7 @@ func BenchmarkTxIndex(b *testing.B) {
 	}
 }
 
-func isSubset(smaller [][]byte, bigger [][]byte) bool {
+func isSubset(smaller, bigger [][]byte) bool {
 	for _, elem := range smaller {
 		if !slices.ContainsFunc(bigger, func(i []byte) bool {
 			return bytes.Equal(i, elem)
@@ -901,11 +901,11 @@ func isSubset(smaller [][]byte, bigger [][]byte) bool {
 	return true
 }
 
-func isEqualSets(x [][]byte, y [][]byte) bool {
+func isEqualSets(x, y [][]byte) bool {
 	return isSubset(x, y) && isSubset(y, x)
 }
 
-func emptyIntersection(x [][]byte, y [][]byte) bool {
+func emptyIntersection(x, y [][]byte) bool {
 	for _, elem := range x {
 		if slices.ContainsFunc(y, func(i []byte) bool {
 			return bytes.Equal(i, elem)
@@ -916,7 +916,7 @@ func emptyIntersection(x [][]byte, y [][]byte) bool {
 	return true
 }
 
-func setDiff(bigger [][]byte, smaller [][]byte) [][]byte {
+func setDiff(bigger, smaller [][]byte) [][]byte {
 	var diff [][]byte
 	for _, elem := range bigger {
 		if !slices.ContainsFunc(smaller, func(i []byte) bool {

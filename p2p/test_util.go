@@ -322,7 +322,7 @@ type AddrBookMock struct {
 
 var _ AddrBook = (*AddrBookMock)(nil)
 
-func (book *AddrBookMock) AddAddress(addr *NetAddress, _ *NetAddress) error {
+func (book *AddrBookMock) AddAddress(addr, _ *NetAddress) error {
 	book.Addrs[addr.String()] = struct{}{}
 	return nil
 }

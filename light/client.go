@@ -559,7 +559,7 @@ func (c *Client) verifyLightBlock(ctx context.Context, newLightBlock *types.Ligh
 	c.logger.Info("VerifyHeader", "height", newLightBlock.Height, "hash", newLightBlock.Hash())
 
 	var (
-		verifyFunc func(ctx context.Context, trusted *types.LightBlock, new *types.LightBlock, now time.Time) error
+		verifyFunc func(ctx context.Context, trusted, new *types.LightBlock, now time.Time) error
 		err        error
 	)
 

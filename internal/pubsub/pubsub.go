@@ -360,7 +360,7 @@ func (state *state) add(clientID string, q Query, subscription *Subscription) {
 	state.queries[qStr].refCount++
 }
 
-func (state *state) remove(clientID string, qStr string, reason error) {
+func (state *state) remove(clientID, qStr string, reason error) {
 	clientSubscriptions, ok := state.subscriptions[qStr]
 	if !ok {
 		return

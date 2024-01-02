@@ -52,11 +52,11 @@ func (p Provider) StopTestnet(ctx context.Context) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "down")
 }
 
-func (p Provider) Disconnect(ctx context.Context, name string, _ string) error {
+func (p Provider) Disconnect(ctx context.Context, name, _ string) error {
 	return Exec(ctx, "network", "disconnect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
 
-func (p Provider) Reconnect(ctx context.Context, name string, _ string) error {
+func (p Provider) Reconnect(ctx context.Context, name, _ string) error {
 	return Exec(ctx, "network", "connect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
 

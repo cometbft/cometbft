@@ -75,6 +75,8 @@ issues:
   max-same-issues: 10000
   max-issues-per-linter: 10000
 linters-settings:
+  gofumpt:
+    extra-rules: true
   gci:
     sections:
       - standard # Standard section: captures all standard packages.

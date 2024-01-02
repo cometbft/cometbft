@@ -436,7 +436,7 @@ func BenchmarkEventBus(b *testing.B) {
 	}
 }
 
-func benchmarkEventBus(b *testing.B, numClients int, randQueries bool, randEvents bool) {
+func benchmarkEventBus(b *testing.B, numClients int, randQueries, randEvents bool) {
 	b.Helper()
 	// for random* functions
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))

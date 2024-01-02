@@ -934,7 +934,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	require.Nil(t, blockAtHeightPlus2, "expecting an unsuccessful load of Height()+2")
 }
 
-func doFn(fn func() (interface{}, error)) (res interface{}, err error, panicErr error) {
+func doFn(fn func() (interface{}, error)) (res interface{}, err, panicErr error) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch e := r.(type) {

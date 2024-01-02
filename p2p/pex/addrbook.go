@@ -45,7 +45,7 @@ type AddrBook interface {
 	AddPrivateIDs(ids []string)
 
 	// Add and remove an address
-	AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error
+	AddAddress(addr, src *p2p.NetAddress) error
 	RemoveAddress(addr *p2p.NetAddress)
 
 	// Check if the address is in the book
@@ -213,7 +213,7 @@ func (a *addrBook) AddPrivateIDs(ids []string) {
 // Add address to a "new" bucket. If it's already in one, only add it probabilistically.
 // Returns error if the addr is non-routable. Does not add self.
 // NOTE: addr must not be nil.
-func (a *addrBook) AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error {
+func (a *addrBook) AddAddress(addr, src *p2p.NetAddress) error {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 

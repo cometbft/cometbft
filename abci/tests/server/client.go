@@ -41,7 +41,7 @@ func Commit(ctx context.Context, client abcicli.Client) error {
 	return nil
 }
 
-func FinalizeBlock(ctx context.Context, client abcicli.Client, txBytes [][]byte, codeExp []uint32, dataExp []byte, hashExp []byte) error {
+func FinalizeBlock(ctx context.Context, client abcicli.Client, txBytes [][]byte, codeExp []uint32, dataExp, hashExp []byte) error {
 	res, _ := client.FinalizeBlock(ctx, &types.FinalizeBlockRequest{Txs: txBytes})
 	appHash := res.AppHash
 	for i, tx := range res.TxResults {
@@ -68,7 +68,7 @@ func FinalizeBlock(ctx context.Context, client abcicli.Client, txBytes [][]byte,
 	return nil
 }
 
-func PrepareProposal(ctx context.Context, client abcicli.Client, txBytes [][]byte, txExpected [][]byte, _ []byte) error {
+func PrepareProposal(ctx context.Context, client abcicli.Client, txBytes, txExpected [][]byte, _ []byte) error {
 	res, _ := client.PrepareProposal(ctx, &types.PrepareProposalRequest{Txs: txBytes})
 	for i, tx := range res.Txs {
 		if !bytes.Equal(tx, txExpected[i]) {

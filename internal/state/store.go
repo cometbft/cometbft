@@ -295,7 +295,7 @@ func (store dbStore) Bootstrap(state State) error {
 // encoding not preserving ordering: https://github.com/tendermint/tendermint/issues/4567
 // This will cause some old states to be left behind when doing incremental partial prunes,
 // specifically older checkpoints and LastHeightChanged targets.
-func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight int64) error {
+func (store dbStore) PruneStates(from, to, evidenceThresholdHeight int64) error {
 	if from <= 0 || to <= 0 {
 		return fmt.Errorf("from height %v and to height %v must be greater than 0", from, to)
 	}
@@ -900,7 +900,7 @@ func (store dbStore) Close() error {
 	return store.db.Close()
 }
 
-func min(a int64, b int64) int64 {
+func min(a, b int64) int64 {
 	if a < b {
 		return a
 	}

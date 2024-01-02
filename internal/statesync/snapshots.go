@@ -146,7 +146,7 @@ func (p *snapshotPool) GetPeers(snapshot *snapshot) []p2p.Peer {
 		peers = append(peers, peer)
 	}
 	// sort results, for testability (otherwise order is random, so tests randomly fail)
-	sort.Slice(peers, func(a int, b int) bool {
+	sort.Slice(peers, func(a, b int) bool {
 		return peers[a].ID() < peers[b].ID()
 	})
 	return peers

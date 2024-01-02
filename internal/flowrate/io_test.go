@@ -164,7 +164,7 @@ const (
 // general equality of fields except for the duration and rates, which can
 // drift due to unpredictable delays (e.g. thread wakes up 25ms after
 // `time.Sleep` has ended).
-func statusesAreEqual(s1 *Status, s2 *Status) bool {
+func statusesAreEqual(s1, s2 *Status) bool {
 	if s1.Active == s2.Active &&
 		s1.Start.Equal(s2.Start) &&
 		durationsAreEqual(s1.Duration, s2.Duration, maxDeviationForDuration) &&
@@ -183,11 +183,11 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 	return false
 }
 
-func durationsAreEqual(d1 time.Duration, d2 time.Duration, maxDeviation time.Duration) bool {
+func durationsAreEqual(d1, d2, maxDeviation time.Duration) bool {
 	return d2-d1 <= maxDeviation
 }
 
-func ratesAreEqual(r1 int64, r2 int64) bool {
+func ratesAreEqual(r1, r2 int64) bool {
 	maxDeviation := int64(50)
 	sub := r1 - r2
 	if sub < 0 {

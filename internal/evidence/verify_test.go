@@ -457,7 +457,7 @@ func makeLunaticEvidence(
 	height, commonHeight int64,
 	byzVals, phantomVals int,
 	commonTime, attackTime time.Time,
-) (ev *types.LightClientAttackEvidence, trusted *types.LightBlock, common *types.LightBlock) {
+) (ev *types.LightClientAttackEvidence, trusted, common *types.LightBlock) {
 	t.Helper()
 	totalVals := 10
 	commonValSet, commonPrivVals := types.RandValidatorSet(totalVals, defaultVotingPower)

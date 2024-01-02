@@ -98,7 +98,7 @@ func getHeightFromKey(key []byte) int64 {
 	panic(fmt.Errorf("key must be either heightKey or eventKey"))
 }
 
-func eventKey(compositeKey, eventValue string, height int64, eventSeq int64) ([]byte, error) {
+func eventKey(compositeKey, eventValue string, height, eventSeq int64) ([]byte, error) {
 	return orderedcode.Append(
 		nil,
 		compositeKey,

@@ -75,7 +75,7 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 
 // Verify that the Proof proves the root hash.
 // Check sp.Index/sp.Total manually if needed.
-func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
+func (sp *Proof) Verify(rootHash, leaf []byte) error {
 	if rootHash == nil {
 		return ErrInvalidHash{
 			Err: errors.New("nil root"),

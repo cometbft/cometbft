@@ -139,7 +139,7 @@ func (s *SnapshotStore) List() ([]*abci.Snapshot, error) {
 }
 
 // LoadChunk loads a snapshot chunk.
-func (s *SnapshotStore) LoadChunk(height uint64, format uint32, chunk uint32) ([]byte, error) {
+func (s *SnapshotStore) LoadChunk(height uint64, format, chunk uint32) ([]byte, error) {
 	s.RLock()
 	defer s.RUnlock()
 	for _, snapshot := range s.metadata {

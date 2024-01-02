@@ -47,7 +47,7 @@ type EventSwitch interface {
 	Fireable
 
 	AddListenerForEvent(listenerID, event string, cb EventCallback) error
-	RemoveListenerForEvent(event string, listenerID string)
+	RemoveListenerForEvent(event, listenerID string)
 	RemoveListener(listenerID string)
 }
 
@@ -118,7 +118,7 @@ func (evsw *eventSwitch) RemoveListener(listenerID string) {
 	}
 }
 
-func (evsw *eventSwitch) RemoveListenerForEvent(event string, listenerID string) {
+func (evsw *eventSwitch) RemoveListenerForEvent(event, listenerID string) {
 	// Get eventCell
 	evsw.mtx.Lock()
 	eventCell := evsw.eventCells[event]

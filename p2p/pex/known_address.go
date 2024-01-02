@@ -19,7 +19,7 @@ type knownAddress struct {
 	LastBanTime time.Time       `json:"last_ban_time"`
 }
 
-func newKnownAddress(addr *p2p.NetAddress, src *p2p.NetAddress) *knownAddress {
+func newKnownAddress(addr, src *p2p.NetAddress) *knownAddress {
 	return &knownAddress{
 		Addr:        addr,
 		Src:         src,

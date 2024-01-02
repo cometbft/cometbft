@@ -49,7 +49,7 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 // An AddrBook represents an address book from the pex package, which is used
 // to store peer addresses.
 type AddrBook interface {
-	AddAddress(addr *NetAddress, src *NetAddress) error
+	AddAddress(addr, src *NetAddress) error
 	AddPrivateIDs(ids []string)
 	AddOurAddress(addr *NetAddress)
 	OurAddress(addr *NetAddress) bool

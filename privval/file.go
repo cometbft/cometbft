@@ -410,7 +410,7 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 
 // Persist height/round/step and signature.
 func (pv *FilePV) saveSigned(height int64, round int32, step int8,
-	signBytes []byte, sig []byte,
+	signBytes, sig []byte,
 ) {
 	pv.LastSignState.Height = height
 	pv.LastSignState.Round = round

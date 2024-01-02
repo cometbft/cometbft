@@ -199,7 +199,7 @@ func NewRPCSuccessResponse(id jsonrpcid, res interface{}) RPCResponse {
 	return RPCResponse{JSONRPC: "2.0", ID: id, Result: rawMsg}
 }
 
-func NewRPCErrorResponse(id jsonrpcid, code int, msg string, data string) RPCResponse {
+func NewRPCErrorResponse(id jsonrpcid, code int, msg, data string) RPCResponse {
 	return RPCResponse{
 		JSONRPC: "2.0",
 		ID:      id,

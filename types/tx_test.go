@@ -125,7 +125,7 @@ func testTxProofUnchangable(t *testing.T) {
 }
 
 // assertBadProof makes sure that the proof doesn't deserialize into something valid.
-func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
+func assertBadProof(t *testing.T, root, bad []byte, good TxProof) {
 	t.Helper()
 	var (
 		proof   TxProof

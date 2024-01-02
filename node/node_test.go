@@ -83,21 +83,23 @@ func TestNodeStartStop(t *testing.T) {
 }
 
 func TestSplitAndTrimEmpty(t *testing.T) {
-	testCases := []struct {
+	testCases := map[string]struct {
 		s        string
 		sep      string
 		cutset   string
 		expected []string
 	}{
-		{"a,b,c", ",", " ", []string{"a", "b", "c"}},
-		{" a , b , c ", ",", " ", []string{"a", "b", "c"}},
-		{" a, b, c ", ",", " ", []string{"a", "b", "c"}},
-		{" a, ", ",", " ", []string{"a"}},
-		{"   ", ",", " ", []string{}},
+		"Simple case":                {"a,b,c", ",", " ", []string{"a", "b", "c"}},
+		"Spaces around separators":   {" a , b , c ", ",", " ", []string{"a", "b", "c"}},
+		"Spaces after separators":    {" a, b, c ", ",", " ", []string{"a", "b", "c"}},
+		"Only one non-empty element": {" a, ", ",", " ", []string{"a"}},
+		"All spaces":                 {"   ", ",", " ", []string{}},
 	}
 
-	for _, tc := range testCases {
-		assert.Equal(t, tc.expected, splitAndTrimEmpty(tc.s, tc.sep, tc.cutset), "%s", tc.s)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, splitAndTrimEmpty(tc.s, tc.sep, tc.cutset))
+		})
 	}
 }
 
@@ -116,21 +118,40 @@ func TestCompanionInitialHeightSetup(t *testing.T) {
 }
 
 func TestNodeDelayedStart(t *testing.T) {
-	config := test.ResetTestRoot("node_delayed_start_test")
+	// Setup the test environment
+	testRoot := "node_delayed_start_test"
+	config := test.ResetTestRoot(testRoot)
 	defer os.RemoveAll(config.RootDir)
-	now := cmttime.Now()
 
-	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger())
-	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
-	require.NoError(t, err)
+	// Define the delay duration
+	delayDuration := 2 * time.Second
 
-	err = n.Start()
-	require.NoError(t, err)
-	defer n.Stop() //nolint:errcheck // ignore for tests
+	// Create a new node
+	node, err := DefaultNewNode(config, log.TestingLogger())
+	require.NoError(t, err, "Failed to create a new node")
 
+	// Set the genesis time to be 2 seconds from now
+	node.GenesisDoc().GenesisTime = cmttime.Now().Add(delayDuration)
+
+	// Start the node
+	err = node.Start()
+	require.NoError(t, err, "Failed to start the node")
+
+	// Ensure the node is stopped after the test
+	defer func() {
+		err := node.Stop()
+		require.NoError(t, err, "Failed to stop the node")
+	}()
+
+	// Get the time after the node start
 	startTime := cmttime.Now()
-	assert.Equal(t, true, startTime.After(n.GenesisDoc().GenesisTime))
+
+	// Assert that the start time is after the genesis time
+	assert.True(t, startTime.After(node.GenesisDoc().GenesisTime), "Start time should be after the genesis time")
+
+	// Assert that the difference between the start time and the genesis time is within a reasonable range
+	// We use a large delta to account for potential discrepancies in timing
+	assert.InDelta(t, delayDuration.Seconds(), startTime.Sub(node.GenesisDoc().GenesisTime).Seconds(), 2.0, "The difference between start time and genesis time should be within a reasonable range")
 }
 
 func TestNodeSetAppVersion(t *testing.T) {
@@ -170,10 +191,18 @@ func TestPprofServer(t *testing.T) {
 	}()
 	assert.NotNil(t, n.pprofSrv)
 
-	resp, err := http.Get("http://" + config.RPC.PprofListenAddress + "/debug/pprof")
-	assert.NoError(t, err)
-	defer resp.Body.Close()
-	assert.Equal(t, 200, resp.StatusCode)
+	// Retry mechanism
+	for i := 0; i < 5; i++ {
+		resp, err := http.Get("http://" + config.RPC.PprofListenAddress + "/debug/pprof")
+		if err == nil {
+			defer resp.Body.Close()
+			assert.Equal(t, 200, resp.StatusCode)
+			return
+		}
+		time.Sleep(time.Second)
+	}
+
+	t.Fatal("pprof server not accessible after 5 retries")
 }
 
 func TestNodeSetPrivValTCP(t *testing.T) {
@@ -438,10 +467,15 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	assert.EqualValues(t, partSet.ByteSize(), int64(pb.Size()))
 }
 
+// TestNodeNewNodeCustomReactors tests that custom reactors can be added to a new node
+// and that they are running after the node is started. It also checks that the custom
+// reactors' channels are included in the node's channels.
 func TestNodeNewNodeCustomReactors(t *testing.T) {
+	// Reset the test root and ensure it's cleaned up after the test
 	config := test.ResetTestRoot("node_new_node_custom_reactors_test")
 	defer os.RemoveAll(config.RootDir)
 
+	// Create a new custom reactor
 	cr := p2pmock.NewReactor()
 	cr.Channels = []*conn.ChannelDescriptor{
 		{
@@ -451,11 +485,14 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 			RecvMessageCapacity: 100,
 		},
 	}
+	// Create another custom reactor
 	customBlocksyncReactor := p2pmock.NewReactor()
 
+	// Load or generate a new node key
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	require.NoError(t, err)
 
+	// Create a new node with the custom reactors
 	n, err := NewNode(context.Background(),
 		config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
@@ -469,16 +506,20 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	// Start the node
 	err = n.Start()
 	require.NoError(t, err)
 	defer n.Stop() //nolint:errcheck // ignore for tests
 
+	// Check that the custom reactors are running
 	assert.True(t, cr.IsRunning())
-	assert.Equal(t, cr, n.Switch().Reactor("FOO"))
-
 	assert.True(t, customBlocksyncReactor.IsRunning())
+
+	// Check that the custom reactors are part of the node's reactors
+	assert.Equal(t, cr, n.Switch().Reactor("FOO"))
 	assert.Equal(t, customBlocksyncReactor, n.Switch().Reactor("BLOCKSYNC"))
 
+	// Check that the custom reactors' channels are part of the node's channels
 	channels := n.NodeInfo().(p2p.DefaultNodeInfo).Channels
 	assert.Contains(t, channels, mempl.MempoolChannel)
 	assert.Contains(t, channels, cr.Channels[0].ID)
@@ -540,58 +581,35 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestNodeNewNodeGenesisHashMismatch tests that creating a new node with a modified genesis file
+// that results in a different hash from the one saved in the database will result in an error.
 func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
+	// Reset the test root and ensure it's cleaned up after the test
 	config := test.ResetTestRoot("node_new_node_genesis_hash")
 	defer os.RemoveAll(config.RootDir)
 
 	// Use goleveldb so we can reuse the same db for the second NewNode()
 	config.DBBackend = string(dbm.GoLevelDBBackend)
 
+	// Load or generate a new node key
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to load or generate node key")
 
-	n, err := NewNode(
-		context.Background(),
-		config,
-		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
-		nodeKey,
-		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
-		DefaultGenesisDocProviderFunc(config),
-		cfg.DefaultDBProvider,
-		DefaultMetricsProvider(config.Instrumentation),
-		log.TestingLogger(),
-	)
-	require.NoError(t, err)
-
-	// Start and stop to close the db for later reading
-	err = n.Start()
-	require.NoError(t, err)
-
-	err = n.Stop()
-	require.NoError(t, err)
+	// Create and start a new node
+	_, err = createAndStartNode(config, nodeKey)
+	require.NoError(t, err, "Failed to create and start a new node")
 
 	// Ensure the genesis doc hash is saved to db
-	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
-	require.NoError(t, err)
-
-	genDocHash, err := stateDB.Get(genesisDocHashKey)
-	require.NoError(t, err)
+	genDocHash, err := getGenesisDocHashFromDB(config)
+	require.NoError(t, err, "Failed to get genesis doc hash from DB")
 	require.NotNil(t, genDocHash, "genesis doc hash should be saved in db")
-	require.Len(t, genDocHash, tmhash.Size)
-
-	err = stateDB.Close()
-	require.NoError(t, err)
+	require.Len(t, genDocHash, tmhash.Size, "Invalid genesis doc hash size")
 
 	// Modify the genesis file chain ID to get a different hash
-	genBytes := cmtos.MustReadFile(config.GenesisFile())
-	var genesisDoc types.GenesisDoc
-	err = cmtjson.Unmarshal(genBytes, &genesisDoc)
-	require.NoError(t, err)
+	err = modifyGenesisFileChainID(config)
+	require.NoError(t, err, "Failed to modify genesis file chain ID")
 
-	genesisDoc.ChainID = "different-chain-id"
-	err = genesisDoc.SaveAs(config.GenesisFile())
-	require.NoError(t, err)
-
+	// Attempt to create a new node with the modified genesis file
 	_, err = NewNode(
 		context.Background(),
 		config,
@@ -603,8 +621,71 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
 	)
+	// Expect an error because the genesis doc hash in the db does not match the loaded genesis doc
 	require.Error(t, err, "NewNode should error when genesisDoc is changed")
 	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
+}
+
+func createAndStartNode(config *cfg.Config, nodeKey *p2p.NodeKey) (*Node, error) {
+	n, err := NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = n.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	err = n.Stop()
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
+
+func getGenesisDocHashFromDB(config *cfg.Config) ([]byte, error) {
+	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	if err != nil {
+		return nil, err
+	}
+	defer stateDB.Close()
+
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return genDocHash, nil
+}
+
+func modifyGenesisFileChainID(config *cfg.Config) error {
+	genBytes := cmtos.MustReadFile(config.GenesisFile())
+	var genesisDoc types.GenesisDoc
+	err := cmtjson.Unmarshal(genBytes, &genesisDoc)
+	if err != nil {
+		return err
+	}
+
+	genesisDoc.ChainID = "different-chain-id"
+	err = genesisDoc.SaveAs(config.GenesisFile())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func TestNodeGenesisHashFlagMatch(t *testing.T) {

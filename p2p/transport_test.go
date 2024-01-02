@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"net"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -288,16 +287,8 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 			close(slowdonec)
 		}()
 
-		// Make sure we switch to fast peer goroutine.
-		runtime.Gosched()
-
-		select {
-		case <-fastc:
-			// Fast peer connected.
-		case <-time.After(200 * time.Millisecond):
-			// We error if the fast peer didn't succeed.
-			errc <- fmt.Errorf("fast peer timed out")
-		}
+		// Wait for fast peer to connect.
+		<-fastc
 
 		sc, err := upgradeSecretConn(c, 200*time.Millisecond, ed25519.GenPrivKey())
 		if err != nil {

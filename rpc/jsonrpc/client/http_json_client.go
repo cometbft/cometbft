@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 	protoUNIX  = "unix"
 )
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // Parsed URL structure.
 type parsedURL struct {
@@ -102,7 +102,7 @@ func (u parsedURL) GetTrimmedURL() string {
 	return u.Scheme + "://" + u.GetTrimmedHostWithPath()
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // HTTPClient is a common interface for JSON-RPC HTTP clients.
 type HTTPClient interface {
@@ -115,7 +115,7 @@ type Caller interface {
 	Call(ctx context.Context, method string, params map[string]interface{}, result interface{}) (interface{}, error)
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // Client is a JSON-RPC client, which sends POST HTTP requests to the
 // remote server.
@@ -302,7 +302,7 @@ func (c *Client) nextRequestID() types.JSONRPCIntID {
 	return types.JSONRPCIntID(id)
 }
 
-//------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------
 
 // jsonRPCBufferedRequest encapsulates a single buffered request, as well as its
 // anticipated response structure.
@@ -376,7 +376,7 @@ func (b *RequestBatch) Call(
 	return result, nil
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // MakeHTTPDialer creates an HTTP client dialer based on the given URL.
 func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {

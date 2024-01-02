@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/require"
 )

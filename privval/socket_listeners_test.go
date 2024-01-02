@@ -97,19 +97,18 @@ func TestListenerTimeoutAccept(t *testing.T) {
 
 func TestListenerTimeoutReadWrite(t *testing.T) {
 	const (
-		// This needs to be long enough s.t. the Accept will definitely succeed:
-		timeoutAccept = time.Second
-		// This can be really short but in the TCP case, the accept can
-		// also trigger a timeoutReadWrite. Hence, we need to give it some time.
-		// Note: this controls how long this test actually runs.
+		timeoutAccept    = time.Second
 		timeoutReadWrite = 10 * time.Millisecond
 	)
 	for _, tc := range listenerTestCases(t, timeoutAccept, timeoutReadWrite) {
 		go func(dialer SocketDialer) {
-			_, err := dialer()
+			conn, err := dialer()
 			if err != nil {
 				panic(err)
 			}
+			// Add a delay before closing the connection
+			time.Sleep(2 * timeoutReadWrite)
+			conn.Close()
 		}(tc.dialer)
 
 		c, err := tc.listener.Accept()

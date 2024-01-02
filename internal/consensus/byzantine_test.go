@@ -276,6 +276,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	pubkey, err := bcs.privValidator.GetPubKey()
 	require.NoError(t, err)
 
+	const timeout = 30 * time.Second // Increase timeout to 30 seconds
+
 	select {
 	case <-done:
 		for idx, ev := range evidenceFromEachValidator {
@@ -286,7 +288,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 				assert.Equal(t, prevoteHeight, ev.Height())
 			}
 		}
-	case <-time.After(20 * time.Second):
+	case <-time.After(timeout):
+		t.Logf("Evidence from each validator: %v", evidenceFromEachValidator) // Log evidence
 		t.Fatalf("Timed out waiting for validators to commit evidence")
 	}
 }

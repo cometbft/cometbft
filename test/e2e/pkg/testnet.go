@@ -1,21 +1,26 @@
 package e2e
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+
+	_ "embed"
 )
 
 const (
@@ -60,26 +65,28 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                 string
-	File                 string
-	Dir                  string
-	IP                   *net.IPNet
-	InitialHeight        int64
-	InitialState         map[string]string
-	Validators           map[*Node]int64
-	ValidatorUpdates     map[int64]map[*Node]int64
-	Nodes                []*Node
-	KeyType              string
-	Evidence             int
-	LoadTxSizeBytes      int
-	LoadTxBatchSize      int
-	LoadTxConnections    int
-	ABCIProtocol         string
-	PrepareProposalDelay time.Duration
-	ProcessProposalDelay time.Duration
-	CheckTxDelay         time.Duration
-	UpgradeVersion       string
-	Prometheus           bool
+	Name                                                 string
+	File                                                 string
+	Dir                                                  string
+	IP                                                   *net.IPNet
+	InitialHeight                                        int64
+	InitialState                                         map[string]string
+	Validators                                           map[*Node]int64
+	ValidatorUpdates                                     map[int64]map[*Node]int64
+	Nodes                                                []*Node
+	KeyType                                              string
+	Evidence                                             int
+	LoadTxSizeBytes                                      int
+	LoadTxBatchSize                                      int
+	LoadTxConnections                                    int
+	ABCIProtocol                                         string
+	PrepareProposalDelay                                 time.Duration
+	ProcessProposalDelay                                 time.Duration
+	CheckTxDelay                                         time.Duration
+	UpgradeVersion                                       string
+	Prometheus                                           bool
+	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -145,6 +152,8 @@ func LoadTestnet(manifest Manifest, fname string, ifd InfrastructureData) (*Test
 		CheckTxDelay:         manifest.CheckTxDelay,
 		UpgradeVersion:       manifest.UpgradeVersion,
 		Prometheus:           manifest.Prometheus,
+		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
+		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -468,6 +477,34 @@ func (t Testnet) HasPerturbations() bool {
 		}
 	}
 	return false
+}
+
+//go:embed templates/prometheus-yaml.tmpl
+var prometheusYamlTemplate string
+
+func (t Testnet) prometheusConfigBytes() ([]byte, error) {
+	tmpl, err := template.New("prometheus-yaml").Parse(prometheusYamlTemplate)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, t)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (t Testnet) WritePrometheusConfig() error {
+	bytes, err := t.prometheusConfigBytes()
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(filepath.Join(t.Dir, "prometheus.yaml"), bytes, 0o644) //nolint:gosec
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Address returns a P2P endpoint address for the node.

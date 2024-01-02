@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/code"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
+	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -162,6 +163,19 @@ func (app *Application) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDelive
 	return abci.ResponseDeliverTx{Code: code.CodeTypeOK}
 }
 
+func (app *Application) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	for _, ev := range req.ByzantineValidators {
+		app.logger.Info("Misbehavior. Slashing validator",
+			"validator_address", ev.GetValidator().Address,
+			"type", ev.GetType(),
+			"height", ev.GetHeight(),
+			"time", ev.GetTime(),
+			"total_voting_power", ev.GetTotalVotingPower(),
+		)
+	}
+	return abci.ResponseBeginBlock{}
+}
+
 // EndBlock implements ABCI.
 func (app *Application) EndBlock(req abci.RequestEndBlock) abci.ResponseEndBlock {
 	valUpdates, err := app.validatorUpdates(uint64(req.Height))
@@ -275,10 +289,11 @@ func (app *Application) PrepareProposal(
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
 	for _, tx := range req.Txs {
-		totalBytes += int64(len(tx))
-		if totalBytes > req.MaxTxBytes {
+		txLen := cmttypes.ComputeProtoSizeForTxs([]cmttypes.Tx{tx})
+		if totalBytes+txLen > req.MaxTxBytes {
 			break
 		}
+		totalBytes += txLen
 		txs = append(txs, tx)
 	}
 

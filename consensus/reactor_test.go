@@ -26,6 +26,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/bits"
 	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -620,12 +621,11 @@ func waitForBlockWithUpdatedValsAndValidateIt(
 			if newBlock.LastCommit.Size() == len(updatedVals) {
 				css[j].Logger.Debug("waitForBlockWithUpdatedValsAndValidateIt: Got block", "height", newBlock.Height)
 				break LOOP
-			} else {
-				css[j].Logger.Debug(
-					"waitForBlockWithUpdatedValsAndValidateIt: Got block with no new validators. Skipping",
-					"height",
-					newBlock.Height)
 			}
+			css[j].Logger.Debug(
+				"waitForBlockWithUpdatedValsAndValidateIt: Got block with no new validators. Skipping",
+				"height",
+				newBlock.Height)
 		}
 
 		err := validateBlock(newBlock, updatedVals)
@@ -1004,4 +1004,33 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMarshalJSONPeerState(t *testing.T) {
+	ps := NewPeerState(nil)
+	data, err := json.Marshal(ps)
+	require.NoError(t, err)
+	require.JSONEq(t, `{
+		"round_state":{
+			"height": "0",
+			"round": -1,
+			"step": 0,
+			"start_time": "0001-01-01T00:00:00Z",
+			"proposal": false,
+			"proposal_block_part_set_header":
+				{"total":0, "hash":""},
+			"proposal_block_parts": null,
+			"proposal_pol_round": -1,
+			"proposal_pol": null,
+			"prevotes": null,
+			"precommits": null,
+			"last_commit_round": -1,
+			"last_commit": null,
+			"catchup_commit_round": -1,
+			"catchup_commit": null
+		},
+		"stats":{
+			"votes":"0",
+			"block_parts":"0"}
+		}`, string(data))
 }

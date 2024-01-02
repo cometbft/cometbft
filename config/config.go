@@ -28,6 +28,9 @@ const (
 	// Default is v0.
 	MempoolV0 = "v0"
 	MempoolV1 = "v1"
+
+	MempoolTypeFlood = "flood"
+	MempoolTypeNop   = "nop"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -73,7 +76,7 @@ type Config struct {
 	Mempool   *MempoolConfig   `mapstructure:"mempool"`
 	StateSync *StateSyncConfig `mapstructure:"statesync"`
 	BlockSync *BlockSyncConfig `mapstructure:"blocksync"`
-	//TODO(williambanfield): remove this field once v0.37 is released.
+	// TODO(williambanfield): remove this field once v0.37 is released.
 	// https://github.com/tendermint/tendermint/issues/9279
 	DeprecatedFastSyncConfig map[interface{}]interface{} `mapstructure:"fastsync"`
 	Consensus                *ConsensusConfig            `mapstructure:"consensus"`
@@ -151,6 +154,9 @@ func (cfg *Config) ValidateBasic() error {
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [instrumentation] section: %w", err)
 	}
+	if !cfg.Consensus.CreateEmptyBlocks && cfg.Mempool.Type == MempoolTypeNop {
+		return fmt.Errorf("`nop` mempool does not support create_empty_blocks = false")
+	}
 	return nil
 }
 
@@ -173,6 +179,9 @@ func (cfg *Config) CheckDeprecated() []string {
 	}
 	if cfg.BaseConfig.DeprecatedFastSyncMode != nil {
 		warnings = append(warnings, "fast_sync key detected. This key has been renamed to block_sync. The value of this deprecated key will be disregarded.")
+	}
+	if cfg.P2P.UPNP != nil {
+		warnings = append(warnings, "unused and deprecated upnp field detected in P2P config.")
 	}
 	return warnings
 }
@@ -202,7 +211,7 @@ type BaseConfig struct { //nolint: maligned
 	// Deprecated: BlockSync will be enabled unconditionally in the next major release.
 	BlockSyncMode bool `mapstructure:"block_sync"`
 
-	//TODO(williambanfield): remove this field once v0.37 is released.
+	// TODO(williambanfield): remove this field once v0.37 is released.
 	// https://github.com/tendermint/tendermint/issues/9279
 	DeprecatedFastSyncMode interface{} `mapstructure:"fast_sync"`
 
@@ -561,8 +570,8 @@ type P2PConfig struct { //nolint: maligned
 	// Comma separated list of nodes to keep persistent connections to
 	PersistentPeers string `mapstructure:"persistent_peers"`
 
-	// UPNP port forwarding
-	UPNP bool `mapstructure:"upnp"`
+	// Deprecated and unused.
+	UPNP interface{} `mapstructure:"upnp"`
 
 	// Path to address book
 	AddrBook string `mapstructure:"addr_book_file"`
@@ -628,7 +637,6 @@ func DefaultP2PConfig() *P2PConfig {
 	return &P2PConfig{
 		ListenAddress:                "tcp://0.0.0.0:26656",
 		ExternalAddress:              "",
-		UPNP:                         false,
 		AddrBook:                     defaultAddrBookPath,
 		AddrBookStrict:               true,
 		MaxNumInboundPeers:           40,
@@ -719,6 +727,17 @@ type MempoolConfig struct {
 	//  1) "v0" - (default) FIFO mempool.
 	//  2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 	Version string `mapstructure:"version"`
+
+	// The type of mempool for this node to use.
+	//
+	//  Possible types:
+	//  - "flood" : concurrent linked list mempool with flooding gossip protocol
+	//  (default)
+	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
+	//  responsible for storing, disseminating and proposing txs).
+	//  "create_empty_blocks=false" is not supported.
+	Type string `mapstructure:"type"`
+
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
@@ -759,6 +778,21 @@ type MempoolConfig struct {
 	// Including space needed by encoding (one varint per transaction).
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
+	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
+	// This feature is only available for the default mempool (version config set to "v0").
+	// We use two independent upper values for persistent and non-persistent peers.
+	// Unconditional peers are not affected by this feature.
+	// If we are connected to more than the specified number of persistent peers, only send txs to
+	// ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+	// persistent peers disconnects, activate another persistent peer.
+	// Similarly for non-persistent peers, with an upper limit of
+	// ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+	// If set to 0, the feature is disabled for the corresponding group of peers, that is, the
+	// number of active connections to that group of peers is not bounded.
+	// For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
+	// performance results using the default P2P configuration.
+	ExperimentalMaxGossipConnectionsToPersistentPeers    int `mapstructure:"experimental_max_gossip_connections_to_persistent_peers"`
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers int `mapstructure:"experimental_max_gossip_connections_to_non_persistent_peers"`
 
 	// TTLDuration, if non-zero, defines the maximum amount of time a transaction
 	// can exist for in the mempool.
@@ -786,16 +820,19 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
+		Type:      MempoolTypeFlood,
 		Version:   MempoolV0,
 		Recheck:   true,
 		Broadcast: true,
 		WalPath:   "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
-		Size:         5000,
-		MaxTxsBytes:  1024 * 1024 * 1024, // 1GB
-		CacheSize:    10000,
-		MaxTxBytes:   1024 * 1024, // 1MB
+		Size:        5000,
+		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
+		CacheSize:   10000,
+		MaxTxBytes:  1024 * 1024, // 1MB
+		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
+		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
 		TTLDuration:  0 * time.Second,
 		TTLNumBlocks: 0,
 	}
@@ -821,6 +858,12 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // ValidateBasic performs basic validation (checking param bounds, etc.) and
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
+	switch cfg.Type {
+	case MempoolTypeFlood, MempoolTypeNop:
+	case "": // allow empty string to be backwards compatible
+	default:
+		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
+	}
 	if cfg.Size < 0 {
 		return errors.New("size can't be negative")
 	}
@@ -832,6 +875,12 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	}
 	if cfg.MaxTxBytes < 0 {
 		return errors.New("max_tx_bytes can't be negative")
+	}
+	if cfg.ExperimentalMaxGossipConnectionsToPersistentPeers < 0 {
+		return errors.New("experimental_max_gossip_connections_to_persistent_peers can't be negative")
+	}
+	if cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers < 0 {
+		return errors.New("experimental_max_gossip_connections_to_non_persistent_peers can't be negative")
 	}
 	return nil
 }

@@ -84,6 +84,7 @@ therefore they have links to it and refer to CometBFT as "Tendermint" or "Tender
 - [ADR-075: RPC Event Subscription Interface](./adr-075-rpc-subscription.md)
 - [ADR-079: Ed25519 Verification](./adr-079-ed25519-verification.md)
 - [ADR-081: Protocol Buffers Management](./adr-081-protobuf-mgmt.md)
+- [ADR-111: `nop` Mempool](./adr-111-nop-mempool.md)
 
 ### Deprecated
 

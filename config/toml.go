@@ -274,11 +274,9 @@ pprof_laddr = "{{ .RPC.PprofListenAddress }}"
 # Address to listen for incoming connections
 laddr = "{{ .P2P.ListenAddress }}"
 
-# Address to advertise to peers for them to dial
-# If empty, will use the same port as the laddr,
-# and will introspect on the listener or use UPnP
-# to figure out the address. ip and port are required
-# example: 159.89.10.97:26656
+# Address to advertise to peers for them to dial. If empty, will use the same
+# port as the laddr, and will introspect on the listener to figure out the
+# address. IP and port are required. Example: 159.89.10.97:26656
 external_address = "{{ .P2P.ExternalAddress }}"
 
 # Comma separated list of seed nodes to connect to
@@ -286,9 +284,6 @@ seeds = "{{ .P2P.Seeds }}"
 
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = "{{ .P2P.PersistentPeers }}"
-
-# UPNP port forwarding
-upnp = {{ .P2P.UPNP }}
 
 # Path to address book
 addr_book_file = "{{ js .P2P.AddrBook }}"
@@ -350,6 +345,16 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 #   2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 version = "{{ .Mempool.Version }}"
 
+# The type of mempool for this node to use.
+#
+#  Possible types:
+#  - "flood" : concurrent linked list mempool with flooding gossip protocol
+#  (default)
+#  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+#  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
+#  not supported.
+type = "flood"
+
 recheck = {{ .Mempool.Recheck }}
 broadcast = {{ .Mempool.Broadcast }}
 wal_dir = "{{ js .Mempool.WalPath }}"
@@ -394,6 +399,22 @@ ttl-duration = "{{ .Mempool.TTLDuration }}"
 # has existed in the mempool at least ttl-num-blocks number of blocks or if
 # it's insertion time into the mempool is beyond ttl-duration.
 ttl-num-blocks = {{ .Mempool.TTLNumBlocks }}
+
+# Experimental parameters to limit gossiping txs to up to the specified number of peers.
+# This feature is only available for the default mempool (version config set to "v0").
+# We use two independent upper values for persistent and non-persistent peers.
+# Unconditional peers are not affected by this feature.
+# If we are connected to more than the specified number of persistent peers, only send txs to
+# ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+# persistent peers disconnects, activate another persistent peer.
+# Similarly for non-persistent peers, with an upper limit of
+# ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+# If set to 0, the feature is disabled for the corresponding group of peers, that is, the
+# number of active connections to that group of peers is not bounded.
+# For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
+# performance results using the default P2P configuration.
+experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
+experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
 
 #######################################################
 ###         State Sync Configuration Options        ###

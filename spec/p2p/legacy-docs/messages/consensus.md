@@ -24,13 +24,13 @@ next block in the blockchain should be.
 
 | Name     | Type                                               | Description                            | Field Number |
 |----------|----------------------------------------------------|----------------------------------------|--------------|
-| proposal | [Proposal](../../core/data_structures.md#proposal) | Proposed Block to come to consensus on | 1            |
+| proposal | [Proposal](../../../core/data_structures.md#proposal) | Proposed Block to come to consensus on | 1            |
 
 ### Vote
 
 Vote is sent to vote for some block (or to inform others that a process does not vote in the
 current round). Vote is defined in the
-[Blockchain](https://github.com/cometbft/cometbft/blob/v0.37.x/spec/core/data_structures.md#blockidd)
+[Blockchain](../../../core/data_structures.md#blockidd)
 section and contains validator's
 information (validator address and index), height and round for which the vote is sent, vote type,
 blockID if process vote for some block (`nil` otherwise) and a timestamp when the vote is sent. The
@@ -38,7 +38,7 @@ message is signed by the validator private key.
 
 | Name | Type                                       | Description               | Field Number |
 |------|--------------------------------------------|---------------------------|--------------|
-| vote | [Vote](../../core/data_structures.md#vote) | Vote for a proposed Block | 1            |
+| vote | [Vote](../../../core/data_structures.md#vote) | Vote for a proposed Block | 1            |
 
 ### BlockPart
 
@@ -49,7 +49,7 @@ and the block part.
 |--------|--------------------------------------------|----------------------------------------|--------------|
 | height | int64                                      | Height of corresponding block.         | 1            |
 | round  | int32                                      | Round of voting to finalize the block. | 2            |
-| part   | [Part](../../core/data_structures.md#part) | A part of the block.                   | 3            |
+| part   | [Part](../../../core/data_structures.md#part) | A part of the block.                   | 3            |
 
 ### NewRoundStep
 
@@ -79,7 +79,7 @@ In case the block is also committed, then IsCommit flag is set to true.
 |-----------------------|--------------------------------------------------------------|----------------------------------------|--------------|
 | height                | int64                                                        | Height of corresponding block          | 1            |
 | round                 | int32                                                        | Round of voting to finalize the block. | 2            |
-| block_part_set_header | [PartSetHeader](../../core/data_structures.md#partsetheader) |                                        | 3            |
+| block_part_set_header | [PartSetHeader](../../../core/data_structures.md#partsetheader) |                                        | 3            |
 | block_parts           | int32                                                        |                                        | 4            |
 | is_commit             | bool                                                         |                                        | 5            |
 
@@ -104,7 +104,7 @@ round, vote type and the index of the validator that is the originator of the co
 |--------|------------------------------------------------------------------|----------------------------------------|--------------|
 | height | int64                                                            | Height of corresponding block          | 1            |
 | round  | int32                                                            | Round of voting to finalize the block. | 2            |
-| type   | [SignedMessageType](../../core/data_structures.md#signedmsgtype) |                                        | 3            |
+| type   | [SignedMessageType](../../../core/data_structures.md#signedmsgtype) |                                        | 3            |
 | index  | int32                                                            |                                        | 4            |
 
 ### VoteSetMaj23
@@ -116,7 +116,7 @@ It contains height, round, vote type and the BlockID.
 |--------|------------------------------------------------------------------|----------------------------------------|--------------|
 | height | int64                                                            | Height of corresponding block          | 1            |
 | round  | int32                                                            | Round of voting to finalize the block. | 2            |
-| type   | [SignedMessageType](../../core/data_structures.md#signedmsgtype) |                                        | 3            |
+| type   | [SignedMessageType](../../../core/data_structures.md#signedmsgtype) |                                        | 3            |
 
 ### VoteSetBits
 
@@ -128,8 +128,8 @@ the votes a process has.
 |----------|------------------------------------------------------------------|----------------------------------------|--------------|
 | height   | int64                                                            | Height of corresponding block          | 1            |
 | round    | int32                                                            | Round of voting to finalize the block. | 2            |
-| type     | [SignedMessageType](../../core/data_structures.md#signedmsgtype) |                                        | 3            |
-| block_id | [BlockID](../../core/data_structures.md#blockid)                 |                                        | 4            |
+| type     | [SignedMessageType](../../../core/data_structures.md#signedmsgtype) |                                        | 3            |
+| block_id | [BlockID](../../../core/data_structures.md#blockid)                 |                                        | 4            |
 | votes    | BitArray                                                         | Round of voting to finalize the block. | 5            |
 
 ### Message

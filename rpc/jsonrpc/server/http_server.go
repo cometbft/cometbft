@@ -188,7 +188,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 				// If RPCResponse
 				if res, ok := e.(types.RPCResponse); ok {
 					if wErr := WriteRPCResponseHTTP(rww, res); wErr != nil {
-						logger.Error("failed to write response", "res", res, "err", wErr)
+						logger.Error("failed to write response", "err", wErr)
 					}
 				} else {
 					// Panics can contain anything, attempt to normalize it as an error.
@@ -207,7 +207,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 
 					res := types.RPCInternalError(types.JSONRPCIntID(-1), err)
 					if wErr := WriteRPCResponseHTTPError(rww, http.StatusInternalServerError, res); wErr != nil {
-						logger.Error("failed to write response", "res", res, "err", wErr)
+						logger.Error("failed to write response", "err", wErr)
 					}
 				}
 			}

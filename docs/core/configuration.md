@@ -223,11 +223,9 @@ pprof_laddr = ""
 # Address to listen for incoming connections
 laddr = "tcp://0.0.0.0:26656"
 
-# Address to advertise to peers for them to dial
-# If empty, will use the same port as the laddr,
-# and will introspect on the listener or use UPnP
-# to figure out the address. ip and port are required
-# example: 159.89.10.97:26656
+# Address to advertise to peers for them to dial. If empty, will use the same
+# port as the laddr, and will introspect on the listener to figure out the
+# address. IP and port are required. Example: 159.89.10.97:26656
 external_address = ""
 
 # Comma separated list of seed nodes to connect to
@@ -235,9 +233,6 @@ seeds = ""
 
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = ""
-
-# UPNP port forwarding
-upnp = false
 
 # Path to address book
 addr_book_file = "config/addrbook.json"
@@ -298,6 +293,16 @@ dial_timeout = "3s"
 #   1) "v0" - (default) FIFO mempool.
 #   2) "v1" - prioritized mempool (deprecated; will be removed in the next release).
 version = "v0"
+
+# The type of mempool for this node to use.
+#
+#  Possible types:
+#  - "flood" : concurrent linked list mempool with flooding gossip protocol
+#  (default)
+#  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+#  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
+#  not supported.
+type = "flood"
 
 recheck = true
 broadcast = true
@@ -492,6 +497,7 @@ namespace = "cometbft"
  ```
 
 ## Empty blocks VS no empty blocks
+
 ### create_empty_blocks = true
 
 If `create_empty_blocks` is set to `true` in your config, blocks will be created ~ every second (with default consensus parameters). You can regulate the delay between blocks by changing the `timeout_commit`. E.g. `timeout_commit = "10s"` should result in ~ 10 second blocks.
@@ -505,6 +511,7 @@ Note after the block H, CometBFT creates something we call a "proof block" (only
 Plus, if you set `create_empty_blocks_interval` to something other than the default (`0`), CometBFT will be creating empty blocks even in the absence of transactions every `create_empty_blocks_interval.` For instance, with `create_empty_blocks = false` and `create_empty_blocks_interval = "30s"`, CometBFT will only create blocks if there are transactions, or after waiting 30 seconds without receiving any transactions.
 
 ## Consensus timeouts explained
+
 There's a variety of information about timeouts in [Running in
 production](./running-in-production.md#configuration-parameters).
 You can also find more detailed explanation in the paper describing
@@ -523,18 +530,20 @@ timeout_precommit = "1s"
 timeout_precommit_delta = "500ms"
 timeout_commit = "1s"
 ```
+
 Note that in a successful round, the only timeout that we absolutely wait no
 matter what is `timeout_commit`.
 Here's a brief summary of the timeouts:
-- `timeout_propose` = how long we wait for a proposal block before prevoting nil
-- `timeout_propose_delta` = how much  `timeout_propose` increases with each round
-- `timeout_prevote` = how long we wait after receiving +2/3 prevotes for
+
+- `timeout_propose` = how long a validator should wait for a proposal block before prevoting nil
+- `timeout_propose_delta` = how much `timeout_propose` increases with each round
+- `timeout_prevote` = how long a validator should wait after receiving +2/3 prevotes for
   anything (ie. not a single block or nil)
 - `timeout_prevote_delta` = how much the `timeout_prevote` increases with each round
-- `timeout_precommit` = how long we wait after receiving +2/3 precommits for
+- `timeout_precommit` = how long a validator should wait after receiving +2/3 precommits for
   anything (ie. not a single block or nil)
 - `timeout_precommit_delta` = how much the `timeout_precommit` increases with each round
-- `timeout_commit` = how long we wait after committing a block, before starting
+- `timeout_commit` = how long a validator should wait after committing a block, before starting
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)
 

@@ -2,13 +2,14 @@ package types
 
 import (
 	"io"
+	"math"
 
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cosmos/gogoproto/proto"
 )
 
 const (
-	maxMsgSize = 104857600 // 100MB
+	maxMsgSize = math.MaxInt32 // 2GB
 )
 
 // WriteMessage writes a varint length-delimited protobuf message.

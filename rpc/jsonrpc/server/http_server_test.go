@@ -149,7 +149,6 @@ func TestWriteRPCResponseHTTPError(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	// Ensure the response body is closed after reading
 	defer resp.Body.Close()
 
 	// Assertions

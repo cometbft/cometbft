@@ -314,7 +314,7 @@ func introduceLazyProposer(t *testing.T, lazyProposer *State, ctx context.Contex
 			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: height}
 			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
 		default:
-			lazyProposer.Logger.Error("enterPropose: Cannot propose anything: No commit for the previous block")
+			lazyProposer.Logger.Error("enterPropose", "error", ErrPubKeyIsNotSet)
 			return
 		}
 

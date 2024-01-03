@@ -60,37 +60,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	// Alter prevote so that the byzantine node double votes when height is 2
 	// This block of code could be refactored into a separate function like `alterPrevoteForByzantineNode()`
-	bcs.doPrevote = func(height int64, round int32) {
-		// Allow first height to happen normally so that byzantine validator is no longer proposer
-		if height == prevoteHeight {
-			bcs.Logger.Info("Sending two votes")
-			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), nil)
-			require.NoError(t, err)
-			prevote2, err := bcs.signVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-			require.NoError(t, err)
-			peerList := reactors[byzantineNode].Switch.Peers().List()
-			bcs.Logger.Info("Getting peer list", "peers", peerList)
-			// Send two votes to all peers (1st to one half, 2nd to another half)
-			for i, peer := range peerList {
-				if i < len(peerList)/2 {
-					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
-					peer.Send(p2p.Envelope{
-						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
-						ChannelID: VoteChannel,
-					})
-				} else {
-					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
-					peer.Send(p2p.Envelope{
-						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
-						ChannelID: VoteChannel,
-					})
-				}
-			}
-		} else {
-			bcs.Logger.Info("Behaving normally")
-			bcs.defaultDoPrevote(height, round)
-		}
-	}
+	alterPrevoteForByzantineNode(t, bcs, prevoteHeight, reactors, byzantineNode)
 
 	// Introducing a lazy proposer means that the time of the block committed is different to the
 	// timestamp that the other nodes have. This tests to ensure that the evidence that finally gets
@@ -366,4 +336,92 @@ func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subs
 	}
 
 	return reactors, blocksSubs, eventBuses, nil
+}
+
+func alterPrevoteForByzantineNode(t *testing.T, bcs *State, prevoteHeight int64, reactors []*Reactor, byzantineNode int) {
+	bcs.doPrevote = func(height int64, round int32) {
+		if height == prevoteHeight {
+			bcs.Logger.Info("Sending two votes")
+			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), nil)
+			require.NoError(t, err)
+			prevote2, err := bcs.signVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+			require.NoError(t, err)
+			peerList := reactors[byzantineNode].Switch.Peers().List()
+			bcs.Logger.Info("Getting peer list", "peers", peerList)
+			for i, peer := range peerList {
+				if i < len(peerList)/2 {
+					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
+					peer.Send(p2p.Envelope{
+						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
+						ChannelID: VoteChannel,
+					})
+				} else {
+					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
+					peer.Send(p2p.Envelope{
+						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
+						ChannelID: VoteChannel,
+					})
+				}
+			}
+		} else {
+			bcs.Logger.Info("Behaving normally")
+			bcs.defaultDoPrevote(height, round)
+		}
+	}
+}
+
+func introduceLazyProposer(t *testing.T, lazyProposer *State, ctx context.Context) {
+	lazyProposer.decideProposal = func(height int64, round int32) {
+		lazyProposer.Logger.Info("Lazy Proposer proposing condensed commit")
+		if lazyProposer.privValidator == nil {
+			panic("entered createProposalBlock with privValidator being nil")
+		}
+
+		var extCommit *types.ExtendedCommit
+		switch {
+		case lazyProposer.Height == lazyProposer.state.InitialHeight:
+			extCommit = &types.ExtendedCommit{}
+		case lazyProposer.LastCommit.HasTwoThirdsMajority():
+			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: height}
+			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
+		default:
+			lazyProposer.Logger.Error("enterPropose: Cannot propose anything: No commit for the previous block")
+			return
+		}
+
+		extCommit.ExtendedSignatures[len(extCommit.ExtendedSignatures)-1] = types.NewExtendedCommitSigAbsent()
+
+		if lazyProposer.privValidatorPubKey == nil {
+			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", ErrPubKeyIsNotSet))
+			return
+		}
+		proposerAddr := lazyProposer.privValidatorPubKey.Address()
+
+		block, err := lazyProposer.blockExec.CreateProposalBlock(
+			ctx, lazyProposer.Height, lazyProposer.state, extCommit, proposerAddr)
+		require.NoError(t, err)
+		blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+		require.NoError(t, err)
+
+		if err := lazyProposer.wal.FlushAndSync(); err != nil {
+			lazyProposer.Logger.Error("Error flushing to disk")
+		}
+
+		propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
+		proposal := types.NewProposal(height, round, lazyProposer.ValidRound, propBlockID)
+		p := proposal.ToProto()
+		if err := lazyProposer.privValidator.SignProposal(lazyProposer.state.ChainID, p); err == nil {
+			proposal.Signature = p.Signature
+
+			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})
+			for i := 0; i < int(blockParts.Total()); i++ {
+				part := blockParts.GetPart(i)
+				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, ""})
+			}
+			lazyProposer.Logger.Info("Signed proposal", "height", height, "round", round, "proposal", proposal)
+			lazyProposer.Logger.Debug(fmt.Sprintf("Signed proposal block: %v", block))
+		} else if !lazyProposer.replayMode {
+			lazyProposer.Logger.Error("enterPropose: Error signing proposal", "height", height, "round", round, "err", err)
+		}
+	}
 }

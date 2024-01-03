@@ -151,7 +151,6 @@ func TestWriteRPCResponseHTTPError(t *testing.T) {
 
 	defer resp.Body.Close()
 
-	// Assertions
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 	assert.Equal(t, `{"jsonrpc":"2.0","id":-1,"error":{"code":-32603,"message":"Internal error","data":"foo"}}`, string(body))

@@ -4,28 +4,40 @@ import (
 	"fmt"
 )
 
-type ErrNewProxyClient struct {
+type ErrUnreachableProxy struct {
 	Err error
 }
 
-func (e ErrNewProxyClient) Error() string {
+func (e ErrUnreachableProxy) Error() string {
 	return fmt.Sprintf("failed to connect to proxy: %v", e.Err)
 }
 
-func (e ErrNewProxyClient) Unwrap() error {
+func (e ErrUnreachableProxy) Unwrap() error {
 	return e.Err
 }
 
-type ErrABCIClient struct {
-	Action  string
+type ErrABCIClientCreate struct {
 	CliType string
 	Err     error
 }
 
-func (e ErrABCIClient) Error() string {
-	return fmt.Sprintf("error %s ABCI client (%s client): %v", e.Action, e.CliType, e.Err)
+func (e ErrABCIClientCreate) Error() string {
+	return fmt.Sprintf("error creating ABCI client (%s client): %v", e.CliType, e.Err)
 }
 
-func (e ErrABCIClient) Unwrap() error {
+func (e ErrABCIClientCreate) Unwrap() error {
+	return e.Err
+}
+
+type ErrABCIClientStart struct {
+	CliType string
+	Err     error
+}
+
+func (e ErrABCIClientStart) Error() string {
+	return fmt.Sprintf("error starting ABCI client (%s client): %v", e.CliType, e.Err)
+}
+
+func (e ErrABCIClientStart) Unwrap() error {
 	return e.Err
 }

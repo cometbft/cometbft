@@ -247,7 +247,7 @@ func (r *remoteClientCreator) NewABCISnapshotClient() (abcicli.Client, error) {
 func (r *remoteClientCreator) newABCIClient() (abcicli.Client, error) {
 	remoteApp, err := abcicli.NewClient(r.addr, r.transport, r.mustConnect)
 	if err != nil {
-		return nil, ErrNewProxyClient{Err: err}
+		return nil, ErrUnreachableProxy{Err: err}
 	}
 
 	return remoteApp, nil

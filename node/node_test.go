@@ -195,7 +195,8 @@ func TestPprofServer(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		resp, err := http.Get("http://" + config.RPC.PprofListenAddress + "/debug/pprof")
 		if err == nil {
-			defer resp.Body.Close()
+			errClose := resp.Body.Close()
+			require.NoError(t, errClose)
 			assert.Equal(t, 200, resp.StatusCode)
 			return
 		}

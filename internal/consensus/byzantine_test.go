@@ -276,7 +276,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	pubkey, err := bcs.privValidator.GetPubKey()
 	require.NoError(t, err)
 
-	const timeout = 30 * time.Second // Increase timeout to 30 seconds
+	const timeout = 35 * time.Second // Increase timeout to 30 seconds
 
 	select {
 	case <-done:

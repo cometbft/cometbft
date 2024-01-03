@@ -148,7 +148,6 @@ func TestWriteRPCResponseHTTPError(t *testing.T) {
 	resp := w.Result()
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)

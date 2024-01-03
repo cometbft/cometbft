@@ -1,0 +1,369 @@
+package consensus
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path"
+	"sync"
+	"testing"
+	"time"
+
+	dbm "github.com/cometbft/cometbft-db"
+	abcicli "github.com/cometbft/cometbft/abci/client"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	"github.com/cometbft/cometbft/internal/evidence"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/store"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/libs/log"
+	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// Byzantine node sends two different prevotes (nil and blockID) to the same validator
+// TestByzantinePrevoteEquivocation tests the scenario where a Byzantine node sends two different prevotes (nil and blockID) to the same validator.
+func TestByzantinePrevoteEquivocation(t *testing.T) {
+	// Create a new context with cancellation
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Define constants for the number of validators, the Byzantine node, and the height at which to prevote
+	const nValidators = 4
+	const byzantineNode = 0
+	const prevoteHeight = int64(2)
+	testName := "consensus_byzantine_test"
+	appFunc := newKVStore
+
+	// Generate a random genesis document and private validators
+	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+	css, err := initializeValidators(nValidators, genDoc, privVals, testName, appFunc)
+	require.NoError(t, err)
+	// Initialize the reactors for each of the validators
+	reactors, blocksSubs, eventBuses, err := initializeReactors(nValidators, css)
+	require.NoError(t, err)
+
+	// Make connected switches and start all reactors
+	p2p.MakeConnectedSwitches(config.P2P, nValidators, func(i int, s *p2p.Switch) *p2p.Switch {
+		s.AddReactor("CONSENSUS", reactors[i])
+		s.SetLogger(reactors[i].conS.Logger.With("module", "p2p"))
+		return s
+	}, p2p.Connect2Switches)
+
+	// Create byzantine validator
+	bcs := css[byzantineNode]
+
+	// Alter prevote so that the byzantine node double votes when height is 2
+	// This block of code could be refactored into a separate function like `alterPrevoteForByzantineNode()`
+	bcs.doPrevote = func(height int64, round int32) {
+		// Allow first height to happen normally so that byzantine validator is no longer proposer
+		if height == prevoteHeight {
+			bcs.Logger.Info("Sending two votes")
+			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), nil)
+			require.NoError(t, err)
+			prevote2, err := bcs.signVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+			require.NoError(t, err)
+			peerList := reactors[byzantineNode].Switch.Peers().List()
+			bcs.Logger.Info("Getting peer list", "peers", peerList)
+			// Send two votes to all peers (1st to one half, 2nd to another half)
+			for i, peer := range peerList {
+				if i < len(peerList)/2 {
+					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
+					peer.Send(p2p.Envelope{
+						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
+						ChannelID: VoteChannel,
+					})
+				} else {
+					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
+					peer.Send(p2p.Envelope{
+						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
+						ChannelID: VoteChannel,
+					})
+				}
+			}
+		} else {
+			bcs.Logger.Info("Behaving normally")
+			bcs.defaultDoPrevote(height, round)
+		}
+	}
+
+	// Introducing a lazy proposer means that the time of the block committed is different to the
+	// timestamp that the other nodes have. This tests to ensure that the evidence that finally gets
+	// proposed will have a valid timestamp
+	// This block of code could be refactored into a separate function like `introduceLazyProposer()`
+	lazyProposer := css[1]
+
+	lazyProposer.decideProposal = func(height int64, round int32) {
+		lazyProposer.Logger.Info("Lazy Proposer proposing condensed commit")
+		if lazyProposer.privValidator == nil {
+			panic("entered createProposalBlock with privValidator being nil")
+		}
+
+		var extCommit *types.ExtendedCommit
+		switch {
+		case lazyProposer.Height == lazyProposer.state.InitialHeight:
+			// We're creating a proposal for the first block.
+			// The commit is empty, but not nil.
+			extCommit = &types.ExtendedCommit{}
+		case lazyProposer.LastCommit.HasTwoThirdsMajority():
+			// Make the commit from LastCommit
+			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: height}
+			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
+		default: // This shouldn't happen.
+			lazyProposer.Logger.Error("enterPropose: Cannot propose anything: No commit for the previous block")
+			return
+		}
+
+		// Omit the last signature in the commit
+		extCommit.ExtendedSignatures[len(extCommit.ExtendedSignatures)-1] = types.NewExtendedCommitSigAbsent()
+
+		if lazyProposer.privValidatorPubKey == nil {
+			// If this node is a validator & proposer in the current round, it will
+			// miss the opportunity to create a block.
+			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", ErrPubKeyIsNotSet))
+			return
+		}
+		proposerAddr := lazyProposer.privValidatorPubKey.Address()
+
+		// Create proposal block
+		block, err := lazyProposer.blockExec.CreateProposalBlock(
+			ctx, lazyProposer.Height, lazyProposer.state, extCommit, proposerAddr)
+		require.NoError(t, err)
+		blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+		require.NoError(t, err)
+
+		// Flush the WAL. Otherwise, we may not recompute the same proposal to sign,
+		// and the privValidator will refuse to sign anything.
+		if err := lazyProposer.wal.FlushAndSync(); err != nil {
+			lazyProposer.Logger.Error("Error flushing to disk")
+		}
+
+		// Make proposal
+		propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
+		proposal := types.NewProposal(height, round, lazyProposer.ValidRound, propBlockID)
+		p := proposal.ToProto()
+		if err := lazyProposer.privValidator.SignProposal(lazyProposer.state.ChainID, p); err == nil {
+			proposal.Signature = p.Signature
+
+			// Send proposal and block parts on internal msg queue
+			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})
+			for i := 0; i < int(blockParts.Total()); i++ {
+				part := blockParts.GetPart(i)
+				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, ""})
+			}
+			lazyProposer.Logger.Info("Signed proposal", "height", height, "round", round, "proposal", proposal)
+			lazyProposer.Logger.Debug(fmt.Sprintf("Signed proposal block: %v", block))
+		} else if !lazyProposer.replayMode {
+			lazyProposer.Logger.Error("enterPropose: Error signing proposal", "height", height, "round", round, "err", err)
+		}
+	}
+
+	// Start the consensus reactors
+	for i := 0; i < nValidators; i++ {
+		s := reactors[i].conS.GetState()
+		reactors[i].SwitchToConsensus(s, false)
+	}
+	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
+
+	// Evidence should be submitted and committed at the third height but
+	// we will check the first six just in case
+	evidenceFromEachValidator := make([]types.Evidence, nValidators)
+
+	// Wait for all validators to commit evidence
+	wg := new(sync.WaitGroup)
+	for i := 0; i < nValidators; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for msg := range blocksSubs[i].Out() {
+				block := msg.Data().(types.EventDataNewBlock).Block
+				if len(block.Evidence.Evidence) != 0 {
+					evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+					return
+				}
+			}
+		}(i)
+	}
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	pubkey, err := bcs.privValidator.GetPubKey()
+	require.NoError(t, err)
+
+	const timeout = 180 * time.Second // Increase timeout to 180 seconds (this is a temporary measure)
+
+	// Check if evidence was committed
+	select {
+	case <-done:
+		for idx, ev := range evidenceFromEachValidator {
+			if assert.NotNil(t, ev, idx) {
+				ev, ok := ev.(*types.DuplicateVoteEvidence)
+				assert.True(t, ok)
+				assert.Equal(t, pubkey.Address(), ev.VoteA.ValidatorAddress)
+				assert.Equal(t, prevoteHeight, ev.Height())
+			}
+		}
+	case <-time.After(timeout):
+		t.Logf("Evidence from each validator: %v", evidenceFromEachValidator) // Log evidence
+		t.Fatalf("Timed out waiting for validators to commit evidence")
+	}
+}
+
+// HELPER FUNCTIONS FOR  TESTBYZANTINEPREVOTEEQUIVOCATION
+
+// initializeValidators sets up a network of validators for testing.
+// It creates nValidators number of validators, initializes their state,
+// and returns a slice of these states.
+// genDoc is the genesis document used to initialize the state.
+// privVals is a slice of private validators.
+// testName is the name of the test for logging purposes.
+// appFunc is a function that returns an ABCI application used in consensus state.
+func initializeValidators(nValidators int, genDoc *types.GenesisDoc, privVals []types.PrivValidator, testName string, appFunc func() abci.Application) ([]*State, error) {
+	css := make([]*State, nValidators)
+
+	for i := 0; i < nValidators; i++ {
+		// Create logger for each validator
+		logger := consensusLogger().With("test", testName, "validator", i)
+		logger.Info("Initializing validator", "index", i)
+
+		// Each state needs its own db
+		stateDB := dbm.NewMemDB()
+
+		// Create a new state store for each validator
+		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+			DiscardABCIResponses: false,
+		})
+
+		// Load state from DB or genesis document
+		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
+
+		// Reset config for each validator
+		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
+
+		// Clean up config root directory after test
+		defer os.RemoveAll(thisConfig.RootDir)
+
+		// Ensure directory for write-ahead log exists
+		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700)
+
+		// Initialize application
+		app := appFunc()
+
+		// Initialize validators from the state
+		vals := types.TM2PB.ValidatorUpdates(state.Validators)
+
+		// Initialize chain with validators
+		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
+		if err != nil {
+			logger.Error("Failed to initialize chain", "error", err)
+			return nil, err
+		}
+
+		// Initialize block DB and store
+		blockDB := dbm.NewMemDB()
+		blockStore := store.NewBlockStore(blockDB)
+
+		// Create a new mutex for each validator
+		mtx := new(cmtsync.Mutex)
+
+		// Create proxy app connections for consensus and mempool
+		proxyAppConnCon := proxy.NewAppConnConsensus(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
+		proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
+
+		// Initialize mempool
+		mempool := mempl.NewCListMempool(config.Mempool,
+			proxyAppConnMem,
+			state.LastBlockHeight,
+			mempl.WithPreCheck(sm.TxPreCheck(state)),
+			mempl.WithPostCheck(sm.TxPostCheck(state)))
+
+		// Enable transactions if necessary
+		if thisConfig.Consensus.WaitForTxs() {
+			mempool.EnableTxsAvailable()
+		}
+
+		// Initialize evidence pool
+		evidenceDB := dbm.NewMemDB()
+		evpool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
+		if err != nil {
+			logger.Error("Failed to initialize evidence pool", "error", err)
+			return nil, err
+		}
+		evpool.SetLogger(logger.With("module", "evidence"))
+
+		// Initialize state
+		blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyAppConnCon, mempool, evpool, blockStore)
+		cs := NewState(thisConfig.Consensus, state, blockExec, blockStore, mempool, evpool)
+		cs.SetLogger(cs.Logger)
+
+		// Set private validator
+		pv := privVals[i]
+		cs.SetPrivValidator(pv)
+
+		// Initialize event bus
+		eventBus := types.NewEventBus()
+		eventBus.SetLogger(log.TestingLogger().With("module", "events"))
+		err = eventBus.Start()
+		if err != nil {
+			logger.Error("Failed to start event bus", "error", err)
+			return nil, err
+		}
+		// Set the event bus
+		cs.SetEventBus(eventBus)
+
+		// Create a new ticker function for the consensus state
+		tickerFunc := newMockTickerFunc(true)
+
+		// Set the timeout ticker
+		cs.SetTimeoutTicker(tickerFunc())
+		cs.SetLogger(logger)
+
+		// Add the consensus state to the slice
+		css[i] = cs
+	}
+
+	// Return the slice of consensus states
+	return css, nil
+}
+
+func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subscription, []*types.EventBus, error) {
+	reactors := make([]*Reactor, nValidators)
+	blocksSubs := make([]types.Subscription, 0)
+	eventBuses := make([]*types.EventBus, nValidators)
+
+	for i := 0; i < nValidators; i++ {
+		reactors[i] = NewReactor(css[i], true)
+		reactors[i] = NewReactor(css[i], true) // so we don't start the consensus states
+		reactors[i].SetLogger(css[i].Logger)
+
+		// eventBus is already started with the cs
+		eventBuses[i] = css[i].eventBus
+		reactors[i].SetEventBus(eventBuses[i])
+
+		// Subscribe to new block events
+		blocksSub, err := eventBuses[i].Subscribe(context.Background(), testSubscriber, types.EventQueryNewBlock, 100)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		blocksSubs = append(blocksSubs, blocksSub)
+
+		// Simulate handle initChain in handshake if last block height is 0
+		if css[i].state.LastBlockHeight == 0 {
+			err = css[i].blockExec.Store().Save(css[i].state)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+		}
+	}
+
+	return reactors, blocksSubs, eventBuses, nil
+}

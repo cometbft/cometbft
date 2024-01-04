@@ -46,7 +46,6 @@ const (
 
 var (
 	ErrSmallOrderRemotePubKey    = errors.New("detected low order point from remote peer")
-	errNonceOverflow             = errors.New("nonce overflow")
 	secretConnKeyAndChallengeGen = []byte("TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN")
 )
 

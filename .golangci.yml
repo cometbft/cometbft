@@ -9,12 +9,14 @@ linters:
     - contextcheck
     - cyclop
     - dupword
+    - deadcode
     - errname
     - errorlint
     - exhaustive
     - exhaustivestruct
     - exhaustruct
     - forbidigo
+    - varcheck
     - forcetypeassert
     - funlen
     - gochecknoglobals
@@ -31,6 +33,7 @@ linters:
     - interfacer
     - ireturn
     - lll
+    - structcheck
     - maintidx
     - maligned
     - nestif

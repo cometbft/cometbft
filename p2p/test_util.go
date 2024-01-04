@@ -8,7 +8,6 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtnet "github.com/cometbft/cometbft/internal/net"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p/conn"
@@ -291,27 +290,41 @@ func testNodeInfo(id ID, name string) NodeInfo {
 }
 
 func testNodeInfoWithNetwork(id ID, name, network string) NodeInfo {
+	listenPort, err := getFreePort()
+	if err != nil {
+		panic(err)
+	}
+	rpcPort, err := getFreePort()
+	if err != nil {
+		panic(err)
+	}
 	return DefaultNodeInfo{
 		ProtocolVersion: defaultProtocolVersion,
 		DefaultNodeID:   id,
-		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", getFreePort()),
+		ListenAddr:      fmt.Sprintf("127.0.0.1:%d", listenPort),
 		Network:         network,
 		Version:         "1.2.3-rc0-deadbeef",
 		Channels:        []byte{testCh},
 		Moniker:         name,
 		Other: DefaultNodeInfoOther{
 			TxIndex:    "on",
-			RPCAddress: fmt.Sprintf("127.0.0.1:%d", getFreePort()),
+			RPCAddress: fmt.Sprintf("127.0.0.1:%d", rpcPort),
 		},
 	}
 }
 
-func getFreePort() int {
-	port, err := cmtnet.GetFreePort()
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
-	return port
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 type AddrBookMock struct {

@@ -67,10 +67,8 @@ func makePathname() string {
 }
 
 func randPort() int {
-	port, err := cmtnet.GetFreePort()
-	if err != nil {
-		panic(err)
-	}
+	port := cmtnet.GetFreePort()
+
 	return port
 }
 

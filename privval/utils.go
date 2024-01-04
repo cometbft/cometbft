@@ -54,9 +54,7 @@ func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEnd
 
 // GetFreeLocalhostAddrPort returns a free localhost:port address.
 func GetFreeLocalhostAddrPort() string {
-	port, err := cmtnet.GetFreePort()
-	if err != nil {
-		panic(err)
-	}
+	port := cmtnet.GetFreePort()
+
 	return fmt.Sprintf("127.0.0.1:%d", port)
 }

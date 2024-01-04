@@ -299,57 +299,84 @@ func alterPrevoteForByzantineNode(t *testing.T, bcs *State, prevoteHeight int64,
 	}
 }
 
+// introduceLazyProposer modifies the decideProposal function of a given State instance
+// to simulate a lazy proposer. The lazy proposer proposes a condensed commit and signs the proposal.
+// This function is used in testing scenarios to simulate different behaviors of proposers.
 func introduceLazyProposer(t *testing.T, lazyProposer *State, ctx context.Context) {
+	// Overwrite the decideProposal function
 	lazyProposer.decideProposal = func(height int64, round int32) {
+		// Log the action of the lazy proposer
 		lazyProposer.Logger.Info("Lazy Proposer proposing condensed commit")
+
+		// Panic if the private validator is not set
 		if lazyProposer.privValidator == nil {
 			panic("entered createProposalBlock with privValidator being nil")
 		}
 
 		var extCommit *types.ExtendedCommit
 		switch {
+		// If the height is the initial height, create an empty ExtendedCommit
 		case lazyProposer.Height == lazyProposer.state.InitialHeight:
 			extCommit = &types.ExtendedCommit{}
+		// If the last commit has a two-thirds majority, create an ExtendedCommit with vote extensions
 		case lazyProposer.LastCommit.HasTwoThirdsMajority():
 			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: height}
 			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
+		// If the private validator public key is not set, log an error and return
 		default:
 			lazyProposer.Logger.Error("enterPropose", "error", ErrPubKeyIsNotSet)
 			return
 		}
 
+		// Set the last signature in the ExtendedCommit to absent
 		extCommit.ExtendedSignatures[len(extCommit.ExtendedSignatures)-1] = types.NewExtendedCommitSigAbsent()
 
+		// If the private validator public key is not set, log an error and return
 		if lazyProposer.privValidatorPubKey == nil {
 			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", ErrPubKeyIsNotSet))
 			return
 		}
+		// Get the address of the proposer
 		proposerAddr := lazyProposer.privValidatorPubKey.Address()
 
+		// Create a proposal block
 		block, err := lazyProposer.blockExec.CreateProposalBlock(
 			ctx, lazyProposer.Height, lazyProposer.state, extCommit, proposerAddr)
 		require.NoError(t, err)
+
+		// Create a part set from the block
 		blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)
 
+		// Flush the write-ahead log to disk
 		if err := lazyProposer.wal.FlushAndSync(); err != nil {
 			lazyProposer.Logger.Error("Error flushing to disk")
 		}
 
+		// Create a block ID for the proposal
 		propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
+		// Create a new proposal
 		proposal := types.NewProposal(height, round, lazyProposer.ValidRound, propBlockID)
 		p := proposal.ToProto()
+
+		// Sign the proposal
 		if err := lazyProposer.privValidator.SignProposal(lazyProposer.state.ChainID, p); err == nil {
 			proposal.Signature = p.Signature
 
+			// Send the proposal message
 			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})
+
+			// Send all block part messages
 			for i := 0; i < int(blockParts.Total()); i++ {
 				part := blockParts.GetPart(i)
 				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, ""})
 			}
+
+			// Log the signed proposal
 			lazyProposer.Logger.Info("Signed proposal", "height", height, "round", round, "proposal", proposal)
 			lazyProposer.Logger.Debug(fmt.Sprintf("Signed proposal block: %v", block))
 		} else if !lazyProposer.replayMode {
+			// Log an error if signing the proposal failed
 			lazyProposer.Logger.Error("enterPropose: Error signing proposal", "height", height, "round", round, "err", err)
 		}
 	}

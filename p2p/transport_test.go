@@ -5,7 +5,10 @@ import (
 	"math/rand"
 	"net"
 	"reflect"
+
+	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -13,6 +16,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/p2p/conn"
+	"github.com/stretchr/testify/require"
+
+	"github.com/sirupsen/logrus"
 )
 
 var defaultNodeName = "host_peer"
@@ -281,58 +287,58 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 	totalIterations := 100
 	failureModes := make(map[string]int)
 
+	log := logrus.New()
+	log.SetFormatter(&logrus.TextFormatter{
+		DisableColors: false,
+		FullTimestamp: true,
+	})
+
 	for i := 0; i < totalIterations; i++ {
-		t.Logf("Test iteration %d started", i)
+		log.Infof("Test iteration %d started", i)
 
 		func() {
 			// Setup a multiplex transport
 			mt := testSetupMultiplexTransport(t)
-			t.Log("Multiplex transport set up")
+			log.Info("Multiplex transport set up")
 
-			var (
-				fastNodePV   = ed25519.GenPrivKey()
-				fastNodeInfo = testNodeInfo(PubKeyToID(fastNodePV.PubKey()), "fastnode")
-				errc         = make(chan error, 2) // Buffer to prevent goroutine leaks
-				fastc        = make(chan struct{})
-				slowc        = make(chan struct{})
-				slowdonec    = make(chan struct{})
-			)
+			fastNodePV := ed25519.GenPrivKey()
+			fastNodeInfo := testNodeInfo(PubKeyToID(fastNodePV.PubKey()), "fastnode")
+			errc := make(chan error, 2) // Buffer to prevent goroutine leaks
+			fastc := make(chan struct{})
+			slowc := make(chan struct{})
 
 			slowPeerPV := ed25519.GenPrivKey()
 			defer mt.Close() // Ensure resources are cleaned up
 
+			var wg sync.WaitGroup
+			wg.Add(2)
+
 			// Simulate slow Peer.
 			go func() {
-				go func() {
-					t.Log("Slow peer starting")
-					addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
-					dialer := newMultiplexTransport(
-						testNodeInfo(PubKeyToID(slowPeerPV.PubKey()), "slowpeer"),
-						NodeKey{
-							PrivKey: slowPeerPV,
-						},
-					)
-					_, err := dialer.Dial(*addr, peerConfig{})
-					if err != nil {
-						errc <- fmt.Errorf("slow peer failed to dial: %v", err)
-						return
-					}
-					t.Log("Peer connected")
+				time.Sleep(100 * time.Millisecond) // Delay slow peer
+				log.Info("Slow peer starting")
+				addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+				dialer := newMultiplexTransport(
+					testNodeInfo(PubKeyToID(slowPeerPV.PubKey()), "slowpeer"),
+					NodeKey{
+						PrivKey: slowPeerPV,
+					},
+				)
+				_, err := dialer.Dial(*addr, peerConfig{})
+				if err != nil {
+					errc <- errors.New(fmt.Sprintf("slow peer failed to dial: %v", err))
+					return
+				}
+				log.Info("Peer connected")
 
-					// Signal that the connection was established.
-					close(slowc)
-				}()
-
-				// Wait until the fast peer has connected.
-				<-fastc
-
-				t.Log("Slow peer finished")
-				close(slowdonec)
+				// Signal that the connection was established.
+				close(slowc)
+				wg.Done()
 			}()
 
 			// Simulate fast Peer.
 			go func() {
-				t.Log("Fast peer starting")
+				log.Info("Fast peer starting")
 				addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
 				dialer := newMultiplexTransport(
 					fastNodeInfo,
@@ -342,20 +348,20 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 				)
 				_, err := dialer.Dial(*addr, peerConfig{})
 				if err != nil {
-					errc <- fmt.Errorf("fast peer failed to dial: %v", err)
+					errc <- errors.New(fmt.Sprintf("fast peer failed to dial: %v", err))
 					return
 				}
 
 				// Wait until the slow peer has connected.
 				<-slowc
 
-				t.Log("Fast peer finished")
+				log.Info("Fast peer finished")
 				close(fastc)
+				wg.Done()
 			}()
 
 			// Wait for both peers to finish
-			<-fastc
-			<-slowdonec
+			wg.Wait()
 
 			// Check for errors
 			close(errc)
@@ -371,7 +377,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 
 			p, err := mt.Accept(peerConfig{})
 			if err != nil {
-				t.Fatalf("failed to accept peer: %v", err)
+				require.NoError(t, err, "failed to accept peer")
 			}
 
 			if have, want := p.NodeInfo().ID(), fastNodeInfo.ID(); have != want {
@@ -381,18 +387,18 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 				t.Logf("Accepted peer NodeInfo: %v", p.NodeInfo())
 				failureModes["Mismatched Node ID"]++
 			} else {
-				t.Log("Fast peer's NodeInfo correctly received")
+				log.Info("Fast peer's NodeInfo correctly received")
 				passCount++
 			}
-			t.Logf("Test iteration %d ended", i)
+			log.Infof("Test iteration %d ended", i)
 		}()
 
 	}
 
-	t.Logf("Pass rate: %.2f%%", float64(passCount)/float64(totalIterations)*100)
-	t.Logf("Closed connection failures: %d", closedConnCount)
+	log.Infof("Pass rate: %.2f%%", float64(passCount)/float64(totalIterations)*100)
+	log.Infof("Closed connection failures: %d", closedConnCount)
 	for mode, count := range failureModes {
-		t.Logf("Failure mode %s: %.2f%%", mode, float64(count)/float64(totalIterations)*100)
+		log.Infof("Failure mode %s: %.2f%%", mode, float64(count)/float64(totalIterations)*100)
 	}
 
 }

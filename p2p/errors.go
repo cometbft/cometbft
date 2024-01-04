@@ -7,10 +7,10 @@ import (
 )
 
 var (
-	errEmptyHost          = errors.New("host is empty")
-	ErrNoIPFound          = errors.New("no IP address found")
-	ErrNoNodeInfoFound    = errors.New("no node info found")
-	errPeerConfigDailFail = errors.New("dial err (peerConfig.DialFail == true)")
+	errEmptyHost      = errors.New("host is empty")
+	ErrNoIP           = errors.New("no IP address found")
+	ErrNoNodeInfo     = errors.New("no node info found")
+	errPeerConfigDial = errors.New("dial err (peerConfig.DialFail == true)")
 )
 
 // ErrFilterTimeout indicates that a filter operation timed out.
@@ -215,12 +215,16 @@ func (e ErrInvalidPort) Error() string {
 }
 
 type ErrInvalidPeerID struct {
-	ID  ID
-	err any
+	ID     ID
+	source error
 }
 
 func (e ErrInvalidPeerID) Error() string {
-	return fmt.Sprintf("invalid peer ID (%v): %v", e.ID, e.err)
+	return fmt.Sprintf("invalid peer ID (%v): %v", e.ID, e.source)
+}
+
+func (e ErrInvalidPeerID) Unwrap() error {
+	return e.source
 }
 
 type ErrInvalidNodeVersion struct {
@@ -245,7 +249,7 @@ type ErrChannelsTooLong struct {
 }
 
 func (e ErrChannelsTooLong) Error() string {
-	return fmt.Sprintf("channels is too long (%v). Max is %v", e.Length, e.Max)
+	return fmt.Sprintf("channels is too long (max: %d, got: %d)", e.Max, e.Length)
 }
 
 type ErrInvalidMoniker struct {
@@ -282,22 +286,22 @@ func (e ErrInvalidNodeInfoType) Error() string {
 }
 
 type ErrDifferentBlockVersion struct {
-	OtherBlockVersion uint64
-	OurBlockVersion   uint64
+	Other uint64
+	Our   uint64
 }
 
 func (e ErrDifferentBlockVersion) Error() string {
 	return fmt.Sprintf("peer is on a different Block version. Got %d, expected %d",
-		e.OtherBlockVersion, e.OurBlockVersion)
+		e.Other, e.Our)
 }
 
 type ErrDifferentNetwork struct {
-	OtherNetwork string
-	OurNetwork   string
+	Other string
+	Our   string
 }
 
 func (e ErrDifferentNetwork) Error() string {
-	return fmt.Sprintf("peer is on a different network. Got %s, expected %s", e.OtherNetwork, e.OurNetwork)
+	return fmt.Sprintf("peer is on a different network. Got %s, expected %s", e.Other, e.Our)
 }
 
 type ErrNoCommonChannels struct {
@@ -309,11 +313,15 @@ func (e ErrNoCommonChannels) Error() string {
 	return fmt.Sprintf("no common channels between us (%v) and peer (%v)", e.OurChannels, e.OtherChannels)
 }
 
-type ErrFailedToStart struct {
+type ErrStart struct {
 	Service any
-	Err     any
+	Err     error
 }
 
-func (e ErrFailedToStart) Error() string {
+func (e ErrStart) Error() string {
 	return fmt.Sprintf("failed to start %v: %v", e.Service, e.Err)
+}
+
+func (e ErrStart) Unwrap() error {
+	return e.Err
 }

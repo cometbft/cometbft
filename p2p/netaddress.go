@@ -267,7 +267,7 @@ func (na *NetAddress) Valid() error {
 	}
 
 	if na.IP == nil {
-		return ErrNoIPFound
+		return ErrNoIP
 	}
 	if na.IP.IsUnspecified() || na.RFC3849() || na.IP.Equal(net.IPv4bcast) {
 		return ErrInvalidIP{na.IP.String()}
@@ -407,7 +407,7 @@ func removeProtocolIfDefined(addr string) string {
 
 func validateID(id ID) error {
 	if len(id) == 0 {
-		return ErrNoIPFound
+		return ErrNoIP
 	}
 	idBytes, err := hex.DecodeString(string(id))
 	if err != nil {

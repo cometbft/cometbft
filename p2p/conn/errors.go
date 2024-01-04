@@ -6,19 +6,22 @@ import (
 )
 
 var (
-	ErrSendInvalidSecreteConnKey = errors.New("send invalid secret connection key")
-	ErrRecvInvalidSecreteConnKey = errors.New("received invalid secret connection key")
+	ErrInvalidSecretConnKeySend  = errors.New("send invalid secret connection key")
+	ErrInvalidSecreteConnKeyRecv = errors.New("received invalid secret connection key")
 	ErrChallengeVerification     = errors.New("challenge verification failed")
-	ErrChunkLength               = errors.New("chunk length is greater than dataMaxSize")
 )
 
 // ErrPacketWrite Packet error when writing.
 type ErrPacketWrite struct {
-	Err any
+	source error
 }
 
 func (e ErrPacketWrite) Error() string {
-	return fmt.Sprintf("failed to write packet: %v", e.Err)
+	return fmt.Sprintf("failed to write packet: %v", e.source)
+}
+
+func (e ErrPacketWrite) Unwrap() error {
+	return e.source
 }
 
 type ErrUnexpectedPubKeyType struct {
@@ -31,18 +34,32 @@ func (e ErrUnexpectedPubKeyType) Error() string {
 }
 
 type ErrDecryptConnection struct {
-	Err any
+	source error
 }
 
 func (e ErrDecryptConnection) Error() string {
-	return fmt.Sprintf("failed to decrypt SecretConnection: %v", e.Err)
+	return fmt.Sprintf("failed to decrypt SecretConnection: %v", e.source)
 }
 
-type ErrExceedsCapacity struct {
+func (e ErrDecryptConnection) Unwrap() error {
+	return e.source
+}
+
+type ErrPacketSize struct {
 	Received int
-	Capacity int
+	Max      int
 }
 
-func (e ErrExceedsCapacity) Error() string {
-	return fmt.Sprintf("received message exceeds available capacity: %v < %v", e.Capacity, e.Received)
+func (e ErrPacketSize) Error() string {
+	// return fmt.Sprintf("received message exceeds maximum capacity: %v < %v", e.Max, e.Received)
+	return fmt.Sprintf("packet is too big (max: %d, got: %d)", e.Max, e.Received)
+}
+
+type ErrChunkSize struct {
+	Received int
+	Max      int
+}
+
+func (e ErrChunkSize) Error() string {
+	return fmt.Sprintf("chunk too big (max: %d, got %d)", e.Max, e.Received)
 }

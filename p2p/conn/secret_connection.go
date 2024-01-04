@@ -45,10 +45,9 @@ const (
 )
 
 var (
-	ErrSmallOrderRemotePubKey      = errors.New("detected low order point from remote peer")
-	errNonceOverflow               = errors.New("nonce overflow")
-	errFailedToGenEphemeralKeyPair = errors.New("failed to generate ephemeral key-pair")
-	secretConnKeyAndChallengeGen   = []byte("TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN")
+	ErrSmallOrderRemotePubKey    = errors.New("detected low order point from remote peer")
+	errNonceOverflow             = errors.New("nonce overflow")
+	secretConnKeyAndChallengeGen = []byte("TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN")
 )
 
 // SecretConnection implements net.Conn.
@@ -133,12 +132,12 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 
 	sendAead, err := chacha20poly1305.New(sendSecret[:])
 	if err != nil {
-		return nil, ErrSendInvalidSecreteConnKey
+		return nil, ErrInvalidSecretConnKeySend
 	}
 
 	recvAead, err := chacha20poly1305.New(recvSecret[:])
 	if err != nil {
-		return nil, ErrRecvInvalidSecreteConnKey
+		return nil, ErrInvalidSecreteConnKeyRecv
 	}
 
 	sc := &SecretConnection{
@@ -256,7 +255,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	defer pool.Put(frame)
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
-		return n, ErrDecryptConnection{Err: err}
+		return n, ErrDecryptConnection{source: err}
 	}
 
 	incrNonce(sc.recvNonce)
@@ -266,7 +265,10 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	// set recvBuffer to the rest.
 	chunkLength := binary.LittleEndian.Uint32(frame) // read the first four bytes
 	if chunkLength > dataMaxSize {
-		return 0, ErrChunkLength
+		return 0, ErrChunkSize{
+			Received: int(chunkLength),
+			Max:      dataMaxSize,
+		}
 	}
 
 	chunk := frame[dataLenSize : dataLenSize+chunkLength]
@@ -298,7 +300,7 @@ func genEphKeys() (ephPub, ephPriv *[32]byte) {
 	// see: https://github.com/dalek-cryptography/x25519-dalek/blob/34676d336049df2bba763cc076a75e47ae1f170f/src/x25519.rs#L56-L74
 	ephPub, ephPriv, err = box.GenerateKey(crand.Reader)
 	if err != nil {
-		panic(errFailedToGenEphemeralKeyPair)
+		panic("failed to generate ephemeral key-pair")
 	}
 	return
 }
@@ -460,7 +462,7 @@ func incrNonce(nonce *[aeadNonceSize]byte) {
 	if counter == math.MaxUint64 {
 		// Terminates the session and makes sure the nonce would not re-used.
 		// See https://github.com/tendermint/tendermint/issues/3531
-		panic(errNonceOverflow)
+		panic("can't increase nonce without overflow")
 	}
 	counter++
 	binary.LittleEndian.PutUint64(nonce[4:], counter)

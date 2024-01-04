@@ -185,16 +185,16 @@ func (info DefaultNodeInfo) CompatibleWith(otherInfo NodeInfo) error {
 
 	if info.ProtocolVersion.Block != other.ProtocolVersion.Block {
 		return ErrDifferentBlockVersion{
-			OtherBlockVersion: other.ProtocolVersion.Block,
-			OurBlockVersion:   info.ProtocolVersion.Block,
+			Other: other.ProtocolVersion.Block,
+			Our:   info.ProtocolVersion.Block,
 		}
 	}
 
 	// nodes must be on the same network
 	if info.Network != other.Network {
 		return ErrDifferentNetwork{
-			OtherNetwork: other.Network,
-			OurNetwork:   info.Network,
+			Other: other.Network,
+			Our:   info.Network,
 		}
 	}
 
@@ -260,7 +260,7 @@ func (info DefaultNodeInfo) ToProto() *tmp2p.DefaultNodeInfo {
 
 func DefaultNodeInfoFromToProto(pb *tmp2p.DefaultNodeInfo) (DefaultNodeInfo, error) {
 	if pb == nil {
-		return DefaultNodeInfo{}, ErrNoNodeInfoFound
+		return DefaultNodeInfo{}, ErrNoNodeInfo
 	}
 
 	dni := DefaultNodeInfo{

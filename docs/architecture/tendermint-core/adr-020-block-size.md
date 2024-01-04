@@ -13,7 +13,7 @@
 
 We currently use MaxTxs to reap txs from the mempool when proposing a block,
 but enforce MaxBytes when unmarshaling a block, so we could easily propose a
-block thats too large to be valid.
+block that's too large to be valid.
 
 We should just remove MaxTxs all together and stick with MaxBytes, and have a
 `mempool.ReapMaxBytes`.
@@ -26,7 +26,7 @@ We could also consider using a MaxDataBytes instead of or in addition to MaxByte
 ## MaxBytes vs MaxDataBytes
 
 The [PR #3045](https://github.com/tendermint/tendermint/pull/3045) suggested
-additional clarity/justification was necessary here, wither respect to the use
+additional clarity/justification was necessary here, with respect to the use
 of MaxDataBytes in addition to, or instead of, MaxBytes.
 
 MaxBytes provides a clear limit on the total size of a block that requires no

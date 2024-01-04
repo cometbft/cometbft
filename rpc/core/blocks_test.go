@@ -10,10 +10,10 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/state/mocks"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/mocks"
 )
 
 func TestBlockchainInfo(t *testing.T) {
@@ -68,7 +68,7 @@ func TestBlockchainInfo(t *testing.T) {
 }
 
 func TestBlockResults(t *testing.T) {
-	results := &abci.ResponseFinalizeBlock{
+	results := &abci.FinalizeBlockResponse{
 		TxResults: []*abci.ExecTxResult{
 			{Code: 0, Data: []byte{0x01}, Log: "ok"},
 			{Code: 0, Data: []byte{0x02}, Log: "ok"},
@@ -97,7 +97,7 @@ func TestBlockResults(t *testing.T) {
 		{101, true, nil},
 		{100, false, &ctypes.ResultBlockResults{
 			Height:                100,
-			TxsResults:            results.TxResults,
+			TxResults:             results.TxResults,
 			FinalizeBlockEvents:   results.Events,
 			ValidatorUpdates:      results.ValidatorUpdates,
 			ConsensusParamUpdates: results.ConsensusParamUpdates,

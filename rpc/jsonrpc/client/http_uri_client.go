@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	// URIClientRequestID in a request ID used by URIClient
+	// URIClientRequestID in a request ID used by URIClient.
 	URIClientRequestID = types.JSONRPCIntID(-1)
 )
 
@@ -52,8 +52,8 @@ func NewURI(remote string) (*URIClient, error) {
 
 // Call issues a POST form HTTP request.
 func (c *URIClient) Call(ctx context.Context, method string,
-	params map[string]interface{}, result interface{}) (interface{}, error) {
-
+	params map[string]interface{}, result interface{},
+) (interface{}, error) {
 	values, err := argsToURLValues(params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode params: %w", err)

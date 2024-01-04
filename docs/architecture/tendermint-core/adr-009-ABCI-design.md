@@ -118,7 +118,7 @@ v1 will:
   style union types.
 
 That said, an Amino v2 will be worked on to improve the performance of the
-format and its useability in cryptographic applications.
+format and its usability in cryptographic applications.
 
 ### PubKey
 

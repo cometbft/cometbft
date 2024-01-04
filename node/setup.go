@@ -6,23 +6,25 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
 	"os"
 	"strings"
 	"time"
 
-	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/blocksync"
 	cfg "github.com/cometbft/cometbft/config"
-	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/evidence"
-	"github.com/cometbft/cometbft/statesync"
-
+	"github.com/cometbft/cometbft/internal/blocksync"
+	cs "github.com/cometbft/cometbft/internal/consensus"
+	"github.com/cometbft/cometbft/internal/evidence"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/state/indexer"
+	"github.com/cometbft/cometbft/internal/state/indexer/block"
+	"github.com/cometbft/cometbft/internal/state/txindex"
+	"github.com/cometbft/cometbft/internal/statesync"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -30,14 +32,8 @@ import (
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/state/indexer/block"
-	"github.com/cometbft/cometbft/state/txindex"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
-
 	_ "github.com/lib/pq" // provide the psql db driver
 )
 
@@ -119,7 +115,7 @@ func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
 }
 
 type blockSyncReactor interface {
-	SwitchToBlockSync(sm.State) error
+	SwitchToBlockSync(state sm.State) error
 }
 
 //------------------------------------------------------------------------------
@@ -208,11 +204,11 @@ func doHandshake(
 func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusLogger log.Logger) {
 	// Log the version info.
 	logger.Info("Version info",
-		"tendermint_version", version.TMCoreSemVer,
+		"tendermint_version", version.CMTSemVer,
 		"abci", version.ABCISemVer,
 		"block", version.BlockProtocol,
 		"p2p", version.P2PProtocol,
-		"commit_hash", version.TMGitCommitHash,
+		"commit_hash", version.CMTGitCommitHash,
 	)
 
 	// If the state and software differ in block version, at least log it.
@@ -240,6 +236,7 @@ func onlyValidatorIsUs(state sm.State, pubKey crypto.PubKey) bool {
 	return bytes.Equal(pubKey.Address(), addr)
 }
 
+// createMempoolAndMempoolReactor creates a mempool and a mempool reactor based on the config.
 func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
@@ -247,30 +244,38 @@ func createMempoolAndMempoolReactor(
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, *mempl.Reactor) {
-	logger = logger.With("module", "mempool")
-	mp := mempl.NewCListMempool(
-		config.Mempool,
-		proxyApp.Mempool(),
-		state.LastBlockHeight,
-		mempl.WithMetrics(memplMetrics),
-		mempl.WithPreCheck(sm.TxPreCheck(state)),
-		mempl.WithPostCheck(sm.TxPostCheck(state)),
-	)
+) (mempl.Mempool, waitSyncP2PReactor) {
+	switch config.Mempool.Type {
+	// allow empty string for backward compatibility
+	case cfg.MempoolTypeFlood, "":
+		logger = logger.With("module", "mempool")
+		mp := mempl.NewCListMempool(
+			config.Mempool,
+			proxyApp.Mempool(),
+			state.LastBlockHeight,
+			mempl.WithMetrics(memplMetrics),
+			mempl.WithPreCheck(sm.TxPreCheck(state)),
+			mempl.WithPostCheck(sm.TxPostCheck(state)),
+		)
+		mp.SetLogger(logger)
+		reactor := mempl.NewReactor(
+			config.Mempool,
+			mp,
+			waitSync,
+		)
+		if config.Consensus.WaitForTxs() {
+			mp.EnableTxsAvailable()
+		}
+		reactor.SetLogger(logger)
 
-	mp.SetLogger(logger)
-
-	reactor := mempl.NewReactor(
-		config.Mempool,
-		mp,
-		waitSync,
-	)
-	if config.Consensus.WaitForTxs() {
-		mp.EnableTxsAvailable()
+		return mp, reactor
+	case cfg.MempoolTypeNop:
+		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
+		// adding it leads to a cleaner code.
+		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
+	default:
+		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
 	}
-	reactor.SetLogger(logger)
-
-	return mp, reactor
 }
 
 func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
@@ -374,7 +379,7 @@ func createTransport(
 			connFilters,
 			// ABCI query for address filtering.
 			func(_ p2p.ConnSet, c net.Conn, _ []net.IP) error {
-				res, err := proxyApp.Query().Query(context.TODO(), &abci.RequestQuery{
+				res, err := proxyApp.Query().Query(context.TODO(), &abci.QueryRequest{
 					Path: fmt.Sprintf("/p2p/filter/addr/%s", c.RemoteAddr().String()),
 				})
 				if err != nil {
@@ -392,7 +397,7 @@ func createTransport(
 			peerFilters,
 			// ABCI query for ID filtering.
 			func(_ p2p.IPeerSet, p p2p.Peer) error {
-				res, err := proxyApp.Query().Query(context.TODO(), &abci.RequestQuery{
+				res, err := proxyApp.Query().Query(context.TODO(), &abci.QueryRequest{
 					Path: fmt.Sprintf("/p2p/filter/id/%s", p.ID()),
 				})
 				if err != nil {
@@ -436,7 +441,9 @@ func createSwitch(config *cfg.Config,
 		p2p.SwitchPeerFilters(peerFilters...),
 	)
 	sw.SetLogger(p2pLogger)
-	sw.AddReactor("MEMPOOL", mempoolReactor)
+	if config.Mempool.Type != cfg.MempoolTypeNop {
+		sw.AddReactor("MEMPOOL", mempoolReactor)
+	}
 	sw.AddReactor("BLOCKSYNC", bcReactor)
 	sw.AddReactor("CONSENSUS", consensusReactor)
 	sw.AddReactor("EVIDENCE", evidenceReactor)
@@ -554,8 +561,10 @@ func startStateSync(
 
 //------------------------------------------------------------------------------
 
-var genesisDocKey = []byte("genesisDoc")
-var genesisDocHashKey = []byte("genesisDocHash")
+var (
+	genesisDocKey     = []byte("genesisDoc")
+	genesisDocHashKey = []byte("genesisDocHash")
+)
 
 // LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
 // database, or creates one using the given genesisDocProvider. On success this also

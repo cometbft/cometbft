@@ -29,7 +29,7 @@ formalized in TLA+ and model checked.
 ## Issues that need to be addressed
 
 As it is part of the larger light node, its data structures and
-functions interact with the fork dectection functionality of the light
+functions interact with the fork detection functionality of the light
 client. As a result of the work on
 [Pull Request 479](https://github.com/informalsystems/tendermint-rs/pull/479) we
 established the need for an update in the data structures in [Issue 499](https://github.com/informalsystems/tendermint-rs/issues/499). This

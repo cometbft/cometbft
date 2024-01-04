@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 )
 
 // DefaultDirPerm is the default permissions used when creating directories.
@@ -48,7 +48,7 @@ func EnsureRoot(rootDir string) {
 }
 
 // XXX: this func should probably be called by cmd/cometbft/commands/init.go
-// alongside the writing of the genesis.json and priv_validator.json
+// alongside the writing of the genesis.json and priv_validator.json.
 func writeDefaultConfigFile(configFilePath string) {
 	WriteConfigFile(configFilePath, DefaultConfig())
 }
@@ -65,7 +65,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 }
 
 // Note: any changes to the comments/variables/mapstructure
-// must be reflected in the appropriate struct in config/config.go
+// must be reflected in the appropriate struct in config/config.go.
 const defaultConfigTemplate = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
@@ -380,6 +380,16 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 #######################################################
 [mempool]
 
+# The type of mempool for this node to use.
+#
+#  Possible types:
+#  - "flood" : concurrent linked list mempool with flooding gossip protocol
+#  (default)
+#  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+#  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
+#  not supported.
+type = "flood"
+
 # recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
@@ -425,13 +435,20 @@ max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 # XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 
-# Experimental parameter to limit broadcast of txs to up to this many peers
-# If we are connected to more than this number of peers, only send txs to
-# the first ExperimentalMaxOutboundPeers of them. If one of those peers goes
-# offline, activate another peer.
-# Value 0 disables the feature by not limiting the number of active connections.
-# If you enable this feature, a value of 10 is recommended based on experimental performance results.
-experimental_max_used_outbound_peers = {{ .Mempool.ExperimentalMaxUsedOutboundPeers }}
+# Experimental parameters to limit gossiping txs to up to the specified number of peers.
+# We use two independent upper values for persistent and non-persistent peers.
+# Unconditional peers are not affected by this feature.
+# If we are connected to more than the specified number of persistent peers, only send txs to
+# ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+# persistent peers disconnects, activate another persistent peer.
+# Similarly for non-persistent peers, with an upper limit of
+# ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+# If set to 0, the feature is disabled for the corresponding group of peers, that is, the
+# number of active connections to that group of peers is not bounded.
+# For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
+# performance results using the default P2P configuration.
+experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
+experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
 
 #######################################################
 ###         State Sync Configuration Options        ###
@@ -566,7 +583,7 @@ initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockReta
 initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
 
 
-# Hash of the Genesis file (as hex string), passed to CometBFT via the command line. 
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
 # If this hash mismatches the hash that CometBFT computes on the genesis file,
 # the node is not able to boot.
 genesis_hash = "{{ .Storage.GenesisHash }}"

@@ -7,18 +7,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtos "github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/internal/tempfile"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmtos "github.com/cometbft/cometbft/libs/os"
-	"github.com/cometbft/cometbft/libs/protoio"
-	"github.com/cometbft/cometbft/libs/tempfile"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 // TODO: type ?
@@ -32,9 +31,9 @@ const (
 // A vote is either stepPrevote or stepPrecommit.
 func voteToStep(vote *cmtproto.Vote) int8 {
 	switch vote.Type {
-	case cmtproto.PrevoteType:
+	case types.PrevoteType:
 		return stepPrevote
-	case cmtproto.PrecommitType:
+	case types.PrecommitType:
 		return stepPrecommit
 	default:
 		panic(fmt.Sprintf("Unknown vote type: %v", vote.Type))
@@ -64,7 +63,7 @@ func (pvKey FilePVKey) Save() {
 		panic(err)
 	}
 
-	if err := tempfile.WriteFileAtomic(outFile, jsonBytes, 0600); err != nil {
+	if err := tempfile.WriteFileAtomic(outFile, jsonBytes, 0o600); err != nil {
 		panic(err)
 	}
 }
@@ -98,7 +97,6 @@ func (lss *FilePVLastSignState) reset() {
 // we have already signed for this HRS, and can reuse the existing signature).
 // It panics if the HRS matches the arguments, there's a SignBytes, but no Signature.
 func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (bool, error) {
-
 	if lss.Height > height {
 		return false, fmt.Errorf("height regression. Got %v, last height %v", height, lss.Height)
 	}
@@ -141,7 +139,7 @@ func (lss *FilePVLastSignState) Save() {
 	if err != nil {
 		panic(err)
 	}
-	err = tempfile.WriteFileAtomic(outFile, jsonBytes, 0600)
+	err = tempfile.WriteFileAtomic(outFile, jsonBytes, 0o600)
 	if err != nil {
 		panic(err)
 	}
@@ -323,7 +321,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 	// precommits, the extension signature will always be empty.
 	// Even if the signed over data is empty, we still add the signature
 	var extSig []byte
-	if vote.Type == cmtproto.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
+	if vote.Type == types.PrecommitType && !types.ProtoBlockIDIsNil(&vote.BlockID) {
 		extSignBytes := types.VoteExtensionSignBytes(chainID, vote)
 		extSig, err = pv.Key.PrivKey.Sign(extSignBytes)
 		if err != nil {
@@ -409,10 +407,10 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 	return nil
 }
 
-// Persist height/round/step and signature
+// Persist height/round/step and signature.
 func (pv *FilePV) saveSigned(height int64, round int32, step int8,
-	signBytes []byte, sig []byte) {
-
+	signBytes []byte, sig []byte,
+) {
 	pv.LastSignState.Height = height
 	pv.LastSignState.Round = round
 	pv.LastSignState.Step = step
@@ -446,7 +444,7 @@ func checkVotesOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.T
 }
 
 // returns the timestamp from the lastSignBytes.
-// returns true if the only difference in the proposals is their timestamp
+// returns true if the only difference in the proposals is their timestamp.
 func checkProposalsOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.Time, bool) {
 	var lastProposal, newProposal cmtproto.CanonicalProposal
 	if err := protoio.UnmarshalDelimited(lastSignBytes, &lastProposal); err != nil {

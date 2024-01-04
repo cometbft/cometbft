@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
+	cmtos "github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/internal/service"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
-	cmtos "github.com/cometbft/cometbft/libs/os"
-	"github.com/cometbft/cometbft/libs/service"
 )
 
 const (
@@ -40,7 +40,7 @@ func NewAppConns(clientCreator ClientCreator, metrics *Metrics) AppConns {
 //
 // A multiAppConn is made of a few appConns and manages their underlying abci
 // clients.
-// TODO: on app restart, clients must reboot together
+// TODO: on app restart, clients must reboot together.
 type multiAppConn struct {
 	service.BaseService
 

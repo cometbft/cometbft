@@ -20,7 +20,7 @@ import (
 // {"foo": 2, "bar": 6}
 // {"foo": 3, "bar": 4}
 // {"foo": 3, "bar": 5}
-// {"foo": 3, "bar": 6}
+// {"foo": 3, "bar": 6}.
 func combinations(items map[string][]interface{}) []map[string]interface{} {
 	keys := []string{}
 	for key := range items {

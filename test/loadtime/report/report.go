@@ -6,11 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofrs/uuid"
-	"gonum.org/v1/gonum/stat"
-
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 	"github.com/cometbft/cometbft/types"
+	"github.com/gofrs/uuid"
+	"gonum.org/v1/gonum/stat"
 )
 
 // BlockStore defines the set of methods needed by the report generator from
@@ -20,7 +19,7 @@ import (
 type BlockStore interface {
 	Height() int64
 	Base() int64
-	LoadBlock(int64) *types.Block
+	LoadBlock(height int64) (*types.Block, *types.BlockMeta)
 }
 
 // DataPoint contains the set of data collected for each transaction.
@@ -119,7 +118,6 @@ func (rs *Reports) calculateAll() {
 		}
 		return rs.l[i].Connections < rs.l[j].Connections
 	})
-
 }
 
 func (rs *Reports) addError() {
@@ -167,16 +165,16 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 					continue
 				}
 
-				l := b.bt.Sub(p.Time.AsTime())
-				idb := (*[16]byte)(p.Id)
+				l := b.bt.Sub(p.GetTime().AsTime())
+				idb := (*[16]byte)(p.GetId())
 				pdc <- payloadData{
 					l:           l,
 					bt:          b.bt,
 					hash:        b.tx.Hash(),
 					id:          uuid.UUID(*idb),
-					connections: p.Connections,
-					rate:        p.Rate,
-					size:        p.Size,
+					connections: p.GetConnections(),
+					rate:        p.GetRate(),
+					size:        p.GetSize(),
 				}
 			}
 		}()
@@ -188,7 +186,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 
 	go func() {
 		base, height := s.Base(), s.Height()
-		prev := s.LoadBlock(base)
+		prev, _ := s.LoadBlock(base)
 		for i := base + 1; i < height; i++ {
 			// Data from two adjacent block are used here simultaneously,
 			// blocks of height H and H+1. The transactions of the block of
@@ -201,7 +199,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 			// chain contains payload transactions, those transactions will not
 			// be used in the latency calculations because the last block whose
 			// transactions are used is the block one before the last.
-			cur := s.LoadBlock(i)
+			cur, _ := s.LoadBlock(i)
 			for _, tx := range prev.Data.Txs {
 				txc <- txData{tx: tx, bt: cur.Time}
 			}

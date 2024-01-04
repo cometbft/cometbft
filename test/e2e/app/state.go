@@ -20,9 +20,9 @@ const (
 // Intermediate type used exclusively in serialization/deserialization of
 // State, such that State need not expose any of its internal values publicly.
 type serializedState struct {
-	Height uint64
-	Values map[string]string
-	Hash   []byte
+	Height uint64            `json:"height"`
+	Values map[string]string `json:"values"`
+	Hash   []byte            `json:"hash"`
 }
 
 // State is the application state.
@@ -182,7 +182,7 @@ func (s *State) Query(key string) (string, uint64) {
 	return value, height
 }
 
-// Finalize is called after applying a block, updating the height and returning the new app_hash
+// Finalize is called after applying a block, updating the height and returning the new app_hash.
 func (s *State) Finalize() []byte {
 	s.Lock()
 	defer s.Unlock()

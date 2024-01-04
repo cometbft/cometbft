@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // PrivValidator defines the functionality of a local CometBFT validator
@@ -15,6 +15,7 @@ import (
 type PrivValidator interface {
 	GetPubKey() (crypto.PubKey, error)
 
+	// FIXME: should use the domain types defined in this package, not the proto types
 	SignVote(chainID string, vote *cmtproto.Vote) error
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
 }
@@ -64,12 +65,12 @@ func NewMockPVWithParams(privKey crypto.PrivKey, breakProposalSigning, breakVote
 	return MockPV{privKey, breakProposalSigning, breakVoteSigning}
 }
 
-// Implements PrivValidator.
+// GetPubKey implements PrivValidator.
 func (pv MockPV) GetPubKey() (crypto.PubKey, error) {
 	return pv.PrivKey.PubKey(), nil
 }
 
-// Implements PrivValidator.
+// SignVote implements PrivValidator.
 func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	useChainID := chainID
 	if pv.breakVoteSigning {
@@ -85,7 +86,7 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 
 	var extSig []byte
 	// We only sign vote extensions for non-nil precommits
-	if vote.Type == cmtproto.PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
+	if vote.Type == PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
 		extSignBytes := VoteExtensionSignBytes(useChainID, vote)
 		extSig, err = pv.PrivKey.Sign(extSignBytes)
 		if err != nil {
@@ -98,7 +99,7 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	return nil
 }
 
-// Implements PrivValidator.
+// SignProposal implements PrivValidator.
 func (pv MockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
 	useChainID := chainID
 	if pv.breakProposalSigning {
@@ -141,12 +142,12 @@ type ErroringMockPV struct {
 
 var ErroringMockPVErr = errors.New("erroringMockPV always returns an error")
 
-// Implements PrivValidator.
+// SignVote implements PrivValidator.
 func (pv *ErroringMockPV) SignVote(string, *cmtproto.Vote) error {
 	return ErroringMockPVErr
 }
 
-// Implements PrivValidator.
+// SignProposal implements PrivValidator.
 func (pv *ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
 	return ErroringMockPVErr
 }

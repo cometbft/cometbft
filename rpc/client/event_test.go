@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
@@ -19,7 +19,7 @@ import (
 
 var waitForEventTimeout = 8 * time.Second
 
-// MakeTxKV returns a text transaction, allong with expected key, value pair
+// MakeTxKV returns a text transaction, along with expected key, value pair
 func MakeTxKV() ([]byte, []byte, []byte) {
 	k := []byte(cmtrand.Str(8))
 	v := []byte(cmtrand.Str(8))
@@ -57,7 +57,6 @@ func TestBlockEvents(t *testing.T) {
 	for _, c := range GetClients() {
 		c := c
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
-
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.
@@ -105,7 +104,6 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 	for _, c := range GetClients() {
 		c := c
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
-
 			// start for this test it if it wasn't already running
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.

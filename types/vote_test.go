@@ -8,32 +8,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/libs/protoio"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cometbft/cometbft/internal/protoio"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 func examplePrevote() *Vote {
-	return exampleVote(byte(cmtproto.PrevoteType))
+	return exampleVote(byte(PrevoteType))
 }
 
 func examplePrecommit() *Vote {
-	vote := exampleVote(byte(cmtproto.PrecommitType))
+	vote := exampleVote(byte(PrecommitType))
 	vote.ExtensionSignature = []byte("signature")
 	return vote
 }
 
 func exampleVote(t byte) *Vote {
-	var stamp, err = time.Parse(TimeFormat, "2017-12-25T03:00:01.234Z")
+	stamp, err := time.Parse(TimeFormat, "2017-12-25T03:00:01.234Z")
 	if err != nil {
 		panic(err)
 	}
 
 	return &Vote{
-		Type:      cmtproto.SignedMsgType(t),
+		Type:      SignedMsgType(t),
 		Height:    12345,
 		Round:     2,
 		Timestamp: stamp,
@@ -61,7 +61,6 @@ func TestVoteSignable(t *testing.T) {
 }
 
 func TestVoteSignBytesTestVectors(t *testing.T) {
-
 	tests := []struct {
 		chainID string
 		vote    *Vote
@@ -74,7 +73,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 		},
 		// with proper (fixed size) height and round (PreCommit):
 		1: {
-			"", &Vote{Height: 1, Round: 1, Type: cmtproto.PrecommitType},
+			"", &Vote{Height: 1, Round: 1, Type: PrecommitType},
 			[]byte{
 				0x21,                                   // length
 				0x8,                                    // (field_number << 3) | wire_type
@@ -85,11 +84,12 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 				0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
 				0x2a, // (field_number << 3) | wire_type
 				// remaining fields (timestamp):
-				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1},
+				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
+			},
 		},
 		// with proper (fixed size) height and round (PreVote):
 		2: {
-			"", &Vote{Height: 1, Round: 1, Type: cmtproto.PrevoteType},
+			"", &Vote{Height: 1, Round: 1, Type: PrevoteType},
 			[]byte{
 				0x21,                                   // length
 				0x8,                                    // (field_number << 3) | wire_type
@@ -100,7 +100,8 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 				0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
 				0x2a, // (field_number << 3) | wire_type
 				// remaining fields (timestamp):
-				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1},
+				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
+			},
 		},
 		3: {
 			"", &Vote{Height: 1, Round: 1},
@@ -112,7 +113,8 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 				0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
 				// remaining fields (timestamp):
 				0x2a,
-				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1},
+				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1,
+			},
 		},
 		// containing non-empty chain_id:
 		4: {
@@ -128,7 +130,8 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1, // timestamp
 				// (field_number << 3) | wire_type
 				0x32,
-				0xd, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64}, // chainID
+				0xd, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64,
+			}, // chainID
 		},
 		// containing vote extension
 		5: {
@@ -143,7 +146,7 @@ func TestVoteSignBytesTestVectors(t *testing.T) {
 				0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // height
 				0x19,                                   // (field_number << 3) | wire_type
 				0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, // round
-				// remaning fields:
+				// remaining fields:
 				0x2a,                                                                // (field_number << 3) | wire_type
 				0xb, 0x8, 0x80, 0x92, 0xb8, 0xc3, 0x98, 0xfe, 0xff, 0xff, 0xff, 0x1, // timestamp
 				// (field_number << 3) | wire_type
@@ -246,7 +249,7 @@ func TestVoteExtension(t *testing.T) {
 				Height:           height,
 				Round:            round,
 				Timestamp:        cmttime.Now(),
-				Type:             cmtproto.PrecommitType,
+				Type:             PrecommitType,
 				BlockID:          makeBlockIDRandom(),
 			}
 
@@ -270,12 +273,12 @@ func TestVoteExtension(t *testing.T) {
 func TestIsVoteTypeValid(t *testing.T) {
 	tc := []struct {
 		name string
-		in   cmtproto.SignedMsgType
+		in   SignedMsgType
 		out  bool
 	}{
-		{"Prevote", cmtproto.PrevoteType, true},
-		{"Precommit", cmtproto.PrecommitType, true},
-		{"InvalidType", cmtproto.SignedMsgType(0x3), false},
+		{"Prevote", PrevoteType, true},
+		{"Precommit", PrecommitType, true},
+		{"InvalidType", SignedMsgType(0x3), false},
 	}
 
 	for _, tt := range tc {

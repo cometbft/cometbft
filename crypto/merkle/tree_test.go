@@ -4,13 +4,11 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/libs/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	"github.com/cometbft/cometbft/libs/test"
-
-	"github.com/cometbft/cometbft/crypto/tmhash"
 )
 
 type testItem []byte
@@ -44,7 +42,6 @@ func TestHashFromByteSlices(t *testing.T) {
 }
 
 func TestProof(t *testing.T) {
-
 	// Try an empty proof first
 	rootHash, proofs := ProofsFromByteSlices([][]byte{})
 	require.Equal(t, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hex.EncodeToString(rootHash))
@@ -68,7 +65,7 @@ func TestProof(t *testing.T) {
 		proof := proofs[i]
 
 		// Check total/index
-		require.EqualValues(t, proof.Index, i, "Unmatched indicies: %d vs %d", proof.Index, i)
+		require.EqualValues(t, proof.Index, i, "Unmatched indices: %d vs %d", proof.Index, i)
 
 		require.EqualValues(t, proof.Total, total, "Unmatched totals: %d vs %d", proof.Total, total)
 
@@ -102,7 +99,6 @@ func TestProof(t *testing.T) {
 }
 
 func TestHashAlternatives(t *testing.T) {
-
 	total := 100
 
 	items := make([][]byte, total)

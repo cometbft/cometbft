@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
+	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 const (
 	// MaxAunts is the maximum number of aunts that can be included in a Proof.
 	// This corresponds to a tree of size 2^100, which should be sufficient for all conceivable purposes.
-	// This maximum helps prevent Denial-of-Service attacks by limitting the size of the proofs.
+	// This maximum helps prevent Denial-of-Service attacks by limiting the size of the proofs.
 	MaxAunts = 100
 )
 
@@ -74,7 +74,7 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 }
 
 // Verify that the Proof proves the root hash.
-// Check sp.Index/sp.Total manually if needed
+// Check sp.Index/sp.Total manually if needed.
 func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 	if rootHash == nil {
 		return ErrInvalidHash{

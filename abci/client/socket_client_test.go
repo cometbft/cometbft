@@ -9,14 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	"github.com/cometbft/cometbft/libs/service"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/internal/service"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCalls(t *testing.T) {
@@ -51,7 +50,9 @@ func TestHangingAsyncCalls(t *testing.T) {
 	resp := make(chan error, 1)
 	go func() {
 		// Call CheckTx
-		reqres, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{})
+		reqres, err := c.CheckTxAsync(context.Background(), &types.CheckTxRequest{
+			Type: types.CHECK_TX_TYPE_CHECK,
+		})
 		require.NoError(t, err)
 		// wait 50 ms for all events to travel socket, but
 		// no response yet from server
@@ -104,7 +105,7 @@ func TestBulk(t *testing.T) {
 	require.NoError(t, err)
 
 	// Construct request
-	rfb := &types.RequestFinalizeBlock{Txs: make([][]byte, numTxs)}
+	rfb := &types.FinalizeBlockRequest{Txs: make([][]byte, numTxs)}
 	for counter := 0; counter < numTxs; counter++ {
 		rfb.Txs[counter] = []byte("test")
 	}
@@ -157,9 +158,9 @@ type slowApp struct {
 	types.BaseApplication
 }
 
-func (slowApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+func (slowApp) CheckTx(context.Context, *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	time.Sleep(time.Second)
-	return &types.ResponseCheckTx{}, nil
+	return &types.CheckTxResponse{}, nil
 }
 
 // TestCallbackInvokedWhenSetLaet ensures that the callback is invoked when
@@ -176,7 +177,9 @@ func TestCallbackInvokedWhenSetLate(t *testing.T) {
 		wg: wg,
 	}
 	_, c := setupClientServer(t, app)
-	reqRes, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{})
+	reqRes, err := c.CheckTxAsync(ctx, &types.CheckTxRequest{
+		Type: types.CHECK_TX_TYPE_CHECK,
+	})
 	require.NoError(t, err)
 
 	done := make(chan struct{})
@@ -200,7 +203,7 @@ type blockedABCIApplication struct {
 	types.BaseApplication
 }
 
-func (b blockedABCIApplication) CheckTxAsync(ctx context.Context, r *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+func (b blockedABCIApplication) CheckTxAsync(ctx context.Context, r *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	b.wg.Wait()
 	return b.BaseApplication.CheckTx(ctx, r)
 }
@@ -217,7 +220,9 @@ func TestCallbackInvokedWhenSetEarly(t *testing.T) {
 		wg: wg,
 	}
 	_, c := setupClientServer(t, app)
-	reqRes, err := c.CheckTxAsync(ctx, &types.RequestCheckTx{})
+	reqRes, err := c.CheckTxAsync(ctx, &types.CheckTxRequest{
+		Type: types.CHECK_TX_TYPE_CHECK,
+	})
 	require.NoError(t, err)
 
 	done := make(chan struct{})

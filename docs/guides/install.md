@@ -51,15 +51,6 @@ running:
 cometbft version
 ```
 
-## Run
-
-To start a one-node blockchain with a simple in-process application:
-
-```sh
-cometbft init
-cometbft node --proxy_app=kvstore
-```
-
 ## Reinstall
 
 If you already have CometBFT installed, and you make updates, simply
@@ -87,15 +78,15 @@ sudo apt install build-essential
 
 sudo apt-get install libsnappy-dev
 
-wget https://github.com/google/leveldb/archive/v1.20.tar.gz && \
-  tar -zxvf v1.20.tar.gz && \
-  cd leveldb-1.20/ && \
+wget https://github.com/google/leveldb/archive/v1.23.tar.gz && \
+  tar -zxvf v1.23.tar.gz && \
+  cd leveldb-1.23/ && \
   make && \
   sudo cp -r out-static/lib* out-shared/lib* /usr/local/lib/ && \
   cd include/ && \
   sudo cp -r leveldb /usr/local/include/ && \
   sudo ldconfig && \
-  rm -f v1.20.tar.gz
+  rm -f v1.23.tar.gz
 ```
 
 Set a database backend to `cleveldb`:

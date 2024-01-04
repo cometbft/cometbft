@@ -3,16 +3,13 @@ package xsalsa20symmetric
 import (
 	"testing"
 
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/cometbft/cometbft/crypto"
 )
 
 func TestSimple(t *testing.T) {
-
 	plaintext := []byte("sometext")
 	secret := []byte("somesecretoflengththirtytwo===32")
 	ciphertext := EncryptSymmetric(plaintext, secret)
@@ -23,7 +20,6 @@ func TestSimple(t *testing.T) {
 }
 
 func TestSimpleWithKDF(t *testing.T) {
-
 	plaintext := []byte("sometext")
 	secretPass := []byte("somesecret")
 	secret, err := bcrypt.GenerateFromPassword(secretPass, 12)

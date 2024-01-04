@@ -211,7 +211,7 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 			t.Log(res)
 			responses := &abci.FinalizeBlockResponse{
 				TxResults: tc.expected,
-				AppHash:   []byte(strconv.Itoa(int(h))),
+				AppHash:   []byte(strconv.FormatInt(h, 10)),
 			}
 			assert.Equal(sm.TxResultsHash(responses.TxResults), sm.TxResultsHash(res.TxResults), "%d", i)
 		}

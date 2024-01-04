@@ -329,6 +329,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 			return
 		}
 
+		t.Log("Fast peer connected")
 		close(fastc)
 		<-slowdonec
 		close(errc)
@@ -347,6 +348,8 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 
 	if have, want := p.NodeInfo().ID(), fastNodeInfo.ID(); have != want {
 		t.Errorf("have %v, want %v", have, want)
+	} else {
+		t.Log("Fast peer's NodeInfo correctly received")
 	}
 }
 

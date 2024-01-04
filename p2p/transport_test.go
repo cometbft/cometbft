@@ -265,6 +265,8 @@ func testDialer(dialAddr NetAddress, errc chan error) {
 // The test checks that the fast peer's NodeInfo is correctly received.
 func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 	for i := 0; i < 100; i++ {
+		t.Logf("Running iteration %d", i+1)
+
 		// Setup a multiplex transport
 		mt := testSetupMultiplexTransport(t)
 		defer mt.Close() // Ensure resources are cleaned up
@@ -282,6 +284,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 
 		// Simulate slow Peer.
 		go func() {
+			t.Log("Slow peer starting")
 			addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
 			c, err := addr.Dial()
 			if err != nil {
@@ -309,10 +312,12 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 			if err != nil {
 				errc <- fmt.Errorf("slow peer failed to handshake: %v", err)
 			}
+			t.Log("Slow peer finished")
 		}()
 
 		// Simulate fast Peer.
 		go func() {
+			t.Log("Fast peer starting")
 			<-slowc
 
 			dialer := newMultiplexTransport(
@@ -334,6 +339,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 			close(fastc)
 			<-slowdonec
 			close(errc)
+			t.Log("Fast peer finished")
 		}()
 
 		<-fastc

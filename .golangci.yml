@@ -46,6 +46,7 @@ linters:
     - nonamedreturns
     - testpackage
     - paralleltest
+    - unparam
     - nosnakecase
     - predeclared
     - tagliatelle

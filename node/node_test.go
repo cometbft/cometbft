@@ -388,6 +388,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 		DiscardABCIResponses: false,
 	})
 	var maxBytes int64 = 16384
+	var partSize uint32 = 256
 	state.ConsensusParams.Block.MaxBytes = maxBytes
 	proposerAddr, _ := state.Validators.GetByIndex(0)
 
@@ -432,7 +433,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	assert.Less(t, int64(pb.Size()), maxBytes)
 
 	// check that the part set does not exceed the maximum block size
-	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+	partSet, err := block.MakePartSet(partSize)
 	require.NoError(t, err)
 	assert.EqualValues(t, partSet.ByteSize(), int64(pb.Size()))
 }

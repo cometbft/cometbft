@@ -113,18 +113,18 @@ func TestBlockHash(t *testing.T) {
 }
 
 func TestBlockMakePartSet(t *testing.T) {
-	bps, err := (*Block)(nil).MakePartSet(BlockPartSizeBytes)
+	bps, err := (*Block)(nil).MakePartSet(2)
 	assert.Error(t, err)
 	assert.Nil(t, bps)
 
-	partSet, err := MakeBlock(int64(3), []Tx{Tx("Hello World")}, nil, nil).MakePartSet(BlockPartSizeBytes)
+	partSet, err := MakeBlock(int64(3), []Tx{Tx("Hello World")}, nil, nil).MakePartSet(1024)
 	require.NoError(t, err)
 	assert.NotNil(t, partSet)
 	assert.EqualValues(t, 1, partSet.Total())
 }
 
 func TestBlockMakePartSetWithEvidence(t *testing.T) {
-	bps, err := (*Block)(nil).MakePartSet(BlockPartSizeBytes)
+	bps, err := (*Block)(nil).MakePartSet(2)
 	assert.Error(t, err)
 	assert.Nil(t, bps)
 

@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/internal/net"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
@@ -22,7 +23,6 @@ import (
 	server "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/go-kit/log/term"
-	"github.com/phayes/freeport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,7 +40,7 @@ const (
 var (
 	ctx     = context.Background()
 	baseIP  = "tcp://127.0.0.1"
-	port, _ = freeport.GetFreePort()
+	port, _ = net.GetFreePort()
 	tcpAddr = baseIP + ":" + strconv.Itoa(port)
 )
 

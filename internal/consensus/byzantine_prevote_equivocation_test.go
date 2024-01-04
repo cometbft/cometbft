@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Byzantine node sends two different prevotes (nil and blockID) to the same validator
 // TestByzantinePrevoteEquivocation tests the scenario where a Byzantine node sends two different prevotes (nil and blockID) to the same validator.
 func TestByzantinePrevoteEquivocation(t *testing.T) {
 	// Create a new context with cancellation
@@ -40,40 +39,42 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	testName := "consensus_byzantine_test"
 	appFunc := newKVStore
 
-	// Generate a random genesis document and private validators
+	t.Log("Generating a random genesis document and private validators")
 	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
-	css, err := initializeValidators(t, nValidators, genDoc, privVals, testName, appFunc)
-	require.NoError(t, err)
-	// Initialize the reactors for each of the validators
-	reactors, blocksSubs, eventBuses, err := initializeReactors(nValidators, css)
-	require.NoError(t, err)
 
-	// Make connected switches and start all reactors
+	t.Log("Initializing validators")
+	css, err := initializeValidators(t, nValidators, genDoc, privVals, testName, appFunc)
+	require.NoError(t, err, "Failed to initialize validators")
+
+	t.Log("Initializing reactors for each validator")
+	reactors, blocksSubs, eventBuses, err := initializeReactors(nValidators, css)
+	require.NoError(t, err, "Failed to initialize reactors")
+
+	t.Log("Making connected switches and starting all reactors")
 	p2p.MakeConnectedSwitches(config.P2P, nValidators, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("CONSENSUS", reactors[i])
 		s.SetLogger(reactors[i].conS.Logger.With("module", "p2p"))
 		return s
 	}, p2p.Connect2Switches)
 
-	// Create byzantine validator
+	t.Log("Creating byzantine validator")
 	bcs := css[byzantineNode]
 
-	// Alter prevote so that the byzantine node double votes when height is 2
+	t.Log("Altering prevote so that the byzantine node double votes when height is 2")
 	alterPrevoteForByzantineNode(t, bcs, prevoteHeight, reactors, byzantineNode)
 	introduceLazyProposer(t, css[1], ctx)
 
-	// Start the consensus reactors
+	t.Log("Starting the consensus reactors")
 	for i := 0; i < nValidators; i++ {
 		s := reactors[i].conS.GetState()
 		reactors[i].SwitchToConsensus(s, false)
 	}
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
-	// Evidence should be submitted and committed at the third height but
-	// we will check the first six just in case
+	t.Log("Preparing to collect evidence from each validator")
 	evidenceFromEachValidator := make([]types.Evidence, nValidators)
 
-	// Wait for all validators to commit evidence
+	t.Log("Waiting for all validators to commit evidence")
 	wg := new(sync.WaitGroup)
 	for i := 0; i < nValidators; i++ {
 		wg.Add(1)
@@ -95,21 +96,21 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		close(done)
 	}()
 
+	t.Log("Getting public key of the byzantine validator")
 	pubkey, err := bcs.privValidator.GetPubKey()
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to get public key of the byzantine validator")
 
 	const timeout = 180 * time.Second // Increase timeout to 180 seconds (this is a temporary measure)
 
-	// Check if evidence was committed
+	t.Log("Checking if evidence was committed")
 	select {
 	case <-done:
 		for idx, ev := range evidenceFromEachValidator {
-			if assert.NotNil(t, ev, idx) {
-				ev, ok := ev.(*types.DuplicateVoteEvidence)
-				assert.True(t, ok)
-				assert.Equal(t, pubkey.Address(), ev.VoteA.ValidatorAddress)
-				assert.Equal(t, prevoteHeight, ev.Height())
-			}
+			require.NotNil(t, ev, "Evidence from validator %d was nil", idx)
+			ev, ok := ev.(*types.DuplicateVoteEvidence)
+			require.True(t, ok, "Evidence from validator %d was not of type *types.DuplicateVoteEvidence", idx)
+			assert.Equal(t, pubkey.Address(), ev.VoteA.ValidatorAddress, "Unexpected validator address in evidence from validator %d", idx)
+			assert.Equal(t, prevoteHeight, ev.Height(), "Unexpected height in evidence from validator %d", idx)
 		}
 	case <-time.After(timeout):
 		t.Logf("Evidence from each validator: %v", evidenceFromEachValidator) // Log evidence
@@ -235,14 +236,25 @@ func initializeValidators(t *testing.T, nValidators int, genDoc *types.GenesisDo
 	return css, nil
 }
 
+// initializeReactors sets up a network of reactors for testing.
+// It creates nValidators number of reactors, initializes their state,
+// and returns a slice of these reactors, block subscriptions, and event buses.
+// css is a slice of consensus states.
 func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subscription, []*types.EventBus, error) {
 	reactors := make([]*Reactor, nValidators)
-	blocksSubs := make([]types.Subscription, 0)
+	blocksSubs := make([]types.Subscription, nValidators)
 	eventBuses := make([]*types.EventBus, nValidators)
 
 	for i := 0; i < nValidators; i++ {
+		// Create a new reactor for each validator
 		reactors[i] = NewReactor(css[i], true) // so we don't start the consensus states
-		reactors[i].SetLogger(css[i].Logger)
+
+		// Check if css[i] is not nil before accessing its Logger
+		if css[i] != nil {
+			reactors[i].SetLogger(css[i].Logger)
+		} else {
+			return nil, nil, nil, fmt.Errorf("consensus state at index %d is nil", i)
+		}
 
 		// eventBus is already started with the cs
 		eventBuses[i] = css[i].eventBus
@@ -251,15 +263,28 @@ func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subs
 		// Subscribe to new block events
 		blocksSub, err := eventBuses[i].Subscribe(context.Background(), testSubscriber, types.EventQueryNewBlock, 100)
 		if err != nil {
+			reactors[i].Logger.Error("Failed to subscribe to new block events", "error", err)
 			return nil, nil, nil, err
 		}
-		blocksSubs = append(blocksSubs, blocksSub)
+		blocksSubs[i] = blocksSub
 
 		// Simulate handle initChain in handshake if last block height is 0
 		if css[i].state.LastBlockHeight == 0 {
 			err = css[i].blockExec.Store().Save(css[i].state)
 			if err != nil {
+				reactors[i].Logger.Error("Failed to save state", "error", err)
 				return nil, nil, nil, err
+			}
+		}
+	}
+
+	// Check for potential lock situations
+	for i := 0; i < nValidators; i++ {
+		if reactors[i].Switch != nil && reactors[i].Switch.IsRunning() {
+			if reactors[i].Logger != nil {
+				reactors[i].Logger.Info("Potential lock situation detected: reactor switch is already running")
+			} else {
+				fmt.Printf("Potential lock situation detected: reactor switch is already running at index %d\n", i)
 			}
 		}
 	}

@@ -41,14 +41,12 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	t.Log("Generating a random genesis document and private validators")
 	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+	require.NotNil(t, genDoc, "Failed to generate a random genesis document")
+	require.NotNil(t, privVals, "Failed to generate private validators")
 
-	t.Log("Initializing validators")
-	css, err := initializeValidators(t, nValidators, genDoc, privVals, testName, appFunc)
-	require.NoError(t, err, "Failed to initialize validators")
-
-	t.Log("Initializing reactors for each validator")
-	reactors, blocksSubs, eventBuses, err := initializeReactors(nValidators, css)
-	require.NoError(t, err, "Failed to initialize reactors")
+	t.Log("Initializing test environment")
+	css, reactors, blocksSubs, eventBuses, err := initializeTestEnvironment(t, nValidators, genDoc, privVals, testName, appFunc)
+	require.NoError(t, err, "Failed to initialize test environment")
 
 	t.Log("Making connected switches and starting all reactors")
 	p2p.MakeConnectedSwitches(config.P2P, nValidators, func(i int, s *p2p.Switch) *p2p.Switch {
@@ -59,42 +57,18 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	t.Log("Creating byzantine validator")
 	bcs := css[byzantineNode]
+	require.NotNil(t, bcs, "Failed to create a Byzantine validator")
 
 	t.Log("Altering prevote so that the byzantine node double votes when height is 2")
 	alterPrevoteForByzantineNode(t, bcs, prevoteHeight, reactors, byzantineNode)
 	introduceLazyProposer(t, css[1], ctx)
 
 	t.Log("Starting the consensus reactors")
-	for i := 0; i < nValidators; i++ {
-		s := reactors[i].conS.GetState()
-		reactors[i].SwitchToConsensus(s, false)
-	}
+	startConsensusReactors(reactors)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
-	t.Log("Preparing to collect evidence from each validator")
-	evidenceFromEachValidator := make([]types.Evidence, nValidators)
-
-	t.Log("Waiting for all validators to commit evidence")
-	wg := new(sync.WaitGroup)
-	for i := 0; i < nValidators; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for msg := range blocksSubs[i].Out() {
-				block := msg.Data().(types.EventDataNewBlock).Block
-				if len(block.Evidence.Evidence) != 0 {
-					evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
-					return
-				}
-			}
-		}(i)
-	}
-
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
+	t.Log("Collecting evidence from each validator")
+	evidenceFromEachValidator := collectEvidenceFromValidators(t, nValidators, blocksSubs)
 
 	t.Log("Getting public key of the byzantine validator")
 	pubkey, err := bcs.privValidator.GetPubKey()
@@ -104,7 +78,10 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	t.Log("Checking if evidence was committed")
 	select {
-	case <-done:
+	case <-time.After(timeout):
+		t.Logf("Evidence from each validator: %v", evidenceFromEachValidator) // Log evidence
+		t.Fatalf("Timed out waiting for validators to commit evidence")
+	default:
 		for idx, ev := range evidenceFromEachValidator {
 			require.NotNil(t, ev, "Evidence from validator %d was nil", idx)
 			ev, ok := ev.(*types.DuplicateVoteEvidence)
@@ -112,9 +89,6 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			assert.Equal(t, pubkey.Address(), ev.VoteA.ValidatorAddress, "Unexpected validator address in evidence from validator %d", idx)
 			assert.Equal(t, prevoteHeight, ev.Height(), "Unexpected height in evidence from validator %d", idx)
 		}
-	case <-time.After(timeout):
-		t.Logf("Evidence from each validator: %v", evidenceFromEachValidator) // Log evidence
-		t.Fatalf("Timed out waiting for validators to commit evidence")
 	}
 }
 
@@ -405,4 +379,47 @@ func introduceLazyProposer(t *testing.T, lazyProposer *State, ctx context.Contex
 			lazyProposer.Logger.Error("enterPropose: Error signing proposal", "height", height, "round", round, "err", err)
 		}
 	}
+}
+
+func initializeTestEnvironment(t *testing.T, nValidators int, genDoc *types.GenesisDoc, privVals []types.PrivValidator, testName string, appFunc func() abci.Application) ([]*State, []*Reactor, []types.Subscription, []*types.EventBus, error) {
+	t.Log("Initializing validators")
+	css, err := initializeValidators(t, nValidators, genDoc, privVals, testName, appFunc)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	t.Log("Initializing reactors for each validator")
+	reactors, blocksSubs, eventBuses, err := initializeReactors(nValidators, css)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	return css, reactors, blocksSubs, eventBuses, nil
+}
+
+func startConsensusReactors(reactors []*Reactor) {
+	for i := 0; i < len(reactors); i++ {
+		s := reactors[i].conS.GetState()
+		reactors[i].SwitchToConsensus(s, false)
+	}
+}
+
+func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []types.Subscription) []types.Evidence {
+	evidenceFromEachValidator := make([]types.Evidence, nValidators)
+	wg := new(sync.WaitGroup)
+	for i := 0; i < nValidators; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for msg := range blocksSubs[i].Out() {
+				block := msg.Data().(types.EventDataNewBlock).Block
+				if len(block.Evidence.Evidence) != 0 {
+					evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+					return
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
+	return evidenceFromEachValidator
 }

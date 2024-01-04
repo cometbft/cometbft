@@ -264,92 +264,94 @@ func testDialer(dialAddr NetAddress, errc chan error) {
 // It simulates a slow peer and a fast peer. The slow peer initiates a connection and then waits for the fast peer to connect.
 // The test checks that the fast peer's NodeInfo is correctly received.
 func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
-	// Setup a multiplex transport
-	mt := testSetupMultiplexTransport(t)
-	defer mt.Close() // Ensure resources are cleaned up
+	for i := 0; i < 100; i++ {
+		// Setup a multiplex transport
+		mt := testSetupMultiplexTransport(t)
+		defer mt.Close() // Ensure resources are cleaned up
 
-	var (
-		fastNodePV   = ed25519.GenPrivKey()
-		fastNodeInfo = testNodeInfo(PubKeyToID(fastNodePV.PubKey()), "fastnode")
-		errc         = make(chan error)
-		fastc        = make(chan struct{})
-		slowc        = make(chan struct{})
-		slowdonec    = make(chan struct{})
-	)
+		var (
+			fastNodePV   = ed25519.GenPrivKey()
+			fastNodeInfo = testNodeInfo(PubKeyToID(fastNodePV.PubKey()), "fastnode")
+			errc         = make(chan error)
+			fastc        = make(chan struct{})
+			slowc        = make(chan struct{})
+			slowdonec    = make(chan struct{})
+		)
 
-	slowPeerPV := ed25519.GenPrivKey()
+		slowPeerPV := ed25519.GenPrivKey()
 
-	// Simulate slow Peer.
-	go func() {
-		addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
-		c, err := addr.Dial()
-		if err != nil {
-			errc <- fmt.Errorf("slow peer failed to dial: %v", err)
-			return
-		}
-		defer c.Close()
+		// Simulate slow Peer.
+		go func() {
+			addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+			c, err := addr.Dial()
+			if err != nil {
+				errc <- fmt.Errorf("slow peer failed to dial: %v", err)
+				return
+			}
+			defer c.Close()
 
-		close(slowc)
-		defer close(slowdonec)
+			close(slowc)
+			defer close(slowdonec)
+
+			<-fastc
+
+			sc, err := upgradeSecretConn(c, 200*time.Millisecond, slowPeerPV)
+			if err != nil {
+				errc <- fmt.Errorf("slow peer failed to upgrade connection: %v", err)
+				return
+			}
+
+			_, err = handshake(sc, 200*time.Millisecond,
+				testNodeInfo(
+					PubKeyToID(slowPeerPV.PubKey()),
+					"slow_peer",
+				))
+			if err != nil {
+				errc <- fmt.Errorf("slow peer failed to handshake: %v", err)
+			}
+		}()
+
+		// Simulate fast Peer.
+		go func() {
+			<-slowc
+
+			dialer := newMultiplexTransport(
+				fastNodeInfo,
+				NodeKey{
+					PrivKey: fastNodePV,
+				},
+			)
+			defer dialer.Close()
+
+			addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+			_, err := dialer.Dial(*addr, peerConfig{})
+			if err != nil {
+				errc <- fmt.Errorf("fast peer failed to dial: %v", err)
+				return
+			}
+
+			t.Log("Fast peer connected")
+			close(fastc)
+			<-slowdonec
+			close(errc)
+		}()
 
 		<-fastc
 
-		sc, err := upgradeSecretConn(c, 200*time.Millisecond, slowPeerPV)
-		if err != nil {
-			errc <- fmt.Errorf("slow peer failed to upgrade connection: %v", err)
-			return
+		if err := <-errc; err != nil {
+			t.Errorf("connection failed: %v", err)
 		}
 
-		_, err = handshake(sc, 200*time.Millisecond,
-			testNodeInfo(
-				PubKeyToID(slowPeerPV.PubKey()),
-				"slow_peer",
-			))
+		p, err := mt.Accept(peerConfig{})
 		if err != nil {
-			errc <- fmt.Errorf("slow peer failed to handshake: %v", err)
-		}
-	}()
-
-	// Simulate fast Peer.
-	go func() {
-		<-slowc
-
-		dialer := newMultiplexTransport(
-			fastNodeInfo,
-			NodeKey{
-				PrivKey: fastNodePV,
-			},
-		)
-		defer dialer.Close()
-
-		addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
-		_, err := dialer.Dial(*addr, peerConfig{})
-		if err != nil {
-			errc <- fmt.Errorf("fast peer failed to dial: %v", err)
-			return
+			t.Fatalf("failed to accept peer: %v", err)
 		}
 
-		t.Log("Fast peer connected")
-		close(fastc)
-		<-slowdonec
-		close(errc)
-	}()
-
-	<-fastc
-
-	if err := <-errc; err != nil {
-		t.Errorf("connection failed: %v", err)
-	}
-
-	p, err := mt.Accept(peerConfig{})
-	if err != nil {
-		t.Fatalf("failed to accept peer: %v", err)
-	}
-
-	if have, want := p.NodeInfo().ID(), fastNodeInfo.ID(); have != want {
-		t.Errorf("have %v, want %v", have, want)
-	} else {
-		t.Log("Fast peer's NodeInfo correctly received")
+		if have, want := p.NodeInfo().ID(), fastNodeInfo.ID(); have != want {
+			t.Errorf("have %v, want %v", have, want)
+		} else {
+			t.Log("Fast peer's NodeInfo correctly received")
+		}
 	}
 }
 

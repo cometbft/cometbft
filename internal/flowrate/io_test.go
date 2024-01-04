@@ -237,7 +237,7 @@ func statusesAreEqualWithinTolerance(s1 *Status, s2 *Status, maxDeviationForDura
 	if s1.Active == s2.Active &&
 		s1.Start == s2.Start &&
 		durationsAreEqual(s1.Duration, s2.Duration, maxDeviationForDuration) &&
-		s1.Idle == s2.Idle &&
+		durationsAreEqual(s1.Idle, s2.Idle, maxDeviationForDuration) && // Add this line
 		s1.Bytes == s2.Bytes &&
 		s1.Samples == s2.Samples &&
 		ratesAreEqual(s1.InstRate, s2.InstRate, maxDeviationForRate) &&

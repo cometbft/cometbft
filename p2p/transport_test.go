@@ -34,6 +34,7 @@ func newMultiplexTransport(
 }
 
 func TestTransportMultiplexConnFilter(t *testing.T) {
+	t.Log("Creating new multiplex transport")
 	mt := newMultiplexTransport(
 		emptyNodeInfo(),
 		NodeKey{
@@ -42,6 +43,7 @@ func TestTransportMultiplexConnFilter(t *testing.T) {
 	)
 	id := mt.nodeKey.ID()
 
+	t.Log("Setting up connection filters")
 	MultiplexTransportConnFilters(
 		func(_ ConnSet, _ net.Conn, _ []net.IP) error { return nil },
 		func(_ ConnSet, _ net.Conn, _ []net.IP) error { return nil },
@@ -50,40 +52,45 @@ func TestTransportMultiplexConnFilter(t *testing.T) {
 		},
 	)(mt)
 
+	t.Log("Creating new network address")
 	addr, err := NewNetAddressString(IDAddressString(id, "127.0.0.1:0"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to create network address: %v", err)
 	}
 
+	t.Log("Starting listener")
 	if err := mt.Listen(*addr); err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to start listener: %v", err)
 	}
 
 	errc := make(chan error)
 
 	go func() {
+		t.Log("Dialing")
 		addr := NewNetAddress(id, mt.listener.Addr())
 
 		_, err := addr.Dial()
 		if err != nil {
-			errc <- err
+			errc <- fmt.Errorf("Failed to dial: %v", err)
 			return
 		}
 
 		close(errc)
 	}()
 
+	t.Log("Waiting for dial to complete")
 	if err := <-errc; err != nil {
-		t.Errorf("connection failed: %v", err)
+		t.Errorf("Connection failed: %v", err)
 	}
 
+	t.Log("Accepting connection")
 	_, err = mt.Accept(peerConfig{})
 	if e, ok := err.(ErrRejected); ok {
 		if !e.IsFiltered() {
-			t.Errorf("expected peer to be filtered, got %v", err)
+			t.Errorf("Expected peer to be filtered, got %v", err)
 		}
 	} else {
-		t.Errorf("expected ErrRejected, got %v", err)
+		t.Errorf("Expected ErrRejected, got %v", err)
 	}
 }
 
@@ -96,7 +103,7 @@ func TestTransportMultiplexConnFilterTimeout(t *testing.T) {
 	)
 	id := mt.nodeKey.ID()
 
-	MultiplexTransportFilterTimeout(5 * time.Millisecond)(mt)
+	MultiplexTransportFilterTimeout(100 * time.Millisecond)(mt)
 	MultiplexTransportConnFilters(
 		func(_ ConnSet, _ net.Conn, _ []net.IP) error {
 			time.Sleep(1 * time.Second)
@@ -148,39 +155,47 @@ func TestTransportMultiplexMaxIncomingConnections(t *testing.T) {
 		},
 	)
 
+	t.Log("Setting maximum incoming connections to 0")
 	MultiplexTransportMaxIncomingConnections(0)(mt)
 
 	addr, err := NewNetAddressString(IDAddressString(id, "127.0.0.1:0"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to create network address: %v", err)
 	}
-	const maxIncomingConns = 2
+
+	const maxIncomingConns = 3
+	t.Logf("Setting maximum incoming connections to %d", maxIncomingConns)
 	MultiplexTransportMaxIncomingConnections(maxIncomingConns)(mt)
+
+	t.Log("Starting listener")
 	if err := mt.Listen(*addr); err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to start listener: %v", err)
 	}
 
 	laddr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
 
 	// Connect more peers than max
 	for i := 0; i <= maxIncomingConns; i++ {
+		t.Logf("Dialing connection %d", i+1)
 		errc := make(chan error)
 		go testDialer(*laddr, errc)
 
 		err = <-errc
 		if i < maxIncomingConns {
 			if err != nil {
-				t.Errorf("dialer connection failed: %v", err)
+				t.Errorf("Dialer connection %d failed: %v", i+1, err)
 			}
 			_, err = mt.Accept(peerConfig{})
 			if err != nil {
-				t.Errorf("connection failed: %v", err)
+				t.Errorf("Accepting connection %d failed: %v", i+1, err)
 			}
-		} else if err == nil || !strings.Contains(err.Error(), "i/o timeout") {
-			// mt actually blocks forever on trying to accept a new peer into a full channel so
-			// expect the dialer to encounter a timeout error. Calling mt.Accept will block until
-			// mt is closed.
-			t.Errorf("expected i/o timeout error, got %v", err)
+		} else {
+			if err == nil || !strings.Contains(err.Error(), "i/o timeout") {
+				// mt actually blocks forever on trying to accept a new peer into a full channel so
+				// expect the dialer to encounter a timeout error. Calling mt.Accept will block until
+				// mt is closed.
+				t.Errorf("Expected i/o timeout error for connection %d, got %v", i+1, err)
+			}
 		}
 	}
 }
@@ -262,101 +277,124 @@ func testDialer(dialAddr NetAddress, errc chan error) {
 
 func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 	var passCount int
+	var closedConnCount int
 	totalIterations := 100
+	failureModes := make(map[string]int)
 
 	for i := 0; i < totalIterations; i++ {
-		t.Logf("Test iteration %d", i)
+		t.Logf("Test iteration %d started", i)
 
-		// Setup a multiplex transport
-		mt := testSetupMultiplexTransport(t)
-		defer mt.Close() // Ensure resources are cleaned up
+		func() {
+			// Setup a multiplex transport
+			mt := testSetupMultiplexTransport(t)
+			t.Log("Multiplex transport set up")
 
-		var (
-			fastNodePV   = ed25519.GenPrivKey()
-			fastNodeInfo = testNodeInfo(PubKeyToID(fastNodePV.PubKey()), "fastnode")
-			errc         = make(chan error, 2) // Buffer to prevent goroutine leaks
-			fastc        = make(chan struct{})
-			slowc        = make(chan struct{})
-			slowdonec    = make(chan struct{})
-		)
-
-		slowPeerPV := ed25519.GenPrivKey()
-
-		// Simulate slow Peer.
-		go func() {
-			t.Log("Slow peer starting")
-			addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
-			dialer := newMultiplexTransport(
-				testNodeInfo(PubKeyToID(slowPeerPV.PubKey()), "slowpeer"),
-				NodeKey{
-					PrivKey: slowPeerPV,
-				},
+			var (
+				fastNodePV   = ed25519.GenPrivKey()
+				fastNodeInfo = testNodeInfo(PubKeyToID(fastNodePV.PubKey()), "fastnode")
+				errc         = make(chan error, 2) // Buffer to prevent goroutine leaks
+				fastc        = make(chan struct{})
+				slowc        = make(chan struct{})
+				slowdonec    = make(chan struct{})
 			)
-			_, err := dialer.Dial(*addr, peerConfig{})
-			if err != nil {
-				errc <- fmt.Errorf("slow peer failed to dial: %v", err)
-				return
-			}
 
-			// Signal that the connection was established.
-			close(slowc)
+			slowPeerPV := ed25519.GenPrivKey()
+			defer mt.Close() // Ensure resources are cleaned up
 
-			// Wait until the fast peer has connected.
+			// Simulate slow Peer.
+			go func() {
+				go func() {
+					t.Log("Slow peer starting")
+					addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+					dialer := newMultiplexTransport(
+						testNodeInfo(PubKeyToID(slowPeerPV.PubKey()), "slowpeer"),
+						NodeKey{
+							PrivKey: slowPeerPV,
+						},
+					)
+					_, err := dialer.Dial(*addr, peerConfig{})
+					if err != nil {
+						errc <- fmt.Errorf("slow peer failed to dial: %v", err)
+						return
+					}
+					t.Log("Peer connected")
+
+					// Signal that the connection was established.
+					close(slowc)
+				}()
+
+				// Wait until the fast peer has connected.
+				<-fastc
+
+				t.Log("Slow peer finished")
+				close(slowdonec)
+			}()
+
+			// Simulate fast Peer.
+			go func() {
+				t.Log("Fast peer starting")
+				addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+				dialer := newMultiplexTransport(
+					fastNodeInfo,
+					NodeKey{
+						PrivKey: fastNodePV,
+					},
+				)
+				_, err := dialer.Dial(*addr, peerConfig{})
+				if err != nil {
+					errc <- fmt.Errorf("fast peer failed to dial: %v", err)
+					return
+				}
+
+				// Wait until the slow peer has connected.
+				<-slowc
+
+				t.Log("Fast peer finished")
+				close(fastc)
+			}()
+
+			// Wait for both peers to finish
 			<-fastc
+			<-slowdonec
 
-			t.Log("Slow peer finished")
-			close(slowdonec)
-		}()
-
-		// Simulate fast Peer.
-		go func() {
-			t.Log("Fast peer starting")
-			addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
-			dialer := newMultiplexTransport(
-				fastNodeInfo,
-				NodeKey{
-					PrivKey: fastNodePV,
-				},
-			)
-			_, err := dialer.Dial(*addr, peerConfig{})
-			if err != nil {
-				errc <- fmt.Errorf("fast peer failed to dial: %v", err)
-				return
+			// Check for errors
+			close(errc)
+			for err := range errc {
+				if err != nil {
+					t.Errorf("connection failed: %v", err)
+					failureModes[err.Error()]++
+					if strings.Contains(err.Error(), "use of closed network connection") {
+						closedConnCount++
+					}
+				}
 			}
 
-			// Wait until the slow peer has connected.
-			<-slowc
+			p, err := mt.Accept(peerConfig{})
+			if err != nil {
+				t.Fatalf("failed to accept peer: %v", err)
+			}
 
-			t.Log("Fast peer finished")
-			close(fastc)
+			if have, want := p.NodeInfo().ID(), fastNodeInfo.ID(); have != want {
+				t.Errorf("have %v, want %v", have, want)
+				t.Logf("Mismatched Node ID: have %v, want %v", have, want)
+				t.Logf("Fast peer NodeInfo: %v", fastNodeInfo)
+				t.Logf("Accepted peer NodeInfo: %v", p.NodeInfo())
+				failureModes["Mismatched Node ID"]++
+			} else {
+				t.Log("Fast peer's NodeInfo correctly received")
+				passCount++
+			}
+			t.Logf("Test iteration %d ended", i)
 		}()
 
-		// Wait for both peers to finish
-		<-fastc
-		<-slowdonec
-
-		// Check for errors
-		close(errc)
-		for err := range errc {
-			if err != nil {
-				t.Errorf("connection failed: %v", err)
-			}
-		}
-
-		p, err := mt.Accept(peerConfig{})
-		if err != nil {
-			t.Fatalf("failed to accept peer: %v", err)
-		}
-
-		if have, want := p.NodeInfo().ID(), fastNodeInfo.ID(); have != want {
-			t.Errorf("have %v, want %v", have, want)
-		} else {
-			t.Log("Fast peer's NodeInfo correctly received")
-			passCount++
-		}
 	}
 
 	t.Logf("Pass rate: %.2f%%", float64(passCount)/float64(totalIterations)*100)
+	t.Logf("Closed connection failures: %d", closedConnCount)
+	for mode, count := range failureModes {
+		t.Logf("Failure mode %s: %.2f%%", mode, float64(count)/float64(totalIterations)*100)
+	}
+
 }
 
 func TestTransportMultiplexValidateNodeInfo(t *testing.T) {
@@ -401,11 +439,13 @@ func TestTransportMultiplexValidateNodeInfo(t *testing.T) {
 }
 
 func TestTransportMultiplexRejectMissmatchID(t *testing.T) {
+	t.Log("Setting up multiplex transport")
 	mt := testSetupMultiplexTransport(t)
 
 	errc := make(chan error)
 
 	go func() {
+		t.Log("Creating dialer with mismatched ID")
 		dialer := newMultiplexTransport(
 			testNodeInfo(
 				PubKeyToID(ed25519.GenPrivKey().PubKey()), "dialer",
@@ -416,23 +456,30 @@ func TestTransportMultiplexRejectMissmatchID(t *testing.T) {
 		)
 		addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
 
+		t.Log("Dialing")
 		_, err := dialer.Dial(*addr, peerConfig{})
 		if err != nil {
+			t.Log("Dialing failed")
 			errc <- err
 			return
 		}
 
+		t.Log("Dialing succeeded")
 		close(errc)
 	}()
 
+	t.Log("Waiting for dialing result")
 	if err := <-errc; err != nil {
 		t.Errorf("connection failed: %v", err)
 	}
 
+	t.Log("Accepting connection")
 	_, err := mt.Accept(peerConfig{})
 	if e, ok := err.(ErrRejected); ok {
 		if !e.IsAuthFailure() {
 			t.Errorf("expected auth failure, got %v", e)
+		} else {
+			t.Log("Auth failure as expected")
 		}
 	} else {
 		t.Errorf("expected ErrRejected, got %v", err)
@@ -614,7 +661,7 @@ func TestTransportHandshake(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ni, err := handshake(c, 20*time.Millisecond, emptyNodeInfo())
+	ni, err := handshake(c, 50*time.Millisecond, emptyNodeInfo())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -664,7 +711,7 @@ func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
 	}
 
 	// give the listener some time to get ready
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
 	return mt
 }

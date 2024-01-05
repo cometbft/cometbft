@@ -453,12 +453,8 @@ FOR_LOOP:
 			// iteration, break the loop if the BlockPool or the Reactor itself
 			// has quit. This avoids case ambiguity of the outer select when two
 			// channels are ready.
-			select {
-			case <-bcR.pool.Quit():
+			if !bcR.IsRunning() {
 				break FOR_LOOP
-			case <-bcR.Quit():
-				break FOR_LOOP
-			default:
 			}
 			// Try again quickly next loop.
 			didProcessCh <- struct{}{}

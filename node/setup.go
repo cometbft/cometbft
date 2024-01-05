@@ -25,6 +25,8 @@ import (
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
+	"github.com/cometbft/cometbft/mempool/cat"
+
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -244,12 +246,14 @@ func createMempoolAndMempoolReactor(
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, waitSyncP2PReactor) {
+) (mempl.Mempool, mempl.SyncReactor, error) {
+	logger = logger.With("module", "mempool")
+
+	var mp mempl.Mempool
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
-		logger = logger.With("module", "mempool")
-		mp := mempl.NewCListMempool(
+		mp = mempl.NewCListMempool(
 			config.Mempool,
 			proxyApp.Mempool(),
 			state.LastBlockHeight,
@@ -257,25 +261,31 @@ func createMempoolAndMempoolReactor(
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)),
 		)
-		mp.SetLogger(logger)
-		reactor := mempl.NewReactor(
-			config.Mempool,
-			mp,
-			waitSync,
-		)
-		if config.Consensus.WaitForTxs() {
-			mp.EnableTxsAvailable()
-		}
-		reactor.SetLogger(logger)
-
-		return mp, reactor
 	case cfg.MempoolTypeNop:
 		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
 		// adding it leads to a cleaner code.
-		return &mempl.NopMempool{}, mempl.NewNopMempoolReactor()
+		mp = &mempl.NopMempool{}
 	default:
-		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
+		return nil, nil, fmt.Errorf("unknown mempool type: %q", config.Mempool.Type)
 	}
+
+	if config.Consensus.WaitForTxs() {
+		mp.EnableTxsAvailable()
+	}
+
+	var reactor mempl.SyncReactor
+	switch config.Mempool.GossipProtocol {
+	case "cat":
+		logger.Info("Using the CAT gossip protocol")
+		reactor = cat.NewReactor(config.Mempool, mp, waitSync, logger)
+	case "v0", "flood", "":
+		logger.Info("Using the (default) flooding gossip protocol")
+		reactor = mempl.NewReactor(config.Mempool, mp, waitSync, logger)
+	default:
+		return nil, nil, fmt.Errorf("unknown gossip protocol \"%s\"", config.Mempool.GossipProtocol)
+	}
+
+	return mp, reactor, nil
 }
 
 func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,

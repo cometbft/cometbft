@@ -4,6 +4,8 @@ include ../../common.mk
 
 all: docker generator runner
 
+fast: docker-fast generator runner
+
 docker:
 	@echo "Building E2E Docker image"
 	@docker build \

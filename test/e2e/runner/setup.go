@@ -182,6 +182,8 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
 	cfg.Consensus.PeerGossipIntraloopSleepDuration = node.Testnet.PeerGossipIntraloopSleepDuration
+	cfg.P2P.PexReactor = node.Testnet.PexReactor
+	cfg.LogLevel = node.Testnet.LogLevel
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
 
@@ -267,6 +269,9 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 			cfg.P2P.PersistentPeers += ","
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
+	}
+	if node.Testnet.GossipProtocol != "" {
+		cfg.Mempool.GossipProtocol = node.Testnet.GossipProtocol
 	}
 	if node.Testnet.DisablePexReactor {
 		cfg.P2P.PexReactor = false

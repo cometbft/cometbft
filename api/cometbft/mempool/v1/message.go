@@ -6,21 +6,25 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-// Wrap implements the p2p Wrapper interface and wraps a mempool message.
-func (m *Txs) Wrap() proto.Message {
-	mm := &Message{}
-	mm.Sum = &Message_Txs{Txs: m}
-	return mm
+type Unwrapper interface {
+	Unwrap() (proto.Message, error)
 }
 
-// Unwrap implements the p2p Wrapper interface and unwraps a wrapped mempool
-// message.
-func (m *Message) Unwrap() (proto.Message, error) {
-	switch msg := m.Sum.(type) {
-	case *Message_Txs:
-		return m.GetTxs(), nil
+func (m *Message_Txs) Unwrap() (proto.Message, error) {
+	return m.Txs, nil
+}
 
-	default:
-		return nil, fmt.Errorf("unknown message: %T", msg)
+func (m *Message_SeenTx) Unwrap() (proto.Message, error) {
+	return m.SeenTx, nil
+}
+
+func (m *Message_WantTx) Unwrap() (proto.Message, error) {
+	return m.WantTx, nil
+}
+
+func (m *Message) Unwrap() (proto.Message, error) {
+	if unwrapper, ok := m.Sum.(Unwrapper); ok {
+		return unwrapper.Unwrap()
 	}
+	return nil, fmt.Errorf("unknown message: %T", m.Sum)
 }

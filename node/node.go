@@ -23,8 +23,10 @@ import (
 	"github.com/cometbft/cometbft/internal/state/txindex/null"
 	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
+	"github.com/cometbft/cometbft/mempool/cat"
+
+	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
@@ -64,8 +66,8 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
-	bcReactor         p2p.Reactor        // for block-syncing
-	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
+	bcReactor         p2p.Reactor       // for block-syncing
+	mempoolReactor    mempl.SyncReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -366,7 +368,11 @@ func NewNode(ctx context.Context,
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
+	// Make MempoolReactor
+	mempool, mempoolReactor, err := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
+	if err != nil {
+		return nil, err
+	}
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
@@ -991,6 +997,10 @@ func makeNodeInfo(
 
 	if config.P2P.PexReactor {
 		nodeInfo.Channels = append(nodeInfo.Channels, pex.PexChannel)
+	}
+
+	if config.Mempool.GossipProtocol == "cat" {
+		nodeInfo.Channels = append(nodeInfo.Channels, cat.MempoolStateChannel)
 	}
 
 	lAddr := config.P2P.ExternalAddress

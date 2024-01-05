@@ -129,7 +129,7 @@ func (app *Application) InitChain(_ context.Context, req *types.InitChainRequest
 func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
-		if _, _, err := parseValidatorTx(req.Tx); err != nil {
+		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
 			//nolint:nilerr
 			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 		}
@@ -218,11 +218,11 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 	respTxs := make([]*types.ExecTxResult, len(req.Txs))
 	for i, tx := range req.Txs {
 		if isValidatorTx(tx) {
-			pubKey, power, err := parseValidatorTx(tx)
+			keyType, pubKey, power, err := parseValidatorTx(tx)
 			if err != nil {
 				panic(err)
 			}
-			app.valUpdates = append(app.valUpdates, types.UpdateValidator(pubKey, power, ""))
+			app.valUpdates = append(app.valUpdates, types.UpdateValidator(pubKey, power, keyType))
 		} else {
 			app.stagedTxs = append(app.stagedTxs, tx)
 		}
@@ -414,33 +414,33 @@ func isValidatorTx(tx []byte) bool {
 	return strings.HasPrefix(string(tx), ValidatorPrefix)
 }
 
-func parseValidatorTx(tx []byte) ([]byte, int64, error) {
+func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 	tx = tx[len(ValidatorPrefix):]
 
 	//  get the pubkey and power
-	pubKeyAndPower := strings.Split(string(tx), "!")
-	if len(pubKeyAndPower) != 2 {
-		return nil, 0, fmt.Errorf("expected 'pubkey!power'. Got %v", pubKeyAndPower)
+	typeKeyAndPower := strings.Split(string(tx), "!")
+	if len(typeKeyAndPower) != 3 {
+		return "", nil, 0, fmt.Errorf("expected 'pubkeytype!pubkey!power'. Got %v", typeKeyAndPower)
 	}
-	pubkeyS, powerS := pubKeyAndPower[0], pubKeyAndPower[1]
+	keytype, pubkeyS, powerS := typeKeyAndPower[0], typeKeyAndPower[1], typeKeyAndPower[2]
 
 	// decode the pubkey
 	pubkey, err := base64.StdEncoding.DecodeString(pubkeyS)
 	if err != nil {
-		return nil, 0, fmt.Errorf("pubkey (%s) is invalid base64", pubkeyS)
+		return "", nil, 0, fmt.Errorf("pubkey (%s) is invalid base64", pubkeyS)
 	}
 
 	// decode the power
 	power, err := strconv.ParseInt(powerS, 10, 64)
 	if err != nil {
-		return nil, 0, fmt.Errorf("power (%s) is not an int", powerS)
+		return "", nil, 0, fmt.Errorf("power (%s) is not an int", powerS)
 	}
 
 	if power < 0 {
-		return nil, 0, fmt.Errorf("power can not be less than 0, got %d", power)
+		return "", nil, 0, fmt.Errorf("power can not be less than 0, got %d", power)
 	}
 
-	return pubkey, power, nil
+	return keytype, pubkey, power, nil
 }
 
 // add, update, or remove a validator.

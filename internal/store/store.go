@@ -293,7 +293,7 @@ func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommi
 	if len(bz) == 0 {
 		return nil
 	}
-	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_seen_ext_commit"), start)()
+	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_ext_commit"), start)()
 
 	err = proto.Unmarshal(bz, pbec)
 	if err != nil {
@@ -463,7 +463,7 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 // that are saved.
 func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts *types.PartSet, seenExtendedCommit *types.ExtendedCommit) {
 	// WARN includes marshalling the blockstore state
-	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_seen_ext_commit"), time.Now())()
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_block_ext_commit"), time.Now())()
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
@@ -510,7 +510,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
-	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_seen_commit"), time.Now())()
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_block_to_batch"), time.Now())()
 
 	height := block.Height
 	hash := block.Hash()

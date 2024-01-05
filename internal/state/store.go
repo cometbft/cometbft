@@ -228,6 +228,8 @@ func (store dbStore) Save(state State) error {
 }
 
 func (store dbStore) save(state State, key []byte) error {
+	start := time.Now()
+
 	batch := store.db.NewBatch()
 	defer func(batch dbm.Batch) {
 		err := batch.Close()
@@ -254,12 +256,17 @@ func (store dbStore) save(state State, key []byte) error {
 		state.LastHeightConsensusParamsChanged, state.ConsensusParams, batch); err != nil {
 		return err
 	}
-	if err := batch.Set(key, state.Bytes()); err != nil {
+	stateMarshallTime := time.Now()
+	stateBytes := state.Bytes()
+	stateMarshallDiff := time.Since(stateMarshallTime).Seconds()
+
+	if err := batch.Set(key, stateBytes); err != nil {
 		return err
 	}
 	if err := batch.WriteSync(); err != nil {
 		panic(err)
 	}
+	store.metrics.StoreAccessDurationSeconds.With("method", "save").Observe(time.Since(start).Seconds() - stateMarshallDiff)
 	return nil
 }
 

@@ -130,12 +130,8 @@ func (app *Application) InitChain(_ context.Context, req *types.InitChainRequest
 func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
-<<<<<<< HEAD
-		if _, _, err := parseValidatorTx(req.Tx); err != nil {
-=======
 		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
 			//nolint:nilerr
->>>>>>> 5633886a7 (Extend kvstore example add with with key types (#1876))
 			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 		}
 	} else if !isValidTx(req.Tx) {

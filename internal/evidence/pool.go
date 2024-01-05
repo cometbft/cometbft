@@ -65,7 +65,7 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool,
 	// if pending evidence already in db, in event of prior failure, then check for expiration,
 	// update the size and load it back to the evidenceList
 	pool.pruningHeight, pool.pruningTime = pool.removeExpiredPendingEvidence()
-	evList, _, err := pool.listEvidence(-1)
+	evList, _, err := pool.listPendingEvidence(-1)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (evpool *Pool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64) {
 	if evpool.Size() == 0 {
 		return []types.Evidence{}, 0
 	}
-	evidence, size, err := evpool.listEvidence(maxBytes)
+	evidence, size, err := evpool.listPendingEvidence(maxBytes)
 	if err != nil {
 		evpool.logger.Error("Unable to retrieve pending evidence", "err", err)
 	}
@@ -348,10 +348,10 @@ func (evpool *Pool) markEvidenceAsCommitted(evidence types.EvidenceList) {
 	}
 }
 
-// listEvidence retrieves the list of pending evidence from oldest to newest
+// listPendingEvidence retrieves the list of pending evidence from oldest to newest
 // within maxBytes. If maxBytes is -1, there's no cap on the size of returned
 // evidence.
-func (evpool *Pool) listEvidence(maxBytes int64) ([]types.Evidence, int64, error) {
+func (evpool *Pool) listPendingEvidence(maxBytes int64) ([]types.Evidence, int64, error) {
 	var (
 		evSize    int64
 		totalSize int64

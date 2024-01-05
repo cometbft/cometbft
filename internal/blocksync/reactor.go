@@ -457,7 +457,7 @@ FOR_LOOP:
 			// iteration, break the loop if the BlockPool or the Reactor itself
 			// has quit. This avoids case ambiguity of the outer select when two
 			// channels are ready.
-			if !bcR.IsRunning() {
+			if !bcR.IsRunning() || !bcR.pool.IsRunning() {
 				break FOR_LOOP
 			}
 			// Try again quickly next loop.

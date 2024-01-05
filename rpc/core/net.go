@@ -130,13 +130,11 @@ func getIDs(peers []string) ([]string, error) {
 	ids := make([]string, 0, len(peers))
 
 	for _, peer := range peers {
-
 		spl := strings.Split(peer, "@")
 		if len(spl) != 2 {
 			return nil, p2p.ErrNetAddressNoID{Addr: peer}
 		}
 		ids = append(ids, spl[0])
-
 	}
 	return ids, nil
 }

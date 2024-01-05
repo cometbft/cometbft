@@ -116,7 +116,7 @@ Interface `IPeerSet` offers methods to access a table of [`Peer`](#peergo) insta
 Type `PeerSet` implements a thread-safe table of [`Peer`](#peergo) instances,
 used by the [switch](#switchgo).
 
-The switch provides limited access to this table by returing a `IPeerSet`
+The switch provides limited access to this table by returning a `IPeerSet`
 instance, used by the [PEX reactor](#pex_reactorgo).
 
 ### `switch.go`

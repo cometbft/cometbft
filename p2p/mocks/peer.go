@@ -41,9 +41,9 @@ func (_m *Peer) FlushStop() {
 	_m.Called()
 }
 
-// Get provides a mock function with given fields: _a0
-func (_m *Peer) Get(_a0 string) interface{} {
-	ret := _m.Called(_a0)
+// Get provides a mock function with given fields: key
+func (_m *Peer) Get(key string) interface{} {
+	ret := _m.Called(key)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Get")
@@ -51,7 +51,7 @@ func (_m *Peer) Get(_a0 string) interface{} {
 
 	var r0 interface{}
 	if rf, ok := ret.Get(0).(func(string) interface{}); ok {
-		r0 = rf(_a0)
+		r0 = rf(key)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(interface{})
@@ -290,9 +290,9 @@ func (_m *Peer) Reset() error {
 	return r0
 }
 
-// Send provides a mock function with given fields: _a0
-func (_m *Peer) Send(_a0 p2p.Envelope) bool {
-	ret := _m.Called(_a0)
+// Send provides a mock function with given fields: e
+func (_m *Peer) Send(e p2p.Envelope) bool {
+	ret := _m.Called(e)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Send")
@@ -300,7 +300,7 @@ func (_m *Peer) Send(_a0 p2p.Envelope) bool {
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(p2p.Envelope) bool); ok {
-		r0 = rf(_a0)
+		r0 = rf(e)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
@@ -308,14 +308,14 @@ func (_m *Peer) Send(_a0 p2p.Envelope) bool {
 	return r0
 }
 
-// Set provides a mock function with given fields: _a0, _a1
-func (_m *Peer) Set(_a0 string, _a1 interface{}) {
-	_m.Called(_a0, _a1)
+// Set provides a mock function with given fields: key, value
+func (_m *Peer) Set(key string, value interface{}) {
+	_m.Called(key, value)
 }
 
-// SetLogger provides a mock function with given fields: _a0
-func (_m *Peer) SetLogger(_a0 log.Logger) {
-	_m.Called(_a0)
+// SetLogger provides a mock function with given fields: l
+func (_m *Peer) SetLogger(l log.Logger) {
+	_m.Called(l)
 }
 
 // SetRemovalFailed provides a mock function with given fields:
@@ -415,9 +415,9 @@ func (_m *Peer) String() string {
 	return r0
 }
 
-// TrySend provides a mock function with given fields: _a0
-func (_m *Peer) TrySend(_a0 p2p.Envelope) bool {
-	ret := _m.Called(_a0)
+// TrySend provides a mock function with given fields: e
+func (_m *Peer) TrySend(e p2p.Envelope) bool {
+	ret := _m.Called(e)
 
 	if len(ret) == 0 {
 		panic("no return value specified for TrySend")
@@ -425,7 +425,7 @@ func (_m *Peer) TrySend(_a0 p2p.Envelope) bool {
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(p2p.Envelope) bool); ok {
-		r0 = rf(_a0)
+		r0 = rf(e)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}

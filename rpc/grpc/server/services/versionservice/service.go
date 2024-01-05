@@ -14,7 +14,7 @@ func New() pbsvc.VersionServiceServer {
 	return &versionServiceServer{}
 }
 
-// GetVersion implements v1.VersionServiceServer
+// GetVersion implements v1.VersionServiceServer.
 func (s *versionServiceServer) GetVersion(context.Context, *pbsvc.GetVersionRequest) (*pbsvc.GetVersionResponse, error) {
 	return &pbsvc.GetVersionResponse{
 		Node:  version.CMTSemVer,

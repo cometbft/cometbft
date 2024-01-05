@@ -7,19 +7,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	gogotypes "github.com/cosmos/gogoproto/types"
-	"github.com/google/orderedcode"
-
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	clist "github.com/cometbft/cometbft/internal/clist"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+	"github.com/cosmos/gogoproto/proto"
+	gogotypes "github.com/cosmos/gogoproto/types"
+	"github.com/google/orderedcode"
 )
 
 const (
@@ -28,7 +25,7 @@ const (
 	prefixPending   = int64(10)
 )
 
-// Pool maintains a pool of valid evidence to be broadcasted and committed
+// Pool maintains a pool of valid evidence to be broadcasted and committed.
 type Pool struct {
 	logger log.Logger
 
@@ -135,11 +132,11 @@ func (evpool *Pool) Update(state sm.State, ev types.EvidenceList) {
 
 // AddEvidence checks the evidence is valid and adds it to the pool.
 func (evpool *Pool) AddEvidence(ev types.Evidence) error {
-	evpool.logger.Debug("Attempting to add evidence", "ev", ev)
+	evpool.logger.Info("Attempting to add evidence", "ev", ev)
 
 	// We have already verified this piece of evidence - no need to do it again
 	if evpool.isPending(ev) {
-		evpool.logger.Debug("Evidence already pending, ignoring this one", "ev", ev)
+		evpool.logger.Info("Evidence already pending, ignoring this one", "ev", ev)
 		return nil
 	}
 
@@ -147,7 +144,7 @@ func (evpool *Pool) AddEvidence(ev types.Evidence) error {
 	if evpool.isCommitted(ev) {
 		// this can happen if the peer that sent us the evidence is behind so we shouldn't
 		// punish the peer.
-		evpool.logger.Debug("Evidence was already committed, ignoring this one", "ev", ev)
+		evpool.logger.Info("Evidence was already committed, ignoring this one", "ev", ev)
 		return nil
 	}
 
@@ -195,7 +192,6 @@ func (evpool *Pool) ReportConflictingVotes(voteA, voteB *types.Vote) {
 func (evpool *Pool) CheckEvidence(evList types.EvidenceList) error {
 	hashes := make([][]byte, len(evList))
 	for idx, ev := range evList {
-
 		_, isLightEv := ev.(*types.LightClientAttackEvidence)
 
 		// We must verify light client attack evidence regardless because there could be a
@@ -232,12 +228,12 @@ func (evpool *Pool) CheckEvidence(evList types.EvidenceList) error {
 	return nil
 }
 
-// EvidenceFront goes to the first evidence in the clist
+// EvidenceFront goes to the first evidence in the clist.
 func (evpool *Pool) EvidenceFront() *clist.CElement {
 	return evpool.evidenceList.Front()
 }
 
-// EvidenceWaitChan is a channel that closes once the first evidence in the list is there. i.e Front is not nil
+// EvidenceWaitChan is a channel that closes once the first evidence in the list is there. i.e Front is not nil.
 func (evpool *Pool) EvidenceWaitChan() <-chan struct{} {
 	return evpool.evidenceList.WaitChan()
 }
@@ -264,7 +260,7 @@ func (evpool *Pool) Close() error {
 }
 
 // IsExpired checks whether evidence or a polc is expired by checking whether a height and time is older
-// than set by the evidence consensus parameters
+// than set by the evidence consensus parameters.
 func (evpool *Pool) isExpired(height int64, time time.Time) bool {
 	var (
 		params       = evpool.State().ConsensusParams.Evidence
@@ -463,7 +459,6 @@ func (evpool *Pool) processConsensusBuffer(state sm.State) {
 	evpool.mtx.Lock()
 	defer evpool.mtx.Unlock()
 	for _, voteSet := range evpool.consensusBuffer {
-
 		// Check the height of the conflicting votes and fetch the corresponding time and validator set
 		// to produce the valid evidence
 		var (
@@ -516,13 +511,13 @@ func (evpool *Pool) processConsensusBuffer(state sm.State) {
 
 		// check if we already have this evidence
 		if evpool.isPending(dve) {
-			evpool.logger.Debug("evidence already pending; ignoring", "evidence", dve)
+			evpool.logger.Info("evidence already pending; ignoring", "evidence", dve)
 			continue
 		}
 
 		// check that the evidence is not already committed on chain
 		if evpool.isCommitted(dve) {
-			evpool.logger.Debug("evidence already committed; ignoring", "evidence", dve)
+			evpool.logger.Info("evidence already committed; ignoring", "evidence", dve)
 			continue
 		}
 

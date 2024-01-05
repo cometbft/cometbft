@@ -5,9 +5,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
 )
 
 func Validator(_ context.Context, votingPower int64) (*types.Validator, types.PrivValidator, error) {
@@ -22,11 +21,12 @@ func Validator(_ context.Context, votingPower int64) (*types.Validator, types.Pr
 }
 
 func ValidatorSet(ctx context.Context, t *testing.T, numValidators int, votingPower int64) (*types.ValidatorSet, []types.PrivValidator) {
+	t.Helper()
+
 	var (
 		valz           = make([]*types.Validator, numValidators)
 		privValidators = make([]types.PrivValidator, numValidators)
 	)
-	t.Helper()
 
 	for i := 0; i < numValidators; i++ {
 		val, privValidator, err := Validator(ctx, votingPower)

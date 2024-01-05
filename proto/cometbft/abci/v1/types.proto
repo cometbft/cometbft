@@ -294,7 +294,7 @@ message CheckTxResponse {
   repeated Event events     = 7 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag)  = "events,omitempty"
-  ];
+  ];  // nondeterministic
   string codespace = 8;
 
   // These reserved fields were used till v0.37 by the priority mempool (now
@@ -420,11 +420,11 @@ enum VerifyVoteExtensionStatus {
 
 // FinalizeBlockResponse contains the result of executing the block.
 message FinalizeBlockResponse {
-  // set of block events emmitted as part of executing the block
+  // set of block events emitted as part of executing the block
   repeated Event events = 1 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag)  = "events,omitempty"
-  ];
+  ];  // nondeterministic
   // the result of executing each transaction including the events
   // the particular transaction emitted. This should match the order
   // of the transactions delivered in the block itself
@@ -528,7 +528,7 @@ message VoteInfo {
   reserved 2;  // signed_last_block
 }
 
-// ExtendedVoteInfo extends VoteInfo with the vote extentions (non-deterministic).
+// ExtendedVoteInfo extends VoteInfo with the vote extensions (non-deterministic).
 message ExtendedVoteInfo {
   // The validator that sent the vote.
   Validator validator = 1 [(gogoproto.nullable) = false];

@@ -25,7 +25,7 @@ func IsConnTimeout(err error) bool {
 	}
 }
 
-// NewSignerListener creates a new SignerListenerEndpoint using the corresponding listen address
+// NewSignerListener creates a new SignerListenerEndpoint using the corresponding listen address.
 func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEndpoint, error) {
 	var listener net.Listener
 
@@ -52,7 +52,7 @@ func NewSignerListener(listenAddr string, logger log.Logger) (*SignerListenerEnd
 	return pve, nil
 }
 
-// GetFreeLocalhostAddrPort returns a free localhost:port address
+// GetFreeLocalhostAddrPort returns a free localhost:port address.
 func GetFreeLocalhostAddrPort() string {
 	port, err := cmtnet.GetFreePort()
 	if err != nil {

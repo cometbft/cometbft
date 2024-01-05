@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/cometbft/cometbft/libs/log"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 // XXX/TODO: These types should be moved to the indexer package.
@@ -63,5 +62,5 @@ func (b *Batch) Size() int {
 	return len(b.Ops)
 }
 
-// ErrorEmptyHash indicates empty hash
+// ErrorEmptyHash indicates empty hash.
 var ErrorEmptyHash = errors.New("transaction hash cannot be empty")

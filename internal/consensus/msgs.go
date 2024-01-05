@@ -3,10 +3,6 @@ package consensus
 import (
 	"fmt"
 
-	"github.com/cosmos/gogoproto/proto"
-
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/internal/bits"
@@ -14,6 +10,8 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 // TODO: This needs to be removed, but WALToProto depends on this.
@@ -125,7 +123,7 @@ func MsgToWrappedProto(msg Message) (cmtcons.Message, error) {
 	return pb, nil
 }
 
-// MsgFromProto takes a consensus proto message and returns the native go type
+// MsgFromProto takes a consensus proto message and returns the native go type.
 func MsgFromProto(p proto.Message) (Message, error) {
 	if p == nil {
 		return nil, ErrNilMessage
@@ -250,7 +248,7 @@ func MsgFromProto(p proto.Message) (Message, error) {
 	return pb, nil
 }
 
-// WALToProto takes a WAL message and return a proto walMessage and error
+// WALToProto takes a WAL message and return a proto walMessage and error.
 func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 	var pb cmtcons.WALMessage
 
@@ -304,7 +302,7 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 	return &pb, nil
 }
 
-// WALFromProto takes a proto wal message and return a consensus walMessage and error
+// WALFromProto takes a proto wal message and return a consensus walMessage and error.
 func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 	if msg == nil {
 		return nil, ErrNilMessage

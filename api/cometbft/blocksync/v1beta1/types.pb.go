@@ -248,7 +248,7 @@ func (m *StatusResponse) GetBase() int64 {
 	return 0
 }
 
-// Message is an abtract blocksync message.
+// Message is an abstract blocksync message.
 type Message struct {
 	// Sum of all possible messages.
 	//

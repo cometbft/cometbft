@@ -599,7 +599,7 @@ Was partially implemented in v0.35 ([#5670](https://github.com/tendermint/tender
 
 ### Negative
 
-* Fully implementing the new design as indended is likely to require breaking changes to the P2P protocol at some point, although the initial implementation shouldn't.
+* Fully implementing the new design as intended is likely to require breaking changes to the P2P protocol at some point, although the initial implementation shouldn't.
 
 * Gradually migrating the existing stack and maintaining backwards-compatibility will be more labor-intensive than simply replacing the entire stack.
 

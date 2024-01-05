@@ -48,8 +48,9 @@ in order of preference:
 - [Create a new discussion on
   GitHub](https://github.com/cometbft/cometbft/discussions)
 - Reach out to us via [Telegram](https://t.me/CometBFT)
-- [Join the chat on
-  Discord](https://discord.com/channels/669268347736686612/669283915743232011)
+- [Join the Cosmos Network Discord](https://discord.gg/cosmosnetwork) and
+  discuss in
+  [`#cometbft`](https://discord.com/channels/669268347736686612/1069933855307472906)
 
 More on how releases are conducted can be found [here](./RELEASES.md).
 

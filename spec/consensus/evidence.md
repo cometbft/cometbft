@@ -77,7 +77,7 @@ should be committed within a certain period from the point that it occurred
 (timely). Timelines is defined by the `EvidenceParams`: `MaxAgeNumBlocks` and
 `MaxAgeDuration`. In Proof of Stake chains where validators are bonded, evidence
 age should be less than the unbonding period so validators still can be
-punished. Given these two propoerties the following initial checks are made.
+punished. Given these two properties the following initial checks are made.
 
 1. Has the evidence expired? This is done by taking the height of the `Vote`
    within `DuplicateVoteEvidence` or `CommonHeight` within

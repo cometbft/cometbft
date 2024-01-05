@@ -7,7 +7,7 @@ import (
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 )
 
-// StatusMock returns the result specified by the Call
+// StatusMock returns the result specified by the Call.
 type StatusMock struct {
 	Call
 }
@@ -26,7 +26,7 @@ func (m *StatusMock) Status(context.Context) (*ctypes.ResultStatus, error) {
 }
 
 // StatusRecorder can wrap another type (StatusMock, full client)
-// and record the status calls
+// and record the status calls.
 type StatusRecorder struct {
 	Client client.StatusClient
 	Calls  []Call

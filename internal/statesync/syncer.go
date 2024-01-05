@@ -480,7 +480,7 @@ func (s *syncer) requestChunk(snapshot *snapshot, chunk uint32) {
 	})
 }
 
-// verifyApp verifies the sync, checking the app hash, last block height and app version
+// verifyApp verifies the sync, checking the app hash, last block height and app version.
 func (s *syncer) verifyApp(snapshot *snapshot, appVersion uint64) error {
 	resp, err := s.connQuery.Info(context.TODO(), proxy.InfoRequest)
 	if err != nil {
@@ -490,7 +490,7 @@ func (s *syncer) verifyApp(snapshot *snapshot, appVersion uint64) error {
 	// sanity check that the app version in the block matches the application's own record
 	// of its version
 	if resp.AppVersion != appVersion {
-		// An error here most likely means that the app hasn't inplemented state sync
+		// An error here most likely means that the app hasn't implemented state sync
 		// or the Info call correctly
 		return fmt.Errorf("app version mismatch. Expected: %d, got: %d",
 			appVersion, resp.AppVersion)

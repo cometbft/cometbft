@@ -7,7 +7,7 @@ OUTPUT?=$(BUILDDIR)/cometbft
 HTTPS_GIT := https://github.com/cometbft/cometbft.git
 CGO_ENABLED ?= 0
 
-# Process Docker environment varible TARGETPLATFORM
+# Process Docker environment variable TARGETPLATFORM
 # in order to build binary with correspondent ARCH
 # by default will always build for linux/amd64
 TARGETPLATFORM ?=
@@ -222,19 +222,37 @@ clean_certs:
 ###                  Formatting, linting, and vetting                       ###
 ###############################################################################
 
-format:
-	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
-	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
-.PHONY: format
+# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
+# Revisit using format after CometBFT v1 release and/or after 2024-06-01.
+#format:
+#	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
+#	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
+#.PHONY: format
 
 lint:
 	@echo "--> Running linter"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
+# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
+# Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
+#lint-format:
+#	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+#	@go run mvdan.cc/gofumpt -l -w ./..
+#.PHONY: lint-format
+
 vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
+
+lint-typo:
+	which codespell || pip3 install codespell
+	@codespell
+.PHONY: lint-typo
+
+lint-fix-typo:
+	@codespell -w
+.PHONY: lint-fix-typo
 
 DESTINATION = ./index.html.md
 
@@ -304,7 +322,7 @@ endif
 
 # Run a nodejs tool to test endpoints against a localnet
 # The command takes care of starting and stopping the network
-# prerequisits: build-contract-tests-hooks build-linux
+# prerequisites: build-contract-tests-hooks build-linux
 # the two build commands were not added to let this command run from generic containers or machines.
 # The binaries should be built beforehand
 contract-tests:

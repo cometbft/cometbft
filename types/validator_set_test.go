@@ -1577,3 +1577,38 @@ func BenchmarkUpdates(b *testing.B) {
 		assert.NoError(b, valSetCopy.UpdateWithChangeSet(newValList))
 	}
 }
+
+func TestVerifyCommitWithInvalidProposerKey(t *testing.T) {
+	vs := &ValidatorSet{
+		Validators: []*Validator{{}, {}},
+	}
+	commit := &Commit{
+		Height:     100,
+		Signatures: []CommitSig{{}, {}},
+	}
+	var bid BlockID
+	cid := ""
+	err := vs.VerifyCommit(cid, bid, 100, commit)
+	assert.Error(t, err)
+}
+
+func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
+	vs := &ValidatorSet{
+		Validators: []*Validator{{}, {}},
+	}
+	commit := &Commit{
+		Height:     100,
+		Signatures: []CommitSig{{}, {}},
+	}
+	cid := ""
+	votingPowerNeeded := vs.TotalVotingPower() * 2 / 3
+
+	// ignore all absent signatures
+	ignore := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagAbsent }
+
+	// only count the signatures that are for the block
+	count := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagCommit }
+
+	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true)
+	assert.Error(t, err)
+}

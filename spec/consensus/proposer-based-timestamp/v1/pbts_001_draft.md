@@ -1,5 +1,3 @@
-<!-- markdown-link-check-disable -->
-
 # Proposer-Based Time (first draft)
 
 ## Current BFTTime
@@ -257,15 +255,11 @@ This specification describes the changes needed to be done to the Tendermint con
 
 [algorithm_v1]: ./pbts-algorithm_001_draft.md
 
-[tlatender]: ../../light-client/accountability/README.md
+[tlatender]: ../../../light-client/accountability/README.md
 
 [bfttime]: ../bft-time.md
 
 [lcspec]: ../../light-client/README.md
-
-[algorithm]: ./pbts-algorithm_002_draft.md
-
-[sysmodel]: ./pbts-sysmodel_002_draft.md
 
 [sysmodel_v1]: ./pbts-sysmodel_001_draft.md
 

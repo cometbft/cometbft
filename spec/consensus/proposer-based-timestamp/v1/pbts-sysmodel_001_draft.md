@@ -194,5 +194,4 @@ Back to [main document][main_v1].
 
 [arXiv]: https://arxiv.org/abs/1807.04938
 
-[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
-
+[CMBC-FM-2THIRDS-link]: ../../../light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1

@@ -97,7 +97,11 @@ func TestListenerTimeoutAccept(t *testing.T) {
 
 func TestListenerTimeoutReadWrite(t *testing.T) {
 	const (
-		timeoutAccept    = time.Second
+		// This needs to be long enough s.t. the Accept will definitely succeed:
+		timeoutAccept = time.Second
+		// This can be really short but in the TCP case, the accept can
+		// also trigger a timeoutReadWrite. Hence, we need to give it some time.
+		// Note: this controls how long this test actually runs.
 		timeoutReadWrite = 10 * time.Millisecond
 	)
 	for _, tc := range listenerTestCases(t, timeoutAccept, timeoutReadWrite) {

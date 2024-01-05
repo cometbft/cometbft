@@ -10,22 +10,22 @@ import (
 var sink any = nil
 
 var manySlices = []struct {
-        name string
+	name string
 	in   [][]byte
 	want [32]byte
 }{
 	{
-                name: "all empty",
+		name: "all empty",
 		in:   [][]byte{[]byte(""), []byte("")},
 		want: sha256.Sum256(nil),
 	},
 	{
-                name: "ax6",
+		name: "ax6",
 		in:   [][]byte{[]byte("aaaa"), []byte("😎"), []byte("aaaa")},
 		want: sha256.Sum256([]byte("aaaa😎aaaa")),
 	},
 	{
-                name: "composite joined",
+		name: "composite joined",
 		in:   [][]byte{bytes.Repeat([]byte("a"), 1<<10), []byte("AA"), bytes.Repeat([]byte("z"), 100)},
 		want: sha256.Sum256([]byte(strings.Repeat("a", 1<<10) + "AA" + strings.Repeat("z", 100))),
 	},

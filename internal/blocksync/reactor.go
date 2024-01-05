@@ -128,7 +128,10 @@ func (bcR *Reactor) OnStart() error {
 			return err
 		}
 		bcR.poolRoutineWg.Add(1)
-		go bcR.poolRoutine(false)
+		go func() {
+			defer bcR.poolRoutineWg.Done()
+			bcR.poolRoutine(false)
+		}()
 	}
 	return nil
 }
@@ -144,7 +147,10 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 		return err
 	}
 	bcR.poolRoutineWg.Add(1)
-	go bcR.poolRoutine(true)
+	go func() {
+		defer bcR.poolRoutineWg.Done()
+		bcR.poolRoutine(false)
+	}()
 	return nil
 }
 
@@ -289,8 +295,6 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
-	defer bcR.poolRoutineWg.Done()
-
 	bcR.metrics.Syncing.Set(1)
 	defer bcR.metrics.Syncing.Set(0)
 

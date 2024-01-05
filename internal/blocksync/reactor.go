@@ -149,7 +149,7 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	bcR.poolRoutineWg.Add(1)
 	go func() {
 		defer bcR.poolRoutineWg.Done()
-		bcR.poolRoutine(false)
+		bcR.poolRoutine(true)
 	}()
 	return nil
 }

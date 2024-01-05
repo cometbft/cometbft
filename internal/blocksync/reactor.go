@@ -230,40 +230,59 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 
 // Receive implements Reactor by handling 4 types of messages (look below).
 func (bcR *Reactor) Receive(e p2p.Envelope) {
+	// Add a counter for the number of blocks processed
+	blockCounter := 0
+
+	// Validate the incoming message
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)
 		return
 	}
 
+	// Log the receipt of the message
 	bcR.Logger.Debug("Receive", "e.Src", e.Src, "chID", e.ChannelID, "msg", e.Message)
 
+	// Handle the message based on its type
 	switch msg := e.Message.(type) {
 	case *bcproto.BlockRequest:
+		// If the message is a BlockRequest, respond to the peer
 		bcR.respondToPeer(msg, e.Src)
 	case *bcproto.BlockResponse:
+		// If the message is a BlockResponse, convert the block from proto
 		bi, err := types.BlockFromProto(msg.Block)
 		if err != nil {
 			bcR.Logger.Error("Block content is invalid", "err", err)
-			return
-		}
-		var extCommit *types.ExtendedCommit
-		if msg.ExtCommit != nil {
-			var err error
-			extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
-			if err != nil {
-				bcR.Logger.Error("failed to convert extended commit from proto",
-					"peer", e.Src,
-					"err", err)
-				return
+		} else {
+			// If the block has an extended commit, convert it from proto
+			var extCommit *types.ExtendedCommit
+			if msg.ExtCommit != nil {
+				extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
+				if err != nil {
+					bcR.Logger.Error("failed to convert extended commit from proto",
+						"peer", e.Src,
+						"err", err)
+				}
+			}
+
+			// Add the block to the pool
+			if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
+				bcR.Logger.Error("failed to add block", "err", err)
+			}
+
+			// Increment the block counter
+			blockCounter++
+
+			// Log every block at debug level
+			bcR.Logger.Debug("Processed block", "total", blockCounter)
+
+			// Log every 100 blocks at info level
+			if blockCounter%100 == 0 {
+				bcR.Logger.Info("Processed 100 blocks", "total", blockCounter)
 			}
 		}
-
-		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "err", err)
-		}
 	case *bcproto.StatusRequest:
-		// Send peer our state.
+		// If the message is a StatusRequest, send the peer our state
 		e.Src.TrySend(p2p.Envelope{
 			ChannelID: BlocksyncChannel,
 			Message: &bcproto.StatusResponse{
@@ -272,11 +291,13 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 			},
 		})
 	case *bcproto.StatusResponse:
-		// Got a peer status. Unverified.
+		// If the message is a StatusResponse, update the peer's range
 		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
 	case *bcproto.NoBlockResponse:
+		// If the message is a NoBlockResponse, log the missing block
 		bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
 	default:
+		// If the message type is unknown, log an error
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
 }

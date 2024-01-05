@@ -104,36 +104,39 @@ func TestListenerTimeoutReadWrite(t *testing.T) {
 		// Note: this controls how long this test actually runs.
 		timeoutReadWrite = 10 * time.Millisecond
 	)
-	for _, tc := range listenerTestCases(t, timeoutAccept, timeoutReadWrite) {
-		go func(dialer SocketDialer) {
-			conn, err := dialer()
+
+	for i := 0; i < 100; i++ {
+		for _, tc := range listenerTestCases(t, timeoutAccept, timeoutReadWrite) {
+			go func(dialer SocketDialer) {
+				conn, err := dialer()
+				if err != nil {
+					panic(err)
+				}
+				// Add a delay before closing the connection
+				time.Sleep(2 * timeoutReadWrite)
+				conn.Close()
+			}(tc.dialer)
+
+			c, err := tc.listener.Accept()
 			if err != nil {
-				panic(err)
+				t.Fatal(err)
 			}
-			// Add a delay before closing the connection
-			time.Sleep(2 * timeoutReadWrite)
-			conn.Close()
-		}(tc.dialer)
 
-		c, err := tc.listener.Accept()
-		if err != nil {
-			t.Fatal(err)
-		}
+			// this will timeout because we don't write anything:
+			msg := make([]byte, 200)
+			_, err = c.Read(msg)
+			opErr, ok := err.(*net.OpError)
+			if !ok {
+				t.Fatalf("for %s listener, have %v, want *net.OpError", tc.description, err)
+			}
 
-		// this will timeout because we don't write anything:
-		msg := make([]byte, 200)
-		_, err = c.Read(msg)
-		opErr, ok := err.(*net.OpError)
-		if !ok {
-			t.Fatalf("for %s listener, have %v, want *net.OpError", tc.description, err)
-		}
+			if have, want := opErr.Op, "read"; have != want {
+				t.Errorf("for %s listener, have %v, want %v", tc.description, have, want)
+			}
 
-		if have, want := opErr.Op, "read"; have != want {
-			t.Errorf("for %s listener, have %v, want %v", tc.description, have, want)
-		}
-
-		if !opErr.Timeout() {
-			t.Errorf("for %s listener, got unexpected error: have %v, want Timeout error", tc.description, opErr)
+			if !opErr.Timeout() {
+				t.Errorf("for %s listener, got unexpected error: have %v, want Timeout error", tc.description, opErr)
+			}
 		}
 	}
 }

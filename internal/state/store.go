@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"sync"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -107,9 +108,16 @@ type Store interface {
 type dbStore struct {
 	db dbm.DB
 
+	appRetainHeightMutex sync.Mutex
+
+	// Cache for validators and consensus parameters
+	validatorsCache      map[int64]*types.ValidatorSet
+	consensusParamsCache map[int64]*types.ConsensusParams
+
 	// Add cache fields to the dbStore struct
-	valInfoCache    map[int64]*cmtstate.ValidatorsInfo
-	paramsInfoCache map[int64]*cmtstate.ConsensusParamsInfo
+	valInfoCache         map[int64]*cmtstate.ValidatorsInfo
+	paramsInfoCache      map[int64]*cmtstate.ConsensusParamsInfo
+	appRetainHeightCache *int64 // Use a pointer to distinguish between cached zero and not-cached.
 
 	StoreOptions
 }
@@ -124,7 +132,7 @@ type StoreOptions struct {
 
 var _ Store = (*dbStore)(nil)
 
-func IsEmpty(store dbStore) (bool, error) {
+func IsEmpty(store *dbStore) (bool, error) {
 	state, err := store.Load()
 	if err != nil {
 		return false, err
@@ -142,7 +150,7 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 	}
 }
 
-// NewDBStore creates a new dbStore with initialized caches
+// NewDBStore creates a new dbStore with initialized caches.
 func NewDBStore(db dbm.DB) *dbStore {
 	return &dbStore{
 		db:              db,
@@ -153,7 +161,7 @@ func NewDBStore(db dbm.DB) *dbStore {
 
 // LoadStateFromDBOrGenesisFile loads the most recent state from the database,
 // or creates a new one from the given genesisFilePath.
-func (store dbStore) LoadFromDBOrGenesisFile(genesisFilePath string) (State, error) {
+func (store *dbStore) LoadFromDBOrGenesisFile(genesisFilePath string) (State, error) {
 	state, err := store.Load()
 	if err != nil {
 		return State{}, err
@@ -171,7 +179,7 @@ func (store dbStore) LoadFromDBOrGenesisFile(genesisFilePath string) (State, err
 
 // LoadStateFromDBOrGenesisDoc loads the most recent state from the database,
 // or creates a new one from the given genesisDoc.
-func (store dbStore) LoadFromDBOrGenesisDoc(genesisDoc *types.GenesisDoc) (State, error) {
+func (store *dbStore) LoadFromDBOrGenesisDoc(genesisDoc *types.GenesisDoc) (State, error) {
 	state, err := store.Load()
 	if err != nil {
 		return State{}, err
@@ -189,11 +197,11 @@ func (store dbStore) LoadFromDBOrGenesisDoc(genesisDoc *types.GenesisDoc) (State
 }
 
 // LoadState loads the State from the database.
-func (store dbStore) Load() (State, error) {
+func (store *dbStore) Load() (State, error) {
 	return store.loadState(stateKey)
 }
 
-func (store dbStore) loadState(key []byte) (state State, err error) {
+func (store *dbStore) loadState(key []byte) (state State, err error) {
 	buf, err := store.db.Get(key)
 	if err != nil {
 		return state, err
@@ -220,11 +228,11 @@ func (store dbStore) loadState(key []byte) (state State, err error) {
 
 // Save persists the State, the ValidatorsInfo, and the ConsensusParamsInfo to the database.
 // This flushes the writes (e.g. calls SetSync).
-func (store dbStore) Save(state State) error {
+func (store *dbStore) Save(state State) error {
 	return store.save(state, stateKey)
 }
 
-func (store dbStore) save(state State, key []byte) error {
+func (store *dbStore) save(state State, key []byte) error {
 	batch := store.db.NewBatch()
 	defer func(batch dbm.Batch) {
 		err := batch.Close()
@@ -261,7 +269,7 @@ func (store dbStore) save(state State, key []byte) error {
 }
 
 // BootstrapState saves a new state, used e.g. by state sync when starting from non-zero height.
-func (store dbStore) Bootstrap(state State) error {
+func (store *dbStore) Bootstrap(state State) error {
 	batch := store.db.NewBatch()
 	defer func(batch dbm.Batch) {
 		err := batch.Close()
@@ -312,7 +320,7 @@ func (store dbStore) Bootstrap(state State) error {
 // encoding not preserving ordering: https://github.com/tendermint/tendermint/issues/4567
 // This will cause some old states to be left behind when doing incremental partial prunes,
 // specifically older checkpoints and LastHeightChanged targets.
-func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight int64) error {
+func (store *dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight int64) error {
 	if from <= 0 || to <= 0 {
 		return fmt.Errorf("from height %v and to height %v must be greater than 0", from, to)
 	}
@@ -391,7 +399,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // PruneABCIResponses attempts to prune all ABCI responses up to, but not
 // including, the given height. On success, returns the number of heights
 // pruned and the new retain height.
-func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
+func (store *dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}
@@ -446,7 +454,7 @@ func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 // LoadFinalizeBlockResponse loads the DiscardABCIResponses for the given height from the
 // database. If the node has D set to true, ErrABCIResponsesNotPersisted
 // is persisted. If not found, ErrNoABCIResponsesForHeight is returned.
-func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
+func (store *dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	if store.DiscardABCIResponses {
 		return nil, ErrFinalizeBlockResponsesNotPersisted
 	}
@@ -488,7 +496,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 //
 // This method is used for recovering in the case that we called the Commit ABCI
 // method on the application but crashed before persisting the results.
-func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
+func (store *dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	bz, err := store.db.Get(lastABCIResponseKey)
 	if err != nil {
 		return nil, err
@@ -530,43 +538,57 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Finalize
 // Merkle proofs.
 //
 // CONTRACT: height must be monotonically increasing every time this is called.
-func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.FinalizeBlockResponse) error {
+func (store *dbStore) SaveFinalizeBlockResponse(height int64, res *abci.FinalizeBlockResponse) error {
+	if res == nil {
+		return errors.New("response cannot be nil")
+	}
+
+	batch := store.db.NewBatch()
+	defer batch.Close()
+
+	// Strip nil values from TxResults
 	var dtxs []*abci.ExecTxResult
-	// strip nil values,
-	for _, tx := range resp.TxResults {
+	for _, tx := range res.TxResults {
 		if tx != nil {
 			dtxs = append(dtxs, tx)
 		}
 	}
-	resp.TxResults = dtxs
+	res.TxResults = dtxs
 
-	// If the flag is false then we save the ABCIResponse. This can be used for the /BlockResults
-	// query or to reindex an event using the command line.
+	// If the flag is false then we save the ABCIResponse.
 	if !store.DiscardABCIResponses {
-		bz, err := resp.Marshal()
+		bz, err := res.Marshal()
 		if err != nil {
 			return err
 		}
-		if err := store.db.Set(calcABCIResponsesKey(height), bz); err != nil {
+		if err := batch.Set(calcABCIResponsesKey(height), bz); err != nil {
 			return err
 		}
 	}
 
 	// We always save the last ABCI response for crash recovery.
-	// This overwrites the previous saved ABCI Response.
-	response := &cmtstate.ABCIResponsesInfo{
-		FinalizeBlock: resp,
+	responseInfo := &cmtstate.ABCIResponsesInfo{
+		FinalizeBlock: res,
 		Height:        height,
 	}
-	bz, err := response.Marshal()
+	bz, err := responseInfo.Marshal()
 	if err != nil {
 		return err
 	}
 
-	return store.db.SetSync(lastABCIResponseKey, bz)
+	if err := batch.Set(lastABCIResponseKey, bz); err != nil {
+		return err
+	}
+
+	// Write the batch with sync to ensure all data is flushed to disk
+	if err := batch.WriteSync(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (store dbStore) getValue(key []byte) ([]byte, error) {
+func (store *dbStore) getValue(key []byte) ([]byte, error) {
 	bz, err := store.db.Get(key)
 	if err != nil {
 		return nil, err
@@ -579,30 +601,47 @@ func (store dbStore) getValue(key []byte) ([]byte, error) {
 }
 
 // ApplicationRetainHeight.
-func (store dbStore) SaveApplicationRetainHeight(height int64) error {
-	return store.db.SetSync(AppRetainHeightKey, int64ToBytes(height))
+func (store *dbStore) SaveApplicationRetainHeight(height int64) error {
+	err := store.db.SetSync(AppRetainHeightKey, int64ToBytes(height))
+	if err != nil {
+		return err
+	}
+
+	store.appRetainHeightMutex.Lock()
+	store.appRetainHeightCache = &height
+	store.appRetainHeightMutex.Unlock()
+
+	return nil
 }
 
-func (store dbStore) GetApplicationRetainHeight() (int64, error) {
+func (store *dbStore) GetApplicationRetainHeight() (int64, error) {
+	store.appRetainHeightMutex.Lock()
+	if store.appRetainHeightCache != nil {
+		height := *store.appRetainHeightCache
+		store.appRetainHeightMutex.Unlock()
+		return height, nil
+	}
+	store.appRetainHeightMutex.Unlock()
+
 	buf, err := store.getValue(AppRetainHeightKey)
 	if err != nil {
 		return 0, err
 	}
 	height := int64FromBytes(buf)
 
-	if height < 0 {
-		return 0, ErrInvalidHeightValue
-	}
+	store.appRetainHeightMutex.Lock()
+	store.appRetainHeightCache = &height
+	store.appRetainHeightMutex.Unlock()
 
 	return height, nil
 }
 
-// DataCompanionRetainHeight.
-func (store dbStore) SaveCompanionBlockRetainHeight(height int64) error {
+// SaveCompanionBlockRetainHeight persists the companion block retain height.
+func (store *dbStore) SaveCompanionBlockRetainHeight(height int64) error {
 	return store.db.SetSync(CompanionBlockRetainHeightKey, int64ToBytes(height))
 }
 
-func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
+func (store *dbStore) GetCompanionBlockRetainHeight() (int64, error) {
 	buf, err := store.getValue(CompanionBlockRetainHeightKey)
 	if err != nil {
 		return 0, err
@@ -617,11 +656,11 @@ func (store dbStore) GetCompanionBlockRetainHeight() (int64, error) {
 }
 
 // DataCompanionRetainHeight.
-func (store dbStore) SaveABCIResRetainHeight(height int64) error {
+func (store *dbStore) SaveABCIResRetainHeight(height int64) error {
 	return store.db.SetSync(ABCIResultsRetainHeightKey, int64ToBytes(height))
 }
 
-func (store dbStore) GetABCIResRetainHeight() (int64, error) {
+func (store *dbStore) GetABCIResRetainHeight() (int64, error) {
 	buf, err := store.getValue(ABCIResultsRetainHeightKey)
 	if err != nil {
 		return 0, err
@@ -635,7 +674,7 @@ func (store dbStore) GetABCIResRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (store dbStore) getLastABCIResponsesRetainHeight() (int64, error) {
+func (store *dbStore) getLastABCIResponsesRetainHeight() (int64, error) {
 	bz, err := store.getValue(lastABCIResponsesRetainHeightKey)
 	if errors.Is(err, ErrKeyNotFound) {
 		return 0, nil
@@ -647,7 +686,7 @@ func (store dbStore) getLastABCIResponsesRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
+func (store *dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 	return store.db.SetSync(lastABCIResponsesRetainHeightKey, int64ToBytes(height))
 }
 
@@ -655,7 +694,7 @@ func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
-func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
+func (store *dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
 	valInfo, err := loadValidatorsInfo(store.db, height)
 	if err != nil {
 		return nil, ErrNoValSetForHeight{height}
@@ -728,7 +767,7 @@ func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, erro
 // `height` is the effective height for which the validator is responsible for
 // signing. It should be called from s.Save(), right before the state itself is
 // persisted.
-func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch dbm.Batch) error {
+func (store *dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch dbm.Batch) error {
 	if lastHeightChanged > height {
 		return errors.New("lastHeightChanged cannot be greater than ValidatorsInfo height")
 	}
@@ -763,7 +802,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 // ConsensusParamsInfo represents the latest consensus params, or the last height it changed
 
 // LoadConsensusParams loads the ConsensusParams for a given height.
-func (store dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, error) {
+func (store *dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, error) {
 	var (
 		empty   = types.ConsensusParams{}
 		emptypb = cmtproto.ConsensusParams{}
@@ -790,7 +829,7 @@ func (store dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, e
 	return types.ConsensusParamsFromProto(paramsInfo.ConsensusParams), nil
 }
 
-func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusParamsInfo, error) {
+func (store *dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusParamsInfo, error) {
 	buf, err := store.db.Get(calcConsensusParamsKey(height))
 	if err != nil {
 		return nil, err
@@ -814,7 +853,7 @@ func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusP
 // It should be called from s.Save(), right before the state itself is persisted.
 // If the consensus params did not change after processing the latest block,
 // only the last height for which they changed is persisted.
-func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams, batch dbm.Batch) error {
+func (store *dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams, batch dbm.Batch) error {
 	paramsInfo := &cmtstate.ConsensusParamsInfo{
 		LastHeightChanged: changeHeight,
 	}
@@ -835,7 +874,7 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 	return nil
 }
 
-func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
+func (store *dbStore) SetOfflineStateSyncHeight(height int64) error {
 	err := store.db.SetSync(offlineStateSyncHeight, int64ToBytes(height))
 	if err != nil {
 		return err
@@ -844,7 +883,7 @@ func (store dbStore) SetOfflineStateSyncHeight(height int64) error {
 }
 
 // Gets the height at which the store is bootstrapped after out of band statesync.
-func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
+func (store *dbStore) GetOfflineStateSyncHeight() (int64, error) {
 	buf, err := store.db.Get(offlineStateSyncHeight)
 	if err != nil {
 		return 0, err
@@ -861,7 +900,7 @@ func (store dbStore) GetOfflineStateSyncHeight() (int64, error) {
 	return height, nil
 }
 
-func (store dbStore) Close() error {
+func (store *dbStore) Close() error {
 	return store.db.Close()
 }
 
@@ -895,49 +934,4 @@ func int64ToBytes(i int64) []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutVarint(buf, i)
 	return buf[:n]
-}
-
-// loadValidatorsInfoCached is a new method that checks the cache before accessing the database
-func (store *dbStore) loadValidatorsInfoCached(height int64) (*cmtstate.ValidatorsInfo, error) {
-	if valInfo, ok := store.valInfoCache[height]; ok {
-		// Return the cached value
-		return valInfo, nil
-	}
-	// Cache miss, load from database
-	valInfo, err := loadValidatorsInfo(store.db, height)
-	if err != nil {
-		return nil, err
-	}
-	// Store in cache
-	store.valInfoCache[height] = valInfo
-	return valInfo, nil
-}
-
-// loadConsensusParamsInfoCached is a new method that checks the cache before accessing the database
-func (store *dbStore) loadConsensusParamsInfoCached(height int64) (*cmtstate.ConsensusParamsInfo, error) {
-	if paramsInfo, ok := store.paramsInfoCache[height]; ok {
-		// Return the cached value
-		return paramsInfo, nil
-	}
-	// Cache miss, load from database
-	paramsInfo, err := store.loadConsensusParamsInfo(height)
-	if err != nil {
-		return nil, err
-	}
-	// Store in cache
-	store.paramsInfoCache[height] = &cmtstate.ConsensusParamsInfo{
-		LastHeightChanged: paramsInfo.LastHeightChanged,
-		ConsensusParams:   paramsInfo.ConsensusParams,
-	}
-
-	return paramsInfo, nil
-}
-
-// Invalidate the cache when it's no longer needed or when the data changes
-func (store *dbStore) invalidateValInfoCache(height int64) {
-	delete(store.valInfoCache, height)
-}
-
-func (store *dbStore) invalidateParamsInfoCache(height int64) {
-	delete(store.paramsInfoCache, height)
 }

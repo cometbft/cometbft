@@ -593,3 +593,5 @@ func (br *ByzantineReactor) Receive(e p2p.Envelope) {
 	br.reactor.Receive(e)
 }
 func (br *ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }
+
+func (br *ByzantineReactor) AppHashErrorsCh() chan p2p.AppHashError { return nil }

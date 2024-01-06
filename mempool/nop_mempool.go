@@ -109,3 +109,6 @@ func (*NopMempoolReactor) Receive(p2p.Envelope) {}
 
 // SetSwitch does nothing.
 func (*NopMempoolReactor) SetSwitch(*p2p.Switch) {}
+
+// AppHashErrorsCh always returns nil.
+func (*NopMempoolReactor) AppHashErrorsCh() chan p2p.AppHashError { return nil }

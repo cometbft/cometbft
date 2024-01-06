@@ -1,9 +1,20 @@
 package p2p
 
 import (
+	"fmt"
+
 	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
+
+type AppHashError struct {
+	Err    error
+	Height uint64
+}
+
+func (e AppHashError) Error() string {
+	return fmt.Sprintf("app hash error at height %v: %s", e.Height, e.Err.Error())
+}
 
 // Reactor is responsible for handling incoming messages on one or more
 // Channel. Switch calls GetChannels when reactor is added to it. When a new
@@ -41,6 +52,10 @@ type Reactor interface {
 	// Receive is called by the switch when an envelope is received from any connected
 	// peer on any of the channels registered by the reactor
 	Receive(e Envelope)
+
+	// AppHashErrorsCh is used to stream hash errors to the sdk, which is then used
+	// to provide further debugging information in logs to the user.
+	AppHashErrorsCh() chan AppHashError
 }
 
 //--------------------------------------
@@ -48,12 +63,14 @@ type Reactor interface {
 type BaseReactor struct {
 	service.BaseService // Provides Start, Stop, .Quit
 	Switch              *Switch
+	AppHashErrorChanBR  chan AppHashError
 }
 
 func NewBaseReactor(name string, impl Reactor) *BaseReactor {
 	return &BaseReactor{
-		BaseService: *service.NewBaseService(nil, name, impl),
-		Switch:      nil,
+		BaseService:        *service.NewBaseService(nil, name, impl),
+		Switch:             nil,
+		AppHashErrorChanBR: impl.AppHashErrorsCh(),
 	}
 }
 
@@ -65,3 +82,4 @@ func (*BaseReactor) AddPeer(Peer)                           {}
 func (*BaseReactor) RemovePeer(Peer, interface{})           {}
 func (*BaseReactor) Receive(Envelope)                       {}
 func (*BaseReactor) InitPeer(peer Peer) Peer                { return peer }
+func (*BaseReactor) AppHashErrorsCh() chan AppHashError     { return nil }

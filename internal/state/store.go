@@ -110,10 +110,6 @@ type dbStore struct {
 
 	appRetainHeightMutex sync.Mutex
 
-	// Cache for validators and consensus parameters
-	validatorsCache      map[int64]*types.ValidatorSet
-	consensusParamsCache map[int64]*types.ConsensusParams
-
 	// Add cache fields to the dbStore struct
 	valInfoCache         map[int64]*cmtstate.ValidatorsInfo
 	paramsInfoCache      map[int64]*cmtstate.ConsensusParamsInfo

@@ -22,7 +22,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Txs represents a collection of transactions.
 type Txs struct {
+	// txs is a repeated field of transactions.
 	Txs [][]byte `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 }
 
@@ -66,7 +68,9 @@ func (m *Txs) GetTxs() [][]byte {
 	return nil
 }
 
+// SeenTx represents a transaction that has been seen by a node.
 type SeenTx struct {
+	// tx_key is the unique identifier of the seen transaction.
 	TxKey []byte `protobuf:"bytes,1,opt,name=tx_key,json=txKey,proto3" json:"tx_key,omitempty"`
 }
 
@@ -110,7 +114,9 @@ func (m *SeenTx) GetTxKey() []byte {
 	return nil
 }
 
+// WantTx represents a request for a transaction that a node wants to know about.
 type WantTx struct {
+	// tx_key is the unique identifier of the requested transaction.
 	TxKey []byte `protobuf:"bytes,1,opt,name=tx_key,json=txKey,proto3" json:"tx_key,omitempty"`
 }
 
@@ -154,7 +160,10 @@ func (m *WantTx) GetTxKey() []byte {
 	return nil
 }
 
+// Message is a wrapper for mempool messages, allowing different types to be sent over the same channel.
 type Message struct {
+	// sum is a oneof field that can represent any type of mempool message.
+	//
 	// Types that are valid to be assigned to Sum:
 	//
 	//	*Message_Txs

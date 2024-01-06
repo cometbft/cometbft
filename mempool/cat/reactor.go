@@ -172,11 +172,12 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			}
 
 			reqRes, err := memR.mempool.CheckTx(tx)
-			if errors.Is(err, mempool.ErrTxInCache) {
+			switch {
+			case errors.Is(err, mempool.ErrTxInCache):
 				memR.Logger.Debug("Tx already exists in cache", "tx", tx.String())
-			} else if err != nil {
+			case err != nil:
 				memR.Logger.Info("Could not check tx", "tx", tx.String(), "err", err)
-			} else {
+			default:
 				// Record the sender only when the transaction is valid and, as
 				// a consequence, added to the mempool. Senders are stored until
 				// the transaction is removed from the mempool. Note that it's

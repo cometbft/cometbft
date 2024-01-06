@@ -3,22 +3,30 @@ package cometbft.mempool.v1;
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/mempool/v1";
 
+// Txs represents a collection of transactions.
 message Txs {
+  // txs is a repeated field of transactions.
   repeated bytes txs = 1;
 }
 
+// SeenTx represents a transaction that has been seen by a node.
 message SeenTx {
+  // tx_key is the unique identifier of the seen transaction.
   bytes tx_key = 1;
 }
 
+// WantTx represents a request for a transaction that a node wants to know about.
 message WantTx {
+  // tx_key is the unique identifier of the requested transaction.
   bytes tx_key = 1;
 }
 
+// Message is a wrapper for mempool messages, allowing different types to be sent over the same channel.
 message Message {
+  // sum is a oneof field that can represent any type of mempool message.
   oneof sum {
-    Txs    txs     = 1;
-    SeenTx seen_tx = 2;
-    WantTx want_tx = 3;
+    Txs    txs     = 1; // Represents a Txs message.
+    SeenTx seen_tx = 2; // Represents a SeenTx message.
+    WantTx want_tx = 3; // Represents a WantTx message.
   }
 }

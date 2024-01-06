@@ -146,7 +146,7 @@ func (s *dbs) LastLightBlockHeight() (int64, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		height, ok := parseLbKey(key)
+		_, height, ok := parseLbKey(key)
 		if ok {
 			return height, nil
 		}
@@ -171,7 +171,7 @@ func (s *dbs) FirstLightBlockHeight() (int64, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		height, ok := parseLbKey(key)
+		_, height, ok := parseLbKey(key)
 		if ok {
 			return height, nil
 		}
@@ -201,7 +201,7 @@ func (s *dbs) LightBlockBefore(height int64) (*types.LightBlock, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		existingHeight, ok := parseLbKey(key)
+		_, existingHeight, ok := parseLbKey(key)
 		if ok {
 			return s.LightBlock(existingHeight)
 		}
@@ -245,7 +245,7 @@ func (s *dbs) Prune(size uint16) error {
 	pruned := 0
 	for itr.Valid() && numToPrune > 0 {
 		key := itr.Key()
-		height, ok := parseLbKey(key)
+		_, height, ok := parseLbKey(key)
 		if ok {
 			if err = b.Delete(s.lbKey(height)); err != nil {
 				return err
@@ -292,25 +292,26 @@ func (s *dbs) lbKey(height int64) []byte {
 
 var keyPattern = regexp.MustCompile(`^(lb)/([^/]*)/([0-9]+)$`)
 
-func parseKey(key []byte) (part string, height int64, ok bool) {
+func parseKey(key []byte) (part string, prefix string, height int64, ok bool) {
 	submatch := keyPattern.FindSubmatch(key)
 	if submatch == nil {
-		return "", 0, false
+		return "", "", 0, false
 	}
 	part = string(submatch[1])
+	prefix = string(submatch[2])
 	height, err := strconv.ParseInt(string(submatch[3]), 10, 64)
 	if err != nil {
-		return "", 0, false
+		return "", "", 0, false
 	}
 	ok = true // good!
-	return part, height, ok
+	return
 }
 
-func parseLbKey(key []byte) (height int64, ok bool) {
+func parseLbKey(key []byte) (prefix string, height int64, ok bool) {
 	var part string
-	part, height, ok = parseKey(key)
+	part, prefix, height, ok = parseKey(key)
 	if part != "lb" {
-		return 0, false
+		return "", 0, false
 	}
 	return height, ok
 }

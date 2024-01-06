@@ -23,11 +23,10 @@ import (
 	"github.com/cometbft/cometbft/internal/state/txindex/null"
 	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
-	"github.com/cometbft/cometbft/light"
-	"github.com/cometbft/cometbft/mempool/cat"
-
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/mempool/cat"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"

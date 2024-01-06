@@ -25,11 +25,10 @@ import (
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
-	"github.com/cometbft/cometbft/mempool/cat"
-
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/mempool/cat"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/privval"
@@ -277,10 +276,14 @@ func createMempoolAndMempoolReactor(
 	switch config.Mempool.GossipProtocol {
 	case "cat":
 		logger.Info("Using the CAT gossip protocol")
-		reactor = cat.NewReactor(config.Mempool, mp, waitSync, logger)
-	case "v0", "flood", "":
+		reactor = cat.NewReactor(config.Mempool, mp.(*mempl.CListMempool), waitSync, logger)
+	case cfg.MempoolTypeFlood, "":
+		clistMempool, ok := mp.(*mempl.CListMempool)
+		if !ok {
+			return nil, nil, fmt.Errorf("mempool is not of type *mempool.CListMempool")
+		}
 		logger.Info("Using the (default) flooding gossip protocol")
-		reactor = mempl.NewReactor(config.Mempool, mp, waitSync, logger)
+		reactor = mempl.NewReactor(config.Mempool, clistMempool, waitSync, logger)
 	default:
 		return nil, nil, fmt.Errorf("unknown gossip protocol \"%s\"", config.Mempool.GossipProtocol)
 	}

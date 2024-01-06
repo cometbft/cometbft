@@ -9,7 +9,7 @@ import (
 )
 
 // SeenTxSet records transactions that have been
-// seen by other peers but not yet by us
+// seen by other peers but not yet by us.
 type SeenTxSet struct {
 	mtx cmtsync.Mutex
 	set map[types.TxKey]timestampedPeerSet
@@ -43,7 +43,7 @@ func (s *SeenTxSet) Add(txKey types.TxKey, peer p2p.ID) {
 	}
 }
 
-// only used in tests
+// only used in tests.
 func (s *SeenTxSet) Pop(txKey types.TxKey) *p2p.ID {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()

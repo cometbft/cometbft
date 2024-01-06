@@ -8,7 +8,6 @@ import (
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	abciapi "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	abciapiv1beta1 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta1"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/types"
@@ -47,17 +46,16 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 		return nil, ErrEndpointClosedCatchingUp
 	}
 
-	resCh := make(chan *abcitypes.ResponseCheckTx, 1)
+	resCh := make(chan *abcitypes.CheckTxResponse, 1)
 	reqRes, err := env.Mempool.CheckNewTx(tx)
 	if err != nil {
 		return nil, err
 	}
-	reqRes.SetCallback(func(res *abciapiv1beta1.Response) {
-		resp := reqRes.Response.GetCheckTx()
-		if resp.Code == abciapiv1beta1.CodeTypeOK {
-			env.Mempool.InvokeNewTxReceivedOnReactor(tx.Key())
+	reqRes.SetCallback(func(res *abcitypes.Response) {
+		select {
+		case <-ctx.Context().Done():
+		case resCh <- reqRes.Response.GetCheckTx():
 		}
-		resCh <- resp
 	})
 	select {
 	case <-ctx.Context().Done():
@@ -105,7 +103,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	}()
 
 	// Broadcast tx and wait for CheckTx result
-	checkTxResCh := make(chan *abciapiv1beta1.ResponseCheckTx, 1)
+	checkTxResCh := make(chan *abcitypes.CheckTxResponse, 1)
 	reqRes, err := env.Mempool.CheckNewTx(tx)
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
@@ -113,7 +111,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	}
 	reqRes.SetCallback(func(res *abciapi.Response) {
 		resp := reqRes.Response.GetCheckTx()
-		if resp.Code == abci.CodeTypeOK {
+		if resp.Code == abcitypes.CodeTypeOK {
 			env.Mempool.InvokeNewTxReceivedOnReactor(tx.Key())
 		}
 		checkTxResCh <- resp

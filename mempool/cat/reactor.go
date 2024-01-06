@@ -18,15 +18,15 @@ import (
 
 const (
 	// default duration to wait before considering a peer non-responsive
-	// and searching for the tx from a new peer
+	// and searching for the tx from a new peer.
 	defaultGossipDelay = 1000 * time.Millisecond
 
 	// Content Addressable Tx Pool gossips state based messages (SeenTx and WantTx) on a separate channel
-	// for cross compatibility
+	// for cross compatibility.
 	MempoolStateChannel = byte(0x31)
 
 	// peerHeightDiff signifies the tolerance in difference in height between the peer and the height
-	// the node received the tx
+	// the node received the tx.
 	peerHeightDiff = 10
 )
 
@@ -37,11 +37,12 @@ type Reactor struct {
 	mempool.BaseSyncReactor
 	mempool *mempool.CListMempool
 
-	peerIDs  sync.Map          // set of connected peers
-	requests *requestScheduler // to track requested transactions
-
-	// Thread-safe list of transactions peers have seen that we have not yet seen
+	peerIDs        sync.Map
+	requests       *requestScheduler
 	seenByPeersSet *SeenTxSet
+	Config         *cfg.MempoolConfig // Add this line
+
+	Logger log.Logger
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
@@ -85,7 +86,7 @@ func (memR *Reactor) OnStart() error {
 	return nil
 }
 
-// OnStop implements Service
+// OnStop implements Service.
 func (memR *Reactor) OnStop() {
 	// stop all the timers tracking outbound requests
 	memR.requests.Close()
@@ -142,7 +143,6 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 // It processes one of three messages: Txs, SeenTx, WantTx.
 func (memR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
-
 	// A peer has sent us one or more transactions. This could be either because we requested them
 	// or because the peer received a new transaction and is broadcasting it to us.
 	// NOTE: This setup also means that we can support older mempool implementations that simply
@@ -279,7 +279,7 @@ type PeerState interface {
 }
 
 // broadcastSeenTx broadcasts a SeenTx message to all peers unless we
-// know they have already seen the transaction
+// know they have already seen the transaction.
 func (memR *Reactor) broadcastSeenTx(txKey types.TxKey) {
 	if !memR.Config.Broadcast {
 		return

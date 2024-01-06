@@ -52,7 +52,7 @@ func TestRequestSchedulerRerequest(t *testing.T) {
 	// wait for the scheduler to invoke the timeout
 	<-closeCh
 
-	// check that the request stil exists
+	// check that the request still exists
 	require.True(t, requests.Has(peerA, key))
 	// check that peerB was requested
 	require.True(t, requests.Has(peerB, key))

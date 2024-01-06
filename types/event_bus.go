@@ -155,6 +155,13 @@ func (b *EventBus) PublishEventNewBlockEvents(data EventDataNewBlockEvents) erro
 	return b.pubsub.PublishWithEvents(ctx, data, events)
 }
 
+// <celestia-core>
+func (b *EventBus) PublishEventNewSignedBlock(data EventDataSignedBlock) error {
+	return b.Publish(EventSignedBlock, data)
+}
+
+// </celestia-core>
+
 func (b *EventBus) PublishEventNewBlockHeader(data EventDataNewBlockHeader) error {
 	return b.Publish(EventNewBlockHeader, data)
 }
@@ -251,6 +258,13 @@ func (NopEventBus) UnsubscribeAll(context.Context, string) error {
 func (NopEventBus) PublishEventNewBlock(EventDataNewBlock) error {
 	return nil
 }
+
+// <celestia-core>
+func (NopEventBus) PublishEventNewSignedBlock(data EventDataSignedBlock) error {
+	return nil
+}
+
+// </celestia-core>
 
 func (NopEventBus) PublishEventNewBlockHeader(EventDataNewBlockHeader) error {
 	return nil

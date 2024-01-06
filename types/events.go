@@ -17,6 +17,7 @@ const (
 	// These are also used by the tx indexer for async indexing.
 	// All of this data can be fetched through the rpc.
 	EventNewBlock            = "NewBlock"
+	EventSignedBlock         = "NewSignedBlock" // <celestia-core />
 	EventNewBlockHeader      = "NewBlockHeader"
 	EventNewBlockEvents      = "NewBlockEvents"
 	EventNewEvidence         = "NewEvidence"
@@ -48,6 +49,7 @@ type TMEventData interface {
 
 func init() {
 	cmtjson.RegisterType(EventDataNewBlock{}, "tendermint/event/NewBlock")
+	cmtjson.RegisterType(EventDataSignedBlock{}, "tendermint/event/NewSignedBlock") // <celestia-core />
 	cmtjson.RegisterType(EventDataNewBlockHeader{}, "tendermint/event/NewBlockHeader")
 	cmtjson.RegisterType(EventDataNewBlockEvents{}, "tendermint/event/NewBlockEvents")
 	cmtjson.RegisterType(EventDataNewEvidence{}, "tendermint/event/NewEvidence")
@@ -68,6 +70,18 @@ type EventDataNewBlock struct {
 	BlockID             BlockID                    `json:"block_id"`
 	ResultFinalizeBlock abci.ResponseFinalizeBlock `json:"result_finalize_block"`
 }
+
+// <celestia-core>
+// EventDataSignedBlock contains all the information needed to verify
+// the data committed in a block.
+type EventDataSignedBlock struct {
+	Header       Header       `json:"header"`
+	Commit       Commit       `json:"commit"`
+	ValidatorSet ValidatorSet `json:"validator_set"`
+	Data         Data         `json:"data"`
+}
+
+// </celestia-core>
 
 type EventDataNewBlockHeader struct {
 	Header Header `json:"header"`
@@ -176,6 +190,7 @@ func QueryForEvent(eventType string) cmtpubsub.Query {
 // BlockEventPublisher publishes all block related events
 type BlockEventPublisher interface {
 	PublishEventNewBlock(block EventDataNewBlock) error
+	PublishEventNewSignedBlock(event EventDataSignedBlock) error // <celestia-core />
 	PublishEventNewBlockHeader(header EventDataNewBlockHeader) error
 	PublishEventNewBlockEvents(events EventDataNewBlockEvents) error
 	PublishEventNewEvidence(evidence EventDataNewEvidence) error

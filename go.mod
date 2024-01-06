@@ -1,6 +1,8 @@
 module github.com/cometbft/cometbft
 
-go 1.21
+go 1.21.1
+
+toolchain go1.21.5
 
 require (
 	github.com/BurntSushi/toml v1.2.1
@@ -30,7 +32,7 @@ require (
 	github.com/snikch/goodman v0.0.0-20171125024755-10e37e294daa
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.14.0
 	golang.org/x/net v0.17.0
 	google.golang.org/grpc v1.58.3
@@ -254,6 +256,8 @@ require (
 	github.com/stbenjam/no-sprintf-host-port v0.1.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
+	github.com/sunrise-zone/sunrise-app/pkg/blob v0.0.0-20240106110541-17a39acb5414 // indirect
+	github.com/sunrise-zone/sunrise-app/pkg/namespace v0.0.0-20240106114425-fcbe9cdfd972 // indirect
 	github.com/t-yuki/gocover-cobertura v0.0.0-20180217150009-aaee18c8195c // indirect
 	github.com/tdakkota/asciicheck v0.2.0 // indirect
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect

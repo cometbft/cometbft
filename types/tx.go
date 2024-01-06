@@ -14,6 +14,7 @@ import (
 	// <celestia-core>
 	"github.com/cometbft/cometbft/pkg/consts"
 	proto "github.com/cosmos/gogoproto/proto"
+	"github.com/sunrise-zone/sunrise-app/pkg/blob"
 	// </celestia-core>
 )
 
@@ -36,7 +37,7 @@ func (tx Tx) Hash() []byte {
 	if indexWrapper, isIndexWrapper := UnmarshalIndexWrapper(tx); isIndexWrapper {
 		return tmhash.Sum(indexWrapper.Tx)
 	}
-	if blobTx, isBlobTx := UnmarshalBlobTx(tx); isBlobTx {
+	if blobTx, isBlobTx := blob.UnmarshalBlobTx(tx); isBlobTx {
 		return tmhash.Sum(blobTx.Tx)
 	}
 	// </celestia-core>
@@ -45,7 +46,7 @@ func (tx Tx) Hash() []byte {
 
 func (tx Tx) Key() TxKey {
 	// <celestia-core>
-	if blobTx, isBlobTx := UnmarshalBlobTx(tx); isBlobTx {
+	if blobTx, isBlobTx := blob.UnmarshalBlobTx(tx); isBlobTx {
 		return sha256.Sum256(blobTx.Tx)
 	}
 	if indexWrapper, isIndexWrapper := UnmarshalIndexWrapper(tx); isIndexWrapper {
@@ -245,42 +246,6 @@ func MarshalIndexWrapper(tx Tx, shareIndexes ...uint32) (Tx, error) {
 		TypeId:       consts.ProtoIndexWrapperTypeID,
 	}
 	return proto.Marshal(&wTx)
-}
-
-// UnmarshalBlobTx attempts to unmarshal a transaction into blob transaction. If an
-// error is thrown, false is returned.
-func UnmarshalBlobTx(tx Tx) (bTx cmtproto.BlobTx, isBlob bool) {
-	err := bTx.Unmarshal(tx)
-	if err != nil {
-		return cmtproto.BlobTx{}, false
-	}
-	// perform some quick basic checks to prevent false positives
-	if bTx.TypeId != consts.ProtoBlobTxTypeID {
-		return bTx, false
-	}
-	if len(bTx.Blobs) == 0 {
-		return bTx, false
-	}
-	for _, b := range bTx.Blobs {
-		if len(b.NamespaceId) != consts.NamespaceIDSize {
-			return bTx, false
-		}
-	}
-	return bTx, true
-}
-
-// MarshalBlobTx creates a BlobTx using a normal transaction and some number of
-// blobs.
-//
-// NOTE: Any checks on the blobs or the transaction must be performed in the
-// application
-func MarshalBlobTx(tx []byte, blobs ...*cmtproto.Blob) (Tx, error) {
-	bTx := cmtproto.BlobTx{
-		Tx:     tx,
-		Blobs:  blobs,
-		TypeId: consts.ProtoBlobTxTypeID,
-	}
-	return bTx.Marshal()
 }
 
 // </celestia-core>

@@ -14,6 +14,10 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+
+	// <celestia-core>
+	"github.com/sunrise-zone/sunrise-app/pkg/blob"
+	// </celestia-core>
 )
 
 //-----------------------------------------------------------------------------
@@ -714,7 +718,7 @@ func fireEvents(
 		// <celestia-core>
 		// Unwrap the blob tx and just publish the PFB without the blobs. We want
 		// the tx indexer to only be concerned with PFBs.
-		blobTx, isBlobTx := types.UnmarshalBlobTx(tx)
+		blobTx, isBlobTx := blob.UnmarshalBlobTx(tx)
 		if isBlobTx {
 			tx = blobTx.Tx
 		}

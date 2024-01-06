@@ -95,19 +95,6 @@ message Data {
   // </celestia-core>
 }
 
-// <celestia-core>
-// Blob (named after binary large object) is a chunk of data submitted by a user
-// to be published to the Celestia blockchain. The data of a Blob is published
-// to a namespace and is encoded into shares based on the format specified by
-// share_version.
-message Blob {
-  bytes  namespace_id      = 1;
-  bytes  data              = 2;
-  uint32 share_version     = 3;
-  uint32 namespace_version = 4;
-}
-// </celestia-core>
-
 // Vote represents a prevote or precommit vote from validators for
 // consensus.
 message Vote {
@@ -223,15 +210,6 @@ message IndexWrapper {
   bytes           tx            = 1;
   repeated uint32 share_indexes = 2;
   string          type_id       = 3;
-}
-
-// BlobTx wraps an encoded sdk.Tx with a second field to contain blobs of data.
-// The raw bytes of the blobs are not signed over, instead we verify each blob
-// using the relevant MsgPayForBlobs that is signed over in the encoded sdk.Tx.
-message BlobTx {
-  bytes         tx      = 1;
-  repeated Blob blobs   = 2;
-  string        type_id = 3;
 }
 
 // ShareProof is an NMT proof that a set of shares exist in a set of rows and a

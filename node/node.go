@@ -85,12 +85,6 @@ type Node struct {
 	pprofSrv          *http.Server
 }
 
-type waitSyncP2PReactor interface {
-	p2p.Reactor
-	// required by RPC service
-	WaitSync() bool
-}
-
 // Option sets a parameter for the node.
 type Option func(*Node)
 

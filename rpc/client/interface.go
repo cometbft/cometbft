@@ -65,6 +65,7 @@ type ABCIClient interface {
 // and prove anything about the chain.
 type SignClient interface {
 	Block(ctx context.Context, height *int64) (*ctypes.ResultBlock, error)
+	SignedBlock(ctx context.Context, height *int64) (*ctypes.ResultSignedBlock, error) // <celestia-core />
 	BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBlock, error)
 	BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error)
 	Header(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)

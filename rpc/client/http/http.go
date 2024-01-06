@@ -419,6 +419,22 @@ func (c *baseRPCClient) Block(ctx context.Context, height *int64) (*ctypes.Resul
 	return result, nil
 }
 
+// <celestia-core>
+func (c *baseRPCClient) SignedBlock(ctx context.Context, height *int64) (*ctypes.ResultSignedBlock, error) {
+	result := new(ctypes.ResultSignedBlock)
+	params := make(map[string]interface{})
+	if height != nil {
+		params["height"] = height
+	}
+	_, err := c.caller.Call(ctx, "signed_block", params, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// </celestia-core>
+
 func (c *baseRPCClient) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	result := new(ctypes.ResultBlock)
 	params := map[string]interface{}{

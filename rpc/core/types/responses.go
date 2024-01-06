@@ -43,6 +43,17 @@ type ResultBlock struct {
 	Block   *types.Block  `json:"block"`
 }
 
+// <celestia-core>
+// Single block with all data for validation
+type ResultSignedBlock struct {
+	Header       types.Header       `json:"header"`
+	Commit       types.Commit       `json:"commit"`
+	Data         types.Data         `json:"data"`
+	ValidatorSet types.ValidatorSet `json:"validator_set"`
+}
+
+// </celestia-core>
+
 // ResultHeader represents the response for a Header RPC Client query
 type ResultHeader struct {
 	Header *types.Header `json:"header"`

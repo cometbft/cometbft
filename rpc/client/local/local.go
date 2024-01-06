@@ -160,6 +160,14 @@ func (c *Local) Block(_ context.Context, height *int64) (*ctypes.ResultBlock, er
 	return c.env.Block(c.ctx, height)
 }
 
+// <celestia-core>
+
+func (c *Local) SignedBlock(ctx context.Context, height *int64) (*ctypes.ResultSignedBlock, error) {
+	return c.env.SignedBlock(c.ctx, height)
+}
+
+// </celestia-core>
+
 func (c *Local) BlockByHash(_ context.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	return c.env.BlockByHash(c.ctx, hash)
 }

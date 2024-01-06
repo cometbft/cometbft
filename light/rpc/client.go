@@ -341,6 +341,56 @@ func (c *Client) Block(ctx context.Context, height *int64) (*ctypes.ResultBlock,
 	return res, nil
 }
 
+// <celestia-core>
+
+// SignedBlock calls rpcclient#SignedBlock and then verifies the result.
+func (c *Client) SignedBlock(ctx context.Context, height *int64) (*ctypes.ResultSignedBlock, error) {
+	res, err := c.next.SignedBlock(ctx, height)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate res.
+	if err := res.Header.ValidateBasic(); err != nil {
+		return nil, err
+	}
+	if height != nil && res.Header.Height != *height {
+		return nil, fmt.Errorf("incorrect height returned. Expected %d, got %d", *height, res.Header.Height)
+	}
+	if err := res.Commit.ValidateBasic(); err != nil {
+		return nil, err
+	}
+	if err := res.ValidatorSet.ValidateBasic(); err != nil {
+		return nil, err
+	}
+
+	// NOTE: this will re-request the header and commit from the primary. Ideally, you'd just
+	// fetch the data from the primary and use the light client to verify it.
+	l, err := c.updateLightClientIfNeededTo(ctx, &res.Header.Height)
+	if err != nil {
+		return nil, err
+	}
+
+	if bmH, bH := l.Header.Hash(), res.Header.Hash(); !bytes.Equal(bmH, bH) {
+		return nil, fmt.Errorf("light client header %X does not match with response header %X",
+			bmH, bH)
+	}
+
+	if bmH, bH := l.Header.DataHash, res.Data.Hash(); !bytes.Equal(bmH, bH) {
+		return nil, fmt.Errorf("light client data hash %X does not match with response data %X",
+			bmH, bH)
+	}
+
+	return &ctypes.ResultSignedBlock{
+		Header:       res.Header,
+		Commit:       *l.Commit,
+		ValidatorSet: *l.ValidatorSet,
+		Data:         res.Data,
+	}, nil
+}
+
+// </celestia-core>
+
 // BlockByHash calls rpcclient#BlockByHash and then verifies the result.
 func (c *Client) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBlock, error) {
 	res, err := c.next.BlockByHash(ctx, hash)

@@ -142,6 +142,39 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 	return &ctypes.ResultBlock{BlockID: blockMeta.BlockID, Block: block}, nil
 }
 
+// <celestia-core>
+
+// SignedBlock fetches the set of transactions at a specified height and all the relevant
+// data to verify the transactions (i.e. using light client verification).
+func (env *Environment) SignedBlock(ctx *rpctypes.Context, heightPtr *int64) (*ctypes.ResultSignedBlock, error) {
+	height, err := env.getHeight(env.BlockStore.Height(), heightPtr)
+	if err != nil {
+		return nil, err
+	}
+
+	block := env.BlockStore.LoadBlock(height)
+	if block == nil {
+		return nil, errors.New("block not found")
+	}
+	seenCommit := env.BlockStore.LoadSeenCommit(height)
+	if seenCommit == nil {
+		return nil, errors.New("seen commit not found")
+	}
+	validatorSet, err := env.StateStore.LoadValidators(height)
+	if validatorSet == nil || err != nil {
+		return nil, err
+	}
+
+	return &ctypes.ResultSignedBlock{
+		Header:       block.Header,
+		Commit:       *seenCommit,
+		ValidatorSet: *validatorSet,
+		Data:         block.Data,
+	}, nil
+}
+
+// </celestia-core>
+
 // BlockByHash gets block by hash.
 // More: https://docs.cometbft.com/v0.38.x/rpc/#/Info/block_by_hash
 func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {

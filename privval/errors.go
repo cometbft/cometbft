@@ -24,9 +24,8 @@ var (
 // RemoteSignerError allows (remote) validators to include meaningful error
 // descriptions in their reply.
 type RemoteSignerError struct {
-	// TODO(ismail): create an enum of known errors
-	Code        int
 	Description string
+	Code        int
 }
 
 func (e *RemoteSignerError) Error() string {

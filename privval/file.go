@@ -44,11 +44,10 @@ func voteToStep(vote *cmtproto.Vote) int8 {
 
 // FilePVKey stores the immutable part of PrivValidator.
 type FilePVKey struct {
-	Address types.Address  `json:"address"`
-	PubKey  crypto.PubKey  `json:"pub_key"`
-	PrivKey crypto.PrivKey `json:"priv_key"`
-
+	PubKey   crypto.PubKey  `json:"pub_key"`
+	PrivKey  crypto.PrivKey `json:"priv_key"`
 	filePath string
+	Address  types.Address `json:"address"`
 }
 
 // Save persists the FilePVKey to its filePath.
@@ -72,13 +71,12 @@ func (pvKey FilePVKey) Save() {
 
 // FilePVLastSignState stores the mutable part of PrivValidator.
 type FilePVLastSignState struct {
+	filePath  string
+	Signature []byte            `json:"signature,omitempty"`
+	SignBytes cmtbytes.HexBytes `json:"signbytes,omitempty"`
 	Height    int64             `json:"height"`
 	Round     int32             `json:"round"`
 	Step      int8              `json:"step"`
-	Signature []byte            `json:"signature,omitempty"`
-	SignBytes cmtbytes.HexBytes `json:"signbytes,omitempty"`
-
-	filePath string
 }
 
 func (lss *FilePVLastSignState) reset() {

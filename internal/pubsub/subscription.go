@@ -21,11 +21,10 @@ var (
 // 2) channel which is closed if a client is too slow or choose to unsubscribe
 // 3) err indicating the reason for (2).
 type Subscription struct {
-	out chan Message
-
+	err      error
+	out      chan Message
 	canceled chan struct{}
 	mtx      cmtsync.RWMutex
-	err      error
 }
 
 // NewSubscription returns a new subscription with the given outCapacity.

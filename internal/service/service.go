@@ -96,13 +96,11 @@ Typical usage:
 */
 type BaseService struct {
 	Logger  log.Logger
-	name    string
-	started uint32 // atomic
-	stopped uint32 // atomic
+	impl    Service
 	quit    chan struct{}
-
-	// The "subclass" of BaseService
-	impl Service
+	name    string
+	started uint32
+	stopped uint32
 }
 
 // NewBaseService creates a new BaseService.

@@ -125,8 +125,8 @@ func (q *Query) matchesEvents(events []types.Event) bool {
 // the event has the designated type, contains an attribute with the given
 // name, and the match function returns true for the attribute value.
 type condition struct {
-	tag   string // e.g., "tx.hash"
 	match func(s string) bool
+	tag   string
 }
 
 // findAttr returns a slice of attribute values from event matching the

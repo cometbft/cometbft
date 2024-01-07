@@ -17,10 +17,10 @@ import (
 
 // Server defines parameters for running an Inspector rpc server.
 type Server struct {
-	Addr    string // TCP address to listen on, ":http" if empty
 	Handler http.Handler
 	Logger  log.Logger
 	Config  *config.RPCConfig
+	Addr    string
 }
 
 // Routes returns the set of routes used by the Inspector server.

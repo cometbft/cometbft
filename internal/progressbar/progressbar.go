@@ -6,12 +6,12 @@ import "fmt"
 // ref: https://www.pixelstech.net/article/1596946473-A-simple-example-on-implementing-progress-bar-in-GoLang
 
 type Bar struct {
-	percent int64  // progress percentage
-	cur     int64  // current progress
-	start   int64  // the init starting value for progress
-	total   int64  // total value for progress
-	rate    string // the actual progress bar to be printed
-	graph   string // the fill value for progress bar
+	rate    string
+	graph   string
+	percent int64
+	cur     int64
+	start   int64
+	total   int64
 }
 
 func (bar *Bar) NewOption(start, total int64) {

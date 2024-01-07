@@ -52,11 +52,10 @@ type EventSwitch interface {
 }
 
 type eventSwitch struct {
-	service.BaseService
-
-	mtx        cmtsync.RWMutex
 	eventCells map[string]*eventCell
 	listeners  map[string]*eventListener
+	service.BaseService
+	mtx cmtsync.RWMutex
 }
 
 func NewEventSwitch() EventSwitch {
@@ -162,8 +161,8 @@ func (evsw *eventSwitch) FireEvent(event string, data EventData) {
 
 // eventCell handles keeping track of listener callbacks for a given event.
 type eventCell struct {
-	mtx       cmtsync.RWMutex
 	listeners map[string]EventCallback
+	mtx       cmtsync.RWMutex
 }
 
 func newEventCell() *eventCell {
@@ -204,11 +203,10 @@ func (cell *eventCell) FireEvent(data EventData) {
 type EventCallback func(data EventData)
 
 type eventListener struct {
-	id string
-
+	id      string
+	events  []string
 	mtx     cmtsync.RWMutex
 	removed bool
-	events  []string
 }
 
 func newEventListener(id string) *eventListener {

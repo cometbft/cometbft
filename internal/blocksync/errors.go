@@ -12,8 +12,8 @@ var ErrNilMessage = errors.New("message cannot be nil")
 
 // ErrInvalidBase is returned when peer informs of a status with invalid height.
 type ErrInvalidHeight struct {
-	Height int64
 	Reason string
+	Height int64
 }
 
 func (e ErrInvalidHeight) Error() string {
@@ -22,8 +22,8 @@ func (e ErrInvalidHeight) Error() string {
 
 // ErrInvalidBase is returned when peer informs of a status with invalid base.
 type ErrInvalidBase struct {
-	Base   int64
 	Reason string
+	Base   int64
 }
 
 func (e ErrInvalidBase) Error() string {

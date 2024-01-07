@@ -203,8 +203,8 @@ func TestSubscribeDuplicateKeys(t *testing.T) {
 	})
 
 	testCases := []struct {
-		query    string
 		expected interface{}
+		query    string
 	}{
 		{
 			"withdraw.rewards='17'",

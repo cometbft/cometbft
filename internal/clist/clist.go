@@ -42,16 +42,15 @@ and there's no reason to serialize that condition for goroutines
 waiting on NextWait() (since it's just a read operation).
 */
 type CElement struct {
-	mtx        cmtsync.RWMutex
+	Value      interface{}
 	prev       *CElement
 	prevWg     *sync.WaitGroup
 	prevWaitCh chan struct{}
 	next       *CElement
 	nextWg     *sync.WaitGroup
 	nextWaitCh chan struct{}
+	mtx        cmtsync.RWMutex
 	removed    bool
-
-	Value interface{} // immutable
 }
 
 // Blocking implementation of Next().
@@ -218,13 +217,13 @@ func (e *CElement) SetRemoved() {
 // Operations are goroutine-safe.
 // Panics if length grows beyond the max.
 type CList struct {
-	mtx    cmtsync.RWMutex
 	wg     *sync.WaitGroup
 	waitCh chan struct{}
-	head   *CElement // first element
-	tail   *CElement // last element
-	curLen int       // list length
-	maxLen int       // max list length
+	head   *CElement
+	tail   *CElement
+	curLen int
+	maxLen int
+	mtx    cmtsync.RWMutex
 }
 
 func (l *CList) Init() *CList {

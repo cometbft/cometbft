@@ -13,13 +13,12 @@ If a long continuous burst of .Set() calls happens, ThrottleTimer fires
 at most once every "dur".
 */
 type ThrottleTimer struct {
-	Name string
-	Ch   chan struct{}
-	quit chan struct{}
-	dur  time.Duration
-
-	mtx   cmtsync.Mutex
+	Ch    chan struct{}
+	quit  chan struct{}
 	timer *time.Timer
+	Name  string
+	dur   time.Duration
+	mtx   cmtsync.Mutex
 	isSet bool
 }
 

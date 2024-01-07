@@ -69,12 +69,13 @@ const (
 // Each call to Next advances the scanner to the next token, or reports an
 // error.
 type Scanner struct {
-	r   *bufio.Reader
-	buf bytes.Buffer
-	tok Token
-	err error
-
-	pos, last, end int
+	err  error
+	r    *bufio.Reader
+	buf  bytes.Buffer
+	pos  int
+	last int
+	end  int
+	tok  Token
 }
 
 // NewScanner constructs a new scanner that reads from r.

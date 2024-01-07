@@ -36,11 +36,11 @@ type StateProvider interface {
 
 // lightClientStateProvider is a state provider using the light client.
 type lightClientStateProvider struct {
-	cmtsync.Mutex // light.Client is not concurrency-safe
 	lc            *light.Client
+	providers     map[lightprovider.Provider]string
 	version       cmtstate.Version
 	initialHeight int64
-	providers     map[lightprovider.Provider]string
+	cmtsync.Mutex
 }
 
 // NewLightClientStateProvider creates a new StateProvider using a light client and RPC clients.

@@ -44,38 +44,20 @@ var InitStateVersion = cmtstate.Version{
 // Instead, use state.Copy() or state.NextState(...).
 // NOTE: not goroutine-safe.
 type State struct {
-	Version cmtstate.Version
-
-	// immutable
-	ChainID       string
-	InitialHeight int64 // should be 1, not 0, when starting from height 1
-
-	// LastBlockHeight=0 at genesis (ie. block(H=0) does not exist)
-	LastBlockHeight int64
-	LastBlockID     types.BlockID
-	LastBlockTime   time.Time
-
-	// LastValidators is used to validate block.LastCommit.
-	// Validators are persisted to the database separately every time they change,
-	// so we can query for historical validator sets.
-	// Note that if s.LastBlockHeight causes a valset change,
-	// we set s.LastHeightValidatorsChanged = s.LastBlockHeight + 1 + 1
-	// Extra +1 due to nextValSet delay.
-	NextValidators              *types.ValidatorSet
-	Validators                  *types.ValidatorSet
-	LastValidators              *types.ValidatorSet
-	LastHeightValidatorsChanged int64
-
-	// Consensus parameters used for validating blocks.
-	// Changes returned by FinalizeBlock and updated after Commit.
+	LastBlockTime                    time.Time
+	NextValidators                   *types.ValidatorSet
+	Validators                       *types.ValidatorSet
+	LastValidators                   *types.ValidatorSet
+	Version                          cmtstate.Version
+	ChainID                          string
+	LastBlockID                      types.BlockID
+	AppHash                          []byte
+	LastResultsHash                  []byte
 	ConsensusParams                  types.ConsensusParams
+	LastBlockHeight                  int64
 	LastHeightConsensusParamsChanged int64
-
-	// Merkle root of the results from executing prev block
-	LastResultsHash []byte
-
-	// the latest AppHash we've received from calling abci.Commit()
-	AppHash []byte
+	LastHeightValidatorsChanged      int64
+	InitialHeight                    int64
 }
 
 // Copy makes a copy of the State for mutating.

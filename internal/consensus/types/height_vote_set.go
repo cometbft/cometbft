@@ -36,15 +36,14 @@ We let each peer provide us with up to 2 unexpected "catchup" rounds.
 One for their LastCommit round, and another for the official commit round.
 */
 type HeightVoteSet struct {
+	valSet            *types.ValidatorSet
+	roundVoteSets     map[int32]RoundVoteSet
+	peerCatchupRounds map[p2p.ID][]int32
 	chainID           string
 	height            int64
-	valSet            *types.ValidatorSet
-	extensionsEnabled bool
-
 	mtx               sync.Mutex
-	round             int32                  // max tracked round
-	roundVoteSets     map[int32]RoundVoteSet // keys: [0...round]
-	peerCatchupRounds map[p2p.ID][]int32     // keys: peer.ID; values: at most 2 rounds
+	round             int32
+	extensionsEnabled bool
 }
 
 func NewHeightVoteSet(chainID string, height int64, valSet *types.ValidatorSet) *HeightVoteSet {
@@ -276,9 +275,9 @@ func (hvs *HeightVoteSet) toAllRoundVotes() []roundVotes {
 }
 
 type roundVotes struct {
-	Round              int32    `json:"round"`
-	Prevotes           []string `json:"prevotes"`
 	PrevotesBitArray   string   `json:"prevotes_bit_array"`
-	Precommits         []string `json:"precommits"`
 	PrecommitsBitArray string   `json:"precommits_bit_array"`
+	Prevotes           []string `json:"prevotes"`
+	Precommits         []string `json:"precommits"`
+	Round              int32    `json:"round"`
 }

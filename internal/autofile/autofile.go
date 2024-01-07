@@ -43,15 +43,13 @@ const (
 //
 // This is useful for using a log file with the logrotate tool.
 type AutoFile struct {
-	ID   string
-	Path string
-
 	closeTicker      *time.Ticker
-	closeTickerStopc chan struct{} // closed when closeTicker is stopped
+	closeTickerStopc chan struct{}
 	hupc             chan os.Signal
-
-	mtx  sync.Mutex
-	file *os.File
+	file             *os.File
+	ID               string
+	Path             string
+	mtx              sync.Mutex
 }
 
 // OpenAutoFile creates an AutoFile in the path (with random ID). If there is

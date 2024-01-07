@@ -189,8 +189,8 @@ func TestBigNumbers(t *testing.T) {
 	}
 
 	testCases := []struct {
-		s       string
 		events  map[string][]string
+		s       string
 		matches bool
 	}{
 		// Test cases for values that exceed the capacity if int64/float64.
@@ -278,8 +278,8 @@ func TestCompiledMatches(t *testing.T) {
 
 	//nolint:lll
 	testCases := []struct {
-		s       string
 		events  map[string][]string
+		s       string
 		matches bool
 	}{
 		{

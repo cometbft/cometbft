@@ -12,13 +12,11 @@ import (
 
 type GRPCServer struct {
 	service.BaseService
-
+	listener net.Listener
+	app      types.Application
+	server   *grpc.Server
 	proto    string
 	addr     string
-	listener net.Listener
-	server   *grpc.Server
-
-	app types.Application
 }
 
 // NewGRPCServer returns a new gRPC ABCI server.

@@ -78,21 +78,19 @@ var RootCmd = &cobra.Command{
 
 // Structure for data passed to print response.
 type response struct {
-	// generic abci response
-	Data   []byte
-	Code   uint32
+	Query  *queryResponse
 	Info   string
 	Log    string
+	Data   []byte
+	Code   uint32
 	Status int32
-
-	Query *queryResponse
 }
 
 type queryResponse struct {
+	ProofOps *crypto.ProofOps
 	Key      []byte
 	Value    []byte
 	Height   int64
-	ProofOps *crypto.ProofOps
 }
 
 func Execute() error {

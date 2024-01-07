@@ -26,8 +26,8 @@ var (
 
 // http provider uses an RPC client to obtain the necessary information.
 type http struct {
-	chainID string
 	client  rpcclient.RemoteClient
+	chainID string
 }
 
 // New creates a HTTP provider, which is using the rpchttp.HTTP client under

@@ -13,13 +13,12 @@ import (
 )
 
 type Mock struct {
-	chainID string
-
-	mtx              sync.Mutex
 	headers          map[int64]*types.SignedHeader
 	vals             map[int64]*types.ValidatorSet
-	evidenceToReport map[string]types.Evidence // hash => evidence
+	evidenceToReport map[string]types.Evidence
+	chainID          string
 	latestHeight     int64
+	mtx              sync.Mutex
 }
 
 var _ provider.Provider = (*Mock)(nil)

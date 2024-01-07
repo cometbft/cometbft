@@ -19,20 +19,9 @@ import (
 // registry of roots-of-trust (e.g. on the Cosmos Hub) seems likely in the
 // future.
 type TrustOptions struct {
-	// tp: trusting period.
-	//
-	// Should be significantly less than the unbonding period (e.g. unbonding
-	// period = 3 weeks, trusting period = 2 weeks).
-	//
-	// More specifically, trusting period + time needed to check headers + time
-	// needed to report and punish misbehavior should be less than the unbonding
-	// period.
-	Period time.Duration
-
-	// Header's Height and Hash must both be provided to force the trusting of a
-	// particular header.
-	Height int64
 	Hash   []byte
+	Period time.Duration
+	Height int64
 }
 
 // ValidateBasic performs basic validation.

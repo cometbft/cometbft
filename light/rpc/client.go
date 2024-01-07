@@ -41,14 +41,11 @@ var _ rpcclient.Client = (*Client)(nil)
 // be proved). Note, merkle.DefaultProofRuntime is used to verify values
 // returned by ABCI#Query.
 type Client struct {
-	service.BaseService
-
-	next rpcclient.Client
-	lc   LightClient
-
-	// proof runtime used to verify values returned by ABCIQuery
+	next      rpcclient.Client
+	lc        LightClient
 	prt       *merkle.ProofRuntime
 	keyPathFn KeyPathFunc
+	service.BaseService
 }
 
 var _ rpcclient.Client = (*Client)(nil)

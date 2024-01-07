@@ -49,9 +49,9 @@ var ErrFailedHeaderCrossReferencing = errors.New("all witnesses have either not 
 // ErrVerificationFailed means either sequential or skipping verification has
 // failed to verify from header #1 to header #2 due to some reason.
 type ErrVerificationFailed struct {
+	Reason error
 	From   int64
 	To     int64
-	Reason error
 }
 
 // Unwrap returns underlying reason.

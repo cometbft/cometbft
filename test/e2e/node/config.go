@@ -11,29 +11,26 @@ import (
 
 // Config is the application configuration.
 type Config struct {
-	ChainID          string                      `toml:"chain_id"`
-	Listen           string                      `toml:"listen"`
-	Protocol         string                      `toml:"protocol"`
-	Dir              string                      `toml:"dir"`
-	Mode             string                      `toml:"mode"`
-	PersistInterval  uint64                      `toml:"persist_interval"`
-	SnapshotInterval uint64                      `toml:"snapshot_interval"`
-	RetainBlocks     uint64                      `toml:"retain_blocks"`
-	ValidatorUpdates map[string]map[string]uint8 `toml:"validator_update"`
-	PrivValServer    string                      `toml:"privval_server"`
-	PrivValKey       string                      `toml:"privval_key"`
-	PrivValState     string                      `toml:"privval_state"`
-	KeyType          string                      `toml:"key_type"`
-
-	PrepareProposalDelay time.Duration `toml:"prepare_proposal_delay"`
-	ProcessProposalDelay time.Duration `toml:"process_proposal_delay"`
-	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
-	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
-	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
-
-	VoteExtensionSize uint `toml:"vote_extension_size"`
-
-	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
+	ValidatorUpdates           map[string]map[string]uint8 `toml:"validator_update"`
+	PrivValKey                 string                      `toml:"privval_key"`
+	Listen                     string                      `toml:"listen"`
+	Protocol                   string                      `toml:"protocol"`
+	Dir                        string                      `toml:"dir"`
+	Mode                       string                      `toml:"mode"`
+	ChainID                    string                      `toml:"chain_id"`
+	KeyType                    string                      `toml:"key_type"`
+	PrivValState               string                      `toml:"privval_state"`
+	PrivValServer              string                      `toml:"privval_server"`
+	PersistInterval            uint64                      `toml:"persist_interval"`
+	RetainBlocks               uint64                      `toml:"retain_blocks"`
+	SnapshotInterval           uint64                      `toml:"snapshot_interval"`
+	PrepareProposalDelay       time.Duration               `toml:"prepare_proposal_delay"`
+	ProcessProposalDelay       time.Duration               `toml:"process_proposal_delay"`
+	CheckTxDelay               time.Duration               `toml:"check_tx_delay"`
+	FinalizeBlockDelay         time.Duration               `toml:"finalize_block_delay"`
+	VoteExtensionDelay         time.Duration               `toml:"vote_extension_delay"`
+	VoteExtensionSize          uint                        `toml:"vote_extension_size"`
+	ABCIRequestsLoggingEnabled bool                        `toml:"abci_requests_logging_enabled"`
 }
 
 // App extracts out the application specific configuration parameters.

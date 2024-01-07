@@ -17,8 +17,8 @@ const (
 )
 
 type mockBlockStore struct {
-	base   int64
 	blocks []*types.Block
+	base   int64
 }
 
 func (m *mockBlockStore) Height() int64 {

@@ -15,19 +15,15 @@ import (
 )
 
 type parser struct {
-	cI int
-
-	R *descriptors
-	U *descriptors
-
-	popped   map[poppedNode]bool
-	crf      map[clusterNode][]*crfNode
-	crfNodes map[crfNode]*crfNode
-
+	R           *descriptors
+	U           *descriptors
+	popped      map[poppedNode]bool
+	crf         map[clusterNode][]*crfNode
+	crfNodes    map[crfNode]*crfNode
 	lex         *lexer.Lexer
+	bsrSet      *bsr.Set
 	parseErrors []*Error
-
-	bsrSet *bsr.Set
+	cI          int
 }
 
 func newParser(l *lexer.Lexer) *parser {
@@ -1287,20 +1283,12 @@ Normally the error of interest is the one that has parsed the largest number of
 tokens.
 */
 type Error struct {
-	// Index of token that caused the error.
-	cI int
-
-	// Grammar slot at which the error occurred.
-	Slot slot.Label
-
-	// The token at which the error occurred.
-	Token *token.Token
-
-	// The line and column in the input text at which the error occurred
-	Line, Column int
-
-	// The tokens expected at the point where the error occurred
+	Token    *token.Token
 	Expected map[token.Type]string
+	cI       int
+	Slot     slot.Label
+	Line     int
+	Column   int
 }
 
 func (pe *Error) String() string {

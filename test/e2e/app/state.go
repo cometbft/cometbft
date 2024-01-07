@@ -20,23 +20,21 @@ const (
 // Intermediate type used exclusively in serialization/deserialization of
 // State, such that State need not expose any of its internal values publicly.
 type serializedState struct {
-	Height uint64            `json:"height"`
 	Values map[string]string `json:"values"`
 	Hash   []byte            `json:"hash"`
+	Height uint64            `json:"height"`
 }
 
 // State is the application state.
 type State struct {
-	sync.RWMutex
-	height uint64
-	values map[string]string
-	hash   []byte
-
-	currentFile string
-	// app saves current and previous state for rollback functionality
+	values          map[string]string
+	currentFile     string
 	previousFile    string
+	hash            []byte
+	height          uint64
 	persistInterval uint64
 	initialHeight   uint64
+	sync.RWMutex
 }
 
 // NewState creates a new state.

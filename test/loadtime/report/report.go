@@ -24,32 +24,25 @@ type BlockStore interface {
 
 // DataPoint contains the set of data collected for each transaction.
 type DataPoint struct {
-	Duration  time.Duration
 	BlockTime time.Time
 	Hash      []byte
+	Duration  time.Duration
 }
 
 // Report contains the data calculated from reading the timestamped transactions
 // of each block found in the blockstore.
 type Report struct {
-	ID                      uuid.UUID
-	Rate, Connections, Size uint64
-	Max, Min, Avg, StdDev   time.Duration
-
-	// NegativeCount is the number of negative durations encountered while
-	// reading the transaction data. A negative duration means that
-	// a transaction timestamp was greater than the timestamp of the block it
-	// was included in and likely indicates an issue with the experimental
-	// setup.
+	All           []DataPoint
+	Rate          uint64
+	Connections   uint64
+	Size          uint64
+	Max           time.Duration
+	Min           time.Duration
+	Avg           time.Duration
+	StdDev        time.Duration
 	NegativeCount int
-
-	// All contains all data points gathered from all valid transactions.
-	// The order of the contents of All is not guaranteed to be match the order of transactions
-	// in the chain.
-	All []DataPoint
-
-	// used for calculating average during report creation.
-	sum int64
+	sum           int64
+	ID            uuid.UUID
 }
 
 type Reports struct {
@@ -128,16 +121,18 @@ func (rs *Reports) addError() {
 // BlockStore.
 func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 	type payloadData struct {
-		id                      uuid.UUID
-		l                       time.Duration
-		bt                      time.Time
-		hash                    []byte
-		connections, rate, size uint64
-		err                     error
+		bt          time.Time
+		err         error
+		hash        []byte
+		l           time.Duration
+		connections uint64
+		rate        uint64
+		size        uint64
+		id          uuid.UUID
 	}
 	type txData struct {
-		tx types.Tx
 		bt time.Time
+		tx types.Tx
 	}
 	reports := &Reports{
 		s: make(map[uuid.UUID]Report),

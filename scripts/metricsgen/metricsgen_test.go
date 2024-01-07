@@ -88,9 +88,9 @@ func TestParseMetricsStruct(t *testing.T) {
 	const pkgName = "mypkg"
 	metricsTests := []struct {
 		name          string
-		shouldError   bool
 		metricsStruct string
 		expected      metricsgen.TemplateData
+		shouldError   bool
 	}{
 		{
 			name: "basic",

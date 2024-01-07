@@ -59,9 +59,9 @@ func TestRootHome(t *testing.T) {
 	defer clearConfig(t, newRoot)
 
 	cases := []struct {
-		args []string
 		env  map[string]string
 		root string
+		args []string
 	}{
 		{nil, nil, root},
 		{[]string{"--home", newRoot}, nil, newRoot},
@@ -88,9 +88,9 @@ func TestRootFlagsEnv(t *testing.T) {
 	defaultLogLvl := defaults.LogLevel
 
 	cases := []struct {
-		args     []string
 		env      map[string]string
 		logLevel string
+		args     []string
 	}{
 		{[]string{"--log", "debug"}, nil, defaultLogLvl},                  // wrong flag
 		{[]string{"--log_level", "debug"}, nil, "debug"},                  // right flag
@@ -122,10 +122,9 @@ func TestRootConfig(t *testing.T) {
 	}
 
 	cases := []struct {
-		args []string
-		env  map[string]string
-
+		env    map[string]string
 		logLvl string
+		args   []string
 	}{
 		{nil, nil, nonDefaultLogLvl},                                           // should load config
 		{[]string{"--log_level=abc:info"}, nil, "abc:info"},                    // flag over rides

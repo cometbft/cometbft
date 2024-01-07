@@ -129,12 +129,12 @@ func loadEventSinks(cfg *cmtcfg.Config, chainID string) (indexer.BlockIndexer, t
 }
 
 type eventReIndexArgs struct {
-	startHeight  int64
-	endHeight    int64
 	blockIndexer indexer.BlockIndexer
 	txIndexer    txindex.TxIndexer
 	blockStore   state.BlockStore
 	stateStore   state.Store
+	startHeight  int64
+	endHeight    int64
 }
 
 func eventReIndex(cmd *cobra.Command, args eventReIndexArgs) error {

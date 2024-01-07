@@ -30,16 +30,16 @@ func RegisterType(_type interface{}, name string) {
 
 // typeInfo contains type information.
 type typeInfo struct {
-	name      string
 	rt        reflect.Type
+	name      string
 	returnPtr bool
 }
 
 // types is a type registry. It is safe for concurrent use.
 type types struct {
-	cmtsync.RWMutex
 	byType map[reflect.Type]*typeInfo
 	byName map[string]*typeInfo
+	cmtsync.RWMutex
 }
 
 // newTypes creates a new type registry.

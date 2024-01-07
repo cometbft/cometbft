@@ -68,26 +68,26 @@ func (c CustomValue) UnmarshalJSON(_ []byte) error {
 
 // Tags tests JSON tags.
 type Tags struct {
+	Tags      *Tags  `json:"tags,omitempty"`
 	JSONName  string `json:"name"`
 	OmitEmpty string `json:",omitempty"`
 	Hidden    string `json:"-"`
-	Tags      *Tags  `json:"tags,omitempty"`
 }
 
 // Struct tests structs with lots of contents.
 type Struct struct {
-	Bool         bool
-	Float64      float64
-	Int32        int32
-	Int64        int64
-	Int64Ptr     *int64
-	String       string
-	StringPtrPtr **string
-	Bytes        []byte
 	Time         time.Time
 	Car          *Car
-	Boat         Boat
-	Vehicles     []Vehicle
+	Int64Ptr     *int64
+	StringPtrPtr **string
 	Child        *Struct
+	String       string
 	private      string
+	Bytes        []byte
+	Vehicles     []Vehicle
+	Int64        int64
+	Float64      float64
+	Int32        int32
+	Bool         bool
+	Boat         Boat
 }

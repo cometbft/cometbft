@@ -11,12 +11,12 @@ import (
 )
 
 type BlockResults struct {
-	Height                int64                     `json:"height"`
+	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
 	TxResults             []*abci.ExecTxResult      `json:"txs_results"`
 	FinalizeBlockEvents   []*abci.Event             `json:"finalize_block_events"`
 	ValidatorUpdates      []*abci.ValidatorUpdate   `json:"validator_updates"`
-	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
 	AppHash               []byte                    `json:"app_hash"`
+	Height                int64                     `json:"height"`
 }
 
 // BlockResultsServiceClient provides the block results of a given height (or latest if none provided).

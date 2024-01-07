@@ -138,9 +138,9 @@ func ArrayToRequest(id jsonrpcid, method string, params []interface{}) (RPCReque
 // RESPONSE
 
 type RPCError struct {
-	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    string `json:"data,omitempty"`
+	Code    int    `json:"code"`
 }
 
 func (err RPCError) Error() string {
@@ -152,19 +152,19 @@ func (err RPCError) Error() string {
 }
 
 type RPCResponse struct {
-	JSONRPC string          `json:"jsonrpc"`
 	ID      jsonrpcid       `json:"id,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
 	Error   *RPCError       `json:"error,omitempty"`
+	JSONRPC string          `json:"jsonrpc"`
+	Result  json.RawMessage `json:"result,omitempty"`
 }
 
 // UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int.
 func (resp *RPCResponse) UnmarshalJSON(data []byte) error {
 	unsafeResp := &struct {
-		JSONRPC string          `json:"jsonrpc"`
 		ID      interface{}     `json:"id,omitempty"`
-		Result  json.RawMessage `json:"result,omitempty"`
 		Error   *RPCError       `json:"error,omitempty"`
+		JSONRPC string          `json:"jsonrpc"`
+		Result  json.RawMessage `json:"result,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &unsafeResp)
 	if err != nil {

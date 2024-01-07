@@ -36,8 +36,8 @@ func blockFromProto(pblockID *cmtproto.BlockID, pblock *cmtproto.Block) (*Block,
 // LatestHeightResult type used in GetLatestResult and send to the client
 // via a channel.
 type LatestHeightResult struct {
-	Height int64
 	Error  error
+	Height int64
 }
 
 type getLatestHeightConfig struct {

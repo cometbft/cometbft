@@ -232,8 +232,8 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 
 // Remember the status for logging.
 type responseWriterWrapper struct {
-	Status int
 	http.ResponseWriter
+	Status int
 }
 
 func (w *responseWriterWrapper) WriteHeader(status int) {

@@ -59,11 +59,10 @@ Example:
 	// handle result
 */
 type HTTP struct {
-	remote string
-	rpc    *jsonrpcclient.Client
-
+	rpc *jsonrpcclient.Client
 	*baseRPCClient
 	*WSEvents
+	remote string
 }
 
 // BatchHTTP provides the same interface as `HTTP`, but allows for batching of
@@ -597,13 +596,12 @@ var errNotRunning = errors.New("client is not running. Use .Start() method to st
 
 // WSEvents is a wrapper around WSClient, which implements EventsClient.
 type WSEvents struct {
+	ws            *jsonrpcclient.WSClient
+	subscriptions map[string]chan ctypes.ResultEvent
+	remote        string
+	endpoint      string
 	service.BaseService
-	remote   string
-	endpoint string
-	ws       *jsonrpcclient.WSClient
-
-	mtx           cmtsync.RWMutex
-	subscriptions map[string]chan ctypes.ResultEvent // query -> chan
+	mtx cmtsync.RWMutex
 }
 
 func newWSEvents(remote, endpoint string) (*WSEvents, error) {

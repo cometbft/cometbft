@@ -14,8 +14,8 @@ import (
 
 // List of blocks.
 type ResultBlockchainInfo struct {
-	LastHeight int64              `json:"last_height"`
 	BlockMetas []*types.BlockMeta `json:"block_metas"`
+	LastHeight int64              `json:"last_height"`
 }
 
 // Genesis file.
@@ -28,15 +28,15 @@ type ResultGenesis struct {
 // document to JSON and then splitting the resulting payload into
 // 16 megabyte blocks and then base64 encoding each block.
 type ResultGenesisChunk struct {
+	Data        string `json:"data"`
 	ChunkNumber int    `json:"chunk"`
 	TotalChunks int    `json:"total"`
-	Data        string `json:"data"`
 }
 
 // Single block (with meta).
 type ResultBlock struct {
-	BlockID types.BlockID `json:"block_id"`
 	Block   *types.Block  `json:"block"`
+	BlockID types.BlockID `json:"block_id"`
 }
 
 // ResultHeader represents the response for a Header RPC Client query.
@@ -52,12 +52,12 @@ type ResultCommit struct {
 
 // ABCI results from a block.
 type ResultBlockResults struct {
-	Height                int64                     `json:"height"`
+	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
 	TxResults             []*abci.ExecTxResult      `json:"txs_results"`
 	FinalizeBlockEvents   []abci.Event              `json:"finalize_block_events"`
 	ValidatorUpdates      []abci.ValidatorUpdate    `json:"validator_updates"`
-	ConsensusParamUpdates *cmtproto.ConsensusParams `json:"consensus_param_updates"`
 	AppHash               []byte                    `json:"app_hash"`
+	Height                int64                     `json:"height"`
 }
 
 // NewResultCommit is a helper to initialize the ResultCommit with
@@ -76,23 +76,21 @@ func NewResultCommit(header *types.Header, commit *types.Commit,
 
 // Info about the node's syncing state.
 type SyncInfo struct {
-	LatestBlockHash   bytes.HexBytes `json:"latest_block_hash"`
-	LatestAppHash     bytes.HexBytes `json:"latest_app_hash"`
-	LatestBlockHeight int64          `json:"latest_block_height"`
-	LatestBlockTime   time.Time      `json:"latest_block_time"`
-
+	LatestBlockTime     time.Time      `json:"latest_block_time"`
+	EarliestBlockTime   time.Time      `json:"earliest_block_time"`
+	LatestBlockHash     bytes.HexBytes `json:"latest_block_hash"`
+	LatestAppHash       bytes.HexBytes `json:"latest_app_hash"`
 	EarliestBlockHash   bytes.HexBytes `json:"earliest_block_hash"`
 	EarliestAppHash     bytes.HexBytes `json:"earliest_app_hash"`
+	LatestBlockHeight   int64          `json:"latest_block_height"`
 	EarliestBlockHeight int64          `json:"earliest_block_height"`
-	EarliestBlockTime   time.Time      `json:"earliest_block_time"`
-
-	CatchingUp bool `json:"catching_up"`
+	CatchingUp          bool           `json:"catching_up"`
 }
 
 // Info about the node's validator.
 type ValidatorInfo struct {
-	Address     bytes.HexBytes `json:"address"`
 	PubKey      crypto.PubKey  `json:"pub_key"`
+	Address     bytes.HexBytes `json:"address"`
 	VotingPower int64          `json:"voting_power"`
 }
 
@@ -113,10 +111,10 @@ func (s *ResultStatus) TxIndexEnabled() bool {
 
 // Info about peer connections.
 type ResultNetInfo struct {
-	Listening bool     `json:"listening"`
 	Listeners []string `json:"listeners"`
-	NPeers    int      `json:"n_peers"`
 	Peers     []Peer   `json:"peers"`
+	NPeers    int      `json:"n_peers"`
+	Listening bool     `json:"listening"`
 }
 
 // Log from dialing seeds.
@@ -132,25 +130,23 @@ type ResultDialPeers struct {
 // A peer.
 type Peer struct {
 	NodeInfo         p2p.DefaultNodeInfo  `json:"node_info"`
-	IsOutbound       bool                 `json:"is_outbound"`
-	ConnectionStatus p2p.ConnectionStatus `json:"connection_status"`
 	RemoteIP         string               `json:"remote_ip"`
+	ConnectionStatus p2p.ConnectionStatus `json:"connection_status"`
+	IsOutbound       bool                 `json:"is_outbound"`
 }
 
 // Validators for a height.
 type ResultValidators struct {
-	BlockHeight int64              `json:"block_height"`
 	Validators  []*types.Validator `json:"validators"`
-	// Count of actual validators in this result
-	Count int `json:"count"`
-	// Total number of validators
-	Total int `json:"total"`
+	BlockHeight int64              `json:"block_height"`
+	Count       int                `json:"count"`
+	Total       int                `json:"total"`
 }
 
 // ConsensusParams for given height.
 type ResultConsensusParams struct {
-	BlockHeight     int64                 `json:"block_height"`
 	ConsensusParams types.ConsensusParams `json:"consensus_params"`
+	BlockHeight     int64                 `json:"block_height"`
 }
 
 // Info about the consensus state.
@@ -173,12 +169,11 @@ type ResultConsensusState struct {
 
 // CheckTx result.
 type ResultBroadcastTx struct {
-	Code      uint32         `json:"code"`
-	Data      bytes.HexBytes `json:"data"`
 	Log       string         `json:"log"`
 	Codespace string         `json:"codespace"`
-
-	Hash bytes.HexBytes `json:"hash"`
+	Data      bytes.HexBytes `json:"data"`
+	Hash      bytes.HexBytes `json:"hash"`
+	Code      uint32         `json:"code"`
 }
 
 // CheckTx and ExecTx results.
@@ -196,12 +191,12 @@ type ResultCheckTx struct {
 
 // Result of querying for a tx.
 type ResultTx struct {
+	TxResult abci.ExecTxResult `json:"tx_result"`
+	Proof    types.TxProof     `json:"proof,omitempty"`
 	Hash     bytes.HexBytes    `json:"hash"`
+	Tx       types.Tx          `json:"tx"`
 	Height   int64             `json:"height"`
 	Index    uint32            `json:"index"`
-	TxResult abci.ExecTxResult `json:"tx_result"`
-	Tx       types.Tx          `json:"tx"`
-	Proof    types.TxProof     `json:"proof,omitempty"`
 }
 
 // Result of searching for txs.
@@ -218,10 +213,10 @@ type ResultBlockSearch struct {
 
 // List of mempool txs.
 type ResultUnconfirmedTxs struct {
+	Txs        []types.Tx `json:"txs"`
 	Count      int        `json:"n_txs"`
 	Total      int        `json:"total"`
 	TotalBytes int64      `json:"total_bytes"`
-	Txs        []types.Tx `json:"txs"`
 }
 
 // Info abci msg.
@@ -250,7 +245,7 @@ type (
 
 // Event data from a subscription.
 type ResultEvent struct {
-	Query  string              `json:"query"`
 	Data   types.TMEventData   `json:"data"`
 	Events map[string][]string `json:"events"`
+	Query  string              `json:"query"`
 }

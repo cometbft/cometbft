@@ -61,17 +61,10 @@ type Callback func(*types.Request, *types.Response)
 type ReqRes struct {
 	*types.Request
 	*sync.WaitGroup
-	*types.Response // Not set atomically, so be sure to use WaitGroup.
-
-	mtx cmtsync.Mutex
-
-	// callbackInvoked as a variable to track if the callback was already
-	// invoked during the regular execution of the request. This variable
-	// allows clients to set the callback simultaneously without potentially
-	// invoking the callback twice by accident, once when 'SetCallback' is
-	// called and once during the normal request.
+	*types.Response
+	cb              func(*types.Response)
+	mtx             cmtsync.Mutex
 	callbackInvoked bool
-	cb              func(*types.Response) // A single callback that may be set.
 }
 
 func NewReqRes(req *types.Request) *ReqRes {

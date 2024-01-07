@@ -30,18 +30,15 @@ const (
 // tracks responses and expects them to respect the order of the requests sent.
 type socketClient struct {
 	service.BaseService
-
-	addr        string
-	mustConnect bool
 	conn        net.Conn
-
-	reqQueue   chan *ReqRes
-	flushTimer *timer.ThrottleTimer
-
-	mtx     sync.Mutex
-	err     error
-	reqSent *list.List                            // list of requests sent, waiting for response
-	resCb   func(*types.Request, *types.Response) // called on all requests, if set.
+	err         error
+	reqQueue    chan *ReqRes
+	flushTimer  *timer.ThrottleTimer
+	reqSent     *list.List
+	resCb       func(*types.Request, *types.Response)
+	addr        string
+	mtx         sync.Mutex
+	mustConnect bool
 }
 
 var _ Client = (*socketClient)(nil)

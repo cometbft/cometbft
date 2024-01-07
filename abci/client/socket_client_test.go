@@ -199,8 +199,8 @@ func TestCallbackInvokedWhenSetLate(t *testing.T) {
 }
 
 type blockedABCIApplication struct {
-	wg *sync.WaitGroup
 	types.BaseApplication
+	wg *sync.WaitGroup
 }
 
 func (b blockedABCIApplication) CheckTxAsync(ctx context.Context, r *types.CheckTxRequest) (*types.CheckTxResponse, error) {

@@ -10,11 +10,9 @@ import (
 
 type unsyncLocalClient struct {
 	service.BaseService
-
 	types.Application
-
-	mtx sync.Mutex
 	Callback
+	mtx sync.Mutex
 }
 
 var _ Client = (*unsyncLocalClient)(nil)

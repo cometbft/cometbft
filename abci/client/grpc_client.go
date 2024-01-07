@@ -20,16 +20,14 @@ var _ Client = (*grpcClient)(nil)
 // synchronous calls using grpc.
 type grpcClient struct {
 	service.BaseService
+	client      types.ABCIServiceClient
+	err         error
+	conn        *grpc.ClientConn
+	chReqRes    chan *ReqRes
+	resCb       func(*types.Request, *types.Response)
+	addr        string
+	mtx         sync.Mutex
 	mustConnect bool
-
-	client   types.ABCIServiceClient
-	conn     *grpc.ClientConn
-	chReqRes chan *ReqRes // dispatches "async" responses to callbacks *in order*, needed by mempool
-
-	mtx   sync.Mutex
-	addr  string
-	err   error
-	resCb func(*types.Request, *types.Response) // listens to all callbacks
 }
 
 func NewGRPCClient(addr string, mustConnect bool) Client {

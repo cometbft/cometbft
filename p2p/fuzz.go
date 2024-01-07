@@ -12,13 +12,11 @@ import (
 // FuzzedConnection wraps any net.Conn and depending on the mode either delays
 // reads/writes or randomly drops reads/writes/connections.
 type FuzzedConnection struct {
-	conn net.Conn
-
-	mtx    cmtsync.Mutex
+	conn   net.Conn
 	start  <-chan time.Time
-	active bool
-
 	config *config.FuzzConnConfig
+	mtx    cmtsync.Mutex
+	active bool
 }
 
 // FuzzConn creates a new FuzzedConnection. Fuzzing starts immediately.

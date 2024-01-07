@@ -21,9 +21,8 @@ type connSetItem struct {
 }
 
 type connSet struct {
-	cmtsync.RWMutex
-
 	conns map[string]connSetItem
+	cmtsync.RWMutex
 }
 
 // NewConnSet returns a ConnSet implementation.

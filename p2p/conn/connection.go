@@ -78,68 +78,43 @@ channel's queue is full.
 Inbound message bytes are handled with an onReceive callback function.
 */
 type MConnection struct {
-	service.BaseService
-
-	conn          net.Conn
-	bufConnReader *bufio.Reader
-	bufConnWriter *bufio.Writer
-	sendMonitor   *flow.Monitor
-	recvMonitor   *flow.Monitor
-	send          chan struct{}
-	pong          chan struct{}
-	channels      []*Channel
-	channelsIdx   map[byte]*Channel
-	onReceive     receiveCbFunc
-	onError       errorCbFunc
-	errored       uint32
-	config        MConnConfig
-
-	// Closing quitSendRoutine will cause the sendRoutine to eventually quit.
-	// doneSendRoutine is closed when the sendRoutine actually quits.
+	config          MConnConfig
+	created         time.Time
+	conn            net.Conn
+	flushTimer      *timer.ThrottleTimer
 	quitSendRoutine chan struct{}
+	recvMonitor     *flow.Monitor
+	send            chan struct{}
+	pong            chan struct{}
+	bufConnReader   *bufio.Reader
+	channelsIdx     map[byte]*Channel
+	onReceive       receiveCbFunc
+	onError         errorCbFunc
+	chStatsTimer    *time.Ticker
+	bufConnWriter   *bufio.Writer
+	sendMonitor     *flow.Monitor
 	doneSendRoutine chan struct{}
-
-	// Closing quitRecvRouting will cause the recvRouting to eventually quit.
 	quitRecvRoutine chan struct{}
-
-	// used to ensure FlushStop and OnStop
-	// are safe to call concurrently.
-	stopMtx cmtsync.Mutex
-
-	flushTimer *timer.ThrottleTimer // flush writes as necessary but throttled.
-	pingTimer  *time.Ticker         // send pings periodically
-
-	// close conn if pong is not received in pongTimeout
-	pongTimer     *time.Timer
-	pongTimeoutCh chan bool // true - timeout, false - peer sent pong
-
-	chStatsTimer *time.Ticker // update channel stats periodically
-
-	created time.Time // time of creation
-
+	pongTimeoutCh   chan bool
+	pongTimer       *time.Timer
+	pingTimer       *time.Ticker
+	service.BaseService
+	channels          []*Channel
 	_maxPacketMsgSize int
+	stopMtx           cmtsync.Mutex
+	errored           uint32
 }
 
 // MConnConfig is a MConnection configuration.
 type MConnConfig struct {
-	SendRate int64 `mapstructure:"send_rate"`
-	RecvRate int64 `mapstructure:"recv_rate"`
-
-	// Maximum payload size
-	MaxPacketMsgPayloadSize int `mapstructure:"max_packet_msg_payload_size"`
-
-	// Interval to flush writes (throttled)
-	FlushThrottle time.Duration `mapstructure:"flush_throttle"`
-
-	// Interval to send pings
-	PingInterval time.Duration `mapstructure:"ping_interval"`
-
-	// Maximum wait time for pongs
-	PongTimeout time.Duration `mapstructure:"pong_timeout"`
-
-	// Fuzz connection
-	TestFuzz       bool                   `mapstructure:"test_fuzz"`
-	TestFuzzConfig *config.FuzzConnConfig `mapstructure:"test_fuzz_config"`
+	TestFuzzConfig          *config.FuzzConnConfig `mapstructure:"test_fuzz_config"`
+	SendRate                int64                  `mapstructure:"send_rate"`
+	RecvRate                int64                  `mapstructure:"recv_rate"`
+	MaxPacketMsgPayloadSize int                    `mapstructure:"max_packet_msg_payload_size"`
+	FlushThrottle           time.Duration          `mapstructure:"flush_throttle"`
+	PingInterval            time.Duration          `mapstructure:"ping_interval"`
+	PongTimeout             time.Duration          `mapstructure:"pong_timeout"`
+	TestFuzz                bool                   `mapstructure:"test_fuzz"`
 }
 
 // DefaultMConnConfig returns the default config.
@@ -691,10 +666,10 @@ func (c *MConnection) maxPacketMsgSize() int {
 }
 
 type ConnectionStatus struct {
-	Duration    time.Duration
+	Channels    []ChannelStatus
 	SendMonitor flow.Status
 	RecvMonitor flow.Status
-	Channels    []ChannelStatus
+	Duration    time.Duration
 }
 
 type ChannelStatus struct {
@@ -727,12 +702,12 @@ func (c *MConnection) Status() ConnectionStatus {
 //-----------------------------------------------------------------------------
 
 type ChannelDescriptor struct {
-	ID                  byte
+	MessageType         proto.Message
 	Priority            int
 	SendQueueCapacity   int
 	RecvBufferCapacity  int
 	RecvMessageCapacity int
-	MessageType         proto.Message
+	ID                  byte
 }
 
 func (chDesc ChannelDescriptor) FillDefaults() (filled ChannelDescriptor) {
@@ -752,17 +727,15 @@ func (chDesc ChannelDescriptor) FillDefaults() (filled ChannelDescriptor) {
 // TODO: lowercase.
 // NOTE: not goroutine-safe.
 type Channel struct {
-	conn          *MConnection
-	desc          ChannelDescriptor
-	sendQueue     chan []byte
-	sendQueueSize int32 // atomic.
-	recving       []byte
-	sending       []byte
-	recentlySent  int64 // exponential moving average
-
+	desc                    ChannelDescriptor
+	Logger                  log.Logger
+	conn                    *MConnection
+	sendQueue               chan []byte
+	recving                 []byte
+	sending                 []byte
+	recentlySent            int64
 	maxPacketMsgPayloadSize int
-
-	Logger log.Logger
+	sendQueueSize           int32
 }
 
 func newChannel(conn *MConnection, desc ChannelDescriptor) *Channel {

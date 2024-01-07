@@ -60,26 +60,15 @@ var (
 // Otherwise they are vulnerable to MITM.
 // (TODO(ismail): see also https://github.com/tendermint/tendermint/issues/3010)
 type SecretConnection struct {
-	// immutable
-	recvAead cipher.AEAD
-	sendAead cipher.AEAD
-
-	remPubKey crypto.PubKey
-	conn      io.ReadWriteCloser
-
-	// net.Conn must be thread safe:
-	// https://golang.org/pkg/net/#Conn.
-	// Since we have internal mutable state,
-	// we need mtxs. But recv and send states
-	// are independent, so we can use two mtxs.
-	// All .Read are covered by recvMtx,
-	// all .Write are covered by sendMtx.
-	recvMtx    cmtsync.Mutex
-	recvBuffer []byte
+	recvAead   cipher.AEAD
+	sendAead   cipher.AEAD
+	remPubKey  crypto.PubKey
+	conn       io.ReadWriteCloser
 	recvNonce  *[aeadNonceSize]byte
-
-	sendMtx   cmtsync.Mutex
-	sendNonce *[aeadNonceSize]byte
+	sendNonce  *[aeadNonceSize]byte
+	recvBuffer []byte
+	recvMtx    cmtsync.Mutex
+	sendMtx    cmtsync.Mutex
 }
 
 // MakeSecretConnection performs handshake and returns a new authenticated

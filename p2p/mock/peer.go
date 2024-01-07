@@ -11,11 +11,12 @@ import (
 
 type Peer struct {
 	*service.BaseService
-	ip                   net.IP
-	id                   p2p.ID
-	addr                 *p2p.NetAddress
-	kv                   map[string]interface{}
-	Outbound, Persistent bool
+	addr       *p2p.NetAddress
+	kv         map[string]interface{}
+	id         p2p.ID
+	ip         net.IP
+	Outbound   bool
+	Persistent bool
 }
 
 // NewPeer creates and starts a new mock peer. If the ip

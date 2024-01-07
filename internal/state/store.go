@@ -25,6 +25,7 @@ const (
 )
 
 var (
+	latestBlockHeightKey  = []byte("latestBlockHeightKey")
 	ErrKeyNotFound        = errors.New("key not found")
 	ErrInvalidHeightValue = errors.New("invalid height value")
 )
@@ -111,6 +112,8 @@ type dbStore struct {
 	appRetainHeightMutex sync.Mutex
 
 	// Add cache fields to the dbStore struct
+	validatorsCache      sync.Map // Cache for validators info
+	consensusParamsCache sync.Map // Cache for consensus params info
 	valInfoCache         map[int64]*cmtstate.ValidatorsInfo
 	paramsInfoCache      map[int64]*cmtstate.ConsensusParamsInfo
 	appRetainHeightCache *int64 // Use a pointer to distinguish between cached zero and not-cached.
@@ -973,13 +976,27 @@ func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *
 }
 
 // ----- Util.
+var bufPool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, binary.MaxVarintLen64)
+	},
+}
+
+func int64ToBytes(i int64) []byte {
+	buf := bufPool.Get().([]byte)
+	n := binary.PutVarint(buf, i)
+	defer bufPool.Put(&buf)
+	return buf[:n]
+}
+
 func int64FromBytes(bz []byte) int64 {
 	v, _ := binary.Varint(bz)
 	return v
 }
 
-func int64ToBytes(i int64) []byte {
-	buf := make([]byte, binary.MaxVarintLen64)
-	n := binary.PutVarint(buf, i)
-	return buf[:n]
+func (store *dbStore) setSync(key, value []byte) error {
+	if err := store.db.SetSync(key, value); err != nil {
+		return fmt.Errorf("failed to set key %s: %w", key, err)
+	}
+	return nil
 }

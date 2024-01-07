@@ -23,8 +23,8 @@ func BenchmarkSaveFinalizeBlockResponse(b *testing.B) {
 	store := NewDBStore(db)
 
 	// Define different transaction sizes to test
-	txSizes := []int{100, 1000, 10000, 100000, 1000000} // in bytes
-	numTxs := 100                                       // Number of transactions to include in the block
+	txSizes := []int{100, 1000, 10000, 100000, 1000000, 10000000} // in bytes
+	numTxs := 10000                                               // Number of transactions to include in the block
 
 	for _, size := range txSizes {
 		b.Run(

@@ -24,46 +24,23 @@ import (
 // mempool uses a concurrent list structure for storing transactions that can
 // be efficiently accessed by multiple concurrent readers.
 type CListMempool struct {
-	// Atomic integers
-	height   int64 // the last block Update()'d to
-	txsBytes int64 // total size of mempool, in bytes
-
-	// notify listeners (ie. consensus) when txs are available
+	proxyAppConn         proxy.AppConnMempool
+	logger               log.Logger
+	cache                TxCache
+	postCheck            PostCheckFunc
+	recheckCursor        *clist.CElement
+	config               *config.MempoolConfig
+	metrics              *Metrics
+	preCheck             PreCheckFunc
+	txs                  *clist.CList
+	txsAvailable         chan struct{}
+	removeTxOnReactorCb  func(txKey types.TxKey)
+	recheckEnd           *clist.CElement
+	txsMap               sync.Map
+	height               int64
+	txsBytes             int64
+	updateMtx            cmtsync.RWMutex
 	notifiedTxsAvailable bool
-	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
-
-	// Function set by the reactor to be called when a transaction is removed
-	// from the mempool.
-	removeTxOnReactorCb func(txKey types.TxKey)
-
-	config *config.MempoolConfig
-
-	// Exclusive mutex for Update method to prevent concurrent execution of
-	// CheckTx or ReapMaxBytesMaxGas(ReapMaxTxs) methods.
-	updateMtx cmtsync.RWMutex
-	preCheck  PreCheckFunc
-	postCheck PostCheckFunc
-
-	proxyAppConn proxy.AppConnMempool
-
-	// Track whether we're rechecking txs.
-	// These are not protected by a mutex and are expected to be mutated in
-	// serial (ie. by abci responses which are called in serial).
-	recheckCursor *clist.CElement // next expected response
-	recheckEnd    *clist.CElement // re-checking stops here
-
-	// Concurrent linked-list of valid txs.
-	// `txsMap`: txKey -> CElement is for quick access to txs.
-	// Transactions in both `txs` and `txsMap` must to be kept in sync.
-	txs    *clist.CList
-	txsMap sync.Map
-
-	// Keep a cache of already-seen txs.
-	// This reduces the pressure on the proxyApp.
-	cache TxCache
-
-	logger  log.Logger
-	metrics *Metrics
 }
 
 var _ Mempool = &CListMempool{}

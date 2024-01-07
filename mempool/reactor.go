@@ -23,24 +23,14 @@ import (
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	config  *cfg.MempoolConfig
-	mempool *CListMempool
-
-	waitSync   atomic.Bool
-	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
-
-	// `txSenders` maps every received transaction to the set of peer IDs that
-	// have sent the transaction to this node. Sender IDs are used during
-	// transaction propagation to avoid sending a transaction to a peer that
-	// already has it.
-	txSenders    map[types.TxKey]map[p2p.ID]bool
-	txSendersMtx cmtsync.Mutex
-
-	// Semaphores to keep track of how many connections to peers are active for broadcasting
-	// transactions. Each semaphore has a capacity that puts an upper bound on the number of
-	// connections for different groups of peers.
+	config                            *cfg.MempoolConfig
+	mempool                           *CListMempool
+	waitSyncCh                        chan struct{}
+	txSenders                         map[types.TxKey]map[p2p.ID]bool
 	activePersistentPeersSemaphore    *semaphore.Weighted
 	activeNonPersistentPeersSemaphore *semaphore.Weighted
+	txSendersMtx                      cmtsync.Mutex
+	waitSync                          atomic.Bool
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.

@@ -33,10 +33,10 @@ var _ TxCache = (*LRUTxCache)(nil)
 // LRUTxCache maintains a thread-safe LRU cache of raw transactions. The cache
 // only stores the hash of the raw transaction.
 type LRUTxCache struct {
-	mtx      cmtsync.Mutex
-	size     int
 	cacheMap map[types.TxKey]*list.Element
 	list     *list.List
+	size     int
+	mtx      cmtsync.Mutex
 }
 
 func NewLRUTxCache(cacheSize int) *LRUTxCache {

@@ -52,10 +52,10 @@ func TestCacheAfterUpdate(t *testing.T) {
 	// also assumes max index is 255 for convenience
 	// txs in cache also checks order of elements
 	tests := []struct {
-		numTxsToCreate int
 		updateIndices  []int
 		reAddIndices   []int
 		txsInCache     []int
+		numTxsToCreate int
 	}{
 		{1, []int{}, []int{1}, []int{1, 0}},    // adding new txs works
 		{2, []int{1}, []int{}, []int{1, 0}},    // update doesn't remove tx from cache

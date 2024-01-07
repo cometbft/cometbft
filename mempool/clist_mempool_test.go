@@ -189,9 +189,9 @@ func TestMempoolFilters(t *testing.T) {
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.
 	// each tx has 20 bytes
 	tests := []struct {
-		numTxsToCreate int
 		preFilter      PreCheckFunc
 		postFilter     PostCheckFunc
+		numTxsToCreate int
 		expectedNumTxs int
 	}{
 		{10, nopPreFilter, nopPostFilter, 10},

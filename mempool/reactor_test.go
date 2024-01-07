@@ -679,8 +679,8 @@ func ensureNoTxs(t *testing.T, reactor *Reactor, timeout time.Duration) {
 func TestMempoolVectors(t *testing.T) {
 	testCases := []struct {
 		testName string
-		tx       []byte
 		expBytes string
+		tx       []byte
 	}{
 		{"tx 1", []byte{123}, "0a030a017b"},
 		{"tx 2", []byte("proto encoding in mempool"), "0a1b0a1970726f746f20656e636f64696e6720696e206d656d706f6f6c"},

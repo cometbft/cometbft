@@ -53,7 +53,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/informalsystems/tm-load-test v1.3.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/vektra/mockery/v2 v2.38.0
+	github.com/vektra/mockery/v2 v2.39.1
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/sync v0.5.0
 	gonum.org/v1/gonum v0.14.0
@@ -104,7 +104,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/charithe/durationcheck v0.0.10 // indirect
 	github.com/chavacava/garif v0.1.0 // indirect
-	github.com/chigopher/pathlib v1.0.0 // indirect
+	github.com/chigopher/pathlib v0.19.1 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/containerd/continuity v0.3.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.15.1 // indirect

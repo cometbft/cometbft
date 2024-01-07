@@ -33,9 +33,9 @@ var ABCIPubKeyTypesToNames = map[string]string{
 // ConsensusParams contains consensus critical parameters that determine the
 // validity of blocks.
 type ConsensusParams struct {
-	Block     BlockParams     `json:"block"`
-	Evidence  EvidenceParams  `json:"evidence"`
 	Validator ValidatorParams `json:"validator"`
+	Evidence  EvidenceParams  `json:"evidence"`
+	Block     BlockParams     `json:"block"`
 	Version   VersionParams   `json:"version"`
 	ABCI      ABCIParams      `json:"abci"`
 }

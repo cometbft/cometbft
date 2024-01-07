@@ -21,8 +21,8 @@ type (
 
 	// ErrWrongField is returned every time a value does not pass a validaty check, accompanied with error.
 	ErrWrongField struct {
-		Field string
 		Err   error
+		Field string
 	}
 )
 

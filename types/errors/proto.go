@@ -5,8 +5,8 @@ import (
 )
 
 type ErrMsgToProto struct {
-	MessageName string
 	Err         error
+	MessageName string
 }
 
 func (e ErrMsgToProto) Error() string {
@@ -18,8 +18,8 @@ func (e ErrMsgToProto) Unwrap() error {
 }
 
 type ErrMsgFromProto struct {
-	MessageName string
 	Err         error
+	MessageName string
 }
 
 func (e ErrMsgFromProto) Error() string {

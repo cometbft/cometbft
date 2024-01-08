@@ -22,6 +22,10 @@ type Mempool struct {
 func (_m *Mempool) CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	ret := _m.Called(tx)
 
+	if len(ret) == 0 {
+		panic("no return value specified for CheckNewTx")
+	}
+
 	var r0 *abcicli.ReqRes
 	var r1 error
 	if rf, ok := ret.Get(0).(func(types.Tx) (*abcicli.ReqRes, error)); ok {

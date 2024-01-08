@@ -245,7 +245,7 @@ func createMempoolAndMempoolReactor(
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, waitSyncP2PReactor) {
+) (mempl.Mempool, WaitSyncP2PReactor) {
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":

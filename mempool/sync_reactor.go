@@ -7,15 +7,9 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 )
 
-type SyncReactor interface {
-	p2p.Reactor
-
-	WaitSync() bool
-
-	EnableInOutTxs()
-}
-
-type BaseSyncReactor struct {
+// A mempool reactor must implement WaitSyncP2PReactor to allow the node to transition from block
+// sync or state sync to consensus mode.
+type WaitSyncReactor struct {
 	p2p.BaseReactor
 	Config *cfg.MempoolConfig
 
@@ -23,8 +17,8 @@ type BaseSyncReactor struct {
 	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
 }
 
-func NewBaseSyncReactor(config *cfg.MempoolConfig, waitSync bool) *BaseSyncReactor {
-	baseR := &BaseSyncReactor{Config: config}
+func NewWaitSyncReactor(config *cfg.MempoolConfig, waitSync bool) *WaitSyncReactor {
+	baseR := &WaitSyncReactor{Config: config}
 	if waitSync {
 		baseR.waitSync.Store(true)
 		baseR.waitSyncCh = make(chan struct{})
@@ -33,7 +27,7 @@ func NewBaseSyncReactor(config *cfg.MempoolConfig, waitSync bool) *BaseSyncReact
 	return baseR
 }
 
-func (memR *BaseSyncReactor) EnableInOutTxs() {
+func (memR *WaitSyncReactor) EnableInOutTxs() {
 	memR.Logger.Info("enabling inbound and outbound transactions")
 	if !memR.waitSync.CompareAndSwap(true, false) {
 		return
@@ -45,6 +39,6 @@ func (memR *BaseSyncReactor) EnableInOutTxs() {
 	}
 }
 
-func (memR *BaseSyncReactor) WaitSync() bool {
+func (memR *WaitSyncReactor) WaitSync() bool {
 	return memR.waitSync.Load()
 }

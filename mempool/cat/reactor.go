@@ -30,11 +30,9 @@ const (
 	peerHeightDiff = 10
 )
 
-// Reactor handles mempool tx broadcasting amongst peers.
-// It maintains a map from peer ID to counter, to prevent gossiping txs to the
-// peers you received it from.
+// Mempool reactor that implements a push-pull gossip protocol.
 type Reactor struct {
-	mempool.BaseSyncReactor
+	mempool.WaitSyncReactor
 	mempool *mempool.CListMempool
 
 	peerIDs  sync.Map          // set of connected peers
@@ -51,7 +49,7 @@ func NewReactor(config *cfg.MempoolConfig, mp *mempool.CListMempool, waitSync bo
 		requests:       newRequestScheduler(defaultGossipDelay, defaultGlobalRequestTimeout),
 		seenByPeersSet: NewSeenTxSet(),
 	}
-	memR.BaseSyncReactor = *mempool.NewBaseSyncReactor(config, waitSync)
+	memR.WaitSyncReactor = *mempool.NewWaitSyncReactor(config, waitSync)
 	memR.SetLogger(logger)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) {
 		memR.seenByPeersSet.RemoveKey(txKey)

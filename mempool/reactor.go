@@ -19,8 +19,9 @@ import (
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
+// TODO: move file to its own package.
 type Reactor struct {
-	BaseSyncReactor
+	WaitSyncReactor
 	mempool *CListMempool
 
 	// `txSenders` maps every received transaction to the set of peer IDs that
@@ -43,7 +44,7 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool,
 		mempool:   mempool,
 		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
 	}
-	memR.BaseSyncReactor = *NewBaseSyncReactor(config, waitSync)
+	memR.WaitSyncReactor = *NewWaitSyncReactor(config, waitSync)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	memR.SetLogger(logger)
 	memR.activePersistentPeersSemaphore = semaphore.NewWeighted(int64(config.ExperimentalMaxGossipConnectionsToPersistentPeers))

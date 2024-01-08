@@ -66,7 +66,7 @@ type Node struct {
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
 	bcReactor         p2p.Reactor        // for block-syncing
-	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
+	mempoolReactor    WaitSyncP2PReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -85,7 +85,8 @@ type Node struct {
 	pprofSrv          *http.Server
 }
 
-type waitSyncP2PReactor interface {
+// A reactor that transitions from block sync or state sync to consensus mode.
+type WaitSyncP2PReactor interface {
 	p2p.Reactor
 	// required by RPC service
 	WaitSync() bool

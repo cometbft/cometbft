@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/oasisprotocol/curve25519-voi/primitives/sr25519"
-
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/oasisprotocol/curve25519-voi/primitives/sr25519"
 )
 
 var (

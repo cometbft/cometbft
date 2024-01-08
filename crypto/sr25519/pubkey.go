@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/oasisprotocol/curve25519-voi/primitives/sr25519"
-
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/oasisprotocol/curve25519-voi/primitives/sr25519"
 )
 
 var _ crypto.PubKey = PubKey{}

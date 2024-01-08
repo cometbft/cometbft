@@ -11,7 +11,7 @@ import (
 
 func TestNetAddress_String(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	netAddr := NewNetAddress("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", tcpAddr)
 
@@ -33,7 +33,7 @@ func TestNetAddress_String(t *testing.T) {
 
 func TestNewNetAddress(t *testing.T) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:8080")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Panics(t, func() {
 		NewNetAddress("", tcpAddr)
@@ -114,11 +114,11 @@ func TestNewNetAddressString(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			addr, err := NewNetAddressString(tc.addr)
 			if tc.correct {
-				if assert.Nil(t, err, tc.addr) {
+				if assert.NoError(t, err, tc.addr) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Equal(t, tc.expected, addr.String())
 				}
 			} else {
-				assert.NotNil(t, err, tc.addr)
+				require.Error(t, err, tc.addr)
 			}
 		})
 	}
@@ -130,8 +130,8 @@ func TestNewNetAddressStrings(t *testing.T) {
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeef@127.0.0.1:8080",
 		"deadbeefdeadbeefdeadbeefdeadbeefdeadbeed@127.0.0.2:8080",
 	})
+	assert.Len(t, addrs, 2)
 	assert.Len(t, errs, 1)
-	assert.Equal(t, 2, len(addrs))
 }
 
 func TestNewNetAddressIPPort(t *testing.T) {
@@ -153,13 +153,13 @@ func TestNetAddressProperties(t *testing.T) {
 
 	for _, tc := range testCases {
 		addr, err := NewNetAddressString(tc.addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		err = addr.Valid()
 		if tc.valid {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		} else {
-			assert.Error(t, err)
+			require.Error(t, err)
 		}
 		assert.Equal(t, tc.local, addr.Local())
 		assert.Equal(t, tc.routable, addr.Routable())
@@ -183,10 +183,10 @@ func TestNetAddressReachabilityTo(t *testing.T) {
 
 	for _, tc := range testCases {
 		addr, err := NewNetAddressString(tc.addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		other, err := NewNetAddressString(tc.other)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		assert.Equal(t, tc.reachability, addr.ReachabilityTo(other))
 	}

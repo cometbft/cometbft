@@ -7,9 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
-
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/spf13/cobra"
 )
 
 const (

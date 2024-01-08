@@ -5,10 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -18,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRollback(t *testing.T) {
@@ -235,10 +233,11 @@ func TestRollbackDifferentStateHeight(t *testing.T) {
 
 	_, _, err := state.Rollback(blockStore, stateStore, false)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "statestore height (100) is not one below or equal to blockstore height (102)")
+	require.Equal(t, "statestore height (100) is not one below or equal to blockstore height (102)", err.Error())
 }
 
 func setupStateStore(t *testing.T, height int64) state.Store {
+	t.Helper()
 	stateStore := state.NewStore(dbm.NewMemDB(), state.StoreOptions{DiscardABCIResponses: false})
 	valSet, _ := types.RandValidatorSet(5, 10)
 

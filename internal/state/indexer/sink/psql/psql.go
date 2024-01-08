@@ -10,13 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/lib/pq"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/lib/pq"
 )
 
 const (

@@ -6,14 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -177,6 +176,7 @@ func newSignerListenerEndpoint(logger log.Logger, addr string, timeoutReadWrite 
 }
 
 func startListenerEndpointAsync(t *testing.T, sle *SignerListenerEndpoint, endpointIsOpenCh chan struct{}) {
+	t.Helper()
 	go func(sle *SignerListenerEndpoint) {
 		require.NoError(t, sle.Start())
 		assert.True(t, sle.IsRunning())
@@ -189,6 +189,7 @@ func getMockEndpoints(
 	addr string,
 	socketDialer SocketDialer,
 ) (*SignerListenerEndpoint, *SignerDialerEndpoint) {
+	t.Helper()
 	var (
 		logger           = log.TestingLogger()
 		endpointIsOpenCh = make(chan struct{})

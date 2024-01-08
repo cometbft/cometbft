@@ -37,11 +37,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/cosmos/gogoproto/test"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cometbft/cometbft/internal/protoio"
 )
 
 func iotest(writer protoio.WriteCloser, reader protoio.ReadCloser) error {

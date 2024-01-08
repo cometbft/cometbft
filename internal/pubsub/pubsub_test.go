@@ -7,12 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -46,13 +45,13 @@ func TestSubscribe(t *testing.T) {
 		defer close(published)
 
 		err := s.Publish(ctx, "Quicksilver")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = s.Publish(ctx, "Asylum")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = s.Publish(ctx, "Ivan")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 
 	select {
@@ -111,10 +110,10 @@ func TestSubscribeUnbuffered(t *testing.T) {
 		defer close(published)
 
 		err := s.Publish(ctx, "Ultron")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = s.Publish(ctx, "Darkhawk")
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}()
 
 	select {
@@ -391,20 +390,21 @@ func TestBufferCapacity(t *testing.T) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
 	err = s.Publish(ctx, "Ironclad")
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Equal(t, context.DeadlineExceeded, err)
 	}
 }
 
-func Benchmark10Clients(b *testing.B)   { benchmarkNClients(10, b) }
-func Benchmark100Clients(b *testing.B)  { benchmarkNClients(100, b) }
-func Benchmark1000Clients(b *testing.B) { benchmarkNClients(1000, b) }
+func Benchmark10Clients(b *testing.B)   { benchmarkNClients(b, 10) }
+func Benchmark100Clients(b *testing.B)  { benchmarkNClients(b, 100) }
+func Benchmark1000Clients(b *testing.B) { benchmarkNClients(b, 1000) }
 
-func Benchmark10ClientsOneQuery(b *testing.B)   { benchmarkNClientsOneQuery(10, b) }
-func Benchmark100ClientsOneQuery(b *testing.B)  { benchmarkNClientsOneQuery(100, b) }
-func Benchmark1000ClientsOneQuery(b *testing.B) { benchmarkNClientsOneQuery(1000, b) }
+func Benchmark10ClientsOneQuery(b *testing.B)   { benchmarkNClientsOneQuery(b, 10) }
+func Benchmark100ClientsOneQuery(b *testing.B)  { benchmarkNClientsOneQuery(b, 100) }
+func Benchmark1000ClientsOneQuery(b *testing.B) { benchmarkNClientsOneQuery(b, 1000) }
 
-func benchmarkNClients(n int, b *testing.B) {
+func benchmarkNClients(b *testing.B, n int) {
+	b.Helper()
 	s := pubsub.NewServer()
 	err := s.Start()
 	require.NoError(b, err)
@@ -449,7 +449,8 @@ func benchmarkNClients(n int, b *testing.B) {
 	}
 }
 
-func benchmarkNClientsOneQuery(n int, b *testing.B) {
+func benchmarkNClientsOneQuery(b *testing.B, n int) {
+	b.Helper()
 	s := pubsub.NewServer()
 	err := s.Start()
 	require.NoError(b, err)
@@ -491,10 +492,11 @@ func benchmarkNClientsOneQuery(n int, b *testing.B) {
 
 // HELPERS
 
-func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message, msgAndArgs ...interface{}) {
+func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message) {
+	t.Helper()
 	select {
 	case actual := <-ch:
-		assert.Equal(t, expected, actual.Data(), msgAndArgs...)
+		assert.Equal(t, expected, actual.Data())
 	case <-time.After(1 * time.Second):
 		t.Errorf("expected to receive %v from the channel, got nothing after 1s", expected)
 		debug.PrintStack()
@@ -502,6 +504,7 @@ func assertReceive(t *testing.T, expected interface{}, ch <-chan pubsub.Message,
 }
 
 func assertCancelled(t *testing.T, subscription *pubsub.Subscription, err error) {
+	t.Helper()
 	_, ok := <-subscription.Canceled()
 	assert.False(t, ok)
 	assert.Equal(t, err, subscription.Err())

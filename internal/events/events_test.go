@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cometbft/cometbft/internal/rand"
 )
 
 // TestAddListenerForEventFireOnce sets up an EventSwitch, subscribes a single

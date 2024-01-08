@@ -3,16 +3,17 @@ package e2e_test
 import (
 	"testing"
 
+	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
 // Tests that block headers are identical across nodes where present.
 func TestBlock_Header(t *testing.T) {
+	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
 			return
 		}
@@ -49,7 +50,9 @@ func TestBlock_Header(t *testing.T) {
 
 // Tests that the node contains the expected block range.
 func TestBlock_Range(t *testing.T) {
+	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		// We do not run this test on seed nodes or nodes with data
 		// companion-related pruning enabled.
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {

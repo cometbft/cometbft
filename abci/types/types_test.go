@@ -3,11 +3,10 @@ package types_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHashAndProveResults(t *testing.T) {
@@ -41,7 +40,7 @@ func TestHashAndProveResults(t *testing.T) {
 		require.NoError(t, err)
 
 		valid := proofs[i].Verify(root, bz)
-		assert.NoError(t, valid, "%d", i)
+		require.NoError(t, valid, "%d", i)
 	}
 }
 

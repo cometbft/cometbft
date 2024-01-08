@@ -3,10 +3,9 @@ package commands
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/spf13/cobra"
 )
 
 // GenNodeKeyCmd allows the generation of a node key. It prints node's ID to

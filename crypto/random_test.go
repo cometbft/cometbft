@@ -3,9 +3,8 @@ package crypto_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/stretchr/testify/require"
 )
 
 // the purpose of this test is primarily to ensure that the randomness

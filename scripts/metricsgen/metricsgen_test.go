@@ -11,9 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
+	"github.com/stretchr/testify/require"
 )
 
 const testDataDir = "./testdata"

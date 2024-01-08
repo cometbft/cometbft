@@ -5,9 +5,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	metricsdiff "github.com/cometbft/cometbft/scripts/metricsgen/metricsdiff"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDiff(t *testing.T) {

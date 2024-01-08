@@ -9,14 +9,13 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/test/e2e/app"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -60,7 +59,6 @@ func testNode(t *testing.T, testFunc func(*testing.T, e2e.Node)) {
 
 		node := *node
 		t.Run(node.Name, func(t *testing.T) {
-			t.Parallel()
 			testFunc(t, node)
 		})
 	}
@@ -92,7 +90,6 @@ func testFullNodesOrValidators(t *testing.T, maxNodes int, testFunc func(*testin
 		if node.Mode == e2e.ModeFull || node.Mode == e2e.ModeValidator {
 			node := *node
 			t.Run(node.Name, func(t *testing.T) {
-				t.Parallel()
 				testFunc(t, node)
 			})
 			nodeCount++
@@ -200,6 +197,7 @@ func fetchBlockChain(t *testing.T) []*types.Block {
 // fetchABCIRequests go through the logs of a specific node and collect all ABCI requests (each slice represents requests from beginning until the first crash,
 // and then between two crashes) for a specific node.
 func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error) {
+	t.Helper()
 	testnet := loadTestnet(t)
 	logs, err := fetchNodeLogs(testnet)
 	if err != nil {

@@ -5,10 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
@@ -24,11 +20,14 @@ import (
 	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 const testAppVersion = 9
 
-// Sets up a basic syncer that can be used to test OfferSnapshot requests
+// Sets up a basic syncer that can be used to test OfferSnapshot requests.
 func setupOfferSyncer() (*syncer, *proxymocks.AppConnSnapshot) {
 	connQuery := &proxymocks.AppConnQuery{}
 	connSnapshot := &proxymocks.AppConnSnapshot{}
@@ -40,7 +39,7 @@ func setupOfferSyncer() (*syncer, *proxymocks.AppConnSnapshot) {
 	return syncer, connSnapshot
 }
 
-// Sets up a simple peer mock with an ID
+// Sets up a simple peer mock with an ID.
 func simplePeer(id string) *p2pmocks.Peer {
 	peer := &p2pmocks.Peer{}
 	peer.On("ID").Return(p2p.ID(id))
@@ -360,7 +359,7 @@ func TestSyncer_SyncAny_abciError(t *testing.T) {
 	}).Once().Return(nil, errBoom)
 
 	_, _, err = syncer.SyncAny(0, func() {})
-	assert.True(t, errors.Is(err, errBoom))
+	require.ErrorIs(t, err, errBoom)
 	connSnapshot.AssertExpectations(t)
 }
 

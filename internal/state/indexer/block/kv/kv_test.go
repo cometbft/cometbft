@@ -5,21 +5,19 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
-
+	db "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/internal/state/txindex/kv"
 	"github.com/cometbft/cometbft/internal/test"
-
-	db "github.com/cometbft/cometbft-db"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 )
 
 func TestBlockerIndexer_Prune(t *testing.T) {
@@ -144,7 +142,7 @@ func TestBlockIndexer(t *testing.T) {
 					Attributes: []abci.EventAttribute{
 						{
 							Key:   "foo",
-							Value: fmt.Sprintf("%d", i),
+							Value: strconv.Itoa(i),
 							Index: index,
 						},
 					},

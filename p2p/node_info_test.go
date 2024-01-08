@@ -3,15 +3,15 @@ package p2p
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNodeInfoValidate(t *testing.T) {
 	// empty fails
 	ni := DefaultNodeInfo{}
-	assert.Error(t, ni.Validate())
+	require.Error(t, ni.Validate())
 
 	channels := make([]byte, maxNumChannels)
 	for i := 0; i < maxNumChannels; i++ {
@@ -19,7 +19,7 @@ func TestNodeInfoValidate(t *testing.T) {
 	}
 	dupChannels := make([]byte, 5)
 	copy(dupChannels, channels[:5])
-	dupChannels = append(dupChannels, testCh)
+	dupChannels = append(dupChannels, testCh) //nolint:makezero // huge errors when we don't do it the "wrong" way
 
 	nonASCII := "¢§µ"
 	emptyTab := "\t"
@@ -32,7 +32,7 @@ func TestNodeInfoValidate(t *testing.T) {
 	}{
 		{
 			"Too Many Channels",
-			func(ni *DefaultNodeInfo) { ni.Channels = append(channels, byte(maxNumChannels)) }, //nolint: gocritic
+			func(ni *DefaultNodeInfo) { ni.Channels = append(channels, byte(maxNumChannels)) }, //nolint: makezero
 			true,
 		},
 		{"Duplicate Channel", func(ni *DefaultNodeInfo) { ni.Channels = dupChannels }, true},
@@ -71,7 +71,7 @@ func TestNodeInfoValidate(t *testing.T) {
 	// test case passes
 	ni = testNodeInfo(nodeKey.ID(), name).(DefaultNodeInfo)
 	ni.Channels = channels
-	assert.NoError(t, ni.Validate())
+	require.NoError(t, ni.Validate())
 
 	for _, tc := range testCases {
 		ni := testNodeInfo(nodeKey.ID(), name).(DefaultNodeInfo)
@@ -79,9 +79,9 @@ func TestNodeInfoValidate(t *testing.T) {
 		tc.malleateNodeInfo(&ni)
 		err := ni.Validate()
 		if tc.expectErr {
-			assert.Error(t, err, tc.testName)
+			require.Error(t, err, tc.testName)
 		} else {
-			assert.NoError(t, err, tc.testName)
+			require.NoError(t, err, tc.testName)
 		}
 	}
 }
@@ -96,17 +96,17 @@ func TestNodeInfoCompatible(t *testing.T) {
 	// test NodeInfo is compatible
 	ni1 := testNodeInfo(nodeKey1.ID(), name).(DefaultNodeInfo)
 	ni2 := testNodeInfo(nodeKey2.ID(), name).(DefaultNodeInfo)
-	assert.NoError(t, ni1.CompatibleWith(ni2))
+	require.NoError(t, ni1.CompatibleWith(ni2))
 
 	// add another channel; still compatible
 	ni2.Channels = append(ni2.Channels, newTestChannel)
 	assert.True(t, ni2.HasChannel(newTestChannel))
-	assert.NoError(t, ni1.CompatibleWith(ni2))
+	require.NoError(t, ni1.CompatibleWith(ni2))
 
 	// wrong NodeInfo type is not compatible
 	_, netAddr := CreateRoutableAddr()
 	ni3 := mockNodeInfo{netAddr}
-	assert.Error(t, ni1.CompatibleWith(ni3))
+	require.Error(t, ni1.CompatibleWith(ni3))
 
 	testCases := []struct {
 		testName         string
@@ -120,6 +120,6 @@ func TestNodeInfoCompatible(t *testing.T) {
 	for _, tc := range testCases {
 		ni := testNodeInfo(nodeKey2.ID(), name).(DefaultNodeInfo)
 		tc.malleateNodeInfo(&ni)
-		assert.Error(t, ni1.CompatibleWith(ni))
+		require.Error(t, ni1.CompatibleWith(ni))
 	}
 }

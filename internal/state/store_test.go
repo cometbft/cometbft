@@ -6,24 +6,21 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/internal/state/indexer/block"
 	"github.com/cometbft/cometbft/internal/state/txindex"
-
-	dbm "github.com/cometbft/cometbft-db"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStoreLoadValidators(t *testing.T) {
@@ -237,7 +234,7 @@ func TestTxResultsHash(t *testing.T) {
 	proof := results.ProveResult(0)
 	bz, err := results[0].Marshal()
 	require.NoError(t, err)
-	assert.NoError(t, proof.Verify(root, bz))
+	require.NoError(t, proof.Verify(root, bz))
 }
 
 func sliceToMap(s []int64) map[int64]bool {
@@ -268,7 +265,10 @@ func makeStateAndBlockStoreAndIndexers() (sm.State, *store.BlockStore, txindex.T
 	return state, store.NewBlockStore(blockDB), txIndexer, blockIndexer, func() { os.RemoveAll(config.RootDir) }, stateStore
 }
 
-func initStateStoreRetainHeights(stateStore sm.Store, appBlockRH, dcBlockRH, dcBlockResultsRH int64) error {
+func initStateStoreRetainHeights(stateStore sm.Store) error {
+	appBlockRH := int64(0)
+	dcBlockRH := int64(0)
+	dcBlockResultsRH := int64(0)
 	if err := stateStore.SaveApplicationRetainHeight(appBlockRH); err != nil {
 		return fmt.Errorf("failed to set initial application block retain height: %w", err)
 	}
@@ -282,6 +282,7 @@ func initStateStoreRetainHeights(stateStore sm.Store, appBlockRH, dcBlockRH, dcB
 }
 
 func fillStore(t *testing.T, height int64, stateStore sm.Store, bs *store.BlockStore, state sm.State, response1 *abci.FinalizeBlockResponse) {
+	t.Helper()
 	if response1 != nil {
 		for h := int64(1); h <= height; h++ {
 			err := stateStore.SaveFinalizeBlockResponse(h, response1)
@@ -311,7 +312,7 @@ func TestSaveRetainHeight(t *testing.T) {
 
 	fillStore(t, height, stateStore, bs, state, nil)
 	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger())
-	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
+	err := initStateStoreRetainHeights(stateStore)
 	require.NoError(t, err)
 
 	// We should not save a height that is 0
@@ -336,7 +337,7 @@ func TestMinRetainHeight(t *testing.T) {
 	defer callbackF()
 	pruner := sm.NewPruner(stateStore, bs, blockIndexer, txIndexer, log.TestingLogger(), sm.WithPrunerCompanionEnabled())
 
-	require.NoError(t, initStateStoreRetainHeights(stateStore, 0, 0, 0))
+	require.NoError(t, initStateStoreRetainHeights(stateStore))
 	minHeight := pruner.FindMinRetainHeight()
 	require.Equal(t, int64(0), minHeight)
 
@@ -465,7 +466,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 		state.LastBlockHeight = height - 1
 
 		fillStore(t, height, stateStore, bs, state, response1)
-		err = initStateStoreRetainHeights(stateStore, 0, 0, 0)
+		err = initStateStoreRetainHeights(stateStore)
 		require.NoError(t, err)
 
 		obs := newPrunerObserver(1)
@@ -531,7 +532,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		assert.Equal(t, lastResponse, response1)
 		// use an incorrect height to make sure the state store errors.
 		_, err = stateStore.LoadLastFinalizeBlockResponse(height + 1)
-		assert.Error(t, err)
+		require.Error(t, err)
 		// check if the abci response didn't save in the abciresponses.
 		responses, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err, responses)

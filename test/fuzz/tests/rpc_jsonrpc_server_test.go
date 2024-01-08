@@ -33,7 +33,7 @@ func FuzzRPCJSONRPCServer(f *testing.F) {
 			return
 		}
 
-		req, err := http.NewRequest("POST", "http://localhost/", bytes.NewReader(data))
+		req, err := http.NewRequest(http.MethodPost, "http://localhost/", bytes.NewReader(data))
 		if err != nil {
 			panic(err)
 		}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var tx = types.Tx([]byte{0x01})
@@ -28,10 +29,10 @@ func TestNopMempool_Basic(t *testing.T) {
 	assert.Nil(t, txs)
 
 	err = mem.FlushAppConn()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = mem.Update(0, nil, nil, nil, nil)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	txsAvailable := mem.TxsAvailable()
 	assert.Nil(t, txsAvailable)

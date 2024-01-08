@@ -6,9 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	mempl "github.com/cometbft/cometbft/test/fuzz/mempool"
+	"github.com/stretchr/testify/require"
 )
 
 const testdataCasesDir = "testdata/cases"

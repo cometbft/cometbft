@@ -5,13 +5,12 @@ import (
 	"math"
 	"testing"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
 	"github.com/cometbft/cometbft/internal/blocksync"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBcBlockRequestMessageValidateBasic(t *testing.T) {
@@ -56,7 +55,7 @@ func TestBcNoBlockResponseMessageValidateBasic(t *testing.T) {
 
 func TestBcStatusRequestMessageValidateBasic(t *testing.T) {
 	request := bcproto.StatusRequest{}
-	assert.NoError(t, blocksync.ValidateMsg(&request))
+	require.NoError(t, blocksync.ValidateMsg(&request))
 }
 
 func TestBcStatusResponseMessageValidateBasic(t *testing.T) {

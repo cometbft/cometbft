@@ -8,12 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
+	"github.com/stretchr/testify/require"
 )
 
 var _ pubsub.Query = (*query.Query)(nil)

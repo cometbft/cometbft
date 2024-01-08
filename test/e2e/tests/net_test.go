@@ -3,9 +3,8 @@ package e2e_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/stretchr/testify/require"
 )
 
 // Tests that all nodes have peered with each other, regardless of discovery method.
@@ -14,6 +13,7 @@ func TestNet_Peers(t *testing.T) {
 	t.SkipNow()
 
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		// Seed nodes shouldn't necessarily mesh with the entire network.
 		if node.Mode == e2e.ModeSeed {
 			return

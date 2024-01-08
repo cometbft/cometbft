@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cometbft/cometbft/libs/json"
 )
 
 func TestUnmarshal(t *testing.T) {

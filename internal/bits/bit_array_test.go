@@ -6,30 +6,29 @@ import (
 	"fmt"
 	"testing"
 
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
-func randBitArray(bits int) (*BitArray, []byte) {
+func randBitArray(bits int) *BitArray {
 	src := cmtrand.Bytes((bits + 7) / 8)
 	bA := NewBitArray(bits)
 	for i := 0; i < len(src); i++ {
 		for j := 0; j < 8; j++ {
 			if i*8+j >= bits {
-				return bA, src
+				return bA
 			}
 			setBit := src[i]&(1<<uint(j)) > 0
 			bA.SetIndex(i*8+j, setBit)
 		}
 	}
-	return bA, src
+	return bA
 }
 
 func TestAnd(t *testing.T) {
-	bA1, _ := randBitArray(51)
-	bA2, _ := randBitArray(31)
+	bA1 := randBitArray(51)
+	bA2 := randBitArray(31)
 	bA3 := bA1.And(bA2)
 
 	var bNil *BitArray
@@ -52,8 +51,8 @@ func TestAnd(t *testing.T) {
 }
 
 func TestOr(t *testing.T) {
-	bA1, _ := randBitArray(51)
-	bA2, _ := randBitArray(31)
+	bA1 := randBitArray(51)
+	bA2 := randBitArray(31)
 	bA3 := bA1.Or(bA2)
 
 	bNil := (*BitArray)(nil)
@@ -95,13 +94,14 @@ func TestSub(t *testing.T) {
 	for _, tc := range testCases {
 		var bA *BitArray
 		err := json.Unmarshal([]byte(tc.initBA), &bA)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		var o *BitArray
 		err = json.Unmarshal([]byte(tc.subtractingBA), &o)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
-		got, _ := json.Marshal(bA.Sub(o))
+		got, err := json.Marshal(bA.Sub(o))
+		require.NoError(t, err)
 		require.Equal(
 			t,
 			tc.expectedBA,
@@ -188,7 +188,7 @@ func TestEmptyFull(t *testing.T) {
 
 func TestUpdateNeverPanics(_ *testing.T) {
 	newRandBitArray := func(n int) *BitArray {
-		ba, _ := randBitArray(n)
+		ba := randBitArray(n)
 		return ba
 	}
 	pairs := []struct {

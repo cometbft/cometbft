@@ -14,9 +14,10 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/netutil"
+
 	"github.com/cometbft/cometbft/libs/log"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"golang.org/x/net/netutil"
 )
 
 // Config is a RPC server configuration.

@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/abci/server"
@@ -18,7 +20,6 @@ import (
 	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/spf13/cobra"
 )
 
 // client is a global variable so it can be reused by the console.

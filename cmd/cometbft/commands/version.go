@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/cometbft/cometbft/version"
 	"github.com/spf13/cobra"
+
+	"github.com/cometbft/cometbft/version"
 )
 
 // VersionCmd ...

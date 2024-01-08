@@ -4,6 +4,9 @@ import (
 	context "context"
 	"fmt"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
 	ptypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
@@ -11,8 +14,6 @@ import (
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type blockServiceServer struct {

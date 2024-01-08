@@ -5,11 +5,12 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	ctest "github.com/cometbft/cometbft/libs/test"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func makeTxs(cnt, size int) Txs {

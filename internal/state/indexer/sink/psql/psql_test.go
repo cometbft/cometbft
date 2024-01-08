@@ -12,16 +12,18 @@ import (
 	"time"
 
 	"github.com/adlio/schema"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/state/txindex"
-	tmlog "github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/types"
 	"github.com/cosmos/gogoproto/proto"
-	_ "github.com/lib/pq"
 	"github.com/ory/dockertest"
 	"github.com/ory/dockertest/docker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/lib/pq"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/state/txindex"
+	tmlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/types"
 )
 
 var (

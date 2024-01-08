@@ -3,7 +3,6 @@ package e2e
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	_ "embed"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"

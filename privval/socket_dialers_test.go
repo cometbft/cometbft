@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cometbft/cometbft/crypto/ed25519"
 )
 
 func getDialerTestCases(t *testing.T) []dialerTestCase {

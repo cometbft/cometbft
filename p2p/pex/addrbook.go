@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/minio/highwayhash"
+
 	"github.com/cometbft/cometbft/crypto"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/service"
@@ -21,7 +23,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/minio/highwayhash"
 )
 
 const (

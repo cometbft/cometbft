@@ -3,10 +3,11 @@ package xsalsa20symmetric
 import (
 	"testing"
 
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/cometbft/cometbft/crypto"
 )
 
 func TestSimple(t *testing.T) {

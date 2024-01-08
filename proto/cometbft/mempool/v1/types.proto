@@ -8,10 +8,12 @@ message Txs {
   repeated bytes txs = 1;
 }
 
+// SeenTx contains a list of transaction keys seen by the sender.
 message SeenTx {
   bytes tx_key = 1;
 }
 
+// WantTx contains a list of transaction keys wanted by the sender.
 message WantTx {
   bytes tx_key = 1;
 }

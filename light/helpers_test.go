@@ -184,7 +184,6 @@ func (pkz privKeys) ChangeKeys(delta int) privKeys {
 // blockSize) and with variation in validator sets. BlockIntervals are in per minute.
 // NOTE: Expected to have a large validator set size ~ 100 validators.
 func genMockNodeWithKeys(
-	chainID string,
 	blockSize int64,
 	valSize int,
 	valVariation float32,
@@ -194,6 +193,7 @@ func genMockNodeWithKeys(
 	map[int64]privKeys,
 ) {
 	var (
+		chainID         = "test-chain"
 		headers         = make(map[int64]*types.SignedHeader, blockSize)
 		valset          = make(map[int64]*types.ValidatorSet, blockSize+1)
 		keymap          = make(map[int64]privKeys, blockSize+1)
@@ -238,7 +238,6 @@ func genMockNodeWithKeys(
 }
 
 func genMockNode(
-	chainID string,
 	blockSize int64,
 	valSize int,
 	valVariation float32,
@@ -247,7 +246,8 @@ func genMockNode(
 	map[int64]*types.SignedHeader,
 	map[int64]*types.ValidatorSet,
 ) {
-	headers, valset, _ := genMockNodeWithKeys(chainID, blockSize, valSize, valVariation, bTime)
+	chainID := "test-chain"
+	headers, valset, _ := genMockNodeWithKeys(blockSize, valSize, valVariation, bTime)
 	return chainID, headers, valset
 }
 

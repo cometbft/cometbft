@@ -21,6 +21,18 @@ func Sum(bz []byte) []byte {
 	return h[:]
 }
 
+// SumMany takes at least 1 byteslice along with a variadic
+// number of other byteslices and produces the SHA256 sum from
+// hashing them as if they were 1 joined slice.
+func SumMany(data []byte, rest ...[]byte) []byte {
+	h := sha256.New()
+	h.Write(data)
+	for _, data := range rest {
+		h.Write(data)
+	}
+	return h.Sum(nil)
+}
+
 //-------------------------------------------------------------
 
 const (

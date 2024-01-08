@@ -1,17 +1,16 @@
 package blocksync
 
 import (
-	"fmt"
+	"strconv"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -206,7 +205,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 func TestBlockPoolRemovePeer(t *testing.T) {
 	peers := make(testPeers, 10)
 	for i := 0; i < 10; i++ {
-		peerID := p2p.ID(fmt.Sprintf("%d", i+1))
+		peerID := p2p.ID(strconv.Itoa(i + 1))
 		height := int64(i + 1)
 		peers[peerID] = testPeer{peerID, 0, height, make(chan inputData)}
 	}

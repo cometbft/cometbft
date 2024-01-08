@@ -12,13 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/types/mocks"
@@ -34,6 +28,10 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
@@ -72,6 +70,7 @@ func startNewStateAndWaitForBlock(
 	blockDB dbm.DB,
 	stateStore sm.Store,
 ) {
+	t.Helper()
 	logger := log.TestingLogger()
 	state, _ := stateStore.LoadFromDBOrGenesisFile(consensusReplayConfig.GenesisFile())
 	privValidator := loadPrivValidator(consensusReplayConfig)
@@ -163,6 +162,7 @@ func TestWALCrash(t *testing.T) {
 func crashWALandCheckLiveness(t *testing.T, consensusReplayConfig *cfg.Config,
 	initFn func(dbm.DB, *State, context.Context), heightToStop int64,
 ) {
+	t.Helper()
 	walPanicked := make(chan error)
 	crashingWal := &crashingWAL{panicCh: walPanicked, heightToStop: heightToStop}
 
@@ -319,11 +319,12 @@ const numBlocks = 6
 // 0 - all synced up
 // 1 - saved block but app and state are behind by one height
 // 2 - save block and committed (i.e. app got `Commit`) but state is behind
-// 3 - same as 2 but with a truncated block store
+// 3 - same as 2 but with a truncated block store.
 var modes = []uint{0, 1, 2, 3}
 
-// This is actually not a test, it's for storing validator change tx data for testHandshakeReplay
+// This is actually not a test, it's for storing validator change tx data for testHandshakeReplay.
 func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*cfg.Config, []*types.Block, []*types.ExtendedCommit, sm.State) {
+	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -371,7 +372,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	newValidatorTx1 := kvstore.MakeValSetChangeTx(valPubKey1ABCI, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	propBlock, err := css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
 	require.NoError(t, err)
 	propBlockParts, err := propBlock.MakePartSet(partSize)
@@ -403,7 +404,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	updateValidatorTx1 := kvstore.MakeValSetChangeTx(updatePubKey1ABCI, 25)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(updateValidatorTx1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
 	require.NoError(t, err)
 	propBlockParts, err = propBlock.MakePartSet(partSize)
@@ -442,7 +443,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	newValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx3)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
 	require.NoError(t, err)
 	propBlockParts, err = propBlock.MakePartSet(partSize)
@@ -484,7 +485,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 
 	removeValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, 0)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rs = css[0].GetRoundState()
 	for i := 0; i < nVals+1; i++ {
@@ -519,7 +520,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	incrementHeight(vss...)
 	removeValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, 0)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx3)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
 	require.NoError(t, err)
 	propBlockParts, err = propBlock.MakePartSet(partSize)
@@ -561,7 +562,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	return config, chain, extCommits, genesisState
 }
 
-// Sync from scratch
+// Sync from scratch.
 func TestHandshakeReplayAll(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -573,7 +574,7 @@ func TestHandshakeReplayAll(t *testing.T) {
 	}
 }
 
-// Sync many, not from scratch
+// Sync many, not from scratch.
 func TestHandshakeReplaySome(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -585,7 +586,7 @@ func TestHandshakeReplaySome(t *testing.T) {
 	}
 }
 
-// Sync from lagging by one
+// Sync from lagging by one.
 func TestHandshakeReplayOne(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -597,7 +598,7 @@ func TestHandshakeReplayOne(t *testing.T) {
 	}
 }
 
-// Sync from caught up
+// Sync from caught up.
 func TestHandshakeReplayNone(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -625,8 +626,9 @@ func tempWALWithData(data []byte) string {
 }
 
 // Make some blocks. Start a fresh app and apply nBlocks blocks.
-// Then restart the app and sync it up with the remaining blocks
+// Then restart the app and sync it up with the remaining blocks.
 func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uint, testValidatorsChange bool) {
+	t.Helper()
 	var (
 		testConfig   *cfg.Config
 		chain        []*types.Block
@@ -768,6 +770,7 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 }
 
 func applyBlock(t *testing.T, stateStore sm.Store, mempool mempool.Mempool, evpool sm.EvidencePool, st sm.State, blk *types.Block, proxyApp proxy.AppConns, bs sm.BlockStore) sm.State {
+	t.Helper()
 	testPartSize := types.BlockPartSizeBytes
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, evpool, bs)
 
@@ -782,6 +785,7 @@ func applyBlock(t *testing.T, stateStore sm.Store, mempool mempool.Mempool, evpo
 func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm.Store, mempool mempool.Mempool, evpool sm.EvidencePool,
 	state sm.State, chain []*types.Block, nBlocks int, mode uint, bs sm.BlockStore,
 ) {
+	t.Helper()
 	// start a new app without handshake, play nBlocks blocks
 	if err := proxyApp.Start(); err != nil {
 		panic(err)
@@ -816,7 +820,7 @@ func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm
 			// update the kvstore height and apphash
 			// as if we ran commit but not
 			// here we expect a dummy state store to be used
-			state = applyBlock(t, stateStore, mempool, evpool, state, chain[nBlocks-1], proxyApp, bs)
+			_ = applyBlock(t, stateStore, mempool, evpool, state, chain[nBlocks-1], proxyApp, bs)
 		}
 	default:
 		panic(fmt.Sprintf("unknown mode %v", mode))
@@ -835,6 +839,7 @@ func buildTMStateFromChain(
 	mode uint,
 	bs sm.BlockStore,
 ) (sm.State, []byte) {
+	t.Helper()
 	// run the whole chain against this client to build up the CometBFT state
 	clientCreator := proxy.NewLocalClientCreator(
 		kvstore.NewPersistentApplication(
@@ -1142,12 +1147,13 @@ func readPieceFromWAL(msg *TimedWALMessage) interface{} {
 	return nil
 }
 
-// fresh state and mock store
+// fresh state and mock store.
 func stateAndStore(
 	t *testing.T,
 	config *cfg.Config,
 	appVersion uint64,
 ) (dbm.DB, sm.State, *mockBlockStore) {
+	t.Helper()
 	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -1177,6 +1183,7 @@ var _ sm.BlockStore = &mockBlockStore{}
 
 // TODO: NewBlockStore(db.NewMemDB) ...
 func newMockBlockStore(t *testing.T, config *cfg.Config, params types.ConsensusParams) *mockBlockStore {
+	t.Helper()
 	return &mockBlockStore{
 		config: config,
 		params: params,

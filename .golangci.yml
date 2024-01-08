@@ -10,20 +10,17 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-    - dupword
     - deadcode
+    - dupword
     - errname
     - errorlint
     - exhaustive
     - exhaustivestruct
     - exhaustruct
     - forbidigo
-    - varcheck
     - forcetypeassert
     - funlen
     - gochecknoglobals
-    - goimports
-    - gocritic
     - gochecknoinits
     - gocognit
     - gocyclo
@@ -31,50 +28,50 @@ linters:
     - goerr113
     - golint
     - gomnd
-    - gofmt
     - gomoddirectives
     - ifshort
     - interfacebloat
     - interfacer
     - ireturn
     - lll
-    - structcheck
     - maintidx
     - maligned
     - nestif
     - nilnil
-    - noctx
     - nlreturn
     - nonamedreturns
-    - testpackage
-    - paralleltest
-    - unparam
     - nosnakecase
     - predeclared
-    - tagliatelle
+    - scopelint
     - structcheck
-    - varcheck
-    - deadcode
+    - tagliatelle
     - typecheck
+    - unparam
+    - varcheck
     - varnamelen
     - wrapcheck
-    - tparallel
     - wsl
-    - scopelint
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
+        - gocritic
+        - gofmt
+        - goimport
         - gosec
+        - noctx
+        - paralleltest
+        - testpackage
+        - tparallel
     - path: \.pb\.go
       linters:
         - gofmt
         - goimports
         - govet
         - stylecheck
-  max-same-issues: 250
-  max-issues-per-linter: 250
+  max-same-issues: 10000
+  max-issues-per-linter: 10000
 linters-settings:
   dogsled:
     max-blank-identifiers: 3

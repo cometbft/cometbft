@@ -153,14 +153,14 @@ func TestRotateFile(t *testing.T) {
 
 	// Read g.Head.Path+"000"
 	body1, err := os.ReadFile(g.Head.Path + ".000")
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to read first rolled file: %v", err)
 	if string(body1) != "Line 1\nLine 2\nLine 3\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body1))
 	}
 
 	// Read g.Head.Path
 	body2, err := os.ReadFile(g.Head.Path)
-	require.NoError(t, err)
+	require.NoError(t, err, "Failed to read first rolled file: %v", err)
 	if string(body2) != "Line 4\nLine 5\nLine 6\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body2))
 	}
@@ -188,7 +188,7 @@ func TestWrite(t *testing.T) {
 	require.NoError(t, err, "failed to create reader")
 
 	_, err = gr.Read(read)
-	require.NoError(t, err, "failed to read data")
+	require.NoError(t, err, "failed to read data: %v", err)
 	assert.Equal(t, written, read)
 
 	// Cleanup
@@ -218,7 +218,7 @@ func TestGroupReaderRead(t *testing.T) {
 	require.NoError(t, err, "failed to create reader")
 
 	n, err := gr.Read(read)
-	require.NoError(t, err, "failed to read data")
+	require.NoError(t, err, "failed to read data: %v", err)
 	assert.Equal(t, totalWrittenLength, n, "not enough bytes read")
 	professorPlusFrankenstein := professor
 	professorPlusFrankenstein = append(professorPlusFrankenstein, frankenstein...)

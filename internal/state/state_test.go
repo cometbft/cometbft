@@ -248,9 +248,9 @@ func TestValidatorSimpleSaveLoad(t *testing.T) {
 	err = statestore.Save(state)
 	require.NoError(t, err)
 	vp0, err := statestore.LoadValidators(nextHeight + 0)
-	require.NoError(t, err, "expected no err")
+	require.NoError(t, err)
 	vp1, err := statestore.LoadValidators(nextHeight + 1)
-	require.NoError(t, err, "expected no err")
+	require.NoError(t, err)
 	assert.Equal(vp0.Hash(), state.Validators.Hash(), "expected validator hashes to match")
 	assert.Equal(vp1.Hash(), state.NextValidators.Hash(), "expected next validator hashes to match")
 }
@@ -306,8 +306,8 @@ func TestOneValidatorChangesSaveLoad(t *testing.T) {
 
 	for i, power := range testCases {
 		v, err := stateStore.LoadValidators(int64(i + 1 + 1)) // +1 because vset changes delayed by 1 block.
-		require.NoError(t, err, fmt.Sprintf("expected no err at height %d", i))
-		assert.Equal(t, 1, v.Size(), fmt.Sprintf("validator set size is greater than 1: %d", v.Size()))
+		require.NoError(t, err, "expected no err at height %d", i)
+		assert.Equal(t, 1, v.Size(), "validator set size is greater than 1: %d", v.Size())
 		_, val := v.GetByIndex(0)
 
 		assert.Equal(t, val.VotingPower, power, fmt.Sprintf(`unexpected powerat
@@ -1066,7 +1066,7 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 
 	for _, testCase := range testCases {
 		p, err := stateStore.LoadConsensusParams(testCase.height)
-		require.NoError(t, err, fmt.Sprintf("expected no err at height %d", testCase.height))
+		require.NoError(t, err, "expected no err at height %d", testCase.height)
 		assert.EqualValues(t, testCase.params, p, fmt.Sprintf(`unexpected consensus params at
                 height %d`, testCase.height))
 	}

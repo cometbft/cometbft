@@ -550,7 +550,7 @@ the new API, to remove a disincentive to upgrading.
 > disruption for users in the v0.36 cycle, I have decided not to do this for
 > the first phase.
 >
-> If we wind up pushing this design into v0.37, however, we should re-evaulate
+> If we wind up pushing this design into v0.37, however, we should re-evaluate
 > this partial turn-down of the websocket.
 
 ### Future Work

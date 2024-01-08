@@ -580,8 +580,7 @@ func makeAndConnectReactorsStar(config *cfg.Config, c, n int) ([]*Reactor, []*p2
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()
 
-		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
-		reactors[i].SetLogger(logger.With("validator", i))
+		reactors[i] = NewReactor(config.Mempool, mempool, false, logger.With("validator", i)) // so we dont start the consensus states
 	}
 
 	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {

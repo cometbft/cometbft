@@ -26,6 +26,12 @@ func (*NopMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
 	return nil, errNotAllowed
 }
 
+func (*NopMempool) CheckNewTx(types.Tx) (*abcicli.ReqRes, error) {
+	return nil, errNotAllowed
+}
+
+func (*NopMempool) InvokeNewTxReceivedOnReactor(txKey types.TxKey) {}
+
 // RemoveTxByKey always returns an error.
 func (*NopMempool) RemoveTxByKey(types.TxKey) error { return errNotAllowed }
 

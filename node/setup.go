@@ -273,7 +273,7 @@ func createMempoolAndMempoolReactor(
 
 		return mp, reactor
 	case cfg.MempoolTypeCat:
-		logger.Info("Using the CAT gossip protocol")
+		logger.Info("Using the mempool with the push-pull gossip protocol (CAT)")
 		logger = logger.With("module", "mempool")
 		mp := mempl.NewCListMempool(
 			config.Mempool,

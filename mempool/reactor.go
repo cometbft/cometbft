@@ -312,6 +312,7 @@ func (memR *Reactor) addSender(txKey types.TxKey, senderID p2p.ID) {
 
 	if sendersSet, ok := memR.txSenders[txKey]; ok {
 		sendersSet[senderID] = true
+		return
 	}
 	memR.txSenders[txKey] = map[p2p.ID]bool{senderID: true}
 }

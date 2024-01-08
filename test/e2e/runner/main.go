@@ -11,6 +11,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/digitalocean"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 	"github.com/spf13/cobra"
 )
@@ -87,6 +88,13 @@ func NewCLI() *CLI {
 			switch inft {
 			case "docker":
 				cli.infp = &docker.Provider{
+					ProviderData: infra.ProviderData{
+						Testnet:            testnet,
+						InfrastructureData: ifd,
+					},
+				}
+			case "digital-ocean":
+				cli.infp = &digitalocean.Provider{
 					ProviderData: infra.ProviderData{
 						Testnet:            testnet,
 						InfrastructureData: ifd,

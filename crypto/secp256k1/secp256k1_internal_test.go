@@ -38,7 +38,7 @@ func Test_genPrivKey(t *testing.T) {
 			got := genPrivKey(bytes.NewReader(tt.notSoRand))
 			fe := new(big.Int).SetBytes(got[:])
 			require.Less(t, fe.Cmp(secp256k1.S256().N), 0, "expected %v to be less than %v", fe, secp256k1.S256().N)
-			require.Greater(t, fe.Sign(), 0, "expected %v to be greater than 0", fe)
+			require.Greater(t, fe.Sign(), 0)
 		})
 	}
 }

@@ -248,7 +248,7 @@ func TestValidatorSimpleSaveLoad(t *testing.T) {
 	err = statestore.Save(state)
 	require.NoError(t, err)
 	vp0, err := statestore.LoadValidators(nextHeight + 0)
-	require.NoError(t, err, "expected no err")
+	require.NoError(t, err)
 	vp1, err := statestore.LoadValidators(nextHeight + 1)
 	require.NoError(t, err, "expected no err")
 	assert.Equal(vp0.Hash(), state.Validators.Hash(), "expected validator hashes to match")

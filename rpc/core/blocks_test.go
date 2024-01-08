@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/mocks"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBlockchainInfo(t *testing.T) {
@@ -107,9 +105,9 @@ func TestBlockResults(t *testing.T) {
 	for _, tc := range testCases {
 		res, err := env.BlockResults(&rpctypes.Context{}, &tc.height)
 		if tc.wantErr {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tc.wantRes, res)
 		}
 	}

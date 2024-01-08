@@ -3,9 +3,8 @@ package test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMakeHeader(t *testing.T) {

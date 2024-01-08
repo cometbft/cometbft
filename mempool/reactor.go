@@ -306,16 +306,15 @@ func (memR *Reactor) isSender(txKey types.TxKey, peerID p2p.ID) bool {
 	return ok && sendersSet[peerID]
 }
 
-func (memR *Reactor) addSender(txKey types.TxKey, senderID p2p.ID) bool {
+func (memR *Reactor) addSender(txKey types.TxKey, senderID p2p.ID) {
 	memR.txSendersMtx.Lock()
 	defer memR.txSendersMtx.Unlock()
 
 	if sendersSet, ok := memR.txSenders[txKey]; ok {
 		sendersSet[senderID] = true
-		return false
+		return
 	}
 	memR.txSenders[txKey] = map[p2p.ID]bool{senderID: true}
-	return true
 }
 
 func (memR *Reactor) removeSenders(txKey types.TxKey) {

@@ -4,13 +4,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cometbft/cometbft/p2p"
 )
 
 func setupChunkQueue(t *testing.T) (*chunkQueue, func()) {
+	t.Helper()
 	snapshot := &snapshot{
 		Height:   3,
 		Format:   1,
@@ -50,7 +50,7 @@ func TestNewChunkQueue_TempDir(t *testing.T) {
 
 	files, err = os.ReadDir(dir)
 	require.NoError(t, err)
-	assert.Len(t, files, 0)
+	assert.Empty(t, files)
 }
 
 func TestChunkQueue(t *testing.T) {

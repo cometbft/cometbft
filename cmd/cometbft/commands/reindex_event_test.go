@@ -5,12 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/spf13/cobra"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	blockmocks "github.com/cometbft/cometbft/internal/state/indexer/mocks"
@@ -18,6 +13,9 @@ import (
 	txmocks "github.com/cometbft/cometbft/internal/state/txindex/mocks"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/types"
+	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 const (

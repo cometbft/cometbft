@@ -1,6 +1,6 @@
 run:
-  tests: false
-  timeout: 5m
+  tests: true
+  timeout: 10m
 
 linters:
   enable-all: true
@@ -8,6 +8,7 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
+    - deadcode
     - dupword
     - errname
     - errorlint
@@ -39,28 +40,37 @@ linters:
     - nonamedreturns
     - nosnakecase
     - predeclared
+    - revive
+    - scopelint
+    - structcheck
     - tagliatelle
     - typecheck
+    - unparam
+    - varcheck
     - varnamelen
     - wrapcheck
     - wsl
-    - scopelint
-    - unparam
-    - revive
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
+        - gocritic
+        - gofmt
+        - goimport
         - gosec
+        - noctx
+        - paralleltest
+        - testpackage
+        - tparallel
     - path: \.pb\.go
       linters:
         - gofmt
         - goimports
         - govet
         - stylecheck
-  max-same-issues: 50
-
+  max-same-issues: 10000
+  max-issues-per-linter: 10000
 linters-settings:
   dogsled:
     max-blank-identifiers: 3

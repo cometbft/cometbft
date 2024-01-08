@@ -15,7 +15,7 @@ func TestSimple(t *testing.T) {
 	ciphertext := EncryptSymmetric(plaintext, secret)
 	plaintext2, err := DecryptSymmetric(ciphertext, secret)
 
-	require.Nil(t, err, "%+v", err)
+	require.NoError(t, err, "%+v", err)
 	assert.Equal(t, plaintext, plaintext2)
 }
 
@@ -31,6 +31,6 @@ func TestSimpleWithKDF(t *testing.T) {
 	ciphertext := EncryptSymmetric(plaintext, secret)
 	plaintext2, err := DecryptSymmetric(ciphertext, secret)
 
-	require.Nil(t, err, "%+v", err)
+	require.NoError(t, err, "%+v", err)
 	assert.Equal(t, plaintext, plaintext2)
 }

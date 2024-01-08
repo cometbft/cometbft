@@ -3,6 +3,7 @@
 # Note that we run these checks regardless whether the input files have
 # changed, because generated code can change in response to toolchain updates
 # even if no files in the repository are modified.
+
 name: Check generated code
 on:
   pull_request:
@@ -46,7 +47,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1 # we need a .git directory to run git diff
+          fetch-depth: 1  # we need a .git directory to run git diff
 
       - name: "Check protobuf generated code"
         run: |

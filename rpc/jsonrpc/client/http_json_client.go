@@ -415,6 +415,7 @@ func DefaultHTTPClient(remoteAddr string) (*http.Client, error) {
 			// Set to true to prevent GZIP-bomb DoS attacks
 			DisableCompression: true,
 			Dial:               dialFn,
+			Proxy:              http.ProxyFromEnvironment,
 		},
 	}
 

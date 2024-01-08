@@ -222,26 +222,31 @@ clean_certs:
 ###                  Formatting, linting, and vetting                       ###
 ###############################################################################
 
-format:
-	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
-	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
-.PHONY: format
+# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
+# Revisit using format after CometBFT v1 release and/or after 2024-06-01.
+#format:
+#	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
+#	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
+#.PHONY: format
 
 lint:
 	@echo "--> Running linter"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
-lint-format:
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
-	@go run mvdan.cc/gofumpt -l -w ./..
-.PHONY: lint-format
+# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
+# Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
+#lint-format:
+#	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+#	@go run mvdan.cc/gofumpt -l -w ./..
+#.PHONY: lint-format
 
 vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
 
 lint-typo:
+	which codespell || pip3 install codespell
 	@codespell
 .PHONY: lint-typo
 

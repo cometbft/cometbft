@@ -4,14 +4,7 @@ import (
 	"testing"
 	"time"
 
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -22,7 +15,11 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 const validationTestsStopHeight int64 = 10
@@ -330,7 +327,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 			block := state.MakeBlock(height, test.MakeNTxs(height, 10), lastCommit, evidence, proposerAddr)
 
 			err := blockExec.ValidateBlock(state, block)
-			if assert.Error(t, err) {
+			if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 				_, ok := err.(*types.ErrEvidenceOverflow)
 				require.True(t, ok, "expected error to be of type ErrEvidenceOverflow at height %d but got %v", height, err)
 			}
@@ -365,6 +362,5 @@ func TestValidateBlockEvidence(t *testing.T) {
 		)
 		require.NoError(t, err, "height %d", height)
 		lastCommit = lastExtCommit.ToCommit()
-
 	}
 }

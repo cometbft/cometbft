@@ -6,12 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
@@ -32,6 +27,9 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -44,7 +42,7 @@ func TestApplyBlock(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	state, stateDB, _ := makeState(1, 1)
@@ -73,7 +71,7 @@ func TestApplyBlock(t *testing.T) {
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
 	state, err = blockExec.ApplyBlock(state, blockID, block)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// TODO check state and mempool
 	assert.EqualValues(t, 1, state.Version.Consensus.App, "App version wasn't updated")
@@ -236,11 +234,10 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		for i, v := range app.CommitVotes {
 			if ctr < len(tc.expectedAbsentValidators) &&
 				tc.expectedAbsentValidators[ctr] == i {
-
-				assert.Equal(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
+				assert.Equal(t, cmtproto.BlockIDFlagAbsent, v.BlockIdFlag)
 				ctr++
 			} else {
-				assert.NotEqual(t, v.BlockIdFlag, cmtproto.BlockIDFlagAbsent)
+				assert.NotEqual(t, cmtproto.BlockIDFlagAbsent, v.BlockIdFlag)
 			}
 		}
 	}
@@ -449,9 +446,9 @@ func TestValidateValidatorUpdates(t *testing.T) {
 	pubkey1 := ed25519.GenPrivKey().PubKey()
 	pubkey2 := ed25519.GenPrivKey().PubKey()
 	pk1, err := cryptoenc.PubKeyToProto(pubkey1)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	pk2, err := cryptoenc.PubKeyToProto(pubkey2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	defaultValidatorParams := types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeEd25519}}
 
@@ -494,9 +491,9 @@ func TestValidateValidatorUpdates(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := sm.ValidateValidatorUpdates(tc.abciUpdates, tc.validatorParams)
 			if tc.shouldErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -556,12 +553,12 @@ func TestUpdateValidators(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			updates, err := types.PB2TM.ValidatorUpdates(tc.abciUpdates)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			err = tc.currentSet.UpdateWithChangeSet(updates)
 			if tc.shouldErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				require.Equal(t, tc.resultingSet.Size(), tc.currentSet.Size())
 
 				assert.Equal(t, tc.resultingSet.TotalVotingPower(), tc.currentSet.TotalVotingPower())
@@ -664,7 +661,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 }
 
 // TestFinalizeBlockValidatorUpdatesResultingInEmptySet checks that processing validator updates that
-// would result in empty set causes no panic, an error is raised and NextValidators is not updated
+// would result in empty set causes no panic, an error is raised and NextValidators is not updated.
 func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	app := &testApp{}
 	cc := proxy.NewLocalClientCreator(app)
@@ -700,7 +697,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	}
 
 	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block) })
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.NotEmpty(t, state.NextValidators.Validators)
 }
 
@@ -743,7 +740,7 @@ func TestEmptyPrepareProposal(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	_, err = blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.NoError(t, err)
@@ -788,7 +785,7 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.NoError(t, err)
@@ -843,7 +840,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.NoError(t, err)
@@ -899,7 +896,7 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.Nil(t, block)
@@ -956,7 +953,7 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.Nil(t, block)
@@ -1010,7 +1007,7 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 		blockStore,
 	)
 	pa, _ := state.Validators.GetByIndex(0)
-	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.Nil(t, block)
@@ -1104,7 +1101,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 			require.NoError(t, err)
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 			pa, _ := state.Validators.GetByIndex(0)
-			lastCommit, _, _ := makeValidCommit(testCase.height-1, blockID, state.Validators, privVals)
+			lastCommit, _ := makeValidCommit(testCase.height-1, blockID, state.Validators, privVals)
 			stripSignatures(lastCommit)
 			if testCase.expectPanic {
 				require.Panics(t, func() {

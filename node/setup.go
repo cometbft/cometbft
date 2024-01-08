@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/lib/pq" // provide the psql db driver
-	_ "net/http/pprof"    //nolint: gosec // securely exposed on separate, optional port
+	_ "net/http/pprof" //nolint: gosec,gci // securely exposed on separate, optional port
+
+	_ "github.com/lib/pq" //nolint: gci // provide the psql db driver.
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"

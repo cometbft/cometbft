@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSeenTxSet(t *testing.T) {

@@ -46,7 +46,7 @@ Arguments in favor of leaving evidence handling in Tendermint:
   for the ABCI app to detect it (ie. we don't send all votes we receive during
   consensus to the app ... ).
 
-2) Amensia attacks can not be easily detected - they require an interactive
+2) Amnesia attacks can not be easily detected - they require an interactive
   protocol among all the validators to submit justification for their past
   votes. Our best notion of [how to do this
   currently](https://github.com/tendermint/tendermint/blob/c67154232ca8be8f5c21dff65d154127adc4f7bb/docs/spec/consensus/fork-detection.md)

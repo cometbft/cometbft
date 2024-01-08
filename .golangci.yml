@@ -1,8 +1,6 @@
 run:
   tests: true
   timeout: 10m
-  sort-results: true
-  allow-parallel-runners: true
 
 linters:
   enable-all: true

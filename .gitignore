@@ -60,6 +60,5 @@ proto/spec/**/*.pb.go
 *.pdf
 *.gz
 *.dvi
-.golangci.yml
 # Python virtual environments
 .venv

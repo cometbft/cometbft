@@ -7,6 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+	gogotypes "github.com/cosmos/gogoproto/types"
+
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	clist "github.com/cometbft/cometbft/internal/clist"
@@ -14,8 +17,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
-	"github.com/cosmos/gogoproto/proto"
-	gogotypes "github.com/cosmos/gogoproto/types"
 )
 
 const (

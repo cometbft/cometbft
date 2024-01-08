@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"testing"
 
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 func randBitArray(bits int) *BitArray {

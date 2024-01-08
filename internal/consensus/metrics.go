@@ -4,9 +4,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-kit/kit/metrics"
+
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	"github.com/cometbft/cometbft/types"
-	"github.com/go-kit/kit/metrics"
 )
 
 const (

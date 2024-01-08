@@ -1066,7 +1066,7 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 
 	for _, testCase := range testCases {
 		p, err := stateStore.LoadConsensusParams(testCase.height)
-		require.NoError(t, err, fmt.Sprintf("expected no err at height %d", testCase.height))
+		require.NoError(t, err, "expected no err at height %d", testCase.height)
 		assert.EqualValues(t, testCase.params, p, fmt.Sprintf(`unexpected consensus params at
                 height %d`, testCase.height))
 	}

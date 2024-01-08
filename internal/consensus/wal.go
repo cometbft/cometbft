@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	auto "github.com/cometbft/cometbft/internal/autofile"
 	cmtos "github.com/cometbft/cometbft/internal/os"
@@ -17,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 const (

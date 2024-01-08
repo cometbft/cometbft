@@ -5,9 +5,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/service"
-	"github.com/stretchr/testify/assert"
 )
 
 // mockPeer for testing the PeerSet.

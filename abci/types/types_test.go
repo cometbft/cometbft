@@ -40,7 +40,7 @@ func TestHashAndProveResults(t *testing.T) {
 		require.NoError(t, err)
 
 		valid := proofs[i].Verify(root, bz)
-		assert.NoError(t, valid, "%d", i)
+		require.NoError(t, valid, "%d", i)
 	}
 }
 

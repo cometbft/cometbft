@@ -17,8 +17,8 @@ func TestIterateKeysWithValues(t *testing.T) {
 
 	// Testing size
 	assert.Equal(t, 10, cmap.Size())
-	assert.Equal(t, 10, len(cmap.Keys()))
-	assert.Equal(t, 10, len(cmap.Values()))
+	assert.Len(t, cmap.Keys(), 10)
+	assert.Len(t, cmap.Values(), 10)
 
 	// Iterating Keys, checking for matching Value
 	for _, key := range cmap.Keys() {

@@ -18,7 +18,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// mempoolTx is an entry in the clist
+// mempoolTx is an entry in the clist.
 type mempoolTx struct {
 	tx        types.Tx // validated by the application
 	height    int64    // height that this tx had been validated in
@@ -33,7 +33,7 @@ func (memTx *mempoolTx) Tx() types.Tx {
 	return memTx.tx
 }
 
-// CElement wrapper
+// CElement wrapper.
 type CListEntry struct {
 	elem *clist.CElement
 }
@@ -207,7 +207,7 @@ func (mem *CListMempool) WasRejected(txKey types.TxKey) bool {
 	return mem.rejectedTxsCache.Has(txKey)
 }
 
-// NOTE: not thread safe - should only be called once, on startup
+// NOTE: not thread safe - should only be called once, on startup.
 func (mem *CListMempool) EnableTxsAvailable() {
 	mem.txsAvailable = make(chan struct{}, 1)
 }
@@ -289,7 +289,7 @@ func (mem *CListMempool) Flush() {
 	mem.removeAllTxs()
 }
 
-// Height returns the latest height that the mempool is at
+// Height returns the latest height that the mempool is at.
 func (mem *CListMempool) Height() int64 {
 	mem.updateMtx.Lock()
 	defer mem.updateMtx.Unlock()

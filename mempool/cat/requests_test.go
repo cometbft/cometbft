@@ -2,6 +2,7 @@ package cat
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -104,7 +105,7 @@ func TestRequestSchedulerConcurrencyAddsAndReads(t *testing.T) {
 		addWg.Add(1)
 		go func(i int) {
 			defer addWg.Done()
-			peerID := p2p.ID(fmt.Sprintf("%d", i))
+			peerID := p2p.ID(strconv.Itoa(i))
 			requests.Add(keys[i%N], peerID, nil)
 		}(i)
 	}
@@ -131,7 +132,7 @@ func TestRequestSchedulerConcurrencyAddsAndReads(t *testing.T) {
 					markReceived()
 				}
 			}
-		}(p2p.ID(fmt.Sprintf("%d", i)))
+		}(p2p.ID(strconv.Itoa(i)))
 	}
 	addWg.Wait()
 	close(doneCh)

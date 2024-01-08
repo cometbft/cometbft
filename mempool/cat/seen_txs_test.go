@@ -2,14 +2,14 @@ package cat
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSeenTxSet(t *testing.T) {
@@ -55,7 +55,7 @@ func TestSeenTxSetConcurrency(_ *testing.T) {
 			defer wg.Done()
 			for i := 0; i < numTx; i++ {
 				tx := types.Tx([]byte(fmt.Sprintf("tx%d", i)))
-				seenSet.Add(tx.Key(), p2p.ID(fmt.Sprintf("%d", i)))
+				seenSet.Add(tx.Key(), p2p.ID(strconv.Itoa(i)))
 			}
 		}(uint16(i % 2))
 	}
@@ -66,7 +66,7 @@ func TestSeenTxSetConcurrency(_ *testing.T) {
 			defer wg.Done()
 			for i := 0; i < numTx; i++ {
 				tx := types.Tx([]byte(fmt.Sprintf("tx%d", i)))
-				seenSet.Has(tx.Key(), p2p.ID(fmt.Sprintf("%d", i)))
+				seenSet.Has(tx.Key(), p2p.ID(strconv.Itoa(i)))
 			}
 		}(uint16(i % 2))
 	}

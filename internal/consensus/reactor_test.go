@@ -971,7 +971,7 @@ func TestBlockPartMessageValidateBasic(t *testing.T) {
 	message := BlockPartMessage{Height: 0, Round: 0, Part: new(types.Part)}
 	message.Part.Index = 1
 
-	assert.True(t, message.ValidateBasic() != nil, "ValidateBasic had an unexpected result")
+	require.Error(t, message.ValidateBasic())
 }
 
 func TestHasVoteMessageValidateBasic(t *testing.T) {

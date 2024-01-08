@@ -181,7 +181,7 @@ func TestValUpdates(t *testing.T) {
 
 	makeApplyBlock(ctx, t, kvstore, 2, diff, tx1, tx2, tx3)
 
-	vals1 = append(vals[:nInit-2], vals[nInit+1]) //nolint: gocritic
+	vals1 = append(vals[:nInit-2], vals[nInit+1])
 	vals2 = kvstore.getValidators()
 	valsEqual(t, vals1, vals2)
 

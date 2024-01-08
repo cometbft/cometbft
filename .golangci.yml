@@ -8,20 +8,17 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-    - dupword
     - deadcode
+    - dupword
     - errname
     - errorlint
     - exhaustive
     - exhaustivestruct
     - exhaustruct
     - forbidigo
-    - varcheck
     - forcetypeassert
     - funlen
     - gochecknoglobals
-    - goimports
-    - gocritic
     - gochecknoinits
     - gocognit
     - gocyclo
@@ -29,40 +26,43 @@ linters:
     - goerr113
     - golint
     - gomnd
-    - gofmt
     - gomoddirectives
     - ifshort
     - interfacebloat
     - interfacer
     - ireturn
     - lll
-    - structcheck
     - maintidx
     - maligned
     - nestif
     - nilnil
-    - noctx
     - nlreturn
     - nonamedreturns
-    - testpackage
-    - paralleltest
-    - unparam
     - nosnakecase
     - predeclared
+    - revive
+    - scopelint
+    - structcheck
     - tagliatelle
     - typecheck
+    - unparam
+    - varcheck
     - varnamelen
     - wrapcheck
-    - tparallel
     - wsl
-    - scopelint
-    - revive
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
+        - gocritic
+        - gofmt
+        - goimport
         - gosec
+        - noctx
+        - paralleltest
+        - testpackage
+        - tparallel
     - path: \.pb\.go
       linters:
         - gofmt

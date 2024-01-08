@@ -67,6 +67,7 @@ func (m *Txs) GetTxs() [][]byte {
 	return nil
 }
 
+// SeenTx contains a list of transaction keys seen by the sender.
 type SeenTx struct {
 	TxKey []byte `protobuf:"bytes,1,opt,name=tx_key,json=txKey,proto3" json:"tx_key,omitempty"`
 }
@@ -111,6 +112,7 @@ func (m *SeenTx) GetTxKey() []byte {
 	return nil
 }
 
+// WantTx contains a list of transaction keys wanted by the sender.
 type WantTx struct {
 	TxKey []byte `protobuf:"bytes,1,opt,name=tx_key,json=txKey,proto3" json:"tx_key,omitempty"`
 }

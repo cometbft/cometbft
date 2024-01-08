@@ -179,7 +179,7 @@ number of operations used to verify a signature does not grow at all with the
 number of signatures included in the aggregate signature (as long as the signers
 signed over the same message data as is the case in Tendermint).
 
-It is worth noting that this would also represent a _degredation_ in signature
+It is worth noting that this would also represent a _degradation_ in signature
 verification time for chains with small validator sets. When batch verifying
 only 32 signatures, our ed25519 library takes .57 milliseconds, whereas BLS
 would still require the same 1.5 milliseconds.

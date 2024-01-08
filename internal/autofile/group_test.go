@@ -188,7 +188,7 @@ func TestWrite(t *testing.T) {
 	require.NoError(t, err, "failed to create reader")
 
 	_, err = gr.Read(read)
-	require.NoError(t, err, "failed to read data")
+	require.NoError(t, err, "failed to read data: %v", err)
 	assert.Equal(t, written, read)
 
 	// Cleanup

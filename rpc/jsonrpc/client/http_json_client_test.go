@@ -26,8 +26,8 @@ func TestHTTPClientMakeHTTPDialer(t *testing.T) {
 	for _, testURL := range []string{ts.URL, tsTLS.URL} {
 		u, err := newParsedURL(testURL)
 		require.NoError(t, err)
-		dialFn, err := makeHTTPDialer(testURL)
-		require.Nil(t, err)
+		dialFn, err := MakeHTTPDialer(testURL)
+		require.NoError(t, err)
 
 		addr, err := dialFn(u.Scheme, u.GetHostWithPath())
 		require.NoError(t, err)

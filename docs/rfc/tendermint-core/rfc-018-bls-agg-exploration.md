@@ -60,7 +60,7 @@ elliptic curves over a finite field. With some original curve, you can define tw
 `G1` and `G2` which are points of the original curve _modulo_ different values.
 Finally, you define a third group `Gt`, where points from `G1` and `G2` satisfy
 the property of bilinearity with `Gt`. In this scheme, the function `e` takes
-as inputs points in `G1` and `G2` and outputs values in `Gt`. Succintly, given
+as inputs points in `G1` and `G2` and outputs values in `Gt`. Succinctly, given
 some point `P` in `G1` and some point `Q` in `G1`, `e(P, Q) = C` where `C` is in `Gt`.
 You can efficiently compute the mapping of points in `G1` and `G2` into `Gt`,
 but you cannot efficiently determine what points were summed and paired to
@@ -179,7 +179,7 @@ number of operations used to verify a signature does not grow at all with the
 number of signatures included in the aggregate signature (as long as the signers
 signed over the same message data as is the case in Tendermint).
 
-It is worth noting that this would also represent a _degredation_ in signature
+It is worth noting that this would also represent a _degradation_ in signature
 verification time for chains with small validator sets. When batch verifying
 only 32 signatures, our ed25519 library takes .57 milliseconds, whereas BLS
 would still require the same 1.5 milliseconds.

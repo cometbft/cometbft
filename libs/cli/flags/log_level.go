@@ -73,7 +73,6 @@ func ParseLogLevel(lvl string, logger log.Logger, defaultLogLevelValue string) (
 						list)
 			}
 			options = append(options, option)
-
 		}
 	}
 

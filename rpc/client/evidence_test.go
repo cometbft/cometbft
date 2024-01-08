@@ -6,32 +6,31 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/privval"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/rpc/client"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
 	"github.com/cometbft/cometbft/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // For some reason the empty node used in tests has a time of
 // 2018-10-10 08:20:13.695936996 +0000 UTC
 // this is because the test genesis time is set here
-// so in order to validate evidence we need evidence to be the same time
+// so in order to validate evidence we need evidence to be the same time.
 var defaultTestTime = time.Date(2018, 10, 10, 8, 20, 13, 695936996, time.UTC)
 
 func newEvidence(t *testing.T, val *privval.FilePV,
 	vote *types.Vote, vote2 *types.Vote,
-	chainID string) *types.DuplicateVoteEvidence {
-
+	chainID string,
+) *types.DuplicateVoteEvidence {
+	t.Helper()
 	var err error
 
 	v := vote.ToProto()
@@ -56,12 +55,13 @@ func makeEvidences(
 	val *privval.FilePV,
 	chainID string,
 ) (correct *types.DuplicateVoteEvidence, fakes []*types.DuplicateVoteEvidence) {
+	t.Helper()
 	vote := types.Vote{
 		ValidatorAddress: val.Key.Address,
 		ValidatorIndex:   0,
 		Height:           1,
 		Round:            0,
-		Type:             cmtproto.PrevoteType,
+		Type:             types.PrevoteType,
 		Timestamp:        defaultTestTime,
 		BlockID: types.BlockID{
 			Hash: tmhash.Sum(cmtrand.Bytes(tmhash.Size)),
@@ -102,7 +102,7 @@ func makeEvidences(
 	// different type
 	{
 		v := vote2
-		v.Type = cmtproto.PrecommitType
+		v.Type = types.PrecommitType
 		fakes = append(fakes, newEvidence(t, val, &vote, &v, chainID))
 	}
 
@@ -162,6 +162,6 @@ func TestBroadcastEvidence_DuplicateVoteEvidence(t *testing.T) {
 func TestBroadcastEmptyEvidence(t *testing.T) {
 	for _, c := range GetClients() {
 		_, err := c.BroadcastEvidence(context.Background(), nil)
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }

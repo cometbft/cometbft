@@ -6,7 +6,7 @@ set -e
 
 # Get the version from the environment, or try to figure it out.
 if [ -z $VERSION ]; then
-	VERSION=$(awk -F\" 'TMCoreSemVer =/ { print $2; exit }' < version/version.go)
+	VERSION=$(awk -F\" 'CMTSemVer =/ { print $2; exit }' < version/version.go)
 fi
 if [ -z "$VERSION" ]; then
     echo "Please specify a version."
@@ -41,7 +41,7 @@ for arch in "${arch_list[@]}"; do
 	for os in "${os_list[@]}"; do
 		if [[ "$XC_EXCLUDE" !=  *" $os/$arch "* ]]; then
 			echo "--> $os/$arch"
-			GOOS=${os} GOARCH=${arch} go build -ldflags "-s -w -X ${GIT_IMPORT}.TMCoreSemVer=${VERSION}" -tags="${BUILD_TAGS}" -o "build/pkg/${os}_${arch}/cometbft" ./cmd/cometbft
+			GOOS=${os} GOARCH=${arch} go build -ldflags "-s -w -X ${GIT_IMPORT}.CMTSemVer=${VERSION}" -tags="${BUILD_TAGS}" -o "build/pkg/${os}_${arch}/cometbft" ./cmd/cometbft
 		fi
 	done
 done

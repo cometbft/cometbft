@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
+	service "github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/internal/state"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	service "github.com/cometbft/cometbft/libs/service"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
@@ -67,7 +67,7 @@ func KeyPathFn(fn KeyPathFunc) Option {
 
 // DefaultMerkleKeyPathFn creates a function used to generate merkle key paths
 // from a path string and a key. This is the default used by the cosmos SDK.
-// This merkle key paths are required when verifying /abci_query calls
+// This merkle key paths are required when verifying /abci_query calls.
 func DefaultMerkleKeyPathFn() KeyPathFunc {
 	// regexp for extracting store name from /abci_query path
 	storeNameRegexp := regexp.MustCompile(`\/store\/(.+)\/key`)
@@ -130,8 +130,8 @@ func (c *Client) ABCIQuery(ctx context.Context, path string, data cmtbytes.HexBy
 
 // ABCIQueryWithOptions returns an error if opts.Prove is false.
 func (c *Client) ABCIQueryWithOptions(ctx context.Context, path string, data cmtbytes.HexBytes,
-	opts rpcclient.ABCIQueryOptions) (*ctypes.ResultABCIQuery, error) {
-
+	opts rpcclient.ABCIQueryOptions,
+) (*ctypes.ResultABCIQuery, error) {
 	// always request the proof
 	opts.Prove = true
 
@@ -378,7 +378,7 @@ func (c *Client) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBl
 
 // BlockResults returns the block results for the given height. If no height is
 // provided, the results of the block preceding the latest are returned.
-// NOTE: Light client only verifies the tx results
+// NOTE: Light client only verifies the tx results.
 func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.ResultBlockResults, error) {
 	var h int64
 	if height == nil {
@@ -411,7 +411,7 @@ func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.Resul
 	}
 
 	// Build a Merkle tree out of the above 3 binary slices.
-	rH := state.TxResultsHash(res.TxsResults)
+	rH := state.TxResultsHash(res.TxResults)
 
 	// Verify block results.
 	if !bytes.Equal(rH, trustedBlock.LastResultsHash) {
@@ -422,7 +422,7 @@ func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.Resul
 	return res, nil
 }
 
-// Header fetches and verifies the header directly via the light client
+// Header fetches and verifies the header directly via the light client.
 func (c *Client) Header(ctx context.Context, height *int64) (*ctypes.ResultHeader, error) {
 	lb, err := c.updateLightClientIfNeededTo(ctx, height)
 	if err != nil {
@@ -518,7 +518,6 @@ func (c *Client) Validators(
 	height *int64,
 	pagePtr, perPagePtr *int,
 ) (*ctypes.ResultValidators, error) {
-
 	// Update the light client if we're behind and retrieve the light block at the
 	// requested height or at the latest height if no height is provided.
 	l, err := c.updateLightClientIfNeededTo(ctx, height)
@@ -540,7 +539,8 @@ func (c *Client) Validators(
 		BlockHeight: l.Height,
 		Validators:  v,
 		Count:       len(v),
-		Total:       totalCount}, nil
+		Total:       totalCount,
+	}, nil
 }
 
 func (c *Client) BroadcastEvidence(ctx context.Context, ev types.Evidence) (*ctypes.ResultBroadcastEvidence, error) {
@@ -548,7 +548,8 @@ func (c *Client) BroadcastEvidence(ctx context.Context, ev types.Evidence) (*cty
 }
 
 func (c *Client) Subscribe(ctx context.Context, subscriber, query string,
-	outCapacity ...int) (out <-chan ctypes.ResultEvent, err error) {
+	outCapacity ...int,
+) (out <-chan ctypes.ResultEvent, err error) {
 	return c.next.Subscribe(ctx, subscriber, query, outCapacity...)
 }
 
@@ -582,7 +583,7 @@ func (c *Client) RegisterOpDecoder(typ string, dec merkle.OpDecoder) {
 
 // SubscribeWS subscribes for events using the given query and remote address as
 // a subscriber, but does not verify responses (UNSAFE)!
-// TODO: verify data
+// TODO: verify data.
 func (c *Client) SubscribeWS(ctx *rpctypes.Context, query string) (*ctypes.ResultSubscribe, error) {
 	out, err := c.next.Subscribe(context.Background(), ctx.RemoteAddr(), query)
 	if err != nil {
@@ -629,9 +630,9 @@ func (c *Client) UnsubscribeAllWS(ctx *rpctypes.Context) (*ctypes.ResultUnsubscr
 	return &ctypes.ResultUnsubscribe{}, nil
 }
 
-// XXX: Copied from rpc/core/env.go
+// XXX: Copied from rpc/core/env.go.
 const (
-	// see README
+	// see README.
 	defaultPerPage = 30
 	maxPerPage     = 100
 )

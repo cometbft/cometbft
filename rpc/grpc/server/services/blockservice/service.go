@@ -4,12 +4,12 @@ import (
 	context "context"
 	"fmt"
 
+	blocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
+	ptypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/rpctrace"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	blocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	ptypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,7 +30,7 @@ func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) b
 	}
 }
 
-// GetByHeight implements v1.BlockServiceServer GetByHeight method
+// GetByHeight implements v1.BlockServiceServer GetByHeight method.
 func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
 	logger := s.logger.With("endpoint", "GetByHeight")
 	if err := validateBlockHeight(req.Height, s.store.Base(), s.store.Height()); err != nil {
@@ -94,7 +94,7 @@ func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes.
 	return &blockIDProto, bp, nil
 }
 
-// GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method
+// GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method.
 func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest, stream blocksvc.BlockService_GetLatestHeightServer) error {
 	logger := s.logger.With("endpoint", "GetLatestHeight")
 

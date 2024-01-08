@@ -160,7 +160,7 @@ func (r *BlockchainReacor) ioRoutine(ioMesgs chan Message, outMsgs chan Message)
 			case scStatusRequestMessage
 				r.sendStatusRequestToPeer(...)
 			case bcPeerError
-				r.Swtich.StopPeerForError(msg.src)
+				r.Switch.StopPeerForError(msg.src)
 				...
 			...
 			case bcFinished
@@ -384,7 +384,7 @@ Implemented
 ### Positive
 
 - Test become deterministic
-- Simulation becomes a-termporal: no need wait for a wall-time timeout
+- Simulation becomes a-temporal: no need wait for a wall-time timeout
 - Peer Selection can be independently tested/simulated
 - Develop a general approach to refactoring reactors
 

@@ -11,21 +11,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
-
 	dbm "github.com/cometbft/cometbft-db"
-
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/light"
 	lproxy "github.com/cometbft/cometbft/light/proxy"
 	lrpc "github.com/cometbft/cometbft/light/rpc"
 	dbs "github.com/cometbft/cometbft/light/store/db"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	"github.com/spf13/cobra"
 )
 
-// LightCmd represents the base command when called without any subcommands
+// LightCmd represents the base command when called without any subcommands.
 var LightCmd = &cobra.Command{
 	Use:   "light [chainID]",
 	Short: "Run a light client proxy server, verifying CometBFT rpc",

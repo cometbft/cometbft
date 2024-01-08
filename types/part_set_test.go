@@ -4,11 +4,10 @@ import (
 	"io"
 	"testing"
 
+	"github.com/cometbft/cometbft/crypto/merkle"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/cometbft/cometbft/crypto/merkle"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 
 const (
@@ -44,11 +43,11 @@ func TestBasicPartSet(t *testing.T) {
 	// adding part with invalid index
 	added, err := partSet2.AddPart(&Part{Index: 10000})
 	assert.False(t, added)
-	assert.Error(t, err)
+	require.Error(t, err)
 	// adding existing part
 	added, err = partSet2.AddPart(partSet2.GetPart(0))
 	assert.False(t, added)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, partSet.Hash(), partSet2.Hash())
 	assert.EqualValues(t, nParts, partSet2.Total())
@@ -145,8 +144,10 @@ func TestParSetHeaderProtoBuf(t *testing.T) {
 		expPass bool
 	}{
 		{"success empty", &PartSetHeader{}, true},
-		{"success",
-			&PartSetHeader{Total: 1, Hash: []byte("hash")}, true},
+		{
+			"success",
+			&PartSetHeader{Total: 1, Hash: []byte("hash")}, true,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -162,7 +163,6 @@ func TestParSetHeaderProtoBuf(t *testing.T) {
 }
 
 func TestPartProtoBuf(t *testing.T) {
-
 	proof := merkle.Proof{
 		Total:    1,
 		Index:    1,
@@ -175,8 +175,10 @@ func TestPartProtoBuf(t *testing.T) {
 	}{
 		{"failure empty", &Part{}, false},
 		{"failure nil", nil, false},
-		{"success",
-			&Part{Index: 1, Bytes: cmtrand.Bytes(32), Proof: proof}, true},
+		{
+			"success",
+			&Part{Index: 1, Bytes: cmtrand.Bytes(32), Proof: proof}, true,
+		},
 	}
 
 	for _, tc := range testCases {

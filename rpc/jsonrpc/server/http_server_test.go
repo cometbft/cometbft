@@ -13,11 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/cometbft/cometbft/libs/log"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type sampleResult struct {
@@ -138,6 +137,7 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 	assert.Equal(t, `[{"jsonrpc":"2.0","id":-1,"result":{"value":"hello"}},{"jsonrpc":"2.0","id":-1,"result":{"value":"world"}}]`, string(body))
 }
 
+// TestWriteRPCResponseHTTPError tests WriteRPCResponseHTTPError.
 func TestWriteRPCResponseHTTPError(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := WriteRPCResponseHTTPError(
@@ -145,10 +145,13 @@ func TestWriteRPCResponseHTTPError(t *testing.T) {
 		http.StatusInternalServerError,
 		types.RPCInternalError(types.JSONRPCIntID(-1), errors.New("foo")))
 	require.NoError(t, err)
+
 	resp := w.Result()
 	body, err := io.ReadAll(resp.Body)
-	_ = resp.Body.Close()
 	require.NoError(t, err)
+	err = resp.Body.Close()
+	require.NoError(t, err)
+
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 	assert.Equal(t, `{"jsonrpc":"2.0","id":-1,"error":{"code":-32603,"message":"Internal error","data":"foo"}}`, string(body))

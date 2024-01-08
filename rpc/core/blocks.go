@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"sort"
 
+	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
+	blockidxnull "github.com/cometbft/cometbft/internal/state/indexer/block/null"
 	"github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -191,7 +191,7 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 
 	return &ctypes.ResultBlockResults{
 		Height:                height,
-		TxsResults:            results.TxResults,
+		TxResults:             results.TxResults,
 		FinalizeBlockEvents:   results.Events,
 		ValidatorUpdates:      results.ValidatorUpdates,
 		ConsensusParamUpdates: results.ConsensusParamUpdates,

@@ -46,7 +46,7 @@ Arguments in favor of leaving evidence handling in Tendermint:
   for the ABCI app to detect it (ie. we don't send all votes we receive during
   consensus to the app ... ).
 
-2) Amensia attacks can not be easily detected - they require an interactive
+2) Amnesia attacks can not be easily detected - they require an interactive
   protocol among all the validators to submit justification for their past
   votes. Our best notion of [how to do this
   currently](https://github.com/tendermint/tendermint/blob/c67154232ca8be8f5c21dff65d154127adc4f7bb/docs/spec/consensus/fork-detection.md)
@@ -57,7 +57,7 @@ Arguments in favor of leaving evidence handling in Tendermint:
   Validators must submit all the votes they saw for the relevant consensus
   height to justify their precommits. This is quite specific to the Tendermint
   protocol and may change if the protocol is upgraded. Hence it would be awkward
-  to co-ordinate this from the app.
+  to coordinate this from the app.
 
 3) Evidence gossipping is similar to tx gossipping, but it should be higher
   priority. Since the mempool does not support any notion of priority yet,

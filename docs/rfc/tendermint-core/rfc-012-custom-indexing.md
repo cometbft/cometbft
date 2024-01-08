@@ -56,7 +56,7 @@ a datum published to or received from the pubsub bus, and **ABCI event** or
 **Indexing** in this context means recording the association between certain
 ABCI metadata and the blocks or transactions they're attached to. The ABCI
 metadata typically carry application-specific details like sender and recipient
-addresses, catgory tags, and so forth, that are not part of consensus but are
+addresses, category tags, and so forth, that are not part of consensus but are
 used by UI tools to find and display transactions of interest.
 
 The consensus node records the blocks and transactions as part of its block
@@ -128,7 +128,7 @@ proprietary indexer. These include:
   are reported to a custom indexer.
 
 - The interface requires the implementation to define methods for the legacy
-  search and query API. This requirement comes from the integation with the
+  search and query API. This requirement comes from the integration with the
   [event subscription RPC API][event-rpc], but actually supporting these
   methods is not trivial.
 
@@ -199,7 +199,7 @@ Inevitably, a question will arise whether we could implement both strategies
 and toggle between them with a flag. That would be a worst-case scenario,
 requiring us to maintain the complexity of two very-different operational
 concerns.  If our goal is that Tendermint should be as simple, efficient, and
-trustworthy as posible, there is not a strong case for making these options
+trustworthy as possible, there is not a strong case for making these options
 configurable: We should pick a side and commit to it.
 
 ### Design Principles

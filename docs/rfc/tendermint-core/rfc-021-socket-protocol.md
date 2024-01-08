@@ -235,7 +235,7 @@ design.
   essential to avoid it.
 
   This is a sound principle, but conflates protocol errors with "mechanical"
-  errors such as timeouts, resoures exhaustion, failed connections, and so on.
+  errors such as timeouts, resources exhaustion, failed connections, and so on.
   Because the protocol has no way to distinguish these conditions, the only way
   for an application to report an error is to panic or crash.
 

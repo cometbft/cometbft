@@ -175,7 +175,7 @@ we see the collected metrics when we run the nodes without the optimization. On
 the right we see the results of running the nodes with the optimization, that
 is, without modifying the code.
 ![rfc-103-comparison](./images/rfc-103-optimization-comparison.png) The node in
-orange called _validator04_ joins the network at arount height 100 and starts
+orange called _validator04_ joins the network at around height 100 and starts
 performing block sync. In the graph at the bottom we can see the height of all
 nodes and in particular how this node starts from height 0 and catches up with
 the other nodes. Also we can observe that, when the optimization is disabled

@@ -101,10 +101,18 @@ github.com/cometbft/cometbft v0.38.0
 )
 ```
 
+XXX: CometBFT `v0.38.0` uses a slightly outdated `gogoproto` library, which
+may fail to compile with newer Go versions. To avoid any compilation errors,
+upgrade `gogoproto` manually:
+
+```bash
+go get github.com/cosmos/gogoproto@v1.4.11
+```
+
 As you write the kvstore application, you can rebuild the binary by
 pulling any new dependencies and recompiling it.
 
-```sh
+```bash
 go get
 go build
 ```
@@ -114,7 +122,7 @@ go build
 CometBFT communicates with the application through the Application
 BlockChain Interface (ABCI). The messages exchanged through the interface are
 defined in the ABCI [protobuf
-file](https://github.com/cometbft/cometbft/blob/v0.38.x/proto/tendermint/abci/types.proto).
+file](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/abci/v1/types.proto).
 
 We begin by creating the basic scaffolding for an ABCI application by
 creating a new type, `KVStoreApplication`, which implements the
@@ -137,61 +145,61 @@ func NewKVStoreApplication() *KVStoreApplication {
     return &KVStoreApplication{}
 }
 
-func (app *KVStoreApplication) Info(_ context.Context, info *abcitypes.RequestInfo) (*abcitypes.ResponseInfo, error) {
-    return &abcitypes.ResponseInfo{}, nil
+func (app *KVStoreApplication) Info(_ context.Context, info *abcitypes.InfoRequest) (*abcitypes.InfoResponse, error) {
+    return &abcitypes.InfoResponse{}, nil
 }
 
-func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQuery) (*abcitypes.ResponseQuery, error) {
-    return &abcitypes.ResponseQuery{}, nil
+func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.QueryRequest) (*abcitypes.QueryResponse, error) {
+    return &abcitypes.QueryResponse{}, nil
 }
 
-func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {
-    return &abcitypes.ResponseCheckTx{Code: code}, nil
+func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.CheckTxRequest) (*abcitypes.CheckTxResponse, error) {
+    return &abcitypes.CheckTxResponse{Code: code}, nil
 }
 
-func (app *KVStoreApplication) InitChain(_ context.Context, chain *abcitypes.RequestInitChain) (*abcitypes.ResponseInitChain, error) {
-    return &abcitypes.ResponseInitChain{}, nil
+func (app *KVStoreApplication) InitChain(_ context.Context, chain *abcitypes.InitChainRequest) (*abcitypes.InitChainResponse, error) {
+    return &abcitypes.InitChainResponse{}, nil
 }
 
-func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-    return &abcitypes.ResponsePrepareProposal{}, nil
+func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.PrepareProposalRequest) (*abcitypes.PrepareProposalResponse, error) {
+    return &abcitypes.PrepareProposalResponse{}, nil
 }
 
-func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.RequestProcessProposal) (*abcitypes.ResponseProcessProposal, error) {
-    return &abcitypes.ResponseProcessProposal{}, nil
+func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.ProcessProposalRequest) (*abcitypes.ProcessProposalResponse, error) {
+    return &abcitypes.ProcessProposalResponse{}, nil
 }
 
-func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
-    return &abcitypes.ResponseFinalizeBlock{}, nil
+func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.FinalizeBlockRequest) (*abcitypes.FinalizeBlockResponse, error) {
+    return &abcitypes.FinalizeBlockResponse{}, nil
 }
 
-func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
-    return &abcitypes.ResponseCommit{}, nil
+func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.CommitRequest) (*abcitypes.CommitResponse, error) {
+    return &abcitypes.CommitResponse{}, nil
 }
 
-func (app *KVStoreApplication) ListSnapshots(_ context.Context, snapshots *abcitypes.RequestListSnapshots) (*abcitypes.ResponseListSnapshots, error) {
-    return &abcitypes.ResponseListSnapshots{}, nil
+func (app *KVStoreApplication) ListSnapshots(_ context.Context, snapshots *abcitypes.ListSnapshotsRequest) (*abcitypes.ListSnapshotsResponse, error) {
+    return &abcitypes.ListSnapshotsResponse{}, nil
 }
 
-func (app *KVStoreApplication) OfferSnapshot(_ context.Context, snapshot *abcitypes.RequestOfferSnapshot) (*abcitypes.ResponseOfferSnapshot, error) {
-    return &abcitypes.ResponseOfferSnapshot{}, nil
+func (app *KVStoreApplication) OfferSnapshot(_ context.Context, snapshot *abcitypes.OfferSnapshotRequest) (*abcitypes.OfferSnapshotResponse, error) {
+    return &abcitypes.OfferSnapshotResponse{}, nil
 }
 
-func (app *KVStoreApplication) LoadSnapshotChunk(_ context.Context, chunk *abcitypes.RequestLoadSnapshotChunk) (*abcitypes.ResponseLoadSnapshotChunk, error) {
-    return &abcitypes.ResponseLoadSnapshotChunk{}, nil
+func (app *KVStoreApplication) LoadSnapshotChunk(_ context.Context, chunk *abcitypes.LoadSnapshotChunkRequest) (*abcitypes.LoadSnapshotChunkResponse, error) {
+    return &abcitypes.LoadSnapshotChunkResponse{}, nil
 }
 
-func (app *KVStoreApplication) ApplySnapshotChunk(_ context.Context, chunk *abcitypes.RequestApplySnapshotChunk) (*abcitypes.ResponseApplySnapshotChunk, error) {
+func (app *KVStoreApplication) ApplySnapshotChunk(_ context.Context, chunk *abcitypes.ApplySnapshotChunkRequest) (*abcitypes.ApplySnapshotChunkResponse, error) {
 
-    return &abcitypes.ResponseApplySnapshotChunk{Result: abcitypes.ResponseApplySnapshotChunk_ACCEPT}, nil
+    return &abcitypes.ApplySnapshotChunkResponse{Result: abcitypes.ApplySnapshotChunkResponse_ACCEPT}, nil
 }
 
-func (app KVStoreApplication) ExtendVote(_ context.Context, extend *abcitypes.RequestExtendVote) (*abcitypes.ResponseExtendVote, error) {
-    return &abcitypes.ResponseExtendVote{}, nil
+func (app KVStoreApplication) ExtendVote(_ context.Context, extend *abcitypes.ExtendVoteRequest) (*abcitypes.ExtendVoteResponse, error) {
+    return &abcitypes.ExtendVoteResponse{}, nil
 }
 
-func (app *KVStoreApplication) VerifyVoteExtension(_ context.Context, verify *abcitypes.RequestVerifyVoteExtension) (*abcitypes.ResponseVerifyVoteExtension, error) {
-    return &abcitypes.ResponseVerifyVoteExtension{}, nil
+func (app *KVStoreApplication) VerifyVoteExtension(_ context.Context, verify *abcitypes.VerifyVoteExtensionRequest) (*abcitypes.VerifyVoteExtensionResponse, error) {
+    return &abcitypes.VerifyVoteExtensionResponse{}, nil
 }
 ```
 
@@ -288,9 +296,9 @@ func (app *KVStoreApplication) isValid(tx []byte) uint32 {
 Now you can rewrite the `CheckTx` method to use the helper function:
 
 ```go
-func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {
+func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.CheckTxRequest) (*abcitypes.CheckTxResponse, error) {
     code := app.isValid(check.Tx)
-    return &abcitypes.ResponseCheckTx{Code: code}, nil
+    return &abcitypes.CheckTxResponse{Code: code}, nil
 }
 ```
 
@@ -330,19 +338,19 @@ application via the `FinalizeBlock` method.
 This method is responsible for executing the block and returning a response to the consensus engine.
 Providing a single `FinalizeBlock` method to signal the finalization of a block simplifies the ABCI interface and increases flexibility in the execution pipeline.
 
-The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `ResponseFinalizeBlock` object which contains any necessary information about the executed block.
+The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `FinalizeBlockResponse` object which contains any necessary information about the executed block.
 
 **Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The state change is actually committed in a later stage i.e. in `commit` phase.
 
 Note that, to implement these calls in our application we're going to make use of Badger's transaction mechanism. We will always refer to these as Badger transactions, not to confuse them with the transactions included in the blocks delivered by CometBFT, the _application transactions_.
 
 First, let's create a new Badger transaction during `FinalizeBlock`. All application transactions in the current block will be executed within this Badger transaction.
-Next, let's modify `FinalizeBlock` to add the `key` and `value` to the database transaction every time our application processes a new application transaction from the list received through `RequestFinalizeBlock`.
+Next, let's modify `FinalizeBlock` to add the `key` and `value` to the database transaction every time our application processes a new application transaction from the list received through `FinalizeBlockRequest`.
 
 Note that we check the validity of the transaction _again_ during `FinalizeBlock`.
 
 ```go
-func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.RequestFinalizeBlock) (*abcitypes.ResponseFinalizeBlock, error) {
+func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.FinalizeBlockRequest) (*abcitypes.FinalizeBlockResponse, error) {
     var txs = make([]*abcitypes.ExecTxResult, len(req.Txs))
 
     app.onGoingBlock = app.db.NewTransaction(true)
@@ -364,7 +372,7 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
         }
     }
 
-    return &abcitypes.ResponseFinalizeBlock{
+    return &abcitypes.FinalizeBlockResponse{
         TxResults:        txs,
     }, nil
 }
@@ -382,8 +390,8 @@ The `Commit` method tells the application to make permanent the effects of the a
 Let's update the method to terminate the pending Badger transaction and persist the resulting state:
 
 ```go
-func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.RequestCommit) (*abcitypes.ResponseCommit, error) {
-    return &abcitypes.ResponseCommit{}, app.onGoingBlock.Commit()
+func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.CommitRequest) (*abcitypes.CommitResponse, error) {
+    return &abcitypes.CommitResponse{}, app.onGoingBlock.Commit()
 }
 ```
 
@@ -410,8 +418,8 @@ When a client tries to read some information from the `kvstore`, the request wil
 handled in the `Query` method. To do this, let's rewrite the `Query` method in `app.go`:
 
 ```go
-func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQuery) (*abcitypes.ResponseQuery, error) {
-    resp := abcitypes.ResponseQuery{Key: req.Data}
+func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.QueryRequest) (*abcitypes.QueryResponse, error) {
+    resp := abcitypes.QueryResponse{Key: req.Data}
 
     dbErr := app.db.View(func(txn *badger.Txn) error {
         item, err := txn.Get(req.Data)
@@ -449,34 +457,20 @@ included in blocks, it groups some of these transactions and then gives the appl
 to modify the group by invoking `PrepareProposal`.
 
 The application is free to modify the group before returning from the call, as long as the resulting set
-does not use more bytes than `RequestPrepareProposal.max_tx_bytes'
+does not use more bytes than `PrepareProposalRequest.max_tx_bytes'.
 For example, the application may reorder, add, or even remove transactions from the group to improve the
 execution of the block once accepted.
+
 In the following code, the application simply returns the unmodified group of transactions:
 
 ```go
-func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.RequestPrepareProposal) (*abcitypes.ResponsePrepareProposal, error) {
-  totalBytes := int64(0)
-  txs := make([]byte, 0)
-
-  for _, tx := range proposal.Txs {
-    totalBytes += int64(len(tx))
-    txs = append(txs, tx...)
-
-      if totalBytes > int64(proposal.MaxTxBytes) {
-        break
-      }
-    }
-
-    return &abcitypes.ResponsePrepareProposal{Txs: proposal.Txs}, nil
+func (app *KVStoreApplication) PrepareProposal(_ context.Context, proposal *abcitypes.PrepareProposalRequest) (*abcitypes.PrepareProposalResponse, error) {
+    return &abcitypes.PrepareProposalResponse{Txs: proposal.Txs}, nil
 }
 ```
 
-This code snippet iterates through the proposed transactions and calculates the `total bytes`. If the `total bytes` exceeds the `MaxTxBytes` specified in the `RequestPrepareProposal` struct, the loop breaks and the transactions processed so far are returned.
-
-Note: It is the responsibility of the application to ensure that the `total bytes` of transactions returned does not exceed the `RequestPrepareProposal.max_tx_bytes` limit.
-
-Once a proposed block is received by a node, the proposal is passed to the application to determine its validity before voting to accept the proposal.
+Once a proposed block is received by a node, the proposal is passed to the
+application to determine its validity before voting to accept the proposal.
 
 This mechanism may be used for different reasons, for example to deal with blocks manipulated
 by malicious nodes, in which case the block should not be considered valid.
@@ -484,14 +478,15 @@ by malicious nodes, in which case the block should not be considered valid.
 The following code simply accepts all proposals:
 
 ```go
-func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.RequestProcessProposal) (*abcitypes.ResponseProcessProposal, error) {
-    return &abcitypes.ResponseProcessProposal{Status: abcitypes.ResponseProcessProposal_ACCEPT}, nil
+func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abcitypes.ProcessProposalRequest) (*abcitypes.ProcessProposalResponse, error) {
+    return &abcitypes.ProcessProposalResponse{Status: abcitypes.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
 }
 ```
 
 ## 1.4 Starting an application and a CometBFT instance
 
-Now that we have the basic functionality of our application in place, let's put it all together inside of our `main.go` file.
+Now that we have the basic functionality of our application in place, let's put
+it all together inside of our `main.go` file.
 
 Change the contents of your `main.go` file to the following.
 
@@ -706,7 +701,7 @@ The response contains a `base64` encoded representation of the data we submitted
 To get the original value out of this data, we can use the `base64` command line utility:
 
 ```bash
-echo cm9ja3M=" | base64 -d
+echo "cm9ja3M=" | base64 -d
 ```
 
 ## Outro

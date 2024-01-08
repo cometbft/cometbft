@@ -163,14 +163,14 @@ func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 		return TemplateData{}, fmt.Errorf("multiple packages found in %s", dir)
 	}
 	if len(d) == 0 {
-		return TemplateData{}, fmt.Errorf("no go pacakges found in %s", dir)
+		return TemplateData{}, fmt.Errorf("no go packages found in %s", dir)
 	}
 
 	// Grab the package name.
 	var pkgName string
 	var pkg *ast.Package
 	// TODO(thane): Figure out a more readable way of implementing this.
-	//nolint:revive
+
 	for pkgName, pkg = range d {
 	}
 	td := TemplateData{

@@ -5,14 +5,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_genPrivKey(t *testing.T) {
-
-	empty := make([]byte, 32)
+	empty := make([]byte, 0, 32)
 	oneB := big.NewInt(1).Bytes()
 	onePadded := make([]byte, 32)
 	copy(onePadded[32-len(oneB):32], oneB)
@@ -39,8 +37,8 @@ func Test_genPrivKey(t *testing.T) {
 			}
 			got := genPrivKey(bytes.NewReader(tt.notSoRand))
 			fe := new(big.Int).SetBytes(got[:])
-			require.True(t, fe.Cmp(secp256k1.S256().N) < 0)
-			require.True(t, fe.Sign() > 0)
+			require.Less(t, fe.Cmp(secp256k1.S256().N), 0, "expected %v to be less than %v", fe, secp256k1.S256().N)
+			require.Greater(t, fe.Sign(), 0)
 		})
 	}
 }

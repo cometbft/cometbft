@@ -1,12 +1,12 @@
 ---
-order: 6
+order: 5
 ---
 
 # Indexing Transactions
 
 CometBFT allows you to index transactions and blocks and later query or
-subscribe to their results. Transactions are indexed by `ResponseFinalizeBlock.tx_results.events` and
-blocks are indexed by `ResponseFinalizeBlock.events`. However, transactions
+subscribe to their results. Transactions are indexed by `FinalizeBlockResponse.tx_results.events` and
+blocks are indexed by `FinalizeBlockResponse.events`. However, transactions
 are also indexed by a primary key which includes the transaction hash and maps
 to and stores the corresponding transaction results. Blocks are indexed by a primary key
 which includes the block height and maps to and stores the block height, i.e.
@@ -14,11 +14,7 @@ the block itself is never stored.
 
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
-details on `Events`, see the
-
-[ABCI](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events)
-
-documentation.
+details on `Events`, see the [ABCI][abci-events] documentation.
 
 An `Event` has a composite key associated with it. A `compositeKey` is
 constructed by its type and key separated by a dot.
@@ -175,7 +171,7 @@ UTF-8 encoded strings (e.g. "transfer.sender": "Bob", "transfer.recipient":
 Example:
 
 ```go
-func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBlockRequest) (*types.FinalizeBlockResponse, error) {
 
     //...
   tx_results[0] := &types.ExecTxResult{
@@ -219,7 +215,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.RequestFinal
 				},
 			},
 		}
-    return &types.ResponseFinalizeBlock{TxResults: tx_results, Events: block_events}
+    return &types.FinalizeBlockResponse{TxResults: tx_results, Events: block_events}
 }
 ```
 
@@ -285,3 +281,5 @@ Users can use anything as an event value. However, if the event attribute value 
 of the integer it is supposed to represent, so that there is no loss of information due to insufficient precision. This was not present before CometBFT v0.38.x and all float values were ignored. 
 - As of CometBFT v0.38.x, queries can contain floating point numbers as well.
 - Note that comparing to floats can be imprecise with a high number of decimals. 
+
+[abci-events]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events

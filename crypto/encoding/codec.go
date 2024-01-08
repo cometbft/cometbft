@@ -3,11 +3,11 @@ package encoding
 import (
 	"fmt"
 
+	pc "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/json"
-	pc "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 // ErrUnsupportedKey describes an error resulting from the use of an
@@ -37,7 +37,7 @@ func init() {
 	json.RegisterType((*pc.PublicKey_Secp256K1)(nil), "tendermint.crypto.PublicKey_Secp256K1")
 }
 
-// PubKeyToProto takes crypto.PubKey and transforms it to a protobuf Pubkey
+// PubKeyToProto takes crypto.PubKey and transforms it to a protobuf Pubkey.
 func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 	var kp pc.PublicKey
 	switch k := k.(type) {
@@ -59,7 +59,7 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 	return kp, nil
 }
 
-// PubKeyFromProto takes a protobuf Pubkey and transforms it to a crypto.Pubkey
+// PubKeyFromProto takes a protobuf Pubkey and transforms it to a crypto.Pubkey.
 func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 	switch k := k.Sum.(type) {
 	case *pc.PublicKey_Ed25519:

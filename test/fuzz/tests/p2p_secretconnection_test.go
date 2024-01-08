@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/libs/async"
+	"github.com/cometbft/cometbft/internal/async"
 	sc "github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -69,12 +69,12 @@ func (drw kvstoreConn) Close() (err error) {
 	err2 := drw.PipeWriter.CloseWithError(io.EOF)
 	err1 := drw.PipeReader.Close()
 	if err2 != nil {
-		return err
+		return err //nolint:nilerr // this is a false positive
 	}
 	return err1
 }
 
-// Each returned ReadWriteCloser is akin to a net.Connection
+// Each returned ReadWriteCloser is akin to a net.Connection.
 func makeKVStoreConnPair() (fooConn, barConn kvstoreConn) {
 	barReader, fooWriter := io.Pipe()
 	fooReader, barWriter := io.Pipe()

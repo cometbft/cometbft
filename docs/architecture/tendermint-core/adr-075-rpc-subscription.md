@@ -483,7 +483,7 @@ crashes and connectivity issues:
   then discard any older than the time window before the latest.
 
   To minimize coordination interference between the publisher (the event bus)
-  and the subcribers (the `events` service handlers), the event log will be
+  and the subscribers (the `events` service handlers), the event log will be
   stored as a persistent linear queue with shared structure (a cons list).  A
   single reader-writer mutex will guard the "head" of the queue where new
   items are published:
@@ -550,7 +550,7 @@ the new API, to remove a disincentive to upgrading.
 > disruption for users in the v0.36 cycle, I have decided not to do this for
 > the first phase.
 >
-> If we wind up pushing this design into v0.37, however, we should re-evaulate
+> If we wind up pushing this design into v0.37, however, we should re-evaluate
 > this partial turn-down of the websocket.
 
 ### Future Work

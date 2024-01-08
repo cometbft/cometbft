@@ -140,7 +140,7 @@ type ProofOfLockChange struct {
 
 This can be either evidence of +2/3 PREVOTES or PRECOMMITS (either warrants the honest node the right to vote) and is valid, among other checks, so long as the PRECOMMIT vote of the node in V2 came after all the votes in the `ProofOfLockChange` i.e. it received +2/3 votes for a block and then voted for that block thereafter (F is unable to prove this).
 
-In the event that an honest node receives `PotentialAmnesiaEvidence` it will first `ValidateBasic()` and `Verify()` it and then will check if it is among the suspected nodes in the evidence. If so, it will retrieve the `ProofOfLockChange` and combine it with `PotentialAmensiaEvidence` to form `AmensiaEvidence`. All honest nodes that are part of the indicted group will have a time, measured in blocks, equal to `ProofTrialPeriod`, the aforementioned evidence paramter, to gossip their `AmnesiaEvidence` with their `ProofOfLockChange`
+In the event that an honest node receives `PotentialAmnesiaEvidence` it will first `ValidateBasic()` and `Verify()` it and then will check if it is among the suspected nodes in the evidence. If so, it will retrieve the `ProofOfLockChange` and combine it with `PotentialAmensiaEvidence` to form `AmensiaEvidence`. All honest nodes that are part of the indicted group will have a time, measured in blocks, equal to `ProofTrialPeriod`, the aforementioned evidence parameter, to gossip their `AmnesiaEvidence` with their `ProofOfLockChange`
 
 ```golang
 type AmnesiaEvidence struct {
@@ -163,7 +163,7 @@ When, `state.LastBlockHeight > PotentialAmnesiaEvidence.timestamp + ProofTrialPe
 Other validators will vote `nil` if:
 
 - The Amnesia Evidence is not valid
-- The Amensia Evidence is not within their own trial period i.e. too soon.
+- The Amnesia Evidence is not within their own trial period i.e. too soon.
 - They don't have the Amnesia Evidence and it is has an empty polc (each validator needs to run their own trial period of the evidence)
 - Is of an AmnesiaEvidence that has already been committed to the chain.
 

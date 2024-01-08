@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/config"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
 // FuzzedConnection wraps any net.Conn and depending on the mode either delays
@@ -107,7 +107,7 @@ func (fc *FuzzedConnection) randomDuration() time.Duration {
 }
 
 // implements the fuzz (delay, kill conn)
-// and returns whether or not the read/write should be ignored
+// and returns whether or not the read/write should be ignored.
 func (fc *FuzzedConnection) fuzz() bool {
 	if !fc.shouldFuzz() {
 		return false

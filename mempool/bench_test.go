@@ -2,19 +2,17 @@ package mempool
 
 import (
 	"fmt"
-	"testing"
-
 	"sync/atomic"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"testing"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/proxy"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkReap(b *testing.B) {
@@ -95,7 +93,7 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 		b.Fatal(err)
 	}
 	e := mp.FlushAppConn()
-	require.True(b, e == nil)
+	require.NotErrorIs(b, nil, e)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -103,7 +101,6 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 			b.Fatal("tx should be duplicate")
 		}
 	}
-
 }
 
 func BenchmarkUpdateRemoteClient(b *testing.B) {
@@ -128,20 +125,18 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
-
 		tx := kvstore.NewTxFromID(i)
 
 		_, e := mp.CheckTx(tx)
-		require.True(b, e == nil)
+		require.NoError(b, e)
 
 		e = mp.FlushAppConn()
-		require.True(b, e == nil)
+		require.NoError(b, e)
 
-		require.True(b, mp.Size() == 1)
+		require.Equal(b, 1, mp.Size())
 
-		var txs = mp.ReapMaxTxs(mp.Size())
+		txs := mp.ReapMaxTxs(mp.Size())
 		doCommit(b, mp, app, txs, int64(i))
 		assert.True(b, true)
 	}
-
 }

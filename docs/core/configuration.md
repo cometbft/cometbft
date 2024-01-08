@@ -305,6 +305,16 @@ dial_timeout = "3s"
 #######################################################
 [mempool]
 
+# The type of mempool for this node to use.
+#
+#  Possible types:
+#  - "flood" : concurrent linked list mempool with flooding gossip protocol
+#  (default)
+#  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+#  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
+#  not supported.
+type = "flood"
+
 # recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
@@ -594,3 +604,54 @@ Here's a brief summary of the timeouts:
 - `timeout_commit` = how long a validator should wait after committing a block, before starting
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)
+
+### The effect of `timeout_propose` on the proposer selection process
+
+Here's an interesting question. What if the particular validator sets a very
+small `timeout_propose`?
+
+Imagine there are only two validators in your network: Alice and Bob. Bob sets
+`timeout_propose` to 1s. Alice uses the default value of 3s. Bob will create
+blocks ~ every second, Alice - every 3 seconds (given `create_empty_blocks` is
+`true`). Let's say they both have an equal voting power. Given the proposer
+selection algorithm is a weighted round-robin, you may expect Alice and Bob to
+take turns proposing blocks, and the result will be:
+
+```
+#1 block - Alice
+#2 block - Bob
+#3 block - Alice
+#4 block - Bob
+...
+```
+
+What happens in reality is, however, a little bit different:
+
+```
+#1 block - Bob
+#2 block - Bob
+#3 block - Bob
+#4 block - Alice
+```
+
+That's because Bob is too fast at proposing blocks. This leaves Alice very
+little chances to propose a block and not always be catching up. Note every
+block Bob creates needs a vote from Alice to constitute 2/3+.
+
+Imagine now there are ten geographically distributed validators. One of them
+(Bob) sets `timeout_propose` to 1s. Others have it set to 3s. Now, Bob won't be
+able to move with the speed of 1s blocks because it won't gather 2/3+ of votes
+for its block proposal in time (1s). I.e., the network moves with the speed of
+time to accumulate 2/3+ of votes, not with the speed of the fastest proposer.
+
+> Isn't block production determined by voting power?
+
+If it were determined solely by voting power, it wouldn't be possible to ensure
+liveness. Timeouts exist because the network can't rely on a single proposer
+being available and must move on if such is not responding.
+
+> How can we address situations where someone arbitrarily adjusts their block
+> production time to gain an advantage?
+
+The impact shown above is negligible in a decentralized network with enough
+decentralization.

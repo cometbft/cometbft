@@ -110,7 +110,7 @@ func (app *multiAppConn) OnStart() error {
 func (app *multiAppConn) startQueryClient() error {
 	c, err := app.clientCreator.NewABCIQueryClient()
 	if err != nil {
-		return ErrABCIClientCreate{CliType: "query", Err: err}
+		return ErrABCIClientCreate{ClientName: "query", Err: err}
 	}
 	app.queryConnClient = c
 	app.queryConn = NewAppConnQuery(c, app.metrics)
@@ -120,7 +120,7 @@ func (app *multiAppConn) startQueryClient() error {
 func (app *multiAppConn) startSnapshotClient() error {
 	c, err := app.clientCreator.NewABCISnapshotClient()
 	if err != nil {
-		return ErrABCIClientCreate{CliType: "snapshot", Err: err}
+		return ErrABCIClientCreate{ClientName: "snapshot", Err: err}
 	}
 	app.snapshotConnClient = c
 	app.snapshotConn = NewAppConnSnapshot(c, app.metrics)
@@ -130,7 +130,7 @@ func (app *multiAppConn) startSnapshotClient() error {
 func (app *multiAppConn) startMempoolClient() error {
 	c, err := app.clientCreator.NewABCIMempoolClient()
 	if err != nil {
-		return ErrABCIClientCreate{CliType: "mempool", Err: err}
+		return ErrABCIClientCreate{ClientName: "mempool", Err: err}
 	}
 	app.mempoolConnClient = c
 	app.mempoolConn = NewAppConnMempool(c, app.metrics)
@@ -141,7 +141,7 @@ func (app *multiAppConn) startConsensusClient() error {
 	c, err := app.clientCreator.NewABCIConsensusClient()
 	if err != nil {
 		app.stopAllClients()
-		return ErrABCIClientCreate{CliType: "consensus", Err: err}
+		return ErrABCIClientCreate{ClientName: "consensus", Err: err}
 	}
 	app.consensusConnClient = c
 	app.consensusConn = NewAppConnConsensus(c, app.metrics)

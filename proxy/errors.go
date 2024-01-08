@@ -17,12 +17,12 @@ func (e ErrUnreachableProxy) Unwrap() error {
 }
 
 type ErrABCIClientCreate struct {
-	CliType string
-	Err     error
+	ClientName string
+	Err        error
 }
 
 func (e ErrABCIClientCreate) Error() string {
-	return fmt.Sprintf("error creating ABCI client (%s client): %v", e.CliType, e.Err)
+	return fmt.Sprintf("error creating ABCI client (%s client): %v", e.ClientName, e.Err)
 }
 
 func (e ErrABCIClientCreate) Unwrap() error {

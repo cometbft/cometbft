@@ -8,14 +8,15 @@ import (
 	"testing"
 	"time"
 
-	abciserver "github.com/cometbft/cometbft/abci/server"
-	"github.com/cometbft/cometbft/abci/types"
-	cmtnet "github.com/cometbft/cometbft/internal/net"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	abciserver "github.com/cometbft/cometbft/abci/server"
+	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestGRPC(t *testing.T) {

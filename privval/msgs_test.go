@@ -5,6 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/stretchr/testify/require"
+
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	privproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -13,8 +16,6 @@ import (
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/types"
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/stretchr/testify/require"
 )
 
 var stamp = time.Date(2019, 10, 13, 16, 14, 44, 0, time.UTC)

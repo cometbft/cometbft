@@ -8,9 +8,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/cometbft/cometbft/libs/log"
 	kitlog "github.com/go-kit/log"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestTMFmtLogger(t *testing.T) {

@@ -6,14 +6,15 @@ import (
 	"testing"
 	"time"
 
-	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	pbtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	"github.com/cometbft/cometbft/internal/protoio"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/fortytw2/leaktest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	pbtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 const maxPingPongPacketSize = 1024 // bytes

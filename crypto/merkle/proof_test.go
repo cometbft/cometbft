@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"testing"
 
-	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
-	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 )
 
 const ProofOpDomino = "test:domino"
@@ -80,58 +81,58 @@ func TestProofOperators(t *testing.T) {
 	// Good
 	popz := ProofOperators([]ProofOperator{op1, op2, op3, op4})
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = popz.VerifyValue(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", bz("INPUT1"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// BAD INPUT
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1_WRONG")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	err = popz.VerifyValue(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", bz("INPUT1_WRONG"))
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 1
 	err = popz.Verify(bz("OUTPUT4"), "/KEY3/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 2
 	err = popz.Verify(bz("OUTPUT4"), "KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 3
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1/", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 4
 	err = popz.Verify(bz("OUTPUT4"), "//KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 5
 	err = popz.Verify(bz("OUTPUT4"), "/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD OUTPUT 1
 	err = popz.Verify(bz("OUTPUT4_WRONG"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD OUTPUT 2
 	err = popz.Verify(bz(""), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD POPZ 1
 	popz = []ProofOperator{op1, op2, op4}
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD POPZ 2
 	popz = []ProofOperator{op4, op3, op2, op1}
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD POPZ 3
 	popz = []ProofOperator{}
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func bz(s string) []byte {
@@ -227,5 +228,5 @@ func TestVsa2022_100(t *testing.T) {
 	// the nil root
 	var root []byte
 
-	assert.NotNil(t, ProofOperators{op}.Verify(root, "/"+string(key), [][]byte{value}))
+	require.Error(t, ProofOperators{op}.Verify(root, "/"+string(key), [][]byte{value}))
 }

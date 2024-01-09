@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -48,15 +47,15 @@ const (
 // test.
 type cleanupFunc func()
 
-// genesis, chain_id, priv_val
+// genesis, chain_id, priv_val.
 var (
 	config                *cfg.Config // NOTE: must be reset for each _test.go file
 	consensusReplayConfig *cfg.Config
 	ensureTimeout         = time.Millisecond * 200
 )
 
-func ensureDir(dir string, mode os.FileMode) {
-	if err := cmtos.EnsureDir(dir, mode); err != nil {
+func ensureDir(dir string) {
+	if err := cmtos.EnsureDir(dir, 0o700); err != nil {
 		panic(err)
 	}
 }
@@ -131,7 +130,7 @@ func (vs *validatorStub) signVote(
 	return vote, err
 }
 
-// Sign vote for type/hash/header
+// Sign vote for type/hash/header.
 func signVote(vs *validatorStub, voteType types.SignedMsgType, hash []byte, header types.PartSetHeader, extEnabled bool) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
@@ -226,6 +225,7 @@ func decideProposal(
 	height int64,
 	round int32,
 ) (*types.Proposal, *types.Block) {
+	t.Helper()
 	cs1.mtx.Lock()
 	block, err := cs1.createProposalBlock(ctx)
 	require.NoError(t, err)
@@ -270,6 +270,7 @@ func signAddVotes(
 }
 
 func validatePrevote(t *testing.T, cs *State, round int32, privVal *validatorStub, blockHash []byte) {
+	t.Helper()
 	prevotes := cs.Votes.Prevotes(round)
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(t, err)
@@ -290,6 +291,7 @@ func validatePrevote(t *testing.T, cs *State, round int32, privVal *validatorStu
 }
 
 func validateLastPrecommit(t *testing.T, cs *State, privVal *validatorStub, blockHash []byte) {
+	t.Helper()
 	votes := cs.LastCommit
 	pv, err := privVal.GetPubKey()
 	require.NoError(t, err)
@@ -312,6 +314,7 @@ func validatePrecommit(
 	votedBlockHash,
 	lockedBlockHash []byte,
 ) {
+	t.Helper()
 	precommits := cs.Votes.Precommits(thisRound)
 	pv, err := privVal.GetPubKey()
 	require.NoError(t, err)
@@ -447,7 +450,7 @@ func newStateWithConfigAndBlockStore(
 
 func loadPrivValidator(config *cfg.Config) *privval.FilePV {
 	privValidatorKeyFile := config.PrivValidatorKeyFile()
-	ensureDir(filepath.Dir(privValidatorKeyFile), 0o700)
+	ensureDir(filepath.Dir(privValidatorKeyFile))
 	privValidatorStateFile := config.PrivValidatorStateFile()
 	privValidator := privval.LoadOrGenFilePV(privValidatorKeyFile, privValidatorStateFile)
 	privValidator.Reset()
@@ -479,7 +482,7 @@ func randStateWithAppImpl(
 	consensusParams *types.ConsensusParams,
 ) (*State, []*validatorStub) {
 	// Get State
-	state, privVals := randGenesisState(nValidators, false, 10, consensusParams)
+	state, privVals := randGenesisState(nValidators, consensusParams)
 
 	vss := make([]*validatorStub, nValidators)
 
@@ -766,7 +769,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 	appFunc func() abci.Application, configOpts ...func(*cfg.Config),
 ) ([]*State, cleanupFunc) {
 	t.Helper()
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	configRootDirs := make([]string, 0, nValidators)
@@ -781,7 +784,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		for _, opt := range configOpts {
 			opt(thisConfig)
 		}
-		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
+		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
@@ -798,7 +801,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 	}
 }
 
-// nPeers = nValidators + nNotValidator
+// nPeers = nValidators + nNotValidator.
 func randConsensusNetWithPeers(
 	t *testing.T,
 	nValidators,
@@ -807,8 +810,9 @@ func randConsensusNetWithPeers(
 	tickerFunc func() TimeoutTicker,
 	appFunc func(string) abci.Application,
 ) ([]*State, *types.GenesisDoc, *cfg.Config, cleanupFunc) {
+	t.Helper()
 	c := test.ConsensusParams()
-	genDoc, privVals := randGenesisDoc(nValidators, false, testMinPower, c)
+	genDoc, privVals := randGenesisDoc(nValidators, testMinPower, c)
 	css := make([]*State, nPeers)
 	logger := consensusLogger()
 	var peer0Config *cfg.Config
@@ -822,7 +826,7 @@ func randConsensusNetWithPeers(
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
-		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
+		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		if i == 0 {
 			peer0Config = thisConfig
 		}
@@ -875,10 +879,10 @@ func getSwitchIndex(switches []*p2p.Switch, peer p2p.Peer) int {
 // genesis
 
 func randGenesisDoc(numValidators int,
-	randPower bool,
 	minPower int64,
 	consensusParams *types.ConsensusParams,
 ) (*types.GenesisDoc, []types.PrivValidator) {
+	randPower := false
 	validators := make([]types.GenesisValidator, numValidators)
 	privValidators := make([]types.PrivValidator, numValidators)
 	for i := 0; i < numValidators; i++ {
@@ -902,11 +906,10 @@ func randGenesisDoc(numValidators int,
 
 func randGenesisState(
 	numValidators int,
-	randPower bool,
-	minPower int64,
 	consensusParams *types.ConsensusParams,
 ) (sm.State, []types.PrivValidator) {
-	genDoc, privValidators := randGenesisDoc(numValidators, randPower, minPower, consensusParams)
+	minPower := int64(10)
+	genDoc, privValidators := randGenesisDoc(numValidators, minPower, consensusParams)
 	s0, _ := sm.MakeGenesisState(genDoc)
 	return s0, privValidators
 }
@@ -924,7 +927,7 @@ func newMockTickerFunc(onlyOnce bool) func() TimeoutTicker {
 }
 
 // mock ticker only fires on RoundStepNewHeight
-// and only once if onlyOnce=true
+// and only once if onlyOnce=true.
 type mockTicker struct {
 	c chan timeoutInfo
 

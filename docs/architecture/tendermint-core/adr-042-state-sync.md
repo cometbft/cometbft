@@ -127,7 +127,7 @@ read/write patterns necessitated by serving a snapshot chunk.
 Specifically, Lazy State Sync performs random reads to the underlying data
 structure while Eager can optimize for sequential reads.
 
-This distinctin between approaches was demonstrated by Binance's
+This distinction between approaches was demonstrated by Binance's
 [ackratos](https://github.com/ackratos) in their implementation of [Lazy
 State sync](https://github.com/tendermint/tendermint/pull/3243), The
 [analysis](https://docs.google.com/document/d/1npGTAa1qxe8EQZ1wG0a0Sip9t5oX2vYZNUDwr_LVRR4/)

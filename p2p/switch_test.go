@@ -88,7 +88,7 @@ func (tr *TestReactor) getMsgs(chID byte) []PeerMessage {
 //-----------------------------------------------------------------------------
 
 // convenience method for creating two switches connected to each other.
-// XXX: note this uses net.Pipe and not a proper TCP conn
+// XXX: note this uses net.Pipe and not a proper TCP conn.
 func MakeSwitchPair(initSwitch func(int, *Switch) *Switch) (*Switch, *Switch) {
 	// Create two switches that will be interconnected.
 	switches := MakeConnectedSwitches(cfg, 2, initSwitch, Connect2Switches)
@@ -181,6 +181,7 @@ func assertMsgReceivedWithTimeout(
 	checkPeriod,
 	timeout time.Duration,
 ) {
+	t.Helper()
 	ticker := time.NewTicker(checkPeriod)
 	for {
 		select {
@@ -212,7 +213,7 @@ func TestSwitchFiltersOutItself(t *testing.T) {
 
 	// addr should be rejected in addPeer based on the same ID
 	err := s1.DialPeerWithAddress(rp.Addr())
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		if err, ok := err.(ErrRejected); ok {
 			if !err.IsSelf() {
 				t.Errorf("expected self to be rejected")
@@ -362,6 +363,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 }
 
 func assertNoPeersAfterTimeout(t *testing.T, sw *Switch, timeout time.Duration) {
+	t.Helper()
 	time.Sleep(timeout)
 	if sw.Peers().Size() != 0 {
 		t.Fatalf("Expected %v to not connect to some peers, got %d", sw, sw.Peers().Size())
@@ -393,10 +395,10 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 		isPersistent: sw.IsPeerPersistent,
 		reactorsByCh: sw.reactorsByCh,
 	})
-	require.Nil(err)
+	require.NoError(err)
 
 	err = sw.addPeer(p)
-	require.Nil(err)
+	require.NoError(err)
 
 	require.NotNil(sw.Peers().Get(rp.ID()))
 
@@ -440,7 +442,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 		return initSwitchFunc(i, sw)
 	})
 
-	assert.Equal(t, len(sw1.Peers().List()), 1)
+	assert.Len(t, sw1.Peers().List(), 1)
 	assert.EqualValues(t, 1, peersMetricValue())
 
 	// send messages to the peer from sw1
@@ -461,7 +463,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	// now call StopPeerForError explicitly, eg. from a reactor
 	sw1.StopPeerForError(p, fmt.Errorf("some err"))
 
-	assert.Equal(t, len(sw1.Peers().List()), 0)
+	require.Empty(t, len(sw1.Peers().List()), 0)
 	assert.EqualValues(t, 0, peersMetricValue())
 }
 
@@ -484,7 +486,7 @@ func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
 	require.NoError(t, err)
 
 	err = sw.DialPeerWithAddress(rp.Addr())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 
 	p := sw.Peers().List()[0]
@@ -509,7 +511,7 @@ func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
 	conf := config.DefaultP2PConfig()
 	conf.TestDialFail = true // will trigger a reconnect
 	err = sw.addOutboundPeerWithConfig(rp.Addr(), conf)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	// DialPeerWithAddres - sw.peerConfig resets the dialer
 	waitUntilSwitchHasAtLeastNPeers(sw, 2)
 	assert.Equal(t, 2, sw.Peers().Size())
@@ -659,7 +661,7 @@ func TestSwitchAcceptRoutine(t *testing.T) {
 	one := make([]byte, 1)
 	_ = conn.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
 	_, err = conn.Read(one)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, cfg.MaxNumInboundPeers, sw.Peers().Size())
 	peer.Stop()
 
@@ -764,7 +766,7 @@ func (r *mockReactor) InitCalledBeforeRemoveFinished() bool {
 	return atomic.LoadUint32(&r.initCalledBeforeRemoveFinished) == 1
 }
 
-// see stopAndRemovePeer
+// see stopAndRemovePeer.
 func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	// make reactor
 	reactor := &mockReactor{}
@@ -862,7 +864,7 @@ func TestSwitchRemovalErr(t *testing.T) {
 	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
 		return initSwitchFunc(i, sw)
 	})
-	assert.Equal(t, len(sw1.Peers().List()), 1)
+	require.Len(t, sw1.Peers().List(), 1)
 	p := sw1.Peers().List()[0]
 
 	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))

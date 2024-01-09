@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	dbm "github.com/cometbft/cometbft-db"
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -22,8 +25,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestByzantinePrevoteEquivocation tests the scenario where a Byzantine node sends two different prevotes (nil and blockID) to the same validator.
@@ -40,7 +41,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	appFunc := newKVStore
 
 	t.Log("Generating a random genesis document and private validators")
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, types.DefaultConsensusParams())
 	require.NotNil(t, genDoc, "Failed to generate a random genesis document")
 	require.NotNil(t, privVals, "Failed to generate private validators")
 
@@ -102,6 +103,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 // testName is the name of the test for logging purposes.
 // appFunc is a function that returns an ABCI application used in consensus state.
 func initializeValidators(t *testing.T, nValidators int, genDoc *types.GenesisDoc, privVals []types.PrivValidator, testName string, appFunc func() abci.Application) ([]*State, error) {
+	t.Helper()
 	css := make([]*State, nValidators)
 
 	for i := 0; i < nValidators; i++ {
@@ -128,7 +130,7 @@ func initializeValidators(t *testing.T, nValidators int, genDoc *types.GenesisDo
 		defer os.RemoveAll(thisConfig.RootDir)
 
 		// Ensure directory for write-ahead log exists
-		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700)
+		ensureDir(path.Dir(thisConfig.Consensus.WalFile()))
 
 		// Initialize application
 		app := appFunc()
@@ -267,6 +269,7 @@ func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subs
 }
 
 func alterPrevoteForByzantineNode(t *testing.T, bcs *State, prevoteHeight int64, reactors []*Reactor, byzantineNode int) {
+	t.Helper()
 	bcs.doPrevote = func(height int64, round int32) {
 		if height == prevoteHeight {
 			bcs.Logger.Info("Sending two votes")
@@ -302,6 +305,7 @@ func alterPrevoteForByzantineNode(t *testing.T, bcs *State, prevoteHeight int64,
 // to simulate a lazy proposer. The lazy proposer proposes a condensed commit and signs the proposal.
 // This function is used in testing scenarios to simulate different behaviors of proposers.
 func introduceLazyProposer(t *testing.T, lazyProposer *State, ctx context.Context) {
+	t.Helper()
 	// Overwrite the decideProposal function
 	lazyProposer.decideProposal = func(height int64, round int32) {
 		// Log the action of the lazy proposer
@@ -382,6 +386,7 @@ func introduceLazyProposer(t *testing.T, lazyProposer *State, ctx context.Contex
 }
 
 func initializeTestEnvironment(t *testing.T, nValidators int, genDoc *types.GenesisDoc, privVals []types.PrivValidator, testName string, appFunc func() abci.Application) ([]*State, []*Reactor, []types.Subscription, []*types.EventBus, error) {
+	t.Helper()
 	t.Log("Initializing validators")
 	css, err := initializeValidators(t, nValidators, genDoc, privVals, testName, appFunc)
 	if err != nil {
@@ -405,6 +410,7 @@ func startConsensusReactors(reactors []*Reactor) {
 }
 
 func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []types.Subscription) []types.Evidence {
+	t.Helper()
 	evidenceFromEachValidator := make([]types.Evidence, nValidators)
 	wg := new(sync.WaitGroup)
 	for i := 0; i < nValidators; i++ {

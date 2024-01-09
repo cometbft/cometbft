@@ -1,24 +1,23 @@
 package p2p
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"net"
 	"reflect"
-
-	"errors"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/stretchr/testify/require"
+
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/p2p/conn"
-	"github.com/stretchr/testify/require"
-
-	"github.com/sirupsen/logrus"
 )
 
 var defaultNodeName = "host_peer"
@@ -287,14 +286,10 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 	totalIterations := 100
 	failureModes := make(map[string]int)
 
-	log := logrus.New()
-	log.SetFormatter(&logrus.TextFormatter{
-		DisableColors: false,
-		FullTimestamp: true,
-	})
+	log := log.NewNopLogger()
 
 	for i := 0; i < totalIterations; i++ {
-		log.Infof("Test iteration %d started", i)
+		log.Info("Test iteration %d started", i)
 
 		func() {
 			// Setup a multiplex transport
@@ -390,17 +385,15 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 				log.Info("Fast peer's NodeInfo correctly received")
 				passCount++
 			}
-			log.Infof("Test iteration %d ended", i)
+			log.Info("Test iteration %d ended", i)
 		}()
-
 	}
 
-	log.Infof("Pass rate: %.2f%%", float64(passCount)/float64(totalIterations)*100)
-	log.Infof("Closed connection failures: %d", closedConnCount)
+	log.Info("Pass rate: %.2f%%", float64(passCount)/float64(totalIterations)*100)
+	log.Info("Closed connection failures: %d", closedConnCount)
 	for mode, count := range failureModes {
-		log.Infof("Failure mode %s: %.2f%%", mode, float64(count)/float64(totalIterations)*100)
+		log.Info("Failure mode %s: %.2f%%", mode, float64(count)/float64(totalIterations)*100)
 	}
-
 }
 
 func TestTransportMultiplexValidateNodeInfo(t *testing.T) {

@@ -238,31 +238,17 @@ func statusesAreEqualWithinTolerance(s1 *Status, s2 *Status, maxDeviationForDura
 	if s1.Active == s2.Active &&
 		s1.Start == s2.Start &&
 		durationsAreEqual(s1.Duration, s2.Duration, maxDeviationForDuration) &&
-		durationsAreEqual(s1.Idle, s2.Idle, maxDeviationForDuration) && 
+		durationsAreEqual(s1.Idle, s2.Idle, maxDeviationForDuration) &&
 		s1.Bytes == s2.Bytes &&
 		s1.Samples == s2.Samples &&
-		ratesAreEqual(s1.InstRate, s2.InstRate, maxDeviationForRate) &&
-		ratesAreEqual(s1.CurRate, s2.CurRate, maxDeviationForRate) &&
-		ratesAreEqual(s1.AvgRate, s2.AvgRate, maxDeviationForRate) &&
-		ratesAreEqual(s1.PeakRate, s2.PeakRate, maxDeviationForRate) &&
+		ratesAreEqual(s1.InstRate, s2.InstRate) &&
+		ratesAreEqual(s1.CurRate, s2.CurRate) &&
+		ratesAreEqual(s1.AvgRate, s2.AvgRate) &&
+		ratesAreEqual(s1.PeakRate, s2.PeakRate) &&
 		s1.BytesRem == s2.BytesRem &&
 		durationsAreEqual(s1.TimeRem, s2.TimeRem, maxDeviationForDuration) &&
 		s1.Progress == s2.Progress {
 		return true
 	}
 	return false
-}
-
-func absDuration(d time.Duration) time.Duration {
-	if d < 0 {
-		return -d
-	}
-	return d
-}
-
-func absInt64(n int64) int64 {
-	if n < 0 {
-		return -n
-	}
-	return n
 }

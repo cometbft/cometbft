@@ -636,7 +636,6 @@ func createAndStartNode(config *cfg.Config, nodeKey *p2p.NodeKey) (*Node, error)
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
 	)
-
 	if err != nil {
 		return nil, err
 	}

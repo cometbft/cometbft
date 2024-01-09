@@ -3,8 +3,9 @@ package client
 import (
 	"context"
 
-	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 	"github.com/cosmos/gogoproto/grpc"
+
+	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 )
 
 // Version provides version information about a particular CometBFT node.

@@ -163,7 +163,7 @@ When, `state.LastBlockHeight > PotentialAmnesiaEvidence.timestamp + ProofTrialPe
 Other validators will vote `nil` if:
 
 - The Amnesia Evidence is not valid
-- The Amensia Evidence is not within their own trial period i.e. too soon.
+- The Amnesia Evidence is not within their own trial period i.e. too soon.
 - They don't have the Amnesia Evidence and it is has an empty polc (each validator needs to run their own trial period of the evidence)
 - Is of an AmnesiaEvidence that has already been committed to the chain.
 

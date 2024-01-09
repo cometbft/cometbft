@@ -635,7 +635,7 @@ What happens in reality is, however, a little bit different:
 ```
 
 That's because Bob is too fast at proposing blocks. This leaves Alice very
-little chances to propose a block and not always be catching up. Not every
+little chances to propose a block and not always be catching up. Note that every
 block Bob creates needs a vote from Alice to constitute 2/3+.
 
 Imagine now there are ten geographically distributed validators. One of them

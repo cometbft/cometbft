@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
@@ -13,7 +15,6 @@ import (
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 const (

@@ -474,8 +474,8 @@ we want to maintain [LCV-INV-TP.1] from the beginning.
 > it may increase trust, when one cross-checks the initial light
 > block. However, if a peer provides a conflicting
 > lightblock, the question is to distinguish the case of a
-> [bogus](https://informal.systems) block (upon which operation should proceed) from a
-> [light client attack](https://informal.systems) (upon which operation should stop). In
+> bogus block (upon which operation should proceed) from a
+> light client attack (upon which operation should stop). In
 > case of a bogus block, the lightclient might be forced to do
 > backwards verification until the blocks are out of the trusting
 > period, to make sure no previous validator set could have generated

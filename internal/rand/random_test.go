@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"testing"
 	"time"
@@ -14,20 +15,20 @@ import (
 func TestRandStr(t *testing.T) {
 	l := 243
 	s := Str(l)
-	assert.Equal(t, l, len(s))
+	assert.Len(t, s, l)
 }
 
 func TestRandBytes(t *testing.T) {
 	l := 243
 	b := Bytes(l)
-	assert.Equal(t, l, len(b))
+	assert.Len(t, b, l)
 }
 
 func TestRandIntn(t *testing.T) {
 	n := 243
 	for i := 0; i < 100; i++ {
 		x := Intn(n)
-		assert.True(t, x < n)
+		assert.Less(t, x, n)
 	}
 }
 
@@ -54,7 +55,10 @@ func testThemAll() string {
 	// Use it.
 	out := new(bytes.Buffer)
 	perm := Perm(10)
-	blob, _ := json.Marshal(perm)
+	blob, err := json.Marshal(perm)
+	if err != nil {
+		log.Fatalf("couldn't unmarshal perm: %v", err)
+	}
 	fmt.Fprintf(out, "perm: %s\n", blob)
 	fmt.Fprintf(out, "randInt: %d\n", Int())
 	fmt.Fprintf(out, "randUint: %d\n", Uint())
@@ -104,10 +108,12 @@ func BenchmarkRandBytes100KiB(b *testing.B) {
 }
 
 func BenchmarkRandBytes1MiB(b *testing.B) {
+	b.Helper()
 	benchmarkRandBytes(b, 1024*1024)
 }
 
 func benchmarkRandBytes(b *testing.B, n int) {
+	b.Helper()
 	for i := 0; i < b.N; i++ {
 		_ = Bytes(n)
 	}

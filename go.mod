@@ -55,7 +55,7 @@ require (
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/vektra/mockery/v2 v2.39.1
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
-	golang.org/x/sync v0.5.0
+	golang.org/x/sync v0.6.0
 	gonum.org/v1/gonum v0.14.0
 	google.golang.org/protobuf v1.32.0
 )

@@ -193,7 +193,7 @@ func TestMsgToProto(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			wpb, err := MsgToWrappedProto(tt.msg)
 			if tt.wantErr {
-				assert.Equal(t, err != nil, tt.wantErr)
+				assert.Equal(t, tt.wantErr, err != nil)
 				return
 			}
 			require.NoError(t, err)
@@ -301,7 +301,7 @@ func TestWALMsgProto(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := WALToProto(tt.msg)
 			if tt.wantErr == true {
-				assert.Equal(t, err != nil, tt.wantErr)
+				assert.Equal(t, tt.wantErr, err != nil)
 				return
 			}
 			assert.EqualValues(t, tt.want, pb, tt.testName)

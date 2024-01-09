@@ -2,7 +2,6 @@ package state
 
 import (
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	"github.com/cometbft/cometbft/types"

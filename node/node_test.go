@@ -491,7 +491,6 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	require.NoError(t, err)
 
 	n, err := NewNode(
-		context.Background(),
 		config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
 		nodeKey,
@@ -534,7 +533,6 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	require.NoError(t, err)
 
 	n, err := NewNode(
-		context.Background(),
 		config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
 		nodeKey,
@@ -576,7 +574,6 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = NewNode(
-		context.Background(),
 		config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
 		nodeKey,

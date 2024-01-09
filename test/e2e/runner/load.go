@@ -7,12 +7,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 	"github.com/cometbft/cometbft/types"
-	"github.com/google/uuid"
 )
 
 const workerPoolSize = 16

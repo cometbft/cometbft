@@ -8,9 +8,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/internal/service"
-
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 )
@@ -22,7 +21,7 @@ import (
 // byzantine validator sends conflicting proposals into A and B,
 // and prevotes/precommits on both of them.
 // B sees a commit, A doesn't.
-// Heal partition and ensure A sees the commit
+// Heal partition and ensure A sees the commit.
 func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	N := 4
 	logger := consensusLogger().With("test", "byzantine")
@@ -54,7 +53,6 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	blocksSubs := make([]types.Subscription, N)
 	reactors := make([]p2p.Reactor, N)
 	for i := 0; i < N; i++ {
-
 		// enable txs so we can create different proposals
 		assertMempool(css[i].txNotifier).EnableTxsAvailable()
 		// make first val byzantine
@@ -183,6 +181,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 // byzantine consensus functions
 
 func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64, round int32, cs *State, sw *p2p.Switch) {
+	t.Helper()
 	// byzantine user should create two proposals and try to split the vote.
 	// Avoid sending on internalMsgQueue and running consensus state.
 
@@ -201,7 +200,7 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	proposal1.Signature = p1.Signature
 
 	// some new transactions come in (this ensures that the proposals are different)
-	deliverTxsRange(t, cs, 0, 1)
+	deliverTxsRange(t, cs, 1)
 
 	// Create a new proposal block from state/txs from the mempool.
 	block2, err := cs.createProposalBlock(ctx)

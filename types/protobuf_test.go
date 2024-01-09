@@ -14,17 +14,16 @@ import (
 
 func TestABCIPubKey(t *testing.T) {
 	pkEd := ed25519.GenPrivKey().PubKey()
-	err := testABCIPubKey(t, pkEd)
-	assert.NoError(t, err)
+	testABCIPubKey(t, pkEd)
 }
 
-func testABCIPubKey(t *testing.T, pk crypto.PubKey) error {
+func testABCIPubKey(t *testing.T, pk crypto.PubKey) {
+	t.Helper()
 	abciPubKey, err := cryptoenc.PubKeyToProto(pk)
 	require.NoError(t, err)
 	pk2, err := cryptoenc.PubKeyFromProto(abciPubKey)
 	require.NoError(t, err)
 	require.Equal(t, pk, pk2)
-	return nil
 }
 
 func TestABCIValidators(t *testing.T) {
@@ -37,7 +36,7 @@ func TestABCIValidators(t *testing.T) {
 
 	abciVal := TM2PB.ValidatorUpdate(cmtVal)
 	cmtVals, err := PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, cmtValExpected, cmtVals[0])
 
 	abciVals := TM2PB.ValidatorUpdates(NewValidatorSet(cmtVals))
@@ -48,7 +47,7 @@ func TestABCIValidators(t *testing.T) {
 
 	abciVal = TM2PB.ValidatorUpdate(cmtVal)
 	cmtVals, err = PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{abciVal})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, cmtValExpected, cmtVals[0])
 }
 

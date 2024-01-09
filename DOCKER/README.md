@@ -22,7 +22,7 @@ CometBFT is Byzantine Fault Tolerant (BFT) middleware that takes a state transit
 
 For more background, see the [the docs](https://docs.cometbft.com/main/introduction/#quick-start).
 
-To get started developing applications, see the [application developers guide](https://docs.cometbft.com/main/introduction/quick-start.html).
+To get started developing applications, see the [application developers guide](https://docs.cometbft.com/main/guides/quick-start.html).
 
 ## How to use this image
 

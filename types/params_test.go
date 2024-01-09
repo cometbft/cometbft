@@ -44,9 +44,9 @@ func TestConsensusParamsValidation(t *testing.T) {
 	}
 	for i, tc := range testCases {
 		if tc.valid {
-			assert.NoErrorf(t, tc.params.ValidateBasic(), "expected no error for valid params (#%d)", i)
+			require.NoErrorf(t, tc.params.ValidateBasic(), "expected no error for valid params (#%d)", i)
 		} else {
-			assert.Errorf(t, tc.params.ValidateBasic(), "expected error for non valid params (#%d)", i)
+			require.Errorf(t, tc.params.ValidateBasic(), "expected error for non valid params (#%d)", i)
 		}
 	}
 }
@@ -231,6 +231,5 @@ func TestProto(t *testing.T) {
 		oriParams := ConsensusParamsFromProto(pbParams)
 
 		assert.Equal(t, params[i], oriParams)
-
 	}
 }

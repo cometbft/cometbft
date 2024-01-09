@@ -56,7 +56,7 @@ func TestBcNoBlockResponseMessageValidateBasic(t *testing.T) {
 
 func TestBcStatusRequestMessageValidateBasic(t *testing.T) {
 	request := bcproto.StatusRequest{}
-	assert.NoError(t, blocksync.ValidateMsg(&request))
+	require.NoError(t, blocksync.ValidateMsg(&request))
 }
 
 func TestBcStatusResponseMessageValidateBasic(t *testing.T) {

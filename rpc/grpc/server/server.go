@@ -5,6 +5,8 @@ import (
 	"net"
 	"strings"
 
+	"google.golang.org/grpc"
+
 	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
 	pbversionsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
@@ -15,7 +17,6 @@ import (
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
 	"github.com/cometbft/cometbft/types"
-	"google.golang.org/grpc"
 )
 
 // Option is any function that allows for configuration of the gRPC server

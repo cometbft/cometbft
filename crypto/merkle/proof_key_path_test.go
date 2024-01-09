@@ -35,7 +35,7 @@ func TestKeyPath(t *testing.T) {
 		}
 
 		res, err := KeyPathToKeys(path.String())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, len(keys), len(res))
 
 		for i, key := range keys {

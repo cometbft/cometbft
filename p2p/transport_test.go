@@ -692,8 +692,9 @@ func TestTransportAddChannel(t *testing.T) {
 	}
 }
 
-// create listener
+// create listener.
 func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
+	t.Helper()
 	var (
 		pv = ed25519.GenPrivKey()
 		id = PubKeyToID(pv.PubKey())

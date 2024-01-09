@@ -11,11 +11,11 @@ func TestArmor(t *testing.T) {
 	blockType := "MINT TEST"
 	data := []byte("somedata")
 	armorStr, err := EncodeArmor(blockType, nil, data)
-	require.Nil(t, err, "%+v", err)
+	require.NoError(t, err, "%+v", err)
 
 	// Decode armorStr and test for equivalence.
 	blockType2, _, data2, err := DecodeArmor(armorStr)
-	require.Nil(t, err, "%+v", err)
+	require.NoError(t, err, "%+v", err)
 	assert.Equal(t, blockType, blockType2)
 	assert.Equal(t, data, data2)
 }

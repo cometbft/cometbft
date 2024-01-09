@@ -6,11 +6,12 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/google/orderedcode"
+
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/types"
-	"github.com/google/orderedcode"
 )
 
 type HeightInfo struct {

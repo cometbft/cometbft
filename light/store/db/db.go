@@ -4,13 +4,14 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"github.com/google/orderedcode"
+
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/light/store"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
-	"github.com/google/orderedcode"
 )
 
 const (

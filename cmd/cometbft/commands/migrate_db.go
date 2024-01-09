@@ -6,10 +6,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	dbm "github.com/cometbft/cometbft-db"
 	v2 "github.com/cometbft/cometbft/cmd/cometbft/commands/migrate_db/v2"
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/spf13/cobra"
 )
 
 var migrateDBTargetVersion uint

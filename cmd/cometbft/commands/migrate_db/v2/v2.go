@@ -10,9 +10,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/orderedcode"
+
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/google/orderedcode"
 )
 
 var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))

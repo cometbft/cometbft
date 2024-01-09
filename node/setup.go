@@ -261,7 +261,6 @@ func createMempoolAndMempoolReactor(
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)),
 		)
-		mp.SetLogger(logger)
 		reactor := mempl.NewReactor(
 			config.Mempool,
 			mp,
@@ -271,7 +270,6 @@ func createMempoolAndMempoolReactor(
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
 		}
-		reactor.SetLogger(logger)
 
 		return mp, reactor
 	case cfg.MempoolTypeCat:
@@ -285,12 +283,10 @@ func createMempoolAndMempoolReactor(
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)),
 		)
-		mp.SetLogger(logger)
 		reactor := cat.NewReactor(config.Mempool, mp, waitSync, logger)
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
 		}
-		reactor.SetLogger(logger)
 
 		return mp, reactor
 	case cfg.MempoolTypeNop:

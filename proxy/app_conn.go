@@ -7,7 +7,7 @@ import (
 	"github.com/go-kit/kit/metrics"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
-	types "github.com/cometbft/cometbft/abci/types"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 )
 
 //go:generate ../scripts/mockery_generate.sh AppConnConsensus|AppConnMempool|AppConnQuery|AppConnSnapshot

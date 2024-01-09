@@ -7,8 +7,8 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 )
 
-// A mempool reactor must implement WaitSyncP2PReactor to allow the node to transition from block
-// sync or state sync to consensus mode.
+// Base mempool reactor with a configuration. It must implement the WaitSyncP2PReactor interface to
+// allow the node to transition from block sync or state sync to consensus mode.
 type WaitSyncReactor struct {
 	p2p.BaseReactor
 	Config *cfg.MempoolConfig
@@ -18,12 +18,11 @@ type WaitSyncReactor struct {
 }
 
 func NewWaitSyncReactor(config *cfg.MempoolConfig, waitSync bool) *WaitSyncReactor {
-	baseR := &WaitSyncReactor{Config: config}
+	baseR := &WaitSyncReactor{Config: config, waitSync: atomic.Bool{}}
 	if waitSync {
 		baseR.waitSync.Store(true)
 		baseR.waitSyncCh = make(chan struct{})
 	}
-	baseR.BaseReactor = *p2p.NewBaseReactor("Mempool", baseR)
 	return baseR
 }
 
@@ -41,4 +40,8 @@ func (memR *WaitSyncReactor) EnableInOutTxs() {
 
 func (memR *WaitSyncReactor) WaitSync() bool {
 	return memR.waitSync.Load()
+}
+
+func (memR *WaitSyncReactor) WaitSyncChan() chan struct{} {
+	return memR.waitSyncCh
 }

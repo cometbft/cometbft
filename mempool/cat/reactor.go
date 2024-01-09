@@ -45,11 +45,13 @@ type Reactor struct {
 // NewReactor returns a new Reactor with the given config and mempool.
 func NewReactor(config *cfg.MempoolConfig, mp *mempool.CListMempool, waitSync bool, logger log.Logger) *Reactor {
 	memR := &Reactor{
-		mempool:        mp,
-		requests:       newRequestScheduler(defaultGossipDelay, defaultGlobalRequestTimeout),
-		seenByPeersSet: NewSeenTxSet(),
+		WaitSyncReactor: *mempool.NewWaitSyncReactor(config, waitSync),
+		mempool:         mp,
+		requests:        newRequestScheduler(defaultGossipDelay, defaultGlobalRequestTimeout),
+		seenByPeersSet:  NewSeenTxSet(),
 	}
-	memR.WaitSyncReactor = *mempool.NewWaitSyncReactor(config, waitSync)
+	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+
 	memR.SetLogger(logger)
 	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) {
 		memR.seenByPeersSet.RemoveKey(txKey)
@@ -77,6 +79,9 @@ func (memR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements p2p.BaseReactor.
 func (memR *Reactor) OnStart() error {
+	if memR.WaitSync() {
+		memR.Logger.Info("Starting reactor in sync mode: tx propagation will start once sync completes")
+	}
 	if !memR.Config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
@@ -139,6 +144,11 @@ func (memR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 // Receive implements Reactor.
 // It processes one of three messages: Txs, SeenTx, WantTx.
 func (memR *Reactor) Receive(e p2p.Envelope) {
+	if memR.WaitSync() {
+		memR.Logger.Debug("Ignored message received while syncing", "msg", e.Message)
+		return
+	}
+
 	switch msg := e.Message.(type) {
 	// A peer has sent us one or more transactions. This could be either because we requested them
 	// or because the peer received a new transaction and is broadcasting it to us.
@@ -327,6 +337,17 @@ func (memR *Reactor) broadcastNewTx(entry *mempool.CListEntry) {
 	if !memR.Config.Broadcast {
 		return
 	}
+
+	// If the node is catching up, don't start this routine immediately.
+	if memR.WaitSync() {
+		select {
+		case <-memR.WaitSyncChan():
+			// EnableInOutTxs() has set WaitSync() to false.
+		case <-memR.Quit():
+			return
+		}
+	}
+	memR.Logger.Info("Start tx propagation")
 
 	tx := entry.Tx()
 	txKey := tx.Key()

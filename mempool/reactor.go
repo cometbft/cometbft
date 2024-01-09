@@ -42,12 +42,14 @@ type Reactor struct {
 // NewReactor returns a new Reactor with the given config and mempool.
 func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool, logger log.Logger) *Reactor {
 	memR := &Reactor{
-		mempool:   mempool,
-		txSenders: make(map[types.TxKey]map[p2p.ID]bool),
+		WaitSyncReactor: *NewWaitSyncReactor(config, waitSync),
+		mempool:         mempool,
+		txSenders:       make(map[types.TxKey]map[p2p.ID]bool),
 	}
-	memR.WaitSyncReactor = *NewWaitSyncReactor(config, waitSync)
-	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
+	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
+
 	memR.SetLogger(logger)
+	memR.mempool.SetTxRemovedCallback(func(txKey types.TxKey) { memR.removeSenders(txKey) })
 	memR.activePersistentPeersSemaphore = semaphore.NewWeighted(int64(config.ExperimentalMaxGossipConnectionsToPersistentPeers))
 	memR.activeNonPersistentPeersSemaphore = semaphore.NewWeighted(int64(config.ExperimentalMaxGossipConnectionsToNonPersistentPeers))
 
@@ -194,12 +196,13 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 	// If the node is catching up, don't start this routine immediately.
 	if memR.WaitSync() {
 		select {
-		case <-memR.waitSyncCh:
+		case <-memR.WaitSyncChan():
 			// EnableInOutTxs() has set WaitSync() to false.
 		case <-memR.Quit():
 			return
 		}
 	}
+	memR.Logger.Info("Start tx propagation", "peer", peer.ID())
 
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time

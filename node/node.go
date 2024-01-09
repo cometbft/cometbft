@@ -24,7 +24,7 @@ import (
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/libs/service"
 
-	mempl "github.com/cometbft/cometbft/mempool" //nolint:staticcheck // SA1019 Priority mempool deprecated but still supported in this release.
+	mempl "github.com/cometbft/cometbft/mempool" // SA1019 Priority mempool deprecated but still supported in this release.
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"

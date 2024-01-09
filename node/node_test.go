@@ -283,6 +283,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 
 // testFreeAddr claims a free port so we don't block on listener being ready.
 func testFreeAddr(t *testing.T) string {
+	t.Helper()
 	port, err := getFreePort()
 	require.NoError(t, err)
 	return fmt.Sprintf("127.0.0.1:%d", port)

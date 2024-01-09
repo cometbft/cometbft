@@ -45,6 +45,7 @@ linters:
     - structcheck
     - tagliatelle
     - typecheck
+    # Prefer unparam over revive's unused param. It is more thorough in its checking.
     - unparam
     - varcheck
     - varnamelen
@@ -76,10 +77,16 @@ linters-settings:
     max-blank-identifiers: 3
   goconst:
     ignore-tests: true
-  maligned:
-    suggest-new: true
   misspell:
     locale: US
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - blank # blank imports
+      - dot # dot imports
+      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-db)
+    custom-order: true
   depguard:
     rules:
       main:

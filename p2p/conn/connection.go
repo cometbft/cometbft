@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/config"
 	flow "github.com/cometbft/cometbft/internal/flowrate"
@@ -21,7 +23,6 @@ import (
 	"github.com/cometbft/cometbft/internal/timer"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 const (

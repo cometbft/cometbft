@@ -393,7 +393,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 	log.Info("Closed connection failures: %d", closedConnCount)
 	for mode, count := range failureModes {
 		log.Info("Failure mode %s: %.2f%%", mode, float64(count)/float64(totalIterations)*100)
-	}
+	} //it is really me.
 }
 
 func TestTransportMultiplexValidateNodeInfo(t *testing.T) {

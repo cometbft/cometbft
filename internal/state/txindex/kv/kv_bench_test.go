@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/types"

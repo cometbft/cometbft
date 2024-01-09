@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"net"
 
+	"google.golang.org/grpc"
+
 	pbpruningsvc "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/pruningservice"
-	"google.golang.org/grpc"
 )
 
 // Option is any function that allows for configuration of the gRPC server

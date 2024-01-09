@@ -4,9 +4,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-kit/kit/metrics"
+
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	"github.com/cometbft/cometbft/types"
-	"github.com/go-kit/kit/metrics"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 	MetricsSubsystem = "consensus"
 )
 
-//go:generate go run ../scripts/metricsgen -struct=Metrics
+//go:generate go run ../../scripts/metricsgen -struct=Metrics
 
 // Metrics contains metrics exposed by this package.
 type Metrics struct {

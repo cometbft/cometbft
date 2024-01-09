@@ -4,8 +4,9 @@ package types
 import (
 	"encoding/json"
 
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cosmos/gogoproto/grpc"
+
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 )
 
 type (

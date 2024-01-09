@@ -651,7 +651,7 @@ liveness. Timeouts exist because the network can't rely on a single proposer
 being available and must move on if such is not responding.
 
 > How can we address situations where someone arbitrarily adjusts their block
-> Production time to gain an advantage?
+> production time to gain an advantage?
 
 The impact shown above is negligible in a decentralized network with enough
 decentralization.

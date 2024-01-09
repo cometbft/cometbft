@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	// prefixes must be unique across all db's
+	// prefixes must be unique across all db's.
 	prefixCommitted = int64(9)
 	prefixPending   = int64(10)
 )

@@ -24,7 +24,7 @@ const (
 	// 100000 results in ~ 100ms to get 100 validators (see BenchmarkLoadValidators).
 	valSetCheckpointInterval = 100000
 
-	// prefixes must be unique across all db's
+	// prefixes must be unique across all db's.
 	prefixValidators      = int64(6)
 	prefixConsensusParams = int64(7)
 	prefixABCIResponses   = int64(8)

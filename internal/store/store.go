@@ -584,9 +584,9 @@ func (bs *BlockStore) Close() error {
 
 //---------------------------------- KEY ENCODING -----------------------------------------
 
-// key prefixes
+// key prefixes.
 const (
-	// prefixes are unique across all tm db's
+	// prefixes are unique across all tm db's.
 	prefixBlockMeta   = int64(0)
 	prefixBlockPart   = int64(1)
 	prefixBlockCommit = int64(2)

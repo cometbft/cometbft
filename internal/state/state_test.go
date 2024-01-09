@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -17,8 +20,6 @@ import (
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // setupTestCase does setup common to all test cases.

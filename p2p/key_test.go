@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 func TestLoadOrGenNodeKey(t *testing.T) {

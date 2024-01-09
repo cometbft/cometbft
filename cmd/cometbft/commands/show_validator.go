@@ -3,10 +3,11 @@ package commands
 import (
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/privval"
-	"github.com/spf13/cobra"
 )
 
 // ShowValidatorCmd adds capabilities for showing the validator info.

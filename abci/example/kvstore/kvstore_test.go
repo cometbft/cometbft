@@ -6,11 +6,12 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/stretchr/testify/require"
 )
 
 const (

@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
+
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 func TestPanicOnMaxLength(t *testing.T) {

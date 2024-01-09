@@ -6,6 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
 	dbm "github.com/cometbft/cometbft-db"
 	abciclientmocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -27,9 +31,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 var (

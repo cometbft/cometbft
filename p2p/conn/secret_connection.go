@@ -13,13 +13,6 @@ import (
 	"net"
 	"time"
 
-	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/async"
-	"github.com/cometbft/cometbft/internal/protoio"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	gogotypes "github.com/cosmos/gogoproto/types"
 	pool "github.com/libp2p/go-buffer-pool"
 	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
@@ -27,6 +20,14 @@ import (
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/nacl/box"
+
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/internal/async"
+	"github.com/cometbft/cometbft/internal/protoio"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
 // 4 + 1024 == 1028 total frame size.

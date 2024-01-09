@@ -5,8 +5,6 @@ import (
 	"crypto/rand"
 	"os"
 	"path/filepath"
-
-	// "sync"
 	"testing"
 	"time"
 
@@ -69,14 +67,14 @@ func TestWALTruncate(t *testing.T) {
 
 	h := int64(50)
 	gr, found, err := wal.SearchForEndHeight(h, &WALSearchOptions{})
-	assert.NoError(t, err, "expected not to err on height %d", h)
+	require.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
 	assert.NotNil(t, gr)
 	defer gr.Close()
 
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
-	assert.NoError(t, err, "expected to decode a message")
+	require.NoError(t, err, "expected to decode a message")
 	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
@@ -146,7 +144,7 @@ func TestWALWrite(t *testing.T) {
 	err = wal.Write(msgInfo{
 		Msg: msg,
 	})
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Contains(t, err.Error(), "msg is too big")
 	}
 }
@@ -164,14 +162,14 @@ func TestWALSearchForEndHeight(t *testing.T) {
 
 	h := int64(3)
 	gr, found, err := wal.SearchForEndHeight(h, &WALSearchOptions{})
-	assert.NoError(t, err, "expected not to err on height %d", h)
+	require.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
 	assert.NotNil(t, gr)
 	defer gr.Close()
 
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
-	assert.NoError(t, err, "expected to decode a message")
+	require.NoError(t, err, "expected to decode a message")
 	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
@@ -211,7 +209,7 @@ func TestWALPeriodicSync(t *testing.T) {
 
 	h := int64(4)
 	gr, found, err := wal.SearchForEndHeight(h, &WALSearchOptions{})
-	assert.NoError(t, err, "expected not to err on height %d", h)
+	require.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
 	assert.NotNil(t, gr)
 	if gr != nil {
@@ -239,6 +237,7 @@ func nBytes(n int) []byte {
 }
 
 func benchmarkWalDecode(b *testing.B, n int) {
+	b.Helper()
 	// registerInterfacesOnce()
 
 	buf := new(bytes.Buffer)
@@ -293,6 +292,7 @@ func BenchmarkWalDecode1GB(b *testing.B) {
 
 // getConfig returns a config for test cases.
 func getConfig(t *testing.T) *cfg.Config {
+	t.Helper()
 	c := test.ResetTestRoot(t.Name())
 
 	// and we use random ports to run in parallel

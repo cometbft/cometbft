@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rs/cors"
+
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/indexer"
@@ -12,7 +14,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/rpc/core"
 	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	"github.com/rs/cors"
 )
 
 // Server defines parameters for running an Inspector rpc server.

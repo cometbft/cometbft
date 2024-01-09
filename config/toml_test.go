@@ -13,10 +13,11 @@ import (
 )
 
 func ensureFiles(t *testing.T, rootDir string, files ...string) {
+	t.Helper()
 	for _, f := range files {
 		p := filepath.Join(rootDir, f)
 		_, err := os.Stat(p)
-		assert.NoError(t, err, p)
+		require.NoError(t, err, p)
 	}
 }
 
@@ -25,7 +26,7 @@ func TestEnsureRoot(t *testing.T) {
 
 	// setup temp dir for test
 	tmpDir, err := os.MkdirTemp("", "config-test")
-	require.Nil(err)
+	require.NoError(err)
 	defer os.RemoveAll(tmpDir)
 
 	// create root dir
@@ -33,7 +34,7 @@ func TestEnsureRoot(t *testing.T) {
 
 	// make sure config is set properly
 	data, err := os.ReadFile(filepath.Join(tmpDir, config.DefaultConfigDir, config.DefaultConfigFileName))
-	require.Nil(err)
+	require.NoError(err)
 
 	assertValidConfig(t, string(data))
 
@@ -50,7 +51,7 @@ func TestEnsureTestRoot(t *testing.T) {
 
 	// make sure config is set properly
 	data, err := os.ReadFile(filepath.Join(rootDir, config.DefaultConfigDir, config.DefaultConfigFileName))
-	require.Nil(err)
+	require.NoError(err)
 
 	assertValidConfig(t, string(data))
 
@@ -62,7 +63,7 @@ func TestEnsureTestRoot(t *testing.T) {
 func assertValidConfig(t *testing.T, configFile string) {
 	t.Helper()
 	// list of words we expect in the config
-	var elems = []string{
+	elems := []string{
 		"moniker",
 		"seeds",
 		"proxy_app",

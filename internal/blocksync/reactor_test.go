@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	sm "github.com/cometbft/cometbft/internal/state"
@@ -28,11 +27,13 @@ import (
 
 var config *cfg.Config
 
-func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.GenesisDoc, []types.PrivValidator) {
+func randGenesisDoc() (*types.GenesisDoc, []types.PrivValidator) {
+	minPower := int64(30)
+	numValidators := 1
 	validators := make([]types.GenesisValidator, numValidators)
 	privValidators := make([]types.PrivValidator, numValidators)
 	for i := 0; i < numValidators; i++ {
-		val, privVal := types.RandValidator(randPower, minPower)
+		val, privVal := types.RandValidator(false, minPower)
 		validators[i] = types.GenesisValidator{
 			PubKey: val.PubKey,
 			Power:  val.VotingPower,
@@ -63,6 +64,7 @@ func newReactor(
 	privVals []types.PrivValidator,
 	maxBlockHeight int64,
 ) ReactorPair {
+	t.Helper()
 	if len(privVals) != 1 {
 		panic("only support one validator")
 	}
@@ -170,7 +172,7 @@ func newReactor(
 func TestNoBlockResponse(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := randGenesisDoc()
 
 	maxBlockHeight := int64(65)
 
@@ -216,9 +218,9 @@ func TestNoBlockResponse(t *testing.T) {
 	for _, tt := range tests {
 		block, _ := reactorPairs[1].reactor.store.LoadBlock(tt.height)
 		if tt.existent {
-			assert.True(t, block != nil)
+			assert.NotNil(t, block)
 		} else {
-			assert.True(t, block == nil)
+			assert.Nil(t, block)
 		}
 	}
 }
@@ -231,12 +233,12 @@ func TestNoBlockResponse(t *testing.T) {
 func TestBadBlockStopsPeer(t *testing.T) {
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := randGenesisDoc()
 
 	maxBlockHeight := int64(148)
 
 	// Other chain needs a different validator set
-	otherGenDoc, otherPrivVals := randGenesisDoc(1, false, 30)
+	otherGenDoc, otherPrivVals := randGenesisDoc()
 	otherChain := newReactor(t, log.TestingLogger(), otherGenDoc, otherPrivVals, maxBlockHeight)
 
 	defer func() {
@@ -289,7 +291,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	reactorPairs[3].reactor.store = otherChain.reactor.store
 
 	lastReactorPair := newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
-	reactorPairs = append(reactorPairs, lastReactorPair)
+	reactorPairs = append(reactorPairs, lastReactorPair) //nolint:makezero // when initializing with 0, the test breaks.
 
 	switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("BLOCKSYNC", reactorPairs[len(reactorPairs)-1].reactor)
@@ -308,7 +310,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 
-	assert.True(t, lastReactorPair.reactor.Switch.Peers().Size() < len(reactorPairs)-1)
+	assert.Less(t, lastReactorPair.reactor.Switch.Peers().Size(), len(reactorPairs)-1)
 }
 
 func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
@@ -316,7 +318,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
-	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc, privVals := randGenesisDoc()
 
 	reactorPairs := make([]ReactorPair, 1, 2)
 	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)

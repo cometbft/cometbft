@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -11,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/stretchr/testify/require"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -321,7 +320,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 				)
 				_, err := dialer.Dial(*addr, peerConfig{})
 				if err != nil {
-					errc <- errors.New(fmt.Sprintf("slow peer failed to dial: %v", err))
+					errc <- fmt.Errorf("slow peer failed to dial: %v", err)
 					return
 				}
 				log.Info("Peer connected")
@@ -343,7 +342,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 				)
 				_, err := dialer.Dial(*addr, peerConfig{})
 				if err != nil {
-					errc <- errors.New(fmt.Sprintf("fast peer failed to dial: %v", err))
+					errc <- fmt.Errorf("fast peer failed to dial: %v", err)
 					return
 				}
 

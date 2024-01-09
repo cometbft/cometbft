@@ -4,10 +4,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
-	"github.com/spf13/cobra"
 )
 
 // ResetAllCmd removes the database of this CometBFT core

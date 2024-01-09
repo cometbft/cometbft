@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/test"
 )
 
 func ensureFiles(t *testing.T, rootDir string, files ...string) {

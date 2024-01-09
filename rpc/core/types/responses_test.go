@@ -3,8 +3,9 @@ package coretypes
 import (
 	"testing"
 
-	"github.com/cometbft/cometbft/p2p"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/cometbft/cometbft/p2p"
 )
 
 func TestStatusIndexer(t *testing.T) {

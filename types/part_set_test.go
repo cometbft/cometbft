@@ -4,10 +4,11 @@ import (
 	"io"
 	"testing"
 
-	"github.com/cometbft/cometbft/crypto/merkle"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cometbft/cometbft/crypto/merkle"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 const (

@@ -3,13 +3,13 @@
 This section describes a version of the Tendermint consensus algorithm, adopted in CometBFT,
 that uses proposer-based timestamps.
 
-## Context
+## BFT Time
 
-Tendermint provides a deterministic, Byzantine fault-tolerant, source of time,
+CometBFT provides a deterministic, Byzantine fault-tolerant, source of time,
 defined by the `Time` field present in the headers of committed blocks.
 
 In the current consensus implementation, the timestamp of a block is
-computed by the [`BFTTime`][bfttime] algorithm:
+computed by the [`BFT Time`][bfttime] algorithm:
 
 - Validators include a timestamp in the `Precommit` messages they broadcast.
 Timestamps are retrieved from the validators' local clocks,
@@ -33,9 +33,9 @@ the cumulative voting power of any valid `Commit` set must be at least `2f+1`.
 As a result, the timestamp computed by `BFTTime` is not influenced by Byzantine validators,
 as the weighted median of `Commit` timestamps comes from the clock of a non-faulty validator.
 
-Tendermint does not make any assumptions regarding the clocks of (correct) validators,
-as block timestamps have no impact in the consensus protocol.
-However, the `Time` field of committed blocks is used by other components of Tendermint,
+The consensus algorithm does not make any assumptions regarding the clocks of (correct) validators,
+as block timestamps have no impact in its operation.
+However, the `Time` field of committed blocks is used by other components of CometBFT,
 such as IBC, the evidence, staking, and slashing modules.
 And it is used based on the common belief that block timestamps
 should bear some resemblance to real time, which is **not guaranteed**.
@@ -57,7 +57,8 @@ A block is only accepted if its timestamp is acceptable.
 A proposed timestamp is acceptable if it is *received* within a certain time window,
 determined by synchronous parameters.
 
-PBTS therefore augments the system model considered by Tendermint with *synchronous assumptions*:
+For validating timestamps, PBTS augments the system model considered by the
+consensus algorithm with *synchronous assumptions*:
 
 - **Synchronized clocks**: simultaneous clock reads at any two correct validators
 differ by at most `PRECISION`;
@@ -67,22 +68,17 @@ is bounded by `MSGDELAY`.
 This assumption is restricted to `Proposal` messages, broadcast by proposers.
 
 `PRECISION` and `MSGDELAY` are consensus parameters, shared by all validators,
-that define whether the timestamp of a block is acceptable.
-Let `t` be the time, read from its local clock, at which a validator
-receives, for the first time, a proposal with timestamp `ts`:
+that define whether the timestamp of a block is acceptable,
+according with the introduced `timely` predicate.
 
-- **[Time-Validity]** The proposed timestamp `ts` received at local time `t`
-is accepted if it satisfies the **timely** predicate:
-	> `ts - PRECISION <= t <= ts + MSGDELAY + PRECISION`
+In short, let `proposalReceiveTime` be the time, read from its local clock, at
+which a validator receives a proposal for a `block` with timestamp `block.time`.
+The proposed timestamp `block.time` can be accepted if
 
-The left inequality of the *timely* predicate establishes that proposed timestamps
-should be in the past, when adjusted by the clocks `PRECISION`.
-The right inequality of the *timely* predicate establishes that proposed timestamps
-should not be too much in the past, more precisely, not more than `MSGDELAY` in the past,
-when adjusted by the clocks `PRECISION`.
+    block.time - PRECISION <= proposalReceiveTime <= block.time + MSGDELAY + PRECISION
 
-A more detailed and formalized description is available in the
-[System Model and Properties][sysmodel] document
+A more detailed and formalized description of the `timely` predicate is available in the
+[System Model and Properties][sysmodel] document.
 
 ## Implementation
 
@@ -99,22 +95,16 @@ The block's timestamp represents the time at which it was assembled
     - To preserve monotonicity, a proposer might need to wait until its clock
 	reads a time greater than the timestamp of the previous block;
 
-- A validator only prevotes for *timely* blocks,
-that is, blocks whose timestamps are considered *timely* (compared to the original Tendermint consensus, a check is added to line 23).
-If the block proposed in a round is considered *untimely*,
-the validator prevotes `nil` (line 26):
+- A validator only prevotes for a block if its timestamp is considered `timely`
+(compared to the original algorithm, a check is added to line 23).
+Otherwise, the validator prevotes `nil` (line 26):
 
     - Validators register the time at which they received `Proposal` messages,
-	in order to evaluate the *timely* predicate;
+	in order to evaluate the `timely` predicate;
 
     - Blocks that are re-proposed because they received `2f+1 Prevotes`
-	in a previous round (line 28) are not subject to the *timely* predicate,
-	as they have already been evaluated as *timely* at a previous round.
-
-The more complex change proposed regards blocks that can be re-proposed in multiple rounds.
-The current solution improves the [first version of the specification][algorithm_v1] (that never had been implemented)
-by simplifying the way this situation is handled,
-from a recursive reasoning regarding valid blocks that are re-proposed.
+	in a previous round (line 28) are not subject to the `timely` predicate,
+    as their timestamps have already been evaluated at a previous round.
 
 The full solution is detailed and formalized in the [Protocol Specification][algorithm] document.
 
@@ -143,6 +133,7 @@ The full solution is detailed and formalized in the [Protocol Specification][alg
 
 [sysmodel]: ./pbts-sysmodel_002_draft.md
 [sysmodel_v1]: ./v1/pbts-sysmodel_001_draft.md
+[timely-predicate]: ./pbts-sysmodel_002_draft.md#timely-predicate
 
 [proposertla]: ./tla/TendermintPBT_001_draft.tla
 

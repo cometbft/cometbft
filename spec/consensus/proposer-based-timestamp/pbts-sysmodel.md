@@ -94,7 +94,7 @@ proposal times.
   predefined `valid` predicate.
 
 With respect to PBTS, the `valid` predicate requires proposal times to be
-[monotonic](./pbts-algorithm_002_draft.md#time-monotonicity) over heights of
+[monotonic][time-monotonicity] over heights of
 consensus.
 
 #### **[PBTS-INV-MONOTONICITY.0]**
@@ -315,9 +315,10 @@ Back to [main document][main].
 
 [main]: ./README.md
 
-[algorithm]: ./pbts-algorithm_002_draft.md
+[algorithm]: ./pbts-algorithm.md
+[time-monotonicity]: ./pbts-algorithm.md#time-monotonicity
 
-[sysmodel]: ./pbts-sysmodel_002_draft.md
+[sysmodel]: ./pbts-sysmodel.md
 [sysmodel_v1]: ./v1/pbts-sysmodel_001_draft.md
 
 [arXiv]: https://arxiv.org/pdf/1807.04938.pdf

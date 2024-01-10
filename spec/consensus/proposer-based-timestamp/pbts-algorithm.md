@@ -1,4 +1,4 @@
-# PBTS: Protocol Specification
+# PBTS: Algorithm Specification
 
 ## Proposal Time
 
@@ -38,14 +38,14 @@ it should postpone the generation of its proposal until `now_p > decision_p[h_p-
 > Although it should be considered, this scenario is unlikely during regular operation,
 as from `decision_p[h_p-1].time` and the start of height `h_p`, a complete consensus instance need to be concluded.
 
-Notice that monotonicity is not introduced by this proposal, being already ensured by  [`BFTTime`][bfttime].
-In `BFTTime`, the `Timestamp` field of every `Precommit` message of height `h_p` sent by a correct process is required to be larger than `decision_p[h_p-1].time`.
+Notice that monotonicity is not introduced by this proposal, being already ensured by  [`BFT Time`][bfttime].
+In `BFT Time`, the `Timestamp` field of every `Precommit` message of height `h_p` sent by a correct process is required to be larger than `decision_p[h_p-1].time`.
 As one of such `Timestamp` fields becomes the time assigned to a value proposed at height `h_p`, time monotonicity is observed.
 
 The time monotonicity of values proposed in heights of consensus is verified by the `valid()` predicate, to which every proposed value is submitted.
 A value rejected by `valid()` is not accepted by any correct process.
 
-## Timely Proposals
+## Timely Predicate
 
 PBTS introduces a new requirement for a process to accept a proposal: the proposal time must be `timely`.
 It is a temporal requirement, associated with the following
@@ -149,8 +149,8 @@ Since `v.time` was considered `timely` by `2f + 1` processes in a previous
 round, and provided that `v.time` cannot be updated when `v` is re-proposed,
 the evaluation of `timely` predicate is not necessary in this case.
 
-> For a more formal explanation and a proof of this assertion, refer to the
-> [properties][sysmodel-pol] section.
+For a more formal explanation and a proof of this assertion, refer to the
+[properties][sysmodel-pol] section.
 
 **All other rules remain unchanged.**
 
@@ -160,8 +160,8 @@ Back to [main document][main].
 
 [algorithm_v1]: ./v1/pbts-algorithm_001_draft.md
 
-[sysmodel]: ./pbts-sysmodel_002_draft.md
-[sysmodel-pol]: ./pbts-sysmodel_002_draft.md#derived-proof-of-locks
+[sysmodel]: ./pbts-sysmodel.md
+[sysmodel-pol]: ./pbts-sysmodel.md#derived-proof-of-locks
 
 [bfttime]: ../bft-time.md
 [arXiv]: https://arxiv.org/pdf/1807.04938.pdf

@@ -190,7 +190,7 @@ Back to [main document][main_v1].
 
 [algorithm_v1]: ./pbts-algorithm_001_draft.md
 
-[sysmodel]: ../pbts-sysmodel_002_draft.md
+[sysmodel]: ../pbts-sysmodel.md
 
 [arXiv]: https://arxiv.org/abs/1807.04938
 

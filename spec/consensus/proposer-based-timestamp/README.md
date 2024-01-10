@@ -30,7 +30,7 @@ is selected by the block's proposer and stored in the `Commit` field of the bloc
 
 Assuming that the voting power controlled by Byzantine validators is bounded by `f`,
 the cumulative voting power of any valid `Commit` set must be at least `2f+1`.
-As a result, the timestamp computed by `BFTTime` is not influenced by Byzantine validators,
+As a result, the timestamp computed by `BFT Time` is not influenced by Byzantine validators,
 as the weighted median of `Commit` timestamps comes from the clock of a non-faulty validator.
 
 The consensus algorithm does not make any assumptions regarding the clocks of (correct) validators,
@@ -40,7 +40,7 @@ such as IBC, the evidence, staking, and slashing modules.
 And it is used based on the common belief that block timestamps
 should bear some resemblance to real time, which is **not guaranteed**.
 
-A more comprehensive discussion of the limitations of `BFTTime`
+A more comprehensive discussion of the limitations of `BFT Time`
 can be found in the [first draft][main_v1] of this proposal.
 Of particular interest is to possibility of having validators equipped with "faulty" clocks,
 not fairly accurate with real time, that control more than `f` voting power,
@@ -111,7 +111,7 @@ The full solution is detailed and formalized in the [Protocol Specification][alg
 ## Further details
 
 - [System Model and Properties][sysmodel]
-- [Protocol Specification][algorithm]
+- [Algorithm Specification][algorithm]
 - [TLA+ Specification][proposertla] (first draft, not updated)
 
 ### Open issues
@@ -128,12 +128,12 @@ The full solution is detailed and formalized in the [Protocol Specification][alg
 
 [main_v1]: ./v1/pbts_001_draft.md
 
-[algorithm]: ./pbts-algorithm_002_draft.md
+[algorithm]: ./pbts-algorithm.md
 [algorithm_v1]: ./v1/pbts-algorithm_001_draft.md
 
-[sysmodel]: ./pbts-sysmodel_002_draft.md
+[sysmodel]: ./pbts-sysmodel.md
 [sysmodel_v1]: ./v1/pbts-sysmodel_001_draft.md
-[timely-predicate]: ./pbts-sysmodel_002_draft.md#timely-predicate
+[timely-predicate]: ./pbts-sysmodel.md#timely-predicate
 
 [proposertla]: ./tla/TendermintPBT_001_draft.tla
 

@@ -154,13 +154,8 @@ func (a *addrBook) init() {
 
 // OnStart implements Service.
 func (a *addrBook) OnStart() error {
-	if err := a.BaseService.OnStart(); err != nil {
-		return err
-	}
 	a.loadFromFile(a.filePath)
 
-	// wg.Add to ensure that any invocation of .Wait()
-	// later on will wait for saveRoutine to terminate.
 	a.wg.Add(1)
 	go a.saveRoutine()
 
@@ -168,12 +163,12 @@ func (a *addrBook) OnStart() error {
 }
 
 // OnStop implements Service.
-func (a *addrBook) OnStop() {
-	a.BaseService.OnStop()
-}
-
-func (a *addrBook) Wait() {
+func (a *addrBook) Stop() error {
+	if err := a.BaseService.Stop(); err != nil {
+		return err
+	}
 	a.wg.Wait()
+	return nil
 }
 
 func (a *addrBook) FilePath() string {
@@ -491,17 +486,15 @@ func (a *addrBook) saveRoutine() {
 	defer a.wg.Done()
 
 	saveFileTicker := time.NewTicker(dumpAddressInterval)
-out:
 	for {
 		select {
 		case <-saveFileTicker.C:
-			a.saveToFile(a.filePath)
+			a.Save()
 		case <-a.Quit():
-			break out
+			a.Save()
+			return
 		}
 	}
-	saveFileTicker.Stop()
-	a.saveToFile(a.filePath)
 }
 
 //----------------------------------------------------------

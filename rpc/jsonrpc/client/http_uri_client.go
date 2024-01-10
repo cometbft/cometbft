@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -56,7 +55,7 @@ func (c *URIClient) Call(ctx context.Context, method string,
 ) (interface{}, error) {
 	values, err := argsToURLValues(params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode params: %w", err)
+		return nil, ErrEncodingParams{Source: err}
 	}
 
 	req, err := http.NewRequestWithContext(
@@ -66,19 +65,19 @@ func (c *URIClient) Call(ctx context.Context, method string,
 		strings.NewReader(values.Encode()),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("new request: %w", err)
+		return nil, ErrCreateRequest{Source: err}
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("post: %w", err)
+		return nil, ErrFailedRequest{Source: err}
 	}
 	defer resp.Body.Close()
 
 	responseBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read response body: %w", err)
+		return nil, ErrReadResponse{Source: err}
 	}
 
 	return unmarshalResponseBytes(responseBytes, URIClientRequestID, result)

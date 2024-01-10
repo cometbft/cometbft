@@ -1,8 +1,6 @@
 package core
 
 import (
-	"errors"
-	"fmt"
 	"sort"
 
 	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
@@ -20,7 +18,7 @@ import (
 func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, fmt.Errorf("transaction indexing is disabled")
+		return nil, ErrTxIndexing
 	}
 
 	r, err := env.TxIndexer.Get(hash)
@@ -29,7 +27,7 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 	}
 
 	if r == nil {
-		return nil, fmt.Errorf("tx (%X) not found", hash)
+		return nil, ErrTxNotFound{hash}
 	}
 
 	var proof types.TxProof
@@ -60,9 +58,9 @@ func (env *Environment) TxSearch(
 ) (*ctypes.ResultTxSearch, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, errors.New("transaction indexing is disabled")
+		return nil, ErrTxIndexing
 	} else if len(query) > maxQueryLength {
-		return nil, errors.New("maximum query length exceeded")
+		return nil, ErrQueryLength{len(query), maxQueryLength}
 	}
 
 	q, err := cmtquery.New(query)
@@ -92,7 +90,7 @@ func (env *Environment) TxSearch(
 			return results[i].Height < results[j].Height
 		})
 	default:
-		return nil, errors.New("expected order_by to be either `asc` or `desc` or empty")
+		return nil, ErrInvalidOrderBy{orderBy}
 	}
 
 	// paginate results

@@ -3,11 +3,11 @@ package core
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/rpc"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
@@ -25,18 +25,18 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 
 	switch {
 	case env.EventBus.NumClients() >= env.Config.MaxSubscriptionClients:
-		return nil, fmt.Errorf("max_subscription_clients %d reached", env.Config.MaxSubscriptionClients)
+		return nil, ErrMaxSubscription{env.Config.MaxSubscriptionClients}
 	case env.EventBus.NumClientSubscriptions(addr) >= env.Config.MaxSubscriptionsPerClient:
-		return nil, fmt.Errorf("max_subscriptions_per_client %d reached", env.Config.MaxSubscriptionsPerClient)
+		return nil, ErrMaxPerClientSubscription{env.Config.MaxSubscriptionsPerClient}
 	case len(query) > maxQueryLength:
-		return nil, errors.New("maximum query length exceeded")
+		return nil, ErrQueryLength{len(query), maxQueryLength}
 	}
 
 	env.Logger.Info("Subscribe to query", "remote", addr, "query", query)
 
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse query: %w", err)
+		return nil, rpc.ErrParseQuery{Source: err}
 	}
 
 	subCtx, cancel := context.WithTimeout(ctx.Context(), SubscribeTimeout)
@@ -67,7 +67,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 
 					if closeIfSlow {
 						var (
-							err  = errors.New("subscription was canceled (reason: slow client)")
+							err  = ErrSubCanceled{errSlowClient.Error()}
 							resp = rpctypes.RPCServerError(subscriptionID, err)
 						)
 						if !ctx.WSConn.TryWriteRPCResponse(resp) {
@@ -78,15 +78,15 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 					}
 				}
 			case <-sub.Canceled():
-				if sub.Err() != cmtpubsub.ErrUnsubscribed {
+				if !errors.Is(sub.Err(), cmtpubsub.ErrUnsubscribed) {
 					var reason string
 					if sub.Err() == nil {
-						reason = "CometBFT exited"
+						reason = errCometBFTExited.Error()
 					} else {
 						reason = sub.Err().Error()
 					}
 					var (
-						err  = fmt.Errorf("subscription was canceled (reason: %s)", reason)
+						err  = ErrSubCanceled{reason}
 						resp = rpctypes.RPCServerError(subscriptionID, err)
 					)
 					if !ctx.WSConn.TryWriteRPCResponse(resp) {
@@ -109,12 +109,14 @@ func (env *Environment) Unsubscribe(ctx *rpctypes.Context, query string) (*ctype
 	env.Logger.Info("Unsubscribe from query", "remote", addr, "query", query)
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse query: %w", err)
+		return nil, rpc.ErrParseQuery{Source: err}
 	}
+
 	err = env.EventBus.Unsubscribe(context.Background(), addr, q)
 	if err != nil {
 		return nil, err
 	}
+
 	return &ctypes.ResultUnsubscribe{}, nil
 }
 

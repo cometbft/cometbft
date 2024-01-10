@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/cometbft/cometbft/libs/log"
+	jsonrpcerrors "github.com/cometbft/cometbft/rpc/jsonrpc/errors"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
@@ -107,7 +108,7 @@ func WriteRPCResponseHTTPError(
 
 	jsonBytes, err := json.Marshal(res)
 	if err != nil {
-		return fmt.Errorf("json marshal: %w", err)
+		return ErrMarshalResponse{Source: err}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -143,7 +144,7 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 
 	jsonBytes, err := json.Marshal(v)
 	if err != nil {
-		return fmt.Errorf("json marshal: %w", err)
+		return ErrMarshalResponse{Source: err}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	for _, header := range headers {
@@ -154,7 +155,7 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 	return err
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // RecoverAndLogHandler wraps an HTTP handler, adding error logging.
 // If the inner function panics, the outer function recovers, logs, sends an
@@ -262,15 +263,12 @@ func (h maxBytesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func Listen(addr string, maxOpenConnections int) (listener net.Listener, err error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf(
-			"invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)",
-			addr,
-		)
+		return nil, jsonrpcerrors.ErrInvalidRemoteAddress{Addr: addr}
 	}
 	proto, addr := parts[0], parts[1]
 	listener, err = net.Listen(proto, addr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to listen on %v: %v", addr, err)
+		return nil, ErrListening{Addr: addr, Source: err}
 	}
 	if maxOpenConnections > 0 {
 		listener = netutil.LimitListener(listener, maxOpenConnections)

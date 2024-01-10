@@ -2,12 +2,12 @@ package client
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/cometbft/cometbft/types"
 )
+
+const WaitThreshold = 10
 
 // Waiter is informed of current height, decided whether to quit early.
 type Waiter func(delta int64) (abort error)
@@ -15,8 +15,8 @@ type Waiter func(delta int64) (abort error)
 // DefaultWaitStrategy is the standard backoff algorithm,
 // but you can plug in another one.
 func DefaultWaitStrategy(delta int64) (abort error) {
-	if delta > 10 {
-		return fmt.Errorf("waiting for %d blocks... aborting", delta)
+	if delta > WaitThreshold {
+		return ErrWaitThreshold{Got: delta, Expected: WaitThreshold}
 	} else if delta > 0 {
 		// estimate of wait time....
 		// wait half a second for the next block (in progress)
@@ -65,7 +65,7 @@ func WaitForOneEvent(c EventsClient, evtTyp string, timeout time.Duration) (type
 	// register for the next event of this type
 	eventCh, err := c.Subscribe(ctx, subscriber, types.QueryForEvent(evtTyp).String())
 	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe: %w", err)
+		return nil, ErrSubscribe{Source: err}
 	}
 	// make sure to unregister after the test is over
 	defer func() {
@@ -78,6 +78,6 @@ func WaitForOneEvent(c EventsClient, evtTyp string, timeout time.Duration) (type
 	case event := <-eventCh:
 		return event.Data, nil
 	case <-ctx.Done():
-		return nil, errors.New("timed out waiting for event")
+		return nil, ErrEventTimeout
 	}
 }

@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cosmos/gogoproto/grpc"
 
@@ -33,7 +32,7 @@ type blockResultServiceClient struct {
 func (b blockResultServiceClient) GetBlockResults(ctx context.Context, height int64) (*BlockResults, error) {
 	res, err := b.client.GetBlockResults(ctx, &brs.GetBlockResultsRequest{Height: height})
 	if err != nil {
-		return nil, fmt.Errorf("error fetching BlockResults for height %d:: %s", height, err.Error())
+		return nil, ErrBlockResults{Height: height, Err: err}
 	}
 
 	return &BlockResults{
@@ -49,7 +48,7 @@ func (b blockResultServiceClient) GetBlockResults(ctx context.Context, height in
 func (b blockResultServiceClient) GetLatestBlockResults(ctx context.Context) (*BlockResults, error) {
 	res, err := b.client.GetLatestBlockResults(ctx, &brs.GetLatestBlockResultsRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("error fetching BlockResults for latest height :: %s", err.Error())
+		return nil, ErrBlockResults{latest: true, Err: err}
 	}
 
 	return &BlockResults{

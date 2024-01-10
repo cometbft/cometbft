@@ -1,0 +1,2 @@
+go test fuzz v1
+string("{\"vs\":{\"vAlidAtors\":[{},{}]},\"h\":100,\"Comm\":{\"height\":100,\"signAtures\":[{},{}]}}")

@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("{\"VAlSet\":{},\"EXtCommit\":{\"Height\":1,\"EXtendedSignAtures\":[{}]}}")

@@ -1035,6 +1035,8 @@ func CommitFromProto(cp *cmtproto.Commit) (*Commit, error) {
 
 // ExtendedCommit is similar to Commit, except that its signatures also retain
 // their corresponding vote extensions and vote extension signatures.
+//
+//nolint:musttag
 type ExtendedCommit struct {
 	Height             int64
 	Round              int32

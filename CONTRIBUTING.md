@@ -519,6 +519,9 @@ fix(cmd/cometbft/commands/debug): execute p.Signal only when p is not nil
 
 Fixes #nnnn
 ```
+Each PR should have one commit once it lands on `main`; this can be accomplished
+by using the "squash and merge" button on GitHub. Be sure to edit your commit
+message, though!
 
 ## Testing
 

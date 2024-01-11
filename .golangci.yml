@@ -50,6 +50,17 @@ linters-settings:
     suggest-new: true
   misspell:
     locale: US
+<<<<<<< HEAD
+=======
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - blank # blank imports
+      - dot # dot imports
+      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-db, github.com/cometbft/cometbft-load-test)
+    custom-order: true
+>>>>>>> ae28a8014 (chore(test/loadtime): replace tm-load-test w/ cometbft-load-test (#2009))
   depguard:
     rules:
       main:

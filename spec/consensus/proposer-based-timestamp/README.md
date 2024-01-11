@@ -112,7 +112,7 @@ The full solution is detailed and formalized in the [Protocol Specification][alg
 
 - [System Model and Properties][sysmodel]
 - [Algorithm Specification][algorithm]
-- [TLA+ Specification][proposertla] (first draft, not updated)
+- [TLA+ Specification][proposertla]
 
 ### Open issues
 
@@ -135,7 +135,7 @@ The full solution is detailed and formalized in the [Protocol Specification][alg
 [sysmodel_v1]: ./v1/pbts-sysmodel_001_draft.md
 [timely-predicate]: ./pbts-sysmodel.md#timely-predicate
 
-[proposertla]: ./tla/TendermintPBT_001_draft.tla
+[proposertla]: ./tla/README.md
 
 [bfttime]: ../bft-time.md
 [arXiv]: https://arxiv.org/pdf/1807.04938.pdf

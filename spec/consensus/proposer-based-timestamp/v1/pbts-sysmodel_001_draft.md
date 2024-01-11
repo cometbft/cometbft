@@ -1,4 +1,6 @@
-# Proposer-Based Time - Part I
+# PBTS: System Model and Properties (first draft)
+
+This specification is **OUTDATED**. Please refer to the [new version][sysmodel].
 
 ## System Model
 
@@ -182,10 +184,14 @@ Let `b` be a block with a valid commit that contains at least one `precommit` me
 
 > "triggered the `PRECOMMIT`" implies that the data in `m` and `b` are "matching", that is, `m` proposed the values that are actually stored in `b`.
 
-Back to [main document][main].
+Back to [main document][main_v1].
 
-[main]: ./pbts_001_draft.md
+[main_v1]: ./pbts_001_draft.md
+
+[algorithm_v1]: ./pbts-algorithm_001_draft.md
+
+[sysmodel]: ../pbts-sysmodel_002_draft.md
 
 [arXiv]: https://arxiv.org/abs/1807.04938
 
-[CMBC-FM-2THIRDS-link]: https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1
+[CMBC-FM-2THIRDS-link]: ../../../light-client/verification/verification_002_draft.md#cmbc-fm-2thirds1

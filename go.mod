@@ -45,15 +45,14 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/cometbft/cometbft-db v0.9.1
+	github.com/cometbft/cometbft-load-test v0.1.0
 	github.com/cometbft/cometbft/api v0.0.0
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.5.0
-	github.com/cometbft/cometbft-load-test v0.1.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/sirupsen/logrus v1.9.3
 	github.com/vektra/mockery/v2 v2.38.0
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/sync v0.6.0
@@ -260,6 +259,7 @@ require (
 	github.com/securego/gosec/v2 v2.18.2 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/shazow/go-diff v0.0.0-20160112020656-b6b7b6733b8c // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sivchari/containedctx v1.0.3 // indirect
 	github.com/sivchari/nosnakecase v1.7.0 // indirect
 	github.com/sivchari/tenv v1.7.1 // indirect

@@ -428,7 +428,7 @@ func (store *dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight 
 
 		// Commit the batch after a certain number of operations to avoid large batches
 		if pruned%batchSize == 0 {
-			if err := batch.WriteSync(); err != nil {
+			if err := batch.Write(); err != nil {
 				return err
 			}
 			batch.Close()               // Close the current batch
@@ -438,7 +438,7 @@ func (store *dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight 
 	}
 
 	// Commit any remaining operations in the batch
-	if err := batch.WriteSync(); err != nil {
+	if err := batch.Write(); err != nil {
 		return err
 	}
 

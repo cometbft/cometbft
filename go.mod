@@ -51,7 +51,7 @@ require (
 	github.com/goccmack/goutil v1.2.3
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.5.0
-	github.com/informalsystems/tm-load-test v1.3.0
+	github.com/cometbft/cometbft-load-test v0.1.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/vektra/mockery/v2 v2.39.1
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa

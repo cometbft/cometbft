@@ -267,6 +267,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				bcR.Logger.Error("failed to convert extended commit from proto",
 					"peer", e.Src,
 					"err", err)
+				bcR.Switch.StopPeerForError(e.Src, err)
 				return
 			}
 		}

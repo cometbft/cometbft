@@ -760,7 +760,7 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 
 			tx := kvstore.NewTxFromID(h)
 			mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
-			require.Equal(t, h, mp.Size(), "pool size mistmatch")
+			require.Equal(t, h, mp.Size(), "pool size mismatch")
 		}(h)
 
 		wg.Wait()
@@ -782,7 +782,7 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	// Adding a new valid tx to the pool will notify a tx is available
 	tx := kvstore.NewTxFromID(1)
 	mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
-	require.Equal(t, 1, mp.Size(), "pool size mistmatch")
+	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Len(t, mp.TxsAvailable(), 1)
 	<-mp.TxsAvailable()
@@ -791,7 +791,7 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
 	require.Equal(t, 1, mp.Size())
 	require.True(t, mp.notifiedTxsAvailable.Load())
-	require.Len(t, mp.TxsAvailable(), 0)
+	require.Empty(t, mp.TxsAvailable())
 
 	// Updating the pool will remove the tx and set the variable to false
 	err := mp.Update(1, []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)

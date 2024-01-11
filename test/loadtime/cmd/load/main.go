@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/informalsystems/tm-load-test/pkg/loadtest"
 
+	"github.com/cometbft/cometbft-load-test/pkg/loadtest"
 	"github.com/cometbft/cometbft/test/loadtime/payload"
 )
 

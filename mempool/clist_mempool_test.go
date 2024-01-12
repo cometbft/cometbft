@@ -6,11 +6,7 @@ import (
 	"fmt"
 	mrand "math/rand"
 	"os"
-<<<<<<< HEAD
-=======
-	"strconv"
 	"sync"
->>>>>>> ce6d2fb8e (mempool: Fix data races in CListMempool's height and notifiedTxsAvailable (#2021))
 	"testing"
 	"time"
 
@@ -666,7 +662,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	defer cleanup()
 
 	// add tx0
-	var tx0 = kvstore.NewTxFromID(0)
+	tx0 := kvstore.NewTxFromID(0)
 	err := mp.CheckTx(tx0, nil, TxInfo{})
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
@@ -739,11 +735,6 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	require.NoError(t, mp.FlushAppConn())
 }
 
-<<<<<<< HEAD
-// caller must close server
-func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
-	clientCreator, err := abciclient.NewClient(addr, "socket", true)
-=======
 func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
@@ -770,7 +761,7 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 			defer wg.Done()
 
 			tx := kvstore.NewTxFromID(h)
-			mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+			mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
 			require.Equal(t, h, mp.Size(), "pool size mismatch")
 		}(h)
 
@@ -792,14 +783,14 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 
 	// Adding a new valid tx to the pool will notify a tx is available
 	tx := kvstore.NewTxFromID(1)
-	mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+	mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
 	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Len(t, mp.TxsAvailable(), 1)
 	<-mp.TxsAvailable()
 
 	// Receiving CheckTx response for a tx already in the pool should not notify of available txs
-	mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+	mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
 	require.Equal(t, 1, mp.Size())
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Empty(t, mp.TxsAvailable())
@@ -811,11 +802,9 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	require.False(t, mp.notifiedTxsAvailable.Load())
 }
 
-// caller must close server.
-func newRemoteApp(t *testing.T, addr string, app abci.Application) service.Service {
-	t.Helper()
-	_, err := abciclient.NewClient(addr, "socket", true)
->>>>>>> ce6d2fb8e (mempool: Fix data races in CListMempool's height and notifiedTxsAvailable (#2021))
+// caller must close server
+func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
+	clientCreator, err := abciclient.NewClient(addr, "socket", true)
 	require.NoError(t, err)
 
 	// Start server

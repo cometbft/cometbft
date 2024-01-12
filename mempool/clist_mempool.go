@@ -409,13 +409,8 @@ func (mem *CListMempool) resCbFirstTime(
 				return
 			}
 
-<<<<<<< HEAD
 			memTx := &mempoolTx{
-				height:    mem.height,
-=======
-			mem.addTx(&mempoolTx{
 				height:    mem.height.Load(),
->>>>>>> ce6d2fb8e (mempool: Fix data races in CListMempool's height and notifiedTxsAvailable (#2021))
 				gasWanted: r.CheckTx.GasWanted,
 				tx:        tx,
 			}
@@ -425,11 +420,7 @@ func (mem *CListMempool) resCbFirstTime(
 				"added good transaction",
 				"tx", types.Tx(tx).Hash(),
 				"res", r,
-<<<<<<< HEAD
-				"height", memTx.height,
-=======
 				"height", mem.height.Load(),
->>>>>>> ce6d2fb8e (mempool: Fix data races in CListMempool's height and notifiedTxsAvailable (#2021))
 				"total", mem.Size(),
 			)
 			mem.notifyTxsAvailable()

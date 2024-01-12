@@ -49,6 +49,7 @@ const (
 	v2 = "v2"
 
 	MempoolTypeFlood = "flood"
+	MempoolTypeCat   = "cat"
 	MempoolTypeNop   = "nop"
 )
 
@@ -845,6 +846,7 @@ type MempoolConfig struct {
 	//  Possible types:
 	//  - "flood" : concurrent linked list mempool with flooding gossip protocol
 	//  (default)
+	//  - "cat"   : 'push-pull'-type protocol for Content-Addressable Transactions
 	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
 	//  responsible for storing, disseminating and proposing txs).
 	//  "create_empty_blocks=false" is not supported.

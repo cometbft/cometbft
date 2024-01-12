@@ -4,6 +4,8 @@ include ../../common.mk
 
 all: docker generator runner
 
+fast: docker-fast generator runner
+
 docker:
 	@echo "Building E2E Docker image"
 	@docker build \
@@ -45,4 +47,4 @@ lint:
 grammar-gen:
 	go run github.com/goccmack/gogll/v3@latest -o pkg/grammar/grammar-auto pkg/grammar/abci_grammar.md
 
-.PHONY: all node docker docker-debug docker-fast node-fast generator runner lint grammar-gen
+.PHONY: all node docker docker-debug fast docker-fast node-fast generator runner lint grammar-gen

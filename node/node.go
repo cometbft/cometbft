@@ -31,6 +31,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/mempool/cat"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/proxy"
@@ -67,7 +68,7 @@ type Node struct {
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
 	bcReactor         p2p.Reactor        // for block-syncing
-	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
+	mempoolReactor    WaitSyncP2PReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -86,7 +87,8 @@ type Node struct {
 	pprofSrv          *http.Server
 }
 
-type waitSyncP2PReactor interface {
+// A reactor that transitions from block sync or state sync to consensus mode.
+type WaitSyncP2PReactor interface {
 	p2p.Reactor
 	// required by RPC service
 	WaitSync() bool
@@ -993,6 +995,10 @@ func makeNodeInfo(
 
 	if config.P2P.PexReactor {
 		nodeInfo.Channels = append(nodeInfo.Channels, pex.PexChannel)
+	}
+
+	if config.Mempool.Type == cfg.MempoolTypeCat {
+		nodeInfo.Channels = append(nodeInfo.Channels, cat.MempoolStateChannel)
 	}
 
 	lAddr := config.P2P.ExternalAddress

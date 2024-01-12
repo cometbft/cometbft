@@ -31,6 +31,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
+	"github.com/cometbft/cometbft/mempool/cat"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/privval"
@@ -246,10 +247,11 @@ func createMempoolAndMempoolReactor(
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, waitSyncP2PReactor) {
+) (mempl.Mempool, WaitSyncP2PReactor) {
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
+		logger.Info("Using the default mempool with a flooding gossip protocol")
 		logger = logger.With("module", "mempool")
 		mp := mempl.NewCListMempool(
 			config.Mempool,
@@ -259,16 +261,32 @@ func createMempoolAndMempoolReactor(
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)),
 		)
-		mp.SetLogger(logger)
 		reactor := mempl.NewReactor(
 			config.Mempool,
 			mp,
 			waitSync,
+			logger,
 		)
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
 		}
-		reactor.SetLogger(logger)
+
+		return mp, reactor
+	case cfg.MempoolTypeCat:
+		logger.Info("Using the mempool with the push-pull gossip protocol (CAT)")
+		logger = logger.With("module", "mempool")
+		mp := mempl.NewCListMempool(
+			config.Mempool,
+			proxyApp.Mempool(),
+			state.LastBlockHeight,
+			mempl.WithMetrics(memplMetrics),
+			mempl.WithPreCheck(sm.TxPreCheck(state)),
+			mempl.WithPostCheck(sm.TxPostCheck(state)),
+		)
+		reactor := cat.NewReactor(config.Mempool, mp, waitSync, logger)
+		if config.Consensus.WaitForTxs() {
+			mp.EnableTxsAvailable()
+		}
 
 		return mp, reactor
 	case cfg.MempoolTypeNop:

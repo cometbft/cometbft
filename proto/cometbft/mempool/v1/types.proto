@@ -8,10 +8,22 @@ message Txs {
   repeated bytes txs = 1;
 }
 
+// SeenTx contains a list of transaction keys seen by the sender.
+message SeenTx {
+  bytes tx_key = 1;
+}
+
+// WantTx contains a list of transaction keys wanted by the sender.
+message WantTx {
+  bytes tx_key = 1;
+}
+
 // Message is an abstract mempool message.
 message Message {
   // Sum of all possible messages.
   oneof sum {
-    Txs txs = 1;
+    Txs    txs     = 1;
+    SeenTx seen_tx = 2;
+    WantTx want_tx = 3;
   }
 }

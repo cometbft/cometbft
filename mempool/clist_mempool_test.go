@@ -142,10 +142,10 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	checkTxs(t, mp, 1)
-	tx0 := mp.TxsFront().Value.(*mempoolTx)
-	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
+	tx0 := mp.TxsFront()
+	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
-	require.Len(t, tx0.tx, 20, "Tx is longer than 20 bytes")
+	require.Len(t, tx0.Tx(), 20, "Tx is longer than 20 bytes")
 	mp.Flush()
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.
@@ -354,7 +354,7 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 		binary.BigEndian.PutUint64(a, 0)
 
 		// remove a from the cache to test (2)
-		mp.cache.Remove(a)
+		mp.cache.Remove(types.Tx(a).Key())
 
 		_, err := mp.CheckTx(a)
 		require.NoError(t, err)
@@ -664,7 +664,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	defer cleanup()
 
 	// add tx0
-	tx0 := kvstore.NewTxFromID(0)
+	tx0 := types.Tx(kvstore.NewTxFromID(0))
 	_, err := mp.CheckTx(tx0)
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
@@ -677,7 +677,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	}
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
-	assert.False(t, mp.cache.Has(kvstore.NewTxFromID(0)))
+	assert.False(t, mp.cache.Has(tx0.Key()))
 
 	// add again tx0
 	_, err = mp.CheckTx(tx0)

@@ -6,6 +6,11 @@ import (
 	"fmt"
 	mrand "math/rand"
 	"os"
+<<<<<<< HEAD
+=======
+	"strconv"
+	"sync"
+>>>>>>> ce6d2fb8e (mempool: Fix data races in CListMempool's height and notifiedTxsAvailable (#2021))
 	"testing"
 	"time"
 
@@ -734,9 +739,83 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	require.NoError(t, mp.FlushAppConn())
 }
 
+<<<<<<< HEAD
 // caller must close server
 func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
 	clientCreator, err := abciclient.NewClient(addr, "socket", true)
+=======
+func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	for h := 1; h <= 100; h++ {
+		// Two concurrent threads for each height. One updates the mempool with one valid tx,
+		// writing the pool's height; the other, receives a CheckTx response, reading the height.
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		go func(h int) {
+			defer wg.Done()
+
+			err := mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+			require.NoError(t, err)
+			require.Equal(t, int64(h), mp.height.Load(), "height mismatch")
+		}(h)
+
+		go func(h int) {
+			defer wg.Done()
+
+			tx := kvstore.NewTxFromID(h)
+			mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+			require.Equal(t, h, mp.Size(), "pool size mismatch")
+		}(h)
+
+		wg.Wait()
+	}
+}
+
+func TestMempoolNotifyTxsAvailable(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	mp.EnableTxsAvailable()
+	assert.NotNil(t, mp.txsAvailable)
+	require.False(t, mp.notifiedTxsAvailable.Load())
+
+	// Adding a new valid tx to the pool will notify a tx is available
+	tx := kvstore.NewTxFromID(1)
+	mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+	require.Equal(t, 1, mp.Size(), "pool size mismatch")
+	require.True(t, mp.notifiedTxsAvailable.Load())
+	require.Len(t, mp.TxsAvailable(), 1)
+	<-mp.TxsAvailable()
+
+	// Receiving CheckTx response for a tx already in the pool should not notify of available txs
+	mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+	require.Equal(t, 1, mp.Size())
+	require.True(t, mp.notifiedTxsAvailable.Load())
+	require.Empty(t, mp.TxsAvailable())
+
+	// Updating the pool will remove the tx and set the variable to false
+	err := mp.Update(1, []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+	require.NoError(t, err)
+	require.Zero(t, mp.Size())
+	require.False(t, mp.notifiedTxsAvailable.Load())
+}
+
+// caller must close server.
+func newRemoteApp(t *testing.T, addr string, app abci.Application) service.Service {
+	t.Helper()
+	_, err := abciclient.NewClient(addr, "socket", true)
+>>>>>>> ce6d2fb8e (mempool: Fix data races in CListMempool's height and notifiedTxsAvailable (#2021))
 	require.NoError(t, err)
 
 	// Start server

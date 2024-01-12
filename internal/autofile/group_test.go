@@ -6,13 +6,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	cmtos "github.com/cometbft/cometbft/internal/os"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
 func createTestGroupWithHeadSizeLimit(t *testing.T, headSizeLimit int64) *Group {
+	t.Helper()
 	testID := cmtrand.Str(12)
 	testDir := "_test_" + testID
 	err := cmtos.EnsureDir(testDir, 0o700)
@@ -27,14 +29,16 @@ func createTestGroupWithHeadSizeLimit(t *testing.T, headSizeLimit int64) *Group 
 }
 
 func destroyTestGroup(t *testing.T, g *Group) {
+	t.Helper()
 	g.Close()
 
 	err := os.RemoveAll(g.Dir)
 	require.NoError(t, err, "Error removing test Group directory")
 }
 
-func assertGroupInfo(t *testing.T, gInfo GroupInfo, minIndex, maxIndex int, totalSize, headSize int64) {
-	assert.Equal(t, minIndex, gInfo.MinIndex)
+func assertGroupInfo(t *testing.T, gInfo GroupInfo, maxIndex int, totalSize, headSize int64) {
+	t.Helper()
+	assert.Equal(t, 0, gInfo.MinIndex)
 	assert.Equal(t, maxIndex, gInfo.MaxIndex)
 	assert.Equal(t, totalSize, gInfo.TotalSize)
 	assert.Equal(t, headSize, gInfo.HeadSize)
@@ -44,7 +48,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	g := createTestGroupWithHeadSizeLimit(t, 1000*1000)
 
 	// At first, there are no files.
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 0, 0)
+	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 0)
 
 	// Write 1000 bytes 999 times.
 	for i := 0; i < 999; i++ {
@@ -53,11 +57,11 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	}
 	err := g.FlushAndSync()
 	require.NoError(t, err)
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 999000, 999000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 0, 999000, 999000)
 
 	// Even calling checkHeadSizeLimit manually won't rotate it.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 0, 999000, 999000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 0, 999000, 999000)
 
 	// Write 1000 more bytes.
 	err = g.WriteLine(cmtrand.Str(999))
@@ -67,7 +71,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 
 	// Calling checkHeadSizeLimit this time rolls it.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 1, 1000000, 0)
+	assertGroupInfo(t, g.ReadGroupInfo(), 1, 1000000, 0)
 
 	// Write 1000 more bytes.
 	err = g.WriteLine(cmtrand.Str(999))
@@ -77,7 +81,7 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 
 	// Calling checkHeadSizeLimit does nothing.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 1, 1001000, 1000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 1, 1001000, 1000)
 
 	// Write 1000 bytes 999 times.
 	for i := 0; i < 999; i++ {
@@ -86,22 +90,22 @@ func TestCheckHeadSizeLimit(t *testing.T) {
 	}
 	err = g.FlushAndSync()
 	require.NoError(t, err)
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 1, 2000000, 1000000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 1, 2000000, 1000000)
 
 	// Calling checkHeadSizeLimit rolls it again.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 2, 2000000, 0)
+	assertGroupInfo(t, g.ReadGroupInfo(), 2, 2000000, 0)
 
 	// Write 1000 more bytes.
 	_, err = g.Head.Write([]byte(cmtrand.Str(999) + "\n"))
 	require.NoError(t, err, "Error appending to head")
 	err = g.FlushAndSync()
 	require.NoError(t, err)
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 2, 2001000, 1000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 2, 2001000, 1000)
 
 	// Calling checkHeadSizeLimit does nothing.
 	g.checkHeadSizeLimit()
-	assertGroupInfo(t, g.ReadGroupInfo(), 0, 2, 2001000, 1000)
+	assertGroupInfo(t, g.ReadGroupInfo(), 2, 2001000, 1000)
 
 	// Cleanup
 	destroyTestGroup(t, g)
@@ -150,14 +154,14 @@ func TestRotateFile(t *testing.T) {
 
 	// Read g.Head.Path+"000"
 	body1, err := os.ReadFile(g.Head.Path + ".000")
-	assert.NoError(t, err, "Failed to read first rolled file")
+	require.NoError(t, err, "Failed to read first rolled file: %v", err)
 	if string(body1) != "Line 1\nLine 2\nLine 3\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body1))
 	}
 
 	// Read g.Head.Path
 	body2, err := os.ReadFile(g.Head.Path)
-	assert.NoError(t, err, "Failed to read first rolled file")
+	require.NoError(t, err, "Failed to read first rolled file: %v", err)
 	if string(body2) != "Line 4\nLine 5\nLine 6\n" {
 		t.Errorf("got unexpected contents: [%v]", string(body2))
 	}
@@ -185,7 +189,7 @@ func TestWrite(t *testing.T) {
 	require.NoError(t, err, "failed to create reader")
 
 	_, err = gr.Read(read)
-	assert.NoError(t, err, "failed to read data")
+	require.NoError(t, err, "failed to read data: %v", err)
 	assert.Equal(t, written, read)
 
 	// Cleanup
@@ -215,7 +219,7 @@ func TestGroupReaderRead(t *testing.T) {
 	require.NoError(t, err, "failed to create reader")
 
 	n, err := gr.Read(read)
-	assert.NoError(t, err, "failed to read data")
+	require.NoError(t, err, "failed to read data: %v", err)
 	assert.Equal(t, totalWrittenLength, n, "not enough bytes read")
 	professorPlusFrankenstein := professor
 	professorPlusFrankenstein = append(professorPlusFrankenstein, frankenstein...)

@@ -6,11 +6,7 @@ import (
 	"fmt"
 	mrand "math/rand"
 	"os"
-<<<<<<< HEAD
-=======
-	"strconv"
 	"sync"
->>>>>>> ce6d2fb8e (mempool: Fix data races in CListMempool's height and notifiedTxsAvailable (#2021))
 	"testing"
 	"time"
 
@@ -733,11 +729,6 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	require.NoError(t, mp.FlushAppConn())
 }
 
-<<<<<<< HEAD
-// caller must close server
-func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
-	clientCreator, err := abciclient.NewClient(addr, "socket", true)
-=======
 func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
@@ -805,11 +796,9 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	require.False(t, mp.notifiedTxsAvailable.Load())
 }
 
-// caller must close server.
-func newRemoteApp(t *testing.T, addr string, app abci.Application) service.Service {
-	t.Helper()
-	_, err := abciclient.NewClient(addr, "socket", true)
->>>>>>> ce6d2fb8e (mempool: Fix data races in CListMempool's height and notifiedTxsAvailable (#2021))
+// caller must close server
+func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
+	clientCreator, err := abciclient.NewClient(addr, "socket", true)
 	require.NoError(t, err)
 
 	// Start server

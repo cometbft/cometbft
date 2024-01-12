@@ -583,6 +583,7 @@ func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 // TestNodeNewNodeGenesisHashMismatch tests that creating a new node with a modified genesis file
 // that results in a different hash from the one saved in the database will result in an error.
 func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
+	time.Sleep(100 * time.Millisecond)
 	// Reset the test root and ensure it's cleaned up after the test
 	config := test.ResetTestRoot("node_new_node_genesis_hash")
 	defer os.RemoveAll(config.RootDir)

@@ -151,6 +151,7 @@ func TestNodeDelayedStart(t *testing.T) {
 	// Assert that the difference between the start time and the genesis time is within a reasonable range
 	// We use a large delta to account for potential discrepancies in timing
 	assert.InDelta(t, delayDuration.Seconds(), startTime.Sub(node.GenesisDoc().GenesisTime).Seconds(), 2.0, "The difference between start time and genesis time should be within a reasonable range")
+	time.Sleep(100 * time.Millisecond)
 }
 
 func TestNodeSetAppVersion(t *testing.T) {

@@ -45,13 +45,13 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/cometbft/cometbft-db v0.9.1
+	github.com/cometbft/cometbft-load-test v0.1.0
 	github.com/cometbft/cometbft/api v0.0.0
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.5.0
-	github.com/cometbft/cometbft-load-test v0.1.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/vektra/mockery/v2 v2.39.1
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa

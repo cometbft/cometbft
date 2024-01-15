@@ -85,7 +85,7 @@ linters-settings:
       - default # Default section: contains all imports that could not be matched to another section type.
       - blank # blank imports
       - dot # dot imports
-      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-db)
+      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-db, github.com/cometbft/cometbft-load-test)
     custom-order: true
   depguard:
     rules:
@@ -105,7 +105,6 @@ linters-settings:
           - github.com/gofrs/uuid
           - github.com/google
           - github.com/gorilla/websocket
-          - github.com/informalsystems/tm-load-test/pkg/loadtest
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
           - github.com/Masterminds/semver/v3

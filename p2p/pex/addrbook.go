@@ -162,8 +162,10 @@ func (a *addrBook) OnStart() error {
 	return nil
 }
 
-// OnStop implements Service.
+// Stop overrides Service.Stop().
 func (a *addrBook) Stop() error {
+	// Closes the Service.Quit() channel.
+	// This enables a.saveRoutine() to quit.
 	if err := a.BaseService.Stop(); err != nil {
 		return err
 	}
@@ -486,6 +488,7 @@ func (a *addrBook) saveRoutine() {
 	defer a.wg.Done()
 
 	saveFileTicker := time.NewTicker(dumpAddressInterval)
+	defer saveFileTicker.Stop()
 	for {
 		select {
 		case <-saveFileTicker.C:

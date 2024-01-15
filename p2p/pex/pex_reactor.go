@@ -168,7 +168,7 @@ func (r *Reactor) OnStart() error {
 	return nil
 }
 
-// Stop implements BaseService.
+// Stop overrides `Service.Stop()`.
 func (r *Reactor) Stop() error {
 	if err := r.BaseReactor.Stop(); err != nil {
 		return err
@@ -441,6 +441,7 @@ func (r *Reactor) ensurePeersRoutine() {
 
 	// fire periodically
 	ticker := time.NewTicker(r.ensurePeersPeriod)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
@@ -676,7 +677,7 @@ func (r *Reactor) crawlPeersRoutine() {
 
 	// Fire periodically
 	ticker := time.NewTicker(crawlPeerPeriod)
-
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:

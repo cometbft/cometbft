@@ -1457,8 +1457,8 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	*/
 	blockID, ok := cs.Votes.Prevotes(cs.Proposal.POLRound).TwoThirdsMajority()
 	ok = ok && !blockID.IsNil()
-	if ok && cs.ProposalBlock.HashesTo(blockID.Hash) && cs.Proposal.POLRound >= 0 && cs.Proposal.POLRound < cs.Round {
-		if cs.LockedRound <= cs.Proposal.POLRound {
+	if ok && cs.ProposalBlock.HashesTo(blockID.Hash) && cs.Proposal.POLRound < cs.Round {
+		if cs.LockedRound < cs.Proposal.POLRound {
 			logger.Debug("prevote step: ProposalBlock is valid and received a 2/3" +
 				"majority in a round later than the locked round; prevoting the proposal")
 			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
@@ -1466,6 +1466,13 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		}
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid and matches our locked block; prevoting the proposal")
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			return
+		}
+		if cs.LockedRound == cs.Proposal.POLRound {
+			logger.Info("prevote step: ProposalBlock is valid and received a 2/3" +
+				"majority on our locked round, while not matching our locked value;" +
+				"this can only happen when validators are double signing; prevoting the proposal")
 			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}

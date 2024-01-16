@@ -52,25 +52,48 @@ func Test_parsedURL(t *testing.T) {
 		},
 
 		"http endpoint": {
-			url:                  "https://example.com",
-			expectedURL:          "https://example.com",
+			url:                  "http://example.com",
+			expectedURL:          "http://example.com",
 			expectedHostWithPath: "example.com",
-			expectedDialAddress:  "example.com",
+			expectedDialAddress:  "example.com:80",
 		},
 
 		"http endpoint with port": {
+			url:                  "http://example.com:8080",
+			expectedURL:          "http://example.com:8080",
+			expectedHostWithPath: "example.com:8080",
+			expectedDialAddress:  "example.com:8080",
+		},
+
+		"https endpoint": {
+			url:                  "https://example.com",
+			expectedURL:          "https://example.com",
+			expectedHostWithPath: "example.com",
+			expectedDialAddress:  "example.com:443",
+		},
+
+		"https endpoint with port": {
 			url:                  "https://example.com:8080",
 			expectedURL:          "https://example.com:8080",
 			expectedHostWithPath: "example.com:8080",
 			expectedDialAddress:  "example.com:8080",
 		},
 
-		"http path routed endpoint": {
+		"https path routed endpoint": {
 			url:                  "https://example.com:8080/rpc",
 			expectedURL:          "https://example.com:8080/rpc",
 			expectedHostWithPath: "example.com:8080/rpc",
 			expectedDialAddress:  "example.com:8080",
 		},
+<<<<<<< HEAD
+=======
+		"https path routed endpoint with version": {
+			url:                  "https://example.com:8080/rpc/v1",
+			expectedURL:          "https://example.com:8080/rpc/v1",
+			expectedHostWithPath: "example.com:8080/rpc/v1",
+			expectedDialAddress:  "example.com:8080",
+		},
+>>>>>>> 9c9ffba6c (feat(rpc): Use default port for HTTP(S) URLs when there is no explicit port (#1903))
 	}
 
 	for name, tt := range tests {

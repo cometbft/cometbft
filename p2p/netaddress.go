@@ -14,8 +14,9 @@ import (
 	"strings"
 	"time"
 
-	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	kcp "github.com/xtaci/kcp-go/v5"
+
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 )
 
 // EmptyNetAddress defines the string representation of an empty NetAddress.

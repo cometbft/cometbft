@@ -570,7 +570,6 @@ func ensureNewEvent(ch <-chan cmtpubsub.Message, height int64, round int32, time
 		}
 		// TODO: We could check also for a step at this point!
 	}
-	panic("unreachable")
 }
 
 func ensureNewRound(roundCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -590,7 +589,6 @@ func ensureNewRound(roundCh <-chan cmtpubsub.Message, height int64, round int32)
 			panic(fmt.Sprintf("expected round %v, got %v", round, newRoundEvent.Round))
 		}
 	}
-	panic("unreachable")
 }
 
 func ensureNewTimeout(timeoutCh <-chan cmtpubsub.Message, height int64, round int32, timeout int64) {
@@ -616,7 +614,6 @@ func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round 
 			panic(fmt.Sprintf("expected round %v, got %v", round, proposalEvent.Round))
 		}
 	}
-	panic("unreachable")
 }
 
 func ensureNewValidBlock(validBlockCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -638,7 +635,6 @@ func ensureNewBlock(blockCh <-chan cmtpubsub.Message, height int64) {
 			panic(fmt.Sprintf("expected height %v, got %v", height, blockEvent.Block.Height))
 		}
 	}
-	panic("unreachable")
 }
 
 func ensureNewBlockHeader(blockCh <-chan cmtpubsub.Message, height int64, blockHash cmtbytes.HexBytes) {
@@ -658,7 +654,6 @@ func ensureNewBlockHeader(blockCh <-chan cmtpubsub.Message, height int64, blockH
 			panic(fmt.Sprintf("expected header %X, got %X", blockHash, blockHeaderEvent.Header.Hash()))
 		}
 	}
-	panic("unreachable")
 }
 
 func ensureLock(lockCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -697,7 +692,6 @@ func ensureProposalWithTimeout(proposalCh <-chan cmtpubsub.Message, height int64
 			}
 		}
 	}
-	panic("unreachable")
 }
 
 func ensurePrecommit(voteCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -731,7 +725,6 @@ func ensureVote(voteCh <-chan cmtpubsub.Message, height int64, round int32,
 			panic(fmt.Sprintf("expected type %v, got %v", voteType, vote.Type))
 		}
 	}
-	panic("unreachable")
 }
 
 func ensurePrevoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64, round int32, hash []byte) {
@@ -764,7 +757,6 @@ func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64
 			require.True(t, bytes.Equal(vote.BlockID.Hash, hash), "Expected prevote to be for %X, got %X", hash, vote.BlockID.Hash)
 		}
 	}
-	panic("unreachable")
 }
 
 func ensurePrecommitTimeout(ch <-chan cmtpubsub.Message) {
@@ -773,7 +765,6 @@ func ensurePrecommitTimeout(ch <-chan cmtpubsub.Message) {
 		panic("Timeout expired while waiting for the Precommit to Timeout")
 	case <-ch:
 	}
-	panic("unreachable")
 }
 
 func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
@@ -782,7 +773,6 @@ func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 		panic("Timeout expired while waiting for new activity on the channel")
 	case <-ch:
 	}
-	panic("unreachable")
 }
 
 //-------------------------------------------------------------------------------

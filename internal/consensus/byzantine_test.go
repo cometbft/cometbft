@@ -231,7 +231,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()})
 			for i := 0; i < int(blockParts.Total()); i++ {
 				part := blockParts.GetPart(i)
-				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, "", cmttime.Now()})
+				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, "", time.Time{}})
 			}
 			lazyProposer.Logger.Info("Signed proposal", "height", height, "round", round, "proposal", proposal)
 			lazyProposer.Logger.Debug(fmt.Sprintf("Signed proposal block: %v", block))
@@ -464,7 +464,7 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	blockParts1, err := block1.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
 	polRound, propBlockID := cs.ValidRound, types.BlockID{Hash: block1.Hash(), PartSetHeader: blockParts1.Header()}
-	proposal1 := types.NewProposal(height, round, polRound, propBlockID, cmttime.Now())
+	proposal1 := types.NewProposal(height, round, polRound, propBlockID, block1.Time)
 	p1 := proposal1.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p1); err != nil {
 		t.Error(err)
@@ -481,7 +481,7 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	blockParts2, err := block2.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
 	polRound, propBlockID = cs.ValidRound, types.BlockID{Hash: block2.Hash(), PartSetHeader: blockParts2.Header()}
-	proposal2 := types.NewProposal(height, round, polRound, propBlockID, cmttime.Now())
+	proposal2 := types.NewProposal(height, round, polRound, propBlockID, block2.Time)
 	p2 := proposal2.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p2); err != nil {
 		t.Error(err)
@@ -491,6 +491,7 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 
 	block1Hash := block1.Hash()
 	block2Hash := block2.Hash()
+	require.NotEqual(t, block1Hash, block2Hash)
 
 	// broadcast conflicting proposals/block parts to peers
 	peers := sw.Peers().List()

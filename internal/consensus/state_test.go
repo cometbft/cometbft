@@ -26,7 +26,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 /*
@@ -1315,14 +1314,8 @@ func TestStateLock_MissingProposalWhenPOLForLockedBlock(t *testing.T) {
 
 	ensurePrecommit(voteCh, height, round)
 
-	// the validator precommits the block, because it matches its locked block,
-	// maintains the same locked block and updates its locked round
-	validatePrecommit(t, cs1, round, 1, vss[0], blockID.Hash, blockID.Hash)
-
-	// NOTE: this behavior is inconsistent with Tendermint consensus pseudo-code.
-	// In the pseudo-code, if a process does not receive the proposal (and block) for
-	// the current round, it cannot Precommit the proposed block ID, even thought it
-	// sees a POL for that block that matches the locked value (block).
+	// the validator precommits nil because it hasn't received the proposal for the current round
+	validatePrecommit(t, cs1, round, 0, vss[0], nil, blockID.Hash)
 }
 
 // TestStateLock_DoesNotLockOnOldProposal tests that observing
@@ -2935,26 +2928,26 @@ func TestStateOutputsBlockPartsStats(t *testing.T) {
 	}
 
 	cs.ProposalBlockParts = types.NewPartSetFromHeader(parts.Header())
-	cs.handleMsg(msgInfo{msg, peer.ID(), cmttime.Now()})
+	cs.handleMsg(msgInfo{msg, peer.ID(), time.Time{}})
 
 	statsMessage := <-cs.statsMsgQueue
 	require.Equal(t, msg, statsMessage.Msg, "")
 	require.Equal(t, peer.ID(), statsMessage.PeerID, "")
 
 	// sending the same part from different peer
-	cs.handleMsg(msgInfo{msg, "peer2", cmttime.Now()})
+	cs.handleMsg(msgInfo{msg, "peer2", time.Time{}})
 
 	// sending the part with the same height, but different round
 	msg.Round = 1
-	cs.handleMsg(msgInfo{msg, peer.ID(), cmttime.Now()})
+	cs.handleMsg(msgInfo{msg, peer.ID(), time.Time{}})
 
 	// sending the part from the smaller height
 	msg.Height = 0
-	cs.handleMsg(msgInfo{msg, peer.ID(), cmttime.Now()})
+	cs.handleMsg(msgInfo{msg, peer.ID(), time.Time{}})
 
 	// sending the part from the bigger height
 	msg.Height = 3
-	cs.handleMsg(msgInfo{msg, peer.ID(), cmttime.Now()})
+	cs.handleMsg(msgInfo{msg, peer.ID(), time.Time{}})
 
 	select {
 	case <-cs.statsMsgQueue:
@@ -2976,20 +2969,20 @@ func TestStateOutputVoteStats(t *testing.T) {
 	vote := signVote(vss[1], types.PrecommitType, cs.state.ChainID, blockID, true)
 
 	voteMessage := &VoteMessage{vote}
-	cs.handleMsg(msgInfo{voteMessage, peer.ID(), cmttime.Now()})
+	cs.handleMsg(msgInfo{voteMessage, peer.ID(), time.Time{}})
 
 	statsMessage := <-cs.statsMsgQueue
 	require.Equal(t, voteMessage, statsMessage.Msg, "")
 	require.Equal(t, peer.ID(), statsMessage.PeerID, "")
 
 	// sending the same part from different peer
-	cs.handleMsg(msgInfo{&VoteMessage{vote}, "peer2", cmttime.Now()})
+	cs.handleMsg(msgInfo{&VoteMessage{vote}, "peer2", time.Time{}})
 
 	// sending the vote for the bigger height
 	incrementHeight(vss[1])
 	vote = signVote(vss[1], types.PrecommitType, cs.state.ChainID, blockID, true)
 
-	cs.handleMsg(msgInfo{&VoteMessage{vote}, peer.ID(), cmttime.Now()})
+	cs.handleMsg(msgInfo{&VoteMessage{vote}, peer.ID(), time.Time{}})
 
 	select {
 	case <-cs.statsMsgQueue:

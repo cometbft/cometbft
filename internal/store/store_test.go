@@ -600,7 +600,8 @@ func TestPruningService(t *testing.T) {
 	assert.EqualValues(t, 1500, bs.Height())
 	assert.EqualValues(t, 1500, bs.Size())
 
-	state.LastBlockTime = time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+	state.LastBlockTime, err = time.Parse(time.RFC3339, "2035-01-16T13:00:00Z")
+	require.NoError(t, err)
 	state.LastBlockHeight = 1500
 
 	state.ConsensusParams.Evidence.MaxAgeNumBlocks = 400
@@ -761,7 +762,8 @@ func TestPruneBlocks(t *testing.T) {
 	assert.EqualValues(t, 1500, bs.Height())
 	assert.EqualValues(t, 1500, bs.Size())
 
-	state.LastBlockTime = time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+	state.LastBlockTime, err = time.Parse(time.RFC3339, "2035-01-16T13:00:00Z")
+	require.NoError(t, err)
 	state.LastBlockHeight = 1500
 
 	state.ConsensusParams.Evidence.MaxAgeNumBlocks = 400

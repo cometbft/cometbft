@@ -13,10 +13,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cometbft/cometbft/libs/log"
+	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 type sampleResult struct {
@@ -137,6 +138,7 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 	assert.Equal(t, `[{"jsonrpc":"2.0","id":-1,"result":{"value":"hello"}},{"jsonrpc":"2.0","id":-1,"result":{"value":"world"}}]`, string(body))
 }
 
+// TestWriteRPCResponseHTTPError tests WriteRPCResponseHTTPError.
 func TestWriteRPCResponseHTTPError(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := WriteRPCResponseHTTPError(

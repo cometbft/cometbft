@@ -6,12 +6,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/cmap"
 	"github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/p2p/conn"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 const (

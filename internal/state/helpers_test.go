@@ -230,7 +230,7 @@ func randomGenesisDoc() *types.GenesisDoc {
 	}
 }
 
-//----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 type testApp struct {
 	abci.BaseApplication
@@ -267,11 +267,11 @@ func (app *testApp) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockRequ
 	}, nil
 }
 
-func (app *testApp) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.CommitResponse, error) {
+func (*testApp) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.CommitResponse, error) {
 	return &abci.CommitResponse{RetainHeight: 1}, nil
 }
 
-func (app *testApp) PrepareProposal(
+func (*testApp) PrepareProposal(
 	_ context.Context,
 	req *abci.PrepareProposalRequest,
 ) (*abci.PrepareProposalResponse, error) {
@@ -290,7 +290,7 @@ func (app *testApp) PrepareProposal(
 	return &abci.PrepareProposalResponse{Txs: txs}, nil
 }
 
-func (app *testApp) ProcessProposal(
+func (*testApp) ProcessProposal(
 	_ context.Context,
 	req *abci.ProcessProposalRequest,
 ) (*abci.ProcessProposalResponse, error) {

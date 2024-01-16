@@ -292,7 +292,7 @@ func (na *NetAddress) Local() bool {
 // ReachabilityTo checks whenever o can be reached from na.
 func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 	const (
-		Unreachable = 0
+		unreachable = 0
 		Default     = iota
 		Teredo
 		Ipv6Weak
@@ -301,7 +301,7 @@ func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 	)
 	switch {
 	case !na.Routable():
-		return Unreachable
+		return unreachable
 	case na.RFC4380():
 		switch {
 		case !o.Routable():

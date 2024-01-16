@@ -204,7 +204,7 @@ func (pool *BlockPool) PeekTwoBlocks() (first, second *types.Block, firstExtComm
 	if r := pool.requesters[pool.height+1]; r != nil {
 		second = r.getBlock()
 	}
-	return
+	return first, second, firstExtCommit
 }
 
 // PopRequest pops the first block at pool.height.
@@ -450,7 +450,7 @@ func (pool *BlockPool) debug() string {
 	return str
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type bpPeer struct {
 	didTimeout  bool
@@ -524,7 +524,7 @@ func (peer *bpPeer) onTimeout() {
 	peer.didTimeout = true
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type bpRequester struct {
 	service.BaseService

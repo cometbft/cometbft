@@ -382,7 +382,7 @@ func (t Testnet) Validate() error {
 	return nil
 }
 
-func (t Testnet) validateZones(nodes []*Node) error {
+func (Testnet) validateZones(nodes []*Node) error {
 	zoneMatrix, err := loadZoneLatenciesMatrix()
 	if err != nil {
 		return err

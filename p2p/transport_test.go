@@ -665,39 +665,39 @@ func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
 
 type testTransportAddr struct{}
 
-func (a *testTransportAddr) Network() string { return "tcp" }
-func (a *testTransportAddr) String() string  { return "test.local:1234" }
+func (*testTransportAddr) Network() string { return "tcp" }
+func (*testTransportAddr) String() string  { return "test.local:1234" }
 
 type testTransportConn struct{}
 
-func (c *testTransportConn) Close() error {
+func (*testTransportConn) Close() error {
 	return fmt.Errorf("close() not implemented")
 }
 
-func (c *testTransportConn) LocalAddr() net.Addr {
+func (*testTransportConn) LocalAddr() net.Addr {
 	return &testTransportAddr{}
 }
 
-func (c *testTransportConn) RemoteAddr() net.Addr {
+func (*testTransportConn) RemoteAddr() net.Addr {
 	return &testTransportAddr{}
 }
 
-func (c *testTransportConn) Read(_ []byte) (int, error) {
+func (*testTransportConn) Read(_ []byte) (int, error) {
 	return -1, fmt.Errorf("read() not implemented")
 }
 
-func (c *testTransportConn) SetDeadline(_ time.Time) error {
+func (*testTransportConn) SetDeadline(_ time.Time) error {
 	return fmt.Errorf("setDeadline() not implemented")
 }
 
-func (c *testTransportConn) SetReadDeadline(_ time.Time) error {
+func (*testTransportConn) SetReadDeadline(_ time.Time) error {
 	return fmt.Errorf("setReadDeadline() not implemented")
 }
 
-func (c *testTransportConn) SetWriteDeadline(_ time.Time) error {
+func (*testTransportConn) SetWriteDeadline(_ time.Time) error {
 	return fmt.Errorf("setWriteDeadline() not implemented")
 }
 
-func (c *testTransportConn) Write(_ []byte) (int, error) {
+func (*testTransportConn) Write(_ []byte) (int, error) {
 	return -1, fmt.Errorf("write() not implemented")
 }

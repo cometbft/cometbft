@@ -300,7 +300,7 @@ func TestWALMsgProto(t *testing.T) {
 		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := WALToProto(tt.msg)
-			if tt.wantErr == true {
+			if tt.wantErr {
 				assert.Equal(t, tt.wantErr, err != nil)
 				return
 			}

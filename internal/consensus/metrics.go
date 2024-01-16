@@ -87,7 +87,7 @@ type Metrics struct {
 	// be above 2/3 of the total voting power of the network defines the endpoint
 	// the endpoint of the interval. Subtract the proposal timestamp from this endpoint
 	// to obtain the quorum delay.
-	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the earliest prevote that achieved a quorum.
+	// metrics:Interval in seconds between the proposal timestamp and the timestamp of the earliest prevote that achieved a quorum.
 	QuorumPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
 	// FullPrevoteDelay is the interval in seconds between the proposal

@@ -38,14 +38,14 @@ var (
 // evidence pools.
 func TestReactorBroadcastEvidence(t *testing.T) {
 	config := cfg.TestConfig()
-	N := 7
+	n := 7
 
 	// create statedb for everyone
-	stateDBs := make([]sm.Store, N)
+	stateDBs := make([]sm.Store, n)
 	val := types.NewMockPV()
 	// we need validators saved for heights at least as high as we have evidence for
 	height := int64(numEvidence) + 10
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		stateDBs[i] = initializeValidatorState(val, height)
 	}
 
@@ -242,14 +242,14 @@ func evidenceLogger() log.Logger {
 func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor,
 	[]*evidence.Pool,
 ) {
-	N := len(stateStores)
+	n := len(stateStores)
 
-	reactors := make([]*evidence.Reactor, N)
-	pools := make([]*evidence.Pool, N)
+	reactors := make([]*evidence.Reactor, n)
+	pools := make([]*evidence.Pool, n)
 	logger := evidenceLogger()
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		evidenceDB := dbm.NewMemDB()
 		blockStore := &mocks.BlockStore{}
 		blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(
@@ -264,7 +264,7 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 
-	p2p.MakeConnectedSwitches(config.P2P, N, func(i int, s *p2p.Switch) *p2p.Switch {
+	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("EVIDENCE", reactors[i])
 		return s
 	}, p2p.Connect2Switches)

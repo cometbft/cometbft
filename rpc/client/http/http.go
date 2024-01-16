@@ -104,7 +104,7 @@ var (
 	_ rpcClient = (*baseRPCClient)(nil)
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // HTTP
 
 // New takes a remote endpoint in the form <protocol>://<host>:<port>. An error
@@ -177,7 +177,7 @@ func (c *HTTP) NewBatch() *BatchHTTP {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BatchHTTP
 
 // Send is a convenience function for an HTTP batch that will trigger the
@@ -199,7 +199,7 @@ func (b *BatchHTTP) Count() int {
 	return b.rpcBatch.Count()
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // baseRPCClient
 
 func (c *baseRPCClient) Status(ctx context.Context) (*ctypes.ResultStatus, error) {
@@ -590,7 +590,7 @@ func (c *baseRPCClient) BroadcastEvidence(
 	return result, nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // WSEvents
 
 var errNotRunning = errors.New("client is not running. Use .Start() method to start")

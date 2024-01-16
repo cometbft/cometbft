@@ -54,5 +54,5 @@ func WeightedMedian(weightedTimes []*WeightedTime, totalVotingPower int64) (res 
 			median -= weightedTime.Weight
 		}
 	}
-	return
+	return res
 }

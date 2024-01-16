@@ -13,14 +13,14 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-//----------------------------------------------
+// ----------------------------------------------
 // byzantine failures
 
 // one byz val sends a precommit for a random block at each height
 // Ensure a testnet makes blocks.
 func TestReactorInvalidPrecommit(t *testing.T) {
-	N := 4
-	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
+	n := 4
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
 		func(c *cfg.Config) {
 			c.Consensus.TimeoutPropose = 3000 * time.Millisecond
 			c.Consensus.TimeoutPrevote = 1000 * time.Millisecond
@@ -28,17 +28,17 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 		})
 	defer cleanup()
 
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		ticker := NewTimeoutTicker()
 		ticker.SetLogger(css[i].Logger)
 		css[i].SetTimeoutTicker(ticker)
 	}
 
-	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, n)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// this val sends a random precommit at each height
-	byzValIdx := N - 1
+	byzValIdx := n - 1
 	byzVal := css[byzValIdx]
 	byzR := reactors[byzValIdx]
 
@@ -54,7 +54,7 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 	// wait for a bunch of blocks
 	// TODO: make this tighter by ensuring the halt happens by block 2
 	for i := 0; i < 10; i++ {
-		timeoutWaitGroup(N, func(j int) {
+		timeoutWaitGroup(n, func(j int) {
 			<-blocksSubs[j].Out()
 		})
 	}

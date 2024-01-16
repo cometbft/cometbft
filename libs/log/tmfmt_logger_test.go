@@ -122,4 +122,4 @@ func spam(logger kitlog.Logger, count int) error {
 
 type mymap map[int]int
 
-func (m mymap) String() string { return "special_behavior" }
+func (mymap) String() string { return "special_behavior" }

@@ -270,7 +270,7 @@ func BlockFromProto(bp *cmtproto.Block) (*Block, error) {
 	return b, b.ValidateBasic()
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // MaxDataBytes returns the maximum size of block's data.
 //
@@ -314,7 +314,7 @@ func MaxDataBytesNoEvidence(maxBytes int64, valsCount int) int64 {
 	return maxDataBytes
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // Header defines the structure of a CometBFT block header.
 // NOTE: changes to the Header should be duplicated in:
@@ -569,7 +569,7 @@ func HeaderFromProto(ph *cmtproto.Header) (Header, error) {
 	return *h, h.ValidateBasic()
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // BlockIDFlag indicates which BlockID the signature is for.
 type BlockIDFlag byte
@@ -709,7 +709,7 @@ func (cs *CommitSig) FromProto(csp cmtproto.CommitSig) error {
 	return cs.ValidateBasic()
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // ExtendedCommitSig contains a commit signature along with its corresponding
 // vote extension and vote extension signature.
@@ -829,7 +829,7 @@ func (ecs *ExtendedCommitSig) FromProto(ecsp cmtproto.ExtendedCommitSig) error {
 	return ecs.ValidateBasic()
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // Commit contains the evidence that a block was committed by a set of validators.
 // NOTE: Commit is empty for height 1, but never nil.
@@ -1031,7 +1031,7 @@ func CommitFromProto(cp *cmtproto.Commit) (*Commit, error) {
 	return commit, commit.ValidateBasic()
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // ExtendedCommit is similar to Commit, except that its signatures also retain
 // their corresponding vote extensions and vote extension signatures.
@@ -1149,7 +1149,7 @@ func (ec *ExtendedCommit) GetExtendedVote(valIndex int32) *Vote {
 // Type returns the vote type of the extended commit, which is always
 // VoteTypePrecommit
 // Implements VoteSetReader.
-func (ec *ExtendedCommit) Type() byte { return byte(PrecommitType) }
+func (*ExtendedCommit) Type() byte { return byte(PrecommitType) }
 
 // GetHeight returns height of the extended commit.
 // Implements VoteSetReader.
@@ -1271,7 +1271,7 @@ func ExtendedCommitFromProto(ecp *cmtproto.ExtendedCommit) (*ExtendedCommit, err
 	return extCommit, extCommit.ValidateBasic()
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // Data contains the set of transactions included in the block.
 type Data struct {
@@ -1351,7 +1351,7 @@ func DataFromProto(dp *cmtproto.Data) (Data, error) {
 	return *data, nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // EvidenceData contains any evidence of malicious wrong-doing by validators.
 type EvidenceData struct {
@@ -1442,7 +1442,7 @@ func (data *EvidenceData) FromProto(eviData *cmtproto.EvidenceList) error {
 	return nil
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // BlockID.
 type BlockID struct {

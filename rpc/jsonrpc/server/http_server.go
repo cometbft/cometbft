@@ -17,7 +17,7 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // Config is a RPC server configuration.
@@ -154,7 +154,7 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 	return err
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // RecoverAndLogHandler wraps an HTTP handler, adding error logging.
 // If the inner function panics, the outer function recovers, logs, sends an

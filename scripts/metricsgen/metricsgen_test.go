@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
+	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen" //nolint:revive // this only works with metricsgen in front
 )
 
 const testDataDir = "./testdata"
@@ -37,6 +37,7 @@ func TestSimpleTemplate(t *testing.T) {
 	}
 }
 
+// TestFromData tests that the metricsgen tool can parse a directory of metrics and generate a file.
 func TestFromData(t *testing.T) {
 	infos, err := os.ReadDir(testDataDir)
 	if err != nil {

@@ -291,7 +291,7 @@ func persistentArgs(line []byte) []string {
 	return args
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 func compose(fs []func() error) error {
 	if len(fs) == 0 {
@@ -731,7 +731,7 @@ func cmdKVStore(*cobra.Command, []string) error {
 	select {}
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 	if flagVerbose {

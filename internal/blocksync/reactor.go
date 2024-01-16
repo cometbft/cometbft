@@ -165,7 +165,7 @@ func (bcR *Reactor) OnStop() {
 }
 
 // GetChannels implements Reactor.
-func (bcR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  BlocksyncChannel,

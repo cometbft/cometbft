@@ -67,7 +67,7 @@ func NewCLI() *CLI {
 }
 
 // generate generates manifests in a directory.
-func (cli *CLI) generate(dir string, groups int, multiVersion string, prometheus bool) error {
+func (*CLI) generate(dir string, groups int, multiVersion string, prometheus bool) error {
 	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		return err

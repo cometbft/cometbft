@@ -45,7 +45,7 @@ func idFromInterface(idInterface interface{}) (jsonrpcid, error) {
 	}
 }
 
-//----------------------------------------
+// ----------------------------------------
 // REQUEST
 
 type RPCRequest struct {
@@ -134,7 +134,7 @@ func ArrayToRequest(id jsonrpcid, method string, params []interface{}) (RPCReque
 	return NewRPCRequest(id, method, payload), nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 // RESPONSE
 
 type RPCError struct {
@@ -246,7 +246,7 @@ func RPCServerError(id jsonrpcid, err error) RPCResponse {
 	return NewRPCErrorResponse(id, -32000, "Server error", err.Error())
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // WSRPCConnection represents a websocket connection.
 type WSRPCConnection interface {
@@ -312,7 +312,7 @@ func (ctx *Context) Context() context.Context {
 	return context.Background()
 }
 
-//----------------------------------------
+// ----------------------------------------
 // SOCKETS
 
 // Determine if its a unix or tcp socket.

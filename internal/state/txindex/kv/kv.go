@@ -157,7 +157,7 @@ func (txi *TxIndex) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (txi *TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
+func (*TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastTxIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -515,10 +515,10 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 			return decoded, true, err
 		}
 	}
-	return
+	return nil, false, nil
 }
 
-func (txi *TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
+func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
 	eventSeq := extractEventSeqFromKey(it.Key())
 	tmpHeights[string(it.Value())+eventSeq] = it.Value()
 }

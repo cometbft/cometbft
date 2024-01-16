@@ -43,7 +43,7 @@ type Reactor interface {
 	Receive(e Envelope)
 }
 
-//--------------------------------------
+// --------------------------------------
 
 type BaseReactor struct {
 	service.BaseService // Provides Start, Stop, .Quit

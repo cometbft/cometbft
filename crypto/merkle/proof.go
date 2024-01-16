@@ -70,7 +70,7 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 			Aunts:    trail.FlattenAunts(),
 		}
 	}
-	return
+	return rootHash, proofs
 }
 
 // Verify that the Proof proves the root hash.
@@ -257,7 +257,6 @@ func (spn *ProofNode) FlattenAunts() [][]byte {
 		case spn.Right != nil:
 			innerHashes = append(innerHashes, spn.Right.Hash)
 		default:
-			break
 		}
 		spn = spn.Parent
 	}

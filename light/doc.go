@@ -121,7 +121,7 @@ See
 https://docs.cometbft.com/main/core/light-client.html
 for usage example.
 Or see
-https://github.com/cometbft/cometbft/tree/main/spec/consensus/light-client
+https://github.com/cometbft/cometbft/blob/main/spec/light-client/README.md
 for the full spec
 */
 package light

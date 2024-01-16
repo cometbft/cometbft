@@ -251,6 +251,8 @@ clean_certs:
 lint:
 	@echo "--> Running linter"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+	# see TODO in gofumpt-pre-commit
+	# @go run mvdan.cc/gofumpt -l -d ./..
 .PHONY: lint
 
 # https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
@@ -275,6 +277,14 @@ lint-typo:
 lint-fix-typo:
 	@codespell -w
 .PHONY: lint-fix-typo
+
+# TODO: remove once the codebase is sufficiently formatted.
+# See https://github.com/cometbft/cometbft/issues/604
+gofumpt-pre-commit:
+	@echo "--> Creating gofumpt pre-commit hook"
+	@mkdir -p .git/hooks
+	@cp scripts/gofumpt.sh .git/hooks/pre-commit
+.PHONY: gofumpt-pre-commit
 
 DESTINATION = ./index.html.md
 

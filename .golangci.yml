@@ -125,7 +125,7 @@ linters-settings:
           - $gostd
           - github.com/cosmos
           - github.com/cometbft
-          - github.com/xtaci/kcp-go
+          - github.com/xtaci/kcp-go/v5
           - github.com/adlio/schema
           - github.com/btcsuite/btcd
           - github.com/fortytw2/leaktest

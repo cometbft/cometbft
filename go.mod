@@ -20,9 +20,9 @@ require (
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pointlander/peg v1.0.1
-	github.com/prometheus/client_golang v1.17.0
+	github.com/prometheus/client_golang v1.18.0
 	github.com/prometheus/client_model v0.5.0
-	github.com/prometheus/common v0.45.0
+	github.com/prometheus/common v0.46.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.10.1
 	github.com/sasha-s/go-deadlock v0.3.1
@@ -30,9 +30,9 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/crypto v0.17.0
-	golang.org/x/net v0.19.0
-	google.golang.org/grpc v1.60.0
+	golang.org/x/crypto v0.18.0
+	golang.org/x/net v0.20.0
+	google.golang.org/grpc v1.60.1
 )
 
 require (
@@ -53,11 +53,11 @@ require (
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/google/uuid v1.5.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
-	github.com/vektra/mockery/v2 v2.38.0
+	github.com/vektra/mockery/v2 v2.40.1
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/sync v0.6.0
 	gonum.org/v1/gonum v0.14.0
-	google.golang.org/protobuf v1.31.1-0.20231027082548-f4a6c1f6e5c1
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
@@ -216,7 +216,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
-	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mbilski/exhaustivestruct v1.2.0 // indirect
 	github.com/mgechev/revive v1.3.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -241,7 +240,7 @@ require (
 	github.com/pointlander/compress v1.1.1-0.20190518213731-ff44bd196cc3 // indirect
 	github.com/pointlander/jetset v1.0.1-0.20190518214125-eee7eff80bd4 // indirect
 	github.com/polyfloyd/go-errorlint v1.4.5 // indirect
-	github.com/prometheus/procfs v0.11.1 // indirect
+	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/quasilyte/go-ruleguard v0.4.0 // indirect
 	github.com/quasilyte/gogrep v0.5.0 // indirect
 	github.com/quasilyte/regex/syntax v0.0.0-20210819130434-b3f0c404a727 // indirect
@@ -305,8 +304,8 @@ require (
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230307190834-24139beb5833 // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17 // indirect

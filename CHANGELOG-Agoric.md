@@ -36,6 +36,8 @@ Ref: https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased]
 
+* Merge `cometbft/cometbft v0.34.30`.
+
 ## [v0.34.27-alpha.agoric.3]
 
 * Merge `agoric-labs/tendermint` v0.34.23-alpha.agoric.4.

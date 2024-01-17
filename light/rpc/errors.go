@@ -41,65 +41,65 @@ func (e ErrPageRange) Error() string {
 }
 
 type ErrNilBlockMeta struct {
-	I int
+	Index int
 }
 
 func (e ErrNilBlockMeta) Error() string {
-	return fmt.Sprintf("nil block meta %d", e.I)
+	return fmt.Sprintf("nil block meta %d", e.Index)
 }
 
 type ErrParamHashMismatch struct {
-	CH []byte
-	TH cmtbytes.HexBytes
+	ConsensusParamsHash []byte
+	ConsensusHash       cmtbytes.HexBytes
 }
 
 func (e ErrParamHashMismatch) Error() string {
-	return fmt.Sprintf("params hash %X does not match trusted hash %X", e.CH, e.TH)
+	return fmt.Sprintf("params hash %X does not match trusted hash %X", e.ConsensusParamsHash, e.ConsensusHash)
 }
 
 type ErrLastResultMismatch struct {
-	RH  []byte
-	LRH cmtbytes.HexBytes
+	ResultHash     []byte
+	LastResultHash cmtbytes.HexBytes
 }
 
 func (e ErrLastResultMismatch) Error() string {
-	return fmt.Sprintf("last results %X does not match with trusted last results %X", e.RH, e.LRH)
+	return fmt.Sprintf("last results %X does not match with trusted last results %X", e.ResultHash, e.LastResultHash)
 }
 
 type ErrPrimaryHeaderMismatch struct {
-	LH cmtbytes.HexBytes
-	TH cmtbytes.HexBytes
+	PrimaryHeaderHash cmtbytes.HexBytes
+	TrustedHeaderHash cmtbytes.HexBytes
 }
 
 func (e ErrPrimaryHeaderMismatch) Error() string {
-	return fmt.Sprintf("primary header hash does not match trusted header hash. (%X != %X)", e.LH, e.TH)
+	return fmt.Sprintf("primary header hash does not match trusted header hash. (%X != %X)", e.PrimaryHeaderHash, e.TrustedHeaderHash)
 }
 
 type ErrBlockHeaderMismatch struct {
-	BH cmtbytes.HexBytes
-	TH cmtbytes.HexBytes
+	BlockHeader   cmtbytes.HexBytes
+	TrustedHeader cmtbytes.HexBytes
 }
 
 func (e ErrBlockHeaderMismatch) Error() string {
-	return fmt.Sprintf("block header %X does not match with trusted header %X", e.BH, e.TH)
+	return fmt.Sprintf("block header %X does not match with trusted header %X", e.BlockHeader, e.TrustedHeader)
 }
 
 type ErrBlockMetaHeaderMismatch struct {
-	BMH cmtbytes.HexBytes
-	TH  cmtbytes.HexBytes
+	BlockMetaHeader cmtbytes.HexBytes
+	TrustedHeader   cmtbytes.HexBytes
 }
 
 func (e ErrBlockMetaHeaderMismatch) Error() string {
-	return fmt.Sprintf("block meta header %X does not match with trusted header %X", e.BMH, e.TH)
+	return fmt.Sprintf("block meta header %X does not match with trusted header %X", e.BlockMetaHeader, e.TrustedHeader)
 }
 
 type ErrBlockIDMismatch struct {
-	BMH cmtbytes.HexBytes
-	BH  cmtbytes.HexBytes
+	BlockID cmtbytes.HexBytes
+	Block   cmtbytes.HexBytes
 }
 
 func (e ErrBlockIDMismatch) Error() string {
-	return fmt.Sprintf("blockID %X does not match with block %X", e.BMH, e.BH)
+	return fmt.Sprintf("blockID %X does not match with block %X", e.BlockID, e.Block)
 }
 
 type ErrBuildMerkleKeyPath struct {

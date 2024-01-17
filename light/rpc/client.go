@@ -245,7 +245,7 @@ func (c *Client) ConsensusParams(ctx context.Context, height *int64) (*ctypes.Re
 
 	// Verify hash.
 	if cH, tH := res.ConsensusParams.Hash(), l.ConsensusHash; !bytes.Equal(cH, tH) {
-		return nil, ErrParamHashMismatch{CH: cH, TH: tH}
+		return nil, ErrParamHashMismatch{ConsensusParamsHash: cH, ConsensusHash: tH}
 	}
 
 	return res, nil
@@ -266,7 +266,7 @@ func (c *Client) BlockchainInfo(ctx context.Context, minHeight, maxHeight int64)
 	// Validate res.
 	for i, meta := range res.BlockMetas {
 		if meta == nil {
-			return nil, ErrNilBlockMeta{I: i}
+			return nil, ErrNilBlockMeta{Index: i}
 		}
 		if err := meta.ValidateBasic(); err != nil {
 			return nil, ErrInvalidBlockMeta{I: i, Err: err}
@@ -288,7 +288,7 @@ func (c *Client) BlockchainInfo(ctx context.Context, minHeight, maxHeight int64)
 			return nil, ErrTrustedHeader{Height: meta.Header.Height, Err: err}
 		}
 		if bmH, tH := meta.Header.Hash(), h.Hash(); !bytes.Equal(bmH, tH) {
-			return nil, ErrBlockMetaHeaderMismatch{BMH: bmH, TH: tH}
+			return nil, ErrBlockMetaHeaderMismatch{BlockMetaHeader: bmH, TrustedHeader: tH}
 		}
 	}
 
@@ -318,7 +318,7 @@ func (c *Client) Block(ctx context.Context, height *int64) (*ctypes.ResultBlock,
 		return nil, err
 	}
 	if bmH, bH := res.BlockID.Hash, res.Block.Hash(); !bytes.Equal(bmH, bH) {
-		return nil, ErrBlockIDMismatch{BMH: bmH, BH: bH}
+		return nil, ErrBlockIDMismatch{BlockID: bmH, Block: bH}
 	}
 
 	// Update the light client if we're behind.
@@ -329,7 +329,7 @@ func (c *Client) Block(ctx context.Context, height *int64) (*ctypes.ResultBlock,
 
 	// Verify block.
 	if bH, tH := res.Block.Hash(), l.Hash(); !bytes.Equal(bH, tH) {
-		return nil, ErrBlockHeaderMismatch{BH: bH, TH: tH}
+		return nil, ErrBlockHeaderMismatch{BlockHeader: bH, TrustedHeader: tH}
 	}
 
 	return res, nil
@@ -350,7 +350,7 @@ func (c *Client) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBl
 		return nil, err
 	}
 	if bmH, bH := res.BlockID.Hash, res.Block.Hash(); !bytes.Equal(bmH, bH) {
-		return nil, ErrBlockIDMismatch{BMH: bmH, BH: bH}
+		return nil, ErrBlockIDMismatch{BlockID: bmH, Block: bH}
 	}
 
 	// Update the light client if we're behind.
@@ -361,7 +361,7 @@ func (c *Client) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBl
 
 	// Verify block.
 	if bH, tH := res.Block.Hash(), l.Hash(); !bytes.Equal(bH, tH) {
-		return nil, ErrBlockHeaderMismatch{BH: bH, TH: tH}
+		return nil, ErrBlockHeaderMismatch{BlockHeader: bH, TrustedHeader: tH}
 	}
 
 	return res, nil
@@ -406,7 +406,7 @@ func (c *Client) BlockResults(ctx context.Context, height *int64) (*ctypes.Resul
 
 	// Verify block results.
 	if !bytes.Equal(rH, trustedBlock.LastResultsHash) {
-		return nil, ErrLastResultMismatch{RH: rH, LRH: trustedBlock.LastResultsHash}
+		return nil, ErrLastResultMismatch{ResultHash: rH, LastResultHash: trustedBlock.LastResultsHash}
 	}
 
 	return res, nil
@@ -439,7 +439,7 @@ func (c *Client) HeaderByHash(ctx context.Context, hash cmtbytes.HexBytes) (*cty
 	}
 
 	if !bytes.Equal(lb.Header.Hash(), res.Header.Hash()) {
-		return nil, ErrPrimaryHeaderMismatch{LH: lb.Header.Hash(), TH: res.Header.Hash()}
+		return nil, ErrPrimaryHeaderMismatch{PrimaryHeaderHash: lb.Header.Hash(), TrustedHeaderHash: res.Header.Hash()}
 	}
 
 	return res, nil

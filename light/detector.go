@@ -339,7 +339,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 		// else we cannot continue with verification.
 		if idx == 0 {
 			if shash, thash := sourceBlock.Hash(), traceBlock.Hash(); !bytes.Equal(shash, thash) {
-				return nil, nil, ErrBlockHashMismatch{TH: thash, SH: shash}
+				return nil, nil, ErrBlockHashMismatch{TraceBlockHash: thash, SourceBlockHash: shash}
 			}
 			previouslyVerifiedBlock = sourceBlock
 			continue

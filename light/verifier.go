@@ -113,7 +113,7 @@ func VerifyAdjacent(
 
 	// Check the validator hashes are the same
 	if !bytes.Equal(untrustedHeader.ValidatorsHash, trustedHeader.NextValidatorsHash) {
-		return ErrValidatorHashMismatch{TH: trustedHeader.NextValidatorsHash, UTH: untrustedHeader.ValidatorsHash}
+		return ErrValidatorHashMismatch{TrustedHash: trustedHeader.NextValidatorsHash, ValidatorHash: untrustedHeader.ValidatorsHash}
 	}
 
 	// Ensure that +2/3 of new validators signed correctly.

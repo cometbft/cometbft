@@ -117,21 +117,21 @@ func (e ErrValidatorsMismatch) Error() string {
 }
 
 type ErrValidatorHashMismatch struct {
-	TH  cmtbytes.HexBytes
-	UTH cmtbytes.HexBytes
+	TrustedHash   cmtbytes.HexBytes
+	ValidatorHash cmtbytes.HexBytes
 }
 
 func (e ErrValidatorHashMismatch) Error() string {
-	return fmt.Sprintf("expected old header next validators (%X) to match those from new header (%X)", e.TH, e.UTH)
+	return fmt.Sprintf("expected old header next validators (%X) to match those from new header (%X)", e.TrustedHash, e.ValidatorHash)
 }
 
 type ErrBlockHashMismatch struct {
-	TH cmtbytes.HexBytes
-	SH cmtbytes.HexBytes
+	TraceBlockHash  cmtbytes.HexBytes
+	SourceBlockHash cmtbytes.HexBytes
 }
 
 func (e ErrBlockHashMismatch) Error() string {
-	return fmt.Sprintf("trusted block is different to the source's first block (%X = %X)", e.TH, e.SH)
+	return fmt.Sprintf("trusted block is different to the source's first block (%X = %X)", e.TraceBlockHash, e.SourceBlockHash)
 }
 
 type ErrHeaderHashMismatch struct {

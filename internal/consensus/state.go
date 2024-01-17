@@ -1469,10 +1469,14 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
+		// If v_r = lockedRound_p we expect v to match lockedValue_p. If it is not the case,
+		// we have two 2/3+ majorities for different values at round v_r, meaning that the
+		// assumption of a 2/3+ majority of honest processes was violated. We should at
+		// least log this scenario, see: https://github.com/cometbft/cometbft/issues/1309.
 		if cs.LockedRound == cs.Proposal.POLRound {
 			logger.Info("prevote step: ProposalBlock is valid and received a 2/3" +
-				"majority on our locked round, while not matching our locked value;" +
-				"this can only happen when validators are double signing; prevoting the proposal")
+				"majority at our locked round, while not matching our locked value;" +
+				"this can only happen when 1/3 or more validators are double signing; prevoting the proposal")
 			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}

@@ -28,7 +28,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   1,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: true,
 		},
 		{
@@ -36,7 +37,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   0,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: false,
 		},
 		{
@@ -44,7 +46,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   47 * 1024 * 1024,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: true,
 		},
 		{
@@ -52,7 +55,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   10,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: true,
 		},
 		{
@@ -60,7 +64,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   100 * 1024 * 1024,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: true,
 		},
 		{
@@ -68,7 +73,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   101 * 1024 * 1024,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: false,
 		},
 		{
@@ -76,7 +82,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   1024 * 1024 * 1024,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: false,
 		},
 		{
@@ -84,7 +91,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   1024 * 1024 * 1024,
 				evidenceAge:  -1,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: false,
 		},
 		// test evidence params
@@ -94,7 +102,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				evidenceAge:      0,
 				maxEvidenceBytes: 0,
 				precision:        1,
-				messageDelay:     1}),
+				messageDelay:     1,
+			}),
 			valid: false,
 		},
 		{
@@ -103,7 +112,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				evidenceAge:      2,
 				maxEvidenceBytes: 2,
 				precision:        1,
-				messageDelay:     1}),
+				messageDelay:     1,
+			}),
 			valid: false,
 		},
 		{
@@ -112,7 +122,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				evidenceAge:      2,
 				maxEvidenceBytes: 1,
 				precision:        1,
-				messageDelay:     1}),
+				messageDelay:     1,
+			}),
 			valid: true,
 		},
 		{
@@ -121,7 +132,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				evidenceAge:      -1,
 				maxEvidenceBytes: 0,
 				precision:        1,
-				messageDelay:     1}),
+				messageDelay:     1,
+			}),
 			valid: false,
 		},
 		// test no pubkey type provided
@@ -131,7 +143,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				evidenceAge:  2,
 				pubkeyTypes:  []string{},
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: false,
 		},
 		// test invalid pubkey type provided
@@ -141,7 +154,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				evidenceAge:  2,
 				pubkeyTypes:  []string{"potatoes make good pubkeys"},
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: false,
 		},
 		{
@@ -149,7 +163,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   -1,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: true,
 		},
 		{
@@ -157,7 +172,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:   -2,
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: false,
 		},
 		// test invalid pubkey type provided
@@ -165,14 +181,16 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				evidenceAge:  2,
 				precision:    1,
-				messageDelay: -1}),
+				messageDelay: -1,
+			}),
 			valid: false,
 		},
 		{
 			params: makeParams(makeParamsArgs{
 				evidenceAge:  2,
 				precision:    -1,
-				messageDelay: 1}),
+				messageDelay: 1,
+			}),
 			valid: false,
 		},
 	}
@@ -221,7 +239,6 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 			VoteExtensionsEnableHeight: args.abciExtensionHeight,
 		},
 	}
-
 }
 
 func TestConsensusParamsHash(t *testing.T) {
@@ -295,7 +312,8 @@ func TestConsensusParamsUpdate(t *testing.T) {
 				blockBytes: 100, blockGas: 200,
 				evidenceAge:      300,
 				maxEvidenceBytes: 50,
-				pubkeyTypes:      valSecp256k1}),
+				pubkeyTypes:      valSecp256k1,
+			}),
 		},
 	}
 

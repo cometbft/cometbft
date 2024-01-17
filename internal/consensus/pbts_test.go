@@ -98,7 +98,7 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	consensusParams := types.DefaultConsensusParams()
 	consensusParams.Synchrony = tc.synchronyParams
 
-	state, privVals := randGenesisState(validators, consensusParams) //TODO tc.genesisTime)
+	state, privVals := randGenesisState(validators, consensusParams) // TODO tc.genesisTime)
 	cs := newState(state, privVals[0], kvstore.NewInMemoryApplication())
 	vss := make([]*validatorStub, validators)
 	for i := 0; i < validators; i++ {
@@ -131,6 +131,7 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 }
 
 func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t *testing.T, previousBlockTime time.Time) heightResult {
+	t.Helper()
 	p.validatorClock.On("Now").Return(p.height2ProposedBlockTime).Times(6)
 
 	ensureNewRound(p.roundCh, p.currentHeight, p.currentRound)
@@ -158,12 +159,14 @@ func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t
 }
 
 func (p *pbtsTestHarness) height2(ctx context.Context, t *testing.T) heightResult {
+	t.Helper()
 	signer := p.otherValidators[0].PrivValidator
 	height3BlockTime := p.height2ProposedBlockTime.Add(-blockTimeIota)
 	return p.nextHeight(ctx, t, signer, p.height2ProposalDeliverTime, p.height2ProposedBlockTime, height3BlockTime)
 }
 
 func (p *pbtsTestHarness) intermediateHeights(ctx context.Context, t *testing.T) {
+	t.Helper()
 	signer := p.otherValidators[1].PrivValidator
 	blockTimeHeight3 := p.height4ProposedBlockTime.Add(-blockTimeIota)
 	p.nextHeight(ctx, t, signer, blockTimeHeight3, blockTimeHeight3, p.height4ProposedBlockTime)
@@ -173,10 +176,13 @@ func (p *pbtsTestHarness) intermediateHeights(ctx context.Context, t *testing.T)
 }
 
 func (p *pbtsTestHarness) height5(ctx context.Context, t *testing.T) heightResult {
+	t.Helper()
 	return p.observedValidatorProposerHeight(ctx, t, p.height4ProposedBlockTime)
 }
 
 func (p *pbtsTestHarness) nextHeight(ctx context.Context, t *testing.T, proposer types.PrivValidator, deliverTime, proposedTime, nextProposedTime time.Time) heightResult {
+	t.Helper()
+
 	p.validatorClock.On("Now").Return(nextProposedTime).Times(6)
 
 	ensureNewRound(p.roundCh, p.currentHeight, p.currentRound)
@@ -283,6 +289,7 @@ type timestampedEvent struct {
 }
 
 func (p *pbtsTestHarness) run(ctx context.Context, t *testing.T) resultSet {
+	t.Helper()
 	startTestRound(p.observedState, p.currentHeight, p.currentRound)
 
 	r1 := p.observedValidatorProposerHeight(ctx, t, p.genesisTime)

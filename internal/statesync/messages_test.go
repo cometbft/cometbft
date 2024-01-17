@@ -3,7 +3,6 @@ package statesync
 import (
 	"encoding/hex"
 	"testing"
-	"time"
 
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
@@ -120,8 +119,4 @@ func TestStateSyncVectors(t *testing.T) {
 
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
 	}
-}
-
-func durationPtr(t time.Duration) *time.Duration {
-	return &t
 }

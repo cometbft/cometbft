@@ -759,14 +759,6 @@ func ensureVoteMatch(t *testing.T, voteCh <-chan cmtpubsub.Message, height int64
 	}
 }
 
-func ensurePrecommitTimeout(ch <-chan cmtpubsub.Message) {
-	select {
-	case <-time.After(ensureTimeout):
-		panic("Timeout expired while waiting for the Precommit to Timeout")
-	case <-ch:
-	}
-}
-
 func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 	select {
 	case <-time.After(ensureTimeout * 12 / 10): // 20% leniency for goroutine scheduling uncertainty

@@ -72,7 +72,7 @@ func DefaultMerkleKeyPathFn() KeyPathFunc {
 	return func(path string, key []byte) (merkle.KeyPath, error) {
 		matches := storeNameRegexp.FindStringSubmatch(path)
 		if len(matches) != 2 {
-			return nil, ErrFindStore{Path: path, Rex: storeNameRegexp}
+			return nil, ErrMissingStoreName{Path: path, Rex: storeNameRegexp}
 		}
 		storeName := matches[1]
 
@@ -561,7 +561,7 @@ func (c *Client) updateLightClientIfNeededTo(ctx context.Context, height *int64)
 		l, err = c.lc.VerifyLightBlockAtHeight(ctx, *height, time.Now())
 	}
 	if err != nil {
-		return nil, ErrUpdateClientHeight{Height: *height, Err: err}
+		return nil, ErrUpdateClient{Height: *height, Err: err}
 	}
 	return l, nil
 }

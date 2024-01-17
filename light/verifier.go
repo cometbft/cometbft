@@ -156,11 +156,11 @@ func verifyNewHeaderAndVals(
 	}
 
 	if untrustedHeader.Height <= trustedHeader.Height {
-		return ErrHeaderHeightCmp{WantHeight: untrustedHeader.Height, GetHeight: trustedHeader.Height}
+		return ErrHeaderHeightNotMonotonic{WantHeight: untrustedHeader.Height, GetHeight: trustedHeader.Height}
 	}
 
 	if !untrustedHeader.Time.After(trustedHeader.Time) {
-		return ErrHeaderTimeCmp{WantTime: untrustedHeader.Time, GetTime: trustedHeader.Time}
+		return ErrHeaderTimeNotMonotonic{WantTime: untrustedHeader.Time, GetTime: trustedHeader.Time}
 	}
 
 	if !untrustedHeader.Time.Before(now.Add(maxClockDrift)) {
@@ -168,7 +168,7 @@ func verifyNewHeaderAndVals(
 	}
 
 	if !bytes.Equal(untrustedHeader.ValidatorsHash, untrustedVals.Hash()) {
-		return ErrHeaderValidatorHashAtGivenHeightMismatch{VH: untrustedHeader.ValidatorsHash, SH: untrustedVals.Hash(), Height: untrustedHeader.Height}
+		return ErrValidatorsMismatch{HeaderHash: untrustedHeader.ValidatorsHash, ValidatorsHash: untrustedVals.Hash(), Height: untrustedHeader.Height}
 	}
 
 	return nil

@@ -34,9 +34,8 @@ Check logs for full evidence and trace`,
 	ErrHeaderHeightNotAdjacent   = errors.New("headers must be adjacent in height")
 	ErrNegativeOrZeroPeriod      = errors.New("negative or zero period")
 	ErrNegativeHeight            = errors.New("negative height")
-	ErrZeroOrNegativeHeight      = errors.New("zero or negative height")
 	ErrNegativeOrZeroHeight      = errors.New("negative or zero height")
-	ErrBlockTimeSanityCheck      = errors.New("sanity check failed: expected traceblock to have a lesser time than the target block")
+	ErrInvalidBlockTime          = errors.New("expected traceblock to have a lesser time than the target block")
 	ErrRemoveStoredBlocksRefused = errors.New("refused to remove the stored light blocks despite hashes mismatch")
 	ErrNoHeadersExist            = errors.New("no headers exist")
 	ErrNilHeader                 = errors.New("nil header")
@@ -54,30 +53,30 @@ func (e ErrOldHeaderExpired) Error() string {
 	return fmt.Sprintf("old header has expired at %v (now: %v)", e.At, e.Now)
 }
 
-type ErrBlockHeightCmp struct {
-	GetHeight  int64
+type ErrTargetBlockHeightLessThanTrusted struct {
+	Target  int64
+	Trusted int64
+}
+
+func (e ErrTargetBlockHeightLessThanTrusted) Error() string {
+	return fmt.Sprintf("target block has a height lower than the trusted height (%d < %d)", e.Target, e.Trusted)
+}
+
+type ErrHeaderHeightNotMonotonic struct {
 	WantHeight int64
-}
-
-func (e ErrBlockHeightCmp) Error() string {
-	return fmt.Sprintf("target block has a height lower than the trusted height (%d < %d)", e.GetHeight, e.WantHeight)
-}
-
-type ErrHeaderHeightCmp struct {
-	WantHeight int64
 	GetHeight  int64
 }
 
-func (e ErrHeaderHeightCmp) Error() string {
+func (e ErrHeaderHeightNotMonotonic) Error() string {
 	return fmt.Sprintf("expected new header height %d to be greater than one of old header %d", e.WantHeight, e.GetHeight)
 }
 
-type ErrHeaderTimeCmp struct {
+type ErrHeaderTimeNotMonotonic struct {
 	WantTime time.Time
 	GetTime  time.Time
 }
 
-func (e ErrHeaderTimeCmp) Error() string {
+func (e ErrHeaderTimeNotMonotonic) Error() string {
 	return fmt.Sprintf("expected new header time %v to be after old header time %v", e.WantTime, e.GetTime)
 }
 
@@ -107,14 +106,14 @@ func (e ErrInvalidTrustLevel) Error() string {
 	return fmt.Sprintf("trustLevel must be within [1/3, 1], given %v", e.Level)
 }
 
-type ErrHeaderValidatorHashAtGivenHeightMismatch struct {
-	VH     cmtbytes.HexBytes
-	SH     []byte
-	Height int64
+type ErrValidatorsMismatch struct {
+	HeaderHash     cmtbytes.HexBytes
+	ValidatorsHash []byte
+	Height         int64
 }
 
-func (e ErrHeaderValidatorHashAtGivenHeightMismatch) Error() string {
-	return fmt.Sprintf("expected new header validators (%X) to match those that were supplied (%X) at height %d", e.VH, e.SH, e.Height)
+func (e ErrValidatorsMismatch) Error() string {
+	return fmt.Sprintf("expected new header validators (%X) to match those that were supplied (%X) at height %d", e.HeaderHash, e.ValidatorsHash, e.Height)
 }
 
 type ErrValidatorHashMismatch struct {
@@ -162,13 +161,13 @@ func (e ErrLightHeaderHashMismatch) Error() string {
 	return fmt.Sprintf("light block header %X does not match newHeader %X", e.Light, e.New)
 }
 
-type ErrHashSizeMismatch struct {
+type ErrInvalidHashSize struct {
 	Want int
-	Get  int
+	Got  int
 }
 
-func (e ErrHashSizeMismatch) Error() string {
-	return fmt.Sprintf("expected hash size to be %d bytes, got %d bytes", e.Want, e.Get)
+func (e ErrInvalidHashSize) Error() string {
+	return fmt.Sprintf("expected hash size to be %d bytes, got %d bytes", e.Want, e.Got)
 }
 
 type ErrUnexpectedChainID struct {
@@ -290,15 +289,15 @@ func (e ErrCleanup) Unwrap() error {
 	return e.Err
 }
 
-type ErrRetrieveBlock struct {
+type ErrGetBlock struct {
 	Err error
 }
 
-func (e ErrRetrieveBlock) Error() string {
+func (e ErrGetBlock) Error() string {
 	return fmt.Sprintf("failed to retrieve light block from primary to verify against: %v", e.Err)
 }
 
-func (e ErrRetrieveBlock) Unwrap() error {
+func (e ErrGetBlock) Unwrap() error {
 	return e.Err
 }
 
@@ -413,16 +412,16 @@ func (e ErrGetHeaderBeforeHeight) Unwrap() error {
 	return e.Err
 }
 
-type ErrObtainHeaderAtHeight struct {
+type ErrGetHeaderAtHeight struct {
 	Height int64
 	Err    error
 }
 
-func (e ErrObtainHeaderAtHeight) Error() string {
+func (e ErrGetHeaderAtHeight) Error() string {
 	return fmt.Sprintf("failed to obtain the header at height #%d: %v", e.Height, e.Err)
 }
 
-func (e ErrObtainHeaderAtHeight) Unwrap() error {
+func (e ErrGetHeaderAtHeight) Unwrap() error {
 	return e.Err
 }
 

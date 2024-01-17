@@ -544,7 +544,7 @@ func (c *Client) VerifyHeader(ctx context.Context, newHeader *types.Header, now 
 	// Request the header and the vals.
 	l, err = c.lightBlockFromPrimary(ctx, newHeader.Height)
 	if err != nil {
-		return ErrRetrieveBlock{Err: err}
+		return ErrGetBlock{Err: err}
 	}
 
 	if !bytes.Equal(l.Hash(), newHeader.Hash()) {
@@ -942,7 +942,7 @@ func (c *Client) backwards(
 	for verifiedHeader.Height > newHeader.Height {
 		interimBlock, err := c.lightBlockFromPrimary(ctx, verifiedHeader.Height-1)
 		if err != nil {
-			return ErrObtainHeaderAtHeight{Height: verifiedHeader.Height - 1, Err: err}
+			return ErrGetHeaderAtHeight{Height: verifiedHeader.Height - 1, Err: err}
 		}
 		interimHeader = interimBlock.Header
 		c.logger.Debug("Verify newHeader against verifiedHeader",

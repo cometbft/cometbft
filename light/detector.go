@@ -299,7 +299,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	)
 
 	if targetBlock.Height < trace[0].Height {
-		return nil, nil, ErrBlockHeightCmp{GetHeight: targetBlock.Height, WantHeight: trace[0].Height}
+		return nil, nil, ErrTargetBlockHeightLessThanTrusted{Target: targetBlock.Height, Trusted: trace[0].Height}
 	}
 
 	for idx, traceBlock := range trace {
@@ -311,7 +311,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 			// the end of the trace has a lesser time than the target block then all blocks in the trace should have a
 			// lesser time
 			if traceBlock.Time.After(targetBlock.Time) {
-				return nil, nil, ErrBlockTimeSanityCheck
+				return nil, nil, ErrInvalidBlockTime
 			}
 
 			// before sending back the divergent block and trace we need to ensure we have verified

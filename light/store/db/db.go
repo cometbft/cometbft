@@ -60,13 +60,13 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 	b := s.db.NewBatch()
 	defer b.Close()
 	if err = b.Set(s.lbKey(lb.Height), lbBz); err != nil {
-		return store.ErrStoreSet{Err: err}
+		return store.ErrStore{Err: err}
 	}
 	if err = b.Set(sizeKey, marshalSize(s.size+1)); err != nil {
-		return store.ErrStoreSet{Err: err}
+		return store.ErrStore{Err: err}
 	}
 	if err = b.WriteSync(); err != nil {
-		return store.ErrStoreWriteSync{Err: err}
+		return store.ErrStore{Err: err}
 	}
 	s.size++
 
@@ -88,13 +88,13 @@ func (s *dbs) DeleteLightBlock(height int64) error {
 	b := s.db.NewBatch()
 	defer b.Close()
 	if err := b.Delete(s.lbKey(height)); err != nil {
-		return store.ErrStoreDel{Err: err}
+		return store.ErrStore{Err: err}
 	}
 	if err := b.Set(sizeKey, marshalSize(s.size-1)); err != nil {
-		return store.ErrStoreSet{Err: err}
+		return store.ErrStore{Err: err}
 	}
 	if err := b.WriteSync(); err != nil {
-		return store.ErrStoreWriteSync{Err: err}
+		return store.ErrStore{Err: err}
 	}
 	s.size--
 
@@ -208,7 +208,7 @@ func (s *dbs) LightBlockBefore(height int64) (*types.LightBlock, error) {
 		itr.Next()
 	}
 	if err = itr.Error(); err != nil {
-		return nil, store.ErrStoreIterError{Err: err}
+		return nil, store.ErrStore{Err: err}
 	}
 
 	return nil, store.ErrLightBlockNotFound
@@ -235,7 +235,7 @@ func (s *dbs) Prune(size uint16) error {
 		append(s.lbKey(1<<63-1), byte(0x00)),
 	)
 	if err != nil {
-		return store.ErrStoreIter{Err: err}
+		return store.ErrStore{Err: err}
 	}
 	defer itr.Close()
 
@@ -248,7 +248,7 @@ func (s *dbs) Prune(size uint16) error {
 		_, height, ok := parseLbKey(key)
 		if ok {
 			if err = b.Delete(s.lbKey(height)); err != nil {
-				return store.ErrStoreDel{Err: err}
+				return store.ErrStore{Err: err}
 			}
 		}
 		itr.Next()
@@ -256,12 +256,12 @@ func (s *dbs) Prune(size uint16) error {
 		pruned++
 	}
 	if err = itr.Error(); err != nil {
-		return store.ErrStoreIterError{Err: err}
+		return store.ErrStore{Err: err}
 	}
 
 	err = b.WriteSync()
 	if err != nil {
-		return store.ErrStoreWriteSync{Err: err}
+		return store.ErrStore{Err: err}
 	}
 
 	// 3) Update size.
@@ -271,7 +271,7 @@ func (s *dbs) Prune(size uint16) error {
 	s.size -= uint16(pruned)
 
 	if wErr := s.db.SetSync(sizeKey, marshalSize(s.size)); wErr != nil {
-		return store.ErrStorePersistSize{Err: wErr}
+		return store.ErrStore{Err: wErr}
 	}
 
 	return nil

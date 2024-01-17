@@ -14,12 +14,12 @@ var (
 	ErrNilKeyPathFn    = errors.New("please configure Client with KeyPathFn option")
 )
 
-type ErrFindStore struct {
+type ErrMissingStoreName struct {
 	Path string
 	Rex  *regexp.Regexp
 }
 
-func (e ErrFindStore) Error() string {
+func (e ErrMissingStoreName) Error() string {
 	return fmt.Sprintf("can't find store name in %s using %s", e.Path, e.Rex)
 }
 
@@ -176,15 +176,15 @@ func (e ErrTrustedHeader) Unwrap() error {
 	return e.Err
 }
 
-type ErrUpdateClientHeight struct {
+type ErrUpdateClient struct {
 	Height int64
 	Err    error
 }
 
-func (e ErrUpdateClientHeight) Error() string {
+func (e ErrUpdateClient) Error() string {
 	return fmt.Sprintf("failed to update light client to %d: %v", e.Height, e.Err)
 }
 
-func (e ErrUpdateClientHeight) Unwrap() error {
+func (e ErrUpdateClient) Unwrap() error {
 	return e.Err
 }

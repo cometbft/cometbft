@@ -45,74 +45,14 @@ func (e ErrProtoConversion) Unwrap() error {
 	return e.Err
 }
 
-type ErrStoreDel struct {
+type ErrStore struct {
 	Err error
 }
 
-func (e ErrStoreDel) Error() string {
+func (e ErrStore) Error() string {
 	return e.Err.Error()
 }
 
-func (e ErrStoreDel) Unwrap() error {
-	return e.Err
-}
-
-type ErrStoreSet struct {
-	Err error
-}
-
-func (e ErrStoreSet) Error() string {
-	return e.Err.Error()
-}
-
-func (e ErrStoreSet) Unwrap() error {
-	return e.Err
-}
-
-type ErrStoreWriteSync struct {
-	Err error
-}
-
-func (e ErrStoreWriteSync) Error() string {
-	return e.Err.Error()
-}
-
-func (e ErrStoreWriteSync) Unwrap() error {
-	return e.Err
-}
-
-type ErrStoreIterError struct {
-	Err error
-}
-
-func (e ErrStoreIterError) Error() string {
-	return e.Err.Error()
-}
-
-func (e ErrStoreIterError) Unwrap() error {
-	return e.Err
-}
-
-type ErrStoreIter struct {
-	Err error
-}
-
-func (e ErrStoreIter) Error() string {
-	return e.Err.Error()
-}
-
-func (e ErrStoreIter) Unwrap() error {
-	return e.Err
-}
-
-type ErrStorePersistSize struct {
-	Err error
-}
-
-func (e ErrStorePersistSize) Error() string {
-	return fmt.Sprintf("failed to persist size: %v", e.Err)
-}
-
-func (e ErrStorePersistSize) Unwrap() error {
+func (e ErrStore) Unwrap() error {
 	return e.Err
 }

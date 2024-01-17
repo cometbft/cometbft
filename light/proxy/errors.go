@@ -15,14 +15,14 @@ func (e ErrCreateHTTPClient) Unwrap() error {
 	return e.Err
 }
 
-type ErrStartClient struct {
+type ErrStartHTTPClient struct {
 	Err error
 }
 
-func (e ErrStartClient) Error() string {
+func (e ErrStartHTTPClient) Error() string {
 	return fmt.Sprintf("can't start client: %v", e.Err)
 }
 
-func (e ErrStartClient) Unwrap() error {
+func (e ErrStartHTTPClient) Unwrap() error {
 	return e.Err
 }

@@ -53,7 +53,7 @@ require (
 	github.com/vektra/mockery/v2 v2.23.1
 	golang.org/x/sync v0.5.0
 	gonum.org/v1/gonum v0.12.0
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.31.0
 )
 
 require (

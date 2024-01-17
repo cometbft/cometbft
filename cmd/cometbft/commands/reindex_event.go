@@ -31,8 +31,9 @@ var (
 
 // ReIndexEventCmd constructs a command to re-index events in a block height interval.
 var ReIndexEventCmd = &cobra.Command{
-	Use:   "reindex-event",
-	Short: "Re-index events to the event store backends",
+	Use:     "reindex-event",
+	Aliases: []string{"reindex_event"},
+	Short:   "Re-index events to the event store backends",
 	Long: `
 reindex-event is an offline tooling to re-index block and tx events to the eventsinks.
 You can run this command when the event store backend dropped/disconnected or you want to

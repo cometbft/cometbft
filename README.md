@@ -45,7 +45,7 @@ more details about [versioning](#versioning).
 
 In any case, if you intend to run CometBFT in production, we're happy to help.
 
-To contact us, you can also 
+To contact us, you can also
 [join the chat](https://discord.com/channels/669268347736686612/669283915743232011).
 
 More on how releases are conducted can be found [here](./RELEASES.md).
@@ -60,7 +60,7 @@ looking for, see [our security policy](SECURITY.md).
 
 | Requirement | Notes             |
 |-------------|-------------------|
-| Go version  | Go 1.19 or higher |
+| Go version  | Go 1.20 or higher |
 
 ### Install
 
@@ -118,7 +118,8 @@ CometBFT up-to-date. Upgrading instructions can be found in
 
 Currently supported versions include:
 
-- v0.34.x: CometBFT v0.34.25 is compatible with Tendermint Core v0.34.24
+- v0.34.x: The CometBFT v0.34 series is compatible with the Tendermint Core
+  v0.34 series
 - v0.37.x: (release candidate)
 
 ## Resources

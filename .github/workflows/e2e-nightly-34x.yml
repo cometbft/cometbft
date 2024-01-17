@@ -21,11 +21,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: '1.19'
+          go-version: '1.20'
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 # AGORIC: We don't maintain a v0.34.x branch yet, so default will do.
 #        with:
 #          ref: 'v0.34.x'
@@ -38,7 +38,7 @@ jobs:
       - name: Generate testnets
         working-directory: test/e2e
         # When changing -g, also change the matrix groups above
-        run: ./build/generator -g 4 -d networks/nightly
+        run: ./build/generator -g 4 -d networks/nightly -p
 
       - name: Run testnets in group ${{ matrix.group }}
         working-directory: test/e2e
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on failure
-        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        uses: rtCamp/action-slack-notify@b24d75fe0e728a4bf9fc42ee217caa686d141ee8
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_CHANNEL: ops-engineering
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack on success
-        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        uses: rtCamp/action-slack-notify@b24d75fe0e728a4bf9fc42ee217caa686d141ee8
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
           SLACK_CHANNEL: ops-engineering

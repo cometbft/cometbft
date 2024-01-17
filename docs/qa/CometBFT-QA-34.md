@@ -1,12 +1,14 @@
 ---
 order: 1
 parent:
-  title: CometBFT Quality Assurance Results for v0.34.x
+  title: CometBFT QA Results v0.34.x
   description: This is a report on the results obtained when running v0.34.x on testnets
-  order: 2
+  order: 3
 ---
 
-# v0.34.x - From Tendermint Core to CometBFT
+# CometBFT QA Results v0.34.x
+
+## v0.34.x - From Tendermint Core to CometBFT
 
 This section reports on the QA process we followed before releasing the first `v0.34.x` version
 from our CometBFT repository.
@@ -54,7 +56,7 @@ Therefore we carry out a complete run of the _200-node test_ on the following ne
 
 ## Configuration and Results
 In the following sections we provide the results of the _200 node test_.
-Each section reports the baseline results (for reference), the homogeneous network scenario (all CometBFT nodes), 
+Each section reports the baseline results (for reference), the homogeneous network scenario (all CometBFT nodes),
 and the mixed networks with 1/2, 1/3 and 2/3 of Tendermint Core nodes.
 
 ### Saturation Point
@@ -62,10 +64,10 @@ and the mixed networks with 1/2, 1/3 and 2/3 of Tendermint Core nodes.
 As the CometBFT release candidate under test has minimal changes
 with respect to Tendermint Core `v0.34.26`, other than the rebranding changes,
 we can confidently reuse the results from the `v0.34.x` baseline test regarding
-the [saturation point](./TMCore.md#finding-the-saturation-point).
+the [saturation point](TMCore-QA-34.md#finding-the-saturation-point).
 
 Therefore, we will simply use a load of (`r=200,c=2`)
-(see the explanation [here](./TMCore.md#finding-the-saturation-point)) on all experiments.
+(see the explanation [here](TMCore-QA-34.md#finding-the-saturation-point)) on all experiments.
 
 We also include the baseline results for quick reference and comparison.
 
@@ -87,26 +89,26 @@ We refer to these UUID to indicate to the representative runs.
 
 ### CometBFT Homogeneous network
 
-![latencies](./img/homogeneous/all_experiments.png)
+![latencies](img34/homogeneous/all_experiments.png)
 
 ### 1/2 Tendermint Core - 1/2 CometBFT
 
-![latencies](./img/cmt1tm1/all_experiments.png)
+![latencies](img34/cmt1tm1/all_experiments.png)
 
 ### 1/3 Tendermint Core - 2/3 CometBFT
 
-![latencies](./img/cmt2tm1/all_experiments.png)
+![latencies](img34/cmt2tm1/all_experiments.png)
 
 ### 2/3 Tendermint Core - 1/3 CometBFT
 
-![latencies_all_tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/all_experiments.png)
+![latencies_all_tm2_3_cmt1_3](img34/v034_200node_tm2cmt1/all_experiments.png)
 
 
 ## Prometheus Metrics
 
 This section reports on the key Prometheus metrics extracted from the following experiments.
 
-* Baseline results: `v0.34.x`, obtained in October 2022 and reported [here](./TMCore.md).
+* Baseline results: `v0.34.x`, obtained in October 2022 and reported [here](TMCore-QA-34.md).
 * CometBFT homogeneous network: experiment with UUID starting with `be8c`.
 * Mixed network, 1/2 Tendermint Core `v0.34.26` and 1/2 running CometBFT: experiment with UUID starting with `04ee`.
 * Mixed network, 1/3 Tendermint Core `v0.34.26` and 2/3 running CometBFT: experiment with UUID starting with `fc5e`.
@@ -125,35 +127,35 @@ The second one shows the evolution of the average over all full nodes.
 
 #### Baseline
 
-![mempool-cumulative](./img/baseline/mempool_size.png)
+![mempool-cumulative](img34/baseline/mempool_size.png)
 
-![mempool-avg](./img/baseline/avg_mempool_size.png)
+![mempool-avg](img34/baseline/avg_mempool_size.png)
 
 #### CometBFT Homogeneous network
 
 The results for the homogeneous network and the baseline are similar in terms of outstanding transactions.
 
-![mempool-cumulative-homogeneous](./img/homogeneous/mempool_size.png)
+![mempool-cumulative-homogeneous](img34/homogeneous/mempool_size.png)
 
-![mempool-avg-homogeneous](./img/homogeneous/avg_mempool_size.png)
+![mempool-avg-homogeneous](img34/homogeneous/avg_mempool_size.png)
 
 #### 1/2 Tendermint Core - 1/2 CometBFT
 
-![mempool size](./img/cmt1tm1/mempool_size.png)
+![mempool size](img34/cmt1tm1/mempool_size.png)
 
-![average mempool size](./img/cmt1tm1/avg_mempool_size.png)
+![average mempool size](img34/cmt1tm1/avg_mempool_size.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
-![mempool size](./img/cmt2tm1/mempool_size.png)
+![mempool size](img34/cmt2tm1/mempool_size.png)
 
-![average mempool size](./img/cmt2tm1/avg_mempool_size.png)
+![average mempool size](img34/cmt2tm1/avg_mempool_size.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
-![mempool_tm2_3_cmt_1_3](./img/v034_200node_tm2cmt1/mempool_size.png)
+![mempool_tm2_3_cmt_1_3](img34/v034_200node_tm2cmt1/mempool_size.png)
 
-![mempool-avg_tm2_3_cmt_1_3](./img/v034_200node_tm2cmt1/avg_mempool_size.png)
+![mempool-avg_tm2_3_cmt_1_3](img34/v034_200node_tm2cmt1/avg_mempool_size.png)
 
 ### Consensus Rounds per Height
 
@@ -161,10 +163,10 @@ The following graphs show the rounds needed to complete each height and agree on
 
 A value of `0` shows that only one round was required (with id `0`), and a value of `1` shows that two rounds were required.
 
-#### Baseline 
+#### Baseline
 We can see that round 1 is reached with a certain frequency.
 
-![rounds](./img/baseline/rounds.png)
+![rounds](img34/baseline/rounds.png)
 
 #### CometBFT Homogeneous network
 
@@ -173,19 +175,19 @@ and a few nodes even needed to advance to round 2 at one point.
 This coincides with the time at which we observed the biggest peak in mempool size
 on the corresponding plot, shown above.
 
-![rounds-homogeneous](./img/homogeneous/rounds.png)
+![rounds-homogeneous](img34/homogeneous/rounds.png)
 
 #### 1/2 Tendermint Core - 1/2 CometBFT
 
-![peers](./img/cmt1tm1/rounds.png)
+![peers](img34/cmt1tm1/rounds.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
-![peers](./img/cmt2tm1/rounds.png)
+![peers](img34/cmt2tm1/rounds.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
-![rounds-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/rounds.png)
+![rounds-tm2_3_cmt1_3](img34/v034_200node_tm2cmt1/rounds.png)
 
 ### Peers
 
@@ -200,30 +202,30 @@ Seed nodes typically have a higher number of peers.
 The fact that non-seed nodes reach more than 50 peers is due to
 [#9548](https://github.com/tendermint/tendermint/issues/9548).
 
-![peers](./img/baseline/peers.png)
+![peers](img34/baseline/peers.png)
 
 #### CometBFT Homogeneous network
 
-The results for the homogeneous network are very similar to the baseline. 
+The results for the homogeneous network are very similar to the baseline.
 The only difference being that the seed nodes seem to loose peers in the middle of the experiment.
 However this cannot be attributed to the differences in the code, which are mainly rebranding.
 
-![peers-homogeneous](./img/homogeneous/peers.png)
+![peers-homogeneous](img34/homogeneous/peers.png)
 
 #### 1/2 Tendermint Core - 1/2 CometBFT
 
-![peers](./img/cmt1tm1/peers.png)
+![peers](img34/cmt1tm1/peers.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
-![peers](./img/cmt2tm1/peers.png)
+![peers](img34/cmt2tm1/peers.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
 As in the homogeneous case, there is some variation in the number of peers for some nodes.
 These, however, do not affect the average.
 
-![peers-tm2_3_cmt1_3](./img/v034_200node_tm2cmt1/peers.png)
+![peers-tm2_3_cmt1_3](img34/v034_200node_tm2cmt1/peers.png)
 
 ### Blocks Produced per Minute, Transactions Processed per Minute
 
@@ -236,11 +238,11 @@ The thick red dashed line show the rates' moving averages.
 
 The average number of blocks/minute oscilate between 10 and 40.
 
-![heights](./img/baseline/block_rate_regular.png)
+![heights](img34/baseline/block_rate_regular.png)
 
 The number of transactions/minute tops around 30k.
 
-![total-txs](./img/baseline/total_txs_rate_regular.png)
+![total-txs](img34/baseline/total_txs_rate_regular.png)
 
 
 #### CometBFT Homogeneous network
@@ -248,30 +250,30 @@ The number of transactions/minute tops around 30k.
 The plot showing the block production rate shows that the rate oscillates around 20 blocks/minute,
 mostly within the same range as the baseline.
 
-![heights-homogeneous-rate](./img/homogeneous/block_rate_regular.png)
+![heights-homogeneous-rate](img34/homogeneous/block_rate_regular.png)
 
-The plot showing the transaction rate shows the rate stays around 20000 transactions per minute, 
+The plot showing the transaction rate shows the rate stays around 20000 transactions per minute,
 also topping around 30k.
 
-![txs-homogeneous-rate](./img/homogeneous/total_txs_rate_regular.png)
+![txs-homogeneous-rate](img34/homogeneous/total_txs_rate_regular.png)
 
 #### 1/2 Tendermint Core - 1/2 CometBFT
 
-![height rate](./img/cmt1tm1/block_rate_regular.png)
+![height rate](img34/cmt1tm1/block_rate_regular.png)
 
-![transaction rate](./img/cmt1tm1/total_txs_rate_regular.png)
+![transaction rate](img34/cmt1tm1/total_txs_rate_regular.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
-![height rate](./img/cmt2tm1/block_rate_regular.png)
+![height rate](img34/cmt2tm1/block_rate_regular.png)
 
-![transaction rate](./img/cmt2tm1/total_txs_rate_regular.png)
+![transaction rate](img34/cmt2tm1/total_txs_rate_regular.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
-![height rate](./img/v034_200node_tm2cmt1/block_rate_regular.png)
+![height rate](img34/v034_200node_tm2cmt1/block_rate_regular.png)
 
-![transaction rate](./img/v034_200node_tm2cmt1/total_txs_rate_regular.png)
+![transaction rate](img34/v034_200node_tm2cmt1/total_txs_rate_regular.png)
 
 ### Memory Resident Set Size
 
@@ -279,83 +281,83 @@ The following graphs show the Resident Set Size (RSS) of all monitored processes
 
 #### Baseline
 
-![rss](./img/baseline/memory.png)
+![rss](img34/baseline/memory.png)
 
-![rss-avg](./img/baseline/avg_memory.png)
+![rss-avg](img34/baseline/avg_memory.png)
 
 #### CometBFT Homogeneous network
 
 This is the plot for the homogeneous network, which is slightly more stable than the baseline over
 the time of the experiment.
 
-![rss-homogeneous](./img/homogeneous/memory.png)
+![rss-homogeneous](img34/homogeneous/memory.png)
 
 And this is the average plot. It oscillates around 560 MiB, which is noticeably lower than the baseline.
 
-![rss-avg-homogeneous](./img/homogeneous/avg_memory.png)
+![rss-avg-homogeneous](img34/homogeneous/avg_memory.png)
 
 #### 1/2 Tendermint Core - 1/2 CometBFT
 
-![rss](./img/cmt1tm1/memory.png)
+![rss](img34/cmt1tm1/memory.png)
 
-![rss average](./img/cmt1tm1/avg_memory.png)
+![rss average](img34/cmt1tm1/avg_memory.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
-![rss](./img/cmt2tm1/memory.png)
+![rss](img34/cmt2tm1/memory.png)
 
-![rss average](./img/cmt2tm1/avg_memory.png)
+![rss average](img34/cmt2tm1/avg_memory.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
-![rss](./img/v034_200node_tm2cmt1/memory.png)
+![rss](img34/v034_200node_tm2cmt1/memory.png)
 
-![rss average](./img/v034_200node_tm2cmt1/avg_memory.png)
+![rss average](img34/v034_200node_tm2cmt1/avg_memory.png)
 
 ### CPU utilization
 
-The following graphs show the `load1` of nodes, as typically shown in the first line of the Unix `top` 
+The following graphs show the `load1` of nodes, as typically shown in the first line of the Unix `top`
 command, and their average value.
 
 #### Baseline
 
-![load1](./img/baseline/cpu.png)
+![load1](img34/baseline/cpu.png)
 
-![load1-avg](./img/baseline/avg_cpu.png)
+![load1-avg](img34/baseline/avg_cpu.png)
 
 #### CometBFT Homogeneous network
 
 The load in the homogenous network is, similarly to the baseline case, below 5 and, therefore, normal.
 
-![load1-homogeneous](./img/homogeneous/cpu.png)
+![load1-homogeneous](img34/homogeneous/cpu.png)
 
 As expected, the average plot also looks similar.
 
-![load1-homogeneous-avg](./img/homogeneous/avg_cpu.png)
+![load1-homogeneous-avg](img34/homogeneous/avg_cpu.png)
 
 #### 1/2 Tendermint Core - 1/2 CometBFT
 
-![load1](./img/cmt1tm1/cpu.png)
+![load1](img34/cmt1tm1/cpu.png)
 
-![average load1](./img/cmt1tm1/avg_cpu.png)
+![average load1](img34/cmt1tm1/avg_cpu.png)
 
 #### 1/3 Tendermint Core - 2/3 CometBFT
 
-![load1](./img/cmt2tm1/cpu.png)
+![load1](img34/cmt2tm1/cpu.png)
 
-![average load1](./img/cmt2tm1/avg_cpu.png)
+![average load1](img34/cmt2tm1/avg_cpu.png)
 
 #### 2/3 Tendermint Core - 1/3 CometBFT
 
-![load1](./img/v034_200node_tm2cmt1/cpu.png)
+![load1](img34/v034_200node_tm2cmt1/cpu.png)
 
-![average load1](./img/v034_200node_tm2cmt1/avg_cpu.png)
+![average load1](img34/v034_200node_tm2cmt1/avg_cpu.png)
 
 ## Test Results
 
 The comparison of the baseline results and the homogeneous case show that both scenarios had similar numbers and are therefore equivalent.
 
-The mixed nodes cases show that networks operate normally with a mix of compatible Tendermint Core and CometBFT versions. 
+The mixed nodes cases show that networks operate normally with a mix of compatible Tendermint Core and CometBFT versions.
 Although not the main goal, a comparison of metric numbers with the homogenous case and the baseline scenarios show similar results and therefore we can conclude that mixing compatible Tendermint Core and CometBFT introduces not performance degradation.
 
 A conclusion of these tests is shown in the following table, along with the commit versions used in the experiments.

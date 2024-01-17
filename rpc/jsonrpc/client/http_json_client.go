@@ -139,6 +139,8 @@ var _ HTTPClient = (*Client)(nil)
 var _ Caller = (*Client)(nil)
 var _ Caller = (*RequestBatch)(nil)
 
+var _ fmt.Stringer = (*Client)(nil)
+
 // New returns a Client pointed at the given address.
 // An error is returned on invalid remote. The function panics when remote is nil.
 func New(remote string) (*Client, error) {
@@ -214,15 +216,26 @@ func (c *Client) Call(
 	if err != nil {
 		return nil, fmt.Errorf("post failed: %w", err)
 	}
-
 	defer httpResponse.Body.Close()
 
 	responseBytes, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("%s. Failed to read response body: %w", getHTTPRespErrPrefix(httpResponse), err)
 	}
 
-	return unmarshalResponseBytes(responseBytes, id, result)
+	res, err := unmarshalResponseBytes(responseBytes, id, result)
+	if err != nil {
+		return nil, fmt.Errorf("%s. %w", getHTTPRespErrPrefix(httpResponse), err)
+	}
+	return res, nil
+}
+
+func getHTTPRespErrPrefix(resp *http.Response) string {
+	return fmt.Sprintf("error in json rpc client, with http response metadata: (Status: %s, Protocol %s)", resp.Status, resp.Proto)
+}
+
+func (c *Client) String() string {
+	return fmt.Sprintf("&Client{user=%v, addr=%v, client=%v, nextReqID=%v}", c.username, c.address, c.client, c.nextReqID)
 }
 
 // NewRequestBatch starts a batch of requests for this client.

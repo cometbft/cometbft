@@ -303,6 +303,7 @@ func (mem *CListMempool) reqResCb(
 
 		// update metrics
 		mem.metrics.Size.Set(float64(mem.Size()))
+		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 		// passed in by the caller of CheckTx, eg. the RPC
 		if externalCb != nil {
@@ -388,6 +389,20 @@ func (mem *CListMempool) resCbFirstTime(
 				// remove from cache (mempool might have a space later)
 				mem.cache.Remove(tx)
 				mem.logger.Error(err.Error())
+				return
+			}
+
+			// Check transaction not already in the mempool
+			if e, ok := mem.txsMap.Load(types.Tx(tx).Key()); ok {
+				memTx := e.(*clist.CElement).Value.(*mempoolTx)
+				memTx.senders.LoadOrStore(peerID, true)
+				mem.logger.Debug(
+					"transaction already there, not adding it again",
+					"tx", types.Tx(tx).Hash(),
+					"res", r,
+					"height", mem.height,
+					"total", mem.Size(),
+				)
 				return
 			}
 
@@ -634,6 +649,7 @@ func (mem *CListMempool) Update(
 
 	// Update metrics
 	mem.metrics.Size.Set(float64(mem.Size()))
+	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 
 	return nil
 }

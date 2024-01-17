@@ -71,7 +71,7 @@ and `ABCIApp` is an ABCI application that can return results and changes to the 
 set (TODO). Execute is defined as:
 
 ```go
-func Execute(s State, app ABCIApp, block Block) State {
+func Execute(state State, app ABCIApp, block Block) State {
  // Fuction ApplyBlock executes block of transactions against the app and returns the new root hash of the app state,
  // modifications to the validator set and the changes of the consensus parameters.
  AppHash, ValidatorChanges, ConsensusParamChanges := app.ApplyBlock(block)
@@ -82,7 +82,6 @@ func Execute(s State, app ABCIApp, block Block) State {
   InitialHeight:   state.InitialHeight,
   LastResults:     abciResponses.DeliverTxResults,
   AppHash:         AppHash,
-  InitialHeight:   state.InitialHeight,
   LastValidators:  state.Validators,
   Validators:      state.NextValidators,
   NextValidators:  UpdateValidators(state.NextValidators, ValidatorChanges),

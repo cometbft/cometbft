@@ -256,7 +256,7 @@ format:
 
 lint:
 	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint run
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
 vulncheck:

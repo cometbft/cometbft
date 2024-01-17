@@ -93,15 +93,37 @@ mechanisms.
 
 ### RPC
 
-Endpoints returning multiple entries are limited by default to return 30
-elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/v0.34/rpc/)
-for more information.
+#### Attack Exposure and Mitigation
 
-Rate-limiting and authentication are another key aspects to help protect
-against DOS attacks. Validators are supposed to use external tools like
-[NGINX](https://www.nginx.com/blog/rate-limiting-nginx/) or
-[traefik](https://docs.traefik.io/middlewares/ratelimit/)
-to achieve the same things.
+**It is generally not recommended for RPC endpoints to be exposed publicly, and
+especially so if the node in question is a validator**, as the CometBFT RPC does
+not currently provide advanced security features. Public exposure of RPC
+endpoints without appropriate protection can make the associated node vulnerable
+to a variety of attacks.
+
+It is entirely up to operators to ensure, if nodes' RPC endpoints have to be
+exposed publicly, that appropriate measures have been taken to mitigate against
+attacks. Some examples of mitigation measures include, but are not limited to:
+
+- Never publicly exposing the RPC endpoints of validators (i.e. if the RPC
+  endpoints absolutely have to be exposed, ensure you do so only on full nodes
+  and with appropriate protection)
+- Correct usage of rate-limiting, authentication and caching (e.g. as provided
+  by reverse proxies like [nginx](https://nginx.org/) and/or DDoS protection
+  services like [Cloudflare](https://www.cloudflare.com))
+- Only exposing the specific endpoints absolutely necessary for the relevant use
+  cases (configurable via nginx/Cloudflare/etc.)
+
+If no expertise is available to the operator to assist with securing nodes' RPC
+endpoints, it is strongly recommended to never expose those endpoints publicly.
+
+**Under no condition should any of the [unsafe RPC endpoints](../rpc/#/Unsafe)
+ever be exposed publicly.**
+
+#### Endpoints Returning Multiple Entries
+
+Endpoints returning multiple entries are limited by default to return 30
+elements (100 max). See the [RPC Documentation](../rpc/) for more information.
 
 ## Debugging CometBFT
 

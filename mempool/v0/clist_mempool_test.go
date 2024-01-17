@@ -1,11 +1,11 @@
 package v0
 
 import (
-	"crypto/rand"
 	"encoding/binary"
 	"fmt"
 	mrand "math/rand"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -95,16 +95,27 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
+func callCheckTx(t *testing.T, mp mempool.Mempool, txs types.Txs) {
+	txInfo := mempool.TxInfo{SenderID: 0}
+	for i, tx := range txs {
+		if err := mp.CheckTx(tx, nil, txInfo); err != nil {
+			// Skip invalid txs.
+			// TestMempoolFilters will fail otherwise. It asserts a number of txs
+			// returned.
+			if mempool.IsPreCheckError(err) {
+				continue
+			}
+			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
+		}
+	}
+}
+
 func checkTxs(t *testing.T, mp mempool.Mempool, count int, peerID uint16) types.Txs {
 	txs := make(types.Txs, count)
 	txInfo := mempool.TxInfo{SenderID: peerID}
 	for i := 0; i < count; i++ {
-		txBytes := make([]byte, 20)
+		txBytes := kvstore.NewRandomTx(20)
 		txs[i] = txBytes
-		_, err := rand.Read(txBytes)
-		if err != nil {
-			t.Error(err)
-		}
 		if err := mp.CheckTx(txBytes, nil, txInfo); err != nil {
 			// Skip invalid txs.
 			// TestMempoolFilters will fail otherwise. It asserts a number of txs
@@ -636,6 +647,51 @@ func TestMempoolTxsBytes(t *testing.T) {
 	assert.NoError(t, mp.RemoveTxByKey(types.Tx([]byte{0x06}).Key()))
 	assert.EqualValues(t, 8, mp.SizeBytes())
 
+}
+
+func TestMempoolNoCacheOverflow(t *testing.T) {
+	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
+	app := kvstore.NewApplication()
+	_, server := newRemoteApp(t, sockPath, app)
+	t.Cleanup(func() {
+		if err := server.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	cfg := config.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
+	defer cleanup()
+
+	// add tx0
+	var tx0 = types.Tx([]byte{0x01})
+	err := mp.CheckTx(tx0, nil, mempool.TxInfo{})
+	require.NoError(t, err)
+	err = mp.FlushAppConn()
+	require.NoError(t, err)
+
+	// saturate the cache to remove tx0
+	for i := 1; i <= mp.config.CacheSize; i++ {
+		err = mp.CheckTx(types.Tx([]byte(strconv.Itoa(i))), nil, mempool.TxInfo{})
+		require.NoError(t, err)
+	}
+	err = mp.FlushAppConn()
+	require.NoError(t, err)
+	assert.False(t, mp.cache.Has(types.Tx([]byte{0x01})))
+
+	// add again tx0
+	err = mp.CheckTx(tx0, nil, mempool.TxInfo{})
+	require.NoError(t, err)
+	err = mp.FlushAppConn()
+	require.NoError(t, err)
+
+	// tx0 should appear only once in mp.txs
+	found := 0
+	for e := mp.txs.Front(); e != nil; e = e.Next() {
+		if types.Tx.Key(e.Value.(*mempoolTx).tx) == types.Tx.Key(tx0) {
+			found++
+		}
+	}
+	assert.True(t, found == 1)
 }
 
 // This will non-deterministically catch some concurrency failures like

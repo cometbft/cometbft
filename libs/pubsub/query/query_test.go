@@ -2,6 +2,7 @@ package query_test
 
 import (
 	"fmt"
+	"math/big"
 	"testing"
 	"time"
 
@@ -10,6 +11,57 @@ import (
 
 	"github.com/tendermint/tendermint/libs/pubsub/query"
 )
+
+func TestBigNumbers(t *testing.T) {
+	bigInt := "10000000000000000000"
+	bigIntAsFloat := "10000000000000000000.0"
+	bigFloat := "10000000000000000000.6"
+	bigFloatLowerRounding := "10000000000000000000.1"
+	doubleBigInt := "20000000000000000000"
+
+	testCases := []struct {
+		s        string
+		events   map[string][]string
+		err      bool
+		matches  bool
+		matchErr bool
+	}{
+
+		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {bigInt}}, false, true, false},
+		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {bigIntAsFloat}}, false, true, false},
+		{"account.balance <= " + doubleBigInt, map[string][]string{"account.balance": {bigInt}}, false, true, false},
+		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {"10000000000000000001"}}, false, false, false},
+		{"account.balance <= " + doubleBigInt, map[string][]string{"account.balance": {bigFloat}}, false, true, false},
+		// To maintain compatibility with the old implementation which did a simple cast of float to int64, we do not round the float
+		// Thus both 10000000000000000000.6 and "10000000000000000000.1 are equal to 10000000000000000000
+		// and the test does not find a match
+		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloat}}, false, false, false},
+		{"account.balance > " + bigInt, map[string][]string{"account.balance": {bigFloatLowerRounding}}, true, false, false},
+		// This test should also find a match, but floats that are too big cannot be properly converted, thus
+		// 10000000000000000000.6 gets rounded to 10000000000000000000
+		{"account.balance > " + bigIntAsFloat, map[string][]string{"account.balance": {bigFloat}}, false, false, false},
+		{"account.balance > 11234.0", map[string][]string{"account.balance": {"11234.6"}}, false, true, false},
+		{"account.balance <= " + bigInt, map[string][]string{"account.balance": {"1000.45"}}, false, true, false},
+	}
+
+	for _, tc := range testCases {
+		q, err := query.New(tc.s)
+		if !tc.err {
+			require.Nil(t, err)
+		}
+		require.NotNil(t, q, "Query '%s' should not be nil", tc.s)
+
+		if tc.matches {
+			match, err := q.Matches(tc.events)
+			assert.Nil(t, err, "Query '%s' should not error on match %v", tc.s, tc.events)
+			assert.True(t, match, "Query '%s' should match %v", tc.s, tc.events)
+		} else {
+			match, err := q.Matches(tc.events)
+			assert.Equal(t, tc.matchErr, err != nil, "Unexpected error for query '%s' match %v", tc.s, tc.events)
+			assert.False(t, match, "Query '%s' should not match %v", tc.s, tc.events)
+		}
+	}
+}
 
 func TestMatches(t *testing.T) {
 	var (
@@ -180,6 +232,10 @@ func TestConditions(t *testing.T) {
 	txTime, err := time.Parse(time.RFC3339, "2013-05-03T14:45:00Z")
 	require.NoError(t, err)
 
+	bigInt := new(big.Int)
+	bigInt, ok := bigInt.SetString("10000000000000000000", 10)
+	require.True(t, ok)
+
 	testCases := []struct {
 		s          string
 		conditions []query.Condition
@@ -193,8 +249,24 @@ func TestConditions(t *testing.T) {
 		{
 			s: "tx.gas > 7 AND tx.gas < 9",
 			conditions: []query.Condition{
-				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: int64(7)},
-				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: int64(9)},
+				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: big.NewInt(7)},
+				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: big.NewInt(9)},
+			},
+		},
+		{
+
+			s: "tx.gas > 7.5 AND tx.gas < 9",
+			conditions: []query.Condition{
+				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: 7.5},
+				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: big.NewInt(9)},
+			},
+		},
+		{
+
+			s: "tx.gas > " + bigInt.String() + " AND tx.gas < 9",
+			conditions: []query.Condition{
+				{CompositeKey: "tx.gas", Op: query.OpGreater, Operand: bigInt},
+				{CompositeKey: "tx.gas", Op: query.OpLess, Operand: big.NewInt(9)},
 			},
 		},
 		{

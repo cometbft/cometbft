@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -240,61 +241,83 @@ func TestStateBadProposal(t *testing.T) {
 }
 
 func TestStateOversizedBlock(t *testing.T) {
-	cs1, vss := randState(2)
-	cs1.state.ConsensusParams.Block.MaxBytes = 2000
-	height, round := cs1.Height, cs1.Round
-	vs2 := vss[1]
+	const maxBytes = 2000
 
-	partSize := types.BlockPartSizeBytes
+	for _, testCase := range []struct {
+		name      string
+		oversized bool
+	}{
+		{
+			name:      "max size, correct block",
+			oversized: false,
+		},
+		{
+			name:      "off-by-1 max size, incorrect block",
+			oversized: true,
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			cs1, vss := randState(2)
+			cs1.state.ConsensusParams.Block.MaxBytes = maxBytes
+			height, round := cs1.Height, cs1.Round
+			vs2 := vss[1]
 
-	timeoutProposeCh := subscribe(cs1.eventBus, types.EventQueryTimeoutPropose)
-	voteCh := subscribe(cs1.eventBus, types.EventQueryVote)
+			partSize := types.BlockPartSizeBytes
 
-	propBlock, _ := cs1.createProposalBlock()
-	propBlock.Data.Txs = []types.Tx{cmtrand.Bytes(2001)}
-	propBlock.Header.DataHash = propBlock.Data.Hash()
+			propBlock, propBlockParts := findBlockSizeLimit(t, height, maxBytes, cs1, partSize, testCase.oversized)
 
-	// make the second validator the proposer by incrementing round
-	round++
-	incrementRound(vss[1:]...)
+			timeoutProposeCh := subscribe(cs1.eventBus, types.EventQueryTimeoutPropose)
+			voteCh := subscribe(cs1.eventBus, types.EventQueryVote)
 
-	propBlockParts := propBlock.MakePartSet(partSize)
-	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
-	proposal := types.NewProposal(height, round, -1, blockID)
-	p := proposal.ToProto()
-	if err := vs2.SignProposal(config.ChainID(), p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
+			// make the second validator the proposer by incrementing round
+			round++
+			incrementRound(vss[1:]...)
+
+			blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
+			proposal := types.NewProposal(height, round, -1, blockID)
+			p := proposal.ToProto()
+			if err := vs2.SignProposal(config.ChainID(), p); err != nil {
+				t.Fatal("failed to sign bad proposal", err)
+			}
+			proposal.Signature = p.Signature
+
+			totalBytes := 0
+			for i := 0; i < int(propBlockParts.Total()); i++ {
+				part := propBlockParts.GetPart(i)
+				totalBytes += len(part.Bytes)
+			}
+
+			if err := cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
+				t.Fatal(err)
+			}
+
+			// start the machine
+			startTestRound(cs1, height, round)
+
+			t.Log("Block Sizes;", "Limit", cs1.state.ConsensusParams.Block.MaxBytes, "Current", totalBytes)
+
+			validateHash := propBlock.Hash()
+			lockedRound := int32(1)
+			if testCase.oversized {
+				validateHash = nil
+				lockedRound = -1
+				// if the block is oversized cs1 should log an error with the block part message as it exceeds
+				// the consensus params. The block is not added to cs.ProposalBlock so the node timeouts.
+				ensureNewTimeout(timeoutProposeCh, height, round, cs1.config.Propose(round).Nanoseconds())
+				// and then should send nil prevote and precommit regardless of whether other validators prevote and
+				// precommit on it
+			}
+			ensurePrevote(voteCh, height, round)
+			validatePrevote(t, cs1, round, vss[0], validateHash)
+
+			signAddVotes(cs1, cmtproto.PrevoteType, propBlock.Hash(), propBlock.MakePartSet(partSize).Header(), vs2)
+			ensurePrevote(voteCh, height, round)
+			ensurePrecommit(voteCh, height, round)
+			validatePrecommit(t, cs1, round, lockedRound, vss[0], validateHash, validateHash)
+
+			signAddVotes(cs1, cmtproto.PrecommitType, propBlock.Hash(), propBlock.MakePartSet(partSize).Header(), vs2)
+		})
 	}
-	proposal.Signature = p.Signature
-
-	totalBytes := 0
-	for i := 0; i < int(propBlockParts.Total()); i++ {
-		part := propBlockParts.GetPart(i)
-		totalBytes += len(part.Bytes)
-	}
-
-	if err := cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
-		t.Fatal(err)
-	}
-
-	// start the machine
-	startTestRound(cs1, height, round)
-
-	t.Log("Block Sizes", "Limit", cs1.state.ConsensusParams.Block.MaxBytes, "Current", totalBytes)
-
-	// c1 should log an error with the block part message as it exceeds the consensus params. The
-	// block is not added to cs.ProposalBlock so the node timeouts.
-	ensureNewTimeout(timeoutProposeCh, height, round, cs1.config.Propose(round).Nanoseconds())
-
-	// and then should send nil prevote and precommit regardless of whether other validators prevote and
-	// precommit on it
-	ensurePrevote(voteCh, height, round)
-	validatePrevote(t, cs1, round, vss[0], nil)
-	signAddVotes(cs1, cmtproto.PrevoteType, propBlock.Hash(), propBlock.MakePartSet(partSize).Header(), vs2)
-	ensurePrevote(voteCh, height, round)
-	ensurePrecommit(voteCh, height, round)
-	validatePrecommit(t, cs1, round, -1, vss[0], nil, nil)
-	signAddVotes(cs1, cmtproto.PrecommitType, propBlock.Hash(), propBlock.MakePartSet(partSize).Header(), vs2)
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -1913,4 +1936,32 @@ func subscribeUnBuffered(eventBus *types.EventBus, q cmtpubsub.Query) <-chan cmt
 		panic(fmt.Sprintf("failed to subscribe %s to %v", testSubscriber, q))
 	}
 	return sub.Out()
+}
+
+func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSize uint32, oversized bool) (*types.Block, *types.PartSet) {
+	var offset int64
+	if !oversized {
+		offset = -2
+	}
+	softMaxDataBytes := int(types.MaxDataBytes(maxBytes, 0, 0))
+	for i := softMaxDataBytes; i < softMaxDataBytes*2; i++ {
+		propBlock, propBlockParts := cs.state.MakeBlock(
+			height,
+			[]types.Tx{[]byte("a=" + strings.Repeat("o", i-2))},
+			&types.Commit{},
+			nil,
+			cs.privValidatorPubKey.Address(),
+		)
+
+		if propBlockParts.ByteSize() > maxBytes+offset {
+			s := "real max"
+			if oversized {
+				s = "off-by-1"
+			}
+			t.Log("Detected "+s+" data size for block;", "size", i, "softMaxDataBytes", softMaxDataBytes)
+			return propBlock, propBlockParts
+		}
+	}
+	require.Fail(t, "We shouldn't hit the end of the loop")
+	return nil, nil
 }

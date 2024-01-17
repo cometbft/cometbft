@@ -315,6 +315,7 @@ func createAndStartIndexerService(
 }
 
 func doHandshake(
+	ctx context.Context,
 	stateStore sm.Store,
 	state sm.State,
 	blockStore sm.BlockStore,
@@ -326,7 +327,7 @@ func doHandshake(
 	handshaker := cs.NewHandshaker(stateStore, state, blockStore, genDoc)
 	handshaker.SetLogger(consensusLogger)
 	handshaker.SetEventBus(eventBus)
-	if err := handshaker.Handshake(proxyApp); err != nil {
+	if err := handshaker.HandshakeWithContext(ctx, proxyApp); err != nil {
 		return fmt.Errorf("error during handshake: %v", err)
 	}
 	return nil
@@ -715,6 +716,23 @@ func NewNode(config *cfg.Config,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
+	return NewNodeWithContext(context.TODO(), config, privValidator,
+		nodeKey, clientCreator, genesisDocProvider, dbProvider,
+		metricsProvider, logger, options...)
+}
+
+// NewNodeWithContext is cancellable version of NewNode.
+func NewNodeWithContext(ctx context.Context,
+	config *cfg.Config,
+	privValidator types.PrivValidator,
+	nodeKey *p2p.NodeKey,
+	clientCreator proxy.ClientCreator,
+	genesisDocProvider GenesisDocProvider,
+	dbProvider DBProvider,
+	metricsProvider MetricsProvider,
+	logger log.Logger,
+	options ...Option,
+) (*Node, error) {
 	blockStore, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
@@ -776,7 +794,7 @@ func NewNode(config *cfg.Config,
 	// and replays any blocks as necessary to sync CometBFT with the app.
 	consensusLogger := logger.With("module", "consensus")
 	if !stateSync {
-		if err := doHandshake(stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
+		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, proxyApp, consensusLogger); err != nil {
 			return nil, err
 		}
 
@@ -1051,13 +1069,21 @@ func (n *Node) OnStop() {
 		}
 	}
 	if n.blockStore != nil {
+		n.Logger.Info("Closing blockstore")
 		if err := n.blockStore.Close(); err != nil {
 			n.Logger.Error("problem closing blockstore", "err", err)
 		}
 	}
 	if n.stateStore != nil {
+		n.Logger.Info("Closing statestore")
 		if err := n.stateStore.Close(); err != nil {
 			n.Logger.Error("problem closing statestore", "err", err)
+		}
+	}
+	if n.evidencePool != nil {
+		n.Logger.Info("Closing evidencestore")
+		if err := n.EvidencePool().Close(); err != nil {
+			n.Logger.Error("problem closing evidencestore", "err", err)
 		}
 	}
 }

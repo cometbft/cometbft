@@ -1,5 +1,5 @@
 ---
-order: 4
+order: 3
 ---
 
 # Upgrading from Tendermint Core
@@ -38,10 +38,8 @@ subsequent major release of CometBFT.
 
 ## Building CometBFT
 
-If you are building CometBFT from scratch, pls observe that it must be compiled 
-using Go 1.19 or higher. The use of Go 1.18 is not supported, since this version 
-has reached end-of-life with the release of Go 1.20.
-
+If you are building CometBFT from scratch, please note that it must be compiled
+using Go 1.20 or higher.
 
 [v03424]: https://github.com/tendermint/tendermint/releases/tag/v0.34.24
 [v03425]: https://github.com/informalsystems/tendermint/releases/tag/v0.34.25

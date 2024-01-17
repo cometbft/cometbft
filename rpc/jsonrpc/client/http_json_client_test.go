@@ -85,15 +85,6 @@ func Test_parsedURL(t *testing.T) {
 			expectedHostWithPath: "example.com:8080/rpc",
 			expectedDialAddress:  "example.com:8080",
 		},
-<<<<<<< HEAD
-=======
-		"https path routed endpoint with version": {
-			url:                  "https://example.com:8080/rpc/v1",
-			expectedURL:          "https://example.com:8080/rpc/v1",
-			expectedHostWithPath: "example.com:8080/rpc/v1",
-			expectedDialAddress:  "example.com:8080",
-		},
->>>>>>> 9c9ffba6c (feat(rpc): Use default port for HTTP(S) URLs when there is no explicit port (#1903))
 	}
 
 	for name, tt := range tests {

@@ -885,10 +885,6 @@ type MempoolConfig struct {
 	// Maximum size of a single transaction
 	// NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
 	MaxTxBytes int `mapstructure:"max_tx_bytes"`
-	// Maximum size of a batch of transactions to send to a peer
-	// Including space needed by encoding (one varint per transaction).
-	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
-	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
 	// We use two independent upper values for persistent and non-persistent peers.
 	// Unconditional peers are not affected by this feature.

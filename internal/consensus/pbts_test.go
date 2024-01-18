@@ -202,7 +202,7 @@ func (p *pbtsTestHarness) nextHeight(ctx context.Context, t *testing.T, proposer
 	prop := types.NewProposal(p.currentHeight, 0, -1, bid, proposedTime)
 	tp := prop.ToProto()
 
-	if err := proposer.SignProposal(p.observedState.state.ChainID, tp); err != nil {
+	if err := proposer.SignProposal(p.chainID, tp); err != nil {
 		t.Fatalf("error signing proposal: %s", err)
 	}
 

@@ -47,8 +47,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			vals,
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			nil,
-			"headers must be adjacent in height",
+			light.ErrHeaderHeightNotAdjacent,
+			"",
 		},
 		// different chainID -> error
 		1: {
@@ -57,8 +57,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			vals,
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			nil,
-			"header belongs to another chain",
+			light.ErrInvalidHeader{light.ErrHeaderValidateBasic{fmt.Errorf("header belongs to another chain %q, not %q", "different-chainID", chainID)}},
+			"",
 		},
 		// new header's time is before old header's time -> error
 		2: {
@@ -67,8 +67,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			vals,
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			nil,
-			"to be after old header time",
+			light.ErrInvalidHeader{light.ErrHeaderTimeNotMonotonic{bTime.Add(-1 * time.Hour), bTime}},
+			"",
 		},
 		// new header's time is from the future -> error
 		3: {
@@ -77,8 +77,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			vals,
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			nil,
-			"new header has a time from the future",
+			light.ErrInvalidHeader{light.ErrHeaderTimeExceedMaxClockDrift{bTime.Add(3 * time.Hour), bTime.Add(2 * time.Hour), 10 * time.Second}},
+			"",
 		},
 		// new header's time is from the future, but it's acceptable (< maxClockDrift) -> no error
 		4: {
@@ -128,8 +128,9 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			keys.ToValidators(10, 1),
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			nil,
-			"to match those from new header",
+			light.ErrValidatorHashMismatch{header.NextValidatorsHash, keys.GenSignedHeader(chainID, nextHeight, bTime.Add(1*time.Hour), nil, keys.ToValidators(10, 1), vals,
+				hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys)).ValidatorsHash},
+			"",
 		},
 		// vals are inconsistent with newHeader -> error
 		9: {
@@ -138,8 +139,10 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			keys.ToValidators(10, 1),
 			3 * time.Hour,
 			bTime.Add(2 * time.Hour),
-			nil,
-			"to match those that were supplied",
+			light.ErrInvalidHeader{light.ErrValidatorsMismatch{keys.GenSignedHeader(chainID, nextHeight, bTime.Add(1*time.Hour), nil, vals, vals,
+				hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys)).ValidatorsHash, keys.ToValidators(10, 1).Hash(), keys.GenSignedHeader(chainID, nextHeight, bTime.Add(1*time.Hour), nil, vals, vals,
+				hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys)).Height}},
+			"",
 		},
 		// old header has expired -> error
 		10: {
@@ -148,8 +151,8 @@ func TestVerifyAdjacentHeaders(t *testing.T) {
 			keys.ToValidators(10, 1),
 			1 * time.Hour,
 			bTime.Add(1 * time.Hour),
-			nil,
-			"old header has expired",
+			light.ErrOldHeaderExpired{bTime.Add(1 * time.Hour), bTime.Add(1 * time.Hour)},
+			"",
 		},
 	}
 

@@ -234,6 +234,11 @@ lint:
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
+lint-fix:
+	@echo "--> Running linter with fix"
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+.PHONY: lint-fix
+
 # https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
 # Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
 #lint-format:

@@ -70,11 +70,11 @@ Please see [SECURITY.md](./SECURITY.md).
 
 ### Install
 
-See the [install guide](./docs/guides/install.md).
+See the [install guide](docs/tutorials/install.md).
 
 ### Quick Start
 
-- [Single node](./docs/guides/quick-start.md)
+- [Single node](docs/tutorials/quick-start.md)
 - [Local cluster using docker-compose](./docs/networks/docker-compose.md)
 
 ## Contributing

@@ -25,12 +25,7 @@ const (
 	protoUNIX  = "unix"
 )
 
-
-
 var endsWithPortPattern = regexp.MustCompile(`:[0-9]+$`)
-
-
-
 
 // Parsed URL structure.
 type parsedURL struct {

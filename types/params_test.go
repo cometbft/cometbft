@@ -19,11 +19,13 @@ var (
 
 func TestConsensusParamsValidation(t *testing.T) {
 	testCases := []struct {
+		name   string
 		params ConsensusParams
 		valid  bool
 	}{
 		// test block params
 		{
+			name: "normal values",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
 				evidenceAge:  2,
@@ -33,6 +35,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "blockBytes se to 0",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   0,
 				evidenceAge:  2,
@@ -42,6 +45,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
+			name: "blockBytes set to a big valid value",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   47 * 1024 * 1024,
 				evidenceAge:  2,
@@ -51,6 +55,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "blockBytes set to a small valid value",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   10,
 				evidenceAge:  2,
@@ -60,6 +65,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "blockBytes set to the biggest valid value",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   100 * 1024 * 1024,
 				evidenceAge:  2,
@@ -69,6 +75,17 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "blockBytes, biggest valid value, off-by-1",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   100*1024*1024 + 1,
+				evidenceAge:  2,
+				precision:    1,
+				messageDelay: 1,
+			}),
+			valid: false,
+		},
+		{
+			name: "blockBytes, biggest valid value, off-by-1MB",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   101 * 1024 * 1024,
 				evidenceAge:  2,
@@ -78,6 +95,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
+			name: "blockBytes, value set to 1GB (too big)",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1024 * 1024 * 1024,
 				evidenceAge:  2,
@@ -87,6 +105,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
+			name: "blockBytes invalid, evidenceAge invalid",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1024 * 1024 * 1024,
 				evidenceAge:  -1,
@@ -97,6 +116,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 		},
 		// test evidence params
 		{
+			name: "evidenceAge 0",
 			params: makeParams(makeParamsArgs{
 				blockBytes:       1,
 				evidenceAge:      0,
@@ -107,6 +127,17 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
+			name: "evidenceAge negative",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   1 * 1024 * 1024,
+				evidenceAge:  -1,
+				precision:    1,
+				messageDelay: 1,
+			}),
+			valid: false,
+		},
+		{
+			name: "maxEvidenceBytes not less than blockBytes",
 			params: makeParams(makeParamsArgs{
 				blockBytes:       1,
 				evidenceAge:      2,
@@ -117,6 +148,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
+			name: "maxEvidenceBytes less than blockBytes",
 			params: makeParams(makeParamsArgs{
 				blockBytes:       1000,
 				evidenceAge:      2,
@@ -127,17 +159,19 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "maxEvidenceBytes 0",
 			params: makeParams(makeParamsArgs{
 				blockBytes:       1,
-				evidenceAge:      -1,
+				evidenceAge:      1,
 				maxEvidenceBytes: 0,
 				precision:        1,
 				messageDelay:     1,
 			}),
-			valid: false,
+			valid: true,
 		},
 		// test no pubkey type provided
 		{
+			name: "empty pubkeyTypes",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
 				evidenceAge:  2,
@@ -149,6 +183,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 		},
 		// test invalid pubkey type provided
 		{
+			name: "bad pubkeyTypes",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
 				evidenceAge:  2,
@@ -159,6 +194,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
+			name: "blockBytes -1",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   -1,
 				evidenceAge:  2,
@@ -168,6 +204,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "blockBytes -2",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   -2,
 				evidenceAge:  2,
@@ -178,6 +215,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 		},
 		// test invalid pubkey type provided
 		{
+			name: "messageDelay -1",
 			params: makeParams(makeParamsArgs{
 				evidenceAge:  2,
 				precision:    1,
@@ -186,6 +224,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
+			name: "precision -1",
 			params: makeParams(makeParamsArgs{
 				evidenceAge:  2,
 				precision:    -1,

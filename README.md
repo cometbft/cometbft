@@ -85,8 +85,8 @@ Before contributing to the project, please take a look at the [contributing
 guidelines](CONTRIBUTING.md) and the [style guide](STYLE_GUIDE.md). You may also
 find it helpful to read the [specifications](./spec/README.md), and familiarize
 yourself with our [Architectural Decision Records
-(ADRs)](./docs/architecture/README.md) and [Request For Comments
-(RFCs)](./docs/rfc/README.md).
+(ADRs)](docs/references/architecture/README.md) and [Request For Comments
+(RFCs)](docs/references/rfc/README.md).
 
 ## Versioning
 

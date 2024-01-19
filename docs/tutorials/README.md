@@ -8,14 +8,17 @@ parent:
 
 # Welcome to CometBFT Tutorials
 
-Are you ready to explore the world of CometBFT, the cutting-edge consensus algorithm that's revolutionizing the field of distributed systems? You've come to the right place! Our CometBFT Tutorials provide the knowledge and hands-on experience you need to master this groundbreaking technology.
+Are you ready to explore the world of CometBFT, the cutting-edge consensus algorithm that's revolutionizing the
+field of distributed systems? You've come to the right place! Our CometBFT Tutorials provide the knowledge
+and hands-on experience you need to master this groundbreaking technology.
 
 ## Why Choose CometBFT Tutorials?
 
 - Comprehensive Learning: Our tutorials cover everything from the basics of consensus algorithms to advanced topics in CometBFT, ensuring that both beginners and experts can benefit.
 - Hands-On Experience: We believe in learning by doing. Our tutorials include practical examples and exercises that allow you to implement CometBFT in real-world scenarios.
 - Up-to-date Content: We keep our tutorials up-to-date with the latest developments in CometBFT, ensuring that you have access to the most current information and best practices.
-  Get Started Today!
+
+## Get Started Today!
 
 Whether you're a chain developer, an integrator, an operator, or simply curious about distributed systems, our CometBFT Tutorials are the perfect resource to enhance your knowledge and skills.
 

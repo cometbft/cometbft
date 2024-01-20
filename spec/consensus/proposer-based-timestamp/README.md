@@ -13,7 +13,10 @@ A block is only accepted if its timestamp is acceptable.
 A proposed timestamp is acceptable if it is *received* within a certain time window,
 determined by synchronous parameters.
 
-### Parameters
+The motivation for introducing this new method for assigning timestamps is
+summarized in the [first draft proposal][main_v1].
+
+### Synchronous Parameters
 
 For validating timestamps, PBTS augments the system model considered by the
 consensus algorithm with *synchronous assumptions*:
@@ -29,7 +32,7 @@ This assumption is restricted to `Proposal` messages, broadcast by proposers.
 that define whether the timestamp of a block is acceptable,
 according with the introduced `timely` predicate.
 
-### Validation
+### Timestamp Validation
 
 The `timely` predicate is defined as follows.
 Let `proposalReceiveTime` be the time, read from its local clock, at
@@ -72,7 +75,7 @@ Otherwise, the validator prevotes `nil` (line 26):
 	in a previous round (line 28) are not subject to the `timely` predicate,
     as their timestamps have already been evaluated at a previous round.
 
-The full solution is detailed and formalized in the [Protocol Specification][algorithm] document.
+The full solution is detailed and formalized in the [Algorithm Specification][algorithm] document.
 
 ## Further details
 

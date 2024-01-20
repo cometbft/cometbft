@@ -68,6 +68,7 @@ ifeq (linux/riscv64,$(findstring linux/riscv64,$(TARGETPLATFORM)))
 	GOARCH=riscv64
 endif
 
+#? all: Run target check, build, test and install
 all: check build test install
 .PHONY: all
 
@@ -77,10 +78,12 @@ include tests.mk
 ###                                Build CometBFT                           ###
 ###############################################################################
 
+#? build: Build CometBFT
 build:
 	CGO_ENABLED=$(CGO_ENABLED) go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o $(OUTPUT) ./cmd/cometbft/
 .PHONY: build
 
+#? install: Install CometBFT to GOBIN
 install:
 	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/cometbft
 .PHONY: install
@@ -89,6 +92,7 @@ install:
 ###                               Metrics                                   ###
 ###############################################################################
 
+#? metrics: Run make testdata-metrics
 metrics: testdata-metrics
 	go generate -run="scripts/metricsgen" ./...
 .PHONY: metrics
@@ -96,6 +100,7 @@ metrics: testdata-metrics
 # By convention, the go tool ignores subdirectories of directories named
 # 'testdata'. This command invokes the generate command on the folder directly
 # to avoid this.
+#? testdata-metrics: Run the go generate command for scripts/metricsgen
 testdata-metrics:
 	ls ./scripts/metricsgen/testdata | xargs -I{} go generate -v -run="scripts/metricsgen" ./scripts/metricsgen/testdata/{}
 .PHONY: testdata-metrics
@@ -104,6 +109,7 @@ testdata-metrics:
 ###                                Mocks                                    ###
 ###############################################################################
 
+#? mockery: Run the go generate command for scripts/mockery_generate.sh
 mockery:
 	go generate -run="./scripts/mockery_generate.sh" ./...
 .PHONY: mockery
@@ -112,12 +118,14 @@ mockery:
 ###                                Protobuf                                 ###
 ###############################################################################
 
+#? check-proto-deps: Install protoc-gen-gogofaster
 check-proto-deps:
 ifeq (,$(shell which protoc-gen-gogofaster))
 	@go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
 endif
 .PHONY: check-proto-deps
 
+#? check-proto-format-deps: Check if clang-format installed
 check-proto-format-deps:
 ifeq (,$(shell which clang-format))
 	$(error "clang-format is required for Protobuf formatting. See instructions for your platform on how to install it.")
@@ -353,6 +361,6 @@ test-group-%:split-test-packages
 
 #? help: Get more info on make commands.
 help: Makefile
-	@echo " Choose a command run in "$(PROJECT_NAME)":"
+	@echo " Choose a command run in comebft:"
 	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
 .PHONY: help

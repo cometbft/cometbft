@@ -251,16 +251,13 @@ clean_certs:
 lint:
 	@echo "--> Running linter"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
-	# see TODO in gofumpt-pre-commit
-	# @go run mvdan.cc/gofumpt@latest -l -d ./..
+	@go run mvdan.cc/gofumpt@latest -l -d ./..
 .PHONY: lint
 
-# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
-# Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
-#lint-format:
-#	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
-#	@go run mvdan.cc/gofumpt@latest -l -w ./..
-#.PHONY: lint-format
+lint-format:
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+	@go run mvdan.cc/gofumpt@latest -l -w ./..
+.PHONY: lint-format
 
 #? vulncheck: Run latest govulncheck
 vulncheck:
@@ -278,8 +275,6 @@ lint-fix-typo:
 	@codespell -w
 .PHONY: lint-fix-typo
 
-# TODO: remove once the codebase is sufficiently formatted.
-# See https://github.com/cometbft/cometbft/issues/604
 gofumpt-pre-commit:
 	@echo "--> Creating gofumpt pre-commit hook"
 	@mkdir -p .git/hooks

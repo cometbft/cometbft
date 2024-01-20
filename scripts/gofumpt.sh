@@ -1,9 +1,6 @@
 #!/bin/bash
 # Format staged Go files with `gofumpt`
 
-# Redirect output to stderr.
-exec 1>&2
-
 # Get the list of staged Go files.
 files=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.go$')
 
@@ -20,8 +17,6 @@ if [ -n "$files" ]; then
 		gofumpt -l -w "$file"
 		git add "$file"
 	done
-else
-	echo "No Go files to format."
 fi
 
 # Continue with the regular commit process.

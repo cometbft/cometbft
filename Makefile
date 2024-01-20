@@ -252,14 +252,14 @@ lint:
 	@echo "--> Running linter"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 	# see TODO in gofumpt-pre-commit
-	# @go run mvdan.cc/gofumpt -l -d ./..
+	# @go run mvdan.cc/gofumpt@latest -l -d ./..
 .PHONY: lint
 
 # https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
 # Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
 #lint-format:
 #	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
-#	@go run mvdan.cc/gofumpt -l -w ./..
+#	@go run mvdan.cc/gofumpt@latest -l -w ./..
 #.PHONY: lint-format
 
 #? vulncheck: Run latest govulncheck

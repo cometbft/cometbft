@@ -556,7 +556,7 @@ func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error 
 		Base:   bs.base,
 		Height: bs.height,
 	}
-	SaveBlockStoreState(&bss, batch)
+	SaveBlockStoreStateBatch(&bss, batch)
 
 	err := batch.WriteSync()
 	if err != nil {
@@ -611,12 +611,31 @@ func calcBlockHashKey(hash []byte) []byte {
 var blockStoreKey = []byte("blockStore")
 
 // SaveBlockStoreState persists the blockStore state to the database.
-func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, batch dbm.Batch) {
+// depretaced: still present in this version for API compatibility
+func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, db dbm.DB) {
+	saveBlockStoreStateBatchInternal(bsj, db, nil)
+}
+
+// SaveBlockStoreStateBatch persists the blockStore state to the database.
+// It uses the DB batch passed as parameter
+func SaveBlockStoreStateBatch(bsj *cmtstore.BlockStoreState, batch dbm.Batch) {
+	saveBlockStoreStateBatchInternal(bsj, nil, batch)
+}
+
+func saveBlockStoreStateBatchInternal(bsj *cmtstore.BlockStoreState, db dbm.DB, batch dbm.Batch) {
 	bytes, err := proto.Marshal(bsj)
 	if err != nil {
-		panic(fmt.Sprintf("Could not marshal state bytes: %v", err))
+		panic(fmt.Sprintf("could not marshal state bytes: %v", err))
 	}
-	if err := batch.Set(blockStoreKey, bytes); err != nil {
+	if batch != nil {
+		err = batch.Set(blockStoreKey, bytes)
+	} else {
+		if db == nil {
+			panic("both 'db' and 'batch' cannot be nil")
+		}
+		err = db.SetSync(blockStoreKey, bytes)
+	}
+	if err != nil {
 		panic(err)
 	}
 }

@@ -135,6 +135,7 @@ package main
 
 import (
     abcitypes "github.com/cometbft/cometbft/abci/types"
+    "context"
 )
 
 type KVStoreApplication struct{}

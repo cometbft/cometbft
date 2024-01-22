@@ -611,7 +611,7 @@ func calcBlockHashKey(hash []byte) []byte {
 var blockStoreKey = []byte("blockStore")
 
 // SaveBlockStoreState persists the blockStore state to the database.
-// depretaced: still present in this version for API compatibility
+// deprecated: still present in this version for API compatibility
 func SaveBlockStoreState(bsj *cmtstore.BlockStoreState, db dbm.DB) {
 	saveBlockStoreStateBatchInternal(bsj, db, nil)
 }

@@ -112,7 +112,7 @@ testdata-metrics:
 #? mockery: Generate test mocks
 mockery:
 	go generate -run="./scripts/mockery_generate.sh" ./...
-	@go run mvdan.cc/gofumpt@latest -l -w ./..
+	@go run mvdan.cc/gofumpt@latest -l -w .
 .PHONY: mockery
 
 ###############################################################################
@@ -242,41 +242,21 @@ clean_certs:
 ###                  Formatting, linting, and vetting                       ###
 ###############################################################################
 
-# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
-# Revisit using format after CometBFT v1 release and/or after 2024-06-01.
-#format:
-#	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
-#	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
-#.PHONY: format
-
-#? lint: Run latest golangci-lint and check if the code is formatted with gofumpt
+#? lint: Lint, format and fix typos
 lint:
-	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
-	@go run mvdan.cc/gofumpt@latest -l -d ./..
-.PHONY: lint
-
-#? lint-format: Run latest golangci-lint with the `--fix` flag and format the code with gofumpt
-lint-format:
+	@echo "--> Linting"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
-	@go run mvdan.cc/gofumpt@latest -l -w ./..
-.PHONY: lint-format
+	@echo "--> Formatting"
+	@go run mvdan.cc/gofumpt@latest -w .
+	@echo "--> Fixing typos"
+	@which codespell || pip3 install codespell
+	@codespell -w
+.PHONY: lint
 
 #? vulncheck: Run latest govulncheck
 vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
-
-#? lint-typo: Run codespell to check typos
-lint-typo:
-	which codespell || pip3 install codespell
-	@codespell
-.PHONY: lint-typo
-
-#? lint-typo: Run codespell to auto fix typos
-lint-fix-typo:
-	@codespell -w
-.PHONY: lint-fix-typo
 
 #? gofumpt-pre-commit: Create gofumpt pre-commit hook
 gofumpt-pre-commit:

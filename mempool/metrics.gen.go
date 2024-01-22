@@ -64,11 +64,30 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "active_outbound_connections",
 			Help:      "Number of connections being actively used for gossiping transactions (experimental feature).",
 		}, labels).With(labelsAndValues...),
+		RequestedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "requested_txs",
+			Help:      "Number of requested transactions (WantTx messages).",
+		}, labels).With(labelsAndValues...),
+		RerequestedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "rerequested_txs",
+			Help:      "Number of re-requested transactions.",
+		}, labels).With(labelsAndValues...),
+		NoPeerForTx: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "no_peer_for_tx",
+			Help:      "Number of times we cannot find a peer for a tx.",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
+<<<<<<< HEAD
 		Size:                      discard.NewGauge(),
 		SizeBytes:                 discard.NewGauge(),
 		TxSizeBytes:               discard.NewHistogram(),
@@ -77,5 +96,16 @@ func NopMetrics() *Metrics {
 		EvictedTxs:                discard.NewCounter(),
 		RecheckTimes:              discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
+=======
+		Size:               discard.NewGauge(),
+		TxSizeBytes:        discard.NewHistogram(),
+		FailedTxs:          discard.NewCounter(),
+		RejectedTxs:        discard.NewCounter(),
+		RecheckTimes:       discard.NewCounter(),
+		AlreadyReceivedTxs: discard.NewCounter(),
+		RequestedTxs:       discard.NewCounter(),
+		RerequestedTxs:     discard.NewCounter(),
+		NoPeerForTx:        discard.NewCounter(),
+>>>>>>> 094c67101 (Add CAT mempool reactor)
 	}
 }

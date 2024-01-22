@@ -7,8 +7,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// mempoolTx is an entry in the mempool
-type mempoolTx struct {
+// MempoolTx is an entry in the mempool
+type MempoolTx struct {
 	height    int64    // height that this tx had been validated in
 	gasWanted int64    // amount of gas this tx states it will require
 	tx        types.Tx // validated by the application
@@ -19,16 +19,20 @@ type mempoolTx struct {
 }
 
 // Height returns the height for this transaction
-func (memTx *mempoolTx) Height() int64 {
+func (memTx *MempoolTx) Height() int64 {
 	return atomic.LoadInt64(&memTx.height)
 }
 
-func (memTx *mempoolTx) isSender(peerID uint16) bool {
+func (memTx *MempoolTx) isSender(peerID uint16) bool {
 	_, ok := memTx.senders.Load(peerID)
 	return ok
 }
 
-func (memTx *mempoolTx) addSender(senderID uint16) bool {
+func (memTx *MempoolTx) addSender(senderID uint16) bool {
 	_, added := memTx.senders.LoadOrStore(senderID, true)
 	return added
+}
+
+func (memTx *MempoolTx) GetTx() types.Tx {
+	return memTx.tx
 }

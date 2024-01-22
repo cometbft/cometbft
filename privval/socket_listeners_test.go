@@ -104,12 +104,16 @@ func TestListenerTimeoutReadWrite(t *testing.T) {
 		// Note: this controls how long this test actually runs.
 		timeoutReadWrite = 10 * time.Millisecond
 	)
+
 	for _, tc := range listenerTestCases(t, timeoutAccept, timeoutReadWrite) {
 		go func(dialer SocketDialer) {
-			_, err := dialer()
+			conn, err := dialer()
 			if err != nil {
 				panic(err)
 			}
+			// Add a delay before closing the connection
+			time.Sleep(2 * timeoutReadWrite)
+			conn.Close()
 		}(tc.dialer)
 
 		c, err := tc.listener.Accept()

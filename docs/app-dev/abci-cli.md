@@ -1,5 +1,5 @@
 ---
-order: 2
+order: 3
 ---
 
 # Using ABCI-CLI
@@ -62,51 +62,10 @@ The most important messages are `deliver_tx`, `check_tx`, and `commit`,
 but there are others for convenience, configuration, and information
 purposes.
 
-We'll start a kvstore application, which was installed at the same time
-as `abci-cli` above. The kvstore just stores transactions in a merkle
-tree. Its code can be found
-[here](https://github.com/cometbft/cometbft/blob/v0.38.x/abci/cmd/abci-cli/abci-cli.go)
-and looks like the following:
-
-```go
-func cmdKVStore(cmd *cobra.Command, args []string) error {
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-
-	// Create the application - in memory or persisted to disk
-	var app types.Application
-	if flagPersist == "" {
-		var err error
-		flagPersist, err = os.MkdirTemp("", "persistent_kvstore_tmp")
-		if err != nil {
-			return err
-		}
-	}
-	app = kvstore.NewPersistentKVStoreApplication(flagPersist)
-	app.(*kvstore.PersistentKVStoreApplication).SetLogger(logger.With("module", "kvstore"))
-
-	// Start the listener
-	srv, err := server.NewServer(flagAddress, flagAbci, app)
-	if err != nil {
-		return err
-	}
-	srv.SetLogger(logger.With("module", "abci-server"))
-	if err := srv.Start(); err != nil {
-		return err
-	}
-
-	// Stop upon receiving SIGTERM or CTRL-C.
-	tmos.TrapSignal(logger, func() {
-		// Cleanup
-		if err := srv.Stop(); err != nil {
-			logger.Error("Error while stopping server", "err", err)
-		}
-	})
-
-	// Run forever.
-	select {}
-}
-
-```
+We'll start a kvstore application, which was installed at the same time as
+`abci-cli` above. The kvstore just stores transactions in a Merkle tree. Its
+code can be found
+[here](https://github.com/cometbft/cometbft/blob/v0.38.x/abci/example/kvstore/kvstore.go).
 
 Start the application by running:
 
@@ -240,7 +199,7 @@ You could put the commands in a file and run
 
 Note that the `abci-cli` is designed strictly for testing and debugging. In a real
 deployment, the role of sending messages is taken by CometBFT, which
-connects to the app using three separate connections, each with its own
+connects to the app using four separate connections, each with its own
 pattern of messages.
 
 For examples of running an ABCI app with CometBFT, see the

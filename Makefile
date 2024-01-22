@@ -68,6 +68,7 @@ ifeq (linux/riscv64,$(findstring linux/riscv64,$(TARGETPLATFORM)))
 	GOARCH=riscv64
 endif
 
+#? all: Run target check, build, test and install
 all: check build test install
 .PHONY: all
 
@@ -77,10 +78,12 @@ include tests.mk
 ###                                Build CometBFT                           ###
 ###############################################################################
 
+#? build: Build CometBFT
 build:
 	CGO_ENABLED=$(CGO_ENABLED) go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o $(OUTPUT) ./cmd/cometbft/
 .PHONY: build
 
+#? install: Install CometBFT to GOBIN
 install:
 	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/cometbft
 .PHONY: install
@@ -89,6 +92,7 @@ install:
 ###                               Metrics                                   ###
 ###############################################################################
 
+#? metrics: Generate metrics
 metrics: testdata-metrics
 	go generate -run="scripts/metricsgen" ./...
 .PHONY: metrics
@@ -96,6 +100,7 @@ metrics: testdata-metrics
 # By convention, the go tool ignores subdirectories of directories named
 # 'testdata'. This command invokes the generate command on the folder directly
 # to avoid this.
+#? testdata-metrics: Generate test data for metrics
 testdata-metrics:
 	ls ./scripts/metricsgen/testdata | xargs -I{} go generate -v -run="scripts/metricsgen" ./scripts/metricsgen/testdata/{}
 .PHONY: testdata-metrics
@@ -104,6 +109,7 @@ testdata-metrics:
 ###                                Mocks                                    ###
 ###############################################################################
 
+#? mockery: Generate test mocks
 mockery:
 	go generate -run="./scripts/mockery_generate.sh" ./...
 .PHONY: mockery
@@ -112,18 +118,21 @@ mockery:
 ###                                Protobuf                                 ###
 ###############################################################################
 
+#? check-proto-deps: Check protobuf deps
 check-proto-deps:
 ifeq (,$(shell which protoc-gen-gogofaster))
 	@go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
 endif
 .PHONY: check-proto-deps
 
+#? check-proto-format-deps: Check protobuf format deps
 check-proto-format-deps:
 ifeq (,$(shell which clang-format))
 	$(error "clang-format is required for Protobuf formatting. See instructions for your platform on how to install it.")
 endif
 .PHONY: check-proto-format-deps
 
+#? proto-gen: Generate protobuf files
 proto-gen: check-proto-deps
 	@echo "Generating Protobuf files"
 	@go run github.com/bufbuild/buf/cmd/buf generate
@@ -133,16 +142,19 @@ proto-gen: check-proto-deps
 
 # These targets are provided for convenience and are intended for local
 # execution only.
+#? proto-lint: Lint protobuf files
 proto-lint: check-proto-deps
 	@echo "Linting Protobuf files"
 	@go run github.com/bufbuild/buf/cmd/buf lint
 .PHONY: proto-lint
 
+#? proto-format: Format protobuf files
 proto-format: check-proto-format-deps
 	@echo "Formatting Protobuf files"
 	@find . -name '*.proto' -path "./proto/*" -exec clang-format -i {} \;
 .PHONY: proto-format
 
+#? proto-check-breaking: Check for breaking changes in Protobuf files against local branch. This is only useful if your changes have not yet been committed
 proto-check-breaking: check-proto-deps
 	@echo "Checking for breaking changes in Protobuf files against local branch"
 	@echo "Note: This is only useful if your changes have not yet been committed."
@@ -159,10 +171,12 @@ proto-check-breaking-ci:
 ###                              Build ABCI                                 ###
 ###############################################################################
 
+#? build_abci: Build abci
 build_abci:
 	@go build -mod=readonly -i ./abci/cmd/...
 .PHONY: build_abci
 
+#? install_abci: Install abci
 install_abci:
 	@go install -mod=readonly ./abci/cmd/...
 .PHONY: install_abci
@@ -173,20 +187,24 @@ install_abci:
 
 # dist builds binaries for all platforms and packages them for distribution
 # TODO add abci to these scripts
+#? dist: Build binaries for all platforms and package them for distribution
 dist:
 	@BUILD_TAGS=$(BUILD_TAGS) sh -c "'$(CURDIR)/scripts/dist.sh'"
 .PHONY: dist
 
+#? go-mod-cache: Download go modules to local cache
 go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
 	@go mod download
 .PHONY: go-mod-cache
 
+#? go.sum: Ensure dependencies have not been modified
 go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	@go mod verify
 	@go mod tidy
 
+#? draw_deps: Generate deps graph
 draw_deps:
 	@# requires brew install graphviz or apt-get install graphviz
 	go get github.com/RobotsAndPencils/goviz
@@ -204,7 +222,7 @@ get_deps_bin_size:
 ###                                  Libs                                   ###
 ###############################################################################
 
-# generates certificates for TLS testing in remotedb and RPC server
+#? gen_certs: Generate certificates for TLS testing in remotedb and RPC server
 gen_certs: clean_certs
 	certstrap init --common-name "cometbft.com" --passphrase ""
 	certstrap request-cert --common-name "server" -ip "127.0.0.1" --passphrase ""
@@ -214,7 +232,7 @@ gen_certs: clean_certs
 	rm -rf out
 .PHONY: gen_certs
 
-# deletes generated certificates
+#? clean_certs: Delete generated certificates
 clean_certs:
 	rm -f rpc/jsonrpc/server/test.crt
 	rm -f rpc/jsonrpc/server/test.key
@@ -229,14 +247,34 @@ format:
 	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
 .PHONY: format
 
+#? lint: Run latest golangci-lint linter
 lint:
 	@echo "--> Running linter"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
+# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
+# Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
+#lint-format:
+#	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+#	@go run mvdan.cc/gofumpt -l -w ./..
+#.PHONY: lint-format
+
+#? vulncheck: Run latest govulncheck
 vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
+
+#? lint-typo: Run codespell to check typos
+lint-typo:
+	which codespell || pip3 install codespell
+	@codespell
+.PHONY: lint-typo
+
+#? lint-typo: Run codespell to auto fix typos
+lint-fix-typo:
+	@codespell -w
+.PHONY: lint-fix-typo
 
 DESTINATION = ./index.html.md
 
@@ -245,7 +283,7 @@ DESTINATION = ./index.html.md
 ###                           Documentation                                 ###
 ###############################################################################
 
-# Verify that important design docs have ToC entries.
+#? check-docs-toc: Verify that important design docs have ToC entries.
 check-docs-toc:
 	@./docs/presubmit.sh
 .PHONY: check-docs-toc
@@ -256,6 +294,7 @@ check-docs-toc:
 
 # On Linux, you may need to run `DOCKER_BUILDKIT=1 make build-docker` for this
 # to work.
+#? build-docker: Build docker image cometbft/cometbft
 build-docker:
 	docker build \
 		--label=cometbft \
@@ -267,11 +306,12 @@ build-docker:
 ###                       Local testnet using docker                        ###
 ###############################################################################
 
-# Build linux binary on other platforms
+#? build-linux: Build linux binary on other platforms
 build-linux:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) $(MAKE) build
 .PHONY: build-linux
 
+#? build-docker-localnode: Build the "localnode" docker image
 build-docker-localnode:
 	@cd networks/local && make
 .PHONY: build-docker-localnode
@@ -284,18 +324,18 @@ build_c-amazonlinux:
 	docker run --rm -it -v `pwd`:/cometbft cometbft/cometbft:build_c-amazonlinux
 .PHONY: build_c-amazonlinux
 
-# Run a 4-node testnet locally
+#? localnet-start: Run a 4-node testnet locally
 localnet-start: localnet-stop build-docker-localnode
 	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
 	docker-compose up
 .PHONY: localnet-start
 
-# Stop testnet
+#? localnet-stop: Stop testnet
 localnet-stop:
 	docker-compose down
 .PHONY: localnet-stop
 
-# Build hooks for dredd, to skip or add information on some steps
+#? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps
 build-contract-tests-hooks:
 ifeq ($(OS),Windows_NT)
 	go build -mod=readonly $(BUILD_FLAGS) -o build/contract_tests.exe ./cmd/contract_tests
@@ -304,7 +344,7 @@ else
 endif
 .PHONY: build-contract-tests-hooks
 
-# Run a nodejs tool to test endpoints against a localnet
+#? contract-tests: Run a nodejs tool to test endpoints against a localnet
 # The command takes care of starting and stopping the network
 # prerequisits: build-contract-tests-hooks build-linux
 # the two build commands were not added to let this command run from generic containers or machines.
@@ -334,3 +374,9 @@ split-test-packages:$(BUILDDIR)/packages.txt
 	split -d -n l/$(NUM_SPLIT) $< $<.
 test-group-%:split-test-packages
 	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=15m -race -coverprofile=$(BUILDDIR)/$*.profile.out
+
+#? help: Get more info on make commands.
+help: Makefile
+	@echo " Choose a command run in comebft:"
+	@sed -n 's/^#?//p' $< | column -t -s ':' |  sort | sed -e 's/^/ /'
+.PHONY: help

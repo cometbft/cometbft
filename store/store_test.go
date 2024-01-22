@@ -91,9 +91,14 @@ func TestLoadBlockStoreState(t *testing.T) {
 
 	for _, tc := range testCases {
 		db := dbm.NewMemDB()
-		SaveBlockStoreState(tc.bss, db)
+		batch := db.NewBatch()
+		SaveBlockStoreStateBatch(tc.bss, batch)
+		err := batch.WriteSync()
+		require.NoError(t, err)
 		retrBSJ := LoadBlockStoreState(db)
 		assert.Equal(t, tc.want, retrBSJ, "expected the retrieved DBs to match: %s", tc.testName)
+		err = batch.Close()
+		require.NoError(t, err)
 	}
 }
 
@@ -608,7 +613,7 @@ func TestPruningService(t *testing.T) {
 	// Generate a bunch of state data.
 	// This is needed because the pruning is expecting to load the state from the database thus
 	// We have to have acceptable values for all fields of the state
-	validator := &types.Validator{Address: cmtrand.Bytes(crypto.AddressSize), VotingPower: 100, PubKey: pk}
+	validator := &types.Validator{Address: pk.Address(), VotingPower: 100, PubKey: pk}
 	validatorSet := &types.ValidatorSet{
 		Validators: []*types.Validator{validator},
 		Proposer:   validator,

@@ -91,9 +91,14 @@ func TestLoadBlockStoreState(t *testing.T) {
 
 	for _, tc := range testCases {
 		db := dbm.NewMemDB()
-		SaveBlockStoreState(tc.bss, db)
+		batch := db.NewBatch()
+		SaveBlockStoreState(tc.bss, batch)
+		err := batch.WriteSync()
+		require.NoError(t, err)
 		retrBSJ := LoadBlockStoreState(db)
 		assert.Equal(t, tc.want, retrBSJ, "expected the retrieved DBs to match: %s", tc.testName)
+		err = batch.Close()
+		require.NoError(t, err)
 	}
 }
 

@@ -95,7 +95,6 @@ type Testnet struct {
 	UpgradeVersion                                       string
 	Prometheus                                           bool
 	VoteExtensionsEnableHeight                           int64
-	VoteExtensionsUpdateHeight                           int64
 	VoteExtensionSize                                    uint
 	PeerGossipIntraloopSleepDuration                     time.Duration
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
@@ -184,7 +183,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		UpgradeVersion:                   manifest.UpgradeVersion,
 		Prometheus:                       manifest.Prometheus,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
-		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
@@ -375,37 +373,6 @@ func (t Testnet) Validate() error {
 	}
 	if err := t.validateZones(t.Nodes); err != nil {
 		return err
-	}
-	if t.VoteExtensionsUpdateHeight < -1 {
-		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
-			"or -1 (Genesis); update height %d", t.VoteExtensionsUpdateHeight)
-	}
-	if t.VoteExtensionsEnableHeight < 0 {
-		return fmt.Errorf("value of VoteExtensionsEnableHeight must be positive, or 0 (disable); "+
-			"enable height %d", t.VoteExtensionsEnableHeight)
-	}
-	if t.VoteExtensionsUpdateHeight > 0 && t.VoteExtensionsUpdateHeight < t.InitialHeight {
-		return fmt.Errorf("a value of VoteExtensionsUpdateHeight greater than 0 "+
-			"must not be less than InitialHeight; "+
-			"update height %d, initial height %d",
-			t.VoteExtensionsUpdateHeight, t.InitialHeight,
-		)
-	}
-	if t.VoteExtensionsEnableHeight > 0 {
-		if t.VoteExtensionsEnableHeight < t.InitialHeight {
-			return fmt.Errorf("a value of VoteExtensionsEnableHeight greater than 0 "+
-				"must not be less than InitialHeight; "+
-				"enable height %d, initial height %d",
-				t.VoteExtensionsEnableHeight, t.InitialHeight,
-			)
-		}
-		if t.VoteExtensionsEnableHeight <= t.VoteExtensionsUpdateHeight {
-			return fmt.Errorf("a value of VoteExtensionsEnableHeight greater than 0 "+
-				"must be greater than VoteExtensionsUpdateHeight; "+
-				"update height %d, enable height %d",
-				t.VoteExtensionsUpdateHeight, t.VoteExtensionsEnableHeight,
-			)
-		}
 	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {

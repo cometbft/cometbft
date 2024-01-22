@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -219,4 +220,58 @@ func getEventsAndResults(height int64) (types.EventDataNewBlockEvents, *abci.TxR
 		Result: abci.ExecTxResult{Code: 0},
 	}
 	return events, txResult1, txResult2
+}
+
+// When trying to prune the only block in the store it should not succeed
+// State should also not be pruned
+func TestPruningWithHeight1(t *testing.T) {
+	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
+	defer os.RemoveAll(config.RootDir)
+	state, bs, txIndexer, blockIndexer, cleanup, stateStore := makeStateAndBlockStoreAndIndexers()
+	defer cleanup()
+	require.EqualValues(t, 0, bs.Base())
+	require.EqualValues(t, 0, bs.Height())
+	require.EqualValues(t, 0, bs.Size())
+
+	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
+	require.NoError(t, err)
+
+	obs := newPrunerObserver(1)
+
+	pruner := sm.NewPruner(
+		stateStore,
+		bs,
+		blockIndexer,
+		txIndexer,
+		log.TestingLogger(),
+		sm.WithPrunerInterval(time.Second*1),
+		sm.WithPrunerObserver(obs),
+		sm.WithPrunerCompanionEnabled(),
+	)
+
+	err = pruner.SetApplicationBlockRetainHeight(1)
+	require.Error(t, err)
+	err = pruner.SetApplicationBlockRetainHeight(0)
+	require.NoError(t, err)
+
+	block := state.MakeBlock(1, test.MakeNTxs(1, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
+	partSet, err := block.MakePartSet(2)
+	require.NoError(t, err)
+
+	bs.SaveBlock(block, partSet, &types.Commit{Height: 1})
+	require.EqualValues(t, 1, bs.Base())
+	require.EqualValues(t, 1, bs.Height())
+
+	err = stateStore.Save(state)
+	require.NoError(t, err)
+
+	err = pruner.SetApplicationBlockRetainHeight(1)
+	require.NoError(t, err)
+	err = pruner.SetCompanionBlockRetainHeight(1)
+	require.NoError(t, err)
+
+	pruned, _, err := pruner.PruneBlocksToHeight(1)
+	require.Equal(t, pruned, uint64(0))
+	require.NoError(t, err)
+
 }

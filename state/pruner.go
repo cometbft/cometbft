@@ -503,8 +503,10 @@ func (p *Pruner) pruneBlocksToHeight(height int64) (uint64, int64, error) {
 	if err != nil {
 		return 0, 0, ErrFailedToPruneBlocks{Height: height, Err: err}
 	}
-	if err := p.stateStore.PruneStates(base, height, evRetainHeight); err != nil {
-		return 0, 0, ErrFailedToPruneStates{Height: height, Err: err}
+	if pruned > 0 {
+		if err := p.stateStore.PruneStates(base, height, evRetainHeight); err != nil {
+			return 0, 0, ErrFailedToPruneStates{Height: height, Err: err}
+		}
 	}
 	return pruned, evRetainHeight, err
 }

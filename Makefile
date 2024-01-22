@@ -192,7 +192,7 @@ dist:
 	@BUILD_TAGS=$(BUILD_TAGS) sh -c "'$(CURDIR)/scripts/dist.sh'"
 .PHONY: dist
 
-#? go-mod-cache: Download go modules to local cache 
+#? go-mod-cache: Download go modules to local cache
 go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
 	@go mod download
@@ -253,8 +253,6 @@ lint:
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 .PHONY: lint
 
-<<<<<<< HEAD
-=======
 # https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
 # Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
 #lint-format:
@@ -263,13 +261,10 @@ lint:
 #.PHONY: lint-format
 
 #? vulncheck: Run latest govulncheck
->>>>>>> 7ffc6e7f3 (misc(Makefile): add `help` target to display the help msg (#2074))
 vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
 
-<<<<<<< HEAD
-=======
 #? lint-typo: Run codespell to check typos
 lint-typo:
 	which codespell || pip3 install codespell
@@ -281,7 +276,6 @@ lint-fix-typo:
 	@codespell -w
 .PHONY: lint-fix-typo
 
->>>>>>> 7ffc6e7f3 (misc(Makefile): add `help` target to display the help msg (#2074))
 DESTINATION = ./index.html.md
 
 

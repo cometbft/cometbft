@@ -3116,7 +3116,7 @@ func TestStateTimestamp_ProposalMatch(t *testing.T) {
 func subscribe(eventBus *types.EventBus, q cmtpubsub.Query) <-chan cmtpubsub.Message {
 	sub, err := eventBus.Subscribe(context.Background(), testSubscriber, q)
 	if err != nil {
-		panic(fmt.Sprintf("failed to subscribe %s to %v", testSubscriber, q))
+		panic(fmt.Sprintf("failed to subscribe %s to %v; err %v", testSubscriber, q, err))
 	}
 	return sub.Out()
 }
@@ -3125,7 +3125,7 @@ func subscribe(eventBus *types.EventBus, q cmtpubsub.Query) <-chan cmtpubsub.Mes
 func subscribeUnBuffered(eventBus *types.EventBus, q cmtpubsub.Query) <-chan cmtpubsub.Message {
 	sub, err := eventBus.SubscribeUnbuffered(context.Background(), testSubscriber, q)
 	if err != nil {
-		panic(fmt.Sprintf("failed to subscribe %s to %v", testSubscriber, q))
+		panic(fmt.Sprintf("failed to subscribe %s to %v; err %v", testSubscriber, q, err))
 	}
 	return sub.Out()
 }

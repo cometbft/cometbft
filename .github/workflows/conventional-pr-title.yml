@@ -37,6 +37,12 @@ jobs:
             ${{ steps.lint_pr_title.outputs.error_message }}
             ```
 
+            General format: `type(scope): msg`
+            Breaking change: `type(scope)!: msg`
+            Multi-scope change: `type: msg`
+            Types:  `feat`, `fix`, `build`, `chore`, `ci`, `docs`, `refactor`, `perf`, `test`, `revert`.
+            Example: `fix(cmd/cometbft/commands/debug): execute p.Signal only when p is not nil`
+
       # Delete a previous comment when the issue has been resolved
       - if: ${{ steps.lint_pr_title.outputs.error_message == null }}
         uses: marocchino/sticky-pull-request-comment@v2

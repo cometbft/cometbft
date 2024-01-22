@@ -230,7 +230,7 @@ design their message handlers to create a blockchain that does anything
 useful but this architecture provides a place to start. The diagram
 below illustrates the flow of messages via ABCI.
 
-![abci](../imgs/abci.png)
+![abci](../../imgs/abci.png)
 
 ## A Note on Determinism
 
@@ -265,7 +265,7 @@ CometBFT adopts [Tendermint consensus][tendermint-paper],
 an easy-to-understand, mostly asynchronous, BFT consensus algorithm.
 The algorithm follows a simple state machine that looks like this:
 
-![consensus-logic](../imgs/consensus_logic.png)
+![consensus-logic](../../imgs/consensus_logic.png)
 
 Participants in the algorithm are called **validators**; they take turns
 proposing blocks of transactions and voting on them. Blocks are

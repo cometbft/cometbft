@@ -111,7 +111,7 @@ I[10-04|13:54:30.410] Recheck txs                                  module=mempoo
 Here is the list of modules you may encounter in CometBFT's log and a
 little overview what they do.
 
-- `abci-client` As mentioned in [Application Development Guide](../app-dev/abci-cli.md), CometBFT acts as an ABCI
+- `abci-client` As mentioned in [Application Development Guide](../../app-dev/abci-cli.md), CometBFT acts as an ABCI
   client with respect to the application and maintains 3 connections:
   mempool, consensus and query. The code used by CometBFT can
   be found [here](https://github.com/cometbft/cometbft/blob/main/abci/client).
@@ -126,13 +126,13 @@ little overview what they do.
   found
   [here](https://github.com/cometbft/cometbft/blob/main/types/events.go).
   You can subscribe to them by calling `subscribe` RPC method. Refer
-  to [RPC docs](./rpc.md) for additional information.
+  to [RPC docs](rpc.md) for additional information.
 - `mempool` Mempool module handles all incoming transactions, whenever
   they are coming from peers or the application.
 - `p2p` Provides an abstraction around peer-to-peer communication. For
   more details, please check out the
   [README](https://github.com/cometbft/cometbft/blob/main/p2p/README.md).
-- `rpc` [CometBFT's RPC](./rpc.md).
+- `rpc` [CometBFT's RPC](rpc.md).
 - `rpc-server` RPC server. For implementation details, please read the
   [doc.go](https://github.com/cometbft/cometbft/blob/main/rpc/jsonrpc/doc.go).
 - `state` Represents the latest state and execution submodule, which

@@ -99,5 +99,5 @@ The ABCI application becomes responsible for storing, disseminating, and
 proposing transactions using [`PrepareProposal`][2]. The concrete design is up
 to the ABCI application developers.
 
-[1]: ../../spec/abci/abci++_methods.md#checktx
-[2]: ../../spec/abci/abci++_methods.md#prepareproposal
+[1]: ../../../spec/abci/abci++_methods.md#checktx
+[2]: ../../../spec/abci/abci++_methods.md#prepareproposal

@@ -25,7 +25,7 @@ Validators have a cryptographic key-pair and an associated amount of
 
 There are two ways to become validator.
 
-1. They can be pre-established in the [genesis state](./using-cometbft.md#genesis)
+1. They can be pre-established in the [genesis state](using-cometbft.md#genesis)
 2. The ABCI app responds to the FinalizeBlock message with changes to the
    existing validator set.
 
@@ -35,7 +35,7 @@ When setting up a validator there are countless ways to configure your setup. Th
 
 ### Network Layout
 
-![ALT Network Layout](../imgs/sentry_layout.png)
+![ALT Network Layout](../../imgs/sentry_layout.png)
 
 The diagram is based on AWS, other cloud providers will have similar solutions to design a solution. Running nodes is not limited to cloud providers, you can run nodes on bare metal systems as well. The architecture will be the same no matter which setup you decide to go with.
 
@@ -49,7 +49,7 @@ A more persistent solution (not detailed on the diagram) is to have multiple dir
 
 ### Local Configuration
 
-![ALT Local Configuration](../imgs/sentry_local_config.png)
+![ALT Local Configuration](../../imgs/sentry_local_config.png)
 
 The validator will only talk to the sentry that are provided, the sentry nodes will communicate to the validator via a secret connection and the rest of the network through a normal connection. The sentry nodes do have the option of communicating with each other as well.
 

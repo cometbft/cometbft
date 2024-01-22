@@ -213,4 +213,4 @@ to effectively influence the pruning of blocks and state, ABCI results (if enabl
 indexer data on the node.
 
 For a comprehensive understanding of the pruning service, please see the document
-[Pruning service](./pruning.md).
+[Pruning service](pruning.md).

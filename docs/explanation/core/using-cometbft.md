@@ -248,7 +248,7 @@ address book files.
 ## Configuration
 
 CometBFT uses a `config.toml` for configuration. For details, see [the
-config specification](./configuration.md).
+config specification](configuration.md).
 
 Notable options include the socket address of the application
 (`proxy_app`), the listening address of the CometBFT peer
@@ -338,7 +338,7 @@ Note the mempool does not provide strong guarantees - just because a tx passed
 CheckTx (ie. was accepted into the mempool), doesn't mean it will be committed,
 as nodes with the tx in their mempool may crash before they get to propose.
 For more information, see the [mempool
-write-ahead-log](./running-in-production.md#mempool-wal)
+write-ahead-log](running-in-production.md#mempool-wal)
 
 ## CometBFT Networks
 
@@ -552,7 +552,7 @@ failing, you need at least four validator nodes (e.g., 2/3).
 
 Updating validators in a live network is supported but must be
 explicitly programmed by the application developer. See the [application
-developers guide](../app-dev/abci-cli.md) for more details.
+developers guide](../../app-dev/abci-cli.md) for more details.
 
 ### Local Network
 

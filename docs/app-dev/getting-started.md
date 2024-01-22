@@ -11,7 +11,7 @@ application you want to run. So, to run a complete blockchain that does
 something useful, you must start two programs: one is CometBFT,
 the other is your application, which can be written in any programming
 language. Recall from [the intro to
-ABCI](../introduction/what-is-cometbft.md#abci-overview) that CometBFT
+ABCI](../explanation/introduction/what-is-cometbft.md#abci-overview) that CometBFT
 handles all the p2p and consensus stuff, and just forwards transactions to the
 application when they need to be validated, or when they're ready to be
 executed and committed.
@@ -92,7 +92,7 @@ abci-cli kvstore
 
 In another terminal, we can start CometBFT. You should already have the
 CometBFT binary installed. If not, follow the steps from
-[here](../introduction/install.md). If you have never run CometBFT
+[here](../explanation/introduction/install.md). If you have never run CometBFT
 before, use:
 
 ```sh
@@ -103,7 +103,7 @@ cometbft node
 If you have used CometBFT, you may want to reset the data for a new
 blockchain by running `cometbft unsafe-reset-all`. Then you can run
 `cometbft node` to start CometBFT, and connect to the app. For more
-details, see [the guide on using CometBFT](../core/using-cometbft.md).
+details, see [the guide on using CometBFT](../explanation/core/using-cometbft.md).
 
 You should see CometBFT making blocks! We can get the status of our
 CometBFT node as follows:

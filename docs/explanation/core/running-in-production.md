@@ -24,13 +24,13 @@ CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 - `tx_index.db`: Indexes txs (and their results) by tx hash and by DeliverTx result events.
 
 By default, CometBFT will only index txs by their hash and height, not by their DeliverTx
-result events. See [indexing transactions](../app-dev/indexing-transactions.md) for
+result events. See [indexing transactions](../../app-dev/indexing-transactions.md) for
 details.
 
 Applications can expose block pruning strategies to the node operator.
 Please read the documentation of your application to find out more details.
 
-Applications can use [state sync](./state-sync.md) to help nodes bootstrap quickly.
+Applications can use [state sync](state-sync.md) to help nodes bootstrap quickly.
 
 ## Logging
 
@@ -38,7 +38,7 @@ Default logging level (`log_level = "main:info,state:info,statesync:info,*:error
 normal operation mode. Read [this
 post](https://blog.cosmos.network/one-of-the-exciting-new-features-in-0-10-0-release-is-smart-log-level-flag-e2506b4ab756)
 for details on how to configure `log_level` config variable. Some of the
-modules can be found [here](./how-to-read-logs.md#list-of-modules). If
+modules can be found [here](how-to-read-logs.md#list-of-modules). If
 you're trying to debug CometBFT or asked to provide logs with debug
 logging level, you can do so by running CometBFT with
 `--log_level="*:debug"`.
@@ -76,7 +76,7 @@ For the above reasons, the `mempool.wal` is disabled by default. To enable, set
 
 ## DoS Exposure and Mitigation
 
-Validators are supposed to setup [Sentry Node Architecture](./validators.md)
+Validators are supposed to setup [Sentry Node Architecture](validators.md)
 to prevent Denial-of-Service attacks.
 
 ### P2P
@@ -129,7 +129,7 @@ for more information.
 ## Debugging CometBFT
 
 If you ever have to debug CometBFT, the first thing you should probably do is
-check out the logs. See [How to read logs](./how-to-read-logs.md), where we
+check out the logs. See [How to read logs](how-to-read-logs.md), where we
 explain what certain log statements mean.
 
 If, after skimming through the logs, things are not clear still, the next thing
@@ -154,7 +154,7 @@ just the votes seen at the current height.
 If, after consulting with the logs and above endpoints, you still have no idea
 what's happening, consider using `cometbft debug kill` sub-command. This
 command will scrap all the available info and kill the process. See
-[Debugging](../tools/debugging.md) for the exact format.
+[Debugging](../../tools/debugging.md) for the exact format.
 
 You can inspect the resulting archive yourself or create an issue on
 [Github](https://github.com/cometbft/cometbft). Before opening an issue
@@ -171,10 +171,10 @@ Other useful endpoints include mentioned earlier `/status`, `/net_info` and
 `/validators`.
 
 CometBFT also can report and serve Prometheus metrics. See
-[Metrics](./metrics.md).
+[Metrics](metrics.md).
 
 `cometbft debug dump` sub-command can be used to periodically dump useful
-information into an archive. See [Debugging](../tools/debugging.md) for more
+information into an archive. See [Debugging](../../tools/debugging.md) for more
 information.
 
 ## What happens when my app dies

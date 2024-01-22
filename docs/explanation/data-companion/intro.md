@@ -22,5 +22,5 @@ indexer data and transaction indexer data.
 By also using the new gRPC services, it's possible now to retrieve data from the node, such as `block` and `block results`
 in a more efficient way.
 
-The [gRPC services](./grpc.md) document provides practical information and insights that will guide you through the
+The [gRPC services](grpc.md) document provides practical information and insights that will guide you through the
 process of using these services in order to create a Data Companion service.

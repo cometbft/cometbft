@@ -87,13 +87,13 @@ type Metrics struct {
 	// be above 2/3 of the total voting power of the network defines the endpoint
 	// the endpoint of the interval. Subtract the proposal timestamp from this endpoint
 	// to obtain the quorum delay.
-	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the earliest prevote that achieved a quorum.
+	// metrics:Interval in seconds between the proposal timestamp and the timestamp of the earliest prevote that achieved a quorum.
 	QuorumPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
 	// FullPrevoteDelay is the interval in seconds between the proposal
 	// timestamp and the timestamp of the latest prevote in a round where 100%
 	// of the voting power on the network issued prevotes.
-	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
+	// metrics:Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.
 	FullPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
 	// VoteExtensionReceiveCount is the number of vote extensions received by this
@@ -126,8 +126,8 @@ type Metrics struct {
 	// ProposalTimestampDifference is the difference between the timestamp in
 	// the proposal message and the local time of the validator at the time
 	// that the validator received the message.
-	//metrics:Difference between the timestamp in the proposal message and the local time of the validator at the time it received the message.
-	ProposalTimestampDifference metrics.Histogram `metrics_labels:"is_timely" metrics_bucketsizes:"-10, -.5, -.025, 0, .1, .5, 1, 1.5, 2, 10"`
+	// metrics:Difference between the timestamp in the proposal message and the local time of the validator at the time it received the message.
+	ProposalTimestampDifference metrics.Histogram `metrics_bucketsizes:"-10, -.5, -.025, 0, .1, .5, 1, 1.5, 2, 10" metrics_labels:"is_timely"`
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -2660,7 +2661,7 @@ func (cs *State) calculateProposalTimestampDifferenceMetric() {
 		}
 
 		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, tp, cs.state.InitialHeight)
-		cs.metrics.ProposalTimestampDifference.With("is_timely", fmt.Sprintf("%t", isTimely)).
+		cs.metrics.ProposalTimestampDifference.With("is_timely", strconv.FormatBool(isTimely)).
 			Observe(cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp).Seconds())
 	}
 }

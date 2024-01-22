@@ -162,6 +162,7 @@ proto-check-breaking: check-proto-deps
 	@go run github.com/bufbuild/buf/cmd/buf@latest breaking --against ".git"
 .PHONY: proto-check-breaking
 
+#? proto-check-breaking-ci: Check for breaking changes in Protobuf files against v0.34.x. This is only useful if your changes have not yet been committed
 proto-check-breaking-ci:
 	@go run github.com/bufbuild/buf/cmd/buf@latest breaking --against $(HTTPS_GIT)#branch=v0.34.x
 .PHONY: proto-check-breaking-ci
@@ -191,7 +192,7 @@ dist:
 	@BUILD_TAGS=$(BUILD_TAGS) sh -c "'$(CURDIR)/scripts/dist.sh'"
 .PHONY: dist
 
-#? go-mod-cache: Download go modules to local cache 
+#? go-mod-cache: Download go modules to local cache
 go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
 	@go mod download
@@ -248,13 +249,14 @@ clean_certs:
 #	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
 #.PHONY: format
 
-#? lint: Run latest golangci-lint linter
+#? lint: Run latest golangci-lint and check if the code is formatted with gofumpt
 lint:
 	@echo "--> Running linter"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
 	@go run mvdan.cc/gofumpt@latest -l -d ./..
 .PHONY: lint
 
+#? lint-format: Run latest golangci-lint with the `--fix` flag and format the code with gofumpt
 lint-format:
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
 	@go run mvdan.cc/gofumpt@latest -l -w ./..
@@ -276,6 +278,7 @@ lint-fix-typo:
 	@codespell -w
 .PHONY: lint-fix-typo
 
+#? gofumpt-pre-commit: Create gofumpt pre-commit hook
 gofumpt-pre-commit:
 	@echo "--> Creating gofumpt pre-commit hook"
 	@mkdir -p .git/hooks

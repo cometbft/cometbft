@@ -97,6 +97,17 @@ type Config struct {
 	CheckTxDelay         time.Duration `toml:"check_tx_delay"`
 	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
 	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
+
+	// VoteExtensionsEnableHeight configures the first height during which
+	// the chain will use and require vote extension data to be present
+	// in precommit messages.
+	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
+
+	// VoteExtensionsUpdateHeight configures the height at which consensus
+	// param VoteExtensionsEnableHeight will be set.
+	// -1 denotes it is set at genesis.
+	// 0 denotes it is set at InitChain.
+	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -136,6 +147,23 @@ func (app *Application) Info(context.Context, *abci.RequestInfo) (*abci.Response
 	}, nil
 }
 
+func (app *Application) updateVoteExtensionEnableHeight(currentHeight int64) *cmtproto.ConsensusParams {
+	var params *cmtproto.ConsensusParams
+	if app.cfg.VoteExtensionsUpdateHeight == currentHeight {
+		app.logger.Info("enabling vote extensions on the fly",
+			"current_height", currentHeight,
+			"enable_height", app.cfg.VoteExtensionsEnableHeight)
+		params = &cmtproto.ConsensusParams{
+			Abci: &cmtproto.ABCIParams{
+				VoteExtensionsEnableHeight: app.cfg.VoteExtensionsEnableHeight,
+			},
+		}
+		app.logger.Info("updating VoteExtensionsHeight in app_state", "height", app.cfg.VoteExtensionsEnableHeight)
+		app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(app.cfg.VoteExtensionsEnableHeight, 10))
+	}
+	return params
+}
+
 // Info implements ABCI.
 func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var err error
@@ -161,8 +189,12 @@ func (app *Application) InitChain(_ context.Context, req *abci.RequestInitChain)
 			}
 		}
 	}
+
+	params := app.updateVoteExtensionEnableHeight(0)
+
 	resp := &abci.ResponseInitChain{
-		AppHash: app.state.GetHash(),
+		ConsensusParams: params,
+		AppHash:         app.state.GetHash(),
 	}
 	if resp.Validators, err = app.validatorUpdates(0); err != nil {
 		return nil, err
@@ -219,14 +251,17 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.RequestFinali
 		panic(err)
 	}
 
+	params := app.updateVoteExtensionEnableHeight(req.Height)
+
 	if app.cfg.FinalizeBlockDelay != 0 {
 		time.Sleep(app.cfg.FinalizeBlockDelay)
 	}
 
 	return &abci.ResponseFinalizeBlock{
-		TxResults:        txs,
-		ValidatorUpdates: valUpdates,
-		AppHash:          app.state.Finalize(),
+		TxResults:             txs,
+		ValidatorUpdates:      valUpdates,
+		AppHash:               app.state.Finalize(),
+		ConsensusParamUpdates: params,
 		Events: []abci.Event{
 			{
 				Type: "val_updates",

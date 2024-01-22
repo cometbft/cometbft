@@ -1,5 +1,5 @@
 ---
-order: 3
+order: 1
 title: CometBFT Explained
 description: Explanation
 parent:

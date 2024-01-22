@@ -24,7 +24,7 @@ CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 - `tx_index.db`: Indexes txs (and their results) by tx hash and by DeliverTx result events.
 
 By default, CometBFT will only index txs by their hash and height, not by their DeliverTx
-result events. See [indexing transactions](../../app-dev/indexing-transactions.md) for
+result events. See [indexing transactions](../../guides/app-dev/indexing-transactions.md) for
 details.
 
 Applications can expose block pruning strategies to the node operator.
@@ -154,7 +154,7 @@ just the votes seen at the current height.
 If, after consulting with the logs and above endpoints, you still have no idea
 what's happening, consider using `cometbft debug kill` sub-command. This
 command will scrap all the available info and kill the process. See
-[Debugging](../../tools/debugging.md) for the exact format.
+[Debugging](../../guides/tools/debugging.md) for the exact format.
 
 You can inspect the resulting archive yourself or create an issue on
 [Github](https://github.com/cometbft/cometbft). Before opening an issue
@@ -174,7 +174,7 @@ CometBFT also can report and serve Prometheus metrics. See
 [Metrics](metrics.md).
 
 `cometbft debug dump` sub-command can be used to periodically dump useful
-information into an archive. See [Debugging](../../tools/debugging.md) for more
+information into an archive. See [Debugging](../../guides/tools/debugging.md) for more
 information.
 
 ## What happens when my app dies

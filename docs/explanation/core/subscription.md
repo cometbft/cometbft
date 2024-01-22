@@ -38,7 +38,7 @@ more information on query syntax and other options.
 
 You can also use tags, given you had included them into DeliverTx
 response, to query transaction results. See [Indexing
-transactions](../../app-dev/indexing-transactions.md) for details.
+transactions](../../guides/app-dev/indexing-transactions.md) for details.
 
 ## Query parameter and event type restrictions
 

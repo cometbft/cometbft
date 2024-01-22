@@ -203,7 +203,7 @@ connects to the app using four separate connections, each with its own
 pattern of messages.
 
 For examples of running an ABCI app with CometBFT, see the
-[getting started guide](./getting-started.md).
+[getting started guide](getting-started.md).
 
 ## Bounties
 

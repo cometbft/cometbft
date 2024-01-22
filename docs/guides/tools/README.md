@@ -9,7 +9,7 @@ parent:
 
 CometBFT has some tools that are associated with it for:
 
-- [Debugging](./debugging.md)
+- [Debugging](debugging.md)
 - [Benchmarking](#benchmarking)
 
 ## Benchmarking

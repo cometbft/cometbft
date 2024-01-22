@@ -111,7 +111,7 @@ I[10-04|13:54:30.410] Recheck txs                                  module=mempoo
 Here is the list of modules you may encounter in CometBFT's log and a
 little overview what they do.
 
-- `abci-client` As mentioned in [Application Development Guide](../../app-dev/abci-cli.md), CometBFT acts as an ABCI
+- `abci-client` As mentioned in [Application Development Guide](../../guides/app-dev/abci-cli.md), CometBFT acts as an ABCI
   client with respect to the application and maintains 3 connections:
   mempool, consensus and query. The code used by CometBFT can
   be found [here](https://github.com/cometbft/cometbft/blob/main/abci/client).

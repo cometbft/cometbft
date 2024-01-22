@@ -1,4 +1,6 @@
-# Proposer-Based Time - Part II
+# PBTS: Protocol Specification (first draft)
+
+This specification is **OUTDATED**. Please refer to the [new version][algorithm].
 
 ## Updated Consensus Algorithm
 
@@ -150,11 +152,11 @@ upon ⟨PROPOSAL, h_p, r, (v,t), ∗⟩ from proposer(h_p, r) AND 2f + 1 ⟨PREC
 
 **All other rules remains unchanged.**
 
-Back to [main document][main].
+Back to [main document][main_v1].
 
-[main]: ./pbts_001_draft.md
+[main_v1]: ./pbts_001_draft.md
+
+[algorithm]: ../pbts-algorithm_002_draft.md
+[algorithm_v1]: ./pbts-algorithm_001_draft.md
 
 [arXiv]: https://arxiv.org/abs/1807.04938
-
-
-

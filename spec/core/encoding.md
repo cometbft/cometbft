@@ -41,7 +41,7 @@ include details of the private keys beyond their type and name.
 
 ### Key Types
 
-Each type specifies it's own pubkey, address, and signature format.
+Each type specifies its own pubkey, address, and signature format.
 
 #### Ed25519
 

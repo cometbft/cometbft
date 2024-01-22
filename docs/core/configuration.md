@@ -11,7 +11,7 @@ further below are intended for advance power users.
 
 ## Options
 
-The default configuration file create by `cometbft init` has all
+The default configuration file created by `cometbft init` has all
 the parameters set with their default values. It will look something
 like the file below, however, double check by inspecting the
 `config.toml` created with your version of `cometbft` installed:
@@ -355,11 +355,6 @@ keep-invalid-txs-in-cache = false
 # NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
 max_tx_bytes = 1048576
 
-# Maximum size of a batch of transactions to send to a peer
-# Including space needed by encoding (one varint per transaction).
-# XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
-max_batch_bytes = 0
-
 #######################################################
 ###         State Sync Configuration Options        ###
 #######################################################
@@ -547,7 +542,7 @@ the delay between blocks by changing the `timeout_commit`. E.g. `timeout_commit 
 
 ### create_empty_blocks = false
 
-In this setting, blocks are created when transactions received.
+In this setting, blocks are created when transactions are received.
 
 Note after the block H, CometBFT creates something we call a "proof block"
 (only if the application hash changed) H+1. The reason for this is to support
@@ -635,7 +630,7 @@ What happens in reality is, however, a little bit different:
 ```
 
 That's because Bob is too fast at proposing blocks. This leaves Alice very
-little chances to propose a block and not always be catching up. Note every
+little chances to propose a block and not always be catching up. Note that every
 block Bob creates needs a vote from Alice to constitute 2/3+.
 
 Imagine now there are ten geographically distributed validators. One of them

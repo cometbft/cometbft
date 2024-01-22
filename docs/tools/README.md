@@ -14,7 +14,7 @@ CometBFT has some tools that are associated with it for:
 
 ## Benchmarking
 
-- <https://github.com/informalsystems/tm-load-test>
+- <https://github.com/cometbft/cometbft-load-test>
 
-`tm-load-test` is a distributed load testing tool (and framework) for load
+`cometbft-load-test` is a distributed load testing tool (and framework) for load
 testing CometBFT networks.

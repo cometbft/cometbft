@@ -216,6 +216,7 @@ func (params ConsensusParams) ValidateBasic() error {
 // | 7 | <=0                   | > height (*)           | nil
 // | 8 | (> 0) <=height        | > height (*)           | vote extensions cannot be modified once enabled
 // | 9 | (> 0) > height        | > height (*)           | nil
+// The table above reflects all cases covered.
 func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, h int64) error {
 	// 1
 	if updated == nil || updated.Abci == nil {

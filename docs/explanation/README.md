@@ -25,4 +25,3 @@ principles that make CometBFT a powerful technology in the realm of distributed 
 - [Introduction](./introduction/README.md)
 - [Core Concepts](./core/README.md)
 - [Data Companion](./data-companion/README.md)
--

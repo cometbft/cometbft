@@ -1,12 +1,12 @@
 ---
 order: 3
-title: Tutorials
+title: CometBFT Tutorials
 description: Tutorials
 parent:
     order: 1
 ---
 
-# Welcome to CometBFT Tutorials
+## Tutorials
 
 Are you ready to explore the world of CometBFT, the cutting-edge consensus algorithm that's revolutionizing the
 field of distributed systems? You've come to the right place! Our CometBFT Tutorials provide the knowledge

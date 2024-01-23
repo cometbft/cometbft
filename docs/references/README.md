@@ -1,12 +1,12 @@
 ---
 order: 4
-title: Reference Documentation
+title: CometBFT Reference Documentation
 description: References
 parent:
     order: 1
 ---
 
-# CometBFT Reference Documentation
+# Reference Documentation
 
 Welcome to the CometBFT Reference Documentation, a comprehensive resource for essential information and
 standards related to CometBFT.
@@ -39,9 +39,6 @@ to ensure that CometBFT meets and exceeds industry benchmarks.
 
 - Testing methodologies and strategies.
 - Documentation on test plans and test cases.
-- Guidelines for test automation.
-- Processes for defect tracking and resolution.
-- Continuous improvement practices.
 
 Explore the QA documents to understand the testing methods to ensure the quality and performance of CometBFT.
 

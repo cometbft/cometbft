@@ -9,8 +9,7 @@ import (
 )
 
 var (
-	errUnexpectedBucketType = errors.New("unexpected bucket type")
-	ErrEmptyAddressBook     = errors.New("address book is empty and couldn't resolve any seed nodes")
+	ErrEmptyAddressBook = errors.New("address book is empty and couldn't resolve any seed nodes")
 	// ErrUnsolicitedList is thrown when a peer provides a list of addresses that have not been asked for.
 	ErrUnsolicitedList = errors.New("unsolicited pexAddrsMessage")
 )
@@ -93,15 +92,15 @@ func (err ErrAddressBanned) Error() string {
 	return fmt.Sprintf("Address: %v is currently banned", err.Addr)
 }
 
-// ErrReceivedRequestTooSoon is thrown when a peer sends a PEX request too soon after the last one.
-type ErrReceivedRequestTooSoon struct {
+// ErrReceivedPEXRequestTooSoon is thrown when a peer sends a PEX request too soon after the last one.
+type ErrReceivedPEXRequestTooSoon struct {
 	Peer         p2p.ID
 	LastReceived time.Time
 	Now          time.Time
 	MinInterval  time.Duration
 }
 
-func (err ErrReceivedRequestTooSoon) Error() string {
+func (err ErrReceivedPEXRequestTooSoon) Error() string {
 	return fmt.Sprintf("received PEX request from peer %v too soon (last received %v, now %v, min interval %v), Disconnecting peer",
 		err.Peer, err.LastReceived, err.Now, err.MinInterval)
 }

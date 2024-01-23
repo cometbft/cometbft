@@ -140,8 +140,9 @@ func NewNetAddressIPPort(ip net.IP, port uint16) *NetAddress {
 func NetAddressFromProto(pb tmp2p.NetAddress) (*NetAddress, error) {
 	ip := net.ParseIP(pb.IP)
 	if ip == nil {
-		return nil, ErrInvalidIP{pb.IP}
+		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: errInvalidIP}
 	}
+
 	if pb.Port >= 1<<16 {
 		return nil, ErrInvalidPort{pb.Port}
 	}
@@ -270,7 +271,7 @@ func (na *NetAddress) Valid() error {
 		return ErrNoIP
 	}
 	if na.IP.IsUnspecified() || na.RFC3849() || na.IP.Equal(net.IPv4bcast) {
-		return ErrInvalidIP{na.IP.String()}
+		return ErrNetAddressInvalid{na.IP.String(), errInvalidIP}
 	}
 	return nil
 }

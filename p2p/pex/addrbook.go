@@ -698,7 +698,7 @@ func (a *addrBook) randomPickAddresses(bucketType byte, num int) []*p2p.NetAddre
 	case bucketTypeOld:
 		buckets = a.bucketsOld
 	default:
-		panic(errUnexpectedBucketType)
+		panic("unexpected bucket type")
 	}
 	total := 0
 	for _, bucket := range buckets {

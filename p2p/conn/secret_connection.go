@@ -137,7 +137,7 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 
 	recvAead, err := chacha20poly1305.New(recvSecret[:])
 	if err != nil {
-		return nil, ErrInvalidSecreteConnKeyRecv
+		return nil, ErrInvalidSecretConnKeyRecv
 	}
 
 	sc := &SecretConnection{
@@ -255,7 +255,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	defer pool.Put(frame)
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
-		return n, ErrDecryptConnection{source: err}
+		return n, ErrDecryptFrame{source: err}
 	}
 
 	incrNonce(sc.recvNonce)
@@ -265,7 +265,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	// set recvBuffer to the rest.
 	chunkLength := binary.LittleEndian.Uint32(frame) // read the first four bytes
 	if chunkLength > dataMaxSize {
-		return 0, ErrChunkSize{
+		return 0, ErrChunkTooBig{
 			Received: int(chunkLength),
 			Max:      dataMaxSize,
 		}

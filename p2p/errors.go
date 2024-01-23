@@ -7,10 +7,10 @@ import (
 )
 
 var (
-	errEmptyHost      = errors.New("host is empty")
-	ErrNoIP           = errors.New("no IP address found")
-	ErrNoNodeInfo     = errors.New("no node info found")
-	errPeerConfigDial = errors.New("dial err (peerConfig.DialFail == true)")
+	errEmptyHost  = errors.New("host is empty")
+	ErrNoIP       = errors.New("no IP address found")
+	ErrNoNodeInfo = errors.New("no node info found")
+	errInvalidIP  = errors.New("invalid IP address")
 )
 
 // ErrFilterTimeout indicates that a filter operation timed out.
@@ -196,14 +196,6 @@ type ErrCurrentlyDialingOrExistingAddress struct {
 
 func (e ErrCurrentlyDialingOrExistingAddress) Error() string {
 	return fmt.Sprintf("connection with %s has been established or dialed", e.Addr)
-}
-
-type ErrInvalidIP struct {
-	IP string
-}
-
-func (e ErrInvalidIP) Error() string {
-	return fmt.Sprintf("invalid IP address: %v", e.IP)
 }
 
 type ErrInvalidPort struct {

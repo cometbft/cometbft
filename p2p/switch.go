@@ -598,10 +598,10 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 
 func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 	sw.Logger.Info("Adding unconditional peer ids", "ids", ids)
-	for i, id := range ids {
+	for _, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return ErrInvalidPeerID{ID: ID(id), source: fmt.Errorf("wrong ID #%d: %w", i, err)}
+			return ErrInvalidPeerID{ID: ID(id), source: err}
 		}
 
 		sw.unconditionalPeerIDs[ID(id)] = struct{}{}
@@ -611,11 +611,12 @@ func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 
 func (sw *Switch) AddPrivatePeerIDs(ids []string) error {
 	validIDs := make([]string, 0, len(ids))
-	for i, id := range ids {
+	for _, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return ErrInvalidPeerID{ID: ID(id), source: fmt.Errorf("wrong ID #%d: %w", i, err)}
+			return ErrInvalidPeerID{ID: ID(id), source: err}
 		}
+
 		validIDs = append(validIDs, id)
 	}
 
@@ -736,7 +737,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 	// XXX(xla): Remove the leakage of test concerns in implementation.
 	if cfg.TestDialFail {
 		go sw.reconnectToPeer(addr)
-		return errPeerConfigDial
+		return fmt.Errorf("dial err (peerConfig.DialFail == true)")
 	}
 
 	p, err := sw.transport.Dial(*addr, peerConfig{

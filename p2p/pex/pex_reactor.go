@@ -301,7 +301,7 @@ func (r *Reactor) receiveRequest(src Peer) error {
 	now := time.Now()
 	minInterval := r.minReceiveRequestInterval()
 	if now.Sub(lastReceived) < minInterval {
-		return ErrReceivedRequestTooSoon{
+		return ErrReceivedPEXRequestTooSoon{
 			Peer:         src.ID(),
 			LastReceived: lastReceived,
 			Now:          now,
@@ -542,8 +542,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 
 	err := r.Switch.DialPeerWithAddress(addr)
 	if err != nil {
-		var errCurrentlyDialingOrExistingAddress p2p.ErrCurrentlyDialingOrExistingAddress
-		if errors.As(err, &errCurrentlyDialingOrExistingAddress) {
+		if _, ok := err.(p2p.ErrCurrentlyDialingOrExistingAddress); ok {
 			return err
 		}
 

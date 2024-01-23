@@ -87,7 +87,7 @@ func TestStateProposerSelection0(t *testing.T) {
 	// Commit a block and ensure proposer for the next height is correct.
 	prop := cs1.GetRoundState().Validators.GetProposer()
 	address := pv.Address()
-	require.Truef(t, bytes.Equal(prop.Address, address), "expected proposer to be validator %d. Got %X", 0, prop.Address)
+	require.Truef(t, bytes.Equal(prop.Address, address), "expected proposer to be validator 0 (%X). Got %X", address, prop.Address)
 
 	// Wait for complete proposal.
 	ensureNewProposal(proposalCh, height, round)
@@ -105,9 +105,7 @@ func TestStateProposerSelection0(t *testing.T) {
 	pv1, err := vss[1].GetPubKey()
 	require.NoError(t, err)
 	addr := pv1.Address()
-	if !bytes.Equal(prop.Address, addr) {
-		panic(fmt.Sprintf("expected proposer to be validator %d. Got %X", 1, prop.Address))
-	}
+	require.Truef(t, bytes.Equal(prop.Address, addr), "expected proposer to be validator 1 (%X). Got %X", addr, prop.Address)
 }
 
 // Now let's do it all again, but starting from round 2 instead of 0.
@@ -132,13 +130,10 @@ func TestStateProposerSelection2(t *testing.T) {
 		require.NoError(t, err)
 		addr := pvk.Address()
 		correctProposer := addr
-		if !bytes.Equal(prop.Address, correctProposer) {
-			panic(fmt.Sprintf(
-				"expected RoundState.Validators.GetProposer() to be validator %d. Got %X",
-				int(i+2)%len(vss),
-				prop.Address))
-		}
-
+		require.Truef(t, bytes.Equal(prop.Address, correctProposer),
+			"expected RoundState.Validators.GetProposer() to be validator %d (%X). Got %X",
+			int(i+2)%len(vss), correctProposer, prop.Address,
+		)
 		signAddVotes(cs1, types.PrecommitType, chainID, types.BlockID{}, true, vss[1:]...)
 		ensureNewRound(newRoundCh, height, i+round+1) // wait for the new round event each round
 		incrementRound(vss[1:]...)
@@ -549,12 +544,10 @@ func TestStateLock_NoPOL(t *testing.T) {
 	rs = cs1.GetRoundState()
 
 	// now we're on a new round and are the proposer
-	if !bytes.Equal(rs.ProposalBlock.Hash(), rs.LockedBlock.Hash()) {
-		panic(fmt.Sprintf(
-			"Expected proposal block to be locked block. Got %v, Expected %v",
-			rs.ProposalBlock,
-			rs.LockedBlock))
-	}
+	require.Truef(t, bytes.Equal(rs.ProposalBlock.Hash(), rs.LockedBlock.Hash()),
+		"expected proposal block to be locked block. Got %v, Expected %v",
+		rs.ProposalBlock, rs.LockedBlock,
+	)
 
 	ensurePrevote(voteCh, height, round) // prevote
 	validatePrevote(t, cs1, round, vss[0], rs.LockedBlock.Hash())

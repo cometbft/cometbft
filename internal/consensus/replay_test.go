@@ -383,7 +383,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 
 	proposal := types.NewProposal(vss[1].Height, round, -1, blockID, propBlock.Header.Time)
 	p := proposal.ToProto()
-	if err := vss[1].SignProposal(test.DefaultTestChainID, p); err != nil {
+	if err := vss[1].SignProposal(chainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
 	proposal.Signature = p.Signature
@@ -415,7 +415,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 
 	proposal = types.NewProposal(vss[2].Height, round, -1, blockID, propBlock.Header.Time)
 	p = proposal.ToProto()
-	if err := vss[2].SignProposal(test.DefaultTestChainID, p); err != nil {
+	if err := vss[2].SignProposal(chainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
 	proposal.Signature = p.Signature
@@ -474,7 +474,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 
 	proposal = types.NewProposal(vss[3].Height, round, -1, blockID, propBlock.Header.Time)
 	p = proposal.ToProto()
-	if err := vss[3].SignProposal(test.DefaultTestChainID, p); err != nil {
+	if err := vss[3].SignProposal(chainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
 	proposal.Signature = p.Signature
@@ -536,7 +536,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	selfIndex = valIndexFn(0)
 	proposal = types.NewProposal(vss[1].Height, round, -1, blockID, propBlock.Header.Time)
 	p = proposal.ToProto()
-	if err := vss[1].SignProposal(test.DefaultTestChainID, p); err != nil {
+	if err := vss[1].SignProposal(chainID, p); err != nil {
 		t.Fatal("failed to sign bad proposal", err)
 	}
 	proposal.Signature = p.Signature

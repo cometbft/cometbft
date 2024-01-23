@@ -494,13 +494,13 @@ func SumTruncated(bz []byte) []byte {
 
 | Name                          | Type  | Description                   | Field Number |
 | ----------------------------- | ----- | ----------------------------- | ------------ |
-| vote_extensions_enable_height | int64 | The ABCI application version. | 1            |
+| vote_extensions_enable_height | int64 | The height where vote extensions will be enabled. | 1            |
 
 ### VersionParams
 
 | Name        | Type   | Description                                       | Field Number |
 | ----------- | ------ | ------------------------------------------------- | ------------ |
-| app_version | uint64 | The height where vote extensions will be enabled. | 1            |
+| app_version | uint64 | The ABCI application version. | 1            |
 
 ### SynchronyParams
 

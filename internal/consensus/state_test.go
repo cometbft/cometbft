@@ -3019,7 +3019,7 @@ func TestSignSameVoteTwice(t *testing.T) {
 }
 
 // TestStateTimestamp_ProposalNotMatch tests that a validator does not prevote a
-// proposed block if the timestamp in the block does not matche the timestamp in the
+// proposed block if the timestamp in the block does not match the timestamp in the
 // corresponding proposal message.
 func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())

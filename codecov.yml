@@ -19,7 +19,6 @@ ignore:
   - "DOCKER"
   - "scripts"
   - "**/*.pb.go"
-  - "libs/pubsub/query/query.peg.go"
   - "*.md"
   - "*.rst"
   - "*.yml"

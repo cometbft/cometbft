@@ -79,6 +79,7 @@ type Testnet struct {
 	LoadTxSizeBytes                                      int
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
+	LoadMaxTxs                                           int
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -146,6 +147,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
+<<<<<<< HEAD
 		Name:                       filepath.Base(dir),
 		File:                       file,
 		Dir:                        dir,
@@ -169,6 +171,35 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Prometheus:                 manifest.Prometheus,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
+=======
+		Name:                             filepath.Base(dir),
+		File:                             file,
+		Dir:                              dir,
+		IP:                               ipNet,
+		InitialHeight:                    1,
+		InitialState:                     manifest.InitialState,
+		Validators:                       map[*Node]int64{},
+		ValidatorUpdates:                 map[int64]map[*Node]int64{},
+		Nodes:                            []*Node{},
+		DisablePexReactor:                manifest.DisablePexReactor,
+		Evidence:                         manifest.Evidence,
+		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
+		LoadTxConnections:                manifest.LoadTxConnections,
+		LoadMaxTxs:                       manifest.LoadMaxTxs,
+		ABCIProtocol:                     manifest.ABCIProtocol,
+		PrepareProposalDelay:             manifest.PrepareProposalDelay,
+		ProcessProposalDelay:             manifest.ProcessProposalDelay,
+		CheckTxDelay:                     manifest.CheckTxDelay,
+		VoteExtensionDelay:               manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
+		UpgradeVersion:                   manifest.UpgradeVersion,
+		Prometheus:                       manifest.Prometheus,
+		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
+		VoteExtensionSize:                manifest.VoteExtensionSize,
+		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+>>>>>>> 6722f3375 (e2e: Add `load_max_txs` option to manifest (#2094))
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}

@@ -600,11 +600,11 @@ func TestPruningService(t *testing.T) {
 	assert.EqualValues(t, 1500, bs.Height())
 	assert.EqualValues(t, 1500, bs.Size())
 
-	state.LastBlockTime = time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+	state.LastBlockTime = cmttime.Now().Add(24 * time.Hour)
 	state.LastBlockHeight = 1500
 
 	state.ConsensusParams.Evidence.MaxAgeNumBlocks = 400
-	state.ConsensusParams.Evidence.MaxAgeDuration = 1 * time.Second
+	state.ConsensusParams.Evidence.MaxAgeDuration = 1 * time.Minute
 
 	pk := ed25519.GenPrivKey().PubKey()
 
@@ -761,11 +761,11 @@ func TestPruneBlocks(t *testing.T) {
 	assert.EqualValues(t, 1500, bs.Height())
 	assert.EqualValues(t, 1500, bs.Size())
 
-	state.LastBlockTime = time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+	state.LastBlockTime = cmttime.Now().Add(24 * time.Hour)
 	state.LastBlockHeight = 1500
 
 	state.ConsensusParams.Evidence.MaxAgeNumBlocks = 400
-	state.ConsensusParams.Evidence.MaxAgeDuration = 1 * time.Second
+	state.ConsensusParams.Evidence.MaxAgeDuration = 1 * time.Minute
 
 	// Check that basic pruning works
 	pruned, evidenceRetainHeight, err := bs.PruneBlocks(1200, state)

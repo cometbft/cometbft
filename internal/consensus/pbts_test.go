@@ -245,6 +245,8 @@ func timestampedCollector(ctx context.Context, t *testing.T, eb *types.EventBus)
 	const tsCollectorClient = "timestampedCollector"
 	proposalSub, err := eb.Subscribe(ctx, tsCollectorClient, types.EventQueryCompleteProposal)
 	require.NoError(t, err)
+	// We set a capacity of since there are several votes produced.
+	// With capacity 1 (default) the tests deadlock sometimes.
 	voteSub, err := eb.Subscribe(ctx, tsCollectorClient, types.EventQueryVote, 10)
 	require.NoError(t, err)
 

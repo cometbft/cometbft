@@ -36,6 +36,7 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 //----------------------------------------------
@@ -131,7 +132,7 @@ func TestReactorWithEvidence(t *testing.T) {
 	// to unroll unwieldy abstractions. Here we duplicate the code from:
 	// css := randConsensusNet(N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
 
-	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, nil, cmttime.Now())
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	for i := 0; i < nValidators; i++ {

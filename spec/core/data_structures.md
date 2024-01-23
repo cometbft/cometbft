@@ -478,11 +478,11 @@ func SumTruncated(bz []byte) []byte {
 
 ### EvidenceParams
 
-| Name               | Type                                                                                                                               | Description                                                                                                                                                                                                                                                                    | Field Number |
-|--------------------|------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-| max_age_num_blocks | int64                                                                                                                              | Max age of evidence, in blocks.                                                                                                                                                                                                                                                | 1            |
-| max_age_duration   | [google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Duration) | Max age of evidence, in time. It should correspond with an app's "unbonding period" or other similar mechanism for handling [Nothing-At-Stake attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed). | 2            |
-| max_bytes          | int64                                                                                                                              | maximum size in bytes of total evidence allowed to be entered into a block                                                                                                                                                                                                     | 3            |
+| Name               | Type                                                                                          | Description                                                                                                                                                                                                                                                                    | Field Number |
+| ------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| max_age_num_blocks | int64                                                                                         | Max age of evidence, in blocks.                                                                                                                                                                                                                                                | 1            |
+| max_age_duration   | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Max age of evidence, in time. It should correspond with an app's "unbonding period" or other similar mechanism for handling [Nothing-At-Stake attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed). | 2            |
+| max_bytes          | int64                                                                                         | maximum size in bytes of total evidence allowed to be entered into a block                                                                                                                                                                                                     | 3            |
 
 ### ValidatorParams
 
@@ -492,22 +492,22 @@ func SumTruncated(bz []byte) []byte {
 
 ### ABCIParams
 
-| Name                          | Type  | Description                   | Field Number |
-| ----------------------------- | ----- | ----------------------------- | ------------ |
-| vote_extensions_enable_height | int64 | The ABCI application version. | 1            |
+| Name                          | Type  | Description                                       | Field Number |
+| ----------------------------- | ----- | ------------------------------------------------- | ------------ |
+| vote_extensions_enable_height | int64 | The height where vote extensions will be enabled. | 1            |
 
 ### VersionParams
 
-| Name        | Type   | Description                                       | Field Number |
-| ----------- | ------ | ------------------------------------------------- | ------------ |
-| app_version | uint64 | The height where vote extensions will be enabled. | 1            |
+| Name        | Type   | Description                   | Field Number |
+| ----------- | ------ | ----------------------------- | ------------ |
+| app_version | uint64 | The ABCI application version. | 1            |
 
 ### SynchronyParams
 
-| Name          | Type                                                                                                                               | Description                                                                                                             | Field Number |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
-| message_delay | [google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Duration) | Bound for how long a proposal message may take to reach all validators on a network and still be considered valid.      | 1            |
-| precision     | [google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Duration) | Bound for how skewed a proposer's clock may be from any validator on the network while still producing valid proposals. | 2            |
+| Name          | Type                                                                                          | Description                                                                                                             | Field Number |
+| ------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
+| message_delay | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how long a proposal message may take to reach all validators on a network and still be considered valid.      | 1            |
+| precision     | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how skewed a proposer's clock may be from any validator on the network while still producing valid proposals. | 2            |
 
 ## Proof
 

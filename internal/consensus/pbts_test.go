@@ -13,6 +13,7 @@ import (
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	cmttimemocks "github.com/cometbft/cometbft/types/time/mocks"
 )
 
@@ -22,14 +23,14 @@ const (
 	blockTimeIota = time.Millisecond
 )
 
-// pbtsTestHarness constructs a Tendermint network that can be used for testing the
+// pbtsTestHarness constructs a CometBFT network that can be used for testing the
 // implementation of the Proposer-Based timestamps algorithm.
 // It runs a series of consensus heights and captures timing of votes and events.
 type pbtsTestHarness struct {
 	// configuration options set by the user of the test harness.
 	pbtsTestConfiguration
 
-	// The Tendermint consensus state machine being run during
+	// The CometBFT consensus state machine being run during
 	// a run of the pbtsTestHarness.
 	observedState *State
 
@@ -98,8 +99,8 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	consensusParams := types.DefaultConsensusParams()
 	consensusParams.Synchrony = tc.synchronyParams
 
-	state, privVals := randGenesisState(validators, consensusParams) // TODO tc.genesisTime)
-	cs := newState(state, privVals[0], kvstore.NewInMemoryApplication())
+	state, privVals := randGenesisStateWithTime(validators, consensusParams, tc.genesisTime)
+	cs := newStateWithConfig(cfg, state, privVals[0], kvstore.NewInMemoryApplication())
 	vss := make([]*validatorStub, validators)
 	for i := 0; i < validators; i++ {
 		vss[i] = newValidatorStub(privVals[i], int32(i))
@@ -132,11 +133,14 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 
 func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t *testing.T, previousBlockTime time.Time) heightResult {
 	t.Helper()
-	p.validatorClock.On("Now").Return(p.height2ProposedBlockTime).Times(6)
+	p.validatorClock.On("Now").Return(p.height2ProposedBlockTime).Times(2 * len(p.otherValidators))
 
 	ensureNewRound(p.roundCh, p.currentHeight, p.currentRound)
 
 	timeout := time.Until(previousBlockTime.Add(ensureTimeout))
+	if timeout < ensureTimeout {
+		timeout = ensureTimeout
+	}
 	ensureProposalWithTimeout(p.ensureProposalCh, p.currentHeight, p.currentRound, nil, timeout)
 
 	rs := p.observedState.GetRoundState()
@@ -144,8 +148,8 @@ func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t
 	ensurePrevote(p.ensureVoteCh, p.currentHeight, p.currentRound)
 	signAddVotes(p.observedState, types.PrevoteType, p.chainID, bid, false, p.otherValidators...)
 
-	signAddVotes(p.observedState, types.PrecommitType, p.chainID, bid, false, p.otherValidators...)
 	ensurePrecommit(p.ensureVoteCh, p.currentHeight, p.currentRound)
+	signAddVotes(p.observedState, types.PrecommitType, p.chainID, bid, false, p.otherValidators...)
 
 	ensureNewBlock(p.blockCh, p.currentHeight)
 
@@ -180,18 +184,22 @@ func (p *pbtsTestHarness) height5(ctx context.Context, t *testing.T) heightResul
 	return p.observedValidatorProposerHeight(ctx, t, p.height4ProposedBlockTime)
 }
 
-func (p *pbtsTestHarness) nextHeight(ctx context.Context, t *testing.T, proposer types.PrivValidator, deliverTime, proposedTime, nextProposedTime time.Time) heightResult {
+func (p *pbtsTestHarness) nextHeight(
+	ctx context.Context,
+	t *testing.T,
+	proposer types.PrivValidator,
+	deliverTime, proposedTime, nextProposedTime time.Time,
+) heightResult {
 	t.Helper()
 
-	p.validatorClock.On("Now").Return(nextProposedTime).Times(6)
+	p.validatorClock.On("Now").Return(nextProposedTime).Times(2 * len(p.otherValidators))
 
 	ensureNewRound(p.roundCh, p.currentHeight, p.currentRound)
 
 	b, err := p.observedState.createProposalBlock(ctx)
 	require.NoError(t, err)
-	b.Height = p.currentHeight
-	b.Header.Height = p.currentHeight
-	b.Header.Time = proposedTime
+	require.Equal(t, b.Height, p.currentHeight)
+	b.Time = proposedTime
 
 	k, err := proposer.GetPubKey()
 	require.NoError(t, err)
@@ -202,22 +210,20 @@ func (p *pbtsTestHarness) nextHeight(ctx context.Context, t *testing.T, proposer
 	prop := types.NewProposal(p.currentHeight, 0, -1, bid, proposedTime)
 	tp := prop.ToProto()
 
-	if err := proposer.SignProposal(p.chainID, tp); err != nil {
-		t.Fatalf("error signing proposal: %s", err)
-	}
+	err = proposer.SignProposal(p.chainID, tp)
+	require.NoError(t, err)
 
 	time.Sleep(time.Until(deliverTime))
 	prop.Signature = tp.Signature
-	if err := p.observedState.SetProposalAndBlock(prop, b, ps, "peerID"); err != nil {
-		t.Fatal(err)
-	}
+	err = p.observedState.SetProposalAndBlock(prop, b, ps, "peerID")
+	require.NoError(t, err)
 	ensureProposal(p.ensureProposalCh, p.currentHeight, 0, bid)
 
 	ensurePrevote(p.ensureVoteCh, p.currentHeight, p.currentRound)
 	signAddVotes(p.observedState, types.PrevoteType, p.chainID, bid, false, p.otherValidators...)
 
-	signAddVotes(p.observedState, types.PrecommitType, p.chainID, bid, false, p.otherValidators...)
 	ensurePrecommit(p.ensureVoteCh, p.currentHeight, p.currentRound)
+	signAddVotes(p.observedState, types.PrecommitType, p.chainID, bid, false, p.otherValidators...)
 
 	vk, err := p.observedValidator.GetPubKey()
 	require.NoError(t, err)
@@ -236,17 +242,31 @@ func timestampedCollector(ctx context.Context, t *testing.T, eb *types.EventBus)
 	// enough to hold all of the events produced during a single height.
 	eventCh := make(chan timestampedEvent, 100)
 
-	/* TODO merge Adapt this
-	if err := eb.Observe(ctx, func(msg cmtpubsub.Message) error {
-		eventCh <- timestampedEvent{
-			ts: time.Now(),
-			m:  msg,
+	const tsCollectorClient = "timestampedCollector"
+	proposalSub, err := eb.Subscribe(ctx, tsCollectorClient, types.EventQueryCompleteProposal)
+	require.NoError(t, err)
+	// We set a capacity of since there are several votes produced.
+	// With capacity 1 (default) the tests deadlock sometimes.
+	voteSub, err := eb.Subscribe(ctx, tsCollectorClient, types.EventQueryVote, 10)
+	require.NoError(t, err)
+
+	go func(ctx context.Context, t *testing.T) {
+		t.Helper()
+		for {
+			var msg cmtpubsub.Message
+			select {
+			case <-ctx.Done():
+				return
+			case msg = <-proposalSub.Out():
+			case msg = <-voteSub.Out():
+			}
+			eventCh <- timestampedEvent{
+				ts: cmttime.Now(),
+				m:  msg,
+			}
 		}
-		return nil
-	}, types.EventQueryVote, types.EventQueryCompleteProposal); err != nil {
-		t.Fatalf("Failed to observe query %v: %v", types.EventQueryVote, err)
-	}
-	*/
+	}(ctx, t)
+
 	return eventCh
 }
 
@@ -254,6 +274,7 @@ func collectHeightResults(ctx context.Context, t *testing.T, eventCh <-chan time
 	t.Helper()
 	var res heightResult
 	for event := range eventCh {
+		require.False(t, event.ts.IsZero())
 		switch v := event.m.Data().(type) {
 		case types.EventDataVote:
 			if v.Vote.Height > height {
@@ -264,6 +285,9 @@ func collectHeightResults(ctx context.Context, t *testing.T, eventCh <-chan time
 			}
 			if v.Vote.Type != types.PrevoteType {
 				continue
+			}
+			if res.prevote != nil {
+				t.Fatalf("received duplicate prevote, previous %v, current %v", res.prevote, v.Vote)
 			}
 			res.prevote = v.Vote
 			res.prevoteIssuedAt = event.ts
@@ -322,13 +346,12 @@ func (hr heightResult) isComplete() bool {
 // TestProposerWaitsForGenesisTime tests that a proposer will not propose a block
 // until after the genesis time has passed. The test sets the genesis time in the
 // future and then ensures that the observed validator waits to propose a block.
-func TestProposerWaitsForGenesisTime(t *testing.T) {
-	t.Skip("Not ready yet")
+func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// create a genesis time far (enough) in the future.
-	initialTime := time.Now().Add(800 * time.Millisecond)
+	initialTime := cmttime.Now().Add(800 * time.Millisecond)
 	cfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    10 * time.Millisecond,
@@ -353,8 +376,7 @@ func TestProposerWaitsForGenesisTime(t *testing.T) {
 // height 1 and height 5. The test sets the block time of height 4 in the future
 // and then verifies that the observed validator waits until after the block time
 // of height 4 to propose a block at height 5.
-func TestProposerWaitsForPreviousBlock(t *testing.T) {
-	t.Skip("Not ready yet")
+func TestPBTSProposerWaitsForPreviousBlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	initialTime := time.Now().Add(time.Millisecond * 50)
@@ -382,8 +404,7 @@ func TestProposerWaitsForPreviousBlock(t *testing.T) {
 	assert.NotNil(t, results.height5.prevote.BlockID.Hash)
 }
 
-func TestProposerWaitTime(t *testing.T) {
-	t.Skip("Not ready yet")
+func TestPBTSProposerWaitTime(t *testing.T) {
 	genesisTime, err := time.Parse(time.RFC3339, "2019-03-13T23:00:00Z")
 	require.NoError(t, err)
 	testCases := []struct {
@@ -422,8 +443,7 @@ func TestProposerWaitTime(t *testing.T) {
 	}
 }
 
-func TestTimelyProposal(t *testing.T) {
-	t.Skip("Not ready yet")
+func TestPBTSTimelyProposal(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -445,8 +465,7 @@ func TestTimelyProposal(t *testing.T) {
 	require.NotNil(t, results.height2.prevote.BlockID.Hash)
 }
 
-func TestTooFarInThePastProposal(t *testing.T) {
-	t.Skip("Not ready yet")
+func TestPBTSTooFarInThePastProposal(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -470,8 +489,7 @@ func TestTooFarInThePastProposal(t *testing.T) {
 	require.Nil(t, results.height2.prevote.BlockID.Hash)
 }
 
-func TestTooFarInTheFutureProposal(t *testing.T) {
-	t.Skip("Not ready yet")
+func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

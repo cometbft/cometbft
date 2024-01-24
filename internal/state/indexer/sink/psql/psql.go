@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/lib/pq"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +42,6 @@ func NewEventSink(connStr, chainID string) (*EventSink, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return &EventSink{
 		store:   db,
 		chainID: chainID,
@@ -178,10 +178,33 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
 	})
 }
 
+// getBlockIDs returns an list of block ids each corresponding to a block id for the provided tx
+func (es *EventSink) getBlockIDs(txrs []*abci.TxResult) ([]int64, error) {
+	heights := make([]int64, len(txrs))
+	for i, txr := range txrs {
+		heights[i] = txr.Height
+	}
+	var blockIDs pq.Int64Array
+	if err := es.store.QueryRow(`
+SELECT array_agg(rowid ORDER BY f.ord)
+FROM (
+  select row_number() over() as ord, height
+  FROM unnest($1::bigint[]) AS height
+) AS f
+JOIN `+tableBlocks+` as b ON b.height = f.height AND b.chain_id = $2;`,
+		pq.Array(heights), es.chainID).Scan(&blockIDs); err != nil {
+		return nil, fmt.Errorf("getting block ids for txs from sql: %w", err)
+	}
+	return blockIDs, nil
+}
+
 func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 	ts := time.Now().UTC()
-
-	for _, txr := range txrs {
+	blockIDs, err := es.getBlockIDs(txrs)
+	if err != nil {
+		return fmt.Errorf("getting block ids for txs: %w", err)
+	}
+	for i, txr := range txrs {
 		// Encode the result message in protobuf wire format for indexing.
 		resultData, err := proto.Marshal(txr)
 		if err != nil {
@@ -192,22 +215,13 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 		txHash := fmt.Sprintf("%X", types.Tx(txr.Tx).Hash())
 
 		if err := runInTransaction(es.store, func(dbtx *sql.Tx) error {
-			// Find the block associated with this transaction. The block header
-			// must have been indexed prior to the transactions belonging to it.
-			blockID, err := queryWithID(dbtx, `
-SELECT rowid FROM `+tableBlocks+` WHERE height = $1 AND chain_id = $2;
-`, txr.Height, es.chainID)
-			if err != nil {
-				return fmt.Errorf("finding block ID: %w", err)
-			}
-
 			// Insert a record for this tx_result and capture its ID for indexing events.
 			txID, err := queryWithID(dbtx, `
 INSERT INTO `+tableTxResults+` (block_id, index, created_at, tx_hash, tx_result)
   VALUES ($1, $2, $3, $4, $5)
   ON CONFLICT DO NOTHING
   RETURNING rowid;
-`, blockID, txr.Index, ts, txHash, resultData)
+`, blockIDs[i], txr.Index, ts, txHash, resultData)
 			if err == sql.ErrNoRows {
 				return nil // we already saw this transaction; quietly succeed
 			} else if err != nil {
@@ -215,14 +229,14 @@ INSERT INTO `+tableTxResults+` (block_id, index, created_at, tx_hash, tx_result)
 			}
 
 			// Insert the special transaction meta-events for hash and height.
-			if err := insertEvents(dbtx, blockID, txID, []abci.Event{
+			if err := insertEvents(dbtx, uint32(blockIDs[i]), txID, []abci.Event{
 				makeIndexedEvent(types.TxHashKey, txHash),
 				makeIndexedEvent(types.TxHeightKey, strconv.FormatInt(txr.Height, 10)),
 			}); err != nil {
 				return fmt.Errorf("indexing transaction meta-events: %w", err)
 			}
 			// Index any events packaged with the transaction.
-			if err := insertEvents(dbtx, blockID, txID, txr.Result.Events); err != nil {
+			if err := insertEvents(dbtx, uint32(blockIDs[i]), txID, txr.Result.Events); err != nil {
 				return fmt.Errorf("indexing transaction events: %w", err)
 			}
 			return nil

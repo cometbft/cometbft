@@ -210,7 +210,7 @@ func (params ConsensusParams) ValidateBasic() error {
 // |  1 | *                    | (nil)                  | nil
 // |  2 | *                    | < 0                    | VoteExtensionsEnableHeight must be positive
 // |  3 | <=0                  | 0                      | nil
-// |  4 | X                    | X                      | nil
+// |  4 | X                    | X (>=0)                | nil
 // |  5 | > 0; <=height        | 0                      | vote extensions cannot be disabled once enabled
 // |  6 | > 0; > height        | 0                      | nil (disable a previous proposal)
 // |  7 | *                    | <=height               | vote extensions cannot be updated to a past height

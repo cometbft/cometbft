@@ -322,6 +322,89 @@ func TestTxSearchEventMatch(t *testing.T) {
 		})
 	}
 }
+
+func TestTxSearchEventMatchByHeight(t *testing.T) {
+
+	indexer := NewTxIndex(db.NewMemDB())
+
+	txResult := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "Ana", Index: true}}},
+	})
+
+	err := indexer.Index(txResult)
+	require.NoError(t, err)
+
+	txResult10 := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "/Ivan/.test", Index: true}}},
+	})
+	txResult10.Tx = types.Tx("HELLO WORLD 10")
+	txResult10.Height = 10
+
+	err = indexer.Index(txResult10)
+	require.NoError(t, err)
+
+	testCases := map[string]struct {
+		q             string
+		resultsLength int
+	}{
+		"Return all events from a height 1": {
+			q:             "tx.height = 1",
+			resultsLength: 1,
+		},
+		"Return all events from a height 10": {
+			q:             "tx.height = 10",
+			resultsLength: 1,
+		},
+		"Return all events from a height 5": {
+			q:             "tx.height = 5",
+			resultsLength: 0,
+		},
+		"Return all events from a height in [2; 5]": {
+			q:             "tx.height >= 2 AND tx.height <= 5",
+			resultsLength: 0,
+		},
+		"Return all events from a height in [1; 5]": {
+			q:             "tx.height >= 1 AND tx.height <= 5",
+			resultsLength: 1,
+		},
+		"Return all events from a height in [1; 10]": {
+			q:             "tx.height >= 1 AND tx.height <= 10",
+			resultsLength: 2,
+		},
+		"Return all events from a height in [1; 5] by account.number": {
+			q:             "tx.height >= 1 AND tx.height <= 5 AND account.number=1",
+			resultsLength: 1,
+		},
+		"Return all events from a height in [1; 10] by account.number 2": {
+			q:             "tx.height >= 1 AND tx.height <= 10 AND account.number=1",
+			resultsLength: 2,
+		},
+	}
+
+	ctx := context.Background()
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.q, func(t *testing.T) {
+			results, err := indexer.Search(ctx, query.MustParse(tc.q))
+			assert.NoError(t, err)
+
+			assert.Len(t, results, tc.resultsLength)
+			if tc.resultsLength > 0 {
+				for _, txr := range results {
+					if txr.Height == 1 {
+						assert.True(t, proto.Equal(txResult, txr))
+					} else if txr.Height == 10 {
+						assert.True(t, proto.Equal(txResult10, txr))
+					} else {
+						assert.True(t, false)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestTxSearchWithCancelation(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 

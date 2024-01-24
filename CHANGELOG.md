@@ -1,5 +1,83 @@
 # CHANGELOG
 
+## v0.37.4
+
+*November 27, 2023*
+
+This release provides the **nop** mempool for applications that want to build
+their own mempool. Using this mempool effectively disables all mempool
+functionality in CometBFT, including transaction dissemination and the
+`broadcast_tx_*` endpoints.
+
+Also fixes a small bug in the mempool for an experimental feature, and reverts
+the change from v0.37.3 that bumped the minimum Go version to v1.21.
+
+### BUG FIXES
+
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
+### FEATURES
+
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
+
+  If you want to use it, change mempool's `type` to `nop`:
+
+  ```toml
+  [mempool]
+
+  # The type of mempool for this node to use.
+  #
+  # Possible types:
+  # - "flood" : concurrent linked list mempool with flooding gossip protocol
+  # (default)
+  # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+  # for storing, disseminating and proposing txs). "create_empty_blocks=false"
+  # is not supported.
+  type = "nop"
+  ```
+
+## v0.37.3
+
+*November 17, 2023*
+
+This release contains, among other things, an opt-in, experimental feature to
+help reduce the bandwidth consumption associated with the mempool's transaction
+gossip.
+
+### BREAKING CHANGES
+
+- `[p2p]` Remove unused UPnP functionality
+  ([\#1113](https://github.com/cometbft/cometbft/issues/1113))
+
+### BUG FIXES
+
+- `[state/indexer]` Respect both height params while querying for events
+   ([\#1529](https://github.com/cometbft/cometbft/pull/1529))
+
+### FEATURES
+
+- `[node/state]` Add Go API to bootstrap block store and state store to a height
+  ([\#1057](https://github.com/tendermint/tendermint/pull/#1057)) (@yihuang)
+- `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
+  ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
+
+### IMPROVEMENTS
+
+- `[crypto/sr25519]` Upgrade to go-schnorrkel@v1.0.0 ([\#475](https://github.com/cometbft/cometbft/issues/475))
+- `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[node]` Close evidence.db OnStop ([cometbft/cometbft\#1210](https://github.com/cometbft/cometbft/pull/1210): @chillyvee)
+- `[mempool]` Add experimental feature to limit the number of persistent peers and non-persistent
+  peers to which the node gossip transactions (only for "v0" mempool).
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
+  `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
+  which the node gossip transactions. 
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+
 ## v0.37.2
 
 *June 14, 2023*
@@ -9,14 +87,14 @@ security issues.
 
 ### BUG FIXES
 
-- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
-  enabled. We are not supporting reading floats from the db into the indexer
-  nor parsing them into BigFloats to not introduce breaking changes in minor
-  releases. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 - `[pubsub]` Pubsub queries are now able to parse big integers (larger than
   int64). Very big floats are also properly parsed into very big integers
   instead of being truncated to int64.
   ([\#771](https://github.com/cometbft/cometbft/pull/771))
+- `[state/kvindex]` Querying event attributes that are bigger than int64 is now
+  enabled. We are not supporting reading floats from the db into the indexer
+  nor parsing them into BigFloats to not introduce breaking changes in minor
+  releases. ([\#771](https://github.com/cometbft/cometbft/pull/771))
 
 ### IMPROVEMENTS
 

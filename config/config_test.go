@@ -37,6 +37,11 @@ func TestConfigValidateBasic(t *testing.T) {
 	// tamper with timeout_propose
 	cfg.Consensus.TimeoutPropose = -10 * time.Second
 	assert.Error(t, cfg.ValidateBasic())
+	cfg.Consensus.TimeoutPropose = 3 * time.Second
+
+	cfg.Consensus.CreateEmptyBlocks = false
+	cfg.Mempool.Type = MempoolTypeNop
+	assert.Error(t, cfg.ValidateBasic())
 }
 
 func TestTLSConfiguration(t *testing.T) {
@@ -121,6 +126,9 @@ func TestMempoolConfigValidateBasic(t *testing.T) {
 		assert.Error(t, cfg.ValidateBasic())
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(0)
 	}
+
+	reflect.ValueOf(cfg).Elem().FieldByName("Type").SetString("invalid")
+	assert.Error(t, cfg.ValidateBasic())
 }
 
 func TestStateSyncConfigValidateBasic(t *testing.T) {

@@ -77,6 +77,10 @@ type mockProxyApp struct {
 	abciResponses *cmtstate.ABCIResponses
 }
 
+func (mock *mockProxyApp) BeginBlock(req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	return *mock.abciResponses.BeginBlock
+}
+
 func (mock *mockProxyApp) DeliverTx(req abci.RequestDeliverTx) abci.ResponseDeliverTx {
 	r := mock.abciResponses.DeliverTxs[mock.txCount]
 	mock.txCount++

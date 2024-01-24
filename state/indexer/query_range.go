@@ -87,14 +87,13 @@ func (qr QueryRange) UpperBoundValue() interface{} {
 func LookForRangesWithHeight(conditions []query.Condition) (queryRange QueryRanges, indexes []int, heightRange QueryRange) {
 	queryRange = make(QueryRanges)
 	for i, c := range conditions {
-		heightKey := false
 		if IsRangeOperation(c.Op) {
+			heightKey := c.CompositeKey == types.BlockHeightKey || c.CompositeKey == types.TxHeightKey
 			r, ok := queryRange[c.CompositeKey]
 			if !ok {
 				r = QueryRange{Key: c.CompositeKey}
 				if c.CompositeKey == types.BlockHeightKey || c.CompositeKey == types.TxHeightKey {
 					heightRange = QueryRange{Key: c.CompositeKey}
-					heightKey = true
 				}
 			}
 

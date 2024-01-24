@@ -60,21 +60,29 @@ type Reactor struct {
 	errorsCh   <-chan peerError
 }
 
-// NewReactor returns new reactor instance.
-func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool) *Reactor {
+func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+	blockSync bool, offlineStateSyncHeight int64) *Reactor {
 
-	if state.LastBlockHeight != store.Height() {
-		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch", state.LastBlockHeight,
-			store.Height()))
+	storeHeight := store.Height()
+	if storeHeight == 0 {
+		// If state sync was performed offline and the stores were bootstrapped to height H
+		// the state store's lastHeight will be H while blockstore's Height and Base are still 0
+		// 1. This scenario should not lead to a panic in this case, which is indicated by
+		// having a OfflineStateSyncHeight > 0
+		// 2. We need to instruct the blocksync reactor to start fetching blocks from H+1
+		// instead of 0.
+		storeHeight = offlineStateSyncHeight
 	}
-
+	if state.LastBlockHeight != storeHeight {
+		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
+			storeHeight))
+	}
 	requestsCh := make(chan BlockRequest, maxTotalRequesters)
 
 	const capacity = 1000                      // must be bigger than peers count
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
 
-	startHeight := store.Height() + 1
+	startHeight := storeHeight + 1
 	if startHeight == 1 {
 		startHeight = state.InitialHeight
 	}
@@ -91,6 +99,14 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	return bcR
+}
+
+// NewReactor returns new reactor instance.
+func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+	blockSync bool) *Reactor {
+
+	return NewReactorWithOfflineStateSync(state, blockExec, store, blockSync, 0)
+
 }
 
 // SetLogger implements service.Service by setting the logger on reactor and pool.

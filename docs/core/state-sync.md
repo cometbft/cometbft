@@ -30,7 +30,7 @@ The next information you will need to acquire it through publicly exposed RPC's 
 - `trust_period`: Trust period is the period in which headers can be verified. 
   > :warning: This value should be significantly smaller than the unbonding period.
 
-If you are relying on publicly exposed RPC's to get the need information, you can use `curl`.
+If you are relying on publicly exposed RPC's to get the need information, you can use `curl` and [`jq`][jq].
 
 Example: 
 
@@ -46,3 +46,5 @@ The response will be:
   "hash": "188F4F36CBCD2C91B57509BBF231C777E79B52EE3E0D90D06B1A25EB16E6E23D"
 }
 ```
+
+[jq]: https://jqlang.github.io/jq/

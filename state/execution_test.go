@@ -776,6 +776,59 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	mp.AssertExpectations(t)
 }
 
+// TestPrepareProposalCountSerializationOverhead tests that the block creation logic returns
+// an error if the ResponsePrepareProposal returned from the application is at the limit of
+// its size and will go beyond the limit upon serialization.
+func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
+	const height = 2
+
+	state, stateDB, privVals := makeState(1, height)
+	// limit max block size
+	var bytesPerTx int64 = 4
+	const nValidators = 1
+	nonDataSize := 5000 - types.MaxDataBytes(5000, 0, nValidators)
+	state.ConsensusParams.Block.MaxBytes = bytesPerTx*1024 + nonDataSize
+	maxDataBytes := types.MaxDataBytes(state.ConsensusParams.Block.MaxBytes, 0, nValidators)
+
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+
+	evpool := &mocks.EvidencePool{}
+	evpool.On("PendingEvidence", mock.Anything).Return([]types.Evidence{}, int64(0))
+
+	txs := test.MakeNTxs(height, maxDataBytes/bytesPerTx)
+	mp := &mpmocks.Mempool{}
+	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs(txs))
+
+	app := &abcimocks.Application{}
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(abci.ResponsePrepareProposal{
+		Txs: types.Txs(txs).ToSliceOfBytes(),
+	}, nil)
+
+	cc := proxy.NewLocalClientCreator(app)
+	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
+	err := proxyApp.Start()
+	require.NoError(t, err)
+	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
+
+	blockExec := sm.NewBlockExecutor(
+		stateStore,
+		log.NewNopLogger(),
+		proxyApp.Consensus(),
+		mp,
+		evpool,
+	)
+	pa, _ := state.Validators.GetByIndex(0)
+	commit, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	require.NoError(t, err)
+	block, err := blockExec.CreateProposalBlock(height, state, commit, pa)
+	require.Nil(t, block)
+	require.ErrorContains(t, err, "transaction data size exceeds maximum")
+
+	mp.AssertExpectations(t)
+}
+
 // TestPrepareProposalErrorOnPrepareProposalError tests when the client returns an error
 // upon calling PrepareProposal on it.
 func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {

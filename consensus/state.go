@@ -1730,14 +1730,6 @@ func (cs *State) finalizeCommit(height int64) {
 		}
 	}
 
-	// Prune old heights, if requested by ABCI app.
-	if retainHeight > 0 && blockExec.pruner != nil {
-		err := blockExec.pruner.SetApplicationBlockRetainHeight(retainHeight)
-		if err != nil {
-			blockExec.logger.Error("Failed to set application block retain height", "retainHeight", retainHeight, "err", err)
-		}
-	}
-
 	// must be called before we update state
 	cs.recordMetrics(height, block)
 
@@ -1761,23 +1753,23 @@ func (cs *State) finalizeCommit(height int64) {
 	// * cs.StartTime is set to when we will start round0.
 }
 
-func (cs *State) pruneBlocks(retainHeight int64) (uint64, error) {
-	base := cs.blockStore.Base()
-	if retainHeight <= base {
-		return 0, nil
-	}
+// func (cs *State) pruneBlocks(retainHeight int64) (uint64, error) {
+// 	base := cs.blockStore.Base()
+// 	if retainHeight <= base {
+// 		return 0, nil
+// 	}
 
-	amountPruned, err := cs.blockStore.PruneBlocks(retainHeight)
-	if err != nil {
-		return 0, fmt.Errorf("failed to prune block store: %w", err)
-	}
+// 	amountPruned, err := cs.blockStore.PruneBlocks(retainHeight)
+// 	if err != nil {
+// 		return 0, fmt.Errorf("failed to prune block store: %w", err)
+// 	}
 
-	err = cs.blockExec.Store().PruneStates(base, retainHeight)
-	if err != nil {
-		return 0, fmt.Errorf("failed to prune state store: %w", err)
-	}
-	return amountPruned, nil
-}
+// 	err = cs.blockExec.Store().PruneStates(base, retainHeight)
+// 	if err != nil {
+// 		return 0, fmt.Errorf("failed to prune state store: %w", err)
+// 	}
+// 	return amountPruned, nil
+// }
 
 func (cs *State) recordMetrics(height int64, block *types.Block) {
 	cs.metrics.Validators.Set(float64(cs.Validators.Size()))

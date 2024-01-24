@@ -6,7 +6,7 @@ RUN apk update && \
 
 VOLUME /cometbft
 WORKDIR /cometbft
-EXPOSE 26656 26657
+EXPOSE 26660 26656 26657
 ENTRYPOINT ["/usr/bin/wrapper.sh"]
 CMD ["node", "--proxy_app", "kvstore"]
 STOPSIGNAL SIGTERM

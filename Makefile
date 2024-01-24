@@ -340,7 +340,7 @@ monitoring-start:
 	cd test/monitoring && docker-compose up -d
 
 #? monitoring-stop: Stop the Prometheus and Grafana servers
-monitoring-start:
+monitoring-stop:
 	cd test/monitoring && docker-compose down
 
 #? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps

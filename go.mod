@@ -293,3 +293,18 @@ require (
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
 	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
 )
+<<<<<<< HEAD
+=======
+
+replace github.com/cometbft/cometbft/api => ./api
+
+retract (
+        // a regression was introduced
+        v0.38.4
+        // a breaking change was introduced
+        v0.38.3
+        // superseeded by v0.38.3 because of ASA-2024-001
+	[v0.38.0, v0.38.2]
+)
+
+>>>>>>> 1d99e0530 (fix: `ValidateUpdate`: allow no-change updates regardless of current height (#2112))

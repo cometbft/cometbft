@@ -4,11 +4,6 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-#  - job_name: "prometheus"
-#    static_configs:
-#      - targets: ["localhost:9090"]
-#    scrape_interval: 1m
-
   - job_name: 'host'
     static_configs:
       - targets: ['node-exporter:9100']
@@ -33,4 +28,3 @@ scrape_configs:
     static_configs:
       - targets: ['host.docker.internal:26673']
     scrape_interval: 5s
-

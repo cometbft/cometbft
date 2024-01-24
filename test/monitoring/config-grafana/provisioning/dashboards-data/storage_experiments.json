@@ -869,7 +869,7 @@
         "type": "prometheus",
         "uid": "$datasource"
       },
-      "description": "Experimental metric that shows the database size and highlights compation",
+      "description": "Experimental metric that shows the database size and highlights compaction",
       "fieldConfig": {
         "defaults": {
           "color": {

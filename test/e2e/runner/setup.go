@@ -166,7 +166,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 	cfg.RPC.PprofListenAddress = ":6060"
-	cfg.RPC.PprofListenAddress = ":6060"
 
 	// cfg.GRPC.ListenAddress = "tcp://0.0.0.0:26670"
 	// cfg.GRPC.VersionService.Enabled = true

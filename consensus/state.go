@@ -1724,9 +1724,9 @@ func (cs *State) finalizeCommit(height int64) {
 	if retainHeight > 0 && cs.blockExec.Pruner() != nil {
 		err := cs.blockExec.Pruner().SetApplicationBlockRetainHeight(retainHeight)
 		if err != nil {
-			logger.Error("failed to prune blocks", "retain_height", retainHeight, "err", err)
+			logger.Error("failed to set application retain height to", "retain_height", retainHeight, "err", err)
 		} else {
-			logger.Error("Failed to set application retain height", "retainHeight", retainHeight, "err", err)
+			logger.Debug("application retain height set")
 		}
 	}
 

@@ -28,6 +28,7 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: "Check the source code"
         run: |
           set -euo pipefail
 

@@ -15,7 +15,7 @@ discussion that might otherwise only be recorded in an ad-hoc way (for example,
 via gists or Google docs) that are difficult to discover for someone after the
 fact. An RFC _may_ give rise to more specific architectural _decisions_ for
 CometBFT, but those decisions must be recorded separately in
-[Architecture Decision Records (ADR)](../references/architecture/).
+[Architecture Decision Records (ADR)](./../architecture/README.md).
 
 As a rule of thumb, if you can articulate a specific question that needs to be
 answered, write an ADR. If you need to explore the topic and get input from

@@ -564,7 +564,7 @@ CometBFT will only create blocks if there are transactions, or after waiting
 ## Consensus timeouts explained
 
 There's a variety of information about timeouts in [Running in
-production](running-in-production.md#configuration-parameters).
+production](./running-in-production.md#configuration-parameters).
 
 You can also find more detailed explanation in the paper describing
 the Tendermint consensus algorithm, adopted by CometBFT: [The latest

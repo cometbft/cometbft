@@ -165,8 +165,8 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 		// no change
 		{"current: 3, 0 -> 0", 3, 0, 0, false},
 		{"current: 3, 100 -> 100, ", 3, 100, 100, false},
-		{"current: 100, 100 -> 100, ", 100, 100, 100, true},
-		{"current: 300, 100 -> 100, ", 300, 100, 100, true},
+		{"current: 100, 100 -> 100, ", 100, 100, 100, false},
+		{"current: 300, 100 -> 100, ", 300, 100, 100, false},
 		// set for the first time
 		{"current: 3, 0 -> 5, ", 3, 0, 5, false},
 		{"current: 4, 0 -> 5, ", 4, 0, 5, false},

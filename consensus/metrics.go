@@ -56,6 +56,8 @@ type Metrics struct {
 	NumTxs metrics.Gauge
 	// Size of the block.
 	BlockSizeBytes metrics.Gauge
+	// Size of the chain in bytes.
+	ChainSizeBytes metrics.Counter
 	// Total number of transactions.
 	TotalTxs metrics.Gauge
 	// The latest block height.

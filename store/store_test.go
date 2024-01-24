@@ -86,7 +86,7 @@ func TestLoadBlockStoreState(t *testing.T) {
 	for _, tc := range testCases {
 		db := dbm.NewMemDB()
 		batch := db.NewBatch()
-		SaveBlockStoreState(tc.bss, batch)
+		SaveBlockStoreStateBatch(tc.bss, batch)
 		err := batch.WriteSync()
 		require.NoError(t, err)
 		retrBSJ := LoadBlockStoreState(db)

@@ -32,4 +32,3 @@ jobs:
       - name: Run Go Tests
         run: |
           make test-group-${{ matrix.part }} NUM_SPLIT=6
-        if: env.GIT_DIFF

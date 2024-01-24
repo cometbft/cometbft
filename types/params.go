@@ -13,7 +13,7 @@ import (
 
 const (
 	// MaxBlockSizeBytes is the maximum permitted size of the blocks.
-	MaxBlockSizeBytes = 104857600 // 100MB
+	MaxBlockSizeBytes = 100 * 1024 * 1024
 
 	// BlockPartSizeBytes is the size of one block part.
 	BlockPartSizeBytes uint32 = 65536 // 64kB
@@ -38,6 +38,7 @@ type ConsensusParams struct {
 	Validator ValidatorParams `json:"validator"`
 	Version   VersionParams   `json:"version"`
 	ABCI      ABCIParams      `json:"abci"`
+	Synchrony SynchronyParams `json:"synchrony"`
 }
 
 // BlockParams define limits on the block size and gas plus minimum time
@@ -82,6 +83,15 @@ func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
 	return a.VoteExtensionsEnableHeight <= h
 }
 
+// SynchronyParams influence the validity of block timestamps.
+// For more information on the relationship of the synchrony parameters to
+// block validity, see the Proposer-Based Timestamps specification:
+// https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md
+type SynchronyParams struct {
+	Precision    time.Duration `json:"precision,string"`
+	MessageDelay time.Duration `json:"message_delay,string"`
+}
+
 // DefaultConsensusParams returns a default ConsensusParams.
 func DefaultConsensusParams() *ConsensusParams {
 	return &ConsensusParams{
@@ -90,6 +100,7 @@ func DefaultConsensusParams() *ConsensusParams {
 		Validator: DefaultValidatorParams(),
 		Version:   DefaultVersionParams(),
 		ABCI:      DefaultABCIParams(),
+		Synchrony: DefaultSynchronyParams(),
 	}
 }
 
@@ -131,6 +142,15 @@ func DefaultABCIParams() ABCIParams {
 	}
 }
 
+func DefaultSynchronyParams() SynchronyParams {
+	// TODO(@wbanfield): Determine experimental values for these defaults
+	// https://github.com/tendermint/tendermint/issues/7202
+	return SynchronyParams{
+		Precision:    500 * time.Millisecond,
+		MessageDelay: 2 * time.Second,
+	}
+}
+
 func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
 	for i := 0; i < len(params.PubKeyTypes); i++ {
 		if params.PubKeyTypes[i] == pubkeyType {
@@ -167,7 +187,7 @@ func (params ConsensusParams) ValidateBasic() error {
 	}
 
 	if params.Evidence.MaxAgeDuration <= 0 {
-		return fmt.Errorf("evidence.MaxAgeDuration must be grater than 0 if provided, Got %v",
+		return fmt.Errorf("evidence.MaxAgeDuration must be greater than 0 if provided, Got %v",
 			params.Evidence.MaxAgeDuration)
 	}
 
@@ -187,6 +207,16 @@ func (params ConsensusParams) ValidateBasic() error {
 
 	if params.ABCI.VoteExtensionsEnableHeight < 0 {
 		return fmt.Errorf("ABCI.VoteExtensionsEnableHeight cannot be negative. Got: %d", params.ABCI.VoteExtensionsEnableHeight)
+	}
+
+	if params.Synchrony.MessageDelay <= 0 {
+		return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
+			params.Synchrony.MessageDelay)
+	}
+
+	if params.Synchrony.Precision <= 0 {
+		return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
+			params.Synchrony.Precision)
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {
@@ -283,6 +313,14 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Abci != nil {
 		res.ABCI.VoteExtensionsEnableHeight = params2.Abci.GetVoteExtensionsEnableHeight()
 	}
+	if params2.Synchrony != nil {
+		if params2.Synchrony.MessageDelay != nil {
+			res.Synchrony.MessageDelay = *params2.Synchrony.GetMessageDelay()
+		}
+		if params2.Synchrony.Precision != nil {
+			res.Synchrony.Precision = *params2.Synchrony.GetPrecision()
+		}
+	}
 	return res
 }
 
@@ -305,6 +343,10 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 		},
 		Abci: &cmtproto.ABCIParams{
 			VoteExtensionsEnableHeight: params.ABCI.VoteExtensionsEnableHeight,
+		},
+		Synchrony: &cmtproto.SynchronyParams{
+			MessageDelay: &params.Synchrony.MessageDelay,
+			Precision:    &params.Synchrony.Precision,
 		},
 	}
 }
@@ -329,6 +371,14 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 	}
 	if pbParams.Abci != nil {
 		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()
+	}
+	if pbParams.Synchrony != nil {
+		if pbParams.Synchrony.MessageDelay != nil {
+			c.Synchrony.MessageDelay = *pbParams.Synchrony.GetMessageDelay()
+		}
+		if pbParams.Synchrony.Precision != nil {
+			c.Synchrony.Precision = *pbParams.Synchrony.GetPrecision()
+		}
 	}
 	return c
 }

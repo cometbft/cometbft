@@ -2,13 +2,13 @@
 
 ## Proposal Time
 
-PBTS computes for a proposed value `v` the proposal time `v.time`, with bounded difference to the actual real-time the proposed value was generated.
-The proposal time is read from the clock of the process that proposes a value for the first time, its original proposer.
+PBTS computes, for a proposed value `v`, the proposal time `v.time` with bounded difference to the actual real-time the proposed value was generated.
+The proposal time is read from the clock of the process that proposes a value for the first time, which is its original proposer.
 
 With PBTS, therefore, we assume that processes have access to **synchronized clocks**.
 The proper definition of what it means can be found in the [system model][sysmodel],
-but essentially we assume that two correct processes do not simultaneous read from their clocks
-time values that differ more than `PRECISION`, which is a system parameter.
+but essentially we assume that two correct processes do not simultaneously read from their clocks
+time values that differ by more than `PRECISION`, which is a system parameter.
 
 ### Proposal times are definitive
 
@@ -17,11 +17,11 @@ If the same value `v` is then re-proposed in a subsequent round of consensus,
 it retains its original time, assigned by its original proposer.
 
 A value `v` should re-proposed when it becomes locked by the network, i.e., when it receives `2f + 1 PREVOTES` in a round `r` of consensus.
-This means that processes with `2f + 1`-equivalent voting power accepted, in round `r`, both `v` and its associated time `v.time`.
+This means that processes with `2f + 1`-equivalent voting power accepted both `v` and its associated time `v.time` in round `r`.
 Since the originally proposed value and its associated time were considered valid, there is no reason for reassigning `v.time`.
 
 > In the [first version][algorithm_v1] of this specification, proposals were defined as pairs `(v, time)`.
-> In addition, the same value `v` could be proposed, in different rounds, but would be associated to distinct times each time it was re-proposed.
+> In addition, the same value `v` could be proposed, in different rounds, but would be associated with distinct times each time it was re-proposed.
 > Since this possibility does not exist in this second specification, the proposal time became part of the proposed value.
 > With this simplification, several small changes to the [arXiv][arXiv] algorithm are no longer required.
 
@@ -31,14 +31,14 @@ Values decided in successive heights of consensus must have increasing times, so
 
 - Monotonicity: for any process `p` and any two decided heights `h` and `h'`, if `h > h'` then `decision_p[h].time > decision_p[h'].time`.
 
-For ensuring time monotonicity, it is enough to ensure that a value `v` proposed by process `p` at height `h_p` has `v.time > decision_p[h_p-1].time`.
+To ensure time monotonicity, it is enough to ensure that a value `v` proposed by process `p` at height `h_p` has `v.time > decision_p[h_p-1].time`.
 So, if process `p` is the proposer of a round of height `h_p` and reads from its clock a time `now_p <= decision_p[h_p-1]`,
 it should postpone the generation of its proposal until `now_p > decision_p[h_p-1]`.
 
 > Although it should be considered, this scenario is unlikely during regular operation,
 as from `decision_p[h_p-1].time` and the start of height `h_p`, a complete consensus instance need to be concluded.
 
-Notice that monotonicity is not introduced by this proposal, being already ensured by  [`BFT Time`][bfttime].
+Notice that monotonicity is not introduced by this proposal, as it is already ensured by  [`BFT Time`][bfttime].
 In `BFT Time`, the `Timestamp` field of every `Precommit` message of height `h_p` sent by a correct process is required to be larger than `decision_p[h_p-1].time`.
 As one of such `Timestamp` fields becomes the time assigned to a value proposed at height `h_p`, time monotonicity is observed.
 
@@ -52,7 +52,7 @@ It is a temporal requirement, associated with the following
 [synchrony assumptions][sysmodel] regarding the behavior of processes and the network:
 
 - Synchronized clocks: the values simultaneously read from clocks of any two correct processes differ by at most `PRECISION`;
-- Bounded transmission delays: the real time interval between the sending of a proposal at a correct process, and the reception of the proposal at any correct process is upper bounded by `MSGDELAY`.
+- Bounded transmission delays: the real time interval between the sending of a proposal at a correct process and the reception of the proposal at any correct process is upper bounded by `MSGDELAY`.
 
 #### **[PBTS-RECEPTION-STEP.1]**
 
@@ -78,11 +78,11 @@ The following changes are proposed for the algorithm in the [arXiv paper][arXiv]
 
 There are two additions to operation of the **proposer** of a round:
 
-1. to ensure time monotonicity, the proposer does not propose a value until its
+1. To ensure time monotonicity, the proposer does not propose a value until its
 current local time, represented by `now_p` in the algorithm, 
 becomes greater than the previously decided value's time
-1. when the proposer produce a new proposal it sets the proposal's time to its current local time
-   - no changes are made to the logic when a proposer has a non-nil `validValue_p`, which retains its original proposal time.
+2. When the proposer produce a new proposal it sets the proposal's time to its current local time
+   - No changes are made to the logic when a proposer has a non-nil `validValue_p`, which retains its original proposal time.
 
 #### **[PBTS-ALG-STARTROUND.1]**
 
@@ -96,7 +96,7 @@ function StartRound(round) {
       } else {
          wait until now_p > decision_p[h_p-1].time // time monotonicity
          proposal ← getValue()
-         proposal.time ← now_p // proposal time
+         proposal.time ← now_p // proposal time set to current local time
       }
       broadcast ⟨PROPOSAL, h_p, round_p, proposal, validRound_p⟩
    } else {
@@ -141,8 +141,8 @@ because its proposer received `2f + 1 PREVOTE`s for `v` in a previous round
 This means that there was a round `r <= vr` in which `2f + 1` processes
 accepted a `PROPOSAL` for `v`, proposed at round `r` for the first time, with
 `vr = -1`.
-These processes therefore executed the line 22 of the algorithm and broadcast a
-`PREVOTE` for `v`, which means, in particular, that they have judged `v.time`
+These processes executed the line 22 of the algorithm and broadcast a
+`PREVOTE` for `v`, indicating in particular, that they have judged `v.time`
 as `timely` in round `r`.
 
 Since `v.time` was considered `timely` by `2f + 1` processes in a previous

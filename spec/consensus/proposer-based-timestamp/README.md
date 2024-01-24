@@ -116,8 +116,8 @@ as the weighted median of `Commit` timestamps comes from the clock of a non-faul
 
 The consensus algorithm does not make any assumptions regarding the clocks of (correct) validators,
 as block timestamps have no impact in its operation.
-However, the `Time` field of committed blocks is used by other components of CometBFT,
-such as IBC, the evidence, staking, and slashing modules.
+However, the `Time` field of committed blocks is used by other applications that integrate with CometBFT,
+including IBC, as well as Cosmos SDK modules such as evidence, staking, and slashing.
 And it is used based on the common belief that block timestamps
 should bear some resemblance to real time, which is **not guaranteed**.
 

@@ -1,4 +1,4 @@
-name: Golang Linter
+name: Lint, format and check the code for typos
 # Lint runs `make lint`
 #
 # This workflow is run on every pull request and push to main.
@@ -13,8 +13,8 @@ on:
       - main
 
 jobs:
-  golangci: # preserve old name to avoid changing GH settings
-    name: golangci-lint
+  lint:
+    name: lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -24,8 +24,7 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 

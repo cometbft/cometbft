@@ -890,7 +890,7 @@ func buildTMStateFromChain(
 		for _, block := range chain[:len(chain)-1] {
 			state = applyBlock(t, stateStore, state, block, proxyApp)
 		}
-/*  TODO: THIS WAS NOT PRESENT AT ALL IN 0.37.x Check whether it works w/o it
+		/*  TODO: THIS WAS NOT PRESENT AT ALL IN 0.37.x Check whether it works w/o it
 		dummyStateStore := &smmocks.Store{}
 		lastHeight := int64(len(chain))
 		penultimateHeight := int64(len(chain) - 1)
@@ -904,7 +904,7 @@ func buildTMStateFromChain(
 		dummyStateStore.On("GetApplicationRetainHeight", mock.Anything).Return(int64(0), nil)
 		dummyStateStore.On("GetCompanionBlockRetainHeight", mock.Anything).Return(int64(0), nil)
 		dummyStateStore.On("GetABCIResRetainHeight", mock.Anything).Return(int64(0), nil)
-*/
+		*/
 		// apply the final block to a state copy so we can
 		// get the right next appHash but keep the state back
 		applyBlock(t, stateStore, state, chain[len(chain)-1], proxyApp)

@@ -118,6 +118,7 @@ func (e ErrNoABCIResponsesForHeight) Error() string {
 }
 
 var ErrABCIResponsesNotPersisted = errors.New("node is not persisting abci responses")
+
 func (e ErrPrunerFailedToLoadState) Error() string {
 	return fmt.Sprintf("failed to load state, cannot prune: %s", e.Err.Error())
 }
@@ -143,6 +144,6 @@ func (e ErrFailedToPruneStates) Unwrap() error {
 }
 
 var (
-	ErrPrunerCannotLowerRetainHeight      = errors.New("cannot set a height lower than previously requested - heights might have already been pruned")
-	ErrInvalidRetainHeight                = errors.New("retain height cannot be less or equal than 0")
+	ErrPrunerCannotLowerRetainHeight = errors.New("cannot set a height lower than previously requested - heights might have already been pruned")
+	ErrInvalidRetainHeight           = errors.New("retain height cannot be less or equal than 0")
 )

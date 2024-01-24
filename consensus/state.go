@@ -1762,18 +1762,18 @@ func (cs *State) finalizeCommit(height int64) {
 	// * cs.StartTime is set to when we will start round0.
 }
 
-func (state *State) pruneBlocks(retainHeight int64) (uint64, error) {
-	base := state.blockStore.Base()
+func (cs *State) pruneBlocks(retainHeight int64) (uint64, error) {
+	base := cs.blockStore.Base()
 	if retainHeight <= base {
 		return 0, nil
 	}
 
-	amountPruned, err := state.blockStore.PruneBlocks(retainHeight)
+	amountPruned, err := cs.blockStore.PruneBlocks(retainHeight)
 	if err != nil {
 		return 0, fmt.Errorf("failed to prune block store: %w", err)
 	}
 
-	err = state.blockExec.Store().PruneStates(base, retainHeight)
+	err = cs.blockExec.Store().PruneStates(base, retainHeight)
 	if err != nil {
 		return 0, fmt.Errorf("failed to prune state store: %w", err)
 	}

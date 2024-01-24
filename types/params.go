@@ -230,7 +230,7 @@ func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, 
 	if params.ABCI.VoteExtensionsEnableHeight <= 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
 		return nil
 	}
-	// 4
+	// 4 (implicit: updated.Abci.VoteExtensionsEnableHeight >= 0)
 	if params.ABCI.VoteExtensionsEnableHeight == updated.Abci.VoteExtensionsEnableHeight {
 		return nil
 	}

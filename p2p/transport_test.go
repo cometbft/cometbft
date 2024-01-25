@@ -515,15 +515,7 @@ func TestTransportMultiplexRejectSelf(t *testing.T) {
 	}()
 
 	if err := <-errc; err != nil {
-		if e, ok := err.(ErrRejected); ok {
-			if !e.IsSelf() {
-				t.Errorf("expected to reject self, got: %v", e)
-			}
-		} else {
-			t.Errorf("expected ErrRejected, got %v", err)
-		}
-	} else {
-		t.Errorf("expected connection failure")
+		checkError(t, err)
 	}
 
 	_, err := mt.Accept(peerConfig{})
@@ -700,4 +692,21 @@ func (*testTransportConn) SetWriteDeadline(_ time.Time) error {
 
 func (*testTransportConn) Write(_ []byte) (int, error) {
 	return -1, fmt.Errorf("write() not implemented")
+}
+
+func checkError(t *testing.T, err error) {
+	if err == nil {
+		t.Errorf("expected connection failure")
+		return
+	}
+
+	e, ok := err.(ErrRejected)
+	if !ok {
+		t.Errorf("expected ErrRejected, got %v", err)
+		return
+	}
+
+	if !e.IsSelf() {
+		t.Errorf("expected to reject self, got: %v", e)
+	}
 }

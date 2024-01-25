@@ -84,22 +84,18 @@ func (c *evilConn) Read(data []byte) (n int, err error) {
 
 	switch c.readStep {
 	case 0:
+		var bz []byte
 		if !c.badEphKey {
 			lc := *c.locEphPub
-			bz, err := protoio.MarshalDelimited(&gogotypes.BytesValue{Value: lc[:]})
-			if err != nil {
-				panic(err)
-			}
-			copy(data, bz[c.readOffset:])
-			n = len(data)
+			bz, err = protoio.MarshalDelimited(&gogotypes.BytesValue{Value: lc[:]})
 		} else {
-			bz, err := protoio.MarshalDelimited(&gogotypes.BytesValue{Value: []byte("drop users;")})
-			if err != nil {
-				panic(err)
-			}
-			copy(data, bz)
-			n = len(data)
+			bz, err = protoio.MarshalDelimited(&gogotypes.BytesValue{Value: []byte("drop users;")})
 		}
+		if err != nil {
+			panic(err)
+		}
+		copy(data, bz[c.readOffset:])
+		n = len(data)
 		c.readOffset += n
 
 		if n >= 32 {
@@ -113,37 +109,30 @@ func (c *evilConn) Read(data []byte) (n int, err error) {
 		return n, nil
 	case 1:
 		signature := c.signChallenge()
+		var bz []byte
 		if !c.badAuthSignature {
 			pkpb, err := cryptoenc.PubKeyToProto(c.privKey.PubKey())
 			if err != nil {
 				panic(err)
 			}
-			bz, err := protoio.MarshalDelimited(&tmp2p.AuthSigMessage{PubKey: pkpb, Sig: signature})
+			bz, err = protoio.MarshalDelimited(&tmp2p.AuthSigMessage{PubKey: pkpb, Sig: signature})
 			if err != nil {
 				panic(err)
 			}
-			n, err = c.secretConn.Write(bz)
-			if err != nil {
-				panic(err)
-			}
-			if c.readOffset > len(c.buffer.Bytes()) {
-				return len(data), nil
-			}
-			copy(data, c.buffer.Bytes()[c.readOffset:])
 		} else {
-			bz, err := protoio.MarshalDelimited(&gogotypes.BytesValue{Value: []byte("select * from users;")})
-			if err != nil {
-				panic(err)
-			}
-			n, err = c.secretConn.Write(bz)
-			if err != nil {
-				panic(err)
-			}
-			if c.readOffset > len(c.buffer.Bytes()) {
-				return len(data), nil
-			}
-			copy(data, c.buffer.Bytes())
+			bz, err = protoio.MarshalDelimited(&gogotypes.BytesValue{Value: []byte("select * from users;")})
 		}
+		if err != nil {
+			panic(err)
+		}
+		n, err = c.secretConn.Write(bz)
+		if err != nil {
+			panic(err)
+		}
+		if c.readOffset > len(c.buffer.Bytes()) {
+			return len(data), nil
+		}
+		copy(data, c.buffer.Bytes()[c.readOffset:])
 		c.readOffset += len(data)
 		return n, nil
 	default:

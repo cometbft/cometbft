@@ -474,8 +474,8 @@ func (bs *BlockStore) saveBlockToBatch(
 	block *types.Block,
 	blockParts *types.PartSet,
 	seenCommit *types.Commit,
-	batch dbm.Batch) error {
-
+	batch dbm.Batch,
+) error {
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}

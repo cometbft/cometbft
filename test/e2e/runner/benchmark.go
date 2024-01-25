@@ -97,7 +97,6 @@ func (t *testnetStats) OutputJSON(net *e2e.Testnet) string {
 		"txns":         t.numtxns,
 		"dur":          t.totalTime.Seconds(),
 	})
-
 	if err != nil {
 		return ""
 	}

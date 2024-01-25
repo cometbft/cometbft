@@ -372,29 +372,38 @@ func (g *Group) readGroupInfo() GroupInfo {
 
 	// For each file in the directory, filter by pattern
 	for _, fileInfo := range fiz {
-		if fileInfo.Name() == headBase {
-			fileSize := fileInfo.Size()
+		fileName := fileInfo.Name()
+		fileSize := fileInfo.Size()
+
+		if fileName == headBase {
 			totalSize += fileSize
 			headSize = fileSize
 			continue
-		} else if strings.HasPrefix(fileInfo.Name(), headBase) {
-			fileSize := fileInfo.Size()
-			totalSize += fileSize
-			indexedFilePattern := regexp.MustCompile(`^.+\.([0-9]{3,})$`)
-			submatch := indexedFilePattern.FindSubmatch([]byte(fileInfo.Name()))
-			if len(submatch) != 0 {
-				// Matches
-				fileIndex, err := strconv.Atoi(string(submatch[1]))
-				if err != nil {
-					panic(err)
-				}
-				if maxIndex < fileIndex {
-					maxIndex = fileIndex
-				}
-				if minIndex == -1 || fileIndex < minIndex {
-					minIndex = fileIndex
-				}
-			}
+		}
+
+		if !strings.HasPrefix(fileName, headBase) {
+			continue
+		}
+
+		totalSize += fileSize
+		indexedFilePattern := regexp.MustCompile(`^.+\.([0-9]{3,})$`)
+		submatch := indexedFilePattern.FindSubmatch([]byte(fileName))
+
+		if len(submatch) == 0 {
+			continue
+		}
+
+		fileIndex, err := strconv.Atoi(string(submatch[1]))
+		if err != nil {
+			panic(err)
+		}
+
+		if maxIndex < fileIndex {
+			maxIndex = fileIndex
+		}
+
+		if minIndex == -1 || fileIndex < minIndex {
+			minIndex = fileIndex
 		}
 	}
 

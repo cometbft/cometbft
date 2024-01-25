@@ -436,6 +436,7 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 	// no iterate over kvs that are not within range.
 	ranges, rangeIndexes, heightRange := indexer.LookForRangesWithHeight(conditions)
 	heightInfo.heightRange = heightRange
+	heightInfo.heightRange = heightRange
 	if len(ranges) > 0 {
 		skipIndexes = append(skipIndexes, rangeIndexes...)
 

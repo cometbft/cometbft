@@ -32,4 +32,4 @@ jobs:
             Makefile
       - name: Run Go Tests
         run: |
-          make test-group-${{ matrix.part }} NUM_SPLIT=6
+          make test-group-${{ matrix.part }} NUM_SPLIT=6 GO_TAGS=pebbledb

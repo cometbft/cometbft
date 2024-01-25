@@ -4,13 +4,8 @@ package slot
 import (
 	"bytes"
 	"fmt"
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-	
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/parser/symbols"
-=======
 
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/symbols"
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/clean-start/grammar-auto/parser/symbols"
 )
 
 type Label int
@@ -234,97 +229,61 @@ var slots = map[Label]*Slot{
 		ApplyChunks1R2,
 	},
 	CleanStart0R0: {
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-		symbols.NT_CleanStart, 0, 0, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_StateSync, 
-=======
 		symbols.NT_CleanStart, 0, 0,
 		symbols.Symbols{
 			symbols.NT_InitChain,
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
+			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart0R0,
 	},
 	CleanStart0R1: {
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-		symbols.NT_CleanStart, 0, 1, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_StateSync, 
-=======
 		symbols.NT_CleanStart, 0, 1,
 		symbols.Symbols{
 			symbols.NT_InitChain,
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
+			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart0R1,
 	},
 	CleanStart0R2: {
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-		symbols.NT_CleanStart, 0, 2, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_StateSync, 
-=======
 		symbols.NT_CleanStart, 0, 2,
 		symbols.Symbols{
 			symbols.NT_InitChain,
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
+			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart0R2,
 	},
 	CleanStart0R3: {
-		symbols.NT_CleanStart, 0, 3, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-			symbols.NT_StateSync, 
+		symbols.NT_CleanStart, 0, 3,
+		symbols.Symbols{
+			symbols.NT_InitChain,
+			symbols.NT_StateSync,
 			symbols.NT_ConsensusExec,
-		}, 
-		CleanStart0R3, 
+		},
+		CleanStart0R3,
 	},
 	CleanStart1R0: {
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-		symbols.NT_CleanStart, 1, 0, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-=======
 		symbols.NT_CleanStart, 1, 0,
 		symbols.Symbols{
-			symbols.NT_StateSync,
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
+			symbols.NT_InitChain,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart1R0,
 	},
 	CleanStart1R1: {
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-		symbols.NT_CleanStart, 1, 1, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-=======
 		symbols.NT_CleanStart, 1, 1,
 		symbols.Symbols{
-			symbols.NT_StateSync,
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
+			symbols.NT_InitChain,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart1R1,
 	},
 	CleanStart1R2: {
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-		symbols.NT_CleanStart, 1, 2, 
-		symbols.Symbols{  
-			symbols.NT_InitChain, 
-=======
 		symbols.NT_CleanStart, 1, 2,
 		symbols.Symbols{
-			symbols.NT_StateSync,
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
+			symbols.NT_InitChain,
 			symbols.NT_ConsensusExec,
 		},
 		CleanStart1R2,
@@ -643,47 +602,6 @@ var slots = map[Label]*Slot{
 		},
 		Proposer1R2,
 	},
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-=======
-	Recovery0R0: {
-		symbols.NT_Recovery, 0, 0,
-		symbols.Symbols{
-			symbols.NT_InitChain,
-			symbols.NT_ConsensusExec,
-		},
-		Recovery0R0,
-	},
-	Recovery0R1: {
-		symbols.NT_Recovery, 0, 1,
-		symbols.Symbols{
-			symbols.NT_InitChain,
-			symbols.NT_ConsensusExec,
-		},
-		Recovery0R1,
-	},
-	Recovery0R2: {
-		symbols.NT_Recovery, 0, 2,
-		symbols.Symbols{
-			symbols.NT_InitChain,
-			symbols.NT_ConsensusExec,
-		},
-		Recovery0R2,
-	},
-	Recovery1R0: {
-		symbols.NT_Recovery, 1, 0,
-		symbols.Symbols{
-			symbols.NT_ConsensusExec,
-		},
-		Recovery1R0,
-	},
-	Recovery1R1: {
-		symbols.NT_Recovery, 1, 1,
-		symbols.Symbols{
-			symbols.NT_ConsensusExec,
-		},
-		Recovery1R1,
-	},
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
 	Start0R0: {
 		symbols.NT_Start, 0, 0,
 		symbols.Symbols{
@@ -698,23 +616,6 @@ var slots = map[Label]*Slot{
 		},
 		Start0R1,
 	},
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-=======
-	Start1R0: {
-		symbols.NT_Start, 1, 0,
-		symbols.Symbols{
-			symbols.NT_Recovery,
-		},
-		Start1R0,
-	},
-	Start1R1: {
-		symbols.NT_Start, 1, 1,
-		symbols.Symbols{
-			symbols.NT_Recovery,
-		},
-		Start1R1,
-	},
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
 	StateSync0R0: {
 		symbols.NT_StateSync, 0, 0,
 		symbols.Symbols{
@@ -855,109 +756,6 @@ var slots = map[Label]*Slot{
 	},
 }
 
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/slot/slot.go
-var slotIndex = map[Index]Label { 
-	Index{ symbols.NT_ApplyChunk,0,0 }: ApplyChunk0R0,
-	Index{ symbols.NT_ApplyChunk,0,1 }: ApplyChunk0R1,
-	Index{ symbols.NT_ApplyChunks,0,0 }: ApplyChunks0R0,
-	Index{ symbols.NT_ApplyChunks,0,1 }: ApplyChunks0R1,
-	Index{ symbols.NT_ApplyChunks,1,0 }: ApplyChunks1R0,
-	Index{ symbols.NT_ApplyChunks,1,1 }: ApplyChunks1R1,
-	Index{ symbols.NT_ApplyChunks,1,2 }: ApplyChunks1R2,
-	Index{ symbols.NT_CleanStart,0,0 }: CleanStart0R0,
-	Index{ symbols.NT_CleanStart,0,1 }: CleanStart0R1,
-	Index{ symbols.NT_CleanStart,0,2 }: CleanStart0R2,
-	Index{ symbols.NT_CleanStart,0,3 }: CleanStart0R3,
-	Index{ symbols.NT_CleanStart,1,0 }: CleanStart1R0,
-	Index{ symbols.NT_CleanStart,1,1 }: CleanStart1R1,
-	Index{ symbols.NT_CleanStart,1,2 }: CleanStart1R2,
-	Index{ symbols.NT_Commit,0,0 }: Commit0R0,
-	Index{ symbols.NT_Commit,0,1 }: Commit0R1,
-	Index{ symbols.NT_ConsensusExec,0,0 }: ConsensusExec0R0,
-	Index{ symbols.NT_ConsensusExec,0,1 }: ConsensusExec0R1,
-	Index{ symbols.NT_ConsensusHeight,0,0 }: ConsensusHeight0R0,
-	Index{ symbols.NT_ConsensusHeight,0,1 }: ConsensusHeight0R1,
-	Index{ symbols.NT_ConsensusHeight,0,2 }: ConsensusHeight0R2,
-	Index{ symbols.NT_ConsensusHeight,0,3 }: ConsensusHeight0R3,
-	Index{ symbols.NT_ConsensusHeight,1,0 }: ConsensusHeight1R0,
-	Index{ symbols.NT_ConsensusHeight,1,1 }: ConsensusHeight1R1,
-	Index{ symbols.NT_ConsensusHeight,1,2 }: ConsensusHeight1R2,
-	Index{ symbols.NT_ConsensusHeights,0,0 }: ConsensusHeights0R0,
-	Index{ symbols.NT_ConsensusHeights,0,1 }: ConsensusHeights0R1,
-	Index{ symbols.NT_ConsensusHeights,1,0 }: ConsensusHeights1R0,
-	Index{ symbols.NT_ConsensusHeights,1,1 }: ConsensusHeights1R1,
-	Index{ symbols.NT_ConsensusHeights,1,2 }: ConsensusHeights1R2,
-	Index{ symbols.NT_ConsensusRound,0,0 }: ConsensusRound0R0,
-	Index{ symbols.NT_ConsensusRound,0,1 }: ConsensusRound0R1,
-	Index{ symbols.NT_ConsensusRound,1,0 }: ConsensusRound1R0,
-	Index{ symbols.NT_ConsensusRound,1,1 }: ConsensusRound1R1,
-	Index{ symbols.NT_ConsensusRounds,0,0 }: ConsensusRounds0R0,
-	Index{ symbols.NT_ConsensusRounds,0,1 }: ConsensusRounds0R1,
-	Index{ symbols.NT_ConsensusRounds,1,0 }: ConsensusRounds1R0,
-	Index{ symbols.NT_ConsensusRounds,1,1 }: ConsensusRounds1R1,
-	Index{ symbols.NT_ConsensusRounds,1,2 }: ConsensusRounds1R2,
-	Index{ symbols.NT_FinalizeBlock,0,0 }: FinalizeBlock0R0,
-	Index{ symbols.NT_FinalizeBlock,0,1 }: FinalizeBlock0R1,
-	Index{ symbols.NT_InitChain,0,0 }: InitChain0R0,
-	Index{ symbols.NT_InitChain,0,1 }: InitChain0R1,
-	Index{ symbols.NT_NonProposer,0,0 }: NonProposer0R0,
-	Index{ symbols.NT_NonProposer,0,1 }: NonProposer0R1,
-	Index{ symbols.NT_OfferSnapshot,0,0 }: OfferSnapshot0R0,
-	Index{ symbols.NT_OfferSnapshot,0,1 }: OfferSnapshot0R1,
-	Index{ symbols.NT_PrepareProposal,0,0 }: PrepareProposal0R0,
-	Index{ symbols.NT_PrepareProposal,0,1 }: PrepareProposal0R1,
-	Index{ symbols.NT_ProcessProposal,0,0 }: ProcessProposal0R0,
-	Index{ symbols.NT_ProcessProposal,0,1 }: ProcessProposal0R1,
-	Index{ symbols.NT_Proposer,0,0 }: Proposer0R0,
-	Index{ symbols.NT_Proposer,0,1 }: Proposer0R1,
-	Index{ symbols.NT_Proposer,1,0 }: Proposer1R0,
-	Index{ symbols.NT_Proposer,1,1 }: Proposer1R1,
-	Index{ symbols.NT_Proposer,1,2 }: Proposer1R2,
-	Index{ symbols.NT_Start,0,0 }: Start0R0,
-	Index{ symbols.NT_Start,0,1 }: Start0R1,
-	Index{ symbols.NT_StateSync,0,0 }: StateSync0R0,
-	Index{ symbols.NT_StateSync,0,1 }: StateSync0R1,
-	Index{ symbols.NT_StateSync,0,2 }: StateSync0R2,
-	Index{ symbols.NT_StateSync,1,0 }: StateSync1R0,
-	Index{ symbols.NT_StateSync,1,1 }: StateSync1R1,
-	Index{ symbols.NT_StateSyncAttempt,0,0 }: StateSyncAttempt0R0,
-	Index{ symbols.NT_StateSyncAttempt,0,1 }: StateSyncAttempt0R1,
-	Index{ symbols.NT_StateSyncAttempt,0,2 }: StateSyncAttempt0R2,
-	Index{ symbols.NT_StateSyncAttempt,1,0 }: StateSyncAttempt1R0,
-	Index{ symbols.NT_StateSyncAttempt,1,1 }: StateSyncAttempt1R1,
-	Index{ symbols.NT_StateSyncAttempts,0,0 }: StateSyncAttempts0R0,
-	Index{ symbols.NT_StateSyncAttempts,0,1 }: StateSyncAttempts0R1,
-	Index{ symbols.NT_StateSyncAttempts,1,0 }: StateSyncAttempts1R0,
-	Index{ symbols.NT_StateSyncAttempts,1,1 }: StateSyncAttempts1R1,
-	Index{ symbols.NT_StateSyncAttempts,1,2 }: StateSyncAttempts1R2,
-	Index{ symbols.NT_SuccessSync,0,0 }: SuccessSync0R0,
-	Index{ symbols.NT_SuccessSync,0,1 }: SuccessSync0R1,
-	Index{ symbols.NT_SuccessSync,0,2 }: SuccessSync0R2,
-}
-
-var alternates = map[symbols.NT][]Label{ 
-	symbols.NT_Start:[]Label{ Start0R0 },
-	symbols.NT_CleanStart:[]Label{ CleanStart0R0,CleanStart1R0 },
-	symbols.NT_StateSync:[]Label{ StateSync0R0,StateSync1R0 },
-	symbols.NT_StateSyncAttempts:[]Label{ StateSyncAttempts0R0,StateSyncAttempts1R0 },
-	symbols.NT_StateSyncAttempt:[]Label{ StateSyncAttempt0R0,StateSyncAttempt1R0 },
-	symbols.NT_SuccessSync:[]Label{ SuccessSync0R0 },
-	symbols.NT_ApplyChunks:[]Label{ ApplyChunks0R0,ApplyChunks1R0 },
-	symbols.NT_ConsensusExec:[]Label{ ConsensusExec0R0 },
-	symbols.NT_ConsensusHeights:[]Label{ ConsensusHeights0R0,ConsensusHeights1R0 },
-	symbols.NT_ConsensusHeight:[]Label{ ConsensusHeight0R0,ConsensusHeight1R0 },
-	symbols.NT_ConsensusRounds:[]Label{ ConsensusRounds0R0,ConsensusRounds1R0 },
-	symbols.NT_ConsensusRound:[]Label{ ConsensusRound0R0,ConsensusRound1R0 },
-	symbols.NT_Proposer:[]Label{ Proposer0R0,Proposer1R0 },
-	symbols.NT_NonProposer:[]Label{ NonProposer0R0 },
-	symbols.NT_InitChain:[]Label{ InitChain0R0 },
-	symbols.NT_FinalizeBlock:[]Label{ FinalizeBlock0R0 },
-	symbols.NT_Commit:[]Label{ Commit0R0 },
-	symbols.NT_OfferSnapshot:[]Label{ OfferSnapshot0R0 },
-	symbols.NT_ApplyChunk:[]Label{ ApplyChunk0R0 },
-	symbols.NT_PrepareProposal:[]Label{ PrepareProposal0R0 },
-	symbols.NT_ProcessProposal:[]Label{ ProcessProposal0R0 },
-=======
 var slotIndex = map[Index]Label{
 	{symbols.NT_ApplyChunk, 0, 0}:        ApplyChunk0R0,
 	{symbols.NT_ApplyChunk, 0, 1}:        ApplyChunk0R1,
@@ -969,6 +767,7 @@ var slotIndex = map[Index]Label{
 	{symbols.NT_CleanStart, 0, 0}:        CleanStart0R0,
 	{symbols.NT_CleanStart, 0, 1}:        CleanStart0R1,
 	{symbols.NT_CleanStart, 0, 2}:        CleanStart0R2,
+	{symbols.NT_CleanStart, 0, 3}:        CleanStart0R3,
 	{symbols.NT_CleanStart, 1, 0}:        CleanStart1R0,
 	{symbols.NT_CleanStart, 1, 1}:        CleanStart1R1,
 	{symbols.NT_CleanStart, 1, 2}:        CleanStart1R2,
@@ -1014,15 +813,8 @@ var slotIndex = map[Index]Label{
 	{symbols.NT_Proposer, 1, 0}:          Proposer1R0,
 	{symbols.NT_Proposer, 1, 1}:          Proposer1R1,
 	{symbols.NT_Proposer, 1, 2}:          Proposer1R2,
-	{symbols.NT_Recovery, 0, 0}:          Recovery0R0,
-	{symbols.NT_Recovery, 0, 1}:          Recovery0R1,
-	{symbols.NT_Recovery, 0, 2}:          Recovery0R2,
-	{symbols.NT_Recovery, 1, 0}:          Recovery1R0,
-	{symbols.NT_Recovery, 1, 1}:          Recovery1R1,
 	{symbols.NT_Start, 0, 0}:             Start0R0,
 	{symbols.NT_Start, 0, 1}:             Start0R1,
-	{symbols.NT_Start, 1, 0}:             Start1R0,
-	{symbols.NT_Start, 1, 1}:             Start1R1,
 	{symbols.NT_StateSync, 0, 0}:         StateSync0R0,
 	{symbols.NT_StateSync, 0, 1}:         StateSync0R1,
 	{symbols.NT_StateSync, 0, 2}:         StateSync0R2,
@@ -1044,14 +836,13 @@ var slotIndex = map[Index]Label{
 }
 
 var alternates = map[symbols.NT][]Label{
-	symbols.NT_Start:             {Start0R0, Start1R0},
+	symbols.NT_Start:             {Start0R0},
 	symbols.NT_CleanStart:        {CleanStart0R0, CleanStart1R0},
 	symbols.NT_StateSync:         {StateSync0R0, StateSync1R0},
 	symbols.NT_StateSyncAttempts: {StateSyncAttempts0R0, StateSyncAttempts1R0},
 	symbols.NT_StateSyncAttempt:  {StateSyncAttempt0R0, StateSyncAttempt1R0},
 	symbols.NT_SuccessSync:       {SuccessSync0R0},
 	symbols.NT_ApplyChunks:       {ApplyChunks0R0, ApplyChunks1R0},
-	symbols.NT_Recovery:          {Recovery0R0, Recovery1R0},
 	symbols.NT_ConsensusExec:     {ConsensusExec0R0},
 	symbols.NT_ConsensusHeights:  {ConsensusHeights0R0, ConsensusHeights1R0},
 	symbols.NT_ConsensusHeight:   {ConsensusHeight0R0, ConsensusHeight1R0},
@@ -1066,5 +857,4 @@ var alternates = map[symbols.NT][]Label{
 	symbols.NT_ApplyChunk:        {ApplyChunk0R0},
 	symbols.NT_PrepareProposal:   {PrepareProposal0R0},
 	symbols.NT_ProcessProposal:   {ProcessProposal0R0},
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/slot/slot.go
 }

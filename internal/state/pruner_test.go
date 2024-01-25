@@ -274,5 +274,4 @@ func TestPruningWithHeight1(t *testing.T) {
 	pruned, _, err := pruner.PruneBlocksToHeight(1)
 	require.Equal(t, pruned, uint64(0))
 	require.NoError(t, err)
-
 }

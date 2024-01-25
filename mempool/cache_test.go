@@ -3,9 +3,8 @@ package mempool
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"testing"
-
 	"fmt"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 

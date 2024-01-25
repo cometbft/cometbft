@@ -31,14 +31,14 @@ type Metrics struct {
 	// transactions that passed CheckTx but failed to make it into the mempool
 	// due to resource limits, e.g. mempool is full and no lower priority
 	// transactions exist in the mempool.
-	//metrics:Number of rejected transactions.
+	// metrics:Number of rejected transactions.
 	RejectedTxs metrics.Counter
 
 	// Number of times transactions are rechecked in the mempool.
 	RecheckTimes metrics.Counter
 
 	// Number of times transactions were received more than once.
-	//metrics:Number of duplicate transaction reception.
+	// metrics:Number of duplicate transaction reception.
 	AlreadyReceivedTxs metrics.Counter
 
 	// Number of connections being actively used for gossiping transactions

@@ -82,7 +82,6 @@ func NewDockerInfrastructureData(m Manifest) (InfrastructureData, error) {
 			GRPCPort:           portGen.Next(),
 			PrivilegedGRPCPort: portGen.Next(),
 		}
-
 	}
 	return ifd, nil
 }

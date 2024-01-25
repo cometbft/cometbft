@@ -34,7 +34,6 @@ func TestGRPC_Version(t *testing.T) {
 
 func TestGRPC_Block_GetByHeight(t *testing.T) {
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
-
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
@@ -60,7 +59,6 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, lastBlock.BlockID)
 		require.Equal(t, lastBlock.Block.Height, last)
-
 	})
 }
 

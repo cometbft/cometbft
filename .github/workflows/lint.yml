@@ -10,12 +10,8 @@ on:
   merge_group:
   push:
     branches:
-<<<<<<< HEAD
       - v1.x
-=======
-      - main
 
->>>>>>> e9637adbe (feat: add gofumpt (#2049))
 jobs:
   lint:
     name: lint

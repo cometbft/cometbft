@@ -122,5 +122,4 @@ func (e ErrDuplicateEvidenceHRTMismatch) Error() string {
 	return fmt.Sprintf("h/r/t does not match: %d/%d/%v vs %d/%d/%v",
 		e.VoteA.Height, e.VoteA.Round, e.VoteA.Type,
 		e.VoteB.Height, e.VoteB.Round, e.VoteB.Type)
-
 }

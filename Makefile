@@ -242,16 +242,7 @@ clean_certs:
 ###                  Formatting, linting, and vetting                       ###
 ###############################################################################
 
-<<<<<<< HEAD
-format:
-	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
-	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
-.PHONY: format
-
-#? lint: Run latest golangci-lint linter
-=======
 #? lint: Lint, format and fix typos
->>>>>>> e9637adbe (feat: add gofumpt (#2049))
 lint:
 	@echo "--> Linting"
 	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix

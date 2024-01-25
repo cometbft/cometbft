@@ -20,28 +20,6 @@ type NT int
 
 const (
 	NT_ApplyChunk NT = iota
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/symbols/symbols.go
-	NT_ApplyChunks 
-	NT_CleanStart 
-	NT_Commit 
-	NT_ConsensusExec 
-	NT_ConsensusHeight 
-	NT_ConsensusHeights 
-	NT_ConsensusRound 
-	NT_ConsensusRounds 
-	NT_FinalizeBlock 
-	NT_InitChain 
-	NT_NonProposer 
-	NT_OfferSnapshot 
-	NT_PrepareProposal 
-	NT_ProcessProposal 
-	NT_Proposer 
-	NT_Start 
-	NT_StateSync 
-	NT_StateSyncAttempt 
-	NT_StateSyncAttempts 
-	NT_SuccessSync 
-=======
 	NT_ApplyChunks
 	NT_CleanStart
 	NT_Commit
@@ -57,13 +35,11 @@ const (
 	NT_PrepareProposal
 	NT_ProcessProposal
 	NT_Proposer
-	NT_Recovery
 	NT_Start
 	NT_StateSync
 	NT_StateSyncAttempt
 	NT_StateSyncAttempts
 	NT_SuccessSync
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/symbols/symbols.go
 )
 
 // T is the type of terminals symbols
@@ -143,28 +119,6 @@ func ToNT(sym string) NT {
 	return nt
 }
 
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/symbols/symbols.go
-var ntToString = []string { 
-	"ApplyChunk", /* NT_ApplyChunk */
-	"ApplyChunks", /* NT_ApplyChunks */
-	"CleanStart", /* NT_CleanStart */
-	"Commit", /* NT_Commit */
-	"ConsensusExec", /* NT_ConsensusExec */
-	"ConsensusHeight", /* NT_ConsensusHeight */
-	"ConsensusHeights", /* NT_ConsensusHeights */
-	"ConsensusRound", /* NT_ConsensusRound */
-	"ConsensusRounds", /* NT_ConsensusRounds */
-	"FinalizeBlock", /* NT_FinalizeBlock */
-	"InitChain", /* NT_InitChain */
-	"NonProposer", /* NT_NonProposer */
-	"OfferSnapshot", /* NT_OfferSnapshot */
-	"PrepareProposal", /* NT_PrepareProposal */
-	"ProcessProposal", /* NT_ProcessProposal */
-	"Proposer", /* NT_Proposer */
-	"Start", /* NT_Start */
-	"StateSync", /* NT_StateSync */
-	"StateSyncAttempt", /* NT_StateSyncAttempt */
-=======
 var ntToString = []string{
 	"ApplyChunk",        /* NT_ApplyChunk */
 	"ApplyChunks",       /* NT_ApplyChunks */
@@ -182,11 +136,9 @@ var ntToString = []string{
 	"PrepareProposal",   /* NT_PrepareProposal */
 	"ProcessProposal",   /* NT_ProcessProposal */
 	"Proposer",          /* NT_Proposer */
-	"Recovery",          /* NT_Recovery */
 	"Start",             /* NT_Start */
 	"StateSync",         /* NT_StateSync */
 	"StateSyncAttempt",  /* NT_StateSyncAttempt */
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/symbols/symbols.go
 	"StateSyncAttempts", /* NT_StateSyncAttempts */
 	"SuccessSync",       /* NT_SuccessSync */
 }
@@ -201,30 +153,6 @@ var tToString = []string{
 	"process_proposal",     /* T_6 */
 }
 
-<<<<<<< HEAD:test/e2e/pkg/grammar/clean-start/grammar-auto/parser/symbols/symbols.go
-var stringNT = map[string]NT{ 
-	"ApplyChunk":NT_ApplyChunk,
-	"ApplyChunks":NT_ApplyChunks,
-	"CleanStart":NT_CleanStart,
-	"Commit":NT_Commit,
-	"ConsensusExec":NT_ConsensusExec,
-	"ConsensusHeight":NT_ConsensusHeight,
-	"ConsensusHeights":NT_ConsensusHeights,
-	"ConsensusRound":NT_ConsensusRound,
-	"ConsensusRounds":NT_ConsensusRounds,
-	"FinalizeBlock":NT_FinalizeBlock,
-	"InitChain":NT_InitChain,
-	"NonProposer":NT_NonProposer,
-	"OfferSnapshot":NT_OfferSnapshot,
-	"PrepareProposal":NT_PrepareProposal,
-	"ProcessProposal":NT_ProcessProposal,
-	"Proposer":NT_Proposer,
-	"Start":NT_Start,
-	"StateSync":NT_StateSync,
-	"StateSyncAttempt":NT_StateSyncAttempt,
-	"StateSyncAttempts":NT_StateSyncAttempts,
-	"SuccessSync":NT_SuccessSync,
-=======
 var stringNT = map[string]NT{
 	"ApplyChunk":        NT_ApplyChunk,
 	"ApplyChunks":       NT_ApplyChunks,
@@ -242,11 +170,9 @@ var stringNT = map[string]NT{
 	"PrepareProposal":   NT_PrepareProposal,
 	"ProcessProposal":   NT_ProcessProposal,
 	"Proposer":          NT_Proposer,
-	"Recovery":          NT_Recovery,
 	"Start":             NT_Start,
 	"StateSync":         NT_StateSync,
 	"StateSyncAttempt":  NT_StateSyncAttempt,
 	"StateSyncAttempts": NT_StateSyncAttempts,
 	"SuccessSync":       NT_SuccessSync,
->>>>>>> e9637adbe (feat: add gofumpt (#2049)):test/e2e/pkg/grammar/grammar-auto/parser/symbols/symbols.go
 }

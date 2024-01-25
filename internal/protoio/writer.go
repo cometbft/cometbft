@@ -51,36 +51,56 @@ type varintWriter struct {
 	buffer []byte
 }
 
+// WriteMsg writes a varint-delimited Protobuf message to the writer.
 func (w *varintWriter) WriteMsg(msg proto.Message) (int, error) {
-	if m, ok := msg.(marshaler); ok {
-		n, ok := getSize(m)
-		if ok {
-			if n+binary.MaxVarintLen64 >= len(w.buffer) {
-				w.buffer = make([]byte, n+binary.MaxVarintLen64)
-			}
-			lenOff := binary.PutUvarint(w.buffer, uint64(n))
-			_, err := m.MarshalTo(w.buffer[lenOff:])
-			if err != nil {
-				return 0, err
-			}
-			_, err = w.w.Write(w.buffer[:lenOff+n])
-			return lenOff + n, err
-		}
+	m, ok := msg.(marshaler)
+	if !ok {
+		return w.fallbackWriteMsg(msg)
 	}
 
-	// fallback
+	n, ok := getSize(m)
+	if !ok {
+		return w.fallbackWriteMsg(msg)
+	}
+
+	if n+binary.MaxVarintLen64 >= len(w.buffer) {
+		w.buffer = make([]byte, n+binary.MaxVarintLen64)
+	}
+
+	lenOff := binary.PutUvarint(w.buffer, uint64(n))
+	_, err := m.MarshalTo(w.buffer[lenOff:])
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = w.w.Write(w.buffer[:lenOff+n])
+	if err != nil {
+		return 0, err
+	}
+
+	return lenOff + n, nil
+}
+
+// fallbackWriteMsg is used when the message is not a marshaler or the size is not known.
+func (w *varintWriter) fallbackWriteMsg(msg proto.Message) (int, error) {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return 0, err
 	}
+
 	length := uint64(len(data))
 	n := binary.PutUvarint(w.lenBuf, length)
 	_, err = w.w.Write(w.lenBuf[:n])
 	if err != nil {
 		return 0, err
 	}
+
 	_, err = w.w.Write(data)
-	return len(data) + n, err
+	if err != nil {
+		return 0, err
+	}
+
+	return len(data) + n, nil
 }
 
 func (w *varintWriter) Close() error {

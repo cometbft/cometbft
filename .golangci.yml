@@ -30,6 +30,7 @@ linters:
     - ifshort
     - interfacer
     - ireturn
+    - interfacebloat
     - lll
     - maintidx
     - maligned

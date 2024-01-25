@@ -485,6 +485,13 @@ means that you shouldn't update someone else's branch for them; even if it seems
 like you're doing them a favor, you may be interfering with their git flow in
 some way!)
 
+### Formatting
+
+Make sure to format your code with [gofumpt](https://github.com/mvdan/gofumpt).
+To install a Git pre-commit hook, run `make gofumpt-pre-commit`. The hook
+automatically applies `gofumpt` to the staged Go files, so you don't need to do
+anything.
+
 #### Merging Pull Requests
 
 It is also our convention that authors merge their own pull requests, when

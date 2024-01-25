@@ -2360,26 +2360,22 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			"data", precommits.LogString())
 
 		blockID, ok := precommits.TwoThirdsMajority()
-		if !ok {
-			if cs.Round <= vote.Round && precommits.HasTwoThirdsAny() {
-				cs.enterNewRound(height, vote.Round)
+		if ok {
+			// Executed as TwoThirdsMajority could be from a higher round
+			cs.enterNewRound(height, vote.Round)
+			cs.enterPrecommit(height, vote.Round)
+
+			if !blockID.IsNil() {
+				cs.enterCommit(height, vote.Round)
+				if cs.config.SkipTimeoutCommit && precommits.HasAll() {
+					cs.enterNewRound(cs.Height, 0)
+				}
+			} else {
 				cs.enterPrecommitWait(height, vote.Round)
 			}
-			return
-		}
-
-		// Executed as TwoThirdsMajority could be from a higher round
-		cs.enterNewRound(height, vote.Round)
-		cs.enterPrecommit(height, vote.Round)
-
-		if blockID.IsNil() {
+		} else if cs.Round <= vote.Round && precommits.HasTwoThirdsAny() {
+			cs.enterNewRound(height, vote.Round)
 			cs.enterPrecommitWait(height, vote.Round)
-			return
-		}
-
-		cs.enterCommit(height, vote.Round)
-		if cs.config.SkipTimeoutCommit && precommits.HasAll() {
-			cs.enterNewRound(cs.Height, 0)
 		}
 
 	default:

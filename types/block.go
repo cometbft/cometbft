@@ -763,29 +763,26 @@ func (ecs ExtendedCommitSig) ValidateBasic() error {
 // EnsureExtension validates that a vote extensions signature is present for
 // this ExtendedCommitSig.
 func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
-	if ecs.BlockIDFlag == BlockIDFlagCommit {
-		if extEnabled && len(ecs.ExtensionSignature) == 0 {
+	if extEnabled {
+		if ecs.BlockIDFlag == BlockIDFlagCommit && len(ecs.ExtensionSignature) == 0 {
 			return fmt.Errorf("vote extension signature is missing; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
 				ecs.Timestamp,
 			)
 		}
-	} else {
-		if len(ecs.Extension) != 0 {
+		if ecs.BlockIDFlag != BlockIDFlagCommit && len(ecs.Extension) != 0 {
 			return fmt.Errorf("non-commit vote extension present; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
 				ecs.Timestamp,
 			)
 		}
-		if len(ecs.ExtensionSignature) != 0 {
+		if ecs.BlockIDFlag != BlockIDFlagCommit && len(ecs.ExtensionSignature) != 0 {
 			return fmt.Errorf("non-commit vote extension signature present; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
 				ecs.Timestamp,
 			)
 		}
-	}
-
-	if !extEnabled {
+	} else {
 		if len(ecs.Extension) != 0 {
 			return fmt.Errorf("vote extension present but extensions disabled; validator addr %s, timestamp %v",
 				ecs.ValidatorAddress.String(),
@@ -799,7 +796,6 @@ func (ecs ExtendedCommitSig) EnsureExtension(extEnabled bool) error {
 			)
 		}
 	}
-
 	return nil
 }
 

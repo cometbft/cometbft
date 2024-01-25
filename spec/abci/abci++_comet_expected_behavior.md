@@ -104,12 +104,28 @@ Let us now examine the grammar line by line, providing further details.
 >start               = clean-start / recovery
 >```
 
+<<<<<<< HEAD
 * If the process is starting from scratch, CometBFT first calls `InitChain`, then it may optionally
   start a _state-sync_ mechanism to catch up with other processes. Finally, it enters normal
   consensus execution.
 
 >```abnf
 >clean-start         = init-chain [state-sync] consensus-exec
+=======
+* If the process is starting from scratch, depending on whether the _state-sync_ is enabled, it engages in the handshake
+with the Application, or it starts the _state-sync_ mechanism to catch up with other processes. Finally, it enters
+normal consensus execution.
+
+>```abnf
+>clean-start         = ( app-handshake / state-sync ) consensus-exec
+>```
+
+* If _state-sync_ is disabled, CometBFT calls `Info` method and then
+since the process is starting from scratch and the Application has no state CometBFT calls `InitChain`.
+
+>```abnf
+>app-handshake         = info init_chain
+>>>>>>> 635d0b596 (docs: v1 - diataxis framework (#2105))
 >```
 
 * In _state-sync_ mode, CometBFT makes one or more attempts at synchronizing the Application's state.
@@ -118,10 +134,10 @@ Let us now examine the grammar line by line, providing further details.
   to provide the Application with all the snapshots needed, in order to reconstruct the state locally.
   A successful attempt must provide at least one chunk via `ApplySnapshotChunk`.
   At the end of a successful attempt, CometBFT calls `Info` to make sure the reconstructed state's
-  _AppHash_ matches the one in the block header at the corresponding height. Note that the state 
-  of  the application does not contain vote extensions itself. The application can rely on 
-  [CometBFT to ensure](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history)
-  the node has all the relevant data to proceed with the execution beyond this point. 
+  _AppHash_ matches the one in the block header at the corresponding height. Note that the state
+  of  the application does not contain vote extensions itself. The application can rely on
+  [CometBFT to ensure](../../docs/references/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history)
+  the node has all the relevant data to proceed with the execution beyond this point.
 
 >```abnf
 >state-sync          = *state-sync-attempt success-sync info
@@ -129,9 +145,14 @@ Let us now examine the grammar line by line, providing further details.
 >success-sync        = offer-snapshot 1*apply-chunk
 >```
 
+<<<<<<< HEAD
 * In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions
   to the Application. After this, CometBFT enters consensus execution, first in replay mode and then
   in normal mode.
+=======
+* In recovery mode, CometBFT first calls `Info` to know from which height it needs to replay decisions to the Application. If the Application
+did not store any state CometBFT calls `InitChain`. After this, CometBFT enters consensus execution, first in replay mode, if there are blocks to replay, and then in normal mode.
+>>>>>>> 635d0b596 (docs: v1 - diataxis framework (#2105))
 
 >```abnf
 >recovery            = info consensus-exec
@@ -165,7 +186,7 @@ Let us now examine the grammar line by line, providing further details.
   Following a crash between (i) and (ii) and in (the likely) case `PrepareProposal` produces a different block,
   the signing of this block will fail, which means that the new block will not be stored or broadcast.
   If the crash happened after (ii), then signing fails but nothing happens to the stored block.
-  
+
   If a block was stored, it is sent to all validators, including the proposer.
   Receiving a proposal block triggers `ProcessProposal` with such a block.
 
@@ -240,21 +261,21 @@ needed to move the return of `AppHash` to `FinalizeBlock`.
 ## Accommodating for vote extensions
 
 In a manner transparent to the application, CometBFT ensures the node is provided with all
-the data it needs to participate in consensus. 
+the data it needs to participate in consensus.
 
 In the case of recovering from a crash, or joining the network via state sync, CometBFT will make
-sure the node acquires the necessary vote extensions before switching to consensus. 
+sure the node acquires the necessary vote extensions before switching to consensus.
 
-If a node is already in consensus but falls behind, during catch-up, CometBFT will provide the node with 
+If a node is already in consensus but falls behind, during catch-up, CometBFT will provide the node with
 vote extensions from past heights by retrieving the extensions within `ExtendedCommit` for old heights that it had previously stored.
 
-We realize this is sub-optimal due to the increase in storage needed to store the extensions, we are 
+We realize this is sub-optimal due to the increase in storage needed to store the extensions, we are
 working on an optimization of this implementation which should alleviate this concern.
 However, the application can use the existing `retain_height` parameter to decide how much
 history it wants to keep, just as is done with the block history. The network-wide implications
 of the usage of `retain_height` stay the same.
-The decision to store 
-historical commits and potential optimizations, are discussed in detail in [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
+The decision to store
+historical commits and potential optimizations, are discussed in detail in [RFC-100](../../docs/references/rfc/rfc-100-abci-vote-extension-propag.md#current-limitations-and-possible-implementations)
 
 ## Handling upgrades to ABCI 2.0
 

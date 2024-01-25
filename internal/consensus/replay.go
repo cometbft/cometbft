@@ -399,22 +399,17 @@ func (h *Handshaker) ReplayBlocks(
 	} else if storeBlockHeight == stateBlockHeight+1 {
 		// We saved the block in the store but haven't updated the state,
 		// so we'll need to replay a block using the WAL.
-		switch {
-		case appBlockHeight < stateBlockHeight:
+		if appBlockHeight < stateBlockHeight {
 			// the app is further behind than it should be, so replay blocks
 			// but leave the last block to go through the WAL
 			return h.replayBlocks(ctx, state, proxyApp, appBlockHeight, storeBlockHeight, true)
-
-		case appBlockHeight == stateBlockHeight:
+		} else if appBlockHeight == stateBlockHeight {
 			// We haven't run Commit (both the state and app are one block behind),
 			// so replayBlock with the real app.
-			// NOTE: We could instead use the cs.WAL on cs.Start,
-			// but we'd have to allow the WAL to replay a block that wrote it's #ENDHEIGHT
 			h.logger.Info("Replay last block using real app")
 			state, err = h.replayBlock(state, storeBlockHeight, proxyApp.Consensus())
 			return state.AppHash, err
-
-		case appBlockHeight == storeBlockHeight:
+		} else if appBlockHeight == storeBlockHeight {
 			// We ran Commit, but didn't save the state, so replayBlock with mock app.
 			finalizeBlockResponse, err := h.stateStore.LoadLastFinalizeBlockResponse(storeBlockHeight)
 			if err != nil {

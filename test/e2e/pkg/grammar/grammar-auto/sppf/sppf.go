@@ -204,5 +204,4 @@ func (n *SymbolNode) dot(bld *dotBuilder) {
 		fmt.Fprintf(bld.w, "%s", pn.Label())
 	}
 	fmt.Fprintln(bld.w)
-
 }

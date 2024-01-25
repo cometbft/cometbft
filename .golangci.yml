@@ -28,29 +28,29 @@ linters:
     - gomnd
     - gomoddirectives
     - ifshort
-    - interfacebloat
     - interfacer
     - ireturn
     - lll
     - maintidx
     - maligned
-    - nestif
     - nilnil
     - nlreturn
     - nonamedreturns
     - nosnakecase
     - predeclared
-    - revive
     - scopelint
     - structcheck
     - tagliatelle
     - typecheck
-    # Prefer unparam over revive's unused param. It is more thorough in its checking.
-    - unparam
     - varcheck
     - varnamelen
     - wrapcheck
     - wsl
+
+
+presets:
+  - performance
+  - unused
 
 issues:
   exclude-rules:

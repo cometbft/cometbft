@@ -5,32 +5,53 @@ title: Requirements for the Application
 
 # Requirements for the Application
 
-- [Formal Requirements](#formal-requirements)
-  - [Consensus Connection Requirements](#consensus-connection-requirements)
-  - [Mempool Connection Requirements](#mempool-connection-requirements)
-- [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
-  - [Connection State](#connection-state)
-    - [Concurrency](#concurrency)
-    - [Finalize Block](#finalizeblock)
-    - [Commit](#commit)
-    - [Candidate States](#candidate-states)
-  - [States and ABCI++ Connections](#states-and-abci%2B%2B-connections) 
-    - [Consensus Connection](#consensus-connection)
-    - [Mempool Connection](#mempool-connection)
-    - [Info/Query Connection](#infoquery-connection)
-    - [Snapshot Connection](#snapshot-connection)
-  - [Transaction Results](#transaction-results)
-  - [Updating the Validator Set](#updating-the-validator-set)
-  - [Consensus Parameters](#consensus-parameters)
-    - [List of Parameters](#list-of-parameters)
-    - [Updating Consensus Parameters](#updating-consensus-parameters)
-  - [Query](#query)
-    - [Query Proofs](#query-proofs)
-    - [Peer Filtering](#peer-filtering)
-    - [Paths](#paths)
-  - [Crash Recovery](#crash-recovery)
-  - [State Sync](#state-sync)
-- [Application configuration required to switch to ABCI2.0](#application-configuration-required-to-switch-to-abci-20)
+- [Requirements for the Application](#requirements-for-the-application)
+  - [Formal Requirements](#formal-requirements)
+    - [Consensus Connection Requirements](#consensus-connection-requirements)
+    - [Mempool Connection Requirements](#mempool-connection-requirements)
+  - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
+    - [Connection State](#connection-state)
+      - [Concurrency](#concurrency)
+      - [FinalizeBlock](#finalizeblock)
+      - [Commit](#commit)
+      - [Candidate States](#candidate-states)
+    - [States and ABCI++ Connections](#states-and-abci-connections)
+      - [Consensus Connection](#consensus-connection)
+      - [Mempool Connection](#mempool-connection)
+        - [Replay Protection](#replay-protection)
+      - [Info/Query Connection](#infoquery-connection)
+      - [Snapshot Connection](#snapshot-connection)
+    - [Transaction Results](#transaction-results)
+      - [Gas](#gas)
+      - [Specifics of `CheckTxResponse`](#specifics-of-checktxresponse)
+      - [Specifics of `ExecTxResult`](#specifics-of-exectxresult)
+    - [Updating the Validator Set](#updating-the-validator-set)
+    - [Consensus Parameters](#consensus-parameters)
+      - [List of Parameters](#list-of-parameters)
+        - [BlockParams.MaxBytes](#blockparamsmaxbytes)
+        - [BlockParams.MaxGas](#blockparamsmaxgas)
+        - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
+        - [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
+        - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
+        - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
+        - [VersionParams.App](#versionparamsapp)
+        - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
+      - [Updating Consensus Parameters](#updating-consensus-parameters)
+        - [`InitChain`](#initchain)
+        - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
+    - [`Query`](#query)
+      - [Query Proofs](#query-proofs)
+      - [Peer Filtering](#peer-filtering)
+      - [Paths](#paths)
+    - [Crash Recovery](#crash-recovery)
+    - [State Sync](#state-sync)
+      - [Taking Snapshots](#taking-snapshots)
+      - [Bootstrapping a Node](#bootstrapping-a-node)
+        - [Snapshot Discovery](#snapshot-discovery)
+        - [Snapshot Restoration](#snapshot-restoration)
+        - [Snapshot Verification](#snapshot-verification)
+        - [Transition to Consensus](#transition-to-consensus)
+  - [Application configuration required to switch to ABCI 2.0](#application-configuration-required-to-switch-to-abci-20)
 
 
 ## Formal Requirements
@@ -773,8 +794,8 @@ include the vote extensions from height `H`. For all heights after `H`
   attached. Nevertheless, the application MAY provide 0-length
   extensions.
 
-Must always be set to a future height. Once set to a value different from
-0, its value must not be changed.
+Must always be set to a future height, 0, or the same height that was previously set.
+Once the chain's height reaches the value set, it cannot be changed to a different value.
 
 #### Updating Consensus Parameters
 

@@ -485,6 +485,13 @@ means that you shouldn't update someone else's branch for them; even if it seems
 like you're doing them a favor, you may be interfering with their git flow in
 some way!)
 
+### Formatting
+
+Make sure to format your code with [gofumpt](https://github.com/mvdan/gofumpt).
+To install a Git pre-commit hook, run `make gofumpt-pre-commit`. The hook
+automatically applies `gofumpt` to the staged Go files, so you don't need to do
+anything.
+
 #### Merging Pull Requests
 
 It is also our convention that authors merge their own pull requests, when
@@ -501,18 +508,24 @@ Before merging a pull request:
 
 ### Git Commit Style
 
-We follow the [Go style guide on commit messages][go-git-commit-style]. Write
-concise commits that start with the package name and have a description that
-finishes the sentence "This change modifies CometBFT to...". For example,
+We follow the [Conventional Commits][conventional-commits] spec. Write concise
+commits that start with a type (`fix`, `feat`, `chore`, `ci`, `docs`, etc.) and
+an optional scope - package name (e.g., `feat(internal/consensus)`), followed
+by a description that finishes the sentence "This change modifies CometBFT
+to...".
+
+If the commit introduces a breaking change, append the `!` after the scope
+(e.g., `feat(internal/consensus)!`).
+
+For example,
 
 ```sh
-cmd/debug: execute p.Signal only when p is not nil
+fix(cmd/cometbft/commands/debug): execute p.Signal only when p is not nil
 
 [potentially longer description in the body]
 
 Fixes #nnnn
 ```
-
 Each PR should have one commit once it lands on `main`; this can be accomplished
 by using the "squash and merge" button on GitHub. Be sure to edit your commit
 message, though!
@@ -576,8 +589,8 @@ in the [OpenAPI file](./rpc/openapi/openapi.yaml)**.
 [`clang-format`]: https://clang.llvm.org/docs/ClangFormat.html
 [unclog]: https://github.com/informalsystems/unclog
 [git-squash]: https://stackoverflow.com/questions/5189560/squash-my-last-x-commits-together-using-git
-[go-git-commit-style]: https://tip.golang.org/doc/contribute.html#commit_messages
 [go-testing]: https://golang.org/pkg/testing/
 [Fuzz tests]: https://en.wikipedia.org/wiki/Fuzzing
 [delve]: https://github.com/go-delve/delve
 [log-lazy]: https://github.com/cometbft/cometbft/blob/main/libs/log/lazy.go
+[conventional-commits]: https://www.conventionalcommits.org/en/v1.0.0/

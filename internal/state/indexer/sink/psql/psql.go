@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	"github.com/cometbft/cometbft/internal/rand"
 	"github.com/lib/pq"
 	"strconv"
 	"strings"
@@ -66,6 +68,27 @@ func runInTransaction(db *sql.DB, query func(*sql.Tx) error) error {
 		return err
 	}
 	return dbtx.Commit()
+}
+
+func runBulkInsert(db *sql.DB, tableName string, columns []string, inserts [][]any) error {
+	return runInTransaction(db, func(tx *sql.Tx) error {
+		stmt, err := tx.Prepare(pq.CopyIn(tableName, columns...))
+		if err != nil {
+			return fmt.Errorf("preparing bulk insert statement: %w", err)
+		}
+		for _, insert := range inserts {
+			if _, err := stmt.Exec(insert...); err != nil {
+				return fmt.Errorf("executing insert statement: %w", err)
+			}
+		}
+		if _, err := stmt.Exec(); err != nil {
+			return fmt.Errorf("flushing bulk insert: %w", err)
+		}
+		if err := stmt.Close(); err != nil {
+			return fmt.Errorf("closing bulk insert statement: %w", err)
+		}
+		return nil
+	})
 }
 
 // queryWithID executes the specified SQL query with the given arguments,
@@ -130,6 +153,25 @@ func insertEvents(dbtx *sql.Tx, blockID, txID uint32, evts []abci.Event) error {
 	return nil
 }
 
+func bulkInsertEvents(blockID, txID uint32, events []v1.Event) (eventInserts, attrInserts [][]any) {
+	for _, event := range events {
+		// Skip events with an empty type.
+		if event.Type == "" {
+			continue
+		}
+		eventID := rand.Uint32() + 1
+		eventInserts = append(eventInserts, []any{eventID, blockID, txID, event.Type})
+		for _, attr := range event.Attributes {
+			if !attr.Index {
+				continue
+			}
+			compositeKey := event.Type + "." + attr.Key
+			attrInserts = append(attrInserts, []any{eventID, attr.Key, compositeKey, attr.Value})
+		}
+	}
+	return eventInserts, attrInserts
+}
+
 // makeIndexedEvent constructs an event from the specified composite key and
 // value. If the key has the form "type.name", the event will have a single
 // attribute with that name and the value; otherwise the event will have only
@@ -178,71 +220,84 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
 	})
 }
 
-// getBlockIDs returns an list of block ids each corresponding to a block id for the provided tx
-func (es *EventSink) getBlockIDs(txrs []*abci.TxResult) ([]int64, error) {
-	heights := make([]int64, len(txrs))
-	for i, txr := range txrs {
-		heights[i] = txr.Height
-	}
+// getBlockIDs returns corresponding block ids for the provided heights
+func (es *EventSink) getBlockIDs(heights []int64) ([]int64, error) {
 	var blockIDs pq.Int64Array
 	if err := es.store.QueryRow(`
-SELECT array_agg(rowid ORDER BY f.ord)
-FROM (
-  select row_number() over() as ord, height
-  FROM unnest($1::bigint[]) AS height
-) AS f
-JOIN `+tableBlocks+` as b ON b.height = f.height AND b.chain_id = $2;`,
-		pq.Array(heights), es.chainID).Scan(&blockIDs); err != nil {
+SELECT array_agg((
+	SELECT rowid FROM `+tableBlocks+` WHERE height = txr.height AND chain_id = $1
+)) FROM unnest($2::bigint[]) AS txr(height);`,
+		es.chainID, pq.Array(heights)).Scan(&blockIDs); err != nil {
 		return nil, fmt.Errorf("getting block ids for txs from sql: %w", err)
 	}
 	return blockIDs, nil
 }
 
+func prefetchTxrExistence(db *sql.DB, blockIDs []int64, indexes []uint32) ([]bool, error) {
+	var existence []bool
+	if err := db.QueryRow(`
+SELECT array_agg((
+	SELECT EXISTS(SELECT 1 FROM `+tableTxResults+` WHERE block_id = txr.block_id AND index = txr.index)
+)) FROM UNNEST($1::bigint[], $2::integer[]) as txr(block_id, index);`,
+		pq.Array(blockIDs), pq.Array(indexes)).Scan((*pq.BoolArray)(&existence)); err != nil {
+		return nil, fmt.Errorf("fetching already indexed txrs: %w", err)
+	}
+	return existence, nil
+}
+
 func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 	ts := time.Now().UTC()
-	blockIDs, err := es.getBlockIDs(txrs)
+	heights := make([]int64, len(txrs))
+	indexes := make([]uint32, len(txrs))
+	for i, txr := range txrs {
+		heights[i] = txr.Height
+		indexes[i] = txr.Index
+	}
+	// prefetch blockIDs for all txrs. Every block header must have been indexed
+	// prior to the transactions belonging to it.
+	blockIDs, err := es.getBlockIDs(heights)
 	if err != nil {
 		return fmt.Errorf("getting block ids for txs: %w", err)
 	}
+	alreadyIndexed, err := prefetchTxrExistence(es.store, blockIDs, indexes)
+	if err != nil {
+		return fmt.Errorf("failed to prefetch which txrs were already indexed: %w", err)
+	}
+	txrInsertColumns := []string{"rowid", "block_id", "index", "created_at", "tx_hash", "tx_result"}
+	eventInsertColumns := []string{"rowid", "block_id", "tx_id", "type"}
+	attrInsertColumns := []string{"event_id", "key", "composite_key", "value"}
+	var txrInserts, attrInserts, eventInserts [][]any
 	for i, txr := range txrs {
+		if alreadyIndexed[i] {
+			continue
+		}
 		// Encode the result message in protobuf wire format for indexing.
 		resultData, err := proto.Marshal(txr)
 		if err != nil {
 			return fmt.Errorf("marshaling tx_result: %w", err)
 		}
-
 		// Index the hash of the underlying transaction as a hex string.
 		txHash := fmt.Sprintf("%X", types.Tx(txr.Tx).Hash())
-
-		if err := runInTransaction(es.store, func(dbtx *sql.Tx) error {
-			// Insert a record for this tx_result and capture its ID for indexing events.
-			txID, err := queryWithID(dbtx, `
-INSERT INTO `+tableTxResults+` (block_id, index, created_at, tx_hash, tx_result)
-  VALUES ($1, $2, $3, $4, $5)
-  ON CONFLICT DO NOTHING
-  RETURNING rowid;
-`, blockIDs[i], txr.Index, ts, txHash, resultData)
-			if err == sql.ErrNoRows {
-				return nil // we already saw this transaction; quietly succeed
-			} else if err != nil {
-				return fmt.Errorf("indexing tx_result: %w", err)
-			}
-
-			// Insert the special transaction meta-events for hash and height.
-			if err := insertEvents(dbtx, uint32(blockIDs[i]), txID, []abci.Event{
-				makeIndexedEvent(types.TxHashKey, txHash),
-				makeIndexedEvent(types.TxHeightKey, strconv.FormatInt(txr.Height, 10)),
-			}); err != nil {
-				return fmt.Errorf("indexing transaction meta-events: %w", err)
-			}
-			// Index any events packaged with the transaction.
-			if err := insertEvents(dbtx, uint32(blockIDs[i]), txID, txr.Result.Events); err != nil {
-				return fmt.Errorf("indexing transaction events: %w", err)
-			}
-			return nil
-		}); err != nil {
-			return err
-		}
+		// Generate random ID for this tx_result and insert a record for it
+		txID := rand.Uint32() + 1
+		txrInserts = append(txrInserts, []any{txID, blockIDs[i], txr.Index, ts, txHash, resultData})
+		// Insert the special transaction meta-events for hash and height.
+		events := append(txr.Result.Events,
+			makeIndexedEvent(types.TxHashKey, txHash),
+			makeIndexedEvent(types.TxHeightKey, strconv.FormatInt(txr.Height, 10)),
+		)
+		newEventInserts, newAttrInserts := bulkInsertEvents(uint32(blockIDs[i]), txID, events)
+		eventInserts = append(eventInserts, newEventInserts...)
+		attrInserts = append(attrInserts, newAttrInserts...)
+	}
+	if err := runBulkInsert(es.store, tableTxResults, txrInsertColumns, txrInserts); err != nil {
+		return fmt.Errorf("bulk inserting txrs: %w", err)
+	}
+	if err := runBulkInsert(es.store, tableEvents, eventInsertColumns, eventInserts); err != nil {
+		return fmt.Errorf("bulk inserting events: %w", err)
+	}
+	if err := runBulkInsert(es.store, tableAttributes, attrInsertColumns, attrInserts); err != nil {
+		return fmt.Errorf("bulk inserting attributes: %w", err)
 	}
 	return nil
 }

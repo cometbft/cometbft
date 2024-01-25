@@ -71,7 +71,7 @@ func (t *timeoutTicker) ScheduleTimeout(ti timeoutInfo) {
 	t.tickChan <- ti
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // stop the timer and drain if necessary.
 func (t *timeoutTicker) stopTimer() {

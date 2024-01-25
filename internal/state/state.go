@@ -21,7 +21,7 @@ var (
 	stateKey = []byte("stateKey")
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // InitStateVersion sets the Consensus.Block and Software versions,
 // but leaves the Consensus.App version blank.
@@ -35,7 +35,7 @@ var InitStateVersion = cmtstate.Version{
 	Software: version.CMTSemVer,
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // State is a short description of the latest committed block of the consensus protocol.
 // It keeps all information necessary to validate new blocks,
@@ -224,7 +224,7 @@ func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	return state, nil
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Create a block from the latest state
 
 // MakeBlock builds a block from the current state with the given txs, commit,
@@ -283,7 +283,7 @@ func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time 
 	return cmttime.WeightedMedian(weightedTimes, totalVotingPower)
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 // Genesis
 
 // MakeGenesisStateFromFile reads and unmarshals state from the given

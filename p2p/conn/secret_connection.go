@@ -291,7 +291,7 @@ func genEphKeys() (ephPub, ephPriv *[32]byte) {
 	if err != nil {
 		panic("Could not generate ephemeral key-pair")
 	}
-	return
+	return ephPub, ephPriv
 }
 
 func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byte, err error) {
@@ -357,7 +357,7 @@ func deriveSecrets(
 		copy(recvSecret[:], res[aeadKeySize:aeadKeySize*2])
 	}
 
-	return
+	return recvSecret, sendSecret
 }
 
 // computeDHSecret computes a Diffie-Hellman shared secret key
@@ -380,7 +380,7 @@ func sort32(foo, bar *[32]byte) (lo, hi *[32]byte) {
 		lo = bar
 		hi = foo
 	}
-	return
+	return lo, hi
 }
 
 func signChallenge(challenge *[32]byte, locPrivKey crypto.PrivKey) ([]byte, error) {
@@ -440,7 +440,7 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 	return _recvMsg, nil
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // Increment nonce little-endian by 1 with wraparound.
 // Due to chacha20poly1305 expecting a 12 byte nonce we do not use the first four

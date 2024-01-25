@@ -480,7 +480,7 @@ func TestSerialReap(t *testing.T) {
 		}
 	}
 
-	//----------------------------------------
+	// ----------------------------------------
 
 	// Deliver some txs.
 	deliverTxsRange(0, 100)
@@ -721,8 +721,8 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	txs := NewRandomTxs(nTxs, txLen)
 
 	// simulate a group of peers sending them over and over
-	N := cfg.Mempool.Size
-	for i := 0; i < N; i++ {
+	n := cfg.Mempool.Size
+	for i := 0; i < n; i++ {
 		txNum := mrand.Intn(nTxs)
 		tx := txs[txNum]
 

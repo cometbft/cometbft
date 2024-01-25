@@ -29,7 +29,7 @@ var (
 	ErrInvalidHeightValue = errors.New("invalid height value")
 )
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 func calcValidatorsKey(height int64) []byte {
 	return []byte(fmt.Sprintf("validatorsKey:%v", height))
@@ -43,7 +43,7 @@ func calcABCIResponsesKey(height int64) []byte {
 	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
 }
 
-//----------------------
+// ----------------------
 
 var (
 	lastABCIResponseKey              = []byte("lastABCIResponseKey")
@@ -468,7 +468,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 	return pruned + batchPruned, targetRetainHeight, batch.WriteSync()
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 // TxResultsHash returns the root hash of a Merkle tree of
 // ExecTxResulst responses (see ABCIResults.Hash)
@@ -686,7 +686,7 @@ func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 	return store.db.SetSync(lastABCIResponsesRetainHeightKey, int64ToBytes(height))
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
@@ -763,7 +763,7 @@ func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, erro
 // `height` is the effective height for which the validator is responsible for
 // signing. It should be called from s.Save(), right before the state itself is
 // persisted.
-func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch dbm.Batch) error {
+func (dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch dbm.Batch) error {
 	if lastHeightChanged > height {
 		return errors.New("lastHeightChanged cannot be greater than ValidatorsInfo height")
 	}
@@ -793,7 +793,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // ConsensusParamsInfo represents the latest consensus params, or the last height it changed
 
@@ -849,7 +849,7 @@ func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusP
 // It should be called from s.Save(), right before the state itself is persisted.
 // If the consensus params did not change after processing the latest block,
 // only the last height for which they changed is persisted.
-func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams, batch dbm.Batch) error {
+func (dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, params types.ConsensusParams, batch dbm.Batch) error {
 	paramsInfo := &cmtstate.ConsensusParamsInfo{
 		LastHeightChanged: changeHeight,
 	}

@@ -40,7 +40,7 @@ func (p testPeer) runInputRoutine() {
 }
 
 // Request desired, pretend like we got the block immediately.
-func (p testPeer) simulateInput(input inputData) {
+func (testPeer) simulateInput(input inputData) {
 	block := &types.Block{Header: types.Header{Height: input.request.Height}}
 	extCommit := &types.ExtendedCommit{
 		Height: input.request.Height,

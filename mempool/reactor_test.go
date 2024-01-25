@@ -44,8 +44,8 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	// asserted in waitForTxsOnReactors (due to transactions gossiping). If we
 	// replace Connect2Switches (full mesh) with a func, which connects first
 	// reactor to others and nothing else, this test should also pass with >2 reactors.
-	const N = 2
-	reactors, _ := makeAndConnectReactors(config, N)
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -68,8 +68,8 @@ func TestReactorConcurrency(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.Size = 5000
 	config.Mempool.CacheSize = 5000
-	const N = 2
-	reactors, _ := makeAndConnectReactors(config, N)
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -125,8 +125,8 @@ func TestReactorConcurrency(t *testing.T) {
 // ensure peer gets no txs.
 func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
-	const N = 2
-	reactors, _ := makeAndConnectReactors(config, N)
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -158,8 +158,8 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 func TestReactor_MaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 
-	const N = 2
-	reactors, _ := makeAndConnectReactors(config, N)
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -198,8 +198,8 @@ func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
 	}
 
 	config := cfg.TestConfig()
-	const N = 2
-	reactors, _ := makeAndConnectReactors(config, N)
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -223,8 +223,8 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 	}
 
 	config := cfg.TestConfig()
-	const N = 2
-	_, switches := makeAndConnectReactors(config, N)
+	const n = 2
+	_, switches := makeAndConnectReactors(config, n)
 
 	// stop reactors
 	for _, s := range switches {
@@ -238,8 +238,8 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 
 func TestReactorTxSendersLocal(t *testing.T) {
 	config := cfg.TestConfig()
-	const N = 1
-	reactors, _ := makeAndConnectReactors(config, N)
+	const n = 1
+	reactors, _ := makeAndConnectReactors(config, n)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -275,8 +275,8 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.Size = 1000
 	config.Mempool.CacheSize = 1000
-	const N = 3
-	reactors, _ := makeAndConnectReactors(config, N)
+	const n = 3
+	reactors, _ := makeAndConnectReactors(config, n)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {

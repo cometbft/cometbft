@@ -22,9 +22,9 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	client "github.com/cometbft/cometbft/rpc/jsonrpc/client"
-	server "github.com/cometbft/cometbft/rpc/jsonrpc/server"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/client"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // Client and Server should work over tcp or unix sockets.
@@ -313,7 +313,7 @@ func testWithWSClient(t *testing.T, cl *client.WSClient) {
 	assert.Equal(t, got2, val2)
 }
 
-//-------------
+// -------------
 
 func TestServersAndClientsBasic(t *testing.T) {
 	serverAddrs := [...]string{tcpAddr, unixAddr}

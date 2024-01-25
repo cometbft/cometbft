@@ -304,7 +304,7 @@ func parseKey(key []byte) (part string, prefix string, height int64, ok bool) {
 		return "", "", 0, false
 	}
 	ok = true // good!
-	return
+	return part, prefix, height, ok
 }
 
 func parseLbKey(key []byte) (prefix string, height int64, ok bool) {
@@ -313,7 +313,7 @@ func parseLbKey(key []byte) (prefix string, height int64, ok bool) {
 	if part != "lb" {
 		return "", 0, false
 	}
-	return
+	return prefix, height, ok
 }
 
 func marshalSize(size uint16) []byte {

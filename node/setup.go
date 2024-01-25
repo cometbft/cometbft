@@ -120,22 +120,22 @@ type blockSyncReactor interface {
 	SwitchToBlockSync(state sm.State) error
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
 	var blockStoreDB dbm.DB
 	blockStoreDB, err = dbProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 	blockStore = store.NewBlockStore(blockStoreDB)
 
 	stateDB, err = dbProvider(&cfg.DBContext{ID: "state", Config: config})
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	return
+	return blockStore, stateDB, nil
 }
 
 func createAndStartProxyAppConns(clientCreator proxy.ClientCreator, logger log.Logger, metrics *proxy.Metrics) (proxy.AppConns, error) {
@@ -561,7 +561,7 @@ func startStateSync(
 	return nil
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 var (
 	genesisDocKey     = []byte("genesisDoc")

@@ -47,7 +47,7 @@ type Peer interface {
 	GetRemovalFailed() bool
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // peerConn contains the raw connection and its config.
 type peerConn struct {
@@ -177,7 +177,7 @@ func (p *peer) String() string {
 	return fmt.Sprintf("Peer{%v %v in}", p.mconn, p.ID())
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // Implements service.Service
 
 // SetLogger implements BaseService.
@@ -218,7 +218,7 @@ func (p *peer) OnStop() {
 	}
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // Implements Peer
 
 // ID returns the peer's ID - the hex encoded hash of its pubkey.
@@ -336,7 +336,7 @@ func (p *peer) GetRemovalFailed() bool {
 	return p.removalAttemptFailed
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // methods only used for testing
 // TODO: can we remove these?
 
@@ -358,7 +358,7 @@ func (p *peer) CanSend(chID byte) bool {
 	return p.mconn.CanSend(chID)
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 
 func PeerMetrics(metrics *Metrics) PeerOption {
 	return func(p *peer) {
@@ -383,7 +383,7 @@ func (p *peer) metricsReporter() {
 	}
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // helper funcs
 
 func createMConnection(

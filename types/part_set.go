@@ -89,7 +89,7 @@ func PartFromProto(pb *cmtproto.Part) (*Part, error) {
 	return part, part.ValidateBasic()
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type PartSetHeader struct {
 	Total uint32            `json:"total"`
@@ -151,7 +151,7 @@ func ProtoPartSetHeaderIsZero(ppsh *cmtproto.PartSetHeader) bool {
 	return ppsh.Total == 0 && len(ppsh.Hash) == 0
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type PartSet struct {
 	total uint32

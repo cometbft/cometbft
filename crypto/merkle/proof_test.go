@@ -64,7 +64,7 @@ func (dop DominoOp) GetKey() []byte {
 	return []byte(dop.key)
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func TestProofOperators(t *testing.T) {
 	var err error

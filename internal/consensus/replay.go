@@ -28,10 +28,10 @@ var crc32c = crc32.MakeTable(crc32.Castagnoli)
 // The former is handled by the WAL, the latter by the proxyApp Handshake on
 // restart, which ultimately hands off the work to the WAL.
 
-//-----------------------------------------
+// -----------------------------------------
 // 1. Recover from failure during consensus
 // (by replaying messages from the WAL)
-//-----------------------------------------
+// -----------------------------------------
 
 // Unmarshal and apply a single message to the consensus state as if it were
 // received in receiveRoutine.  Lines that start with "#" are ignored.
@@ -165,7 +165,7 @@ LOOP:
 	return nil
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // Parses marker lines of the form:
 // #ENDHEIGHT: 12345
@@ -191,11 +191,11 @@ func makeHeightSearchFunc(height int64) auto.SearchFunc {
 	}
 }*/
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // 2. Recover from failure while applying the block.
 // (by handshaking with the app to figure out where
 // we were last, and using the WAL to recover there.)
-//---------------------------------------------------
+// ---------------------------------------------------
 
 type Handshaker struct {
 	stateStore   sm.Store

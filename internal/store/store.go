@@ -581,7 +581,7 @@ func (bs *BlockStore) Close() error {
 	return bs.db.Close()
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 func calcBlockMetaKey(height int64) []byte {
 	return []byte(fmt.Sprintf("H:%v", height))
@@ -607,7 +607,7 @@ func calcBlockHashKey(hash []byte) []byte {
 	return []byte(fmt.Sprintf("BH:%x", hash))
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 var blockStoreKey = []byte("blockStore")
 
@@ -658,7 +658,7 @@ func mustEncode(pb proto.Message) []byte {
 	return bz
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // DeleteLatestBlock removes the block pointed to by height,
 // lowering height by one.

@@ -546,7 +546,8 @@ func isAmbiguous(b BSR) bool {
 	return false
 }
 
-//---- SPPF ------------
+
+// ---- SPPF ------------
 
 type bldSPPF struct {
 	root         *sppf.SymbolNode
@@ -599,8 +600,15 @@ func (pf *Set) ToSPPF() *sppf.SymbolNode {
 }
 
 func (bld *bldSPPF) mkIN(nt symbols.NT, body symbols.Symbols, pos int,
+
+	
+
+
 	lext, rext int,
 ) *sppf.IntermediateNode {
+
+
+
 	in := &sppf.IntermediateNode{
 		NT:   nt,
 		Body: body,

@@ -110,7 +110,7 @@ func (tm *TrustMetric) TrustScore() int {}
 // NewMetric returns a trust metric with the default configuration
 func NewMetric() *TrustMetric {}
 
-//------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // For example
 
 tm := NewMetric()
@@ -148,7 +148,7 @@ func DefaultConfig() TrustMetricConfig {}
 // NewMetricWithConfig returns a trust metric with a custom configuration
 func NewMetricWithConfig(tmc TrustMetricConfig) *TrustMetric {}
 
-//------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // For example
 
 config := TrustMetricConfig{
@@ -196,7 +196,7 @@ func (tms *TrustMetricStore) GetPeerTrustMetric(key string) *TrustMetric {}
 // PeerDisconnected pauses the trust metric associated with the peer identified by the key
 func (tms *TrustMetricStore) PeerDisconnected(key string) {}
 
-//------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
 // For example
 
 db := dbm.NewDB("trusthistory", "goleveldb", dirPathStr)

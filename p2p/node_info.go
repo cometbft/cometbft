@@ -22,7 +22,7 @@ func MaxNodeInfoSize() int {
 	return maxNodeInfoSize
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // NodeInfo exposes basic info of a node
 // and determines if we're compatible.
@@ -43,7 +43,7 @@ type nodeInfoTransport interface {
 	CompatibleWith(other NodeInfo) error
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // ProtocolVersion contains the protocol versions for the software.
 type ProtocolVersion struct {
@@ -69,7 +69,7 @@ func NewProtocolVersion(p2p, block, app uint64) ProtocolVersion {
 	}
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // Assert DefaultNodeInfo satisfies NodeInfo.
 var _ NodeInfo = DefaultNodeInfo{}

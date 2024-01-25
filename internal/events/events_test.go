@@ -451,7 +451,7 @@ func TestRemoveListenersAsync(t *testing.T) {
 	}
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 // Helper functions
 
 // sumReceivedNumbers takes two channels and adds all numbers received

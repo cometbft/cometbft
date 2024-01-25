@@ -709,8 +709,6 @@ func (txi *TxIndex) matchRange(
 	firstRun bool,
 	heightInfo HeightInfo,
 ) map[string][]byte {
-	// A previous match was attempted but resulted in no matches, so we return
-	// no matches (assuming AND operand).
 	if !firstRun && len(filteredHashes) == 0 {
 		return filteredHashes
 	}
@@ -729,53 +727,54 @@ LOOP:
 			continue
 		}
 
-		if _, ok := qr.AnyBound().(*big.Float); ok {
-			v := new(big.Int)
-			v, ok := v.SetString(extractValueFromKey(it.Key()), 10)
-			var vF *big.Float
-			if !ok {
-				vF, _, err = big.ParseFloat(extractValueFromKey(it.Key()), 10, 125, big.ToNearestEven)
-				if err != nil {
-					continue LOOP
-				}
-			}
-			if qr.Key != types.TxHeightKey {
-				keyHeight, err := extractHeightFromKey(it.Key())
-				if err != nil {
-					txi.log.Error("failure to parse height from key:", err)
-					continue
-				}
-				withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
-				if err != nil {
-					txi.log.Error("failure checking for height bounds:", err)
-					continue
-				}
-				if !withinBounds {
-					continue
-				}
-			}
-			var withinBounds bool
-			var err error
-			if !ok {
-				withinBounds, err = idxutil.CheckBounds(qr, vF)
-			} else {
-				withinBounds, err = idxutil.CheckBounds(qr, v)
-			}
-			if err != nil {
-				txi.log.Error("failed to parse bounds:", err)
-			} else if withinBounds {
-				txi.setTmpHashes(tmpHashes, it)
-			}
-
-			// XXX: passing time in a ABCI Events is not yet implemented
-			// case time.Time:
-			// 	v := strconv.ParseInt(extractValueFromKey(it.Key()), 10, 64)
-			// 	if v == r.upperBound {
-			// 		break
-			// 	}
+		_, isBigFloat := qr.AnyBound().(*big.Float)
+		if !isBigFloat {
+			continue
 		}
 
-		// Potentially exit early.
+		v := new(big.Int)
+		v, ok := v.SetString(extractValueFromKey(it.Key()), 10)
+		var vF *big.Float
+		if !ok {
+			vF, _, err = big.ParseFloat(extractValueFromKey(it.Key()), 10, 125, big.ToNearestEven)
+			if err != nil {
+				continue LOOP
+			}
+		}
+
+		if qr.Key != types.TxHeightKey {
+			keyHeight, err := extractHeightFromKey(it.Key())
+			if err != nil {
+				txi.log.Error("failure to parse height from key:", err)
+				continue
+			}
+			withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+			if err != nil {
+				txi.log.Error("failure checking for height bounds:", err)
+				continue
+			}
+			if !withinBounds {
+				continue
+			}
+		}
+
+		var withinBounds bool
+		var err error
+		if !ok {
+			withinBounds, err = idxutil.CheckBounds(qr, vF)
+		} else {
+			withinBounds, err = idxutil.CheckBounds(qr, v)
+		}
+		if err != nil {
+			txi.log.Error("failed to parse bounds:", err)
+			continue
+		}
+		if !withinBounds {
+			continue
+		}
+
+		txi.setTmpHashes(tmpHashes, it)
+
 		select {
 		case <-ctx.Done():
 			break LOOP
@@ -787,25 +786,14 @@ LOOP:
 	}
 
 	if len(tmpHashes) == 0 || firstRun {
-		// Either:
-		//
-		// 1. Regardless if a previous match was attempted, which may have had
-		// results, but no match was found for the current condition, then we
-		// return no matches (assuming AND operand).
-		//
-		// 2. A previous match was not attempted, so we return all results.
 		return tmpHashes
 	}
 
-	// Remove/reduce matches in filteredHashes that were not found in this
-	// match (tmpHashes).
 REMOVE_LOOP:
 	for k, v := range filteredHashes {
 		tmpHash := tmpHashes[k]
 		if tmpHash == nil || !bytes.Equal(tmpHashes[k], v) {
 			delete(filteredHashes, k)
-
-			// Potentially exit early.
 			select {
 			case <-ctx.Done():
 				break REMOVE_LOOP

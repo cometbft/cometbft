@@ -168,7 +168,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 		rww.Header().Set("X-Server-Time", strconv.FormatInt(begin.Unix(), 10))
 
 		defer handlePanicDuringRecovery(w)
-		defer handlePanicInHandler(rww, r, handler, logger, begin)
+		defer handlePanicInHandler(rww, r, logger, begin)
 
 		handler.ServeHTTP(rww, r)
 	})
@@ -181,10 +181,10 @@ func handlePanicDuringRecovery(w http.ResponseWriter) {
 	}
 }
 
-func handlePanicInHandler(rww *responseWriterWrapper, r *http.Request, handler http.Handler, logger log.Logger, begin time.Time) {
+func handlePanicInHandler(rww *responseWriterWrapper, r *http.Request, logger log.Logger, begin time.Time) {
 	if e := recover(); e != nil {
 		handleRPCResponseOrError(e, rww, logger)
-		logRequestDetails(rww, r, handler, logger, begin)
+		logRequestDetails(rww, r, logger, begin)
 	}
 }
 
@@ -216,7 +216,7 @@ func normalizeError(e interface{}) error {
 	}
 }
 
-func logRequestDetails(rww *responseWriterWrapper, r *http.Request, handler http.Handler, logger log.Logger, begin time.Time) {
+func logRequestDetails(rww *responseWriterWrapper, r *http.Request, logger log.Logger, begin time.Time) {
 	durationMS := time.Since(begin).Nanoseconds() / 1000000
 	if rww.Status == -1 {
 		rww.Status = 200

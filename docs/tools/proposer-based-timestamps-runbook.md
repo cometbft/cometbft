@@ -213,9 +213,9 @@ by the application running alongside CometBFT. Updates to these parameters must
 be passed to the application during the `FinalizeBlock` ABCI method call.
 
 If the application was built using the CosmosSDK, then these parameters can be updated
-programatically using a governance proposal. For more information, see the [CosmosSDK
+programmatically using a governance proposal. For more information, see the [CosmosSDK
 documentation](https://hub.cosmos.network/main/governance/submitting.html#sending-the-transaction-that-submits-your-governance-proposal).
 
 If the application does not implement a way to update the consensus parameters
-programatically, then the application itself must be updated to do so. More information on updating
+programmatically, then the application itself must be updated to do so. More information on updating
 the consensus parameters via ABCI can be found in the [FinalizeBlock documentation](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock).

@@ -1008,49 +1008,51 @@ func TestStateSyncConfig() *StateSyncConfig {
 
 // ValidateBasic performs basic validation.
 func (cfg *StateSyncConfig) ValidateBasic() error {
-	if cfg.Enable {
-		if len(cfg.RPCServers) == 0 {
-			return cmterrors.ErrRequiredField{Field: "rpc_servers"}
-		}
+	if !cfg.Enable {
+		return nil
+	}
 
-		if len(cfg.RPCServers) < 2 {
-			return ErrNotEnoughRPCServers
-		}
+	if len(cfg.RPCServers) == 0 {
+		return cmterrors.ErrRequiredField{Field: "rpc_servers"}
+	}
 
-		for _, server := range cfg.RPCServers {
-			if len(server) == 0 {
-				return ErrEmptyRPCServerEntry
-			}
-		}
+	if len(cfg.RPCServers) < 2 {
+		return ErrNotEnoughRPCServers
+	}
 
-		if cfg.DiscoveryTime != 0 && cfg.DiscoveryTime < 5*time.Second {
-			return ErrInsufficientDiscoveryTime
+	for _, server := range cfg.RPCServers {
+		if len(server) == 0 {
+			return ErrEmptyRPCServerEntry
 		}
+	}
 
-		if cfg.TrustPeriod <= 0 {
-			return cmterrors.ErrRequiredField{Field: "trusted_period"}
-		}
+	if cfg.DiscoveryTime != 0 && cfg.DiscoveryTime < 5*time.Second {
+		return ErrInsufficientDiscoveryTime
+	}
 
-		if cfg.TrustHeight <= 0 {
-			return cmterrors.ErrRequiredField{Field: "trusted_height"}
-		}
+	if cfg.TrustPeriod <= 0 {
+		return cmterrors.ErrRequiredField{Field: "trusted_period"}
+	}
 
-		if len(cfg.TrustHash) == 0 {
-			return cmterrors.ErrRequiredField{Field: "trusted_hash"}
-		}
+	if cfg.TrustHeight <= 0 {
+		return cmterrors.ErrRequiredField{Field: "trusted_height"}
+	}
 
-		_, err := hex.DecodeString(cfg.TrustHash)
-		if err != nil {
-			return fmt.Errorf("invalid trusted_hash: %w", err)
-		}
+	if len(cfg.TrustHash) == 0 {
+		return cmterrors.ErrRequiredField{Field: "trusted_hash"}
+	}
 
-		if cfg.ChunkRequestTimeout < 5*time.Second {
-			return ErrInsufficientChunkRequestTimeout
-		}
+	_, err := hex.DecodeString(cfg.TrustHash)
+	if err != nil {
+		return fmt.Errorf("invalid trusted_hash: %w", err)
+	}
 
-		if cfg.ChunkFetchers <= 0 {
-			return cmterrors.ErrRequiredField{Field: "chunk_fetchers"}
-		}
+	if cfg.ChunkRequestTimeout < 5*time.Second {
+		return ErrInsufficientChunkRequestTimeout
+	}
+
+	if cfg.ChunkFetchers <= 0 {
+		return cmterrors.ErrRequiredField{Field: "chunk_fetchers"}
 	}
 
 	return nil

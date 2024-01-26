@@ -91,11 +91,15 @@ func runBulkInsert(db *sql.DB, tableName string, columns []string, inserts [][]a
 	})
 }
 
+func randomBigserial() int64 {
+	return rand.Int63()
+}
+
 var txrInsertColumns = []string{"rowid", "block_id", "index", "created_at", "tx_hash", "tx_result"}
 var eventInsertColumns = []string{"rowid", "block_id", "tx_id", "type"}
 var attrInsertColumns = []string{"event_id", "key", "composite_key", "value"}
 
-func bulkInsertEvents(blockID, txID uint32, events []v1.Event) (eventInserts, attrInserts [][]any) {
+func bulkInsertEvents(blockID, txID int64, events []v1.Event) (eventInserts, attrInserts [][]any) {
 	// Populate the transaction ID field iff one is defined (> 0).
 	var txIDArg interface{}
 	if txID > 0 {
@@ -106,7 +110,7 @@ func bulkInsertEvents(blockID, txID uint32, events []v1.Event) (eventInserts, at
 		if event.Type == "" {
 			continue
 		}
-		eventID := rand.Uint32() + 1
+		eventID := randomBigserial()
 		eventInserts = append(eventInserts, []any{eventID, blockID, txIDArg, event.Type})
 		for _, attr := range event.Attributes {
 			if !attr.Index {
@@ -140,7 +144,7 @@ func (es *EventSink) IndexBlockEvents(h types.EventDataNewBlockEvents) error {
 
 	// Add the block to the blocks table and report back its row ID for use
 	// in indexing the events for the block.
-	var blockID uint32
+	var blockID int64
 	err := es.store.QueryRow(`
 INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
   VALUES ($1, $2, $3)
@@ -222,14 +226,14 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 		// Index the hash of the underlying transaction as a hex string.
 		txHash := fmt.Sprintf("%X", types.Tx(txr.Tx).Hash())
 		// Generate random ID for this tx_result and insert a record for it
-		txID := rand.Uint32() + 1
+		txID := randomBigserial()
 		txrInserts = append(txrInserts, []any{txID, blockIDs[i], txr.Index, ts, txHash, resultData})
 		// Insert the special transaction meta-events for hash and height.
 		events := append(txr.Result.Events,
 			makeIndexedEvent(types.TxHashKey, txHash),
 			makeIndexedEvent(types.TxHeightKey, strconv.FormatInt(txr.Height, 10)),
 		)
-		newEventInserts, newAttrInserts := bulkInsertEvents(uint32(blockIDs[i]), txID, events)
+		newEventInserts, newAttrInserts := bulkInsertEvents(blockIDs[i], txID, events)
 		eventInserts = append(eventInserts, newEventInserts...)
 		attrInserts = append(attrInserts, newAttrInserts...)
 	}

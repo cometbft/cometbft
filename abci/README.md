@@ -12,7 +12,7 @@ Previously, the ABCI was referred to as TMSP.
 
 ## Installation & Usage
 
-To get up and running quickly, see the [getting started guide](../docs/app-dev/getting-started.md) along with the [abci-cli documentation](../docs/app-dev/abci-cli.md) which will go through the examples found in the [examples](./example/) directory.
+To get up and running quickly, see the [getting started guide](../docs/guides/app-dev/getting-started.md) along with the [abci-cli documentation](../docs/guides/app-dev/abci-cli.md) which will go through the examples found in the [examples](./example/) directory.
 
 ## Specification
 

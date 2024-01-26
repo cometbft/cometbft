@@ -20,16 +20,16 @@ team, including:
    transaction dissemination mechanism, for example a standalone mempool-like
    process that can be scaled independently of the consensus engine/application.
    This requires application developers to implement their own gossip/networking
-   mechanisms. See [ADR 111](./docs/architecture/adr-111-nop-mempool.md) for
+   mechanisms. See [ADR 111](docs/references/architecture/adr-111-nop-mempool.md) for
    details.
 4. The first officially supported release of the [data companion
-   API](./docs/architecture/adr-101-data-companion-pull-api.md).
+   API](docs/references/architecture/adr-101-data-companion-pull-api.md).
 5. Versioning of both the Protobuf definitions _and_ RPC. By versioning our
    APIs, we aim to provide a level of commitment to API stability while
    simultaneously affording ourselves the ability to roll out substantial
    changes in non-breaking releases of CometBFT. See [ADR
-   103](./docs/architecture/adr-103-proto-versioning.md) and [ADR
-   107](./docs/architecture/adr-107-betaize-proto-versions.md).
+   103](docs/references/architecture/adr-103-proto-versioning.md) and [ADR
+   107](docs/references/architecture/adr-107-betaize-proto-versions.md).
 6. Moving many Go packages that are currently publicly accessible into the
    `internal` directory such that the team can roll out substantial changes in
    future without needing to worry about causing breakages in users' codebases.
@@ -37,7 +37,7 @@ team, including:
    hampered the team's ability to roll out impactful new changes to users, as
    previously such changes required a new breaking release (which currently
    takes 6 to 12 months to reach production use for many users). See [ADR
-   109](./docs/architecture/adr-109-reduce-go-api-surface.md) for more details.
+   109](docs/references/architecture/adr-109-reduce-go-api-surface.md) for more details.
 
 None of these changes are state machine-breaking for CometBFT-based networks,
 but could be breaking for some users who depend on the Protobuf definitions type
@@ -76,7 +76,7 @@ the stability guarantees we provide for pre-releases.
   and corresponding consensus file replay code, such as
   `consensus.RunReplayFile`, and `consensus.State.ReplayFile`
   ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
-- `[comet]` Version variables, in `version/version.go`, have been renamed to reflect the CometBFT rebranding. 
+- `[comet]` Version variables, in `version/version.go`, have been renamed to reflect the CometBFT rebranding.
    ([cometbft/cometbft\#1621](https://github.com/cometbft/cometbft/pull/1621))
 - `[consensus]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
@@ -132,7 +132,7 @@ the stability guarantees we provide for pre-releases.
 - `[node]` Change the signature of `GenesisDocProvider` to
   return the checksum of JSON content alongside the parsed genesis data
   ([\#1287](https://github.com/cometbft/cometbft/issues/1287)).
-- `[node]` Go-API breaking: Change the signature of `LoadStateFromDBOrGenesisDocProvider` 
+- `[node]` Go-API breaking: Change the signature of `LoadStateFromDBOrGenesisDocProvider`
    to accept an optional operator provided hash of the genesis file
   ([\#1324](https://github.com/cometbft/cometbft/pull/1324)).
 - `[proto]` Renamed the packages from `tendermint.*` to `cometbft.*`
@@ -140,7 +140,7 @@ the stability guarantees we provide for pre-releases.
   released in 0.34.x, 0.37.x, 0.38.x, and 1.0.x versions.
   Prior to the 1.0 release, the versioned packages are suffixed with
   `.v1beta1`, `.v1beta2`, and so on; all definitions describing the protocols
-  as per the 1.0.0 release are in packages suffixed with `.v1`. 
+  as per the 1.0.0 release are in packages suffixed with `.v1`.
   Relocated generated Go code into a new `api` folder and changed the import
   paths accordingly.
   ([\#495](https://github.com/cometbft/cometbft/pull/495)
@@ -228,10 +228,10 @@ the stability guarantees we provide for pre-releases.
   ```
 - `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
   ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
-- `[metrics]` Add metrics to monitor pruning and current available data in stores: `PruningServiceBlockRetainHeight`, `PruningServiceBlockResultsRetainHeight`, `ApplicationBlockRetainHeight`, `BlockStoreBaseHeight`, `ABCIResultsBaseHeight`. 
+- `[metrics]` Add metrics to monitor pruning and current available data in stores: `PruningServiceBlockRetainHeight`, `PruningServiceBlockResultsRetainHeight`, `ApplicationBlockRetainHeight`, `BlockStoreBaseHeight`, `ABCIResultsBaseHeight`.
   ([\#1234](https://github.com/cometbft/cometbft/pull/1234))
 - `[proto]` Add definitions and generated code for
-  [ADR-101](./docs/architecture/adr-101-data-companion-pull-api.md)
+  [ADR-101](docs/references/architecture/adr-101-data-companion-pull-api.md)
   `PruningService` in the `cometbft.services.pruning.v1` proto package
   ([\#1097](https://github.com/cometbft/cometbft/issues/1097)).
 - `[rpc/grpc]` Add privileged gRPC server and client facilities, in
@@ -240,7 +240,7 @@ the stability guarantees we provide for pre-releases.
   without authentication and should never be exposed to public internet
   ([\#1097](https://github.com/cometbft/cometbft/issues/1097)).
 - `[rpc/grpc]` Add a pruning service adding on the privileged gRPC server API to
-  give an [ADR-101](./docs/architecture/adr-101-data-companion-pull-api.md) data
+  give an [ADR-101](docs/references/architecture/adr-101-data-companion-pull-api.md) data
   companion control over block data retained by the node. The
   `WithPruningService` option method in `server/privileged` is provided to
   configure the pruning service
@@ -276,7 +276,7 @@ the stability guarantees we provide for pre-releases.
 - `[abci/client]` Add fully unsynchronized local client creator, which
   imposes no mutexes on the application, leaving all handling of concurrency up
   to the application ([\#1141](https://github.com/cometbft/cometbft/pull/1141))
-- `[cli/node]` The genesis hash provided with the `--genesis-hash` is now 
+- `[cli/node]` The genesis hash provided with the `--genesis-hash` is now
    forwarded to the node, instead of reading the file.
   ([\#1324](https://github.com/cometbft/cometbft/pull/1324)).
 - `[config]` Added `[storage.pruning]` and `[storage.pruning.data_companion]`
@@ -307,7 +307,7 @@ the stability guarantees we provide for pre-releases.
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
   `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
-  which the node gossip transactions. 
+  which the node gossip transactions.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[node]` On upgrade, after [\#1296](https://github.com/cometbft/cometbft/pull/1296), delete the genesis file existing in the DB.
@@ -475,7 +475,7 @@ gossip.
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
   `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
-  which the node gossip transactions. 
+  which the node gossip transactions.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 
@@ -513,7 +513,7 @@ gossip.
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
   `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
-  which the node gossip transactions. 
+  which the node gossip transactions.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[node]` Close evidence.db OnStop ([cometbft/cometbft\#1210](https://github.com/cometbft/cometbft/pull/1210): @chillyvee)
@@ -545,7 +545,7 @@ gossip.
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
   `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
-  which the node gossip transactions. 
+  which the node gossip transactions.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[node]` Close evidence.db OnStop ([cometbft/cometbft\#1210](https://github.com/cometbft/cometbft/pull/1210): @chillyvee)

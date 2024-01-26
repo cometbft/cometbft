@@ -169,13 +169,14 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 		}
 	}
 
-	// save a block
+	// save a block big enough to have two block parts
 	txs := []types.Tx{make([]byte, types.BlockPartSizeBytes)} // TX taking one block part alone
 	block := state.MakeBlock(bs.Height()+1, txs, new(types.Commit), nil, state.Validators.GetProposer().Address)
 	validPartSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, validPartSet.Total(), uint32(2))
 	part2 = validPartSet.GetPart(1)
+
 	seenCommit := makeTestCommit(10, cmttime.Now())
 	bs.SaveBlock(block, partSet, seenCommit)
 	require.EqualValues(t, 1, bs.Base(), "expecting the new height to be changed")
@@ -595,7 +596,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 
 	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
-	seenCommit := makeTestCommit(block.Header.Height, cmttime.Now())
+	seenCommit := makeTestCommit(10, cmttime.Now())
 	bs.SaveBlock(block, partSet, seenCommit)
 	require.Equal(t, bs.Height(), block.Header.Height, "expecting the new height to be changed")
 

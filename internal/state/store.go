@@ -449,7 +449,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 	if err != nil {
 		return err
 	}
-	store.metrics.StoreAccessDurationSeconds.With("method", "load_single_validator_info").Observe(elapsedTime)
+	store.metrics.StoreAccessDurationSeconds.With("method", "pruning_load_validator_info").Observe(elapsedTime)
 	return nil
 }
 

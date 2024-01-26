@@ -12,12 +12,67 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+// handleClient handles the client related operations.
+func handleClient(ctx context.Context, node *e2e.Node, clients map[string]*rpchttp.HTTP) (*rpctypes.ResultBlock, error) {
+	client, ok := clients[node.Name]
+	var err error
+	if !ok {
+		client, err = node.Client()
+		if err != nil {
+			return nil, err
+		}
+		clients[node.Name] = client
+	}
+
+	subctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+	result, err := client.Block(subctx, nil)
+	if err == context.DeadlineExceeded || err == context.Canceled {
+		return nil, ctx.Err()
+	}
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// handleTimer deals with the timer case in the select statement.
+func handleTimer(ctx context.Context, testnet *e2e.Testnet, clients map[string]*rpchttp.HTTP, maxResult **rpctypes.ResultBlock, lastIncrease *time.Time) error {
+	for _, node := range testnet.Nodes {
+		if node.Stateless() {
+			continue
+		}
+		result, err := handleClient(ctx, node, clients)
+		if err != nil {
+			continue
+		}
+		if result.Block != nil && (*maxResult == nil || result.Block.Height > (*maxResult).Block.Height) {
+			*maxResult = result
+			*lastIncrease = time.Now()
+		}
+	}
+	return nil
+}
+
+// checkStall checks if the chain has stalled.
+func checkStall(clients map[string]*rpchttp.HTTP, lastIncrease time.Time, maxResult *rpctypes.ResultBlock) error {
+	if len(clients) == 0 {
+		return errors.New("unable to connect to any network nodes")
+	}
+	if time.Since(lastIncrease) >= 20*time.Second {
+		if maxResult == nil {
+			return errors.New("chain stalled at unknown height")
+		}
+		return fmt.Errorf("chain stalled at height %v", maxResult.Block.Height)
+	}
+	return nil
+}
+
 // waitForHeight waits for the network to reach a certain height (or above),
 // returning the highest height seen. Errors if the network is not making
 // progress at all.
 func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*types.Block, *types.BlockID, error) {
 	var (
-		err          error
 		maxResult    *rpctypes.ResultBlock
 		clients      = map[string]*rpchttp.HTTP{}
 		lastIncrease = time.Now()
@@ -30,45 +85,16 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 		case <-ctx.Done():
 			return nil, nil, ctx.Err()
 		case <-timer.C:
-			for _, node := range testnet.Nodes {
-				if node.Stateless() {
-					continue
-				}
-				client, ok := clients[node.Name]
-				if !ok {
-					client, err = node.Client()
-					if err != nil {
-						continue
-					}
-					clients[node.Name] = client
-				}
-
-				subctx, cancel := context.WithTimeout(ctx, 1*time.Second)
-				defer cancel()
-				result, err := client.Block(subctx, nil)
-				if err == context.DeadlineExceeded || err == context.Canceled {
-					return nil, nil, ctx.Err()
-				}
-				if err != nil {
-					continue
-				}
-				if result.Block != nil && (maxResult == nil || result.Block.Height > maxResult.Block.Height) {
-					maxResult = result
-					lastIncrease = time.Now()
-				}
-				if maxResult != nil && maxResult.Block.Height >= height {
-					return maxResult.Block, &maxResult.BlockID, nil
-				}
+			err := handleTimer(ctx, testnet, clients, &maxResult, &lastIncrease)
+			if err != nil {
+				return nil, nil, err
 			}
-
-			if len(clients) == 0 {
-				return nil, nil, errors.New("unable to connect to any network nodes")
+			if maxResult != nil && maxResult.Block.Height >= height {
+				return maxResult.Block, &maxResult.BlockID, nil
 			}
-			if time.Since(lastIncrease) >= 20*time.Second {
-				if maxResult == nil {
-					return nil, nil, errors.New("chain stalled at unknown height")
-				}
-				return nil, nil, fmt.Errorf("chain stalled at height %v", maxResult.Block.Height)
+			err = checkStall(clients, lastIncrease, maxResult)
+			if err != nil {
+				return nil, nil, err
 			}
 			timer.Reset(1 * time.Second)
 		}

@@ -106,12 +106,6 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "block_size_bytes",
 			Help:      "Size of the block.",
 		}, labels).With(labelsAndValues...),
-		ChainSizeBytes: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
-			Namespace: namespace,
-			Subsystem: MetricsSubsystem,
-			Name:      "chain_size_bytes",
-			Help:      "Size of the chain in bytes.",
-		}, labels).With(labelsAndValues...),
 		TotalTxs: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -218,7 +212,6 @@ func NopMetrics() *Metrics {
 		BlockIntervalSeconds:      discard.NewHistogram(),
 		NumTxs:                    discard.NewGauge(),
 		BlockSizeBytes:            discard.NewGauge(),
-		ChainSizeBytes:            discard.NewCounter(),
 		TotalTxs:                  discard.NewGauge(),
 		CommittedHeight:           discard.NewGauge(),
 		BlockParts:                discard.NewCounter(),

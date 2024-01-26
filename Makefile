@@ -112,6 +112,7 @@ testdata-metrics:
 #? mockery: Generate test mocks
 mockery:
 	go generate -run="./scripts/mockery_generate.sh" ./...
+	@go run mvdan.cc/gofumpt@latest -l -w .
 .PHONY: mockery
 
 ###############################################################################
@@ -161,6 +162,7 @@ proto-check-breaking: check-proto-deps
 	@go run github.com/bufbuild/buf/cmd/buf@latest breaking --against ".git"
 .PHONY: proto-check-breaking
 
+#? proto-check-breaking-ci: Check for breaking changes in Protobuf files against v0.34.x. This is only useful if your changes have not yet been committed
 proto-check-breaking-ci:
 	@go run github.com/bufbuild/buf/cmd/buf@latest breaking --against $(HTTPS_GIT)#branch=v0.34.x
 .PHONY: proto-check-breaking-ci
@@ -190,7 +192,7 @@ dist:
 	@BUILD_TAGS=$(BUILD_TAGS) sh -c "'$(CURDIR)/scripts/dist.sh'"
 .PHONY: dist
 
-#? go-mod-cache: Download go modules to local cache 
+#? go-mod-cache: Download go modules to local cache
 go-mod-cache: go.sum
 	@echo "--> Download go modules to local cache"
 	@go mod download
@@ -240,41 +242,28 @@ clean_certs:
 ###                  Formatting, linting, and vetting                       ###
 ###############################################################################
 
-# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
-# Revisit using format after CometBFT v1 release and/or after 2024-06-01.
-#format:
-#	find . -name '*.go' -type f -not -path "*.git*" -not -name '*.pb.go' -not -name '*pb_test.go' | xargs gofmt -w -s
-#	find . -name '*.go' -type f -not -path "*.git*"  -not -name '*.pb.go' -not -name '*pb_test.go' | xargs goimports -w -local github.com/cometbft/cometbft
-#.PHONY: format
-
-#? lint: Run latest golangci-lint linter
+#? lint: Lint, format and fix typos
 lint:
-	@echo "--> Running linter"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run
+	@echo "--> Linting"
+	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
+	@echo "--> Formatting"
+	@go run mvdan.cc/gofumpt@latest -w .
+	@echo "--> Fixing typos"
+	@which codespell || pip3 install codespell
+	@codespell -w
 .PHONY: lint
-
-# https://github.com/cometbft/cometbft/pull/1925#issuecomment-1875127862
-# Revisit using lint-format after CometBFT v1 release and/or after 2024-06-01.
-#lint-format:
-#	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
-#	@go run mvdan.cc/gofumpt -l -w ./..
-#.PHONY: lint-format
 
 #? vulncheck: Run latest govulncheck
 vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
 
-#? lint-typo: Run codespell to check typos
-lint-typo:
-	which codespell || pip3 install codespell
-	@codespell
-.PHONY: lint-typo
-
-#? lint-typo: Run codespell to auto fix typos
-lint-fix-typo:
-	@codespell -w
-.PHONY: lint-fix-typo
+#? gofumpt-pre-commit: Create gofumpt pre-commit hook
+gofumpt-pre-commit:
+	@echo "--> Creating gofumpt pre-commit hook"
+	@mkdir -p .git/hooks
+	@cp scripts/gofumpt.sh .git/hooks/pre-commit
+.PHONY: gofumpt-pre-commit
 
 DESTINATION = ./index.html.md
 
@@ -327,13 +316,21 @@ build_c-amazonlinux:
 #? localnet-start: Run a 4-node testnet locally
 localnet-start: localnet-stop build-docker-localnode
 	@if ! [ -f build/node0/config/genesis.json ]; then docker run --rm -v $(CURDIR)/build:/cometbft:Z cometbft/localnode testnet --config /etc/cometbft/config-template.toml --o . --starting-ip-address 192.167.10.2; fi
-	docker-compose up
+	docker-compose up -d
 .PHONY: localnet-start
 
 #? localnet-stop: Stop testnet
 localnet-stop:
 	docker-compose down
 .PHONY: localnet-stop
+
+#? monitoring-start: Start Prometheus and Grafana servers for localnet monitoring
+monitoring-start:
+	cd test/monitoring && docker-compose up -d
+
+#? monitoring-stop: Stop the Prometheus and Grafana servers
+monitoring-stop:
+	cd test/monitoring && docker-compose down
 
 #? build-contract-tests-hooks: Build hooks for dredd, to skip or add information on some steps
 build-contract-tests-hooks:

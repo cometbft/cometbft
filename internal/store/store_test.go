@@ -70,7 +70,7 @@ func makeStateAndBlockStoreAndIndexers() (sm.State, *BlockStore, txindex.TxIndex
 		panic(err)
 	}
 
-	return state, NewBlockStore(blockDB, BlockStoreOptions{}), txIndexer, blockIndexer, func() { os.RemoveAll(config.RootDir) }, stateStore
+	return state, NewBlockStore(blockDB), txIndexer, blockIndexer, func() { os.RemoveAll(config.RootDir) }, stateStore
 }
 
 func TestLoadBlockStoreState(t *testing.T) {
@@ -108,7 +108,7 @@ func TestNewBlockStore(t *testing.T) {
 	bz, _ := proto.Marshal(&bss)
 	err := db.Set(blockStoreKey, bz)
 	require.NoError(t, err)
-	bs := NewBlockStore(db, BlockStoreOptions{})
+	bs := NewBlockStore(db)
 	require.Equal(t, int64(100), bs.Base(), "failed to properly parse blockstore")
 	require.Equal(t, int64(10000), bs.Height(), "failed to properly parse blockstore")
 
@@ -126,7 +126,7 @@ func TestNewBlockStore(t *testing.T) {
 		_, _, panicErr := doFn(func() (interface{}, error) {
 			err := db.Set(blockStoreKey, tt.data)
 			require.NoError(t, err)
-			_ = NewBlockStore(db, BlockStoreOptions{})
+			_ = NewBlockStore(db)
 			return nil, nil
 		})
 		require.Error(t, panicErr, "#%d panicCauser: %q expected a panic", i, tt.data)
@@ -135,13 +135,13 @@ func TestNewBlockStore(t *testing.T) {
 
 	err = db.Set(blockStoreKey, []byte{})
 	require.NoError(t, err)
-	bs = NewBlockStore(db, BlockStoreOptions{})
+	bs = NewBlockStore(db)
 	assert.Equal(t, int64(0), bs.Height(), "expecting empty bytes to be unmarshaled alright")
 }
 
 func newInMemoryBlockStore() (*BlockStore, dbm.DB) {
 	db := dbm.NewMemDB()
-	return NewBlockStore(db, BlockStoreOptions{}), db
+	return NewBlockStore(db), db
 }
 
 // TODO: This test should be simplified ...
@@ -471,7 +471,7 @@ func TestLoadBaseMeta(t *testing.T) {
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
-	bs := NewBlockStore(dbm.NewMemDB(), BlockStoreOptions{})
+	bs := NewBlockStore(dbm.NewMemDB())
 
 	for h := int64(1); h <= 10; h++ {
 		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
@@ -745,7 +745,7 @@ func TestPruneBlocks(t *testing.T) {
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
 	db := dbm.NewMemDB()
-	bs := NewBlockStore(db, BlockStoreOptions{})
+	bs := NewBlockStore(db)
 	assert.EqualValues(t, 0, bs.Base())
 	assert.EqualValues(t, 0, bs.Height())
 	assert.EqualValues(t, 0, bs.Size())
@@ -900,7 +900,7 @@ func TestLoadBlockMetaByHash(t *testing.T) {
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	require.NoError(t, err)
-	bs := NewBlockStore(dbm.NewMemDB(), BlockStoreOptions{})
+	bs := NewBlockStore(dbm.NewMemDB())
 
 	b1 := state.MakeBlock(state.LastBlockHeight+1, test.MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 	partSet, err := b1.MakePartSet(types.BlockPartSizeBytes)

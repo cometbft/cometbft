@@ -62,7 +62,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		require.NoError(t, err)
 
 		blockDB := dbm.NewMemDB()
-		blockStore := store.NewBlockStore(blockDB, store.BlockStoreOptions{Metrics: store.NopMetrics()})
+		blockStore := store.NewBlockStore(blockDB)
 
 		mtx := new(cmtsync.Mutex)
 		// one for mempool, one for consensus

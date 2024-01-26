@@ -73,7 +73,7 @@ func NewFromConfig(cfg *config.Config) (*Inspector, error) {
 	if err != nil {
 		return nil, err
 	}
-	bs := store.NewBlockStore(bsDB, store.BlockStoreOptions{Metrics: store.NopMetrics()})
+	bs := store.NewBlockStore(bsDB)
 	sDB, err := config.DefaultDBProvider(&config.DBContext{ID: "state", Config: cfg})
 	if err != nil {
 		return nil, err

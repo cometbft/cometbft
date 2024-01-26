@@ -408,7 +408,7 @@ func initializeValidatorState(privVal types.PrivValidator, height int64) sm.Stor
 // initializeBlockStore creates a block storage and populates it w/ a dummy
 // block at +height+.
 func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) (*store.BlockStore, error) {
-	blockStore := store.NewBlockStore(db, store.BlockStoreOptions{Metrics: store.NopMetrics()})
+	blockStore := store.NewBlockStore(db)
 
 	for i := int64(1); i <= state.LastBlockHeight; i++ {
 		lastCommit := makeExtCommit(i-1, valAddr)

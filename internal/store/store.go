@@ -60,30 +60,33 @@ type BlockStore struct {
 	height int64
 }
 
-type BlockStoreOptions struct {
-	Metrics *Metrics
+type BlockStoreOption func(*BlockStore)
+
+// WithMetrics sets the metrics.
+func WithMetrics(metrics *Metrics) BlockStoreOption {
+	return func(bs *BlockStore) { bs.metrics = metrics }
 }
 
 // NewBlockStore returns a new BlockStore with the given DB,
 // initialized to the last height that was committed to the DB.
-func NewBlockStore(db dbm.DB, o BlockStoreOptions) *BlockStore {
+func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
 	start := time.Now()
 
 	bs := LoadBlockStoreState(db)
-	m := NopMetrics()
-	if o.Metrics != nil {
-		m = o.Metrics
-	}
 
-	bStore := BlockStore{
-		metrics: m,
+	bStore := &BlockStore{
 		base:    bs.Base,
 		height:  bs.Height,
 		db:      db,
+		metrics: NopMetrics(),
+	}
+
+	for _, option := range options {
+		option(bStore)
 	}
 
 	addTimeSample(bStore.metrics.BlockStoreAccessDurationSeconds.With("method", "new_block_store"), start)()
-	return &bStore
+	return bStore
 }
 
 func (bs *BlockStore) IsEmpty() bool {

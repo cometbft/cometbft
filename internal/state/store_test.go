@@ -263,7 +263,7 @@ func makeStateAndBlockStoreAndIndexers() (sm.State, *store.BlockStore, txindex.T
 		panic(err)
 	}
 
-	return state, store.NewBlockStore(blockDB, store.BlockStoreOptions{Metrics: store.NopMetrics()}), txIndexer, blockIndexer, func() { os.RemoveAll(config.RootDir) }, stateStore
+	return state, store.NewBlockStore(blockDB), txIndexer, blockIndexer, func() { os.RemoveAll(config.RootDir) }, stateStore
 }
 
 func initStateStoreRetainHeights(stateStore sm.Store) error {

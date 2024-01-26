@@ -58,7 +58,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 		t.Error(err)
 	}
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.BlockStoreOptions{Metrics: store.NopMetrics()})
+	blockStore := store.NewBlockStore(blockStoreDB)
 
 	proxyApp := proxy.NewAppConns(proxy.NewLocalClientCreator(app), proxy.NopMetrics())
 	proxyApp.SetLogger(logger.With("module", "proxy"))

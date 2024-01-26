@@ -621,42 +621,56 @@ func (bpr *bpRequester) redo(peerID p2p.ID) {
 // Responsible for making more requests as necessary
 // Returns only when a block is found (e.g. AddBlock() is called).
 func (bpr *bpRequester) requestRoutine() {
+OUTER_LOOP:
 	for {
-		if !bpr.IsRunning() || !bpr.pool.IsRunning() {
-			return
-		}
-		peer := bpr.pool.pickIncrAvailablePeer(bpr.height)
-		if peer == nil {
-			bpr.Logger.Debug("No peers currently available; will retry shortly", "height", bpr.height)
-			time.Sleep(requestIntervalMS * time.Millisecond)
-			continue
+		// Pick a peer to send request to.
+		var peer *bpPeer
+	PICK_PEER_LOOP:
+		for {
+			if !bpr.IsRunning() || !bpr.pool.IsRunning() {
+				return
+			}
+			peer = bpr.pool.pickIncrAvailablePeer(bpr.height)
+			if peer == nil {
+				bpr.Logger.Debug("No peers currently available; will retry shortly", "height", bpr.height)
+				time.Sleep(requestIntervalMS * time.Millisecond)
+				continue PICK_PEER_LOOP
+			}
+			break PICK_PEER_LOOP
 		}
 		bpr.mtx.Lock()
 		bpr.peerID = peer.id
 		bpr.mtx.Unlock()
 
 		to := time.NewTimer(requestRetrySeconds * time.Second)
+		// Send request and wait.
 		bpr.pool.sendRequest(bpr.height, peer.id)
-
-		select {
-		case <-bpr.pool.Quit():
-			if err := bpr.Stop(); err != nil {
-				bpr.Logger.Error("Error stopped requester", "err", err)
-			}
-			return
-		case <-bpr.Quit():
-			return
-		case <-to.C:
-			bpr.Logger.Debug("Retrying block request after timeout", "height", bpr.height, "peer", bpr.peerID)
-			bpr.reset()
-			continue
-		case peerID := <-bpr.redoCh:
-			if peerID == bpr.peerID {
+	WAIT_LOOP:
+		for {
+			select {
+			case <-bpr.pool.Quit():
+				if err := bpr.Stop(); err != nil {
+					bpr.Logger.Error("Error stopped requester", "err", err)
+				}
+				return
+			case <-bpr.Quit():
+				return
+			case <-to.C:
+				bpr.Logger.Debug("Retrying block request after timeout", "height", bpr.height, "peer", bpr.peerID)
+				// Simulate a redo
 				bpr.reset()
-				continue
+				continue OUTER_LOOP
+			case peerID := <-bpr.redoCh:
+				if peerID == bpr.peerID {
+					bpr.reset()
+					continue OUTER_LOOP
+				}
+				continue WAIT_LOOP
+			case <-bpr.gotBlockCh:
+				// We got a block!
+				// Continue the for-loop and wait til Quit.
+				continue WAIT_LOOP
 			}
-		case <-bpr.gotBlockCh:
-			continue
 		}
 	}
 }

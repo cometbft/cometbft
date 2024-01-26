@@ -76,8 +76,6 @@ type generateConfig struct {
 
 // Generate generates random testnets using the given RNG.
 func Generate(cfg *generateConfig) (manifests []e2e.Manifest, err error) {
-	upgradeVersion := ""
-
 	if cfg.multiVersion == "" {
 		return manifests, nil
 	}

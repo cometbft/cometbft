@@ -74,6 +74,10 @@ issues:
   max-same-issues: 10000
   max-issues-per-linter: 10000
 linters-settings:
+  nestif:
+    # Minimal complexity of if statements to report.
+    # Default: 5
+    min-complexity: 7
   dogsled:
     max-blank-identifiers: 3
   goconst:
@@ -152,11 +156,13 @@ linters-settings:
       - name: max-public-structs
         disabled: true
       - name: cognitive-complexity
-        disabled: true
+        disabled: false
+        arguments: [24]
       - name: argument-limit
         disabled: true
       - name: cyclomatic
-        disabled: true
+        disabled: false
+        arguments: [20]
       - name: file-header
         disabled: true
       - name: function-length

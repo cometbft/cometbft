@@ -498,6 +498,7 @@ func TestTransportMultiplexRejectIncompatible(t *testing.T) {
 }
 
 func checkError(t *testing.T, err error) {
+	t.Helper()
 	if err == nil {
 		t.Errorf("expected connection failure")
 		return

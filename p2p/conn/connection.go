@@ -571,99 +571,97 @@ func (c *MConnection) recvRoutine() {
 
 FOR_LOOP:
 	for {
-		// Block until .recvMonitor says we can read.
 		c.recvMonitor.Limit(c._maxPacketMsgSize, atomic.LoadInt64(&c.config.RecvRate), true)
 
-		// Peek into bufConnReader for debugging
-		/*
-			if numBytes := c.bufConnReader.Buffered(); numBytes > 0 {
-				bz, err := c.bufConnReader.Peek(cmtmath.MinInt(numBytes, 100))
-				if err == nil {
-					// return
-				} else {
-					c.Logger.Debug("Error peeking connection buffer", "err", err)
-					// return nil
-				}
-				c.Logger.Info("Peek connection buffer", "numBytes", numBytes, "bz", bz)
-			}
-		*/
-
-		// Read packet type
 		var packet tmp2p.Packet
-
 		_n, err := protoReader.ReadMsg(&packet)
 		c.recvMonitor.Update(_n)
-		if err != nil {
-			// stopServices was invoked and we are shutting down
-			// receiving is expected to fail since we will close the connection
-			select {
-			case <-c.quitRecvRoutine:
-				break FOR_LOOP
-			default:
-			}
 
-			if c.IsRunning() {
-				if err == io.EOF {
-					c.Logger.Info("Connection is closed @ recvRoutine (likely by the other side)", "conn", c)
-				} else {
-					c.Logger.Debug("Connection failed @ recvRoutine (reading byte)", "conn", c, "err", err)
-				}
-				c.stopForError(err)
-			}
+		if c.handleRecvError(err) {
 			break FOR_LOOP
 		}
 
-		// Read more depending on packet type.
 		switch pkt := packet.Sum.(type) {
 		case *tmp2p.Packet_PacketPing:
-			// TODO: prevent abuse, as they cause flush()'s.
-			// https://github.com/tendermint/tendermint/issues/1190
-			c.Logger.Debug("Receive Ping")
-			select {
-			case c.pong <- struct{}{}:
-			default:
-				// never block
-			}
+			c.handlePacketPing()
 		case *tmp2p.Packet_PacketPong:
-			c.Logger.Debug("Receive Pong")
-			select {
-			case c.pongTimeoutCh <- false:
-			default:
-				// never block
-			}
+			c.handlePacketPong()
 		case *tmp2p.Packet_PacketMsg:
-			channelID := byte(pkt.PacketMsg.ChannelID)
-			channel, ok := c.channelsIdx[channelID]
-			if pkt.PacketMsg.ChannelID < 0 || pkt.PacketMsg.ChannelID > math.MaxUint8 || !ok || channel == nil {
-				err := fmt.Errorf("unknown channel %X", pkt.PacketMsg.ChannelID)
-				c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
-				c.stopForError(err)
-				break FOR_LOOP
-			}
-
-			msgBytes, err := channel.recvPacketMsg(*pkt.PacketMsg)
-			if err != nil {
-				if c.IsRunning() {
-					c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
-					c.stopForError(err)
-				}
-				break FOR_LOOP
-			}
-			if msgBytes != nil {
-				c.Logger.Debug("Received bytes", "chID", channelID, "msgBytes", msgBytes)
-				// NOTE: This means the reactor.Receive runs in the same thread as the p2p recv routine
-				c.onReceive(channelID, msgBytes)
-			}
+			c.handlePacketMsg(pkt)
 		default:
-			err := fmt.Errorf("unknown message type %v", reflect.TypeOf(packet))
-			c.Logger.Error("Connection failed @ recvRoutine", "conn", c, "err", err)
-			c.stopForError(err)
-			break FOR_LOOP
+			c.handleUnknownPacket(&packet)
 		}
 	}
-
-	// Cleanup
 	close(c.pong)
+}
+
+func (c *MConnection) handleRecvError(err error) bool {
+	if err != nil {
+		select {
+		case <-c.quitRecvRoutine:
+			return true
+		default:
+		}
+
+		if c.IsRunning() {
+			if err == io.EOF {
+				c.Logger.Info("Connection is closed @ recvRoutine (likely by the other side)", "conn", c)
+			} else {
+				c.Logger.Debug("Connection failed @ recvRoutine (reading byte)", "conn", c, "err", err)
+			}
+			c.stopForError(err)
+		}
+		return true
+	}
+	return false
+}
+
+func (c *MConnection) handlePacketPing() {
+	c.Logger.Debug("Receive Ping")
+	select {
+	case c.pong <- struct{}{}:
+	default:
+		// never block
+	}
+}
+
+func (c *MConnection) handlePacketPong() {
+	c.Logger.Debug("Receive Pong")
+	select {
+	case c.pongTimeoutCh <- false:
+	default:
+		// never block
+	}
+}
+
+func (c *MConnection) handlePacketMsg(pkt *tmp2p.Packet_PacketMsg) {
+	channelID := byte(pkt.PacketMsg.ChannelID)
+	channel, ok := c.channelsIdx[channelID]
+	if pkt.PacketMsg.ChannelID < 0 || pkt.PacketMsg.ChannelID > math.MaxUint8 || !ok || channel == nil {
+		err := fmt.Errorf("unknown channel %X", pkt.PacketMsg.ChannelID)
+		c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
+		c.stopForError(err)
+		return
+	}
+
+	msgBytes, err := channel.recvPacketMsg(*pkt.PacketMsg)
+	if err != nil {
+		if c.IsRunning() {
+			c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
+			c.stopForError(err)
+		}
+		return
+	}
+	if msgBytes != nil {
+		c.Logger.Debug("Received bytes", "chID", channelID, "msgBytes", msgBytes)
+		c.onReceive(channelID, msgBytes)
+	}
+}
+
+func (c *MConnection) handleUnknownPacket(pkt proto.Message) {
+	err := fmt.Errorf("unknown message type %v", reflect.TypeOf(pkt))
+	c.Logger.Error("Connection failed @ recvRoutine", "conn", c, "err", err)
+	c.stopForError(err)
 }
 
 // not goroutine-safe.

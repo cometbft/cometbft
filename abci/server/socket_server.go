@@ -212,96 +212,160 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*types.Response, error) {
 	switch r := req.Value.(type) {
 	case *types.Request_Echo:
-		return types.ToEchoResponse(r.Echo.Message), nil
+		return s.handleEcho(r.Echo)
 	case *types.Request_Flush:
-		return types.ToFlushResponse(), nil
+		return s.handleFlush(r.Flush)
 	case *types.Request_Info:
-		res, err := s.app.Info(ctx, r.Info)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToInfoResponse(res), nil
+		return s.handleInfo(ctx, r.Info)
 	case *types.Request_CheckTx:
-		res, err := s.app.CheckTx(ctx, r.CheckTx)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToCheckTxResponse(res), nil
+		return s.handleCheckTx(ctx, r.CheckTx)
 	case *types.Request_Commit:
-		res, err := s.app.Commit(ctx, r.Commit)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToCommitResponse(res), nil
+		return s.handleCommit(ctx, r.Commit)
 	case *types.Request_Query:
-		res, err := s.app.Query(ctx, r.Query)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToQueryResponse(res), nil
+		return s.handleQuery(ctx, r.Query)
 	case *types.Request_InitChain:
-		res, err := s.app.InitChain(ctx, r.InitChain)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToInitChainResponse(res), nil
+		return s.handleInitChain(ctx, r.InitChain)
 	case *types.Request_FinalizeBlock:
-		res, err := s.app.FinalizeBlock(ctx, r.FinalizeBlock)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToFinalizeBlockResponse(res), nil
+		return s.handleFinalizeBlock(ctx, r.FinalizeBlock)
 	case *types.Request_ListSnapshots:
-		res, err := s.app.ListSnapshots(ctx, r.ListSnapshots)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToListSnapshotsResponse(res), nil
+		return s.handleListSnapshots(ctx, r.ListSnapshots)
 	case *types.Request_OfferSnapshot:
-		res, err := s.app.OfferSnapshot(ctx, r.OfferSnapshot)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToOfferSnapshotResponse(res), nil
+		return s.handleOfferSnapshot(ctx, r.OfferSnapshot)
 	case *types.Request_PrepareProposal:
-		res, err := s.app.PrepareProposal(ctx, r.PrepareProposal)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToPrepareProposalResponse(res), nil
+		return s.handlePrepareProposal(ctx, r.PrepareProposal)
 	case *types.Request_ProcessProposal:
-		res, err := s.app.ProcessProposal(ctx, r.ProcessProposal)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToProcessProposalResponse(res), nil
+		return s.handleProcessProposal(ctx, r.ProcessProposal)
 	case *types.Request_LoadSnapshotChunk:
-		res, err := s.app.LoadSnapshotChunk(ctx, r.LoadSnapshotChunk)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToLoadSnapshotChunkResponse(res), nil
+		return s.handleLoadSnapshotChunk(ctx, r.LoadSnapshotChunk)
 	case *types.Request_ApplySnapshotChunk:
-		res, err := s.app.ApplySnapshotChunk(ctx, r.ApplySnapshotChunk)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToApplySnapshotChunkResponse(res), nil
+		return s.handleApplySnapshotChunk(ctx, r.ApplySnapshotChunk)
 	case *types.Request_ExtendVote:
-		res, err := s.app.ExtendVote(ctx, r.ExtendVote)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToExtendVoteResponse(res), nil
+		return s.handleExtendVote(ctx, r.ExtendVote)
 	case *types.Request_VerifyVoteExtension:
-		res, err := s.app.VerifyVoteExtension(ctx, r.VerifyVoteExtension)
-		if err != nil {
-			return nil, err
-		}
-		return types.ToVerifyVoteExtensionResponse(res), nil
+		return s.handleVerifyVoteExtension(ctx, r.VerifyVoteExtension)
 	default:
 		return nil, ErrUnknownRequest{Request: *req}
 	}
+}
+
+func (*SocketServer) handleEcho(echo *types.EchoRequest) (*types.Response, error) {
+	return types.ToEchoResponse(echo.Message), nil
+}
+
+func (*SocketServer) handleFlush(flush *types.FlushRequest) (*types.Response, error) {
+	return types.ToFlushResponse(), nil
+}
+
+func (s *SocketServer) handleInfo(ctx context.Context, info *types.InfoRequest) (*types.Response, error) {
+	res, err := s.app.Info(ctx, info)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToInfoResponse(res), nil
+}
+
+func (s *SocketServer) handleCheckTx(ctx context.Context, checkTx *types.CheckTxRequest) (*types.Response, error) {
+	res, err := s.app.CheckTx(ctx, checkTx)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToCheckTxResponse(res), nil
+}
+
+func (s *SocketServer) handleCommit(ctx context.Context, commit *types.CommitRequest) (*types.Response, error) {
+	res, err := s.app.Commit(ctx, commit)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToCommitResponse(res), nil
+}
+
+func (s *SocketServer) handleQuery(ctx context.Context, query *types.QueryRequest) (*types.Response, error) {
+	res, err := s.app.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToQueryResponse(res), nil
+}
+
+func (s *SocketServer) handleInitChain(ctx context.Context, initChain *types.InitChainRequest) (*types.Response, error) {
+	res, err := s.app.InitChain(ctx, initChain)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToInitChainResponse(res), nil
+}
+
+func (s *SocketServer) handleFinalizeBlock(ctx context.Context, finalizeBlock *types.FinalizeBlockRequest) (*types.Response, error) {
+	res, err := s.app.FinalizeBlock(ctx, finalizeBlock)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToFinalizeBlockResponse(res), nil
+}
+
+func (s *SocketServer) handleListSnapshots(ctx context.Context, listSnapshots *types.ListSnapshotsRequest) (*types.Response, error) {
+	res, err := s.app.ListSnapshots(ctx, listSnapshots)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToListSnapshotsResponse(res), nil
+}
+
+func (s *SocketServer) handleOfferSnapshot(ctx context.Context, offerSnapshot *types.OfferSnapshotRequest) (*types.Response, error) {
+	res, err := s.app.OfferSnapshot(ctx, offerSnapshot)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToOfferSnapshotResponse(res), nil
+}
+
+func (s *SocketServer) handlePrepareProposal(ctx context.Context, prepareProposal *types.PrepareProposalRequest) (*types.Response, error) {
+	res, err := s.app.PrepareProposal(ctx, prepareProposal)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToPrepareProposalResponse(res), nil
+}
+
+func (s *SocketServer) handleProcessProposal(ctx context.Context, processProposal *types.ProcessProposalRequest) (*types.Response, error) {
+	res, err := s.app.ProcessProposal(ctx, processProposal)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToProcessProposalResponse(res), nil
+}
+
+func (s *SocketServer) handleLoadSnapshotChunk(ctx context.Context, loadSnapshotChunk *types.LoadSnapshotChunkRequest) (*types.Response, error) {
+	res, err := s.app.LoadSnapshotChunk(ctx, loadSnapshotChunk)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToLoadSnapshotChunkResponse(res), nil
+}
+
+func (s *SocketServer) handleApplySnapshotChunk(ctx context.Context, applySnapshotChunk *types.ApplySnapshotChunkRequest) (*types.Response, error) {
+	res, err := s.app.ApplySnapshotChunk(ctx, applySnapshotChunk)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToApplySnapshotChunkResponse(res), nil
+}
+
+func (s *SocketServer) handleExtendVote(ctx context.Context, extendVote *types.ExtendVoteRequest) (*types.Response, error) {
+	res, err := s.app.ExtendVote(ctx, extendVote)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToExtendVoteResponse(res), nil
+}
+
+func (s *SocketServer) handleVerifyVoteExtension(ctx context.Context, verifyVoteExtension *types.VerifyVoteExtensionRequest) (*types.Response, error) {
+	res, err := s.app.VerifyVoteExtension(ctx, verifyVoteExtension)
+	if err != nil {
+		return nil, err
+	}
+	return types.ToVerifyVoteExtensionResponse(res), nil
 }
 
 // Pull responses from 'responses' and write them to conn.

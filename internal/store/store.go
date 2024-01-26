@@ -6,9 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-kit/kit/metrics"
-
 	"github.com/cosmos/gogoproto/proto"
+	"github.com/go-kit/kit/metrics"
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
@@ -68,17 +67,23 @@ type BlockStoreOptions struct {
 // NewBlockStore returns a new BlockStore with the given DB,
 // initialized to the last height that was committed to the DB.
 func NewBlockStore(db dbm.DB, o BlockStoreOptions) *BlockStore {
+	start := time.Now()
+
 	bs := LoadBlockStoreState(db)
 	m := NopMetrics()
 	if o.Metrics != nil {
 		m = o.Metrics
 	}
-	return &BlockStore{
+
+	bStore := BlockStore{
 		metrics: m,
 		base:    bs.Base,
 		height:  bs.Height,
 		db:      db,
 	}
+
+	addTimeSample(bStore.metrics.BlockStoreAccessDurationSeconds.With("method", "new_block_store"), start)()
+	return &bStore
 }
 
 func (bs *BlockStore) IsEmpty() bool {
@@ -182,7 +187,6 @@ func (bs *BlockStore) LoadBlockByHash(hash []byte) (*types.Block, *types.BlockMe
 // from the block at the given height.
 // If no part is found for the given height and index, it returns nil.
 func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
-
 	pbpart := new(cmtproto.Part)
 	start := time.Now()
 	bz, err := bs.db.Get(calcBlockPartKey(height, index))
@@ -337,7 +341,6 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 // number of blocks pruned and the evidence retain height - the height at which
 // data needed to prove evidence must not be removed.
 func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
-	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "prune_blocks"), time.Now())()
 	if height <= 0 {
 		return 0, -1, fmt.Errorf("height must be greater than 0")
 	}
@@ -365,6 +368,8 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		bs.base = base
 		return bs.saveStateAndWriteDB(batch, "failed to prune")
 	}
+
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "prune_blocks"), time.Now())()
 
 	evidencePoint := height
 	for h := base; h < height; h++ {
@@ -463,8 +468,9 @@ func (bs *BlockStore) SaveBlock(block *types.Block, blockParts *types.PartSet, s
 // height. This allows the vote extension data to be persisted for all blocks
 // that are saved.
 func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts *types.PartSet, seenExtendedCommit *types.ExtendedCommit) {
-	// WARN includes marshalling the blockstore state
-	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_block_ext_commit"), time.Now())()
+	// WARN includes marshaling the blockstore state
+	start := time.Now()
+
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
@@ -481,9 +487,13 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 	height := block.Height
 
 	marshallingTime := time.Now()
+
 	pbec := seenExtendedCommit.ToProto()
+
 	extCommitBytes := mustEncode(pbec)
-	fmt.Println("Marshalling time ExtCommit", time.Since(marshallingTime).Seconds())
+
+	extCommitMarshallTDiff := time.Since(marshallingTime).Seconds()
+
 	if err := batch.Set(calcExtCommitKey(height), extCommitBytes); err != nil {
 		panic(err)
 	}
@@ -500,6 +510,8 @@ func (bs *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 	if err != nil {
 		panic(err)
 	}
+
+	bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_block_ext_commit").Observe(time.Since(start).Seconds() - extCommitMarshallTDiff)
 }
 
 func (bs *BlockStore) saveBlockToBatch(
@@ -511,7 +523,6 @@ func (bs *BlockStore) saveBlockToBatch(
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}
-	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_block_to_batch"), time.Now())()
 
 	height := block.Height
 	hash := block.Hash()
@@ -530,6 +541,8 @@ func (bs *BlockStore) saveBlockToBatch(
 	// parts individually.
 	saveBlockPartsToBatch := blockParts.Count() <= maxBlockPartsToBatch
 
+	start := time.Now()
+
 	// Save block parts. This must be done before the block meta, since callers
 	// typically load the block meta first as an indication that the block exists
 	// and then go on to load block parts - we must make sure the block is
@@ -539,6 +552,7 @@ func (bs *BlockStore) saveBlockToBatch(
 		bs.saveBlockPart(height, i, part, batch, saveBlockPartsToBatch)
 	}
 
+	marshallTime := time.Now()
 	// Save block meta
 	blockMeta := types.NewBlockMeta(block, blockParts)
 	pbm := blockMeta.ToProto()
@@ -546,6 +560,8 @@ func (bs *BlockStore) saveBlockToBatch(
 		return errors.New("nil blockmeta")
 	}
 	metaBytes := mustEncode(pbm)
+	blockMetaMarshallDiff := time.Since(marshallTime).Seconds()
+
 	if err := batch.Set(calcBlockMetaKey(height), metaBytes); err != nil {
 		return err
 	}
@@ -553,22 +569,30 @@ func (bs *BlockStore) saveBlockToBatch(
 		return err
 	}
 
+	marshallTime = time.Now()
 	// Save block commit (duplicate and separate from the Block)
 	pbc := block.LastCommit.ToProto()
 	blockCommitBytes := mustEncode(pbc)
+
+	blockMetaMarshallDiff += time.Since(marshallTime).Seconds()
 
 	if err := batch.Set(calcBlockCommitKey(height-1), blockCommitBytes); err != nil {
 		return err
 	}
 
+	marshallTime = time.Now()
+
 	// Save seen commit (seen +2/3 precommits for block)
 	// NOTE: we can delete this at a later height
 	pbsc := seenCommit.ToProto()
 	seenCommitBytes := mustEncode(pbsc)
+
+	blockMetaMarshallDiff += time.Since(marshallTime).Seconds()
 	if err := batch.Set(calcSeenCommitKey(height), seenCommitBytes); err != nil {
 		return err
 	}
 
+	bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_block_to_batch").Observe(time.Since(start).Seconds() - blockMetaMarshallDiff)
 	return nil
 }
 
@@ -597,6 +621,8 @@ func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error 
 		Base:   bs.base,
 		Height: bs.height,
 	}
+	start := time.Now()
+
 	SaveBlockStoreState(&bss, batch)
 
 	err := batch.WriteSync()
@@ -604,6 +630,8 @@ func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error 
 		return fmt.Errorf("error writing batch to DB %q: (base %d, height %d): %w",
 			errMsg, bs.base, bs.height, err)
 	}
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_bs_state"), start)()
+
 	return nil
 }
 
@@ -704,6 +732,8 @@ func mustEncode(pb proto.Message) []byte {
 // DeleteLatestBlock removes the block pointed to by height,
 // lowering height by one.
 func (bs *BlockStore) DeleteLatestBlock() error {
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "delete_latest_block"), time.Now())()
+
 	bs.mtx.RLock()
 	targetHeight := bs.height
 	bs.mtx.RUnlock()

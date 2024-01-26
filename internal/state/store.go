@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
-
-	dbm "github.com/cometbft/cometbft-db"
 	"github.com/go-kit/kit/metrics"
 
+	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -224,7 +223,6 @@ func (store dbStore) loadState(key []byte) (state State, err error) {
 // Save persists the State, the ValidatorsInfo, and the ConsensusParamsInfo to the database.
 // This flushes the writes (e.g. calls SetSync).
 func (store dbStore) Save(state State) error {
-	defer addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "save"), time.Now())()
 	return store.save(state, stateKey)
 }
 
@@ -333,10 +331,11 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		return fmt.Errorf("from height %v must be lower than to height %v", from, to)
 	}
 
-	valInfo, err := loadValidatorsInfo(store.db, min(to, evidenceThresholdHeight))
+	valInfo, elapsedTime, err := loadValidatorsInfo(store.db, min(to, evidenceThresholdHeight))
 	if err != nil {
 		return fmt.Errorf("validators at height %v not found: %w", to, err)
 	}
+
 	paramsInfo, err := store.loadConsensusParamsInfo(to)
 	if err != nil {
 		return fmt.Errorf("consensus params at height %v not found: %w", to, err)
@@ -363,7 +362,8 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		// params, otherwise they will panic if they're retrieved directly (instead of
 		// indirectly via a LastHeightChanged pointer).
 		if keepVals[h] {
-			v, err := loadValidatorsInfo(store.db, h)
+			v, tmpTime, err := loadValidatorsInfo(store.db, h)
+			elapsedTime += tmpTime
 			if err != nil || v.ValidatorSet == nil {
 				vip, err := store.LoadValidators(h)
 				if err != nil {
@@ -449,7 +449,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 	if err != nil {
 		return err
 	}
-
+	store.metrics.StoreAccessDurationSeconds.With("method", "load_single_validator_info").Observe(elapsedTime)
 	return nil
 }
 
@@ -600,7 +600,6 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Finalize
 //
 // CONTRACT: height must be monotonically increasing every time this is called.
 func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.FinalizeBlockResponse) error {
-
 	var dtxs []*abci.ExecTxResult
 	// strip nil values,
 	for _, tx := range resp.TxResults {
@@ -728,16 +727,15 @@ func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
 func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
-	start := time.Now()
-	valInfo, err := loadValidatorsInfo(store.db, height)
+	valInfo, elapsedTime, err := loadValidatorsInfo(store.db, height)
 	if err != nil {
 		return nil, ErrNoValSetForHeight{height}
 	}
 	// (WARN) This includes time to unmarshal the validator info
-	addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_validators"), start)()
 	if valInfo.ValidatorSet == nil {
 		lastStoredHeight := lastStoredHeightFor(height, valInfo.LastHeightChanged)
-		valInfo2, err := loadValidatorsInfo(store.db, lastStoredHeight)
+		valInfo2, tmpTime, err := loadValidatorsInfo(store.db, lastStoredHeight)
+		elapsedTime += tmpTime
 		if err != nil || valInfo2.ValidatorSet == nil {
 			return nil,
 				fmt.Errorf("couldn't find validators at height %d (height %d was originally requested): %w",
@@ -766,7 +764,7 @@ func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	store.metrics.StoreAccessDurationSeconds.With("method", "load_validators").Observe(elapsedTime)
 	return vip, nil
 }
 
@@ -776,14 +774,17 @@ func lastStoredHeightFor(height, lastHeightChanged int64) int64 {
 }
 
 // CONTRACT: Returned ValidatorsInfo can be mutated.
-func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, error) {
+func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, float64, error) {
+	start := time.Now()
 	buf, err := db.Get(calcValidatorsKey(height))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
+	elapsedTime := time.Since(start).Seconds()
+
 	if len(buf) == 0 {
-		return nil, errors.New("value retrieved from db is empty")
+		return nil, 0, errors.New("value retrieved from db is empty")
 	}
 
 	v := new(cmtstate.ValidatorsInfo)
@@ -795,7 +796,7 @@ func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, erro
 	}
 	// TODO: ensure that buf is completely read.
 
-	return v, nil
+	return v, elapsedTime, nil
 }
 
 // saveValidatorsInfo persists the validator set.
@@ -976,7 +977,7 @@ func int64ToBytes(i int64) []byte {
 }
 
 // addTimeSample returns a function that, when called, adds an observation to m.
-// The observation added to m is the number of seconds ellapsed since addTimeSample
+// The observation added to m is the number of seconds elapsed since addTimeSample
 // was initially called. addTimeSample is meant to be called in a defer to calculate
 // the amount of time a function takes to complete.
 func addTimeSample(m metrics.Histogram, start time.Time) func() {

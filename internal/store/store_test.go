@@ -136,7 +136,7 @@ func TestNewBlockStore(t *testing.T) {
 	err = db.Set(blockStoreKey, []byte{})
 	require.NoError(t, err)
 	bs = NewBlockStore(db, BlockStoreOptions{})
-	assert.Equal(t, bs.Height(), int64(0), "expecting empty bytes to be unmarshaled alright")
+	assert.Equal(t, int64(0), bs.Height(), "expecting empty bytes to be unmarshaled alright")
 }
 
 func newInMemoryBlockStore() (*BlockStore, dbm.DB) {

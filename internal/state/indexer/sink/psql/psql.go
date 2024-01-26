@@ -6,17 +6,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
-	"github.com/cometbft/cometbft/internal/rand"
-	"github.com/lib/pq"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
+	"github.com/lib/pq"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -76,6 +75,7 @@ func runBulkInsert(db *sql.DB, tableName string, columns []string, inserts [][]a
 		if err != nil {
 			return fmt.Errorf("preparing bulk insert statement: %w", err)
 		}
+		defer stmt.Close()
 		for _, insert := range inserts {
 			if _, err := stmt.Exec(insert...); err != nil {
 				return fmt.Errorf("executing insert statement: %w", err)
@@ -83,9 +83,6 @@ func runBulkInsert(db *sql.DB, tableName string, columns []string, inserts [][]a
 		}
 		if _, err := stmt.Exec(); err != nil {
 			return fmt.Errorf("flushing bulk insert: %w", err)
-		}
-		if err := stmt.Close(); err != nil {
-			return fmt.Errorf("closing bulk insert statement: %w", err)
 		}
 		return nil
 	})
@@ -95,11 +92,13 @@ func randomBigserial() int64 {
 	return rand.Int63()
 }
 
-var txrInsertColumns = []string{"rowid", "block_id", "index", "created_at", "tx_hash", "tx_result"}
-var eventInsertColumns = []string{"rowid", "block_id", "tx_id", "type"}
-var attrInsertColumns = []string{"event_id", "key", "composite_key", "value"}
+var (
+	txrInsertColumns   = []string{"rowid", "block_id", "index", "created_at", "tx_hash", "tx_result"}
+	eventInsertColumns = []string{"rowid", "block_id", "tx_id", "type"}
+	attrInsertColumns  = []string{"event_id", "key", "composite_key", "value"}
+)
 
-func bulkInsertEvents(blockID, txID int64, events []v1.Event) (eventInserts, attrInserts [][]any) {
+func bulkInsertEvents(blockID, txID int64, events []abci.Event) (eventInserts, attrInserts [][]any) {
 	// Populate the transaction ID field iff one is defined (> 0).
 	var txIDArg interface{}
 	if txID > 0 {
@@ -145,6 +144,7 @@ func (es *EventSink) IndexBlockEvents(h types.EventDataNewBlockEvents) error {
 	// Add the block to the blocks table and report back its row ID for use
 	// in indexing the events for the block.
 	var blockID int64
+	//nolint:execinquery
 	err := es.store.QueryRow(`
 INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
   VALUES ($1, $2, $3)
@@ -158,7 +158,7 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
 	}
 
 	// Insert the special block meta-event for height.
-	events := append(h.Events, makeIndexedEvent(types.BlockHeightKey, strconv.FormatInt(h.Height, 10)))
+	events := append([]abci.Event{makeIndexedEvent(types.BlockHeightKey, strconv.FormatInt(h.Height, 10))}, h.Events...)
 	// Insert all the block events. Order is important here,
 	eventInserts, attrInserts := bulkInsertEvents(blockID, 0, events)
 	if err := runBulkInsert(es.store, tableEvents, eventInsertColumns, eventInserts); err != nil {
@@ -170,7 +170,7 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
 	return nil
 }
 
-// getBlockIDs returns corresponding block ids for the provided heights
+// getBlockIDs returns corresponding block ids for the provided heights.
 func (es *EventSink) getBlockIDs(heights []int64) ([]int64, error) {
 	var blockIDs pq.Int64Array
 	if err := es.store.QueryRow(`
@@ -213,7 +213,7 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 	if err != nil {
 		return fmt.Errorf("failed to prefetch which txrs were already indexed: %w", err)
 	}
-	var txrInserts, attrInserts, eventInserts [][]any
+	txrInserts, attrInserts, eventInserts := make([][]any, 0, len(txrs)), make([][]any, 0, len(txrs)), make([][]any, 0, len(txrs))
 	for i, txr := range txrs {
 		if alreadyIndexed[i] {
 			continue
@@ -229,9 +229,11 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 		txID := randomBigserial()
 		txrInserts = append(txrInserts, []any{txID, blockIDs[i], txr.Index, ts, txHash, resultData})
 		// Insert the special transaction meta-events for hash and height.
-		events := append(txr.Result.Events,
+		events := append([]abci.Event{
 			makeIndexedEvent(types.TxHashKey, txHash),
 			makeIndexedEvent(types.TxHeightKey, strconv.FormatInt(txr.Height, 10)),
+		},
+			txr.Result.Events...,
 		)
 		newEventInserts, newAttrInserts := bulkInsertEvents(blockIDs[i], txID, events)
 		eventInserts = append(eventInserts, newEventInserts...)

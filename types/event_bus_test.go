@@ -101,6 +101,13 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 		close(done)
 	}()
 
+<<<<<<< HEAD
+=======
+	var ps *PartSet
+	ps, err = block.MakePartSet(BlockPartSizeBytes)
+	require.NoError(t, err)
+
+>>>>>>> 28ad4d223 (feat(consensus): additional sanity checks for the size of proposed blocks (#1408))
 	err = eventBus.PublishEventNewBlock(EventDataNewBlock{
 		Block:            block,
 		ResultBeginBlock: resultBeginBlock,

@@ -142,7 +142,7 @@ func TestMain(m *testing.M) {
 	txs := []types.Tx{make([]byte, types.BlockPartSizeBytes)} // TX taking one block part alone
 	block = state.MakeBlock(state.LastBlockHeight+1, txs, new(types.Commit), nil, state.Validators.GetProposer().Address)
 
-	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+	partSet, err = block.MakePartSet(types.BlockPartSizeBytes)
 	if err != nil {
 		stdlog.Fatal(err)
 	}

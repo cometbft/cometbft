@@ -4,10 +4,11 @@ import (
 	"context"
 	"net"
 
+	"google.golang.org/grpc"
+
 	"github.com/cometbft/cometbft/abci/types"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
 	"github.com/cometbft/cometbft/internal/service"
-	"google.golang.org/grpc"
 )
 
 type GRPCServer struct {

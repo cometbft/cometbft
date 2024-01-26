@@ -39,9 +39,9 @@ func TestUnsafeDialSeeds(t *testing.T) {
 	for _, tc := range testCases {
 		res, err := env.UnsafeDialSeeds(&rpctypes.Context{}, tc.seeds)
 		if tc.isErr {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, res)
 		}
 	}
@@ -80,9 +80,9 @@ func TestUnsafeDialPeers(t *testing.T) {
 	for _, tc := range testCases {
 		res, err := env.UnsafeDialPeers(&rpctypes.Context{}, tc.peers, tc.persistence, tc.unconditional, tc.private)
 		if tc.isErr {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, res)
 		}
 	}

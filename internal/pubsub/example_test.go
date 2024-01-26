@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/stretchr/testify/require"
 )
 
 func TestExample(t *testing.T) {

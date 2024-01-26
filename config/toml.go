@@ -430,11 +430,6 @@ keep-invalid-txs-in-cache = {{ .Mempool.KeepInvalidTxsInCache }}
 # NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
 max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 
-# Maximum size of a batch of transactions to send to a peer
-# Including space needed by encoding (one varint per transaction).
-# XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
-max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
-
 # Experimental parameters to limit gossiping txs to up to the specified number of peers.
 # We use two independent upper values for persistent and non-persistent peers.
 # Unconditional peers are not affected by this feature.

@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"math"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
 	"github.com/cometbft/cometbft/internal/rpctrace"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type pruningServiceServer struct {

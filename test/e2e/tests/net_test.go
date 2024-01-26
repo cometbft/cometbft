@@ -14,6 +14,7 @@ func TestNet_Peers(t *testing.T) {
 	t.SkipNow()
 
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		// Seed nodes shouldn't necessarily mesh with the entire network.
 		if node.Mode == e2e.ModeSeed {
 			return

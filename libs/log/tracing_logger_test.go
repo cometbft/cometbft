@@ -7,8 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/pkg/errors"
+
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestTracingLogger(t *testing.T) {

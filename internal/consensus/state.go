@@ -11,6 +11,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -28,7 +30,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 var msgQueueSize = 1000
@@ -396,7 +397,7 @@ func (cs *State) OnStart() error {
 // timeoutRoutine: receive requests for timeouts on tickChan and fire timeouts on tockChan
 // receiveRoutine: serializes processing of proposoals, block parts, votes; coordinates state transitions.
 //
-//nolint:unused
+
 func (cs *State) startRoutines(maxSteps int) {
 	err := cs.timeoutTicker.Start()
 	if err != nil {
@@ -1456,8 +1457,8 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	*/
 	blockID, ok := cs.Votes.Prevotes(cs.Proposal.POLRound).TwoThirdsMajority()
 	ok = ok && !blockID.IsNil()
-	if ok && cs.ProposalBlock.HashesTo(blockID.Hash) && cs.Proposal.POLRound >= 0 && cs.Proposal.POLRound < cs.Round {
-		if cs.LockedRound <= cs.Proposal.POLRound {
+	if ok && cs.ProposalBlock.HashesTo(blockID.Hash) && cs.Proposal.POLRound < cs.Round {
+		if cs.LockedRound < cs.Proposal.POLRound {
 			logger.Debug("prevote step: ProposalBlock is valid and received a 2/3" +
 				"majority in a round later than the locked round; prevoting the proposal")
 			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
@@ -1465,6 +1466,17 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		}
 		if cs.ProposalBlock.HashesTo(cs.LockedBlock.Hash()) {
 			logger.Debug("prevote step: ProposalBlock is valid and matches our locked block; prevoting the proposal")
+			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+			return
+		}
+		// If v_r = lockedRound_p we expect v to match lockedValue_p. If it is not the case,
+		// we have two 2/3+ majorities for different values at round v_r, meaning that the
+		// assumption of a 2/3+ majority of honest processes was violated. We should at
+		// least log this scenario, see: https://github.com/cometbft/cometbft/issues/1309.
+		if cs.LockedRound == cs.Proposal.POLRound {
+			logger.Info("prevote step: ProposalBlock is valid and received a 2/3" +
+				"majority at our locked round, while not matching our locked value;" +
+				"this can only happen when 1/3 or more validators are double signing; prevoting the proposal")
 			cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
 			return
 		}
@@ -1943,6 +1955,7 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 	cs.metrics.NumTxs.Set(float64(len(block.Data.Txs)))
 	cs.metrics.TotalTxs.Add(float64(len(block.Data.Txs)))
 	cs.metrics.BlockSizeBytes.Set(float64(block.Size()))
+	cs.metrics.ChainSizeBytes.Add(float64(block.Size()))
 	cs.metrics.CommittedHeight.Set(float64(block.Height))
 }
 

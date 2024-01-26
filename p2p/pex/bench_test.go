@@ -19,6 +19,6 @@ func BenchmarkAddrBook_hash(b *testing.B) {
 	msg := []byte(`foobar`)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = book.hash(msg)
+		_ = book.hash(msg)
 	}
 }

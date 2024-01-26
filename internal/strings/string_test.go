@@ -30,10 +30,10 @@ func TestIsASCIIText(t *testing.T) {
 }
 
 func TestASCIITrim(t *testing.T) {
-	assert.Equal(t, ASCIITrim(" "), "")
-	assert.Equal(t, ASCIITrim(" a"), "a")
-	assert.Equal(t, ASCIITrim("a "), "a")
-	assert.Equal(t, ASCIITrim(" a "), "a")
+	assert.Equal(t, "", ASCIITrim(" "))
+	assert.Equal(t, "a", ASCIITrim(" a"))
+	assert.Equal(t, "a", ASCIITrim("a "))
+	assert.Equal(t, "a", ASCIITrim(" a "))
 	assert.Panics(t, func() { ASCIITrim("\xC2\xA2") })
 }
 

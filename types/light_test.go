@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -49,9 +50,9 @@ func TestLightBlockValidateBasic(t *testing.T) {
 		}
 		err := lightBlock.ValidateBasic(header.ChainID)
 		if tc.expectErr {
-			assert.Error(t, err, tc.name)
+			require.Error(t, err, tc.name)
 		} else {
-			assert.NoError(t, err, tc.name)
+			require.NoError(t, err, tc.name)
 		}
 	}
 }
@@ -93,16 +94,16 @@ func TestLightBlockProtobuf(t *testing.T) {
 		}
 		lbp, err := lightBlock.ToProto()
 		if tc.toProtoErr {
-			assert.Error(t, err, tc.name)
+			require.Error(t, err, tc.name)
 		} else {
-			assert.NoError(t, err, tc.name)
+			require.NoError(t, err, tc.name)
 		}
 
 		lb, err := LightBlockFromProto(lbp)
 		if tc.toBlockErr {
-			assert.Error(t, err, tc.name)
+			require.Error(t, err, tc.name)
 		} else {
-			assert.NoError(t, err, tc.name)
+			require.NoError(t, err, tc.name)
 			assert.Equal(t, lightBlock, lb)
 		}
 	}

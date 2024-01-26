@@ -3,9 +3,10 @@ package blocksync
 import (
 	"fmt"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
 	"github.com/cometbft/cometbft/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 const (

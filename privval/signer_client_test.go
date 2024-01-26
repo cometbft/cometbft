@@ -25,6 +25,7 @@ type signerTestCase struct {
 }
 
 func getSignerTestCases(t *testing.T) []signerTestCase {
+	t.Helper()
 	testCases := make([]signerTestCase, 0)
 
 	// Get test cases for each possible dialer (DialTCP / DialUnix / etc)
@@ -57,10 +58,10 @@ func getSignerTestCases(t *testing.T) []signerTestCase {
 func TestSignerClose(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
 		err := tc.signerClient.Close()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		err = tc.signerServer.Stop()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -79,7 +80,7 @@ func TestSignerPing(t *testing.T) {
 		})
 
 		err := tc.signerClient.Ping()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -433,6 +434,6 @@ func TestSignerUnexpectedResponse(t *testing.T) {
 		want := &types.Vote{Timestamp: ts, Type: types.PrecommitType}
 
 		e := tc.signerClient.SignVote(tc.chainID, want.ToProto())
-		assert.ErrorIs(t, e, cmterrors.ErrRequiredField{Field: "response"})
+		require.ErrorIs(t, e, cmterrors.ErrRequiredField{Field: "response"})
 	}
 }

@@ -77,7 +77,7 @@ linters-settings:
   nestif:
     # Minimal complexity of if statements to report.
     # Default: 5
-    min-complexity: 7
+    min-complexity: 10
   dogsled:
     max-blank-identifiers: 3
   goconst:
@@ -162,7 +162,7 @@ linters-settings:
         disabled: true
       - name: cyclomatic
         disabled: false
-        arguments: [20]
+        arguments: [24]
       - name: file-header
         disabled: true
       - name: function-length

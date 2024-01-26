@@ -399,7 +399,7 @@ func newStateWithConfigAndBlockStore(
 	blockDB dbm.DB,
 ) *State {
 	// Get BlockStore
-	blockStore := store.NewBlockStore(blockDB, store.WithMetrics(store.NopMetrics()))
+	blockStore := store.NewBlockStore(blockDB)
 
 	// one for mempool, one for consensus
 	mtx := new(cmtsync.Mutex)

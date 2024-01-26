@@ -170,9 +170,12 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	}
 
 	// save a block
-	block := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
-	validPartSet, err := block.MakePartSet(2)
+	txs := []types.Tx{make([]byte, types.BlockPartSizeBytes)} // TX taking one block part alone
+	block := state.MakeBlock(bs.Height()+1, txs, new(types.Commit), nil, state.Validators.GetProposer().Address)
+	validPartSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
+	require.GreaterOrEqual(t, validPartSet.Total(), uint32(2))
+	part2 = validPartSet.GetPart(1)
 	seenCommit := makeTestCommit(10, cmttime.Now())
 	bs.SaveBlock(block, partSet, seenCommit)
 	require.EqualValues(t, 1, bs.Base(), "expecting the new height to be changed")
@@ -380,7 +383,7 @@ func TestLoadBaseMeta(t *testing.T) {
 
 	for h := int64(1); h <= 10; h++ {
 		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
-		partSet, err := block.MakePartSet(2)
+		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)
 		seenCommit := makeTestCommit(h, cmttime.Now())
 		bs.SaveBlock(block, partSet, seenCommit)
@@ -454,7 +457,7 @@ func TestPruneBlocks(t *testing.T) {
 	// make more than 1000 blocks, to test batch deletions
 	for h := int64(1); h <= 1500; h++ {
 		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
-		partSet, err := block.MakePartSet(2)
+		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 		require.NoError(t, err)
 		seenCommit := makeTestCommit(h, cmttime.Now())
 		bs.SaveBlock(block, partSet, seenCommit)
@@ -590,9 +593,9 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 	block := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
 
-	partSet, err := block.MakePartSet(2)
+	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
-	seenCommit := makeTestCommit(10, cmttime.Now())
+	seenCommit := makeTestCommit(block.Header.Height, cmttime.Now())
 	bs.SaveBlock(block, partSet, seenCommit)
 	require.Equal(t, bs.Height(), block.Header.Height, "expecting the new height to be changed")
 

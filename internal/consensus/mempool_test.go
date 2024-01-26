@@ -2,8 +2,8 @@ package consensus
 
 import (
 	"context"
-	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sm "github.com/cometbft/cometbft/internal/state"
@@ -20,7 +19,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// for testing
+// for testing.
 func assertMempool(txn txNotifier) mempl.Mempool {
 	return txn.(mempl.Mempool)
 }
@@ -29,7 +28,7 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)
 	config.Consensus.CreateEmptyBlocks = false
-	state, privVals := randGenesisState(1, false, 10, nil)
+	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
@@ -42,7 +41,7 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 
 	ensureNewEventOnChannel(newBlockCh) // first block gets committed
 	ensureNoNewEventOnChannel(newBlockCh)
-	deliverTxsRange(t, cs, 0, 1)
+	deliverTxsRange(t, cs, 1)
 	ensureNewEventOnChannel(newBlockCh) // commit txs
 	ensureNewEventOnChannel(newBlockCh) // commit updated app hash
 	ensureNoNewEventOnChannel(newBlockCh)
@@ -53,7 +52,7 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
-	state, privVals := randGenesisState(1, false, 10, nil)
+	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
@@ -74,7 +73,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)
 	config.Consensus.CreateEmptyBlocks = false
-	state, privVals := randGenesisState(1, false, 10, nil)
+	state, privVals := randGenesisState(1, nil)
 	cs := newStateWithConfig(config, state, privVals[0], kvstore.NewInMemoryApplication())
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
 	height, round := cs.Height, cs.Round
@@ -99,7 +98,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	round = 0
 
 	ensureNewRound(newRoundCh, height, round) // first round at next height
-	deliverTxsRange(t, cs, 0, 1)              // we deliver txs, but dont set a proposal so we get the next round
+	deliverTxsRange(t, cs, 1)                 // we deliver txs, but dont set a proposal so we get the next round
 	ensureNewTimeout(timeoutCh, height, round, cs.config.TimeoutPropose.Nanoseconds())
 
 	round++                                   // moving to the next round
@@ -107,17 +106,19 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	ensureNewEventOnChannel(newBlockCh)       // now we can commit the block
 }
 
-func deliverTxsRange(t *testing.T, cs *State, start, end int) {
+func deliverTxsRange(t *testing.T, cs *State, end int) {
+	t.Helper()
+	start := 0
 	// Deliver some txs.
 	for i := start; i < end; i++ {
-		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"))
+		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(i), "true"))
 		require.NoError(t, err)
 		require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	}
 }
 
 func TestMempoolTxConcurrentWithCommit(t *testing.T) {
-	state, privVals := randGenesisState(1, false, 10, nil)
+	state, privVals := randGenesisState(1, nil)
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], kvstore.NewInMemoryApplication(), blockDB)
@@ -126,7 +127,7 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)
 
 	const numTxs int64 = 3000
-	go deliverTxsRange(t, cs, 0, int(numTxs))
+	go deliverTxsRange(t, cs, int(numTxs))
 
 	startTestRound(cs, cs.Height, cs.Round)
 	for n := int64(0); n < numTxs; {
@@ -142,7 +143,7 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 }
 
 func TestMempoolRmBadTx(t *testing.T) {
-	state, privVals := randGenesisState(1, false, 10, nil)
+	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
@@ -155,7 +156,7 @@ func TestMempoolRmBadTx(t *testing.T) {
 	res, err := app.FinalizeBlock(context.Background(), &abci.FinalizeBlockRequest{Txs: [][]byte{txBytes}})
 	require.NoError(t, err)
 	assert.False(t, res.TxResults[0].IsErr())
-	assert.True(t, len(res.AppHash) > 0)
+	assert.NotEmpty(t, res.AppHash)
 
 	_, err = app.Commit(context.Background(), &abci.CommitRequest{})
 	require.NoError(t, err)

@@ -3,8 +3,9 @@ package privval
 import (
 	"fmt"
 
-	pvproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cosmos/gogoproto/proto"
+
+	pvproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 )
 
 // TODO: Add ChainIDRequest

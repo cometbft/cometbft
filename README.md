@@ -48,8 +48,9 @@ in order of preference:
 - [Create a new discussion on
   GitHub](https://github.com/cometbft/cometbft/discussions)
 - Reach out to us via [Telegram](https://t.me/CometBFT)
-- [Join the chat on
-  Discord](https://discord.com/channels/669268347736686612/669283915743232011)
+- [Join the Cosmos Network Discord](https://discord.gg/cosmosnetwork) and
+  discuss in
+  [`#cometbft`](https://discord.com/channels/669268347736686612/1069933855307472906)
 
 More on how releases are conducted can be found [here](./RELEASES.md).
 
@@ -69,11 +70,11 @@ Please see [SECURITY.md](./SECURITY.md).
 
 ### Install
 
-See the [install guide](./docs/guides/install.md).
+See the [install guide](docs/tutorials/install.md).
 
 ### Quick Start
 
-- [Single node](./docs/guides/quick-start.md)
+- [Single node](docs/tutorials/quick-start.md)
 - [Local cluster using docker-compose](./docs/networks/docker-compose.md)
 
 ## Contributing
@@ -84,8 +85,8 @@ Before contributing to the project, please take a look at the [contributing
 guidelines](CONTRIBUTING.md) and the [style guide](STYLE_GUIDE.md). You may also
 find it helpful to read the [specifications](./spec/README.md), and familiarize
 yourself with our [Architectural Decision Records
-(ADRs)](./docs/architecture/README.md) and [Request For Comments
-(RFCs)](./docs/rfc/README.md).
+(ADRs)](docs/references/architecture/README.md) and [Request For Comments
+(RFCs)](docs/references/rfc/README.md).
 
 ## Versioning
 

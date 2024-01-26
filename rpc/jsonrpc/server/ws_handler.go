@@ -10,10 +10,11 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/gorilla/websocket"
+
 	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/gorilla/websocket"
 )
 
 // WebSocket handler

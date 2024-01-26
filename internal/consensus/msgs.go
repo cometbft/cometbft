@@ -3,6 +3,8 @@ package consensus
 import (
 	"fmt"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/internal/bits"
@@ -11,7 +13,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 // TODO: This needs to be removed, but WALToProto depends on this.

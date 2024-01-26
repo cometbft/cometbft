@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	"github.com/cosmos/gogoproto/proto"
+
+	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 )
 
 const (

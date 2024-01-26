@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -49,6 +48,7 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 	[]types.Subscription,
 	[]*types.EventBus,
 ) {
+	t.Helper()
 	reactors := make([]*Reactor, n)
 	blocksSubs := make([]types.Subscription, 0)
 	eventBuses := make([]*types.EventBus, n)
@@ -107,7 +107,7 @@ func stopConsensusNet(logger log.Logger, reactors []*Reactor, eventBuses []*type
 	logger.Info("stopConsensusNet: DONE", "n", len(reactors))
 }
 
-// Ensure a testnet makes blocks
+// Ensure a testnet makes blocks.
 func TestReactorBasic(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
@@ -120,7 +120,7 @@ func TestReactorBasic(t *testing.T) {
 	})
 }
 
-// Ensure we can process blocks with evidence
+// Ensure we can process blocks with evidence.
 func TestReactorWithEvidence(t *testing.T) {
 	nValidators := 4
 	testName := "consensus_reactor_test"
@@ -131,7 +131,7 @@ func TestReactorWithEvidence(t *testing.T) {
 	// to unroll unwieldy abstractions. Here we duplicate the code from:
 	// css := randConsensusNet(N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
 
-	genDoc, privVals := randGenesisDoc(nValidators, false, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	for i := 0; i < nValidators; i++ {
@@ -142,7 +142,7 @@ func TestReactorWithEvidence(t *testing.T) {
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		defer os.RemoveAll(thisConfig.RootDir)
-		ensureDir(path.Dir(thisConfig.Consensus.WalFile()), 0o700) // dir for wal
+		ensureDir(path.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
@@ -220,7 +220,7 @@ func TestReactorWithEvidence(t *testing.T) {
 
 //------------------------------------
 
-// Ensure a testnet makes blocks when there are txs
+// Ensure a testnet makes blocks when there are txs.
 func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
@@ -551,9 +551,9 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 
 	t.Run("Testing adding one validator", func(t *testing.T) {
 		newValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		valPubKey1ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey1)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		newValidatorTx1 := kvstore.MakeValSetChangeTx(valPubKey1ABCI, testMinPower)
 
 		// wait till everyone makes block 2
@@ -632,7 +632,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	})
 }
 
-// Check we can make blocks with skip_timeout_commit=false
+// Check we can make blocks with skip_timeout_commit=false.
 func TestReactorWithTimeoutCommit(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_with_timeout_commit_test", newMockTickerFunc(false), newKVStore)
@@ -659,6 +659,7 @@ func waitForAndValidateBlock(
 	css []*State,
 	txs ...[]byte,
 ) {
+	t.Helper()
 	timeoutWaitGroup(n, func(j int) {
 		css[j].Logger.Debug("waitForAndValidateBlock")
 		msg := <-blocksSubs[j].Out()
@@ -684,6 +685,7 @@ func waitForAndValidateBlockWithTx(
 	css []*State,
 	txs ...[]byte,
 ) {
+	t.Helper()
 	timeoutWaitGroup(n, func(j int) {
 		ntxs := 0
 	BLOCK_TX_LOOP:
@@ -717,6 +719,7 @@ func waitForBlockWithUpdatedValsAndValidateIt(
 	blocksSubs []types.Subscription,
 	css []*State,
 ) {
+	t.Helper()
 	timeoutWaitGroup(n, func(j int) {
 		var newBlock *types.Block
 	LOOP:
@@ -735,7 +738,7 @@ func waitForBlockWithUpdatedValsAndValidateIt(
 		}
 
 		err := validateBlock(newBlock, updatedVals)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 }
 
@@ -898,7 +901,7 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
+			if tc.expErr != "" && assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 				assert.Contains(t, err.Error(), tc.expErr)
 			}
 		})
@@ -931,7 +934,7 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
+			if tc.expErr != "" && assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 				assert.Contains(t, err.Error(), tc.expErr)
 			}
 		})
@@ -969,7 +972,7 @@ func TestBlockPartMessageValidateBasic(t *testing.T) {
 	message := BlockPartMessage{Height: 0, Round: 0, Part: new(types.Part)}
 	message.Part.Index = 1
 
-	assert.Equal(t, true, message.ValidateBasic() != nil, "Validate Basic had an unexpected result")
+	require.Error(t, message.ValidateBasic())
 }
 
 func TestHasVoteMessageValidateBasic(t *testing.T) {
@@ -1089,7 +1092,7 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
+			if tc.expErr != "" && assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 				assert.Contains(t, err.Error(), tc.expErr)
 			}
 		})

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/go-kit/kit/metrics"
 
@@ -15,7 +17,6 @@ import (
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 const (

@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	asrt "github.com/stretchr/testify/assert"
+
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
 type thCounter struct {

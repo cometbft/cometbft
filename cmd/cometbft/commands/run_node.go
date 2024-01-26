@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	nm "github.com/cometbft/cometbft/node"
-	"github.com/spf13/cobra"
 )
 
 var genesisHash []byte

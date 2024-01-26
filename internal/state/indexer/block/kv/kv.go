@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/orderedcode"
+
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
@@ -19,7 +21,6 @@ import (
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
-	"github.com/google/orderedcode"
 )
 
 var (
@@ -88,7 +89,6 @@ func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	return batch.WriteSync()
 }
 
-//nolint:deadcode,unused
 func getKeys(indexer BlockerIndexer) [][]byte {
 	var keys [][]byte
 

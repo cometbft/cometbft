@@ -2,4 +2,3 @@
 laddr = "tcp://0.0.0.0:26657"
 [instrumentation]
 prometheus = true
-prometheus_listen_addr = ":26667"

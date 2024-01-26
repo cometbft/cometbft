@@ -25,6 +25,7 @@ var (
 	ErrVoteInvalidValidatorIndex     = errors.New("invalid validator index")
 	ErrVoteInvalidValidatorAddress   = errors.New("invalid validator address")
 	ErrVoteInvalidSignature          = errors.New("invalid signature")
+	ErrVoteNoSignature               = errors.New("no signature")
 	ErrVoteInvalidBlockHash          = errors.New("invalid block hash")
 	ErrVoteNonDeterministicSignature = errors.New("non-deterministic signature")
 	ErrVoteNil                       = errors.New("nil vote")
@@ -239,7 +240,7 @@ func (vote *Vote) VerifyVoteAndExtension(chainID string, pubKey crypto.PubKey) e
 	// We only verify vote extension signatures for non-nil precommits.
 	if vote.Type == PrecommitType && !ProtoBlockIDIsNil(&v.BlockID) {
 		if len(vote.ExtensionSignature) == 0 {
-			return errors.New("expected vote extension signature")
+			return ErrVoteNoSignature
 		}
 
 		extSignBytes := VoteExtensionSignBytes(chainID, v)
@@ -258,6 +259,9 @@ func (vote *Vote) VerifyExtension(chainID string, pubKey crypto.PubKey) error {
 	}
 	v := vote.ToProto()
 	extSignBytes := VoteExtensionSignBytes(chainID, v)
+	if len(vote.ExtensionSignature) == 0 {
+		return ErrVoteNoSignature
+	}
 	if !pubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
 		return ErrVoteInvalidSignature
 	}
@@ -337,7 +341,7 @@ func (vote *Vote) ValidateBasic() error {
 		// we don't know if extensions are enabled so we can only
 		// enforce the signature when extension size is not nil
 		if len(vote.ExtensionSignature) == 0 && len(vote.Extension) != 0 {
-			return fmt.Errorf("vote extension signature absent on vote with extension")
+			return ErrVoteNoSignature
 		}
 	}
 

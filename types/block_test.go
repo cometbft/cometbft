@@ -1,9 +1,6 @@
 package types
 
 import (
-	// it is ok to use math/rand here: we do not need a cryptographically secure random
-	// number generator here and we can run the tests a bit faster
-
 	"crypto/rand"
 	"encoding/hex"
 	"math"
@@ -47,7 +44,7 @@ func TestBlockAddEvidence(t *testing.T) {
 
 	block := MakeBlock(h, txs, extCommit.ToCommit(), evList)
 	require.NotNil(t, block)
-	require.Equal(t, 1, len(block.Evidence.Evidence))
+	require.Len(t, block.Evidence.Evidence, 1)
 	require.NotNil(t, block.EvidenceHash)
 }
 
@@ -114,7 +111,7 @@ func TestBlockHash(t *testing.T) {
 
 func TestBlockMakePartSet(t *testing.T) {
 	bps, err := (*Block)(nil).MakePartSet(2)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, bps)
 
 	partSet, err := MakeBlock(int64(3), []Tx{Tx("Hello World")}, nil, nil).MakePartSet(1024)
@@ -125,7 +122,7 @@ func TestBlockMakePartSet(t *testing.T) {
 
 func TestBlockMakePartSetWithEvidence(t *testing.T) {
 	bps, err := (*Block)(nil).MakePartSet(2)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, bps)
 
 	lastID := makeBlockIDRandom()
@@ -212,7 +209,7 @@ func makeBlockID(hash []byte, partSetSize uint32, partSetHash []byte) BlockID {
 
 var nilBytes []byte
 
-// This follows RFC-6962, i.e. `echo -n ” | sha256sum`
+// This follows RFC-6962, i.e. `echo -n ” | sha256sum`.
 var emptyBytes = []byte{
 	0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14, 0x9a, 0xfb, 0xf4, 0xc8,
 	0x99, 0x6f, 0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b,
@@ -620,7 +617,7 @@ func TestExtendedCommitToVoteSet(t *testing.T) {
 
 			voteSet, valSet, vals := randVoteSet(h-1, 1, PrecommitType, 10, 1, true)
 			extCommit, err := MakeExtCommit(lastID, h-1, 1, voteSet, vals, time.Now(), true)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			if !testCase.includeExtension {
 				for i := 0; i < len(vals); i++ {
@@ -696,7 +693,7 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 				}
 
 				added, err := signAddVote(vals[vi], vote, voteSet)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.True(t, added)
 
 				vi++
@@ -708,7 +705,7 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 			extCommit := voteSet.MakeExtendedCommit(veHeightParam) // panics without > 2/3 valid votes
 			assert.NotNil(t, extCommit)
 			err := valSet.VerifyCommit(voteSet.ChainID(), blockID, height-1, extCommit.ToCommit())
-			assert.Nil(t, err)
+			require.NoError(t, err)
 		} else {
 			assert.Panics(t, func() { voteSet.MakeExtendedCommit(veHeightParam) })
 		}

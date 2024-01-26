@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
@@ -22,7 +24,6 @@ import (
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 const (

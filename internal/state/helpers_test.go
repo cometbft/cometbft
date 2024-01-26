@@ -7,7 +7,6 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -46,7 +45,7 @@ func makeAndCommitGoodBlock(
 	}
 
 	// Simulate a lastCommit for this block from all validators for the next height
-	commit, _, err := makeValidCommit(height, blockID, state.Validators, privVals)
+	commit, err := makeValidCommit(height, blockID, state.Validators, privVals)
 	if err != nil {
 		return state, types.BlockID{}, nil, err
 	}
@@ -91,7 +90,7 @@ func makeValidCommit(
 	blockID types.BlockID,
 	vals *types.ValidatorSet,
 	privVals map[string]types.PrivValidator,
-) (*types.ExtendedCommit, []*types.Vote, error) {
+) (*types.ExtendedCommit, error) {
 	sigs := make([]types.ExtendedCommitSig, vals.Size())
 	votes := make([]*types.Vote, vals.Size())
 	for i := 0; i < vals.Size(); i++ {
@@ -107,7 +106,7 @@ func makeValidCommit(
 			time.Now(),
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		sigs[i] = vote.ExtendedCommitSig()
 		votes[i] = vote
@@ -116,7 +115,7 @@ func makeValidCommit(
 		Height:             height,
 		BlockID:            blockID,
 		ExtendedSignatures: sigs,
-	}, votes, nil
+	}, nil
 }
 
 func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValidator) {

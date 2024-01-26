@@ -135,14 +135,12 @@ func WALWithNBlocks(t *testing.T, numBlocks int, config *cfg.Config) (data []byt
 	return b.Bytes(), nil
 }
 
-//nolint:unused
 func randPort() int {
 	// returns between base and base + spread
 	base, spread := 20000, 20000
 	return base + cmtrand.Intn(spread)
 }
 
-//nolint:deadcode,unused
 func makeAddrs() (string, string) {
 	start := randPort()
 	return fmt.Sprintf("tcp://127.0.0.1:%d", start),

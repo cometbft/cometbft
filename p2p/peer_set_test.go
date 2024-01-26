@@ -11,7 +11,7 @@ import (
 	"github.com/cometbft/cometbft/internal/service"
 )
 
-// mockPeer for testing the PeerSet
+// mockPeer for testing the PeerSet.
 type mockPeer struct {
 	service.BaseService
 	ip net.IP
@@ -35,7 +35,7 @@ func (mp *mockPeer) CloseConn() error         { return nil }
 func (mp *mockPeer) SetRemovalFailed()        {}
 func (mp *mockPeer) GetRemovalFailed() bool   { return false }
 
-// Returns a mock peer
+// Returns a mock peer.
 func newMockPeer(ip net.IP) *mockPeer {
 	if ip == nil {
 		ip = net.IP{127, 0, 0, 1}
@@ -48,8 +48,6 @@ func newMockPeer(ip net.IP) *mockPeer {
 }
 
 func TestPeerSetAddRemoveOne(t *testing.T) {
-	t.Parallel()
-
 	peerSet := NewPeerSet()
 
 	var peerList []Peer
@@ -68,7 +66,7 @@ func TestPeerSetAddRemoveOne(t *testing.T) {
 		assert.True(t, removed)
 		wantSize := n - i - 1
 		for j := 0; j < 2; j++ {
-			assert.Equal(t, false, peerSet.Has(peerAtFront.ID()), "#%d Run #%d: failed to remove peer", i, j)
+			assert.False(t, false, peerSet.Has(peerAtFront.ID()), "#%d Run #%d: failed to remove peer", i, j)
 			assert.Equal(t, wantSize, peerSet.Size(), "#%d Run #%d: failed to remove peer and decrement size", i, j)
 			// Test the route of removing the now non-existent element
 			removed := peerSet.Remove(peerAtFront)
@@ -89,13 +87,12 @@ func TestPeerSetAddRemoveOne(t *testing.T) {
 		peerAtEnd := peerList[i]
 		removed := peerSet.Remove(peerAtEnd)
 		assert.True(t, removed)
-		assert.Equal(t, false, peerSet.Has(peerAtEnd.ID()), "#%d: failed to remove item at end", i)
+		assert.False(t, false, peerSet.Has(peerAtEnd.ID()), "#%d: failed to remove item at end", i)
 		assert.Equal(t, i, peerSet.Size(), "#%d: differing sizes after peerSet.Remove(atEndPeer)", i)
 	}
 }
 
 func TestPeerSetAddRemoveMany(t *testing.T) {
-	t.Parallel()
 	peerSet := NewPeerSet()
 
 	peers := []Peer{}
@@ -124,7 +121,6 @@ func TestPeerSetAddRemoveMany(t *testing.T) {
 }
 
 func TestPeerSetAddDuplicate(t *testing.T) {
-	t.Parallel()
 	peerSet := NewPeerSet()
 	peer := newMockPeer(nil)
 
@@ -164,8 +160,6 @@ func TestPeerSetAddDuplicate(t *testing.T) {
 }
 
 func TestPeerSetGet(t *testing.T) {
-	t.Parallel()
-
 	var (
 		peerSet = NewPeerSet()
 		peer    = newMockPeer(nil)
@@ -185,7 +179,7 @@ func TestPeerSetGet(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			have, want := peerSet.Get(peer.ID()), peer
-			assert.Equal(t, have, want, "%d: have %v, want %v", i, have, want)
+			assert.Equal(t, want, have, "%d: have %v, want %v", i, want, have)
 		}(i)
 	}
 	wg.Wait()

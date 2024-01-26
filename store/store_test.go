@@ -179,7 +179,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	part2 = validPartSet.GetPart(1)
 
 	seenCommit := makeTestCommit(10, cmttime.Now())
-	bs.SaveBlock(block, validPartSet, seenCommit)
+	bs.SaveBlock(block, partSet, seenCommit)
 	require.EqualValues(t, 1, bs.Base(), "expecting the new height to be changed")
 	require.EqualValues(t, block.Header.Height, bs.Height(), "expecting the new height to be changed")
 

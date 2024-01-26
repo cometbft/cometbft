@@ -39,28 +39,9 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-// Setup sets up the testnet configuration.
 func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
 	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %q", testnet.Dir))
 
-	if err := createDirectories(testnet, infp); err != nil {
-		return err
-	}
-
-	if err := setupNodes(testnet); err != nil {
-		return err
-	}
-
-	if testnet.Prometheus {
-		if err := testnet.WritePrometheusConfig(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func createDirectories(testnet *e2e.Testnet, infp infra.Provider) error {
 	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
 		return err
 	}
@@ -69,92 +50,78 @@ func createDirectories(testnet *e2e.Testnet, infp infra.Provider) error {
 		return err
 	}
 
-	return nil
-}
-
-func setupNodes(testnet *e2e.Testnet) error {
 	genesis, err := MakeGenesis(testnet)
 	if err != nil {
 		return err
 	}
 
 	for _, node := range testnet.Nodes {
-		if err := setupNodeDirectories(node, testnet); err != nil {
-			return err
+		nodeDir := filepath.Join(testnet.Dir, node.Name)
+
+		dirs := []string{
+			filepath.Join(nodeDir, "config"),
+			filepath.Join(nodeDir, "data"),
+			filepath.Join(nodeDir, "data", "app"),
+		}
+		for _, dir := range dirs {
+			// light clients don't need an app directory
+			if node.Mode == e2e.ModeLight && strings.Contains(dir, "app") {
+				continue
+			}
+			err := os.MkdirAll(dir, 0o755)
+			if err != nil {
+				return err
+			}
 		}
 
-		if err := setupNodeConfig(node, testnet, genesis); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func setupNodeDirectories(node *e2e.Node, testnet *e2e.Testnet) error {
-	nodeDir := filepath.Join(testnet.Dir, node.Name)
-
-	dirs := []string{
-		filepath.Join(nodeDir, "config"),
-		filepath.Join(nodeDir, "data"),
-		filepath.Join(nodeDir, "data", "app"),
-	}
-	for _, dir := range dirs {
-		// light clients don't need an app directory
-		if node.Mode == e2e.ModeLight && strings.Contains(dir, "app") {
-			continue
-		}
-		err := os.MkdirAll(dir, 0o755)
+		cfg, err := MakeConfig(node)
 		if err != nil {
 			return err
 		}
+		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
+
+		appCfg, err := MakeAppConfig(node)
+		if err != nil {
+			return err
+		}
+		err = os.WriteFile(filepath.Join(nodeDir, "config", "app.toml"), appCfg, 0o644) //nolint:gosec
+		if err != nil {
+			return err
+		}
+
+		if node.Mode == e2e.ModeLight {
+			// stop early if a light client
+			continue
+		}
+
+		err = genesis.SaveAs(filepath.Join(nodeDir, "config", "genesis.json"))
+		if err != nil {
+			return err
+		}
+
+		err = (&p2p.NodeKey{PrivKey: node.NodeKey}).SaveAs(filepath.Join(nodeDir, "config", "node_key.json"))
+		if err != nil {
+			return err
+		}
+
+		(privval.NewFilePV(node.PrivvalKey,
+			filepath.Join(nodeDir, PrivvalKeyFile),
+			filepath.Join(nodeDir, PrivvalStateFile),
+		)).Save()
+
+		// Set up a dummy validator. CometBFT requires a file PV even when not used, so we
+		// give it a dummy such that it will fail if it actually tries to use it.
+		(privval.NewFilePV(ed25519.GenPrivKey(),
+			filepath.Join(nodeDir, PrivvalDummyKeyFile),
+			filepath.Join(nodeDir, PrivvalDummyStateFile),
+		)).Save()
 	}
 
-	return nil
-}
-
-func setupNodeConfig(node *e2e.Node, testnet *e2e.Testnet, genesis types.GenesisDoc) error {
-	cfg, err := MakeConfig(node)
-	if err != nil {
-		return err
+	if testnet.Prometheus {
+		if err := testnet.WritePrometheusConfig(); err != nil {
+			return err
+		}
 	}
-	config.WriteConfigFile(filepath.Join(node.Testnet.Dir, "config", "config.toml"), cfg) // panics
-
-	appCfg, err := MakeAppConfig(node)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(filepath.Join(node.Testnet.Dir, "config", "app.toml"), appCfg, 0o644) //nolint:gosec
-	if err != nil {
-		return err
-	}
-
-	if node.Mode == e2e.ModeLight {
-		// stop early if a light client
-		return nil
-	}
-
-	err = genesis.SaveAs(filepath.Join(node.Testnet.Dir, "config", "genesis.json"))
-	if err != nil {
-		return err
-	}
-
-	err = (&p2p.NodeKey{PrivKey: node.NodeKey}).SaveAs(filepath.Join(node.Testnet.Dir, "config", "node_key.json"))
-	if err != nil {
-		return err
-	}
-
-	(privval.NewFilePV(node.PrivvalKey,
-		filepath.Join(node.Testnet.Dir, PrivvalKeyFile),
-		filepath.Join(node.Testnet.Dir, PrivvalStateFile),
-	)).Save()
-
-	// Set up a dummy validator. CometBFT requires a file PV even when not used, so we
-	// give it a dummy such that it will fail if it actually tries to use it.
-	(privval.NewFilePV(ed25519.GenPrivKey(),
-		filepath.Join(node.Testnet.Dir, PrivvalDummyKeyFile),
-		filepath.Join(node.Testnet.Dir, PrivvalDummyStateFile),
-	)).Save()
 
 	return nil
 }

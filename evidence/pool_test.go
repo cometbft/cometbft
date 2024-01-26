@@ -409,15 +409,8 @@ func initializeBlockStore(db dbm.DB, state sm.State, valAddr []byte) *store.Bloc
 			state.Validators.GetProposer().Address)
 		block.Header.Time = defaultEvidenceTime.Add(time.Duration(i) * time.Minute)
 		block.Header.Version = cmtversion.Consensus{Block: version.BlockProtocol, App: 1}
-<<<<<<< HEAD:evidence/pool_test.go
 		const parts = 1
 		partSet := block.MakePartSet(parts)
-=======
-		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
-		if err != nil {
-			return nil, err
-		}
->>>>>>> 28ad4d223 (feat(consensus): additional sanity checks for the size of proposed blocks (#1408)):internal/evidence/pool_test.go
 
 		seenCommit := makeCommit(i, valAddr)
 		blockStore.SaveBlock(block, partSet, seenCommit)

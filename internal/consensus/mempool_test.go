@@ -76,20 +76,16 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 // After moving to the next height, it delivers transactions but does not set a proposal, causing a timeout and moving to the next round.
 // Finally, it ensures that a new round starts at the next height and a block gets committed.
 func TestMempoolProgressInHigherRound(t *testing.T) {
-	// Setup
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
 	cs := newStateWithConfig(config, state, privVals[0], kvstore.NewInMemoryApplication())
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
-
-	// Subscribe to events
+	height, round := cs.Height, cs.Round
 	newBlockCh := subscribe(cs.eventBus, types.EventQueryNewBlock)
 	newRoundCh := subscribe(cs.eventBus, types.EventQueryNewRound)
 	timeoutCh := subscribe(cs.eventBus, types.EventQueryTimeoutPropose)
-
-	// Set proposal function
 	cs.setProposal = func(proposal *types.Proposal) error {
 		if cs.Height == 2 && cs.Round == 0 {
 			// dont set the proposal in round 0 so we timeout and
@@ -99,29 +95,21 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 		}
 		return cs.defaultSetProposal(proposal)
 	}
-
-	// Start test round
-	height, round := cs.Height, cs.Round
 	startTestRound(cs, height, round)
 
-	// Ensure new round at first height and block commit
-	ensureNewRound(newRoundCh, height, round)
-	ensureNewEventOnChannel(newBlockCh)
+	ensureNewRound(newRoundCh, height, round) // first round at first height
+	ensureNewEventOnChannel(newBlockCh)       // first block gets committed
 
-	// Move to next height
-	height++
+	height++ // moving to the next height
 	round = 0
 
 	ensureNewRound(newRoundCh, height, round) // first round at next height
 	deliverTxsRange(t, cs, 1)                 // we deliver txs, but dont set a proposal so we get the next round
 	ensureNewTimeout(timeoutCh, height, round, cs.config.TimeoutPropose.Nanoseconds())
 
-	// Move to next round
-	round++
-
-	// Ensure new round at next height and block commit
-	ensureNewRound(newRoundCh, height, round)
-	ensureNewEventOnChannel(newBlockCh)
+	round++                                   // moving to the next round
+	ensureNewRound(newRoundCh, height, round) // wait for the next round
+	ensureNewEventOnChannel(newBlockCh)       // now we can commit the block
 }
 
 func deliverTxsRange(t *testing.T, cs *State, end int) {

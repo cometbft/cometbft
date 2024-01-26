@@ -139,9 +139,10 @@ func TestMain(m *testing.M) {
 	var cleanup cleanupFunc
 	var err error
 	state, _, cleanup = makeStateAndBlockStore(log.NewTMLogger(new(bytes.Buffer)))
-	block = state.MakeBlock(state.LastBlockHeight+1, test.MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
+	txs := []types.Tx{make([]byte, types.BlockPartSizeBytes)} // TX taking one block part alone
+	block = state.MakeBlock(state.LastBlockHeight+1, txs, new(types.Commit), nil, state.Validators.GetProposer().Address)
 
-	partSet, err = block.MakePartSet(2)
+	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -178,7 +179,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	part2 = validPartSet.GetPart(1)
 
 	seenCommit := makeTestCommit(10, cmttime.Now())
-	bs.SaveBlock(block, partSet, seenCommit)
+	bs.SaveBlock(block, validPartSet, seenCommit)
 	require.EqualValues(t, 1, bs.Base(), "expecting the new height to be changed")
 	require.EqualValues(t, block.Header.Height, bs.Height(), "expecting the new height to be changed")
 
@@ -577,7 +578,7 @@ func TestLoadBlockMetaByHash(t *testing.T) {
 	bs := NewBlockStore(dbm.NewMemDB())
 
 	b1 := state.MakeBlock(state.LastBlockHeight+1, test.MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
-	partSet, err := b1.MakePartSet(2)
+	partSet, err := b1.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
 	seenCommit := makeTestCommit(1, cmttime.Now())
 	bs.SaveBlock(b1, partSet, seenCommit)

@@ -214,7 +214,7 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 	case *types.Request_Echo:
 		return s.handleEcho(r.Echo)
 	case *types.Request_Flush:
-		return s.handleFlush(r.Flush)
+		return s.handleFlush()
 	case *types.Request_Info:
 		return s.handleInfo(ctx, r.Info)
 	case *types.Request_CheckTx:
@@ -252,7 +252,7 @@ func (*SocketServer) handleEcho(echo *types.EchoRequest) (*types.Response, error
 	return types.ToEchoResponse(echo.Message), nil
 }
 
-func (*SocketServer) handleFlush(flush *types.FlushRequest) (*types.Response, error) {
+func (*SocketServer) handleFlush() (*types.Response, error) {
 	return types.ToFlushResponse(), nil
 }
 

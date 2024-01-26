@@ -1,7 +1,6 @@
 package store
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -155,12 +154,10 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 		}
 	}
 
-	// save a block big enough to have two block parts
-	txs := []types.Tx{make([]byte, types.BlockPartSizeBytes)} // TX taking one block part alone
-	block := state.MakeBlock(bs.Height()+1, txs, new(types.Commit), nil, state.Validators.GetProposer().Address)
-	validPartSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+	// save a block
+	block := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
+	validPartSet, err := block.MakePartSet(2)
 	require.NoError(t, err)
-	require.GreaterOrEqual(t, validPartSet.Total(), uint32(2))
 	part2 := validPartSet.GetPart(1)
 
 	seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
@@ -402,7 +399,7 @@ func TestSaveBlockWithExtendedCommitPanicOnAbsentExtension(t *testing.T) {
 			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 
 			seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
-			ps, err := block.MakePartSet(types.BlockPartSizeBytes)
+			ps, err := block.MakePartSet(2)
 			require.NoError(t, err)
 			testCase.malleateCommit(seenCommit)
 			if testCase.shouldPanic {
@@ -442,7 +439,7 @@ func TestLoadBlockExtendedCommit(t *testing.T) {
 			h := bs.Height() + 1
 			block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
 			seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
-			ps, err := block.MakePartSet(types.BlockPartSizeBytes)
+			ps, err := block.MakePartSet(2)
 			require.NoError(t, err)
 			if testCase.saveExtended {
 				bs.SaveBlockWithExtendedCommit(block, ps, seenCommit)
@@ -471,7 +468,7 @@ func TestLoadBaseMeta(t *testing.T) {
 
 	for h := int64(1); h <= 10; h++ {
 		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
-		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+		partSet, err := block.MakePartSet(2)
 		require.NoError(t, err)
 		seenCommit := makeTestExtCommit(h, cmttime.Now())
 		bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
@@ -516,7 +513,7 @@ func TestLoadBlockPart(t *testing.T) {
 
 	// 3. A good block serialized and saved to the DB should be retrievable
 	block := state.MakeBlock(height, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
-	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+	partSet, err := block.MakePartSet(2)
 	require.NoError(t, err)
 	part1 := partSet.GetPart(0)
 
@@ -527,214 +524,10 @@ func TestLoadBlockPart(t *testing.T) {
 	gotPart, _, panicErr := doFn(loadPart)
 	require.Nil(t, panicErr, "an existent and proper block should not panic")
 	require.Nil(t, res, "a properly saved block should return a proper block")
-
-	// Having to do this because of https://github.com/stretchr/testify/issues/1141
-	gotPartJSON, err := json.Marshal(gotPart.(*types.Part))
-	require.NoError(t, err)
-	part1JSON, err := json.Marshal(part1)
-	require.NoError(t, err)
-	require.JSONEq(t, string(gotPartJSON), string(part1JSON),
+	require.Equal(t, gotPart.(*types.Part), part1,
 		"expecting successful retrieval of previously saved block")
 }
 
-<<<<<<< HEAD:store/store_test.go
-=======
-type prunerObserver struct {
-	sm.NoopPrunerObserver
-	prunedABCIResInfoCh   chan *sm.ABCIResponsesPrunedInfo
-	prunedBlocksResInfoCh chan *sm.BlocksPrunedInfo
-}
-
-func newPrunerObserver(infoChCap int) *prunerObserver {
-	return &prunerObserver{
-		prunedABCIResInfoCh:   make(chan *sm.ABCIResponsesPrunedInfo, infoChCap),
-		prunedBlocksResInfoCh: make(chan *sm.BlocksPrunedInfo, infoChCap),
-	}
-}
-
-func (o *prunerObserver) PrunerPrunedABCIRes(info *sm.ABCIResponsesPrunedInfo) {
-	o.prunedABCIResInfoCh <- info
-}
-
-func (o *prunerObserver) PrunerPrunedBlocks(info *sm.BlocksPrunedInfo) {
-	o.prunedBlocksResInfoCh <- info
-}
-
-// This test tests the pruning service and its pruning of the blockstore
-// The state store cannot be pruned here because we do not have proper
-// state stored. The test is expected to pass even though the log should
-// inform about the inability to prune the state store.
-func TestPruningService(t *testing.T) {
-	config := test.ResetTestRoot("blockchain_reactor_pruning_test")
-	defer os.RemoveAll(config.RootDir)
-	state, bs, txIndexer, blockIndexer, cleanup, stateStore := makeStateAndBlockStoreAndIndexers()
-	defer cleanup()
-	assert.EqualValues(t, 0, bs.Base())
-	assert.EqualValues(t, 0, bs.Height())
-	assert.EqualValues(t, 0, bs.Size())
-
-	err := initStateStoreRetainHeights(stateStore, 0, 0, 0)
-	require.NoError(t, err)
-
-	obs := newPrunerObserver(1)
-
-	pruner := sm.NewPruner(
-		stateStore,
-		bs,
-		blockIndexer,
-		txIndexer,
-		log.TestingLogger(),
-		sm.WithPrunerInterval(time.Second*1),
-		sm.WithPrunerObserver(obs),
-		sm.WithPrunerCompanionEnabled(),
-	)
-
-	err = pruner.SetApplicationBlockRetainHeight(1)
-	require.Error(t, err)
-	err = pruner.SetApplicationBlockRetainHeight(0)
-	require.NoError(t, err)
-
-	// make more than 1000 blocks, to test batch deletions
-	for h := int64(1); h <= 1500; h++ {
-		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
-		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
-		require.NoError(t, err)
-		seenCommit := makeTestExtCommit(h, cmttime.Now())
-		bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
-	}
-
-	assert.EqualValues(t, 1, bs.Base())
-	assert.EqualValues(t, 1500, bs.Height())
-	assert.EqualValues(t, 1500, bs.Size())
-
-	state.LastBlockTime = time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
-	state.LastBlockHeight = 1500
-
-	state.ConsensusParams.Evidence.MaxAgeNumBlocks = 400
-	state.ConsensusParams.Evidence.MaxAgeDuration = 1 * time.Second
-
-	pk := ed25519.GenPrivKey().PubKey()
-
-	// Generate a bunch of state data.
-	// This is needed because the pruning is expecting to load the state from the database thus
-	// We have to have acceptable values for all fields of the state
-	validator := &types.Validator{Address: pk.Address(), VotingPower: 100, PubKey: pk}
-	validatorSet := &types.ValidatorSet{
-		Validators: []*types.Validator{validator},
-		Proposer:   validator,
-	}
-	state.Validators = validatorSet
-	state.NextValidators = validatorSet
-	if state.LastBlockHeight >= 1 {
-		state.LastValidators = state.Validators
-	}
-
-	err = stateStore.Save(state)
-	require.NoError(t, err)
-	// Check that basic pruning works
-	err = pruner.SetApplicationBlockRetainHeight(1200)
-	require.NoError(t, err)
-	err = pruner.SetCompanionBlockRetainHeight(1200)
-	require.NoError(t, err)
-	err = pruner.Start()
-	require.NoError(t, err)
-
-	select {
-	case info := <-obs.prunedBlocksResInfoCh:
-		assert.EqualValues(t, 0, info.FromHeight)
-		assert.EqualValues(t, 1199, info.ToHeight)
-		assert.EqualValues(t, 1200, bs.Base())
-		assert.EqualValues(t, 1500, bs.Height())
-		assert.EqualValues(t, 301, bs.Size())
-		block, meta := bs.LoadBlock(1200)
-		require.NotNil(t, block)
-		require.NotNil(t, meta)
-		block, meta = bs.LoadBlock(1199)
-		require.Nil(t, block)
-		require.Nil(t, meta)
-		// The header and commit for heights 1100 onwards
-		// need to remain to verify evidence
-		require.NotNil(t, bs.LoadBlockMeta(1100))
-		require.Nil(t, bs.LoadBlockMeta(1099))
-		require.NotNil(t, bs.LoadBlockCommit(1100))
-		require.Nil(t, bs.LoadBlockCommit(1099))
-		for i := int64(1); i < 1200; i++ {
-			block, meta = bs.LoadBlock(i)
-			require.Nil(t, block)
-			require.Nil(t, meta)
-		}
-		for i := int64(1200); i <= 1500; i++ {
-			block, meta = bs.LoadBlock(i)
-			require.NotNil(t, block)
-			require.NotNil(t, meta)
-		}
-		t.Log("Done pruning blocks until height 1200")
-
-	case <-time.After(5 * time.Second):
-		require.Fail(t, "timed out waiting for pruning run to complete")
-	}
-
-	// Pruning below the current base should error
-	err = pruner.SetApplicationBlockRetainHeight(1199)
-	require.Error(t, err)
-
-	// Pruning to the current base should work
-	err = pruner.SetApplicationBlockRetainHeight(1200)
-	require.NoError(t, err)
-
-	// Pruning again should work
-	err = pruner.SetApplicationBlockRetainHeight(1300)
-	require.NoError(t, err)
-
-	err = pruner.SetCompanionBlockRetainHeight(1350)
-	require.NoError(t, err)
-
-	select {
-	case <-obs.prunedBlocksResInfoCh:
-		assert.EqualValues(t, 1300, bs.Base())
-
-		// we should still have the header and the commit
-		// as they're needed for evidence
-		require.NotNil(t, bs.LoadBlockMeta(1100))
-		require.Nil(t, bs.LoadBlockMeta(1099))
-		require.NotNil(t, bs.LoadBlockCommit(1100))
-		require.Nil(t, bs.LoadBlockCommit(1099))
-		t.Log("Done pruning up until 1300")
-	case <-time.After(5 * time.Second):
-		require.Fail(t, "timed out waiting for pruning run to complete")
-	}
-	// Setting the pruning height beyond the current height should error
-	err = pruner.SetApplicationBlockRetainHeight(1501)
-	require.Error(t, err)
-
-	// Pruning to the current height should work
-	err = pruner.SetApplicationBlockRetainHeight(1500)
-	require.NoError(t, err)
-
-	select {
-	case <-obs.prunedBlocksResInfoCh:
-		// But we will prune only until 1350 because that was the Companions height
-		// and it is lower
-		block, meta := bs.LoadBlock(1349)
-		assert.Nil(t, block)
-		assert.Nil(t, meta)
-		block, meta = bs.LoadBlock(1350)
-		assert.NotNil(t, block, fmt.Sprintf("expected block at height 1350 to be there, but it was not; block store base height = %d", bs.Base()))
-		assert.NotNil(t, meta)
-		block, meta = bs.LoadBlock(1500)
-		assert.NotNil(t, block)
-		assert.NotNil(t, meta)
-		block, meta = bs.LoadBlock(1501)
-		assert.Nil(t, block)
-		assert.Nil(t, meta)
-		t.Log("Done pruning blocks until 1500")
-
-	case <-time.After(5 * time.Second):
-		require.Fail(t, "timed out waiting for pruning run to complete")
-	}
-}
-
->>>>>>> 28ad4d223 (feat(consensus): additional sanity checks for the size of proposed blocks (#1408)):internal/store/store_test.go
 func TestPruneBlocks(t *testing.T) {
 	config := test.ResetTestRoot("blockchain_reactor_test")
 	defer os.RemoveAll(config.RootDir)
@@ -759,7 +552,7 @@ func TestPruneBlocks(t *testing.T) {
 	// make more than 1000 blocks, to test batch deletions
 	for h := int64(1); h <= 1500; h++ {
 		block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
-		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+		partSet, err := block.MakePartSet(2)
 		require.NoError(t, err)
 		seenCommit := makeTestExtCommit(h, cmttime.Now())
 		bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)
@@ -888,7 +681,7 @@ func TestLoadBlockMetaByHash(t *testing.T) {
 	bs := NewBlockStore(dbm.NewMemDB())
 
 	b1 := state.MakeBlock(state.LastBlockHeight+1, test.MakeNTxs(state.LastBlockHeight+1, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
-	partSet, err := b1.MakePartSet(types.BlockPartSizeBytes)
+	partSet, err := b1.MakePartSet(2)
 	require.NoError(t, err)
 	seenCommit := makeTestExtCommit(1, cmttime.Now())
 	bs.SaveBlock(b1, partSet, seenCommit.ToCommit())
@@ -905,7 +698,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	require.Equal(t, bs.Height(), int64(0), "initially the height should be zero")
 	block := state.MakeBlock(bs.Height()+1, nil, new(types.Commit), nil, state.Validators.GetProposer().Address)
 
-	partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+	partSet, err := block.MakePartSet(2)
 	require.NoError(t, err)
 	seenCommit := makeTestExtCommit(block.Header.Height, cmttime.Now())
 	bs.SaveBlockWithExtendedCommit(block, partSet, seenCommit)

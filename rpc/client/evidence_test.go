@@ -121,7 +121,10 @@ func TestBroadcastEvidence_DuplicateVoteEvidence(t *testing.T) {
 
 	for i, c := range GetClients() {
 		evidenceHeight := int64(1)
-		block, _ := c.Block(ctx, &evidenceHeight)
+		err := client.WaitForHeight(c, evidenceHeight, nil)
+		require.NoError(t, err)
+		block, err := c.Block(ctx, &evidenceHeight)
+		require.NoError(t, err)
 		ts := block.Block.Time
 		correct, fakes := makeEvidences(t, pv, chainID, ts)
 		t.Logf("client %d", i)

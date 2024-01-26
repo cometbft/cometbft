@@ -154,63 +154,78 @@ func TestConsensusParamsUpdate_AppVersion(t *testing.T) {
 }
 
 func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
-	t.Run("set to height but initial height already run", func(*testing.T) {
-		initialParams := makeParams(1, 0, 2, 0, valEd25519, 1)
-		update := &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: 10,
-			},
-		}
-		require.Error(t, initialParams.ValidateUpdate(update, 1))
-		require.Error(t, initialParams.ValidateUpdate(update, 5))
-	})
-	t.Run("reset to 0", func(t *testing.T) {
-		initialParams := makeParams(1, 0, 2, 0, valEd25519, 1)
-		update := &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: 0,
-			},
-		}
-		require.Error(t, initialParams.ValidateUpdate(update, 1))
-	})
-	t.Run("set to height before current height run", func(*testing.T) {
-		initialParams := makeParams(1, 0, 2, 0, valEd25519, 100)
-		update := &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: 10,
-			},
-		}
-		require.Error(t, initialParams.ValidateUpdate(update, 11))
-		require.Error(t, initialParams.ValidateUpdate(update, 99))
-	})
-	t.Run("set to height after current height run", func(*testing.T) {
-		initialParams := makeParams(1, 0, 2, 0, valEd25519, 300)
-		update := &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: 99,
-			},
-		}
-		require.NoError(t, initialParams.ValidateUpdate(update, 11))
-		require.NoError(t, initialParams.ValidateUpdate(update, 98))
-	})
-	t.Run("no error when unchanged", func(*testing.T) {
-		initialParams := makeParams(1, 0, 2, 0, valEd25519, 100)
-		update := &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: 100,
-			},
-		}
-		require.NoError(t, initialParams.ValidateUpdate(update, 500))
-	})
-	t.Run("updated from 0 to 0", func(t *testing.T) {
-		initialParams := makeParams(1, 0, 2, 0, valEd25519, 0)
-		update := &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: 0,
-			},
-		}
-		require.NoError(t, initialParams.ValidateUpdate(update, 100))
-	})
+	const nilTest = -10000000
+	testCases := []struct {
+		name        string
+		current     int64
+		from        int64
+		to          int64
+		expectedErr bool
+	}{
+		// no change
+		{"current: 3, 0 -> 0", 3, 0, 0, false},
+		{"current: 3, 100 -> 100, ", 3, 100, 100, false},
+		{"current: 100, 100 -> 100, ", 100, 100, 100, false},
+		{"current: 300, 100 -> 100, ", 300, 100, 100, false},
+		// set for the first time
+		{"current: 3, 0 -> 5, ", 3, 0, 5, false},
+		{"current: 4, 0 -> 5, ", 4, 0, 5, false},
+		{"current: 5, 0 -> 5, ", 5, 0, 5, true},
+		{"current: 6, 0 -> 5, ", 6, 0, 5, true},
+		{"current: 50, 0 -> 5, ", 50, 0, 5, true},
+		// reset to 0
+		{"current: 4, 5 -> 0, ", 4, 5, 0, false},
+		{"current: 5, 5 -> 0, ", 5, 5, 0, true},
+		{"current: 6, 5 -> 0, ", 6, 5, 0, true},
+		{"current: 10, 5 -> 0, ", 10, 5, 0, true},
+		// modify backwards
+		{"current: 1, 10 -> 5, ", 1, 10, 5, false},
+		{"current: 4, 10 -> 5, ", 4, 10, 5, false},
+		{"current: 5, 10 -> 5, ", 5, 10, 5, true},
+		{"current: 6, 10 -> 5, ", 6, 10, 5, true},
+		{"current: 9, 10 -> 5, ", 9, 10, 5, true},
+		{"current: 10, 10 -> 5, ", 10, 10, 5, true},
+		{"current: 11, 10 -> 5, ", 11, 10, 5, true},
+		{"current: 100, 10 -> 5, ", 100, 10, 5, true},
+		// modify forward
+		{"current: 3, 10 -> 15, ", 3, 10, 15, false},
+		{"current: 9, 10 -> 15, ", 9, 10, 15, false},
+		{"current: 10, 10 -> 15, ", 10, 10, 15, true},
+		{"current: 11, 10 -> 15, ", 11, 10, 15, true},
+		{"current: 14, 10 -> 15, ", 14, 10, 15, true},
+		{"current: 15, 10 -> 15, ", 15, 10, 15, true},
+		{"current: 16, 10 -> 15, ", 16, 10, 15, true},
+		{"current: 100, 10 -> 15, ", 100, 10, 15, true},
+		// negative values
+		{"current: 3, 0 -> -5", 3, 0, -5, true},
+		{"current: 3, -5 -> 100, ", 3, -5, 100, false},
+		{"current: 3, -10 -> 3, ", 3, -10, 3, true},
+		{"current: 3, -3 -> -3", 3, -3, -3, true},
+		{"current: 100, -8 -> -9, ", 100, -8, -9, true},
+		{"current: 300, -10 -> -8, ", 300, -10, -8, true},
+		// test for nil
+		{"current: 300, 400 -> nil, ", 300, 400, nilTest, false},
+		{"current: 300, 200 -> nil, ", 300, 200, nilTest, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(*testing.T) {
+			initialParams := makeParams(1, 0, 2, 0, valEd25519, tc.from)
+			update := &cmtproto.ConsensusParams{}
+			if tc.to == nilTest {
+				update.Abci = nil
+			} else {
+				update.Abci = &cmtproto.ABCIParams{
+					VoteExtensionsEnableHeight: tc.to,
+				}
+			}
+			if tc.expectedErr {
+				require.Error(t, initialParams.ValidateUpdate(update, tc.current))
+			} else {
+				require.NoError(t, initialParams.ValidateUpdate(update, tc.current))
+			}
+		})
+	}
 }
 
 func TestProto(t *testing.T) {

@@ -250,28 +250,38 @@ func (l *LightClientAttackEvidence) Bytes() []byte {
 // GetByzantineValidators finds out what style of attack LightClientAttackEvidence was and then works out who
 // the malicious validators were and returns them. This is used both for forming the ByzantineValidators
 // field and for validating that it is correct. Validators are ordered based on validator power.
+// GetByzantineValidators finds out what style of attack LightClientAttackEvidence was and then works out who
+// the malicious validators were and returns them. This is used both for forming the ByzantineValidators
+// field and for validating that it is correct. Validators are ordered based on validator power.
 func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *ValidatorSet,
 	trusted *SignedHeader,
 ) []*Validator {
 	var validators []*Validator
 	// First check if the header is invalid. This means that it is a lunatic attack and therefore we take the
 	// validators who are in the commonVals and voted for the lunatic header
-	if l.ConflictingHeaderIsInvalid(trusted.Header) {
-		for _, commitSig := range l.ConflictingBlock.Commit.Signatures {
-			if commitSig.BlockIDFlag != BlockIDFlagCommit {
-				continue
-			}
+	if !l.ConflictingHeaderIsInvalid(trusted.Header) {
+		return l.handleValidHeader(trusted)
+	}
 
-			_, val := commonVals.GetByAddress(commitSig.ValidatorAddress)
-			if val == nil {
-				// validator wasn't in the common validator set
-				continue
-			}
-			validators = append(validators, val)
+	for _, commitSig := range l.ConflictingBlock.Commit.Signatures {
+		if commitSig.BlockIDFlag != BlockIDFlagCommit {
+			continue
 		}
-		sort.Sort(ValidatorsByVotingPower(validators))
-		return validators
-	} else if trusted.Commit.Round == l.ConflictingBlock.Commit.Round {
+
+		_, val := commonVals.GetByAddress(commitSig.ValidatorAddress)
+		if val == nil {
+			// validator wasn't in the common validator set
+			continue
+		}
+		validators = append(validators, val)
+	}
+	sort.Sort(ValidatorsByVotingPower(validators))
+	return validators
+}
+
+func (l *LightClientAttackEvidence) handleValidHeader(trusted *SignedHeader) []*Validator {
+	var validators []*Validator
+	if trusted.Commit.Round == l.ConflictingBlock.Commit.Round {
 		// This is an equivocation attack as both commits are in the same round. We then find the validators
 		// from the conflicting light block validator set that voted in both headers.
 		// Validator hashes are the same therefore the indexing order of validators are the same and thus we

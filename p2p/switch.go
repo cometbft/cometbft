@@ -497,6 +497,11 @@ func (sw *Switch) dialPeersAsync(netAddrs []*NetAddress) {
 	// The integration tests depend on the addrBook being saved
 	// right away but maybe we can change that. Recall that
 	// the addrBook is only written to disk every 2min
+
+	// the addrBook is only written to disk every 2min
+	if sw.addrBook == nil {
+		return
+	}
 	if sw.addrBook != nil {
 		// add peers to `addrBook`
 		for _, netAddr := range netAddrs {

@@ -451,21 +451,7 @@ func (app *Application) updateValidator(v types.ValidatorUpdate) {
 	}
 	key := []byte(ValidatorPrefix + string(pubkey.Bytes()))
 
-	if v.Power == 0 {
-		// remove validator
-		hasKey, err := app.state.db.Has(key)
-		if err != nil {
-			panic(err)
-		}
-		if !hasKey {
-			pubStr := base64.StdEncoding.EncodeToString(pubkey.Bytes())
-			app.logger.Info("tried to remove non existent validator. Skipping...", "pubKey", pubStr)
-		}
-		if err = app.state.db.Delete(key); err != nil {
-			panic(err)
-		}
-		delete(app.valAddrToPubKeyMap, string(pubkey.Address()))
-	} else {
+	if v.Power != 0 {
 		// add or update validator
 		value := bytes.NewBuffer(make([]byte, 0))
 		if err := types.WriteMessage(&v, value); err != nil {
@@ -475,7 +461,23 @@ func (app *Application) updateValidator(v types.ValidatorUpdate) {
 			panic(err)
 		}
 		app.valAddrToPubKeyMap[string(pubkey.Address())] = v.PubKey
+		return
 	}
+
+	// remove validator
+	hasKey, err := app.state.db.Has(key)
+	if err != nil {
+		panic(err)
+	}
+	if !hasKey {
+		pubStr := base64.StdEncoding.EncodeToString(pubkey.Bytes())
+		app.logger.Info("tried to remove non existent validator. Skipping...", "pubKey", pubStr)
+		return
+	}
+	if err = app.state.db.Delete(key); err != nil {
+		panic(err)
+	}
+	delete(app.valAddrToPubKeyMap, string(pubkey.Address()))
 }
 
 func (app *Application) getValidators() (validators []types.ValidatorUpdate) {

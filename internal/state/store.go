@@ -200,10 +200,13 @@ func (store dbStore) loadState(key []byte) (state State, err error) {
 	if err != nil {
 		return state, err
 	}
+
+	addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load"), start)()
+
 	if len(buf) == 0 {
 		return state, nil
 	}
-	addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load"), start)()
+
 	sp := new(cmtstate.State)
 
 	err = proto.Unmarshal(buf, sp)
@@ -522,10 +525,12 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 	if err != nil {
 		return nil, err
 	}
+
+	addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_abci_responses"), start)()
+
 	if len(buf) == 0 {
 		return nil, ErrNoABCIResponsesForHeight{height}
 	}
-	addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_abci_responses"), start)()
 
 	resp := new(abci.FinalizeBlockResponse)
 	err = resp.Unmarshal(buf)
@@ -873,10 +878,12 @@ func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusP
 	if err != nil {
 		return nil, err
 	}
+
+	addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_consensus_params"), start)()
+
 	if len(buf) == 0 {
 		return nil, errors.New("value retrieved from db is empty")
 	}
-	addTimeSample(store.metrics.StoreAccessDurationSeconds.With("method", "load_consensus_params"), start)()
 
 	paramsInfo := new(cmtstate.ConsensusParamsInfo)
 	if err = paramsInfo.Unmarshal(buf); err != nil {

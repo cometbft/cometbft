@@ -137,7 +137,6 @@ func (bs *BlockStore) LoadBlock(height int64) (*types.Block, *types.BlockMeta) {
 	if blockMeta == nil {
 		return nil, nil
 	}
-	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block"), start)()
 	pbb := new(cmtproto.Block)
 	buf := []byte{}
 	for i := 0; i < int(blockMeta.BlockID.PartSetHeader.Total); i++ {
@@ -149,6 +148,8 @@ func (bs *BlockStore) LoadBlock(height int64) (*types.Block, *types.BlockMeta) {
 		}
 		buf = append(buf, part.Bytes...)
 	}
+	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block"), start)()
+
 	err := proto.Unmarshal(buf, pbb)
 	if err != nil {
 		// NOTE: The existence of meta should imply the existence of the
@@ -196,11 +197,12 @@ func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 	if err != nil {
 		panic(err)
 	}
+
+	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_part"), start)()
+
 	if len(bz) == 0 {
 		return nil
 	}
-	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_part"), start)()
-
 	err = proto.Unmarshal(bz, pbpart)
 	if err != nil {
 		panic(fmt.Errorf("unmarshal to cmtproto.Part failed: %w", err))
@@ -222,10 +224,13 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	if err != nil {
 		panic(err)
 	}
+
+	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_meta"), start)()
+
 	if len(bz) == 0 {
 		return nil
 	}
-	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_meta"), start)()
+
 	err = proto.Unmarshal(bz, pbbm)
 	if err != nil {
 		panic(fmt.Errorf("unmarshal to cmtproto.BlockMeta: %w", err))
@@ -271,10 +276,12 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	if err != nil {
 		panic(err)
 	}
+
+	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_commit"), start)()
+
 	if len(bz) == 0 {
 		return nil
 	}
-	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_commit"), start)()
 
 	err = proto.Unmarshal(bz, pbc)
 	if err != nil {
@@ -298,10 +305,12 @@ func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommi
 	if err != nil {
 		panic(fmt.Errorf("fetching extended commit: %w", err))
 	}
+
+	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_ext_commit"), start)()
+
 	if len(bz) == 0 {
 		return nil
 	}
-	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_ext_commit"), start)()
 
 	err = proto.Unmarshal(bz, pbec)
 	if err != nil {
@@ -324,10 +333,13 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 	if err != nil {
 		panic(err)
 	}
+
+	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_seen_commit"), start)()
+
 	if len(bz) == 0 {
 		return nil
 	}
-	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_seen_commit"), start)()
+
 	err = proto.Unmarshal(bz, pbc)
 	if err != nil {
 		panic(fmt.Sprintf("error reading block seen commit: %v", err))
@@ -640,9 +652,12 @@ func (bs *BlockStore) saveStateAndWriteDB(batch dbm.Batch, errMsg string) error 
 
 // SaveSeenCommit saves a seen commit, used by e.g. the state sync reactor when bootstrapping node.
 func (bs *BlockStore) SaveSeenCommit(height int64, seenCommit *types.Commit) error {
-	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_seen_commit"), time.Now())()
+
 	pbc := seenCommit.ToProto()
 	seenCommitBytes, err := proto.Marshal(pbc)
+
+	defer addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "save_seen_commit"), time.Now())()
+
 	if err != nil {
 		return fmt.Errorf("unable to marshal commit: %w", err)
 	}

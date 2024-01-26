@@ -75,34 +75,38 @@ type generateConfig struct {
 }
 
 // Generate generates random testnets using the given RNG.
-func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
+func Generate(cfg *generateConfig) (manifests []e2e.Manifest, err error) {
 	upgradeVersion := ""
 
-	if cfg.multiVersion != "" {
-		var err error
-		nodeVersions, upgradeVersion, err = parseWeightedVersions(cfg.multiVersion)
+	if cfg.multiVersion == "" {
+		return manifests, nil
+	}
+
+	nodeVersions, upgradeVersion, err := parseWeightedVersions(cfg.multiVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := nodeVersions["local"]; ok {
+		nodeVersions[""] = nodeVersions["local"]
+		delete(nodeVersions, "local")
+		if upgradeVersion == "local" {
+			upgradeVersion = ""
+		}
+	}
+
+	if _, ok := nodeVersions["latest"]; ok {
+		latestVersion, err := gitRepoLatestReleaseVersion(cfg.outputDir)
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := nodeVersions["local"]; ok {
-			nodeVersions[""] = nodeVersions["local"]
-			delete(nodeVersions, "local")
-			if upgradeVersion == "local" {
-				upgradeVersion = ""
-			}
-		}
-		if _, ok := nodeVersions["latest"]; ok {
-			latestVersion, err := gitRepoLatestReleaseVersion(cfg.outputDir)
-			if err != nil {
-				return nil, err
-			}
-			nodeVersions[latestVersion] = nodeVersions["latest"]
-			delete(nodeVersions, "latest")
-			if upgradeVersion == "latest" {
-				upgradeVersion = latestVersion
-			}
+		nodeVersions[latestVersion] = nodeVersions["latest"]
+		delete(nodeVersions, "latest")
+		if upgradeVersion == "latest" {
+			upgradeVersion = latestVersion
 		}
 	}
+
 	fmt.Println("Generating testnet with weighted versions:")
 	for ver, wt := range nodeVersions {
 		if ver == "" {
@@ -111,7 +115,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 			fmt.Printf("- %s: %d\n", ver, wt)
 		}
 	}
-	manifests := []e2e.Manifest{}
+	manifests = []e2e.Manifest{}
 	for _, opt := range combinations(testnetCombinations) {
 		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion, cfg.prometheus)
 		if err != nil {

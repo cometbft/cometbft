@@ -384,11 +384,7 @@ FOR_LOOP:
 			blocksSynced++
 
 			// Log the sync rate every 100 blocks.
-			if blocksSynced%100 == 0 {
-				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
-				bcR.Logger.Info("block sync rate", "height", bcR.pool.height, "max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
-				lastHundred = time.Now()
-			}
+			bcR.logSyncRate(&blocksSynced, &lastHundred, &lastRate)
 
 			// Remove the processed block from the pool's request queue.
 			bcR.pool.PopRequest()
@@ -551,18 +547,29 @@ func (bcR *Reactor) handleRequestsAndErrors() {
 			bcR.handleBlockRequest(request)
 		case err := <-bcR.errorsCh:
 			bcR.handlePeerError(err)
-
 		case <-bcR.statusUpdateTicker.C:
 			// ask for status updates
 			go bcR.BroadcastStatusRequest()
+		default:
+			// Non-blocking default case to handle the absence of requests or errors.
+			time.Sleep(time.Millisecond * 100) // Sleep briefly to avoid spinning.
 		}
 	}
 }
 
 // signalProcessing signals that block processing should be attempted.
-func (bcR *Reactor) signalProcessing(didProcessCh chan struct{}) {
+func (*Reactor) signalProcessing(didProcessCh chan struct{}) {
 	select {
 	case didProcessCh <- struct{}{}:
 	default:
+	}
+}
+
+// logSyncRate logs the sync rate every 100 blocks.
+func (bcR *Reactor) logSyncRate(blocksSynced *uint64, lastHundred *time.Time, lastRate *float64) {
+	if *blocksSynced%100 == 0 {
+		*lastRate = 0.9**lastRate + 0.1*(100/time.Since(*lastHundred).Seconds())
+		bcR.Logger.Info("block sync rate", "height", bcR.pool.height, "max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", *lastRate)
+		*lastHundred = time.Now()
 	}
 }

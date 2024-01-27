@@ -321,24 +321,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	didProcessCh := make(chan struct{}, 1)
 
 	// Handle requests and errors from the pool.
-	go func() {
-		for {
-			select {
-			case <-bcR.Quit():
-				return
-			case <-bcR.pool.Quit():
-				return
-			case request := <-bcR.requestsCh:
-				bcR.handleBlockRequest(request)
-			case err := <-bcR.errorsCh:
-				bcR.handlePeerError(err)
-
-			case <-bcR.statusUpdateTicker.C:
-				// ask for status updates
-				go bcR.BroadcastStatusRequest()
-			}
-		}
-	}()
+	go bcR.handleRequestsAndErrors()
 
 	// FOR_LOOP: is the main loop of the block sync reactor.  It handles the following:
 	// - Switching to consensus mode
@@ -558,4 +541,24 @@ func (bcR *Reactor) initTickers() {
 		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
 	}
 	bcR.switchToConsensusTicker = time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
+}
+
+// handleRequestsAndErrors handles requests and errors from the pool.
+func (bcR *Reactor) handleRequestsAndErrors() {
+	for {
+		select {
+		case <-bcR.Quit():
+			return
+		case <-bcR.pool.Quit():
+			return
+		case request := <-bcR.requestsCh:
+			bcR.handleBlockRequest(request)
+		case err := <-bcR.errorsCh:
+			bcR.handlePeerError(err)
+
+		case <-bcR.statusUpdateTicker.C:
+			// ask for status updates
+			go bcR.BroadcastStatusRequest()
+		}
+	}
 }

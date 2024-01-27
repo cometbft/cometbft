@@ -69,6 +69,11 @@ type Reactor struct {
 	switchToConsensusMs int
 
 	metrics *Metrics
+
+	// tickers
+	trySyncTicker           *time.Ticker
+	statusUpdateTicker      *time.Ticker
+	switchToConsensusTicker *time.Ticker
 }
 
 // NewReactor returns new reactor instance.
@@ -120,13 +125,14 @@ func (bcR *Reactor) SetLogger(l log.Logger) {
 	bcR.pool.Logger = l
 }
 
-// OnStart implements service.Service.
+// OnStart implements Reactor.
 func (bcR *Reactor) OnStart() error {
 	if bcR.blockSync {
 		err := bcR.pool.Start()
 		if err != nil {
 			return err
 		}
+		bcR.initTickers() // Initialize tickers here
 		bcR.poolRoutineWg.Add(1)
 		go func() {
 			defer bcR.poolRoutineWg.Done()
@@ -154,12 +160,16 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	return nil
 }
 
-// OnStop implements service.Service.
+// OnStop implements Reactor.
+// OnStop implements Reactor.
 func (bcR *Reactor) OnStop() {
 	if bcR.blockSync {
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)
 		}
+		bcR.trySyncTicker.Stop()
+		bcR.statusUpdateTicker.Stop()
+		bcR.switchToConsensusTicker.Stop()
 		bcR.poolRoutineWg.Wait()
 	}
 }
@@ -300,18 +310,6 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	bcR.metrics.Syncing.Set(1)
 	defer bcR.metrics.Syncing.Set(0)
 
-	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
-	defer trySyncTicker.Stop()
-
-	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
-	defer statusUpdateTicker.Stop()
-
-	if bcR.switchToConsensusMs == 0 {
-		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
-	}
-	switchToConsensusTicker := time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
-	defer switchToConsensusTicker.Stop()
-
 	blocksSynced := uint64(0)
 
 	chainID := bcR.initialState.ChainID
@@ -335,7 +333,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 			case err := <-bcR.errorsCh:
 				bcR.handlePeerError(err)
 
-			case <-statusUpdateTicker.C:
+			case <-bcR.statusUpdateTicker.C:
 				// ask for status updates
 				go bcR.BroadcastStatusRequest()
 			}
@@ -351,12 +349,12 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 FOR_LOOP:
 	for {
 		select {
-		case <-switchToConsensusTicker.C:
+		case <-bcR.switchToConsensusTicker.C:
 			if bcR.handleSwitchToConsensusTicker(&state, &blocksSynced, stateSynced) {
 				break FOR_LOOP // exit the loop if ready to switch to consensus
 			}
 
-		case <-trySyncTicker.C: // chan time
+		case <-bcR.trySyncTicker.C: // chan time
 			select {
 			case didProcessCh <- struct{}{}:
 			default:
@@ -550,4 +548,14 @@ func (bcR *Reactor) handleBlockProcessingError(firstBlockHeight, secondBlockHeig
 			bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: fmt.Errorf("error in block validation at height %d", secondBlockHeight)})
 		}
 	}
+}
+
+// initTickers initializes all tickers used in the Reactor.
+func (bcR *Reactor) initTickers() {
+	bcR.trySyncTicker = time.NewTicker(trySyncIntervalMS * time.Millisecond)
+	bcR.statusUpdateTicker = time.NewTicker(statusUpdateIntervalSeconds * time.Second)
+	if bcR.switchToConsensusMs == 0 {
+		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
+	}
+	bcR.switchToConsensusTicker = time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
 }

@@ -363,58 +363,14 @@ FOR_LOOP:
 			}
 
 		case <-didProcessCh:
-			// Check if there are any blocks to sync.
-			first, second, extCommit := bcR.pool.PeekTwoBlocks()
-
-			// Ensure we have two consecutive blocks for validation.
-			if first == nil || second == nil {
-				continue FOR_LOOP // Need two blocks for validation, continue loop.
-			}
-
-			// Sanity check: Ensure the heights of blocks are consecutive.
-			if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
-				panic(fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height))
-			}
-
-			// Sanity check: Ensure the heights of blocks are consecutive.
-			if first.Height+1 != second.Height {
-				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
-			}
-
-			// Check for extended commit if required by consensus parameters.
-			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
-			}
-
-			// Prepare for block processing.
-			firstParts, err := first.MakePartSet(types.BlockPartSizeBytes)
-			if err != nil {
-				bcR.Logger.Error("failed to create part set", "height", first.Height, "err", err)
-				continue FOR_LOOP // Skip processing this block on error.
-			}
-
-			// Process and apply the block. This includes validation and state update.
-			if err := bcR.processAndApplyBlock(&state, first, second.LastCommit, extCommit, firstParts, chainID); err != nil {
-				bcR.Logger.Error("error in processing and applying block", "height", first.Height, "err", err)
-
-				// Handle error by potentially redoing the request from another peer.
-				bcR.handleBlockProcessingError(first.Height, second.Height)
+			if err := bcR.processNextBlocks(&state, chainID, &blocksSynced); err != nil {
+				bcR.Logger.Error("Error processing blocks", "err", err)
 				continue FOR_LOOP
 			}
 
-			// Update metrics and increment the number of blocks synced.
-			bcR.metrics.recordBlockMetrics(first)
-			blocksSynced++
-
-			// Log the sync rate every 100 blocks.
 			if blocksSynced%100 == 0 {
-				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
-				bcR.Logger.Info("block sync rate", "height", bcR.pool.height, "max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
-				lastHundred = time.Now()
+				bcR.logSyncRate(&blocksSynced, &lastHundred, &lastRate)
 			}
-
-			// Remove the processed block from the pool's request queue.
-			bcR.pool.PopRequest()
 
 			continue FOR_LOOP
 
@@ -559,4 +515,34 @@ func (bcR *Reactor) logSyncRate(blocksSynced *uint64, lastHundred *time.Time, la
 		bcR.Logger.Info("block sync rate", "height", bcR.pool.height, "max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", *lastRate)
 		*lastHundred = time.Now()
 	}
+}
+
+func (bcR *Reactor) processNextBlocks(state *sm.State, chainID string, blocksSynced *uint64) error {
+	first, second, extCommit := bcR.pool.PeekTwoBlocks()
+
+	if first == nil || second == nil {
+		return nil // No consecutive blocks available for processing
+	}
+
+	if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
+		return fmt.Errorf("unexpected block height: expected %d, got %d", state.LastBlockHeight+1, first.Height)
+	}
+
+	if first.Height+1 != second.Height {
+		return fmt.Errorf("non-consecutive blocks: expected %d and %d, got %d and %d", first.Height, first.Height+1, first.Height, second.Height)
+	}
+
+	firstParts, err := first.MakePartSet(types.BlockPartSizeBytes)
+	if err != nil {
+		return fmt.Errorf("failed to create part set for height %d: %v", first.Height, err)
+	}
+
+	if err := bcR.processAndApplyBlock(state, first, second.LastCommit, extCommit, firstParts, chainID); err != nil {
+		bcR.handleBlockProcessingError(first.Height, second.Height)
+		return fmt.Errorf("error processing block at height %d: %v", first.Height, err)
+	}
+
+	*blocksSynced++
+	bcR.pool.PopRequest()
+	return nil
 }

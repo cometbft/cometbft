@@ -160,8 +160,7 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	return nil
 }
 
-// OnStop implements Reactor.
-// OnStop implements Reactor.
+// OnStop implements Reactor.  It stops the pool and waits for the poolRoutine to exit.
 func (bcR *Reactor) OnStop() {
 	if bcR.blockSync {
 		if err := bcR.pool.Stop(); err != nil {
@@ -321,24 +320,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	didProcessCh := make(chan struct{}, 1)
 
 	// Handle requests and errors from the pool.
-	go func() {
-		for {
-			select {
-			case <-bcR.Quit():
-				return
-			case <-bcR.pool.Quit():
-				return
-			case request := <-bcR.requestsCh:
-				bcR.handleBlockRequest(request)
-			case err := <-bcR.errorsCh:
-				bcR.handlePeerError(err)
-
-			case <-bcR.statusUpdateTicker.C:
-				// ask for status updates
-				go bcR.BroadcastStatusRequest()
-			}
-		}
-	}()
+	go bcR.handleRequestsAndErrors()
 
 	// FOR_LOOP: is the main loop of the block sync reactor.  It handles the following:
 	// - Switching to consensus mode
@@ -355,10 +337,7 @@ FOR_LOOP:
 			}
 
 		case <-bcR.trySyncTicker.C: // chan time
-			select {
-			case didProcessCh <- struct{}{}:
-			default:
-			}
+			bcR.signalProcessing(didProcessCh)
 
 		case <-didProcessCh:
 			// Check if there are any blocks to sync.
@@ -558,4 +537,32 @@ func (bcR *Reactor) initTickers() {
 		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
 	}
 	bcR.switchToConsensusTicker = time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
+}
+
+// handleRequestsAndErrors handles requests and errors from the pool.
+func (bcR *Reactor) handleRequestsAndErrors() {
+	for {
+		select {
+		case <-bcR.Quit():
+			return
+		case <-bcR.pool.Quit():
+			return
+		case request := <-bcR.requestsCh:
+			bcR.handleBlockRequest(request)
+		case err := <-bcR.errorsCh:
+			bcR.handlePeerError(err)
+
+		case <-bcR.statusUpdateTicker.C:
+			// ask for status updates
+			go bcR.BroadcastStatusRequest()
+		}
+	}
+}
+
+// signalProcessing signals that block processing should be attempted.
+func (bcR *Reactor) signalProcessing(didProcessCh chan struct{}) {
+	select {
+	case didProcessCh <- struct{}{}:
+	default:
+	}
 }

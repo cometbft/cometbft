@@ -295,7 +295,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 }
 
 // Handle messages from the poolReactor telling the reactor what to do.
-// NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
+// NOTE: Don't sleep in the FOR_LOOP or block sync will be slower.
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	bcR.metrics.Syncing.Set(1)
 	defer bcR.metrics.Syncing.Set(0)
@@ -322,6 +322,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 
 	didProcessCh := make(chan struct{}, 1)
 
+	// Handle requests and errors from the pool.
 	go func() {
 		for {
 			select {
@@ -341,6 +342,12 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 		}
 	}()
 
+	// FOR_LOOP: is the main loop of the block sync reactor.  It handles the following:
+	// - Switching to consensus mode
+	// - Processing and applying blocks
+	// - Logging the sync rate
+	// - Removing the processed block from the pool's request queue
+	// - Handling errors during block processing
 FOR_LOOP:
 	for {
 		select {
@@ -368,6 +375,8 @@ FOR_LOOP:
 			if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
 				panic(fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height))
 			}
+
+			// Sanity check: Ensure the heights of blocks are consecutive.
 			if first.Height+1 != second.Height {
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
 			}
@@ -455,6 +464,7 @@ func (bcR *Reactor) handleSwitchToConsensusTicker(state *sm.State, blocksSynced 
 	bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
 		"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
+	// Check if we should be using vote extensions.
 	missingExtension := true
 	if state.LastBlockHeight == 0 ||
 		!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
@@ -463,6 +473,7 @@ func (bcR *Reactor) handleSwitchToConsensusTicker(state *sm.State, blocksSynced 
 		missingExtension = false
 	}
 
+	// Check if we should switch to consensus mode.
 	if !missingExtension && bcR.pool.IsCaughtUp() {
 		bcR.Logger.Info("Switching to consensus mode!", "height", height)
 		if err := bcR.pool.Stop(); err != nil {

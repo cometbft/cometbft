@@ -11,11 +11,22 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
 
+type TestCase struct {
+	description, description2 string
+	chainID                   string
+	blockID                   BlockID
+	valSize                   int
+	height                    int64
+	blockVotes                int
+	nilVotes                  int
+	absentVotes               int
+	expErr                    bool
+}
+
 // Check VerifyCommit, VerifyCommitLight and VerifyCommitLightTrusting basic
 // verification.
 func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 	var (
-		round  = int32(0)
 		height = int64(100)
 
 		blockID    = makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
@@ -23,37 +34,17 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 		trustLevel = cmtmath.Fraction{Numerator: 2, Denominator: 3}
 	)
 
-	testCases := []struct {
-		description, description2 string // description2, if not empty, is checked against VerifyCommitLightTrusting
-		// vote chainID
-		chainID string
-		// vote blockID
-		blockID BlockID
-		valSize int
-
-		// height of the commit
-		height int64
-
-		// votes
-		blockVotes  int
-		nilVotes    int
-		absentVotes int
-
-		expErr bool
-	}{
+	testCases := []TestCase{
 		{"good (batch verification)", "", chainID, blockID, 3, height, 3, 0, 0, false},
 		{"good (single verification)", "", chainID, blockID, 1, height, 1, 0, 0, false},
-
 		{"wrong signature (#0)", "", "EpsilonEridani", blockID, 2, height, 2, 0, 0, true},
 		{"wrong block ID", "", chainID, makeBlockIDRandom(), 2, height, 2, 0, 0, true},
 		{"wrong height", "", chainID, blockID, 1, height - 1, 1, 0, 0, true},
-
 		{"wrong set size: 4 vs 3", "", chainID, blockID, 4, height, 3, 0, 0, true},
 		{"wrong set size: 1 vs 2", "double vote from Validator", chainID, blockID, 1, height, 2, 0, 0, true},
-
 		{"insufficient voting power: got 30, needed more than 66", "", chainID, blockID, 10, height, 3, 2, 5, true},
-		{"insufficient voting power: got 0, needed more than 6", "", chainID, blockID, 1, height, 0, 0, 1, true}, // absent
-		{"insufficient voting power: got 0, needed more than 6", "", chainID, blockID, 1, height, 0, 1, 0, true}, // nil
+		{"insufficient voting power: got 0, needed more than 6", "", chainID, blockID, 1, height, 0, 0, 1, true},
+		{"insufficient voting power: got 0, needed more than 6", "", chainID, blockID, 1, height, 0, 1, 0, true},
 		{"insufficient voting power: got 60, needed more than 60", "", chainID, blockID, 9, height, 6, 3, 0, true},
 	}
 
@@ -62,70 +53,17 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 		countAllSignatures := false
 		f := func(t *testing.T) {
 			t.Helper()
-			_, valSet, vals := randVoteSet(tc.height, round, PrecommitType, tc.valSize, 10, false)
-			totalVotes := tc.blockVotes + tc.absentVotes + tc.nilVotes
-			sigs := make([]CommitSig, totalVotes)
-			vi := 0
-			// add absent sigs first
-			for i := 0; i < tc.absentVotes; i++ {
-				sigs[vi] = NewCommitSigAbsent()
-				vi++
-			}
-			for i := 0; i < tc.blockVotes+tc.nilVotes; i++ {
-				pubKey, err := vals[vi%len(vals)].GetPubKey()
-				require.NoError(t, err)
-				vote := &Vote{
-					ValidatorAddress: pubKey.Address(),
-					ValidatorIndex:   int32(vi),
-					Height:           tc.height,
-					Round:            round,
-					Type:             PrecommitType,
-					BlockID:          tc.blockID,
-					Timestamp:        time.Now(),
-				}
-				if i >= tc.blockVotes {
-					vote.BlockID = BlockID{}
-				}
-
-				v := vote.ToProto()
-
-				require.NoError(t, vals[vi%len(vals)].SignVote(tc.chainID, v))
-				vote.Signature = v.Signature
-
-				sigs[vi] = vote.CommitSig()
-
-				vi++
-			}
-			commit := &Commit{
-				Height:     tc.height,
-				Round:      round,
-				BlockID:    tc.blockID,
-				Signatures: sigs,
-			}
-
+			valSet, commit, totalVotes := setupCommit(t, tc)
 			err := valSet.VerifyCommit(chainID, blockID, height, commit)
-			if tc.expErr {
-				if assert.Error(t, err, "VerifyCommit") { //nolint:testifylint // require.Error doesn't work with the conditional here
-					assert.Contains(t, err.Error(), tc.description, "VerifyCommit")
-				}
-			} else {
-				require.NoError(t, err, "VerifyCommit")
-			}
+			verifyCommit(t, err, tc, "VerifyCommit")
 
 			if countAllSignatures {
 				err = valSet.VerifyCommitLightAllSignatures(chainID, blockID, height, commit)
 			} else {
 				err = valSet.VerifyCommitLight(chainID, blockID, height, commit)
 			}
-			if tc.expErr {
-				if assert.Error(t, err, "VerifyCommitLight") { //nolint:testifylint // require.Error doesn't work with the conditional here
-					assert.Contains(t, err.Error(), tc.description, "VerifyCommitLight")
-				}
-			} else {
-				require.NoError(t, err, "VerifyCommitLight")
-			}
+			verifyCommit(t, err, tc, "VerifyCommitLight")
 
-			// only a subsection of the tests apply to VerifyCommitLightTrusting
 			expErr := tc.expErr
 			if (!countAllSignatures && totalVotes != tc.valSize) || totalVotes < tc.valSize || !tc.blockID.Equals(blockID) || tc.height != height {
 				expErr = false
@@ -136,7 +74,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel)
 			}
 			if expErr {
-				if assert.Error(t, err, "VerifyCommitLightTrusting") { //nolint:testifylint // require.Error doesn't work with the conditional here
+				if assert.Error(t, err, "VerifyCommitLightTrusting") {
 					errStr := tc.description2
 					if len(errStr) == 0 {
 						errStr = tc.description
@@ -150,6 +88,64 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 		t.Run(tc.description+"/"+strconv.FormatBool(countAllSignatures), f)
 		countAllSignatures = true
 		t.Run(tc.description+"/"+strconv.FormatBool(countAllSignatures), f)
+	}
+}
+
+func setupCommit(t *testing.T, tc TestCase) (*ValidatorSet, *Commit, int) {
+	t.Helper()
+	round := int32(0)
+
+	_, valSet, vals := randVoteSet(tc.height, round, PrecommitType, tc.valSize, 10, false)
+	totalVotes := tc.blockVotes + tc.absentVotes + tc.nilVotes
+	sigs := make([]CommitSig, totalVotes)
+	vi := 0
+	for i := 0; i < tc.absentVotes; i++ {
+		sigs[vi] = NewCommitSigAbsent()
+		vi++
+	}
+	for i := 0; i < tc.blockVotes+tc.nilVotes; i++ {
+		pubKey, err := vals[vi%len(vals)].GetPubKey()
+		require.NoError(t, err)
+		vote := &Vote{
+			ValidatorAddress: pubKey.Address(),
+			ValidatorIndex:   int32(vi),
+			Height:           tc.height,
+			Round:            round,
+			Type:             PrecommitType,
+			BlockID:          tc.blockID,
+			Timestamp:        time.Now(),
+		}
+		if i >= tc.blockVotes {
+			vote.BlockID = BlockID{}
+		}
+
+		v := vote.ToProto()
+
+		require.NoError(t, vals[vi%len(vals)].SignVote(tc.chainID, v))
+		vote.Signature = v.Signature
+
+		sigs[vi] = vote.CommitSig()
+
+		vi++
+	}
+	commit := &Commit{
+		Height:     tc.height,
+		Round:      round,
+		BlockID:    tc.blockID,
+		Signatures: sigs,
+	}
+
+	return valSet, commit, totalVotes
+}
+
+func verifyCommit(t *testing.T, err error, tc TestCase, method string) {
+	t.Helper()
+	if tc.expErr {
+		if assert.Error(t, err, method) {
+			assert.Contains(t, err.Error(), tc.description, method)
+		}
+	} else {
+		require.NoError(t, err, method)
 	}
 }
 

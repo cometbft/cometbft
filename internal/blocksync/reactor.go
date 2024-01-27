@@ -322,8 +322,6 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 
 	didProcessCh := make(chan struct{}, 1)
 
-	initialCommitHasExtensions := (bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil)
-
 	go func() {
 		for {
 			select {
@@ -347,63 +345,8 @@ FOR_LOOP:
 	for {
 		select {
 		case <-switchToConsensusTicker.C:
-			height, numPending, lenRequesters := bcR.pool.GetStatus()
-			outbound, inbound, _ := bcR.Switch.NumPeers()
-			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
-				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
-
-			// The "if" statement below is a bit confusing, so here is a breakdown
-			// of its logic and purpose:
-			//
-			// If we are at genesis (no block in the chain), we don't need VoteExtensions
-			// because the first block's LastCommit is empty anyway.
-			//
-			// If VoteExtensions were disabled for the previous height then we don't need
-			// VoteExtensions.
-			//
-			// If we have sync'd at least one block, then we are guaranteed to have extensions
-			// if we need them by the logic inside loop FOR_LOOP: it requires that the blocks
-			// it fetches have extensions if extensions were enabled during the height.
-			//
-			// If we already had extensions for the initial height (e.g. we are recovering),
-			// then we are guaranteed to have extensions for the last block (if required) even
-			// if we did not blocksync any block.
-			//
-			missingExtension := true
-			if state.LastBlockHeight == 0 ||
-				!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
-				blocksSynced > 0 ||
-				initialCommitHasExtensions {
-				missingExtension = false
-			}
-
-			// If require extensions, but since we don't have them yet, then we cannot switch to consensus yet.
-			if missingExtension {
-				bcR.Logger.Info(
-					"no extended commit yet",
-					"height", height,
-					"last_block_height", state.LastBlockHeight,
-					"initial_height", state.InitialHeight,
-					"max_peer_height", bcR.pool.MaxPeerHeight(),
-				)
-				continue FOR_LOOP
-			}
-			if bcR.pool.IsCaughtUp() {
-				bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
-				if err := bcR.pool.Stop(); err != nil {
-					bcR.Logger.Error("Error stopping pool", "err", err)
-				}
-				if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
-					memR.EnableInOutTxs()
-				}
-				if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
-					conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
-				}
-				// else {
-				// should only happen during testing
-				// }
-
-				break FOR_LOOP
+			if bcR.handleSwitchToConsensusTicker(&state, &blocksSynced, stateSynced) {
+				break FOR_LOOP // exit the loop if ready to switch to consensus
 			}
 
 		case <-trySyncTicker.C: // chan time
@@ -569,4 +512,36 @@ func (bcR *Reactor) handlePeerError(err peerError) {
 	if peer != nil {
 		bcR.Switch.StopPeerForError(peer, err)
 	}
+}
+
+// handleSwitchToConsensusTicker checks if the node is ready to switch to consensus mode.
+func (bcR *Reactor) handleSwitchToConsensusTicker(state *sm.State, blocksSynced *uint64, stateSynced bool) bool {
+	height, numPending, lenRequesters := bcR.pool.GetStatus()
+	outbound, inbound, _ := bcR.Switch.NumPeers()
+	bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
+		"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+
+	missingExtension := true
+	if state.LastBlockHeight == 0 ||
+		!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
+		*blocksSynced > 0 ||
+		(bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil) {
+		missingExtension = false
+	}
+
+	if !missingExtension && bcR.pool.IsCaughtUp() {
+		bcR.Logger.Info("Switching to consensus mode!", "height", height)
+		if err := bcR.pool.Stop(); err != nil {
+			bcR.Logger.Error("Error stopping pool", "err", err)
+		}
+		if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
+			memR.EnableInOutTxs()
+		}
+		if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
+			conR.SwitchToConsensus(*state, *blocksSynced > 0 || stateSynced)
+		}
+		return true // indicate that the switch to consensus is ready
+	}
+
+	return false // indicate that the switch to consensus is not ready
 }

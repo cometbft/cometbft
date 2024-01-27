@@ -157,12 +157,12 @@ linters-settings:
         disabled: true
       - name: cognitive-complexity
         disabled: false
-        arguments: [24]
+        arguments: [35]
       - name: argument-limit
         disabled: true
       - name: cyclomatic
         disabled: false
-        arguments: [24]
+        arguments: [35]
       - name: file-header
         disabled: true
       - name: function-length

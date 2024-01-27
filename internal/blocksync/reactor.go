@@ -334,10 +334,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 			case request := <-bcR.requestsCh:
 				bcR.handleBlockRequest(request)
 			case err := <-bcR.errorsCh:
-				peer := bcR.Switch.Peers().Get(err.peerID)
-				if peer != nil {
-					bcR.Switch.StopPeerForError(peer, err)
-				}
+				bcR.handlePeerError(err)
 
 			case <-statusUpdateTicker.C:
 				// ask for status updates
@@ -563,5 +560,13 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 	})
 	if !queued {
 		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+	}
+}
+
+// handlePeerError processes an error reported by a peer.
+func (bcR *Reactor) handlePeerError(err peerError) {
+	peer := bcR.Switch.Peers().Get(err.peerID)
+	if peer != nil {
+		bcR.Switch.StopPeerForError(peer, err)
 	}
 }

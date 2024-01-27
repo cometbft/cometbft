@@ -69,11 +69,6 @@ type Reactor struct {
 	switchToConsensusMs int
 
 	metrics *Metrics
-
-	// tickers
-	trySyncTicker           *time.Ticker
-	statusUpdateTicker      *time.Ticker
-	switchToConsensusTicker *time.Ticker
 }
 
 // NewReactor returns new reactor instance.
@@ -125,14 +120,13 @@ func (bcR *Reactor) SetLogger(l log.Logger) {
 	bcR.pool.Logger = l
 }
 
-// OnStart implements Reactor.
+// OnStart implements service.Service.
 func (bcR *Reactor) OnStart() error {
 	if bcR.blockSync {
 		err := bcR.pool.Start()
 		if err != nil {
 			return err
 		}
-		bcR.initTickers() // Initialize tickers here
 		bcR.poolRoutineWg.Add(1)
 		go func() {
 			defer bcR.poolRoutineWg.Done()
@@ -166,9 +160,6 @@ func (bcR *Reactor) OnStop() {
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)
 		}
-		bcR.trySyncTicker.Stop()
-		bcR.statusUpdateTicker.Stop()
-		bcR.switchToConsensusTicker.Stop()
 		bcR.poolRoutineWg.Wait()
 	}
 }
@@ -309,6 +300,18 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	bcR.metrics.Syncing.Set(1)
 	defer bcR.metrics.Syncing.Set(0)
 
+	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
+	defer trySyncTicker.Stop()
+
+	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
+	defer statusUpdateTicker.Stop()
+
+	if bcR.switchToConsensusMs == 0 {
+		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
+	}
+	switchToConsensusTicker := time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
+	defer switchToConsensusTicker.Stop()
+
 	blocksSynced := uint64(0)
 
 	chainID := bcR.initialState.ChainID
@@ -320,7 +323,24 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	didProcessCh := make(chan struct{}, 1)
 
 	// Handle requests and errors from the pool.
-	go bcR.handleRequestsAndErrors()
+	go func() {
+		for {
+			select {
+			case <-bcR.Quit():
+				return
+			case <-bcR.pool.Quit():
+				return
+			case request := <-bcR.requestsCh:
+				bcR.handleBlockRequest(request)
+			case err := <-bcR.errorsCh:
+				bcR.handlePeerError(err)
+
+			case <-statusUpdateTicker.C:
+				// ask for status updates
+				go bcR.BroadcastStatusRequest()
+			}
+		}
+	}()
 
 	// FOR_LOOP: is the main loop of the block sync reactor.  It handles the following:
 	// - Switching to consensus mode
@@ -331,13 +351,16 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 FOR_LOOP:
 	for {
 		select {
-		case <-bcR.switchToConsensusTicker.C:
+		case <-switchToConsensusTicker.C:
 			if bcR.handleSwitchToConsensusTicker(&state, &blocksSynced, stateSynced) {
 				break FOR_LOOP // exit the loop if ready to switch to consensus
 			}
 
-		case <-bcR.trySyncTicker.C: // chan time
-			bcR.signalProcessing(didProcessCh)
+		case <-trySyncTicker.C: // chan time
+			select {
+			case didProcessCh <- struct{}{}:
+			default:
+			}
 
 		case <-didProcessCh:
 			// Check if there are any blocks to sync.
@@ -529,40 +552,11 @@ func (bcR *Reactor) handleBlockProcessingError(firstBlockHeight, secondBlockHeig
 	}
 }
 
-// initTickers initializes all tickers used in the Reactor.
-func (bcR *Reactor) initTickers() {
-	bcR.trySyncTicker = time.NewTicker(trySyncIntervalMS * time.Millisecond)
-	bcR.statusUpdateTicker = time.NewTicker(statusUpdateIntervalSeconds * time.Second)
-	if bcR.switchToConsensusMs == 0 {
-		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
-	}
-	bcR.switchToConsensusTicker = time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
-}
-
-// handleRequestsAndErrors handles requests and errors from the pool.
-func (bcR *Reactor) handleRequestsAndErrors() {
-	for {
-		select {
-		case <-bcR.Quit():
-			return
-		case <-bcR.pool.Quit():
-			return
-		case request := <-bcR.requestsCh:
-			bcR.handleBlockRequest(request)
-		case err := <-bcR.errorsCh:
-			bcR.handlePeerError(err)
-
-		case <-bcR.statusUpdateTicker.C:
-			// ask for status updates
-			go bcR.BroadcastStatusRequest()
-		}
-	}
-}
-
-// signalProcessing signals that block processing should be attempted.
-func (bcR *Reactor) signalProcessing(didProcessCh chan struct{}) {
-	select {
-	case didProcessCh <- struct{}{}:
-	default:
+// logSyncRate logs the sync rate every 100 blocks.
+func (bcR *Reactor) logSyncRate(blocksSynced *uint64, lastHundred *time.Time, lastRate *float64) {
+	if *blocksSynced%100 == 0 {
+		*lastRate = 0.9**lastRate + 0.1*(100/time.Since(*lastHundred).Seconds())
+		bcR.Logger.Info("block sync rate", "height", bcR.pool.height, "max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", *lastRate)
+		*lastHundred = time.Now()
 	}
 }

@@ -542,6 +542,7 @@ func (bcR *Reactor) processNextBlocks(state *sm.State, chainID string, blocksSyn
 		return fmt.Errorf("error processing block at height %d: %v", first.Height, err)
 	}
 
+	bcR.metrics.recordBlockMetrics(first)
 	*blocksSynced++
 	bcR.pool.PopRequest()
 	return nil

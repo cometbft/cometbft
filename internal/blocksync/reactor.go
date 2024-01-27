@@ -294,124 +294,6 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	}
 }
 
-func (bcR *Reactor) handleConsensusSwitch(state sm.State, blocksSynced uint64, stateSynced bool) bool {
-	height, numPending, lenRequesters := bcR.pool.GetStatus()
-	outbound, inbound, _ := bcR.Switch.NumPeers()
-	bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
-		"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
-
-	missingExtension := true
-	if state.LastBlockHeight == 0 ||
-		!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
-		blocksSynced > 0 ||
-		(bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil) {
-		missingExtension = false
-	}
-
-	if missingExtension {
-		bcR.Logger.Info(
-			"no extended commit yet",
-			"height", height,
-			"last_block_height", state.LastBlockHeight,
-			"initial_height", state.InitialHeight,
-			"max_peer_height", bcR.pool.MaxPeerHeight(),
-		)
-		return false
-	}
-	if bcR.pool.IsCaughtUp() {
-		bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
-		if err := bcR.pool.Stop(); err != nil {
-			bcR.Logger.Error("Error stopping pool", "err", err)
-		}
-		if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
-			memR.EnableInOutTxs()
-		}
-		if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
-			conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
-		}
-		return true
-	}
-	return false
-}
-
-func (bcR *Reactor) handleBlockSync(state sm.State, didProcessCh chan struct{}) {
-	first, second, extCommit := bcR.pool.PeekTwoBlocks()
-	if first == nil || second == nil {
-		return
-	}
-
-	// Log the heights of the blocks we are about to process
-	bcR.Logger.Info("Processing blocks", "firstHeight", first.Height, "secondHeight", second.Height)
-
-	// Ensure the blocks are in the correct order
-	if first.Height >= second.Height {
-		bcR.Logger.Error("received blocks out of order", "firstHeight", first.Height, "secondHeight", second.Height)
-		return
-	}
-
-	// Additional checks to ensure we have the correct first block
-	if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
-		bcR.Logger.Error("received unexpected first block height", "expected", state.LastBlockHeight+1, "received", first.Height)
-		return
-	}
-	if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
-		panic(fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height))
-	}
-	if first.Height+1 != second.Height {
-		panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
-	}
-	if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-		panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
-	}
-
-	if !bcR.IsRunning() || !bcR.pool.IsRunning() {
-		return
-	}
-	didProcessCh <- struct{}{}
-
-	firstParts, err := first.MakePartSet(types.BlockPartSizeBytes)
-	if err != nil {
-		bcR.Logger.Error("failed to make part set", "height", first.Height, "err", err)
-		return
-	}
-	firstPartSetHeader := firstParts.Header()
-	firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
-	err = state.Validators.VerifyCommitLight(state.ChainID, firstID, first.Height, second.LastCommit)
-	if err == nil {
-		err = bcR.blockExec.ValidateBlock(state, first)
-	}
-	if err == nil {
-		if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-			err = extCommit.EnsureExtensions(true)
-		} else if extCommit != nil {
-			err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-		}
-		if err != nil {
-			bcR.Logger.Error("Error in validation", "err", err)
-			peerID := bcR.pool.RedoRequest(first.Height)
-			peer := bcR.Switch.Peers().Get(peerID)
-			if peer != nil {
-				bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
-			}
-			return
-		}
-	}
-
-	bcR.pool.PopRequest()
-
-	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-		bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
-	} else {
-		bcR.store.SaveBlock(first, firstParts, second.LastCommit)
-	}
-
-	state, err = bcR.blockExec.ApplyBlock(state, firstID, first)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
-	}
-	bcR.metrics.recordBlockMetrics(first)
-}
-
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
@@ -431,65 +313,106 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	defer switchToConsensusTicker.Stop()
 
 	blocksSynced := uint64(0)
+
+	chainID := bcR.initialState.ChainID
 	state := bcR.initialState
+
+	lastHundred := time.Now()
+	lastRate := 0.0
+
 	didProcessCh := make(chan struct{}, 1)
 
-	go bcR.handleRequests(didProcessCh)
-	go bcR.handleStatusUpdates(statusUpdateTicker)
+	go func() {
+		for {
+			select {
+			case <-bcR.Quit():
+				return
+			case <-bcR.pool.Quit():
+				return
+			case request := <-bcR.requestsCh:
+				bcR.handleBlockRequest(request)
+			case err := <-bcR.errorsCh:
+				bcR.handlePeerError(err)
+
+			case <-statusUpdateTicker.C:
+				// ask for status updates
+				go bcR.BroadcastStatusRequest()
+			}
+		}
+	}()
 
 FOR_LOOP:
 	for {
 		select {
 		case <-switchToConsensusTicker.C:
-			if bcR.handleConsensusSwitch(state, blocksSynced, stateSynced) {
-				break FOR_LOOP
+			if bcR.handleSwitchToConsensusTicker(&state, &blocksSynced, stateSynced) {
+				break FOR_LOOP // exit the loop if ready to switch to consensus
 			}
-		case <-trySyncTicker.C:
-			// Send a request to try syncing blocks
+
+		case <-trySyncTicker.C: // chan time
 			select {
 			case didProcessCh <- struct{}{}:
 			default:
 			}
+
 		case <-didProcessCh:
-			bcR.handleBlockSync(state, didProcessCh)
+			// Check if there are any blocks to sync.
+			first, second, extCommit := bcR.pool.PeekTwoBlocks()
+
+			// Ensure we have two consecutive blocks for validation.
+			if first == nil || second == nil {
+				continue FOR_LOOP // Need two blocks for validation, continue loop.
+			}
+
+			// Sanity check: Ensure the heights of blocks are consecutive.
+			if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
+				panic(fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height))
+			}
+			if first.Height+1 != second.Height {
+				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
+			}
+
+			// Check for extended commit if required by consensus parameters.
+			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
+			}
+
+			// Prepare for block processing.
+			firstParts, err := first.MakePartSet(types.BlockPartSizeBytes)
+			if err != nil {
+				bcR.Logger.Error("failed to create part set", "height", first.Height, "err", err)
+				continue FOR_LOOP // Skip processing this block on error.
+			}
+
+			// Process and apply the block. This includes validation and state update.
+			if err := bcR.processAndApplyBlock(&state, first, second.LastCommit, extCommit, firstParts, chainID); err != nil {
+				bcR.Logger.Error("error in processing and applying block", "height", first.Height, "err", err)
+
+				// Handle error by potentially redoing the request from another peer.
+				bcR.handleBlockProcessingError(first.Height, second.Height)
+				continue FOR_LOOP
+			}
+
+			// Update metrics and increment the number of blocks synced.
+			bcR.metrics.recordBlockMetrics(first)
+			blocksSynced++
+
+			// Log the sync rate every 100 blocks.
+			if blocksSynced%100 == 0 {
+				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
+				bcR.Logger.Info("block sync rate", "height", bcR.pool.height, "max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
+				lastHundred = time.Now()
+			}
+
+			// Remove the processed block from the pool's request queue.
+			bcR.pool.PopRequest()
+
+			continue FOR_LOOP
+
 		case <-bcR.Quit():
-			// Reactor is quitting
 			break FOR_LOOP
 		case <-bcR.pool.Quit():
-			// Block pool has quit
 			break FOR_LOOP
-		}
-	}
-}
-
-func (bcR *Reactor) handleRequests(didProcessCh chan struct{}) {
-	for {
-		select {
-		case <-bcR.Quit():
-			return
-		case request := <-bcR.requestsCh:
-			peer := bcR.Switch.Peers().Get(request.PeerID)
-			if peer == nil {
-				continue
-			}
-			queued := peer.TrySend(p2p.Envelope{
-				ChannelID: BlocksyncChannel,
-				Message:   &bcproto.BlockRequest{Height: request.Height},
-			})
-			if !queued {
-				bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
-			}
-		}
-	}
-}
-
-func (bcR *Reactor) handleStatusUpdates(statusUpdateTicker *time.Ticker) {
-	for {
-		select {
-		case <-bcR.Quit():
-			return
-		case <-statusUpdateTicker.C:
-			bcR.BroadcastStatusRequest()
 		}
 	}
 }
@@ -500,4 +423,120 @@ func (bcR *Reactor) BroadcastStatusRequest() {
 		ChannelID: BlocksyncChannel,
 		Message:   &bcproto.StatusRequest{},
 	})
+}
+
+// handleBlockRequest processes a block request from the requests channel.
+func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
+	peer := bcR.Switch.Peers().Get(request.PeerID)
+	if peer == nil {
+		return
+	}
+	queued := peer.TrySend(p2p.Envelope{
+		ChannelID: BlocksyncChannel,
+		Message:   &bcproto.BlockRequest{Height: request.Height},
+	})
+	if !queued {
+		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+	}
+}
+
+// handlePeerError processes an error reported by a peer.
+func (bcR *Reactor) handlePeerError(err peerError) {
+	peer := bcR.Switch.Peers().Get(err.peerID)
+	if peer != nil {
+		bcR.Switch.StopPeerForError(peer, err)
+	}
+}
+
+// handleSwitchToConsensusTicker checks if the node is ready to switch to consensus mode.
+func (bcR *Reactor) handleSwitchToConsensusTicker(state *sm.State, blocksSynced *uint64, stateSynced bool) bool {
+	height, numPending, lenRequesters := bcR.pool.GetStatus()
+	outbound, inbound, _ := bcR.Switch.NumPeers()
+	bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
+		"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+
+	missingExtension := true
+	if state.LastBlockHeight == 0 ||
+		!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
+		*blocksSynced > 0 ||
+		(bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil) {
+		missingExtension = false
+	}
+
+	if !missingExtension && bcR.pool.IsCaughtUp() {
+		bcR.Logger.Info("Switching to consensus mode!", "height", height)
+		if err := bcR.pool.Stop(); err != nil {
+			bcR.Logger.Error("Error stopping pool", "err", err)
+		}
+		if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
+			memR.EnableInOutTxs()
+		}
+		if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
+			conR.SwitchToConsensus(*state, *blocksSynced > 0 || stateSynced)
+		}
+		return true // indicate that the switch to consensus is ready
+	}
+
+	return false // indicate that the switch to consensus is not ready
+}
+
+// processAndApplyBlock validates and applies a block to the state.
+func (bcR *Reactor) processAndApplyBlock(state *sm.State, first *types.Block, second *types.Commit, extCommit *types.ExtendedCommit, firstParts *types.PartSet, chainID string) error {
+	firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstParts.Header()}
+
+	// Verify the first block using the second's commit
+	if err := state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second); err != nil {
+		return err
+	}
+
+	// Validate the block before persisting it
+	if err := bcR.blockExec.ValidateBlock(*state, first); err != nil {
+		return err
+	}
+
+	// Ensure vote extensions if required
+	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+		if err := extCommit.EnsureExtensions(true); err != nil {
+			return err
+		}
+	} else if extCommit != nil {
+		return fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
+	}
+
+	// Save and apply the block
+	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+		bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
+	} else {
+		bcR.store.SaveBlock(first, firstParts, second)
+	}
+
+	newState, err := bcR.blockExec.ApplyBlock(*state, firstID, first)
+	if err != nil {
+		return fmt.Errorf("failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err)
+	}
+
+	*state = newState // Update the state reference
+	return nil
+}
+
+// handleBlockProcessingError handles errors during block processing by redoing requests from peers.
+func (bcR *Reactor) handleBlockProcessingError(firstBlockHeight, secondBlockHeight int64) {
+	// Redo the request for the first block from another peer.
+	peerID1 := bcR.pool.RedoRequest(firstBlockHeight)
+	peer1 := bcR.Switch.Peers().Get(peerID1)
+	if peer1 != nil {
+		// Stop the peer for error.
+		bcR.Switch.StopPeerForError(peer1, ErrReactorValidation{Err: fmt.Errorf("error in block validation at height %d", firstBlockHeight)})
+	}
+
+	// Redo the request for the second block from another peer.
+	peerID2 := bcR.pool.RedoRequest(secondBlockHeight)
+	// Check if the second peer is different from the first peer to avoid redundancy.
+	if peerID2 != peerID1 {
+		peer2 := bcR.Switch.Peers().Get(peerID2)
+		if peer2 != nil {
+			// Stop the peer for error.
+			bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: fmt.Errorf("error in block validation at height %d", secondBlockHeight)})
+		}
+	}
 }

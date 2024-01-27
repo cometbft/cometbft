@@ -160,8 +160,7 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	return nil
 }
 
-// OnStop implements Reactor.
-// OnStop implements Reactor.
+// OnStop implements Reactor.  It stops the pool and waits for the poolRoutine to exit.
 func (bcR *Reactor) OnStop() {
 	if bcR.blockSync {
 		if err := bcR.pool.Stop(); err != nil {
@@ -338,10 +337,7 @@ FOR_LOOP:
 			}
 
 		case <-bcR.trySyncTicker.C: // chan time
-			select {
-			case didProcessCh <- struct{}{}:
-			default:
-			}
+			bcR.signalProcessing(didProcessCh)
 
 		case <-didProcessCh:
 			// Check if there are any blocks to sync.
@@ -560,5 +556,13 @@ func (bcR *Reactor) handleRequestsAndErrors() {
 			// ask for status updates
 			go bcR.BroadcastStatusRequest()
 		}
+	}
+}
+
+// signalProcessing signals that block processing should be attempted.
+func (bcR *Reactor) signalProcessing(didProcessCh chan struct{}) {
+	select {
+	case didProcessCh <- struct{}{}:
+	default:
 	}
 }

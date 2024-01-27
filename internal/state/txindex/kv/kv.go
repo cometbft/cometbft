@@ -554,6 +554,9 @@ func (txi *TxIndex) match(
 		defer it.Close()
 
 		err = txi.processIterator(ctx, it, c, heightInfo, tmpHashes)
+		if err != nil {
+			panic(err) // note: do we want to panic if we have an error processing an iterator??
+		}
 
 		if err := it.Error(); err != nil {
 			panic(err)
@@ -569,6 +572,9 @@ func (txi *TxIndex) match(
 		defer it.Close()
 
 		err = txi.processIterator(ctx, it, c, heightInfo, tmpHashes)
+		if err != nil {
+			panic(err) // note: do we want to panic if we have an error processing an iterator??
+		}
 
 		if err := it.Error(); err != nil {
 			panic(err)

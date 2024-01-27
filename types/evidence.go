@@ -256,7 +256,7 @@ func (l *LightClientAttackEvidence) Bytes() []byte {
 func (l *LightClientAttackEvidence) GetByzantineValidators(commonVals *ValidatorSet,
 	trusted *SignedHeader,
 ) []*Validator {
-	var validators []*Validator
+	var validators []*Validator //nolint:prealloc
 	// First check if the header is invalid. This means that it is a lunatic attack and therefore we take the
 	// validators who are in the commonVals and voted for the lunatic header
 	if !l.ConflictingHeaderIsInvalid(trusted.Header) {

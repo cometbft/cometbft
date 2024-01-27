@@ -823,35 +823,6 @@ func startKey(fields ...interface{}) []byte {
 	return b.Bytes()
 }
 
-func (txi *TxIndex) addTmpHashes(ctx context.Context, it dbm.Iterator, tmpHashes map[string][]byte, heightInfo HeightInfo) error {
-	for ; it.Valid(); it.Next() {
-		keyHeight, err := extractHeightFromKey(it.Key())
-		if err != nil {
-			txi.log.Error("failure to parse height from key:", err)
-			continue
-		}
-
-		withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
-		if err != nil {
-			txi.log.Error("failure checking for height bounds:", err)
-			continue
-		}
-
-		if withinBounds {
-			eventSeq := extractEventSeqFromKey(it.Key())
-			tmpHashes[string(it.Value())+eventSeq] = it.Value()
-		}
-
-		// Check for early exit.
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-		}
-	}
-	return it.Error()
-}
-
 func (txi *TxIndex) isKeyHeightWithinBounds(key []byte, heightInfo HeightInfo) (bool, error) {
 	keyHeight, err := extractHeightFromKey(key)
 	if err != nil {

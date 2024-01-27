@@ -553,22 +553,8 @@ func (txi *TxIndex) match(
 		}
 		defer it.Close()
 
-	EQ_LOOP:
-		for ; it.Valid(); it.Next() {
-			// If we have a height range in a query, we need only transactions
-			// for this height
-			withinBounds, err := txi.isKeyHeightWithinBounds(it.Key(), heightInfo)
-			if err != nil || !withinBounds {
-				continue
-			}
-			txi.setTmpHashes(tmpHashes, it)
-			// Potentially exit early.
-			select {
-			case <-ctx.Done():
-				break EQ_LOOP
-			default:
-			}
-		}
+		err = txi.processIterator(ctx, it, c, heightInfo, tmpHashes)
+
 		if err := it.Error(); err != nil {
 			panic(err)
 		}
@@ -582,21 +568,8 @@ func (txi *TxIndex) match(
 		}
 		defer it.Close()
 
-	EXISTS_LOOP:
-		for ; it.Valid(); it.Next() {
-			withinBounds, err := txi.isKeyHeightWithinBounds(it.Key(), heightInfo)
-			if err != nil || !withinBounds {
-				continue
-			}
-			txi.setTmpHashes(tmpHashes, it)
+		err = txi.processIterator(ctx, it, c, heightInfo, tmpHashes)
 
-			// Potentially exit early.
-			select {
-			case <-ctx.Done():
-				break EXISTS_LOOP
-			default:
-			}
-		}
 		if err := it.Error(); err != nil {
 			panic(err)
 		}
@@ -892,4 +865,30 @@ func (txi *TxIndex) isKeyHeightWithinBounds(key []byte, heightInfo HeightInfo) (
 	}
 
 	return withinBounds, err
+}
+
+func (txi *TxIndex) processIterator(ctx context.Context, it dbm.Iterator, c syntax.Condition, heightInfo HeightInfo, tmpHashes map[string][]byte) error {
+	for ; it.Valid(); it.Next() {
+		if c.Op == syntax.TContains && !isTagKey(it.Key()) {
+			continue
+		}
+
+		if c.Op == syntax.TContains && !strings.Contains(extractValueFromKey(it.Key()), c.Arg.Value()) {
+			continue
+		}
+
+		withinBounds, err := txi.isKeyHeightWithinBounds(it.Key(), heightInfo)
+		if err != nil || !withinBounds {
+			continue
+		}
+
+		txi.setTmpHashes(tmpHashes, it)
+
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
+	}
+	return it.Error()
 }

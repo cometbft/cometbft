@@ -22,44 +22,20 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
-			res := types.RPCInvalidRequestError(nil,
-				fmt.Errorf("error reading request body: %w", err),
-			)
-			if wErr := WriteRPCResponseHTTPError(w, http.StatusBadRequest, res); wErr != nil {
-				logger.Error("failed to write response", "err", wErr)
-			}
+			handleReadBodyError(err, w, logger)
 			return
 		}
 
-		// if its an empty request (like from a browser), just display a list of
-		// functions
-		if len(b) == 0 {
-			writeListOfEndpoints(w, r, funcMap)
+		if handleEmptyRequestAndListEndpoints(w, r, b, funcMap) {
 			return
 		}
 
-		// first try to unmarshal the incoming request as an array of RPC requests
-		var (
-			requests  []types.RPCRequest
-			responses []types.RPCResponse
-		)
-		if err := json.Unmarshal(b, &requests); err != nil {
-			// next, try to unmarshal as a single request
-			var request types.RPCRequest
-			if err := json.Unmarshal(b, &request); err != nil {
-				res := types.RPCParseError(fmt.Errorf("error unmarshaling request: %w", err))
-				if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
-					logger.Error("failed to write response", "err", wErr)
-				}
-				return
-			}
-			requests = []types.RPCRequest{request}
+		requests, ok := unmarshalJSONRequests(b, w, logger)
+		if !ok {
+			return
 		}
 
-		// Set the default response cache to true unless
-		// 1. Any RPC request error.
-		// 2. Any RPC request doesn't allow to be cached.
-		// 3. Any RPC request has the height argument and the value is 0 (the default).
+		var responses []types.RPCResponse
 		cache := true
 		for _, request := range requests {
 			request := request
@@ -257,4 +233,44 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	w.Write(buf.Bytes()) //nolint: errcheck
+}
+
+// handleReadBodyError handles errors from reading the HTTP request body.
+func handleReadBodyError(err error, w http.ResponseWriter, logger log.Logger) {
+	if err != nil {
+		res := types.RPCInvalidRequestError(nil, fmt.Errorf("error reading request body: %w", err))
+		if wErr := WriteRPCResponseHTTPError(w, http.StatusBadRequest, res); wErr != nil {
+			logger.Error("failed to write response", "err", wErr)
+		}
+	}
+}
+
+// handleEmptyRequestAndListEndpoints checks if the request body is empty and lists available endpoints.
+func handleEmptyRequestAndListEndpoints(w http.ResponseWriter, r *http.Request, b []byte, funcMap map[string]*RPCFunc) bool {
+	if len(b) == 0 {
+		writeListOfEndpoints(w, r, funcMap)
+		return true // Indicate that the request was handled
+	}
+	return false // Indicate that the request was not empty and not handled here
+}
+
+// unmarshalJSONRequests attempts to unmarshal the request body into an array of RPC requests
+// or a single RPC request. It returns the unmarshaled requests and a boolean indicating success.
+func unmarshalJSONRequests(b []byte, w http.ResponseWriter, logger log.Logger) ([]types.RPCRequest, bool) {
+	var requests []types.RPCRequest
+
+	// First, try to unmarshal as an array of requests
+	if err := json.Unmarshal(b, &requests); err != nil {
+		// Next, try to unmarshal as a single request
+		var request types.RPCRequest
+		if err := json.Unmarshal(b, &request); err != nil {
+			res := types.RPCParseError(fmt.Errorf("error unmarshaling request: %w", err))
+			if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
+				logger.Error("failed to write response", "err", wErr)
+			}
+			return nil, false
+		}
+		requests = []types.RPCRequest{request}
+	}
+	return requests, true
 }

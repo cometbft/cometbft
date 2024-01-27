@@ -62,7 +62,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 	t.Log("Altering prevote so that the byzantine node double votes when height is 2")
 	alterPrevoteForByzantineNode(t, bcs, prevoteHeight, reactors, byzantineNode)
-	introduceLazyProposer(t, css[1], ctx)
+	introduceLazyProposer(ctx, t, css[1])
 
 	t.Log("Starting the consensus reactors")
 	startConsensusReactors(reactors)
@@ -304,7 +304,7 @@ func alterPrevoteForByzantineNode(t *testing.T, bcs *State, prevoteHeight int64,
 // introduceLazyProposer modifies the decideProposal function of a given State instance
 // to simulate a lazy proposer. The lazy proposer proposes a condensed commit and signs the proposal.
 // This function is used in testing scenarios to simulate different behaviors of proposers.
-func introduceLazyProposer(t *testing.T, lazyProposer *State, ctx context.Context) {
+func introduceLazyProposer(ctx context.Context, t *testing.T, lazyProposer *State) {
 	t.Helper()
 	// Overwrite the decideProposal function
 	lazyProposer.decideProposal = func(height int64, round int32) {

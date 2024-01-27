@@ -461,15 +461,11 @@ func (n Node) Validate(testnet Testnet) error {
 	if !testnet.IP.Contains(n.InternalIP) {
 		return fmt.Errorf("node IP %v is not in testnet network %v", n.InternalIP, testnet.IP)
 	}
-	if n.RPCProxyPort == n.PrometheusProxyPort {
-		return fmt.Errorf("node local port %v used also for Prometheus local port", n.RPCProxyPort)
+	// Validate ports
+	if err := n.validatePorts(); err != nil {
+		return err
 	}
-	if n.RPCProxyPort > 0 && n.RPCProxyPort <= 1024 {
-		return fmt.Errorf("local port %v must be >1024", n.RPCProxyPort)
-	}
-	if n.PrometheusProxyPort > 0 && n.PrometheusProxyPort <= 1024 {
-		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
-	}
+
 	for _, peer := range testnet.Nodes {
 		if peer.Name != n.Name && peer.RPCProxyPort == n.RPCProxyPort && peer.ExternalIP.Equal(n.ExternalIP) {
 			return fmt.Errorf("peer %q also has local port %v", peer.Name, n.RPCProxyPort)
@@ -525,20 +521,25 @@ func (n Node) Validate(testnet Testnet) error {
 		return errors.New("snapshot_interval must be less than er equal to retain_blocks")
 	}
 
-	var upgradeFound bool
-	for _, perturbation := range n.Perturbations {
-		switch perturbation {
-		case PerturbationUpgrade:
-			if upgradeFound {
-				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
-			}
-			upgradeFound = true
-		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:
-		default:
-			return fmt.Errorf("invalid perturbation %q", perturbation)
-		}
+	// Validate perturbations
+	if err := n.validatePerturbations(); err != nil {
+		return err
 	}
 
+	return nil
+}
+
+// validatePorts checks the validity of Node's RPCProxyPort and PrometheusProxyPort.
+func (n Node) validatePorts() error {
+	if n.RPCProxyPort == n.PrometheusProxyPort {
+		return fmt.Errorf("node local port %v used also for Prometheus local port", n.RPCProxyPort)
+	}
+	if n.RPCProxyPort > 0 && n.RPCProxyPort <= 1024 {
+		return fmt.Errorf("local port %v must be >1024", n.RPCProxyPort)
+	}
+	if n.PrometheusProxyPort > 0 && n.PrometheusProxyPort <= 1024 {
+		return fmt.Errorf("local port %v must be >1024", n.PrometheusProxyPort)
+	}
 	return nil
 }
 
@@ -803,4 +804,23 @@ func parseCsv(csvString string) ([][]string, error) {
 	}
 
 	return records, nil
+}
+
+// validatePerturbations checks the validity of Node's Perturbations.
+func (n Node) validatePerturbations() error {
+	var upgradeFound bool
+	for _, perturbation := range n.Perturbations {
+		switch perturbation {
+		case PerturbationUpgrade:
+			if upgradeFound {
+				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
+			}
+			upgradeFound = true
+		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:
+			// These are valid perturbations
+		default:
+			return fmt.Errorf("invalid perturbation %q", perturbation)
+		}
+	}
+	return nil
 }

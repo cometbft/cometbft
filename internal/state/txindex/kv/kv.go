@@ -557,17 +557,8 @@ func (txi *TxIndex) match(
 		for ; it.Valid(); it.Next() {
 			// If we have a height range in a query, we need only transactions
 			// for this height
-			keyHeight, err := extractHeightFromKey(it.Key())
-			if err != nil {
-				txi.log.Error("failure to parse height from key:", err)
-				continue
-			}
-			withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
-			if err != nil {
-				txi.log.Error("failure checking for height bounds:", err)
-				continue
-			}
-			if !withinBounds {
+			withinBounds, err := txi.isKeyHeightWithinBounds(it.Key(), heightInfo)
+			if err != nil || !withinBounds {
 				continue
 			}
 			txi.setTmpHashes(tmpHashes, it)
@@ -593,17 +584,8 @@ func (txi *TxIndex) match(
 
 	EXISTS_LOOP:
 		for ; it.Valid(); it.Next() {
-			keyHeight, err := extractHeightFromKey(it.Key())
-			if err != nil {
-				txi.log.Error("failure to parse height from key:", err)
-				continue
-			}
-			withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
-			if err != nil {
-				txi.log.Error("failure checking for height bounds:", err)
-				continue
-			}
-			if !withinBounds {
+			withinBounds, err := txi.isKeyHeightWithinBounds(it.Key(), heightInfo)
+			if err != nil || !withinBounds {
 				continue
 			}
 			txi.setTmpHashes(tmpHashes, it)
@@ -636,17 +618,8 @@ func (txi *TxIndex) match(
 			}
 
 			if strings.Contains(extractValueFromKey(it.Key()), c.Arg.Value()) {
-				keyHeight, err := extractHeightFromKey(it.Key())
-				if err != nil {
-					txi.log.Error("failure to parse height from key:", err)
-					continue
-				}
-				withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
-				if err != nil {
-					txi.log.Error("failure checking for height bounds:", err)
-					continue
-				}
-				if !withinBounds {
+				withinBounds, err := txi.isKeyHeightWithinBounds(it.Key(), heightInfo)
+				if err != nil || !withinBounds {
 					continue
 				}
 				txi.setTmpHashes(tmpHashes, it)
@@ -744,17 +717,8 @@ LOOP:
 		}
 
 		if qr.Key != types.TxHeightKey {
-			keyHeight, err := extractHeightFromKey(it.Key())
-			if err != nil {
-				txi.log.Error("failure to parse height from key:", err)
-				continue
-			}
-			withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
-			if err != nil {
-				txi.log.Error("failure checking for height bounds:", err)
-				continue
-			}
-			if !withinBounds {
+			withinBounds, err := txi.isKeyHeightWithinBounds(it.Key(), heightInfo)
+			if err != nil || !withinBounds {
 				continue
 			}
 		}
@@ -884,4 +848,48 @@ func startKey(fields ...interface{}) []byte {
 		b.WriteString(fmt.Sprintf("%v", f) + tagKeySeparator)
 	}
 	return b.Bytes()
+}
+
+func (txi *TxIndex) addTmpHashes(ctx context.Context, it dbm.Iterator, tmpHashes map[string][]byte, heightInfo HeightInfo) error {
+	for ; it.Valid(); it.Next() {
+		keyHeight, err := extractHeightFromKey(it.Key())
+		if err != nil {
+			txi.log.Error("failure to parse height from key:", err)
+			continue
+		}
+
+		withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+		if err != nil {
+			txi.log.Error("failure checking for height bounds:", err)
+			continue
+		}
+
+		if withinBounds {
+			eventSeq := extractEventSeqFromKey(it.Key())
+			tmpHashes[string(it.Value())+eventSeq] = it.Value()
+		}
+
+		// Check for early exit.
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
+	}
+	return it.Error()
+}
+
+func (txi *TxIndex) isKeyHeightWithinBounds(key []byte, heightInfo HeightInfo) (bool, error) {
+	keyHeight, err := extractHeightFromKey(key)
+	if err != nil {
+		txi.log.Error("failure to parse height from key:", err)
+		return false, err
+	}
+
+	withinBounds, err := checkHeightConditions(heightInfo, keyHeight)
+	if err != nil {
+		txi.log.Error("failure checking for height bounds:", err)
+	}
+
+	return withinBounds, err
 }

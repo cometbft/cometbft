@@ -332,17 +332,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 			case <-bcR.pool.Quit():
 				return
 			case request := <-bcR.requestsCh:
-				peer := bcR.Switch.Peers().Get(request.PeerID)
-				if peer == nil {
-					continue
-				}
-				queued := peer.TrySend(p2p.Envelope{
-					ChannelID: BlocksyncChannel,
-					Message:   &bcproto.BlockRequest{Height: request.Height},
-				})
-				if !queued {
-					bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
-				}
+				bcR.handleBlockRequest(request)
 			case err := <-bcR.errorsCh:
 				peer := bcR.Switch.Peers().Get(err.peerID)
 				if peer != nil {
@@ -559,4 +549,19 @@ func (bcR *Reactor) BroadcastStatusRequest() {
 		ChannelID: BlocksyncChannel,
 		Message:   &bcproto.StatusRequest{},
 	})
+}
+
+// handleBlockRequest processes a block request from the requests channel.
+func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
+	peer := bcR.Switch.Peers().Get(request.PeerID)
+	if peer == nil {
+		return
+	}
+	queued := peer.TrySend(p2p.Envelope{
+		ChannelID: BlocksyncChannel,
+		Message:   &bcproto.BlockRequest{Height: request.Height},
+	})
+	if !queued {
+		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+	}
 }

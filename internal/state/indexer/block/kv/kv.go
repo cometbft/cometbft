@@ -320,29 +320,17 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 			continue
 		}
 
-		startKey, err := orderedcode.Append(nil, c.Tag, c.Arg.Value())
+		var err error
+		filteredHeights, err = idx.processCondition(ctx, c, filteredHeights, !heightsInitialized, heightInfo)
 		if err != nil {
 			return nil, err
 		}
 
-		if !heightsInitialized {
-			filteredHeights, err = idx.match(ctx, c, startKey, filteredHeights, true, heightInfo)
-			if err != nil {
-				return nil, err
-			}
+		heightsInitialized = heightsInitialized || len(filteredHeights) > 0
 
-			heightsInitialized = true
-
-			// Ignore any remaining conditions if the first condition resulted in no
-			// matches (assuming implicit AND operand).
-			if len(filteredHeights) == 0 {
-				break
-			}
-		} else {
-			filteredHeights, err = idx.match(ctx, c, startKey, filteredHeights, false, heightInfo)
-			if err != nil {
-				return nil, err
-			}
+		// Ignore any remaining conditions if the first condition resulted in no matches (assuming AND operand).
+		if len(filteredHeights) == 0 {
+			break
 		}
 	}
 
@@ -436,68 +424,6 @@ func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterat
 	eventSeq, _ := parseEventSeqFromEventKey(it.Key())
 	retVal := it.Value()
 	tmpHeights[string(retVal)+strconv.FormatInt(eventSeq, 10)] = it.Value()
-}
-
-// match returns all matching heights that meet a given query condition and start
-// key. An already filtered result (filteredHeights) is provided such that any
-// non-intersecting matches are removed.
-//
-// NOTE: The provided filteredHeights may be empty if no previous condition has
-// matched.
-func (idx *BlockerIndexer) match(
-	ctx context.Context,
-	c syntax.Condition,
-	startKeyBz []byte,
-	filteredHeights map[string][]byte,
-	firstRun bool,
-	heightInfo HeightInfo,
-) (map[string][]byte, error) {
-	// A previous match was attempted but resulted in no matches, so we return
-	// no matches (assuming AND operand).
-	if !firstRun && len(filteredHeights) == 0 {
-		return filteredHeights, nil
-	}
-
-	var tmpHeights map[string][]byte
-
-	switch {
-	case c.Op == syntax.TEq:
-		tmpHeights, _ = idx.matchTEq(ctx, startKeyBz, heightInfo)
-	case c.Op == syntax.TExists:
-		tmpHeights, _ = idx.matchTExists(ctx, c, heightInfo)
-	case c.Op == syntax.TContains:
-		tmpHeights, _ = idx.matchTContains(ctx, c, heightInfo)
-	default:
-		return nil, errors.New("other operators should be handled already")
-	}
-
-	if len(tmpHeights) == 0 || firstRun {
-		// Either:
-		//
-		// 1. Regardless if a previous match was attempted, which may have had
-		// results, but no match was found for the current condition, then we
-		// return no matches (assuming AND operand).
-		//
-		// 2. A previous match was not attempted, so we return all results.
-		return tmpHeights, nil
-	}
-
-	// Remove/reduce matches in filteredHeights that were not found in this
-	// match (tmpHeights).
-	for k, v := range filteredHeights {
-		tmpHeight := tmpHeights[k]
-		if tmpHeight == nil || !bytes.Equal(tmpHeight, v) {
-			delete(filteredHeights, k)
-
-			select {
-			case <-ctx.Done():
-
-			default:
-			}
-		}
-	}
-
-	return filteredHeights, nil
 }
 
 func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, height int64) error {
@@ -818,4 +744,39 @@ func (*BlockerIndexer) mergeFilteredHeights(
 
 	// Return the merged heights.
 	return mergedHeights
+}
+
+func (idx *BlockerIndexer) processCondition(
+	ctx context.Context,
+	c syntax.Condition,
+	filteredHeights map[string][]byte,
+	firstRun bool,
+	heightInfo HeightInfo,
+) (map[string][]byte, error) {
+	var tmpHeights map[string][]byte
+	var err error
+	startKey, err := orderedcode.Append(nil, c.Tag, c.Arg.Value())
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case c.Op == syntax.TEq:
+		tmpHeights, err = idx.matchTEq(ctx, startKey, heightInfo)
+	case c.Op == syntax.TExists:
+		tmpHeights, err = idx.matchTExists(ctx, c, heightInfo)
+	case c.Op == syntax.TContains:
+		tmpHeights, err = idx.matchTContains(ctx, c, heightInfo)
+	default:
+		return nil, errors.New("unsupported operator")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tmpHeights) == 0 || firstRun {
+		return tmpHeights, nil
+	}
+
+	return idx.mergeFilteredHeights(filteredHeights, tmpHeights), nil
 }

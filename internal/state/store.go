@@ -303,23 +303,9 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		return fmt.Errorf("from height %v must be lower than to height %v", from, to)
 	}
 
-	valInfo, err := loadValidatorsInfo(store.db, min(to, evidenceThresholdHeight))
+	keepVals, keepParams, err := store.determineHeightsToKeep(to, evidenceThresholdHeight)
 	if err != nil {
-		return fmt.Errorf("validators at height %v not found: %w", to, err)
-	}
-	paramsInfo, err := store.loadConsensusParamsInfo(to)
-	if err != nil {
-		return fmt.Errorf("consensus params at height %v not found: %w", to, err)
-	}
-
-	keepVals := make(map[int64]bool)
-	if valInfo.ValidatorSet == nil {
-		keepVals[valInfo.LastHeightChanged] = true
-		keepVals[lastStoredHeightFor(to, valInfo.LastHeightChanged)] = true // keep last checkpoint too
-	}
-	keepParams := make(map[int64]bool)
-	if paramsInfo.ConsensusParams.Equal(&cmtproto.ConsensusParams{}) {
-		keepParams[paramsInfo.LastHeightChanged] = true
+		return fmt.Errorf("error determining heights to keep: %w", err)
 	}
 
 	batch := store.db.NewBatch()
@@ -930,4 +916,27 @@ func int64ToBytes(i int64) []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutVarint(buf, i)
 	return buf[:n]
+}
+
+func (store dbStore) determineHeightsToKeep(to int64, evidenceThresholdHeight int64) (map[int64]bool, map[int64]bool, error) {
+	valInfo, err := loadValidatorsInfo(store.db, min(to, evidenceThresholdHeight))
+	if err != nil {
+		return nil, nil, fmt.Errorf("validators at height %v not found: %w", to, err)
+	}
+	paramsInfo, err := store.loadConsensusParamsInfo(to)
+	if err != nil {
+		return nil, nil, fmt.Errorf("consensus params at height %v not found: %w", to, err)
+	}
+
+	keepVals := make(map[int64]bool)
+	if valInfo.ValidatorSet == nil {
+		keepVals[valInfo.LastHeightChanged] = true
+		keepVals[lastStoredHeightFor(to, valInfo.LastHeightChanged)] = true
+	}
+	keepParams := make(map[int64]bool)
+	if paramsInfo.ConsensusParams.Equal(&cmtproto.ConsensusParams{}) {
+		keepParams[paramsInfo.LastHeightChanged] = true
+	}
+
+	return keepVals, keepParams, nil
 }

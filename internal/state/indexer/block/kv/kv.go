@@ -389,83 +389,31 @@ func (idx *BlockerIndexer) matchRange(
 	firstRun bool,
 	heightInfo HeightInfo,
 ) (map[string][]byte, error) {
-	// A previous match was attempted but resulted in no matches, so we return
-	// no matches (assuming AND operand).
+	// If this is not the first run and there are no previous matches, return an empty result.
 	if !firstRun && len(filteredHeights) == 0 {
 		return filteredHeights, nil
 	}
 
 	tmpHeights := make(map[string][]byte)
-
 	it, err := dbm.IteratePrefix(idx.store, startKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
 	}
 	defer it.Close()
 
-LOOP:
 	for ; it.Valid(); it.Next() {
-		var (
-			eventValue string
-			err        error
-		)
-
-		if qr.Key == types.BlockHeightKey {
-			eventValue, err = parseValueFromPrimaryKey(it.Key())
-		} else {
-			eventValue, err = parseValueFromEventKey(it.Key())
-		}
-
+		include, err := idx.processIteratorItem(it, qr, tmpHeights, heightInfo)
 		if err != nil {
-			continue
+			continue // Skip this iteration if there was an error processing the item.
 		}
 
-		if _, ok := qr.AnyBound().(*big.Float); ok {
-			v := new(big.Int)
-			v, ok := v.SetString(eventValue, 10)
-			var vF *big.Float
-			if !ok {
-				// The precision here is 125. For numbers bigger than this, the value
-				// will not be parsed properly
-				vF, _, err = big.ParseFloat(eventValue, 10, 125, big.ToNearestEven)
-				if err != nil {
-					continue LOOP
-				}
-			}
-
-			if qr.Key != types.BlockHeightKey {
-				keyHeight, err := parseHeightFromEventKey(it.Key())
-				if err != nil {
-					idx.log.Error("failure to parse height from key:", err)
-					continue LOOP
-				}
-				withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
-				if err != nil {
-					idx.log.Error("failure checking for height bounds:", err)
-					continue LOOP
-				}
-				if !withinHeight {
-					continue LOOP
-				}
-			}
-
-			var withinBounds bool
-			var err error
-			if !ok {
-				withinBounds, err = idxutil.CheckBounds(qr, vF)
-			} else {
-				withinBounds, err = idxutil.CheckBounds(qr, v)
-			}
-			if err != nil {
-				idx.log.Error("failed to parse bounds:", err)
-			} else if withinBounds {
-				idx.setTmpHeights(tmpHeights, it)
-			}
+		if include {
+			idx.setTmpHeights(tmpHeights, it)
 		}
 
 		select {
 		case <-ctx.Done():
-
+			return nil, ctx.Err()
 		default:
 		}
 	}
@@ -474,36 +422,12 @@ LOOP:
 		return nil, err
 	}
 
-	if len(tmpHeights) == 0 || firstRun {
-		// Either:
-		//
-		// 1. Regardless if a previous match was attempted, which may have had
-		// results, but no match was found for the current condition, then we
-		// return no matches (assuming AND operand).
-		//
-		// 2. A previous match was not attempted, so we return all results.
+	if firstRun {
 		return tmpHeights, nil
 	}
 
-	// Remove/reduce matches in filteredHashes that were not found in this
-	// match (tmpHashes).
-	for k, v := range filteredHeights {
-		tmpHeight := tmpHeights[k]
-
-		// Check whether in this iteration we have not found an overlapping height (tmpHeight == nil)
-		// or whether the events in which the attributed occurred do not match (first part of the condition)
-		if tmpHeight == nil || !bytes.Equal(tmpHeight, v) {
-			delete(filteredHeights, k)
-
-			select {
-			case <-ctx.Done():
-
-			default:
-			}
-		}
-	}
-
-	return filteredHeights, nil
+	// Merge the new filtered heights with the existing ones.
+	return idx.mergeFilteredHeights(filteredHeights, tmpHeights), nil
 }
 
 func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
@@ -612,8 +536,9 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 	return nil
 }
 
-// HELPER FUCNTIONS TO REDUCE COMPLEXITY
+// HELPER FUNCTIONS TO REDUCE COMPLEXITY
 
+// matchTEq returns all matching block heights that match a given QueryRange.
 func (idx *BlockerIndexer) matchTEq(
 	ctx context.Context,
 	startKeyBz []byte,
@@ -656,6 +581,7 @@ func (idx *BlockerIndexer) matchTEq(
 	return tmpHeights, nil
 }
 
+// matchTExists returns all matching block heights that match a given QueryRange.
 func (idx *BlockerIndexer) matchTExists(
 	ctx context.Context,
 	c syntax.Condition,
@@ -713,6 +639,7 @@ func (idx *BlockerIndexer) matchTExists(
 	return tmpHeights, nil
 }
 
+// matchTContains returns all matching block heights that match a given QueryRange.
 func (idx *BlockerIndexer) matchTContains(
 	ctx context.Context,
 	c syntax.Condition,
@@ -777,4 +704,118 @@ func (idx *BlockerIndexer) matchTContains(
 	}
 
 	return tmpHeights, nil
+}
+
+// processIteratorItem processes a single iterator item for matchRange.
+func (idx *BlockerIndexer) processIteratorItem(
+	it dbm.Iterator,
+	qr indexer.QueryRange,
+	tmpHeights map[string][]byte,
+	heightInfo HeightInfo,
+) (bool, error) {
+	var eventValue string
+	var err error
+	if qr.Key == types.BlockHeightKey {
+		eventValue, err = parseValueFromPrimaryKey(it.Key())
+	} else {
+		eventValue, err = parseValueFromEventKey(it.Key())
+	}
+	if err != nil {
+		return false, err
+	}
+
+	// For numeric bounds, we handle them differently
+	if _, isNumeric := qr.AnyBound().(*big.Float); isNumeric {
+		return idx.processNumericBounds(it, qr, tmpHeights, eventValue, heightInfo)
+	}
+
+	if qr.Key != types.BlockHeightKey {
+		keyHeight, err := parseHeightFromEventKey(it.Key())
+		if err != nil {
+			idx.log.Error("failure to parse height from key:", err)
+			return false, err
+		}
+		withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+		if err != nil {
+			idx.log.Error("failure checking for height bounds:", err)
+			return false, err
+		}
+		if !withinHeight {
+			return false, nil
+		}
+	}
+
+	idx.setTmpHeights(tmpHeights, it)
+	return true, nil
+}
+
+// processNumericBounds checks if the numeric value of an event meets the query range bounds.
+func (idx *BlockerIndexer) processNumericBounds(
+	it dbm.Iterator,
+	qr indexer.QueryRange,
+	tmpHeights map[string][]byte,
+	eventValue string,
+	heightInfo HeightInfo,
+) (bool, error) {
+	v := new(big.Int)
+	v, ok := v.SetString(eventValue, 10)
+
+	if !ok {
+		vF, _, err := big.ParseFloat(eventValue, 10, 125, big.ToNearestEven)
+		if err != nil {
+			return false, err
+		}
+		withinBounds, err := idxutil.CheckBounds(qr, vF)
+		if err != nil || !withinBounds {
+			return false, err
+		}
+	} else {
+		withinBounds, err := idxutil.CheckBounds(qr, v)
+		if err != nil || !withinBounds {
+			return false, err
+		}
+	}
+
+	if qr.Key != types.BlockHeightKey {
+		keyHeight, err := parseHeightFromEventKey(it.Key())
+		if err != nil {
+			idx.log.Error("failure to parse height from key:", err)
+			return false, err
+		}
+		withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+		if err != nil || !withinHeight {
+			return false, err
+		}
+	}
+
+	idx.setTmpHeights(tmpHeights, it)
+	return true, nil
+}
+
+func (*BlockerIndexer) mergeFilteredHeights(
+	existingFilteredHeights map[string][]byte,
+	newFilteredHeights map[string][]byte,
+) map[string][]byte {
+	// If the existing filtered heights map is empty, return the new filtered heights as there's nothing to merge.
+	if len(existingFilteredHeights) == 0 {
+		return newFilteredHeights
+	}
+
+	// If the new filtered heights map is empty, return an empty map as there are no common heights.
+	if len(newFilteredHeights) == 0 {
+		return make(map[string][]byte)
+	}
+
+	// Initialize a map to store the merged heights.
+	mergedHeights := make(map[string][]byte)
+
+	// Iterate over the existing filtered heights and check if they exist in the new filtered heights.
+	for key, value := range existingFilteredHeights {
+		if newVal, ok := newFilteredHeights[key]; ok && bytes.Equal(value, newVal) {
+			mergedHeights[key] = value
+		}
+	}
+
+	// Return the merged heights.
+	return mergedHeights
 }

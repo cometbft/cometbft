@@ -798,25 +798,45 @@ func (n Node) validatePerturbations() error {
 // initializeTestnetFromManifest initializes a Testnet struct from the given manifest and file.
 func initializeTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
+
 	_, ipNet, err := net.ParseCIDR(ifd.Network)
 	if err != nil {
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
 	}
 
 	testnet := &Testnet{
-		Name:             filepath.Base(dir),
-		File:             file,
-		Dir:              dir,
-		IP:               ipNet,
-		InitialHeight:    1,
-		InitialState:     manifest.InitialState,
-		Validators:       map[*Node]int64{},
-		ValidatorUpdates: map[int64]map[*Node]int64{},
-		Nodes:            []*Node{},
-		// ... other initializations ...
+		Name:                             filepath.Base(dir),
+		File:                             file,
+		Dir:                              dir,
+		IP:                               ipNet,
+		InitialHeight:                    manifest.InitialHeight,
+		InitialState:                     manifest.InitialState,
+		Validators:                       make(map[*Node]int64),
+		ValidatorUpdates:                 make(map[int64]map[*Node]int64),
+		Nodes:                            []*Node{},
+		DisablePexReactor:                manifest.DisablePexReactor,
+		Evidence:                         manifest.Evidence,
+		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
+		LoadTxConnections:                manifest.LoadTxConnections,
+		LoadMaxTxs:                       manifest.LoadMaxTxs,
+		ABCIProtocol:                     manifest.ABCIProtocol,
+		PrepareProposalDelay:             manifest.PrepareProposalDelay,
+		ProcessProposalDelay:             manifest.ProcessProposalDelay,
+		CheckTxDelay:                     manifest.CheckTxDelay,
+		VoteExtensionDelay:               manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
+		UpgradeVersion:                   manifest.UpgradeVersion,
+		Prometheus:                       manifest.Prometheus,
+		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
+		VoteExtensionSize:                manifest.VoteExtensionSize,
+		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
+		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
+		ABCITestsEnabled: manifest.ABCITestsEnabled,
+		DefaultZone:      manifest.DefaultZone,
 	}
-	// Additional initialization logic based on manifest
-	// ...
 
 	return testnet, nil
 }

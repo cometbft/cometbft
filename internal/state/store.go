@@ -315,90 +315,11 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 	// We have to delete in reverse order, to avoid deleting previous heights that have validator
 	// sets and consensus params that we may need to retrieve.
 	for h := to - 1; h >= from; h-- {
-		// For heights we keep, we must make sure they have the full validator set or consensus
-		// params, otherwise they will panic if they're retrieved directly (instead of
-		// indirectly via a LastHeightChanged pointer).
-		if keepVals[h] {
-			v, err := loadValidatorsInfo(store.db, h)
-			if err != nil || v.ValidatorSet == nil {
-				vip, err := store.LoadValidators(h)
-				if err != nil {
-					return err
-				}
-
-				pvi, err := vip.ToProto()
-				if err != nil {
-					return err
-				}
-
-				v.ValidatorSet = pvi
-				v.LastHeightChanged = h
-
-				bz, err := v.Marshal()
-				if err != nil {
-					return err
-				}
-				err = batch.Set(calcValidatorsKey(h), bz)
-				if err != nil {
-					return err
-				}
-			}
-		} else if h < evidenceThresholdHeight {
-			err = batch.Delete(calcValidatorsKey(h))
-			if err != nil {
-				return err
-			}
-		}
-		// else we keep the validator set because we might need
-		// it later on for evidence verification
-
-		if keepParams[h] {
-			p, err := store.loadConsensusParamsInfo(h)
-			if err != nil {
-				return err
-			}
-
-			if p.ConsensusParams.Equal(&cmtproto.ConsensusParams{}) {
-				params, err := store.LoadConsensusParams(h)
-				if err != nil {
-					return err
-				}
-				p.ConsensusParams = params.ToProto()
-
-				p.LastHeightChanged = h
-				bz, err := p.Marshal()
-				if err != nil {
-					return err
-				}
-
-				err = batch.Set(calcConsensusParamsKey(h), bz)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			err = batch.Delete(calcConsensusParamsKey(h))
-			if err != nil {
-				return err
-			}
-		}
-
-		err = batch.Delete(calcABCIResponsesKey(h))
+		err := store.deleteStateForHeight(h, keepVals, keepParams, evidenceThresholdHeight, batch)
 		if err != nil {
 			return err
 		}
 		pruned++
-
-		// avoid batches growing too large by flushing to database regularly
-		if pruned%1000 == 0 && pruned > 0 {
-			err := batch.Write()
-			if err != nil {
-				return err
-			}
-			batch.Close()
-			batch = store.db.NewBatch()
-			defer batch.Close()
-		}
 	}
 
 	err = batch.WriteSync()
@@ -939,4 +860,27 @@ func (store dbStore) determineHeightsToKeep(to int64, evidenceThresholdHeight in
 	}
 
 	return keepVals, keepParams, nil
+}
+
+func (store dbStore) deleteStateForHeight(height int64, keepVals map[int64]bool, keepParams map[int64]bool, evidenceThresholdHeight int64, batch dbm.Batch) error {
+	if !keepVals[height] && height < evidenceThresholdHeight {
+		err := batch.Delete(calcValidatorsKey(height))
+		if err != nil {
+			return fmt.Errorf("failed to delete validator set at height %d: %w", height, err)
+		}
+	}
+
+	if !keepParams[height] {
+		err := batch.Delete(calcConsensusParamsKey(height))
+		if err != nil {
+			return fmt.Errorf("failed to delete consensus params at height %d: %w", height, err)
+		}
+	}
+
+	err := batch.Delete(calcABCIResponsesKey(height))
+	if err != nil {
+		return fmt.Errorf("failed to delete ABCI responses at height %d: %w", height, err)
+	}
+
+	return nil
 }

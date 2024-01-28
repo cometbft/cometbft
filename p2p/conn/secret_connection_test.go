@@ -109,14 +109,12 @@ func TestConcurrentRead(t *testing.T) {
 
 func TestSecretConnectionReadWrite(t *testing.T) {
 	fooConn, barConn := makeKVStoreConnPair()
-	fooWrites, barWrites := []string{}, []string{}
 	fooReads, barReads := []string{}, []string{}
 
 	// Pre-generate the things to write (for foo & bar)
-	for i := 0; i < 100; i++ {
-		fooWrites = append(fooWrites, cmtrand.Str((cmtrand.Int()%(dataMaxSize*5))+1))
-		barWrites = append(barWrites, cmtrand.Str((cmtrand.Int()%(dataMaxSize*5))+1))
-	}
+	// Generate writes for foo and bar
+	fooWrites := generateRandomWrites(100, dataMaxSize)
+	barWrites := generateRandomWrites(100, dataMaxSize)
 
 	// A helper that will run with (fooConn, fooWrites, fooReads) and vice versa
 	genNodeRunner := func(nodeConn kvstoreConn, nodeWrites []string, nodeReads *[]string) async.Task {
@@ -189,39 +187,9 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 	require.NoError(t, trs.FirstError())
 	require.True(t, ok, "unexpected task abortion")
 
-	// A helper to ensure that the writes and reads match.
-	// Additionally, small writes (<= dataMaxSize) must be atomically read.
-	compareWritesReads := func(writes []string, reads []string) {
-		for {
-			// Pop next write & corresponding reads
-			read := ""
-			write := writes[0]
-			readCount := 0
-			for _, readChunk := range reads {
-				read += readChunk
-				readCount++
-				if len(write) <= len(read) {
-					break
-				}
-				if len(write) <= dataMaxSize {
-					break // atomicity of small writes
-				}
-			}
-			// Compare
-			if write != read {
-				t.Errorf("expected to read %X, got %X", write, read)
-			}
-			// Iterate
-			writes = writes[1:]
-			reads = reads[readCount:]
-			if len(writes) == 0 {
-				break
-			}
-		}
-	}
-
-	compareWritesReads(fooWrites, barReads)
-	compareWritesReads(barWrites, fooReads)
+	// Verify the writes and reads for both connections
+	verifyWritesAndReads(t, fooWrites, barReads)
+	verifyWritesAndReads(t, barWrites, fooReads)
 }
 
 func TestDeriveSecretsAndChallengeGolden(t *testing.T) {
@@ -474,4 +442,48 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 		}
 	}
 	b.StopTimer()
+}
+
+// /// HELPER FUNCTIONS FOR TESTSECRETCONNECTIONREADWRITE /////
+
+func generateRandomWrites(n int, maxSize int) []string {
+	writes := make([]string, n)
+	for i := 0; i < n; i++ {
+		writes[i] = cmtrand.Str((cmtrand.Int() % (maxSize * 5)) + 1)
+	}
+	return writes
+}
+
+func verifyWritesAndReads(t *testing.T, writes []string, reads []string) {
+	for {
+		// Pop next write & corresponding reads
+		if len(writes) == 0 {
+			break
+		}
+
+		write := writes[0]
+		read := ""
+		readCount := 0
+
+		for _, readChunk := range reads {
+			read += readChunk
+			readCount++
+
+			if len(write) <= len(read) {
+				break
+			}
+
+			// Ensure atomicity of small writes
+			if len(write) <= dataMaxSize {
+				break
+			}
+		}
+
+		// Compare
+		require.Equal(t, write, read, "Writes and reads do not match")
+
+		// Iterate
+		writes = writes[1:]
+		reads = reads[readCount:]
+	}
 }

@@ -534,129 +534,15 @@ func (idx *BlockerIndexer) match(
 		return filteredHeights, nil
 	}
 
-	tmpHeights := make(map[string][]byte)
+	var tmpHeights map[string][]byte
 
 	switch {
 	case c.Op == syntax.TEq:
-		it, err := dbm.IteratePrefix(idx.store, startKeyBz)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
-		}
-		defer it.Close()
-
-		for ; it.Valid(); it.Next() {
-			keyHeight, err := parseHeightFromEventKey(it.Key())
-			if err != nil {
-				idx.log.Error("failure to parse height from key:", err)
-				continue
-			}
-			withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
-			if err != nil {
-				idx.log.Error("failure checking for height bounds:", err)
-				continue
-			}
-			if !withinHeight {
-				continue
-			}
-
-			idx.setTmpHeights(tmpHeights, it)
-
-			if err := ctx.Err(); err != nil {
-				break
-			}
-		}
-
-		if err := it.Error(); err != nil {
-			return nil, err
-		}
-
+		tmpHeights, _ = idx.matchTEq(ctx, startKeyBz, heightInfo)
 	case c.Op == syntax.TExists:
-		prefix, err := orderedcode.Append(nil, c.Tag)
-		if err != nil {
-			return nil, err
-		}
-
-		it, err := dbm.IteratePrefix(idx.store, prefix)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
-		}
-		defer it.Close()
-
-		for ; it.Valid(); it.Next() {
-			keyHeight, err := parseHeightFromEventKey(it.Key())
-			if err != nil {
-				idx.log.Error("failure to parse height from key:", err)
-				continue
-			}
-			withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
-			if err != nil {
-				idx.log.Error("failure checking for height bounds:", err)
-				continue
-			}
-			if !withinHeight {
-				continue
-			}
-
-			idx.setTmpHeights(tmpHeights, it)
-
-			select {
-			case <-ctx.Done():
-				break
-
-			default:
-			}
-		}
-
-		if err := it.Error(); err != nil {
-			return nil, err
-		}
-
+		tmpHeights, _ = idx.matchTExists(ctx, c, heightInfo)
 	case c.Op == syntax.TContains:
-		prefix, err := orderedcode.Append(nil, c.Tag)
-		if err != nil {
-			return nil, err
-		}
-
-		it, err := dbm.IteratePrefix(idx.store, prefix)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
-		}
-		defer it.Close()
-
-		for ; it.Valid(); it.Next() {
-			eventValue, err := parseValueFromEventKey(it.Key())
-			if err != nil {
-				continue
-			}
-
-			if strings.Contains(eventValue, c.Arg.Value()) {
-				keyHeight, err := parseHeightFromEventKey(it.Key())
-				if err != nil {
-					idx.log.Error("failure to parse height from key:", err)
-					continue
-				}
-				withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
-				if err != nil {
-					idx.log.Error("failure checking for height bounds:", err)
-					continue
-				}
-				if !withinHeight {
-					continue
-				}
-				idx.setTmpHeights(tmpHeights, it)
-			}
-
-			select {
-			case <-ctx.Done():
-				break
-
-			default:
-			}
-		}
-		if err := it.Error(); err != nil {
-			return nil, err
-		}
-
+		tmpHeights, _ = idx.matchTContains(ctx, c, heightInfo)
 	default:
 		return nil, errors.New("other operators should be handled already")
 	}
@@ -724,4 +610,171 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 		}
 	}
 	return nil
+}
+
+// HELPER FUCNTIONS TO REDUCE COMPLEXITY
+
+func (idx *BlockerIndexer) matchTEq(
+	ctx context.Context,
+	startKeyBz []byte,
+	heightInfo HeightInfo,
+) (map[string][]byte, error) {
+	tmpHeights := make(map[string][]byte)
+
+	it, err := dbm.IteratePrefix(idx.store, startKeyBz)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		keyHeight, err := parseHeightFromEventKey(it.Key())
+		if err != nil {
+			idx.log.Error("failure to parse height from key:", err)
+			continue
+		}
+		withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+		if err != nil {
+			idx.log.Error("failure checking for height bounds:", err)
+			continue
+		}
+		if !withinHeight {
+			continue
+		}
+
+		idx.setTmpHeights(tmpHeights, it)
+
+		if err := ctx.Err(); err != nil {
+			break
+		}
+	}
+
+	if err := it.Error(); err != nil {
+		return nil, err
+	}
+
+	return tmpHeights, nil
+}
+
+func (idx *BlockerIndexer) matchTExists(
+	ctx context.Context,
+	c syntax.Condition,
+	heightInfo HeightInfo,
+) (map[string][]byte, error) {
+	tmpHeights := make(map[string][]byte)
+
+	// Create prefix based on the event tag (condition tag)
+	prefix, err := orderedcode.Append(nil, c.Tag)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create prefix key: %w", err)
+	}
+
+	// Create a prefix iterator to go through all events with the specified tag
+	it, err := dbm.IteratePrefix(idx.store, prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		// Extract the height from the event key
+		keyHeight, err := parseHeightFromEventKey(it.Key())
+		if err != nil {
+			idx.log.Error("failure to parse height from key:", err)
+			continue
+		}
+
+		// Check if the height is within specified bounds
+		withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+		if err != nil {
+			idx.log.Error("failure checking for height bounds:", err)
+			continue
+		}
+		if !withinHeight {
+			continue
+		}
+
+		// Add to temporary heights map
+		idx.setTmpHeights(tmpHeights, it)
+
+		// Check for context cancellation
+		select {
+		case <-ctx.Done():
+			return tmpHeights, ctx.Err()
+
+		default:
+		}
+	}
+
+	if err := it.Error(); err != nil {
+		return nil, err
+	}
+
+	return tmpHeights, nil
+}
+
+func (idx *BlockerIndexer) matchTContains(
+	ctx context.Context,
+	c syntax.Condition,
+	heightInfo HeightInfo,
+) (map[string][]byte, error) {
+	tmpHeights := make(map[string][]byte)
+
+	// Create prefix based on the event tag (condition tag)
+	prefix, err := orderedcode.Append(nil, c.Tag)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create prefix key: %w", err)
+	}
+
+	// Create a prefix iterator to go through all events with the specified tag
+	it, err := dbm.IteratePrefix(idx.store, prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create prefix iterator: %w", err)
+	}
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		// Extract the event value from the key
+		eventValue, err := parseValueFromEventKey(it.Key())
+		if err != nil {
+			continue
+		}
+
+		// Check if the event value contains the condition argument
+		if strings.Contains(eventValue, c.Arg.Value()) {
+			// Extract the height from the event key
+			keyHeight, err := parseHeightFromEventKey(it.Key())
+			if err != nil {
+				idx.log.Error("failure to parse height from key:", err)
+				continue
+			}
+
+			// Check if the height is within specified bounds
+			withinHeight, err := checkHeightConditions(heightInfo, keyHeight)
+			if err != nil {
+				idx.log.Error("failure checking for height bounds:", err)
+				continue
+			}
+			if !withinHeight {
+				continue
+			}
+
+			// Add to temporary heights map
+			idx.setTmpHeights(tmpHeights, it)
+		}
+
+		// Check for context cancellation
+		select {
+		case <-ctx.Done():
+			return tmpHeights, ctx.Err()
+
+		default:
+		}
+	}
+
+	if err := it.Error(); err != nil {
+		return nil, err
+	}
+
+	return tmpHeights, nil
 }

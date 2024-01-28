@@ -186,10 +186,149 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
-	// Setup nodes
-	err = setupNodesFromManifest(testnet, manifest, ifd, keyGen, prometheusProxyPortGen)
-	if err != nil {
-		return nil, err
+	for _, name := range sortNodeNames(manifest) {
+		nodeManifest := manifest.Nodes[name]
+		ind, ok := ifd.Instances[name]
+		if !ok {
+			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
+		}
+		extIP := ind.ExtIPAddress
+		if len(extIP) == 0 {
+			extIP = ind.IPAddress
+		}
+		v := nodeManifest.Version
+		if v == "" {
+			v = localVersion
+		}
+
+		node := &Node{
+			Name:                    name,
+			Version:                 v,
+			Testnet:                 testnet,
+			PrivvalKey:              keyGen.Generate(manifest.KeyType),
+			NodeKey:                 keyGen.Generate("ed25519"),
+			InternalIP:              ind.IPAddress,
+			ExternalIP:              extIP,
+			RPCProxyPort:            ind.RPCPort,
+			GRPCProxyPort:           ind.GRPCPort,
+			GRPCPrivilegedProxyPort: ind.PrivilegedGRPCPort,
+			Mode:                    ModeValidator,
+			Database:                "goleveldb",
+			ABCIProtocol:            Protocol(testnet.ABCIProtocol),
+			PrivvalProtocol:         ProtocolFile,
+			StartAt:                 nodeManifest.StartAt,
+			BlockSyncVersion:        nodeManifest.BlockSyncVersion,
+			StateSync:               nodeManifest.StateSync,
+			PersistInterval:         1,
+			SnapshotInterval:        nodeManifest.SnapshotInterval,
+			RetainBlocks:            nodeManifest.RetainBlocks,
+			EnableCompanionPruning:  nodeManifest.EnableCompanionPruning,
+			Perturbations:           []Perturbation{},
+			SendNoLoad:              nodeManifest.SendNoLoad,
+			Prometheus:              testnet.Prometheus,
+			Zone:                    ZoneID(nodeManifest.Zone),
+		}
+		if node.StartAt == testnet.InitialHeight {
+			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
+		}
+		if node.BlockSyncVersion == "" {
+			node.BlockSyncVersion = "v0"
+		}
+		if nodeManifest.Mode != "" {
+			node.Mode = Mode(nodeManifest.Mode)
+		}
+		if node.Mode == ModeLight {
+			node.ABCIProtocol = ProtocolBuiltin
+		}
+		if nodeManifest.Database != "" {
+			node.Database = nodeManifest.Database
+		}
+		if nodeManifest.PrivvalProtocol != "" {
+			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocol)
+		}
+		if nodeManifest.PersistInterval != nil {
+			node.PersistInterval = *nodeManifest.PersistInterval
+		}
+		if node.Prometheus {
+			node.PrometheusProxyPort = prometheusProxyPortGen.Next()
+		}
+		for _, p := range nodeManifest.Perturb {
+			node.Perturbations = append(node.Perturbations, Perturbation(p))
+		}
+		if nodeManifest.Zone != "" {
+			node.Zone = ZoneID(nodeManifest.Zone)
+		} else if testnet.DefaultZone != "" {
+			node.Zone = ZoneID(testnet.DefaultZone)
+		}
+
+		testnet.Nodes = append(testnet.Nodes, node)
+	}
+
+	// We do a second pass to set up seeds and persistent peers, which allows graph cycles.
+	for _, node := range testnet.Nodes {
+		nodeManifest, ok := manifest.Nodes[node.Name]
+		if !ok {
+			return nil, fmt.Errorf("failed to look up manifest for node %q", node.Name)
+		}
+		for _, seedName := range nodeManifest.Seeds {
+			seed := testnet.LookupNode(seedName)
+			if seed == nil {
+				return nil, fmt.Errorf("unknown seed %q for node %q", seedName, node.Name)
+			}
+			node.Seeds = append(node.Seeds, seed)
+		}
+		for _, peerName := range nodeManifest.PersistentPeers {
+			peer := testnet.LookupNode(peerName)
+			if peer == nil {
+				return nil, fmt.Errorf("unknown persistent peer %q for node %q", peerName, node.Name)
+			}
+			node.PersistentPeers = append(node.PersistentPeers, peer)
+		}
+
+		// If there are no seeds or persistent peers specified, default to persistent
+		// connections to all other nodes.
+		if len(node.PersistentPeers) == 0 && len(node.Seeds) == 0 {
+			for _, peer := range testnet.Nodes {
+				if peer.Name == node.Name {
+					continue
+				}
+				node.PersistentPeers = append(node.PersistentPeers, peer)
+			}
+		}
+	}
+
+	// Set up genesis validators. If not specified explicitly, use all validator nodes.
+	if manifest.Validators != nil {
+		for validatorName, power := range *manifest.Validators {
+			validator := testnet.LookupNode(validatorName)
+			if validator == nil {
+				return nil, fmt.Errorf("unknown validator %q", validatorName)
+			}
+			testnet.Validators[validator] = power
+		}
+	} else {
+		for _, node := range testnet.Nodes {
+			if node.Mode == ModeValidator {
+				testnet.Validators[node] = 100
+			}
+		}
+	}
+
+	// Set up validator updates.
+	for heightStr, validators := range manifest.ValidatorUpdates {
+		height, err := strconv.Atoi(heightStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)
+		}
+		valUpdate := map[*Node]int64{}
+		for name, power := range validators {
+			node := testnet.LookupNode(name)
+			if node == nil {
+				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
+			}
+			valUpdate[node] = power
+		}
+		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
 
 	return testnet, testnet.Validate()
@@ -700,123 +839,4 @@ func initializeTestnetFromManifest(manifest Manifest, file string, ifd Infrastru
 	}
 
 	return testnet, nil
-}
-
-// setupNodesFromManifest sets up the nodes for the testnet based on the manifest and infrastructure data.
-func setupNodesFromManifest(testnet *Testnet, manifest Manifest, ifd InfrastructureData, keyGen *keyGenerator, prometheusProxyPortGen *portGenerator) error {
-	for _, name := range sortNodeNames(manifest) {
-		nodeManifest := manifest.Nodes[name]
-		ind, ok := ifd.Instances[name]
-		if !ok {
-			return fmt.Errorf("information for node '%s' missing from infrastructure data", name)
-		}
-		extIP := ind.ExtIPAddress
-		if extIP == nil {
-			extIP = ind.IPAddress
-		}
-		version := nodeManifest.Version
-		if version == "" {
-			version = localVersion
-		}
-
-		node := &Node{
-			Name:                    name,
-			Version:                 version,
-			Testnet:                 testnet,
-			PrivvalKey:              keyGen.Generate(manifest.KeyType),
-			NodeKey:                 keyGen.Generate("ed25519"),
-			InternalIP:              ind.IPAddress,
-			ExternalIP:              extIP,
-			RPCProxyPort:            ind.RPCPort,
-			GRPCProxyPort:           ind.GRPCPort,
-			GRPCPrivilegedProxyPort: ind.PrivilegedGRPCPort,
-			Mode:                    Mode(nodeManifest.Mode),
-			Database:                nodeManifest.Database,
-			PrivvalProtocol:         Protocol(nodeManifest.PrivvalProtocol),
-			StartAt:                 nodeManifest.StartAt,
-			BlockSyncVersion:        nodeManifest.BlockSyncVersion,
-			StateSync:               nodeManifest.StateSync,
-			PersistInterval:         *nodeManifest.PersistInterval,
-			SnapshotInterval:        nodeManifest.SnapshotInterval,
-			RetainBlocks:            nodeManifest.RetainBlocks,
-			EnableCompanionPruning:  nodeManifest.EnableCompanionPruning,
-			Perturbations:           parsePerturbations(nodeManifest.Perturb),
-			SendNoLoad:              nodeManifest.SendNoLoad,
-			Prometheus:              testnet.Prometheus,
-			Zone:                    ZoneID(nodeManifest.Zone),
-		}
-
-		if node.Prometheus {
-			node.PrometheusProxyPort = prometheusProxyPortGen.Next()
-		}
-
-		testnet.Nodes = append(testnet.Nodes, node)
-	}
-
-	// Setup seeds and persistent peers
-	for _, node := range testnet.Nodes {
-		nodeManifest, ok := manifest.Nodes[node.Name]
-		if !ok {
-			return fmt.Errorf("failed to look up manifest for node %q", node.Name)
-		}
-		for _, seedName := range nodeManifest.Seeds {
-			seed := testnet.LookupNode(seedName)
-			if seed == nil {
-				return fmt.Errorf("unknown seed %q for node %q", seedName, node.Name)
-			}
-			node.Seeds = append(node.Seeds, seed)
-		}
-		for _, peerName := range nodeManifest.PersistentPeers {
-			peer := testnet.LookupNode(peerName)
-			if peer == nil {
-				return fmt.Errorf("unknown persistent peer %q for node %q", peerName, node.Name)
-			}
-			node.PersistentPeers = append(node.PersistentPeers, peer)
-		}
-	}
-
-	// Set up genesis validators
-	if manifest.Validators != nil {
-		for validatorName, power := range *manifest.Validators {
-			validator := testnet.LookupNode(validatorName)
-			if validator == nil {
-				return fmt.Errorf("unknown validator %q", validatorName)
-			}
-			testnet.Validators[validator] = power
-		}
-	} else {
-		for _, node := range testnet.Nodes {
-			if node.Mode == ModeValidator {
-				testnet.Validators[node] = 100
-			}
-		}
-	}
-
-	// Set up validator updates
-	for heightStr, validators := range manifest.ValidatorUpdates {
-		height, err := strconv.Atoi(heightStr)
-		if err != nil {
-			return fmt.Errorf("invalid validator update height %q: %w", heightStr, err)
-		}
-		valUpdate := make(map[*Node]int64)
-		for name, power := range validators {
-			node := testnet.LookupNode(name)
-			if node == nil {
-				return fmt.Errorf("unknown validator %q for update at height %v", name, height)
-			}
-			valUpdate[node] = power
-		}
-		testnet.ValidatorUpdates[int64(height)] = valUpdate
-	}
-
-	return nil
-}
-
-// parsePerturbations parses a slice of perturbations from the manifest.
-func parsePerturbations(perturbations []string) []Perturbation {
-	var parsed []Perturbation //nolint:prealloc
-	for _, p := range perturbations {
-		parsed = append(parsed, Perturbation(p))
-	}
-	return parsed
 }

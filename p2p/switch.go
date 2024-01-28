@@ -364,6 +364,13 @@ func (sw *Switch) StopPeerGracefully(peer Peer) {
 }
 
 func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
+	if peer == nil {
+		// This condition can occur due to the fact that Switch.OnStop uses stale data and
+		// there is no easy fix for it per https://github.com/cometbft/cometbft/issues/2158
+		sw.Logger.Error("nil peer passed in for stopAndRemovePeer")
+		return
+	}
+
 	sw.transport.Cleanup(peer)
 	if err := peer.Stop(); err != nil {
 		sw.Logger.Error("error while stopping peer", "error", err) // TODO: should return error to be handled accordingly

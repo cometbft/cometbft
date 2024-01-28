@@ -109,7 +109,7 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 	defer ps.mtx.Unlock()
 
 	item := ps.lookup[peer.ID()]
-	if item == nil {
+	if item == nil || len(ps.list) == 0 {
 		// Removing the peer has failed so we set a flag to mark that a removal was attempted.
 		// This can happen when the peer add routine from the switch is running in
 		// parallel to the receive routine of MConn.
@@ -120,24 +120,22 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 	}
 
 	index := item.index
-	// Create a new copy of the list but with one less item.
-	// (we must copy because we'll be mutating the list).
-	newList := make([]Peer, len(ps.list)-1)
-	copy(newList, ps.list)
+	lastPeer := ps.list[len(ps.list)-1]
+	ps.list[len(ps.list)-1] = nil // nil the last entry of the slice to shorten, so it isn't reachable & can be GC'd.
+
 	// If it's the last peer, that's an easy special case.
 	if index == len(ps.list)-1 {
-		ps.list = newList
+		ps.list = ps.list[:len(ps.list)-1]
 		delete(ps.lookup, peer.ID())
 		return true
 	}
 
 	// Replace the popped item with the last item in the old list.
-	lastPeer := ps.list[len(ps.list)-1]
 	lastPeerKey := lastPeer.ID()
 	lastPeerItem := ps.lookup[lastPeerKey]
-	newList[index] = lastPeer
+	ps.list[index] = lastPeer
+	ps.list = ps.list[:len(ps.list)-1]
 	lastPeerItem.index = index
-	ps.list = newList
 	delete(ps.lookup, peer.ID())
 	return true
 }

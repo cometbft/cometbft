@@ -40,7 +40,7 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "thinkpad"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb 
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
 #   - pure go
 #   - stable

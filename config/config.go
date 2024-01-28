@@ -201,7 +201,7 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | cleveldb | boltdb | rocksdb
+	// Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
 	// * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
 	//   - pure go
 	//   - stable

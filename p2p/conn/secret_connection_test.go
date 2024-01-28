@@ -455,6 +455,7 @@ func generateRandomWrites(n int, maxSize int) []string {
 }
 
 func verifyWritesAndReads(t *testing.T, writes []string, reads []string) {
+	t.Helper()
 	for {
 		// Pop next write & corresponding reads
 		if len(writes) == 0 {

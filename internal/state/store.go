@@ -862,7 +862,7 @@ func (store dbStore) determineHeightsToKeep(to int64, evidenceThresholdHeight in
 	return keepVals, keepParams, nil
 }
 
-func (store dbStore) deleteStateForHeight(height int64, keepVals map[int64]bool, keepParams map[int64]bool, evidenceThresholdHeight int64, batch dbm.Batch) error {
+func (dbStore) deleteStateForHeight(height int64, keepVals map[int64]bool, keepParams map[int64]bool, evidenceThresholdHeight int64, batch dbm.Batch) error {
 	if !keepVals[height] && height < evidenceThresholdHeight {
 		err := batch.Delete(calcValidatorsKey(height))
 		if err != nil {

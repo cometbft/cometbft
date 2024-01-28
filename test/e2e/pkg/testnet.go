@@ -814,7 +814,7 @@ func setupNodesFromManifest(testnet *Testnet, manifest Manifest, ifd Infrastruct
 
 // parsePerturbations parses a slice of perturbations from the manifest.
 func parsePerturbations(perturbations []string) []Perturbation {
-	var parsed []Perturbation
+	var parsed []Perturbation //nolint:prealloc
 	for _, p := range perturbations {
 		parsed = append(parsed, Perturbation(p))
 	}

@@ -74,13 +74,12 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 				err = valSet.VerifyCommitLightTrusting(chainID, commit, trustLevel)
 			}
 			if expErr {
-				if assert.Error(t, err, "VerifyCommitLightTrusting") {
-					errStr := tc.description2
-					if len(errStr) == 0 {
-						errStr = tc.description
-					}
-					assert.Contains(t, err.Error(), errStr, "VerifyCommitLightTrusting")
+				require.Error(t, err, "VerifyCommitLightTrusting")
+				errStr := tc.description2
+				if len(errStr) == 0 {
+					errStr = tc.description
 				}
+				assert.Contains(t, err.Error(), errStr, "VerifyCommitLightTrusting")
 			} else {
 				require.NoError(t, err, "VerifyCommitLightTrusting")
 			}
@@ -141,9 +140,8 @@ func setupCommit(t *testing.T, tc TestCase) (*ValidatorSet, *Commit, int) {
 func verifyCommit(t *testing.T, err error, tc TestCase, method string) {
 	t.Helper()
 	if tc.expErr {
-		if assert.Error(t, err, method) {
-			assert.Contains(t, err.Error(), tc.description, method)
-		}
+		require.Error(t, err, method)
+		require.Contains(t, err.Error(), tc.description, method)
 	} else {
 		require.NoError(t, err, method)
 	}

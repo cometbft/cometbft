@@ -26,9 +26,8 @@ func TestWebsocketManagerHandler(t *testing.T) {
 			t.Errorf("dialResp.StatusCode = %q, want %q", got, want)
 		}
 
-		// check basic functionality works
 		req, err := types.MapToRequest(
-			types.JSONRPCStringID("TestWebsocketManager"),
+			types.JSONRPCIntID(1), // Use an integer ID
 			"c",
 			map[string]interface{}{"s": "a", "i": 10},
 		)

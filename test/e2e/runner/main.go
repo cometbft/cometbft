@@ -42,69 +42,7 @@ func NewCLI() *CLI {
 		SilenceUsage:  true,
 		SilenceErrors: true, // we'll output them ourselves in Run()
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			file, err := cmd.Flags().GetString("file")
-			if err != nil {
-				return err
-			}
-			m, err := e2e.LoadManifest(file)
-			if err != nil {
-				return err
-			}
-
-			inft, err := cmd.Flags().GetString("infrastructure-type")
-			if err != nil {
-				return err
-			}
-
-			var ifd e2e.InfrastructureData
-			switch inft {
-			case "docker":
-				var err error
-				ifd, err = e2e.NewDockerInfrastructureData(m)
-				if err != nil {
-					return err
-				}
-			case "digital-ocean":
-				p, err := cmd.Flags().GetString("infrastructure-data")
-				if err != nil {
-					return err
-				}
-				if p == "" {
-					return errors.New("'--infrastructure-data' must be set when using the 'digital-ocean' infrastructure-type")
-				}
-				ifd, err = e2e.InfrastructureDataFromFile(p)
-				if err != nil {
-					return fmt.Errorf("parsing infrastructure data: %s", err)
-				}
-			default:
-				return fmt.Errorf("unknown infrastructure type '%s'", inft)
-			}
-
-			testnet, err := e2e.LoadTestnet(file, ifd)
-			if err != nil {
-				return fmt.Errorf("loading testnet: %s", err)
-			}
-
-			cli.testnet = testnet
-			switch inft {
-			case "docker":
-				cli.infp = &docker.Provider{
-					ProviderData: infra.ProviderData{
-						Testnet:            testnet,
-						InfrastructureData: ifd,
-					},
-				}
-			case "digital-ocean":
-				cli.infp = &digitalocean.Provider{
-					ProviderData: infra.ProviderData{
-						Testnet:            testnet,
-						InfrastructureData: ifd,
-					},
-				}
-			default:
-				return fmt.Errorf("bad infrastructure type: %s", inft)
-			}
-			return nil
+			return setupTestnet(cmd, cli)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := Cleanup(cli.testnet); err != nil {
@@ -182,28 +120,8 @@ func NewCLI() *CLI {
 	cli.root.Flags().BoolVarP(&cli.preserve, "preserve", "p", false,
 		"Preserves the running of the test net after tests are completed")
 
-	cli.root.AddCommand(&cobra.Command{
-		Use:   "setup",
-		Short: "Generates the testnet directory and configuration",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return Setup(cli.testnet, cli.infp)
-		},
-	})
-
-	cli.root.AddCommand(&cobra.Command{
-		Use:   "start",
-		Short: "Starts the testnet, waiting for nodes to become available",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := os.Stat(cli.testnet.Dir)
-			if os.IsNotExist(err) {
-				err = Setup(cli.testnet, cli.infp)
-			}
-			if err != nil {
-				return err
-			}
-			return Start(cmd.Context(), cli.testnet, cli.infp)
-		},
-	})
+	cli.addSetupCommand()
+	cli.addStartCommand()
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "perturb",
@@ -355,4 +273,98 @@ func (cli *CLI) Run() {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
+}
+
+// setupTestnet sets up the testnet based on provided flags.
+func setupTestnet(cmd *cobra.Command, cli *CLI) error {
+	file, err := cmd.Flags().GetString("file")
+	if err != nil {
+		return err
+	}
+	m, err := e2e.LoadManifest(file)
+	if err != nil {
+		return err
+	}
+
+	inft, err := cmd.Flags().GetString("infrastructure-type")
+	if err != nil {
+		return err
+	}
+
+	var ifd e2e.InfrastructureData
+	switch inft {
+	case "docker":
+		var err error
+		ifd, err = e2e.NewDockerInfrastructureData(m)
+		if err != nil {
+			return err
+		}
+	case "digital-ocean":
+		p, err := cmd.Flags().GetString("infrastructure-data")
+		if err != nil {
+			return err
+		}
+		if p == "" {
+			return errors.New("'--infrastructure-data' must be set when using the 'digital-ocean' infrastructure-type")
+		}
+		ifd, err = e2e.InfrastructureDataFromFile(p)
+		if err != nil {
+			return fmt.Errorf("parsing infrastructure data: %s", err)
+		}
+	default:
+		return fmt.Errorf("unknown infrastructure type '%s'", inft)
+	}
+
+	testnet, err := e2e.LoadTestnet(file, ifd)
+	if err != nil {
+		return fmt.Errorf("loading testnet: %s", err)
+	}
+
+	cli.testnet = testnet
+	switch inft {
+	case "docker":
+		cli.infp = &docker.Provider{
+			ProviderData: infra.ProviderData{
+				Testnet:            testnet,
+				InfrastructureData: ifd,
+			},
+		}
+	case "digital-ocean":
+		cli.infp = &digitalocean.Provider{
+			ProviderData: infra.ProviderData{
+				Testnet:            testnet,
+				InfrastructureData: ifd,
+			},
+		}
+	}
+	return nil
+}
+
+func (cli *CLI) addSetupCommand() {
+	setupCmd := &cobra.Command{
+		Use:   "setup",
+		Short: "Generates the testnet directory and configuration",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return Setup(cli.testnet, cli.infp)
+		},
+	}
+	cli.root.AddCommand(setupCmd)
+}
+
+func (cli *CLI) addStartCommand() {
+	startCmd := &cobra.Command{
+		Use:   "start",
+		Short: "Starts the testnet, waiting for nodes to become available",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, err := os.Stat(cli.testnet.Dir)
+			if os.IsNotExist(err) {
+				err = Setup(cli.testnet, cli.infp)
+			}
+			if err != nil {
+				return err
+			}
+			return Start(cmd.Context(), cli.testnet, cli.infp)
+		},
+	}
+	cli.root.AddCommand(startCmd)
 }

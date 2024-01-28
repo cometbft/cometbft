@@ -2626,34 +2626,5 @@ func repairWalFile(src, dst string) error {
 		}
 	}
 
-	//nolint:nilerr
-	return nil
-}
-
-func (cs *State) handleConflictingVotes(vote *types.Vote) (err error) {
-	if voteErr, ok := err.(*types.ErrVoteConflictingVotes); ok {
-		if cs.privValidatorPubKey == nil {
-			return ErrPubKeyIsNotSet
-		}
-
-		if bytes.Equal(vote.ValidatorAddress, cs.privValidatorPubKey.Address()) {
-			cs.Logger.Error(
-				"found conflicting vote from ourselves; did you unsafe_reset a validator?",
-				"height", vote.Height,
-				"round", vote.Round,
-				"type", vote.Type,
-			)
-			return err
-		}
-
-		// report conflicting votes to the evidence pool
-		cs.evpool.ReportConflictingVotes(voteErr.VoteA, voteErr.VoteB)
-		cs.Logger.Debug(
-			"found and sent conflicting votes to the evidence pool",
-			"vote_a", voteErr.VoteA,
-			"vote_b", voteErr.VoteB,
-		)
-		return err
-	}
-	return nil
+	return err
 }

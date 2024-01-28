@@ -122,29 +122,15 @@ func NewCLI() *CLI {
 
 	cli.addSetupCommand()
 	cli.addStartCommand()
-
-	cli.root.AddCommand(&cobra.Command{
-		Use:   "perturb",
-		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return Perturb(cmd.Context(), cli.testnet, cli.infp)
-		},
-	})
+	cli.addPerturbCommand()
+	cli.addStopCommand()
+	cli.addBenchmarkCommand()
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "wait",
 		Short: "Waits for a few blocks to be produced and all nodes to catch up",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return Wait(cmd.Context(), cli.testnet, 5)
-		},
-	})
-
-	cli.root.AddCommand(&cobra.Command{
-		Use:   "stop",
-		Short: "Stops the testnet",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			logger.Info("Stopping testnet")
-			return cli.infp.StopTestnet(context.Background())
 		},
 	})
 
@@ -208,59 +194,6 @@ func NewCLI() *CLI {
 		Short: "Tails the testnet logs",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs", "--follow")
-		},
-	})
-
-	cli.root.AddCommand(&cobra.Command{
-		Use:   "benchmark",
-		Short: "Benchmarks testnet",
-		Long: `Benchmarks the following metrics:
-	Mean Block Interval
-	Standard Deviation
-	Min Block Interval
-	Max Block Interval
-over a 100 block sampling period.
-		
-Does not run any perturbations.
-		`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := Cleanup(cli.testnet); err != nil {
-				return err
-			}
-			if err := Setup(cli.testnet, cli.infp); err != nil {
-				return err
-			}
-
-			chLoadResult := make(chan error)
-			ctx, loadCancel := context.WithCancel(cmd.Context())
-			defer loadCancel()
-			go func() {
-				err := Load(ctx, cli.testnet)
-				if err != nil {
-					logger.Error(fmt.Sprintf("Transaction load errored: %v", err.Error()))
-				}
-				chLoadResult <- err
-			}()
-
-			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
-				return err
-			}
-
-			if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // allow some txs to go through
-				return err
-			}
-
-			// we benchmark performance over the next 100 blocks
-			if err := Benchmark(cmd.Context(), cli.testnet, 100); err != nil {
-				return err
-			}
-
-			loadCancel()
-			if err := <-chLoadResult; err != nil {
-				return err
-			}
-
-			return Cleanup(cli.testnet)
 		},
 	})
 
@@ -367,4 +300,83 @@ func (cli *CLI) addStartCommand() {
 		},
 	}
 	cli.root.AddCommand(startCmd)
+}
+
+func (cli *CLI) addPerturbCommand() {
+	perturbCmd := &cobra.Command{
+		Use:   "perturb",
+		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return Perturb(cmd.Context(), cli.testnet, cli.infp)
+		},
+	}
+	cli.root.AddCommand(perturbCmd)
+}
+
+func (cli *CLI) addStopCommand() {
+	stopCmd := &cobra.Command{
+		Use:   "stop",
+		Short: "Stops the testnet",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger.Info("Stopping testnet")
+			return cli.infp.StopTestnet(context.Background())
+		},
+	}
+	cli.root.AddCommand(stopCmd)
+}
+
+func (cli *CLI) addBenchmarkCommand() {
+	benchmarkCmd := &cobra.Command{
+		Use:   "benchmark",
+		Short: "Benchmarks testnet",
+		Long: `Benchmarks the following metrics:
+            Mean Block Interval
+            Standard Deviation
+            Min Block Interval
+            Max Block Interval
+            over a 100 block sampling period.
+            
+            Does not run any perturbations.
+        `,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := Cleanup(cli.testnet); err != nil {
+				return err
+			}
+			if err := Setup(cli.testnet, cli.infp); err != nil {
+				return err
+			}
+
+			chLoadResult := make(chan error)
+			ctx, loadCancel := context.WithCancel(cmd.Context())
+			defer loadCancel()
+			go func() {
+				err := Load(ctx, cli.testnet)
+				if err != nil {
+					logger.Error(fmt.Sprintf("Transaction load errored: %v", err.Error()))
+				}
+				chLoadResult <- err
+			}()
+
+			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
+				return err
+			}
+
+			if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // allow some txs to go through
+				return err
+			}
+
+			// Benchmark performance over the next 100 blocks
+			if err := Benchmark(cmd.Context(), cli.testnet, 100); err != nil {
+				return err
+			}
+
+			loadCancel()
+			if err := <-chLoadResult; err != nil {
+				return err
+			}
+
+			return Cleanup(cli.testnet)
+		},
+	}
+	cli.root.AddCommand(benchmarkCmd)
 }

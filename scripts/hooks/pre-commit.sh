@@ -29,3 +29,4 @@ function lint_modified_go_files() {
 
 format_modified_go_files
 lint_modified_go_files
+

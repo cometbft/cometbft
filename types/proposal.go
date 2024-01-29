@@ -88,7 +88,7 @@ func (p *Proposal) ValidateBasic() error {
 // localtime <= proposedBlockTime + MsgDelay + Precision
 //
 // For more information on the meaning of 'timely', see the proposer-based timestamp specification:
-// https://github.com/tendermint/spec/tree/master/spec/consensus/proposer-based-timestamp
+// https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
 func (p *Proposal) IsTimely(recvTime time.Time, sp SynchronyParams) bool {
 	// lhs is `proposedBlockTime - Precision` in the first inequality
 	lhs := p.Timestamp.Add(-sp.Precision)

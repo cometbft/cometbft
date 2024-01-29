@@ -47,7 +47,7 @@ perturb = ["disconnect"]
 
 [node.validator02]
 seeds = ["seed01"]
-database = "boltdb"
+database = "pebbledb"
 privval_protocol = "tcp"
 persist_interval = 0
 perturb = ["restart"]

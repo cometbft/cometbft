@@ -13,7 +13,7 @@ Proposed.
 ## Context
 
 In an effort to support [Go-API-Stability](adr-060-go-api-stability.md),
-during the 0.35 development cycle, we have attempted to reduce the the API
+during the 0.35 development cycle, we have attempted to reduce the API
 surface area by moving most of the interface of the `node` package into
 unexported functions, as well as moving the reactors to an `internal`
 package. Having this coincide with the 0.35 release made a lot of sense
@@ -103,7 +103,7 @@ would probably be overly-abstract at this stage.
   components in the implementation of `node`.
 
 - Begin iterating on a more-flexible internal framework for
-  initializing tendermint nodes to make the initatilization process
+  initializing tendermint nodes to make the initialization process
   less hard-coded by the implementation of the node objects.
 
   - Reactors should not need to expose their interfaces *within* the
@@ -116,8 +116,8 @@ would probably be overly-abstract at this stage.
 	orchestration framework.
 
 - Do not proactively provide a system for injecting
-  components/services within a tendtermint node, though make it
-  possible to retrofit this kind of plugability in the future if
+  components/services within a tendermint node, though make it
+  possible to retrofit this kind of pluggability in the future if
   needed.
 
 - Prioritize implementation of p2p-based statesync reactor to obviate

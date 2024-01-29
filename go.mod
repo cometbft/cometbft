@@ -30,7 +30,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.18.0
 	golang.org/x/net v0.20.0
-	google.golang.org/grpc v1.60.1
+	google.golang.org/grpc v1.61.0
 )
 
 require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
@@ -136,11 +136,10 @@ require (
 replace github.com/cometbft/cometbft/api => ./api
 
 retract (
-        // a regression was introduced
-        v0.38.4
-        // a breaking change was introduced
-        v0.38.3
-        // superseeded by v0.38.3 because of ASA-2024-001
+	// a regression was introduced
+	v0.38.4
+	// a breaking change was introduced
+	v0.38.3
+	// superseeded by v0.38.3 because of ASA-2024-001
 	[v0.38.0, v0.38.2]
 )
-

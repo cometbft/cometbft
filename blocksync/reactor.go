@@ -406,7 +406,11 @@ FOR_LOOP:
 
 			// TODO: same thing for app - but we would need a way to
 			// get the hash without persisting the state
+<<<<<<< HEAD:blocksync/reactor.go
 			state, _, err = bcR.blockExec.ApplyBlock(state, firstID, first)
+=======
+			state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
+>>>>>>> 8c9e30241 (perf(internal/blocksync): do not `ValidateBlock` twice (#2026)):internal/blocksync/reactor.go
 			if err != nil {
 				// TODO This is bad, are we zombie?
 				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))

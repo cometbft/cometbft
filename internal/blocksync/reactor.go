@@ -255,7 +255,8 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	case *bcproto.BlockResponse:
 		bi, err := types.BlockFromProto(msg.Block)
 		if err != nil {
-			bcR.Logger.Error("Block content is invalid", "err", err)
+			bcR.Logger.Error("Peer sent us invalid block", "peer", e.Src, "msg", e.Message, "err", err)
+			bcR.Switch.StopPeerForError(e.Src, err)
 			return
 		}
 		var extCommit *types.ExtendedCommit
@@ -266,6 +267,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				bcR.Logger.Error("failed to convert extended commit from proto",
 					"peer", e.Src,
 					"err", err)
+				bcR.Switch.StopPeerForError(e.Src, err)
 				return
 			}
 		}

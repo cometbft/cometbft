@@ -41,9 +41,21 @@ proxy_app = "tcp://127.0.0.1:26658"
 moniker = "thinkpad"
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb 
+# pebbledb 
+# - pebble is actively maintained unlike:
+#   - goleveldb
+#   - boltdb
+#   - badgerdb 
+# - pebble does not require the use of CGO like:
+#   - cleveldb
+#   - rocksdb
+# In benchmarks:
+# - pebble performs better than goleveldb, cleveldb and rocksdb
+# - pebble performs consistently unlike goleveldb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
 #   - pure go
-#   - stable
+#   - stable but only if you use a replace statement
+#   - unmaintained
 # * cleveldb (uses levigo wrapper)
 #   - fast
 #   - requires gcc

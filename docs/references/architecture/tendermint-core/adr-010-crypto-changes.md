@@ -4,7 +4,7 @@
 
 Tendermint is a cryptographic protocol that uses and composes a variety of cryptographic primitives.
 
-After nearly 4 years of development, Tendermint has recently undergone multiple security reviews to search for vulnerabilities and to assess the the use and composition of cryptographic primitives.
+After nearly 4 years of development, Tendermint has recently undergone multiple security reviews to search for vulnerabilities and to assess the use and composition of cryptographic primitives.
 
 ### Hash Functions
 
@@ -34,7 +34,7 @@ This is done using the simple Station-to-Station protocol with the NaCL Ed25519 
 
 While there have been no vulnerabilities found in the implementation, there are some concerns:
 
-- NaCL uses Salsa20, a not-widely used and relatively out-dated stream cipher that has been obsoleted by ChaCha20
+- NaCL uses Salsa20, a not-widely used and relatively outdated stream cipher that has been obsoleted by ChaCha20
 - Connections use RIPEMD160 to compute a value that is used for the encryption nonce with subtle requirements on how it's used
 
 ## Decision

@@ -1,1 +1,0 @@
-- Add `pebbledb` ([\#2132](https://github.com/cometbft/cometbft/pull/2132/))

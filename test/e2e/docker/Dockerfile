@@ -1,7 +1,7 @@
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
-FROM cometbft/cometbft-db-testing:v0.9.1
+FROM cometbft/cometbft-db-testing:v0.10.0
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 
@@ -10,18 +10,6 @@ RUN apt-get -qq install -y iputils-ping iproute2 python3-netifaces >/dev/null
 RUN mkdir -p /scripts
 COPY test/e2e/pkg/latency/aws-latencies.csv /scripts/
 COPY test/e2e/pkg/latency/latency-setter.py /scripts/
-
-# Install Rocksdb
-ARG ROCKSDB=8.9.1
-RUN \
-  wget -q https://github.com/facebook/rocksdb/archive/refs/tags/v${ROCKSDB}.tar.gz \
-  && tar -zxf v${ROCKSDB}.tar.gz \
-  && cd rocksdb-${ROCKSDB} \
-  && DEBUG_LEVEL=0 make -j4 shared_lib \
-  && make install-shared \
-  && ldconfig \
-  && cd .. \
-  && rm -rf v${ROCKSDB}.tar.gz rocksdb-${ROCKSDB}
 
 # Set up build directory /src/cometbft
 ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb

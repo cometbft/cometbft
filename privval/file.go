@@ -102,7 +102,7 @@ func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (
 		return false, fmt.Errorf("height regression. Got %v, last height %v", height, lss.Height)
 	}
 
-	if lss.Height < height {
+	if lss.Height != height {
 		return false, nil
 	}
 
@@ -110,7 +110,7 @@ func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (
 		return false, fmt.Errorf("round regression at height %v. Got %v, last round %v", height, round, lss.Round)
 	}
 
-	if lss.Round < round {
+	if lss.Round != round {
 		return false, nil
 	}
 
@@ -124,14 +124,17 @@ func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (
 		)
 	}
 
-	if lss.Step < step || lss.SignBytes == nil {
+	if lss.Step < step {
 		return false, nil
+	}
+
+	if lss.SignBytes == nil {
+		return false, errors.New("no SignBytes found")
 	}
 
 	if lss.Signature == nil {
 		panic("pv: Signature is nil but SignBytes is not!")
 	}
-
 	return true, nil
 }
 

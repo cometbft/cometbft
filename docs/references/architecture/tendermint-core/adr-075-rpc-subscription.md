@@ -308,7 +308,7 @@ type EventParams struct {
     MaxResults int `json:"max_results"`
 
     // Return only items after this cursor. If empty, the limit is just
-    // before the the beginning of the event log.
+    // before the beginning of the event log.
     After string `json:"after"`
 
     // Return only items before this cursor.  If empty, the limit is just

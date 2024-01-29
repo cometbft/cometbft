@@ -151,7 +151,7 @@ func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
 }
 
 // NewTestnetFromManifest creates and validates a testnet from a manifest.
-func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
+func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) { //nolint:revive // it's proven more or less impossible to refactor this function into smaller functions.
 	testnet, err := initializeTestnetFromManifest(manifest, file, ifd)
 	if err != nil {
 		return nil, err

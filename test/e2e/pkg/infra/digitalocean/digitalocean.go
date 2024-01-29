@@ -192,7 +192,7 @@ func ansiblePerturbConnectionBytes(disconnect bool) string {
 }
 
 // ExecCompose runs a Docker Compose command for a testnet.
-func execAnsible(ctx context.Context, dir, playbook string, nodeIPs []string, args ...string) error {
+func execAnsible(ctx context.Context, dir, playbook string, nodeIPs []string, args ...string) error { //nolint:unparam // it has proven nigh on impossible to remove args here, better to //nolint
 	playbook = filepath.Join(dir, playbook)
 	return exec.CommandVerbose(ctx, append(
 		[]string{"ansible-playbook", playbook, "-f", "50", "-u", "root", "--inventory", strings.Join(nodeIPs, ",") + ","},

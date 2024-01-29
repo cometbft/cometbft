@@ -11,6 +11,18 @@ RUN mkdir -p /scripts
 COPY test/e2e/pkg/latency/aws-latencies.csv /scripts/
 COPY test/e2e/pkg/latency/latency-setter.py /scripts/
 
+# Install Rocksdb
+ARG ROCKSDB=8.9.1
+RUN \
+  wget -q https://github.com/facebook/rocksdb/archive/refs/tags/v${ROCKSDB}.tar.gz \
+  && tar -zxf v${ROCKSDB}.tar.gz \
+  && cd rocksdb-${ROCKSDB} \
+  && DEBUG_LEVEL=0 make -j4 shared_lib \
+  && make install-shared \
+  && ldconfig \
+  && cd .. \
+  && rm -rf v${ROCKSDB}.tar.gz rocksdb-${ROCKSDB}
+
 # Set up build directory /src/cometbft
 ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
 WORKDIR /src/cometbft

@@ -202,6 +202,17 @@ type BaseConfig struct {
 	Moniker string `mapstructure:"moniker"`
 
 	// Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
+	// pebbledb
+	// - pebble is actively maintained unlike:
+	//   - goleveldb
+	//   - boltdb
+	//   - badgerdb
+	// - pebble does not require the use of CGO like:
+	//   - cleveldb
+	//   - rocksdb
+	// In benchmarks:
+	// - pebble performs better than goleveldb, cleveldb and rocksdb
+	// - pebble performs consistently unlike goleveldb
 	// * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
 	//   - pure go
 	//   - stable

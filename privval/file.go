@@ -102,32 +102,40 @@ func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (
 		return false, fmt.Errorf("height regression. Got %v, last height %v", height, lss.Height)
 	}
 
-	if lss.Height == height {
-		if lss.Round > round {
-			return false, fmt.Errorf("round regression at height %v. Got %v, last round %v", height, round, lss.Round)
-		}
-
-		if lss.Round == round {
-			if lss.Step > step {
-				return false, fmt.Errorf(
-					"step regression at height %v round %v. Got %v, last step %v",
-					height,
-					round,
-					step,
-					lss.Step,
-				)
-			} else if lss.Step == step {
-				if lss.SignBytes != nil {
-					if lss.Signature == nil {
-						panic("pv: Signature is nil but SignBytes is not!")
-					}
-					return true, nil
-				}
-				return false, errors.New("no SignBytes found")
-			}
-		}
+	if lss.Height != height {
+		return false, nil
 	}
-	return false, nil
+
+	if lss.Round > round {
+		return false, fmt.Errorf("round regression at height %v. Got %v, last round %v", height, round, lss.Round)
+	}
+
+	if lss.Round != round {
+		return false, nil
+	}
+
+	if lss.Step > step {
+		return false, fmt.Errorf(
+			"step regression at height %v round %v. Got %v, last step %v",
+			height,
+			round,
+			step,
+			lss.Step,
+		)
+	}
+
+	if lss.Step < step {
+		return false, nil
+	}
+
+	if lss.SignBytes == nil {
+		return false, errors.New("no SignBytes found")
+	}
+
+	if lss.Signature == nil {
+		panic("pv: Signature is nil but SignBytes is not!")
+	}
+	return true, nil
 }
 
 // Save persists the FilePvLastSignState to its filePath.

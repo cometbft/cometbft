@@ -47,9 +47,38 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, nodeIPs)
 }
 
+<<<<<<< HEAD
 // Currently unsupported.
 func (p Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
 	return fmt.Errorf("SetLatency() currently unsupported for Digital Ocean")
+=======
+// SetLatency prepares and executes the latency-setter script in the given node.
+func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
+	// Directory in the DigitalOcean node that contains all latency files.
+	remoteDir := "/root/cometbft/test/e2e/pkg/latency/"
+
+	playbook := "- name: e2e custom playbook\n" +
+		"  hosts: all\n" +
+		"  tasks:\n"
+
+	// Add task to copy the necessary files to the node.
+	playbook = ansibleAddCopyTask(playbook, "copy zones file to node", filepath.Base(p.IPZonesFilePath()), remoteDir)
+
+	// Add task to execute latency-setter script in the node.
+	cmd := fmt.Sprintf("%s set %s %s eth0",
+		filepath.Join(remoteDir, "latency-setter.py"),
+		filepath.Join(remoteDir, filepath.Base(p.IPZonesFilePath())),
+		filepath.Join(remoteDir, "aws-latencies.csv"),
+	)
+	playbook = ansibleAddShellTasks(playbook, "execute latency setter script", cmd)
+
+	// Execute playbook
+	playbookFile := getNextPlaybookFilename()
+	if err := p.writePlaybook(playbookFile, playbook); err != nil {
+		return err
+	}
+	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{node.ExternalIP.String()})
+>>>>>>> c2f74def6 (fix(e2e): path to latency script files in DO (#2148))
 }
 
 func (p Provider) StopTestnet(ctx context.Context) error {

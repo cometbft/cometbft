@@ -46,7 +46,7 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/gofrs/uuid v4.4.0+incompatible
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/sync v0.6.0

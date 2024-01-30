@@ -1,1 +1,1 @@
-- `[state/store]` Added metrics to monitor state store access. ([\#1974](https://github.com/cometbft/cometbft/pull/1974))
+- `[metrics]` Added metrics to monitor state store access. ([\#1974](https://github.com/cometbft/cometbft/pull/1974))

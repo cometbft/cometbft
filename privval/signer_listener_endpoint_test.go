@@ -1,6 +1,7 @@
 package privval
 
 import (
+	"errors"
 	"net"
 	"testing"
 	"time"
@@ -212,4 +213,29 @@ func getMockEndpoints(
 	<-endpointIsOpenCh
 
 	return listenerEndpoint, dialerEndpoint
+}
+
+func TestSignerListenerEndpointServiceLoop(t *testing.T) {
+	listenerEndpoint := NewSignerListenerEndpoint(
+		log.TestingLogger(),
+		&testListener{initialErrs: 5},
+	)
+
+	require.NoError(t, listenerEndpoint.Start())
+	require.NoError(t, listenerEndpoint.WaitForConnection(time.Second))
+}
+
+type testListener struct {
+	net.Listener
+	initialErrs int
+}
+
+func (l *testListener) Accept() (net.Conn, error) {
+	if l.initialErrs > 0 {
+		l.initialErrs--
+
+		return nil, errors.New("accept error")
+	}
+
+	return nil, nil // Note this doesn't actually return a valid connection, it just doesn't error.
 }

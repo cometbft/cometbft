@@ -55,7 +55,7 @@ func TestEventBusPublishEventTx(t *testing.T) {
 		Tx:     tx,
 		Result: result,
 	}})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -96,7 +96,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	}()
 
 	var ps *PartSet
-	ps, err = block.MakePartSet(MaxBlockSizeBytes)
+	ps, err = block.MakePartSet(BlockPartSizeBytes)
 	require.NoError(t, err)
 
 	err = eventBus.PublishEventNewBlock(EventDataNewBlock{
@@ -107,7 +107,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 		},
 		ResultFinalizeBlock: resultFinalizeBlock,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -209,7 +209,7 @@ func TestEventBusPublishEventTxDuplicateKeys(t *testing.T) {
 			Tx:     tx,
 			Result: result,
 		}})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		select {
 		case <-done:
@@ -251,7 +251,7 @@ func TestEventBusPublishEventNewBlockHeader(t *testing.T) {
 	err = eventBus.PublishEventNewBlockHeader(EventDataNewBlockHeader{
 		Header: block.Header,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -293,7 +293,7 @@ func TestEventBusPublishEventNewBlockEvents(t *testing.T) {
 			}},
 		}},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -332,7 +332,7 @@ func TestEventBusPublishEventNewEvidence(t *testing.T) {
 		Evidence: ev,
 		Height:   4,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	select {
 	case <-done:
@@ -431,12 +431,13 @@ func BenchmarkEventBus(b *testing.B) {
 	for _, bm := range benchmarks {
 		bm := bm
 		b.Run(bm.name, func(b *testing.B) {
-			benchmarkEventBus(bm.numClients, bm.randQueries, bm.randEvents, b)
+			benchmarkEventBus(b, bm.numClients, bm.randQueries, bm.randEvents)
 		})
 	}
 }
 
-func benchmarkEventBus(numClients int, randQueries bool, randEvents bool, b *testing.B) {
+func benchmarkEventBus(b *testing.B, numClients int, randQueries bool, randEvents bool) {
+	b.Helper()
 	// for random* functions
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 

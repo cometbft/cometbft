@@ -6,9 +6,8 @@ import (
 	"net"
 	"time"
 
-	"golang.org/x/net/netutil"
-
 	"github.com/cosmos/gogoproto/proto"
+	"golang.org/x/net/netutil"
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -24,7 +23,7 @@ const (
 
 // IPResolver is a behavior subset of net.Resolver.
 type IPResolver interface {
-	LookupIPAddr(context.Context, string) ([]net.IPAddr, error)
+	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
 }
 
 // accept is the container to carry the upgraded connection and NodeInfo from an
@@ -64,20 +63,20 @@ type Transport interface {
 	NetAddress() NetAddress
 
 	// Accept returns a newly connected Peer.
-	Accept(peerConfig) (Peer, error)
+	Accept(config peerConfig) (Peer, error)
 
 	// Dial connects to the Peer for the address.
-	Dial(NetAddress, peerConfig) (Peer, error)
+	Dial(addr NetAddress, config peerConfig) (Peer, error)
 
 	// Cleanup any resources associated with Peer.
-	Cleanup(Peer)
+	Cleanup(peer Peer)
 }
 
 // transportLifecycle bundles the methods for callers to control start and stop
 // behavior.
 type transportLifecycle interface {
 	Close() error
-	Listen(NetAddress) error
+	Listen(addr NetAddress) error
 }
 
 // ConnFilterFunc to be implemented by filter hooks after a new connection has
@@ -129,7 +128,7 @@ func MultiplexTransportResolver(resolver IPResolver) MultiplexTransportOption {
 }
 
 // MultiplexTransportMaxIncomingConnections sets the maximum number of
-// simultaneous connections (incoming). Default: 0 (unlimited)
+// simultaneous connections (incoming). Default: 0 (unlimited).
 func MultiplexTransportMaxIncomingConnections(n int) MultiplexTransportOption {
 	return func(mt *MultiplexTransport) { mt.maxIncomingConnections = n }
 }
@@ -275,7 +274,7 @@ func (mt *MultiplexTransport) Listen(addr NetAddress) error {
 // AddChannel registers a channel to nodeInfo.
 // NOTE: NodeInfo must be of type DefaultNodeInfo else channels won't be updated
 // This is a bit messy at the moment but is cleaned up in the following version
-// when NodeInfo changes from an interface to a concrete type
+// when NodeInfo changes from an interface to a concrete type.
 func (mt *MultiplexTransport) AddChannel(chID byte) {
 	if ni, ok := mt.nodeInfo.(DefaultNodeInfo); ok {
 		if !ni.HasChannel(chID) {
@@ -423,7 +422,7 @@ func (mt *MultiplexTransport) upgrade(
 	if err != nil {
 		return nil, nil, ErrRejected{
 			conn:          c,
-			err:           fmt.Errorf("secret conn failed: %v", err),
+			err:           fmt.Errorf("secret conn failed: %w", err),
 			isAuthFailure: true,
 		}
 	}
@@ -449,7 +448,7 @@ func (mt *MultiplexTransport) upgrade(
 	if err != nil {
 		return nil, nil, ErrRejected{
 			conn:          c,
-			err:           fmt.Errorf("handshake failed: %v", err),
+			err:           fmt.Errorf("handshake failed: %w", err),
 			isAuthFailure: true,
 		}
 	}

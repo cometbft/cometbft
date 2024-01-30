@@ -32,12 +32,14 @@ type Config struct {
 	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
 	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
 
-	VoteExtensionSize uint `toml:"vote_extension_size"`
+	VoteExtensionSize          uint  `toml:"vote_extension_size"`
+	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
+	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
 
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 }
 
-// App extracts out the application specific configuration parameters
+// App extracts out the application specific configuration parameters.
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
 		Dir:                        cfg.Dir,
@@ -52,6 +54,8 @@ func (cfg *Config) App() *app.Config {
 		FinalizeBlockDelay:         cfg.FinalizeBlockDelay,
 		VoteExtensionDelay:         cfg.VoteExtensionDelay,
 		VoteExtensionSize:          cfg.VoteExtensionSize,
+		VoteExtensionsEnableHeight: cfg.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight: cfg.VoteExtensionsUpdateHeight,
 		ABCIRequestsLoggingEnabled: cfg.ABCIRequestsLoggingEnabled,
 	}
 }

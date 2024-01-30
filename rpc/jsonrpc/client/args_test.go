@@ -30,8 +30,8 @@ func TestArgToJSON(t *testing.T) {
 	for i, tc := range cases {
 		args := map[string]interface{}{"data": tc.input}
 		err := argsToJSON(args)
-		require.Nil(err, "%d: %+v", i, err)
-		require.Equal(1, len(args), "%d", i)
+		require.NoError(err, "%d: %+v", i, err)
+		require.Len(args, 1, "%d", i)
 		data, ok := args["data"].(string)
 		require.True(ok, "%d: %#v", i, args["data"])
 		assert.Equal(tc.expected, data, "%d", i)

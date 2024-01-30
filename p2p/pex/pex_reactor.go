@@ -18,7 +18,7 @@ import (
 type Peer = p2p.Peer
 
 const (
-	// PexChannel is a channel for PEX messages
+	// PexChannel is a channel for PEX messages.
 	PexChannel = byte(0x00)
 
 	// over-estimate of max NetAddress size
@@ -27,18 +27,18 @@ const (
 	maxAddressSize = 256
 
 	// NOTE: amplificaiton factor!
-	// small request results in up to maxMsgSize response
+	// small request results in up to maxMsgSize response.
 	maxMsgSize = maxAddressSize * maxGetSelection
 
-	// ensure we have enough peers
+	// ensure we have enough peers.
 	defaultEnsurePeersPeriod = 30 * time.Second
 
-	// Seed/Crawler constants
+	// Seed/Crawler constants.
 
 	// minTimeBetweenCrawls is a minimum time between attempts to crawl a peer.
 	minTimeBetweenCrawls = 2 * time.Minute
 
-	// check some peers every this
+	// check some peers every this.
 	crawlPeerPeriod = 30 * time.Second
 
 	maxAttemptsToDial = 16 // ~ 35h in total (last attempt - 18h)
@@ -48,7 +48,7 @@ const (
 	// untrusted.
 	biasToSelectNewPeers = 30 // 70 to select good peers
 
-	// if a peer is marked bad, it will be banned for at least this time period
+	// if a peer is marked bad, it will be banned for at least this time period.
 	defaultBanTime = 24 * time.Hour
 )
 
@@ -140,7 +140,7 @@ func NewReactor(b AddrBook, config *ReactorConfig) *Reactor {
 	return r
 }
 
-// OnStart implements BaseService
+// OnStart implements BaseService.
 func (r *Reactor) OnStart() error {
 	err := r.book.Start()
 	if err != nil && err != service.ErrAlreadyStarted {
@@ -166,14 +166,14 @@ func (r *Reactor) OnStart() error {
 	return nil
 }
 
-// OnStop implements BaseService
+// OnStop implements BaseService.
 func (r *Reactor) OnStop() {
 	if err := r.book.Stop(); err != nil {
 		r.Logger.Error("Error stopping address book", "err", err)
 	}
 }
 
-// GetChannels implements Reactor
+// GetChannels implements Reactor.
 func (r *Reactor) GetChannels() []*conn.ChannelDescriptor {
 	return []*conn.ChannelDescriptor{
 		{
@@ -264,7 +264,6 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 				e.Src.FlushStop()
 				r.Switch.StopPeerGracefully(e.Src)
 			}()
-
 		} else {
 			// Check we're not receiving requests too frequently.
 			if err := r.receiveRequest(e.Src); err != nil {
@@ -297,7 +296,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 	}
 }
 
-// enforces a minimum amount of time between requests
+// enforces a minimum amount of time between requests.
 func (r *Reactor) receiveRequest(src Peer) error {
 	id := string(src.ID())
 	v := r.lastReceivedRequests.Get(id)
@@ -413,7 +412,7 @@ func (r *Reactor) SetEnsurePeersPeriod(d time.Duration) {
 	r.ensurePeersPeriod = d
 }
 
-// Ensures that sufficient peers are connected. (continuous)
+// Ensures that sufficient peers are connected. (continuous).
 func (r *Reactor) ensurePeersRoutine() {
 	var (
 		seed   = cmtrand.NewRand()
@@ -513,7 +512,6 @@ func (r *Reactor) ensurePeers() {
 	}
 
 	if r.book.NeedMoreAddrs() {
-
 		// 1) Pick a random peer and ask for more.
 		peers := r.Switch.Peers().List()
 		peersCount := len(peers)
@@ -615,7 +613,7 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*p2p.NetAddress, err e
 	return numOnline, netAddrs, nil
 }
 
-// randomly dial seeds until we connect to one or exhaust them
+// randomly dial seeds until we connect to one or exhaust them.
 func (r *Reactor) dialSeeds() {
 	perm := cmtrand.Perm(len(r.seedAddrs))
 	// perm := r.Switch.rng.Perm(lSeeds)
@@ -740,7 +738,7 @@ func (r *Reactor) cleanupCrawlPeerInfos() {
 	}
 }
 
-// attemptDisconnects checks if we've been with each peer long enough to disconnect
+// attemptDisconnects checks if we've been with each peer long enough to disconnect.
 func (r *Reactor) attemptDisconnects() {
 	for _, peer := range r.Switch.Peers().List() {
 		if peer.Status().Duration < r.config.SeedDisconnectWaitPeriod {

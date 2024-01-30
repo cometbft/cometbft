@@ -12,14 +12,12 @@ import (
 
 	"github.com/google/orderedcode"
 
-	"github.com/cometbft/cometbft/internal/state"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
@@ -68,7 +66,7 @@ func (idx *BlockerIndexer) Has(height int64) (bool, error) {
 // The following is indexed:
 //
 // primary key: encode(block.height | height) => encode(height)
-// FinalizeBlock events: encode(eventType.eventAttr|eventValue|height|finalize_block|eventSeq) => encode(height)
+// FinalizeBlock events: encode(eventType.eventAttr|eventValue|height|finalize_block|eventSeq) => encode(height).
 func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	batch := idx.store.NewBatch()
 	defer batch.Close()
@@ -461,10 +459,8 @@ LOOP:
 			}
 			if err != nil {
 				idx.log.Error("failed to parse bounds:", err)
-			} else {
-				if withinBounds {
-					idx.setTmpHeights(tmpHeights, it)
-				}
+			} else if withinBounds {
+				idx.setTmpHeights(tmpHeights, it)
 			}
 		}
 
@@ -552,7 +548,6 @@ func (idx *BlockerIndexer) match(
 		defer it.Close()
 
 		for ; it.Valid(); it.Next() {
-
 			keyHeight, err := parseHeightFromEventKey(it.Key())
 			if err != nil {
 				idx.log.Error("failure to parse height from key:", err)
@@ -591,7 +586,6 @@ func (idx *BlockerIndexer) match(
 		defer it.Close()
 
 		for ; it.Valid(); it.Next() {
-
 			keyHeight, err := parseHeightFromEventKey(it.Key())
 			if err != nil {
 				idx.log.Error("failure to parse height from key:", err)
@@ -704,7 +698,7 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 	heightBz := int64ToBytes(height)
 
 	for _, event := range events {
-		idx.eventSeq = idx.eventSeq + 1
+		idx.eventSeq++
 		// only index events with a non-empty type
 		if len(event.Type) == 0 {
 			continue

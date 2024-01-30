@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"

@@ -13,7 +13,7 @@ import (
 )
 
 // RandVal creates one random validator, with a key derived
-// from the input value
+// from the input value.
 func RandVal() types.ValidatorUpdate {
 	pubkey := cmtrand.Bytes(32)
 	power := cmtrand.Uint16() + 1
@@ -24,7 +24,7 @@ func RandVal() types.ValidatorUpdate {
 // RandVals returns a list of cnt validators for initializing
 // the application. Note that the keys are deterministically
 // derived from the index in the array, while the power is
-// random (Change this if not desired)
+// random (Change this if not desired).
 func RandVals(cnt int) []types.ValidatorUpdate {
 	res := make([]types.ValidatorUpdate, cnt)
 	for i := 0; i < cnt; i++ {
@@ -35,7 +35,7 @@ func RandVals(cnt int) []types.ValidatorUpdate {
 
 // InitKVStore initializes the kvstore app with some data,
 // which allows tests to pass and is fine as long as you
-// don't make any tx that modify the validator state
+// don't make any tx that modify the validator state.
 func InitKVStore(ctx context.Context, app *Application) error {
 	_, err := app.InitChain(ctx, &types.InitChainRequest{
 		Validators: RandVals(1),
@@ -43,7 +43,7 @@ func InitKVStore(ctx context.Context, app *Application) error {
 	return err
 }
 
-// Create a new transaction
+// Create a new transaction.
 func NewTx(key, value string) []byte {
 	return []byte(strings.Join([]string{key, value}, "="))
 }
@@ -75,5 +75,6 @@ func MakeValSetChangeTx(pubkey pbcrypto.PublicKey, power int64) []byte {
 		panic(err)
 	}
 	pubStr := base64.StdEncoding.EncodeToString(pk.Bytes())
-	return []byte(fmt.Sprintf("%s%s!%d", ValidatorPrefix, pubStr, power))
+	pubTypeStr := pk.Type()
+	return []byte(fmt.Sprintf("%s%s!%s!%d", ValidatorPrefix, pubTypeStr, pubStr, power))
 }

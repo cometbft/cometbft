@@ -6,7 +6,7 @@ import (
 	"github.com/cometbft/cometbft/abci/types"
 )
 
-// ErrUnknownAbciTransport is returned when trying to create a client with an invalid transport option
+// ErrUnknownAbciTransport is returned when trying to create a client with an invalid transport option.
 type ErrUnknownAbciTransport struct {
 	Transport string
 }

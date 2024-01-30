@@ -38,18 +38,18 @@ type AddrBook interface {
 	service.Service
 
 	// Add our own addresses so we don't later add ourselves
-	AddOurAddress(*p2p.NetAddress)
+	AddOurAddress(addr *p2p.NetAddress)
 	// Check if it is our address
-	OurAddress(*p2p.NetAddress) bool
+	OurAddress(addr *p2p.NetAddress) bool
 
-	AddPrivateIDs([]string)
+	AddPrivateIDs(ids []string)
 
 	// Add and remove an address
 	AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error
-	RemoveAddress(*p2p.NetAddress)
+	RemoveAddress(addr *p2p.NetAddress)
 
 	// Check if the address is in the book
-	HasAddress(*p2p.NetAddress) bool
+	HasAddress(addr *p2p.NetAddress) bool
 
 	// Do we need more peers?
 	NeedMoreAddrs() bool
@@ -61,14 +61,14 @@ type AddrBook interface {
 	PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress
 
 	// Mark address
-	MarkGood(p2p.ID)
-	MarkAttempt(*p2p.NetAddress)
-	MarkBad(*p2p.NetAddress, time.Duration) // Move peer to bad peers list
+	MarkGood(id p2p.ID)
+	MarkAttempt(addr *p2p.NetAddress)
+	MarkBad(addr *p2p.NetAddress, dur time.Duration) // Move peer to bad peers list
 	// Add bad peers back to addrBook
 	ReinstateBadPeers()
 
-	IsGood(*p2p.NetAddress) bool
-	IsBanned(*p2p.NetAddress) bool
+	IsGood(addr *p2p.NetAddress) bool
+	IsBanned(addr *p2p.NetAddress) bool
 
 	// Send a selection of addresses to peers
 	GetSelection() []*p2p.NetAddress
@@ -136,7 +136,7 @@ func NewAddrBook(filePath string, routabilityStrict bool) AddrBook {
 }
 
 // Initialize the buckets.
-// When modifying this, don't forget to update loadFromFile()
+// When modifying this, don't forget to update loadFromFile().
 func (a *addrBook) init() {
 	a.key = crypto.CRandHex(24) // 24/2 * 8 = 96 bits
 	// New addr buckets
@@ -212,7 +212,7 @@ func (a *addrBook) AddPrivateIDs(ids []string) {
 // AddAddress implements AddrBook
 // Add address to a "new" bucket. If it's already in one, only add it probabilistically.
 // Returns error if the addr is non-routable. Does not add self.
-// NOTE: addr must not be nil
+// NOTE: addr must not be nil.
 func (a *addrBook) AddAddress(addr *p2p.NetAddress, src *p2p.NetAddress) error {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
@@ -237,7 +237,7 @@ func (a *addrBook) IsGood(addr *p2p.NetAddress) bool {
 	return a.addrLookup[addr.ID].isOld()
 }
 
-// IsBanned returns true if the peer is currently banned
+// IsBanned returns true if the peer is currently banned.
 func (a *addrBook) IsBanned(addr *p2p.NetAddress) bool {
 	a.mtx.Lock()
 	_, ok := a.badPeers[addr.ID]
@@ -332,9 +332,7 @@ func (a *addrBook) MarkGood(id p2p.ID) {
 	}
 	ka.markGood()
 	if ka.isNew() {
-		if err := a.moveToOld(ka); err != nil {
-			a.Logger.Error("Error moving address to old", "err", err)
-		}
+		a.moveToOld(ka)
 	}
 }
 
@@ -372,12 +370,7 @@ func (a *addrBook) ReinstateBadPeers() {
 			continue
 		}
 
-		bucket, err := a.calcNewBucket(ka.Addr, ka.Src)
-		if err != nil {
-			a.Logger.Error("Failed to calculate new bucket (bad peer won't be reinstantiated)",
-				"addr", ka.Addr, "err", err)
-			continue
-		}
+		bucket := a.calcNewBucket(ka.Addr, ka.Src)
 
 		if err := a.addToNewBucket(ka, bucket); err != nil {
 			a.Logger.Error("Error adding peer to new bucket", "err", err)
@@ -640,7 +633,7 @@ func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 }
 
 // adds the address to a "new" bucket. if its already in one,
-// it only adds it probabilistically
+// it only adds it probabilistically.
 func (a *addrBook) addAddress(addr, src *p2p.NetAddress) error {
 	if addr == nil || src == nil {
 		return ErrAddrBookNilAddr{addr, src}
@@ -692,10 +685,8 @@ func (a *addrBook) addAddress(addr, src *p2p.NetAddress) error {
 		ka = newKnownAddress(addr, src)
 	}
 
-	bucket, err := a.calcNewBucket(addr, src)
-	if err != nil {
-		return err
-	}
+	bucket := a.calcNewBucket(addr, src)
+
 	return a.addToNewBucket(ka, bucket)
 }
 
@@ -757,15 +748,15 @@ func (a *addrBook) expireNew(bucketIdx int) {
 // Promotes an address from new to old. If the destination bucket is full,
 // demote the oldest one to a "new" bucket.
 // TODO: Demote more probabilistically?
-func (a *addrBook) moveToOld(ka *knownAddress) error {
+func (a *addrBook) moveToOld(ka *knownAddress) {
 	// Sanity check
 	if ka.isOld() {
 		a.Logger.Error(fmt.Sprintf("Cannot promote address that is already old %v", ka))
-		return nil
+		return
 	}
 	if len(ka.Buckets) == 0 {
 		a.Logger.Error(fmt.Sprintf("Cannot promote address that isn't in any new buckets %v", ka))
-		return nil
+		return
 	}
 
 	// Remove from all (new) buckets.
@@ -774,19 +765,15 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 	ka.BucketType = bucketTypeOld
 
 	// Try to add it to its oldBucket destination.
-	oldBucketIdx, err := a.calcOldBucket(ka.Addr)
-	if err != nil {
-		return err
-	}
+	oldBucketIdx := a.calcOldBucket(ka.Addr)
+
 	added := a.addToOldBucket(ka, oldBucketIdx)
 	if !added {
 		// No room; move the oldest to a new bucket
 		oldest := a.pickOldest(bucketTypeOld, oldBucketIdx)
 		a.removeFromBucket(oldest, bucketTypeOld, oldBucketIdx)
-		newBucketIdx, err := a.calcNewBucket(oldest.Addr, oldest.Src)
-		if err != nil {
-			return err
-		}
+		newBucketIdx := a.calcNewBucket(oldest.Addr, oldest.Src)
+
 		if err := a.addToNewBucket(oldest, newBucketIdx); err != nil {
 			a.Logger.Error("Error adding peer to old bucket", "err", err)
 		}
@@ -797,7 +784,6 @@ func (a *addrBook) moveToOld(ka *knownAddress) error {
 			a.Logger.Error(fmt.Sprintf("Could not re-add ka %v to oldBucketIdx %v", ka, oldBucketIdx))
 		}
 	}
-	return nil
 }
 
 func (a *addrBook) removeAddress(addr *p2p.NetAddress) {
@@ -829,16 +815,13 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 //---------------------------------------------------------------------
 // calculate bucket placements
 
-// hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets
-func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
+// hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.
+func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) int {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(a.groupKey(addr))...)
 	data1 = append(data1, []byte(a.groupKey(src))...)
-	hash1, err := a.hash(data1)
-	if err != nil {
-		return 0, err
-	}
+	hash1 := a.hash(data1)
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= newBucketsPerGroup
 	var hashbuf [8]byte
@@ -848,23 +831,18 @@ func (a *addrBook) calcNewBucket(addr, src *p2p.NetAddress) (int, error) {
 	data2 = append(data2, a.groupKey(src)...)
 	data2 = append(data2, hashbuf[:]...)
 
-	hash2, err := a.hash(data2)
-	if err != nil {
-		return 0, err
-	}
+	hash2 := a.hash(data2)
 	result := int(binary.BigEndian.Uint64(hash2) % newBucketCount)
-	return result, nil
+	return result
 }
 
-// hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets
-func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
+// hash(key + group + int64(hash(key + addr)) % buckets_per_group) % num_old_buckets.
+func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) int {
 	data1 := []byte{}
 	data1 = append(data1, []byte(a.key)...)
 	data1 = append(data1, []byte(addr.String())...)
-	hash1, err := a.hash(data1)
-	if err != nil {
-		return 0, err
-	}
+	hash1 := a.hash(data1)
+
 	hash64 := binary.BigEndian.Uint64(hash1)
 	hash64 %= oldBucketsPerGroup
 	var hashbuf [8]byte
@@ -874,12 +852,10 @@ func (a *addrBook) calcOldBucket(addr *p2p.NetAddress) (int, error) {
 	data2 = append(data2, a.groupKey(addr)...)
 	data2 = append(data2, hashbuf[:]...)
 
-	hash2, err := a.hash(data2)
-	if err != nil {
-		return 0, err
-	}
+	hash2 := a.hash(data2)
+
 	result := int(binary.BigEndian.Uint64(hash2) % oldBucketCount)
-	return result, nil
+	return result
 }
 
 // Return a string representing the network group of this address.
@@ -940,8 +916,9 @@ func groupKeyFor(na *p2p.NetAddress, routabilityStrict bool) string {
 	return na.IP.Mask(ipv6Mask).String()
 }
 
-func (a *addrBook) hash(b []byte) ([]byte, error) {
+// hash returns the hash of b.
+func (a *addrBook) hash(b []byte) []byte {
 	a.hasher.Reset()
 	a.hasher.Write(b)
-	return a.hasher.Sum(nil), nil
+	return a.hasher.Sum(nil)
 }

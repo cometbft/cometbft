@@ -34,7 +34,7 @@ var (
 	}
 
 	// The following specify randomly chosen values for testnet nodes.
-	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "boltdb", "badgerdb"}
+	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "boltdb", "badgerdb", "pebbledb"}
 	ipv6          = uniformChoice{false, true}
 	// FIXME: grpc disabled due to https://github.com/tendermint/tendermint/issues/5439
 	nodeABCIProtocols     = uniformChoice{"unix", "tcp", "builtin", "builtin_connsync"} // "grpc"
@@ -61,9 +61,10 @@ var (
 	lightNodePerturbations = probSetChoice{
 		"upgrade": 0.3,
 	}
-	voteExtensionEnableHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
-	voteExtensionEnabled            = uniformChoice{true, false}
-	voteExtensionSize               = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
+	voteExtensionUpdateHeight = uniformChoice{int64(-1), int64(0), int64(1)} // -1: genesis, 0: InitChain, 1: (use offset)
+	voteExtensionEnabled      = weightedChoice{true: 3, false: 1}
+	voteExtensionHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
+	voteExtensionSize         = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
 )
 
 type generateConfig struct {
@@ -150,9 +151,13 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		manifest.VoteExtensionDelay = 100 * time.Millisecond
 		manifest.FinalizeBlockDelay = 500 * time.Millisecond
 	}
-
+	manifest.VoteExtensionsUpdateHeight = voteExtensionUpdateHeight.Choose(r).(int64)
+	if manifest.VoteExtensionsUpdateHeight == 1 {
+		manifest.VoteExtensionsUpdateHeight = manifest.InitialHeight + voteExtensionHeightOffset.Choose(r).(int64)
+	}
 	if voteExtensionEnabled.Choose(r).(bool) {
-		manifest.VoteExtensionsEnableHeight = manifest.InitialHeight + voteExtensionEnableHeightOffset.Choose(r).(int64)
+		baseHeight := max(manifest.VoteExtensionsUpdateHeight+1, manifest.InitialHeight)
+		manifest.VoteExtensionsEnableHeight = baseHeight + voteExtensionHeightOffset.Choose(r).(int64)
 	}
 
 	manifest.VoteExtensionSize = voteExtensionSize.Choose(r).(uint)
@@ -197,7 +202,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		if startAt == 0 {
 			(*manifest.Validators)[name] = int64(30 + r.Intn(71))
 		} else {
-			manifest.ValidatorUpdates[fmt.Sprint(startAt+5)] = map[string]int64{
+			manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)] = map[string]int64{
 				name: int64(30 + r.Intn(71)),
 			}
 		}
@@ -367,11 +372,12 @@ func parseWeightedVersions(s string) (weightedChoice, string, error) {
 	for _, wv := range wvs {
 		parts := strings.Split(strings.TrimSpace(wv), ":")
 		var ver string
-		if len(parts) == 2 {
+		switch len(parts) {
+		case 2:
 			ver = strings.TrimSpace(strings.Join([]string{"cometbft/e2e-node", parts[0]}, ":"))
-		} else if len(parts) == 3 {
+		case 3:
 			ver = strings.TrimSpace(strings.Join([]string{parts[0], parts[1]}, ":"))
-		} else {
+		default:
 			return nil, "", fmt.Errorf("unexpected weight:version combination: %s", wv)
 		}
 

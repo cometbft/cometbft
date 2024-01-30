@@ -16,7 +16,7 @@ import (
 	"github.com/cometbft/cometbft/version"
 )
 
-// database keys
+// database keys.
 var (
 	stateKey = []byte("stateKey")
 )
@@ -129,7 +129,7 @@ func (state State) IsEmpty() bool {
 	return state.Validators == nil // XXX can't compare to Empty
 }
 
-// ToProto takes the local state type and returns the equivalent proto type
+// ToProto takes the local state type and returns the equivalent proto type.
 func (state *State) ToProto() (*cmtstate.State, error) {
 	if state == nil {
 		return nil, errors.New("state is nil")
@@ -173,7 +173,7 @@ func (state *State) ToProto() (*cmtstate.State, error) {
 	return sm, nil
 }
 
-// FromProto takes a state proto message & returns the local state type
+// FromProto takes a state proto message & returns the local state type.
 func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	if pb == nil {
 		return nil, errors.New("nil State")
@@ -302,11 +302,11 @@ func MakeGenesisStateFromFile(genDocFile string) (State, error) {
 func MakeGenesisDocFromFile(genDocFile string) (*types.GenesisDoc, error) {
 	genDocJSON, err := os.ReadFile(genDocFile)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't read GenesisDoc file: %v", err)
+		return nil, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
 	}
 	genDoc, err := types.GenesisDocFromJSON(genDocJSON)
 	if err != nil {
-		return nil, fmt.Errorf("error reading GenesisDoc: %v", err)
+		return nil, fmt.Errorf("error reading GenesisDoc: %w", err)
 	}
 	return genDoc, nil
 }

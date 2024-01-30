@@ -44,11 +44,11 @@ func TestBasicPartSet(t *testing.T) {
 	// adding part with invalid index
 	added, err := partSet2.AddPart(&Part{Index: 10000})
 	assert.False(t, added)
-	assert.Error(t, err)
+	require.Error(t, err)
 	// adding existing part
 	added, err = partSet2.AddPart(partSet2.GetPart(0))
 	assert.False(t, added)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, partSet.Hash(), partSet2.Hash())
 	assert.EqualValues(t, nParts, partSet2.Total())
@@ -86,6 +86,22 @@ func TestWrongProof(t *testing.T) {
 	if added || err == nil {
 		t.Errorf("expected to fail adding a part with bad bytes.")
 	}
+
+	// Test adding a part with wrong proof index.
+	part = partSet.GetPart(2)
+	part.Proof.Index = 1
+	added, err = partSet2.AddPart(part)
+	if added || err == nil {
+		t.Errorf("expected to fail adding a part with bad proof index.")
+	}
+
+	// Test adding a part with wrong proof total.
+	part = partSet.GetPart(3)
+	part.Proof.Total = int64(partSet.Total() - 1)
+	added, err = partSet2.AddPart(part)
+	if added || err == nil {
+		t.Errorf("expected to fail adding a part with bad proof total.")
+	}
 }
 
 func TestPartSetHeaderValidateBasic(t *testing.T) {
@@ -117,9 +133,19 @@ func TestPartValidateBasic(t *testing.T) {
 	}{
 		{"Good Part", func(pt *Part) {}, false},
 		{"Too big part", func(pt *Part) { pt.Bytes = make([]byte, BlockPartSizeBytes+1) }, true},
+		{"Good small last part", func(pt *Part) {
+			pt.Index = 1
+			pt.Bytes = make([]byte, BlockPartSizeBytes-1)
+			pt.Proof.Total = 2
+		}, false},
+		{"Too small inner part", func(pt *Part) {
+			pt.Index = 0
+			pt.Bytes = make([]byte, BlockPartSizeBytes-1)
+			pt.Proof.Total = 2
+		}, true},
 		{"Too big proof", func(pt *Part) {
 			pt.Proof = merkle.Proof{
-				Total:    1,
+				Total:    2,
 				Index:    1,
 				LeafHash: make([]byte, 1024*1024),
 			}

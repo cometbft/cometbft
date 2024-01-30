@@ -11,9 +11,8 @@ import (
 	"github.com/cometbft/cometbft/internal/cmap"
 	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/types"
-
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
+	"github.com/cometbft/cometbft/types"
 )
 
 //go:generate ../scripts/mockery_generate.sh Peer
@@ -38,11 +37,11 @@ type Peer interface {
 	Status() cmtconn.ConnectionStatus
 	SocketAddr() *NetAddress // actual address of the socket
 
-	Send(Envelope) bool
-	TrySend(Envelope) bool
+	Send(e Envelope) bool
+	TrySend(e Envelope) bool
 
-	Set(string, interface{})
-	Get(string) interface{}
+	Set(key string, value interface{})
+	Get(key string) interface{}
 
 	SetRemovalFailed()
 	GetRemovalFailed() bool
@@ -81,7 +80,7 @@ func (pc peerConn) ID() ID {
 	return PubKeyToID(pc.conn.(*cmtconn.SecretConnection).RemotePubKey())
 }
 
-// Return the IP from the connection RemoteAddr
+// Return the IP from the connection RemoteAddr.
 func (pc peerConn) RemoteIP() net.IP {
 	if pc.ip != nil {
 		return pc.ip
@@ -341,7 +340,7 @@ func (p *peer) GetRemovalFailed() bool {
 // methods only used for testing
 // TODO: can we remove these?
 
-// CloseConn closes the underlying connection
+// CloseConn closes the underlying connection.
 func (pc *peerConn) CloseConn() {
 	pc.conn.Close()
 }
@@ -407,7 +406,7 @@ func createMConnection(
 		msg := proto.Clone(mt)
 		err := proto.Unmarshal(msgBytes, msg)
 		if err != nil {
-			panic(fmt.Errorf("unmarshaling message: %s into type: %s", err, reflect.TypeOf(mt)))
+			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
 		}
 		labels := []string{
 			"peer_id", string(p.ID()),
@@ -416,7 +415,7 @@ func createMConnection(
 		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
-				panic(fmt.Errorf("unwrapping message: %s", err))
+				panic(fmt.Sprintf("unwrapping message: %v", err))
 			}
 		}
 		p.metrics.PeerReceiveBytesTotal.With(labels...).Add(float64(len(msgBytes)))

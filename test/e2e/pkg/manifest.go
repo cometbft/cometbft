@@ -59,11 +59,6 @@ type Manifest struct {
 	// testnet via the RPC endpoint of a random node. Default is 0
 	Evidence int `toml:"evidence"`
 
-	// VoteExtensionsEnableHeight configures the first height during which
-	// the chain will use and require vote extension data to be present
-	// in precommit messages.
-	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
-
 	// ABCIProtocol specifies the protocol used to communicate with the ABCI
 	// application: "unix", "tcp", "grpc", "builtin" or "builtin_connsync".
 	//
@@ -91,6 +86,7 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+	LoadMaxTxs        int `toml:"load_max_txs"`
 
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
@@ -98,6 +94,17 @@ type Manifest struct {
 
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// VoteExtensionsEnableHeight configures the first height during which
+	// the chain will use and require vote extension data to be present
+	// in precommit messages.
+	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
+
+	// VoteExtensionsUpdateHeight configures the height at which consensus
+	// param VoteExtensionsEnableHeight will be set.
+	// -1 denotes it is set at genesis.
+	// 0 denotes it is set at InitChain.
+	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
@@ -139,7 +146,7 @@ type ManifestNode struct {
 	PersistentPeers []string `toml:"persistent_peers"`
 
 	// Database specifies the database backend: "goleveldb", "cleveldb",
-	// "rocksdb", "boltdb", or "badgerdb". Defaults to goleveldb.
+	// "rocksdb", "boltdb", "pebbledb" or "badgerdb". Defaults to goleveldb.
 	Database string `toml:"database"`
 
 	// PrivvalProtocol specifies the protocol used to sign consensus messages:

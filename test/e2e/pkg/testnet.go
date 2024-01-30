@@ -17,14 +17,14 @@ import (
 	"text/template"
 	"time"
 
+	_ "embed"
+
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
-
-	_ "embed"
 )
 
 const (
@@ -86,6 +86,7 @@ type Testnet struct {
 	LoadTxSizeBytes                                      int
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
+	LoadMaxTxs                                           int
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -95,6 +96,7 @@ type Testnet struct {
 	UpgradeVersion                                       string
 	Prometheus                                           bool
 	VoteExtensionsEnableHeight                           int64
+	VoteExtensionsUpdateHeight                           int64
 	VoteExtensionSize                                    uint
 	PeerGossipIntraloopSleepDuration                     time.Duration
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
@@ -148,7 +150,7 @@ func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
 	return NewTestnetFromManifest(manifest, file, ifd)
 }
 
-// NewTestnetFromManifest creates and validates a testnet from a manifest
+// NewTestnetFromManifest creates and validates a testnet from a manifest.
 func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
 
@@ -174,6 +176,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
 		LoadTxConnections:                manifest.LoadTxConnections,
+		LoadMaxTxs:                       manifest.LoadMaxTxs,
 		ABCIProtocol:                     manifest.ABCIProtocol,
 		PrepareProposalDelay:             manifest.PrepareProposalDelay,
 		ProcessProposalDelay:             manifest.ProcessProposalDelay,
@@ -183,6 +186,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		UpgradeVersion:                   manifest.UpgradeVersion,
 		Prometheus:                       manifest.Prometheus,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
@@ -374,6 +378,37 @@ func (t Testnet) Validate() error {
 	if err := t.validateZones(t.Nodes); err != nil {
 		return err
 	}
+	if t.VoteExtensionsUpdateHeight < -1 {
+		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
+			"or -1 (Genesis); update height %d", t.VoteExtensionsUpdateHeight)
+	}
+	if t.VoteExtensionsEnableHeight < 0 {
+		return fmt.Errorf("value of VoteExtensionsEnableHeight must be positive, or 0 (disable); "+
+			"enable height %d", t.VoteExtensionsEnableHeight)
+	}
+	if t.VoteExtensionsUpdateHeight > 0 && t.VoteExtensionsUpdateHeight < t.InitialHeight {
+		return fmt.Errorf("a value of VoteExtensionsUpdateHeight greater than 0 "+
+			"must not be less than InitialHeight; "+
+			"update height %d, initial height %d",
+			t.VoteExtensionsUpdateHeight, t.InitialHeight,
+		)
+	}
+	if t.VoteExtensionsEnableHeight > 0 {
+		if t.VoteExtensionsEnableHeight < t.InitialHeight {
+			return fmt.Errorf("a value of VoteExtensionsEnableHeight greater than 0 "+
+				"must not be less than InitialHeight; "+
+				"enable height %d, initial height %d",
+				t.VoteExtensionsEnableHeight, t.InitialHeight,
+			)
+		}
+		if t.VoteExtensionsEnableHeight <= t.VoteExtensionsUpdateHeight {
+			return fmt.Errorf("a value of VoteExtensionsEnableHeight greater than 0 "+
+				"must be greater than VoteExtensionsUpdateHeight; "+
+				"update height %d, enable height %d",
+				t.VoteExtensionsUpdateHeight, t.VoteExtensionsEnableHeight,
+			)
+		}
+	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
@@ -389,7 +424,7 @@ func (t Testnet) validateZones(nodes []*Node) error {
 	}
 
 	// Get list of zone ids in matrix.
-	zones := make([]ZoneID, len(zoneMatrix))
+	zones := make([]ZoneID, 0, len(zoneMatrix))
 	for zone := range zoneMatrix {
 		zones = append(zones, zone)
 	}
@@ -451,7 +486,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
 	}
 	switch n.Database {
-	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb":
+	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb", "pebbledb":
 	default:
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
@@ -609,6 +644,7 @@ func (n Node) AddressRPC() string {
 
 // Client returns an RPC client for the node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
+	//nolint:nosprintfhostport
 	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
 }
 
@@ -630,7 +666,7 @@ func (n Node) GRPCPrivilegedClient(ctx context.Context) (grpcprivileged.Client, 
 	)
 }
 
-// Stateless returns true if the node is either a seed node or a light node
+// Stateless returns true if the node is either a seed node or a light node.
 func (n Node) Stateless() bool {
 	return n.Mode == ModeLight || n.Mode == ModeSeed
 }

@@ -8,9 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	db "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/internal/state/indexer"
-
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/internal/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/internal/state/txindex/kv"
@@ -50,6 +49,7 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 }
 
 func createTestSetup(t *testing.T) (*txindex.IndexerService, *kv.TxIndex, indexer.BlockIndexer, *types.EventBus) {
+	t.Helper()
 	// event bus
 	eventBus := types.NewEventBus()
 	eventBus.SetLogger(log.TestingLogger())

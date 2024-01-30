@@ -92,7 +92,6 @@ func (l tmfmtLogger) Log(keyvals ...interface{}) error {
 		if s, ok := keyvals[i+1].(fmt.Stringer); ok {
 			keyvals[i+1] = s.String()
 		}
-
 	}
 
 	// Form a custom CometBFT line

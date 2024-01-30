@@ -17,39 +17,39 @@ import (
 
 type AppConnConsensus interface {
 	Error() error
-	InitChain(context.Context, *types.InitChainRequest) (*types.InitChainResponse, error)
-	PrepareProposal(context.Context, *types.PrepareProposalRequest) (*types.PrepareProposalResponse, error)
-	ProcessProposal(context.Context, *types.ProcessProposalRequest) (*types.ProcessProposalResponse, error)
-	ExtendVote(context.Context, *types.ExtendVoteRequest) (*types.ExtendVoteResponse, error)
-	VerifyVoteExtension(context.Context, *types.VerifyVoteExtensionRequest) (*types.VerifyVoteExtensionResponse, error)
-	FinalizeBlock(context.Context, *types.FinalizeBlockRequest) (*types.FinalizeBlockResponse, error)
-	Commit(context.Context) (*types.CommitResponse, error)
+	InitChain(ctx context.Context, req *types.InitChainRequest) (*types.InitChainResponse, error)
+	PrepareProposal(ctx context.Context, req *types.PrepareProposalRequest) (*types.PrepareProposalResponse, error)
+	ProcessProposal(ctx context.Context, req *types.ProcessProposalRequest) (*types.ProcessProposalResponse, error)
+	ExtendVote(ctx context.Context, req *types.ExtendVoteRequest) (*types.ExtendVoteResponse, error)
+	VerifyVoteExtension(ctx context.Context, req *types.VerifyVoteExtensionRequest) (*types.VerifyVoteExtensionResponse, error)
+	FinalizeBlock(ctx context.Context, req *types.FinalizeBlockRequest) (*types.FinalizeBlockResponse, error)
+	Commit(ctx context.Context) (*types.CommitResponse, error)
 }
 
 type AppConnMempool interface {
-	SetResponseCallback(abcicli.Callback)
+	SetResponseCallback(cb abcicli.Callback)
 	Error() error
 
-	CheckTx(context.Context, *types.CheckTxRequest) (*types.CheckTxResponse, error)
-	CheckTxAsync(context.Context, *types.CheckTxRequest) (*abcicli.ReqRes, error)
-	Flush(context.Context) error
+	CheckTx(ctx context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error)
+	CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*abcicli.ReqRes, error)
+	Flush(ctx context.Context) error
 }
 
 type AppConnQuery interface {
 	Error() error
 
-	Echo(context.Context, string) (*types.EchoResponse, error)
-	Info(context.Context, *types.InfoRequest) (*types.InfoResponse, error)
-	Query(context.Context, *types.QueryRequest) (*types.QueryResponse, error)
+	Echo(ctx context.Context, echo string) (*types.EchoResponse, error)
+	Info(ctx context.Context, req *types.InfoRequest) (*types.InfoResponse, error)
+	Query(ctx context.Context, req *types.QueryRequest) (*types.QueryResponse, error)
 }
 
 type AppConnSnapshot interface {
 	Error() error
 
-	ListSnapshots(context.Context, *types.ListSnapshotsRequest) (*types.ListSnapshotsResponse, error)
-	OfferSnapshot(context.Context, *types.OfferSnapshotRequest) (*types.OfferSnapshotResponse, error)
-	LoadSnapshotChunk(context.Context, *types.LoadSnapshotChunkRequest) (*types.LoadSnapshotChunkResponse, error)
-	ApplySnapshotChunk(context.Context, *types.ApplySnapshotChunkRequest) (*types.ApplySnapshotChunkResponse, error)
+	ListSnapshots(ctx context.Context, req *types.ListSnapshotsRequest) (*types.ListSnapshotsResponse, error)
+	OfferSnapshot(ctx context.Context, req *types.OfferSnapshotRequest) (*types.OfferSnapshotResponse, error)
+	LoadSnapshotChunk(ctx context.Context, req *types.LoadSnapshotChunkRequest) (*types.LoadSnapshotChunkResponse, error)
+	ApplySnapshotChunk(ctx context.Context, req *types.ApplySnapshotChunkRequest) (*types.ApplySnapshotChunkResponse, error)
 }
 
 //-----------------------------------------------------------------------------------------

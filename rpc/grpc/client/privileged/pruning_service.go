@@ -52,7 +52,7 @@ func (c *pruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context) 
 	return res.Height, nil
 }
 
-// SetTxIndexerRetainHeight implements PruningServiceClient
+// SetTxIndexerRetainHeight implements PruningServiceClient.
 func (c *pruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, height uint64) error {
 	_, err := c.inner.SetTxIndexerRetainHeight(ctx, &pbsvc.SetTxIndexerRetainHeightRequest{
 		Height: height,
@@ -60,7 +60,7 @@ func (c *pruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, hei
 	return err
 }
 
-// GetTxIndexerRetainHeight implements PruningServiceClient
+// GetTxIndexerRetainHeight implements PruningServiceClient.
 func (c *pruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context) (uint64, error) {
 	res, err := c.inner.GetTxIndexerRetainHeight(ctx, &pbsvc.GetTxIndexerRetainHeightRequest{})
 	if err != nil {

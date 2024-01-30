@@ -27,6 +27,7 @@ func TestEvidenceList(t *testing.T) {
 }
 
 func randomDuplicateVoteEvidence(t *testing.T) *DuplicateVoteEvidence {
+	t.Helper()
 	val := NewMockPV()
 	blockID := makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := makeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
@@ -46,7 +47,7 @@ func TestDuplicateVoteEvidence(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, ev.Hash(), tmhash.Sum(ev.Bytes()))
 	assert.NotNil(t, ev.String())
-	assert.Equal(t, ev.Height(), height)
+	assert.Equal(t, height, ev.Height())
 }
 
 func TestDuplicateVoteEvidenceValidation(t *testing.T) {
@@ -177,7 +178,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 		Timestamp:           header.Time,
 		ByzantineValidators: valSet.Validators[:nValidators/2],
 	}
-	assert.NoError(t, lcae.ValidateBasic())
+	require.NoError(t, lcae.ValidateBasic())
 
 	testCases := []struct {
 		testName         string
@@ -219,9 +220,9 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			}
 			tc.malleateEvidence(lcae)
 			if tc.expectErr {
-				assert.Error(t, lcae.ValidateBasic(), tc.testName)
+				require.Error(t, lcae.ValidateBasic(), tc.testName)
 			} else {
-				assert.NoError(t, lcae.ValidateBasic(), tc.testName)
+				require.NoError(t, lcae.ValidateBasic(), tc.testName)
 			}
 		})
 	}
@@ -230,7 +231,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 func TestMockEvidenceValidateBasic(t *testing.T) {
 	goodEvidence, err := NewMockDuplicateVoteEvidence(int64(1), time.Now(), "mock-chain-id")
 	require.NoError(t, err)
-	assert.Nil(t, goodEvidence.ValidateBasic())
+	require.NoError(t, goodEvidence.ValidateBasic())
 }
 
 func makeHeaderRandom() *Header {
@@ -294,14 +295,14 @@ func TestEvidenceProto(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := EvidenceToProto(tt.evidence)
 			if tt.toProtoErr {
-				assert.Error(t, err, tt.testName)
+				require.Error(t, err, tt.testName)
 				return
 			}
-			assert.NoError(t, err, tt.testName)
+			require.NoError(t, err, tt.testName)
 
 			evi, err := EvidenceFromProto(pb)
 			if tt.fromProtoErr {
-				assert.Error(t, err, tt.testName)
+				require.Error(t, err, tt.testName)
 				return
 			}
 			require.Equal(t, tt.evidence, evi, tt.testName)

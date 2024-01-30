@@ -55,7 +55,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 // SetLatency prepares and executes the latency-setter script in the given node.
 func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	// Directory in the DigitalOcean node that contains all latency files.
-	remoteDir := "/root/cometbft/test/e2e/latency/"
+	remoteDir := "/root/cometbft/test/e2e/pkg/latency/"
 
 	playbook := "- name: e2e custom playbook\n" +
 		"  hosts: all\n" +
@@ -171,7 +171,7 @@ func ansibleAddShellTasks(playbook, name string, shells ...string) string {
 }
 
 // file as bytes to be written out to disk.
-// ansibleStartBytes generates an Ansible playbook to start the network
+// ansibleStartBytes generates an Ansible playbook to start the network.
 func ansibleSystemdBytes(starting bool) string {
 	return ansibleAddSystemdTask(basePlaybook, starting)
 }

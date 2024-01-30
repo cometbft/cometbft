@@ -31,7 +31,7 @@ func New(store *store.BlockStore, eventBus *types.EventBus, logger log.Logger) b
 	}
 }
 
-// GetByHeight implements v1.BlockServiceServer GetByHeight method
+// GetByHeight implements v1.BlockServiceServer GetByHeight method.
 func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByHeightRequest) (*blocksvc.GetByHeightResponse, error) {
 	logger := s.logger.With("endpoint", "GetByHeight")
 	if err := validateBlockHeight(req.Height, s.store.Base(), s.store.Height()); err != nil {
@@ -95,7 +95,7 @@ func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes.
 	return &blockIDProto, bp, nil
 }
 
-// GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method
+// GetLatestHeight implements v1.BlockServiceServer GetLatestHeight method.
 func (s *blockServiceServer) GetLatestHeight(_ *blocksvc.GetLatestHeightRequest, stream blocksvc.BlockService_GetLatestHeightServer) error {
 	logger := s.logger.With("endpoint", "GetLatestHeight")
 

@@ -98,6 +98,8 @@ func MakeVoteNoError(
 	blockID BlockID,
 	time time.Time,
 ) *Vote {
+	t.Helper()
+
 	vote, err := MakeVote(val, chainID, valIndex, height, round, step, blockID, time)
 	require.NoError(t, err)
 	return vote

@@ -18,7 +18,7 @@ import (
 var _ Client = (*grpcClient)(nil)
 
 // A stripped copy of the remoteClient that makes
-// synchronous calls using grpc
+// synchronous calls using grpc.
 type grpcClient struct {
 	service.BaseService
 	mustConnect bool

@@ -16,7 +16,7 @@ const (
 	MetricsSubsystem = "consensus"
 )
 
-//go:generate go run ../scripts/metricsgen -struct=Metrics
+//go:generate go run ../../scripts/metricsgen -struct=Metrics
 
 // Metrics contains metrics exposed by this package.
 type Metrics struct {
@@ -30,7 +30,7 @@ type Metrics struct {
 	Rounds metrics.Gauge
 
 	// Histogram of round duration.
-	RoundDurationSeconds metrics.Histogram `metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
+	RoundDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.1, 100, 8" metrics_buckettype:"exprange"`
 
 	// Number of validators.
 	Validators metrics.Gauge
@@ -56,6 +56,8 @@ type Metrics struct {
 	NumTxs metrics.Gauge
 	// Size of the block.
 	BlockSizeBytes metrics.Gauge
+	// Size of the chain in bytes.
+	ChainSizeBytes metrics.Counter
 	// Total number of transactions.
 	TotalTxs metrics.Gauge
 	// The latest block height.
@@ -71,7 +73,7 @@ type Metrics struct {
 	DuplicateVote metrics.Counter
 
 	// Histogram of durations for each step in the consensus protocol.
-	StepDurationSeconds metrics.Histogram `metrics_labels:"step" metrics_buckettype:"exprange" metrics_bucketsizes:"0.1, 100, 8"`
+	StepDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.1, 100, 8" metrics_buckettype:"exprange" metrics_labels:"step"`
 	stepStart           time.Time
 
 	// Number of block parts received by the node, separated by whether the part
@@ -87,7 +89,7 @@ type Metrics struct {
 	// be above 2/3 of the total voting power of the network defines the endpoint
 	// the endpoint of the interval. Subtract the proposal timestamp from this endpoint
 	// to obtain the quorum delay.
-	//metrics:Interval in seconds between the proposal timestamp and the timestamp of the earliest prevote that achieved a quorum.
+	// metrics:Interval in seconds between the proposal timestamp and the timestamp of the earliest prevote that achieved a quorum.
 	QuorumPrevoteDelay metrics.Gauge `metrics_labels:"proposer_address"`
 
 	// FullPrevoteDelay is the interval in seconds between the proposal

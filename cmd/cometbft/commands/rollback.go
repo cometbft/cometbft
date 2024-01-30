@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/state"

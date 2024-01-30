@@ -43,7 +43,7 @@ which were also removed. (See
 
 ### Go API
 
-As per [ADR 109](./docs/architecture/adr-109-reduce-go-api-surface.md), the
+As per [ADR 109](docs/references/architecture/adr-109-reduce-go-api-surface.md), the
 following packages that were publicly accessible in CometBFT v0.38 were moved
 into the `internal` directory:
 

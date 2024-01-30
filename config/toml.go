@@ -48,7 +48,7 @@ func EnsureRoot(rootDir string) {
 }
 
 // XXX: this func should probably be called by cmd/cometbft/commands/init.go
-// alongside the writing of the genesis.json and priv_validator.json
+// alongside the writing of the genesis.json and priv_validator.json.
 func writeDefaultConfigFile(configFilePath string) {
 	WriteConfigFile(configFilePath, DefaultConfig())
 }
@@ -65,7 +65,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 }
 
 // Note: any changes to the comments/variables/mapstructure
-// must be reflected in the appropriate struct in config/config.go
+// must be reflected in the appropriate struct in config/config.go.
 const defaultConfigTemplate = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
@@ -429,11 +429,6 @@ keep-invalid-txs-in-cache = {{ .Mempool.KeepInvalidTxsInCache }}
 # Maximum size of a single transaction.
 # NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
 max_tx_bytes = {{ .Mempool.MaxTxBytes }}
-
-# Maximum size of a batch of transactions to send to a peer
-# Including space needed by encoding (one varint per transaction).
-# XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
-max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 
 # Experimental parameters to limit gossiping txs to up to the specified number of peers.
 # We use two independent upper values for persistent and non-persistent peers.

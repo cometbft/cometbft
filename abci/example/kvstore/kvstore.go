@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/types"
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
@@ -33,7 +32,7 @@ var _ types.Application = (*Application)(nil)
 
 // Application is the kvstore state machine. It complies with the abci.Application interface.
 // It takes transactions in the form of key=value and saves them in a database. This is
-// a somewhat trivial example as there is no real state execution
+// a somewhat trivial example as there is no real state execution.
 type Application struct {
 	types.BaseApplication
 
@@ -51,7 +50,7 @@ type Application struct {
 	genBlockEvents bool
 }
 
-// NewApplication creates an instance of the kvstore from the provided database
+// NewApplication creates an instance of the kvstore from the provided database.
 func NewApplication(db dbm.DB) *Application {
 	return &Application{
 		logger:             log.NewNopLogger(),
@@ -61,7 +60,7 @@ func NewApplication(db dbm.DB) *Application {
 	}
 }
 
-// NewPersistentApplication creates a new application using the goleveldb database engine
+// NewPersistentApplication creates a new application using the goleveldb database engine.
 func NewPersistentApplication(dbDir string) *Application {
 	name := "kvstore"
 	db, err := dbm.NewGoLevelDB(name, dbDir)
@@ -84,7 +83,7 @@ func (app *Application) SetGenBlockEvents() {
 // Info returns information about the state of the application. This is generally used every time a Tendermint instance
 // begins and let's the application know what Tendermint versions it's interacting with. Based from this information,
 // Tendermint will ensure it is in sync with the application by potentially replaying the blocks it has. If the
-// Application returns a 0 appBlockHeight, Tendermint will call InitChain to initialize the application with consensus related data
+// Application returns a 0 appBlockHeight, Tendermint will call InitChain to initialize the application with consensus related data.
 func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoResponse, error) {
 	// Tendermint expects the application to persist validators, on start-up we need to reload them to memory if they exist
 	if len(app.valAddrToPubKeyMap) == 0 && app.state.Height > 0 {
@@ -127,11 +126,12 @@ func (app *Application) InitChain(_ context.Context, req *types.InitChainRequest
 // For the KVStore we check that each transaction has the valid tx format:
 // - Contains one and only one `=`
 // - `=` is not the first or last byte.
-// - if key is `val` that the validator update transaction is also valid
+// - if key is `val` that the validator update transaction is also valid.
 func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
-		if _, _, err := parseValidatorTx(req.Tx); err != nil {
+		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
+			//nolint:nilerr
 			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 		}
 	} else if !isValidTx(req.Tx) {
@@ -143,7 +143,7 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 
 // Tx must have a format like key:value or key=value. That is:
 // - it must have one and only one ":" or "="
-// - It must not begin or end with these special characters
+// - It must not begin or end with these special characters.
 func isValidTx(tx []byte) bool {
 	if bytes.Count(tx, []byte(":")) == 1 && bytes.Count(tx, []byte("=")) == 0 {
 		if !bytes.HasPrefix(tx, []byte(":")) && !bytes.HasSuffix(tx, []byte(":")) {
@@ -166,7 +166,7 @@ func (app *Application) PrepareProposal(ctx context.Context, req *types.PrepareP
 }
 
 // formatTxs validates and excludes invalid transactions
-// also substitutes all the transactions with x:y to x=y
+// also substitutes all the transactions with x:y to x=y.
 func (app *Application) formatTxs(ctx context.Context, blockData [][]byte) [][]byte {
 	txs := make([][]byte, 0, len(blockData))
 	for _, tx := range blockData {
@@ -183,6 +183,7 @@ func (app *Application) ProcessProposal(ctx context.Context, req *types.ProcessP
 	for _, tx := range req.Txs {
 		// As CheckTx is a full validity check we can simply reuse this
 		if resp, err := app.CheckTx(ctx, &types.CheckTxRequest{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK}); err != nil || resp.Code != CodeTypeOK {
+			//nolint:nilerr
 			return &types.ProcessProposalResponse{Status: types.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 	}
@@ -218,11 +219,11 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 	respTxs := make([]*types.ExecTxResult, len(req.Txs))
 	for i, tx := range req.Txs {
 		if isValidatorTx(tx) {
-			pubKey, power, err := parseValidatorTx(tx)
+			keyType, pubKey, power, err := parseValidatorTx(tx)
 			if err != nil {
 				panic(err)
 			}
-			app.valUpdates = append(app.valUpdates, types.UpdateValidator(pubKey, power, ""))
+			app.valUpdates = append(app.valUpdates, types.UpdateValidator(pubKey, power, keyType))
 		} else {
 			app.stagedTxs = append(app.stagedTxs, tx)
 		}
@@ -324,7 +325,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 
 // Commit is called after FinalizeBlock and after Tendermint state which includes the updates to
 // AppHash, ConsensusParams and ValidatorSet has occurred.
-// The KVStore persists the validator updates and the new key values
+// The KVStore persists the validator updates and the new key values.
 func (app *Application) Commit(context.Context, *types.CommitRequest) (*types.CommitResponse, error) {
 	// apply the validator updates to state (note this is really the validator set at h + 2)
 	for _, valUpdate := range app.valUpdates {
@@ -414,36 +415,36 @@ func isValidatorTx(tx []byte) bool {
 	return strings.HasPrefix(string(tx), ValidatorPrefix)
 }
 
-func parseValidatorTx(tx []byte) ([]byte, int64, error) {
+func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 	tx = tx[len(ValidatorPrefix):]
 
 	//  get the pubkey and power
-	pubKeyAndPower := strings.Split(string(tx), "!")
-	if len(pubKeyAndPower) != 2 {
-		return nil, 0, fmt.Errorf("expected 'pubkey!power'. Got %v", pubKeyAndPower)
+	typeKeyAndPower := strings.Split(string(tx), "!")
+	if len(typeKeyAndPower) != 3 {
+		return "", nil, 0, fmt.Errorf("expected 'pubkeytype!pubkey!power'. Got %v", typeKeyAndPower)
 	}
-	pubkeyS, powerS := pubKeyAndPower[0], pubKeyAndPower[1]
+	keytype, pubkeyS, powerS := typeKeyAndPower[0], typeKeyAndPower[1], typeKeyAndPower[2]
 
 	// decode the pubkey
 	pubkey, err := base64.StdEncoding.DecodeString(pubkeyS)
 	if err != nil {
-		return nil, 0, fmt.Errorf("pubkey (%s) is invalid base64", pubkeyS)
+		return "", nil, 0, fmt.Errorf("pubkey (%s) is invalid base64", pubkeyS)
 	}
 
 	// decode the power
 	power, err := strconv.ParseInt(powerS, 10, 64)
 	if err != nil {
-		return nil, 0, fmt.Errorf("power (%s) is not an int", powerS)
+		return "", nil, 0, fmt.Errorf("power (%s) is not an int", powerS)
 	}
 
 	if power < 0 {
-		return nil, 0, fmt.Errorf("power can not be less than 0, got %d", power)
+		return "", nil, 0, fmt.Errorf("power can not be less than 0, got %d", power)
 	}
 
-	return pubkey, power, nil
+	return keytype, pubkey, power, nil
 }
 
-// add, update, or remove a validator
+// add, update, or remove a validator.
 func (app *Application) updateValidator(v types.ValidatorUpdate) {
 	pubkey, err := cryptoencoding.PubKeyFromProto(v.PubKey)
 	if err != nil {
@@ -541,7 +542,7 @@ func saveState(state State) {
 // as the size or number of transactions processed within the state. Note that this isn't
 // a strong guarantee of state machine replication because states could
 // have different kv values but still have the same size.
-// This function is used as the "AppHash"
+// This function is used as the "AppHash".
 func (s State) Hash() []byte {
 	appHash := make([]byte, 8)
 	binary.PutVarint(appHash, s.Size)

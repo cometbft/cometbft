@@ -69,7 +69,7 @@ func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bo
 	name := node.Name
 	upgraded := false
 	if len(out) == 0 {
-		name = name + "_u"
+		name += "_u"
 		upgraded = true
 	}
 	return name, upgraded, nil

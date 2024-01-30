@@ -7,7 +7,7 @@ import (
 )
 
 // cdcEncode returns nil if the input is nil, otherwise returns
-// proto.Marshal(<type>Value{Value: item})
+// proto.Marshal(<type>Value{Value: item}).
 func cdcEncode(item interface{}) []byte {
 	if item != nil && !isTypedNil(item) && !isEmpty(item) {
 		switch item := item.(type) {

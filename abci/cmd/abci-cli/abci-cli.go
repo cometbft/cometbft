@@ -11,9 +11,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/libs/log"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/abci/server"
@@ -21,28 +18,30 @@ import (
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/version"
 	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	cmtos "github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
-// client is a global variable so it can be reused by the console
+// client is a global variable so it can be reused by the console.
 var (
 	client abcicli.Client
 	logger log.Logger
 )
 
-// flags
+// flags.
 var (
-	// global
+	// global.
 	flagAddress  string
 	flagAbci     string
 	flagVerbose  bool   // for the println output
 	flagLogLevel string // for the logger
 
-	// query
+	// query.
 	flagPath   string
 	flagHeight int
 	flagProve  bool
 
-	// kvstore
+	// kvstore.
 	flagPersist string
 )
 
@@ -279,7 +278,7 @@ var testCmd = &cobra.Command{
 	RunE:  cmdTest,
 }
 
-// Generates new Args array based off of previous call args to maintain flag persistence
+// Generates new Args array based off of previous call args to maintain flag persistence.
 func persistentArgs(line []byte) []string {
 	// generate the arguments to run from original os.Args
 	// to maintain flag arguments
@@ -364,7 +363,6 @@ func cmdBatch(cmd *cobra.Command, _ []string) error {
 	bufReader := bufio.NewReader(os.Stdin)
 LOOP:
 	for {
-
 		line, more, err := bufReader.ReadLine()
 		switch {
 		case more:
@@ -492,7 +490,7 @@ func cmdUnimplemented(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Have the application echo a message
+// Have the application echo a message.
 func cmdEcho(cmd *cobra.Command, args []string) error {
 	msg := ""
 	if len(args) > 0 {
@@ -510,7 +508,7 @@ func cmdEcho(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Get some info from the application
+// Get some info from the application.
 func cmdInfo(cmd *cobra.Command, args []string) error {
 	var version string
 	if len(args) == 1 {
@@ -528,7 +526,7 @@ func cmdInfo(cmd *cobra.Command, args []string) error {
 
 const codeBad uint32 = 10
 
-// Append new txs to application
+// Append new txs to application.
 func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -565,7 +563,7 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Validate a tx
+// Validate a tx.
 func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -594,7 +592,7 @@ func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Get application Merkle root hash
+// Get application Merkle root hash.
 func cmdCommit(cmd *cobra.Command, args []string) error {
 	_, err := client.Commit(cmd.Context(), &types.CommitRequest{})
 	if err != nil {
@@ -604,7 +602,7 @@ func cmdCommit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Query application state
+// Query application state.
 func cmdQuery(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -780,7 +778,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 	}
 }
 
-// NOTE: s is interpreted as a string unless prefixed with 0x
+// NOTE: s is interpreted as a string unless prefixed with 0x.
 func stringOrHexToBytes(s string) ([]byte, error) {
 	if len(s) > 2 && strings.ToLower(s[:2]) == "0x" {
 		b, err := hex.DecodeString(s[2:])

@@ -17,9 +17,9 @@ type AppConnMempool struct {
 	mock.Mock
 }
 
-// CheckTx provides a mock function with given fields: _a0, _a1
-func (_m *AppConnMempool) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (*v1.CheckTxResponse, error) {
-	ret := _m.Called(_a0, _a1)
+// CheckTx provides a mock function with given fields: ctx, req
+func (_m *AppConnMempool) CheckTx(ctx context.Context, req *v1.CheckTxRequest) (*v1.CheckTxResponse, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckTx")
@@ -28,10 +28,10 @@ func (_m *AppConnMempool) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (
 	var r0 *v1.CheckTxResponse
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.CheckTxRequest) (*v1.CheckTxResponse, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.CheckTxRequest) *v1.CheckTxResponse); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.CheckTxResponse)
@@ -39,7 +39,7 @@ func (_m *AppConnMempool) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.CheckTxRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -47,9 +47,9 @@ func (_m *AppConnMempool) CheckTx(_a0 context.Context, _a1 *v1.CheckTxRequest) (
 	return r0, r1
 }
 
-// CheckTxAsync provides a mock function with given fields: _a0, _a1
-func (_m *AppConnMempool) CheckTxAsync(_a0 context.Context, _a1 *v1.CheckTxRequest) (*abcicli.ReqRes, error) {
-	ret := _m.Called(_a0, _a1)
+// CheckTxAsync provides a mock function with given fields: ctx, req
+func (_m *AppConnMempool) CheckTxAsync(ctx context.Context, req *v1.CheckTxRequest) (*abcicli.ReqRes, error) {
+	ret := _m.Called(ctx, req)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckTxAsync")
@@ -58,10 +58,10 @@ func (_m *AppConnMempool) CheckTxAsync(_a0 context.Context, _a1 *v1.CheckTxReque
 	var r0 *abcicli.ReqRes
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.CheckTxRequest) (*abcicli.ReqRes, error)); ok {
-		return rf(_a0, _a1)
+		return rf(ctx, req)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *v1.CheckTxRequest) *abcicli.ReqRes); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(ctx, req)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*abcicli.ReqRes)
@@ -69,7 +69,7 @@ func (_m *AppConnMempool) CheckTxAsync(_a0 context.Context, _a1 *v1.CheckTxReque
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *v1.CheckTxRequest) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(ctx, req)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -95,9 +95,9 @@ func (_m *AppConnMempool) Error() error {
 	return r0
 }
 
-// Flush provides a mock function with given fields: _a0
-func (_m *AppConnMempool) Flush(_a0 context.Context) error {
-	ret := _m.Called(_a0)
+// Flush provides a mock function with given fields: ctx
+func (_m *AppConnMempool) Flush(ctx context.Context) error {
+	ret := _m.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Flush")
@@ -105,7 +105,7 @@ func (_m *AppConnMempool) Flush(_a0 context.Context) error {
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(_a0)
+		r0 = rf(ctx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -113,9 +113,9 @@ func (_m *AppConnMempool) Flush(_a0 context.Context) error {
 	return r0
 }
 
-// SetResponseCallback provides a mock function with given fields: _a0
-func (_m *AppConnMempool) SetResponseCallback(_a0 abcicli.Callback) {
-	_m.Called(_a0)
+// SetResponseCallback provides a mock function with given fields: cb
+func (_m *AppConnMempool) SetResponseCallback(cb abcicli.Callback) {
+	_m.Called(cb)
 }
 
 // NewAppConnMempool creates a new instance of AppConnMempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

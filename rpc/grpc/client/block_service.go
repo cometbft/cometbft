@@ -35,7 +35,7 @@ func blockFromProto(pblockID *cmtproto.BlockID, pblock *cmtproto.Block) (*Block,
 }
 
 // LatestHeightResult type used in GetLatestResult and send to the client
-// via a channel
+// via a channel.
 type LatestHeightResult struct {
 	Height int64
 	Error  error
@@ -55,7 +55,7 @@ func GetLatestHeightChannelSize(sz uint) GetLatestHeightOption {
 	}
 }
 
-// BlockServiceClient provides block information
+// BlockServiceClient provides block information.
 type BlockServiceClient interface {
 	// GetBlockByHeight attempts to retrieve the block associated with the
 	// given height.
@@ -79,7 +79,7 @@ func newBlockServiceClient(conn grpc.ClientConn) BlockServiceClient {
 	}
 }
 
-// GetBlockByHeight implements BlockServiceClient GetBlockByHeight
+// GetBlockByHeight implements BlockServiceClient GetBlockByHeight.
 func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64) (*Block, error) {
 	res, err := c.client.GetByHeight(ctx, &blocksvc.GetByHeightRequest{
 		Height: height,
@@ -101,7 +101,7 @@ func (c *blockServiceClient) GetLatestBlock(ctx context.Context) (*Block, error)
 	return blockFromProto(res.BlockId, res.Block)
 }
 
-// GetLatestHeight implements BlockServiceClient GetLatestHeight
+// GetLatestHeight implements BlockServiceClient GetLatestHeight.
 func (c *blockServiceClient) GetLatestHeight(ctx context.Context, opts ...GetLatestHeightOption) (<-chan LatestHeightResult, error) {
 	req := blocksvc.GetLatestHeightRequest{}
 
@@ -137,7 +137,6 @@ func (c *blockServiceClient) GetLatestHeight(ctx context.Context, opts ...GetLat
 				// Skip sending this result because the channel is full - the
 				// client will get the next one once the channel opens up again
 			}
-
 		}
 	}(latestHeightClient)
 
@@ -150,7 +149,7 @@ func newDisabledBlockServiceClient() BlockServiceClient {
 	return &disabledBlockServiceClient{}
 }
 
-// GetBlockByHeight implements BlockServiceClient GetBlockByHeight - disabled client
+// GetBlockByHeight implements BlockServiceClient GetBlockByHeight - disabled client.
 func (*disabledBlockServiceClient) GetBlockByHeight(context.Context, int64) (*Block, error) {
 	panic("block service client is disabled")
 }
@@ -160,7 +159,7 @@ func (*disabledBlockServiceClient) GetLatestBlock(context.Context) (*Block, erro
 	panic("block service client is disabled")
 }
 
-// GetLatestHeight implements BlockServiceClient GetLatestHeight - disabled client
+// GetLatestHeight implements BlockServiceClient GetLatestHeight - disabled client.
 func (*disabledBlockServiceClient) GetLatestHeight(context.Context, ...GetLatestHeightOption) (<-chan LatestHeightResult, error) {
 	panic("block service client is disabled")
 }

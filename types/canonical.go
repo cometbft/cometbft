@@ -9,7 +9,7 @@ import (
 
 // Canonical* wraps the structs in types for amino encoding them for use in SignBytes / the Signable interface.
 
-// TimeFormat is used for generating the sigs
+// TimeFormat is used for generating the sigs.
 const TimeFormat = time.RFC3339Nano
 
 //-----------------------------------

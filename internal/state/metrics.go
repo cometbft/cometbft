@@ -10,21 +10,21 @@ const (
 	MetricsSubsystem = "state"
 )
 
-//go:generate go run ../scripts/metricsgen -struct=Metrics
+//go:generate go run ../../scripts/metricsgen -struct=Metrics
 
 // Metrics contains metrics exposed by this package.
 type Metrics struct {
 	// Time spent processing FinalizeBlock
-	BlockProcessingTime metrics.Histogram `metrics_buckettype:"lin" metrics_bucketsizes:"1, 10, 10"`
+	BlockProcessingTime metrics.Histogram `metrics_bucketsizes:"1, 10, 10" metrics_buckettype:"lin"`
 
 	// ConsensusParamUpdates is the total number of times the application has
 	// updated the consensus params since process start.
-	//metrics:Number of consensus parameter updates returned by the application since process start.
+	// metrics:Number of consensus parameter updates returned by the application since process start.
 	ConsensusParamUpdates metrics.Counter
 
 	// ValidatorSetUpdates is the total number of times the application has
 	// updated the validator set since process start.
-	//metrics:Number of validator set updates returned by the application since process start.
+	// metrics:Number of validator set updates returned by the application since process start.
 	ValidatorSetUpdates metrics.Counter
 
 	// PruningServiceBlockRetainHeight is the accepted block

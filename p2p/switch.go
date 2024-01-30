@@ -17,16 +17,16 @@ import (
 
 const (
 	// wait a random amount of time from this interval
-	// before dialing peers or reconnecting to help prevent DoS
+	// before dialing peers or reconnecting to help prevent DoS.
 	dialRandomizerIntervalMilliseconds = 3000
 
 	// repeatedly try to reconnect for a few minutes
-	// ie. 5 * 20 = 100s
+	// ie. 5 * 20 = 100s.
 	reconnectAttempts = 20
 	reconnectInterval = 5 * time.Second
 
 	// then move into exponential backoff mode for ~1day
-	// ie. 3**10 = 16hrs
+	// ie. 3**10 = 16hrs.
 	reconnectBackOffAttempts    = 10
 	reconnectBackOffBaseSeconds = 3
 )
@@ -50,12 +50,12 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 // to store peer addresses.
 type AddrBook interface {
 	AddAddress(addr *NetAddress, src *NetAddress) error
-	AddPrivateIDs([]string)
-	AddOurAddress(*NetAddress)
-	OurAddress(*NetAddress) bool
-	MarkGood(ID)
-	RemoveAddress(*NetAddress)
-	HasAddress(*NetAddress) bool
+	AddPrivateIDs(ids []string)
+	AddOurAddress(addr *NetAddress)
+	OurAddress(addr *NetAddress) bool
+	MarkGood(id ID)
+	RemoveAddress(addr *NetAddress)
+	HasAddress(addr *NetAddress) bool
 	Save()
 }
 
@@ -558,7 +558,7 @@ func (sw *Switch) DialPeerWithAddress(addr *NetAddress) error {
 	return sw.addOutboundPeerWithConfig(addr, sw.config)
 }
 
-// sleep for interval plus some random amount of ms on [0, dialRandomizerIntervalMilliseconds]
+// sleep for interval plus some random amount of ms on [0, dialRandomizerIntervalMilliseconds].
 func (sw *Switch) randomSleep(interval time.Duration) {
 	r := time.Duration(sw.rng.Int63n(dialRandomizerIntervalMilliseconds)) * time.Millisecond
 	time.Sleep(r + interval)
@@ -681,7 +681,7 @@ func (sw *Switch) acceptRoutine() {
 				// So might as well panic and let process managers restart the node.
 				// There's no point in letting the node run without the acceptRoutine,
 				// since it won't be able to accept new connections.
-				panic(fmt.Errorf("accept routine exited: %v", err))
+				panic(fmt.Sprintf("accept routine exited: %v", err))
 			}
 
 			break
@@ -702,7 +702,6 @@ func (sw *Switch) acceptRoutine() {
 
 				continue
 			}
-
 		}
 
 		if err := sw.addPeer(p); err != nil {
@@ -841,8 +840,7 @@ func (sw *Switch) addPeer(p Peer) error {
 	// so that if Receive errors, we will find the peer and remove it.
 	// Add should not err since we already checked peers.Has().
 	if err := sw.peers.Add(p); err != nil {
-		switch err.(type) {
-		case ErrPeerRemoval:
+		if _, ok := err.(ErrPeerRemoval); ok {
 			sw.Logger.Error("Error starting peer ",
 				" err ", "Peer has already errored and removal was attempted.",
 				"peer", p.ID())

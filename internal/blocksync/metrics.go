@@ -12,7 +12,7 @@ const (
 	MetricsSubsystem = "blocksync"
 )
 
-//go:generate go run ../scripts/metricsgen -struct=Metrics
+//go:generate go run ../../scripts/metricsgen -struct=Metrics
 
 // Metrics contains metrics exposed by this package.
 type Metrics struct {

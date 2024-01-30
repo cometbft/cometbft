@@ -251,7 +251,7 @@ func TestMakeSecretConnection(t *testing.T) {
 		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), "EOF"},
 		{"share bad ethimeral key", newEvilConn(true, true, false, false), "wrong wireType"},
 		{"refuse to share auth signature", newEvilConn(true, false, false, false), "EOF"},
-		{"share bad auth signature", newEvilConn(true, false, true, true), "failed to decrypt SecretConnection"},
+		{"share bad auth signature", newEvilConn(true, false, true, true), "failed to decrypt the frame"},
 		{"all good", newEvilConn(true, false, true, false), ""},
 	}
 

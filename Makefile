@@ -258,11 +258,12 @@ vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
 
-#? gofumpt-pre-commit: Create gofumpt pre-commit hook
-gofumpt-pre-commit:
-	@echo "--> Creating gofumpt pre-commit hook"
-	@mkdir -p .git/hooks
-	@cp scripts/gofumpt.sh .git/hooks/pre-commit
+#? setup-pre-commit: Create git pre-commit hook for gofumpt, golangci-lint
+setup-pre-commit:
+	@cp .git/hooks/pre-commit .git/hooks/pre-commit.bak 2>/dev/null || true
+	@echo "Installing pre-commit hook..."
+	@ln -sf ../../scripts/hooks/pre-commit.sh .git/hooks/pre-commit
+	@echo "Pre-commit hook installed successfully"
 .PHONY: gofumpt-pre-commit
 
 DESTINATION = ./index.html.md

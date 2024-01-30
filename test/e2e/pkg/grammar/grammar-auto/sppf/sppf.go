@@ -10,9 +10,8 @@ Package sppf implements a Shared Packed Parse Forest as defined in:
 package sppf
 
 import (
-	"bytes"
 	"fmt"
-
+	"bytes"
 	"github.com/goccmack/goutil/ioutil"
 
 	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/symbols"
@@ -204,4 +203,6 @@ func (n *SymbolNode) dot(bld *dotBuilder) {
 		fmt.Fprintf(bld.w, "%s", pn.Label())
 	}
 	fmt.Fprintln(bld.w)
+
 }
+

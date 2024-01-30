@@ -1,4 +1,5 @@
 COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb,rocksdb,pebbledb
+IMAGE_TAG=cometbft/e2e-node:local-version
 
 include ../../common.mk
 
@@ -8,27 +9,24 @@ fast: docker-fast generator runner
 
 # This will set up a container with all required dependencies for compiling, copy all the source
 # code to the container, and compile the binary inside it.
-docker:
+docker: docker-clean
 	@echo "Building E2E Docker image"
-	@docker build \
-		--tag cometbft/e2e-node:local-version \
-		-f docker/Dockerfile ../..
+	@docker build --tag $(IMAGE_TAG) -f docker/Dockerfile ../..
 
-docker-debug:
+docker-debug: docker-clean
 	@echo "Building E2E Docker image for debugging"
-	@docker build \
-		--tag cometbft/e2e-node:local-version \
-		-f docker/Dockerfile.debug ../..
+	@docker build --tag $(IMAGE_TAG) -f docker/Dockerfile.debug ../..
 
 # This will compile a binary to be executed in a container, set up a slim container, and copy only
 # the binary to it.
-docker-fast:
+docker-fast: docker-clean
 	@echo "Compiling binary for slim E2E Docker image"
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' -o build/node ./node
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/node ./node
 	@echo "Building slim E2E Docker image"
-	@docker build \
-		--tag cometbft/e2e-node:local-version \
-		-f docker/Dockerfile.fast .
+	@docker build --tag $(IMAGE_TAG) -f docker/Dockerfile.fast .
+
+docker-clean:
+	@docker rmi $(IMAGE_TAG) 2>/dev/null; true
 
 # We need to build support for database backends into the app in
 # order to build a binary with a CometBFT node in it (for built-in
@@ -49,4 +47,8 @@ lint:
 grammar-gen:
 	go run github.com/goccmack/gogll/v3@latest -o pkg/grammar/grammar-auto pkg/grammar/abci_grammar.md
 
-.PHONY: all slow fast node docker docker-debug docker-fast generator runner lint grammar-gen
+clean: docker-clean
+	rm -drf build/
+	rm -drf data/
+
+.PHONY: all fast node docker docker-debug docker-fast docker-clean generator runner lint grammar-gen clean

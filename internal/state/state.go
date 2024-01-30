@@ -239,9 +239,18 @@ func (state State) MakeBlock(
 ) *types.Block {
 	// Build base block with block data.
 	block := types.MakeBlock(height, txs, lastCommit, evidence)
-
 	// TODO(@glnro): Update logic once merged with #2205
 	// Check if PBTS Enabled: state.ConsensusParams.PBTS.PBTSEnabled(height)
+
+	// Set time.
+	var timestamp time.Time
+	if height == state.InitialHeight {
+		timestamp = state.LastBlockTime // genesis time
+	} else if isPBTSEnabled() {
+		timestamp = time.Now()
+	} else {
+		timestamp = MedianTime(lastCommit, state.LastValidators)
+	}
 
 	// Fill rest of header with state data.
 	block.Header.Populate(
@@ -253,6 +262,29 @@ func (state State) MakeBlock(
 	)
 
 	return block
+}
+
+// MedianTime computes a median time for a given Commit (based on Timestamp field of votes messages) and the
+// corresponding validator set. The computed time is always between timestamps of
+// the votes sent by honest processes, i.e., a faulty processes can not arbitrarily increase or decrease the
+// computed value.
+func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time {
+	weightedTimes := make([]*cmttime.WeightedTime, len(commit.Signatures))
+	totalVotingPower := int64(0)
+
+	for i, commitSig := range commit.Signatures {
+		if commitSig.BlockIDFlag == types.BlockIDFlagAbsent {
+			continue
+		}
+		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)
+		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
+		if validator != nil {
+			totalVotingPower += validator.VotingPower
+			weightedTimes[i] = cmttime.NewWeightedTime(commitSig.Timestamp, validator.VotingPower)
+		}
+	}
+
+	return cmttime.WeightedMedian(weightedTimes, totalVotingPower)
 }
 
 //------------------------------------------------------------------------
@@ -322,4 +354,10 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 
 		AppHash: genDoc.AppHash,
 	}, nil
+}
+
+// isPBTSEnabled returns true if PBFT is enabled at the current height.
+func isPBTSEnabled() bool {
+	//TODO: properly implement.
+	return true
 }

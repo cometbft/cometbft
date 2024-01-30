@@ -2484,7 +2484,7 @@ func (cs *State) signVote(
 		ValidatorIndex:   valIdx,
 		Height:           cs.Height,
 		Round:            cs.Round,
-		Timestamp:        cmttime.Now(),
+		Timestamp:        cs.voteTime(),
 		Type:             msgType,
 		BlockID:          types.BlockID{Hash: hash, PartSetHeader: header},
 	}
@@ -2508,6 +2508,32 @@ func (cs *State) signVote(
 	}
 
 	return vote, err
+}
+
+func (cs *State) voteTime() time.Time {
+	now := cmttime.Now()
+	if isPBTSEnabled() {
+		return now
+	}
+
+	minVoteTime := now
+
+	// Minimum time increment between blocks
+	const timeIota = time.Millisecond
+	// TODO: We should remove next line in case we don't vote for v in case cs.ProposalBlock == nil,
+	// even if cs.LockedBlock != nil. See https://github.com/cometbft/cometbft/tree/main/spec/.
+	if cs.LockedBlock != nil {
+		// See the BFT time spec
+		// https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
+		minVoteTime = cs.LockedBlock.Time.Add(timeIota)
+	} else if cs.ProposalBlock != nil {
+		minVoteTime = cs.ProposalBlock.Time.Add(timeIota)
+	}
+
+	if now.After(minVoteTime) {
+		return now
+	}
+	return minVoteTime
 }
 
 // sign the vote and publish on internalMsgQueue
@@ -2699,4 +2725,10 @@ func proposerWaitTime(lt cmttime.Source, bt time.Time) time.Duration {
 		return bt.Sub(t)
 	}
 	return 0
+}
+
+// isPBTSEnabled returns true if PBFT is enabled at the current height.
+func isPBTSEnabled() bool {
+	//TODO: properly implement.
+	return true
 }

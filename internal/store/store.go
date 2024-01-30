@@ -391,10 +391,10 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		return 0, -1, err
 	}
 
-	compact_err := bs.db.Compact(nil, nil)
-	if compact_err != nil {
-		fmt.Println("COMPACTION ERROR")
-	}
+	_ = bs.db.Compact(nil, nil)
+	// if compact_err != nil {
+	// 	fmt.Println("COMPACTION ERROR")
+	// }
 	return pruned, evidencePoint, nil
 }
 

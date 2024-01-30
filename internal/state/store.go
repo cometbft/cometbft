@@ -420,10 +420,10 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		return err
 	}
 
-	compact_err := store.db.Compact(nil, nil)
-	if compact_err != nil {
-		fmt.Println("COMPACTION ERROR")
-	}
+	// TODO add logger to output error.
+	// We do not want to panic or interrupt consensus on compaction failure
+	_ = store.db.Compact(nil, nil)
+
 	return nil
 }
 

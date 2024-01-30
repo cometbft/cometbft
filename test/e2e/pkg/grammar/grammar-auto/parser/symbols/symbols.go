@@ -35,6 +35,7 @@ const (
 	NT_PrepareProposal
 	NT_ProcessProposal
 	NT_Proposer
+	NT_Recovery
 	NT_Start
 	NT_StateSync
 	NT_StateSyncAttempt
@@ -136,6 +137,7 @@ var ntToString = []string{
 	"PrepareProposal",   /* NT_PrepareProposal */
 	"ProcessProposal",   /* NT_ProcessProposal */
 	"Proposer",          /* NT_Proposer */
+	"Recovery",          /* NT_Recovery */
 	"Start",             /* NT_Start */
 	"StateSync",         /* NT_StateSync */
 	"StateSyncAttempt",  /* NT_StateSyncAttempt */
@@ -170,6 +172,7 @@ var stringNT = map[string]NT{
 	"PrepareProposal":   NT_PrepareProposal,
 	"ProcessProposal":   NT_ProcessProposal,
 	"Proposer":          NT_Proposer,
+	"Recovery":          NT_Recovery,
 	"Start":             NT_Start,
 	"StateSync":         NT_StateSync,
 	"StateSyncAttempt":  NT_StateSyncAttempt,

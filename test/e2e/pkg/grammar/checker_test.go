@@ -44,29 +44,44 @@ func TestVerify(t *testing.T) {
 		{"non-proposer-round-1", []*abci.Request{initChain, processProposal, finalizeBlock, commit}, CleanStart, Pass},
 		{"multiple-rounds-1", []*abci.Request{initChain, prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, CleanStart, Pass},
 
-		// clean-start = init-chain state-sync consensus-exec
+		// clean-start = state-sync consensus-exec
 		// state-sync = success-sync
-		{"one-apply-chunk-1", []*abci.Request{initChain, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
-		{"multiple-apply-chunks-1", []*abci.Request{initChain, offerSnapshot, applyChunk, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
-		{"offer-snapshot-missing-1", []*abci.Request{initChain, applyChunk, finalizeBlock, commit}, CleanStart, Fail},
-		{"apply-chunk-missing", []*abci.Request{initChain, offerSnapshot, finalizeBlock, commit}, CleanStart, Fail},
+		{"one-apply-chunk-1", []*abci.Request{offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"multiple-apply-chunks-1", []*abci.Request{offerSnapshot, applyChunk, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"offer-snapshot-missing-1", []*abci.Request{applyChunk, finalizeBlock, commit}, CleanStart, Fail},
+		{"apply-chunk-missing", []*abci.Request{offerSnapshot, finalizeBlock, commit}, CleanStart, Fail},
 		// state-sync = *state-sync-attempt success-sync
-		{"one-apply-chunk-2", []*abci.Request{initChain, offerSnapshot, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
-		{"multiple-apply-chunks-2", []*abci.Request{initChain, offerSnapshot, applyChunk, applyChunk, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
-		{"offer-snapshot-missing-2", []*abci.Request{initChain, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Fail},
-		{"no-apply-chunk", []*abci.Request{initChain, offerSnapshot, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"one-apply-chunk-2", []*abci.Request{offerSnapshot, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"multiple-apply-chunks-2", []*abci.Request{offerSnapshot, applyChunk, applyChunk, applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+		{"offer-snapshot-missing-2", []*abci.Request{applyChunk, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Fail},
+		{"no-apply-chunk", []*abci.Request{offerSnapshot, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Pass},
+
+		{"init-chain+state-sync", []*abci.Request{initChain, offerSnapshot, applyChunk, finalizeBlock, commit}, CleanStart, Fail},
+		{"no-init-chain+state-sync", []*abci.Request{finalizeBlock, commit}, CleanStart, Fail},
 
 		// start = recovery
+
+		// recovery = init-chain consensus-exec
+		// consensus-height = finalizeBlock commit
+		{"empty-block-2", []*abci.Request{initChain, finalizeBlock, commit}, !CleanStart, Pass},
+		{"finalize-block-missing-2", []*abci.Request{initChain, commit}, !CleanStart, Fail},
+		{"commit-missing-2", []*abci.Request{initChain, finalizeBlock}, !CleanStart, Fail},
+		// consensus-height = *consensus-round finalizeBlock commit
+		{"proposer-round-3", []*abci.Request{initChain, prepareProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"proposer-round-4", []*abci.Request{initChain, prepareProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"non-proposer-round-2", []*abci.Request{initChain, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"multiple-rounds-2", []*abci.Request{initChain, prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+
 		// recovery = consensus-exec
 		// consensus-height = finalizeBlock commit
-		{"empty-block-2", []*abci.Request{finalizeBlock, commit}, !CleanStart, Pass},
-		{"finalize-block-missing-2", []*abci.Request{commit}, !CleanStart, Fail},
-		{"commit-missing-2", []*abci.Request{finalizeBlock}, !CleanStart, Fail},
+		{"empty-block-3", []*abci.Request{finalizeBlock, commit}, !CleanStart, Pass},
+		{"finalize-block-missing-3", []*abci.Request{commit}, !CleanStart, Fail},
+		{"commit-missing-3", []*abci.Request{finalizeBlock}, !CleanStart, Fail},
 		// consensus-height = *consensus-round finalizeBlock commit
-		{"proposer-round-3", []*abci.Request{prepareProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
-		{"proposer-round-4", []*abci.Request{prepareProposal, finalizeBlock, commit}, !CleanStart, Pass},
-		{"non-proposer-round-2", []*abci.Request{processProposal, finalizeBlock, commit}, !CleanStart, Pass},
-		{"multiple-rounds-2", []*abci.Request{prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"proposer-round-4", []*abci.Request{prepareProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"proposer-round-5", []*abci.Request{prepareProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"non-proposer-round-3", []*abci.Request{processProposal, finalizeBlock, commit}, !CleanStart, Pass},
+		{"multiple-rounds-3", []*abci.Request{prepareProposal, processProposal, processProposal, prepareProposal, processProposal, processProposal, processProposal, finalizeBlock, commit}, !CleanStart, Pass},
 
 		// corner cases
 		{"empty execution", nil, CleanStart, Fail},

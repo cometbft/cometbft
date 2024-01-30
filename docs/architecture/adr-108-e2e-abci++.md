@@ -2,6 +2,7 @@
 
 ## Changelog
 - 2023-08-08: Initial version (@nenadmilosevic95)
+- 2023-15-12: Updated to account for grammar changes (@nenadmilosevic95)
 
 
 ## Context
@@ -100,20 +101,20 @@ The idea here was to find a library that automatically verifies whether a specif
 
 We found the following library - https://github.com/goccmack/gogll. It generates a GLL or LR(1) parser and an FSA-based lexer for any context-free grammar. What we needed to do is to rewrite [ABCI 1.0 grammar](../../spec/abci/abci%2B%2B_comet_expected_behavior.md#valid-method-call-sequences)
 using the syntax that the library understands. 
-The new grammar is below.
+The new grammar is below and can be found in `test/e2e/pkg/grammar/abci_grammar.md` file.
 
 ```abnf
 
-Start : CleanStart | Recovery ;
+Start : CleanStart | Recovery;
 
-CleanStart : InitChain StateSync ConsensusExec | InitChain ConsensusExec ;
+CleanStart : InitChain ConsensusExec | StateSync ConsensusExec ;
 StateSync : StateSyncAttempts SuccessSync |  SuccessSync ; 
 StateSyncAttempts : StateSyncAttempt | StateSyncAttempt StateSyncAttempts ;
 StateSyncAttempt : OfferSnapshot ApplyChunks | OfferSnapshot ;
 SuccessSync : OfferSnapshot ApplyChunks ; 
 ApplyChunks : ApplyChunk | ApplyChunk ApplyChunks ;  
 
-Recovery :  ConsensusExec ;
+Recovery :  InitChain ConsensusExec | ConsensusExec ;
 
 ConsensusExec : ConsensusHeights ;
 ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensusHeights ;
@@ -123,7 +124,6 @@ ConsensusRound : Proposer | NonProposer ;
 
 Proposer : PrepareProposal | PrepareProposal ProcessProposal ; 
 NonProposer: ProcessProposal ;
-
 
 InitChain : "init_chain" ;
 FinalizeBlock : "finalize_block" ; 
@@ -146,21 +146,10 @@ it totally from the new grammar. The Application is still logging the `Info`
 call, but a specific test would need to be written to check whether it happens
 at the right moment. 
 
-Moreover, both grammars, the original and the new, represent the node's expected behaviour from the fresh beginning (`CleanStart`) or after a crash (`Recovery`).
-This is why we needed to separate the grammar into two different files (`test/e2e/pkg/grammar/clean-start/abci_grammar_clean_start.md` and `test/e2e/pkg/grammar/recovery/abci_grammar_recovery.md`) and generate two parsers: one for `CleanStart` and one for `Recovery` executions. If we didn't do this, a parser would classify a `CleanStart` execution that happens after the crash as a valid one. This is why later when we verify the execution, we first determine whether a set of requests represent a `CleanStart` or `Recovery` execution and then check its validity by calling an appropriate parser. 
+Moreover, it is worth noticing that the `(inf)` part of the grammar is replaced with the `*`. This results in the new grammar being finite compared to the original, which represents an infinite (omega) grammar. 
 
-Lastly, it is worth noticing that the `(inf)` part of the grammar is replaced with the `*`. This results in the new grammar being finite compared to the original, which represents an infinite (omega) grammar. 
-
-The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. The actual commands are integrated into `test/e2e/Makefile` and executed when `make grammar` is invoked. 
-The resulting code is inside the following directories: 
-- `test/e2e/pkg/grammar/clean-start/lexer`,
-- `test/e2e/pkg/grammar/clean-start/parser`,
-- `test/e2e/pkg/grammar/clean-start/sppf`,
-- `test/e2e/pkg/grammar/clean-start/token`,
-- `test/e2e/pkg/grammar/recovery/lexer`,
-- `test/e2e/pkg/grammar/recovery/parser`,
-- `test/e2e/pkg/grammar/recoveryt/sppf`,
-- `test/e2e/pkg/grammar/recovery/token`.
+The `gogll` library receives the file with the grammar as input, and it generates the corresponding parser and lexer. The actual commands are integrated into `test/e2e/Makefile` and executed when `make grammar-gen` is invoked. 
+The resulting code is stored inside `test/e2e/pkg/grammar/grammar-auto` directory. 
 
 Apart from this auto-generated code, we implemented `GrammarChecker` abstraction
 which knows how to use the generated parsers and lexers to verify whether a
@@ -169,26 +158,22 @@ testnet was running) respects the ABCI 1.0 grammar. The implementation and tests
 for it are inside `test/e2e/pkg/grammar/checker.go` and 
 `test/e2e/pkg/grammar/checker_test.go`, respectively. 
 
-How the `GrammarChecker` works is demonstrated with the test `TestABCIGrammar`
+How the `GrammarChecker` works is demonstrated with the test `TestCheckABCIGrammar`
 implemented in `test/e2e/tests/abci_test.go` file. 
 
 ```go
-func TestABCIGrammar(t *testing.T) {
+func TestCheckABCIGrammar(t *testing.T) {
 	checker := grammar.NewGrammarChecker(grammar.DefaultConfig())
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		if !node.Testnet.ABCITestsEnabled {
 			return
 		}
-		reqs, err := fetchABCIRequests(t, node.Name)
-		if err != nil {
-			t.Error(fmt.Errorf("collecting of ABCI requests failed: %w", err))
-		}
-		for i, r := range reqs {
+		executions, err := fetchABCIRequests(t, node.Name)
+		require.NoError(t, err)
+		for i, e := range executions {
 			isCleanStart := i == 0
-			_, err := checker.Verify(r, isCleanStart)
-			if err != nil {
-				t.Error(fmt.Errorf("ABCI grammar verification failed: %w", err))
-			}
+			_, err := checker.Verify(e, isCleanStart)
+			require.NoError(t, err)
 		}
 	})
 }
@@ -210,22 +195,17 @@ application side.
 
 The `Verify()` method is shown below. 
 ```go
-func (g *GrammarChecker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
+func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
 	if len(reqs) == 0 {
-		return false, fmt.Errorf("execution with no ABCI calls.")
+		return false, fmt.Errorf("execution with no ABCI calls")
 	}
 	r := g.filterRequests(reqs)
 	// Check if the execution is incomplete.
 	if len(r) == 0 {
 		return true, nil
 	}
-	var errors []*Error
 	execution := g.getExecutionString(r)
-	if isCleanStart {
-		errors = g.verifyCleanStart(execution)
-	} else {
-		errors = g.verifyRecovery(execution)
-	}
+	errors := g.verify(execution, isCleanStart)
 	if errors == nil {
 		return true, nil
 	}
@@ -247,12 +227,12 @@ corresponding terminal from the grammar. This logic is implemented in
 `getExecutionString()` function. This function receives a list of `abci.Request` and generates a string where every request 
 will be replaced with a corresponding terminal. For example, request `r` of type `abci.Request_PrepareProposal` is replaced with the string `prepare_proposal`, the first part of `r`'s string representation. 
 - Checks if the resulting string with terminals respects the grammar by calling the 
-appropriate function (`verifyCleanStart()` or `verifyRecovery()`) depending on the execution type. The implementations of both functions are the same; they just use different parsers and lexers. 
+`verify()` function. The implementations of both functions are the same; they just use different parsers and lexers. 
 - Returns true if the execution is valid and an error if that's not the case. An example of an error is below. 
 
 ```
-FAIL: TestABCIGrammar/full02 (8.76s)
-        abci_test.go:24: ABCI grammar verification failed: The error: "Invalid clean-start execution: parser was expecting one of [init_chain], got [offer_snapshot] instead." has occurred at height 0.
+FAIL: TestCheckABCIGrammar/full02 (8.76s)
+        abci_test.go:24: ABCI grammar verification failed: The error: "Invalid execution: parser was expecting one of [init_chain], got [offer_snapshot] instead." has occurred at height 0.
             
             Full execution:
             0: offer_snapshot apply_snapshot_chunk finalize_block commit
@@ -261,26 +241,69 @@ FAIL: TestABCIGrammar/full02 (8.76s)
             3: finalize_block commit
 			...
 ```
-The error shown above reports an invalid `CleanStart` execution. Moreover, it says why it is considered invalid (`init_chain` was missing) and the height of the error. Notice here that the height in the case of `CleanStart` execution corresponds to the actual consensus height, while for the `Recovery` execution, height 0 represents the first height after the crash. Lastly, after the error, the full execution, one height per line, is printed. This part may be optional and handled with a config flag, but we left it like this for now. 
+The error shown above reports an invalid execution. Moreover, it says why it is considered invalid (`init_chain` was missing) and the height of the error. Notice here that the height in the case of `CleanStart` execution corresponds to the actual consensus height, while for the `Recovery` execution, height 0 represents the first height after the crash. Lastly, after the error, the full execution, one height per line, is printed. This part may be optional and handled with a config flag, but we left it like this for now. 
 
 *Note:* The `gogll` parser can return many errors because it returns an error at every point at which the parser fails to parse
 a grammar production. Usually, the error of interest is the one that has 
 parsed the largest number of tokens. This is why, by default, we are printing only the last error; however, this can be configured with the `NumberOfErrorsToShow` field of `GrammarChecker`'s config.
 
+Lastly, we present the `verify()` function since this function is the heart of this code. 
+```go
+func (g *Checker) verify(execution string, isCleanStart bool) []*Error {
+	errors := make([]*Error, 0)
+	lexer := lexer.New([]rune(execution))
+	bsrForest, errs := parser.Parse(lexer)
+	for _, err := range errs {
+		exp := []string{}
+		for _, ex := range err.Expected {
+			exp = append(exp, ex)
+		}
+		expectedTokens := strings.Join(exp, ",")
+		unexpectedToken := err.Token.TypeID()
+		e := &Error{
+			description: fmt.Sprintf("Invalid execution: parser was expecting one of [%v], got [%v] instead.", expectedTokens, unexpectedToken),
+			height:      err.Line - 1,
+		}
+		errors = append(errors, e)
+	}
+	if len(errors) != 0 {
+		return errors
+	}
+	eType := symbols.NT_Recovery
+	if isCleanStart {
+		eType = symbols.NT_CleanStart
+	}
+	roots := bsrForest.GetRoots()
+	for _, r := range roots {
+		for _, s := range r.Label.Slot().Symbols {
+			if s == eType {
+				return nil
+			}
+		}
+	}
+	e := &Error{
+		description: fmt.Sprintf("The execution is not of valid type."),
+		height:      0,
+	}
+	errors = append(errors, e)
+	return errors
+
+}
+
+```
+
+This function first checks if the specific execution represents a valid execution concerning the ABCI grammar. For this, it uses 
+the auto-generated parser and lexer. If the execution passes this initial test, it checks whether the execution is of a valid type (`CleanStart` or `Recovery`). Namely, it checks whether the execution is of the type specified with the function's second parameter (`isCleanStart`). 
+
 **Changing the grammar**
 
-Any modification to the grammar (`test/e2e/pkg/grammar/clean-start/abci_grammar_clean_start.md` or `test/e2e/pkg/grammar/recovery/abci_grammar_recovery.md`) requires generating a new parser and lexer. This is done by 
+Any modification to the grammar (`test/e2e/pkg/grammar/abci_grammar.md`) requires generating a new parser and lexer. This is done by 
 going to the `test/e2e/` directory and running:
 
 ```bash 
-make grammar
+make grammar-gen
 ``` 
-Notice here that you need to have `gogll` installed 
-on your machine to run the make successfully. If this is not the case, you can install it with the following command: 
 
-```bash 
-go get github.com/goccmack/gogll/v3
-```  
 Make sure you commit any changes to the auto-generated code together with the changes to the grammar.
 
 ### Supporting additional ABCI requests

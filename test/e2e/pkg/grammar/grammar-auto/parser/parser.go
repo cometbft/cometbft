@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/lexer"
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser/bsr"
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser/slot"
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/parser/symbols"
-	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/recovery/grammar-auto/token"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/lexer"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/bsr"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/slot"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/parser/symbols"
+	"github.com/cometbft/cometbft/test/e2e/pkg/grammar/grammar-auto/token"
 )
 
 type parser struct {
@@ -65,6 +65,79 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 		// p.DumpDescriptors()
 
 		switch L {
+		case slot.ApplyChunk0R0: // ApplyChunk : ∙apply_snapshot_chunk
+
+			p.bsrSet.Add(slot.ApplyChunk0R1, cU, p.cI, p.cI+1)
+			p.cI++
+			if p.follow(symbols.NT_ApplyChunk) {
+				p.rtn(symbols.NT_ApplyChunk, cU, p.cI)
+			} else {
+				p.parseError(slot.ApplyChunk0R0, p.cI, followSets[symbols.NT_ApplyChunk])
+			}
+		case slot.ApplyChunks0R0: // ApplyChunks : ∙ApplyChunk
+
+			p.call(slot.ApplyChunks0R1, cU, p.cI)
+		case slot.ApplyChunks0R1: // ApplyChunks : ApplyChunk ∙
+
+			if p.follow(symbols.NT_ApplyChunks) {
+				p.rtn(symbols.NT_ApplyChunks, cU, p.cI)
+			} else {
+				p.parseError(slot.ApplyChunks0R0, p.cI, followSets[symbols.NT_ApplyChunks])
+			}
+		case slot.ApplyChunks1R0: // ApplyChunks : ∙ApplyChunk ApplyChunks
+
+			p.call(slot.ApplyChunks1R1, cU, p.cI)
+		case slot.ApplyChunks1R1: // ApplyChunks : ApplyChunk ∙ApplyChunks
+
+			if !p.testSelect(slot.ApplyChunks1R1) {
+				p.parseError(slot.ApplyChunks1R1, p.cI, first[slot.ApplyChunks1R1])
+				break
+			}
+
+			p.call(slot.ApplyChunks1R2, cU, p.cI)
+		case slot.ApplyChunks1R2: // ApplyChunks : ApplyChunk ApplyChunks ∙
+
+			if p.follow(symbols.NT_ApplyChunks) {
+				p.rtn(symbols.NT_ApplyChunks, cU, p.cI)
+			} else {
+				p.parseError(slot.ApplyChunks1R0, p.cI, followSets[symbols.NT_ApplyChunks])
+			}
+		case slot.CleanStart0R0: // CleanStart : ∙InitChain ConsensusExec
+
+			p.call(slot.CleanStart0R1, cU, p.cI)
+		case slot.CleanStart0R1: // CleanStart : InitChain ∙ConsensusExec
+
+			if !p.testSelect(slot.CleanStart0R1) {
+				p.parseError(slot.CleanStart0R1, p.cI, first[slot.CleanStart0R1])
+				break
+			}
+
+			p.call(slot.CleanStart0R2, cU, p.cI)
+		case slot.CleanStart0R2: // CleanStart : InitChain ConsensusExec ∙
+
+			if p.follow(symbols.NT_CleanStart) {
+				p.rtn(symbols.NT_CleanStart, cU, p.cI)
+			} else {
+				p.parseError(slot.CleanStart0R0, p.cI, followSets[symbols.NT_CleanStart])
+			}
+		case slot.CleanStart1R0: // CleanStart : ∙StateSync ConsensusExec
+
+			p.call(slot.CleanStart1R1, cU, p.cI)
+		case slot.CleanStart1R1: // CleanStart : StateSync ∙ConsensusExec
+
+			if !p.testSelect(slot.CleanStart1R1) {
+				p.parseError(slot.CleanStart1R1, p.cI, first[slot.CleanStart1R1])
+				break
+			}
+
+			p.call(slot.CleanStart1R2, cU, p.cI)
+		case slot.CleanStart1R2: // CleanStart : StateSync ConsensusExec ∙
+
+			if p.follow(symbols.NT_CleanStart) {
+				p.rtn(symbols.NT_CleanStart, cU, p.cI)
+			} else {
+				p.parseError(slot.CleanStart1R0, p.cI, followSets[symbols.NT_CleanStart])
+			}
 		case slot.Commit0R0: // Commit : ∙commit
 
 			p.bsrSet.Add(slot.Commit0R1, cU, p.cI, p.cI+1)
@@ -213,6 +286,15 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.FinalizeBlock0R0, p.cI, followSets[symbols.NT_FinalizeBlock])
 			}
+		case slot.InitChain0R0: // InitChain : ∙init_chain
+
+			p.bsrSet.Add(slot.InitChain0R1, cU, p.cI, p.cI+1)
+			p.cI++
+			if p.follow(symbols.NT_InitChain) {
+				p.rtn(symbols.NT_InitChain, cU, p.cI)
+			} else {
+				p.parseError(slot.InitChain0R0, p.cI, followSets[symbols.NT_InitChain])
+			}
 		case slot.NonProposer0R0: // NonProposer : ∙ProcessProposal
 
 			p.call(slot.NonProposer0R1, cU, p.cI)
@@ -222,6 +304,15 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 				p.rtn(symbols.NT_NonProposer, cU, p.cI)
 			} else {
 				p.parseError(slot.NonProposer0R0, p.cI, followSets[symbols.NT_NonProposer])
+			}
+		case slot.OfferSnapshot0R0: // OfferSnapshot : ∙offer_snapshot
+
+			p.bsrSet.Add(slot.OfferSnapshot0R1, cU, p.cI, p.cI+1)
+			p.cI++
+			if p.follow(symbols.NT_OfferSnapshot) {
+				p.rtn(symbols.NT_OfferSnapshot, cU, p.cI)
+			} else {
+				p.parseError(slot.OfferSnapshot0R0, p.cI, followSets[symbols.NT_OfferSnapshot])
 			}
 		case slot.PrepareProposal0R0: // PrepareProposal : ∙prepare_proposal
 
@@ -269,25 +360,155 @@ func (p *parser) parse() (*bsr.Set, []*Error) {
 			} else {
 				p.parseError(slot.Proposer1R0, p.cI, followSets[symbols.NT_Proposer])
 			}
-		case slot.Recovery0R0: // Recovery : ∙ConsensusExec
+		case slot.Recovery0R0: // Recovery : ∙InitChain ConsensusExec
 
 			p.call(slot.Recovery0R1, cU, p.cI)
-		case slot.Recovery0R1: // Recovery : ConsensusExec ∙
+		case slot.Recovery0R1: // Recovery : InitChain ∙ConsensusExec
+
+			if !p.testSelect(slot.Recovery0R1) {
+				p.parseError(slot.Recovery0R1, p.cI, first[slot.Recovery0R1])
+				break
+			}
+
+			p.call(slot.Recovery0R2, cU, p.cI)
+		case slot.Recovery0R2: // Recovery : InitChain ConsensusExec ∙
 
 			if p.follow(symbols.NT_Recovery) {
 				p.rtn(symbols.NT_Recovery, cU, p.cI)
 			} else {
 				p.parseError(slot.Recovery0R0, p.cI, followSets[symbols.NT_Recovery])
 			}
-		case slot.Start0R0: // Start : ∙Recovery
+		case slot.Recovery1R0: // Recovery : ∙ConsensusExec
+
+			p.call(slot.Recovery1R1, cU, p.cI)
+		case slot.Recovery1R1: // Recovery : ConsensusExec ∙
+
+			if p.follow(symbols.NT_Recovery) {
+				p.rtn(symbols.NT_Recovery, cU, p.cI)
+			} else {
+				p.parseError(slot.Recovery1R0, p.cI, followSets[symbols.NT_Recovery])
+			}
+		case slot.Start0R0: // Start : ∙CleanStart
 
 			p.call(slot.Start0R1, cU, p.cI)
-		case slot.Start0R1: // Start : Recovery ∙
+		case slot.Start0R1: // Start : CleanStart ∙
 
 			if p.follow(symbols.NT_Start) {
 				p.rtn(symbols.NT_Start, cU, p.cI)
 			} else {
 				p.parseError(slot.Start0R0, p.cI, followSets[symbols.NT_Start])
+			}
+		case slot.Start1R0: // Start : ∙Recovery
+
+			p.call(slot.Start1R1, cU, p.cI)
+		case slot.Start1R1: // Start : Recovery ∙
+
+			if p.follow(symbols.NT_Start) {
+				p.rtn(symbols.NT_Start, cU, p.cI)
+			} else {
+				p.parseError(slot.Start1R0, p.cI, followSets[symbols.NT_Start])
+			}
+		case slot.StateSync0R0: // StateSync : ∙StateSyncAttempts SuccessSync
+
+			p.call(slot.StateSync0R1, cU, p.cI)
+		case slot.StateSync0R1: // StateSync : StateSyncAttempts ∙SuccessSync
+
+			if !p.testSelect(slot.StateSync0R1) {
+				p.parseError(slot.StateSync0R1, p.cI, first[slot.StateSync0R1])
+				break
+			}
+
+			p.call(slot.StateSync0R2, cU, p.cI)
+		case slot.StateSync0R2: // StateSync : StateSyncAttempts SuccessSync ∙
+
+			if p.follow(symbols.NT_StateSync) {
+				p.rtn(symbols.NT_StateSync, cU, p.cI)
+			} else {
+				p.parseError(slot.StateSync0R0, p.cI, followSets[symbols.NT_StateSync])
+			}
+		case slot.StateSync1R0: // StateSync : ∙SuccessSync
+
+			p.call(slot.StateSync1R1, cU, p.cI)
+		case slot.StateSync1R1: // StateSync : SuccessSync ∙
+
+			if p.follow(symbols.NT_StateSync) {
+				p.rtn(symbols.NT_StateSync, cU, p.cI)
+			} else {
+				p.parseError(slot.StateSync1R0, p.cI, followSets[symbols.NT_StateSync])
+			}
+		case slot.StateSyncAttempt0R0: // StateSyncAttempt : ∙OfferSnapshot ApplyChunks
+
+			p.call(slot.StateSyncAttempt0R1, cU, p.cI)
+		case slot.StateSyncAttempt0R1: // StateSyncAttempt : OfferSnapshot ∙ApplyChunks
+
+			if !p.testSelect(slot.StateSyncAttempt0R1) {
+				p.parseError(slot.StateSyncAttempt0R1, p.cI, first[slot.StateSyncAttempt0R1])
+				break
+			}
+
+			p.call(slot.StateSyncAttempt0R2, cU, p.cI)
+		case slot.StateSyncAttempt0R2: // StateSyncAttempt : OfferSnapshot ApplyChunks ∙
+
+			if p.follow(symbols.NT_StateSyncAttempt) {
+				p.rtn(symbols.NT_StateSyncAttempt, cU, p.cI)
+			} else {
+				p.parseError(slot.StateSyncAttempt0R0, p.cI, followSets[symbols.NT_StateSyncAttempt])
+			}
+		case slot.StateSyncAttempt1R0: // StateSyncAttempt : ∙OfferSnapshot
+
+			p.call(slot.StateSyncAttempt1R1, cU, p.cI)
+		case slot.StateSyncAttempt1R1: // StateSyncAttempt : OfferSnapshot ∙
+
+			if p.follow(symbols.NT_StateSyncAttempt) {
+				p.rtn(symbols.NT_StateSyncAttempt, cU, p.cI)
+			} else {
+				p.parseError(slot.StateSyncAttempt1R0, p.cI, followSets[symbols.NT_StateSyncAttempt])
+			}
+		case slot.StateSyncAttempts0R0: // StateSyncAttempts : ∙StateSyncAttempt
+
+			p.call(slot.StateSyncAttempts0R1, cU, p.cI)
+		case slot.StateSyncAttempts0R1: // StateSyncAttempts : StateSyncAttempt ∙
+
+			if p.follow(symbols.NT_StateSyncAttempts) {
+				p.rtn(symbols.NT_StateSyncAttempts, cU, p.cI)
+			} else {
+				p.parseError(slot.StateSyncAttempts0R0, p.cI, followSets[symbols.NT_StateSyncAttempts])
+			}
+		case slot.StateSyncAttempts1R0: // StateSyncAttempts : ∙StateSyncAttempt StateSyncAttempts
+
+			p.call(slot.StateSyncAttempts1R1, cU, p.cI)
+		case slot.StateSyncAttempts1R1: // StateSyncAttempts : StateSyncAttempt ∙StateSyncAttempts
+
+			if !p.testSelect(slot.StateSyncAttempts1R1) {
+				p.parseError(slot.StateSyncAttempts1R1, p.cI, first[slot.StateSyncAttempts1R1])
+				break
+			}
+
+			p.call(slot.StateSyncAttempts1R2, cU, p.cI)
+		case slot.StateSyncAttempts1R2: // StateSyncAttempts : StateSyncAttempt StateSyncAttempts ∙
+
+			if p.follow(symbols.NT_StateSyncAttempts) {
+				p.rtn(symbols.NT_StateSyncAttempts, cU, p.cI)
+			} else {
+				p.parseError(slot.StateSyncAttempts1R0, p.cI, followSets[symbols.NT_StateSyncAttempts])
+			}
+		case slot.SuccessSync0R0: // SuccessSync : ∙OfferSnapshot ApplyChunks
+
+			p.call(slot.SuccessSync0R1, cU, p.cI)
+		case slot.SuccessSync0R1: // SuccessSync : OfferSnapshot ∙ApplyChunks
+
+			if !p.testSelect(slot.SuccessSync0R1) {
+				p.parseError(slot.SuccessSync0R1, p.cI, first[slot.SuccessSync0R1])
+				break
+			}
+
+			p.call(slot.SuccessSync0R2, cU, p.cI)
+		case slot.SuccessSync0R2: // SuccessSync : OfferSnapshot ApplyChunks ∙
+
+			if p.follow(symbols.NT_SuccessSync) {
+				p.rtn(symbols.NT_SuccessSync, cU, p.cI)
+			} else {
+				p.parseError(slot.SuccessSync0R0, p.cI, followSets[symbols.NT_SuccessSync])
 			}
 
 		default:
@@ -535,22 +756,88 @@ func (p *parser) testSelect(l slot.Label) bool {
 }
 
 var first = []map[token.Type]string{
+	// ApplyChunk : ∙apply_snapshot_chunk
+	{
+		token.T_0: "apply_snapshot_chunk",
+	},
+	// ApplyChunk : apply_snapshot_chunk ∙
+	{
+		token.T_0: "apply_snapshot_chunk",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// ApplyChunks : ∙ApplyChunk
+	{
+		token.T_0: "apply_snapshot_chunk",
+	},
+	// ApplyChunks : ApplyChunk ∙
+	{
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// ApplyChunks : ∙ApplyChunk ApplyChunks
+	{
+		token.T_0: "apply_snapshot_chunk",
+	},
+	// ApplyChunks : ApplyChunk ∙ApplyChunks
+	{
+		token.T_0: "apply_snapshot_chunk",
+	},
+	// ApplyChunks : ApplyChunk ApplyChunks ∙
+	{
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// CleanStart : ∙InitChain ConsensusExec
+	{
+		token.T_3: "init_chain",
+	},
+	// CleanStart : InitChain ∙ConsensusExec
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// CleanStart : InitChain ConsensusExec ∙
+	{
+		token.EOF: "$",
+	},
+	// CleanStart : ∙StateSync ConsensusExec
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// CleanStart : StateSync ∙ConsensusExec
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// CleanStart : StateSync ConsensusExec ∙
+	{
+		token.EOF: "$",
+	},
 	// Commit : ∙commit
 	{
-		token.T_0: "commit",
+		token.T_1: "commit",
 	},
 	// Commit : commit ∙
 	{
 		token.EOF: "$",
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusExec : ∙ConsensusHeights
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusExec : ConsensusHeights ∙
 	{
@@ -558,44 +845,44 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusHeight : ∙ConsensusRounds FinalizeBlock Commit
 	{
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeight : ConsensusRounds ∙FinalizeBlock Commit
 	{
-		token.T_1: "finalize_block",
+		token.T_2: "finalize_block",
 	},
 	// ConsensusHeight : ConsensusRounds FinalizeBlock ∙Commit
 	{
-		token.T_0: "commit",
+		token.T_1: "commit",
 	},
 	// ConsensusHeight : ConsensusRounds FinalizeBlock Commit ∙
 	{
 		token.EOF: "$",
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeight : ∙FinalizeBlock Commit
 	{
-		token.T_1: "finalize_block",
+		token.T_2: "finalize_block",
 	},
 	// ConsensusHeight : FinalizeBlock ∙Commit
 	{
-		token.T_0: "commit",
+		token.T_1: "commit",
 	},
 	// ConsensusHeight : FinalizeBlock Commit ∙
 	{
 		token.EOF: "$",
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights : ∙ConsensusHeight
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights : ConsensusHeight ∙
 	{
@@ -603,15 +890,15 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusHeights : ∙ConsensusHeight ConsensusHeights
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights : ConsensusHeight ∙ConsensusHeights
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights : ConsensusHeight ConsensusHeights ∙
 	{
@@ -619,138 +906,278 @@ var first = []map[token.Type]string{
 	},
 	// ConsensusRound : ∙Proposer
 	{
-		token.T_2: "prepare_proposal",
+		token.T_5: "prepare_proposal",
 	},
 	// ConsensusRound : Proposer ∙
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRound : ∙NonProposer
 	{
-		token.T_3: "process_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRound : NonProposer ∙
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds : ∙ConsensusRound
 	{
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds : ConsensusRound ∙
 	{
-		token.T_1: "finalize_block",
+		token.T_2: "finalize_block",
 	},
 	// ConsensusRounds : ∙ConsensusRound ConsensusRounds
 	{
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds : ConsensusRound ∙ConsensusRounds
 	{
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds : ConsensusRound ConsensusRounds ∙
 	{
-		token.T_1: "finalize_block",
+		token.T_2: "finalize_block",
 	},
 	// FinalizeBlock : ∙finalize_block
 	{
-		token.T_1: "finalize_block",
+		token.T_2: "finalize_block",
 	},
 	// FinalizeBlock : finalize_block ∙
 	{
-		token.T_0: "commit",
+		token.T_1: "commit",
+	},
+	// InitChain : ∙init_chain
+	{
+		token.T_3: "init_chain",
+	},
+	// InitChain : init_chain ∙
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// NonProposer : ∙ProcessProposal
 	{
-		token.T_3: "process_proposal",
+		token.T_6: "process_proposal",
 	},
 	// NonProposer : ProcessProposal ∙
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// OfferSnapshot : ∙offer_snapshot
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// OfferSnapshot : offer_snapshot ∙
+	{
+		token.T_0: "apply_snapshot_chunk",
+		token.T_4: "offer_snapshot",
 	},
 	// PrepareProposal : ∙prepare_proposal
 	{
-		token.T_2: "prepare_proposal",
+		token.T_5: "prepare_proposal",
 	},
 	// PrepareProposal : prepare_proposal ∙
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ProcessProposal : ∙process_proposal
 	{
-		token.T_3: "process_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ProcessProposal : process_proposal ∙
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Proposer : ∙PrepareProposal
 	{
-		token.T_2: "prepare_proposal",
+		token.T_5: "prepare_proposal",
 	},
 	// Proposer : PrepareProposal ∙
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Proposer : ∙PrepareProposal ProcessProposal
 	{
-		token.T_2: "prepare_proposal",
+		token.T_5: "prepare_proposal",
 	},
 	// Proposer : PrepareProposal ∙ProcessProposal
 	{
-		token.T_3: "process_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Proposer : PrepareProposal ProcessProposal ∙
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// Recovery : ∙InitChain ConsensusExec
+	{
+		token.T_3: "init_chain",
+	},
+	// Recovery : InitChain ∙ConsensusExec
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// Recovery : InitChain ConsensusExec ∙
+	{
+		token.EOF: "$",
 	},
 	// Recovery : ∙ConsensusExec
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Recovery : ConsensusExec ∙
 	{
 		token.EOF: "$",
 	},
+	// Start : ∙CleanStart
+	{
+		token.T_3: "init_chain",
+		token.T_4: "offer_snapshot",
+	},
+	// Start : CleanStart ∙
+	{
+		token.EOF: "$",
+	},
 	// Start : ∙Recovery
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_3: "init_chain",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Start : Recovery ∙
 	{
 		token.EOF: "$",
 	},
+	// StateSync : ∙StateSyncAttempts SuccessSync
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSync : StateSyncAttempts ∙SuccessSync
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSync : StateSyncAttempts SuccessSync ∙
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// StateSync : ∙SuccessSync
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSync : SuccessSync ∙
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// StateSyncAttempt : ∙OfferSnapshot ApplyChunks
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempt : OfferSnapshot ∙ApplyChunks
+	{
+		token.T_0: "apply_snapshot_chunk",
+	},
+	// StateSyncAttempt : OfferSnapshot ApplyChunks ∙
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempt : ∙OfferSnapshot
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempt : OfferSnapshot ∙
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempts : ∙StateSyncAttempt
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempts : StateSyncAttempt ∙
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempts : ∙StateSyncAttempt StateSyncAttempts
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempts : StateSyncAttempt ∙StateSyncAttempts
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempts : StateSyncAttempt StateSyncAttempts ∙
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// SuccessSync : ∙OfferSnapshot ApplyChunks
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// SuccessSync : OfferSnapshot ∙ApplyChunks
+	{
+		token.T_0: "apply_snapshot_chunk",
+	},
+	// SuccessSync : OfferSnapshot ApplyChunks ∙
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
 }
 
 var followSets = []map[token.Type]string{
+	// ApplyChunk
+	{
+		token.T_0: "apply_snapshot_chunk",
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// ApplyChunks
+	{
+		token.T_2: "finalize_block",
+		token.T_4: "offer_snapshot",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// CleanStart
+	{
+		token.EOF: "$",
+	},
 	// Commit
 	{
 		token.EOF: "$",
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusExec
 	{
@@ -759,9 +1186,9 @@ var followSets = []map[token.Type]string{
 	// ConsensusHeight
 	{
 		token.EOF: "$",
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusHeights
 	{
@@ -769,41 +1196,52 @@ var followSets = []map[token.Type]string{
 	},
 	// ConsensusRound
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ConsensusRounds
 	{
-		token.T_1: "finalize_block",
+		token.T_2: "finalize_block",
 	},
 	// FinalizeBlock
 	{
-		token.T_0: "commit",
+		token.T_1: "commit",
+	},
+	// InitChain
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// NonProposer
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// OfferSnapshot
+	{
+		token.T_0: "apply_snapshot_chunk",
+		token.T_4: "offer_snapshot",
 	},
 	// PrepareProposal
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// ProcessProposal
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Proposer
 	{
-		token.T_1: "finalize_block",
-		token.T_2: "prepare_proposal",
-		token.T_3: "process_proposal",
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 	// Recovery
 	{
@@ -812,6 +1250,26 @@ var followSets = []map[token.Type]string{
 	// Start
 	{
 		token.EOF: "$",
+	},
+	// StateSync
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
+	},
+	// StateSyncAttempt
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// StateSyncAttempts
+	{
+		token.T_4: "offer_snapshot",
+	},
+	// SuccessSync
+	{
+		token.T_2: "finalize_block",
+		token.T_5: "prepare_proposal",
+		token.T_6: "process_proposal",
 	},
 }
 

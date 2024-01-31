@@ -33,16 +33,16 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestConfigValidateBasic(t *testing.T) {
 	cfg := config.DefaultConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	// tamper with timeout_propose
 	cfg.Consensus.TimeoutPropose = -10 * time.Second
-	assert.Error(t, cfg.ValidateBasic())
+	require.Error(t, cfg.ValidateBasic())
 	cfg.Consensus.TimeoutPropose = 3 * time.Second
 
 	cfg.Consensus.CreateEmptyBlocks = false
 	cfg.Mempool.Type = config.MempoolTypeNop
-	assert.Error(t, cfg.ValidateBasic())
+	require.Error(t, cfg.ValidateBasic())
 }
 
 func TestTLSConfiguration(t *testing.T) {
@@ -63,16 +63,16 @@ func TestTLSConfiguration(t *testing.T) {
 
 func TestBaseConfigValidateBasic(t *testing.T) {
 	cfg := config.TestBaseConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	// tamper with log format
 	cfg.LogFormat = "invalid"
-	assert.Error(t, cfg.ValidateBasic())
+	require.Error(t, cfg.ValidateBasic())
 }
 
 func TestRPCConfigValidateBasic(t *testing.T) {
 	cfg := config.TestRPCConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	fieldsToTest := []string{
 		"MaxOpenConnections",
@@ -85,14 +85,14 @@ func TestRPCConfigValidateBasic(t *testing.T) {
 
 	for _, fieldName := range fieldsToTest {
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(-1)
-		assert.Error(t, cfg.ValidateBasic())
+		require.Error(t, cfg.ValidateBasic())
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(0)
 	}
 }
 
 func TestP2PConfigValidateBasic(t *testing.T) {
 	cfg := config.TestP2PConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	fieldsToTest := []string{
 		"MaxNumInboundPeers",
@@ -105,14 +105,14 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 
 	for _, fieldName := range fieldsToTest {
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(-1)
-		assert.Error(t, cfg.ValidateBasic())
+		require.Error(t, cfg.ValidateBasic())
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(0)
 	}
 }
 
 func TestMempoolConfigValidateBasic(t *testing.T) {
 	cfg := config.TestMempoolConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	fieldsToTest := []string{
 		"Size",
@@ -123,12 +123,12 @@ func TestMempoolConfigValidateBasic(t *testing.T) {
 
 	for _, fieldName := range fieldsToTest {
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(-1)
-		assert.Error(t, cfg.ValidateBasic())
+		require.Error(t, cfg.ValidateBasic())
 		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(0)
 	}
 
 	reflect.ValueOf(cfg).Elem().FieldByName("Type").SetString("invalid")
-	assert.Error(t, cfg.ValidateBasic())
+	require.Error(t, cfg.ValidateBasic())
 }
 
 func TestStateSyncConfigValidateBasic(t *testing.T) {
@@ -138,14 +138,14 @@ func TestStateSyncConfigValidateBasic(t *testing.T) {
 
 func TestBlockSyncConfigValidateBasic(t *testing.T) {
 	cfg := config.TestBlockSyncConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	// tamper with version
 	cfg.Version = "v1"
-	assert.Error(t, cfg.ValidateBasic())
+	require.Error(t, cfg.ValidateBasic())
 
 	cfg.Version = "invalid"
-	assert.Error(t, cfg.ValidateBasic())
+	require.Error(t, cfg.ValidateBasic())
 }
 
 func TestConsensusConfig_ValidateBasic(t *testing.T) {
@@ -182,9 +182,9 @@ func TestConsensusConfig_ValidateBasic(t *testing.T) {
 
 			err := cfg.ValidateBasic()
 			if tc.expectErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -192,9 +192,9 @@ func TestConsensusConfig_ValidateBasic(t *testing.T) {
 
 func TestInstrumentationConfigValidateBasic(t *testing.T) {
 	cfg := config.TestInstrumentationConfig()
-	assert.NoError(t, cfg.ValidateBasic())
+	require.NoError(t, cfg.ValidateBasic())
 
 	// tamper with maximum open connections
 	cfg.MaxOpenConnections = -1
-	assert.Error(t, cfg.ValidateBasic())
+	require.Error(t, cfg.ValidateBasic())
 }

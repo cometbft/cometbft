@@ -94,7 +94,7 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 		b.Fatal(err)
 	}
 	e := mp.FlushAppConn()
-	require.True(b, e == nil)
+	require.NotErrorIs(b, nil, e)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -126,16 +126,15 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
-
 		tx := kvstore.NewTxFromID(i)
 
 		_, e := mp.CheckTx(tx)
-		require.True(b, e == nil)
+		require.NoError(b, e)
 
 		e = mp.FlushAppConn()
-		require.True(b, e == nil)
+		require.NoError(b, e)
 
-		require.True(b, mp.Size() == 1)
+		require.Equal(b, 1, mp.Size())
 
 		txs := mp.ReapMaxTxs(mp.Size())
 		doCommit(b, mp, app, txs, int64(i))

@@ -7,12 +7,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
+
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 // database keys.

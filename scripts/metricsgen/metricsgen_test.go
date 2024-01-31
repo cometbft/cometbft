@@ -11,8 +11,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
 	"github.com/stretchr/testify/require"
+
+	metricsgen "github.com/cometbft/cometbft/scripts/metricsgen"
 )
 
 const testDataDir = "./testdata"
@@ -175,6 +176,49 @@ func TestParseMetricsStruct(t *testing.T) {
 						TypeName:   "Counter",
 						FieldName:  "myCounter",
 						MetricName: "my_counter",
+					},
+				},
+			},
+		},
+		{
+			name: "parse description from comments",
+			metricsStruct: `type Metrics struct {
+				// myCounter is a counter.
+				// It does count.
+				myCounter metrics.Counter
+				nonMetric string
+				}`,
+			expected: metricsgen.TemplateData{
+				Package: pkgName,
+				ParsedMetrics: []metricsgen.ParsedMetricField{
+					{
+						Description: "myCounter is a counter. It does count.",
+						TypeName:    "Counter",
+						FieldName:   "myCounter",
+						MetricName:  "my_counter",
+					},
+				},
+			},
+		},
+		{
+			name: "parse short description from comments",
+			metricsStruct: `type Metrics struct {
+				// myCounter is a counter.
+				//
+				// myCounter needs a super long description,
+				// we don't want it on the description.
+				// metrics:It does count.
+				myCounter metrics.Counter
+				nonMetric string
+				}`,
+			expected: metricsgen.TemplateData{
+				Package: pkgName,
+				ParsedMetrics: []metricsgen.ParsedMetricField{
+					{
+						Description: "It does count.",
+						TypeName:    "Counter",
+						FieldName:   "myCounter",
+						MetricName:  "my_counter",
 					},
 				},
 			},

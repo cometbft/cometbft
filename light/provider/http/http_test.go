@@ -22,15 +22,15 @@ import (
 func TestNewProvider(t *testing.T) {
 	c, err := lighthttp.New("chain-test", "192.168.0.1:26657")
 	require.NoError(t, err)
-	require.Equal(t, fmt.Sprintf("%s", c), "http{http://192.168.0.1:26657}")
+	require.Equal(t, "http{http://192.168.0.1:26657}", fmt.Sprintf("%s", c))
 
 	c, err = lighthttp.New("chain-test", "http://153.200.0.1:26657")
 	require.NoError(t, err)
-	require.Equal(t, fmt.Sprintf("%s", c), "http{http://153.200.0.1:26657}")
+	require.Equal(t, "http{http://153.200.0.1:26657}", fmt.Sprintf("%s", c))
 
 	c, err = lighthttp.New("chain-test", "153.200.0.1")
 	require.NoError(t, err)
-	require.Equal(t, fmt.Sprintf("%s", c), "http{http://153.200.0.1}")
+	require.Equal(t, "http{http://153.200.0.1}", fmt.Sprintf("%s", c))
 }
 
 func TestProvider(t *testing.T) {
@@ -47,7 +47,7 @@ func TestProvider(t *testing.T) {
 		chainID := genDoc.ChainID
 
 		c, err := rpchttp.New(rpcAddr + path)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		p := lighthttp.NewWithClient(chainID, c)
 		require.NoError(t, err)
@@ -61,10 +61,10 @@ func TestProvider(t *testing.T) {
 		lb, err := p.LightBlock(context.Background(), 0)
 		require.NoError(t, err)
 		require.NotNil(t, lb)
-		assert.True(t, lb.Height >= 10)
+		assert.GreaterOrEqual(t, lb.Height, int64(10))
 
 		// let's check this is valid somehow
-		assert.Nil(t, lb.ValidateBasic(chainID))
+		require.NoError(t, lb.ValidateBasic(chainID))
 
 		// historical queries now work :)
 		lb, err = p.LightBlock(context.Background(), 0)

@@ -12,12 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	p2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-
-	"github.com/cometbft/cometbft/config"
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -30,10 +29,10 @@ func TestPeerBasic(t *testing.T) {
 	t.Cleanup(rp.Stop)
 
 	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), cfg, cmtconn.DefaultMConnConfig())
-	require.Nil(err)
+	require.NoError(err)
 
 	err = p.Start()
-	require.Nil(err)
+	require.NoError(err)
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {
 			t.Error(err)
@@ -60,10 +59,10 @@ func TestPeerSend(t *testing.T) {
 	t.Cleanup(rp.Stop)
 
 	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), config, cmtconn.DefaultMConnConfig())
-	require.Nil(err)
+	require.NoError(err)
 
 	err = p.Start()
-	require.Nil(err)
+	require.NoError(err)
 
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {

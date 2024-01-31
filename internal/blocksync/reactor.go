@@ -3,6 +3,7 @@ package blocksync
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"time"
 
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
@@ -56,10 +57,11 @@ type Reactor struct {
 	// immutable
 	initialState sm.State
 
-	blockExec *sm.BlockExecutor
-	store     sm.BlockStore
-	pool      *BlockPool
-	blockSync bool
+	blockExec     *sm.BlockExecutor
+	store         sm.BlockStore
+	pool          *BlockPool
+	blockSync     bool
+	poolRoutineWg sync.WaitGroup
 
 	requestsCh <-chan BlockRequest
 	errorsCh   <-chan peerError
@@ -125,7 +127,11 @@ func (bcR *Reactor) OnStart() error {
 		if err != nil {
 			return err
 		}
-		go bcR.poolRoutine(false)
+		bcR.poolRoutineWg.Add(1)
+		go func() {
+			defer bcR.poolRoutineWg.Done()
+			bcR.poolRoutine(false)
+		}()
 	}
 	return nil
 }
@@ -140,7 +146,11 @@ func (bcR *Reactor) SwitchToBlockSync(state sm.State) error {
 	if err != nil {
 		return err
 	}
-	go bcR.poolRoutine(true)
+	bcR.poolRoutineWg.Add(1)
+	go func() {
+		defer bcR.poolRoutineWg.Done()
+		bcR.poolRoutine(true)
+	}()
 	return nil
 }
 
@@ -150,6 +160,7 @@ func (bcR *Reactor) OnStop() {
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)
 		}
+		bcR.poolRoutineWg.Wait()
 	}
 }
 
@@ -244,7 +255,8 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	case *bcproto.BlockResponse:
 		bi, err := types.BlockFromProto(msg.Block)
 		if err != nil {
-			bcR.Logger.Error("Block content is invalid", "err", err)
+			bcR.Logger.Error("Peer sent us invalid block", "peer", e.Src, "msg", e.Message, "err", err)
+			bcR.Switch.StopPeerForError(e.Src, err)
 			return
 		}
 		var extCommit *types.ExtendedCommit
@@ -255,6 +267,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				bcR.Logger.Error("failed to convert extended commit from proto",
 					"peer", e.Src,
 					"err", err)
+				bcR.Switch.StopPeerForError(e.Src, err)
 				return
 			}
 		}
@@ -442,6 +455,13 @@ FOR_LOOP:
 				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
 			}
 
+			// Before priming didProcessCh for another check on the next
+			// iteration, break the loop if the BlockPool or the Reactor itself
+			// has quit. This avoids case ambiguity of the outer select when two
+			// channels are ready.
+			if !bcR.IsRunning() || !bcR.pool.IsRunning() {
+				break FOR_LOOP
+			}
 			// Try again quickly next loop.
 			didProcessCh <- struct{}{}
 
@@ -508,7 +528,7 @@ FOR_LOOP:
 
 			// TODO: same thing for app - but we would need a way to
 			// get the hash without persisting the state
-			state, err = bcR.blockExec.ApplyBlock(state, firstID, first)
+			state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
 			if err != nil {
 				// TODO This is bad, are we zombie?
 				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
@@ -526,6 +546,8 @@ FOR_LOOP:
 			continue FOR_LOOP
 
 		case <-bcR.Quit():
+			break FOR_LOOP
+		case <-bcR.pool.Quit():
 			break FOR_LOOP
 		}
 	}

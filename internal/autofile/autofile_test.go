@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	cmtos "github.com/cometbft/cometbft/internal/os"
 )
 
 func TestSIGHUP(t *testing.T) {

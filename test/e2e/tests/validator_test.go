@@ -13,7 +13,9 @@ import (
 // Tests that validator sets are available and correct according to
 // scheduled validator updates.
 func TestValidator_Sets(t *testing.T) {
+	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
 			return
 		}
@@ -55,8 +57,10 @@ func TestValidator_Sets(t *testing.T) {
 // Tests that a validator proposes blocks when it's supposed to. It tolerates some
 // missed blocks, e.g. due to testnet perturbations.
 func TestValidator_Propose(t *testing.T) {
+	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode != e2e.ModeValidator {
 			return
 		}
@@ -86,8 +90,10 @@ func TestValidator_Propose(t *testing.T) {
 // Tests that a validator signs blocks when it's supposed to. It tolerates some
 // missed blocks, e.g. due to testnet perturbations.
 func TestValidator_Sign(t *testing.T) {
+	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode != e2e.ModeValidator {
 			return
 		}

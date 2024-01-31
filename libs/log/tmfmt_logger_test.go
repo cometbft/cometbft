@@ -8,13 +8,13 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/cometbft/cometbft/libs/log"
 	kitlog "github.com/go-kit/log"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestTMFmtLogger(t *testing.T) {
-	t.Parallel()
 	buf := &bytes.Buffer{}
 	logger := log.NewTMFmtLogger(buf)
 
@@ -69,11 +69,11 @@ func BenchmarkTMFmtLoggerContextual(b *testing.B) {
 }
 
 func TestTMFmtLoggerConcurrency(t *testing.T) {
-	t.Parallel()
 	testConcurrency(t, log.NewTMFmtLogger(io.Discard), 10000)
 }
 
 func benchmarkRunnerKitlog(b *testing.B, logger kitlog.Logger, f func(kitlog.Logger)) {
+	b.Helper()
 	lc := kitlog.With(logger, "common_key", "common_value")
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -90,6 +90,7 @@ var (
 // These test are designed to be run with the race detector.
 
 func testConcurrency(t *testing.T, logger kitlog.Logger, total int) {
+	t.Helper()
 	n := int(math.Sqrt(float64(total)))
 	share := total / n
 

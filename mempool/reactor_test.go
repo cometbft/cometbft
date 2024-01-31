@@ -49,7 +49,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -73,7 +73,7 @@ func TestReactorConcurrency(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -99,7 +99,7 @@ func TestReactorConcurrency(t *testing.T) {
 			defer reactors[0].mempool.Unlock()
 
 			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}()
 
 		// 1. submit a bunch of txs
@@ -111,7 +111,7 @@ func TestReactorConcurrency(t *testing.T) {
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}()
 
 		// 1. flush the mempool
@@ -130,7 +130,7 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -163,7 +163,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -203,7 +203,7 @@ func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -228,7 +228,7 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 
 	// stop reactors
 	for _, s := range switches {
-		assert.NoError(t, s.Stop())
+		require.NoError(t, s.Stop())
 	}
 
 	// check that we are not leaking any go-routines
@@ -243,7 +243,7 @@ func TestReactorTxSendersLocal(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -280,7 +280,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -344,7 +344,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -381,7 +381,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -427,7 +427,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -475,7 +475,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -514,10 +514,11 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 // Check that the mempool has exactly the given list of txs and, if it's not the
 // first reactor (reactorIndex == 0), then each tx has a non-empty list of senders.
 func checkTxsInMempoolAndSenders(t *testing.T, r *Reactor, txs types.Txs, reactorIndex int) {
+	t.Helper()
 	r.txSendersMtx.Lock()
 	defer r.txSendersMtx.Unlock()
 
-	require.Equal(t, len(txs), r.mempool.Size())
+	require.Len(t, txs, r.mempool.Size())
 	if reactorIndex == 0 {
 		require.Zero(t, len(r.txSenders))
 	} else {
@@ -550,7 +551,7 @@ func mempoolLogger() log.Logger {
 	})
 }
 
-// connect N mempool reactors through N switches
+// connect N mempool reactors through N switches.
 func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switch) {
 	reactors := make([]*Reactor, n)
 	logger := mempoolLogger()
@@ -571,7 +572,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 	return reactors, switches
 }
 
-// connect N mempool reactors through N switches as a star centered in c
+// connect N mempool reactors through N switches as a star centered in c.
 func makeAndConnectReactorsStar(config *cfg.Config, c, n int) ([]*Reactor, []*p2p.Switch) {
 	reactors := make([]*Reactor, n)
 	logger := mempoolLogger()
@@ -603,6 +604,7 @@ func newUniqueTxs(n int) types.Txs {
 // Wait for all reactors to finish applying a testing function to a list of
 // transactions.
 func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc func(*testing.T, types.Txs, *Reactor, int)) {
+	t.Helper()
 	wg := new(sync.WaitGroup)
 	for i, reactor := range reactors {
 		wg.Add(1)
@@ -636,16 +638,18 @@ func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 // Wait until all txs are in the mempool and check that the number of txs in the
 // mempool is as expected.
 func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
+	t.Helper()
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
-	require.Equal(t, len(txs), len(reapedTxs))
-	require.Equal(t, len(txs), reactor.mempool.Size())
+	require.Len(t, txs, len(reapedTxs))
+	require.Len(t, txs, reactor.mempool.Size())
 }
 
 // Wait until all txs are in the mempool and check that they are in the same
 // order as given.
 func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+	t.Helper()
 	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
 	// Check that all transactions in the mempool are in the same order as txs.
@@ -657,6 +661,7 @@ func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex
 }
 
 func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs types.Txs) {
+	t.Helper()
 	allTxs := append(validTxs, invalidTxs...)
 
 	validTxResponses := abciResponses(len(validTxs), abci.CodeTypeOK)
@@ -670,8 +675,9 @@ func updateMempool(t *testing.T, mp Mempool, validTxs types.Txs, invalidTxs type
 	require.NoError(t, err)
 }
 
-// ensure no txs on reactor after some timeout
+// ensure no txs on reactor after some timeout.
 func ensureNoTxs(t *testing.T, reactor *Reactor, timeout time.Duration) {
+	t.Helper()
 	time.Sleep(timeout) // wait for the txs in all mempools
 	assert.Zero(t, reactor.mempool.Size())
 }

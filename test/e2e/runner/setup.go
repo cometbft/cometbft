@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
@@ -137,7 +138,9 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
-	genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
+	if testnet.VoteExtensionsUpdateHeight == -1 {
+		genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
+	}
 	for validator, power := range testnet.Validators {
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
 			Name:    validator.Name,
@@ -297,6 +300,8 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extension_delay":          node.Testnet.VoteExtensionDelay,
 		"finalize_block_delay":          node.Testnet.FinalizeBlockDelay,
 		"vote_extension_size":           node.Testnet.VoteExtensionSize,
+		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
+		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
 		"abci_requests_logging_enabled": node.Testnet.ABCITestsEnabled,
 	}
 	switch node.ABCIProtocol {

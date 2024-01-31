@@ -4,9 +4,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	nm "github.com/cometbft/cometbft/node"
-	"github.com/spf13/cobra"
 )
 
 var genesisHash []byte
@@ -74,7 +75,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 	cmd.Flags().String(
 		"db_backend",
 		config.DBBackend,
-		"database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb")
+		"database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb")
 	cmd.Flags().String(
 		"db_dir",
 		config.DBPath,

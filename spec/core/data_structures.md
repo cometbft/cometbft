@@ -176,7 +176,7 @@ Part defines a part of a block. In CometBFT blocks are broken into `parts` for g
 
 | Name  | Type            | Description                       | Validation           |
 |-------|-----------------|-----------------------------------|----------------------|
-| index | int32           | Total amount of parts for a block | Must be > 0          |
+| index | int32           | Total amount of parts for a block | Must be >= 0         |
 | bytes | bytes           | MerkleRoot of a serialized block  | Must be of length 32 |
 | proof | [Proof](#proof) | MerkleRoot of a serialized block  | Must be of length 32 |
 
@@ -199,8 +199,8 @@ Commit is a simple wrapper for a list of signatures, with one for each validator
 
 | Name       | Type                             | Description                                                          | Validation                                                                                               |
 |------------|----------------------------------|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| Height     | int64                            | Height at which this commit was created.                             | Must be > 0                                                                                              |
-| Round      | int32                            | Round that the commit corresponds to.                                | Must be > 0                                                                                              |
+| Height     | int64                            | Height at which this commit was created.                             | Must be >= 0                                                                                             |
+| Round      | int32                            | Round that the commit corresponds to.                                | Must be >= 0                                                                                             |
 | BlockID    | [BlockID](#blockid)              | The blockID of the corresponding block.                              | Must adhere to the validation rules of [BlockID](#blockid).                                              |
 | Signatures | Array of [CommitSig](#commitsig) | Array of commit signatures that correspond to current validator set. | Length of signatures must be > 0 and adhere to the validation of each individual [Commitsig](#commitsig) |
 
@@ -211,8 +211,8 @@ In addition, it contains the verified vote extensions, one for each non-`nil` vo
 
 | Name               | Type                                     | Description                                                                         | Validation                                                                                                               |
 |--------------------|------------------------------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| Height             | int64                                    | Height at which this commit was created.                                            | Must be > 0                                                                                                              |
-| Round              | int32                                    | Round that the commit corresponds to.                                               | Must be > 0                                                                                                              |
+| Height             | int64                                    | Height at which this commit was created.                                            | Must be >= 0                                                                                                             |
+| Round              | int32                                    | Round that the commit corresponds to.                                               | Must be >= 0                                                                                                             |
 | BlockID            | [BlockID](#blockid)                      | The blockID of the corresponding block.                                             | Must adhere to the validation rules of [BlockID](#blockid).                                                              |
 | ExtendedSignatures | Array of [ExtendedCommitSig](#commitsig) | The current validator set's commit signatures, extension, and extension signatures. | Length of signatures must be > 0 and adhere to the validation of each individual [ExtendedCommitSig](#extendedcommitsig) |
 
@@ -270,8 +270,8 @@ The vote includes information about the validator signing it. When stored in the
 | Name               | Type                            | Description                                                                              | Validation                               |
 |--------------------|---------------------------------|------------------------------------------------------------------------------------------|------------------------------------------|
 | Type               | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to                                                   | Must be `PrevoteType` or `PrecommitType` |
-| Height             | int64                           | Height for which this vote was created for                                               | Must be > 0                              |
-| Round              | int32                           | Round that the commit corresponds to.                                                    | Must be > 0                              |
+| Height             | int64                           | Height for which this vote was created for                                               | Must be >= 0                             |
+| Round              | int32                           | Round that the commit corresponds to.                                                    | Must be >= 0                             |
 | BlockID            | [BlockID](#blockid)             | The blockID of the corresponding block.                                                  |                                          |
 | Timestamp          | [Time](#time)                   | Timestamp represents the time at which a validator signed.                               |                                          |
 | ValidatorAddress   | bytes                           | Address of the validator                                                                 | Length must be equal to 20               |
@@ -289,8 +289,8 @@ and uses a different ordering of the fields.
 | Name      | Type                            | Description                             | Validation                               |
 |-----------|---------------------------------|-----------------------------------------|------------------------------------------|
 | Type      | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to  | Must be `PrevoteType` or `PrecommitType` |
-| Height    | int64                           | Height in which the vote was provided.  | Must be > 0                              |
-| Round     | int64                           | Round in which the vote was provided.   | Must be > 0                              |
+| Height    | int64                           | Height in which the vote was provided.  | Must be >= 0                             |
+| Round     | int64                           | Round in which the vote was provided.   | Must be >= 0                             |
 | BlockID   | string                          | ID of the block the vote refers to.     |                                          |
 | Timestamp | string                          | Time of the vote.                       |                                          |
 | ChainID   | string                          | ID of the blockchain running consensus. |                                          |
@@ -323,8 +323,8 @@ This is the structure to marshall in order to obtain the bytes to sign or verify
 | Name      | Type   | Description                                 | Validation           |
 |-----------|--------|---------------------------------------------|----------------------|
 | Extension | bytes  | Vote extension provided by the Application. | Can have zero length |
-| Height    | int64  | Height in which the extension was provided. | Must be > 0          |
-| Round     | int64  | Round in which the extension was provided.  | Must be > 0          |
+| Height    | int64  | Height in which the extension was provided. | Must be >= 0         |
+| Round     | int64  | Round in which the extension was provided.  | Must be >= 0         |
 | ChainID   | string | ID of the blockchain running consensus.     |                      |
 
 ## Proposal

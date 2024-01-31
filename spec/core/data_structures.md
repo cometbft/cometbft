@@ -197,12 +197,14 @@ Data is just a wrapper for a list of transactions, where transactions are arbitr
 
 Commit is a simple wrapper for a list of signatures, with one for each validator. It also contains the relevant BlockID, height and round:
 
-| Name       | Type                             | Description                                                          | Validation                                                                                               |
-|------------|----------------------------------|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| Height     | int64                            | Height at which this commit was created.                             | Must be >= 0                                                                                             |
-| Round      | int32                            | Round that the commit corresponds to.                                | Must be >= 0                                                                                             |
-| BlockID    | [BlockID](#blockid)              | The blockID of the corresponding block.                              | Must adhere to the validation rules of [BlockID](#blockid).                                              |
-| Signatures | Array of [CommitSig](#commitsig) | Array of commit signatures that correspond to current validator set. | Length of signatures must be > 0 and adhere to the validation of each individual [Commitsig](#commitsig) |
+| Name       | Type                             | Description                                                          | Validation                                                                                                                         |
+|------------|----------------------------------|----------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| Height     | int64                            | Height at which this commit was created.                             | Must be >= 0.                                                                                                                      |
+| Round      | int32                            | Round that the commit corresponds to.                                | Must be >= 0.                                                                                                                      |
+| BlockID    | [BlockID](#blockid)              | The blockID of the corresponding block.                              | If Height > 0, then it cannot be the [BlockID](#blockid) of a nil block.                                                           |
+| Signatures | Array of [CommitSig](#commitsig) | Array of commit signatures that correspond to current validator set. | If Height > 0, then the length of signatures must be > 0 and adhere to the validation of each individual [Commitsig](#commitsig).  |
+
+
 
 ## ExtendedCommit
 

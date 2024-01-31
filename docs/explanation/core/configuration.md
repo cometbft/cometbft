@@ -606,18 +606,17 @@ Here's a brief summary of the timeouts:
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)
 
-### The adverse effect of using inconsistent `timeout_commit` in a network
+### The adverse effect of using inconsistent `timeout_propose` in a network
 
 Here's an interesting question. What happens if a particular validator sets a
-very small `timeout_commit`, as compared to the rest of the network?
+very small `timeout_commit` and/or `timeout_propose`, as compared to the rest
+of the network?
 
 Imagine there are only two validators in your network: Alice and Bob. Bob sets
-`timeout_commit` to 0s. Alice uses the default value of 1s. Bob will create
-blocks almost instantly, Alice - every second (given the default value of
-`create_empty_blocks` is `true`). Let's say they both have an equal voting
-power. Given the proposer selection algorithm is a weighted round-robin, you
-may expect Alice and Bob to take turns proposing blocks, and the result will
-be:
+`timeout_propose` to 0s. Alice uses the default value of 3s. Let's say they
+both have an equal voting power. Given the proposer selection algorithm is a
+weighted round-robin, you may expect Alice and Bob to take turns proposing
+blocks, and the result like:
 
 ```
 #1 block - Alice
@@ -633,18 +632,21 @@ What happens in reality is, however, a little bit different:
 #1 block - Bob
 #2 block - Bob
 #3 block - Bob
-#4 block - Alice
+#4 block - Bob
 ```
 
-That's because Bob is too fast at committing blocks. This leaves Alice very
-little chances to propose a block and not always be catching up. Note that every
-block Bob creates needs a vote from Alice to constitute 2/3+.
+That's because Bob doesn't wait for a proposal from Alice (prevotes `nil`) and
+always moves onto the next round (NOT height). This leaves Alice no chances to
+commit a block. Note that every block Bob creates needs a vote from Alice to
+constitute 2/3+. Bob always gets one because Alice has `timeout_propose` set to
+3s. Alice never gets one because Bob has it set to 0s.
 
 Imagine now there are ten geographically distributed validators. One of them
-(Bob) sets `timeout_commit` to 0s. Others have it set to 1s. Now, Bob won't be
-able to move with the speed of 1s blocks because it won't gather 2/3+ of votes
-for its block proposal in time (1s). I.e., the network moves with the speed of
-time to accumulate 2/3+ of votes, not with the speed of the fastest proposer.
+(Bob) sets `timeout_propose` to 0s. Others have it set to 3s. Now, Bob won't be
+able to move with his own speed because it still needs 2/3 votes of the other
+validators and it takes time to propagate those. I.e., the network moves with
+the speed of time to accumulate 2/3+ of votes (prevotes & precommits), not with
+the speed of the fastest proposer.
 
 > Isn't block production determined by voting power?
 
@@ -657,3 +659,12 @@ being available and must move on if such is not responding.
 
 The impact shown above is negligible in a decentralized network with enough
 decentralization.
+
+### The adverse effect of using inconsistent `timeout_commit` in a network
+
+Let's look at the same scenario as before. There are ten geographically
+distributed validators. One of them (Bob) sets `timeout_commit` to 0s. Others
+have it set to 1s (the default value). Now, Bob will be the fastest producer
+because he doesn't wait for additional precommits after creating a block. If
+waiting for precommits (`timeout_commit`) is not incentivized, Bob will accrue
+more rewards compared to the other 9 validators.

@@ -685,18 +685,18 @@ This is the version of the ABCI application.
 This sets a bound on how skewed a proposer's clock may be from any validator
 on the network while still producing valid proposals.
 
-This parameter is part of the
-[proposer-based timestamps](../consensus/proposer-based-timestamp)
-(PBTS) algorithm.
+This parameter is used by the
+[Proposer-Based Timestamps (PBTS)](../consensus/proposer-based-timestamp/README.md)
+algorithm.
 
 ##### SynchronyParams.MessageDelay
 
 This sets a bound on how long a proposal message may take to reach all
 validators on a network and still be considered valid.
 
-This parameter is part of the
-[proposer-based timestamps](../consensus/proposer-based-timestamp)
-(PBTS) algorithm.
+This parameter is used by the
+[Proposer-Based Timestamps (PBTS)](../consensus/proposer-based-timestamp/README.md)
+algorithm.
 
 <!--
 

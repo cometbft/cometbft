@@ -214,20 +214,21 @@ func (pool *BlockPool) PopRequest() {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
-	if r := pool.requesters[pool.height]; r != nil {
-		/*  The block can disappear at any time, due to removePeer().
-		if r := pool.requesters[pool.height]; r == nil || r.block == nil {
-			PanicSanity("PopRequest() requires a valid block")
-		}
-		*/
-		if err := r.Stop(); err != nil {
-			pool.Logger.Error("Error stopping requester", "err", err)
-		}
-		delete(pool.requesters, pool.height)
-		pool.height++
-	} else {
+	/*  The block can disappear at any time, due to removePeer().
+	if r := pool.requesters[pool.height]; r == nil || r.block == nil {
+		PanicSanity("PopRequest() requires a valid block")
+	}
+	*/
+	r := pool.requesters[pool.height]
+	if r == nil {
 		panic(fmt.Sprintf("Expected requester to pop, got nothing at height %v", pool.height))
 	}
+
+	if err := r.Stop(); err != nil {
+		pool.Logger.Error("Error stopping requester", "err", err)
+	}
+	delete(pool.requesters, pool.height)
+	pool.height++
 }
 
 // RedoRequest invalidates the block at pool.height,
@@ -283,16 +284,16 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 		return fmt.Errorf("peer sent us a block we didn't expect (peer: %s, current height: %d, block height: %d)", peerID, pool.height, block.Height)
 	}
 
-	if requester.setBlock(block, extCommit, peerID) {
-		atomic.AddInt32(&pool.numPending, -1)
-		peer := pool.peers[peerID]
-		if peer != nil {
-			peer.decrPending(blockSize)
-		}
-	} else {
+	if !requester.setBlock(block, extCommit, peerID) {
 		err := errors.New("requester is different or block already exists")
 		pool.sendError(err, peerID)
 		return fmt.Errorf("%w (peer: %s, requester: %s, block height: %d)", err, peerID, requester.getPeerID(), block.Height)
+	}
+
+	atomic.AddInt32(&pool.numPending, -1)
+	peer := pool.peers[peerID]
+	if peer != nil {
+		peer.decrPending(blockSize)
 	}
 
 	return nil

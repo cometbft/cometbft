@@ -11,7 +11,7 @@ linters:
     - deadcode
     - dupword
     - errorlint
-    - erroname
+    - errname
     - exhaustive
     - exhaustivestruct
     - exhaustruct

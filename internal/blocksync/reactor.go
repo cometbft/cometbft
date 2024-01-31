@@ -502,20 +502,9 @@ FOR_LOOP:
 
 			bcR.pool.PopRequest()
 
-			state, err = bcR.processBlock(first, firstParts, extCommit, second, firstID, state)
-
+			state, err = bcR.processBlocks(first, firstParts, extCommit, second, firstID, state, &blocksSynced, &lastRate, &lastHundred)
 			if err != nil {
-				// TODO This is bad, are we zombie?
-				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
-			}
-			bcR.metrics.recordBlockMetrics(first)
-			blocksSynced++
-
-			if blocksSynced%100 == 0 {
-				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
-				bcR.Logger.Info("Block Sync Rate", "height", bcR.pool.height,
-					"max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
-				lastHundred = time.Now()
+				break FOR_LOOP
 			}
 
 			continue FOR_LOOP
@@ -571,6 +560,26 @@ func (bcR *Reactor) processBlock(first *types.Block, firstParts *types.PartSet, 
 	// TODO: same thing for app - but we would need a way to
 	// get the hash without persisting the state
 	return bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
+}
+
+func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet, extCommit *types.ExtendedCommit, second *types.Block, firstID types.BlockID, state sm.State, blocksSynced *uint64, lastRate *float64, lastHundred *time.Time) (sm.State, error) {
+	state, err := bcR.processBlock(first, firstParts, extCommit, second, firstID, state)
+
+	if err != nil {
+		// TODO This is bad, are we zombie?
+		panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
+	}
+	bcR.metrics.recordBlockMetrics(first)
+	*blocksSynced++
+
+	if *blocksSynced%100 == 0 {
+		*lastRate = 0.9**lastRate + 0.1*(100/time.Since(*lastHundred).Seconds())
+		bcR.Logger.Info("Block Sync Rate", "height", bcR.pool.height,
+			"max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", *lastRate)
+		*lastHundred = time.Now()
+	}
+
+	return state, nil
 }
 
 // BroadcastStatusRequest broadcasts `BlockStore` base and height.

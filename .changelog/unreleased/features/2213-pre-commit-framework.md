@@ -1,0 +1,1 @@
+- `[ci]` Using the pre-commit framework for linting. ([\#2213](https://github.com/cometbft/cometbft/issues/2213))

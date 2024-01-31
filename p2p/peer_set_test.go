@@ -26,8 +26,8 @@ func (*mockPeer) Status() ConnectionStatus { return ConnectionStatus{} }
 func (mp *mockPeer) ID() ID                { return mp.id }
 func (*mockPeer) IsOutbound() bool         { return false }
 func (*mockPeer) IsPersistent() bool       { return true }
-func (*mockPeer) Get(s string) interface{} { return s }
-func (*mockPeer) Set(string, interface{})  {}
+func (*mockPeer) Get(s string) any         { return s }
+func (*mockPeer) Set(string, any)          {}
 func (mp *mockPeer) RemoteIP() net.IP      { return mp.ip }
 func (*mockPeer) SocketAddr() *NetAddress  { return nil }
 func (mp *mockPeer) RemoteAddr() net.Addr  { return &net.TCPAddr{IP: mp.ip, Port: 8800} }

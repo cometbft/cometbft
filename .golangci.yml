@@ -143,10 +143,6 @@ linters-settings:
     # Do NOT whine about the following, full explanation found in:
     # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#description-of-available-rules
     rules:
-      - name: use-any
-        disabled: true
-      - name: if-return
-        disabled: true
       - name: max-public-structs
         disabled: true
       - name: cognitive-complexity
@@ -169,25 +165,17 @@ linters-settings:
         disabled: true
       - name: empty-lines
         disabled: true
-      - name: banned-characters
-        disabled: true
       - name: deep-exit
         disabled: true
       - name: confusing-results
-        disabled: true
-      - name: unused-parameter
         disabled: true
       - name: import-shadowing
         disabled: true
       - name: modifies-value-receiver
         disabled: true
-      - name: early-return
-        disabled: true
       - name: confusing-naming
         disabled: true
       - name: defer
-        disabled: true
-      - name: unused-parameter        # Disabled in favour of unparam.
         disabled: true
       - name: unchecked-type-assertion
         disabled: true
@@ -197,4 +185,3 @@ linters-settings:
           - 'fmt.Printf'
           - 'fmt.Print'
           - 'fmt.Println'
-          - 'myFunction'

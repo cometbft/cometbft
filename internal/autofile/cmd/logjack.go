@@ -36,7 +36,7 @@ func parseFlags() (headPath string, chopSize int64, limitSize int64, version boo
 
 type fmtLogger struct{}
 
-func (fmtLogger) Info(msg string, keyvals ...interface{}) {
+func (fmtLogger) Info(msg string, keyvals ...any) {
 	strs := make([]string, len(keyvals))
 	for i, kv := range keyvals {
 		strs[i] = fmt.Sprintf("%v", kv)

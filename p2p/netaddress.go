@@ -188,7 +188,7 @@ func (na *NetAddress) ToProto() tmp2p.NetAddress {
 
 // Equals reports whether na and other are the same addresses,
 // including their ID, IP, and Port.
-func (na *NetAddress) Equals(other interface{}) bool {
+func (na *NetAddress) Equals(other any) bool {
 	if o, ok := other.(*NetAddress); ok {
 		return na.String() == o.String()
 	}
@@ -196,7 +196,7 @@ func (na *NetAddress) Equals(other interface{}) bool {
 }
 
 // Same returns true is na has the same non-empty ID or DialString as other.
-func (na *NetAddress) Same(other interface{}) bool {
+func (na *NetAddress) Same(other any) bool {
 	if o, ok := other.(*NetAddress); ok {
 		if na.DialString() == o.DialString() {
 			return true

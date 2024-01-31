@@ -10,8 +10,8 @@ linters:
     - cyclop
     - deadcode
     - dupword
-    - errname
     - errorlint
+    - erroname
     - exhaustive
     - exhaustivestruct
     - exhaustruct
@@ -26,7 +26,6 @@ linters:
     - goerr113
     - golint
     - gomnd
-    - gomoddirectives
     - ifshort
     - interfacebloat
     - interfacer
@@ -162,10 +161,6 @@ linters-settings:
       - name: add-constant
         disabled: true
       - name: empty-lines
-        disabled: true
-      - name: deep-exit
-        disabled: true
-      - name: confusing-results
         disabled: true
       - name: import-shadowing
         disabled: true

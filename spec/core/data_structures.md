@@ -517,7 +517,7 @@ func SumTruncated(bz []byte) []byte {
 
 | Name          | Type                                                                                          | Description                                                                                                             | Field Number |
 | ------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
-| message_delay | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how long a proposal message may take to reach all validators on a network and still be considered valid.      | 1            |
-| precision     | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how skewed a proposer's clock may be from any validator on the network while still producing valid proposals. | 2            |
+| precision     | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how skewed a proposer's clock may be from any validator on the network while still producing valid proposals. | 1            |
+| message_delay | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how long a proposal message may take to reach all validators on a network and still be considered valid.      | 2            |
 
 [pbts]: ../consensus/proposer-based-timestamp/README.md

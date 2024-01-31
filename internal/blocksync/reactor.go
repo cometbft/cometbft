@@ -564,7 +564,6 @@ func (bcR *Reactor) processBlock(first *types.Block, firstParts *types.PartSet, 
 
 func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet, extCommit *types.ExtendedCommit, second *types.Block, firstID types.BlockID, state sm.State, blocksSynced *uint64, lastRate *float64, lastHundred *time.Time) (sm.State, error) {
 	state, err := bcR.processBlock(first, firstParts, extCommit, second, firstID, state)
-
 	if err != nil {
 		// TODO This is bad, are we zombie?
 		panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))

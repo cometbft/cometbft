@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -426,7 +427,13 @@ func TestLoadBlockPart(t *testing.T) {
 	gotPart, _, panicErr := doFn(loadPart)
 	require.Nil(t, panicErr, "an existent and proper block should not panic")
 	require.Nil(t, res, "a properly saved block should return a proper block")
-	require.Equal(t, gotPart.(*types.Part), part1,
+
+	// Having to do this because of https://github.com/stretchr/testify/issues/1141
+	gotPartJSON, err := json.Marshal(gotPart.(*types.Part))
+	require.NoError(t, err)
+	part1JSON, err := json.Marshal(part1)
+	require.NoError(t, err)
+	require.JSONEq(t, string(gotPartJSON), string(part1JSON),
 		"expecting successful retrieval of previously saved block")
 }
 

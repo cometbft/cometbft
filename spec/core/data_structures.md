@@ -38,6 +38,7 @@ The CometBFT blockchain consists of a short list of data types:
   - [ValidatorSet](#validatorset)
   - [Validator](#validator)
   - [Address](#address)
+  - [Proof](#proof)
   - [ConsensusParams](#consensusparams)
     - [BlockParams](#blockparams)
     - [EvidenceParams](#evidenceparams)
@@ -45,7 +46,6 @@ The CometBFT blockchain consists of a short list of data types:
     - [ABCIParams](#abciparams)
     - [VersionParams](#versionparams)
     - [SynchronyParams](#synchronyparams)
-  - [Proof](#proof)
 
 
 ## Block
@@ -460,6 +460,15 @@ func SumTruncated(bz []byte) []byte {
 }
 ```
 
+## Proof
+
+| Name      | Type           | Description                                   | Field Number |
+|-----------|----------------|-----------------------------------------------|--------------|
+| total     | int64          | Total number of items.                        | 1            |
+| index     | int64          | Index item to prove.                          | 2            |
+| leaf_hash | bytes          | Hash of item value.                           | 3            |
+| aunts     | repeated bytes | Hashes from leaf's sibling to a root's child. | 4            |
+
 ## ConsensusParams
 
 | Name      | Type                                | Description                                                                         | Field Number |
@@ -510,14 +519,5 @@ func SumTruncated(bz []byte) []byte {
 | ------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
 | message_delay | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how long a proposal message may take to reach all validators on a network and still be considered valid.      | 1            |
 | precision     | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how skewed a proposer's clock may be from any validator on the network while still producing valid proposals. | 2            |
-
-## Proof
-
-| Name      | Type           | Description                                   | Field Number |
-|-----------|----------------|-----------------------------------------------|--------------|
-| total     | int64          | Total number of items.                        | 1            |
-| index     | int64          | Index item to prove.                          | 2            |
-| leaf_hash | bytes          | Hash of item value.                           | 3            |
-| aunts     | repeated bytes | Hashes from leaf's sibling to a root's child. | 4            |
 
 [pbts]: ../consensus/proposer-based-timestamp/README.md

@@ -142,6 +142,33 @@ func (bs *BlockStore) LoadBlock(height int64) (*types.Block, *types.BlockMeta) {
 	return block, blockMeta
 }
 
+func (bs *BlockStore) LoadBlockProto(height int64) (*bcproto.Block, *types.BlockMeta) {
+	blockMeta := bs.LoadBlockMeta(height)
+	if blockMeta == nil {
+		return nil, nil
+	}
+
+	pbb := new(cmtproto.Block)
+	buf := []byte{}
+	for i := 0; i < int(blockMeta.BlockID.PartSetHeader.Total); i++ {
+		part := bs.LoadBlockPart(height, i)
+		// If the part is missing (e.g. since it has been deleted after we
+		// loaded the block meta) we consider the whole block to be missing.
+		if part == nil {
+			return nil, nil
+		}
+		buf = append(buf, part.Bytes...)
+	}
+	err := proto.Unmarshal(buf, pbb)
+	if err != nil {
+		// NOTE: The existence of meta should imply the existence of the
+		// block. So, make sure meta is only saved after blocks are saved.
+		panic(fmt.Sprintf("Error reading block: %v", err))
+	}
+
+	return pbb, blockMeta
+}
+
 // LoadBlockByHash returns the block with the given hash.
 // If no block is found for that hash, it returns nil.
 // Panics if it fails to parse height associated with the given hash.

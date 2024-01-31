@@ -200,6 +200,8 @@ func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 
 // respondToPeer loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
+// respondToPeer loads a block and sends it to the requesting peer,
+// if we have it. Otherwise, we'll respond saying we don't have it.
 func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
 	block, _ := bcR.store.LoadBlock(msg.Height)
 	if block == nil {
@@ -224,16 +226,10 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 		}
 	}
 
-	bl, err := block.ToProto()
-	if err != nil {
-		bcR.Logger.Error("could not convert msg to protobuf", "err", err)
-		return false
-	}
-
 	return src.TrySend(p2p.Envelope{
 		ChannelID: BlocksyncChannel,
 		Message: &bcproto.BlockResponse{
-			Block:     bl,
+			Block:     block,
 			ExtCommit: extCommit.ToProto(),
 		},
 	})

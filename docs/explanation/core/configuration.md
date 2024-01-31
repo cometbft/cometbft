@@ -609,8 +609,7 @@ Here's a brief summary of the timeouts:
 ### The adverse effect of using inconsistent `timeout_propose` in a network
 
 Here's an interesting question. What happens if a particular validator sets a
-very small `timeout_commit` and/or `timeout_propose`, as compared to the rest
-of the network?
+very small `timeout_propose`, as compared to the rest of the network?
 
 Imagine there are only two validators in your network: Alice and Bob. Bob sets
 `timeout_propose` to 0s. Alice uses the default value of 3s. Let's say they

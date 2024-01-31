@@ -502,20 +502,8 @@ FOR_LOOP:
 
 			bcR.pool.PopRequest()
 
-			// TODO: batch saves so we dont persist to disk every block
-			if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
-			} else {
-				// We use LastCommit here instead of extCommit. extCommit is not
-				// guaranteed to be populated by the peer if extensions are not enabled.
-				// Currently, the peer should provide an extCommit even if the vote extension data are absent
-				// but this may change so using second.LastCommit is safer.
-				bcR.store.SaveBlock(first, firstParts, second.LastCommit)
-			}
+			state, err = bcR.processBlock(first, firstParts, extCommit, second, firstID, state)
 
-			// TODO: same thing for app - but we would need a way to
-			// get the hash without persisting the state
-			state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
 			if err != nil {
 				// TODO This is bad, are we zombie?
 				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
@@ -550,6 +538,7 @@ func (bcR *Reactor) handlePeerError(err peerError) {
 	}
 }
 
+// handleBlockRequest sends a block request to a peer.
 func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 	peer := bcR.Switch.Peers().Get(request.PeerID)
 	if peer == nil {
@@ -562,6 +551,26 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 	if !queued {
 		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
 	}
+}
+
+// processBlock processes a block, saves it to the store, and updates the state.
+// It takes a block, its parts, an extended commit, the second block and the current state as parameters.
+// It returns the updated state and an error if there is one.
+func (bcR *Reactor) processBlock(first *types.Block, firstParts *types.PartSet, extCommit *types.ExtendedCommit, second *types.Block, firstID types.BlockID, state sm.State) (sm.State, error) {
+	// TODO: batch saves so we dont persist to disk every block
+	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+		bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
+	} else {
+		// We use LastCommit here instead of extCommit. extCommit is not
+		// guaranteed to be populated by the peer if extensions are not enabled.
+		// Currently, the peer should provide an extCommit even if the vote extension data are absent
+		// but this may change so using second.LastCommit is safer.
+		bcR.store.SaveBlock(first, firstParts, second.LastCommit)
+	}
+
+	// TODO: same thing for app - but we would need a way to
+	// get the hash without persisting the state
+	return bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
 }
 
 // BroadcastStatusRequest broadcasts `BlockStore` base and height.

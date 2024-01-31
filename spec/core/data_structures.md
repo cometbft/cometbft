@@ -462,12 +462,14 @@ func SumTruncated(bz []byte) []byte {
 
 ## ConsensusParams
 
-| Name      | Type                                | Description                                                                  | Field Number |
-|-----------|-------------------------------------|------------------------------------------------------------------------------|--------------|
-| block     | [BlockParams](#blockparams)         | Parameters limiting the size of a block and time between consecutive blocks. | 1            |
-| evidence  | [EvidenceParams](#evidenceparams)   | Parameters limiting the validity of evidence of byzantine behavior.         | 2            |
-| validator | [ValidatorParams](#validatorparams) | Parameters limiting the types of public keys validators can use.             | 3            |
-| version   | [BlockParams](#blockparams)         | The ABCI application version.                                                | 4            |
+| Name      | Type                                | Description                                                                         | Field Number |
+|-----------|-------------------------------------|-------------------------------------------------------------------------------------|--------------|
+| block     | [BlockParams](#blockparams)         | Parameters limiting the size of a block and time between consecutive blocks.        | 1            |
+| evidence  | [EvidenceParams](#evidenceparams)   | Parameters limiting the validity of evidence of byzantine behavior.                 | 2            |
+| validator | [ValidatorParams](#validatorparams) | Parameters limiting the types of public keys validators can use.                    | 3            |
+| version   | [VersionParams](#versionparams)     | The version of specific components of CometBFT.                                     | 4            |
+| abci      | [ABCIParams](#abciparams)           | Parameters for the [Application-Blockchain Interface (ABCI)](../abci/README.md).    | 5            |
+| synchrony | [SynchronyParams](#synchronyparams) | Parameters for the [Proposer-Based Timestamps (PBTS)][pbts] algorithm.              | 6            |
 
 ### BlockParams
 
@@ -490,17 +492,17 @@ func SumTruncated(bz []byte) []byte {
 |---------------|-----------------|-----------------------------------------------------------------------|--------------|
 | pub_key_types | repeated string | List of accepted public key types. Uses same naming as `PubKey.Type`. | 1            |
 
-### ABCIParams
-
-| Name                          | Type  | Description                                       | Field Number |
-| ----------------------------- | ----- | ------------------------------------------------- | ------------ |
-| vote_extensions_enable_height | int64 | The height where vote extensions will be enabled. | 1            |
-
 ### VersionParams
 
 | Name        | Type   | Description                   | Field Number |
 | ----------- | ------ | ----------------------------- | ------------ |
 | app_version | uint64 | The ABCI application version. | 1            |
+
+### ABCIParams
+
+| Name                          | Type  | Description                                       | Field Number |
+| ----------------------------- | ----- | ------------------------------------------------- | ------------ |
+| vote_extensions_enable_height | int64 | The height where vote extensions will be enabled. | 1            |
 
 ### SynchronyParams
 
@@ -517,3 +519,5 @@ func SumTruncated(bz []byte) []byte {
 | index     | int64          | Index item to prove.                          | 2            |
 | leaf_hash | bytes          | Hash of item value.                           | 3            |
 | aunts     | repeated bytes | Hashes from leaf's sibling to a root's child. | 4            |
+
+[pbts]: ../consensus/proposer-based-timestamp/README.md

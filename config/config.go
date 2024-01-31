@@ -201,25 +201,31 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | cleveldb | boltdb | rocksdb
-	// * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
-	//   - pure go
+	// Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
+	// * goleveldb (github.com/syndtr/goleveldb)
+	//   - UNMAINTAINED
 	//   - stable
+	//   - pure go
 	// * cleveldb (uses levigo wrapper)
-	//   - fast
 	//   - requires gcc
 	//   - use cleveldb build tag (go build -tags cleveldb)
 	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
 	//   - EXPERIMENTAL
-	//   - may be faster is some use-cases (random reads - indexer)
+	//   - stable
 	//   - use boltdb build tag (go build -tags boltdb)
-	// * rocksdb (uses github.com/tecbot/gorocksdb)
+	// * rocksdb (uses github.com/linxGnu/grocksdb)
 	//   - EXPERIMENTAL
 	//   - requires gcc
 	//   - use rocksdb build tag (go build -tags rocksdb)
 	// * badgerdb (uses github.com/dgraph-io/badger)
 	//   - EXPERIMENTAL
+	//   - stable
 	//   - use badgerdb build tag (go build -tags badgerdb)
+	// * pebbledb (uses github.com/cockroachdb/pebble)
+	//   - EXPERIMENTAL
+	//   - stable
+	//   - pure go
+	//   - use pebbledb build tag (go build -tags pebbledb)
 	DBBackend string `mapstructure:"db_backend"`
 
 	// Database directory
@@ -885,10 +891,6 @@ type MempoolConfig struct {
 	// Maximum size of a single transaction
 	// NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
 	MaxTxBytes int `mapstructure:"max_tx_bytes"`
-	// Maximum size of a batch of transactions to send to a peer
-	// Including space needed by encoding (one varint per transaction).
-	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
-	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
 	// We use two independent upper values for persistent and non-persistent peers.
 	// Unconditional peers are not affected by this feature.

@@ -634,11 +634,11 @@ What happens in reality is, however, a little bit different:
 #4 block - Bob
 ```
 
-That's because Bob doesn't wait for a proposal from Alice (prevotes `nil`) and
-always moves onto the next round (NOT height). This leaves Alice no chances to
-commit a block. Note that every block Bob creates needs a vote from Alice to
-constitute 2/3+. Bob always gets one because Alice has `timeout_propose` set to
-3s. Alice never gets one because Bob has it set to 0s.
+That's because Bob doesn't wait for a proposal from Alice (prevotes `nil`).
+This leaves Alice no chances to commit a block. Note that every block Bob
+creates needs a vote from Alice to constitute 2/3+. Bob always gets one because
+Alice has `timeout_propose` set to 3s. Alice never gets one because Bob has it
+set to 0s.
 
 Imagine now there are ten geographically distributed validators. One of them
 (Bob) sets `timeout_propose` to 0s. Others have it set to 3s. Now, Bob won't be
@@ -667,3 +667,10 @@ have it set to 1s (the default value). Now, Bob will be the fastest producer
 because he doesn't wait for additional precommits after creating a block. If
 waiting for precommits (`timeout_commit`) is not incentivized, Bob will accrue
 more rewards compared to the other 9 validators.
+
+This is because Bob has the advantage of broadcasting its proposal early (1
+second earlier than the others). But it also makes it possible for Bob to miss
+a proposal from another validator and prevote `nil` due to him starting
+`timeout_propose` earlier. I.e., if Bob's `timeout_commit` is too low comparing
+to other validators, then he might miss some proposals and get slashed for
+inactivity.

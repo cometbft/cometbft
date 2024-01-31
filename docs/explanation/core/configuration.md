@@ -40,25 +40,31 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "thinkpad"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
-# * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
-#   - pure go
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb 
+# * goleveldb (github.com/syndtr/goleveldb)
+#   - UNMAINTAINED
 #   - stable
+#   - pure go
 # * cleveldb (uses levigo wrapper)
-#   - fast
 #   - requires gcc
 #   - use cleveldb build tag (go build -tags cleveldb)
 # * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
 #   - EXPERIMENTAL
-#   - may be faster is some use-cases (random reads - indexer)
+#   - stable
 #   - use boltdb build tag (go build -tags boltdb)
-# * rocksdb (uses github.com/tecbot/gorocksdb)
+# * rocksdb (uses github.com/linxGnu/grocksdb)
 #   - EXPERIMENTAL
 #   - requires gcc
 #   - use rocksdb build tag (go build -tags rocksdb)
 # * badgerdb (uses github.com/dgraph-io/badger)
 #   - EXPERIMENTAL
+#   - stable
 #   - use badgerdb build tag (go build -tags badgerdb)
+# * pebbledb (uses github.com/cockroachdb/pebble)
+#   - EXPERIMENTAL
+#   - stable
+#   - pure go
+#   - use pebbledb build tag (go build -tags pebbledb)
 db_backend = "goleveldb"
 
 # Database directory

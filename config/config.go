@@ -1272,7 +1272,11 @@ type StorageConfig struct {
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
 	// Configuration related to storage pruning.
 	Pruning *PruningConfig `mapstructure:"pruning"`
-
+	// Compaction config
+	CompactOnPruning bool `mapstructure:"compact_on_pruning"`
+	// Compaction interval - number of blocks to try explicit compaciton on
+	// 1000 by default
+	CompactionInterval int64 `mapstructure:"compaction_interval"`
 	// Hex representation of the hash of the genesis file.
 	// This is an optional parameter set when an operator provides
 	// a hash via the command line.
@@ -1288,6 +1292,8 @@ func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
 		Pruning:              DefaultPruningConfig(),
+		CompactOnPruning:     true,
+		CompactionInterval:   1000,
 		GenesisHash:          "",
 	}
 }

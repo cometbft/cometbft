@@ -583,6 +583,12 @@ initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockReta
 # already set a block results retain height, this is ignored.
 initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
 
+# If set to true, CometBFT will force compaction to happen for databases that support this feature
+compact_on_pruning = true
+
+# To avoid forcing compaction every time, this parameter instructs Comet to wait 
+# the given amount of blocks to be pruned before triggering compaction.
+compaction_interval = 1000
 
 # Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
 # If this hash mismatches the hash that CometBFT computes on the genesis file,

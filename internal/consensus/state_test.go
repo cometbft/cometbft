@@ -1596,7 +1596,7 @@ func TestStateLock_POLSafety2(t *testing.T) {
 	ensureNewProposal(proposalCh, height, round)
 
 	ensurePrevote(voteCh, height, round)
-	validatePrevote(t, cs1, round, vss[0], propBlockID1.Hash)
+	validatePrevote(t, cs1, round, vss[0], nil)
 }
 
 // TestState_PrevotePOLFromPreviousRound tests that a validator will prevote

@@ -334,10 +334,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 			case request := <-bcR.requestsCh:
 				bcR.handleBlockRequest(request)
 			case err := <-bcR.errorsCh:
-				peer := bcR.Switch.Peers().Get(err.peerID)
-				if peer != nil {
-					bcR.Switch.StopPeerForError(peer, err)
-				}
+				bcR.handlePeerError(err)
 
 			case <-statusUpdateTicker.C:
 				// ask for status updates
@@ -540,6 +537,16 @@ FOR_LOOP:
 		case <-bcR.pool.Quit():
 			break FOR_LOOP
 		}
+	}
+}
+
+// handlePeerError processes an error received from a peer.
+// If the peer that caused the error is still connected, it stops the peer and logs the error.
+// This function is used in the poolRoutine of the Reactor to handle errors received from peers.
+func (bcR *Reactor) handlePeerError(err peerError) {
+	peer := bcR.Switch.Peers().Get(err.peerID)
+	if peer != nil {
+		bcR.Switch.StopPeerForError(peer, err)
 	}
 }
 

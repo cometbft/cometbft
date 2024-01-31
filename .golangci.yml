@@ -44,8 +44,6 @@ linters:
     - structcheck
     - tagliatelle
     - typecheck
-    # Prefer unparam over revive's unused param. It is more thorough in its checking.
-    - unparam
     - varcheck
     - varnamelen
     - wrapcheck

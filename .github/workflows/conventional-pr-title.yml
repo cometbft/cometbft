@@ -19,18 +19,19 @@ jobs:
         id: lint_pr_title
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        types: |
-            feat
-            fix
-            build
-            chore
-            ci
-            docs
-            refactor
-            perf
-            test
-            revert
-            spec
+        with:
+          types: |
+              feat
+              fix
+              build
+              chore
+              ci
+              docs
+              refactor
+              perf
+              test
+              revert
+              spec
 
       - uses: marocchino/sticky-pull-request-comment@v2
         # When the previous steps fails, the workflow would stop. By adding this

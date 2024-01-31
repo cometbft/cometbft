@@ -581,8 +581,8 @@ These are the current consensus parameters (as of v0.37.x):
 5. [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
 6. [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
 7. [VersionParams.App](#versionparamsapp)
-6. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
-7. [SynchronyParams.Precision](#synchronyparamsprecision)
+8. [SynchronyParams.Precision](#synchronyparamsprecision)
+9. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
 
 <!--
 8. [TimeoutParams.Propose](#timeoutparamspropose)
@@ -680,20 +680,19 @@ The parameter restricts the type of keys validators can use. The parameter uses 
 
 This is the version of the ABCI application.
 
-##### SynchronyParams.MessageDelay
+##### SynchronyParams.Precision
 
-This sets a bound on how long a proposal message may take to reach all
-validators on a network and still be considered valid.
+This sets a bound on how skewed a proposer's clock may be from any validator
+on the network while still producing valid proposals.
 
 This parameter is part of the
 [proposer-based timestamps](../consensus/proposer-based-timestamp)
 (PBTS) algorithm.
 
+##### SynchronyParams.MessageDelay
 
-##### SynchronyParams.Precision
-
-This sets a bound on how skewed a proposer's clock may be from any validator
-on the network while still producing valid proposals.
+This sets a bound on how long a proposal message may take to reach all
+validators on a network and still be considered valid.
 
 This parameter is part of the
 [proposer-based timestamps](../consensus/proposer-based-timestamp)

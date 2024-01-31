@@ -18,6 +18,7 @@ linters:
     - forbidigo
     - forcetypeassert
     - funlen
+    - gomoddirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit
@@ -147,6 +148,8 @@ linters-settings:
       - name: argument-limit
         disabled: true
       - name: cyclomatic
+        disabled: true
+      - name: deep-exit
         disabled: true
       - name: file-header
         disabled: true

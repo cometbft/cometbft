@@ -102,7 +102,7 @@ func getKeys(indexer BlockerIndexer) [][]byte {
 	return keys
 }
 
-func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
+func (idx *BlockerIndexer) Prune(retainHeight int64) (numPruned int64, newRetainHeight int64, err error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned or 0 in case of error. E.x. if heights {1, 3, 7} were pruned and there was no error, numPruned == 3
 	// newRetainHeight: new retain height after pruning or lastRetainHeight in case of error

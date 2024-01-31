@@ -619,9 +619,9 @@ func (voteSet *VoteSet) LogString() string {
 }
 
 // sumTotalFrac returns the power voted, the total, and the fraction.
-func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
-	voted, total := voteSet.sum, voteSet.valSet.TotalVotingPower()
-	fracVoted := float64(voted) / float64(total)
+func (voteSet *VoteSet) sumTotalFrac() (voted, total int64, fracVoted float64) {
+	voted, total = voteSet.sum, voteSet.valSet.TotalVotingPower()
+	fracVoted = float64(voted) / float64(total)
 	return voted, total, fracVoted
 }
 

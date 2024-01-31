@@ -56,7 +56,7 @@ func (env *Environment) BlockchainInfo(
 // error if either min or max are negative or min > max
 // if 0, use blockstore base for min, latest block height for max
 // enforce limit.
-func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
+func filterMinMax(base, height, min, max, limit int64) (minHeight, maxHeight int64, err error) {
 	// filter negatives
 	if min < 0 || max < 0 {
 		return min, max, fmt.Errorf("heights must be non-negative")

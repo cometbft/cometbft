@@ -45,7 +45,7 @@ type TxIndex struct {
 	log log.Logger
 }
 
-func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
+func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight int64, err error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned. E.x. if heights {1, 3, 7} were pruned, numPruned == 3
 	// newRetainHeight: new retain height after pruning

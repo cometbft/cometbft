@@ -23,7 +23,7 @@ func (*TxIndex) GetRetainHeight() (int64, error) {
 	return 0, nil
 }
 
-func (*TxIndex) Prune(_ int64) (int64, int64, error) {
+func (*TxIndex) Prune(_ int64) (numPruned, newRetainHeight int64, err error) {
 	return 0, 0, nil
 }
 

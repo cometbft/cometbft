@@ -297,32 +297,12 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
-	bcR.metrics.Syncing.Set(1)
+	didProcessCh, trySyncTicker, statusUpdateTicker, switchToConsensusTicker, blocksSynced, chainID, state, lastHundred, lastRate, initialCommitHasExtensions := bcR.setupPoolRoutine()
+
 	defer bcR.metrics.Syncing.Set(0)
-
-	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
 	defer trySyncTicker.Stop()
-
-	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
 	defer statusUpdateTicker.Stop()
-
-	if bcR.switchToConsensusMs == 0 {
-		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
-	}
-	switchToConsensusTicker := time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
 	defer switchToConsensusTicker.Stop()
-
-	blocksSynced := uint64(0)
-
-	chainID := bcR.initialState.ChainID
-	state := bcR.initialState
-
-	lastHundred := time.Now()
-	lastRate := 0.0
-
-	didProcessCh := make(chan struct{}, 1)
-
-	initialCommitHasExtensions := (bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil)
 
 	go func() {
 		for {
@@ -515,6 +495,32 @@ FOR_LOOP:
 			break FOR_LOOP
 		}
 	}
+}
+
+func (bcR *Reactor) setupPoolRoutine() (chan struct{}, *time.Ticker, *time.Ticker, *time.Ticker, uint64, string, sm.State, time.Time, float64, bool) {
+	bcR.metrics.Syncing.Set(1)
+
+	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
+	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
+
+	if bcR.switchToConsensusMs == 0 {
+		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
+	}
+	switchToConsensusTicker := time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
+
+	blocksSynced := uint64(0)
+
+	chainID := bcR.initialState.ChainID
+	state := bcR.initialState
+
+	lastHundred := time.Now()
+	lastRate := 0.0
+
+	didProcessCh := make(chan struct{}, 1)
+
+	initialCommitHasExtensions := (bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil)
+
+	return didProcessCh, trySyncTicker, statusUpdateTicker, switchToConsensusTicker, blocksSynced, chainID, state, lastHundred, lastRate, initialCommitHasExtensions
 }
 
 // handlePeerError processes an error received from a peer.

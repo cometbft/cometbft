@@ -331,17 +331,17 @@ This is the structure to marshall in order to obtain the bytes to sign or verify
 
 Proposal contains height and round for which this proposal is made, BlockID as a unique identifier
 of proposed block, timestamp, and POLRound (a so-called Proof-of-Lock (POL) round) that is needed for
-termination of the consensus. If POLRound >= 0, then BlockID corresponds to the block that
-is locked in POLRound. The message is signed by the validator private key.
+termination of the consensus. If POLRound >= 0, then BlockID corresponds to the block that was
+or could have been locked in POLRound. The message is signed by the validator private key.
 
 | Name      | Type                            | Description                                                                           | Validation                                              |
 |-----------|---------------------------------|---------------------------------------------------------------------------------------|---------------------------------------------------------|
-| Type      | [SignedMsgType](#signedmsgtype) | Represents a Proposal [SignedMsgType](#signedmsgtype)                                 | Must be `ProposalType`  [signedMsgType](#signedmsgtype) |
-| Height    | uint64                           | Height for which this vote was created for                                            | Must be > 0                                             |
-| Round     | int32                           | Round that the commit corresponds to.                                                 | Must be > 0                                             |
-| POLRound  | int64                           | Proof of lock                                                                         | Must be > 0                                             |
+| Type      | [SignedMsgType](#signedmsgtype) | Represents a Proposal [SignedMsgType](#signedmsgtype).                                | Must be `ProposalType`                                  |
+| Height    | uint64                          | Height for which this vote was created for                                            | Must be >= 0                                            |
+| Round     | int32                           | Round that the commit corresponds to.                                                 | Must be >= 0                                            |
+| POLRound  | int64                           | Proof of lock round.                                                                  | Must be >= -1                                           |
 | BlockID   | [BlockID](#blockid)             | The blockID of the corresponding block.                                               | [BlockID](#blockid)                                     |
-| Timestamp | [Time](#time)                   | Timestamp represents the time at which a validator signed.                            | [Time](#time)                                           |
+| Timestamp | [Time](#time)                   | Timestamp represents the time at which the proposer produced the block.               | [Time](#time)                                           |
 | Signature | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock. | Length of signature must be > 0 and < 64                |
 
 ## SignedMsgType

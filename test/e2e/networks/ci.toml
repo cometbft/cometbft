@@ -14,7 +14,7 @@ check_tx_delay = "0ms"
 abci_protocol = "builtin"
 prometheus = true
 peer_gossip_intraloop_sleep_duration = "50ms"
-abci_tests_enabled = false
+abci_tests_enabled = true
 
 [validators]
 validator01 = 100
@@ -47,7 +47,7 @@ perturb = ["disconnect"]
 
 [node.validator02]
 seeds = ["seed01"]
-database = "boltdb"
+database = "pebbledb"
 privval_protocol = "tcp"
 persist_interval = 0
 perturb = ["restart"]

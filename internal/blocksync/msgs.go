@@ -30,10 +30,9 @@ func ValidateMsg(pb proto.Message) error {
 			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}
 		}
 	case *bcproto.BlockResponse:
-		_, err := types.BlockFromProto(msg.Block)
-		if err != nil {
-			return err
-		}
+		// Avoid double-calling `types.BlockFromProto` for performance reasons.
+		// See https://github.com/cometbft/cometbft/issues/1964
+		return nil
 	case *bcproto.NoBlockResponse:
 		if msg.Height < 0 {
 			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}

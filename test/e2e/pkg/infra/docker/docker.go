@@ -91,13 +91,10 @@ func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
 	}
 
 	// Execute the latency setter script in the container.
-	if err := ExecVerbose(ctx, "exec", "--privileged", node.Name,
+	return ExecVerbose(ctx, "exec", "--privileged", node.Name,
 		filepath.Join(containerDir, "latency-setter.py"), "set",
 		filepath.Join(containerDir, "zones.csv"),
-		filepath.Join(containerDir, "aws-latencies.csv"), "eth0"); err != nil {
-		return err
-	}
-	return nil
+		filepath.Join(containerDir, "aws-latencies.csv"), "eth0")
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the

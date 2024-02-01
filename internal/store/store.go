@@ -531,6 +531,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	// NOTE: we can delete this at a later height
 	pbsc := seenCommit.ToProto()
 	seenCommitBytes := mustEncode(pbsc)
+
 	if err := batch.Set(calcSeenCommitKey(height), seenCommitBytes); err != nil {
 		return err
 	}

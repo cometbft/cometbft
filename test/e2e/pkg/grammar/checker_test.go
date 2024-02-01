@@ -30,7 +30,7 @@ type ABCIExecution struct {
 
 // consensus-exec part of executions
 // consensus-exec = (inf)consensus-height
-// it is part of each executions
+// it is part of each executions.
 var consExecPart = []ABCIExecution{
 	// consensus-height = finalizeBlock commit
 	{[]*abci.Request{finalizeBlock, commit}, true},

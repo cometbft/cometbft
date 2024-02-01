@@ -1355,10 +1355,6 @@ func TestStateMissingProposalValidBlockReceivedTimeout(t *testing.T) {
 	validBlockCh := subscribe(cs1.eventBus, types.EventQueryValidBlock)
 
 	// Produce a block
-	//	mempool := assertMempool(cs1.txNotifier)
-	//	tx := kvstore.NewTx("key", string(make([]byte, 5*types.BlockPartSizeBytes)))
-	//	mempool.CheckTx(tx)
-
 	block, err := cs1.createProposalBlock(ctx)
 	require.NoError(t, err)
 	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)

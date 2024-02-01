@@ -1,4 +1,4 @@
-# ADR 71: Proposer-Based Timestamps
+# ADR 112: Proposer-Based Timestamps
 
 ## Changelog
 
@@ -9,6 +9,7 @@
  - Oct 25 2021: Update the ADR to match updated spec from @cason by @williambanfield
  - Nov 10 2021: Additional language updates by @williambanfield per feedback from @cason
  - Feb 2 2022: Synchronize logic for timely with latest version of the spec by @williambanfield
+ - Feb 1 2024: Renamed to ADR 112 as basis its adoption ([#1731](https://github.com/cometbft/cometbft/issues/1731)) in CometBFT v1.0 by @cason
 
 ## Status
 
@@ -16,7 +17,7 @@
 
 ## Context
 
-Tendermint currently provides a monotonically increasing source of time known as [BFTTime](https://github.com/tendermint/tendermint/blob/main/spec/consensus/bft-time.md).
+CometBFT currently provides a monotonically increasing source of time known as [BFTTime](https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md).
 This mechanism for producing a source of time is reasonably simple.
 Each correct validator adds a timestamp to each `Precommit` message it sends.
 The timestamp it sends is either the validator's current known Unix time or one millisecond greater than the previous block time, depending on which value is greater.
@@ -29,7 +30,7 @@ Validators do not have to agree at all on how close the selected block timestamp
 Additionally, any amount of voting power `>1/3` may directly control the block timestamp.
 As a result, it is quite possible that the timestamp is not particularly meaningful.
 
-These drawbacks present issues in the Tendermint protocol.
+These drawbacks present issues in the CometBFT protocol.
 Timestamps are used by light clients to verify blocks.
 Light clients rely on correspondence between their own currently known Unix time and the block timestamp to verify blocks they see;
 However, their currently known Unix time may be greatly divergent from the block timestamp as a result of the limitations of `BFTTime`.
@@ -41,7 +42,7 @@ Proposer-based timestamps alter the current mechanism for producing block timest
 1. Correct validators only approve the proposed block timestamp if it is close enough to their own currently known Unix time.
 
 The result of these changes is a more meaningful timestamp that cannot be controlled by `<= 2/3` of the validator voting power.
-This document outlines the necessary code changes in Tendermint to implement the corresponding [proposer-based timestamps specification](https://github.com/tendermint/tendermint/tree/main/spec/consensus/proposer-based-timestamp).
+This document outlines the necessary code changes in CometBFT to implement the corresponding [proposer-based timestamps specification](https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp).
 
 ## Alternative Approaches
 
@@ -58,8 +59,8 @@ We therefore decided not to remove the timestamp.
 Applications often wish for some transactions to occur on a certain day, on a regular period, or after some time following a different event.
 All of these require some meaningful representation of agreed upon time.
 The following protocols and application features require a reliable source of time:
-* Tendermint Light Clients [rely on correspondence between their known time](https://github.com/tendermint/tendermint/blob/main/spec/light-client/verification/README.md#definitions-1) and the block time for block verification.
-* Tendermint Evidence validity is determined [either in terms of heights or in terms of time](https://github.com/tendermint/tendermint/blob/8029cf7a0fcc89a5004e173ec065aa48ad5ba3c8/spec/consensus/evidence.md#verification).
+* CometBFT Light Clients [rely on correspondence between their known time](https://github.com/cometbft/cometbft/blob/main/spec/light-client/verification/README.md#definitions-1) and the block time for block verification.
+* CometBFT Evidence validity is determined [either in terms of heights or in terms of time](https://github.com/cometbft/cometbft/blob/8029cf7a0fcc89a5004e173ec065aa48ad5ba3c8/spec/consensus/evidence.md#verification).
 * Unbonding of staked assets in the Cosmos Hub [occurs after a period of 21 days](https://github.com/cosmos/governance/blob/ce75de4019b0129f6efcbb0e752cd2cc9e6136d3/params-change/Staking.md#unbondingtime).
 * IBC packets can use either a [timestamp or a height to timeout packet delivery](https://docs.cosmos.network/v0.45/ibc/overview.html#acknowledgements)
 
@@ -76,7 +77,7 @@ Implement proposer-based timestamps and remove `BFTTime`.
 
 ### Overview
 
-Implementing proposer-based timestamps will require a few changes to Tendermint’s code.
+Implementing proposer-based timestamps will require a few changes to CometBFT’s code.
 These changes will be to the following components:
 * The `internal/consensus/` package.
 * The `state/` package.
@@ -85,7 +86,7 @@ These changes will be to the following components:
 
 ### Changes to `CommitSig`
 
-The [CommitSig](https://github.com/tendermint/tendermint/blob/a419f4df76fe4aed668a6c74696deabb9fe73211/types/block.go#L604) struct currently contains a timestamp.
+The [CommitSig](https://github.com/cometbft/cometbft/blob/a419f4df76fe4aed668a6c74696deabb9fe73211/types/block.go#L604) struct currently contains a timestamp.
 This timestamp is the current Unix time known to the validator when it issued a `Precommit` for the block.
 This timestamp is no longer used and will be removed in this change.
 
@@ -102,10 +103,10 @@ type CommitSig struct {
 
 ### Changes to `Vote` messages
 
-`Precommit` and `Prevote` messages use a common [Vote struct](https://github.com/tendermint/tendermint/blob/a419f4df76fe4aed668a6c74696deabb9fe73211/types/vote.go#L50).
+`Precommit` and `Prevote` messages use a common [Vote struct](https://github.com/cometbft/cometbft/blob/a419f4df76fe4aed668a6c74696deabb9fe73211/types/vote.go#L50).
 This struct currently contains a timestamp.
-This timestamp is set using the [voteTime](https://github.com/tendermint/tendermint/blob/e8013281281985e3ada7819f42502b09623d24a0/internal/consensus/state.go#L2241) function and therefore vote times correspond to the current Unix time known to the validator, provided this time is greater than the timestamp of the previous block.
-For precommits, this timestamp is used to construct the [CommitSig that is included in the block in the LastCommit](https://github.com/tendermint/tendermint/blob/e8013281281985e3ada7819f42502b09623d24a0/types/block.go#L754) field.
+This timestamp is set using the [voteTime](https://github.com/cometbft/cometbft/blob/e8013281281985e3ada7819f42502b09623d24a0/internal/consensus/state.go#L2241) function and therefore vote times correspond to the current Unix time known to the validator, provided this time is greater than the timestamp of the previous block.
+For precommits, this timestamp is used to construct the [CommitSig that is included in the block in the LastCommit](https://github.com/cometbft/cometbft/blob/e8013281281985e3ada7819f42502b09623d24a0/types/block.go#L754) field.
 For prevotes, this field is currently unused.
 Proposer-based timestamps will use the timestamp that the proposer sets into the block and will therefore no longer require that a timestamp be included in the vote messages.
 This timestamp is therefore no longer useful as part of consensus and may optionally be dropped from the message.
@@ -135,7 +136,7 @@ A validator will only Prevote a proposal if the proposal timestamp is considered
 A proposal timestamp is considered `timely` if it is within `PRECISION` and `MSGDELAY` of the Unix time known to the validator.
 More specifically, a proposal timestamp is `timely` if `proposalTimestamp - PRECISION ≤ validatorLocalTime ≤ proposalTimestamp + PRECISION + MSGDELAY`.
 
-Because the `PRECISION` and `MSGDELAY` parameters must be the same across all validators, they will be added to the [consensus parameters](https://github.com/tendermint/tendermint/blob/main/proto/tendermint/types/params.proto#L11) as [durations](https://protobuf.dev/reference/protobuf/google.protobuf/#duration).
+Because the `PRECISION` and `MSGDELAY` parameters must be the same across all validators, they will be added to the [consensus parameters](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/types/params.proto#L11) as [durations](https://protobuf.dev/reference/protobuf/google.protobuf/#duration).
 
 The consensus parameters will be updated to include this `Synchrony` field as follows:
 
@@ -160,11 +161,11 @@ type SynchronyParams struct {
 
 #### Proposer selects block timestamp
 
-Tendermint currently uses the `BFTTime` algorithm to produce the block's `Header.Timestamp`.
-The [proposal logic](https://github.com/tendermint/tendermint/blob/68ca65f5d79905abd55ea999536b1a3685f9f19d/internal/state/state.go#L269) sets the weighted median of the times in the `LastCommit.CommitSigs` as the proposed block's `Header.Timestamp`.
+CometBFT currently uses the `BFTTime` algorithm to produce the block's `Header.Timestamp`.
+The [proposal logic](https://github.com/cometbft/cometbft/blob/68ca65f5d79905abd55ea999536b1a3685f9f19d/internal/state/state.go#L269) sets the weighted median of the times in the `LastCommit.CommitSigs` as the proposed block's `Header.Timestamp`.
 
 In proposer-based timestamps, the proposer will still set a timestamp into the `Header.Timestamp`.
-The timestamp the proposer sets into the `Header` will change depending on if the block has previously received a [polka](https://github.com/tendermint/tendermint/blob/053651160f496bb44b107a434e3e6482530bb287/docs/introduction/what-is-tendermint.md#consensus-overview) or not.
+The timestamp the proposer sets into the `Header` will change depending on if the block has previously received a [polka](https://github.com/cometbft/cometbft/blob/053651160f496bb44b107a434e3e6482530bb287/docs/introduction/what-is-cometbft.md#consensus-overview) or not.
 
 #### Proposal of a block that has not previously received a polka
 
@@ -182,13 +183,13 @@ The proposer will set the re-proposed block's `Header.Timestamp` as the `Proposa
 #### Proposer waits
 
 Block timestamps must be monotonically increasing.
-In `BFTTime`, if a validator’s clock was behind, the [validator added 1 millisecond to the previous block’s time and used that in its vote messages](https://github.com/tendermint/tendermint/blob/e8013281281985e3ada7819f42502b09623d24a0/internal/consensus/state.go#L2246).
+In `BFTTime`, if a validator’s clock was behind, the [validator added 1 millisecond to the previous block’s time and used that in its vote messages](https://github.com/cometbft/cometbft/blob/e8013281281985e3ada7819f42502b09623d24a0/internal/consensus/state.go#L2246).
 A goal of adding proposer-based timestamps is to enforce some degree of clock synchronization, so having a mechanism that completely ignores the Unix time of the validator time no longer works.
 Validator clocks will not be perfectly in sync.
 Therefore, the proposer’s current known Unix time may be less than the previous block's `Header.Time`.
 If the proposer’s current known Unix time is less than the previous block's `Header.Time`, the proposer will sleep until its known Unix time exceeds it.
 
-This change will require amending the [defaultDecideProposal](https://github.com/tendermint/tendermint/blob/822893615564cb20b002dd5cf3b42b8d364cb7d9/internal/consensus/state.go#L1180) method.
+This change will require amending the [defaultDecideProposal](https://github.com/cometbft/cometbft/blob/822893615564cb20b002dd5cf3b42b8d364cb7d9/internal/consensus/state.go#L1180) method.
 This method should now schedule a timeout that fires when the proposer’s time is greater than the previous block's `Header.Time`.
 When the timeout fires, the proposer will finally issue the `Proposal` message.
 
@@ -205,31 +206,31 @@ Receiving +2/3 prevotes in a round is frequently referred to as a 'polka' and we
 
 #### Current timestamp validation logic
 
-To provide a better understanding of the changes needed to timestamp validation, we will first detail how timestamp validation works currently in Tendermint.
+To provide a better understanding of the changes needed to timestamp validation, we will first detail how timestamp validation works currently in CometBFT.
 
-The [validBlock function](https://github.com/tendermint/tendermint/blob/c3ae6f5b58e07b29c62bfdc5715b6bf8ae5ee951/state/validation.go#L14) currently [validates the proposed block timestamp in three ways](https://github.com/tendermint/tendermint/blob/c3ae6f5b58e07b29c62bfdc5715b6bf8ae5ee951/state/validation.go#L118).
+The [validBlock function](https://github.com/cometbft/cometbft/blob/c3ae6f5b58e07b29c62bfdc5715b6bf8ae5ee951/state/validation.go#L14) currently [validates the proposed block timestamp in three ways](https://github.com/cometbft/cometbft/blob/c3ae6f5b58e07b29c62bfdc5715b6bf8ae5ee951/state/validation.go#L118).
 First, the validation logic checks that this timestamp is greater than the previous block’s timestamp.
 
-Second, it validates that the block timestamp is correctly calculated as the weighted median of the timestamps in the [block’s LastCommit](https://github.com/tendermint/tendermint/blob/e8013281281985e3ada7819f42502b09623d24a0/types/block.go#L48).
+Second, it validates that the block timestamp is correctly calculated as the weighted median of the timestamps in the [block’s LastCommit](https://github.com/cometbft/cometbft/blob/e8013281281985e3ada7819f42502b09623d24a0/types/block.go#L48).
 
 Finally, the validation logic authenticates the timestamps in the `LastCommit.CommitSig`.
 The cryptographic signature in each `CommitSig` is created by signing a hash of fields in the block with the voting validator’s private key.
 One of the items in this `signedBytes` hash is the timestamp in the `CommitSig`.
 To authenticate the `CommitSig` timestamp, the validator authenticating votes builds a hash of fields that includes the `CommitSig` timestamp and checks this hash against the signature.
-This takes place in the [VerifyCommit function](https://github.com/tendermint/tendermint/blob/e8013281281985e3ada7819f42502b09623d24a0/types/validation.go#L25).
+This takes place in the [VerifyCommit function](https://github.com/cometbft/cometbft/blob/e8013281281985e3ada7819f42502b09623d24a0/types/validation.go#L25).
 
 #### Remove unused timestamp validation logic
 
 `BFTTime` validation is no longer applicable and will be removed.
 This means that validators will no longer check that the block timestamp is a weighted median of `LastCommit` timestamps.
-Specifically, we will remove the call to [MedianTime in the validateBlock function](https://github.com/tendermint/tendermint/blob/4db71da68e82d5cb732b235eeb2fd69d62114b45/state/validation.go#L117).
+Specifically, we will remove the call to [MedianTime in the validateBlock function](https://github.com/cometbft/cometbft/blob/4db71da68e82d5cb732b235eeb2fd69d62114b45/state/validation.go#L117).
 The `MedianTime` function can be completely removed.
 
 Since `CommitSig`s will no longer contain a timestamp, the validator authenticating a commit will no longer include the `CommitSig` timestamp in the hash of fields it builds to check against the cryptographic signature.
 
 #### Timestamp validation when a block has not received a polka
 
-The [POLRound](https://github.com/tendermint/tendermint/blob/68ca65f5d79905abd55ea999536b1a3685f9f19d/types/proposal.go#L29) in the `Proposal` message indicates which round the block received a polka.
+The [POLRound](https://github.com/cometbft/cometbft/blob/68ca65f5d79905abd55ea999536b1a3685f9f19d/types/proposal.go#L29) in the `Proposal` message indicates which round the block received a polka.
 A negative value in the `POLRound` field indicates that the block has not previously been proposed on the network.
 Therefore the validation logic will check for timely when `POLRound < 0`.
 
@@ -260,7 +261,7 @@ Additionally, this validation logic can be updated to check that the `Proposal.T
 
 The `Synchrony` parameters, `MessageDelay` and `Precision` provide a means to bound the timestamp of a proposed block.
 Selecting values that are too small presents a possible liveness issue for the network.
-If a Tendermint network selects a `MessageDelay` parameter that does not accurately reflect the time to broadcast a proposal message to all of the validators on the network, nodes will begin rejecting proposals from otherwise correct proposers because these proposals will appear to be too far in the past.
+If a CometBFT network selects a `MessageDelay` parameter that does not accurately reflect the time to broadcast a proposal message to all of the validators on the network, nodes will begin rejecting proposals from otherwise correct proposers because these proposals will appear to be too far in the past.
 
 `MessageDelay` and `Precision` are planned to be configured as `ConsensusParams`.
 A very common way to update `ConsensusParams` is by executing a transaction included in a block that specifies new values for them.
@@ -274,7 +275,7 @@ This liveness issue is not as problematic for chains with very small `Precision`
 Operators can more easily readjust local validator clocks to be more aligned.
 Additionally, chains that wish to increase a small `Precision` value can still take advantage of the `MessageDelay` relaxation, waiting for the `MessageDelay` value to grow significantly and issuing proposals with timestamps that are far in the past of their peers.
 
-For more discussion of this, see [issue 371](https://github.com/tendermint/spec/issues/371).
+For more discussion of this, see [issue 371](https://github.com/cometbft/spec/issues/371).
 
 ### Changes to the prevote step
 
@@ -293,7 +294,7 @@ Its proposal validation rules will change in the same ways that validation will 
 
 ### Remove voteTime Completely
 
-[voteTime](https://github.com/tendermint/tendermint/blob/822893615564cb20b002dd5cf3b42b8d364cb7d9/internal/consensus/state.go#L2229) is a mechanism for calculating the next `BFTTime` given both the validator's current known Unix time and the previous block timestamp.
+[voteTime](https://github.com/cometbft/cometbft/blob/822893615564cb20b002dd5cf3b42b8d364cb7d9/internal/consensus/state.go#L2229) is a mechanism for calculating the next `BFTTime` given both the validator's current known Unix time and the previous block timestamp.
 If the previous block timestamp is greater than the validator's current known Unix time, then voteTime returns a value one millisecond greater than the previous block timestamp.
 This logic is used in multiple places and is no longer needed for proposer-based timestamps.
 It should therefore be removed completely.
@@ -315,7 +316,7 @@ By removing fields from the `Precommit` messages, we are able to aggregate signa
 
 ### Neutral
 
-* Alters Tendermint’s liveness properties.
+* Alters CometBFT’s liveness properties.
 Liveness now requires that all correct validators have synchronized clocks within a bound.
 Liveness will now also require that validators’ clocks move forward, which was not required under `BFTTime`.
 
@@ -328,6 +329,6 @@ This skew will be bound by the `PRECISION` value, so it is unlikely to be too la
 
 ## References
 
-* [PBTS Spec](https://github.com/tendermint/tendermint/tree/main/spec/consensus/proposer-based-timestamp)
-* [BFTTime spec](https://github.com/tendermint/tendermint/blob/main/spec/consensus/bft-time.md)
-* [Issue 371](https://github.com/tendermint/spec/issues/371)
+* [PBTS Spec](https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp)
+* [BFTTime spec](https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md)
+* [Issue 371](https://github.com/cometbft/spec/issues/371)

@@ -63,14 +63,13 @@ func (s *State) load() error {
 	bz, err := os.ReadFile(s.currentFile)
 	if err != nil {
 		// if the current state doesn't exist then we try recover from the previous state
-		if errors.Is(err, os.ErrNotExist) {
-			bz, err = os.ReadFile(s.previousFile)
-			if err != nil {
-				return fmt.Errorf("failed to read both current and previous state (%q): %w",
-					s.previousFile, err)
-			}
-		} else {
+		if !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("failed to read state from %q: %w", s.currentFile, err)
+		}
+		bz, err = os.ReadFile(s.previousFile)
+		if err != nil {
+			return fmt.Errorf("failed to read both current and previous state (%q): %w",
+				s.previousFile, err)
 		}
 	}
 	if err := json.Unmarshal(bz, s); err != nil {

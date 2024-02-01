@@ -9,7 +9,7 @@
  - Oct 25 2021: Update the ADR to match updated spec from @cason by @williambanfield
  - Nov 10 2021: Additional language updates by @williambanfield per feedback from @cason
  - Feb 2 2022: Synchronize logic for timely with latest version of the spec by @williambanfield
- - Feb 1 2024: Renamed to ADR 112 as basis its adoption ([#1731](https://github.com/cometbft/cometbft/issues/1731)) in CometBFT v1.0 by @cason
+ - Feb 1 2024: Renamed to ADR 112 as basis for its adoption ([#1731](https://github.com/cometbft/cometbft/issues/1731)) in CometBFT v1.0 by @cason
 
 ## Status
 
@@ -72,19 +72,20 @@ Proposer-based timestamps will allow this inflation calculation to use a more me
 
 ## Decision
 
-Implement proposer-based timestamps and remove `BFT Time`.
+Implement Proposer-Based Timestamps while maintaining backwards compatibility with `BFT Time`.
 
 ## Detailed Design
 
 ### Overview
 
-Implementing proposer-based timestamps will require a few changes to CometBFT’s code.
+Implementing Proposer-Based Timestamps (PBTS) will require a few changes to CometBFT’s code.
 These changes will be to the following components:
+
 * The `internal/consensus/` package.
-* The `state/` package.
-* The `Vote`, `CommitSig` and `Header` types.
+* The `internal/state/` package.
 * The consensus parameters.
 
+<!---
 ### Changes to `CommitSig`
 
 The [CommitSig](https://github.com/cometbft/cometbft/blob/a419f4df76fe4aed668a6c74696deabb9fe73211/types/block.go#L604) struct currently contains a timestamp.
@@ -126,35 +127,39 @@ type Vote struct {
 	Signature        []byte                `json:"signature"`
 }
 ```
+--->
 
 ### New consensus parameters
 
-The proposer-based timestamp specification includes a pair of new parameters that must be the same among all validators.
+The PBTS specification includes a pair of new parameters that must be the same among all validators.
 These parameters are `PRECISION`, and `MSGDELAY`.
 
 The `PRECISION` and `MSGDELAY` parameters are used to determine if the proposed timestamp is acceptable.
 A validator will only Prevote a proposal if the proposal timestamp is considered `timely`.
 A proposal timestamp is considered `timely` if it is within `PRECISION` and `MSGDELAY` of the Unix time known to the validator.
-More specifically, a proposal timestamp is `timely` if `proposalTimestamp - PRECISION ≤ validatorLocalTime ≤ proposalTimestamp + PRECISION + MSGDELAY`.
+More specifically, the timestamp of a proposal received at `proposalReceiveTime` is `timely` if
 
-Because the `PRECISION` and `MSGDELAY` parameters must be the same across all validators, they will be added to the [consensus parameters](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/types/params.proto#L11) as [durations](https://protobuf.dev/reference/protobuf/google.protobuf/#duration).
+    proposalTimestamp - PRECISION ≤ proposalReceiveTime ≤ proposalTimestamp + PRECISION + MSGDELAY
+
+Because the `PRECISION` and `MSGDELAY` parameters must be the same across all validators, they will be added to the [consensus parameters](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/types/v1/params.proto#L13) as [durations](https://protobuf.dev/reference/protobuf/google.protobuf/#duration).
 
 The consensus parameters will be updated to include this `Synchrony` field as follows:
 
 ```diff
 type ConsensusParams struct {
-	Block     BlockParams     `json:"block"`
-	Evidence  EvidenceParams  `json:"evidence"`
-	Validator ValidatorParams `json:"validator"`
-	Version   VersionParams   `json:"version"`
-++	Synchrony SynchronyParams `json:"synchrony"`
+        Block     BlockParams     `json:"block"`
+        Evidence  EvidenceParams  `json:"evidence"`
+        Validator ValidatorParams `json:"validator"`
+        Version   VersionParams   `json:"version"`
+        ABCI      ABCIParams      `json:"abci"`
+++      Synchrony SynchronyParams `json:"synchrony"`
 }
 ```
 
 ```go
 type SynchronyParams struct {
-	MessageDelay time.Duration `json:"message_delay"`
-	Precision    time.Duration `json:"precision"`
+        Precision    time.Duration `json:"precision,string"`
+        MessageDelay time.Duration `json:"message_delay,string"`
 }
 ```
 
@@ -163,19 +168,20 @@ type SynchronyParams struct {
 #### Proposer selects block timestamp
 
 CometBFT currently uses the `BFT Time` algorithm to produce the block's `Header.Timestamp`.
-The [proposal logic](https://github.com/cometbft/cometbft/blob/68ca65f5d79905abd55ea999536b1a3685f9f19d/internal/state/state.go#L269) sets the weighted median of the times in the `LastCommit.CommitSigs` as the proposed block's `Header.Timestamp`.
+The [block production logic](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/state.go#L248)
+sets the weighted median of the times in the `LastCommit.CommitSigs` as the proposed block's `Header.Timestamp`.
 
-In proposer-based timestamps, the proposer will still set a timestamp into the `Header.Timestamp`.
-The timestamp the proposer sets into the `Header` will change depending on if the block has previously received a [polka](https://github.com/cometbft/cometbft/blob/053651160f496bb44b107a434e3e6482530bb287/docs/introduction/what-is-cometbft.md#consensus-overview) or not.
+In PBTS, the proposer will still set a timestamp into the `Header.Timestamp`.
+The timestamp the proposer sets into the `Header` will change depending on if the block has previously received a Polka, i.e., `2/3+` prevotes in a previous round.
 
-#### Proposal of a block that has not previously received a polka
+#### Proposal of a block that has not previously received a Polka
 
 If a proposer is proposing a new block then it will set the Unix time currently known to the proposer into the `Header.Timestamp` field.
 The proposer will also set this same timestamp into the `Timestamp` field of the `Proposal` message that it issues.
 
-#### Re-proposal of a block that has previously received a polka
+#### Re-proposal of a block that has previously received a Polka
 
-If a proposer is re-proposing a block that has previously received a polka on the network, then the proposer does not update the `Header.Timestamp` of that block.
+If a proposer is re-proposing a block that has previously received a Polka on the network, then the proposer does not update the `Header.Timestamp` of that block.
 Instead, the proposer simply re-proposes the exact same block.
 This way, the proposed block has the exact same block ID as the previously proposed block and the validators that have already received that block do not need to attempt to receive it again.
 
@@ -184,42 +190,43 @@ The proposer will set the re-proposed block's `Header.Timestamp` as the `Proposa
 #### Proposer waits
 
 Block timestamps must be monotonically increasing.
-In `BFT Time`, if a validator’s clock was behind, the [validator added 1 millisecond to the previous block’s time and used that in its vote messages](https://github.com/cometbft/cometbft/blob/e8013281281985e3ada7819f42502b09623d24a0/internal/consensus/state.go#L2246).
-A goal of adding proposer-based timestamps is to enforce some degree of clock synchronization, so having a mechanism that completely ignores the Unix time of the validator time no longer works.
+In `BFT Time`, if a validator’s clock was behind, the [validator added 1 millisecond to the previous block’s time and used that in its vote messages](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/consensus/state.go#L2460).
+A goal of adding PBTS is to enforce some degree of clock synchronization, so having a mechanism that completely ignores the Unix time of the validator time no longer works.
 Validator clocks will not be perfectly in sync.
 Therefore, the proposer’s current known Unix time may be less than the previous block's `Header.Time`.
 If the proposer’s current known Unix time is less than the previous block's `Header.Time`, the proposer will sleep until its known Unix time exceeds it.
 
-This change will require amending the [defaultDecideProposal](https://github.com/cometbft/cometbft/blob/822893615564cb20b002dd5cf3b42b8d364cb7d9/internal/consensus/state.go#L1180) method.
+This change will require amending the [`defaultDecideProposal`](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/consensus/state.go#L1195) method.
 This method should now schedule a timeout that fires when the proposer’s time is greater than the previous block's `Header.Time`.
 When the timeout fires, the proposer will finally issue the `Proposal` message.
 
 ### Changes to proposal validation rules
 
-The rules for validating a proposed block will be modified to implement proposer-based timestamps.
+The rules for validating a proposed block will be modified to implement PBTS.
 We will change the validation logic to ensure that a proposal is `timely`.
 
-Per the proposer-based timestamps spec, `timely` only needs to be checked if a block has not received a +2/3 majority of `Prevotes` in a round.
+Per the PBTS spec, `timely` only needs to be checked if a block has not received a +2/3 majority of `Prevotes` in a round.
 If a block previously received a +2/3 majority of prevotes in a previous round, then +2/3 of the voting power considered the block's timestamp near enough to their own currently known Unix time in that round.
 
 The validation logic will be updated to check `timely` for blocks that did not previously receive +2/3 prevotes in a round.
-Receiving +2/3 prevotes in a round is frequently referred to as a 'polka' and we will use this term for simplicity.
+Receiving +2/3 prevotes in a round is frequently referred to as a 'Polka' and we will use this term for simplicity.
 
 #### Current timestamp validation logic
 
 To provide a better understanding of the changes needed to timestamp validation, we will first detail how timestamp validation works currently in CometBFT.
 
-The [validBlock function](https://github.com/cometbft/cometbft/blob/c3ae6f5b58e07b29c62bfdc5715b6bf8ae5ee951/state/validation.go#L14) currently [validates the proposed block timestamp in three ways](https://github.com/cometbft/cometbft/blob/c3ae6f5b58e07b29c62bfdc5715b6bf8ae5ee951/state/validation.go#L118).
+The [`validateBlock` function](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/validation.go#L15) currently [validates the proposed block timestamp in three ways](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/validation.go#L116).
 First, the validation logic checks that this timestamp is greater than the previous block’s timestamp.
 
-Second, it validates that the block timestamp is correctly calculated as the weighted median of the timestamps in the [block’s LastCommit](https://github.com/cometbft/cometbft/blob/e8013281281985e3ada7819f42502b09623d24a0/types/block.go#L48).
+Second, it validates that the block timestamp is correctly calculated as the weighted median of the timestamps in the [block’s `LastCommit`](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/block.go#L49).
 
 Finally, the validation logic authenticates the timestamps in the `LastCommit.CommitSig`.
 The cryptographic signature in each `CommitSig` is created by signing a hash of fields in the block with the voting validator’s private key.
 One of the items in this `signedBytes` hash is the timestamp in the `CommitSig`.
 To authenticate the `CommitSig` timestamp, the validator authenticating votes builds a hash of fields that includes the `CommitSig` timestamp and checks this hash against the signature.
-This takes place in the [VerifyCommit function](https://github.com/cometbft/cometbft/blob/e8013281281985e3ada7819f42502b09623d24a0/types/validation.go#L25).
+This takes place in the [`VerifyCommit` function](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/validation.go#L26).
 
+<!---
 #### Remove unused timestamp validation logic
 
 `BFT Time` validation is no longer applicable and will be removed.
@@ -228,14 +235,16 @@ Specifically, we will remove the call to [MedianTime in the validateBlock functi
 The `MedianTime` function can be completely removed.
 
 Since `CommitSig`s will no longer contain a timestamp, the validator authenticating a commit will no longer include the `CommitSig` timestamp in the hash of fields it builds to check against the cryptographic signature.
+--->
 
-#### Timestamp validation when a block has not received a polka
+#### Timestamp validation when a block has not received a Polka
 
-The [POLRound](https://github.com/cometbft/cometbft/blob/68ca65f5d79905abd55ea999536b1a3685f9f19d/types/proposal.go#L29) in the `Proposal` message indicates which round the block received a polka.
+The [`POLRound`](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/proposal.go#L29) in the `Proposal` message indicates which round the block received a Polka.
 A negative value in the `POLRound` field indicates that the block has not previously been proposed on the network.
-Therefore the validation logic will check for timely when `POLRound < 0`.
+Therefore the validation logic will check for timely when `POLRound == -1`.
 
-When a validator receives a `Proposal` message, the validator will check that the `Proposal.Timestamp` is at most `PRECISION` greater than the current Unix time known to the validator, and at maximum `PRECISION + MSGDELAY` less than the current Unix time known to the validator.
+When a validator receives a `Proposal` message, it records it `proposalReceiveTime` as the current Unix time known to the validator.
+The validator will check that the `Proposal.Timestamp` is at most `PRECISION` greater than `proposalReceiveTime`, and at maximum `PRECISION + MSGDELAY` less than `proposalReceiveTime`.
 If the timestamp is not within these bounds, the proposed block will not be considered `timely`.
 
 Once a full block matching the `Proposal` message is received, the validator will also check that the timestamp in the `Header.Timestamp` of the block matches this `Proposal.Timestamp`.
@@ -244,7 +253,7 @@ Using the `Proposal.Timestamp` to check `timely` allows for the `MSGDELAY` param
 A validator will also check that the proposed timestamp is greater than the timestamp of the block for the previous height.
 If the timestamp is not greater than the previous block's timestamp, the block will not be considered valid, which is the same as the current logic.
 
-#### Timestamp validation when a block has received a polka
+#### Timestamp validation when a block has received a Polka
 
 When a block is re-proposed that has already received a +2/3 majority of `Prevote`s on the network, the `Proposal` message for the re-proposed block is created with a `POLRound` that is `>= 0`.
 A validator will not check that the `Proposal` is `timely` if the propose message has a non-negative `POLRound`.
@@ -258,6 +267,7 @@ If the timestamp is not greater than the previous block's timestamp, the block w
 
 Additionally, this validation logic can be updated to check that the `Proposal.Timestamp` matches the `Header.Timestamp` of the proposed block, but it is less relevant since checking that votes were received is sufficient to ensure the block timestamp is correct.
 
+<!---
 #### Relaxation of the 'Timely' check
 
 The `Synchrony` parameters, `MessageDelay` and `Precision` provide a means to bound the timestamp of a proposed block.
@@ -277,6 +287,7 @@ Operators can more easily readjust local validator clocks to be more aligned.
 Additionally, chains that wish to increase a small `Precision` value can still take advantage of the `MessageDelay` relaxation, waiting for the `MessageDelay` value to grow significantly and issuing proposals with timestamps that are far in the past of their peers.
 
 For more discussion of this, see [issue 371](https://github.com/cometbft/spec/issues/371).
+--->
 
 ### Changes to the prevote step
 
@@ -293,17 +304,19 @@ The only change we will make to the prevote step is to what a validator consider
 The precommit step will not require much modification.
 Its proposal validation rules will change in the same ways that validation will change in the prevote step with the exception of the `timely` check: precommit validation will never check that the timestamp is `timely`.
 
+<!---
 ### Remove voteTime Completely
 
 [voteTime](https://github.com/cometbft/cometbft/blob/822893615564cb20b002dd5cf3b42b8d364cb7d9/internal/consensus/state.go#L2229) is a mechanism for calculating the next `BFT Time` given both the validator's current known Unix time and the previous block timestamp.
 If the previous block timestamp is greater than the validator's current known Unix time, then voteTime returns a value one millisecond greater than the previous block timestamp.
-This logic is used in multiple places and is no longer needed for proposer-based timestamps.
+This logic is used in multiple places and is no longer needed for PBTS.
 It should therefore be removed completely.
+--->
 
 ## Future Improvements
 
 * Implement BLS signature aggregation.
-By removing fields from the `Precommit` messages, we are able to aggregate signatures.
+If we remove the `Timestamp` field from the `Precommit` messages, we are able to aggregate signatures.
 
 ## Consequences
 
@@ -332,7 +345,9 @@ This skew will be bound by the `PRECISION` value, so it is unlikely to be too la
 
 * [PBTS Spec][pbts-spec]
 * [BFT Time spec][bfttime]
+<!---
 * [Issue 371](https://github.com/cometbft/spec/issues/371)
+--->
 
 [bfttime]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
 [pbts-spec]: https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp/README.md

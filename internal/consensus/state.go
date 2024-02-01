@@ -1616,7 +1616,7 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	// At this point, +2/3 prevoted for a particular block.
 
 	// If we did not receive a proposal block to vote for, we must precommit nil
-	// FIXME: altough +2/3 prevoted for the block, therefore it is valid.
+	// FIXME: although +2/3 prevoted for the block, therefore it is valid.
 	if cs.ProposalBlock == nil {
 		logger.Debug("precommit step; did not receive proposal, precommitting nil")
 		cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)

@@ -214,11 +214,6 @@ func (pool *BlockPool) PopRequest() {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
-	/*  The block can disappear at any time, due to removePeer().
-	if r := pool.requesters[pool.height]; r == nil || r.block == nil {
-		PanicSanity("PopRequest() requires a valid block")
-	}
-	*/
 	r := pool.requesters[pool.height]
 	if r == nil {
 		panic(fmt.Sprintf("Expected requester to pop, got nothing at height %v", pool.height))

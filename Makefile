@@ -243,14 +243,8 @@ clean_certs:
 ###############################################################################
 
 #? lint: Lint, format and fix typos
-lint:
-	@echo "--> Linting"
-	@go run github.com/golangci/golangci-lint/cmd/golangci-lint@latest run --fix
-	@echo "--> Formatting"
-	@go run mvdan.cc/gofumpt@latest -w .
-	@echo "--> Fixing typos"
-	@which codespell || pip3 install codespell
-	@codespell -w
+lint: pre-commit
+	@pre-commit run
 .PHONY: lint
 
 #? vulncheck: Run latest govulncheck
@@ -258,13 +252,11 @@ vulncheck:
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 .PHONY: vulncheck
 
-#? setup-pre-commit: Create git pre-commit hook for gofumpt, golangci-lint
-setup-pre-commit:
-	@cp .git/hooks/pre-commit .git/hooks/pre-commit.bak 2>/dev/null || true
-	@echo "Installing pre-commit hook..."
-	@ln -sf ../../scripts/hooks/pre-commit.sh .git/hooks/pre-commit
-	@echo "Pre-commit hook installed successfully"
-.PHONY: gofumpt-pre-commit
+#? pre-commit: Create pre-commit hook using the pre-commit framework.
+pre-commit:
+	@which pre-commit || pip3 install pre-commit
+	@pre-commit install
+.PHONY: pre-commit
 
 DESTINATION = ./index.html.md
 
@@ -306,13 +298,6 @@ build-docker-localnode:
 	@cd networks/local && make
 .PHONY: build-docker-localnode
 
-# Runs `make build COMETBFT_BUILD_OPTIONS=cleveldb` from within an Amazon
-# Linux (v2)-based Docker build container in order to build an Amazon
-# Linux-compatible binary. Produces a compatible binary at ./build/cometbft
-build_c-amazonlinux:
-	$(MAKE) -C ./DOCKER build_amazonlinux_buildimage
-	docker run --rm -it -v `pwd`:/cometbft cometbft/cometbft:build_c-amazonlinux
-.PHONY: build_c-amazonlinux
 
 #? localnet-start: Run a 4-node testnet locally
 localnet-start: localnet-stop build-docker-localnode

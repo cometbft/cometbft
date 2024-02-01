@@ -35,14 +35,12 @@ test_abci_cli:
 
 test_integrations:
 	make build_docker_test_image
-	make tools
 	make install
 	make install_abci
 	make test_cover
 	make test_apps
 	make test_abci_apps
 	make test_abci_cli
-	make test_libs
 .PHONY: test_integrations
 
 test_release:
@@ -71,5 +69,5 @@ test_race:
 
 test_deadlock:
 	@echo "--> Running go test --deadlock"
-	@go test -p 1 -v  $(PACKAGES) -tags deadlock 
+	@go test -p 1 -v  $(PACKAGES) -tags deadlock
 .PHONY: test_race

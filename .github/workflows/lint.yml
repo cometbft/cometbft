@@ -19,27 +19,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
+      - uses: pre-commit/action@v3.0.0
 
-      - name: "Check the source code"
-        run: |
-          set -euo pipefail
-
-          make lint
-
-          if ! git diff --stat --exit-code ; then
-            echo ">> ERROR:"
-            echo ">>"
-            echo ">> The source code is not linted, not formatted or contains typos."
-            echo ">> Re-run 'make lint' and update this PR."
-            echo ">>"
-            git diff
-            exit 1
-          fi

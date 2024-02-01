@@ -1380,10 +1380,11 @@ func TestStateMissingProposalValidBlockReceivedTimeout(t *testing.T) {
 	}
 
 	// We have polka for blockID so we can accept the associated full block.
-	ensureNewValidBlock(validBlockCh, height, round)
 	for i := 0; i < int(blockParts.Total()); i++ {
-		cs1.AddProposalBlockPart(height, round, blockParts.GetPart(i), "peer")
+		err := cs1.AddProposalBlockPart(height, round, blockParts.GetPart(i), "peer")
+		require.NoError(t, err)
 	}
+	ensureNewValidBlock(validBlockCh, height, round)
 
 	// We don't prevote right now because we didn't receive the round's
 	// Proposal. Wait for the propose timeout.
@@ -1398,7 +1399,6 @@ func TestStateMissingProposalValidBlockReceivedTimeout(t *testing.T) {
 	// In branches v0.{34,37,38}.x, the node prevotes for the valid block.
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], nil)
-
 }
 
 // TestStateLockDoesNotLockOnOldProposal tests that observing

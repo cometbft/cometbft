@@ -267,7 +267,6 @@ If the timestamp is not greater than the previous block's timestamp, the block w
 
 Additionally, this validation logic can be updated to check that the `Proposal.Timestamp` matches the `Header.Timestamp` of the proposed block, but it is less relevant since checking that votes were received is sufficient to ensure the block timestamp is correct.
 
-<!---
 #### Relaxation of the 'Timely' check
 
 The `Synchrony` parameters, `MessageDelay` and `Precision` provide a means to bound the timestamp of a proposed block.
@@ -278,16 +277,18 @@ If a CometBFT network selects a `MessageDelay` parameter that does not accuratel
 A very common way to update `ConsensusParams` is by executing a transaction included in a block that specifies new values for them.
 However, if the network is unable to produce blocks because of this liveness issue, no such transaction may be executed.
 To prevent this dangerous condition, we will add a relaxation mechanism to the `Timely` predicate.
+
+<!---
 If consensus takes more than 10 rounds to produce a block for any reason, the `MessageDelay` will be doubled.
 This doubling will continue for each subsequent 10 rounds of consensus.
 This will enable chains that selected too small of a value for the `MessageDelay` parameter to eventually issue a transaction and readjust the parameters to more accurately reflect the broadcast time.
+--->
 
 This liveness issue is not as problematic for chains with very small `Precision` values.
 Operators can more easily readjust local validator clocks to be more aligned.
 Additionally, chains that wish to increase a small `Precision` value can still take advantage of the `MessageDelay` relaxation, waiting for the `MessageDelay` value to grow significantly and issuing proposals with timestamps that are far in the past of their peers.
 
-For more discussion of this, see [issue 371](https://github.com/cometbft/spec/issues/371).
---->
+For more discussion of this, see [issue 2184][issue2184].
 
 ### Changes to the prevote step
 
@@ -312,6 +313,18 @@ If the previous block timestamp is greater than the validator's current known Un
 This logic is used in multiple places and is no longer needed for PBTS.
 It should therefore be removed completely.
 --->
+
+### Backwards compatibility
+
+In order to ensure backwards compatibility, PBTS should be enabled using a consensus parameter.
+The proposed approach is similar to the one adopted to enable vote extensions:
+[`ABCIParams.VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
+
+In summary, the network will migrate from the `BFT Time` method for assigning
+and validating timestamps to the new method for assigning and validating
+timestamps adopted by `PBTS` from a given, configurable height.
+
+For more discussion of this, see [issue 2063][issue2063].
 
 ## Future Improvements
 
@@ -345,9 +358,10 @@ This skew will be bound by the `PRECISION` value, so it is unlikely to be too la
 
 * [PBTS Spec][pbts-spec]
 * [BFT Time spec][bfttime]
-<!---
-* [Issue 371](https://github.com/cometbft/spec/issues/371)
---->
+* [PBTS: support both PBTS and legacy BFT Time #2063][issue2063]
+* [PBTS: should synchrony parameters be adaptive? #2184][issue2184]
 
+[issue2184]: https://github.com/cometbft/cometbft/issues/2184
+[issue2063]: https://github.com/cometbft/cometbft/issues/2063
 [bfttime]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
 [pbts-spec]: https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp/README.md

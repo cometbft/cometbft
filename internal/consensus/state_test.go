@@ -52,6 +52,7 @@ next round, so we precommit nil but maintain lock
 x * TestStateLockMissingProposalWhenPOLSeenDoesNotUpdateLock - 4 vals, 1 misses proposal but sees POL.
 x * TestStateLockMissingProposalWhenPOLSeenDoesNotUnlock - 4 vals, 1 misses proposal but sees POL.
   * TestStateLockMissingProposalWhenPOLForLockedBlock - 4 vals, 1 misses proposal but sees POL for locked block.
+x * TestStateMissingProposalValidBlockReceivedTimeout - 4 vals, 1 misses proposal but receives full block.
 x * TestStateLockPOLSafety1 - 4 vals. We shouldn't change lock based on polka at earlier round
 x * TestStateLockPOLSafety2 - 4 vals. After unlocking, we shouldn't relock based on polka at earlier round
 x * TestStatePrevotePOLFromPreviousRound 4 vals, prevote a proposal if a POL was seen for it in a previous round.
@@ -1337,6 +1338,67 @@ func TestStateLockMissingProposalWhenPOLForLockedBlock(t *testing.T) {
 	// In the pseudo-code, if a process does not receive the proposal (and block) for
 	// the current round, it cannot Precommit the proposed block ID, even thought it
 	// sees a POL for that block that matches the locked value (block).
+}
+
+// TestStateMissingProposalValidBlockReceivedTimeout tests if a node that
+// misses the round's Proposal but receives a Polka for a block and the full
+// block will not prevote for the valid block because the Proposal was missing.
+func TestStateMissingProposalValidBlockReceivedTimeout(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cs1, vss := randState(4)
+	height, round := cs1.Height, cs1.Round
+
+	timeoutProposeCh := subscribe(cs1.eventBus, types.EventQueryTimeoutPropose)
+	voteCh := subscribe(cs1.eventBus, types.EventQueryVote)
+	validBlockCh := subscribe(cs1.eventBus, types.EventQueryValidBlock)
+
+	// Produce a block
+	//	mempool := assertMempool(cs1.txNotifier)
+	//	tx := kvstore.NewTx("key", string(make([]byte, 5*types.BlockPartSizeBytes)))
+	//	mempool.CheckTx(tx)
+
+	block, err := cs1.createProposalBlock(ctx)
+	require.NoError(t, err)
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+	blockID := types.BlockID{
+		Hash:          block.Hash(),
+		PartSetHeader: blockParts.Header(),
+	}
+
+	// Skip round 0 and start consensus threads
+	round++
+	incrementRound(vss[1:]...)
+	startTestRound(cs1, height, round)
+
+	// Receive prevotes(height, round=1, blockID) from all other validators.
+	for i := 1; i < len(vss); i++ {
+		signAddVotes(cs1, types.PrevoteType, blockID.Hash, blockID.PartSetHeader, false, vss[i])
+		ensurePrevote(voteCh, height, round)
+	}
+
+	// We have polka for blockID so we can accept the associated full block.
+	ensureNewValidBlock(validBlockCh, height, round)
+	for i := 0; i < int(blockParts.Total()); i++ {
+		cs1.AddProposalBlockPart(height, round, blockParts.GetPart(i), "peer")
+	}
+
+	// We don't prevote right now because we didn't receive the round's
+	// Proposal. Wait for the propose timeout.
+	ensureNewTimeout(timeoutProposeCh, height, round, cs1.config.Propose(round).Nanoseconds())
+
+	rs := cs1.GetRoundState()
+	assert.Equal(t, rs.ValidRound, round)
+	assert.Equal(t, rs.ValidBlock.Hash(), blockID.Hash)
+
+	// Since we didn't see the round's Proposal, we should prevote nil.
+	// NOTE: introduced by https://github.com/cometbft/cometbft/pull/1203.
+	// In branches v0.{34,37,38}.x, the node prevotes for the valid block.
+	ensurePrevote(voteCh, height, round)
+	validatePrevote(t, cs1, round, vss[0], nil)
+
 }
 
 // TestStateLockDoesNotLockOnOldProposal tests that observing

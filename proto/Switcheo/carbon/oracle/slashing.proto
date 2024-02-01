@@ -1,0 +1,20 @@
+syntax = "proto3";
+package Switcheo.carbon.oracle;
+
+option go_package = "github.com/cometbft/cometbft/oracle/types";
+option (gogoproto.goproto_getters_all) = false;
+
+import "gogoproto/gogo.proto";
+
+message OracleVotesWindow {
+  string validator = 1;
+  string oracle_id = 2;
+  uint64 vote_count = 3;
+}
+
+message SlashCounter {
+  string validator = 1;
+  uint64 slash_count = 2;
+  uint64 prev_slash_count = 3;
+  uint64 newly_bonded_window_allowance = 4;
+}

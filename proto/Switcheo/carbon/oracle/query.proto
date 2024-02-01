@@ -1,0 +1,207 @@
+syntax = "proto3";
+package Switcheo.carbon.oracle;
+
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+// this line is used by starport scaffolding # 1
+import "Switcheo/carbon/oracle/oracle.proto";
+import "Switcheo/carbon/oracle/slashing.proto";
+
+option go_package = "github.com/cometbft/cometbft/oracle/types";
+option (gogoproto.goproto_getters_all) = false;
+
+// Query defines the gRPC querier service.
+service Query {
+  // this line is used by starport scaffolding # 2
+
+  // Get details for an oracle
+  rpc Oracle(QueryOracleRequest) returns (QueryOracleResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/oracles/{id}";
+  }
+
+  // Get details for all oracles
+  rpc OracleAll(QueryAllOracleRequest) returns (QueryAllOracleResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/oracles";
+  }
+
+  // Get results for all oracles, or a specific oracle
+  rpc Results(QueryResultsRequest) returns (QueryResultsResponse) {
+    option (google.api.http) = {
+      get : "/carbon/oracle/v1/results/{oracle_id}"
+      additional_bindings {get : "/carbon/oracle/v1/results"}
+    };
+  }
+
+  // Get latest result for all oracles
+  rpc ResultsLatest(QueryResultsRequest) returns (QueryResultsResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/results_latest";
+  }
+
+  // Get votes for all oracles, or a specific oracle
+  rpc Votes(QueryVotesRequest) returns (QueryVotesResponse) {
+    option (google.api.http) = {
+      get : "/carbon/oracle/v1/votes/{oracle_id}"
+      additional_bindings {get : "/carbon/oracle/v1/votes"}
+    };
+  }
+
+  // Get voting power for an address
+  rpc VoterPower(QueryVoterPowerRequest) returns (QueryVoterPowerResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/powers/{address}";
+  }
+
+  // Get all slash counters
+  rpc SlashCounterAll(QueryAllSlashCounterRequest)
+      returns (QueryAllSlashCounterResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/slash_counters";
+  }
+
+  // Get slash counter for a valoper address
+  rpc SlashCounter(QuerySlashCounterRequest)
+      returns (QuerySlashCounterResponse) {
+    option (google.api.http).get =
+        "/carbon/oracle/v1/slash_counters/{valoper_address}";
+  }
+
+  // Get all oracle votes window
+  rpc OracleVotesWindowAll(QueryAllOracleVotesWindowRequest)
+      returns (QueryAllOracleVotesWindowResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/oracle_votes_windows";
+  }
+
+  // Get oracle votes window for address
+  rpc OracleVotesWindow(QueryOracleVotesWindowRequest)
+      returns (QueryOracleVotesWindowResponse) {
+    option (google.api.http).get =
+        "/carbon/oracle/v1/oracle_votes_windows/{valoper_address}";
+  }
+
+  rpc OracleContractAddress(QueryContractAddressRequest)
+      returns (QueryContractAddressResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/contracts_address/{id}";
+  }
+
+  rpc OracleContractAll(QueryContractAllRequest)
+      returns (QueryContractAllResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/contracts";
+  }
+
+  rpc OracleContractParams(QueryContractParamsRequest)
+      returns (QueryContractParamsResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/contract_params/{id}";
+  }
+
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/carbon/oracle/v1/params";
+  }
+}
+
+// this line is used by starport scaffolding # 3
+message QueryOracleRequest { string id = 1; }
+
+message QueryOracleResponse {
+  Oracle oracle = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryAllOracleRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllOracleResponse {
+  repeated Oracle oracles = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryResultsRequest {
+  string oracle_id = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryResultsResponse {
+  repeated Result results = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryVotesRequest {
+  string oracle_id = 1;
+  int64 timestamp = 2;
+  string voter = 3;
+  cosmos.base.query.v1beta1.PageRequest pagination = 4;
+}
+
+message QueryVotesResponse {
+  repeated Vote votes = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryVoterPowerRequest { string address = 1; }
+
+message QueryVoterPowerResponse {
+  string power = 1 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = true
+  ];
+}
+
+message QueryAllSlashCounterRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllSlashCounterResponse {
+  repeated SlashCounter slash_counters = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QuerySlashCounterRequest { string valoper_address = 1; }
+
+message QuerySlashCounterResponse {
+  SlashCounter slash_counter = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryAllOracleVotesWindowRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+message QueryAllOracleVotesWindowResponse {
+  repeated OracleVotesWindow oracle_votes_windows = 1
+      [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryOracleVotesWindowRequest {
+  string valoper_address = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+message QueryOracleVotesWindowResponse {
+  repeated OracleVotesWindow oracle_votes_windows = 1
+      [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryContractAddressRequest { string id = 1; }
+message QueryContractAddressResponse { string address = 1; }
+
+message QueryContractAllRequest {}
+message QueryContractAllResponse {
+  repeated Contract contracts = 1 [ (gogoproto.nullable) = false ];
+}
+
+message QueryContractParamsRequest { string id = 1; }
+message QueryContractParamsResponse {
+  string id = 1;
+  string creator = 2;
+  uint64 decimals = 3;
+  string timestamp = 4;
+  string data = 5;
+}

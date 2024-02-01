@@ -1,0 +1,73 @@
+syntax = "proto3";
+package Switcheo.carbon.oracle;
+
+option go_package = "github.com/cometbft/cometbft/oracle/types";
+option (gogoproto.goproto_getters_all) = false;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// Params defines the parameters for the oracle module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  bool oracle_slash_enabled = 1;
+  uint32 oracle_slash_window_block = 2;
+  string oracle_slash_initial = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  string oracle_slash_increment = 4 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  uint32 oracle_continuous_slash_max = 5;
+  uint32 newly_bonded_window_allowance = 6;
+  google.protobuf.Duration vote_timestamp_future_allowance = 7
+      [ (gogoproto.nullable) = false, (gogoproto.stdduration) = true ];
+  string oracle_min_vote_factor = 8 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+  string max_power_to_slash_factor = 9 [
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message Oracle {
+  string creator = 1;
+  string id = 2;
+  string description = 3;
+  string status = 4;
+  int64 min_turnout_percentage = 5;
+  int64 max_result_age = 6;
+  string security_type = 7;
+  string result_strategy = 8;
+  int64 resolution = 9;
+  string spec = 10;
+}
+
+message Vote {
+  string oracle_id = 1;
+  int64 timestamp = 2;
+  string data = 3;
+  string voter = 4;
+}
+
+message Result {
+  string oracle_id = 1 [ (gogoproto.moretags) = "db:\"oracle_id\"" ];
+  int64 timestamp = 3 [ (gogoproto.moretags) = "db:\"timestamp\"" ];
+  string data = 4 [ (gogoproto.moretags) = "db:\"data\"" ];
+}
+
+message Mark {
+  string oracle_id = 1;
+  int64 timestamp = 2;
+}
+
+message Contract {
+  string oracle_id = 1;
+  string contract_address = 2;
+}

@@ -52,6 +52,7 @@ next round, so we precommit nil but maintain lock
 x * TestStateLock_MissingProposalWhenPOLSeenDoesNotUpdateLock - 4 vals, 1 misses proposal but sees POL.
 x * TestStateLock_MissingProposalWhenPOLSeenDoesNotUnlock - 4 vals, 1 misses proposal but sees POL.
   * TestStateLock_MissingProposalWhenPOLForLockedBlock - 4 vals, 1 misses proposal but sees POL for locked block.
+x * TestState_MissingProposalValidBlockReceivedPrecommit - 4 vals, 1 misses proposal but receives full block.
 x * TestStateLock_POLSafety1 - 4 vals. We shouldn't change lock based on polka at earlier round
 x * TestStateLock_POLSafety2 - 4 vals. After unlocking, we shouldn't relock based on polka at earlier round
 x * TestState_PrevotePOLFromPreviousRound 4 vals, prevote a proposal if a POL was seen for it in a previous round.
@@ -1307,6 +1308,60 @@ func TestStateLock_MissingProposalWhenPOLForLockedBlock(t *testing.T) {
 
 	// the validator precommits nil because it hasn't received the proposal for the current round
 	validatePrecommit(t, cs1, round, 0, vss[0], nil, blockID.Hash)
+}
+
+// TestState_MissingProposalValidBlockReceivedPrecommit tests if a node that
+// misses the round's Proposal but receives a Polka for a block and the full
+// block precommit the valid block even though the Proposal is missing.
+func TestState_MissingProposalValidBlockReceivedPrecommit(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cs1, vss := randState(4)
+	height, round := cs1.Height, cs1.Round
+	chainID := cs1.state.ChainID
+
+	timeoutProposeCh := subscribe(cs1.eventBus, types.EventQueryTimeoutPropose)
+	validBlockCh := subscribe(cs1.eventBus, types.EventQueryValidBlock)
+	voteCh := subscribe(cs1.eventBus, types.EventQueryVote)
+
+	// Produce a block
+	block, err := cs1.createProposalBlock(ctx)
+	require.NoError(t, err)
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+	blockID := types.BlockID{
+		Hash:          block.Hash(),
+		PartSetHeader: blockParts.Header(),
+	}
+
+	// Skip round 0 and start consensus
+	round++
+	incrementRound(vss[1:]...)
+	startTestRound(cs1, height, round)
+
+	// We are late, so we already receive prevotes for the block
+	for i := 1; i < len(vss); i++ {
+		signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vss[i])
+		ensurePrevote(voteCh, height, round)
+	}
+	// We received a Polka for blockID, which is now valid
+	ensureNewValidBlock(validBlockCh, height, round)
+
+	// We don't have the Proposal, so we wait for timeout propose
+	ensureNewTimeout(timeoutProposeCh, height, round, cs1.config.Propose(round).Nanoseconds())
+	ensurePrevote(voteCh, height, round)
+	validatePrevote(t, cs1, round, vss[0], nil)
+
+	// We accept the full block associated with the valid blockID
+	for i := 0; i < int(blockParts.Total()); i++ {
+		err := cs1.AddProposalBlockPart(height, round, blockParts.GetPart(i), "peer")
+		require.NoError(t, err)
+	}
+
+	// we don't have the Proposal for blockID, but we have the full block
+	ensurePrecommit(voteCh, height, round)
+	validatePrecommit(t, cs1, round, round, vss[0], blockID.Hash, blockID.Hash)
 }
 
 // TestStateLock_DoesNotLockOnOldProposal tests that observing

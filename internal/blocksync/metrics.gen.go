@@ -8,42 +8,38 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels ...string) *Metrics {
 	return &Metrics{
 		Syncing: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "syncing",
 			Help:      "Whether or not a node is block syncing. 1 if yes, 0 if no.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		NumTxs: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "num_txs",
 			Help:      "Number of transactions in the latest block.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		TotalTxs: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "total_txs",
 			Help:      "Total number of transactions.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		BlockSizeBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_size_bytes",
 			Help:      "Size of the latest block.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		LatestBlockHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "latest_block_height",
 			Help:      "The height of the latest block.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 	}
 }
 
@@ -54,5 +50,15 @@ func NopMetrics() *Metrics {
 		TotalTxs:          discard.NewGauge(),
 		BlockSizeBytes:    discard.NewGauge(),
 		LatestBlockHeight: discard.NewGauge(),
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		Syncing:           m.Syncing.With(labelsAndValues...),
+		NumTxs:            m.NumTxs.With(labelsAndValues...),
+		TotalTxs:          m.TotalTxs.With(labelsAndValues...),
+		BlockSizeBytes:    m.BlockSizeBytes.With(labelsAndValues...),
+		LatestBlockHeight: m.LatestBlockHeight.With(labelsAndValues...),
 	}
 }

@@ -8,30 +8,26 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels ...string) *Metrics {
 	return &Metrics{
 		Height: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "height",
 			Help:      "Height of the chain.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ValidatorLastSignedHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "validator_last_signed_height",
 			Help:      "Last height signed by this validator if the node is a validator.",
-		}, append(labels, "validator_address")).With(labelsAndValues...),
+		}, append(labels, "validator_address")),
 		Rounds: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "rounds",
 			Help:      "Number of rounds.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		RoundDurationSeconds: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -39,109 +35,109 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "Histogram of round duration.",
 
 			Buckets: stdprometheus.ExponentialBucketsRange(0.1, 100, 8),
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		Validators: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "validators",
 			Help:      "Number of validators.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ValidatorsPower: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "validators_power",
 			Help:      "Total power of all validators.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ValidatorPower: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "validator_power",
 			Help:      "Power of a validator.",
-		}, append(labels, "validator_address")).With(labelsAndValues...),
+		}, append(labels, "validator_address")),
 		ValidatorMissedBlocks: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "validator_missed_blocks",
 			Help:      "Amount of blocks missed per validator.",
-		}, append(labels, "validator_address")).With(labelsAndValues...),
+		}, append(labels, "validator_address")),
 		MissingValidators: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "missing_validators",
 			Help:      "Number of validators who did not sign.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		MissingValidatorsPower: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "missing_validators_power",
 			Help:      "Total power of the missing validators.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ByzantineValidators: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "byzantine_validators",
 			Help:      "Number of validators who tried to double sign.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ByzantineValidatorsPower: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "byzantine_validators_power",
 			Help:      "Total power of the byzantine validators.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		BlockIntervalSeconds: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_interval_seconds",
 			Help:      "Time between this and the last block.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		NumTxs: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "num_txs",
 			Help:      "Number of transactions.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		BlockSizeBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_size_bytes",
 			Help:      "Size of the block.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ChainSizeBytes: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "chain_size_bytes",
 			Help:      "Size of the chain in bytes.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		TotalTxs: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "total_txs",
 			Help:      "Total number of transactions.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		CommittedHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "latest_block_height",
 			Help:      "The latest block height.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		BlockParts: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_parts",
 			Help:      "Number of block parts transmitted by each peer.",
-		}, append(labels, "peer_id")).With(labelsAndValues...),
+		}, append(labels, "peer_id")),
 		DuplicateBlockPart: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "duplicate_block_part",
 			Help:      "Number of times we received a duplicate block part",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		DuplicateVote: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "duplicate_vote",
 			Help:      "Number of times we received a duplicate vote",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		StepDurationSeconds: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -149,55 +145,55 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "Histogram of durations for each step in the consensus protocol.",
 
 			Buckets: stdprometheus.ExponentialBucketsRange(0.1, 100, 8),
-		}, append(labels, "step")).With(labelsAndValues...),
+		}, append(labels, "step")),
 		BlockGossipPartsReceived: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_gossip_parts_received",
 			Help:      "Number of block parts received by the node, separated by whether the part was relevant to the block the node is trying to gather or not.",
-		}, append(labels, "matches_current")).With(labelsAndValues...),
+		}, append(labels, "matches_current")),
 		QuorumPrevoteDelay: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "quorum_prevote_delay",
 			Help:      "Interval in seconds between the proposal timestamp and the timestamp of the earliest prevote that achieved a quorum.",
-		}, append(labels, "proposer_address")).With(labelsAndValues...),
+		}, append(labels, "proposer_address")),
 		FullPrevoteDelay: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "full_prevote_delay",
 			Help:      "Interval in seconds between the proposal timestamp and the timestamp of the latest prevote in a round where all validators voted.",
-		}, append(labels, "proposer_address")).With(labelsAndValues...),
+		}, append(labels, "proposer_address")),
 		VoteExtensionReceiveCount: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "vote_extension_receive_count",
 			Help:      "VoteExtensionReceiveCount is the number of vote extensions received by this node. The metric is annotated by the status of the vote extension from the application, either 'accepted' or 'rejected'.",
-		}, append(labels, "status")).With(labelsAndValues...),
+		}, append(labels, "status")),
 		ProposalReceiveCount: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "proposal_receive_count",
 			Help:      "ProposalReceiveCount is the total number of proposals received by this node since process start. The metric is annotated by the status of the proposal from the application, either 'accepted' or 'rejected'.",
-		}, append(labels, "status")).With(labelsAndValues...),
+		}, append(labels, "status")),
 		ProposalCreateCount: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "proposal_create_count",
 			Help:      "ProposalCreationCount is the total number of proposals created by this node since process start. The metric is annotated by the status of the proposal from the application, either 'accepted' or 'rejected'.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		RoundVotingPowerPercent: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "round_voting_power_percent",
 			Help:      "RoundVotingPowerPercent is the percentage of the total voting power received with a round. The value begins at 0 for each round and approaches 1.0 as additional voting power is observed. The metric is labeled by vote type.",
-		}, append(labels, "vote_type")).With(labelsAndValues...),
+		}, append(labels, "vote_type")),
 		LateVotes: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "late_votes",
 			Help:      "LateVotes stores the number of votes that were received by this node that correspond to earlier heights and rounds than this node is currently in.",
-		}, append(labels, "vote_type")).With(labelsAndValues...),
+		}, append(labels, "vote_type")),
 	}
 }
 
@@ -233,5 +229,40 @@ func NopMetrics() *Metrics {
 		ProposalCreateCount:       discard.NewCounter(),
 		RoundVotingPowerPercent:   discard.NewGauge(),
 		LateVotes:                 discard.NewCounter(),
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		Height:                    m.Height.With(labelsAndValues...),
+		ValidatorLastSignedHeight: m.ValidatorLastSignedHeight.With(labelsAndValues...),
+		Rounds:                    m.Rounds.With(labelsAndValues...),
+		RoundDurationSeconds:      m.RoundDurationSeconds.With(labelsAndValues...),
+		Validators:                m.Validators.With(labelsAndValues...),
+		ValidatorsPower:           m.ValidatorsPower.With(labelsAndValues...),
+		ValidatorPower:            m.ValidatorPower.With(labelsAndValues...),
+		ValidatorMissedBlocks:     m.ValidatorMissedBlocks.With(labelsAndValues...),
+		MissingValidators:         m.MissingValidators.With(labelsAndValues...),
+		MissingValidatorsPower:    m.MissingValidatorsPower.With(labelsAndValues...),
+		ByzantineValidators:       m.ByzantineValidators.With(labelsAndValues...),
+		ByzantineValidatorsPower:  m.ByzantineValidatorsPower.With(labelsAndValues...),
+		BlockIntervalSeconds:      m.BlockIntervalSeconds.With(labelsAndValues...),
+		NumTxs:                    m.NumTxs.With(labelsAndValues...),
+		BlockSizeBytes:            m.BlockSizeBytes.With(labelsAndValues...),
+		ChainSizeBytes:            m.ChainSizeBytes.With(labelsAndValues...),
+		TotalTxs:                  m.TotalTxs.With(labelsAndValues...),
+		CommittedHeight:           m.CommittedHeight.With(labelsAndValues...),
+		BlockParts:                m.BlockParts.With(labelsAndValues...),
+		DuplicateBlockPart:        m.DuplicateBlockPart.With(labelsAndValues...),
+		DuplicateVote:             m.DuplicateVote.With(labelsAndValues...),
+		StepDurationSeconds:       m.StepDurationSeconds.With(labelsAndValues...),
+		BlockGossipPartsReceived:  m.BlockGossipPartsReceived.With(labelsAndValues...),
+		QuorumPrevoteDelay:        m.QuorumPrevoteDelay.With(labelsAndValues...),
+		FullPrevoteDelay:          m.FullPrevoteDelay.With(labelsAndValues...),
+		VoteExtensionReceiveCount: m.VoteExtensionReceiveCount.With(labelsAndValues...),
+		ProposalReceiveCount:      m.ProposalReceiveCount.With(labelsAndValues...),
+		ProposalCreateCount:       m.ProposalCreateCount.With(labelsAndValues...),
+		RoundVotingPowerPercent:   m.RoundVotingPowerPercent.With(labelsAndValues...),
+		LateVotes:                 m.LateVotes.With(labelsAndValues...),
 	}
 }

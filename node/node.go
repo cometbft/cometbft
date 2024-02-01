@@ -299,7 +299,8 @@ func NewNode(ctx context.Context,
 		logger.Error("Failed to delete genesis doc from DB ", err)
 	}
 
-	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
+	allMetrics := metricsProvider(genDoc.ChainID)
+	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := allMetrics.Consensus, allMetrics.P2P, allMetrics.Mempool, allMetrics.State, allMetrics.Proxy, allMetrics.Blocksync, allMetrics.Statesync
 
 	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).
 	proxyApp, err := createAndStartProxyAppConns(clientCreator, logger, abciMetrics)

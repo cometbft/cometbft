@@ -8,23 +8,25 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels ...string) *Metrics {
 	return &Metrics{
 		Syncing: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "syncing",
 			Help:      "Whether or not a node is state syncing. 1 if yes, 0 if no.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
 		Syncing: discard.NewGauge(),
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		Syncing: m.Syncing.With(labelsAndValues...),
 	}
 }

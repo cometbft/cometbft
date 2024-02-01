@@ -8,23 +8,25 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels ...string) *Metrics {
 	return &Metrics{
 		Height: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "height",
 			Help:      "simple metric that tracks the height of the chain.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 	}
 }
 
 func NopMetrics() *Metrics {
 	return &Metrics{
 		Height: discard.NewGauge(),
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		Height: m.Height.With(labelsAndValues...),
 	}
 }

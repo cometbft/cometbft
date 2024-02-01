@@ -8,24 +8,20 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels ...string) *Metrics {
 	return &Metrics{
 		Size: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "size",
 			Help:      "Number of uncommitted transactions in the mempool.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		SizeBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "size_bytes",
 			Help:      "Total size of the mempool in bytes.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		TxSizeBytes: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -33,37 +29,37 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "Histogram of transaction sizes in bytes.",
 
 			Buckets: stdprometheus.ExponentialBuckets(1, 3, 7),
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		FailedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "failed_txs",
 			Help:      "Number of failed transactions.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		RejectedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "rejected_txs",
 			Help:      "Number of rejected transactions.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		RecheckTimes: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "recheck_times",
 			Help:      "Number of times transactions are rechecked in the mempool.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		AlreadyReceivedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "already_received_txs",
 			Help:      "Number of duplicate transaction reception.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ActiveOutboundConnections: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "active_outbound_connections",
 			Help:      "Number of connections being actively used for gossiping transactions (experimental feature).",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 	}
 }
 
@@ -77,5 +73,18 @@ func NopMetrics() *Metrics {
 		RecheckTimes:              discard.NewCounter(),
 		AlreadyReceivedTxs:        discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		Size:                      m.Size.With(labelsAndValues...),
+		SizeBytes:                 m.SizeBytes.With(labelsAndValues...),
+		TxSizeBytes:               m.TxSizeBytes.With(labelsAndValues...),
+		FailedTxs:                 m.FailedTxs.With(labelsAndValues...),
+		RejectedTxs:               m.RejectedTxs.With(labelsAndValues...),
+		RecheckTimes:              m.RecheckTimes.With(labelsAndValues...),
+		AlreadyReceivedTxs:        m.AlreadyReceivedTxs.With(labelsAndValues...),
+		ActiveOutboundConnections: m.ActiveOutboundConnections.With(labelsAndValues...),
 	}
 }

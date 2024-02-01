@@ -8,54 +8,50 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels ...string) *Metrics {
 	return &Metrics{
 		Peers: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "peers",
 			Help:      "Number of peers.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		PeerReceiveBytesTotal: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "peer_receive_bytes_total",
 			Help:      "Number of bytes received from a given peer.",
-		}, append(labels, "peer_id", "chID")).With(labelsAndValues...),
+		}, append(labels, "peer_id", "chID")),
 		PeerSendBytesTotal: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "peer_send_bytes_total",
 			Help:      "Number of bytes sent to a given peer.",
-		}, append(labels, "peer_id", "chID")).With(labelsAndValues...),
+		}, append(labels, "peer_id", "chID")),
 		PeerPendingSendBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "peer_pending_send_bytes",
 			Help:      "Pending bytes to be sent to a given peer.",
-		}, append(labels, "peer_id")).With(labelsAndValues...),
+		}, append(labels, "peer_id")),
 		NumTxs: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "num_txs",
 			Help:      "Number of transactions submitted by each peer.",
-		}, append(labels, "peer_id")).With(labelsAndValues...),
+		}, append(labels, "peer_id")),
 		MessageReceiveBytesTotal: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "message_receive_bytes_total",
 			Help:      "Number of bytes of each message type received.",
-		}, append(labels, "message_type")).With(labelsAndValues...),
+		}, append(labels, "message_type")),
 		MessageSendBytesTotal: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "message_send_bytes_total",
 			Help:      "Number of bytes of each message type sent.",
-		}, append(labels, "message_type")).With(labelsAndValues...),
+		}, append(labels, "message_type")),
 	}
 }
 
@@ -68,5 +64,17 @@ func NopMetrics() *Metrics {
 		NumTxs:                   discard.NewGauge(),
 		MessageReceiveBytesTotal: discard.NewCounter(),
 		MessageSendBytesTotal:    discard.NewCounter(),
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		Peers:                    m.Peers.With(labelsAndValues...),
+		PeerReceiveBytesTotal:    m.PeerReceiveBytesTotal.With(labelsAndValues...),
+		PeerSendBytesTotal:       m.PeerSendBytesTotal.With(labelsAndValues...),
+		PeerPendingSendBytes:     m.PeerPendingSendBytes.With(labelsAndValues...),
+		NumTxs:                   m.NumTxs.With(labelsAndValues...),
+		MessageReceiveBytesTotal: m.MessageReceiveBytesTotal.With(labelsAndValues...),
+		MessageSendBytesTotal:    m.MessageSendBytesTotal.With(labelsAndValues...),
 	}
 }

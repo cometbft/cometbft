@@ -8,11 +8,7 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels ...string) *Metrics {
 	return &Metrics{
 		BlockProcessingTime: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
@@ -21,73 +17,73 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "Time spent processing FinalizeBlock",
 
 			Buckets: stdprometheus.LinearBuckets(1, 10, 10),
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ConsensusParamUpdates: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "consensus_param_updates",
 			Help:      "Number of consensus parameter updates returned by the application since process start.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ValidatorSetUpdates: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "validator_set_updates",
 			Help:      "Number of validator set updates returned by the application since process start.",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		PruningServiceBlockRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "pruning_service_block_retain_height",
 			Help:      "PruningServiceBlockRetainHeight is the accepted block retain height set by the data companion",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		PruningServiceBlockResultsRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "pruning_service_block_results_retain_height",
 			Help:      "PruningServiceBlockResultsRetainHeight is the accepted block results retain height set by the data companion",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		PruningServiceTxIndexerRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "pruning_service_tx_indexer_retain_height",
 			Help:      "PruningServiceTxIndexerRetainHeight is the accepted transactions indices retain height set by the data companion",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		PruningServiceBlockIndexerRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "pruning_service_block_indexer_retain_height",
 			Help:      "PruningServiceBlockIndexerRetainHeight is the accepted blocks indices retain height set by the data companion",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ApplicationBlockRetainHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "application_block_retain_height",
 			Help:      "ApplicationBlockRetainHeight is the accepted block retain height set by the application",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		BlockStoreBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_store_base_height",
 			Help:      "BlockStoreBaseHeight shows the first height at which a block is available",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		ABCIResultsBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "abciresults_base_height",
 			Help:      "ABCIResultsBaseHeight shows the first height at which abci results are available",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		TxIndexerBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "tx_indexer_base_height",
 			Help:      "TxIndexerBaseHeight shows the first height at which tx indices are available",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		BlockIndexerBaseHeight: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_indexer_base_height",
 			Help:      "BlockIndexerBaseHeight shows the first height at which block indices are available",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 	}
 }
 
@@ -105,5 +101,22 @@ func NopMetrics() *Metrics {
 		ABCIResultsBaseHeight:                  discard.NewGauge(),
 		TxIndexerBaseHeight:                    discard.NewGauge(),
 		BlockIndexerBaseHeight:                 discard.NewGauge(),
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		BlockProcessingTime:                    m.BlockProcessingTime.With(labelsAndValues...),
+		ConsensusParamUpdates:                  m.ConsensusParamUpdates.With(labelsAndValues...),
+		ValidatorSetUpdates:                    m.ValidatorSetUpdates.With(labelsAndValues...),
+		PruningServiceBlockRetainHeight:        m.PruningServiceBlockRetainHeight.With(labelsAndValues...),
+		PruningServiceBlockResultsRetainHeight: m.PruningServiceBlockResultsRetainHeight.With(labelsAndValues...),
+		PruningServiceTxIndexerRetainHeight:    m.PruningServiceTxIndexerRetainHeight.With(labelsAndValues...),
+		PruningServiceBlockIndexerRetainHeight: m.PruningServiceBlockIndexerRetainHeight.With(labelsAndValues...),
+		ApplicationBlockRetainHeight:           m.ApplicationBlockRetainHeight.With(labelsAndValues...),
+		BlockStoreBaseHeight:                   m.BlockStoreBaseHeight.With(labelsAndValues...),
+		ABCIResultsBaseHeight:                  m.ABCIResultsBaseHeight.With(labelsAndValues...),
+		TxIndexerBaseHeight:                    m.TxIndexerBaseHeight.With(labelsAndValues...),
+		BlockIndexerBaseHeight:                 m.BlockIndexerBaseHeight.With(labelsAndValues...),
 	}
 }

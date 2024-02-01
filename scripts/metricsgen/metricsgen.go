@@ -68,11 +68,7 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels...string) *Metrics {
 	return &Metrics{
 		{{ range $metric := .ParsedMetrics }}
 		{{- $metric.FieldName }}: prometheus.New{{ $metric.TypeName }}From(stdprometheus.{{$metric.TypeName }}Opts{
@@ -86,19 +82,26 @@ func PrometheusMetrics(namespace string, labelsAndValues...string) *Metrics {
 			Buckets: []float64{ {{ $metric.HistogramOptions.BucketSizes }} },
 			{{ end }}
 		{{- if eq (len $metric.Labels) 0 }}
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		{{ else }}
-		}, append(labels, {{$metric.Labels}})).With(labelsAndValues...),
+		}, append(labels, {{$metric.Labels}})),
 		{{ end }}
 		{{- end }}
 	}
 }
 
-
 func NopMetrics() *Metrics {
 	return &Metrics{
 		{{- range $metric := .ParsedMetrics }}
 		{{ $metric.FieldName }}: discard.New{{ $metric.TypeName }}(),
+		{{- end }}
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		{{- range $metric := .ParsedMetrics }}
+		{{ $metric.FieldName }}: m.{{ $metric.FieldName }}.With(labelsAndValues...),
 		{{- end }}
 	}
 }

@@ -8,18 +8,14 @@ import (
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 
-func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
-	labels := []string{}
-	for i := 0; i < len(labelsAndValues); i += 2 {
-		labels = append(labels, labelsAndValues[i])
-	}
+func PrometheusMetrics(namespace string, labels ...string) *Metrics {
 	return &Metrics{
 		WithLabels: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "with_labels",
 			Help:      "",
-		}, append(labels, "step", "time")).With(labelsAndValues...),
+		}, append(labels, "step", "time")),
 		WithExpBuckets: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -27,7 +23,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "",
 
 			Buckets: stdprometheus.ExponentialBuckets(.1, 100, 8),
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		WithBuckets: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -35,13 +31,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Help:      "",
 
 			Buckets: []float64{1, 2, 3, 4, 5},
-		}, labels).With(labelsAndValues...),
+		}, labels),
 		Named: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "metric_with_name",
 			Help:      "",
-		}, labels).With(labelsAndValues...),
+		}, labels),
 	}
 }
 
@@ -51,5 +47,14 @@ func NopMetrics() *Metrics {
 		WithExpBuckets: discard.NewHistogram(),
 		WithBuckets:    discard.NewHistogram(),
 		Named:          discard.NewCounter(),
+	}
+}
+
+func (m *Metrics) With(labelsAndValues ...string) *Metrics {
+	return &Metrics{
+		WithLabels:     m.WithLabels.With(labelsAndValues...),
+		WithExpBuckets: m.WithExpBuckets.With(labelsAndValues...),
+		WithBuckets:    m.WithBuckets.With(labelsAndValues...),
+		Named:          m.Named.With(labelsAndValues...),
 	}
 }

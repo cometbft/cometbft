@@ -532,7 +532,6 @@ func (bs *BlockStore) saveBlockToBatch(
 	pbsc := seenCommit.ToProto()
 	seenCommitBytes := mustEncode(pbsc)
 
-	//nolint:revive // this is a false positive from if-return
 	if err := batch.Set(calcSeenCommitKey(height), seenCommitBytes); err != nil {
 		return err
 	}

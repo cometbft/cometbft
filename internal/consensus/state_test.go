@@ -3103,14 +3103,16 @@ func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
 	startTestRound(cs1, height, round)
 	ensureProposal(proposalCh, height, round, blockID)
 
-	signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vs2, vs3, vs4)
-
 	// ensure that the validator prevotes nil.
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], nil)
 
+	// This does not refer to the main concern of this test unit. Since
+	// 2/3+ validators have seen the proposal, validated and prevoted for
+	// it, it is a valid proposal. We should lock and precommit for it.
+	signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vs2, vs3, vs4)
 	ensurePrecommit(voteCh, height, round)
-	validatePrecommit(t, cs1, round, -1, vss[0], nil, nil)
+	validatePrecommit(t, cs1, round, round, vss[0], blockID.Hash, blockID.Hash)
 }
 
 // TestStateTimestamp_ProposalMatch tests that a validator prevotes a

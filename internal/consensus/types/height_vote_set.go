@@ -138,15 +138,15 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bo
 	}
 	voteSet := hvs.getVoteSet(vote.Round, vote.Type)
 	if voteSet == nil {
-		if rndz := hvs.peerCatchupRounds[peerID]; len(rndz) < 2 {
-			hvs.addRound(vote.Round)
-			voteSet = hvs.getVoteSet(vote.Round, vote.Type)
-			hvs.peerCatchupRounds[peerID] = append(rndz, vote.Round)
-		} else {
+		rndz := hvs.peerCatchupRounds[peerID]
+		if len(rndz) >= 2 {
 			// punish peer
 			err = ErrGotVoteFromUnwantedRound
 			return
 		}
+		hvs.addRound(vote.Round)
+		voteSet = hvs.getVoteSet(vote.Round, vote.Type)
+		hvs.peerCatchupRounds[peerID] = append(rndz, vote.Round)
 	}
 	added, err = voteSet.AddVote(vote)
 	return

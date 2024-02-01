@@ -128,19 +128,14 @@ func jsonStringToArg(rt reflect.Type, arg string) (reflect.Value, error) {
 func nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, error) {
 	if rt.Kind() == reflect.Ptr {
 		rv1, ok, err := nonJSONStringToArg(rt.Elem(), arg)
-		switch {
-		case err != nil:
-			return reflect.Value{}, false, err
-		case ok:
-			rv := reflect.New(rt.Elem())
-			rv.Elem().Set(rv1)
-			return rv, true, nil
-		default:
-			return reflect.Value{}, false, nil
+		if err != nil || !ok {
+			return reflect.Value{}, ok, err
 		}
-	} else {
-		return _nonJSONStringToArg(rt, arg)
+		rv := reflect.New(rt.Elem())
+		rv.Elem().Set(rv1)
+		return rv, true, nil
 	}
+	return _nonJSONStringToArg(rt, arg)
 }
 
 // NOTE: rt.Kind() isn't a pointer.

@@ -344,13 +344,13 @@ func (c *Client) checkTrustedHeaderUsingOptions(ctx context.Context, options Tru
 		action := fmt.Sprintf(
 			"Prev. trusted header's hash %X doesn't match hash %X from primary provider. Remove all the stored light blocks?",
 			c.latestTrustedBlock.Hash(), primaryHash)
-		if c.confirmationFn(action) {
-			err := c.Cleanup()
-			if err != nil {
-				return fmt.Errorf("failed to cleanup: %w", err)
-			}
-		} else {
+		if !c.confirmationFn(action) {
 			return errors.New("refused to remove the stored light blocks despite hashes mismatch")
+		}
+
+		err := c.Cleanup()
+		if err != nil {
+			return fmt.Errorf("failed to cleanup: %w", err)
 		}
 	}
 

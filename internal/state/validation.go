@@ -119,13 +119,15 @@ func validateBlock(state State, block *types.Block) error {
 				state.LastBlockTime,
 			)
 		}
-		// TODO: only use if in block creation and skip in blocksync.
-		medianTime := MedianTime(block.LastCommit, state.LastValidators)
-		if !block.Time.Equal(medianTime) {
-			return fmt.Errorf("invalid block time. Expected %v, got %v",
-				medianTime,
-				block.Time,
-			)
+		if !isPBTSEnabled() {
+			// TODO: only use if in block creation and skip in blocksync.
+			medianTime := MedianTime(block.LastCommit, state.LastValidators)
+			if !block.Time.Equal(medianTime) {
+				return fmt.Errorf("invalid block time. Expected %v, got %v",
+					medianTime,
+					block.Time,
+				)
+			}
 		}
 
 	case block.Height == state.InitialHeight:

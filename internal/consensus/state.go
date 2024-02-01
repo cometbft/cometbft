@@ -2730,5 +2730,5 @@ func proposerWaitTime(lt cmttime.Source, bt time.Time) time.Duration {
 // isPBTSEnabled returns true if PBFT is enabled at the current height.
 func isPBTSEnabled() bool {
 	// TODO: properly implement.
-	return true
+	return false
 }

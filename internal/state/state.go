@@ -360,5 +360,5 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 // isPBTSEnabled returns true if PBFT is enabled at the current height.
 func isPBTSEnabled() bool {
 	// TODO: properly implement.
-	return true
+	return false
 }

@@ -39,6 +39,7 @@ type ConsensusParams struct {
 	Version   VersionParams   `json:"version"`
 	ABCI      ABCIParams      `json:"abci"`
 	Synchrony SynchronyParams `json:"synchrony"`
+	PBTS      PBTSParams      `json:"pbts"`
 }
 
 // BlockParams define limits on the block size and gas plus minimum time
@@ -83,6 +84,22 @@ func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
 	return a.VoteExtensionsEnableHeight <= h
 }
 
+type PBTSParams struct {
+	PBTSEnableHeight int64 `json:"pbts_enable_height"`
+}
+
+// PBTSEnabled returns true if PBTS are enabled at height h
+// and false otherwise.
+func (p PBTSParams) PBTSEnabled(h int64) bool {
+	if h < 1 {
+		panic(fmt.Errorf("cannot check if PBTS enabled for height %d (< 1)", h))
+	}
+	if p.PBTSEnableHeight == 0 {
+		return false
+	}
+	return p.PBTSEnableHeight <= h
+}
+
 // SynchronyParams influence the validity of block timestamps.
 // For more information on the relationship of the synchrony parameters to
 // block validity, see the Proposer-Based Timestamps specification:
@@ -101,6 +118,7 @@ func DefaultConsensusParams() *ConsensusParams {
 		Version:   DefaultVersionParams(),
 		ABCI:      DefaultABCIParams(),
 		Synchrony: DefaultSynchronyParams(),
+		PBTS:      DefaultPBTSParams(),
 	}
 }
 
@@ -148,6 +166,13 @@ func DefaultSynchronyParams() SynchronyParams {
 	return SynchronyParams{
 		Precision:    500 * time.Millisecond,
 		MessageDelay: 2 * time.Second,
+	}
+}
+
+// Disabled by default.
+func DefaultPBTSParams() PBTSParams {
+	return PBTSParams{
+		PBTSEnableHeight: 0,
 	}
 }
 
@@ -219,6 +244,10 @@ func (params ConsensusParams) ValidateBasic() error {
 			params.Synchrony.Precision)
 	}
 
+	if params.PBTS.PBTSEnableHeight < 0 {
+		return fmt.Errorf("PBTS.PBTSEnableHeight must not be negative. Got: %d", params.PBTS.PBTSEnableHeight)
+	}
+
 	if len(params.Validator.PubKeyTypes) == 0 {
 		return errors.New("len(Validator.PubKeyTypes) must be greater than 0")
 	}
@@ -236,9 +265,22 @@ func (params ConsensusParams) ValidateBasic() error {
 }
 
 func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, h int64) error {
-	if updated.Abci == nil {
-		return nil
+	var err error
+	// Validate ABCI Update
+	if updated.Abci != nil {
+		if err = validateUpdateABCI(params, updated, h); err != nil {
+			return err
+		}
 	}
+
+	// Validate PBTS Update
+	if updated.Pbts != nil {
+		err = validateUpdatePBTS(params, updated, h)
+	}
+	return err
+}
+
+func validateUpdateABCI(params ConsensusParams, updated *cmtproto.ConsensusParams, h int64) error {
 	if params.ABCI.VoteExtensionsEnableHeight == updated.Abci.VoteExtensionsEnableHeight {
 		return nil
 	}
@@ -255,6 +297,19 @@ func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, 
 			"the initial height has occurred, "+
 			"initial height: %d, current height %d",
 			params.ABCI.VoteExtensionsEnableHeight, h)
+	}
+	return nil
+}
+
+func validateUpdatePBTS(params ConsensusParams, updated *cmtproto.ConsensusParams, h int64) error {
+	if params.PBTS.PBTSEnableHeight != 0 {
+		return errors.New("pbts already enabled")
+	}
+
+	if updated.Pbts.PbtsEnableHeight <= h {
+		return fmt.Errorf("PbtsEnableHeight cannot be updated to a past height, "+
+			"pbts enabled height: %d, current height %d",
+			params.PBTS.PBTSEnableHeight, h)
 	}
 	return nil
 }
@@ -321,6 +376,9 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 			res.Synchrony.Precision = *params2.Synchrony.GetPrecision()
 		}
 	}
+	if params2.Pbts != nil {
+		res.PBTS.PBTSEnableHeight = params2.Pbts.GetPbtsEnableHeight()
+	}
 	return res
 }
 
@@ -347,6 +405,9 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 		Synchrony: &cmtproto.SynchronyParams{
 			MessageDelay: &params.Synchrony.MessageDelay,
 			Precision:    &params.Synchrony.Precision,
+		},
+		Pbts: &cmtproto.PBTSParams{
+			PbtsEnableHeight: params.PBTS.PBTSEnableHeight,
 		},
 	}
 }
@@ -379,6 +440,9 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 		if pbParams.Synchrony.Precision != nil {
 			c.Synchrony.Precision = *pbParams.Synchrony.GetPrecision()
 		}
+	}
+	if pbParams.Pbts != nil {
+		c.PBTS.PBTSEnableHeight = pbParams.Pbts.GetPbtsEnableHeight()
 	}
 	return c
 }

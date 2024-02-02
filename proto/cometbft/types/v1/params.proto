@@ -17,6 +17,7 @@ message ConsensusParams {
   VersionParams   version   = 4;
   ABCIParams      abci      = 5;
   SynchronyParams synchrony = 6;
+  PBTSParams pbts = 7;
 }
 
 // BlockParams contains limits on the block size.
@@ -106,4 +107,14 @@ message SynchronyParams {
   // on the network while still producing valid proposals.
   google.protobuf.Duration precision = 2
       [(gogoproto.stdduration) = true];
+}
+
+// PBTSParams configure how CometBFT calculates block time. BFT Time is enabled by default.
+// By enabling this parameter (setting a valid non zero value), CometBFT will forever shift to using
+// Proposer Based Timestamps. For more information see
+// https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
+message PBTSParams{
+  // pbts_enable_height configures the first height that the chain will use
+  // proposer base timestamps instead of BFT time.
+  int64 pbts_enable_height = 1;
 }

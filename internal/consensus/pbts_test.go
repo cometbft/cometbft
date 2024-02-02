@@ -67,6 +67,8 @@ type pbtsTestConfiguration struct {
 	// The timestamp consensus parameters to be used by the state machine under test.
 	synchronyParams types.SynchronyParams
 
+	pbtsParams types.PBTSParams
+
 	// The setting to use for the TimeoutPropose configuration parameter.
 	timeoutPropose time.Duration
 
@@ -106,6 +108,8 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	cfg.Consensus.TimeoutPropose = tc.timeoutPropose
 	consensusParams := types.DefaultConsensusParams()
 	consensusParams.Synchrony = tc.synchronyParams
+	// TODO(@glnro): Update TC's once #2205 merged to include pbts enabled
+	consensusParams.PBTS = tc.pbtsParams
 
 	state, privVals := randGenesisStateWithTime(validators, consensusParams, tc.genesisTime)
 	cs := newStateWithConfig(cfg, state, privVals[0], kvstore.NewInMemoryApplication())

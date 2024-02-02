@@ -676,7 +676,6 @@ func (mem *CListMempool) recheckTxs() {
 		})
 		if err != nil {
 			mem.logger.Error("recheckTx", err, "err")
-			return
 		}
 	}
 

@@ -1146,7 +1146,7 @@ func (cs *State) enterPropose(height int64, round int32) {
 
 	// If this validator is the proposer of this round, and the previous block time is later than
 	// our local clock time, wait to propose until our local clock time has passed the block time.
-	if cs.privValidatorPubKey != nil && cs.isProposer(cs.privValidatorPubKey.Address()) {
+	if cs.isPBTSEnabled() && cs.privValidatorPubKey != nil && cs.isProposer(cs.privValidatorPubKey.Address()) {
 		proposerWaitTime := proposerWaitTime(cmttime.DefaultSource{}, cs.state.LastBlockTime)
 		if proposerWaitTime > 0 {
 			cs.scheduleTimeout(proposerWaitTime, height, round, cstypes.RoundStepNewRound)
@@ -1382,7 +1382,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	if cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
+	if cs.isPBTSEnabled() && cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
 		logger.Debug("prevote step: Proposal is not timely; prevoting nil",
 			"proposed",
 			cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
@@ -2512,7 +2512,7 @@ func (cs *State) signVote(
 
 func (cs *State) voteTime() time.Time {
 	now := cmttime.Now()
-	if isPBTSEnabled() {
+	if cs.isPBTSEnabled() {
 		return now
 	}
 
@@ -2728,7 +2728,6 @@ func proposerWaitTime(lt cmttime.Source, bt time.Time) time.Duration {
 }
 
 // isPBTSEnabled returns true if PBFT is enabled at the current height.
-func isPBTSEnabled() bool {
-	// TODO: properly implement.
-	return false
+func (cs *State) isPBTSEnabled() bool {
+	return cs.state.ConsensusParams.Synchrony.Precision != time.Duration(10000*366*24*60*60*1000)
 }

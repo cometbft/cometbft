@@ -11,7 +11,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
-	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 //----------------------------------------------
@@ -85,7 +84,7 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 			ValidatorIndex:   valIndex,
 			Height:           cs.Height,
 			Round:            cs.Round,
-			Timestamp:        cmttime.Now(),
+			Timestamp:        cs.voteTime(),
 			Type:             types.PrecommitType,
 			BlockID: types.BlockID{
 				Hash:          blockHash,

@@ -245,10 +245,10 @@ func (state State) MakeBlock(
 	// Set time.
 	var timestamp time.Time
 	switch {
+	case state.isPBTSEnabled():
+		timestamp = time.Now()
 	case height == state.InitialHeight:
 		timestamp = state.LastBlockTime // genesis time
-	case isPBTSEnabled():
-		timestamp = time.Now()
 	default:
 		timestamp = MedianTime(lastCommit, state.LastValidators)
 	}
@@ -358,7 +358,6 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 }
 
 // isPBTSEnabled returns true if PBFT is enabled at the current height.
-func isPBTSEnabled() bool {
-	// TODO: properly implement.
-	return false
+func (state State) isPBTSEnabled() bool {
+	return state.ConsensusParams.Synchrony.Precision != time.Duration(10000*366*24*60*60*1000)
 }

@@ -119,7 +119,7 @@ func validateBlock(state State, block *types.Block) error {
 				state.LastBlockTime,
 			)
 		}
-		if !isPBTSEnabled() {
+		if !state.isPBTSEnabled() {
 			// TODO: only use if in block creation and skip in blocksync.
 			medianTime := MedianTime(block.LastCommit, state.LastValidators)
 			if !block.Time.Equal(medianTime) {

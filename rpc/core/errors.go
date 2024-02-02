@@ -8,7 +8,7 @@ import (
 var (
 	errNegativeHeight          = errors.New("negative height")
 	ErrBlockIndexing           = errors.New("block indexing is disabled")
-	ErrTxIndexing              = errors.New("transaction indexing is disabled")
+	ErrTxIndexingDisabled      = errors.New("transaction indexing is disabled")
 	ErrNoEvidence              = errors.New("no evidence was provided")
 	errSlowClient              = errors.New("slow client")
 	errCometBFTExited          = errors.New("cometBFT exited")

@@ -3,11 +3,11 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
-	"github.com/cometbft/cometbft/rpc"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
@@ -17,6 +17,18 @@ const (
 	// accepted. This is just a safety check to avoid outlandish queries.
 	maxQueryLength = 512
 )
+
+type ErrParseQuery struct {
+	Source error
+}
+
+func (e ErrParseQuery) Error() string {
+	return fmt.Sprintf("failed to parse query: %v", e.Source)
+}
+
+func (e ErrParseQuery) Unwrap() error {
+	return e.Source
+}
 
 // Subscribe for events via WebSocket.
 // More: https://docs.cometbft.com/main/rpc/#/Websocket/subscribe
@@ -36,7 +48,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return nil, rpc.ErrParseQuery{Source: err}
+		return nil, ErrParseQuery{Source: err}
 	}
 
 	subCtx, cancel := context.WithTimeout(ctx.Context(), SubscribeTimeout)
@@ -109,7 +121,7 @@ func (env *Environment) Unsubscribe(ctx *rpctypes.Context, query string) (*ctype
 	env.Logger.Info("Unsubscribe from query", "remote", addr, "query", query)
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return nil, rpc.ErrParseQuery{Source: err}
+		return nil, ErrParseQuery{Source: err}
 	}
 
 	err = env.EventBus.Unsubscribe(context.Background(), addr, q)

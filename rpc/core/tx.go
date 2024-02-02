@@ -18,7 +18,7 @@ import (
 func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, ErrTxIndexing
+		return nil, ErrTxIndexingDisabled
 	}
 
 	r, err := env.TxIndexer.Get(hash)
@@ -58,7 +58,7 @@ func (env *Environment) TxSearch(
 ) (*ctypes.ResultTxSearch, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, ErrTxIndexing
+		return nil, ErrTxIndexingDisabled
 	} else if len(query) > maxQueryLength {
 		return nil, ErrQueryLength{len(query), maxQueryLength}
 	}

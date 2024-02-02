@@ -10,10 +10,10 @@ type ErrBlockResults struct {
 
 func (e ErrBlockResults) Error() string {
 	if e.latest {
-		return fmt.Sprintf("error fetching BlockResults for latest height :: %s", e.Err.Error())
+		return fmt.Sprintf("error fetching BlockResults for latest height: %s", e.Err.Error())
 	}
 
-	return fmt.Sprintf("error fetching BlockResults for height %d:: %s", e.Height, e.Err.Error())
+	return fmt.Sprintf("error fetching BlockResults for height %d: %s", e.Height, e.Err.Error())
 }
 
 type ErrStreamSetup struct {

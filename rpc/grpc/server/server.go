@@ -16,9 +16,16 @@ import (
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
-	jsonrpcerrors "github.com/cometbft/cometbft/rpc/jsonrpc/errors"
 	"github.com/cometbft/cometbft/types"
 )
+
+type ErrInvalidRemoteAddress struct {
+	Addr string
+}
+
+func (e ErrInvalidRemoteAddress) Error() string {
+	return fmt.Sprintf("invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)", e.Addr)
+}
 
 // Option is any function that allows for configuration of the gRPC server
 // during its creation.
@@ -49,7 +56,7 @@ func newServerBuilder(listener net.Listener) *serverBuilder {
 func Listen(addr string) (net.Listener, error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		return nil, jsonrpcerrors.ErrInvalidRemoteAddress{Addr: addr}
+		return nil, ErrInvalidRemoteAddress{Addr: addr}
 	}
 	return net.Listen(parts[0], parts[1])
 }

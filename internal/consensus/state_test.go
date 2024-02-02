@@ -252,7 +252,7 @@ func TestStateBadProposal(t *testing.T) {
 }
 
 func TestStateOversizedBlock(t *testing.T) {
-	const maxBytes = 2000
+	const maxBytes = int64(types.BlockPartSizeBytes)
 
 	for _, testCase := range []struct {
 		name      string
@@ -297,11 +297,20 @@ func TestStateOversizedBlock(t *testing.T) {
 				totalBytes += len(part.Bytes)
 			}
 
+			maxBlockParts := maxBytes / int64(types.BlockPartSizeBytes)
+			if maxBytes > maxBlockParts*int64(types.BlockPartSizeBytes) {
+				maxBlockParts++
+			}
+			numBlockParts := int64(propBlockParts.Total())
+
 			err = cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer")
 			require.NoError(t, err)
 
 			// start the machine
 			startTestRound(cs1, height, round)
+
+			t.Log("Block Sizes;", "Limit", maxBytes, "Current", totalBytes)
+			t.Log("Proposal Parts;", "Maximum", maxBlockParts, "Current", numBlockParts)
 
 			validateHash := propBlock.Hash()
 			lockedRound := int32(1)
@@ -316,6 +325,11 @@ func TestStateOversizedBlock(t *testing.T) {
 			}
 			ensurePrevote(voteCh, height, round)
 			validatePrevote(t, cs1, round, vss[0], validateHash)
+
+			// Should not accept a Proposal with too many block parts
+			if numBlockParts > maxBlockParts {
+				require.Nil(t, cs1.Proposal)
+			}
 
 			signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vs2)
 			ensurePrevote(voteCh, height, round)

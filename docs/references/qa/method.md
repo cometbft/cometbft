@@ -52,7 +52,7 @@ _200 Node Test_, and _Rotating Nodes Test_.
 This section explains how the tests were carried out for reproducibility purposes.
 
 1. [If you haven't done it before]
-   Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
+   Follow steps 1-5 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
 2. Copy file `testnets/testnet200.toml` onto `testnet.toml` (do NOT commit this change)
 3. Set the variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
    * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),

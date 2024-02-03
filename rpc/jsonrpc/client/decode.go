@@ -88,11 +88,10 @@ func validateResponseIDs(ids, expectedIDs []types.JSONRPCIntID) error {
 	}
 
 	for i, id := range ids {
-		if m[id] {
-			delete(m, id)
-		} else {
+		if !m[id] {
 			return fmt.Errorf("unsolicited ID #%d: %v", i, id)
 		}
+		delete(m, id)
 	}
 
 	return nil

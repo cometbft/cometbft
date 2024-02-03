@@ -343,13 +343,13 @@ func (c *Client) checkTrustedHeaderUsingOptions(ctx context.Context, options Tru
 		action := fmt.Sprintf(
 			"Prev. trusted header's hash %X doesn't match hash %X from primary provider. Remove all the stored light blocks?",
 			c.latestTrustedBlock.Hash(), primaryHash)
-		if c.confirmationFn(action) {
-			err := c.Cleanup()
-			if err != nil {
-				return ErrCleanup{Err: err}
-			}
-		} else {
+		if !c.confirmationFn(action) {
 			return ErrRemoveStoredBlocksRefused
+		}
+
+		err := c.Cleanup()
+		if err != nil {
+			return ErrCleanup{Err: err}
 		}
 	}
 

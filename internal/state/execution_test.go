@@ -35,7 +35,7 @@ import (
 
 var (
 	chainID             = "execution_chain"
-	testPartSize uint32 = 65536
+	testPartSize uint32 = types.BlockPartSizeBytes
 )
 
 func TestApplyBlock(t *testing.T) {

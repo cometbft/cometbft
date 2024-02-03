@@ -96,7 +96,7 @@ func TestEventBusPublishEventNewBlock(t *testing.T) {
 	}()
 
 	var ps *PartSet
-	ps, err = block.MakePartSet(MaxBlockSizeBytes)
+	ps, err = block.MakePartSet(BlockPartSizeBytes)
 	require.NoError(t, err)
 
 	err = eventBus.PublishEventNewBlock(EventDataNewBlock{

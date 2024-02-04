@@ -1,4 +1,4 @@
 [codespell]
-skip = *.sum,go.mod,LOG,consensus-paper,./test/e2e/pkg/grammar,*.tla
+skip = *.sum,go.mod,LOG,*/consensus-paper/*,*/grammar-auto/*,*.tla,.github/workflows/fuzz-nightly.yml
 quiet-level = 2
 ignore-words = .github/workflows/ignore-words.txt

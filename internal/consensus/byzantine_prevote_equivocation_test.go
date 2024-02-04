@@ -225,12 +225,10 @@ func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subs
 		// Create a new reactor for each validator
 		reactors[i] = NewReactor(css[i], true) // so we don't start the consensus states
 
-		// Check if css[i] is not nil before accessing its Logger
-		if css[i] != nil {
-			reactors[i].SetLogger(css[i].Logger)
-		} else {
+		if css[i] == nil {
 			return nil, nil, nil, fmt.Errorf("consensus state at index %d is nil", i)
 		}
+		reactors[i].SetLogger(css[i].Logger)
 
 		// eventBus is already started with the cs
 		eventBuses[i] = css[i].eventBus

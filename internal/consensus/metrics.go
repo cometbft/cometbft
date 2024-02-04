@@ -124,6 +124,12 @@ type Metrics struct {
 	// correspond to earlier heights and rounds than this node is currently
 	// in.
 	LateVotes metrics.Counter `metrics_labels:"vote_type"`
+
+	// ProposalTimestampDifference is the difference between the timestamp in
+	// the proposal message and the local time of the validator at the time
+	// that the validator received the message.
+	// metrics:Difference between the timestamp in the proposal message and the local time of the validator at the time it received the message.
+	ProposalTimestampDifference metrics.Histogram `metrics_bucketsizes:"-10, -.5, -.025, 0, .1, .5, 1, 1.5, 2, 10" metrics_labels:"is_timely"`
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

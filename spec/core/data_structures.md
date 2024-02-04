@@ -9,38 +9,43 @@ Here we describe the data structures in the CometBFT blockchain and the rules fo
 The CometBFT blockchain consists of a short list of data types:
 
 - [Data Structures](#data-structures)
-    - [Block](#block)
-    - [Execution](#execution)
-    - [Header](#header)
-    - [Version](#version)
-    - [BlockID](#blockid)
-    - [PartSetHeader](#partsetheader)
-    - [Part](#part)
-    - [Time](#time)
-    - [Data](#data)
-    - [Commit](#commit)
-    - [CommitSig](#commitsig)
-    - [BlockIDFlag](#blockidflag)
-    - [Vote](#vote)
-    - [CanonicalVote](#canonicalvote)
-    - [Proposal](#proposal)
-    - [SignedMsgType](#signedmsgtype)
-    - [Signature](#signature)
-    - [EvidenceList](#evidencelist)
-    - [Evidence](#evidence)
-        - [DuplicateVoteEvidence](#duplicatevoteevidence)
-        - [LightClientAttackEvidence](#lightclientattackevidence)
-    - [LightBlock](#lightblock)
-    - [SignedHeader](#signedheader)
-    - [ValidatorSet](#validatorset)
-    - [Validator](#validator)
-    - [Address](#address)
-    - [ConsensusParams](#consensusparams)
-        - [BlockParams](#blockparams)
-        - [EvidenceParams](#evidenceparams)
-        - [ValidatorParams](#validatorparams)
-        - [VersionParams](#versionparams)
-    - [Proof](#proof)
+  - [Block](#block)
+  - [Execution](#execution)
+  - [Header](#header)
+  - [Version](#version)
+  - [BlockID](#blockid)
+  - [PartSetHeader](#partsetheader)
+  - [Part](#part)
+  - [Time](#time)
+  - [Data](#data)
+  - [Commit](#commit)
+  - [ExtendedCommit](#extendedcommit)
+  - [CommitSig](#commitsig)
+  - [ExtendedCommitSig](#extendedcommitsig)
+  - [BlockIDFlag](#blockidflag)
+  - [Vote](#vote)
+  - [CanonicalVote](#canonicalvote)
+    - [CanonicalVoteExtension](#canonicalvoteextension)
+  - [Proposal](#proposal)
+  - [SignedMsgType](#signedmsgtype)
+  - [Signature](#signature)
+  - [EvidenceList](#evidencelist)
+  - [Evidence](#evidence)
+    - [DuplicateVoteEvidence](#duplicatevoteevidence)
+    - [LightClientAttackEvidence](#lightclientattackevidence)
+  - [LightBlock](#lightblock)
+  - [SignedHeader](#signedheader)
+  - [ValidatorSet](#validatorset)
+  - [Validator](#validator)
+  - [Address](#address)
+  - [Proof](#proof)
+  - [ConsensusParams](#consensusparams)
+    - [BlockParams](#blockparams)
+    - [EvidenceParams](#evidenceparams)
+    - [ValidatorParams](#validatorparams)
+    - [ABCIParams](#abciparams)
+    - [VersionParams](#versionparams)
+    - [SynchronyParams](#synchronyparams)
 
 
 ## Block
@@ -124,7 +129,7 @@ the data in the current block, the previous block, and the results returned by t
 | Version           | [Version](#version)       | Version defines the application and protocol version being used.                                                                                                                                                                                                                                                                                                                       | Must adhere to the validation rules of [Version](#version)                                                                                                                                       |
 | ChainID           | String                    | ChainID is the ID of the chain. This must be unique to your chain.                                                                                                                                                                                                                                                                                                                    | ChainID must be less than 50 bytes.                                                                                                                                                              |
 | Height            | uint64                     | Height is the height for this header.                                                                                                                                                                                                                                                                                                                                                 | Must be > 0, >= initialHeight, and == previous Height+1                                                                                                                                          |
-| Time              | [Time](#time)             | The timestamp is equal to the weighted median of validators present in the last commit. Read more on time in the [BFT-time section](../consensus/bft-time.md). Note: the timestamp of a vote must be greater by at least one millisecond than that of the block being voted on.                                                                                                       | Time must be >= previous header timestamp + consensus parameters TimeIotaMs.  The timestamp of the first block must be equal to the genesis time (since there's no votes to compute the median). |
+| Time              | [Time](#time)             | The timestamp can be computed using [PBTS][pbts] or [BFT Time][bfttime] algorithms. In case of PBTS, it is the time at which the proposer has produced the block (the value of its local clock). In case of BFT Time, it is equal to the weighted median of timestamps present in the previous commit.                                                                                                  | Time must be larger than the Time of the previous block header. The timestamp of the first block should not be smaller than the genesis time. When BFT Time is used, it should match the genesis time (since there's no votes to compute the median with). |
 | LastBlockID       | [BlockID](#blockid)       | BlockID of the previous block.                                                                                                                                                                                                                                                                                                                                                        | Must adhere to the validation rules of [blockID](#blockid). The first block has `block.Header.LastBlockID == BlockID{}`.                                                                         |
 | LastCommitHash    | slice of bytes (`[]byte`) | MerkleRoot of the lastCommit's signatures. The signatures represent the validators that committed to the last block. The first block has an empty slices of bytes for the hash.                                                                                                                                                                                                       | Must  be of length 32                                                                                                                                                                            |
 | DataHash          | slice of bytes (`[]byte`) | MerkleRoot of the hash of transactions. **Note**: The transactions are hashed before being included in the merkle tree, the leaves of the Merkle tree are the hashes, not the transactions themselves.                                                                                                                                                                                | Must  be of length 32                                                                                                                                                                            |
@@ -171,7 +176,7 @@ Part defines a part of a block. In CometBFT blocks are broken into `parts` for g
 
 | Name  | Type            | Description                       | Validation           |
 |-------|-----------------|-----------------------------------|----------------------|
-| index | int32           | Total amount of parts for a block | Must be > 0          |
+| index | int32           | Total amount of parts for a block | Must be >= 0         |
 | bytes | bytes           | MerkleRoot of a serialized block  | Must be of length 32 |
 | proof | [Proof](#proof) | MerkleRoot of a serialized block  | Must be of length 32 |
 
@@ -192,12 +197,14 @@ Data is just a wrapper for a list of transactions, where transactions are arbitr
 
 Commit is a simple wrapper for a list of signatures, with one for each validator. It also contains the relevant BlockID, height and round:
 
-| Name       | Type                             | Description                                                          | Validation                                                                                               |
-|------------|----------------------------------|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| Height     | int64                            | Height at which this commit was created.                             | Must be > 0                                                                                              |
-| Round      | int32                            | Round that the commit corresponds to.                                | Must be > 0                                                                                              |
-| BlockID    | [BlockID](#blockid)              | The blockID of the corresponding block.                              | Must adhere to the validation rules of [BlockID](#blockid).                                              |
-| Signatures | Array of [CommitSig](#commitsig) | Array of commit signatures that correspond to current validator set. | Length of signatures must be > 0 and adhere to the validation of each individual [Commitsig](#commitsig) |
+| Name       | Type                             | Description                                                          | Validation                                                                                                                         |
+|------------|----------------------------------|----------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| Height     | int64                            | Height at which this commit was created.                             | Must be >= 0.                                                                                                                      |
+| Round      | int32                            | Round that the commit corresponds to.                                | Must be >= 0.                                                                                                                      |
+| BlockID    | [BlockID](#blockid)              | The blockID of the corresponding block.                              | If Height > 0, then it cannot be the [BlockID](#blockid) of a nil block.                                                           |
+| Signatures | Array of [CommitSig](#commitsig) | Array of commit signatures that correspond to current validator set. | If Height > 0, then the length of signatures must be > 0 and adhere to the validation of each individual [Commitsig](#commitsig).  |
+
+
 
 ## ExtendedCommit
 
@@ -206,8 +213,8 @@ In addition, it contains the verified vote extensions, one for each non-`nil` vo
 
 | Name               | Type                                     | Description                                                                         | Validation                                                                                                               |
 |--------------------|------------------------------------------|-------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| Height             | int64                                    | Height at which this commit was created.                                            | Must be > 0                                                                                                              |
-| Round              | int32                                    | Round that the commit corresponds to.                                               | Must be > 0                                                                                                              |
+| Height             | int64                                    | Height at which this commit was created.                                            | Must be >= 0                                                                                                             |
+| Round              | int32                                    | Round that the commit corresponds to.                                               | Must be >= 0                                                                                                             |
 | BlockID            | [BlockID](#blockid)                      | The blockID of the corresponding block.                                             | Must adhere to the validation rules of [BlockID](#blockid).                                                              |
 | ExtendedSignatures | Array of [ExtendedCommitSig](#commitsig) | The current validator set's commit signatures, extension, and extension signatures. | Length of signatures must be > 0 and adhere to the validation of each individual [ExtendedCommitSig](#extendedcommitsig) |
 
@@ -265,8 +272,8 @@ The vote includes information about the validator signing it. When stored in the
 | Name               | Type                            | Description                                                                              | Validation                               |
 |--------------------|---------------------------------|------------------------------------------------------------------------------------------|------------------------------------------|
 | Type               | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to                                                   | Must be `PrevoteType` or `PrecommitType` |
-| Height             | int64                           | Height for which this vote was created for                                               | Must be > 0                              |
-| Round              | int32                           | Round that the commit corresponds to.                                                    | Must be > 0                              |
+| Height             | int64                           | Height for which this vote was created for                                               | Must be > 0                             |
+| Round              | int32                           | Round that the commit corresponds to.                                                    | Must be >= 0                             |
 | BlockID            | [BlockID](#blockid)             | The blockID of the corresponding block.                                                  |                                          |
 | Timestamp          | [Time](#time)                   | Timestamp represents the time at which a validator signed.                               |                                          |
 | ValidatorAddress   | bytes                           | Address of the validator                                                                 | Length must be equal to 20               |
@@ -284,8 +291,8 @@ and uses a different ordering of the fields.
 | Name      | Type                            | Description                             | Validation                               |
 |-----------|---------------------------------|-----------------------------------------|------------------------------------------|
 | Type      | [SignedMsgType](#signedmsgtype) | The type of message the vote refers to  | Must be `PrevoteType` or `PrecommitType` |
-| Height    | int64                           | Height in which the vote was provided.  | Must be > 0                              |
-| Round     | int64                           | Round in which the vote was provided.   | Must be > 0                              |
+| Height    | int64                           | Height in which the vote was provided.  | Must be > 0                             |
+| Round     | int64                           | Round in which the vote was provided.   | Must be >= 0                             |
 | BlockID   | string                          | ID of the block the vote refers to.     |                                          |
 | Timestamp | string                          | Time of the vote.                       |                                          |
 | ChainID   | string                          | ID of the blockchain running consensus. |                                          |
@@ -318,25 +325,25 @@ This is the structure to marshall in order to obtain the bytes to sign or verify
 | Name      | Type   | Description                                 | Validation           |
 |-----------|--------|---------------------------------------------|----------------------|
 | Extension | bytes  | Vote extension provided by the Application. | Can have zero length |
-| Height    | int64  | Height in which the extension was provided. | Must be > 0          |
-| Round     | int64  | Round in which the extension was provided.  | Must be > 0          |
+| Height    | int64  | Height in which the extension was provided. | Must be >= 0         |
+| Round     | int64  | Round in which the extension was provided.  | Must be >= 0         |
 | ChainID   | string | ID of the blockchain running consensus.     |                      |
 
 ## Proposal
 
 Proposal contains height and round for which this proposal is made, BlockID as a unique identifier
 of proposed block, timestamp, and POLRound (a so-called Proof-of-Lock (POL) round) that is needed for
-termination of the consensus. If POLRound >= 0, then BlockID corresponds to the block that
-is locked in POLRound. The message is signed by the validator private key.
+termination of the consensus. If POLRound >= 0, then BlockID corresponds to the block that was
+or could have been locked in POLRound. The message is signed by the validator private key.
 
 | Name      | Type                            | Description                                                                           | Validation                                              |
 |-----------|---------------------------------|---------------------------------------------------------------------------------------|---------------------------------------------------------|
-| Type      | [SignedMsgType](#signedmsgtype) | Represents a Proposal [SignedMsgType](#signedmsgtype)                                 | Must be `ProposalType`  [signedMsgType](#signedmsgtype) |
-| Height    | uint64                           | Height for which this vote was created for                                            | Must be > 0                                             |
-| Round     | int32                           | Round that the commit corresponds to.                                                 | Must be > 0                                             |
-| POLRound  | int64                           | Proof of lock                                                                         | Must be > 0                                             |
+| Type      | [SignedMsgType](#signedmsgtype) | Represents a Proposal [SignedMsgType](#signedmsgtype).                                | Must be `ProposalType`                                  |
+| Height    | uint64                          | Height for which this vote was created for                                            | Must be >= 0                                            |
+| Round     | int32                           | Round that the commit corresponds to.                                                 | Must be >= 0                                            |
+| POLRound  | int64                           | Proof of lock round.                                                                  | Must be >= -1                                           |
 | BlockID   | [BlockID](#blockid)             | The blockID of the corresponding block.                                               | [BlockID](#blockid)                                     |
-| Timestamp | [Time](#time)                   | Timestamp represents the time at which a validator signed.                            | [Time](#time)                                           |
+| Timestamp | [Time](#time)                   | Timestamp represents the time at which the block was produced.               | [Time](#time)                                           |
 | Signature | slice of bytes (`[]byte`)       | Signature by the validator if they participated in consensus for the associated bock. | Length of signature must be > 0 and < 64                |
 
 ## SignedMsgType
@@ -455,14 +462,25 @@ func SumTruncated(bz []byte) []byte {
 }
 ```
 
+## Proof
+
+| Name      | Type           | Description                                   | Field Number |
+|-----------|----------------|-----------------------------------------------|--------------|
+| total     | int64          | Total number of items.                        | 1            |
+| index     | int64          | Index item to prove.                          | 2            |
+| leaf_hash | bytes          | Hash of item value.                           | 3            |
+| aunts     | repeated bytes | Hashes from leaf's sibling to a root's child. | 4            |
+
 ## ConsensusParams
 
-| Name      | Type                                | Description                                                                  | Field Number |
-|-----------|-------------------------------------|------------------------------------------------------------------------------|--------------|
-| block     | [BlockParams](#blockparams)         | Parameters limiting the size of a block and time between consecutive blocks. | 1            |
-| evidence  | [EvidenceParams](#evidenceparams)   | Parameters limiting the validity of evidence of byzantine behavior.         | 2            |
-| validator | [ValidatorParams](#validatorparams) | Parameters limiting the types of public keys validators can use.             | 3            |
-| version   | [BlockParams](#blockparams)         | The ABCI application version.                                                | 4            |
+| Name      | Type                                | Description                                                                         | Field Number |
+|-----------|-------------------------------------|-------------------------------------------------------------------------------------|--------------|
+| block     | [BlockParams](#blockparams)         | Parameters limiting the size of a block and time between consecutive blocks.        | 1            |
+| evidence  | [EvidenceParams](#evidenceparams)   | Parameters limiting the validity of evidence of byzantine behavior.                 | 2            |
+| validator | [ValidatorParams](#validatorparams) | Parameters limiting the types of public keys validators can use.                    | 3            |
+| version   | [VersionParams](#versionparams)     | The version of specific components of CometBFT.                                     | 4            |
+| abci      | [ABCIParams](#abciparams)           | Parameters for the [Application-Blockchain Interface (ABCI)](../abci/README.md).    | 5            |
+| synchrony | [SynchronyParams](#synchronyparams) | Parameters for the [Proposer-Based Timestamps (PBTS)][pbts] algorithm.              | 6            |
 
 ### BlockParams
 
@@ -473,11 +491,11 @@ func SumTruncated(bz []byte) []byte {
 
 ### EvidenceParams
 
-| Name               | Type                                                                                                                               | Description                                                                                                                                                                                                                                                                    | Field Number |
-|--------------------|------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
-| max_age_num_blocks | int64                                                                                                                              | Max age of evidence, in blocks.                                                                                                                                                                                                                                                | 1            |
-| max_age_duration   | [google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Duration) | Max age of evidence, in time. It should correspond with an app's "unbonding period" or other similar mechanism for handling [Nothing-At-Stake attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed). | 2            |
-| max_bytes          | int64                                                                                                                              | maximum size in bytes of total evidence allowed to be entered into a block                                                                                                                                                                                                     | 3            |
+| Name               | Type                                                                                          | Description                                                                                                                                                                                                                                                                    | Field Number |
+| ------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| max_age_num_blocks | int64                                                                                         | Max age of evidence, in blocks.                                                                                                                                                                                                                                                | 1            |
+| max_age_duration   | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Max age of evidence, in time. It should correspond with an app's "unbonding period" or other similar mechanism for handling [Nothing-At-Stake attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed). | 2            |
+| max_bytes          | int64                                                                                         | maximum size in bytes of total evidence allowed to be entered into a block                                                                                                                                                                                                     | 3            |
 
 ### ValidatorParams
 
@@ -488,14 +506,21 @@ func SumTruncated(bz []byte) []byte {
 ### VersionParams
 
 | Name        | Type   | Description                   | Field Number |
-|-------------|--------|-------------------------------|--------------|
+| ----------- | ------ | ----------------------------- | ------------ |
 | app_version | uint64 | The ABCI application version. | 1            |
 
-## Proof
+### ABCIParams
 
-| Name      | Type           | Description                                   | Field Number |
-|-----------|----------------|-----------------------------------------------|--------------|
-| total     | int64          | Total number of items.                        | 1            |
-| index     | int64          | Index item to prove.                          | 2            |
-| leaf_hash | bytes          | Hash of item value.                           | 3            |
-| aunts     | repeated bytes | Hashes from leaf's sibling to a root's child. | 4            |
+| Name                          | Type  | Description                                       | Field Number |
+| ----------------------------- | ----- | ------------------------------------------------- | ------------ |
+| vote_extensions_enable_height | int64 | The height where vote extensions will be enabled. | 1            |
+
+### SynchronyParams
+
+| Name          | Type                                                                                          | Description                                                                                                             | Field Number |
+| ------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------ |
+| precision     | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how skewed a proposer's clock may be from any validator on the network while still producing valid proposals. | 1            |
+| message_delay | [google.protobuf.Duration](https://protobuf.dev/reference/protobuf/google.protobuf/#duration) | Bound for how long a proposal message may take to reach all validators on a network and still be considered valid.      | 2            |
+
+[pbts]: ../consensus/proposer-based-timestamp/README.md
+[bfttime]: ../consensus/bft-time.md

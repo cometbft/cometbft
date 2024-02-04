@@ -81,7 +81,7 @@ type cmd struct {
 	clientID     string
 
 	// publish
-	msg    interface{}
+	msg    any
 	events map[string][]string
 }
 
@@ -267,14 +267,14 @@ func (s *Server) NumClientSubscriptions(clientID string) int {
 
 // Publish publishes the given message. An error will be returned to the caller
 // if the context is canceled.
-func (s *Server) Publish(ctx context.Context, msg interface{}) error {
+func (s *Server) Publish(ctx context.Context, msg any) error {
 	return s.PublishWithEvents(ctx, msg, make(map[string][]string))
 }
 
 // PublishWithEvents publishes the given message with the set of events. The set
 // is matched with clients queries. If there is a match, the message is sent to
 // the client.
-func (s *Server) PublishWithEvents(ctx context.Context, msg interface{}, events map[string][]string) error {
+func (s *Server) PublishWithEvents(ctx context.Context, msg any, events map[string][]string) error {
 	select {
 	case s.cmds <- cmd{op: pub, msg: msg, events: events}:
 		return nil
@@ -404,7 +404,7 @@ func (state *state) removeAll(reason error) {
 	}
 }
 
-func (state *state) send(msg interface{}, events map[string][]string) error {
+func (state *state) send(msg any, events map[string][]string) error {
 	for qStr, clientSubscriptions := range state.subscriptions {
 		q := state.queries[qStr].q
 

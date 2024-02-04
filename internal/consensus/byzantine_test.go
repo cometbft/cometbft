@@ -311,7 +311,7 @@ func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 	}
 }
 
-func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason any) {
 	br.reactor.RemovePeer(peer, reason)
 }
 

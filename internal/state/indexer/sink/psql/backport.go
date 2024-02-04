@@ -41,7 +41,7 @@ func (BackportTxIndexer) SetRetainHeight(_ int64) error {
 	return nil
 }
 
-func (BackportTxIndexer) Prune(_ int64) (int64, int64, error) {
+func (BackportTxIndexer) Prune(_ int64) (numPruned, newRetainHeight int64, err error) {
 	// Not implemented
 	return 0, 0, nil
 }
@@ -88,7 +88,7 @@ func (BackportBlockIndexer) GetRetainHeight() (int64, error) {
 	return 0, nil
 }
 
-func (BackportBlockIndexer) Prune(_ int64) (int64, int64, error) {
+func (BackportBlockIndexer) Prune(_ int64) (numPruned, newRetainHeight int64, err error) {
 	// Not implemented
 	return 0, 0, nil
 }

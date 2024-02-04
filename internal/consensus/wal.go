@@ -44,7 +44,7 @@ type EndHeightMessage struct {
 	Height int64 `json:"height"`
 }
 
-type WALMessage interface{}
+type WALMessage any
 
 func init() {
 	cmtjson.RegisterType(msgInfo{}, "tendermint/wal/MsgInfo")

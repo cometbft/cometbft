@@ -12,8 +12,8 @@ import (
 func unmarshalResponseBytes(
 	responseBytes []byte,
 	expectedID types.JSONRPCIntID,
-	result interface{},
-) (interface{}, error) {
+	result any,
+) (any, error) {
 	// Read response.  If rpc/core/types is imported, the result will unmarshal
 	// into the correct type.
 	response := &types.RPCResponse{}
@@ -40,8 +40,8 @@ func unmarshalResponseBytes(
 func unmarshalResponseBytesArray(
 	responseBytes []byte,
 	expectedIDs []types.JSONRPCIntID,
-	results []interface{},
-) ([]interface{}, error) {
+	results []any,
+) ([]any, error) {
 	var responses []types.RPCResponse
 
 	if err := json.Unmarshal(responseBytes, &responses); err != nil {
@@ -109,7 +109,7 @@ func validateAndVerifyID(res *types.RPCResponse, expectedID types.JSONRPCIntID) 
 	return nil
 }
 
-func validateResponseID(id interface{}) error {
+func validateResponseID(id any) error {
 	if id == nil {
 		return errors.New("no ID")
 	}

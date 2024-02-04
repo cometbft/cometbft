@@ -233,7 +233,7 @@ func TestStateBadProposal(t *testing.T) {
 	proposal.Signature = p.Signature
 
 	// set the proposal block
-	if err := cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(proposal, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -316,7 +316,7 @@ func TestStateOversizedBlock(t *testing.T) {
 			}
 			numBlockParts := int64(propBlockParts.Total())
 
-			if err := cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
+			if err := cs1.SetProposalAndBlock(proposal, propBlockParts, "some peer"); err != nil {
 				t.Fatal(err)
 			}
 
@@ -627,7 +627,7 @@ func TestStateLockNoPOL(t *testing.T) {
 	// so set the proposal block
 	bps3, err := propBlock.MakePartSet(partSize)
 	require.NoError(t, err)
-	if err := cs1.SetProposalAndBlock(prop, propBlock, bps3, ""); err != nil {
+	if err := cs1.SetProposalAndBlock(prop, bps3, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -737,7 +737,7 @@ func TestStateLockPOLUpdateLock(t *testing.T) {
 	require.NoError(t, err)
 	propBlockR1Hash := propBlockR1.Hash()
 	require.NotEqual(t, propBlockR1Hash, theBlockHash)
-	if err := cs1.SetProposalAndBlock(propR1, propBlockR1, propBlockR1Parts, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(propR1, propBlockR1Parts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -796,7 +796,6 @@ func TestStateLockPOLRelock(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 	ensureNewProposal(proposalCh, height, round)
 	rs := cs1.GetRoundState()
-	theBlock := rs.ProposalBlock
 	theBlockHash := rs.ProposalBlock.Hash()
 	theBlockParts := rs.ProposalBlockParts
 
@@ -834,7 +833,7 @@ func TestStateLockPOLRelock(t *testing.T) {
 		t.Fatalf("error signing proposal: %s", err)
 	}
 	propR1.Signature = p.Signature
-	if err := cs1.SetProposalAndBlock(propR1, theBlock, theBlockParts, ""); err != nil {
+	if err := cs1.SetProposalAndBlock(propR1, theBlockParts, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1014,7 +1013,7 @@ func TestStateLockPrevoteNilWhenLockedAndDifferentProposal(t *testing.T) {
 
 	propBlockR1Hash := propBlockR1.Hash()
 	require.NotEqual(t, propBlockR1Hash, theBlockHash)
-	if err := cs1.SetProposalAndBlock(propR1, propBlockR1, propBlockR1Parts, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(propR1, propBlockR1Parts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1119,7 +1118,7 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEqual(t, propBlock.Hash(), theBlockHash)
-	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, ""); err != nil {
+	if err := cs1.SetProposalAndBlock(prop, propBlockParts, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1155,7 +1154,7 @@ func TestStateLockPOLDoesNotUnlock(t *testing.T) {
 	propBlockParts, err = propBlock.MakePartSet(types.BlockPartSizeBytes)
 	require.NoError(t, err)
 
-	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, ""); err != nil {
+	if err := cs1.SetProposalAndBlock(prop, propBlockParts, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1470,7 +1469,7 @@ func TestStateLockPOLSafety1(t *testing.T) {
 	ensureNewRound(newRoundCh, height, round)
 
 	// XXX: this isn't guaranteed to get there before the timeoutPropose ...
-	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(prop, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 	/* Round2
@@ -1578,7 +1577,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 	startTestRound(cs1, height, round)
 	ensureNewRound(newRoundCh, height, round)
 
-	if err := cs1.SetProposalAndBlock(prop1, propBlock1, propBlockParts1, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(prop1, propBlockParts1, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 	ensureNewProposal(proposalCh, height, round)
@@ -1611,7 +1610,7 @@ func TestStateLockPOLSafety2(t *testing.T) {
 
 	newProp.Signature = p.Signature
 
-	if err := cs1.SetProposalAndBlock(newProp, propBlock0, propBlockParts0, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(newProp, propBlockParts0, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1747,7 +1746,7 @@ func TestStatePrevotePOLFromPreviousRound(t *testing.T) {
 	propR2.Signature = p.Signature
 
 	// cs1 receives a proposal for D, the block that received a POL in round 1.
-	if err := cs1.SetProposalAndBlock(propR2, propBlockR1, propBlockR1Parts, ""); err != nil {
+	if err := cs1.SetProposalAndBlock(propR2, propBlockR1Parts, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1970,7 +1969,7 @@ func TestSetValidBlockOnDelayedProposal(t *testing.T) {
 	ensurePrecommit(voteCh, height, round)
 	validatePrecommit(t, cs1, round, -1, vss[0], nil, nil)
 
-	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(prop, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2688,7 +2687,7 @@ func TestCommitFromPreviousRound(t *testing.T) {
 	assert.Nil(t, rs.ProposalBlock, nil)
 	assert.True(t, rs.ProposalBlockParts.Header().Equals(propBlockParts.Header()))
 
-	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(prop, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2821,7 +2820,7 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 	propBlockParts, err := propBlock.MakePartSet(partSize)
 	require.NoError(t, err)
 
-	if err := cs1.SetProposalAndBlock(prop, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := cs1.SetProposalAndBlock(prop, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 	ensureNewProposal(proposalCh, height+1, 0)

@@ -141,7 +141,7 @@ func randPort() int {
 	return base + cmtrand.Intn(spread)
 }
 
-func makeAddrs() (string, string) {
+func makeAddrs() (address, port string) {
 	start := randPort()
 	return fmt.Sprintf("tcp://127.0.0.1:%d", start),
 		fmt.Sprintf("tcp://127.0.0.1:%d", start+1)

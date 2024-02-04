@@ -188,7 +188,7 @@ func handlePanicInHandler(rww *responseWriterWrapper, r *http.Request, logger lo
 	}
 }
 
-func handleRPCResponseOrError(e interface{}, rww *responseWriterWrapper, logger log.Logger) {
+func handleRPCResponseOrError(e any, rww *responseWriterWrapper, logger log.Logger) {
 	if res, ok := e.(types.RPCResponse); ok {
 		if wErr := WriteRPCResponseHTTP(rww, res); wErr != nil {
 			logger.Error("failed to write response", "err", wErr)
@@ -203,7 +203,7 @@ func handleRPCResponseOrError(e interface{}, rww *responseWriterWrapper, logger 
 	}
 }
 
-func normalizeError(e interface{}) error {
+func normalizeError(e any) error {
 	switch e := e.(type) {
 	case error:
 		return e

@@ -139,7 +139,7 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	}
 }
 
-func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t *testing.T, previousBlockTime time.Time) (heightResult, time.Time) {
+func (p *pbtsTestHarness) observedValidatorProposerHeight(t *testing.T, previousBlockTime time.Time) (heightResult, time.Time) {
 	t.Helper()
 	p.validatorClock.On("Now").Return(p.genesisTime.Add(p.height2ProposedBlockOffset)).Times(2 * len(p.otherValidators))
 
@@ -163,7 +163,7 @@ func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t
 
 	vk, err := p.observedValidator.GetPubKey()
 	require.NoError(t, err)
-	res := collectHeightResults(ctx, t, p.eventCh, p.currentHeight, vk.Address())
+	res := collectHeightResults(t, p.eventCh, p.currentHeight, vk.Address())
 
 	p.currentHeight++
 	incrementHeight(p.otherValidators...)
@@ -194,9 +194,9 @@ func (p *pbtsTestHarness) intermediateHeights(ctx context.Context, t *testing.T)
 		time.Now())
 }
 
-func (p *pbtsTestHarness) height5(ctx context.Context, t *testing.T) (heightResult, time.Time) {
+func (p *pbtsTestHarness) height5(t *testing.T) (heightResult, time.Time) {
 	t.Helper()
-	return p.observedValidatorProposerHeight(ctx, t, p.firstBlockTime.Add(p.height4ProposedBlockOffset))
+	return p.observedValidatorProposerHeight(t, p.firstBlockTime.Add(p.height4ProposedBlockOffset))
 }
 
 func (p *pbtsTestHarness) nextHeight(
@@ -230,7 +230,7 @@ func (p *pbtsTestHarness) nextHeight(
 
 	time.Sleep(time.Until(deliverTime))
 	prop.Signature = tp.Signature
-	err = p.observedState.SetProposalAndBlock(prop, b, ps, "peerID")
+	err = p.observedState.SetProposalAndBlock(prop, ps, "peerID")
 	require.NoError(t, err)
 	ensureProposal(p.ensureProposalCh, p.currentHeight, 0, bid)
 
@@ -242,7 +242,7 @@ func (p *pbtsTestHarness) nextHeight(
 
 	vk, err := p.observedValidator.GetPubKey()
 	require.NoError(t, err)
-	res := collectHeightResults(ctx, t, p.eventCh, p.currentHeight, vk.Address())
+	res := collectHeightResults(t, p.eventCh, p.currentHeight, vk.Address())
 	ensureNewBlock(p.blockCh, p.currentHeight)
 
 	p.currentHeight++
@@ -285,7 +285,7 @@ func timestampedCollector(ctx context.Context, t *testing.T, eb *types.EventBus)
 	return eventCh
 }
 
-func collectHeightResults(ctx context.Context, t *testing.T, eventCh <-chan timestampedEvent, height int64, address []byte) heightResult {
+func collectHeightResults(t *testing.T, eventCh <-chan timestampedEvent, height int64, address []byte) heightResult {
 	t.Helper()
 	var res heightResult
 	for event := range eventCh {
@@ -317,9 +317,9 @@ func collectHeightResults(ctx context.Context, t *testing.T, eventCh <-chan time
 			return res
 		}
 	}
-	t.Fatalf("complete height result never seen for height %d", height)
+	t.Fatalf("complete height result never seen for height %d", height) //nolint:revive // we're aware that the code below is unreachable
 
-	panic("unreachable")
+	panic("unreachable") // intentionally unreachable
 }
 
 type timestampedEvent struct {
@@ -331,11 +331,11 @@ func (p *pbtsTestHarness) run(ctx context.Context, t *testing.T) resultSet {
 	t.Helper()
 	startTestRound(p.observedState, p.currentHeight, p.currentRound)
 
-	r1, proposalBlockTime := p.observedValidatorProposerHeight(ctx, t, p.genesisTime)
+	r1, proposalBlockTime := p.observedValidatorProposerHeight(t, p.genesisTime)
 	p.firstBlockTime = proposalBlockTime
 	r2 := p.height2(ctx, t)
 	p.intermediateHeights(ctx, t)
-	r5, _ := p.height5(ctx, t)
+	r5, _ := p.height5(t)
 	return resultSet{
 		genesisHeight: r1,
 		height2:       r2,

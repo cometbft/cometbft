@@ -18,15 +18,6 @@ message GetByHeightResponse {
   cometbft.types.v1.Block   block    = 2;
 }
 
-// GetLatestRequest is a request for the latest block.
-message GetLatestRequest {}
-
-// GetLatestResponse contains the latest block ID and the latest block.
-message GetLatestResponse {
-  cometbft.types.v1.BlockID block_id = 1;
-  cometbft.types.v1.Block   block    = 2;
-}
-
 // GetLatestHeightRequest - empty message since no parameter is required
 message GetLatestHeightRequest {}
 

@@ -239,13 +239,11 @@ func (state State) MakeBlock(
 ) *types.Block {
 	// Build base block with block data.
 	block := types.MakeBlock(height, txs, lastCommit, evidence)
-	// TODO(@glnro): Update logic once merged with #2205
-	// Check if PBTS Enabled: state.ConsensusParams.PBTS.PBTSEnabled(height)
 
 	// Set time.
 	var timestamp time.Time
 	switch {
-	case state.isPBTSEnabled():
+	case state.ConsensusParams.PBTS.PBTSEnabled(height):
 		timestamp = time.Now()
 	case height == state.InitialHeight:
 		timestamp = state.LastBlockTime // genesis time

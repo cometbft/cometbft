@@ -1146,7 +1146,7 @@ func (cs *State) enterPropose(height int64, round int32) {
 
 	// If this validator is the proposer of this round, and the previous block time is later than
 	// our local clock time, wait to propose until our local clock time has passed the block time.
-	if cs.isPBTSEnabled() && cs.privValidatorPubKey != nil && cs.isProposer(cs.privValidatorPubKey.Address()) {
+	if cs.isPBTSEnabled(height) && cs.privValidatorPubKey != nil && cs.isProposer(cs.privValidatorPubKey.Address()) {
 		proposerWaitTime := proposerWaitTime(cmttime.DefaultSource{}, cs.state.LastBlockTime)
 		if proposerWaitTime > 0 {
 			cs.scheduleTimeout(proposerWaitTime, height, round, cstypes.RoundStepNewRound)
@@ -1382,7 +1382,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	if cs.isPBTSEnabled() && cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
+	if cs.isPBTSEnabled(height) && cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
 		logger.Debug("prevote step: Proposal is not timely; prevoting nil",
 			"proposed",
 			cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
@@ -2478,13 +2478,14 @@ func (cs *State) signVote(
 
 	addr := cs.privValidatorPubKey.Address()
 	valIdx, _ := cs.Validators.GetByAddress(addr)
+	timestamp := cs.voteTime(cs.Height)
 
 	vote := &types.Vote{
 		ValidatorAddress: addr,
 		ValidatorIndex:   valIdx,
 		Height:           cs.Height,
 		Round:            cs.Round,
-		Timestamp:        cs.voteTime(),
+		Timestamp:        timestamp,
 		Type:             msgType,
 		BlockID:          types.BlockID{Hash: hash, PartSetHeader: header},
 	}
@@ -2510,9 +2511,9 @@ func (cs *State) signVote(
 	return vote, err
 }
 
-func (cs *State) voteTime() time.Time {
+func (cs *State) voteTime(height int64) time.Time {
 	now := cmttime.Now()
-	if cs.isPBTSEnabled() {
+	if cs.isPBTSEnabled(height) {
 		return now
 	}
 
@@ -2728,6 +2729,6 @@ func proposerWaitTime(lt cmttime.Source, bt time.Time) time.Duration {
 }
 
 // isPBTSEnabled returns true if PBFT is enabled at the current height.
-func (cs *State) isPBTSEnabled() bool {
-	return cs.state.ConsensusParams.Synchrony.Precision != time.Duration(10000*366*24*60*60*1000)
+func (cs *State) isPBTSEnabled(height int64) bool {
+	return cs.state.ConsensusParams.PBTS.PBTSEnabled(height)
 }

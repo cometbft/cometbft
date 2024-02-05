@@ -164,7 +164,7 @@ func DefaultSynchronyParams() SynchronyParams {
 	// TODO(@wbanfield): Determine experimental values for these defaults
 	// https://github.com/tendermint/tendermint/issues/7202
 	return SynchronyParams{
-		Precision:    time.Duration(10000 * 366 * 24 * 60 * 60 * 1000), // 500 * time.Millisecond, // Default is to use BFT Time. // TODO: use something else to determine if PBTS is enabled.
+		Precision:    500 * time.Millisecond, // Default is to use BFT Time.
 		MessageDelay: 2 * time.Second,
 	}
 }

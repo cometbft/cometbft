@@ -1304,10 +1304,11 @@ func TestStateLock_MissingProposalWhenPOLForLockedBlock(t *testing.T) {
 	// now lets add prevotes from everyone else for the locked block
 	signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vs2, vs3, vs4)
 
+	// the validator precommits the valid block (as it received 2/3+
+	// prevotes) which matches its locked block (which also received 2/3+
+	// prevotes in the previous round).
 	ensurePrecommit(voteCh, height, round)
-
-	// the validator precommits nil because it hasn't received the proposal for the current round
-	validatePrecommit(t, cs1, round, 0, vss[0], nil, blockID.Hash)
+	validatePrecommit(t, cs1, round, round, vss[0], blockID.Hash, blockID.Hash)
 }
 
 // TestState_MissingProposalValidBlockReceivedPrecommit tests if a node that

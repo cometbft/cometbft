@@ -354,8 +354,3 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 		AppHash: genDoc.AppHash,
 	}, nil
 }
-
-// isPBTSEnabled returns true if PBFT is enabled at the current height.
-func (state State) isPBTSEnabled() bool {
-	return state.ConsensusParams.Synchrony.Precision != time.Duration(10000*366*24*60*60*1000)
-}

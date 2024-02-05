@@ -5,7 +5,7 @@ import "tendermint/types/block.proto";
 import "tendermint/types/types.proto";
 
 message GetByHeightRequest {
-  // The height of the block requested. If set to 0, the latest height will be returned.
+  // The height of the block requested.
   int64 height = 1;
 }
 

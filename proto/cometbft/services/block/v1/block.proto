@@ -8,7 +8,7 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/services/block/v1
 
 // GetByHeightRequest is a request for a block at the specified height.
 message GetByHeightRequest {
-  // The height of the block requested. If set to 0, the latest height will be returned.
+  // The height of the block requested.
   int64 height = 1;
 }
 

@@ -188,23 +188,6 @@ func TestWriter(t *testing.T) {
 	})
 }
 
-func durationsAreEqual(d1 time.Duration, d2 time.Duration) bool {
-	const maxDeviation = 50 * time.Millisecond
-	return d2-d1 <= maxDeviation
-}
-
-func ratesAreEqual(r1 int64, r2 int64) bool {
-	const maxDeviation = int64(50)
-	sub := r1 - r2
-	if sub < 0 {
-		sub = -sub
-	}
-	if sub <= maxDeviation {
-		return true
-	}
-	return false
-}
-
 // statusesAreEqual returns true if s1 is equal to s2. Equality here means
 // general equality of fields except for the duration and rates, which can
 // drift due to unpredictable delays (e.g. thread wakes up 25ms after
@@ -223,6 +206,23 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 		s1.BytesRem == s2.BytesRem &&
 		durationsAreEqual(s1.TimeRem, s2.TimeRem) &&
 		s1.Progress == s2.Progress {
+		return true
+	}
+	return false
+}
+
+func durationsAreEqual(d1 time.Duration, d2 time.Duration) bool {
+	const maxDeviation = 50 * time.Millisecond
+	return d2-d1 <= maxDeviation
+}
+
+func ratesAreEqual(r1 int64, r2 int64) bool {
+	const maxDeviation = int64(50)
+	sub := r1 - r2
+	if sub < 0 {
+		sub = -sub
+	}
+	if sub <= maxDeviation {
 		return true
 	}
 	return false

@@ -48,19 +48,13 @@ func newMockPeer(ip net.IP) *mockPeer {
 }
 
 func TestPeerSetAddRemoveOne(t *testing.T) {
-	testPeerSetAddRemoveOne(t)
-}
-
-func testPeerSetAddRemoveOne(tb testing.TB) {
-	tb.Helper()
-
 	peerSet := NewPeerSet()
 
 	var peerList []Peer
 	for i := 0; i < 5; i++ {
 		p := newMockPeer(net.IP{127, 0, 0, byte(i)})
 		if err := peerSet.Add(p); err != nil {
-			tb.Error(err)
+			t.Error(err)
 		}
 		peerList = append(peerList, p)
 	}
@@ -69,14 +63,14 @@ func testPeerSetAddRemoveOne(tb testing.TB) {
 	// 1. Test removing from the front
 	for i, peerAtFront := range peerList {
 		removed := peerSet.Remove(peerAtFront)
-		assert.True(tb, removed)
+		assert.True(t, removed)
 		wantSize := n - i - 1
 		for j := 0; j < 2; j++ {
-			assert.False(tb, false, peerSet.Has(peerAtFront.ID()), "#%d Run #%d: failed to remove peer", i, j)
-			assert.Equal(tb, wantSize, peerSet.Size(), "#%d Run #%d: failed to remove peer and decrement size", i, j)
+			assert.False(t, false, peerSet.Has(peerAtFront.ID()), "#%d Run #%d: failed to remove peer", i, j)
+			assert.Equal(t, wantSize, peerSet.Size(), "#%d Run #%d: failed to remove peer and decrement size", i, j)
 			// Test the route of removing the now non-existent element
 			removed := peerSet.Remove(peerAtFront)
-			assert.False(tb, removed)
+			assert.False(t, removed)
 		}
 	}
 
@@ -84,7 +78,7 @@ func testPeerSetAddRemoveOne(tb testing.TB) {
 	// a) Replenish the peerSet
 	for _, peer := range peerList {
 		if err := peerSet.Add(peer); err != nil {
-			tb.Error(err)
+			t.Error(err)
 		}
 	}
 
@@ -92,19 +86,13 @@ func testPeerSetAddRemoveOne(tb testing.TB) {
 	for i := n - 1; i >= 0; i-- {
 		peerAtEnd := peerList[i]
 		removed := peerSet.Remove(peerAtEnd)
-		assert.True(tb, removed)
-		assert.False(tb, false, peerSet.Has(peerAtEnd.ID()), "#%d: failed to remove item at end", i)
-		assert.Equal(tb, i, peerSet.Size(), "#%d: differing sizes after peerSet.Remove(atEndPeer)", i)
+		assert.True(t, removed)
+		assert.False(t, false, peerSet.Has(peerAtEnd.ID()), "#%d: failed to remove item at end", i)
+		assert.Equal(t, i, peerSet.Size(), "#%d: differing sizes after peerSet.Remove(atEndPeer)", i)
 	}
 }
 
 func TestPeerSetAddRemoveMany(t *testing.T) {
-	testPeerSetAddRemoveMany(t)
-}
-
-func testPeerSetAddRemoveMany(tb testing.TB) {
-	tb.Helper()
-
 	peerSet := NewPeerSet()
 
 	peers := []Peer{}
@@ -112,22 +100,22 @@ func testPeerSetAddRemoveMany(tb testing.TB) {
 	for i := 0; i < N; i++ {
 		peer := newMockPeer(net.IP{127, 0, 0, byte(i)})
 		if err := peerSet.Add(peer); err != nil {
-			tb.Errorf("failed to add new peer")
+			t.Errorf("failed to add new peer")
 		}
 		if peerSet.Size() != i+1 {
-			tb.Errorf("failed to add new peer and increment size")
+			t.Errorf("failed to add new peer and increment size")
 		}
 		peers = append(peers, peer)
 	}
 
 	for i, peer := range peers {
 		removed := peerSet.Remove(peer)
-		assert.True(tb, removed)
+		assert.True(t, removed)
 		if peerSet.Has(peer.ID()) {
-			tb.Errorf("failed to remove peer")
+			t.Errorf("failed to remove peer")
 		}
 		if peerSet.Size() != len(peers)-i-1 {
-			tb.Errorf("failed to remove peer and decrement size")
+			t.Errorf("failed to remove peer and decrement size")
 		}
 	}
 }

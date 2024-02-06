@@ -40,7 +40,7 @@ func ValidateValidatorUpdates(abciUpdates []abci.ValidatorUpdate, params types.V
 // SaveValidatorsInfo is an alias for the private saveValidatorsInfo method in
 // store.go, exported exclusively and explicitly for testing.
 func SaveValidatorsInfo(db dbm.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet) error {
-	stateStore := dbStore{db, NopMetrics(), StoreOptions{DiscardABCIResponses: false}}
+	stateStore := dbStore{db, StoreOptions{DiscardABCIResponses: false}}
 	batch := stateStore.db.NewBatch()
 	err := stateStore.saveValidatorsInfo(height, lastHeightChanged, valSet, batch)
 	if err != nil {

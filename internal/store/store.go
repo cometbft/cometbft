@@ -787,6 +787,10 @@ func (bs *BlockStore) DeleteLatestBlock() error {
 	return bs.saveStateAndWriteDB(batch, "failed to delete the latest block")
 }
 
+// addTimeSample returns a function that, when called, adds an observation to m.
+// The observation added to m is the number of seconds elapsed since addTimeSample
+// was initially called. addTimeSample is meant to be called in a defer to calculate
+// the amount of time a function takes to complete.
 func addTimeSample(h metrics.Histogram, start time.Time) func() {
 	return func() {
 		h.Observe(time.Since(start).Seconds())

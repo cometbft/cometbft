@@ -257,12 +257,13 @@ func TestMempoolUpdate(t *testing.T) {
 	}
 }
 
+// Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection
+// to the app.
 func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	var callback abciclient.Callback
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
-
 	mockClient.On("Error").Return(nil).Times(4)
 	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
 
@@ -273,21 +274,30 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// Add 4 transactions to the mempool by calling the mempool's `CheckTx` on each of them.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
 	for _, tx := range txs {
-		reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: abci.CHECK_TX_TYPE_CHECK}))
-		reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
-
-		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil)
+		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, nil).Once()
 		_, err := mp.CheckTx(tx)
 		require.NoError(t, err)
-
-		// ensure that the callback that the mempool sets on the ReqRes is run.
-		reqRes.InvokeCallback()
 	}
+	require.Zero(t, mp.Size())
+
+	// Invoke CheckTx callbacks asynchronously.
+	for _, tx := range txs {
+		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK)
+		callback(reqRes.Request, reqRes.Response)
+	}
+	require.Equal(t, len(txs), mp.Size())
+	require.Nil(t, mp.recheckCursor)
 
 	// Calling update to remove the first transaction from the mempool.
 	// This call also triggers the mempool to recheck its remaining transactions.
+<<<<<<< HEAD
 	err = mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 	require.Nil(t, err)
+=======
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, nil)
+	err := mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+	require.NoError(t, err)
+>>>>>>> 71dbb46f9 (test(mempool): fix TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx (#2242))
 
 	// The mempool has now sent its requests off to the client to be rechecked
 	// and is waiting for the corresponding callbacks to be called.
@@ -295,12 +305,12 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// This simulates the client dropping the second request.
 	// Previous versions of this code panicked when the ABCI application missed
 	// a recheck-tx request.
-	resp := &abci.CheckTxResponse{Code: abci.CodeTypeOK}
-	req := &abci.CheckTxRequest{Tx: txs[1], Type: abci.CHECK_TX_TYPE_CHECK}
-	callback(abci.ToCheckTxRequest(req), abci.ToCheckTxResponse(resp))
+	reqRes := newReqRes(txs[1], abci.CodeTypeOK, abci.CHECK_TX_TYPE_RECHECK)
+	callback(reqRes.Request, reqRes.Response)
 
-	req = &abci.CheckTxRequest{Tx: txs[3], Type: abci.CHECK_TX_TYPE_CHECK}
-	callback(abci.ToCheckTxRequest(req), abci.ToCheckTxResponse(resp))
+	reqRes = newReqRes(txs[3], abci.CodeTypeOK, abci.CHECK_TX_TYPE_RECHECK)
+	callback(reqRes.Request, reqRes.Response)
+
 	mockClient.AssertExpectations(t)
 }
 
@@ -809,6 +819,12 @@ func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.C
 	}
 
 	return clientCreator, server
+}
+
+func newReqRes(tx types.Tx, code uint32, requestType abci.CheckTxType) *abciclient.ReqRes {
+	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
+	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code})
+	return reqRes
 }
 
 func abciResponses(n int, code uint32) []*abci.ExecTxResult {

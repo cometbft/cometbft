@@ -108,8 +108,6 @@ func TestWriter(t *testing.T) {
 	const writeSize = 20
 	const remainingSize = 80
 	const transferSize = 100
-	const maxDeviationForDuration = _50ms
-	const maxDeviationForRate = 50
 
 	// Initialize a buffer with sequential bytes
 	b := make([]byte, bufferSize)
@@ -176,7 +174,7 @@ func TestWriter(t *testing.T) {
 
 		// Compare actual and expected statuses
 		for i, s := range status {
-			if !statusesAreEqualWithinTolerance(&s, &want[i], maxDeviationForDuration, maxDeviationForRate) {
+			if !statusesAreEqual(&s, &want[i]) {
 				t.Errorf("w.Status(%v)\nexpected: %v\ngot     : %v\n", i, want[i], s)
 			}
 		}
@@ -190,40 +188,13 @@ func TestWriter(t *testing.T) {
 	})
 }
 
-const (
-	maxDeviationForDuration       = 50 * time.Millisecond
-	maxDeviationForRate     int64 = 50
-)
-
-// statusesAreEqual returns true if s1 is equal to s2. Equality here means
-// general equality of fields except for the duration and rates, which can
-// drift due to unpredictable delays (e.g. thread wakes up 25ms after
-// `time.Sleep` has ended).
-func statusesAreEqual(s1 *Status, s2 *Status) bool {
-	if s1.Active == s2.Active &&
-		s1.Start == s2.Start &&
-		durationsAreEqual(s1.Duration, s2.Duration, maxDeviationForDuration) &&
-		s1.Idle == s2.Idle &&
-		s1.Bytes == s2.Bytes &&
-		s1.Samples == s2.Samples &&
-		ratesAreEqual(s1.InstRate, s2.InstRate) &&
-		ratesAreEqual(s1.CurRate, s2.CurRate) &&
-		ratesAreEqual(s1.AvgRate, s2.AvgRate) &&
-		ratesAreEqual(s1.PeakRate, s2.PeakRate) &&
-		s1.BytesRem == s2.BytesRem &&
-		durationsAreEqual(s1.TimeRem, s2.TimeRem, maxDeviationForDuration) &&
-		s1.Progress == s2.Progress {
-		return true
-	}
-	return false
-}
-
-func durationsAreEqual(d1 time.Duration, d2 time.Duration, maxDeviation time.Duration) bool {
+func durationsAreEqual(d1 time.Duration, d2 time.Duration) bool {
+	const maxDeviation = 50 * time.Millisecond
 	return d2-d1 <= maxDeviation
 }
 
 func ratesAreEqual(r1 int64, r2 int64) bool {
-	maxDeviation := int64(50)
+	const maxDeviation = int64(50)
 	sub := r1 - r2
 	if sub < 0 {
 		sub = -sub
@@ -234,11 +205,15 @@ func ratesAreEqual(r1 int64, r2 int64) bool {
 	return false
 }
 
-func statusesAreEqualWithinTolerance(s1 *Status, s2 *Status, maxDeviationForDuration time.Duration, maxDeviationForRate int64) bool {
+// statusesAreEqual returns true if s1 is equal to s2. Equality here means
+// general equality of fields except for the duration and rates, which can
+// drift due to unpredictable delays (e.g. thread wakes up 25ms after
+// `time.Sleep` has ended).
+func statusesAreEqual(s1 *Status, s2 *Status) bool {
 	if s1.Active == s2.Active &&
 		s1.Start == s2.Start &&
-		durationsAreEqual(s1.Duration, s2.Duration, maxDeviationForDuration) &&
-		durationsAreEqual(s1.Idle, s2.Idle, maxDeviationForDuration) &&
+		durationsAreEqual(s1.Duration, s2.Duration) &&
+		durationsAreEqual(s1.Idle, s2.Idle) &&
 		s1.Bytes == s2.Bytes &&
 		s1.Samples == s2.Samples &&
 		ratesAreEqual(s1.InstRate, s2.InstRate) &&
@@ -246,7 +221,7 @@ func statusesAreEqualWithinTolerance(s1 *Status, s2 *Status, maxDeviationForDura
 		ratesAreEqual(s1.AvgRate, s2.AvgRate) &&
 		ratesAreEqual(s1.PeakRate, s2.PeakRate) &&
 		s1.BytesRem == s2.BytesRem &&
-		durationsAreEqual(s1.TimeRem, s2.TimeRem, maxDeviationForDuration) &&
+		durationsAreEqual(s1.TimeRem, s2.TimeRem) &&
 		s1.Progress == s2.Progress {
 		return true
 	}

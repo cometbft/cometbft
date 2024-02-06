@@ -262,7 +262,8 @@ func TestMempoolUpdate(t *testing.T) {
 	}
 }
 
-// Test dropping CheckTx requests when rechecking transactions. Assumes an asynchronous ABCI client.
+// Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection
+// to the app.
 func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	var callback abciclient.Callback
 	mockClient := new(abciclimocks.Client)

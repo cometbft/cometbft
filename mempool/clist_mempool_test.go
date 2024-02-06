@@ -290,14 +290,9 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 
 	// Calling update to remove the first transaction from the mempool.
 	// This call also triggers the mempool to recheck its remaining transactions.
-<<<<<<< HEAD
-	err = mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
-	require.Nil(t, err)
-=======
 	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, nil)
-	err := mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+	err = mp.Update(0, []types.Tx{txs[0]}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 	require.NoError(t, err)
->>>>>>> 71dbb46f9 (test(mempool): fix TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx (#2242))
 
 	// The mempool has now sent its requests off to the client to be rechecked
 	// and is waiting for the corresponding callbacks to be called.

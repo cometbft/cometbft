@@ -254,6 +254,9 @@ func (store dbStore) save(state State, key []byte) error {
 		state.LastHeightConsensusParamsChanged, state.ConsensusParams, batch); err != nil {
 		return err
 	}
+
+	// Counting the amount of time taken to marshall the state.
+	// In case the state is big this can impact the metrics reporting
 	stateMarshallTime := time.Now()
 	stateBytes := state.Bytes()
 	stateMarshallDiff := time.Since(stateMarshallTime).Seconds()

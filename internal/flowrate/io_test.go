@@ -199,10 +199,10 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 		durationsAreEqual(s1.Idle, s2.Idle) &&
 		s1.Bytes == s2.Bytes &&
 		s1.Samples == s2.Samples &&
-		ratesAreEqual(s1.InstRate, s2.InstRate, maxDeviationForRate) &&
-		ratesAreEqual(s1.CurRate, s2.CurRate, maxDeviationForRate) &&
-		ratesAreEqual(s1.AvgRate, s2.AvgRate, maxDeviationForRate) &&
-		ratesAreEqual(s1.PeakRate, s2.PeakRate, maxDeviationForRate) &&
+		ratesAreEqual(s1.InstRate, s2.InstRate) &&
+		ratesAreEqual(s1.CurRate, s2.CurRate) &&
+		ratesAreEqual(s1.AvgRate, s2.AvgRate) &&
+		ratesAreEqual(s1.PeakRate, s2.PeakRate) &&
 		s1.BytesRem == s2.BytesRem &&
 		durationsAreEqual(s1.TimeRem, s2.TimeRem) &&
 		s1.Progress == s2.Progress {
@@ -216,12 +216,8 @@ func durationsAreEqual(d1 time.Duration, d2 time.Duration) bool {
 	return d2-d1 <= maxDeviation
 }
 
-<<<<<<< HEAD
-func ratesAreEqual(r1 int64, r2 int64, maxDeviation int64) bool {
-=======
 func ratesAreEqual(r1 int64, r2 int64) bool {
 	const maxDeviation = int64(50)
->>>>>>> 075d3b594 (fix(flowrate): fix non-determinism in flowrate tests (#2147))
 	sub := r1 - r2
 	if sub < 0 {
 		sub = -sub

@@ -118,25 +118,21 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 		peer.SetRemovalFailed()
 		return false
 	}
-
 	index := item.index
+	delete(ps.lookup, peer.ID())
+
 	lastPeer := ps.list[len(ps.list)-1]
 	ps.list[len(ps.list)-1] = nil // nil the last entry of the slice to shorten, so it isn't reachable & can be GC'd.
+	ps.list = ps.list[:len(ps.list)-1]
 
 	// If it's the last peer, that's an easy special case.
-	if index == len(ps.list)-1 {
-		ps.list = ps.list[:len(ps.list)-1]
-		delete(ps.lookup, peer.ID())
+	if index == len(ps.list) {
 		return true
 	}
 
 	// Replace the popped item with the last item in the old list.
-	lastPeerKey := lastPeer.ID()
-	lastPeerItem := ps.lookup[lastPeerKey]
-	ps.list[index] = lastPeer
-	ps.list = ps.list[:len(ps.list)-1]
+	lastPeerItem := ps.lookup[lastPeer.ID()]
 	lastPeerItem.index = index
-	delete(ps.lookup, peer.ID())
 	return true
 }
 

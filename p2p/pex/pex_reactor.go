@@ -168,17 +168,10 @@ func (r *Reactor) OnStart() error {
 	return nil
 }
 
-<<<<<<< HEAD
-// OnStop implements BaseService
-func (r *Reactor) OnStop() {
-	if err := r.book.Stop(); err != nil {
-		r.Logger.Error("Error stopping address book", "err", err)
-=======
 // Stop overrides `Service.Stop()`.
 func (r *Reactor) Stop() error {
 	if err := r.BaseReactor.Stop(); err != nil {
 		return err
->>>>>>> 8a0a2f6e3 (fix(p2p/pex): gracefully shutdown `Reactor` (#2010))
 	}
 	if err := r.book.Stop(); err != nil {
 		return fmt.Errorf("can't stop address book: %w", err)

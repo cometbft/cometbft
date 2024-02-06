@@ -203,6 +203,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 	for _, ev := range req.Misbehavior {
 		if ev.Type == types.MISBEHAVIOR_TYPE_DUPLICATE_VOTE {
 			addr := string(ev.Validator.Address)
+			//nolint:revive // this is a false positive from early-return
 			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
 				app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{
 					PubKey: pubKey,

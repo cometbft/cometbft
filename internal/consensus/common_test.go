@@ -495,6 +495,7 @@ func randStateWithApp(nValidators int, app abci.Application) (*State, []*validat
 	c := test.ConsensusParams()
 	return randStateWithAppImpl(nValidators, app, c)
 }
+
 func randStateWithAppVePbts(nValidators int) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
 	c.PBTS.PBTSEnableHeight = 1

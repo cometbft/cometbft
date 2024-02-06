@@ -281,6 +281,8 @@ func NewNode(ctx context.Context,
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+		Compact:              config.Storage.CompactOnPruning,
+		CompactionInterval:   config.Storage.CompactionInterval,
 	})
 
 	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, config.Storage.GenesisHash)

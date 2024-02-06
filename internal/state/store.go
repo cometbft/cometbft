@@ -117,6 +117,10 @@ type StoreOptions struct {
 	// the store will maintain only the response object from the latest
 	// height.
 	DiscardABCIResponses bool
+
+	Compact bool
+
+	CompactionInterval int64
 }
 
 var _ Store = (*dbStore)(nil)
@@ -420,9 +424,11 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		return err
 	}
 
-	// TODO add logger to output error.
 	// We do not want to panic or interrupt consensus on compaction failure
-	_ = store.db.Compact(nil, nil)
+	if store.StoreOptions.Compact && (to%store.StoreOptions.CompactionInterval == 0 || pruned >= uint64(store.StoreOptions.CompactionInterval)) {
+		// TODO add logger to output error.
+		_ = store.db.Compact(nil, nil)
+	}
 
 	return nil
 }

@@ -1326,8 +1326,8 @@ func TestStateLock_MissingProposalWhenPOLForLockedBlock(t *testing.T) {
 }
 
 // TestState_MissingProposalValidBlockReceivedPrecommit tests if a node that
-// misses the round's Proposal but receives a Polka for a block and the full
-// block precommit the valid block even though the Proposal is missing.
+// misses the round's Proposal, but receives a Polka for a block and the full
+// block, precommits the valid block even though the Proposal is missing.
 func TestState_MissingProposalValidBlockReceivedPrecommit(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

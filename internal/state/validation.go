@@ -12,7 +12,7 @@ import (
 //-----------------------------------------------------
 // Validate block
 
-func validateBlock(state State, block *types.Block) error {
+func validateBlock(state State, block *types.Block, isBlockSync bool) error {
 	// Validate internal consistency.
 	if err := block.ValidateBasic(); err != nil {
 		return err
@@ -119,8 +119,7 @@ func validateBlock(state State, block *types.Block) error {
 				state.LastBlockTime,
 			)
 		}
-		if !state.ConsensusParams.PBTS.PBTSEnabled(block.Height) {
-			// TODO: only use if in block creation and skip in blocksync.
+		if !state.ConsensusParams.PBTS.PBTSEnabled(block.Height) && !isBlockSync {
 			medianTime := MedianTime(block.LastCommit, state.LastValidators)
 			if !block.Time.Equal(medianTime) {
 				return fmt.Errorf("invalid block time. Expected %v, got %v",

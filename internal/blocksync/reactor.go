@@ -484,7 +484,7 @@ FOR_LOOP:
 
 			if err == nil {
 				// validate the block before we persist it
-				err = bcR.blockExec.ValidateBlock(state, first)
+				err = bcR.blockExec.ValidateBlockForBlocksync(state, first)
 			}
 			if err == nil {
 				// if vote extensions were required at this height, ensure they exist.

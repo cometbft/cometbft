@@ -164,7 +164,7 @@ func DefaultSynchronyParams() SynchronyParams {
 	// TODO(@wbanfield): Determine experimental values for these defaults
 	// https://github.com/tendermint/tendermint/issues/7202
 	return SynchronyParams{
-		Precision:    500 * time.Millisecond, // Default is to use BFT Time.
+		Precision:    500 * time.Millisecond,
 		MessageDelay: 2 * time.Second,
 	}
 }
@@ -172,6 +172,7 @@ func DefaultSynchronyParams() SynchronyParams {
 // Disabled by default.
 func DefaultPBTSParams() PBTSParams {
 	return PBTSParams{
+		// When set to 0, PBTS is disabled and timestamps are generated through BFT Time.
 		PBTSEnableHeight: 0,
 	}
 }

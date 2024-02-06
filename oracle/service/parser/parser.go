@@ -86,9 +86,9 @@ func ParseSpec(spec types.OracleSpec) (unrolledSpec types.OracleSpec, err error)
 }
 
 // ValidateOracleJobs validates oracle jobs
-func ValidateOracleJobs(app types.App, jobs []types.OracleJob) error {
+func ValidateOracleJobs(oracleInfo *types.OracleInfo, jobs []types.OracleJob) error {
 	for _, job := range jobs {
-		adapter, ok := app.AdapterMap[job.Adapter]
+		adapter, ok := oracleInfo.AdapterMap[job.Adapter]
 		if !ok {
 			return fmt.Errorf("adapter not found: '%s'", job.Adapter)
 		}

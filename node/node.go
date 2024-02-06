@@ -39,6 +39,9 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 
+	"github.com/cometbft/cometbft/oracle"
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
+
 	_ "net/http/pprof" //nolint: gosec
 )
 
@@ -67,6 +70,8 @@ type Node struct {
 	bcReactor         p2p.Reactor       // for block-syncing
 	mempoolReactor    p2p.Reactor       // for gossipping transactions
 	mempool           mempl.Mempool
+	oracleReactor     oracle.Reactor
+	oracleInfo        *oracletypes.OracleInfo
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
@@ -375,12 +380,17 @@ func NewNodeWithContext(ctx context.Context,
 		return nil, err
 	}
 
+	// Make OracleReactor
+	oracleReactor := oracle.NewReactor("", "127.0.0.1:9090")
+	oracleInfo := oracleReactor.OracleInfo
+
 	// make block executor for consensus and blocksync reactors to execute blocks
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		logger.With("module", "state"),
 		proxyApp.Consensus(),
 		mempool,
+		oracleInfo,
 		evidencePool,
 		blockStore,
 		sm.BlockExecutorWithMetrics(smMetrics),
@@ -432,7 +442,7 @@ func NewNodeWithContext(ctx context.Context,
 	// Setup Switch.
 	p2pLogger := logger.With("module", "p2p")
 	sw := createSwitch(
-		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
+		config, transport, p2pMetrics, peerFilters, mempoolReactor, oracleReactor, bcReactor,
 		stateSyncReactor, consensusReactor, evidenceReactor, nodeInfo, nodeKey, p2pLogger,
 	)
 
@@ -487,6 +497,8 @@ func NewNodeWithContext(ctx context.Context,
 		bcReactor:        bcReactor,
 		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
+		oracleReactor:    *oracleReactor,
+		oracleInfo:       oracleInfo,
 		consensusState:   consensusState,
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,

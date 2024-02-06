@@ -7,11 +7,11 @@ import (
 )
 
 // App struct for app
-type App struct {
+type OracleInfo struct {
 	Oracles    []Oracle
 	AdapterMap map[string]Adapter
 	Redis      redis.Service
-	// Wallet     carbonwalletgo.Wallet
 	Config     Config
 	GrpcClient *grpc.ClientConn
+	Votes      map[uint64]map[string][]Vote // timestamp : oracleId : []vote
 }

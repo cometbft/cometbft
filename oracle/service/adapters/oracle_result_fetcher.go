@@ -1,13 +1,16 @@
 package adapters
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/cometbft/cometbft/oracle/service/types"
+	oracle "github.com/cometbft/cometbft/oracle/types"
 	"github.com/cometbft/cometbft/redis"
+	"github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc"
 )
@@ -55,12 +58,12 @@ func (oracleResultFetcher *OracleResultFetcher) Perform(job types.OracleJob, res
 
 	if cacheErr != nil {
 		// rework to re-perform job as we cant use carbon query client due to circular depedency
-		// logrus.Error(cacheErr)
-		// var grpcErr error
-		// price, grpcErr = getOracleResultFromGrpc(oracleId, oracleResultFetcher.grpcClient)
-		// if grpcErr != nil {
-		// 	return result, grpcErr
-		// }
+		logrus.Error(cacheErr)
+		var grpcErr error
+		price, grpcErr = getOracleResultFromGrpc(oracleId, oracleResultFetcher.grpcClient)
+		if grpcErr != nil {
+			return result, grpcErr
+		}
 	}
 
 	job.SetOutput(result, types.StringToGenericValue(price))
@@ -101,25 +104,22 @@ func getOracleResultFromCache(oracleId string, staleAllowance string, redisServi
 }
 
 func getOracleResultFromGrpc(oracleId string, grpcClient *grpc.ClientConn) (string, error) {
-	// change this to reperform the whole job if not found in cache, as we cant use
-	// oracle query client from carbon due to circular depedency
-	// oracleClient := oracle.NewQueryClient(grpcClient)
-	// request := &oracle.QueryResultsRequest{
-	// 	OracleId: oracleId,
-	// }
+	oracleClient := oracle.NewQueryClient(grpcClient)
+	request := &oracle.QueryResultsRequest{
+		OracleId: oracleId,
+	}
 
-	// // Call the gRPC method to fetch data from the Oracle
-	// response, err := oracleClient.Results(context.Background(), request)
-	// if err != nil {
-	// 	return "", err
-	// }
+	// Call the gRPC method to fetch data from the Oracle
+	response, err := oracleClient.Results(context.Background(), request)
+	if err != nil {
+		return "", err
+	}
 
-	// if len(response.Results) == 0 {
-	// 	return "", fmt.Errorf("oracle: %s RPC result is empty", oracleId)
-	// }
+	if len(response.Results) == 0 {
+		return "", fmt.Errorf("oracle: %s RPC result is empty", oracleId)
+	}
 
-	// grpcResult := []oracle.Result{response.Results[len(response.Results)-1]}
+	grpcResult := []oracle.Result{response.Results[len(response.Results)-1]}
 
-	// return grpcResult[0].Data, nil
-	return "", nil
+	return grpcResult[0].Data, nil
 }

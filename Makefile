@@ -15,6 +15,8 @@ GOOS ?= linux
 GOARCH ?= amd64
 GOARM ?=
 
+DOCKER := $(shell which docker)
+
 ifeq (linux/arm,$(findstring linux/arm,$(TARGETPLATFORM)))
 	GOOS=linux
 	GOARCH=arm
@@ -124,11 +126,20 @@ ifeq (,$(shell which clang-format))
 endif
 .PHONY: check-proto-format-deps
 
+protoVer=0.14.0
+protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
+
+proto-gen-carbon:
+	@echo "Generating Protobuf files"
+	@$(protoImage) sh ./scripts/protocgen.sh
+
 proto-gen: check-proto-deps
 	@echo "Generating Protobuf files"
 	@go run github.com/bufbuild/buf/cmd/buf generate
 	@mv ./proto/tendermint/abci/types.pb.go ./abci/types/
 	@cp ./proto/tendermint/rpc/grpc/types.pb.go ./rpc/grpc
+	@mv ./proto/Switcheo/carbon/oracle/*.pb.go ./oracle/types/
 .PHONY: proto-gen
 
 # These targets are provided for convenience and are intended for local

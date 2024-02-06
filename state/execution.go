@@ -14,6 +14,8 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 )
 
 //-----------------------------------------------------------------------------
@@ -37,8 +39,9 @@ type BlockExecutor struct {
 
 	// manage the mempool lock during commit
 	// and update both with block results after commit.
-	mempool mempool.Mempool
-	evpool  EvidencePool
+	mempool    mempool.Mempool
+	oracleInfo *oracletypes.OracleInfo
+	evpool     EvidencePool
 
 	logger log.Logger
 
@@ -60,6 +63,7 @@ func NewBlockExecutor(
 	logger log.Logger,
 	proxyApp proxy.AppConnConsensus,
 	mempool mempool.Mempool,
+	oracleInfo *oracletypes.OracleInfo,
 	evpool EvidencePool,
 	blockStore BlockStore,
 	options ...BlockExecutorOption,
@@ -69,6 +73,7 @@ func NewBlockExecutor(
 		proxyApp:   proxyApp,
 		eventBus:   types.NopEventBus{},
 		mempool:    mempool,
+		oracleInfo: oracleInfo,
 		evpool:     evpool,
 		logger:     logger,
 		metrics:    NopMetrics(),

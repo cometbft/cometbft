@@ -32,6 +32,8 @@ import (
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 )
 
 func TestNodeStartStop(t *testing.T) {
@@ -313,11 +315,14 @@ func TestCreateProposalBlock(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		logger,
 		proxyApp.Consensus(),
 		mempool,
+		&oracleInfo,
 		evidencePool,
 		blockStore,
 	)
@@ -390,11 +395,14 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	err = mempool.CheckTx(tx, nil, mempl.TxInfo{})
 	assert.NoError(t, err)
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		logger,
 		proxyApp.Consensus(),
 		mempool,
+		&oracleInfo,
 		sm.EmptyEvidencePool{},
 		blockStore,
 	)

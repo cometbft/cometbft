@@ -10,12 +10,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Switcheo/carbon-wallet-go/api"
-	"github.com/Switcheo/carbon/constants"
-	oracletypes "github.com/Switcheo/carbon/x/oracle/types"
+	// "github.com/Switcheo/carbon/constants"
 	"github.com/cometbft/cometbft/oracle/service/adapters"
 	"github.com/cometbft/cometbft/oracle/service/parser"
 	"github.com/cometbft/cometbft/oracle/service/types"
+	oracletypes "github.com/cometbft/cometbft/oracle/types"
 	"github.com/cometbft/cometbft/redis"
 )
 
@@ -123,41 +122,10 @@ func overwriteData(oracleId string, data string) string {
 	return price + "." + decimalPrice
 }
 
-// func msgResultCallback(response *sdktypes.TxResponse, msg sdktypes.Msg, err error) {
-// 	var result float32
-// 	result = 1
-// 	if err != nil {
-// 		result = 0
-// 	}
-// 	telemetry.SetGaugeWithLabels([]string{constants.METRIC_VOTE_STATUS}, result, []metrics.Label{telemetry.NewLabel("transaction_hash", response.TxHash)})
-// }
-
-// // SubmitVote submit oracle vote
-// func SubmitVote(app types.App, msg oracletypes.MsgCreateVote) {
-// 	power, err := oracleapi.GetSubAccountPower(app.Wallet.GRPCURL, app.Wallet.Bech32Addr, app.Wallet.ClientCtx)
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	if power.IsZero() {
-// 		return
-// 	}
-
-// 	app.Wallet.SubmitMsgAsync(&msg, msgResultCallback)
-// 	// log.Infoln("Submitted vote", app.Wallet.AccAddress().String(), msg.OracleID, msg.Timestamp, msg.Data)
-// }
-
 // SyncOracles sync oracles with active on-chain oracles
-func SyncOracles(app types.App) (oracles []types.Oracle, err error) {
+func SyncOracles(oracleInfo *types.OracleInfo) (oracles []types.Oracle, err error) {
 	// fetch oracle list first
-	grpcConn, err := api.GetGRPCConnection(app.Wallet.GRPCURL, app.Wallet.ClientCtx)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	defer grpcConn.Close()
-
-	oracleClient := oracletypes.NewQueryClient(grpcConn)
+	oracleClient := oracletypes.NewQueryClient(oracleInfo.GrpcClient)
 	oracleRes, err := oracleClient.OracleAll(
 		context.Background(),
 		&oracletypes.QueryAllOracleRequest{
@@ -183,7 +151,7 @@ func SyncOracles(app types.App) (oracles []types.Oracle, err error) {
 			log.Warnf("[oracle:%v] unable to unroll spec: %v", oracle.Id, err)
 			continue
 		}
-		err = parser.ValidateOracleJobs(app, spec.Jobs)
+		err = parser.ValidateOracleJobs(oracleInfo, spec.Jobs)
 		if err != nil {
 			log.Warnf("[oracle: %v,] invalid oracle jobs: %v", oracle.Id, err)
 			continue
@@ -214,8 +182,8 @@ func SaveOracleResult(price string, oracleId string, redisService redis.Service)
 }
 
 // RunOracle run oracle submission
-func RunOracle(app types.App, oracle types.Oracle, currentTime uint64) error {
-	red := app.Redis
+func RunOracle(oracleInfo *types.OracleInfo, oracle types.Oracle, currentTime uint64) error {
+	red := oracleInfo.Redis
 	normalizedTime := (currentTime / oracle.Resolution) * oracle.Resolution
 	lastSubmissionTime, exists, err := red.Get(LastSubmissionTimeKey)
 	if err != nil {
@@ -237,11 +205,11 @@ func RunOracle(app types.App, oracle types.Oracle, currentTime uint64) error {
 
 	input := types.AdapterRunTimeInput{
 		BeginTime: currentTime,
-		Config:    app.Config,
+		Config:    oracleInfo.Config,
 	}
 
 	for _, job := range jobs {
-		adapter, ok := app.AdapterMap[job.Adapter]
+		adapter, ok := oracleInfo.AdapterMap[job.Adapter]
 		if !ok {
 			panic("adapter should exist: " + job.Adapter)
 		}
@@ -273,32 +241,33 @@ func RunOracle(app types.App, oracle types.Oracle, currentTime uint64) error {
 
 	SaveOracleResult(resultData, oracle.Id, red)
 
-	if OracleOverwriteData == constants.True {
+	if OracleOverwriteData == "true" {
 		resultData = overwriteData(oracle.Id, resultData) // if we want to override oracle price
-		// resultData = overwriteDataV2(oracle.ID, resultData) // if we want to override oracle price
 	}
 
 	if resultData == "" {
 		return errors.New("skipping submission for " + oracle.Id + " as result is empty")
 	}
 
-	msg := oracletypes.MsgCreateVote{
-		Creator:   app.Wallet.Bech32Addr,
-		OracleId:  oracle.Id,
-		Timestamp: int64(normalizedTime),
+	vote := types.Vote{
+		Creator:   "",
+		OracleID:  oracle.Id,
+		Timestamp: normalizedTime,
 		Data:      resultData,
 	}
 
-	SubmitVote(app, msg)
+	oracleMap := oracleInfo.Votes[normalizedTime]
+	oracleMap[oracle.Id] = append(oracleMap[oracle.Id], vote)
+	oracleInfo.Votes[normalizedTime] = oracleMap
 
 	return nil
 }
 
 // RunOracles run oracle submissions
-func RunOracles(app types.App, t uint64) {
-	for _, oracle := range app.Oracles {
+func RunOracles(oracleInfo *types.OracleInfo, t uint64) {
+	for _, oracle := range oracleInfo.Oracles {
 		go func(currOracle types.Oracle) {
-			err := RunOracle(app, currOracle, t)
+			err := RunOracle(oracleInfo, currOracle, t)
 			if err != nil {
 				log.Warnln(err)
 			}
@@ -307,21 +276,21 @@ func RunOracles(app types.App, t uint64) {
 }
 
 // Run run oracles
-func Run(app types.App) {
+func Run(oracleInfo *types.OracleInfo) {
 	log.Info("[oracle] Service started.")
 	count := 0
 	for {
 		if count == 0 { // on init, and every minute
-			oracles, err := SyncOracles(app)
+			oracles, err := SyncOracles(oracleInfo)
 			if err != nil {
 				log.Warn(err)
 				time.Sleep(time.Second)
 				continue
 			}
-			app.Oracles = oracles
+			oracleInfo.Oracles = oracles
 		}
 
-		RunOracles(app, uint64(time.Now().Unix()))
+		RunOracles(oracleInfo, uint64(time.Now().Unix()))
 		time.Sleep(100 * time.Millisecond)
 
 		count++

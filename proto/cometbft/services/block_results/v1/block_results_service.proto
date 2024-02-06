@@ -11,7 +11,4 @@ option go_package = "github.com/cometbft/cometbft/api/cometbft/services/block_re
 service BlockResultsService {
   // GetBlockResults returns the BlockResults of the requested height.
   rpc GetBlockResults(GetBlockResultsRequest) returns (GetBlockResultsResponse);
-
-  // GetLatestBlockResults returns the BlockResults of the latest committed height.
-  rpc GetLatestBlockResults(GetLatestBlockResultsRequest) returns (GetLatestBlockResultsResponse);
 }

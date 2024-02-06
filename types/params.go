@@ -341,16 +341,63 @@ func validateUpdateABCI(params ConsensusParams, updated *cmtproto.ConsensusParam
 	return nil
 }
 
+// validateUpdatePBTS validates the updated PBTSEnableHeight.
+// | r | params...EnableHeight | updated...EnableHeight | result (nil == pass)
+// |  1 | *                    | (nil)                  | nil
+// |  2 | *                    | < 0                    | PbtsEnableHeight must be positive
+// |  3 | <=0                  | 0                      | nil
+// |  4 | X                    | X (>=0)                | nil
+// |  5 | > 0; <=height        | 0                      | PBTS cannot be disabled once enabled
+// |  6 | > 0; > height        | 0                      | nil (disable a previous proposal)
+// |  7 | *                    | <=height               | PBTS cannot be updated to a past height
+// |  8 | <=0                  | > height (*)           | nil
+// |  9 | (> 0) <=height       | > height (*)           | PBTS cannot be modified once enabled
+// | 10 | (> 0) > height       | > height (*)           | nil
 func validateUpdatePBTS(params ConsensusParams, updated *cmtproto.ConsensusParams, h int64) error {
-	if params.PBTS.PBTSEnableHeight != 0 {
-		return errors.New("pbts already enabled")
+	// 1
+	if updated == nil || updated.Pbts == nil {
+		return nil
 	}
-
+	// 2
+	if updated.Pbts.PbtsEnableHeight < 0 {
+		return errors.New("PbtsEnableHeight must be positive")
+	}
+	// 3
+	if params.PBTS.PBTSEnableHeight <= 0 && updated.Pbts.PbtsEnableHeight == 0 {
+		return nil
+	}
+	// 4
+	if params.PBTS.PBTSEnableHeight == updated.Pbts.PbtsEnableHeight {
+		return nil
+	}
+	// 5 & 6
+	if params.PBTS.PBTSEnableHeight > 0 && updated.Pbts.PbtsEnableHeight == 0 {
+		// 5
+		if params.PBTS.PBTSEnableHeight <= h {
+			return fmt.Errorf("PBTS cannot be disabled once enabled"+
+				"enabled height: %d, current height: %d",
+				params.PBTS.PBTSEnableHeight, h)
+		}
+		// 6
+		return nil
+	}
+	// 7
 	if updated.Pbts.PbtsEnableHeight <= h {
-		return fmt.Errorf("PbtsEnableHeight cannot be updated to a past height, "+
-			"pbts enabled height: %d, current height %d",
+		return fmt.Errorf("PBTS cannot be updated to a past or current height, "+
+			"enabled height: %d, enable height: %d, current height %d",
+			params.PBTS.PBTSEnableHeight, updated.Pbts.PbtsEnableHeight, h)
+	}
+	// 8
+	if params.PBTS.PBTSEnableHeight <= 0 {
+		return nil
+	}
+	// 9
+	if params.PBTS.PBTSEnableHeight <= h {
+		return fmt.Errorf("PBTS cannot be modified once enabled"+
+			"enabled height: %d, current height: %d",
 			params.PBTS.PBTSEnableHeight, h)
 	}
+	// 10
 	return nil
 }
 

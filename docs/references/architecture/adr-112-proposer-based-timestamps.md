@@ -245,6 +245,7 @@ Therefore the validation logic will check for timely when `POLRound == -1`.
 When a node receives a `Proposal` message, it records it `proposalReceiveTime` as the current Unix time known to the node.
 The node will check that the `Proposal.Timestamp` is at most `PRECISION` greater than `proposalReceiveTime`, and at maximum `PRECISION + MSGDELAY` less than `proposalReceiveTime`.
 If the timestamp is not within these bounds, the proposed block will not be considered `timely`.
+A validator prevotes nil when the proposed block is not considered `timely`.
 
 Once a full block matching the `Proposal` message is received, the node will also check that the timestamp in the `Header.Timestamp` of the block matches this `Proposal.Timestamp`.
 Using the `Proposal.Timestamp` to check `timely` allows for the `MSGDELAY` parameter to be more finely tuned since `Proposal` messages do not change sizes and are therefore faster to gossip than full blocks across the network.

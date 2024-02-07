@@ -278,14 +278,14 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	}
 
 	if added := mem.addToCache(tx); !added {
-		mem.logger.Debug("Not cached", "tx", tx)
+		mem.logger.Debug("Not cached", "tx", tx.Hash())
 		mem.metrics.AlreadyReceivedTxs.Add(1)
 		// TODO: consider punishing peer for dups,
 		// its non-trivial since invalid txs can become valid,
 		// but they can spam the same tx with little cost to them atm.
 		return nil, ErrTxInCache
 	}
-	mem.logger.Debug("Cached", "tx", tx)
+	mem.logger.Debug("Cached", "tx", tx.Hash())
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
 		Tx:   tx,
@@ -450,7 +450,7 @@ func (mem *CListMempool) resCbFirstTime(
 func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
-		tx := req.GetCheckTx().Tx
+		tx := types.Tx(req.GetCheckTx().Tx)
 		memTx := mem.recheckCursor.Value.(*mempoolTx)
 
 		// Search through the remaining list of tx to recheck for a transaction that matches
@@ -465,8 +465,8 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 
 			mem.logger.Error(
 				"re-CheckTx transaction mismatch",
-				"got", types.Tx(tx),
-				"expected", memTx.tx,
+				"got", tx.Hash(),
+				"expected", memTx.tx.Hash(),
 			)
 
 			if mem.recheckCursor == mem.recheckEnd {
@@ -488,7 +488,7 @@ func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
 
 		if (r.CheckTx.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("tx is no longer valid", "tx", types.Tx(tx).Hash(), "res", r, "err", postCheckErr)
+			mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", r, "err", postCheckErr)
 			if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			}

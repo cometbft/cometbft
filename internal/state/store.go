@@ -12,6 +12,7 @@ import (
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtos "github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/types"
 )
@@ -121,6 +122,8 @@ type StoreOptions struct {
 	Compact bool
 
 	CompactionInterval int64
+
+	Logger log.Logger
 }
 
 var _ Store = (*dbStore)(nil)
@@ -426,8 +429,10 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 
 	// We do not want to panic or interrupt consensus on compaction failure
 	if store.StoreOptions.Compact && (to%store.StoreOptions.CompactionInterval == 0 || pruned >= uint64(store.StoreOptions.CompactionInterval)) {
-		// TODO add logger to output error.
-		_ = store.db.Compact(nil, nil)
+		err = store.db.Compact(nil, nil)
+		if err != nil && store.StoreOptions.Logger != nil {
+			store.StoreOptions.Logger.Error("error compacting state store ", "err", err)
+		}
 	}
 
 	return nil

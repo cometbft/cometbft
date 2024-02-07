@@ -122,19 +122,18 @@ type blockSyncReactor interface {
 
 //------------------------------------------------------------------------------
 
-func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
+func initDBs(config *cfg.Config, dbProvider cfg.DBProvider, logger log.Logger) (blockStore *store.BlockStore, stateDB dbm.DB, err error) {
 	var blockStoreDB dbm.DB
 	blockStoreDB, err = dbProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
 		return
 	}
-	blockStore = store.NewBlockStore(blockStoreDB, store.WithCompaction(config.Storage.CompactOnPruning, config.Storage.CompactionInterval))
+	blockStore = store.NewBlockStore(blockStoreDB, store.WithCompaction(config.Storage.CompactOnPruning, config.Storage.CompactionInterval), store.WithLogger(logger.With("module", "blockstore")))
 
 	stateDB, err = dbProvider(&cfg.DBContext{ID: "state", Config: config})
 	if err != nil {
 		return
 	}
-
 	return
 }
 

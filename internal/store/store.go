@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/internal/evidence"
 	sm "github.com/cometbft/cometbft/internal/state"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
@@ -59,6 +60,8 @@ type BlockStore struct {
 	blocksDeleted      int64
 	compact            bool
 	compactionInterval int64
+
+	logger log.Logger
 }
 
 type BlockStoreOption func(*BlockStore)
@@ -68,6 +71,13 @@ func WithCompaction(compact bool, compactionInterval int64) BlockStoreOption {
 	return func(bs *BlockStore) {
 		bs.compact = compact
 		bs.compactionInterval = compactionInterval
+	}
+}
+
+// WithLogger sets the logger for the blockstore.
+func WithLogger(logger log.Logger) BlockStoreOption {
+	return func(bs *BlockStore) {
+		bs.logger = logger
 	}
 }
 
@@ -415,7 +425,10 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 	if bs.compact && bs.blocksDeleted >= bs.compactionInterval {
 		// Error on compaction should not be reason to halt the chain
 		// TODO add logger to keep track of error
-		_ = bs.db.Compact(nil, nil)
+		err = bs.db.Compact(nil, nil)
+		if err != nil && bs.logger != nil {
+			bs.logger.Error("Error compacting block store", "err", err)
+		}
 		bs.blocksDeleted = 0
 	}
 	return pruned, evidencePoint, nil

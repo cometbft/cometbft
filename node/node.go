@@ -163,7 +163,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	if dbProvider == nil {
 		dbProvider = cfg.DefaultDBProvider
 	}
-	blockStore, stateDB, err := initDBs(config, dbProvider)
+	blockStore, stateDB, err := initDBs(config, dbProvider, logger)
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -183,6 +183,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+		Logger:               logger.With("module", "stateStore"),
 	})
 
 	defer func() {
@@ -274,7 +275,7 @@ func NewNode(ctx context.Context,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
-	blockStore, stateDB, err := initDBs(config, dbProvider)
+	blockStore, stateDB, err := initDBs(config, dbProvider, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -283,6 +284,7 @@ func NewNode(ctx context.Context,
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 		Compact:              config.Storage.CompactOnPruning,
 		CompactionInterval:   config.Storage.CompactionInterval,
+		Logger:               logger.With("module", "stateStore"),
 	})
 
 	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, config.Storage.GenesisHash)

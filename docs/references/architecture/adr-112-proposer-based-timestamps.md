@@ -172,7 +172,8 @@ The [block production logic](https://github.com/cometbft/cometbft/blob/1f430f51f
 sets the weighted median of the times in the `LastCommit.CommitSigs` as the proposed block's `Header.Timestamp`.
 
 In PBTS, the proposer will still set a timestamp into the `Header.Timestamp`.
-The timestamp the proposer sets into the `Header` will change depending on whether the block has previously received a Polka, i.e., `2/3+` prevotes in a previous round.
+The timestamp the proposer sets into the `Header` will change depending on whether the block has previously received `2/3+` prevotes in a previous round.
+Receiving +2/3 prevotes in a round is frequently referred to as a 'Polka' and we will use this term for simplicity.
 
 #### Proposal of a block that has not previously received a Polka
 
@@ -205,11 +206,10 @@ When the timeout fires, the proposer will finally issue the `Proposal` message.
 The rules for validating a proposed block will be modified to implement PBTS.
 We will change the validation logic to ensure that a proposal is `timely`.
 
-Per the PBTS spec, `timely` only needs to be checked if a block has not received a +2/3 majority of `Prevotes` in a round.
-If a block previously received a +2/3 majority of prevotes in a previous round, then +2/3 of the voting power considered the block's timestamp near enough to their own currently known Unix time in that round.
+Per the PBTS spec, `timely` only needs to be checked if a block has not received a Polka in a previous round.
+If a block previously received a +2/3 majority of prevotes in a round, then +2/3 of the voting power considered the block's timestamp near enough to their own currently known Unix time in that round.
 
-The validation logic will be updated to check `timely` for blocks that did not previously receive +2/3 prevotes in a round.
-Receiving +2/3 prevotes in a round is frequently referred to as a 'Polka' and we will use this term for simplicity.
+The validation logic will be updated to check `timely` for blocks that did not previously receive a Polka in a round.
 
 #### Current timestamp validation logic
 
@@ -255,8 +255,8 @@ If the timestamp is not greater than the previous block's timestamp, the block w
 
 #### Timestamp validation when a block has received a Polka
 
-When a block is re-proposed that has already received a +2/3 majority of `Prevote`s on the network, the `Proposal` message for the re-proposed block is created with a `POLRound` that is `>= 0`.
-A validator will not check that the `Proposal` is `timely` if the propose message has a non-negative `POLRound`.
+When a block is re-proposed that has already received a +2/3 majority of `Prevote`s (i.e., a Polka) on the network, the `Proposal` message for the re-proposed block is created with a `POLRound` that is `>= 0`.
+A validator will not check that the `Proposal` is `timely` if the proposal message has a non-negative `POLRound`.
 If the `POLRound` is non-negative, each validator will simply ensure that it received the `Prevote` messages for the proposed block in the round indicated by `POLRound`.
 
 If the validator does not receive `Prevote` messages for the proposed block before the proposal timeout, then it will prevote nil.

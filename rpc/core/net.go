@@ -13,20 +13,19 @@ import (
 // NetInfo returns network info.
 // More: https://docs.cometbft.com/main/rpc/#/Info/net_info
 func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
-	peersList := env.P2PPeers.Peers().List()
-	peers := make([]ctypes.Peer, 0, len(peersList))
-	for _, peer := range peersList {
-		nodeInfo, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)
+	peers := make([]ctypes.Peer, 0)
+	env.P2PPeers.Peers().ForEach(func(p p2p.Peer) {
+		nodeInfo, ok := p.NodeInfo().(p2p.DefaultNodeInfo)
 		if !ok {
-			return nil, fmt.Errorf("peer.NodeInfo() is not DefaultNodeInfo")
+			return
 		}
 		peers = append(peers, ctypes.Peer{
 			NodeInfo:         nodeInfo,
-			IsOutbound:       peer.IsOutbound(),
-			ConnectionStatus: peer.Status(),
-			RemoteIP:         peer.RemoteIP().String(),
+			IsOutbound:       p.IsOutbound(),
+			ConnectionStatus: p.Status(),
+			RemoteIP:         p.RemoteIP().String(),
 		})
-	}
+	})
 	// TODO: Should we include PersistentPeers and Seeds in here?
 	// PRO: useful info
 	// CON: privacy

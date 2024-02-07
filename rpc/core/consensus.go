@@ -3,6 +3,7 @@ package core
 import (
 	cm "github.com/cometbft/cometbft/internal/consensus"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/p2p"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/types"
@@ -55,24 +56,24 @@ func (env *Environment) Validators(
 // More: https://docs.cometbft.com/main/rpc/#/Info/dump_consensus_state
 func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDumpConsensusState, error) {
 	// Get Peer consensus states.
-	peers := env.P2PPeers.Peers().List()
-	peerStates := make([]ctypes.PeerStateInfo, len(peers))
-	for i, peer := range peers {
-		peerState, ok := peer.Get(types.PeerStateKey).(*cm.PeerState)
+	peerStates := make([]ctypes.PeerStateInfo, 0)
+	env.P2PPeers.Peers().ForEach(func(p p2p.Peer) {
+		peerState, ok := p.Get(types.PeerStateKey).(*cm.PeerState)
 		if !ok { // peer does not have a state yet
-			continue
+			return
 		}
 		peerStateJSON, err := peerState.MarshalJSON()
 		if err != nil {
-			return nil, err
+			return
 		}
-		peerStates[i] = ctypes.PeerStateInfo{
+		peerStates = append(peerStates, ctypes.PeerStateInfo{
 			// Peer basic info.
-			NodeAddress: peer.SocketAddr().String(),
+			NodeAddress: p.SocketAddr().String(),
 			// Peer consensus state.
 			PeerState: peerStateJSON,
-		}
-	}
+		})
+	})
+
 	// Get self round state.
 	roundState, err := env.ConsensusState.GetRoundStateJSON()
 	if err != nil {

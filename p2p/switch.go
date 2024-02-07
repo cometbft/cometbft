@@ -299,14 +299,10 @@ func (sw *Switch) Broadcast(e Envelope) chan bool {
 func (sw *Switch) NumPeers() (outbound, inbound, dialing int) {
 	peers := sw.peers.List()
 	for _, peer := range peers {
-		if peer.IsOutbound() {
-			if !sw.IsPeerUnconditional(peer.ID()) {
-				outbound++
-			}
-		} else {
-			if !sw.IsPeerUnconditional(peer.ID()) {
-				inbound++
-			}
+		if peer.IsOutbound() && !sw.IsPeerUnconditional(peer.ID()) {
+			outbound++
+		} else if !sw.IsPeerUnconditional(peer.ID()) {
+			inbound++
 		}
 	}
 	dialing = sw.dialing.Size()

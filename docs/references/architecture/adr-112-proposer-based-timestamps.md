@@ -341,7 +341,7 @@ requiring a hard-fork (this feature is called [Soft Upgrades](https://github.com
 
 ### Positive
 
-* `<2/3` of validators can no longer influence block timestamps.
+* `<2/3` of validators can no longer arbitrarily influence block timestamps.
 * Block timestamp will have stronger correspondence to real time.
 * Improves the reliability of light client block verification.
 * Will enable BLS signature aggregation.

@@ -2515,7 +2515,7 @@ func (cs *State) voteTime(height int64) time.Time {
 	if cs.isPBTSEnabled(height) {
 		return cmttime.Now()
 	}
-now := cmttime.Now()
+	now := cmttime.Now()
 	minVoteTime := now
 
 	// Minimum time increment between blocks

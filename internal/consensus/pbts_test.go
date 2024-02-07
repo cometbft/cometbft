@@ -381,9 +381,7 @@ func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
 		height2ProposalTimeDeliveryOffset: 10 * time.Millisecond,
 		height2ProposedBlockOffset:        10 * time.Millisecond,
 		height4ProposedBlockOffset:        30 * time.Millisecond,
-		pbtsParams: types.PBTSParams{
-			PBTSEnableHeight: 1,
-		},
+		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
 	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
@@ -413,9 +411,7 @@ func TestPBTSProposerWaitsForPreviousBlock(t *testing.T) {
 		height2ProposalTimeDeliveryOffset: 150 * time.Millisecond,
 		height2ProposedBlockOffset:        100 * time.Millisecond,
 		height4ProposedBlockOffset:        800 * time.Millisecond,
-		pbtsParams: types.PBTSParams{
-			PBTSEnableHeight: 1,
-		},
+		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
 	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
@@ -484,9 +480,7 @@ func TestPBTSTimelyProposal(t *testing.T) {
 		genesisTime:                       initialTime,
 		height2ProposedBlockOffset:        15 * time.Millisecond,
 		height2ProposalTimeDeliveryOffset: 30 * time.Millisecond,
-		pbtsParams: types.PBTSParams{
-			PBTSEnableHeight: 1,
-		},
+		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
 	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
@@ -507,9 +501,7 @@ func TestPBTSTooFarInThePastProposal(t *testing.T) {
 		timeoutPropose:                    50 * time.Millisecond,
 		height2ProposedBlockOffset:        15 * time.Millisecond,
 		height2ProposalTimeDeliveryOffset: 27 * time.Millisecond,
-		pbtsParams: types.PBTSParams{
-			PBTSEnableHeight: 1,
-		},
+		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
 	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
@@ -532,9 +524,7 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 		height2ProposedBlockOffset:        100 * time.Millisecond,
 		height2ProposalTimeDeliveryOffset: 10 * time.Millisecond,
 		height4ProposedBlockOffset:        150 * time.Millisecond,
-		pbtsParams: types.PBTSParams{
-			PBTSEnableHeight: 1,
-		},
+		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
 	pbtsTest := newPBTSTestHarness(ctx, t, cfg)

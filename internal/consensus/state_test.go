@@ -1624,7 +1624,7 @@ func TestStateLock_POLSafety2PBTS(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cs1, vss := randStateWithAppVePbts(4)
+	cs1, vss := randStateWithAppPbts(4)
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 

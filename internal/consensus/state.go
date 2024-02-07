@@ -2512,11 +2512,10 @@ func (cs *State) signVote(
 }
 
 func (cs *State) voteTime(height int64) time.Time {
-	now := cmttime.Now()
 	if cs.isPBTSEnabled(height) {
-		return now
+		return cmttime.Now()
 	}
-
+now := cmttime.Now()
 	minVoteTime := now
 
 	// Minimum time increment between blocks

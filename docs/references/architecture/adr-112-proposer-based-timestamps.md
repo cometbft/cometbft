@@ -329,7 +329,13 @@ For more discussion of this, see [issue 2063][issue2063].
 ## Future Improvements
 
 * Implement BLS signature aggregation.
-If we remove the `Timestamp` field from the `Precommit` messages, we are able to aggregate signatures.
+If we remove the `Timestamp` field from the `Precommit` messages, we are able to aggregate signatures,
+as votes for the same block, height and round become identical.
+
+We have left the removal of the `Timestamp` field of vote messages out for the time being, as it would break the block format and validation
+rules (signature verification) and thus may force a hard-fork on chains upgrading to the latest version of CometBFT.
+We will remove the timestamps in votes when changing the block format is supported in CometBFT without
+requiring a hard-fork (this feature is called [Soft Upgrades](https://github.com/cometbft/cometbft/issues/122)).
 
 ## Consequences
 

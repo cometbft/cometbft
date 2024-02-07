@@ -342,10 +342,10 @@ requiring a hard-fork (this feature is called [Soft Upgrades](https://github.com
 ### Positive
 
 * `<2/3` of validators can no longer arbitrarily influence block timestamps.
-* Block timestamp will have stronger correspondence to real time.
-* Improves the reliability of light client block verification.
-* Will enable BLS signature aggregation.
-* Enables evidence handling to use time instead of height for evidence validity.
+* Block timestamps will have stronger correspondence to real time.
+* Improves the reliability of [components](#remove-timestamps-altogether) that rely on block timestamps:
+  Light Client verification, Evidence validity, Unbonding of staked assets, IBC packet timeouts, inflation distribution, etc.
+* It is a step towards enabling BLS signature aggregation.
 
 ### Neutral
 

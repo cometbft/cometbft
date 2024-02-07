@@ -10,6 +10,7 @@
  - Nov 10 2021: Additional language updates by @williambanfield per feedback from @cason
  - Feb 2 2022: Synchronize logic for timely with latest version of the spec by @williambanfield
  - Feb 1 2024: Renamed to ADR 112 as basis for its adoption ([#1731](https://github.com/cometbft/cometbft/issues/1731)) in CometBFT v1.0 by @cason
+ - Feb 7 2024: Multiple revisions, fixes, and backwards compatibility discussion by @cason
 
 ## Status
 

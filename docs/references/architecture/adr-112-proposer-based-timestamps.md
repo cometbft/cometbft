@@ -130,19 +130,9 @@ type Vote struct {
 
 ### New consensus parameters
 
-The PBTS specification includes a pair of new parameters that must be the same among all validators.
-These parameters are `PRECISION`, and `MSGDELAY`.
-
-The `PRECISION` and `MSGDELAY` parameters are used to determine if the proposed timestamp is acceptable.
-A validator will only Prevote a proposal if the proposal timestamp is considered `timely`.
-A proposal timestamp is considered `timely` if it is within `PRECISION` and `MSGDELAY` of the Unix time known to the validator.
-More specifically, the timestamp of a proposal received at `proposalReceiveTime` is `timely` if
-
-    proposalTimestamp - PRECISION ≤ proposalReceiveTime ≤ proposalTimestamp + PRECISION + MSGDELAY
-
-Because the `PRECISION` and `MSGDELAY` parameters must be the same across all validators, they will be added to the [consensus parameters](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/types/v1/params.proto#L13) as [durations](https://protobuf.dev/reference/protobuf/google.protobuf/#duration).
-
-The consensus parameters will be updated to include this `Synchrony` field as follows:
+The PBTS specification includes some new parameters that must be the same among across all validators.
+The set of [consensus parameters](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/types/v1/params.proto#L13)
+will be updated to include new fields as follows:
 
 ```diff
 type ConsensusParams struct {
@@ -152,8 +142,20 @@ type ConsensusParams struct {
         Version   VersionParams   `json:"version"`
         ABCI      ABCIParams      `json:"abci"`
 ++      Synchrony SynchronyParams `json:"synchrony"`
+++      XXX       XXXParams       `json:"xxx"`
 }
 ```
+
+#### Synchrony parameters
+
+The `PRECISION` and `MSGDELAY` parameters are used to determine if the proposed timestamp is acceptable.
+A validator will only Prevote a proposal if the proposal timestamp is considered `timely`.
+A proposal timestamp is considered `timely` if it is within `PRECISION` and `MSGDELAY` of the Unix time known to the validator.
+More specifically, the timestamp of a proposal received at `proposalReceiveTime` is `timely` if
+
+    proposalTimestamp - PRECISION ≤ proposalReceiveTime ≤ proposalTimestamp + PRECISION + MSGDELAY
+
+`PRECISION` and `MSGDELAY` will be added to the consensus synchrony parameters as [durations](https://protobuf.dev/reference/protobuf/google.protobuf/#duration):
 
 ```go
 type SynchronyParams struct {
@@ -161,6 +163,19 @@ type SynchronyParams struct {
         MessageDelay time.Duration `json:"message_delay,string"`
 }
 ```
+
+#### Compatibility parameters
+
+In order to ensure backwards compatibility, PBTS should be enabled using a consensus parameter.
+
+```go
+type XXXParams struct {
+        EnableHeight    int64 `json:"enable_height"`
+}
+```
+
+For more discussion of this, see [issue 2197][issue2197].
+
 
 ### Changes to the block proposal step
 
@@ -316,13 +331,14 @@ It should therefore be removed completely.
 
 ### Backwards compatibility
 
-In order to ensure backwards compatibility, PBTS should be enabled using a consensus parameter.
-The proposed approach is similar to the one adopted to enable vote extensions:
+In order to ensure backwards compatibility, PBTS should be enabled using a [consensus parameter](#compatibility-parameters).
+The proposed approach is similar to the one adopted to enable vote extensions via
 [`ABCIParams.VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
 
 In summary, the network will migrate from the `BFT Time` method for assigning
 and validating timestamps to the new method for assigning and validating
 timestamps adopted by `PBTS` from a given, configurable height.
+Once `PBTS` is activated, there are no provisions for the network to revert back to `BFT Time (considered obsolete).
 
 For more discussion of this, see [issue 2063][issue2063].
 
@@ -369,6 +385,7 @@ At this point, the transition from BFT Time to PBTS should be smooth.
 * [PBTS: should synchrony parameters be adaptive? #2184][issue2184]
 
 [issue2184]: https://github.com/cometbft/cometbft/issues/2184
+[issue2197]: https://github.com/cometbft/cometbft/issues/2197
 [issue2063]: https://github.com/cometbft/cometbft/issues/2063
 [bfttime]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
 [pbts-spec]: https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp/README.md

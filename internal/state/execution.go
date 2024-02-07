@@ -202,10 +202,11 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
 }
 
-// ValidateBlock validates the given block against the given state.
+// ValidateBlockForBlocksync validates the given block against the given state.
 // If the block is invalid, it returns an error.
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
+// This method is less strict than `ValidateBlock`, which also validates the block's timestamp.
 func (blockExec *BlockExecutor) ValidateBlockForBlocksync(state State, block *types.Block) error {
 	err := validateBlock(state, block, true)
 	if err != nil {

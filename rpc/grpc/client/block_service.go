@@ -61,9 +61,6 @@ type BlockServiceClient interface {
 	// given height.
 	GetBlockByHeight(ctx context.Context, height int64) (*Block, error)
 
-	// GetLatestBlock attempts to retrieve the latest committed block.
-	GetLatestBlock(ctx context.Context) (*Block, error)
-
 	// GetLatestHeight provides sends the latest committed block height to the
 	// resulting output channel as blocks are committed.
 	GetLatestHeight(ctx context.Context, opts ...GetLatestHeightOption) (<-chan LatestHeightResult, error)
@@ -84,16 +81,6 @@ func (c *blockServiceClient) GetBlockByHeight(ctx context.Context, height int64)
 	res, err := c.client.GetByHeight(ctx, &blocksvc.GetByHeightRequest{
 		Height: height,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return blockFromProto(res.BlockId, res.Block)
-}
-
-// GetLatestBlock implements BlockServiceClient.
-func (c *blockServiceClient) GetLatestBlock(ctx context.Context) (*Block, error) {
-	res, err := c.client.GetLatest(ctx, &blocksvc.GetLatestRequest{})
 	if err != nil {
 		return nil, err
 	}

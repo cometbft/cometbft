@@ -120,9 +120,8 @@ type peer struct {
 	// User data
 	Data *cmap.CMap
 
-	metrics       *Metrics
-	metricsTicker *time.Ticker
-	mlc           *metricsLabelCache
+	metrics *Metrics
+	mlc     *metricsLabelCache
 
 	// When removal of a peer fails, we set this flag
 	removalAttemptFailed bool
@@ -142,13 +141,12 @@ func newPeer(
 	options ...PeerOption,
 ) *peer {
 	p := &peer{
-		peerConn:      pc,
-		nodeInfo:      nodeInfo,
-		channels:      nodeInfo.(DefaultNodeInfo).Channels,
-		Data:          cmap.NewCMap(),
-		metricsTicker: time.NewTicker(metricsTickerDuration),
-		metrics:       NopMetrics(),
-		mlc:           mlc,
+		peerConn: pc,
+		nodeInfo: nodeInfo,
+		channels: nodeInfo.(DefaultNodeInfo).Channels,
+		Data:     cmap.NewCMap(),
+		metrics:  NopMetrics(),
+		mlc:      mlc,
 	}
 
 	p.mconn = createMConnection(
@@ -372,11 +370,12 @@ func PeerMetrics(metrics *Metrics) PeerOption {
 }
 
 func (p *peer) metricsReporter() {
-	defer p.metricsTicker.Stop()
+	metricsTicker := time.NewTicker(metricsTickerDuration)
+	defer metricsTicker.Stop()
 
 	for {
 		select {
-		case <-p.metricsTicker.C:
+		case <-metricsTicker.C:
 			status := p.mconn.Status()
 			var sendQueueSize float64
 			for _, chStatus := range status.Channels {

@@ -80,9 +80,9 @@ Implement Proposer-Based Timestamps while maintaining backwards compatibility wi
 Implementing Proposer-Based Timestamps (PBTS) will require a few changes to CometBFT’s code.
 These changes will be to the following components:
 
+* The consensus parameters.
 * The `internal/consensus/` package.
 * The `internal/state/` package.
-* The consensus parameters.
 
 <!---
 ### Changes to `CommitSig`
@@ -303,9 +303,10 @@ This logic is used in multiple places and is no longer needed for PBTS.
 It should therefore be removed completely.
 --->
 
-### Changes to the block validation logic
+### Changes to the block validation
 
-To provide a better understanding of the changes needed for timestamp validation, we will first detail how timestamp validation works currently in CometBFT.
+To provide a better understanding of the changes needed for timestamp validation, we first detail how timestamp validation works currently with BFT Time,
+then presents how it will work with PBTS.
 
 #### Current block time validation logic
 
@@ -331,7 +332,7 @@ The `MedianTime` function can be completely removed.
 Since `CommitSig`s will no longer contain a timestamp, the validator authenticating a commit will no longer include the `CommitSig` timestamp in the hash of fields it builds to check against the cryptographic signature.
 --->
 
-#### PBTS block time validation logic
+#### PBTS block time validation
 
 PBTS does not perform a validation of the timestamp of a block, as part of the `validateBlock` method.
 This means that nodes will no longer check that the block time is a weighted median of `LastCommit` timestamps.

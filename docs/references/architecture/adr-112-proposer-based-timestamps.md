@@ -225,32 +225,6 @@ If a block previously received a +2/3 majority of prevotes in a round, then +2/3
 
 The validation logic will be updated to check `timely` for blocks that did not previously receive a Polka in a round.
 
-#### Current timestamp validation logic
-
-To provide a better understanding of the changes needed for timestamp validation, we will first detail how timestamp validation works currently in CometBFT.
-
-The [`validateBlock` function](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/validation.go#L15) currently [validates the proposed block timestamp in three ways](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/validation.go#L116).
-First, the validation logic checks that this timestamp is greater than the previous block’s timestamp.
-
-Second, it validates that the block timestamp is correctly calculated as the weighted median of the timestamps in the [block’s `LastCommit`](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/block.go#L49).
-
-Finally, the validation logic authenticates the timestamps in the `LastCommit.CommitSig`.
-The cryptographic signature in each `CommitSig` is created by signing a hash of fields in the block with the voting validator’s private key.
-One of the items in this `signedBytes` hash is the timestamp in the `CommitSig`.
-To authenticate the `CommitSig` timestamp, the node authenticating votes builds a hash of fields that includes the `CommitSig` timestamp and checks this hash against the signature.
-This takes place in the [`VerifyCommit` function](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/validation.go#L26).
-
-<!---
-#### Remove unused timestamp validation logic
-
-`BFT Time` validation is no longer applicable and will be removed.
-This means that validators will no longer check that the block timestamp is a weighted median of `LastCommit` timestamps.
-Specifically, we will remove the call to [MedianTime in the validateBlock function](https://github.com/cometbft/cometbft/blob/4db71da68e82d5cb732b235eeb2fd69d62114b45/state/validation.go#L117).
-The `MedianTime` function can be completely removed.
-
-Since `CommitSig`s will no longer contain a timestamp, the validator authenticating a commit will no longer include the `CommitSig` timestamp in the hash of fields it builds to check against the cryptographic signature.
---->
-
 #### Timestamp validation when a block has not received a Polka
 
 The [`POLRound`](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/proposal.go#L29) in the `Proposal` message indicates which round the block received a Polka.
@@ -329,6 +303,46 @@ This logic is used in multiple places and is no longer needed for PBTS.
 It should therefore be removed completely.
 --->
 
+### Changes to the block validation logic
+
+To provide a better understanding of the changes needed for timestamp validation, we will first detail how timestamp validation works currently in CometBFT.
+
+#### Current block time validation logic
+
+The [`validateBlock` function](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/validation.go#L15) currently [validates the proposed block timestamp in three ways](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/validation.go#L116).
+First, the validation logic checks that this timestamp is greater than the previous block’s timestamp.
+
+Second, it validates that the block timestamp is correctly calculated as the weighted median of the timestamps in the [block’s `LastCommit`](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/block.go#L49).
+
+Finally, the validation logic authenticates the timestamps in the `LastCommit.CommitSig`.
+The cryptographic signature in each `CommitSig` is created by signing a hash of fields in the block with the voting validator’s private key.
+One of the items in this `signedBytes` hash is the timestamp in the `CommitSig`.
+To authenticate the `CommitSig` timestamp, the node authenticating votes builds a hash of fields that includes the `CommitSig` timestamp and checks this hash against the signature.
+This takes place in the [`VerifyCommit` function](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/validation.go#L26).
+
+<!---
+#### Remove unused timestamp validation logic
+
+`BFT Time` validation is no longer applicable and will be removed.
+This means that validators will no longer check that the block timestamp is a weighted median of `LastCommit` timestamps.
+Specifically, we will remove the call to [MedianTime in the validateBlock function](https://github.com/cometbft/cometbft/blob/4db71da68e82d5cb732b235eeb2fd69d62114b45/state/validation.go#L117).
+The `MedianTime` function can be completely removed.
+
+Since `CommitSig`s will no longer contain a timestamp, the validator authenticating a commit will no longer include the `CommitSig` timestamp in the hash of fields it builds to check against the cryptographic signature.
+--->
+
+#### PBTS block time validation logic
+
+PBTS does not perform a validation of the timestamp of a block, as part of the `validateBlock` method.
+This means that nodes will no longer check that the block time is a weighted median of `LastCommit` timestamps.
+
+Instead of validating the timestamp of proposed blocks,
+PBTS validates the timestamp of the `Proposal` message for a block, as detailed [here](#changes-to-proposal-validation-rules).
+Notice that the `Proposal` timestamp must match the proposed block's `Time` field.
+
+This also means that committed blocks, retrieved from peers via consensus catch-up mechanisms or via block sync,
+will not have their timestamps validated, since the timestamp validation is now part of the consensus logic.
+
 ### Backwards compatibility
 
 In order to ensure backwards compatibility, PBTS should be enabled using a [consensus parameter](#compatibility-parameters).
@@ -341,6 +355,7 @@ timestamps adopted by `PBTS` from a given, configurable height.
 Once `PBTS` is activated, there are no provisions for the network to revert back to `BFT Time (considered obsolete).
 
 For more discussion of this, see [issue 2063][issue2063].
+
 
 ## Future Improvements
 

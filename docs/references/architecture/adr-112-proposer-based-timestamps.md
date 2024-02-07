@@ -349,16 +349,17 @@ requiring a hard-fork (this feature is called [Soft Upgrades](https://github.com
 
 ### Neutral
 
-* Alters CometBFT’s liveness properties.
+* Alters the liveness requirements for the consensus algorithm.
 Liveness now requires that all correct validators have synchronized clocks, with inaccuracy bound by `PRECISION`,
 and that end-to-end delays of `PROPOSAL` messages are bound by `MSGDELAY`.
 
 ### Negative
 
-* May increase the length of the propose step if there is a large skew between the previous proposer and the current proposer’s local Unix time.
-This skew will be bound by the `PRECISION` value, so it is unlikely to be too large.
-
-* Current chains with block timestamps far in the future will either need to pause consensus until after the erroneous block timestamp or must maintain synchronized but very inaccurate clocks.
+* May increase the duration of the propose step if there is a large skew between the clocks of the previous proposer and the current proposer.
+The clock skew between correct validators is supposed to be bound by `PRECISION`, so this impact is relevant when block times are shorter than `PRECISION`.
+* Existing chains that adopt PBTS may have block times far in the future, which may cause the transition height to have a very long duration (to preserve time monotonicity).
+The workaround in this case is, first, to synchronize the validators' clocks, then to maintain the legacy operation (using BFT Time), until block times align with real time.
+At this point, the transition from BFT Time to PBTS should be smooth.
 
 ## References
 

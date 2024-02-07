@@ -39,7 +39,7 @@ The [Proposer-Based Timestamps specification (PBTS)][pbts-spec] suggests an alte
 Proposer-based timestamps alter the current mechanism for producing block timestamps in two main ways:
 
 1. The block proposer is amended to offer up its currently known Unix time as the timestamp for the next block instead of the `BFT Time`.
-1. Correct validators only approve the proposed block timestamp if it is close enough to their own currently known Unix time.
+1. Correct validators are assumed to be equipped with synchronized clocks and only approve the proposed block timestamp if it is close enough to their own currently known Unix time.
 
 The result of these changes is a more meaningful timestamp that cannot be controlled by `<= 2/3` of the validator voting power.
 This document outlines the necessary code changes in CometBFT to implement the corresponding [specification][pbts-spec].

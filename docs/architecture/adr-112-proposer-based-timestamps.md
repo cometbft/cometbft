@@ -172,7 +172,7 @@ The [block production logic](https://github.com/cometbft/cometbft/blob/1f430f51f
 sets the weighted median of the times in the `LastCommit.CommitSigs` as the proposed block's `Header.Timestamp`.
 
 In PBTS, the proposer will still set a timestamp into the `Header.Timestamp`.
-The timestamp the proposer sets into the `Header` will change depending on if the block has previously received a Polka, i.e., `2/3+` prevotes in a previous round.
+The timestamp the proposer sets into the `Header` will change depending on whether the block has previously received a Polka, i.e., `2/3+` prevotes in a previous round.
 
 #### Proposal of a block that has not previously received a Polka
 
@@ -213,7 +213,7 @@ Receiving +2/3 prevotes in a round is frequently referred to as a 'Polka' and we
 
 #### Current timestamp validation logic
 
-To provide a better understanding of the changes needed to timestamp validation, we will first detail how timestamp validation works currently in CometBFT.
+To provide a better understanding of the changes needed for timestamp validation, we will first detail how timestamp validation works currently in CometBFT.
 
 The [`validateBlock` function](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/validation.go#L15) currently [validates the proposed block timestamp in three ways](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/validation.go#L116).
 First, the validation logic checks that this timestamp is greater than the previous block’s timestamp.
@@ -338,7 +338,7 @@ If we remove the `Timestamp` field from the `Precommit` messages, we are able to
 * `<2/3` of validators can no longer influence block timestamps.
 * Block timestamp will have stronger correspondence to real time.
 * Improves the reliability of light client block verification.
-* Enables BLS signature aggregation.
+* Will enable BLS signature aggregation.
 * Enables evidence handling to use time instead of height for evidence validity.
 
 ### Neutral

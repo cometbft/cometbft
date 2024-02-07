@@ -528,10 +528,8 @@ func (r *Reactor) ensurePeers() {
 
 	if r.book.NeedMoreAddrs() {
 		// 1) Pick a random peer and ask for more.
-		peers := r.Switch.Peers().Copy()
-		peersCount := len(peers)
-		if peersCount > 0 {
-			peer := peers[cmtrand.Int()%peersCount]
+		peer := r.Switch.Peers().Random()
+		if peer != nil {
 			r.Logger.Info("We need more addresses. Sending pexRequest to random peer", "peer", peer)
 			r.RequestAddrs(peer)
 		}

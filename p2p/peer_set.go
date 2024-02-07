@@ -3,6 +3,7 @@ package p2p
 import (
 	"net"
 
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
@@ -20,6 +21,8 @@ type IPeerSet interface {
 	Size() int
 	// ForEach iterates over the PeerSet and calls the given function for each peer.
 	ForEach(p func(Peer))
+	// Random returns a random peer from the PeerSet.
+	Random() Peer
 }
 
 //-----------------------------------------------------------------------------
@@ -162,4 +165,16 @@ func (ps *PeerSet) ForEach(fn func(p Peer)) {
 	for _, item := range ps.lookup {
 		fn(item.peer)
 	}
+}
+
+// Random returns a random peer from the PeerSet.
+func (ps *PeerSet) Random() Peer {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+
+	if len(ps.list) == 0 {
+		return nil
+	}
+
+	return ps.list[cmtrand.Int()%len(ps.list)]
 }

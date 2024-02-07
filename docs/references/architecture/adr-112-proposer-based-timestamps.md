@@ -69,7 +69,6 @@ Finally, inflation distribution in the Cosmos Hub uses an approximation of time 
 This approximation of time is calculated using [block heights with an estimated number of blocks produced in a year](https://github.com/cosmos/governance/blob/master/params-change/Mint.md#blocksperyear).
 Proposer-based timestamps will allow this inflation calculation to use a more meaningful and accurate source of time.
 
-
 ## Decision
 
 Implement Proposer-Based Timestamps while maintaining backwards compatibility with `BFT Time`.
@@ -184,7 +183,7 @@ The proposer will also set this same timestamp into the `Timestamp` field of the
 
 If a proposer is re-proposing a block that has previously received a Polka on the network, then the proposer does not update the `Header.Timestamp` of that block.
 Instead, the proposer simply re-proposes the exact same block.
-This way, the proposed block has the exact same block ID as the previously proposed block and the validators that have already received that block do not need to attempt to receive it again.
+This way, the proposed block has the exact same block ID as the previously proposed block and the nodes that have already received that block do not need to attempt to receive it again.
 
 The proposer will set the re-proposed block's `Header.Timestamp` as the `Proposal` message's `Timestamp`.
 
@@ -223,7 +222,7 @@ Second, it validates that the block timestamp is correctly calculated as the wei
 Finally, the validation logic authenticates the timestamps in the `LastCommit.CommitSig`.
 The cryptographic signature in each `CommitSig` is created by signing a hash of fields in the block with the voting validator’s private key.
 One of the items in this `signedBytes` hash is the timestamp in the `CommitSig`.
-To authenticate the `CommitSig` timestamp, the validator authenticating votes builds a hash of fields that includes the `CommitSig` timestamp and checks this hash against the signature.
+To authenticate the `CommitSig` timestamp, the node authenticating votes builds a hash of fields that includes the `CommitSig` timestamp and checks this hash against the signature.
 This takes place in the [`VerifyCommit` function](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/types/validation.go#L26).
 
 <!---
@@ -243,26 +242,26 @@ The [`POLRound`](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789
 A negative value in the `POLRound` field indicates that the block has not previously been proposed on the network.
 Therefore the validation logic will check for timely when `POLRound == -1`.
 
-When a validator receives a `Proposal` message, it records it `proposalReceiveTime` as the current Unix time known to the validator.
-The validator will check that the `Proposal.Timestamp` is at most `PRECISION` greater than `proposalReceiveTime`, and at maximum `PRECISION + MSGDELAY` less than `proposalReceiveTime`.
+When a node receives a `Proposal` message, it records it `proposalReceiveTime` as the current Unix time known to the node.
+The node will check that the `Proposal.Timestamp` is at most `PRECISION` greater than `proposalReceiveTime`, and at maximum `PRECISION + MSGDELAY` less than `proposalReceiveTime`.
 If the timestamp is not within these bounds, the proposed block will not be considered `timely`.
 
-Once a full block matching the `Proposal` message is received, the validator will also check that the timestamp in the `Header.Timestamp` of the block matches this `Proposal.Timestamp`.
+Once a full block matching the `Proposal` message is received, the node will also check that the timestamp in the `Header.Timestamp` of the block matches this `Proposal.Timestamp`.
 Using the `Proposal.Timestamp` to check `timely` allows for the `MSGDELAY` parameter to be more finely tuned since `Proposal` messages do not change sizes and are therefore faster to gossip than full blocks across the network.
 
-A validator will also check that the proposed timestamp is greater than the timestamp of the block for the previous height.
+A node will also check that the proposed timestamp is greater than the timestamp of the block for the previous height.
 If the timestamp is not greater than the previous block's timestamp, the block will not be considered valid, which is the same as the current logic.
 
 #### Timestamp validation when a block has received a Polka
 
 When a block is re-proposed that has already received a +2/3 majority of `Prevote`s (i.e., a Polka) on the network, the `Proposal` message for the re-proposed block is created with a `POLRound` that is `>= 0`.
-A validator will not check that the `Proposal` is `timely` if the proposal message has a non-negative `POLRound`.
-If the `POLRound` is non-negative, each validator will simply ensure that it received the `Prevote` messages for the proposed block in the round indicated by `POLRound`.
+A node will not check that the `Proposal` is `timely` if the proposal message has a non-negative `POLRound`.
+If the `POLRound` is non-negative, each node (although this is only relevant for validators) will simply ensure that it received the `Prevote` messages for the proposed block in the round indicated by `POLRound`.
 
-If the validator does not receive `Prevote` messages for the proposed block before the proposal timeout, then it will prevote nil.
+If the node is a validator and it does not receive `Prevote` messages for the proposed block before the proposal timeout, then it will prevote nil.
 Validators already check that +2/3 prevotes were seen in `POLRound`, so this does not represent a change to the prevote logic.
 
-A validator will also check that the proposed timestamp is greater than the timestamp of the block for the previous height.
+A node will also check that the proposed timestamp is greater than the timestamp of the block for the previous height.
 If the timestamp is not greater than the previous block's timestamp, the block will not be considered valid, which is the same as the current logic.
 
 Additionally, this validation logic can be updated to check that the `Proposal.Timestamp` matches the `Header.Timestamp` of the proposed block, but it is less relevant since checking that votes were received is sufficient to ensure the block timestamp is correct.
@@ -271,7 +270,7 @@ Additionally, this validation logic can be updated to check that the `Proposal.T
 
 The `Synchrony` parameters, `MessageDelay` and `Precision` provide a means to bound the timestamp of a proposed block.
 Selecting values that are too small presents a possible liveness issue for the network.
-If a CometBFT network selects a `MessageDelay` parameter that does not accurately reflect the time to broadcast a proposal message to all of the validators on the network, nodes will begin rejecting proposals from otherwise correct proposers because these proposals will appear to be too far in the past.
+If a CometBFT network selects a `MessageDelay` parameter that does not accurately reflect the time to broadcast a proposal message to all of the validators on the network, validators will begin rejecting proposals from otherwise correct proposers because these proposals will appear to be too far in the past.
 
 `MessageDelay` and `Precision` are planned to be configured as `ConsensusParams`.
 A very common way to update `ConsensusParams` is by executing a transaction included in a block that specifies new values for them.

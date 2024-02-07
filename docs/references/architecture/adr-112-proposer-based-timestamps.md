@@ -350,8 +350,8 @@ requiring a hard-fork (this feature is called [Soft Upgrades](https://github.com
 ### Neutral
 
 * Alters CometBFT’s liveness properties.
-Liveness now requires that all correct validators have synchronized clocks within a bound.
-Liveness will now also require that validators’ clocks move forward, which was not required under `BFT Time`.
+Liveness now requires that all correct validators have synchronized clocks, with inaccuracy bound by `PRECISION`,
+and that end-to-end delays of `PROPOSAL` messages are bound by `MSGDELAY`.
 
 ### Negative
 

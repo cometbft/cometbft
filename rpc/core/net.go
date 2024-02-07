@@ -14,10 +14,12 @@ import (
 // More: https://docs.cometbft.com/main/rpc/#/Info/net_info
 func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
 	peers := make([]ctypes.Peer, 0)
+	var err error
 	env.P2PPeers.Peers().ForEach(func(p p2p.Peer) {
 		nodeInfo, ok := p.NodeInfo().(p2p.DefaultNodeInfo)
 		if !ok {
-			panic(fmt.Sprintf("peer %v has the invalid node info type: %T ", p.ID(), p.NodeInfo()))
+			err = fmt.Errorf("peer %v has the invalid node info type: %T ", p.ID(), p.NodeInfo())
+			return
 		}
 		peers = append(peers, ctypes.Peer{
 			NodeInfo:         nodeInfo,
@@ -26,6 +28,9 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 			RemoteIP:         p.RemoteIP().String(),
 		})
 	})
+	if err != nil {
+		return nil, err
+	}
 	// TODO: Should we include PersistentPeers and Seeds in here?
 	// PRO: useful info
 	// CON: privacy

@@ -17,7 +17,7 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 	env.P2PPeers.Peers().ForEach(func(p p2p.Peer) {
 		nodeInfo, ok := p.NodeInfo().(p2p.DefaultNodeInfo)
 		if !ok {
-			return
+			panic(fmt.Sprintf("peer %v has the invalid node info type: %T ", p.ID(), p.NodeInfo()))
 		}
 		peers = append(peers, ctypes.Peer{
 			NodeInfo:         nodeInfo,

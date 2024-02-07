@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+
 	cm "github.com/cometbft/cometbft/internal/consensus"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/p2p"
@@ -57,13 +59,15 @@ func (env *Environment) Validators(
 func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDumpConsensusState, error) {
 	// Get Peer consensus states.
 	peerStates := make([]ctypes.PeerStateInfo, 0)
+	var err error
 	env.P2PPeers.Peers().ForEach(func(p p2p.Peer) {
 		peerState, ok := p.Get(types.PeerStateKey).(*cm.PeerState)
 		if !ok { // peer does not have a state yet
 			return
 		}
-		peerStateJSON, err := peerState.MarshalJSON()
-		if err != nil {
+		peerStateJSON, marshalErr := peerState.MarshalJSON()
+		if marshalErr != nil {
+			err = fmt.Errorf("failed to marshal peer %v state: %w", p.ID(), marshalErr)
 			return
 		}
 		peerStates = append(peerStates, ctypes.PeerStateInfo{
@@ -73,6 +77,9 @@ func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDum
 			PeerState: peerStateJSON,
 		})
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	// Get self round state.
 	roundState, err := env.ConsensusState.GetRoundStateJSON()

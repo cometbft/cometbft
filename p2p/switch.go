@@ -359,13 +359,16 @@ func (sw *Switch) StopPeerGracefully(peer Peer) {
 }
 
 func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
+	// Returning early if the peer is already stopped prevents data races because
+	// this function may be called from multiple places at once.
+	if err := peer.Stop(); err != nil {
+		sw.Logger.Error("Error stopping peer", "peer", peer.ID(), "err", err)
+		return
+	}
+
 	sw.transport.Cleanup(peer)
 	for _, reactor := range sw.reactors {
 		reactor.RemovePeer(peer, reason)
-	}
-
-	if err := peer.Stop(); err != nil {
-		sw.Logger.Error("Error stopping peer", "peer", peer.ID(), "err", err)
 	}
 
 	// Removing a peer should go last to avoid a situation where a peer

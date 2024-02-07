@@ -512,10 +512,13 @@ func (m *SynchronyParams) GetPrecision() *time.Duration {
 	return nil
 }
 
+// PBTSParams configure how CometBFT calculates block time. BFT Time is enabled by default.
+// By enabling this parameter (setting a valid non zero value), CometBFT will forever shift to using
+// Proposer Based Timestamps. For more information see
+// https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
 type PBTSParams struct {
 	// pbts_enable_height configures the first height that the chain will use
-	// proposer base timestamps instead of BFT time. For more information see
-	// https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
+	// proposer base timestamps instead of BFT time.
 	PbtsEnableHeight int64 `protobuf:"varint,1,opt,name=pbts_enable_height,json=pbtsEnableHeight,proto3" json:"pbts_enable_height,omitempty"`
 }
 

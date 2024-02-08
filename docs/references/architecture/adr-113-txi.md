@@ -38,9 +38,10 @@ Give app developers a way to provide their own transaction hash function.
 
 ## Detailed Design
 
-Add `hashFn HashFn` argument to `NewNode` constructor in `node.go`.
+Add `hashFn HashFn` option to `NewNode` in `node.go`.
 
 ```go
+// HashFn defines an interface for the hashing function.
 type HashFn interface {
     // New returns a new hash.Hash calculating the given hash function.
     New() hash.Hash
@@ -48,16 +49,25 @@ type HashFn interface {
     Size() int
 }
 
+// Use CustomHashFn to supply custom hashing function.
+func CustomHashFn(hashFn HashFn) Option {
+	return func(n *Node) {
+		n.hashFn = hashFn
+	}
+}
+
+// DefaultHashFn is a TMHash.
+func DefaultHashFn() HashFn {
+    return TMHash{}
+}
+
+// TMHash uses tmhash.
 type TMHash struct {}
 func (TMHash) New() hash.Hash {
     return tmhash.New()
 }
 func (TMHash) Size(bz []byte) {
     return tmhash.Size
-}
-
-func DefaultHashFn() HashFn {
-    return TMHash{}
 }
 ```
 
@@ -73,9 +83,10 @@ And then use it to calculate a transaction's hash.
 
 ### Negative
 
-- One more argument in `NewNode`
-
 ### Neutral
+
+- App developers need to take performance into account when choosing custom
+  hash function.
 
 ## References
 

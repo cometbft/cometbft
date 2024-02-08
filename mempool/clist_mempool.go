@@ -623,7 +623,7 @@ func (mem *CListMempool) recheckTxs() {
 	// NOTE: globalCb may be called concurrently, but CheckTx cannot be executed concurrently
 	// because this function has the lock (via Update and Lock).
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		tx := types.Tx(e.Value.(*mempoolTx).tx)
+		tx := e.Value.(*mempoolTx).tx
 		mem.recheck.numPendingTxs.Add(1)
 
 		// Send a CheckTx request to the app. If we're using a sync client, the resCbRecheck

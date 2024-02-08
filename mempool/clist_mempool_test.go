@@ -957,10 +957,11 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 			}
 			txs := mp.ReapMaxBytesMaxGas(100, -1)
 			mp.Lock()
-			mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
-			err := mp.Update(int64(h), txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			mp.Unlock()
+			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
 			require.NoError(t, err)
+			err = mp.Update(int64(h), txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
+			require.NoError(t, err)
+			mp.Unlock()
 		}
 	}()
 
@@ -973,6 +974,7 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 }
 
 func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
+	t.Helper()
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
 	server := newRemoteApp(t, sockPath, app)

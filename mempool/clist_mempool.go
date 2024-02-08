@@ -316,7 +316,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 		case abci.CHECK_TX_TYPE_RECHECK:
 			tx := types.Tx(req.GetCheckTx().Tx)
 			if mem.recheck.done() {
-				mem.logger.Info("discarded late recheck response", "tx", tx)
+				mem.logger.Info("discarded late recheck response", "tx", tx.Hash())
 				return
 			}
 			mem.metrics.RecheckTimes.Add(1)

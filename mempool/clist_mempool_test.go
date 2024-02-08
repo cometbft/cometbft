@@ -79,8 +79,14 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	return mp, func() { os.RemoveAll(cfg.RootDir) }
 }
 
+<<<<<<< HEAD
 func ensureNoFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	timer := time.NewTimer(time.Duration(timeoutMS) * time.Millisecond)
+=======
+func ensureNoFire(t *testing.T, ch <-chan struct{}) {
+	t.Helper()
+	timer := time.NewTimer(100 * time.Millisecond)
+>>>>>>> 858ac4e7b (fix(mempool/tests): Reduce tests duration (#2263))
 	select {
 	case <-ch:
 		t.Fatal("Expected not to fire")
@@ -370,7 +376,7 @@ func TestTxsAvailable(t *testing.T) {
 	defer cleanup()
 	mp.EnableTxsAvailable()
 
-	timeoutMS := 500
+	timeoutMS := 100
 
 	// with no txs, it shouldn't fire
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)

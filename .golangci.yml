@@ -39,6 +39,7 @@ linters:
     - nlreturn
     - nonamedreturns
     - nosnakecase
+    - perfsprint
     - predeclared
     - revive
     - scopelint

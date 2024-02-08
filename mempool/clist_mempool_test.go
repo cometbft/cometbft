@@ -785,6 +785,7 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	require.False(t, mp.notifiedTxsAvailable.Load())
 }
 
+// Test that rechecking finishes correctly when a request fails, using a sync ABCI client.
 func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	var callback abciclient.Callback
 	mockClient := new(abciclimocks.Client)
@@ -849,6 +850,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
+// Test that rechecking finishes correctly when a request fails, using an async ABCI client.
 func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	var callback abciclient.Callback
 	mockClient := new(abciclimocks.Client)
@@ -909,6 +911,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
+// This test used to cause a data race when rechecking (see https://github.com/cometbft/cometbft/issues/1827).
 func TestMempoolRecheckRace(t *testing.T) {
 	mp, cleanup := newMempoolWithAsyncConnection(t)
 	defer cleanup()
@@ -931,14 +934,14 @@ func TestMempoolRecheckRace(t *testing.T) {
 
 	// Add again the same transaction that was updated. Checking this
 	// transaction and rechecking the others simultaneously should not result
-	// in a data race for the variable recheckCursor.
+	// in a data race on the variable recheck.cursor.
 	_, err = mp.CheckTx(txs[:1][0])
 	require.Equal(t, err, ErrTxInCache)
 	require.Zero(t, mp.recheck.numPendingTxs.Load())
 }
 
-// While connected to the app with an async client, this test adds txs with CheckTx while a
-// concurrent routine updates the mempool.
+// Test adding txs while a concurrent routine reaps txs and updates the mempool, using an async ABCI
+// client.
 func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	mp, cleanup := newMempoolWithAsyncConnection(t)
 	defer cleanup()

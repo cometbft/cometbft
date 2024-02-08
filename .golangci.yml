@@ -1,4 +1,5 @@
 linters:
+<<<<<<< HEAD
   enable:
     - asciicheck
     - bodyclose
@@ -22,6 +23,51 @@ linters:
     - staticcheck
     # - structcheck // to be fixed by golangci-lint
     - stylecheck
+=======
+  enable-all: true
+  disable:
+    - containedctx
+    - contextcheck
+    - cyclop
+    - deadcode
+    - dupword
+    - errname
+    - errorlint
+    - exhaustive
+    - exhaustivestruct
+    - exhaustruct
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - gocyclo
+    - godox
+    - goerr113
+    - golint
+    - gomnd
+    - gomoddirectives
+    - ifshort
+    - interfacebloat
+    - interfacer
+    - ireturn
+    - lll
+    - maintidx
+    - maligned
+    - nestif
+    - nilnil
+    - nlreturn
+    - nonamedreturns
+    - nosnakecase
+    - perfsprint
+    - predeclared
+    - revive
+    - scopelint
+    - structcheck
+    - tagliatelle
+    - testifylint
+>>>>>>> a03158b85 (ci: run golangci-lint linters for all files (not only ones which were modified) (#2250))
     - typecheck
     - unconvert
     - unused

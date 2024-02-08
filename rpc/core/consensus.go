@@ -60,19 +60,19 @@ func (env *Environment) DumpConsensusState(*rpctypes.Context) (*ctypes.ResultDum
 	// Get Peer consensus states.
 	peerStates := make([]ctypes.PeerStateInfo, 0)
 	var err error
-	env.P2PPeers.Peers().ForEach(func(p p2p.Peer) {
-		peerState, ok := p.Get(types.PeerStateKey).(*cm.PeerState)
+	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
+		peerState, ok := peer.Get(types.PeerStateKey).(*cm.PeerState)
 		if !ok { // peer does not have a state yet
 			return
 		}
 		peerStateJSON, marshalErr := peerState.MarshalJSON()
 		if marshalErr != nil {
-			err = fmt.Errorf("failed to marshal peer %v state: %w", p.ID(), marshalErr)
+			err = fmt.Errorf("failed to marshal peer %v state: %w", peer.ID(), marshalErr)
 			return
 		}
 		peerStates = append(peerStates, ctypes.PeerStateInfo{
 			// Peer basic info.
-			NodeAddress: p.SocketAddr().String(),
+			NodeAddress: peer.SocketAddr().String(),
 			// Peer consensus state.
 			PeerState: peerStateJSON,
 		})

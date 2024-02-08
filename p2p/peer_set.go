@@ -20,7 +20,7 @@ type IPeerSet interface {
 	// Size returns the number of peers in the PeerSet.
 	Size() int
 	// ForEach iterates over the PeerSet and calls the given function for each peer.
-	ForEach(p func(Peer))
+	ForEach(peer func(Peer))
 	// Random returns a random peer from the PeerSet.
 	Random() Peer
 }
@@ -158,7 +158,7 @@ func (ps *PeerSet) Copy() []Peer {
 }
 
 // ForEach iterates over the PeerSet and calls the given function for each peer.
-func (ps *PeerSet) ForEach(fn func(p Peer)) {
+func (ps *PeerSet) ForEach(fn func(peer Peer)) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 

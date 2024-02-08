@@ -15,17 +15,17 @@ import (
 func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error) {
 	peers := make([]ctypes.Peer, 0)
 	var err error
-	env.P2PPeers.Peers().ForEach(func(p p2p.Peer) {
-		nodeInfo, ok := p.NodeInfo().(p2p.DefaultNodeInfo)
+	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
+		nodeInfo, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)
 		if !ok {
-			err = fmt.Errorf("peer %v has the invalid node info type: %T ", p.ID(), p.NodeInfo())
+			err = fmt.Errorf("peer %v has the invalid node info type: %T ", peer.ID(), peer.NodeInfo())
 			return
 		}
 		peers = append(peers, ctypes.Peer{
 			NodeInfo:         nodeInfo,
-			IsOutbound:       p.IsOutbound(),
-			ConnectionStatus: p.Status(),
-			RemoteIP:         p.RemoteIP().String(),
+			IsOutbound:       peer.IsOutbound(),
+			ConnectionStatus: peer.Status(),
+			RemoteIP:         peer.RemoteIP().String(),
 		})
 	})
 	if err != nil {

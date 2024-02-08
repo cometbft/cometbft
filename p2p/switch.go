@@ -273,18 +273,21 @@ func (sw *Switch) OnStop() {
 func (sw *Switch) Broadcast(e Envelope) chan bool {
 	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
 
-	peers := sw.peers.Copy()
 	var wg sync.WaitGroup
-	wg.Add(len(peers))
-	successChan := make(chan bool, len(peers))
+	successChan := make(chan bool, sw.peers.Size())
 
-	for _, peer := range peers {
-		go func(p Peer) {
+	sw.peers.ForEach(func(p Peer) {
+		wg.Add(1) // Incrementing by one is safer.
+		go func(peer Peer) {
 			defer wg.Done()
-			success := p.Send(e)
-			successChan <- success
-		}(peer)
-	}
+			success := peer.Send(e)
+			// For rare cases where PeerSet changes between a call to `peers.Size()` and `peers.ForEach()`.
+			select {
+			case successChan <- success:
+			default:
+			}
+		}(p)
+	})
 
 	go func() {
 		wg.Wait()
@@ -297,10 +300,10 @@ func (sw *Switch) Broadcast(e Envelope) chan bool {
 // NumPeers returns the count of outbound/inbound and outbound-dialing peers.
 // unconditional peers are not counted here.
 func (sw *Switch) NumPeers() (outbound, inbound, dialing int) {
-	sw.peers.ForEach(func(p Peer) {
-		if p.IsOutbound() && !sw.IsPeerUnconditional(p.ID()) {
+	sw.peers.ForEach(func(peer Peer) {
+		if peer.IsOutbound() && !sw.IsPeerUnconditional(peer.ID()) {
 			outbound++
-		} else if !sw.IsPeerUnconditional(p.ID()) {
+		} else if !sw.IsPeerUnconditional(peer.ID()) {
 			inbound++
 		}
 	})

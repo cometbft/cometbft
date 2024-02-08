@@ -81,7 +81,7 @@ type pbtsTestConfiguration struct {
 
 	// The time offset from height 1 block time of the block proposed at height 4.
 	// At height 4, the proposed block and the deliver offsets are the same so
-	// that timely-ness does not affect height 4.
+	// that timeliness does not affect height 4.
 	height4ProposedBlockOffset time.Duration
 }
 

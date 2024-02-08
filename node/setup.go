@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
-	_ "net/http/pprof" //nolint: gosec // securely exposed on separate, optional port
+	_ "net/http/pprof" //nolint: gosec,gci // securely exposed on separate, optional port
+
+	_ "github.com/lib/pq" //nolint: gci // provide the psql db driver.
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -21,12 +22,11 @@ import (
 	"github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/internal/statesync"
-
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/internal/state/indexer/block"
 	"github.com/cometbft/cometbft/internal/state/txindex"
+	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
@@ -37,8 +37,6 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
-
-	_ "github.com/lib/pq" // provide the psql db driver
 )
 
 const readHeaderTimeout = 10 * time.Second
@@ -119,7 +117,7 @@ func DefaultMetricsProvider(config *cfg.InstrumentationConfig) MetricsProvider {
 }
 
 type blockSyncReactor interface {
-	SwitchToBlockSync(sm.State) error
+	SwitchToBlockSync(state sm.State) error
 }
 
 //------------------------------------------------------------------------------

@@ -200,7 +200,7 @@ func (g *Group) MinIndex() int {
 // returns the number of bytes written. If nn < len(p), it also returns an
 // error explaining why the write is short.
 // NOTE: Writes are buffered so they don't write synchronously
-// TODO: Make it halt if space is unavailable
+// TODO: Make it halt if space is unavailable.
 func (g *Group) Write(p []byte) (nn int, err error) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
@@ -209,7 +209,7 @@ func (g *Group) Write(p []byte) (nn int, err error) {
 
 // WriteLine writes line into the current head of the group. It also appends "\n".
 // NOTE: Writes are buffered so they don't write synchronously
-// TODO: Make it halt if space is unavailable
+// TODO: Make it halt if space is unavailable.
 func (g *Group) WriteLine(line string) error {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
@@ -353,7 +353,7 @@ func (g *Group) ReadGroupInfo() GroupInfo {
 }
 
 // Index includes the head.
-// CONTRACT: caller should have called g.mtx.Lock
+// CONTRACT: caller should have called g.mtx.Lock.
 func (g *Group) readGroupInfo() GroupInfo {
 	groupDir := filepath.Dir(g.Head.Path)
 	headBase := filepath.Base(g.Head.Path)
@@ -496,7 +496,7 @@ func (gr *GroupReader) Read(p []byte) (n int, err error) {
 }
 
 // IF index > gr.Group.maxIndex, returns io.EOF
-// CONTRACT: caller should hold gr.mtx
+// CONTRACT: caller should hold gr.mtx.
 func (gr *GroupReader) openFile(index int) error {
 	// Lock on Group to ensure that head doesn't move in the meanwhile.
 	gr.Group.mtx.Lock()

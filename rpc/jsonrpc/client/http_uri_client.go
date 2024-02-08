@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	// URIClientRequestID in a request ID used by URIClient
+	// URIClientRequestID in a request ID used by URIClient.
 	URIClientRequestID = types.JSONRPCIntID(-1)
 )
 

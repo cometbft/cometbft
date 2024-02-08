@@ -8,7 +8,7 @@ import (
 	"github.com/go-kit/log/term"
 )
 
-// reuse the same logger across all tests
+// reuse the same logger across all tests.
 var _testingLogger Logger
 
 // TestingLogger returns a TMLogger which writes to STDOUT if testing being run

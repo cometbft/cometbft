@@ -50,13 +50,13 @@ type BlockStore interface {
 // EvidencePool defines the EvidencePool interface used by State.
 type EvidencePool interface {
 	PendingEvidence(maxBytes int64) (ev []types.Evidence, size int64)
-	AddEvidence(types.Evidence) error
-	Update(State, types.EvidenceList)
-	CheckEvidence(types.EvidenceList) error
+	AddEvidence(ev types.Evidence) error
+	Update(state State, evList types.EvidenceList)
+	CheckEvidence(evList types.EvidenceList) error
 }
 
 // EmptyEvidencePool is an empty implementation of EvidencePool, useful for testing. It also complies
-// to the consensus evidence pool interface
+// to the consensus evidence pool interface.
 type EmptyEvidencePool struct{}
 
 func (EmptyEvidencePool) PendingEvidence(int64) (ev []types.Evidence, size int64) {

@@ -9,18 +9,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"google.golang.org/grpc"
-
 	"golang.org/x/net/context"
-
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	cmtnet "github.com/cometbft/cometbft/internal/net"
-	"github.com/cometbft/cometbft/libs/log"
 
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestGRPC(t *testing.T) {
@@ -77,7 +73,6 @@ func TestGRPC(t *testing.T) {
 				time.Sleep(time.Second * 1) // Wait for a bit to allow counter overflow
 			}()
 		}
-
 	}
 }
 

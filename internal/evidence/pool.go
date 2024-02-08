@@ -10,15 +10,13 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"
 
-	cmterrors "github.com/cometbft/cometbft/types/errors"
-
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	clist "github.com/cometbft/cometbft/internal/clist"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 const (
@@ -26,7 +24,7 @@ const (
 	baseKeyPending   = byte(0x01)
 )
 
-// Pool maintains a pool of valid evidence to be broadcasted and committed
+// Pool maintains a pool of valid evidence to be broadcasted and committed.
 type Pool struct {
 	logger log.Logger
 
@@ -193,7 +191,6 @@ func (evpool *Pool) ReportConflictingVotes(voteA, voteB *types.Vote) {
 func (evpool *Pool) CheckEvidence(evList types.EvidenceList) error {
 	hashes := make([][]byte, len(evList))
 	for idx, ev := range evList {
-
 		_, isLightEv := ev.(*types.LightClientAttackEvidence)
 
 		// We must verify light client attack evidence regardless because there could be a
@@ -230,12 +227,12 @@ func (evpool *Pool) CheckEvidence(evList types.EvidenceList) error {
 	return nil
 }
 
-// EvidenceFront goes to the first evidence in the clist
+// EvidenceFront goes to the first evidence in the clist.
 func (evpool *Pool) EvidenceFront() *clist.CElement {
 	return evpool.evidenceList.Front()
 }
 
-// EvidenceWaitChan is a channel that closes once the first evidence in the list is there. i.e Front is not nil
+// EvidenceWaitChan is a channel that closes once the first evidence in the list is there. i.e Front is not nil.
 func (evpool *Pool) EvidenceWaitChan() <-chan struct{} {
 	return evpool.evidenceList.WaitChan()
 }
@@ -262,7 +259,7 @@ func (evpool *Pool) Close() error {
 }
 
 // IsExpired checks whether evidence or a polc is expired by checking whether a height and time is older
-// than set by the evidence consensus parameters
+// than set by the evidence consensus parameters.
 func (evpool *Pool) isExpired(height int64, time time.Time) bool {
 	var (
 		params       = evpool.State().ConsensusParams.Evidence
@@ -461,7 +458,6 @@ func (evpool *Pool) processConsensusBuffer(state sm.State) {
 	evpool.mtx.Lock()
 	defer evpool.mtx.Unlock()
 	for _, voteSet := range evpool.consensusBuffer {
-
 		// Check the height of the conflicting votes and fetch the corresponding time and validator set
 		// to produce the valid evidence
 		var (
@@ -556,7 +552,7 @@ func evMapKey(ev types.Evidence) string {
 	return string(ev.Hash())
 }
 
-// big endian padded hex
+// big endian padded hex.
 func bE(h int64) string {
 	return fmt.Sprintf("%0.16X", h)
 }

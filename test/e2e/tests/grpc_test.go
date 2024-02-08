@@ -15,7 +15,9 @@ import (
 )
 
 func TestGRPC_Version(t *testing.T) {
+	t.Helper()
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
 		defer ctxCancel()
 		client, err := node.GRPCClient(ctx)
@@ -34,6 +36,7 @@ func TestGRPC_Version(t *testing.T) {
 
 func TestGRPC_Block_GetByHeight(t *testing.T) {
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
@@ -63,7 +66,9 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 }
 
 func TestGRPC_Block_GetLatestHeight(t *testing.T) {
+	t.Helper()
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
@@ -90,7 +95,9 @@ func TestGRPC_Block_GetLatestHeight(t *testing.T) {
 }
 
 func TestGRPC_GetBlockResults(t *testing.T) {
+	t.Helper()
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
@@ -138,7 +145,7 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 
 			require.NoError(t, err, fmt.Sprintf("Unexpected error for GetBlockResults at expected height: %d", tc.expectedHeight))
 			require.NotNil(t, res)
-			require.Equal(t, res.Height, tc.expectedHeight)
+			require.Equal(t, tc.expectedHeight, res.Height)
 		}
 		for _, tc := range errorCases {
 			_, err = gRPCClient.GetBlockResults(ctx, tc.requestHeight)
@@ -148,7 +155,9 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 }
 
 func TestGRPC_BlockRetainHeight(t *testing.T) {
+	t.Helper()
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if !node.EnableCompanionPruning {
 			return
 		}
@@ -167,7 +176,9 @@ func TestGRPC_BlockRetainHeight(t *testing.T) {
 }
 
 func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
+	t.Helper()
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if !node.EnableCompanionPruning {
 			return
 		}
@@ -186,6 +197,7 @@ func TestGRPC_BlockResultsRetainHeight(t *testing.T) {
 
 func TestGRPC_TxIndexerRetainHeight(t *testing.T) {
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if !node.EnableCompanionPruning {
 			return
 		}
@@ -203,7 +215,9 @@ func TestGRPC_TxIndexerRetainHeight(t *testing.T) {
 }
 
 func TestGRPC_BlockIndexerRetainHeight(t *testing.T) {
+	t.Helper()
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if !node.EnableCompanionPruning {
 			return
 		}
@@ -221,6 +235,7 @@ func TestGRPC_BlockIndexerRetainHeight(t *testing.T) {
 }
 
 func getGRPCPrivilegedClientForTesting(t *testing.T, node e2e.Node) (privileged.Client, *coretypes.ResultStatus, func()) {
+	t.Helper()
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
 
 	grpcClient, err := node.GRPCPrivilegedClient(ctx)

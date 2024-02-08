@@ -197,7 +197,7 @@ func (hvs *HeightVoteSet) getVoteSet(round int32, voteType types.SignedMsgType) 
 // If a peer claims that it has 2/3 majority for given blockKey, call this.
 // NOTE: if there are too many peers, or too much peer churn,
 // this can cause memory issues.
-// TODO: implement ability to remove peers too
+// TODO: implement ability to remove peers too.
 func (hvs *HeightVoteSet) SetPeerMaj23(
 	round int32,
 	voteType types.SignedMsgType,

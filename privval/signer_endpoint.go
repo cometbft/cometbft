@@ -30,14 +30,14 @@ func (se *signerEndpoint) Close() error {
 	return nil
 }
 
-// IsConnected indicates if there is an active connection
+// IsConnected indicates if there is an active connection.
 func (se *signerEndpoint) IsConnected() bool {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
 	return se.isConnected()
 }
 
-// TryGetConnection retrieves a connection if it is already available
+// TryGetConnection retrieves a connection if it is already available.
 func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.Conn) bool {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
@@ -51,7 +51,7 @@ func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.
 	return false
 }
 
-// TryGetConnection retrieves a connection if it is already available
+// TryGetConnection retrieves a connection if it is already available.
 func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, maxWait time.Duration) error {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
@@ -65,21 +65,21 @@ func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, ma
 	return nil
 }
 
-// SetConnection replaces the current connection object
+// SetConnection replaces the current connection object.
 func (se *signerEndpoint) SetConnection(newConnection net.Conn) {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
 	se.conn = newConnection
 }
 
-// IsConnected indicates if there is an active connection
+// IsConnected indicates if there is an active connection.
 func (se *signerEndpoint) DropConnection() {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
 	se.dropConnection()
 }
 
-// ReadMessage reads a message from the endpoint
+// ReadMessage reads a message from the endpoint.
 func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
@@ -111,7 +111,7 @@ func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 	return
 }
 
-// WriteMessage writes a message from the endpoint
+// WriteMessage writes a message from the endpoint.
 func (se *signerEndpoint) WriteMessage(msg privvalproto.Message) (err error) {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()

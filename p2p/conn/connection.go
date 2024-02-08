@@ -35,7 +35,7 @@ const (
 
 	// some of these defaults are written in the user config
 	// flushThrottle, sendRate, recvRate
-	// TODO: remove values present in config
+	// TODO: remove values present in config.
 	defaultFlushThrottle = 100 * time.Millisecond
 
 	defaultSendQueueCapacity   = 1
@@ -155,7 +155,7 @@ func DefaultMConnConfig() MConnConfig {
 	}
 }
 
-// NewMConnection wraps net.Conn and creates multiplex connection
+// NewMConnection wraps net.Conn and creates multiplex connection.
 func NewMConnection(
 	conn net.Conn,
 	chDescs []*ChannelDescriptor,
@@ -170,7 +170,7 @@ func NewMConnection(
 		DefaultMConnConfig())
 }
 
-// NewMConnectionWithConfig wraps net.Conn and creates multiplex connection with a config
+// NewMConnectionWithConfig wraps net.Conn and creates multiplex connection with a config.
 func NewMConnectionWithConfig(
 	conn net.Conn,
 	chDescs []*ChannelDescriptor,
@@ -223,7 +223,7 @@ func (c *MConnection) SetLogger(l log.Logger) {
 	}
 }
 
-// OnStart implements BaseService
+// OnStart implements BaseService.
 func (c *MConnection) OnStart() error {
 	if err := c.BaseService.OnStart(); err != nil {
 		return err
@@ -309,7 +309,7 @@ func (c *MConnection) FlushStop() {
 	// c.Stop()
 }
 
-// OnStop implements BaseService
+// OnStop implements BaseService.
 func (c *MConnection) OnStop() {
 	if c.stopServices() {
 		return
@@ -664,13 +664,13 @@ FOR_LOOP:
 
 	// Cleanup
 	close(c.pong)
-	//nolint:revive
+
 	for range c.pong {
 		// Drain
 	}
 }
 
-// not goroutine-safe
+// not goroutine-safe.
 func (c *MConnection) stopPongTimer() {
 	if c.pongTimer != nil {
 		_ = c.pongTimer.Stop()
@@ -678,7 +678,7 @@ func (c *MConnection) stopPongTimer() {
 	}
 }
 
-// maxPacketMsgSize returns a maximum size of PacketMsg
+// maxPacketMsgSize returns a maximum size of PacketMsg.
 func (c *MConnection) maxPacketMsgSize() int {
 	bz, err := proto.Marshal(mustWrapPacket(&tmp2p.PacketMsg{
 		ChannelID: 0x01,
@@ -786,7 +786,7 @@ func (ch *Channel) SetLogger(l log.Logger) {
 
 // Queues message to send to this channel.
 // Goroutine-safe
-// Times out (and returns false) after defaultSendTimeout
+// Times out (and returns false) after defaultSendTimeout.
 func (ch *Channel) sendBytes(bytes []byte) bool {
 	select {
 	case ch.sendQueue <- bytes:
@@ -799,7 +799,7 @@ func (ch *Channel) sendBytes(bytes []byte) bool {
 
 // Queues message to send to this channel.
 // Nonblocking, returns true if successful.
-// Goroutine-safe
+// Goroutine-safe.
 func (ch *Channel) trySendBytes(bytes []byte) bool {
 	select {
 	case ch.sendQueue <- bytes:
@@ -810,7 +810,7 @@ func (ch *Channel) trySendBytes(bytes []byte) bool {
 	}
 }
 
-// Goroutine-safe
+// Goroutine-safe.
 func (ch *Channel) loadSendQueueSize() (size int) {
 	return int(atomic.LoadInt32(&ch.sendQueueSize))
 }
@@ -823,7 +823,7 @@ func (ch *Channel) canSend() bool {
 
 // Returns true if any PacketMsgs are pending to be sent.
 // Call before calling nextPacketMsg()
-// Goroutine-safe
+// Goroutine-safe.
 func (ch *Channel) isSendPending() bool {
 	if len(ch.sending) == 0 {
 		if len(ch.sendQueue) == 0 {
@@ -835,7 +835,7 @@ func (ch *Channel) isSendPending() bool {
 }
 
 // Creates a new PacketMsg to send.
-// Not goroutine-safe
+// Not goroutine-safe.
 func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 	packet := tmp2p.PacketMsg{ChannelID: int32(ch.desc.ID)}
 	maxSize := ch.maxPacketMsgPayloadSize
@@ -852,7 +852,7 @@ func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 }
 
 // Writes next PacketMsg to w and updates c.recentlySent.
-// Not goroutine-safe
+// Not goroutine-safe.
 func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 	packet := ch.nextPacketMsg()
 	n, err = protoio.NewDelimitedWriter(w).WriteMsg(mustWrapPacket(&packet))
@@ -862,7 +862,7 @@ func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 
 // Handles incoming PacketMsgs. It returns a message bytes if message is
 // complete. NOTE message bytes may change on next call to recvPacketMsg.
-// Not goroutine-safe
+// Not goroutine-safe.
 func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 	ch.Logger.Debug("Read PacketMsg", "conn", ch.conn, "packet", packet)
 	recvCap, recvReceived := ch.desc.RecvMessageCapacity, len(ch.recving)+len(packet.Data)
@@ -884,7 +884,7 @@ func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 }
 
 // Call this periodically to update stats for throttling purposes.
-// Not goroutine-safe
+// Not goroutine-safe.
 func (ch *Channel) updateStats() {
 	// Exponential decay of stats.
 	// TODO: optimize.

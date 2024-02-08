@@ -30,7 +30,7 @@ import (
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
-// 4 + 1024 == 1028 total frame size
+// 4 + 1024 == 1028 total frame size.
 const (
 	dataLenSize      = 4
 	dataMaxSize      = 1024
@@ -174,7 +174,7 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	return sc, nil
 }
 
-// RemotePubKey returns authenticated remote pubkey
+// RemotePubKey returns authenticated remote pubkey.
 func (sc *SecretConnection) RemotePubKey() crypto.PubKey {
 	return sc.remPubKey
 }
@@ -269,7 +269,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	return n, err
 }
 
-// Implements net.Conn
+// Implements net.Conn.
 func (sc *SecretConnection) Close() error                  { return sc.conn.Close() }
 func (sc *SecretConnection) LocalAddr() net.Addr           { return sc.conn.(net.Conn).LocalAddr() }
 func (sc *SecretConnection) RemoteAddr() net.Addr          { return sc.conn.(net.Conn).RemoteAddr() }

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	sm "github.com/cometbft/cometbft/internal/state"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
@@ -191,7 +190,7 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 	return state, nil
 }
 
-// rpcClient sets up a new RPC client
+// rpcClient sets up a new RPC client.
 func rpcClient(server string) (*rpchttp.HTTP, error) {
 	if !strings.Contains(server, "://") {
 		server = "http://" + server

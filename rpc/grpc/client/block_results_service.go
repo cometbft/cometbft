@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-
 	"github.com/cosmos/gogoproto/grpc"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 )
 
 type BlockResults struct {
@@ -58,7 +57,7 @@ func newDisabledBlockResultsServiceClient() BlockResultsServiceClient {
 	return &disabledBlockResultsServiceClient{}
 }
 
-// GetBlockResults implements BlockResultsServiceClient
+// GetBlockResults implements BlockResultsServiceClient.
 func (*disabledBlockResultsServiceClient) GetBlockResults(_ context.Context, _ int64) (*BlockResults, error) {
 	panic("block results service client is disabled")
 }

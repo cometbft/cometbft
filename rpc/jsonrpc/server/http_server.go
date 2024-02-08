@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -148,7 +149,7 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 	for _, header := range headers {
 		w.Header().Set(header.name, header.value)
 	}
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(jsonBytes)
 	return err
 }
@@ -164,7 +165,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 		rww := &responseWriterWrapper{-1, w}
 		begin := time.Now()
 
-		rww.Header().Set("X-Server-Time", fmt.Sprintf("%v", begin.Unix()))
+		rww.Header().Set("X-Server-Time", strconv.FormatInt(begin.Unix(), 10))
 
 		defer func() {
 			// Handle any panics in the panic handler below. Does not use the logger, since we want
@@ -176,7 +177,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 			// https://github.com/golang/go/issues/17790#issuecomment-258481416
 			if e := recover(); e != nil {
 				fmt.Fprintf(os.Stderr, "Panic during RPC panic recovery: %v\n%v\n", e, string(debug.Stack()))
-				w.WriteHeader(500)
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}()
 
@@ -230,7 +231,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 	})
 }
 
-// Remember the status for logging
+// Remember the status for logging.
 type responseWriterWrapper struct {
 	Status int
 	http.ResponseWriter
@@ -241,7 +242,7 @@ func (w *responseWriterWrapper) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-// implements http.Hijacker
+// implements http.Hijacker.
 func (w *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
 }

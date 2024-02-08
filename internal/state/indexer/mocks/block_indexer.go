@@ -75,9 +75,9 @@ func (_m *BlockIndexer) Has(height int64) (bool, error) {
 	return r0, r1
 }
 
-// Index provides a mock function with given fields: _a0
-func (_m *BlockIndexer) Index(_a0 types.EventDataNewBlockEvents) error {
-	ret := _m.Called(_a0)
+// Index provides a mock function with given fields: events
+func (_m *BlockIndexer) Index(events types.EventDataNewBlockEvents) error {
+	ret := _m.Called(events)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Index")
@@ -85,7 +85,7 @@ func (_m *BlockIndexer) Index(_a0 types.EventDataNewBlockEvents) error {
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(types.EventDataNewBlockEvents) error); ok {
-		r0 = rf(_a0)
+		r0 = rf(events)
 	} else {
 		r0 = ret.Error(0)
 	}

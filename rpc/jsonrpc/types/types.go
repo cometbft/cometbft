@@ -17,13 +17,13 @@ type jsonrpcid interface {
 	isJSONRPCID()
 }
 
-// JSONRPCStringID a wrapper for JSON-RPC string IDs
+// JSONRPCStringID a wrapper for JSON-RPC string IDs.
 type JSONRPCStringID string
 
 func (JSONRPCStringID) isJSONRPCID()      {}
 func (id JSONRPCStringID) String() string { return string(id) }
 
-// JSONRPCIntID a wrapper for JSON-RPC integer IDs
+// JSONRPCIntID a wrapper for JSON-RPC integer IDs.
 type JSONRPCIntID int
 
 func (JSONRPCIntID) isJSONRPCID()      {}
@@ -55,7 +55,7 @@ type RPCRequest struct {
 	Params  json.RawMessage `json:"params"` // must be map[string]interface{} or []interface{}
 }
 
-// UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int
+// UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int.
 func (req *RPCRequest) UnmarshalJSON(data []byte) error {
 	unsafeReq := struct {
 		JSONRPC string          `json:"jsonrpc"`
@@ -158,7 +158,7 @@ type RPCResponse struct {
 	Error   *RPCError       `json:"error,omitempty"`
 }
 
-// UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int
+// UnmarshalJSON custom JSON unmarshalling due to jsonrpcid being string or int.
 func (resp *RPCResponse) UnmarshalJSON(data []byte) error {
 	unsafeResp := &struct {
 		JSONRPC string          `json:"jsonrpc"`
@@ -253,9 +253,9 @@ type WSRPCConnection interface {
 	// GetRemoteAddr returns a remote address of the connection.
 	GetRemoteAddr() string
 	// WriteRPCResponse writes the response onto connection (BLOCKING).
-	WriteRPCResponse(context.Context, RPCResponse) error
+	WriteRPCResponse(ctx context.Context, res RPCResponse) error
 	// TryWriteRPCResponse tries to write the response onto connection (NON-BLOCKING).
-	TryWriteRPCResponse(RPCResponse) bool
+	TryWriteRPCResponse(res RPCResponse) bool
 	// Context returns the connection's context.
 	Context() context.Context
 }
@@ -317,7 +317,7 @@ func (ctx *Context) Context() context.Context {
 
 // Determine if its a unix or tcp socket.
 // If tcp, must specify the port; `0.0.0.0` will return incorrectly as "unix" since there's no port
-// TODO: deprecate
+// TODO: deprecate.
 func SocketType(listenAddr string) string {
 	socketType := "unix"
 	if len(strings.Split(listenAddr, ":")) >= 2 {

@@ -39,7 +39,7 @@ type Config struct {
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 }
 
-// App extracts out the application specific configuration parameters
+// App extracts out the application specific configuration parameters.
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
 		Dir:                        cfg.Dir,

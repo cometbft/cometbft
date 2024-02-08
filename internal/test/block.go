@@ -41,7 +41,7 @@ func MakeBlockIDWithHash(hash []byte) types.BlockID {
 }
 
 // MakeHeader fills the rest of the contents of the header such that it passes
-// validate basic
+// validate basic.
 func MakeHeader(t *testing.T, h *types.Header) *types.Header {
 	t.Helper()
 	if h.Version.Block == 0 {

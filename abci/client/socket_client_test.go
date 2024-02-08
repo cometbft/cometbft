@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
@@ -39,7 +38,7 @@ func TestCalls(t *testing.T) {
 		require.Fail(t, "No response arrived")
 	case err, ok := <-resp:
 		require.True(t, ok, "Must not close channel")
-		assert.NoError(t, err, "This should return success")
+		require.NoError(t, err)
 	}
 }
 
@@ -72,7 +71,7 @@ func TestHangingAsyncCalls(t *testing.T) {
 		require.Fail(t, "No response arrived")
 	case err, ok := <-resp:
 		require.True(t, ok, "Must not close channel")
-		assert.Error(t, err, "We should get EOF error")
+		require.Error(t, err, "We should get EOF error")
 	}
 }
 
@@ -113,7 +112,7 @@ func TestBulk(t *testing.T) {
 	// Send bulk request
 	res, err := client.FinalizeBlock(context.Background(), rfb)
 	require.NoError(t, err)
-	require.Equal(t, numTxs, len(res.TxResults), "Number of txs doesn't match")
+	require.Len(t, res.TxResults, numTxs, "Number of txs doesn't match")
 	for _, tx := range res.TxResults {
 		require.Equal(t, uint32(0), tx.Code, "Tx failed")
 	}

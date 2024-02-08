@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/inspect/rpc"
 	"github.com/cometbft/cometbft/internal/state"
@@ -17,8 +19,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
 	"github.com/cometbft/cometbft/types"
-
-	"golang.org/x/sync/errgroup"
 )
 
 var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
@@ -47,7 +47,7 @@ type Inspector struct {
 // The sinks are used to enable block and transaction querying via the RPC server.
 // The caller is responsible for starting and stopping the Inspector service.
 //
-//nolint:lll
+
 func New(
 	cfg *config.RPCConfig,
 	bs state.BlockStore,

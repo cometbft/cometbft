@@ -6,7 +6,7 @@ import (
 
 //------------------------------------------------------------------------------
 
-// ValidatorUpdates is a list of validators that implements the Sort interface
+// ValidatorUpdates is a list of validators that implements the Sort interface.
 type ValidatorUpdates []ValidatorUpdate
 
 var _ sort.Interface = (ValidatorUpdates)(nil)
@@ -21,7 +21,7 @@ func (v ValidatorUpdates) Len() int {
 	return len(v)
 }
 
-// XXX: doesn't distinguish same validator with different power
+// XXX: doesn't distinguish same validator with different power.
 func (v ValidatorUpdates) Less(i, j int) bool {
 	return v[i].PubKey.Compare(v[j].PubKey) <= 0
 }

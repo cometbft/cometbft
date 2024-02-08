@@ -146,7 +146,7 @@ func (mem *CListMempool) removeAllTxs() {
 	})
 }
 
-// NOTE: not thread safe - should only be called once, on startup
+// NOTE: not thread safe - should only be called once, on startup.
 func (mem *CListMempool) EnableTxsAvailable() {
 	mem.txsAvailable = make(chan struct{}, 1)
 }
@@ -590,7 +590,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 }
 
 // Lock() must be help by the caller during execution.
-// TODO: this function always returns nil; remove the return value
+// TODO: this function always returns nil; remove the return value.
 func (mem *CListMempool) Update(
 	height int64,
 	txs types.Txs,

@@ -19,7 +19,7 @@ import (
 
 var waitForEventTimeout = 8 * time.Second
 
-// MakeTxKV returns a text transaction, along with expected key, value pair
+// MakeTxKV returns a text transaction, along with expected key, value pair.
 func MakeTxKV() ([]byte, []byte, []byte) {
 	k := []byte(cmtrand.Str(8))
 	v := []byte(cmtrand.Str(8))
@@ -34,7 +34,7 @@ func TestHeaderEvents(t *testing.T) {
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.
 				err := c.Start()
-				require.Nil(t, err, "%d: %+v", i, err)
+				require.NoError(t, err, "%d: %+v", i, err)
 				t.Cleanup(func() {
 					if err := c.Stop(); err != nil {
 						t.Error(err)
@@ -44,7 +44,8 @@ func TestHeaderEvents(t *testing.T) {
 
 			evtTyp := types.EventNewBlockHeader
 			evt, err := client.WaitForOneEvent(c, evtTyp, waitForEventTimeout)
-			require.Nil(t, err, "%d: %+v", i, err)
+			require.NoError(t, err)
+			require.NoError(t, err, "%d: %+v", i, err)
 			_, ok := evt.(types.EventDataNewBlockHeader)
 			require.True(t, ok, "%d: %#v", i, evt)
 			// TODO: more checks...
@@ -52,7 +53,7 @@ func TestHeaderEvents(t *testing.T) {
 	}
 }
 
-// subscribe to new blocks and make sure height increments by 1
+// subscribe to new blocks and make sure height increments by 1.
 func TestBlockEvents(t *testing.T) {
 	for _, c := range GetClients() {
 		c := c
@@ -61,7 +62,7 @@ func TestBlockEvents(t *testing.T) {
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.
 				err := c.Start()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				t.Cleanup(func() {
 					if err := c.Stop(); err != nil {
 						t.Error(err)
@@ -101,6 +102,7 @@ func TestTxEventsSentWithBroadcastTxAsync(t *testing.T) { testTxEventsSent(t, "a
 func TestTxEventsSentWithBroadcastTxSync(t *testing.T)  { testTxEventsSent(t, "sync") }
 
 func testTxEventsSent(t *testing.T, broadcastMethod string) {
+	t.Helper()
 	for _, c := range GetClients() {
 		c := c
 		t.Run(reflect.TypeOf(c).String(), func(t *testing.T) {
@@ -108,7 +110,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.
 				err := c.Start()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				t.Cleanup(func() {
 					if err := c.Stop(); err != nil {
 						t.Error(err)
@@ -134,14 +136,14 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 				default:
 					panic(fmt.Sprintf("Unknown broadcastMethod %s", broadcastMethod))
 				}
-				if assert.NoError(t, err) {
-					assert.Equal(t, txres.Code, abci.CodeTypeOK)
+				if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+					require.Equal(t, abci.CodeTypeOK, txres.Code)
 				}
 			}()
 
 			// and wait for confirmation
 			evt, err := client.WaitForOneEvent(c, types.EventTx, waitForEventTimeout)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// and make sure it has the proper info
 			txe, ok := evt.(types.EventDataTx)
@@ -160,14 +162,14 @@ func TestHTTPReturnsErrorIfClientIsNotRunning(t *testing.T) {
 	// on Subscribe
 	_, err := c.Subscribe(context.Background(), "TestHeaderEvents",
 		types.QueryForEvent(types.EventNewBlockHeader).String())
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// on Unsubscribe
 	err = c.Unsubscribe(context.Background(), "TestHeaderEvents",
 		types.QueryForEvent(types.EventNewBlockHeader).String())
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// on UnsubscribeAll
 	err = c.UnsubscribeAll(context.Background(), "TestHeaderEvents")
-	assert.Error(t, err)
+	require.Error(t, err)
 }

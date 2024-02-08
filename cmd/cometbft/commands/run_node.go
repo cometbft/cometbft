@@ -13,7 +13,7 @@ import (
 var genesisHash []byte
 
 // AddNodeFlags exposes some common configuration options on the command-line
-// These are exposed for convenience of commands embedding a CometBFT node
+// These are exposed for convenience of commands embedding a CometBFT node.
 func AddNodeFlags(cmd *cobra.Command) {
 	// bind flags
 	cmd.Flags().String("moniker", config.Moniker, "node name")

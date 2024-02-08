@@ -22,7 +22,7 @@ type GRPCServer struct {
 	app types.Application
 }
 
-// NewGRPCServer returns a new gRPC ABCI server
+// NewGRPCServer returns a new gRPC ABCI server.
 func NewGRPCServer(protoAddr string, app types.Application) service.Service {
 	proto, addr := cmtnet.ProtocolAndAddress(protoAddr)
 	s := &GRPCServer{
@@ -62,7 +62,7 @@ func (s *GRPCServer) OnStop() {
 
 //-------------------------------------------------------
 
-// gRPCApplication is a gRPC shim for Application
+// gRPCApplication is a gRPC shim for Application.
 type gRPCApplication struct {
 	types.Application
 }

@@ -31,7 +31,7 @@ func newVersionServiceClient(conn grpc.ClientConn) VersionServiceClient {
 	}
 }
 
-// GetVersion implements VersionServiceClient
+// GetVersion implements VersionServiceClient.
 func (c *versionServiceClient) GetVersion(ctx context.Context) (*Version, error) {
 	res, err := c.client.GetVersion(ctx, &pbsvc.GetVersionRequest{})
 	if err != nil {
@@ -51,7 +51,7 @@ func newDisabledVersionServiceClient() VersionServiceClient {
 	return &disabledVersionServiceClient{}
 }
 
-// GetVersion implements VersionServiceClient
+// GetVersion implements VersionServiceClient.
 func (*disabledVersionServiceClient) GetVersion(context.Context) (*Version, error) {
 	panic("version service client is disabled")
 }

@@ -202,7 +202,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		if startAt == 0 {
 			(*manifest.Validators)[name] = int64(30 + r.Intn(71))
 		} else {
-			manifest.ValidatorUpdates[fmt.Sprint(startAt+5)] = map[string]int64{
+			manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)] = map[string]int64{
 				name: int64(30 + r.Intn(71)),
 			}
 		}
@@ -372,11 +372,12 @@ func parseWeightedVersions(s string) (weightedChoice, string, error) {
 	for _, wv := range wvs {
 		parts := strings.Split(strings.TrimSpace(wv), ":")
 		var ver string
-		if len(parts) == 2 {
+		switch len(parts) {
+		case 2:
 			ver = strings.TrimSpace(strings.Join([]string{"cometbft/e2e-node", parts[0]}, ":"))
-		} else if len(parts) == 3 {
+		case 3:
 			ver = strings.TrimSpace(strings.Join([]string{parts[0], parts[1]}, ":"))
-		} else {
+		default:
 			return nil, "", fmt.Errorf("unexpected weight:version combination: %s", wv)
 		}
 

@@ -76,7 +76,7 @@ func (err ErrAddrBookInvalidAddr) Error() string {
 	return fmt.Sprintf("Cannot add invalid address %v: %v", err.Addr, err.AddrErr)
 }
 
-// ErrAddressBanned is thrown when the address has been banned and therefore cannot be used
+// ErrAddressBanned is thrown when the address has been banned and therefore cannot be used.
 type ErrAddressBanned struct {
 	Addr *p2p.NetAddress
 }

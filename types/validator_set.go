@@ -425,7 +425,7 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 //	Note that this will be < 2 * MaxTotalVotingPower in case high power validators are removed and
 //	validators are added/ updated with high power values.
 //
-// err - non-nil if the maximum allowed total voting power would be exceeded
+// err - non-nil if the maximum allowed total voting power would be exceeded.
 func verifyUpdates(
 	updates []*Validator,
 	vals *ValidatorSet,
@@ -661,7 +661,7 @@ func (vals *ValidatorSet) UpdateWithChangeSet(changes []*Validator) error {
 }
 
 // VerifyCommit verifies +2/3 of the set had signed the given commit and all
-// other signatures are valid
+// other signatures are valid.
 func (vals *ValidatorSet) VerifyCommit(chainID string, blockID BlockID,
 	height int64, commit *Commit,
 ) error {
@@ -810,7 +810,7 @@ func (valz ValidatorsByAddress) Swap(i, j int) {
 	valz[i], valz[j] = valz[j], valz[i]
 }
 
-// ToProto converts ValidatorSet to protobuf
+// ToProto converts ValidatorSet to protobuf.
 func (vals *ValidatorSet) ToProto() (*cmtproto.ValidatorSet, error) {
 	if vals.IsNilOrEmpty() {
 		return &cmtproto.ValidatorSet{}, nil // validator set should never be nil
@@ -842,7 +842,7 @@ func (vals *ValidatorSet) ToProto() (*cmtproto.ValidatorSet, error) {
 
 // ValidatorSetFromProto sets a protobuf ValidatorSet to the given pointer.
 // It returns an error if any of the validators from the set or the proposer
-// is invalid
+// is invalid.
 func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 	if vp == nil {
 		return nil, errors.New("nil validator set") // validator set should never be nil, bigger issues are at play if empty

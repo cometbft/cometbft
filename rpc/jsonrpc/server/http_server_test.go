@@ -138,6 +138,7 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 	assert.Equal(t, `[{"jsonrpc":"2.0","id":-1,"result":{"value":"hello"}},{"jsonrpc":"2.0","id":-1,"result":{"value":"world"}}]`, string(body))
 }
 
+// TestWriteRPCResponseHTTPError tests WriteRPCResponseHTTPError.
 func TestWriteRPCResponseHTTPError(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := WriteRPCResponseHTTPError(

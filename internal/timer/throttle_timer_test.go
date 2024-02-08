@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	// make govet noshadow happy...
-
 	asrt "github.com/stretchr/testify/assert"
 
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
@@ -31,7 +29,7 @@ func (c *thCounter) Count() int {
 }
 
 // Read should run in a go-routine and
-// updates count by one every time a packet comes in
+// updates count by one every time a packet comes in.
 func (c *thCounter) Read() {
 	for range c.input {
 		c.Increment()

@@ -54,7 +54,7 @@ func (genDoc *GenesisDoc) SaveAs(file string) error {
 	return cmtos.WriteFile(file, genDocBytes, 0o644)
 }
 
-// ValidatorHash returns the hash of the validator set contained in the GenesisDoc
+// ValidatorHash returns the hash of the validator set contained in the GenesisDoc.
 func (genDoc *GenesisDoc) ValidatorHash() []byte {
 	vals := make([]*Validator, len(genDoc.Validators))
 	for i, v := range genDoc.Validators {
@@ -65,7 +65,7 @@ func (genDoc *GenesisDoc) ValidatorHash() []byte {
 }
 
 // ValidateAndComplete checks that all necessary fields are present
-// and fills in defaults for optional fields left empty
+// and fills in defaults for optional fields left empty.
 func (genDoc *GenesisDoc) ValidateAndComplete() error {
 	if genDoc.ChainID == "" {
 		return errors.New("genesis doc must include non-empty chain_id")

@@ -17,14 +17,14 @@ import (
 	"text/template"
 	"time"
 
+	_ "embed"
+
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
-
-	_ "embed"
 )
 
 const (
@@ -150,7 +150,7 @@ func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
 	return NewTestnetFromManifest(manifest, file, ifd)
 }
 
-// NewTestnetFromManifest creates and validates a testnet from a manifest
+// NewTestnetFromManifest creates and validates a testnet from a manifest.
 func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
 
@@ -424,7 +424,7 @@ func (t Testnet) validateZones(nodes []*Node) error {
 	}
 
 	// Get list of zone ids in matrix.
-	zones := make([]ZoneID, len(zoneMatrix))
+	zones := make([]ZoneID, 0, len(zoneMatrix))
 	for zone := range zoneMatrix {
 		zones = append(zones, zone)
 	}
@@ -644,6 +644,7 @@ func (n Node) AddressRPC() string {
 
 // Client returns an RPC client for the node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
+	//nolint:nosprintfhostport
 	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
 }
 
@@ -665,7 +666,7 @@ func (n Node) GRPCPrivilegedClient(ctx context.Context) (grpcprivileged.Client, 
 	)
 }
 
-// Stateless returns true if the node is either a seed node or a light node
+// Stateless returns true if the node is either a seed node or a light node.
 func (n Node) Stateless() bool {
 	return n.Mode == ModeLight || n.Mode == ModeSeed
 }

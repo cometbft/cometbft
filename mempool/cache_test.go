@@ -3,7 +3,7 @@ package mempool
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,14 +29,14 @@ func TestCacheRemove(t *testing.T) {
 		cache.Push(txBytes)
 
 		// make sure its added to both the linked list and the map
-		require.Equal(t, i+1, len(cache.cacheMap))
+		require.Len(t, cache.cacheMap, i+1)
 		require.Equal(t, i+1, cache.list.Len())
 	}
 
 	for i := 0; i < numTxs; i++ {
 		cache.Remove(txs[i])
 		// make sure its removed from both the map and the linked list
-		require.Equal(t, numTxs-(i+1), len(cache.cacheMap))
+		require.Len(t, cache.cacheMap, numTxs-(i+1))
 		require.Equal(t, numTxs-(i+1), cache.list.Len())
 	}
 }
@@ -63,7 +63,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 	}
 	for tcIndex, tc := range tests {
 		for i := 0; i < tc.numTxsToCreate; i++ {
-			tx := kvstore.NewTx(fmt.Sprintf("%d", i), "value")
+			tx := kvstore.NewTx(strconv.Itoa(i), "value")
 			reqRes, err := mp.CheckTx(tx)
 			require.NoError(t, err)
 			require.False(t, reqRes.Response.GetCheckTx().IsErr())
@@ -71,14 +71,14 @@ func TestCacheAfterUpdate(t *testing.T) {
 
 		updateTxs := []types.Tx{}
 		for _, v := range tc.updateIndices {
-			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")
+			tx := kvstore.NewTx(strconv.Itoa(v), "value")
 			updateTxs = append(updateTxs, tx)
 		}
 		err := mp.Update(int64(tcIndex), updateTxs, abciResponses(len(updateTxs), abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
 
 		for _, v := range tc.reAddIndices {
-			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")
+			tx := kvstore.NewTx(strconv.Itoa(v), "value")
 			reqRes, err := mp.CheckTx(tx)
 			if err == nil {
 				require.False(t, reqRes.Response.GetCheckTx().IsErr())
@@ -93,7 +93,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 				"cache larger than expected on testcase %d", tcIndex)
 
 			nodeVal := node.Value.(types.TxKey)
-			expTx := kvstore.NewTx(fmt.Sprintf("%d", tc.txsInCache[len(tc.txsInCache)-counter-1]), "value")
+			expTx := kvstore.NewTx(strconv.Itoa(tc.txsInCache[len(tc.txsInCache)-counter-1]), "value")
 			expectedBz := sha256.Sum256(expTx)
 			// Reference for reading the errors:
 			// >>> sha256('\x00').hexdigest()
@@ -107,7 +107,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 			counter++
 			node = node.Next()
 		}
-		require.Equal(t, len(tc.txsInCache), counter,
+		require.Len(t, tc.txsInCache, counter,
 			"cache smaller than expected on testcase %d", tcIndex)
 		mp.Flush()
 	}

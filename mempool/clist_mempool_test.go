@@ -79,8 +79,9 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	return mp, func() { os.RemoveAll(cfg.RootDir) }
 }
 
-func ensureNoFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
-	timer := time.NewTimer(time.Duration(timeoutMS) * time.Millisecond)
+func ensureNoFire(t *testing.T, ch <-chan struct{}) {
+	t.Helper()
+	timer := time.NewTimer(100 * time.Millisecond)
 	select {
 	case <-ch:
 		t.Fatal("Expected not to fire")
@@ -370,15 +371,15 @@ func TestTxsAvailable(t *testing.T) {
 	defer cleanup()
 	mp.EnableTxsAvailable()
 
-	timeoutMS := 500
+	timeoutMS := 100
 
 	// with no txs, it shouldn't fire
-	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
+	ensureNoFire(t, mp.TxsAvailable())
 
 	// send a bunch of txs, it should only fire once
 	txs := checkTxs(t, mp, 100)
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
-	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
+	ensureNoFire(t, mp.TxsAvailable())
 
 	// call update with half the txs.
 	// it should fire once now for the new height
@@ -388,23 +389,23 @@ func TestTxsAvailable(t *testing.T) {
 		t.Error(err)
 	}
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
-	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
+	ensureNoFire(t, mp.TxsAvailable())
 
 	// send a bunch more txs. we already fired for this height so it shouldn't fire again
 	moreTxs := checkTxs(t, mp, 50)
-	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
+	ensureNoFire(t, mp.TxsAvailable())
 
 	// now call update with all the txs. it should not fire as there are no txs left
 	committedTxs = append(remainingTxs, moreTxs...)
 	if err := mp.Update(2, committedTxs, abciResponses(len(committedTxs), abci.CodeTypeOK), nil, nil); err != nil {
 		t.Error(err)
 	}
-	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
+	ensureNoFire(t, mp.TxsAvailable())
 
 	// send a bunch more txs, it should only fire once
 	checkTxs(t, mp, 100)
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
-	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
+	ensureNoFire(t, mp.TxsAvailable())
 }
 
 func TestSerialReap(t *testing.T) {

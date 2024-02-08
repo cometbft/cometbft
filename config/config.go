@@ -1272,9 +1272,10 @@ type StorageConfig struct {
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
 	// Configuration related to storage pruning.
 	Pruning *PruningConfig `mapstructure:"pruning"`
-	// Compaction config
+	// Compaction on pruning - enable or disable in-process compaction
+	// false by default (compaction on pruning is disabled)
 	CompactOnPruning bool `mapstructure:"compact_on_pruning"`
-	// Compaction interval - number of blocks to try explicit compaciton on
+	// Compaction interval - number of blocks to try explicit compaction on
 	// 1000 by default
 	CompactionInterval int64 `mapstructure:"compaction_interval"`
 	// Hex representation of the hash of the genesis file.

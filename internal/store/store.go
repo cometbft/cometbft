@@ -74,7 +74,7 @@ func WithCompaction(compact bool, compactionInterval int64) BlockStoreOption {
 	}
 }
 
-// WithLogger sets the logger for the blockstore.
+// WithLogger sets the logger for the BlockStore.
 func WithLogger(logger log.Logger) BlockStoreOption {
 	return func(bs *BlockStore) {
 		bs.logger = logger

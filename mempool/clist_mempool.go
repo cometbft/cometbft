@@ -657,10 +657,10 @@ func (mem *CListMempool) recheckTxs() {
 }
 
 // The cursor and end pointers define a dynamic list of transactions that could be rechecked. The
-// end pointer is fixed. When a recheck response for a trasaction is received, cursor will point to
+// end pointer is fixed. When a recheck response for a transaction is received, cursor will point to
 // the entry in the mempool corresponding to that transaction, thus narrowing the list. Transactions
 // corresponding to entries between the old and current positions of cursor will be ignored for
-// rechecking. This is to gaurantee that recheck responses are processed in the same sequential
+// rechecking. This is to guarantee that recheck responses are processed in the same sequential
 // order as they appear in the mempool.
 type recheck struct {
 	cursor        *clist.CElement // next expected recheck response

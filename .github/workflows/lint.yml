@@ -7,6 +7,9 @@ name: Lint, format and check the code for typos
 
 on:
   pull_request:
+    branches:
+      - main
+      - feature/**
   merge_group:
   push:
     branches:

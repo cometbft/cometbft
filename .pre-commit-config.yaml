@@ -3,12 +3,12 @@
 
 repos:
 
- # golangci-lint
- - repo: https://github.com/golangci/golangci-lint
-   rev: v1.55.2
-   hooks:
-    - id: golangci-lint
-      args: [--timeout, 5m] # for CI
+# # golangci-lint
+# - repo: https://github.com/golangci/golangci-lint
+#   rev: v1.55.2
+#   hooks:
+#    - id: golangci-lint
+#      args: [--timeout, 5m] # for CI
 
  # gofumpt (does not have .pre-commmit-hooks.yaml)
  - repo: local

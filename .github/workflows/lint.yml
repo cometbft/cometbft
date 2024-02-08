@@ -1,7 +1,7 @@
 name: Lint, format and check the code for typos
 # Lint runs `make lint`
 #
-# This workflow is run on every pull request and push to main.
+# This workflow is run on every pull request and push to main and any feature branch.
 #
 # To run this locally, simply run `make lint` from the root of the repo.
 
@@ -11,6 +11,7 @@ on:
   push:
     branches:
       - main
+      - feature/**
 
 jobs:
   lint:

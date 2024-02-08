@@ -701,8 +701,7 @@ func (_m *Client) VerifyVoteExtension(ctx context.Context, req *v1.VerifyVoteExt
 func NewClient(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *Client {
+}) *Client {
 	mock := &Client{}
 	mock.Mock.Test(t)
 

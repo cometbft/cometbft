@@ -440,8 +440,7 @@ func (_m *Application) VerifyVoteExtension(ctx context.Context, req *v1.VerifyVo
 func NewApplication(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *Application {
+}) *Application {
 	mock := &Application{}
 	mock.Mock.Test(t)
 

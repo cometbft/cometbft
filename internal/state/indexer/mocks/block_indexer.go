@@ -186,8 +186,7 @@ func (_m *BlockIndexer) SetRetainHeight(retainHeight int64) error {
 func NewBlockIndexer(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *BlockIndexer {
+}) *BlockIndexer {
 	mock := &BlockIndexer{}
 	mock.Mock.Test(t)
 

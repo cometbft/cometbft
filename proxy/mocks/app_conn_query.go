@@ -128,8 +128,7 @@ func (_m *AppConnQuery) Query(ctx context.Context, req *v1.QueryRequest) (*v1.Qu
 func NewAppConnQuery(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *AppConnQuery {
+}) *AppConnQuery {
 	mock := &AppConnQuery{}
 	mock.Mock.Test(t)
 

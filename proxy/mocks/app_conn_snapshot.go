@@ -158,8 +158,7 @@ func (_m *AppConnSnapshot) OfferSnapshot(ctx context.Context, req *v1.OfferSnaps
 func NewAppConnSnapshot(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *AppConnSnapshot {
+}) *AppConnSnapshot {
 	mock := &AppConnSnapshot{}
 	mock.Mock.Test(t)
 

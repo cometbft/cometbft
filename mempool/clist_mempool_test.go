@@ -289,7 +289,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK)
 		callback(reqRes.Request, reqRes.Response)
 	}
-	require.Equal(t, len(txs), mp.Size())
+	require.Len(t, txs, mp.Size())
 	require.Nil(t, mp.recheckCursor)
 
 	// Calling update to remove the first transaction from the mempool.

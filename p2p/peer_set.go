@@ -83,8 +83,8 @@ func (ps *PeerSet) HasIP(peerIP net.IP) bool {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
-	for _, item := range ps.lookup {
-		if item.peer.RemoteIP().Equal(peerIP) {
+	for _, peer := range ps.list {
+		if peer.RemoteIP().Equal(peerIP) {
 			return true
 		}
 	}
@@ -110,8 +110,8 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
-	item := ps.lookup[peer.ID()]
-	if item == nil || len(ps.list) == 0 {
+	item, ok := ps.lookup[peer.ID()]
+	if !ok || len(ps.list) == 0 {
 		// Removing the peer has failed so we set a flag to mark that a removal was attempted.
 		// This can happen when the peer add routine from the switch is running in
 		// parallel to the receive routine of MConn.
@@ -121,20 +121,23 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 		return false
 	}
 	index := item.index
+
+	// Remove from ps.lookup.
 	delete(ps.lookup, peer.ID())
 
-	lastPeer := ps.list[len(ps.list)-1]
+	// If it's not the last item.
+	if index != len(ps.list)-1 {
+		// Swap it with the last item.
+		lastPeer := ps.list[len(ps.list)-1]
+		item := ps.lookup[lastPeer.ID()]
+		item.index = index
+		ps.list[index] = item.peer
+	}
+
+	// Remove the last item from ps.list.
 	ps.list[len(ps.list)-1] = nil // nil the last entry of the slice to shorten, so it isn't reachable & can be GC'd.
 	ps.list = ps.list[:len(ps.list)-1]
 
-	// If it's the last peer, that's an easy special case.
-	if len(ps.list) == 0 {
-		return true
-	}
-
-	// Replace the popped item with the last item in the old list.
-	lastPeerItem := ps.lookup[lastPeer.ID()]
-	lastPeerItem.index = index
 	return true
 }
 

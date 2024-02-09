@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 )
@@ -303,8 +304,8 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 		ABCI: ABCIParams{
 			VoteExtensionsEnableHeight: args.abciExtensionHeight,
 		},
-		PBTS: PBTSParams{
-			PBTSEnableHeight: args.pbtsHeight,
+		Feature: FeatureParams{
+			PbtsEnableHeight: &args.pbtsHeight,
 		},
 	}
 }
@@ -363,8 +364,8 @@ func TestConsensusParamsUpdate(t *testing.T) {
 		{
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
-				Pbts: &cmtproto.PBTSParams{
-					PbtsEnableHeight: 1,
+				Feature: &cmtproto.FeatureParams{
+					PbtsEnableHeight: &wrapperspb.Int64Value{Value: 1},
 				},
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pbtsHeight: 1}),
@@ -494,8 +495,8 @@ func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
 			pbtsHeight: 1,
 		})
 		update := &cmtproto.ConsensusParams{
-			Pbts: &cmtproto.PBTSParams{
-				PbtsEnableHeight: 10,
+			Feature: &cmtproto.FeatureParams{
+				PbtsEnableHeight: &wrapperspb.Int64Value{Value: 10},
 			},
 		}
 		require.Error(t, initialParams.ValidateUpdate(update, 3))
@@ -505,8 +506,8 @@ func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
 			pbtsHeight: 1,
 		})
 		update := &cmtproto.ConsensusParams{
-			Pbts: &cmtproto.PBTSParams{
-				PbtsEnableHeight: 0,
+			Feature: &cmtproto.FeatureParams{
+				PbtsEnableHeight: &wrapperspb.Int64Value{Value: 0},
 			},
 		}
 		require.Error(t, initialParams.ValidateUpdate(update, 3))
@@ -516,8 +517,8 @@ func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
 			pbtsHeight: 0,
 		})
 		update := &cmtproto.ConsensusParams{
-			Pbts: &cmtproto.PBTSParams{
-				PbtsEnableHeight: 5,
+			Feature: &cmtproto.FeatureParams{
+				PbtsEnableHeight: &wrapperspb.Int64Value{Value: 5},
 			},
 		}
 		require.Error(t, initialParams.ValidateUpdate(update, 10))
@@ -527,8 +528,8 @@ func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
 			pbtsHeight: 0,
 		})
 		update := &cmtproto.ConsensusParams{
-			Pbts: &cmtproto.PBTSParams{
-				PbtsEnableHeight: 10,
+			Feature: &cmtproto.FeatureParams{
+				PbtsEnableHeight: &wrapperspb.Int64Value{Value: 10},
 			},
 		}
 		require.NoError(t, initialParams.ValidateUpdate(update, 3))

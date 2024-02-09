@@ -761,7 +761,11 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 			defer wg.Done()
 
 			tx := kvstore.NewTxFromID(h)
+<<<<<<< HEAD
 			mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
+=======
+			mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
+>>>>>>> 460b8136b (refactor(mempool): simplify parameters of resCbFirstTime and resCbRecheck (#2272))
 			require.Equal(t, h, mp.Size(), "pool size mismatch")
 		}(h)
 
@@ -783,14 +787,22 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 
 	// Adding a new valid tx to the pool will notify a tx is available
 	tx := kvstore.NewTxFromID(1)
+<<<<<<< HEAD
 	mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
+=======
+	mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
+>>>>>>> 460b8136b (refactor(mempool): simplify parameters of resCbFirstTime and resCbRecheck (#2272))
 	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Len(t, mp.TxsAvailable(), 1)
 	<-mp.TxsAvailable()
 
 	// Receiving CheckTx response for a tx already in the pool should not notify of available txs
+<<<<<<< HEAD
 	mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
+=======
+	mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
+>>>>>>> 460b8136b (refactor(mempool): simplify parameters of resCbFirstTime and resCbRecheck (#2272))
 	require.Equal(t, 1, mp.Size())
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Empty(t, mp.TxsAvailable())

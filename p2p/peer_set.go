@@ -128,7 +128,7 @@ func (ps *PeerSet) Remove(peer Peer) bool {
 	ps.list = ps.list[:len(ps.list)-1]
 
 	// If it's the last peer, that's an easy special case.
-	if index == len(ps.list) {
+	if len(ps.list) == 0 {
 		return true
 	}
 

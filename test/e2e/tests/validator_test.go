@@ -138,7 +138,8 @@ type validatorSchedule struct {
 }
 
 func newValidatorSchedule(testnet e2e.Testnet) *validatorSchedule {
-	valMap := testnet.Validators                  // genesis validators
+	valMap := testnet.Validators // genesis validators
+	// TODO need to retrieve the flipping validator here
 	if v, ok := testnet.ValidatorUpdates[0]; ok { // InitChain validators
 		valMap = v
 	}
@@ -156,7 +157,9 @@ func (s *validatorSchedule) Increment(heights int64) {
 			// validator set updates are offset by 2, since they only take effect
 			// two blocks after they're returned.
 			if update, ok := s.updates[s.height-2]; ok {
-				if err := s.Set.UpdateWithChangeSet(makeVals(update)); err != nil {
+				vals := makeVals(update)
+				// TODO need to add oscillation here to fix tests
+				if err := s.Set.UpdateWithChangeSet(vals); err != nil {
 					panic(err)
 				}
 			}

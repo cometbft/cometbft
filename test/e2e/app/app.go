@@ -36,6 +36,7 @@ const (
 	suffixChainID       string = "ChainID"
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixInitialHeight string = "InitialHeight"
+	suffixFlippingVal   string = "FlippingVal"
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -182,6 +183,51 @@ func (app *Application) updateVoteExtensionEnableHeight(currentHeight int64) *cm
 	return params
 }
 
+func (app *Application) oscillateParams(params *cmtproto.ConsensusParams, height int64) (*cmtproto.ConsensusParams, error) {
+	if !app.cfg.ConstantValConsensusChanges {
+		return params, nil
+	}
+	keyTypes := []string{cmttypes.ABCIPubKeyTypeEd25519} // Default genesis value, not touched by e2e logic
+	if height%2 == 0 {
+		keyTypes = append(keyTypes, cmttypes.ABCIPubKeyTypeSecp256k1)
+	}
+	if params == nil {
+		params = &cmtproto.ConsensusParams{}
+	}
+	params.Validator = &cmtproto.ValidatorParams{
+		PubKeyTypes: keyTypes,
+	}
+	app.logger.Info("oscillating key types", "PubKeyTypes", keyTypes)
+	return params, nil
+}
+
+func (app *Application) oscillateValUpdates(updates abci.ValidatorUpdates, height int64) (abci.ValidatorUpdates, error) {
+	if !app.cfg.ConstantValConsensusChanges || len(updates) > 0 {
+		return updates, nil
+	}
+	if height < 1 {
+		return nil, fmt.Errorf("cannot oscillate validators on height < 1 (%d)", height)
+	}
+
+	addr := app.state.Get(prefixReservedKey + suffixFlippingVal)
+	if addr == "" {
+		return nil, errors.New("the flipping validator's address cannot be empty")
+	}
+	power := height % 2
+	app.logger.Info("oscillating validator power", "addr", addr, "power", power)
+
+	pubKeyProto, err := app.loadPubKey(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	u := abci.ValidatorUpdate{
+		PubKey: *pubKeyProto,
+		Power:  power,
+	}
+	return abci.ValidatorUpdates{u}, nil
+}
+
 // Info implements ABCI.
 func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
 	r := &abci.Request{Value: &abci.Request_InitChain{InitChain: &abci.InitChainRequest{}}}
@@ -214,6 +260,9 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	}
 
 	params := app.updateVoteExtensionEnableHeight(0)
+	if params, err = app.oscillateParams(params, 0); err != nil {
+		return nil, err
+	}
 
 	resp := &abci.InitChainResponse{
 		ConsensusParams: params,
@@ -284,10 +333,16 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 
 	valUpdates, err := app.validatorUpdates(uint64(req.Height))
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+	if valUpdates, err = app.oscillateValUpdates(valUpdates, req.Height); err != nil {
+		return nil, err
 	}
 
 	params := app.updateVoteExtensionEnableHeight(req.Height)
+	if params, err = app.oscillateParams(params, req.Height); err != nil {
+		return nil, err
+	}
 
 	if app.cfg.FinalizeBlockDelay != 0 {
 		time.Sleep(app.cfg.FinalizeBlockDelay)
@@ -308,7 +363,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 					},
 					{
 						Key:   "height",
-						Value: strconv.Itoa(int(req.Height)),
+						Value: strconv.FormatInt(req.Height, 10),
 					},
 				},
 			},
@@ -698,6 +753,11 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 		return err
 	}
 	addr := pubKey.Address().String()
+	if app.cfg.ConstantValConsensusChanges {
+		if app.state.Get(prefixReservedKey+suffixFlippingVal) == "" {
+			app.state.Set(prefixReservedKey+suffixFlippingVal, addr)
+		}
+	}
 	if valUpdate.Power > 0 {
 		pubKeyBytes, err := valUpdate.PubKey.Marshal()
 		if err != nil {
@@ -742,6 +802,23 @@ func (app *Application) logABCIRequest(req *abci.Request) error {
 	}
 	app.logger.Info(s)
 	return nil
+}
+
+func (app *Application) loadPubKey(addr string) (*cryptoproto.PublicKey, error) {
+	pubKeyHex := app.state.Get(prefixReservedKey + addr)
+	if len(pubKeyHex) == 0 {
+		return nil, fmt.Errorf("unknown validator with address %q", addr)
+	}
+	pubKeyBytes, err := hex.DecodeString(pubKeyHex)
+	if err != nil {
+		return nil, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", addr, err)
+	}
+	var pubKeyProto cryptoproto.PublicKey
+	err = pubKeyProto.Unmarshal(pubKeyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", addr, err)
+	}
+	return &pubKeyProto, nil
 }
 
 // parseTx parses a tx in 'key=value' format into a key and value.
@@ -818,20 +895,11 @@ func (app *Application) verifyAndSum(
 
 		// ... and verify
 		valAddr := crypto.Address(vote.Validator.Address).String()
-		pubKeyHex := app.state.Get(prefixReservedKey + valAddr)
-		if len(pubKeyHex) == 0 {
-			return 0, fmt.Errorf("received vote from unknown validator with address %q", valAddr)
-		}
-		pubKeyBytes, err := hex.DecodeString(pubKeyHex)
+		pubKeyProto, err := app.loadPubKey(valAddr)
 		if err != nil {
-			return 0, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", valAddr, err)
+			return 0, err
 		}
-		var pubKeyProto cryptoproto.PublicKey
-		err = pubKeyProto.Unmarshal(pubKeyBytes)
-		if err != nil {
-			return 0, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", valAddr, err)
-		}
-		pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
+		pubKey, err := cryptoenc.PubKeyFromProto(*pubKeyProto)
 		if err != nil {
 			return 0, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", valAddr, err)
 		}

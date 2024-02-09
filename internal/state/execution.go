@@ -195,20 +195,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
 func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) error {
-	err := validateBlock(state, block, false)
-	if err != nil {
-		return err
-	}
-	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
-}
-
-// ValidateBlockForBlocksync validates the given block against the given state.
-// If the block is invalid, it returns an error.
-// Validation does not mutate state, but does require historical information from the stateDB,
-// ie. to verify evidence from a validator at an old height.
-// This method is less strict than `ValidateBlock`, which also validates the block's timestamp.
-func (blockExec *BlockExecutor) ValidateBlockForBlocksync(state State, block *types.Block) error {
-	err := validateBlock(state, block, true)
+	err := validateBlock(state, block)
 	if err != nil {
 		return err
 	}
@@ -231,7 +218,7 @@ func (blockExec *BlockExecutor) ApplyVerifiedBlock(
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
-	if err := validateBlock(state, block, false); err != nil {
+	if err := validateBlock(state, block); err != nil {
 		return state, ErrInvalidBlock(err)
 	}
 

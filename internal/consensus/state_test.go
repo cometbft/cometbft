@@ -52,6 +52,7 @@ next round, so we precommit nil but maintain lock
 x * TestStateLock_MissingProposalWhenPOLSeenDoesNotUpdateLock - 4 vals, 1 misses proposal but sees POL.
 x * TestStateLock_MissingProposalWhenPOLSeenDoesNotUnlock - 4 vals, 1 misses proposal but sees POL.
   * TestStateLock_MissingProposalWhenPOLForLockedBlock - 4 vals, 1 misses proposal but sees POL for locked block.
+x * TestState_MissingProposalValidBlockReceivedPrecommit - 4 vals, 1 misses proposal but receives full block.
 x * TestStateLock_POLSafety1 - 4 vals. We shouldn't change lock based on polka at earlier round
 x * TestStateLock_POLSafety2 - 4 vals. After unlocking, we shouldn't relock based on polka at earlier round
 x * TestState_PrevotePOLFromPreviousRound 4 vals, prevote a proposal if a POL was seen for it in a previous round.
@@ -1317,10 +1318,65 @@ func TestStateLock_MissingProposalWhenPOLForLockedBlock(t *testing.T) {
 	// now lets add prevotes from everyone else for the locked block
 	signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vs2, vs3, vs4)
 
+	// the validator precommits the valid block (as it received 2/3+
+	// prevotes) which matches its locked block (which also received 2/3+
+	// prevotes in the previous round).
 	ensurePrecommit(voteCh, height, round)
+	validatePrecommit(t, cs1, round, round, vss[0], blockID.Hash, blockID.Hash)
+}
 
-	// the validator precommits nil because it hasn't received the proposal for the current round
-	validatePrecommit(t, cs1, round, 0, vss[0], nil, blockID.Hash)
+// TestState_MissingProposalValidBlockReceivedPrecommit tests if a node that
+// misses the round's Proposal, but receives a Polka for a block and the full
+// block, precommits the valid block even though the Proposal is missing.
+func TestState_MissingProposalValidBlockReceivedPrecommit(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cs1, vss := randState(4)
+	height, round := cs1.Height, cs1.Round
+	chainID := cs1.state.ChainID
+
+	timeoutProposeCh := subscribe(cs1.eventBus, types.EventQueryTimeoutPropose)
+	validBlockCh := subscribe(cs1.eventBus, types.EventQueryValidBlock)
+	voteCh := subscribe(cs1.eventBus, types.EventQueryVote)
+
+	// Produce a block
+	block, err := cs1.createProposalBlock(ctx)
+	require.NoError(t, err)
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+	blockID := types.BlockID{
+		Hash:          block.Hash(),
+		PartSetHeader: blockParts.Header(),
+	}
+
+	// Skip round 0 and start consensus
+	round++
+	incrementRound(vss[1:]...)
+	startTestRound(cs1, height, round)
+
+	// We are late, so we already receive prevotes for the block
+	for i := 1; i < len(vss); i++ {
+		signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vss[i])
+		ensurePrevote(voteCh, height, round)
+	}
+	// We received a Polka for blockID, which is now valid
+	ensureNewValidBlock(validBlockCh, height, round)
+
+	// We don't have the Proposal, so we wait for timeout propose
+	ensureNewTimeout(timeoutProposeCh, height, round, cs1.config.Propose(round).Nanoseconds())
+	ensurePrevote(voteCh, height, round)
+	validatePrevote(t, cs1, round, vss[0], nil)
+
+	// We accept the full block associated with the valid blockID
+	for i := 0; i < int(blockParts.Total()); i++ {
+		err := cs1.AddProposalBlockPart(height, round, blockParts.GetPart(i), "peer")
+		require.NoError(t, err)
+	}
+
+	// we don't have the Proposal for blockID, but we have the full block
+	ensurePrecommit(voteCh, height, round)
+	validatePrecommit(t, cs1, round, round, vss[0], blockID.Hash, blockID.Hash)
 }
 
 // TestStateLock_DoesNotLockOnOldProposal tests that observing
@@ -3160,14 +3216,16 @@ func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
 	startTestRound(cs1, height, round)
 	ensureProposal(proposalCh, height, round, blockID)
 
-	signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vs2, vs3, vs4)
-
 	// ensure that the validator prevotes nil.
 	ensurePrevote(voteCh, height, round)
 	validatePrevote(t, cs1, round, vss[0], nil)
 
+	// This does not refer to the main concern of this test unit. Since
+	// 2/3+ validators have seen the proposal, validated and prevoted for
+	// it, it is a valid proposal. We should lock and precommit for it.
+	signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vs2, vs3, vs4)
 	ensurePrecommit(voteCh, height, round)
-	validatePrecommit(t, cs1, round, -1, vss[0], nil, nil)
+	validatePrecommit(t, cs1, round, round, vss[0], blockID.Hash, blockID.Hash)
 }
 
 // TestStateTimestamp_ProposalMatch tests that a validator prevotes a

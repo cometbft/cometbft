@@ -67,7 +67,7 @@ type pbtsTestConfiguration struct {
 	// The timestamp consensus parameters to be used by the state machine under test.
 	synchronyParams types.SynchronyParams
 
-	pbtsParams types.PBTSParams
+	featureParams types.FeatureParams
 
 	// The setting to use for the TimeoutPropose configuration parameter.
 	timeoutPropose time.Duration
@@ -90,7 +90,7 @@ type pbtsTestConfiguration struct {
 func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfiguration) pbtsTestHarness {
 	t.Helper()
 	const validators = 4
-	cfg := test.ResetTestRoot("newPBTSTestHarness")
+	pbtsCfg := test.ResetTestRoot("newPBTSTestHarness")
 	clock := new(cmttimemocks.Source)
 
 	if tc.genesisTime.IsZero() {
@@ -105,13 +105,14 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 		// height 4 therefore occurs 2*blockTimeIota after height 2.
 		tc.height4ProposedBlockOffset = tc.height2ProposalTimeDeliveryOffset + 2*blockTimeIota
 	}
-	cfg.Consensus.TimeoutPropose = tc.timeoutPropose
+	pbtsCfg.Consensus.TimeoutPropose = tc.timeoutPropose
 	consensusParams := types.DefaultConsensusParams()
 	consensusParams.Synchrony = tc.synchronyParams
-	consensusParams.PBTS = tc.pbtsParams
+	// TODO(@glnro): Update TC's once #2205 merged to include pbts enabled
+	consensusParams.Feature = tc.featureParams
 
 	state, privVals := randGenesisStateWithTime(validators, consensusParams, tc.genesisTime)
-	cs := newStateWithConfig(cfg, state, privVals[0], kvstore.NewInMemoryApplication())
+	cs := newStateWithConfig(pbtsCfg, state, privVals[0], kvstore.NewInMemoryApplication())
 	vss := make([]*validatorStub, validators)
 	for i := 0; i < validators; i++ {
 		vss[i] = newValidatorStub(privVals[i], int32(i))
@@ -381,7 +382,7 @@ func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
 		height2ProposalTimeDeliveryOffset: 10 * time.Millisecond,
 		height2ProposedBlockOffset:        10 * time.Millisecond,
 		height4ProposedBlockOffset:        30 * time.Millisecond,
-		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
+		featureParams:                     pbtsFromHeightParams(1),
 	}
 
 	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
@@ -401,11 +402,12 @@ func TestPBTSProposerWaitsForPreviousBlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	initialTime := time.Now().Add(time.Millisecond * 50)
-	cfg := pbtsTestConfiguration{
+	pbtsCfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    100 * time.Millisecond,
 			MessageDelay: 500 * time.Millisecond,
 		},
+		featureParams:                     pbtsFromHeightParams(1),
 		timeoutPropose:                    50 * time.Millisecond,
 		genesisTime:                       initialTime,
 		height2ProposalTimeDeliveryOffset: 150 * time.Millisecond,
@@ -414,13 +416,13 @@ func TestPBTSProposerWaitsForPreviousBlock(t *testing.T) {
 		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
 	results := pbtsTest.run(ctx, t)
 
 	// the observed validator is the proposer at height 5.
 	// ensure that the observed validator did not propose a block until after
 	// the time configured for height 4.
-	assert.True(t, results.height5.proposalIssuedAt.After(pbtsTest.firstBlockTime.Add(cfg.height4ProposedBlockOffset)))
+	assert.True(t, results.height5.proposalIssuedAt.After(pbtsTest.firstBlockTime.Add(pbtsCfg.height4ProposedBlockOffset)))
 
 	// Ensure that the validator issued a prevote for a non-nil block.
 	assert.NotNil(t, results.height5.prevote.BlockID.Hash)
@@ -471,11 +473,12 @@ func TestPBTSTimelyProposal(t *testing.T) {
 
 	initialTime := time.Now()
 
-	cfg := pbtsTestConfiguration{
+	pbtsCfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    10 * time.Millisecond,
 			MessageDelay: 140 * time.Millisecond,
 		},
+		featureParams:                     pbtsFromHeightParams(1),
 		timeoutPropose:                    40 * time.Millisecond,
 		genesisTime:                       initialTime,
 		height2ProposedBlockOffset:        15 * time.Millisecond,
@@ -483,7 +486,7 @@ func TestPBTSTimelyProposal(t *testing.T) {
 		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
 	results := pbtsTest.run(ctx, t)
 	require.NotNil(t, results.height2.prevote.BlockID.Hash)
 }
@@ -493,18 +496,19 @@ func TestPBTSTooFarInThePastProposal(t *testing.T) {
 	defer cancel()
 
 	// localtime > proposedBlockTime + MsgDelay + Precision
-	cfg := pbtsTestConfiguration{
+	pbtsCfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    1 * time.Millisecond,
 			MessageDelay: 10 * time.Millisecond,
 		},
+		featureParams:                     pbtsFromHeightParams(1),
 		timeoutPropose:                    50 * time.Millisecond,
 		height2ProposedBlockOffset:        15 * time.Millisecond,
 		height2ProposalTimeDeliveryOffset: 27 * time.Millisecond,
 		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
 	results := pbtsTest.run(ctx, t)
 
 	require.Nil(t, results.height2.prevote.BlockID.Hash)
@@ -515,11 +519,12 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 	defer cancel()
 
 	// localtime < proposedBlockTime - Precision
-	cfg := pbtsTestConfiguration{
+	pbtsCfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    1 * time.Millisecond,
 			MessageDelay: 10 * time.Millisecond,
 		},
+		featureParams:                     pbtsFromHeightParams(1),
 		timeoutPropose:                    50 * time.Millisecond,
 		height2ProposedBlockOffset:        100 * time.Millisecond,
 		height2ProposalTimeDeliveryOffset: 10 * time.Millisecond,
@@ -527,8 +532,14 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 		pbtsParams:                        types.PBTSParams{PBTSEnableHeight: 1},
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
 	results := pbtsTest.run(ctx, t)
 
 	require.Nil(t, results.height2.prevote.BlockID.Hash)
+}
+
+func pbtsFromHeightParams(height int64) types.FeatureParams {
+	return types.FeatureParams{
+		PbtsEnableHeight: &height,
+	}
 }

@@ -1626,20 +1626,6 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	}
 	// At this point, +2/3 prevoted for a particular block.
 
-	// If we never received a proposal for this block, we must precommit nil
-	if cs.Proposal == nil || cs.ProposalBlock == nil {
-		logger.Debug("precommit step; did not receive proposal, precommitting nil")
-		cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)
-		return
-	}
-
-	// If the proposal time does not match the block time, precommit nil.
-	if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
-		logger.Debug("precommit step: proposal timestamp not equal; precommitting nil")
-		cs.signAddVote(types.PrecommitType, nil, types.PartSetHeader{}, nil)
-		return
-	}
-
 	// If we're already locked on that block, precommit it, and update the LockedRound
 	if cs.LockedBlock.HashesTo(blockID.Hash) {
 		logger.Debug("precommit step; +2/3 prevoted locked block; relocking")

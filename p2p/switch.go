@@ -256,7 +256,7 @@ func (sw *Switch) OnStop() {
 	sw.Logger.Debug("Switch: Stopping reactors")
 	for _, reactor := range sw.reactors {
 		if err := reactor.Stop(); err != nil {
-			sw.Logger.Error("Error while stopped reactor", "reactor", reactor, "err", err)
+			sw.Logger.Error("error while stopped reactor", "reactor", reactor, "err", err)
 		}
 	}
 }
@@ -365,7 +365,7 @@ func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
 	// Returning early if the peer is already stopped prevents data races because
 	// this function may be called from multiple places at once.
 	if err := peer.Stop(); err != nil {
-		sw.Logger.Error("Error stopping peer", "peer", peer.ID(), "err", err)
+		sw.Logger.Error("error stopping peer", "peer", peer.ID(), "err", err)
 		return
 	}
 
@@ -381,7 +381,7 @@ func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
 	if !sw.peers.Remove(peer) {
 		// Removal of the peer has failed. The function above sets a flag within the peer to mark this.
 		// We keep this message here as information to the developer.
-		sw.Logger.Debug("Error on peer removal", "peer", peer.ID())
+		sw.Logger.Debug("error on peer removal", "peer", peer.ID())
 		return
 	}
 

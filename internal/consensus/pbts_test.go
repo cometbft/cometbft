@@ -90,7 +90,7 @@ type pbtsTestConfiguration struct {
 func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfiguration) pbtsTestHarness {
 	t.Helper()
 	const validators = 4
-	pbtsCfg := test.ResetTestRoot("newPBTSTestHarness")
+	cfg := test.ResetTestRoot("newPBTSTestHarness")
 	clock := new(cmttimemocks.Source)
 
 	if tc.genesisTime.IsZero() {
@@ -105,14 +105,13 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 		// height 4 therefore occurs 2*blockTimeIota after height 2.
 		tc.height4ProposedBlockOffset = tc.height2ProposalTimeDeliveryOffset + 2*blockTimeIota
 	}
-	pbtsCfg.Consensus.TimeoutPropose = tc.timeoutPropose
+	cfg.Consensus.TimeoutPropose = tc.timeoutPropose
 	consensusParams := types.DefaultConsensusParams()
 	consensusParams.Synchrony = tc.synchronyParams
-	// TODO(@glnro): Update TC's once #2205 merged to include pbts enabled
 	consensusParams.Feature = tc.featureParams
 
 	state, privVals := randGenesisStateWithTime(validators, consensusParams, tc.genesisTime)
-	cs := newStateWithConfig(pbtsCfg, state, privVals[0], kvstore.NewInMemoryApplication())
+	cs := newStateWithConfig(cfg, state, privVals[0], kvstore.NewInMemoryApplication())
 	vss := make([]*validatorStub, validators)
 	for i := 0; i < validators; i++ {
 		vss[i] = newValidatorStub(privVals[i], int32(i))
@@ -372,7 +371,7 @@ func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
 
 	// create a genesis time far (enough) in the future.
 	initialTime := cmttime.Now().Add(800 * time.Millisecond)
-	pbtsCfg := pbtsTestConfiguration{
+	cfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    10 * time.Millisecond,
 			MessageDelay: 10 * time.Millisecond,
@@ -385,11 +384,11 @@ func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
 		featureParams:                     pbtsFromHeightParams(1),
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
 	results := pbtsTest.run(ctx, t)
 
 	// ensure that the proposal was issued after the genesis time.
-	assert.True(t, results.genesisHeight.proposalIssuedAt.After(pbtsCfg.genesisTime))
+	assert.True(t, results.genesisHeight.proposalIssuedAt.After(cfg.genesisTime))
 }
 
 // TestProposerWaitsForPreviousBlock tests that the proposer of a block waits until
@@ -402,7 +401,7 @@ func TestPBTSProposerWaitsForPreviousBlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	initialTime := time.Now().Add(time.Millisecond * 50)
-	pbtsCfg := pbtsTestConfiguration{
+	cfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    100 * time.Millisecond,
 			MessageDelay: 500 * time.Millisecond,
@@ -415,13 +414,13 @@ func TestPBTSProposerWaitsForPreviousBlock(t *testing.T) {
 		height4ProposedBlockOffset:        800 * time.Millisecond,
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
 	results := pbtsTest.run(ctx, t)
 
 	// the observed validator is the proposer at height 5.
 	// ensure that the observed validator did not propose a block until after
 	// the time configured for height 4.
-	assert.True(t, results.height5.proposalIssuedAt.After(pbtsTest.firstBlockTime.Add(pbtsCfg.height4ProposedBlockOffset)))
+	assert.True(t, results.height5.proposalIssuedAt.After(pbtsTest.firstBlockTime.Add(cfg.height4ProposedBlockOffset)))
 
 	// Ensure that the validator issued a prevote for a non-nil block.
 	assert.NotNil(t, results.height5.prevote.BlockID.Hash)
@@ -472,7 +471,7 @@ func TestPBTSTimelyProposal(t *testing.T) {
 
 	initialTime := time.Now()
 
-	pbtsCfg := pbtsTestConfiguration{
+	cfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    10 * time.Millisecond,
 			MessageDelay: 140 * time.Millisecond,
@@ -484,7 +483,7 @@ func TestPBTSTimelyProposal(t *testing.T) {
 		height2ProposalTimeDeliveryOffset: 30 * time.Millisecond,
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
 	results := pbtsTest.run(ctx, t)
 	require.NotNil(t, results.height2.prevote.BlockID.Hash)
 }
@@ -494,7 +493,7 @@ func TestPBTSTooFarInThePastProposal(t *testing.T) {
 	defer cancel()
 
 	// localtime > proposedBlockTime + MsgDelay + Precision
-	pbtsCfg := pbtsTestConfiguration{
+	cfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    1 * time.Millisecond,
 			MessageDelay: 10 * time.Millisecond,
@@ -505,7 +504,7 @@ func TestPBTSTooFarInThePastProposal(t *testing.T) {
 		height2ProposalTimeDeliveryOffset: 27 * time.Millisecond,
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
 	results := pbtsTest.run(ctx, t)
 
 	require.Nil(t, results.height2.prevote.BlockID.Hash)
@@ -516,7 +515,7 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 	defer cancel()
 
 	// localtime < proposedBlockTime - Precision
-	pbtsCfg := pbtsTestConfiguration{
+	cfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    1 * time.Millisecond,
 			MessageDelay: 10 * time.Millisecond,
@@ -528,7 +527,7 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 		height4ProposedBlockOffset:        150 * time.Millisecond,
 	}
 
-	pbtsTest := newPBTSTestHarness(ctx, t, pbtsCfg)
+	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
 	results := pbtsTest.run(ctx, t)
 
 	require.Nil(t, results.height2.prevote.BlockID.Hash)

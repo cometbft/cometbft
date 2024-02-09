@@ -75,7 +75,7 @@ func TestBasicGenesisDoc(t *testing.T) {
 				"validator": {"pub_key_types":["ed25519"]},
 				"block": {"max_bytes": "100"},
 				"evidence": {"max_age_num_blocks": "100", "max_age_duration": "10"},
-				"feature": {"vote_extension_enable_height": "0", "pbts_enable_height": "0"}
+				"feature": {"vote_extension_enable_height": "0", "pbts_enable_height": "0"},
 			}
 		}`,
 	)

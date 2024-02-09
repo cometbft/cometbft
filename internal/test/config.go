@@ -72,8 +72,8 @@ var testGenesisFmt = `{
 		"version": {},
 		"feature": {
 			"vote_extensions_enable_height": "0",
-			"pbts_enable_height": "0"
-		}
+			"pbts_enable_height": "0",
+		},
 	},
   "validators": [
     {

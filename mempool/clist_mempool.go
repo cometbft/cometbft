@@ -310,14 +310,14 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 				// this should never happen
 				panic("recheck cursor is not nil before resCbFirstTime")
 			}
-			mem.resCbFirstTime(req.GetCheckTx().Tx, res)
+			mem.resCbFirstTime(req.GetCheckTx().Tx, res.GetCheckTx())
 
 		case abci.CHECK_TX_TYPE_RECHECK:
 			if mem.recheckCursor == nil {
 				return
 			}
 			mem.metrics.RecheckTimes.Add(1)
-			mem.resCbRecheck(req, res)
+			mem.resCbRecheck(req.GetCheckTx().Tx, res.GetCheckTx())
 
 		default:
 			panic(fmt.Sprintf("unexpected value %d of RequestCheckTx.type", checkType))
@@ -334,11 +334,31 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 
 // Called from:
 //   - resCbFirstTime (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *mempoolTx) {
+func (mem *CListMempool) addTx(memTx *mempoolTx) bool {
+	tx := memTx.tx
+
+	if mem.InMempool(tx.Key()) {
+		mem.logger.Debug(
+			"transaction already in mempool, not adding it again",
+			"tx", tx.Hash(),
+			"height", mem.height.Load(),
+			"total", mem.Size(),
+		)
+		return false
+	}
+
 	e := mem.txs.PushBack(memTx)
-	mem.txsMap.Store(memTx.tx.Key(), e)
-	mem.txsBytes.Add(int64(len(memTx.tx)))
-	mem.metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
+	mem.txsMap.Store(tx.Key(), e)
+	mem.txsBytes.Add(int64(len(tx)))
+	mem.metrics.TxSizeBytes.Observe(float64(len(tx)))
+
+	mem.logger.Debug(
+		"added valid transaction",
+		"tx", tx.Hash(),
+		"height", mem.height.Load(),
+		"total", mem.Size(),
+	)
+	return true
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
@@ -349,15 +369,19 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	// The transaction should be removed from the reactor, even if it cannot be
 	// found in the mempool.
 	mem.invokeRemoveTxOnReactor(txKey)
-	if elem, ok := mem.getCElement(txKey); ok {
-		mem.txs.Remove(elem)
-		elem.DetachPrev()
-		mem.txsMap.Delete(txKey)
-		tx := elem.Value.(*mempoolTx).tx
-		mem.txsBytes.Add(int64(-len(tx)))
-		return nil
+
+	elem, ok := mem.getCElement(txKey)
+	if !ok {
+		return ErrTxNotFound
 	}
-	return ErrTxNotFound
+
+	mem.txs.Remove(elem)
+	elem.DetachPrev()
+	mem.txsMap.Delete(txKey)
+	tx := elem.Value.(*mempoolTx).tx
+	mem.txsBytes.Add(int64(-len(tx)))
+	mem.logger.Debug("removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
+	return nil
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
@@ -382,64 +406,38 @@ func (mem *CListMempool) isFull(txSize int) error {
 //
 // The case where the app checks the tx for the second and subsequent times is
 // handled by the resCbRecheck callback.
-func (mem *CListMempool) resCbFirstTime(
-	tx []byte,
-	res *abci.Response,
-) {
-	switch r := res.Value.(type) {
-	case *abci.Response_CheckTx:
-		var postCheckErr error
-		if mem.postCheck != nil {
-			postCheckErr = mem.postCheck(tx, r.CheckTx)
-		}
-		txKey := types.Tx(tx).Key()
-		if (r.CheckTx.Code == abci.CodeTypeOK) && postCheckErr == nil {
-			// Check mempool isn't full again to reduce the chance of exceeding the
-			// limits.
-			if err := mem.isFull(len(tx)); err != nil {
-				mem.forceRemoveFromCache(tx) // mempool might have space later
-				mem.logger.Error(err.Error())
-				return
-			}
+func (mem *CListMempool) resCbFirstTime(tx types.Tx, res *abci.CheckTxResponse) {
+	var postCheckErr error
+	if mem.postCheck != nil {
+		postCheckErr = mem.postCheck(tx, res)
+	}
 
-			// Check transaction not already in the mempool
-			if mem.InMempool(txKey) {
-				mem.logger.Debug(
-					"transaction already there, not adding it again",
-					"tx", types.Tx(tx).Hash(),
-					"res", r,
-					"height", mem.height.Load(),
-					"total", mem.Size(),
-				)
-				return
-			}
+	if res.Code != abci.CodeTypeOK || postCheckErr != nil {
+		mem.tryRemoveFromCache(tx)
+		mem.logger.Debug(
+			"rejected invalid transaction",
+			"tx", tx.Hash(),
+			"res", res,
+			"err", postCheckErr,
+		)
+		mem.metrics.FailedTxs.Add(1)
+		return
+	}
 
-			mem.addTx(&mempoolTx{
-				height:    mem.height.Load(),
-				gasWanted: r.CheckTx.GasWanted,
-				tx:        tx,
-			})
-			mem.logger.Debug(
-				"added valid transaction",
-				"tx", types.Tx(tx).Hash(),
-				"res", r,
-				"height", mem.height.Load(),
-				"total", mem.Size(),
-			)
-			mem.notifyTxsAvailable()
-		} else {
-			mem.tryRemoveFromCache(tx)
-			mem.logger.Debug(
-				"rejected invalid transaction",
-				"tx", types.Tx(tx).Hash(),
-				"res", r,
-				"err", postCheckErr,
-			)
-			mem.metrics.FailedTxs.Add(1)
-		}
+	// Check mempool isn't full again to reduce the chance of exceeding the
+	// limits.
+	if err := mem.isFull(len(tx)); err != nil {
+		mem.forceRemoveFromCache(tx) // mempool might have space later
+		mem.logger.Error(err.Error())
+		return
+	}
 
-	default:
-		// ignore other messages
+	if mem.addTx(&mempoolTx{
+		height:    mem.height.Load(),
+		gasWanted: res.GasWanted,
+		tx:        tx,
+	}) {
+		mem.notifyTxsAvailable()
 	}
 }
 
@@ -447,69 +445,65 @@ func (mem *CListMempool) resCbFirstTime(
 //
 // The case where the app checks the tx for the first time is handled by the
 // resCbFirstTime callback.
-func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
-	switch r := res.Value.(type) {
-	case *abci.Response_CheckTx:
-		tx := types.Tx(req.GetCheckTx().Tx)
-		memTx := mem.recheckCursor.Value.(*mempoolTx)
+func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.CheckTxResponse) {
+	memTx := mem.recheckCursor.Value.(*mempoolTx)
 
-		// Search through the remaining list of tx to recheck for a transaction that matches
-		// the one we received from the ABCI application.
-		for {
-			if bytes.Equal(tx, memTx.tx) {
-				// We've found a tx in the recheck list that matches the tx that we
-				// received from the ABCI application.
-				// Break, and use this transaction for further checks.
-				break
-			}
-
-			mem.logger.Error(
-				"re-CheckTx transaction mismatch",
-				"got", tx.Hash(),
-				"expected", memTx.tx.Hash(),
-			)
-
-			if mem.recheckCursor == mem.recheckEnd {
-				// we reached the end of the recheckTx list without finding a tx
-				// matching the one we received from the ABCI application.
-				// Return without processing any tx.
-				mem.recheckCursor = nil
-				return
-			}
-
-			mem.recheckCursor = mem.recheckCursor.Next()
-			memTx = mem.recheckCursor.Value.(*mempoolTx)
+	// Search through the remaining list of tx to recheck for a transaction that matches
+	// the one we received from the ABCI application.
+	for {
+		if bytes.Equal(tx, memTx.tx) {
+			// We've found a tx in the recheck list that matches the tx that we
+			// received from the ABCI application.
+			// Break, and use this transaction for further checks.
+			break
 		}
 
-		var postCheckErr error
-		if mem.postCheck != nil {
-			postCheckErr = mem.postCheck(tx, r.CheckTx)
-		}
+		mem.logger.Error(
+			"re-CheckTx transaction mismatch",
+			"got", tx.Hash(),
+			"expected", memTx.tx.Hash(),
+		)
 
-		if (r.CheckTx.Code != abci.CodeTypeOK) || postCheckErr != nil {
-			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", r, "err", postCheckErr)
-			if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
-				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
-			}
-			mem.tryRemoveFromCache(tx)
-		}
 		if mem.recheckCursor == mem.recheckEnd {
+			// we reached the end of the recheckTx list without finding a tx
+			// matching the one we received from the ABCI application.
+			// Return without processing any tx.
 			mem.recheckCursor = nil
-		} else {
-			mem.recheckCursor = mem.recheckCursor.Next()
+			return
 		}
-		if mem.recheckCursor == nil {
-			// Done!
-			mem.logger.Debug("done rechecking txs")
 
-			// in case the recheck removed all txs
-			if mem.Size() > 0 {
-				mem.notifyTxsAvailable()
-			}
+		mem.recheckCursor = mem.recheckCursor.Next()
+		memTx = mem.recheckCursor.Value.(*mempoolTx)
+	}
+
+	var postCheckErr error
+	if mem.postCheck != nil {
+		postCheckErr = mem.postCheck(tx, res)
+	}
+
+	if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
+		// Tx became invalidated due to newly committed block.
+		mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+		if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
+			mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 		}
-	default:
-		// ignore other messages
+		mem.tryRemoveFromCache(tx)
+	}
+
+	if mem.recheckCursor == mem.recheckEnd {
+		mem.recheckCursor = nil
+	} else {
+		mem.recheckCursor = mem.recheckCursor.Next()
+	}
+
+	if mem.recheckCursor == nil {
+		// Done!
+		mem.logger.Debug("done rechecking txs")
+
+		// in case the recheck removed all txs
+		if mem.Size() > 0 {
+			mem.notifyTxsAvailable()
+		}
 	}
 }
 
@@ -672,7 +666,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})
 		if err != nil {
-			mem.logger.Error("recheckTx", err, "err")
+			mem.logger.Error("recheckTx", "err", err)
 			return
 		}
 	}

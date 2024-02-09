@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 )
@@ -365,7 +365,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
 				Feature: &cmtproto.FeatureParams{
-					PbtsEnableHeight: &wrapperspb.Int64Value{Value: 1},
+					PbtsEnableHeight: &types.Int64Value{Value: 1},
 				},
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pbtsHeight: 1}),
@@ -496,7 +496,7 @@ func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
 		})
 		update := &cmtproto.ConsensusParams{
 			Feature: &cmtproto.FeatureParams{
-				PbtsEnableHeight: &wrapperspb.Int64Value{Value: 10},
+				PbtsEnableHeight: &types.Int64Value{Value: 10},
 			},
 		}
 		require.Error(t, initialParams.ValidateUpdate(update, 3))
@@ -507,7 +507,7 @@ func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
 		})
 		update := &cmtproto.ConsensusParams{
 			Feature: &cmtproto.FeatureParams{
-				PbtsEnableHeight: &wrapperspb.Int64Value{Value: 0},
+				PbtsEnableHeight: &types.Int64Value{Value: 0},
 			},
 		}
 		require.Error(t, initialParams.ValidateUpdate(update, 3))
@@ -518,7 +518,7 @@ func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
 		})
 		update := &cmtproto.ConsensusParams{
 			Feature: &cmtproto.FeatureParams{
-				PbtsEnableHeight: &wrapperspb.Int64Value{Value: 5},
+				PbtsEnableHeight: &types.Int64Value{Value: 5},
 			},
 		}
 		require.Error(t, initialParams.ValidateUpdate(update, 10))
@@ -529,7 +529,7 @@ func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
 		})
 		update := &cmtproto.ConsensusParams{
 			Feature: &cmtproto.FeatureParams{
-				PbtsEnableHeight: &wrapperspb.Int64Value{Value: 10},
+				PbtsEnableHeight: &types.Int64Value{Value: 10},
 			},
 		}
 		require.NoError(t, initialParams.ValidateUpdate(update, 3))

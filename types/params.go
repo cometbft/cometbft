@@ -9,7 +9,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	gogo "github.com/cosmos/gogoproto/types" //nolint:allz
 )
 
 const (
@@ -173,9 +173,11 @@ func DefaultSynchronyParams() SynchronyParams {
 
 // Disabled by default.
 func DefaultFeatureParams() FeatureParams {
-	defaultHeight := int64(0)
+	defPbtsHeight := int64(0)
+	defVeHeight := int64(0)
 	return FeatureParams{
-		PbtsEnableHeight: &defaultHeight,
+		VoteExtensionsEnableHeight: &defVeHeight,
+		PbtsEnableHeight:           &defPbtsHeight,
 	}
 }
 
@@ -491,10 +493,12 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 	feature := cmtproto.FeatureParams{}
 	if params.Feature.PbtsEnableHeight != nil {
-		feature.PbtsEnableHeight = wrapperspb.Int64(*params.Feature.PbtsEnableHeight)
+		feature.PbtsEnableHeight = &gogo.Int64Value{}
+		feature.PbtsEnableHeight.Value = *params.Feature.PbtsEnableHeight
 	}
 	if params.Feature.VoteExtensionsEnableHeight != nil {
-		feature.VoteExtensionsEnableHeight = wrapperspb.Int64(*params.Feature.VoteExtensionsEnableHeight)
+		feature.VoteExtensionsEnableHeight = &gogo.Int64Value{}
+		feature.VoteExtensionsEnableHeight.Value = *params.Feature.VoteExtensionsEnableHeight
 	}
 
 	return cmtproto.ConsensusParams{

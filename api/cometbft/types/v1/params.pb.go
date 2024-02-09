@@ -8,8 +8,8 @@ import (
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	types "github.com/cosmos/gogoproto/types"
 	_ "github.com/golang/protobuf/ptypes/duration"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -523,14 +523,14 @@ type FeatureParams struct {
 	// Once enabled, vote extensions will be created by the application in ExtendVote,
 	// passed to the application for validation in VerifyVoteExtension and given
 	// to the application to use when proposing a block during PrepareProposal.
-	VoteExtensionsEnableHeight *wrapperspb.Int64Value `protobuf:"bytes,1,opt,name=vote_extensions_enable_height,json=voteExtensionsEnableHeight,proto3" json:"vote_extensions_enable_height,omitempty"`
+	VoteExtensionsEnableHeight *types.Int64Value `protobuf:"bytes,1,opt,name=vote_extensions_enable_height,json=voteExtensionsEnableHeight,proto3" json:"vote_extensions_enable_height,omitempty"`
 	// PBTSParams configure how CometBFT calculates block time. BFT Time is enabled by default.
 	// By enabling this parameter (setting a valid non zero value), CometBFT will forever shift to using
 	// Proposer Based Timestamps. For more information see
 	// https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
 	// pbts_enable_height configures the first height that the chain will use
 	// proposer base timestamps instead of BFT time.
-	PbtsEnableHeight *wrapperspb.Int64Value `protobuf:"bytes,2,opt,name=pbts_enable_height,json=pbtsEnableHeight,proto3" json:"pbts_enable_height,omitempty"`
+	PbtsEnableHeight *types.Int64Value `protobuf:"bytes,2,opt,name=pbts_enable_height,json=pbtsEnableHeight,proto3" json:"pbts_enable_height,omitempty"`
 }
 
 func (m *FeatureParams) Reset()         { *m = FeatureParams{} }
@@ -566,14 +566,14 @@ func (m *FeatureParams) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_FeatureParams proto.InternalMessageInfo
 
-func (m *FeatureParams) GetVoteExtensionsEnableHeight() *wrapperspb.Int64Value {
+func (m *FeatureParams) GetVoteExtensionsEnableHeight() *types.Int64Value {
 	if m != nil {
 		return m.VoteExtensionsEnableHeight
 	}
 	return nil
 }
 
-func (m *FeatureParams) GetPbtsEnableHeight() *wrapperspb.Int64Value {
+func (m *FeatureParams) GetPbtsEnableHeight() *types.Int64Value {
 	if m != nil {
 		return m.PbtsEnableHeight
 	}
@@ -2571,7 +2571,7 @@ func (m *FeatureParams) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.VoteExtensionsEnableHeight == nil {
-				m.VoteExtensionsEnableHeight = &wrapperspb.Int64Value{}
+				m.VoteExtensionsEnableHeight = &types.Int64Value{}
 			}
 			if err := m.VoteExtensionsEnableHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -2607,7 +2607,7 @@ func (m *FeatureParams) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.PbtsEnableHeight == nil {
-				m.PbtsEnableHeight = &wrapperspb.Int64Value{}
+				m.PbtsEnableHeight = &types.Int64Value{}
 			}
 			if err := m.PbtsEnableHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

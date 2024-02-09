@@ -115,6 +115,8 @@ type Config struct {
 
 	// Flag for enabling and disabling logging of ABCI requests.
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
+
+	ConstantValConsensusChanges bool `toml:"constant_val_consensus_changes"`
 }
 
 func DefaultConfig(dir string) *Config {

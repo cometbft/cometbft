@@ -103,6 +103,7 @@ type Testnet struct {
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 	ABCITestsEnabled                                     bool
 	DefaultZone                                          string
+	ConstantValConsensusChanges                          bool
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -191,8 +192,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
-		ABCITestsEnabled: manifest.ABCITestsEnabled,
-		DefaultZone:      manifest.DefaultZone,
+		ABCITestsEnabled:            manifest.ABCITestsEnabled,
+		DefaultZone:                 manifest.DefaultZone,
+		ConstantValConsensusChanges: manifest.ConstantValConsensusChanges,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType

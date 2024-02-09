@@ -120,6 +120,9 @@ type Manifest struct {
 	// Default geographical zone ID for simulating latencies, assigned to nodes that don't have a
 	// specific zone assigned.
 	DefaultZone string `toml:"default_zone"`
+
+	// TODO document
+	ConstantValConsensusChanges bool `toml:"constant_val_consensus_changes"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

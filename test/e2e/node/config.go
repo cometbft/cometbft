@@ -37,26 +37,29 @@ type Config struct {
 	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
 
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
+
+	ConstantValConsensusChanges bool `toml:"constant_val_consensus_changes"`
 }
 
 // App extracts out the application specific configuration parameters.
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
-		Dir:                        cfg.Dir,
-		SnapshotInterval:           cfg.SnapshotInterval,
-		RetainBlocks:               cfg.RetainBlocks,
-		KeyType:                    cfg.KeyType,
-		ValidatorUpdates:           cfg.ValidatorUpdates,
-		PersistInterval:            cfg.PersistInterval,
-		PrepareProposalDelay:       cfg.PrepareProposalDelay,
-		ProcessProposalDelay:       cfg.ProcessProposalDelay,
-		CheckTxDelay:               cfg.CheckTxDelay,
-		FinalizeBlockDelay:         cfg.FinalizeBlockDelay,
-		VoteExtensionDelay:         cfg.VoteExtensionDelay,
-		VoteExtensionSize:          cfg.VoteExtensionSize,
-		VoteExtensionsEnableHeight: cfg.VoteExtensionsEnableHeight,
-		VoteExtensionsUpdateHeight: cfg.VoteExtensionsUpdateHeight,
-		ABCIRequestsLoggingEnabled: cfg.ABCIRequestsLoggingEnabled,
+		Dir:                         cfg.Dir,
+		SnapshotInterval:            cfg.SnapshotInterval,
+		RetainBlocks:                cfg.RetainBlocks,
+		KeyType:                     cfg.KeyType,
+		ValidatorUpdates:            cfg.ValidatorUpdates,
+		PersistInterval:             cfg.PersistInterval,
+		PrepareProposalDelay:        cfg.PrepareProposalDelay,
+		ProcessProposalDelay:        cfg.ProcessProposalDelay,
+		CheckTxDelay:                cfg.CheckTxDelay,
+		FinalizeBlockDelay:          cfg.FinalizeBlockDelay,
+		VoteExtensionDelay:          cfg.VoteExtensionDelay,
+		VoteExtensionSize:           cfg.VoteExtensionSize,
+		VoteExtensionsEnableHeight:  cfg.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight:  cfg.VoteExtensionsUpdateHeight,
+		ABCIRequestsLoggingEnabled:  cfg.ABCIRequestsLoggingEnabled,
+		ConstantValConsensusChanges: cfg.ConstantValConsensusChanges,
 	}
 }
 

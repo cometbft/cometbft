@@ -16,6 +16,7 @@ message ConsensusParams {
   EvidenceParams  evidence  = 2;
   ValidatorParams validator = 3;
   VersionParams   version   = 4;
+  // TODO: move ABCI to FeatureParams
   ABCIParams      abci      = 5;
   SynchronyParams synchrony = 6;
   FeatureParams   feature = 7;

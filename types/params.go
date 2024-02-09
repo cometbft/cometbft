@@ -38,6 +38,7 @@ type ConsensusParams struct {
 	Evidence  EvidenceParams  `json:"evidence"`
 	Validator ValidatorParams `json:"validator"`
 	Version   VersionParams   `json:"version"`
+	// TODO: move ABCI to FeatureParams
 	ABCI      ABCIParams      `json:"abci"`
 	Synchrony SynchronyParams `json:"synchrony"`
 	Feature   FeatureParams   `json:"feature"`
@@ -67,12 +68,14 @@ type VersionParams struct {
 	App uint64 `json:"app"`
 }
 
+// TODO: move ABCI to FeatureParams
 // ABCIParams configure ABCI functionality specific to the Application Blockchain
 // Interface.
 type ABCIParams struct {
 	VoteExtensionsEnableHeight int64 `json:"vote_extensions_enable_height"`
 }
 
+// TODO: move ABCI to FeatureParams
 // VoteExtensionsEnabled returns true if vote extensions are enabled at height h
 // and false otherwise.
 func (a ABCIParams) VoteExtensionsEnabled(h int64) bool {
@@ -91,8 +94,8 @@ type FeatureParams struct {
 	PbtsEnableHeight           *int64 `json:"pbts_enable_height"`
 }
 
-// PBTSEnabled returns true if PBTS are enabled at height h and false otherwise.
-func (p FeatureParams) PBTSEnabled(h int64) bool {
+// PbtsEnabled returns true if PBTS are enabled at height h and false otherwise.
+func (p FeatureParams) PbtsEnabled(h int64) bool {
 	if h < 1 {
 		panic(fmt.Errorf("cannot check if PBTS enabled for height %d (< 1)", h))
 	}
@@ -235,6 +238,7 @@ func (params ConsensusParams) ValidateBasic() error {
 			params.Evidence.MaxBytes)
 	}
 
+	// TODO: move ABCI to FeatureParams
 	if params.ABCI.VoteExtensionsEnableHeight < 0 {
 		return fmt.Errorf("ABCI.VoteExtensionsEnableHeight cannot be negative. Got: %d", params.ABCI.VoteExtensionsEnableHeight)
 	}
@@ -249,9 +253,12 @@ func (params ConsensusParams) ValidateBasic() error {
 			params.Synchrony.Precision)
 	}
 
-	// TODO: VE move.
-	if *params.Feature.PbtsEnableHeight < 0 {
-		return fmt.Errorf("Feature.PbtsEnableHeight must not be negative. Got: %d", *params.Feature.PbtsEnableHeight)
+	// TODO: move ABCI to FeatureParams
+
+	if params.Feature.PbtsEnableHeight != nil {
+		if *params.Feature.PbtsEnableHeight < 0 {
+			return fmt.Errorf("Feature.PbtsEnableHeight must not be negative. Got: %d", *params.Feature.PbtsEnableHeight)
+		}
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {
@@ -278,93 +285,38 @@ func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, 
 	}
 
 	var err error
-	// TODO: ABCI move
+	// TODO: move ABCI to FeatureParams
 	// Validate ABCI Update
 	if updated.Abci != nil {
-		if err = validateUpdateABCI(params, updated, h); err != nil {
+		if err = validateUpdateFeatureEnableHeight(params.ABCI.VoteExtensionsEnableHeight,
+			updated.Abci.VoteExtensionsEnableHeight,
+			h, "VoteExtensions"); err != nil {
 			return err
 		}
 	}
 
-	// Validate PBTS Update
+	// Validate feature update parameters.
 	if updated.Feature != nil {
 		err = validateUpdateFeatures(params.Feature, *updated.Feature, h)
 	}
 	return err
 }
 
-// validateUpdateABCI validates the updated VoteExtensionsEnableHeight.
-// | r | params...EnableHeight | updated...EnableHeight | result (nil == pass)
-// |  1 | *                    | (nil)                  | nil
-// |  2 | *                    | < 0                    | VoteExtensionsEnableHeight must be positive
-// |  3 | <=0                  | 0                      | nil
-// |  4 | X                    | X (>=0)                | nil
-// |  5 | > 0; <=height        | 0                      | vote extensions cannot be disabled once enabled
-// |  6 | > 0; > height        | 0                      | nil (disable a previous proposal)
-// |  7 | *                    | <=height               | vote extensions cannot be updated to a past height
-// |  8 | <=0                  | > height (*)           | nil
-// |  9 | (> 0) <=height       | > height (*)           | vote extensions cannot be modified once enabled
-// | 10 | (> 0) > height       | > height (*)           | nil
-func validateUpdateABCI(params ConsensusParams, updated *cmtproto.ConsensusParams, h int64) error {
-	// 1
-	if updated == nil || updated.Abci == nil {
-		return nil
-	}
-	// 2
-	if updated.Abci.VoteExtensionsEnableHeight < 0 {
-		return errors.New("VoteExtensionsEnableHeight must be positive")
-	}
-	// 3
-	if params.ABCI.VoteExtensionsEnableHeight <= 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
-		return nil
-	}
-	// 4 (implicit: updated.Abci.VoteExtensionsEnableHeight >= 0)
-	if params.ABCI.VoteExtensionsEnableHeight == updated.Abci.VoteExtensionsEnableHeight {
-		return nil
-	}
-	// 5 & 6
-	if params.ABCI.VoteExtensionsEnableHeight > 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
-		// 5
-		if params.ABCI.VoteExtensionsEnableHeight <= h {
-			return fmt.Errorf("vote extensions cannot be disabled once enabled"+
-				"old enable height: %d, current height %d",
-				params.ABCI.VoteExtensionsEnableHeight, h)
-		}
-		// 6
-		return nil
-	}
-	// 7 (implicit: updated.Abci.VoteExtensionsEnableHeight > 0)
-	if updated.Abci.VoteExtensionsEnableHeight <= h {
-		return fmt.Errorf("vote extensions cannot be updated to a past or current height, "+
-			"enable height: %d, current height %d",
-			updated.Abci.VoteExtensionsEnableHeight, h)
-	}
-	// 8 (implicit: updated.Abci.VoteExtensionsEnableHeight > h)
-	if params.ABCI.VoteExtensionsEnableHeight <= 0 {
-		return nil
-	}
-	// 9 (implicit: params.ABCI.VoteExtensionsEnableHeight > 0 && updated.Abci.VoteExtensionsEnableHeight > h)
-	if params.ABCI.VoteExtensionsEnableHeight <= h {
-		return fmt.Errorf("vote extensions cannot be modified once enabled"+
-			"enable height: %d, current height %d",
-			params.ABCI.VoteExtensionsEnableHeight, h)
-	}
-	// 10 (implicit: params.ABCI.VoteExtensionsEnableHeight > h && updated.Abci.VoteExtensionsEnableHeight > h)
-	return nil
-}
-
 // validateUpdateFeatures validates the updated PBTSEnableHeight.
 // | r | params...EnableHeight | updated...EnableHeight | result (nil == pass)
-// |  2 | *                    | < 0                    | PbtsEnableHeight must be positive
+// |  2 | *                    | < 0                    | EnableHeight must be positive
 // |  3 | <=0                  | 0                      | nil
 // |  4 | X                    | X (>=0)                | nil
-// |  5 | > 0; <=height        | 0                      | PBTS cannot be disabled once enabled
+// |  5 | > 0; <=height        | 0                      | Feature cannot be disabled once enabled
 // |  6 | > 0; > height        | 0                      | nil (disable a previous proposal)
-// |  7 | *                    | <=height               | PBTS cannot be updated to a past height
+// |  7 | *                    | <=height               | Feature cannot be updated to a past height
 // |  8 | <=0                  | > height (*)           | nil
-// |  9 | (> 0) <=height       | > height (*)           | PBTS cannot be modified once enabled
+// |  9 | (> 0) <=height       | > height (*)           | Feature cannot be modified once enabled
 // | 10 | (> 0) > height       | > height (*)           | nil
+// The table above reflects all cases covered.
 func validateUpdateFeatures(params FeatureParams, updated cmtproto.FeatureParams, h int64) error {
+	// TODO: move ABCI to FeatureParams
+
 	if updated.PbtsEnableHeight != nil {
 		err := validateUpdateFeatureEnableHeight(*params.PbtsEnableHeight, updated.PbtsEnableHeight.Value, h, "PBTS")
 		if err != nil {
@@ -383,7 +335,7 @@ func validateUpdateFeatureEnableHeight(param int64, updated int64, h int64, feat
 	if param <= 0 && updated == 0 {
 		return nil
 	}
-	// 4
+	// 4 (implicit: updated >= 0)
 	if param == updated {
 		return nil
 	}
@@ -398,23 +350,23 @@ func validateUpdateFeatureEnableHeight(param int64, updated int64, h int64, feat
 		// 6
 		return nil
 	}
-	// 7
+	// 7 (implicit: updated > 0)
 	if updated <= h {
 		return fmt.Errorf("%s cannot be updated to a past or current height, "+
 			"enabled height: %d, enable height: %d, current height %d",
 			featureName, param, updated, h)
 	}
-	// 8
+	// 8 (implicit: updated > h)
 	if param <= 0 {
 		return nil
 	}
-	// 9
+	// 9 (implicit: param > 0 && updated > h)
 	if param <= h {
 		return fmt.Errorf("%s cannot be modified once enabled"+
 			"enabled height: %d, current height: %d",
 			featureName, param, h)
 	}
-	// 10
+	// 10 (implicit: param > h && updated > h)
 	return nil
 }
 
@@ -469,6 +421,7 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Version != nil {
 		res.Version.App = params2.Version.App
 	}
+	// TODO: move ABCI FeatureParams
 	if params2.Abci != nil {
 		res.ABCI.VoteExtensionsEnableHeight = params2.Abci.GetVoteExtensionsEnableHeight()
 	}
@@ -482,7 +435,7 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	}
 
 	if params2.Feature != nil {
-		// TODO: move ABCI
+		// TODO: move ABCI FeatureParams
 		if params2.Feature.PbtsEnableHeight != nil {
 			res.Feature.PbtsEnableHeight = &params2.Feature.GetPbtsEnableHeight().Value
 		}

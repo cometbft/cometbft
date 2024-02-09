@@ -177,35 +177,37 @@ The CometBFT team should improve it at every iteration to increase the amount of
 This section explains how the tests were carried out for reproducibility purposes.
 
 1. [If you haven't done it before]
-   Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
+   Follow the [set up][qa-setup] steps of the `README.md` at the top of the testnet repository to
+   configure Terraform, and `doctl`.
 2. Copy file `testnet_rotating.toml` onto `testnet.toml` (do NOT commit this change)
 3. Set variable `VERSION_TAG` to the git hash that is to be tested.
-4. Run `make terraform-apply EPHEMERAL_SIZE=25`
-    * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests
-5. Follow steps 6-10 of the `README.md` to configure and start the "stable" part of the rotating node testnet
-6. As a sanity check, connect to the Prometheus node's web interface and check the graph for the `tendermint_consensus_height` metric.
+4. Follow the [testnet starting][qa-start] steps of the `README.md` to configure and start the
+  "stable" part of the rotating node testnet. On the `terraform-apply` step, set the
+   value of the `EPHEMERAL_SIZE` parameter: `make terraform-apply EPHEMERAL_SIZE=25`
+    * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests.
+5. As a sanity check, connect to the Prometheus node's web interface and check the graph for the `tendermint_consensus_height` metric.
    All nodes should be increasing their heights.
-7. On a different shell,
+6. On a different shell,
     * run `make runload LOAD_CONNECTIONS=X LOAD_TX_RATE=Y LOAD_TOTAL_TIME=Z`
     * `X` and `Y` should reflect a load below the saturation point (see, e.g.,
       [this paragraph](CometBFT-QA-34.md#finding-the-saturation-point) for further info)
     * `Z` (in seconds) should be big enough to keep running throughout the test, until we manually stop it in step 9.
       In principle, a good value for `Z` is `7200` (2 hours)
-8. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
+7. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
     * WARNING: If you run this command from your laptop, the laptop needs to be up and connected for the full length
       of the experiment.
     * [This](http://<PROMETHEUS-NODE-IP>:9090/classic/graph?g0.range_input=100m&g0.expr=cometbft_consensus_height%7Bjob%3D~%22ephemeral.*%22%7D%20or%20cometbft_blocksync_latest_block_height%7Bjob%3D~%22ephemeral.*%22%7D&g0.tab=0&g1.range_input=100m&g1.expr=cometbft_mempool_size%7Bjob!~%22ephemeral.*%22%7D&g1.tab=0&g2.range_input=100m&g2.expr=cometbft_consensus_num_txs%7Bjob!~%22ephemeral.*%22%7D&g2.tab=0)
       is an example Prometheus URL you can use to monitor the test case's progress
-9. When the height of the chain reaches 3000, stop the `make runload` script.
-10. When the rotate script has made two iterations (i.e., all ephemeral nodes have caught up twice)
+8. When the height of the chain reaches 3000, stop the `make runload` script.
+9. When the rotate script has made two iterations (i.e., all ephemeral nodes have caught up twice)
     after height 3000 was reached, stop `make rotate`
-11. Run `make stop-network`
-12. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
-13. Verify that the data was collected without errors
+10. Run `make stop-network`
+11. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
+12. Verify that the data was collected without errors
     * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node
     * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
-14. **Run `make terraform-destroy`**
+13. **Run `make terraform-destroy`**
 
 Steps 8 to 10 are highly manual at the moment and will be improved in next iterations.
 
@@ -223,16 +225,18 @@ As for prometheus, the same method as for the 200 node experiment can be applied
 This section explains how the tests were carried out for reproducibility purposes.
 
 1. [If you haven't done it before]
-   Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
+   Follow the [set up][qa-setup] steps of the `README.md` at the top of the testnet repository to
+   configure Terraform, and `doctl`.
 2. Copy file `varyVESize.toml` onto `testnet.toml` (do NOT commit this change).
 3. Set variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
-4. Follow steps 5-10 of the `README.md` to configure and start the testnet
+4. Follow the [testnet starting][qa-start] steps of the `README.md` to configure and start
+   the testnet.
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests
 5. Configure the load runner to produce the desired transaction load.
     * set makefile variables `ROTATE_CONNECTIONS`, `ROTATE_TX_RATE`, to values that will produce the desired transaction load.
     * set `ROTATE_TOTAL_TIME` to 150 (seconds).
     * set `ITERATIONS` to the number of iterations that each configuration should run for.
-6. Execute steps 5-10 of the `README.md` file at the testnet repository.
+6. Execute the [testnet starting][qa-start] steps of the `README.md` file at the testnet repository.
 
 7. Repeat the following steps for each desired `vote_extension_size`
     1. Update the configuration (you can skip this step if you didn't change the `vote_extension_size`)
@@ -260,3 +264,6 @@ In order to obtain a latency plot, follow the instructions above for the 200 nod
 * Therefore, no need for any `for` loops
 
 As for Prometheus, the same method as for the 200 node experiment can be applied.
+
+[qa-setup]: https://github.com/cometbft/qa-infra/blob/main/README.md#setup
+[qa-start]: https://github.com/cometbft/qa-infra/blob/main/README.md#start-the-network

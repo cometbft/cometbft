@@ -243,23 +243,13 @@ func (mem *CListMempool) CheckTx(
 
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
-<<<<<<< HEAD
-			return ErrPreCheck{
-				Reason: err,
-			}
-=======
-			return nil, ErrPreCheck{Err: err}
->>>>>>> 91445e5e1 (feat(mempool): export error (#1427))
+			return ErrPreCheck{Err: err}
 		}
 	}
 
 	// NOTE: proxyAppConn may error if tx buffer is full
 	if err := mem.proxyAppConn.Error(); err != nil {
-<<<<<<< HEAD
-		return err
-=======
-		return nil, ErrAppConnMempool{Err: err}
->>>>>>> 91445e5e1 (feat(mempool): export error (#1427))
+		return ErrAppConnMempool{Err: err}
 	}
 
 	if !mem.cache.Push(tx) { // if the transaction already exists in the cache
@@ -278,12 +268,8 @@ func (mem *CListMempool) CheckTx(
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
-<<<<<<< HEAD
-		return err
-=======
 		mem.logger.Error("RequestCheckTx", "err", err)
-		return nil, ErrCheckTxAsync{Err: err}
->>>>>>> 91445e5e1 (feat(mempool): export error (#1427))
+		return ErrCheckTxAsync{Err: err}
 	}
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
 

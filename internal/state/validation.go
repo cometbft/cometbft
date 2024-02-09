@@ -119,7 +119,7 @@ func validateBlock(state State, block *types.Block) error {
 				state.LastBlockTime,
 			)
 		}
-		if !state.ConsensusParams.PBTS.PBTSEnabled(block.Height) {
+		if !state.ConsensusParams.Feature.PbtsEnabled(block.Height) {
 			medianTime := MedianTime(block.LastCommit, state.LastValidators)
 			if !block.Time.Equal(medianTime) {
 				return fmt.Errorf("invalid block time. Expected %v, got %v",

@@ -243,7 +243,7 @@ func (state State) MakeBlock(
 	// Set time.
 	var timestamp time.Time
 	switch {
-	case state.ConsensusParams.PBTS.PBTSEnabled(height):
+	case state.ConsensusParams.Feature.PbtsEnabled(height):
 		timestamp = time.Now()
 	case height == state.InitialHeight:
 		timestamp = state.LastBlockTime // genesis time

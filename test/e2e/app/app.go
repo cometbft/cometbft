@@ -176,7 +176,7 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 	}, nil
 }
 
-func (app *Application) updateEnableHeights(currentHeight int64) *cmtproto.ConsensusParams {
+func (app *Application) updateFeatureEnableHeights(currentHeight int64) *cmtproto.ConsensusParams {
 	params := &cmtproto.ConsensusParams{
 		Feature: &cmtproto.FeatureParams{},
 	}
@@ -222,10 +222,10 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	}
 	app.logger.Info("setting ChainID in app_state", "chainId", req.ChainId)
 	app.state.Set(prefixReservedKey+suffixChainID, req.ChainId)
-	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Feature.VoteExtensionsEnableHeight.Value)
-	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Feature.VoteExtensionsEnableHeight.Value, 10))
-	app.logger.Info("setting PBTS Height in app_state", "height", req.ConsensusParams.Feature.PbtsEnableHeight.Value)
-	app.state.Set(prefixReservedKey+suffixPbtsHeight, strconv.FormatInt(req.ConsensusParams.Feature.PbtsEnableHeight.Value, 10))
+	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Feature.VoteExtensionsEnableHeight.GetValue())
+	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Feature.VoteExtensionsEnableHeight.GetValue(), 10))
+	app.logger.Info("setting PBTS Height in app_state", "height", req.ConsensusParams.Feature.PbtsEnableHeight.GetValue())
+	app.state.Set(prefixReservedKey+suffixPbtsHeight, strconv.FormatInt(req.ConsensusParams.Feature.PbtsEnableHeight.GetValue(), 10))
 	app.logger.Info("setting initial height in app_state", "initial_height", req.InitialHeight)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
 	// Get validators from genesis
@@ -238,7 +238,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 		}
 	}
 
-	params := app.updateEnableHeights(0)
+	params := app.updateFeatureEnableHeights(0)
 
 	resp := &abci.InitChainResponse{
 		ConsensusParams: params,
@@ -312,7 +312,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 		panic(err)
 	}
 
-	params := app.updateEnableHeights(req.Height)
+	params := app.updateFeatureEnableHeights(req.Height)
 
 	if app.cfg.FinalizeBlockDelay != 0 {
 		time.Sleep(app.cfg.FinalizeBlockDelay)

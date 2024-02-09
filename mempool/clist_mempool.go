@@ -50,7 +50,7 @@ type CListMempool struct {
 
 	proxyAppConn proxy.AppConnMempool
 
-	// For keeping track of rechecking txs.
+	// For keeping track of the rechecking process.
 	recheck *recheck
 
 	// Concurrent linked-list of valid txs.
@@ -645,7 +645,7 @@ func (mem *CListMempool) recheckTxs() {
 	// txs were rechecked.
 	select {
 	case <-time.After(timeoutRecheck):
-		mem.recheck.markDone()
+		mem.recheck.setDone()
 		mem.logger.Error("timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
 	}
@@ -686,8 +686,8 @@ func (rc *recheck) done() bool {
 	return rc.cursor == nil
 }
 
-// markDone registers that rechecking has finished.
-func (rc *recheck) markDone() {
+// setDone registers that rechecking has finished.
+func (rc *recheck) setDone() {
 	rc.cursor = nil
 }
 
@@ -701,7 +701,7 @@ func (rc *recheck) setNextEntry() {
 func (rc *recheck) tryFinish() bool {
 	if rc.cursor == rc.end {
 		// Reached end of the list without finding a matching tx.
-		rc.markDone()
+		rc.setDone()
 	}
 	if rc.done() {
 		// Notify that recheck has finished.

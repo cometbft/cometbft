@@ -45,7 +45,6 @@ linters:
     - structcheck
     - tagliatelle
     - testifylint
-    - typecheck
     - varcheck
     - varnamelen
     - wrapcheck

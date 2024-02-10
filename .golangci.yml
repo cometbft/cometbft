@@ -28,7 +28,6 @@ linters:
     - ireturn
     - interfacebloat
     - lll
-    - maintidx
     - maligned
     - nilnil
     - nlreturn

@@ -25,6 +25,8 @@ func TestLogging(t *testing.T) {
 		{Value: &abci.Request_ApplySnapshotChunk{ApplySnapshotChunk: &abci.ApplySnapshotChunkRequest{}}},
 		{Value: &abci.Request_PrepareProposal{PrepareProposal: &abci.PrepareProposalRequest{}}},
 		{Value: &abci.Request_ProcessProposal{ProcessProposal: &abci.ProcessProposalRequest{}}},
+		{Value: &abci.Request_ExtendVote{ExtendVote: &abci.ExtendVoteRequest{}}},
+		{Value: &abci.Request_VerifyVoteExtension{VerifyVoteExtension: &abci.VerifyVoteExtensionRequest{}}},
 	}
 	for _, r := range reqs {
 		s, err := GetABCIRequestString(r)

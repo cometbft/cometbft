@@ -2179,7 +2179,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	return added, nil
 }
 
-func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) { //nolint:revive // this should be made into smaller functions but it is quite difficult.
+func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
 	cs.Logger.Debug(
 		"adding vote",
 		"vote_height", vote.Height,

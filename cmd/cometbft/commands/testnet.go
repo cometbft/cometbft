@@ -95,27 +95,13 @@ Example:
 }
 
 func testnetFiles(*cobra.Command, []string) error {
-	if len(hostnames) > 0 && len(hostnames) != (nValidators+nNonValidators) {
-		return fmt.Errorf(
-			"testnet needs precisely %d hostnames (number of validators plus non-validators) if --hostname parameter is used",
-			nValidators+nNonValidators,
-		)
+	if err := validateHostnames(); err != nil {
+		return err
 	}
 
-	config := cfg.DefaultConfig()
-
-	// overwrite default config if set and valid
-	if configFile != "" {
-		viper.SetConfigFile(configFile)
-		if err := viper.ReadInConfig(); err != nil {
-			return err
-		}
-		if err := viper.Unmarshal(config); err != nil {
-			return err
-		}
-		if err := config.ValidateBasic(); err != nil {
-			return err
-		}
+	config, err := initializeConfig()
+	if err != nil {
+		return err
 	}
 
 	genVals := make([]types.GenesisValidator, nValidators)
@@ -198,7 +184,6 @@ func testnetFiles(*cobra.Command, []string) error {
 	// Gather persistent peer addresses.
 	var (
 		persistentPeers string
-		err             error
 	)
 	if populatePersistentPeers {
 		persistentPeers, err = persistentPeersString(config)
@@ -223,6 +208,36 @@ func testnetFiles(*cobra.Command, []string) error {
 	}
 
 	fmt.Printf("Successfully initialized %v node directories\n", nValidators+nNonValidators)
+	return nil
+}
+
+func initializeConfig() (*cfg.Config, error) {
+	config := cfg.DefaultConfig()
+
+	// Overwrite default config if set and valid
+	if configFile != "" {
+		viper.SetConfigFile(configFile)
+		if err := viper.ReadInConfig(); err != nil {
+			return nil, err
+		}
+		if err := viper.Unmarshal(config); err != nil {
+			return nil, err
+		}
+		if err := config.ValidateBasic(); err != nil {
+			return nil, err
+		}
+	}
+
+	return config, nil
+}
+
+func validateHostnames() error {
+	if len(hostnames) > 0 && len(hostnames) != (nValidators+nNonValidators) {
+		return fmt.Errorf(
+			"testnet needs precisely %d hostnames (number of validators plus non-validators) if --hostname parameter is used",
+			nValidators+nNonValidators,
+		)
+	}
 	return nil
 }
 

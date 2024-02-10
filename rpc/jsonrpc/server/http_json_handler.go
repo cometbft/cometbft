@@ -18,90 +18,93 @@ import (
 // HTTP + JSON handler
 
 // jsonrpc calls grab the given method's function info and runs reflect.Call.
+// jsonrpc calls grab the given method's function info and runs reflect.Call.
 func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		b, err := io.ReadAll(r.Body)
-		if err != nil {
-			handleReadBodyError(err, w, logger)
-			return
+		handleRequest(w, r, funcMap, logger)
+	}
+}
+
+func handleRequest(w http.ResponseWriter, r *http.Request, funcMap map[string]*RPCFunc, logger log.Logger) {
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		handleReadBodyError(err, w, logger)
+		return
+	}
+
+	if handleEmptyRequestAndListEndpoints(w, r, b, funcMap) {
+		return
+	}
+
+	requests, ok := unmarshalJSONRequests(b, w, logger)
+	if !ok {
+		return
+	}
+
+	responses := make([]types.RPCResponse, 0, len(requests))
+	cache := true
+	for _, request := range requests {
+		request := request
+
+		if request.ID == nil {
+			logger.Debug(
+				"HTTPJSONRPC received a notification, skipping... (please send a non-empty ID if you want to call a method)",
+				"req", request,
+			)
+			continue
 		}
-
-		if handleEmptyRequestAndListEndpoints(w, r, b, funcMap) {
-			return
+		trimmedPath := strings.Trim(r.URL.Path, "/")
+		if trimmedPath != "" && trimmedPath != "v1" {
+			responses = append(
+				responses,
+				types.RPCInvalidRequestError(request.ID, fmt.Errorf("path %s is invalid", r.URL.Path)),
+			)
+			cache = false
+			continue
 		}
-
-		requests, ok := unmarshalJSONRequests(b, w, logger)
-		if !ok {
-			return
+		rpcFunc, ok := funcMap[request.Method]
+		if !ok || (rpcFunc.ws) {
+			responses = append(responses, types.RPCMethodNotFoundError(request.ID))
+			cache = false
+			continue
 		}
-
-		var responses []types.RPCResponse
-		cache := true
-		for _, request := range requests {
-			request := request
-
-			// A Notification is a Request object without an "id" member.
-			// The Server MUST NOT reply to a Notification, including those that are within a batch request.
-			if request.ID == nil {
-				logger.Debug(
-					"HTTPJSONRPC received a notification, skipping... (please send a non-empty ID if you want to call a method)",
-					"req", request,
-				)
-				continue
-			}
-			trimmedPath := strings.Trim(r.URL.Path, "/")
-			if trimmedPath != "" && trimmedPath != "v1" {
+		ctx := &types.Context{JSONReq: &request, HTTPReq: r}
+		args := []reflect.Value{reflect.ValueOf(ctx)}
+		if len(request.Params) > 0 {
+			fnArgs, err := jsonParamsToArgs(rpcFunc, request.Params)
+			if err != nil {
 				responses = append(
 					responses,
-					types.RPCInvalidRequestError(request.ID, fmt.Errorf("path %s is invalid", r.URL.Path)),
+					types.RPCInvalidParamsError(request.ID, fmt.Errorf("error converting json params to arguments: %w", err)),
 				)
 				cache = false
 				continue
 			}
-			rpcFunc, ok := funcMap[request.Method]
-			if !ok || (rpcFunc.ws) {
-				responses = append(responses, types.RPCMethodNotFoundError(request.ID))
-				cache = false
-				continue
-			}
-			ctx := &types.Context{JSONReq: &request, HTTPReq: r}
-			args := []reflect.Value{reflect.ValueOf(ctx)}
-			if len(request.Params) > 0 {
-				fnArgs, err := jsonParamsToArgs(rpcFunc, request.Params)
-				if err != nil {
-					responses = append(
-						responses,
-						types.RPCInvalidParamsError(request.ID, fmt.Errorf("error converting json params to arguments: %w", err)),
-					)
-					cache = false
-					continue
-				}
-				args = append(args, fnArgs...)
-			}
-
-			if cache && !rpcFunc.cacheableWithArgs(args) {
-				cache = false
-			}
-
-			returns := rpcFunc.f.Call(args)
-			result, err := unreflectResult(returns)
-			if err != nil {
-				responses = append(responses, types.RPCInternalError(request.ID, err))
-				continue
-			}
-			responses = append(responses, types.NewRPCSuccessResponse(request.ID, result))
+			args = append(args, fnArgs...)
 		}
 
-		if len(responses) > 0 {
-			var wErr error
-			if cache {
-				wErr = WriteCacheableRPCResponseHTTP(w, responses...)
-			} else {
-				wErr = WriteRPCResponseHTTP(w, responses...)
-			}
-			if wErr != nil {
-				logger.Error("failed to write responses", "err", wErr)
-			}
+		if cache && !rpcFunc.cacheableWithArgs(args) {
+			cache = false
+		}
+
+		returns := rpcFunc.f.Call(args)
+		result, err := unreflectResult(returns)
+		if err != nil {
+			responses = append(responses, types.RPCInternalError(request.ID, err))
+			continue
+		}
+		responses = append(responses, types.NewRPCSuccessResponse(request.ID, result))
+	}
+
+	if len(responses) > 0 {
+		var wErr error
+		if cache {
+			wErr = WriteCacheableRPCResponseHTTP(w, responses...)
+		} else {
+			wErr = WriteRPCResponseHTTP(w, responses...)
+		}
+		if wErr != nil {
+			logger.Error("failed to write responses", "err", wErr)
 		}
 	}
 }

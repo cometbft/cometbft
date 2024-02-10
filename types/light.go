@@ -62,10 +62,12 @@ func (lb LightBlock) StringIndented(indent string) string {
 		indent)
 }
 
+var ErrNilLightBlock = errors.New("light block is nil")
+
 // ToProto converts the LightBlock to protobuf.
 func (lb *LightBlock) ToProto() (*cmtproto.LightBlock, error) {
 	if lb == nil {
-		return nil, nil
+		return nil, ErrNilLightBlock
 	}
 
 	lbp := new(cmtproto.LightBlock)

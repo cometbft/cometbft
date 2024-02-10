@@ -184,6 +184,8 @@ func (txi *TxIndex) SetLogger(l log.Logger) {
 	txi.log = l
 }
 
+var ErrTxNotFound = errors.New("transaction not found")
+
 // Get gets transaction from the TxIndex storage and returns it or nil if the
 // transaction is not found.
 func (txi *TxIndex) Get(hash []byte) (*abci.TxResult, error) {
@@ -195,8 +197,9 @@ func (txi *TxIndex) Get(hash []byte) (*abci.TxResult, error) {
 	if err != nil {
 		panic(err)
 	}
+
 	if rawBytes == nil {
-		return nil, nil
+		return nil, ErrTxNotFound
 	}
 
 	txResult := new(abci.TxResult)

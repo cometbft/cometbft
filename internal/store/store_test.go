@@ -127,7 +127,7 @@ func TestNewBlockStore(t *testing.T) {
 			err := db.Set(blockStoreKey, tt.data)
 			require.NoError(t, err)
 			_ = NewBlockStore(db)
-			return nil, nil
+			return nil, fmt.Errorf("invalid block store data")
 		})
 		require.Error(t, panicErr, "#%d panicCauser: %q expected a panic", i, tt.data)
 		assert.Contains(t, fmt.Sprintf("%#v", panicErr), tt.wantErr, "#%d data: %q", i, tt.data)
@@ -294,7 +294,7 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 		res, err, panicErr := doFn(func() (interface{}, error) {
 			bs.SaveBlockWithExtendedCommit(tuple.block, tuple.parts, tuple.seenCommit)
 			if tuple.block == nil {
-				return nil, nil
+				return nil, fmt.Errorf("block is nil")
 			}
 
 			if tuple.corruptBlockInDB {

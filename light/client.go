@@ -430,6 +430,11 @@ func (c *Client) compareWithLatestHeight(height int64) (int64, error) {
 	return height, nil
 }
 
+var (
+	ErrNoLightBlocks = errors.New("no light blocks available")
+	ErrNoUpdates     = errors.New("no updates available")
+)
+
 // Update attempts to advance the state by downloading the latest light
 // block and verifying it. It returns a new light block on a successful
 // update. Otherwise, it returns nil (plus an error, if any).
@@ -441,7 +446,7 @@ func (c *Client) Update(ctx context.Context, now time.Time) (*types.LightBlock, 
 
 	if lastTrustedHeight == -1 {
 		// no light blocks yet => wait
-		return nil, nil
+		return nil, ErrNoLightBlocks
 	}
 
 	latestBlock, err := c.lightBlockFromPrimary(ctx, 0)
@@ -458,7 +463,7 @@ func (c *Client) Update(ctx context.Context, now time.Time) (*types.LightBlock, 
 		return latestBlock, nil
 	}
 
-	return nil, nil
+	return nil, ErrNoUpdates
 }
 
 // VerifyLightBlockAtHeight fetches the light block at the given height

@@ -35,7 +35,6 @@ linters:
     - maintidx
     - maligned
     - nestif
-    - nilnil
     - nlreturn
     - nonamedreturns
     - nosnakecase

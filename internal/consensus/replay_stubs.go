@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"context"
+	"errors"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -22,7 +23,7 @@ func (emptyMempool) Unlock()          {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
 func (emptyMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
-	return nil, nil
+	return nil, errors.New("tx in cache")
 }
 
 func (emptyMempool) RemoveTxByKey(types.TxKey) error {

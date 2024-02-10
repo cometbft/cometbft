@@ -18,7 +18,6 @@ linters:
     - forbidigo
     - forcetypeassert
     - funlen
-    - gomoddirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit

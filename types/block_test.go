@@ -69,7 +69,7 @@ func TestBlockValidateBasic(t *testing.T) {
 		malleateBlock func(*Block)
 		expErr        bool
 	}{
-		{"Make Block", func(blk *Block) {}, false},
+		{"Make Block", func(_ *Block) {}, false},
 		{"Make Block w/ proposer Addr", func(blk *Block) { blk.ProposerAddress = valSet.GetProposer().Address }, false},
 		{"Negative Height", func(blk *Block) { blk.Height = -1 }, true},
 		{"Remove 1/2 the commits", func(blk *Block) {
@@ -253,7 +253,7 @@ func TestCommitValidateBasic(t *testing.T) {
 		malleateCommit func(*Commit)
 		expectErr      bool
 	}{
-		{"Random Commit", func(com *Commit) {}, false},
+		{"Random Commit", func(_ *Commit) {}, false},
 		{"Incorrect signature", func(com *Commit) { com.Signatures[0].Signature = []byte{0} }, false},
 		{"Incorrect height", func(com *Commit) { com.Height = int64(-100) }, true},
 		{"Incorrect round", func(com *Commit) { com.Round = -100 }, true},

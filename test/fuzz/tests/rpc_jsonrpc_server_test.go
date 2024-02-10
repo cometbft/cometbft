@@ -21,14 +21,14 @@ func FuzzRPCJSONRPCServer(f *testing.F) {
 		I int    `json:"i"`
 	}
 	rpcFuncMap := map[string]*rpcserver.RPCFunc{
-		"c": rpcserver.NewRPCFunc(func(ctx *rpctypes.Context, args *args, options ...rpcserver.Option) (string, error) {
+		"c": rpcserver.NewRPCFunc(func(_ *rpctypes.Context, _ *args, _ ...rpcserver.Option) (string, error) {
 			return "foo", nil
 		}, "args"),
 	}
 
 	mux := http.NewServeMux()
 	rpcserver.RegisterRPCFuncs(mux, rpcFuncMap, log.NewNopLogger())
-	f.Fuzz(func(t *testing.T, data []byte) {
+	f.Fuzz(func(_ *testing.T, data []byte) {
 		if len(data) == 0 {
 			return
 		}

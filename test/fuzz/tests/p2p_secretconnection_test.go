@@ -15,7 +15,7 @@ import (
 )
 
 func FuzzP2PSecretConnection(f *testing.F) {
-	f.Fuzz(func(t *testing.T, data []byte) {
+	f.Fuzz(func(_ *testing.T, data []byte) {
 		fuzz(data)
 	})
 }

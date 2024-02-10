@@ -229,7 +229,7 @@ func NewClientFromTrustedStore(
 		witnesses:        witnesses,
 		trustedStore:     trustedStore,
 		pruningSize:      defaultPruningSize,
-		confirmationFn:   func(action string) bool { return true },
+		confirmationFn:   func(_ string) bool { return true },
 		quit:             make(chan struct{}),
 		logger:           log.NewNopLogger(),
 	}

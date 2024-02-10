@@ -78,19 +78,8 @@ func (is *IndexerService) OnStart() error {
 					txResult := msg2.Data().(types.EventDataTx).TxResult
 
 					if err = batch.Add(&txResult); err != nil {
-						is.Logger.Error(
-							"failed to add tx to batch",
-							"height", height,
-							"index", txResult.Index,
-							"err", err,
-						)
-
-						if is.terminateOnError {
-							if err := is.Stop(); err != nil {
-								is.Logger.Error("failed to stop", "err", err)
-							}
-							return
-						}
+						is.handleError(err, height, txResult.Index)
+						return
 					}
 				}
 
@@ -121,6 +110,16 @@ func (is *IndexerService) OnStart() error {
 		}
 	}()
 	return nil
+}
+
+// handleError handles errors based on the terminateOnError flag.
+func (is *IndexerService) handleError(err error, height int64, index uint32) {
+	is.Logger.Error("failed to process", "height", height, "index", index, "err", err)
+	if is.terminateOnError {
+		if stopErr := is.Stop(); stopErr != nil {
+			is.Logger.Error("failed to stop", "err", stopErr)
+		}
+	}
 }
 
 // OnStop implements service.Service by unsubscribing from all transactions.

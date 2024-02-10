@@ -762,7 +762,7 @@ func (vals *ValidatorSet) StringIndented(indent string) string {
 		return "nil-ValidatorSet"
 	}
 	var valStrings []string
-	vals.Iterate(func(index int, val *Validator) bool {
+	vals.Iterate(func(_ int, val *Validator) bool {
 		valStrings = append(valStrings, val.String())
 		return false
 	})

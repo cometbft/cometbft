@@ -105,13 +105,13 @@ func TestParallelAbort(t *testing.T) {
 func TestParallelRecover(t *testing.T) {
 	// Create tasks.
 	tasks := []Task{
-		func(i int) (res any, abort bool, err error) {
+		func(_ int) (res any, abort bool, err error) {
 			return 0, false, nil
 		},
-		func(i int) (res any, abort bool, err error) {
+		func(_ int) (res any, abort bool, err error) {
 			return 1, false, errors.New("some error")
 		},
-		func(i int) (res any, abort bool, err error) {
+		func(_ int) (res any, abort bool, err error) {
 			panic(2)
 		},
 	}

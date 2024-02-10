@@ -46,7 +46,7 @@ func TestWebsocketManagerHandler(t *testing.T) {
 
 func newWSServer() *httptest.Server {
 	funcMap := map[string]*RPCFunc{
-		"c": NewWSRPCFunc(func(ctx *types.Context, s string, i int) (string, error) { return "foo", nil }, "s,i"),
+		"c": NewWSRPCFunc(func(_ *types.Context, _ string, _ int) (string, error) { return "foo", nil }, "s,i"),
 	}
 	wm := NewWebsocketManager(funcMap)
 	wm.SetLogger(log.TestingLogger())

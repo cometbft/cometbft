@@ -16,7 +16,6 @@ linters:
     - exhaustivestruct
     - exhaustruct
     - forbidigo
-    - forcetypeassert
     - funlen
     - gomoddirectives
     - gochecknoglobals

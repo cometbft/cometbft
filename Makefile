@@ -112,7 +112,6 @@ testdata-metrics:
 #? mockery: Generate test mocks
 mockery:
 	go generate -run="./scripts/mockery_generate.sh" ./...
-	@go run mvdan.cc/gofumpt@latest -l -w .
 .PHONY: mockery
 
 ###############################################################################

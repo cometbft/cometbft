@@ -19,8 +19,6 @@ linters:
     - gomoddirectives
     - gochecknoglobals
     - gochecknoinits
-    - gocognit
-    - gocyclo
     - godox
     - goerr113
     - golint

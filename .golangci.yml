@@ -7,7 +7,6 @@ linters:
   disable:
     - containedctx
     - contextcheck
-    - cyclop
     - deadcode
     - dupword
     - errorlint
@@ -17,7 +16,6 @@ linters:
     - exhaustruct
     - forbidigo
     - forcetypeassert
-    - funlen
     - gomoddirectives
     - gochecknoglobals
     - gochecknoinits
@@ -74,6 +72,29 @@ issues:
   max-same-issues: 10000
   max-issues-per-linter: 10000
 linters-settings:
+  cyclop:
+    # The maximal code complexity to report.
+    # Default: 10
+    max-complexity: 20
+    # The maximal average package complexity.
+    # If it's higher than 0.0 (float) the check is enabled
+    # Default: 0.0
+    package-average: 10
+    # Should ignore tests.
+    # Default: false
+    skip-tests: false
+  funlen:
+    # Checks the number of lines in a function.
+    # If lower than 0, disable the check.
+    # Default: 60
+    lines: 200
+    # Checks the number of statements in a function.
+    # If lower than 0, disable the check.
+    # Default: 40
+    statements: 100
+    # Ignore comments when counting lines.
+    # Default false
+    ignore-comments: false
   nestif:
     # Minimal complexity of if statements to report.
     # Default: 5

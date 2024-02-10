@@ -330,39 +330,28 @@ FOR_LOOP:
 			if first == nil || second == nil {
 				continue FOR_LOOP
 			}
-			err := bcR.validatePeekedBlocks(first, second, extCommit, state)
-			if err != nil {
+			if err := bcR.validatePeekedBlocks(first, second, extCommit, state); err != nil {
 				bcR.Logger.Error("Validation failed for peeked blocks", "err", err)
-				panic(err)
+				continue FOR_LOOP
 			}
 
-			if !bcR.IsRunning() || !bcR.pool.IsRunning() {
-				break FOR_LOOP
-			}
-			didProcessCh <- struct{}{}
-
-			// Generate firstParts and firstID before validation
 			firstParts, firstID, err := bcR.generateFirstBlockParts(first)
 			if err != nil {
-				break FOR_LOOP
+				bcR.Logger.Error("Failed to generate first block parts", "err", err)
+				continue FOR_LOOP
 			}
 
-			// Perform validation
-			err = bcR.validateBlock(first, second, extCommit, state, bcR.initialState.ChainID)
-			if err != nil {
+			if err := bcR.validateBlock(first, second, extCommit, state, bcR.initialState.ChainID); err != nil {
 				bcR.handleErrorInValidation(err, first.Height, second.Height)
 				continue FOR_LOOP
 			}
 
 			bcR.pool.PopRequest()
-
-			// Proceed with processing using firstParts and firstID
 			state, err = bcR.processBlocks(first, firstParts, extCommit, second, firstID, state, &blocksSynced, &lastRate, &lastHundred)
 			if err != nil {
-				break FOR_LOOP
+				bcR.Logger.Error("Failed to process blocks", "err", err)
+				continue FOR_LOOP
 			}
-
-			continue FOR_LOOP
 
 		case <-bcR.Quit():
 			break FOR_LOOP

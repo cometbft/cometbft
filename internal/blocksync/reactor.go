@@ -294,74 +294,82 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	}
 }
 
-// Handle messages from the poolReactor telling the reactor what to do.
-// NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
+// poolRoutine orchestrates the block synchronization process.
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
+	// Setup the initial state for the poolRoutine including tickers for various intervals and state variables.
 	didProcessCh, trySyncTicker, statusUpdateTicker, switchToConsensusTicker, blocksSynced, _, state, lastHundred, lastRate, initialCommitHasExtensions := bcR.setupPoolRoutine()
 
+	// Ensure tickers are stopped and metrics are updated when the function exits.
 	defer bcR.cleanupPoolRoutine(trySyncTicker, statusUpdateTicker, switchToConsensusTicker)
 
-	// Start goroutines for handling block requests and peer errors
+	// Start separate goroutines for handling block requests, peer errors, status updates, and listening for quit signals.
 	go bcR.handleRequests()
 	go bcR.handleErrors()
 	go bcR.statusUpdateLoop(statusUpdateTicker)
+	go bcR.quitPoolRoutine() // listen for quit
 
-	go func() {
-		for {
-			select {
-			case <-bcR.Quit():
-				return
-			case <-bcR.pool.Quit():
-				return
-			}
-		}
-	}()
-
+	// Main loop for the poolRoutine, handling ticks from various tickers and quit signals.
 FOR_LOOP:
 	for {
 		select {
-		case <-switchToConsensusTicker.C:
+		case <-switchToConsensusTicker.C: // On each tick, check if it's time to switch to consensus mode.
 			bcR.switchToConsensus(state, initialCommitHasExtensions, blocksSynced, stateSynced)
-		case <-trySyncTicker.C: // chan time
+		case <-trySyncTicker.C: // On each tick, attempt to synchronize with peers.
 			bcR.trySync(didProcessCh)
 
-		case <-didProcessCh:
-			first, second, extCommit := bcR.pool.PeekTwoBlocks()
-			if first == nil || second == nil {
-				continue FOR_LOOP
-			}
-			if err := bcR.validatePeekedBlocks(first, second, extCommit, state); err != nil {
-				bcR.Logger.Error("Validation failed for peeked blocks", "err", err)
-				continue FOR_LOOP
-			}
+		case <-didProcessCh: // When a block processing signal is received, handle the processed block.
+			bcR.handleDidProcessChannel(&state, &blocksSynced, &lastRate, &lastHundred)
 
-			firstParts, firstID, err := bcR.generateFirstBlockParts(first)
-			if err != nil {
-				bcR.Logger.Error("Failed to generate first block parts", "err", err)
-				continue FOR_LOOP
-			}
-
-			if err := bcR.validateBlock(first, second, extCommit, state, bcR.initialState.ChainID); err != nil {
-				bcR.handleErrorInValidation(err, first.Height, second.Height)
-				continue FOR_LOOP
-			}
-
-			bcR.pool.PopRequest()
-			state, err = bcR.processBlocks(first, firstParts, extCommit, second, firstID, state, &blocksSynced, &lastRate, &lastHundred)
-			if err != nil {
-				bcR.Logger.Error("Failed to process blocks", "err", err)
-				continue FOR_LOOP
-			}
-
-		case <-bcR.Quit():
+		case <-bcR.Quit(): // If a quit signal is received, break out of the loop to stop the routine.
 			break FOR_LOOP
-		case <-bcR.pool.Quit():
+		case <-bcR.pool.Quit(): // If the block pool signals to quit, also break out of the loop.
 			break FOR_LOOP
 		}
 	}
 }
 
-// New function to handle cleanup operations
+// handleDidProcessChannel processes blocks when the didProcessCh channel receives a signal.
+func (bcR *Reactor) handleDidProcessChannel(state *sm.State, blocksSynced *uint64, lastRate *float64, lastHundred *time.Time) {
+	first, second, extCommit := bcR.pool.PeekTwoBlocks()
+	if first == nil || second == nil {
+		return
+	}
+	if err := bcR.validatePeekedBlocks(first, second, extCommit, *state); err != nil {
+		bcR.Logger.Error("Validation failed for peeked blocks", "err", err)
+		return
+	}
+
+	firstParts, firstID, err := bcR.generateFirstBlockParts(first)
+	if err != nil {
+		bcR.Logger.Error("Failed to generate first block parts", "err", err)
+		return
+	}
+
+	if err := bcR.validateBlock(first, second, extCommit, *state, bcR.initialState.ChainID); err != nil {
+		bcR.handleErrorInValidation(err, first.Height, second.Height)
+		return
+	}
+
+	bcR.pool.PopRequest()
+	*state, err = bcR.processBlocks(first, firstParts, extCommit, second, firstID, *state, blocksSynced, lastRate, lastHundred)
+	if err != nil {
+		bcR.Logger.Error("Failed to process blocks", "err", err)
+	}
+}
+
+// quitPoolRoutine handles the termination of the poolRoutine.
+func (bcR *Reactor) quitPoolRoutine() { // Renamed function
+	for {
+		select {
+		case <-bcR.Quit():
+			return
+		case <-bcR.pool.Quit():
+			return
+		}
+	}
+}
+
+// cleanupPoolRoutine handles cleanup operations when the poolRoutine exits.
 func (bcR *Reactor) cleanupPoolRoutine(trySyncTicker, statusUpdateTicker, switchToConsensusTicker *time.Ticker) {
 	trySyncTicker.Stop()
 	statusUpdateTicker.Stop()
@@ -369,7 +377,7 @@ func (bcR *Reactor) cleanupPoolRoutine(trySyncTicker, statusUpdateTicker, switch
 	bcR.metrics.Syncing.Set(0)
 }
 
-// New function to handle status update loop
+// statusUpdateLoop sends status requests to peers at regular intervals.
 func (bcR *Reactor) statusUpdateLoop(ticker *time.Ticker) {
 	for {
 		select {
@@ -383,8 +391,8 @@ func (bcR *Reactor) statusUpdateLoop(ticker *time.Ticker) {
 	}
 }
 
-// New function to encapsulate trySync logic
-func (bcR *Reactor) trySync(didProcessCh chan struct{}) {
+// trySync attempts to synchronize with peers.
+func (*Reactor) trySync(didProcessCh chan struct{}) {
 	select {
 	case didProcessCh <- struct{}{}:
 	default:

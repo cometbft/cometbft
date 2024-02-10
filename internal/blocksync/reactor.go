@@ -297,7 +297,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
-	didProcessCh, trySyncTicker, statusUpdateTicker, switchToConsensusTicker, blocksSynced, chainID, state, lastHundred, lastRate, initialCommitHasExtensions := bcR.setupPoolRoutine()
+	didProcessCh, trySyncTicker, statusUpdateTicker, switchToConsensusTicker, blocksSynced, _, state, lastHundred, lastRate, initialCommitHasExtensions := bcR.setupPoolRoutine()
 
 	defer bcR.metrics.Syncing.Set(0)
 	defer trySyncTicker.Stop()
@@ -335,88 +335,45 @@ FOR_LOOP:
 			}
 
 		case <-didProcessCh:
-			// NOTE: It is a subtle mistake to process more than a single block
-			// at a time (e.g. 10) here, because we only TrySend 1 request per
-			// loop.  The ratio mismatch can result in starving of blocks, a
-			// sudden burst of requests and responses, and repeat.
-			// Consequently, it is better to split these routines rather than
-			// coupling them as it's written here.  TODO uncouple from request
-			// routine.
-
-			// See if there are any blocks to sync.
 			first, second, extCommit := bcR.pool.PeekTwoBlocks()
 			if first == nil || second == nil {
-				// we need to have fetched two consecutive blocks in order to
-				// perform blocksync verification
 				continue FOR_LOOP
 			}
-			// Some sanity checks on heights
 			if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
-				// Panicking because the block pool's height  MUST keep consistent with the state; the block pool is totally under our control
 				panic(fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height))
 			}
 			if first.Height+1 != second.Height {
-				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
 			}
 			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				// See https://github.com/tendermint/tendermint/pull/8433#discussion_r866790631
 				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
 			}
-
-			// Before priming didProcessCh for another check on the next
-			// iteration, break the loop if the BlockPool or the Reactor itself
-			// has quit. This avoids case ambiguity of the outer select when two
-			// channels are ready.
 			if !bcR.IsRunning() || !bcR.pool.IsRunning() {
 				break FOR_LOOP
 			}
-			// Try again quickly next loop.
 			didProcessCh <- struct{}{}
 
+			// Generate firstParts and firstID before validation
 			firstParts, err := first.MakePartSet(types.BlockPartSizeBytes)
 			if err != nil {
-				bcR.Logger.Error("failed to make ",
-					"height", first.Height,
-					"err", err.Error())
+				bcR.Logger.Error("failed to make part set", "height", first.Height, "err", err)
 				break FOR_LOOP
 			}
 			firstPartSetHeader := firstParts.Header()
 			firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
-			// Finally, verify the first block using the second's commit
-			// NOTE: we can probably make this more efficient, but note that calling
-			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
-			// currently necessary.
-			// TODO(sergio): Should we also validate against the extended commit?
-			err = state.Validators.VerifyCommitLight(
-				chainID, firstID, first.Height, second.LastCommit)
 
-			if err == nil {
-				// validate the block before we persist it
-				err = bcR.blockExec.ValidateBlock(state, first)
-			}
-			if err == nil {
-				// if vote extensions were required at this height, ensure they exist.
-				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-					err = extCommit.EnsureExtensions(true)
-				} else if extCommit != nil {
-					err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-				}
-			}
+			// Perform validation
+			err = bcR.validateBlock(first, second, extCommit, state, bcR.initialState.ChainID)
 			if err != nil {
 				bcR.Logger.Error("Error in validation", "err", err)
 				peerID := bcR.pool.RedoRequest(first.Height)
 				peer := bcR.Switch.Peers().Get(peerID)
 				if peer != nil {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
 					bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
 				}
 				peerID2 := bcR.pool.RedoRequest(second.Height)
 				peer2 := bcR.Switch.Peers().Get(peerID2)
 				if peer2 != nil && peer2 != peer {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
 					bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: err})
 				}
 				continue FOR_LOOP
@@ -424,6 +381,7 @@ FOR_LOOP:
 
 			bcR.pool.PopRequest()
 
+			// Proceed with processing using firstParts and firstID
 			state, err = bcR.processBlocks(first, firstParts, extCommit, second, firstID, state, &blocksSynced, &lastRate, &lastHundred)
 			if err != nil {
 				break FOR_LOOP
@@ -436,6 +394,57 @@ FOR_LOOP:
 		case <-bcR.pool.Quit():
 			break FOR_LOOP
 		}
+	}
+}
+
+// validateBlock performs various validations on a block.
+func (bcR *Reactor) validateBlock(first *types.Block, second *types.Block, extCommit *types.ExtendedCommit, state sm.State, chainID string) error {
+	firstParts, err := first.MakePartSet(types.BlockPartSizeBytes)
+	if err != nil {
+		return fmt.Errorf("failed to make part set: %w", err)
+	}
+	firstPartSetHeader := firstParts.Header()
+	firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
+
+	// Verify the first block using the second's commit
+	err = state.Validators.VerifyCommitLight(chainID, firstID, first.Height, second.LastCommit)
+	if err != nil {
+		return fmt.Errorf("failed to verify commit light: %w", err)
+	}
+
+	// Validate the block before persisting it
+	err = bcR.blockExec.ValidateBlock(state, first)
+	if err != nil {
+		return fmt.Errorf("failed to validate block: %w", err)
+	}
+
+	// Ensure vote extensions are present if required
+	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+		if extCommit == nil {
+			return fmt.Errorf("vote extensions required but extCommit is nil at height %d", first.Height)
+		}
+		err = extCommit.EnsureExtensions(true)
+		if err != nil {
+			return fmt.Errorf("failed to ensure extensions: %w", err)
+		}
+	} else if extCommit != nil {
+		return fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
+	}
+
+	return nil
+}
+
+func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
+	peer := bcR.Switch.Peers().Get(request.PeerID)
+	if peer == nil {
+		return
+	}
+	queued := peer.TrySend(p2p.Envelope{
+		ChannelID: BlocksyncChannel,
+		Message:   &bcproto.BlockRequest{Height: request.Height},
+	})
+	if !queued {
+		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
 	}
 }
 
@@ -472,21 +481,6 @@ func (bcR *Reactor) handlePeerError(err peerError) {
 	peer := bcR.Switch.Peers().Get(err.peerID)
 	if peer != nil {
 		bcR.Switch.StopPeerForError(peer, err)
-	}
-}
-
-// handleBlockRequest sends a block request to a peer.
-func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
-	peer := bcR.Switch.Peers().Get(request.PeerID)
-	if peer == nil {
-		return
-	}
-	queued := peer.TrySend(p2p.Envelope{
-		ChannelID: BlocksyncChannel,
-		Message:   &bcproto.BlockRequest{Height: request.Height},
-	})
-	if !queued {
-		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
 	}
 }
 

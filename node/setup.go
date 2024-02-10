@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -382,7 +383,7 @@ func createTransport(
 			// ABCI query for address filtering.
 			func(_ p2p.ConnSet, c net.Conn, _ []net.IP) error {
 				res, err := proxyApp.Query().Query(context.TODO(), &abci.QueryRequest{
-					Path: fmt.Sprintf("/p2p/filter/addr/%s", c.RemoteAddr().String()),
+					Path: "/p2p/filter/addr/" + c.RemoteAddr().String(),
 				})
 				if err != nil {
 					return err
@@ -594,10 +595,10 @@ func LoadStateFromDBOrGenesisDocProvider(
 	if operatorGenesisHashHex != "" {
 		decodedOperatorGenesisHash, err := hex.DecodeString(operatorGenesisHashHex)
 		if err != nil {
-			return sm.State{}, nil, fmt.Errorf("genesis hash provided by operator cannot be decoded")
+			return sm.State{}, nil, errors.New("genesis hash provided by operator cannot be decoded")
 		}
 		if !bytes.Equal(csGenDoc.Sha256Checksum, decodedOperatorGenesisHash) {
-			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match passed --genesis_hash value")
+			return sm.State{}, nil, errors.New("genesis doc hash in db does not match passed --genesis_hash value")
 		}
 	}
 
@@ -608,7 +609,7 @@ func LoadStateFromDBOrGenesisDocProvider(
 		}
 	} else {
 		if !bytes.Equal(genDocHash, csGenDoc.Sha256Checksum) {
-			return sm.State{}, nil, fmt.Errorf("genesis doc hash in db does not match loaded genesis doc")
+			return sm.State{}, nil, errors.New("genesis doc hash in db does not match loaded genesis doc")
 		}
 	}
 

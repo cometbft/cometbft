@@ -338,28 +338,22 @@ FOR_LOOP:
 			if first == nil || second == nil {
 				continue FOR_LOOP
 			}
-			if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
-				panic(fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height))
+			err := bcR.validatePeekedBlocks(first, second, extCommit, state)
+			if err != nil {
+				bcR.Logger.Error("Validation failed for peeked blocks", "err", err)
+				panic(err)
 			}
-			if first.Height+1 != second.Height {
-				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
-			}
-			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
-			}
+
 			if !bcR.IsRunning() || !bcR.pool.IsRunning() {
 				break FOR_LOOP
 			}
 			didProcessCh <- struct{}{}
 
 			// Generate firstParts and firstID before validation
-			firstParts, err := first.MakePartSet(types.BlockPartSizeBytes)
+			firstParts, firstID, err := bcR.generateFirstBlockParts(first)
 			if err != nil {
-				bcR.Logger.Error("failed to make part set", "height", first.Height, "err", err)
 				break FOR_LOOP
 			}
-			firstPartSetHeader := firstParts.Header()
-			firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
 
 			// Perform validation
 			err = bcR.validateBlock(first, second, extCommit, state, bcR.initialState.ChainID)
@@ -384,6 +378,33 @@ FOR_LOOP:
 			break FOR_LOOP
 		}
 	}
+}
+
+// generateFirstBlockID generates the BlockID for the first block by creating its PartSet and computing its hash.
+// generateFirstBlockParts generates the PartSet and BlockID for the first block.
+func (bcR *Reactor) generateFirstBlockParts(first *types.Block) (*types.PartSet, types.BlockID, error) {
+	firstParts, err := first.MakePartSet(types.BlockPartSizeBytes)
+	if err != nil {
+		bcR.Logger.Error("failed to make part set", "height", first.Height, "err", err)
+		return nil, types.BlockID{}, err
+	}
+	firstPartSetHeader := firstParts.Header()
+	firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
+	return firstParts, firstID, nil
+}
+
+// validatePeekedBlocks validates the first and second blocks peeked from the block pool.
+func (*Reactor) validatePeekedBlocks(first *types.Block, second *types.Block, extCommit *types.ExtendedCommit, state sm.State) error {
+	if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
+		return fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height)
+	}
+	if first.Height+1 != second.Height {
+		return fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", first.Height+1, second.Height)
+	}
+	if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+		return fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height)
+	}
+	return nil
 }
 
 // handleErrors listens to the errors channel and handles peer errors.

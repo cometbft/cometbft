@@ -299,14 +299,12 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	didProcessCh, trySyncTicker, statusUpdateTicker, switchToConsensusTicker, blocksSynced, _, state, lastHundred, lastRate, initialCommitHasExtensions := bcR.setupPoolRoutine()
 
-	defer bcR.metrics.Syncing.Set(0)
-	defer trySyncTicker.Stop()
-	defer statusUpdateTicker.Stop()
-	defer switchToConsensusTicker.Stop()
+	defer bcR.cleanupPoolRoutine(trySyncTicker, statusUpdateTicker, switchToConsensusTicker)
 
 	// Start goroutines for handling block requests and peer errors
 	go bcR.handleRequests()
 	go bcR.handleErrors()
+	go bcR.statusUpdateLoop(statusUpdateTicker)
 
 	go func() {
 		for {
@@ -315,9 +313,6 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 				return
 			case <-bcR.pool.Quit():
 				return
-			case <-statusUpdateTicker.C:
-				// ask for status updates
-				go bcR.BroadcastStatusRequest()
 			}
 		}
 	}()
@@ -328,10 +323,7 @@ FOR_LOOP:
 		case <-switchToConsensusTicker.C:
 			bcR.switchToConsensus(state, initialCommitHasExtensions, blocksSynced, stateSynced)
 		case <-trySyncTicker.C: // chan time
-			select {
-			case didProcessCh <- struct{}{}:
-			default:
-			}
+			bcR.trySync(didProcessCh)
 
 		case <-didProcessCh:
 			first, second, extCommit := bcR.pool.PeekTwoBlocks()
@@ -377,6 +369,36 @@ FOR_LOOP:
 		case <-bcR.pool.Quit():
 			break FOR_LOOP
 		}
+	}
+}
+
+// New function to handle cleanup operations
+func (bcR *Reactor) cleanupPoolRoutine(trySyncTicker, statusUpdateTicker, switchToConsensusTicker *time.Ticker) {
+	trySyncTicker.Stop()
+	statusUpdateTicker.Stop()
+	switchToConsensusTicker.Stop()
+	bcR.metrics.Syncing.Set(0)
+}
+
+// New function to handle status update loop
+func (bcR *Reactor) statusUpdateLoop(ticker *time.Ticker) {
+	for {
+		select {
+		case <-bcR.Quit():
+			return
+		case <-bcR.pool.Quit():
+			return
+		case <-ticker.C:
+			bcR.BroadcastStatusRequest()
+		}
+	}
+}
+
+// New function to encapsulate trySync logic
+func (bcR *Reactor) trySync(didProcessCh chan struct{}) {
+	select {
+	case didProcessCh <- struct{}{}:
+	default:
 	}
 }
 

@@ -49,7 +49,7 @@ func (r *Rand) init() {
 
 func (r *Rand) reset(seed int64) {
 	// G404: Use of weak random number generator (math/rand instead of crypto/rand)
-	//nolint:gosec
+	//nolint:gosec // We use math/rand for non-cryptographic purposes.
 	r.rand = mrand.New(mrand.NewSource(seed))
 }
 

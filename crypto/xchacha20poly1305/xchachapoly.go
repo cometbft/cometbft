@@ -136,7 +136,7 @@ func (c *xchacha20poly1305) Open(dst, nonce, ciphertext, additionalData []byte) 
 // It can be used as a key-derivation-function (KDF).
 func HChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) { hChaCha20Generic(out, nonce, key) }
 
-func hChaCha20Generic(out *[32]byte, nonce *[16]byte, key *[32]byte) {
+func hChaCha20Generic(out *[32]byte, nonce *[16]byte, key *[32]byte) { //nolint:funlen
 	v00 := sigma0
 	v01 := sigma1
 	v02 := sigma2

@@ -33,9 +33,9 @@ func TestAnd(t *testing.T) {
 	bA3 := bA1.And(bA2)
 
 	var bNil *BitArray
-	require.Equal(t, bNil.And(bA1), (*BitArray)(nil))
-	require.Equal(t, bA1.And(nil), (*BitArray)(nil))
-	require.Equal(t, bNil.And(nil), (*BitArray)(nil))
+	require.Equal(t, (*BitArray)(nil), bNil.And(bA1))
+	require.Equal(t, (*BitArray)(nil), bA1.And(nil))
+	require.Equal(t, (*BitArray)(nil), bNil.And(nil))
 
 	if bA3.Bits != 31 {
 		t.Error("Expected min bits", bA3.Bits)
@@ -59,7 +59,7 @@ func TestOr(t *testing.T) {
 	bNil := (*BitArray)(nil)
 	require.Equal(t, bNil.Or(bA1), bA1)
 	require.Equal(t, bA1.Or(nil), bA1)
-	require.Equal(t, bNil.Or(nil), (*BitArray)(nil))
+	require.Equal(t, (*BitArray)(nil), bNil.Or(nil))
 
 	if bA3.Bits != 51 {
 		t.Error("Expected max bits")

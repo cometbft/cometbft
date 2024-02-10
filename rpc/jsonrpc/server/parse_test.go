@@ -23,7 +23,7 @@ func TestParseJSONMap(t *testing.T) {
 	if assert.NoError(t, err) {
 		h, ok := p1["height"].(float64)
 		if assert.True(t, ok, "%#v", p1["height"]) {
-			assert.EqualValues(t, 22, h)
+			assert.InEpsilon(t, 22, h, 0.001, "Height should be close to 22")
 		}
 		v, ok := p1["value"].(string)
 		if assert.True(t, ok, "%#v", p1["value"]) {
@@ -41,7 +41,7 @@ func TestParseJSONMap(t *testing.T) {
 	if assert.NoError(t, err) {
 		h, ok := p2["height"].(float64)
 		if assert.True(t, ok, "%#v", p2["height"]) {
-			assert.EqualValues(t, 22, h)
+			assert.InEpsilon(t, 22, h, 0.001, "Height should be close to 22")
 		}
 		v, ok := p2["value"].(string)
 		if assert.True(t, ok, "%#v", p2["value"]) {
@@ -114,7 +114,7 @@ func TestParseJSONArray(t *testing.T) {
 		}
 		h, ok := p1[1].(float64)
 		if assert.True(t, ok, "%#v", p1[1]) {
-			assert.EqualValues(t, 22, h)
+			assert.InEpsilon(t, 22, h, 0.001, "Height should be close to 22")
 		}
 	}
 

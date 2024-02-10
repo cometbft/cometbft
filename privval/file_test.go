@@ -93,9 +93,9 @@ func TestUnmarshalValidatorState(t *testing.T) {
 	require.NoError(err, "%+v", err)
 
 	// make sure the values match
-	assert.EqualValues(val.Height, 1)
-	assert.EqualValues(val.Round, 1)
-	assert.EqualValues(val.Step, 1)
+	assert.EqualValues(1, val.Height)
+	assert.EqualValues(1, val.Round)
+	assert.EqualValues(1, val.Step)
 
 	// export it and make sure it is the same
 	out, err := cmtjson.Marshal(val)

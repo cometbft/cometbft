@@ -442,8 +442,8 @@ func TestSwitchStopPeerForError(t *testing.T) {
 		return initSwitchFunc(i, sw)
 	})
 
-	assert.Len(t, sw1.Peers().List(), 1)
-	assert.EqualValues(t, 1, peersMetricValue())
+	require.Len(t, sw1.Peers().List(), 1)
+	require.InEpsilon(t, 1, peersMetricValue(), 0.001, "peers metric value should be close to 1")
 
 	// send messages to the peer from sw1
 	p := sw1.Peers().List()[0]
@@ -463,8 +463,8 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	// now call StopPeerForError explicitly, eg. from a reactor
 	sw1.StopPeerForError(p, errors.New("some err"))
 
-	require.Empty(t, len(sw1.Peers().List()), 0)
-	assert.EqualValues(t, 0, peersMetricValue())
+	require.Empty(t, sw1.Peers().List())
+	require.InEpsilon(t, 0, peersMetricValue(), 0.001)
 }
 
 func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {

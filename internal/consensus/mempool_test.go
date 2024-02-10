@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -41,7 +42,8 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 
 	ensureNewEventOnChannel(newBlockCh) // first block gets committed
 	ensureNoNewEventOnChannel(newBlockCh)
-	deliverTxsRange(t, cs, 1)
+	err = deliverTxsRange(t, cs, 1)
+	require.NoError(t, err)
 	ensureNewEventOnChannel(newBlockCh) // commit txs
 	ensureNewEventOnChannel(newBlockCh) // commit updated app hash
 	ensureNoNewEventOnChannel(newBlockCh)
@@ -98,7 +100,8 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	round = 0
 
 	ensureNewRound(newRoundCh, height, round) // first round at next height
-	deliverTxsRange(t, cs, 1)                 // we deliver txs, but dont set a proposal so we get the next round
+	err := deliverTxsRange(t, cs, 1)          // we deliver txs, but dont set a proposal so we get the next round
+	require.NoError(t, err)
 	ensureNewTimeout(timeoutCh, height, round, cs.config.TimeoutPropose.Nanoseconds())
 
 	round++                                   // moving to the next round
@@ -106,15 +109,20 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	ensureNewEventOnChannel(newBlockCh)       // now we can commit the block
 }
 
-func deliverTxsRange(t *testing.T, cs *State, end int) {
+func deliverTxsRange(t *testing.T, cs *State, end int) error {
 	t.Helper()
 	start := 0
 	// Deliver some txs.
 	for i := start; i < end; i++ {
 		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(i), "true"))
-		require.NoError(t, err)
-		require.False(t, reqRes.Response.GetCheckTx().IsErr())
+		if err != nil {
+			return err
+		}
+		if reqRes.Response.GetCheckTx().IsErr() {
+			return fmt.Errorf("tx %d check failed", i)
+		}
 	}
+	return nil
 }
 
 func TestMempoolTxConcurrentWithCommit(t *testing.T) {

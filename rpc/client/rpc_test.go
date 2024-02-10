@@ -221,9 +221,9 @@ func TestABCIQuery(t *testing.T) {
 		require.NoError(t, err)
 		res, err := c.ABCIQuery(context.Background(), "/key", k)
 		qres := res.Response
-		if assert.NoError(t, err) && assert.True(t, qres.IsOK()) {
-			assert.EqualValues(t, v, qres.Value)
-		}
+		require.NoError(t, err)
+		require.True(t, qres.IsOK())
+		require.EqualValues(t, v, qres.Value)
 	}
 }
 

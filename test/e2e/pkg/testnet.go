@@ -492,11 +492,8 @@ func (n Node) Validate(testnet Testnet) error {
 	}
 
 	// Validate perturbations
-	if err := n.validatePerturbations(); err != nil {
-		return err
-	}
-
-	return nil
+	err := n.validatePerturbations()
+	return err
 }
 
 // validatePorts checks the validity of Node's RPCProxyPort and PrometheusProxyPort.

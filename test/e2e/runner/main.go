@@ -41,7 +41,7 @@ func NewCLI() *CLI {
 		Short:         "End-to-end test runner",
 		SilenceUsage:  true,
 		SilenceErrors: true, // we'll output them ourselves in Run()
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			return setupTestnet(cmd, cli)
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -277,7 +277,7 @@ func (cli *CLI) addSetupCommand() {
 	setupCmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Generates the testnet directory and configuration",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return Setup(cli.testnet, cli.infp)
 		},
 	}
@@ -288,7 +288,7 @@ func (cli *CLI) addStartCommand() {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Starts the testnet, waiting for nodes to become available",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			_, err := os.Stat(cli.testnet.Dir)
 			if os.IsNotExist(err) {
 				err = Setup(cli.testnet, cli.infp)
@@ -306,7 +306,7 @@ func (cli *CLI) addPerturbCommand() {
 	perturbCmd := &cobra.Command{
 		Use:   "perturb",
 		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return Perturb(cmd.Context(), cli.testnet, cli.infp)
 		},
 	}
@@ -317,7 +317,7 @@ func (cli *CLI) addStopCommand() {
 	stopCmd := &cobra.Command{
 		Use:   "stop",
 		Short: "Stops the testnet",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			logger.Info("Stopping testnet")
 			return cli.infp.StopTestnet(context.Background())
 		},
@@ -338,7 +338,7 @@ func (cli *CLI) addBenchmarkCommand() {
             
             Does not run any perturbations.
         `,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := Cleanup(cli.testnet); err != nil {
 				return err
 			}

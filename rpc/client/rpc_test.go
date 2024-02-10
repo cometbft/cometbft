@@ -221,7 +221,7 @@ func TestABCIQuery(t *testing.T) {
 		require.NoError(t, err)
 		res, err := c.ABCIQuery(context.Background(), "/key", k)
 		qres := res.Response
-		if assert.NoError(t, err) && assert.True(t, qres.IsOK()) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.NoError(t, err) && assert.True(t, qres.IsOK()) {
 			assert.EqualValues(t, v, qres.Value)
 		}
 	}

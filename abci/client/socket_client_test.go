@@ -26,12 +26,13 @@ func TestCalls(t *testing.T) {
 	_, c := setupClientServer(t, app)
 
 	resp := make(chan error, 1)
-	go func() {
+	go func(t *testing.T) {
+		t.Helper()
 		res, err := c.Echo(ctx, "hello")
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		resp <- c.Error()
-	}()
+	}(t)
 
 	select {
 	case <-time.After(time.Second):

@@ -477,7 +477,7 @@ func TestPrivatePeers(t *testing.T) {
 	// private addrs must not be added
 	for _, addr := range addrs {
 		err := book.AddAddress(addr, addr)
-		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.Error(t, err) {
 			_, ok := err.(ErrAddrBookPrivate)
 			assert.True(t, ok)
 		}
@@ -485,7 +485,7 @@ func TestPrivatePeers(t *testing.T) {
 
 	// addrs coming from private peers must not be added
 	err := book.AddAddress(randIPv4Address(t), addrs[0])
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.Error(t, err) {
 		_, ok := err.(ErrAddrBookPrivateSrc)
 		assert.True(t, ok)
 	}

@@ -43,7 +43,6 @@ linters:
     - scopelint
     - structcheck
     - tagliatelle
-    - testifylint
     - typecheck
     - varcheck
     - varnamelen

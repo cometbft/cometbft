@@ -28,13 +28,18 @@ const (
 	NT_ConsensusHeights
 	NT_ConsensusRound
 	NT_ConsensusRounds
+	NT_Extend
+	NT_ExtendVote
 	NT_FinalizeBlock
+	NT_GotVote
+	NT_GotVotes
 	NT_InitChain
 	NT_NonProposer
 	NT_OfferSnapshot
 	NT_PrepareProposal
 	NT_ProcessProposal
 	NT_Proposer
+	NT_ProposerSimple
 	NT_Recovery
 	NT_Start
 	NT_StateSync
@@ -49,11 +54,13 @@ type T int
 const (
 	T_0 T = iota // apply_snapshot_chunk
 	T_1          // commit
-	T_2          // finalize_block
-	T_3          // init_chain
-	T_4          // offer_snapshot
-	T_5          // prepare_proposal
-	T_6          // process_proposal
+	T_2          // extend_vote
+	T_3          // finalize_block
+	T_4          // init_chain
+	T_5          // offer_snapshot
+	T_6          // prepare_proposal
+	T_7          // process_proposal
+	T_8          // verify_vote_extension
 )
 
 type Symbols []Symbol
@@ -130,13 +137,18 @@ var ntToString = []string{
 	"ConsensusHeights",  /* NT_ConsensusHeights */
 	"ConsensusRound",    /* NT_ConsensusRound */
 	"ConsensusRounds",   /* NT_ConsensusRounds */
+	"Extend",            /* NT_Extend */
+	"ExtendVote",        /* NT_ExtendVote */
 	"FinalizeBlock",     /* NT_FinalizeBlock */
+	"GotVote",           /* NT_GotVote */
+	"GotVotes",          /* NT_GotVotes */
 	"InitChain",         /* NT_InitChain */
 	"NonProposer",       /* NT_NonProposer */
 	"OfferSnapshot",     /* NT_OfferSnapshot */
 	"PrepareProposal",   /* NT_PrepareProposal */
 	"ProcessProposal",   /* NT_ProcessProposal */
 	"Proposer",          /* NT_Proposer */
+	"ProposerSimple",    /* NT_ProposerSimple */
 	"Recovery",          /* NT_Recovery */
 	"Start",             /* NT_Start */
 	"StateSync",         /* NT_StateSync */
@@ -146,13 +158,15 @@ var ntToString = []string{
 }
 
 var tToString = []string{
-	"apply_snapshot_chunk", /* T_0 */
-	"commit",               /* T_1 */
-	"finalize_block",       /* T_2 */
-	"init_chain",           /* T_3 */
-	"offer_snapshot",       /* T_4 */
-	"prepare_proposal",     /* T_5 */
-	"process_proposal",     /* T_6 */
+	"apply_snapshot_chunk",  /* T_0 */
+	"commit",                /* T_1 */
+	"extend_vote",           /* T_2 */
+	"finalize_block",        /* T_3 */
+	"init_chain",            /* T_4 */
+	"offer_snapshot",        /* T_5 */
+	"prepare_proposal",      /* T_6 */
+	"process_proposal",      /* T_7 */
+	"verify_vote_extension", /* T_8 */
 }
 
 var stringNT = map[string]NT{
@@ -165,13 +179,18 @@ var stringNT = map[string]NT{
 	"ConsensusHeights":  NT_ConsensusHeights,
 	"ConsensusRound":    NT_ConsensusRound,
 	"ConsensusRounds":   NT_ConsensusRounds,
+	"Extend":            NT_Extend,
+	"ExtendVote":        NT_ExtendVote,
 	"FinalizeBlock":     NT_FinalizeBlock,
+	"GotVote":           NT_GotVote,
+	"GotVotes":          NT_GotVotes,
 	"InitChain":         NT_InitChain,
 	"NonProposer":       NT_NonProposer,
 	"OfferSnapshot":     NT_OfferSnapshot,
 	"PrepareProposal":   NT_PrepareProposal,
 	"ProcessProposal":   NT_ProcessProposal,
 	"Proposer":          NT_Proposer,
+	"ProposerSimple":    NT_ProposerSimple,
 	"Recovery":          NT_Recovery,
 	"Start":             NT_Start,
 	"StateSync":         NT_StateSync,

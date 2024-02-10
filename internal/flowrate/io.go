@@ -97,11 +97,10 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	var c int
 	for len(p) > 0 && err == nil {
 		s := p[:w.Limit(len(p), w.limit, w.block)]
-		if len(s) > 0 {
-			c, err = w.IO(w.Writer.Write(s))
-		} else {
+		if len(s) == 0 {
 			return n, ErrLimit
 		}
+		c, err = w.IO(w.Writer.Write(s))
 		p = p[c:]
 		n += c
 	}

@@ -386,56 +386,6 @@ FOR_LOOP:
 	}
 }
 
-// processNextBlocks encapsulates the logic to process the next blocks if available.
-// Returns false if the routine should exit.
-func (bcR *Reactor) processNextBlocks(state *sm.State, blocksSynced *uint64, lastRate *float64, lastHundred *time.Time) bool {
-	first, second, extCommit := bcR.pool.PeekTwoBlocks()
-	if first == nil || second == nil {
-		return true // Continue the loop
-	}
-	if err := bcR.preProcessBlocks(first, second, extCommit, *state); err != nil {
-		bcR.handleErrorInValidation(err, first.Height, second.Height)
-		return true // Continue despite error
-	}
-
-	bcR.pool.PopRequest()
-	newState, err := bcR.processBlocks(first, nil, extCommit, second, types.BlockID{}, *state, blocksSynced, lastRate, lastHundred)
-	if err != nil {
-		bcR.Logger.Error("Error processing blocks", "err", err)
-		return false // Exit the loop on error
-	}
-	*state = newState
-	return true
-}
-
-// preProcessBlocks checks and prepares blocks before processing.
-// Returns an error if there are issues with the blocks.
-func (bcR *Reactor) preProcessBlocks(first *types.Block, second *types.Block, extCommit *types.ExtendedCommit, state sm.State) error {
-	// Check if the first block is the expected next block
-	if state.LastBlockHeight > 0 && state.LastBlockHeight+1 != first.Height {
-		return fmt.Errorf("peeked first block has unexpected height; expected %d, got %d", state.LastBlockHeight+1, first.Height)
-	}
-	// Ensure the heights of the first and second blocks are consecutive
-	if first.Height+1 != second.Height {
-		return fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", first.Height+1, second.Height)
-	}
-	// Check for the presence of an extended commit if vote extensions are enabled for the height
-	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-		if extCommit == nil {
-			return fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height)
-		}
-		// Ensure the extended commit has the required extensions
-		err := extCommit.EnsureExtensions(true)
-		if err != nil {
-			return fmt.Errorf("failed to ensure extensions: %w", err)
-		}
-	} else if extCommit != nil {
-		// If vote extensions are disabled, ensure no extended commit is present
-		return fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-	}
-	return nil
-}
-
 // handleErrors listens to the errors channel and handles peer errors.
 func (bcR *Reactor) handleErrors() {
 	for err := range bcR.errorsCh {

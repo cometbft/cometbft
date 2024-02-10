@@ -147,37 +147,46 @@ func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
 }
 
 // NewTestnetFromManifest creates and validates a testnet from a manifest.
-// NewTestnetFromManifest creates and validates a testnet from a manifest.
-func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
+func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) { //nolint:revive // it's proven more or less impossible to refactor this function into smaller functions.
 	testnet, err := initializeTestnetFromManifest(manifest, file, ifd)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := setupNodes(testnet, manifest, ifd); err != nil {
-		return nil, err
-	}
-
-	if err := setupSeedsAndPeers(testnet, manifest); err != nil {
-		return nil, err
-	}
-
-	if err := setupValidators(testnet, manifest); err != nil {
-		return nil, err
-	}
-
-	return testnet, testnet.Validate()
-}
-
-func setupNodes(testnet *Testnet, manifest Manifest, ifd InfrastructureData) error {
 	keyGen := newKeyGenerator(randomSeed)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
+	_, _, err = net.ParseCIDR(ifd.Network)
+	if err != nil {
+		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
+	}
+
+	if len(manifest.KeyType) != 0 {
+		testnet.KeyType = manifest.KeyType
+	}
+	if manifest.InitialHeight > 0 {
+		testnet.InitialHeight = manifest.InitialHeight
+	}
+	if testnet.ABCIProtocol == "" {
+		testnet.ABCIProtocol = string(ProtocolBuiltin)
+	}
+	if testnet.UpgradeVersion == "" {
+		testnet.UpgradeVersion = localVersion
+	}
+	if testnet.LoadTxConnections == 0 {
+		testnet.LoadTxConnections = defaultConnections
+	}
+	if testnet.LoadTxBatchSize == 0 {
+		testnet.LoadTxBatchSize = defaultBatchSize
+	}
+	if testnet.LoadTxSizeBytes == 0 {
+		testnet.LoadTxSizeBytes = defaultTxSizeBytes
+	}
 
 	for _, name := range sortNodeNames(manifest) {
 		nodeManifest := manifest.Nodes[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {
-			return fmt.Errorf("information for node '%s' missing from infrastructure data", name)
+			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
 		}
 		extIP := ind.ExtIPAddress
 		if len(extIP) == 0 {
@@ -251,28 +260,23 @@ func setupNodes(testnet *Testnet, manifest Manifest, ifd InfrastructureData) err
 		testnet.Nodes = append(testnet.Nodes, node)
 	}
 
-	return nil
-}
-
-func setupSeedsAndPeers(testnet *Testnet, manifest Manifest) error {
+	// We do a second pass to set up seeds and persistent peers, which allows graph cycles.
 	for _, node := range testnet.Nodes {
 		nodeManifest, ok := manifest.Nodes[node.Name]
 		if !ok {
-			return fmt.Errorf("failed to look up manifest for node %q", node.Name)
+			return nil, fmt.Errorf("failed to look up manifest for node %q", node.Name)
 		}
-		// Setup seeds
 		for _, seedName := range nodeManifest.Seeds {
 			seed := testnet.LookupNode(seedName)
 			if seed == nil {
-				return fmt.Errorf("unknown seed %q for node %q", seedName, node.Name)
+				return nil, fmt.Errorf("unknown seed %q for node %q", seedName, node.Name)
 			}
 			node.Seeds = append(node.Seeds, seed)
 		}
-		// Setup persistent peers
 		for _, peerName := range nodeManifest.PersistentPeers {
 			peer := testnet.LookupNode(peerName)
 			if peer == nil {
-				return fmt.Errorf("unknown persistent peer %q for node %q", peerName, node.Name)
+				return nil, fmt.Errorf("unknown persistent peer %q for node %q", peerName, node.Name)
 			}
 			node.PersistentPeers = append(node.PersistentPeers, peer)
 		}
@@ -288,52 +292,42 @@ func setupSeedsAndPeers(testnet *Testnet, manifest Manifest) error {
 			}
 		}
 	}
-	return nil
-}
 
-func setupValidators(testnet *Testnet, manifest Manifest) error {
-	// Initialize validators map if not already done
-	if testnet.Validators == nil {
-		testnet.Validators = make(map[*Node]int64)
-	}
-
-	// Set up initial validators
+	// Set up genesis validators. If not specified explicitly, use all validator nodes.
 	if manifest.Validators != nil {
 		for validatorName, power := range *manifest.Validators {
-			validatorNode := testnet.LookupNode(validatorName)
-			if validatorNode == nil {
-				return fmt.Errorf("unknown validator %q", validatorName)
+			validator := testnet.LookupNode(validatorName)
+			if validator == nil {
+				return nil, fmt.Errorf("unknown validator %q", validatorName)
 			}
-			testnet.Validators[validatorNode] = power
+			testnet.Validators[validator] = power
 		}
 	} else {
-		// If no validators are specified, default to using all nodes with ModeValidator as validators
 		for _, node := range testnet.Nodes {
 			if node.Mode == ModeValidator {
-				testnet.Validators[node] = 100 // Default power
+				testnet.Validators[node] = 100
 			}
 		}
 	}
 
-	// Set up validator updates
-	testnet.ValidatorUpdates = make(map[int64]map[*Node]int64)
+	// Set up validator updates.
 	for heightStr, validators := range manifest.ValidatorUpdates {
 		height, err := strconv.Atoi(heightStr)
 		if err != nil {
-			return fmt.Errorf("invalid validator update height %q: %w", heightStr, err)
+			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)
 		}
-		valUpdate := make(map[*Node]int64)
+		valUpdate := map[*Node]int64{}
 		for name, power := range validators {
 			node := testnet.LookupNode(name)
 			if node == nil {
-				return fmt.Errorf("unknown validator %q for update at height %v", name, height)
+				return nil, fmt.Errorf("unknown validator %q for update at height %v", name, height)
 			}
 			valUpdate[node] = power
 		}
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
 
-	return nil
+	return testnet, testnet.Validate()
 }
 
 // Validate validates a testnet.

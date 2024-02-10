@@ -35,7 +35,7 @@ func NewCLI() *CLI {
 		Short:         "End-to-end testnet generator",
 		SilenceUsage:  true,
 		SilenceErrors: true, // we'll output them ourselves in Run()
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			dir, err := cmd.Flags().GetString("dir")
 			if err != nil {
 				return err

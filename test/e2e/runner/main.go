@@ -44,7 +44,7 @@ func NewCLI() *CLI {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return setupTestnet(cmd, cli)
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := Cleanup(cli.testnet); err != nil {
 				return err
 			}
@@ -129,7 +129,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "wait",
 		Short: "Waits for a few blocks to be produced and all nodes to catch up",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return Wait(cmd.Context(), cli.testnet, 5)
 		},
 	})
@@ -137,7 +137,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "load",
 		Short: "Generates transaction load until the command is canceled",
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(_ *cobra.Command, _ []string) (err error) {
 			return Load(context.Background(), cli.testnet)
 		},
 	})
@@ -168,7 +168,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "test",
 		Short: "Runs test cases against a running testnet",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return Test(cli.testnet, cli.infp.GetInfrastructureData())
 		},
 	})
@@ -176,7 +176,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "cleanup",
 		Short: "Removes the testnet directory",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return Cleanup(cli.testnet)
 		},
 	})
@@ -184,7 +184,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "logs",
 		Short: "Shows the testnet logs",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs")
 		},
 	})
@@ -192,7 +192,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "tail",
 		Short: "Tails the testnet logs",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs", "--follow")
 		},
 	})

@@ -867,7 +867,7 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 		malleateFn func(*NewValidBlockMessage)
 		expErr     string
 	}{
-		{func(msg *NewValidBlockMessage) {}, ""},
+		{func(_ *NewValidBlockMessage) {}, ""},
 		{func(msg *NewValidBlockMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
 		{func(msg *NewValidBlockMessage) { msg.Round = -1 }, cmterrors.ErrNegativeField{Field: "Round"}.Error()},
 		{
@@ -913,7 +913,7 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 		malleateFn func(*ProposalPOLMessage)
 		expErr     string
 	}{
-		{func(msg *ProposalPOLMessage) {}, ""},
+		{func(_ *ProposalPOLMessage) {}, ""},
 		{func(msg *ProposalPOLMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
 		{func(msg *ProposalPOLMessage) { msg.ProposalPOLRound = -1 }, cmterrors.ErrNegativeField{Field: "ProposalPOLRound"}.Error()},
 		{func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(0) }, cmterrors.ErrRequiredField{Field: "ProposalPOL"}.Error()},
@@ -1061,7 +1061,7 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 		malleateFn func(*VoteSetBitsMessage)
 		expErr     string
 	}{
-		{func(msg *VoteSetBitsMessage) {}, ""},
+		{func(_ *VoteSetBitsMessage) {}, ""},
 		{func(msg *VoteSetBitsMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
 		{func(msg *VoteSetBitsMessage) { msg.Type = 0x03 }, cmterrors.ErrInvalidField{Field: "Type"}.Error()},
 		{func(msg *VoteSetBitsMessage) {

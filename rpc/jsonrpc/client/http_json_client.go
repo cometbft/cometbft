@@ -407,7 +407,7 @@ func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), 
 		protocol = protoTCP
 	}
 
-	dialFn := func(proto, addr string) (net.Conn, error) {
+	dialFn := func(_, _ string) (net.Conn, error) {
 		return net.Dial(protocol, u.GetDialAddress())
 	}
 

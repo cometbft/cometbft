@@ -189,8 +189,8 @@ func TestMempoolFilters(t *testing.T) {
 	defer cleanup()
 	emptyTxArr := []types.Tx{[]byte{}}
 
-	nopPreFilter := func(tx types.Tx) error { return nil }
-	nopPostFilter := func(tx types.Tx, res *abci.CheckTxResponse) error { return nil }
+	nopPreFilter := func(_ types.Tx) error { return nil }
+	nopPostFilter := func(_ types.Tx, _ *abci.CheckTxResponse) error { return nil }
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.
 	// each tx has 20 bytes

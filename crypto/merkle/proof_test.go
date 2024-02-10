@@ -145,7 +145,7 @@ func TestProofValidateBasic(t *testing.T) {
 		malleateProof func(*Proof)
 		errStr        string
 	}{
-		{"Good", func(sp *Proof) {}, ""},
+		{"Good", func(_ *Proof) {}, ""},
 		{"Negative Total", func(sp *Proof) { sp.Total = -1 }, "negative proof total"},
 		{"Negative Index", func(sp *Proof) { sp.Index = -1 }, "negative proof index"},
 		{

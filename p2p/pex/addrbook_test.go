@@ -454,8 +454,8 @@ func TestAddrBookEmpty(t *testing.T) {
 	book.AddOurAddress(randIPv4Address(t))
 	require.True(t, book.Empty())
 	// Check that book with private addrs is empty
-	_, privateIds := testCreatePrivateAddrs(t, 5)
-	book.AddPrivateIDs(privateIds)
+	_, privateIDs := testCreatePrivateAddrs(t, 5)
+	book.AddPrivateIDs(privateIDs)
 	require.True(t, book.Empty())
 
 	// Check that book with address is not empty

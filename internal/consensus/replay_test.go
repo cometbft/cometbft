@@ -139,12 +139,12 @@ func TestWALCrash(t *testing.T) {
 	}{
 		{
 			"empty block",
-			func(stateDB dbm.DB, cs *State, ctx context.Context) {},
+			func(_ dbm.DB, _ *State, _ context.Context) {},
 			1,
 		},
 		{
 			"many non-empty blocks",
-			func(stateDB dbm.DB, cs *State, ctx context.Context) {
+			func(_ dbm.DB, cs *State, ctx context.Context) {
 				go sendTxs(ctx, cs)
 			},
 			3,

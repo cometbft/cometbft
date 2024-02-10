@@ -228,7 +228,7 @@ func TestAddAndRemoveListenerConcurrency(t *testing.T) {
 			// we explicitly ignore errors here, since the listener will sometimes be removed
 			// (that's what we're testing)
 			_ = evsw.AddListenerForEvent("listener", fmt.Sprintf("event%d", index),
-				func(data EventData) {
+				func(_ EventData) {
 					t.Errorf("should not run callback for %d.\n", index)
 					stopInputEvent = true
 				})
@@ -313,13 +313,13 @@ func TestRemoveListener(t *testing.T) {
 	sum1, sum2 := 0, 0
 	// add some listeners and make sure they work
 	err = evsw.AddListenerForEvent("listener", "event1",
-		func(data EventData) {
+		func(_ EventData) {
 			sum1++
 		})
 	require.NoError(t, err)
 
 	err = evsw.AddListenerForEvent("listener", "event2",
-		func(data EventData) {
+		func(_ EventData) {
 			sum2++
 		})
 	require.NoError(t, err)

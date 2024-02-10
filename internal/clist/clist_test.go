@@ -88,7 +88,7 @@ func TestGCFifo(t *testing.T) {
 		v := new(value)
 		v.Int = i
 		l.PushBack(v)
-		runtime.SetFinalizer(v, func(v *value) {
+		runtime.SetFinalizer(v, func(_ *value) {
 			wg.Done()
 		})
 	}
@@ -130,7 +130,7 @@ func TestGCRandom(t *testing.T) {
 		v := new(value)
 		v.Int = i
 		l.PushBack(v)
-		runtime.SetFinalizer(v, func(v *value) {
+		runtime.SetFinalizer(v, func(_ *value) {
 			wg.Done()
 		})
 	}

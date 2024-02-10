@@ -44,7 +44,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 		switches[i] = p2p.MakeSwitch(
 			config.P2P,
 			i,
-			func(i int, sw *p2p.Switch) *p2p.Switch {
+			func(_ int, sw *p2p.Switch) *p2p.Switch {
 				return sw
 			})
 		switches[i].SetLogger(p2pLogger.With("validator", i))
@@ -66,7 +66,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 			}
 			// We are setting the prevote function to do nothing because the prevoting
 			// and precommitting are done alongside the proposal.
-			css[i].doPrevote = func(height int64, round int32) {}
+			css[i].doPrevote = func(_ int64, _ int32) {}
 		}
 
 		eventBus := css[i].eventBus
@@ -104,7 +104,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 		}
 	}()
 
-	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
+	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, _ *p2p.Switch) *p2p.Switch {
 		// ignore new switch s, we already made ours
 		switches[i].AddReactor("CONSENSUS", reactors[i])
 		return switches[i]

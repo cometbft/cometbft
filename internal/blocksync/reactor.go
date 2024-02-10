@@ -365,17 +365,7 @@ FOR_LOOP:
 			// Perform validation
 			err = bcR.validateBlock(first, second, extCommit, state, bcR.initialState.ChainID)
 			if err != nil {
-				bcR.Logger.Error("Error in validation", "err", err)
-				peerID := bcR.pool.RedoRequest(first.Height)
-				peer := bcR.Switch.Peers().Get(peerID)
-				if peer != nil {
-					bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
-				}
-				peerID2 := bcR.pool.RedoRequest(second.Height)
-				peer2 := bcR.Switch.Peers().Get(peerID2)
-				if peer2 != nil && peer2 != peer {
-					bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: err})
-				}
+				bcR.handleErrorInValidation(err, first.Height, second.Height)
 				continue FOR_LOOP
 			}
 
@@ -394,6 +384,21 @@ FOR_LOOP:
 		case <-bcR.pool.Quit():
 			break FOR_LOOP
 		}
+	}
+}
+
+// handleErrorInValidation abstracts the error handling logic during block validation.
+func (bcR *Reactor) handleErrorInValidation(err error, firstHeight, secondHeight int64) {
+	bcR.Logger.Error("Error in validation", "err", err)
+	peerID := bcR.pool.RedoRequest(firstHeight)
+	peer := bcR.Switch.Peers().Get(peerID)
+	if peer != nil {
+		bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
+	}
+	peerID2 := bcR.pool.RedoRequest(secondHeight)
+	peer2 := bcR.Switch.Peers().Get(peerID2)
+	if peer2 != nil && peer2 != peer {
+		bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: err})
 	}
 }
 

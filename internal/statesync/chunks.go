@@ -205,13 +205,9 @@ func (q *chunkQueue) Has(index uint32) bool {
 // mutex lock.
 func (q *chunkQueue) load(index uint32) (*chunk, error) {
 	path, ok := q.chunkFiles[index]
-
-	errChunkNotFound := errors.New("chunk not found")
-
 	if !ok {
-		return nil, errChunkNotFound
+		return nil, nil
 	}
-
 	body, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load chunk %v: %w", index, err)

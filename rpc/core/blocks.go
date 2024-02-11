@@ -134,8 +134,6 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 	return &ctypes.ResultBlock{BlockID: blockMeta.BlockID, Block: block}, nil
 }
 
-var ErrBlockMetaNotFound = errors.New("block metadata not found")
-
 // BlockByHash gets block by hash.
 // More: https://docs.cometbft.com/main/rpc/#/Info/block_by_hash
 func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
@@ -157,7 +155,7 @@ func (env *Environment) Commit(_ *rpctypes.Context, heightPtr *int64) (*ctypes.R
 
 	blockMeta := env.BlockStore.LoadBlockMeta(height)
 	if blockMeta == nil {
-		return nil, ErrBlockMetaNotFound
+		return nil, nil
 	}
 	header := blockMeta.Header
 

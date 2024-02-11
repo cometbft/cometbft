@@ -2,7 +2,6 @@ package app
 
 import (
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -23,12 +22,10 @@ func GetABCIRequestString(req *abci.Request) (string, error) {
 	return AbciReq + reqStr + AbciReq, nil
 }
 
-var ErrInvalidFormat = errors.New("invalid format")
-
 // GetABCIRequestFromString parse string and try to get a string of a Request created by GetRequestString.
 func GetABCIRequestFromString(s string) (*abci.Request, error) {
 	if !strings.Contains(s, AbciReq) {
-		return nil, ErrInvalidFormat
+		return nil, nil
 	}
 	parts := strings.Split(s, AbciReq)
 	if len(parts) != 3 || len(parts[1]) == 0 {

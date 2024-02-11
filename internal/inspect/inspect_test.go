@@ -280,11 +280,16 @@ func TestBlockResults(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()

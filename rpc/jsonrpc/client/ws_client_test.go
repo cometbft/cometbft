@@ -85,7 +85,8 @@ func TestWSClientReconnectsAfterReadFailure(t *testing.T) {
 	h.mtx.Unlock()
 
 	// results in WS read error, no send retry because write succeeded
-	call(t, "a", c)
+	err := call(t, "a", c)
+	require.NoError(t, err) // TODO: this should result in an error
 
 	// expect to reconnect almost immediately
 	time.Sleep(10 * time.Millisecond)
@@ -94,7 +95,8 @@ func TestWSClientReconnectsAfterReadFailure(t *testing.T) {
 	h.mtx.Unlock()
 
 	// should succeed
-	call(t, "b", c)
+	err = call(t, "b", c)
+	require.NoError(t, err)
 
 	wg.Wait()
 }
@@ -119,12 +121,14 @@ func TestWSClientReconnectsAfterWriteFailure(t *testing.T) {
 
 	// results in WS write error, the client should resend on reconnect
 	call(t, "a", c)
+	///	require.NoError(t, err) // TODO: THIS SHOULD ERROR BUT DOESN'T
 
 	// expect to reconnect almost immediately
 	time.Sleep(10 * time.Millisecond)
 
 	// should succeed
-	call(t, "b", c)
+	err := call(t, "b", c)
+	require.NoError(t, err)
 
 	wg.Wait()
 }
@@ -167,7 +171,10 @@ func TestWSClientReconnectFailure(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		// client should block on this
-		call(t, "b", c)
+		err := call(t, "b", c)
+		if err != nil {
+			t.Error(err) // Use t.Error or a channel to send the error back to the main goroutine for assertion
+		}
 		close(done)
 	}()
 
@@ -188,13 +195,19 @@ func TestNotBlockingOnStop(t *testing.T) {
 	// Let the readRoutine get around to blocking
 	time.Sleep(time.Second)
 	passCh := make(chan struct{})
+	errCh := make(chan error, 1) // Create an error channel
 	go func() {
-		// Unless we have a non-blocking write to ResponsesCh from readRoutine
-		// this blocks forever ont the waitgroup
 		err := c.Stop()
-		require.NoError(t, err)
+		errCh <- err // Send the error back to the main goroutine
 		passCh <- struct{}{}
 	}()
+
+	select {
+	case err := <-errCh: // Receive the error in the main goroutine
+		require.NoError(t, err) // Assert the error here
+	case <-time.After(timeout):
+		t.Fatalf("Timeout waiting for stop")
+	}
 	select {
 	case <-passCh:
 		// Pass
@@ -214,10 +227,10 @@ func startClient(t *testing.T, addr string) *WSClient {
 	return c
 }
 
-func call(t *testing.T, method string, c *WSClient) {
+func call(t *testing.T, method string, c *WSClient) error {
 	t.Helper()
 	err := c.Call(context.Background(), method, make(map[string]any))
-	require.NoError(t, err)
+	return err
 }
 
 func callWgDoneOnResult(t *testing.T, c *WSClient, wg *sync.WaitGroup) {

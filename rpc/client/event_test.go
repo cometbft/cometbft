@@ -2,11 +2,11 @@ package client_test
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -120,6 +120,8 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 			// make the tx
 			_, _, tx := MakeTxKV()
 
+			errCh := make(chan error, 1) // Buffered channel to avoid goroutine leak
+
 			// send
 			go func() {
 				var (
@@ -135,10 +137,16 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 				default:
 					panic("Unknown broadcastMethod " + broadcastMethod)
 				}
-				if assert.NoError(t, err) {
-					require.Equal(t, abci.CodeTypeOK, txres.Code)
+				if err != nil || txres.Code != abci.CodeTypeOK {
+					errCh <- fmt.Errorf("broadcast failed: %v, code: %v", err, txres.Code)
+					return
 				}
+				errCh <- nil
 			}()
+
+			// After the goroutine, read from the error channel and use require
+			err := <-errCh
+			require.NoError(t, err)
 
 			// and wait for confirmation
 			evt, err := client.WaitForOneEvent(c, types.EventTx, waitForEventTimeout)

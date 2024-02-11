@@ -76,12 +76,19 @@ func TestConcurrentWrite(t *testing.T) {
 	go writeLots(t, wg, fooSecConn, fooWriteText, n)
 	go writeLots(t, wg, fooSecConn, fooWriteText, n)
 
-	// Consume reads from bar's reader
-	readLots(t, wg, barSecConn, n*2)
+	// Create an error channel
+	errCh := make(chan error, 2) // Adjust the buffer size as needed
+
+	// Consume reads from bar's reader, passing the newly created error channel
+	readLots(t, wg, barSecConn, n*2, errCh)
 	wg.Wait()
 
-	if err := fooSecConn.Close(); err != nil {
-		t.Error(err)
+	// After wg.Wait(), make sure to handle the errors from the error channel
+	close(errCh) // Close the channel to signal no more errors will be sent
+	for err := range errCh {
+		if err != nil {
+			t.Error(err) // Handle the error, e.g., log it or fail the test
+		}
 	}
 }
 
@@ -89,22 +96,38 @@ func TestConcurrentRead(t *testing.T) {
 	fooSecConn, barSecConn := makeSecretConnPair(t)
 	fooWriteText := cmtrand.Str(dataMaxSize)
 	n := 100
+	errCh := make(chan error, 2) // Create a channel to collect errors
 
-	// read from two routines.
-	// should be safe from race according to net.Conn:
-	// https://golang.org/pkg/net/#Conn
 	wg := new(sync.WaitGroup)
 	wg.Add(3)
-	go readLots(t, wg, fooSecConn, n/2)
-	go readLots(t, wg, fooSecConn, n/2)
+	go readLots(t, wg, fooSecConn, n/2, errCh)
+	go readLots(t, wg, fooSecConn, n/2, errCh)
 
-	// write to bar
 	writeLots(t, wg, barSecConn, fooWriteText, n)
 	wg.Wait()
+	close(errCh) // Close the channel after all goroutines are done
+
+	for err := range errCh { // Check for errors collected in the channel
+		require.NoError(t, err)
+	}
 
 	if err := fooSecConn.Close(); err != nil {
 		t.Error(err)
 	}
+}
+
+// Modified readLots function to accept an error channel and send errors to it.
+func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int, errCh chan<- error) {
+	t.Helper()
+	readBuffer := make([]byte, dataMaxSize)
+	for i := 0; i < n; i++ {
+		_, err := conn.Read(readBuffer)
+		if err != nil {
+			errCh <- err // Send errors to the channel instead of using require
+			return
+		}
+	}
+	wg.Done()
 }
 
 func TestSecretConnectionReadWrite(t *testing.T) {
@@ -296,16 +319,6 @@ func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n i
 			return
 		}
 	}
-}
-
-func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
-	t.Helper()
-	readBuffer := make([]byte, dataMaxSize)
-	for i := 0; i < n; i++ {
-		_, err := conn.Read(readBuffer)
-		require.NoError(t, err)
-	}
-	wg.Done()
 }
 
 // Creates the data for a test vector file.

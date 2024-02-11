@@ -947,12 +947,12 @@ func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 	)
 	// witness should have behaved properly -> no error
 	require.NoError(t, err)
-	assert.EqualValues(t, 2, len(c.Witnesses()))
+	assert.Len(t, 2, len(c.Witnesses()))
 
 	// witness behaves incorrectly -> removed from list, no error
 	l, err := c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(2*time.Hour))
 	require.NoError(t, err)
-	assert.EqualValues(t, 1, len(c.Witnesses()))
+	assert.Len(t, 1, len(c.Witnesses()))
 	// light block should still be verified
 	assert.EqualValues(t, 2, l.Height)
 
@@ -962,7 +962,7 @@ func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 		assert.Equal(t, light.ErrFailedHeaderCrossReferencing, err)
 	}
 	// witness does not have a light block -> left in the list
-	assert.EqualValues(t, 1, len(c.Witnesses()))
+	assert.Len(t, 1, len(c.Witnesses()))
 }
 
 func TestClient_TrustedValidatorSet(t *testing.T) {

@@ -26,13 +26,14 @@ func TestCalls(t *testing.T) {
 	_, c := setupClientServer(t, app)
 
 	resp := make(chan error, 1)
-	go func(t *testing.T) {
-		t.Helper()
+	go func() {
 		res, err := c.Echo(ctx, "hello")
-		require.NoError(t, err)
-		require.NotNil(t, res)
-		resp <- c.Error()
-	}(t)
+		if err != nil || res == nil {
+			resp <- fmt.Errorf("Echo failed: %v, response: %v", err, res)
+		} else {
+			resp <- nil
+		}
+	}()
 
 	select {
 	case <-time.After(time.Second):
@@ -49,7 +50,8 @@ func TestHangingAsyncCalls(t *testing.T) {
 	s, c := setupClientServer(t, app)
 
 	resp := make(chan error, 1)
-	go func() {
+	go func(t *testing.T) {
+		t.Helper()
 		// Call CheckTx
 		reqres, err := c.CheckTxAsync(context.Background(), &types.CheckTxRequest{
 			Type: types.CHECK_TX_TYPE_CHECK,
@@ -65,7 +67,7 @@ func TestHangingAsyncCalls(t *testing.T) {
 		// wait for the response from CheckTx
 		reqres.Wait()
 		resp <- c.Error()
-	}()
+	}(t)
 
 	select {
 	case <-time.After(time.Second):

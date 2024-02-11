@@ -135,7 +135,10 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)
 
 	const numTxs int64 = 3000
-	go deliverTxsRange(t, cs, int(numTxs))
+	errCh := make(chan error, 1) // Create an error channel
+	go func() {
+		errCh <- deliverTxsRange(t, cs, int(numTxs)) // Pass error to channel
+	}()
 
 	startTestRound(cs, cs.Height, cs.Round)
 	for n := int64(0); n < numTxs; {

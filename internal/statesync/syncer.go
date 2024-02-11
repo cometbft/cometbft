@@ -441,8 +441,6 @@ func (s *syncer) fetchChunks(ctx context.Context, snapshot *snapshot, chunks *ch
 			"format", snapshot.Format, "chunk", index, "total", chunks.Size())
 
 		ticker := time.NewTicker(s.retryTimeout)
-		defer ticker.Stop()
-
 		s.requestChunk(snapshot, index)
 
 		select {
@@ -453,6 +451,7 @@ func (s *syncer) fetchChunks(ctx context.Context, snapshot *snapshot, chunks *ch
 			next = false
 
 		case <-ctx.Done():
+			ticker.Stop()
 			return
 		}
 

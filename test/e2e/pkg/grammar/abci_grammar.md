@@ -18,8 +18,11 @@ ConsensusHeight : ConsensusRounds FinalizeBlock Commit | FinalizeBlock Commit ;
 ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
 ConsensusRound : Proposer | NonProposer ; 
 
-Proposer : PrepareProposal | PrepareProposal ProcessProposal ; 
-NonProposer: ProcessProposal ;
+Proposer : GotVotes | ProposerSimple | Extend | GotVotes ProposerSimple | GotVotes Extend | ProposerSimple Extend | GotVotes ProposerSimple Extend ; 
+ProposerSimple : PrepareProposal | PrepareProposal ProcessProposal ;
+NonProposer: GotVotes | ProcessProposal | Extend | GotVotes ProcessProposal | GotVotes Extend | ProcessProposal Extend | GotVotes ProcessProposal Extend ; 
+Extend : ExtendVote | GotVotes ExtendVote | ExtendVote GotVotes | GotVotes ExtendVote GotVotes ;
+GotVotes : GotVote | GotVote GotVotes ; 
 
 InitChain : "init_chain" ;
 FinalizeBlock : "finalize_block" ; 
@@ -28,6 +31,8 @@ OfferSnapshot : "offer_snapshot" ;
 ApplyChunk : "apply_snapshot_chunk" ; 
 PrepareProposal : "prepare_proposal" ; 
 ProcessProposal : "process_proposal" ;
+ExtendVote : "extend_vote" ;
+GotVote : "verify_vote_extension" ;
 
 ```
 
@@ -63,7 +68,7 @@ got-vote            = %s"<VerifyVoteExtension>"
 finalize-block      = %s"<FinalizeBlock>"
 commit              = %s"<Commit>"
 
-*Note* `Info` and parts related to vote extensions are missing. We ignore `Info` since it can be triggered by the e2e tests at unpredictable places because of its role in RPC handling from external clients. 
+*Note* We ignore `Info` since it can be triggered by the e2e tests at unpredictable places because of its role in RPC handling from external clients. 
 
 
 

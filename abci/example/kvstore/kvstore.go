@@ -202,6 +202,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 	for _, ev := range req.Misbehavior {
 		if ev.Type == types.MISBEHAVIOR_TYPE_DUPLICATE_VOTE {
 			addr := string(ev.Validator.Address)
+			//nolint:revive // this is a false positive from early-return
 			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
 				app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{
 					PubKey: pubKey,
@@ -418,11 +419,11 @@ func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 	tx = tx[len(ValidatorPrefix):]
 
 	//  get the pubkey and power
-	typeKeyAndPower := strings.Split(string(tx), "!")
-	if len(typeKeyAndPower) != 3 {
-		return "", nil, 0, fmt.Errorf("expected 'pubkeytype!pubkey!power'. Got %v", typeKeyAndPower)
+	typePubKeyAndPower := strings.Split(string(tx), "!")
+	if len(typePubKeyAndPower) != 3 {
+		return "", nil, 0, fmt.Errorf("expected 'pubkeytype!pubkey!power'. Got %v", typePubKeyAndPower)
 	}
-	keytype, pubkeyS, powerS := typeKeyAndPower[0], typeKeyAndPower[1], typeKeyAndPower[2]
+	keyType, pubkeyS, powerS := typePubKeyAndPower[0], typePubKeyAndPower[1], typePubKeyAndPower[2]
 
 	// decode the pubkey
 	pubkey, err := base64.StdEncoding.DecodeString(pubkeyS)
@@ -440,7 +441,7 @@ func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 		return "", nil, 0, fmt.Errorf("power can not be less than 0, got %d", power)
 	}
 
-	return keytype, pubkey, power, nil
+	return keyType, pubkey, power, nil
 }
 
 // add, update, or remove a validator.

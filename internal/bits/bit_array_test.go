@@ -33,21 +33,16 @@ func TestAnd(t *testing.T) {
 	bA3 := bA1.And(bA2)
 
 	var bNil *BitArray
-	require.Equal(t, bNil.And(bA1), (*BitArray)(nil))
-	require.Equal(t, bA1.And(nil), (*BitArray)(nil))
-	require.Equal(t, bNil.And(nil), (*BitArray)(nil))
+	require.Nil(t, bNil.And(bA1), "Expected nil when calling And with nil receiver")
+	require.Nil(t, bA1.And(nil), "Expected nil when calling And with nil argument")
+	require.Nil(t, bNil.And(nil), "Expected nil when calling And with nil receiver and nil argument")
 
-	if bA3.Bits != 31 {
-		t.Error("Expected min bits", bA3.Bits)
-	}
-	if len(bA3.Elems) != len(bA2.Elems) {
-		t.Error("Expected min elems length")
-	}
+	require.Equal(t, 31, bA3.Bits, "Expected Bits to be the minimum of the two BitArrays")
+	require.Len(t, bA3.Elems, len(bA2.Elems), "Expected Elems length to match the minimum of the two BitArrays")
+
 	for i := 0; i < bA3.Bits; i++ {
 		expected := bA1.GetIndex(i) && bA2.GetIndex(i)
-		if bA3.GetIndex(i) != expected {
-			t.Error("Wrong bit from bA3", i, bA1.GetIndex(i), bA2.GetIndex(i), bA3.GetIndex(i))
-		}
+		require.Equal(t, expected, bA3.GetIndex(i), fmt.Sprintf("Wrong bit at index %d", i))
 	}
 }
 
@@ -58,8 +53,9 @@ func TestOr(t *testing.T) {
 
 	bNil := (*BitArray)(nil)
 	require.Equal(t, bNil.Or(bA1), bA1)
+	require.Equal(t, (*BitArray)(nil), bNil.Or(nil))
 	require.Equal(t, bA1.Or(nil), bA1)
-	require.Equal(t, bNil.Or(nil), (*BitArray)(nil))
+	require.Equal(t, bNil.Or(bA1), bA1)
 
 	if bA3.Bits != 51 {
 		t.Error("Expected max bits")

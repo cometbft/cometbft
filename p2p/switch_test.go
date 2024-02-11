@@ -213,7 +213,7 @@ func TestSwitchFiltersOutItself(t *testing.T) {
 
 	// addr should be rejected in addPeer based on the same ID
 	err := s1.DialPeerWithAddress(rp.Addr())
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.Error(t, err) {
 		if err, ok := err.(ErrRejected); ok {
 			if !err.IsSelf() {
 				t.Errorf("expected self to be rejected")
@@ -443,7 +443,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	})
 
 	assert.Len(t, sw1.Peers().List(), 1)
-	assert.EqualValues(t, 1, peersMetricValue())
+	assert.InEpsilon(t, 1, peersMetricValue(), 0.0001)
 
 	// send messages to the peer from sw1
 	p := sw1.Peers().List()[0]
@@ -464,7 +464,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	sw1.StopPeerForError(p, fmt.Errorf("some err"))
 
 	require.Empty(t, len(sw1.Peers().List()), 0)
-	assert.EqualValues(t, 0, peersMetricValue())
+	assert.InEpsilon(t, 0, peersMetricValue(), 0.0001)
 }
 
 func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {

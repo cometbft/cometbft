@@ -90,7 +90,7 @@ func TestValidatorValidateBasic(t *testing.T) {
 	for _, tc := range testCases {
 		err := tc.val.ValidateBasic()
 		if tc.err {
-			if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+			if assert.Error(t, err) {
 				assert.Equal(t, tc.msg, err.Error())
 			}
 		} else {

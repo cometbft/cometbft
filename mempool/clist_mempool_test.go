@@ -233,7 +233,7 @@ func TestMempoolUpdate(t *testing.T) {
 		err := mp.Update(1, []types.Tx{tx1}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
 		_, err = mp.CheckTx(tx1)
-		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
 	}
@@ -343,13 +343,13 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 
 		// a must be added to the cache
 		_, err = mp.CheckTx(a)
-		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
 
 		// b must remain in the cache
 		_, err = mp.CheckTx(b)
-		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
 	}
@@ -606,7 +606,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 	tx4 := kvstore.NewRandomTx(10)
 	_, err = mp.CheckTx(tx4)
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.Error(t, err) {
 		assert.IsType(t, ErrMempoolIsFull{}, err)
 	}
 
@@ -746,29 +746,61 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
 	defer cleanup()
 
+	errCh := make(chan error, 200)           // Channel to collect errors
+	heightMismatchCh := make(chan bool, 100) // Channel to collect height mismatch flags
+	sizeMismatchCh := make(chan bool, 100)   // Channel to collect size mismatch flags
+
 	for h := 1; h <= 100; h++ {
-		// Two concurrent threads for each height. One updates the mempool with one valid tx,
-		// writing the pool's height; the other, receives a CheckTx response, reading the height.
 		var wg sync.WaitGroup
 		wg.Add(2)
 
 		go func(h int) {
 			defer wg.Done()
 
+			tx := kvstore.NewTxFromID(h) // Ensure tx is unique per iteration
 			err := mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
-			require.NoError(t, err)
-			require.Equal(t, int64(h), mp.height.Load(), "height mismatch")
+			if err != nil {
+				errCh <- err
+			}
+			if int64(h) != mp.height.Load() {
+				heightMismatchCh <- true
+			} else {
+				heightMismatchCh <- false
+			}
 		}(h)
 
 		go func(h int) {
 			defer wg.Done()
 
-			tx := kvstore.NewTxFromID(h)
+			tx := kvstore.NewTxFromID(h) // Ensure tx is unique per iteration
 			mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
-			require.Equal(t, h, mp.Size(), "pool size mismatch")
+			if h != mp.Size() {
+				sizeMismatchCh <- true
+			} else {
+				sizeMismatchCh <- false
+			}
 		}(h)
 
 		wg.Wait()
+	}
+
+	close(errCh)
+	close(heightMismatchCh)
+	close(sizeMismatchCh)
+
+	// Check for errors
+	for err := range errCh {
+		require.NoError(t, err)
+	}
+
+	// Check for height mismatches
+	for mismatch := range heightMismatchCh {
+		require.False(t, mismatch, "height mismatch")
+	}
+
+	// Check for size mismatches
+	for mismatch := range sizeMismatchCh {
+		require.False(t, mismatch, "pool size mismatch")
 	}
 }
 

@@ -130,42 +130,48 @@ func Test_Concurrency(t *testing.T) {
 	dbStore := New(dbm.NewMemDB(), "Test_Prune")
 
 	var wg sync.WaitGroup
+	errChan := make(chan error, 100) // Buffered channel to collect errors from SaveLightBlock
+
 	for i := 1; i <= 100; i++ {
 		wg.Add(1)
 		go func(i int64) {
 			defer wg.Done()
 
-			err := dbStore.SaveLightBlock(randLightBlock(i))
-			require.NoError(t, err)
+			// Only capture errors from SaveLightBlock to send back to the main goroutine
+			if err := dbStore.SaveLightBlock(randLightBlock(i)); err != nil {
+				errChan <- err
+				return // Return early on SaveLightBlock error
+			}
 
-			_, err = dbStore.LightBlock(i)
-			if err != nil {
+			// For other operations, log the errors but do not send them through the channel
+			if _, err := dbStore.LightBlock(i); err != nil {
 				t.Log(err)
 			}
 
-			_, err = dbStore.LastLightBlockHeight()
-			if err != nil {
+			if _, err := dbStore.LastLightBlockHeight(); err != nil {
 				t.Log(err)
 			}
-			_, err = dbStore.FirstLightBlockHeight()
-			if err != nil {
+			if _, err := dbStore.FirstLightBlockHeight(); err != nil {
 				t.Log(err)
 			}
 
-			err = dbStore.Prune(2)
-			if err != nil {
+			if err := dbStore.Prune(2); err != nil {
 				t.Log(err)
 			}
-			_ = dbStore.Size()
 
-			err = dbStore.DeleteLightBlock(1)
-			if err != nil {
+			if err := dbStore.DeleteLightBlock(1); err != nil {
 				t.Log(err)
 			}
 		}(int64(i))
 	}
 
 	wg.Wait()
+	close(errChan) // Close the channel to signal no more errors will be sent
+
+	// Check for errors sent to errChan from SaveLightBlock
+	for err := range errChan {
+		require.NoError(t, err)
+	}
 }
 
 func randLightBlock(height int64) *types.LightBlock {

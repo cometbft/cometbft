@@ -338,6 +338,7 @@ func TestChunkQueue_Next(t *testing.T) {
 
 	// Next should block waiting for the next chunks, even when given out of order.
 	chNext := make(chan *chunk, 10)
+	errs := make(chan error, 10) // Channel to collect errors from goroutines
 	go func() {
 		for {
 			c, err := queue.Next()
@@ -345,14 +346,17 @@ func TestChunkQueue_Next(t *testing.T) {
 				close(chNext)
 				break
 			}
-			require.NoError(t, err)
+			if err != nil {
+				errs <- err
+				return
+			}
 			chNext <- c
 		}
 	}()
 
 	assert.Empty(t, chNext)
 	_, err := queue.Add(&chunk{Height: 3, Format: 1, Index: 1, Chunk: []byte{3, 1, 1}, Sender: p2p.ID("b")})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	select {
 	case <-chNext:
 		assert.Fail(t, "channel should be empty")
@@ -360,7 +364,7 @@ func TestChunkQueue_Next(t *testing.T) {
 	}
 
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 0, Chunk: []byte{3, 1, 0}, Sender: p2p.ID("a")})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t,
 		&chunk{Height: 3, Format: 1, Index: 0, Chunk: []byte{3, 1, 0}, Sender: p2p.ID("a")},
@@ -370,7 +374,7 @@ func TestChunkQueue_Next(t *testing.T) {
 		<-chNext)
 
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 4, Chunk: []byte{3, 1, 4}, Sender: p2p.ID("e")})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	select {
 	case <-chNext:
 		assert.Fail(t, "channel should be empty")
@@ -378,9 +382,9 @@ func TestChunkQueue_Next(t *testing.T) {
 	}
 
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 2, Chunk: []byte{3, 1, 2}, Sender: p2p.ID("c")})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 3, Chunk: []byte{3, 1, 3}, Sender: p2p.ID("d")})
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	assert.Equal(t,
 		&chunk{Height: 3, Format: 1, Index: 2, Chunk: []byte{3, 1, 2}, Sender: p2p.ID("c")},
@@ -394,6 +398,12 @@ func TestChunkQueue_Next(t *testing.T) {
 
 	_, ok := <-chNext
 	assert.False(t, ok, "channel should be closed")
+
+	// Check for errors from goroutines
+	close(errs)
+	for e := range errs {
+		assert.NoError(t, e)
+	}
 
 	// Calling next on a finished queue should return done
 	_, err = queue.Next()

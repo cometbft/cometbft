@@ -2,6 +2,7 @@ package privval
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -36,6 +37,7 @@ type dialerTestCase struct {
 func TestSignerRemoteRetryTCPOnly(t *testing.T) {
 	var (
 		attemptCh = make(chan int)
+		errCh     = make(chan error, 1) // Error channel to capture errors within the goroutine
 		retries   = 10
 	)
 
@@ -43,14 +45,20 @@ func TestSignerRemoteRetryTCPOnly(t *testing.T) {
 	require.NoError(t, err)
 
 	// Continuously Accept connection and close {attempts} times
-	go func(ln net.Listener, attemptCh chan<- int) {
+	go func(ln net.Listener, attemptCh chan<- int, errCh chan<- error) {
 		attempts := 0
 		for {
 			conn, err := ln.Accept()
-			require.NoError(t, err)
+			if err != nil {
+				errCh <- err
+				return
+			}
 
 			err = conn.Close()
-			require.NoError(t, err)
+			if err != nil {
+				errCh <- err
+				return
+			}
 
 			attempts++
 
@@ -59,7 +67,8 @@ func TestSignerRemoteRetryTCPOnly(t *testing.T) {
 				break
 			}
 		}
-	}(ln, attemptCh)
+		errCh <- nil // Send nil to indicate successful completion without errors
+	}(ln, attemptCh, errCh)
 
 	dialerEndpoint := NewSignerDialerEndpoint(
 		log.TestingLogger(),
@@ -83,6 +92,8 @@ func TestSignerRemoteRetryTCPOnly(t *testing.T) {
 	select {
 	case attempts := <-attemptCh:
 		assert.Equal(t, retries, attempts)
+	case err := <-errCh: // Check for errors from the goroutine
+		require.NoError(t, err)
 	case <-time.After(1500 * time.Millisecond):
 		t.Error("expected remote to observe connection attempts")
 	}
@@ -178,13 +189,30 @@ func newSignerListenerEndpoint(logger log.Logger, addr string, timeoutReadWrite 
 
 func startListenerEndpointAsync(t *testing.T, sle *SignerListenerEndpoint, endpointIsOpenCh chan struct{}) {
 	t.Helper()
+	// Create an error channel to capture errors from the goroutine.
+	errChan := make(chan error, 1)
+
 	go func(sle *SignerListenerEndpoint) {
-		require.NoError(t, sle.Start())
-		assert.True(t, sle.IsRunning())
+		// Attempt to start the listener endpoint and capture any error.
+		err := sle.Start()
+		if err != nil {
+			errChan <- err
+			return
+		}
+		if !sle.IsRunning() {
+			errChan <- fmt.Errorf("listener endpoint is not running after start")
+			return
+		}
+		// If no errors occurred, send nil to the channel and close the endpointIsOpenCh to signal readiness.
+		errChan <- nil
 		close(endpointIsOpenCh)
 	}(sle)
-}
 
+	// Wait for the goroutine to send an error or nil.
+	err := <-errChan
+	// Use require.NoError outside of the goroutine to fail the test immediately if an error occurred.
+	require.NoError(t, err)
+}
 func getMockEndpoints(
 	t *testing.T,
 	addr string,

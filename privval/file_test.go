@@ -79,28 +79,26 @@ func TestLoadOrGenValidator(t *testing.T) {
 }
 
 func TestUnmarshalValidatorState(t *testing.T) {
-	assert, require := assert.New(t), require.New(t)
-
 	// create some fixed values
 	serialized := `{
-		"height": "1",
+		"height": 1,
 		"round": 1,
 		"step": 1
 	}`
 
 	val := FilePVLastSignState{}
 	err := cmtjson.Unmarshal([]byte(serialized), &val)
-	require.NoError(err, "%+v", err)
+	require.NoError(t, err) // Simplified, no need to format error
 
 	// make sure the values match
-	assert.EqualValues(val.Height, 1)
-	assert.EqualValues(val.Round, 1)
-	assert.EqualValues(val.Step, 1)
+	assert.Equal(t, int64(1), val.Height) // Use direct type and value comparison
+	assert.Equal(t, int32(1), val.Round)  // Adjusted to match the expected type
+	assert.Equal(t, int8(1), val.Step)    // Adjusted to match the expected type
 
 	// export it and make sure it is the same
 	out, err := cmtjson.Marshal(val)
-	require.NoError(err, "%+v", err)
-	assert.JSONEq(serialized, string(out))
+	require.NoError(t, err) // Simplified, no need to format error
+	assert.JSONEq(t, serialized, string(out))
 }
 
 func TestUnmarshalValidatorKey(t *testing.T) {

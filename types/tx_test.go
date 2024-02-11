@@ -87,7 +87,7 @@ func TestValidTxProof(t *testing.T) {
 			require.NoError(t, err)
 
 			p2, err = TxProofFromProto(pb2)
-			if assert.NoError(t, err, "%d: %d: %+v", h, i, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+			if assert.NoError(t, err, "%d: %d: %+v", h, i, err) {
 				require.NoError(t, p2.Validate(root), "%d: %d", h, i)
 			}
 		}

@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -75,17 +76,20 @@ func TestWSClientReconnectsAfterReadFailure(t *testing.T) {
 	defer s.Close()
 
 	c := startClient(t, "//"+s.Listener.Addr().String())
-	defer c.Stop() //nolint:errcheck // ignore for tests
+	defer c.Stop()               //nolint:errcheck // ignore for tests
+	errCh := make(chan error, 1) // Create the error channel
 
 	wg.Add(1)
-	go callWgDoneOnResult(t, c, &wg)
+
+	callWgDoneOnResult(t, c, &wg, errCh) // Pass the error channel as an argument
 
 	h.mtx.Lock()
 	h.closeConnAfterRead = true
 	h.mtx.Unlock()
 
 	// results in WS read error, no send retry because write succeeded
-	call(t, "a", c)
+	err := call(t, "a", c)
+	require.NoError(t, err) // Handle the error using require.NoError
 
 	// expect to reconnect almost immediately
 	time.Sleep(10 * time.Millisecond)
@@ -94,7 +98,8 @@ func TestWSClientReconnectsAfterReadFailure(t *testing.T) {
 	h.mtx.Unlock()
 
 	// should succeed
-	call(t, "b", c)
+	err = call(t, "b", c)
+	require.NoError(t, err) // Handle the error using require.NoError
 
 	wg.Wait()
 }
@@ -110,23 +115,41 @@ func TestWSClientReconnectsAfterWriteFailure(t *testing.T) {
 	defer c.Stop() //nolint:errcheck // ignore for tests
 
 	wg.Add(2)
-	go callWgDoneOnResult(t, c, &wg)
+	errCh := make(chan error, 2) // Channel to collect errors from goroutines
 
-	// hacky way to abort the connection before write
-	if err := c.conn.Close(); err != nil {
-		t.Error(err)
-	}
+	go func() {
+		defer wg.Done()
+		// hacky way to abort the connection before write
+		if err := c.conn.Close(); err != nil {
+			errCh <- err // Send error to the channel instead of calling t.Error directly
+		}
 
-	// results in WS write error, the client should resend on reconnect
-	call(t, "a", c)
+		// results in WS write error, the client should resend on reconnect
+		err := call(t, "a", c) // Use the updated call function that returns an error
+		if err != nil {
+			errCh <- err // Send error to the channel
+		}
+	}()
 
-	// expect to reconnect almost immediately
-	time.Sleep(10 * time.Millisecond)
+	go func() {
+		defer wg.Done()
+		// expect to reconnect almost immediately
+		time.Sleep(10 * time.Millisecond)
 
-	// should succeed
-	call(t, "b", c)
+		// should succeed
+		err := call(t, "b", c) // Again, use the updated call function for the second call
+		if err != nil {
+			errCh <- err // Send error to the channel
+		}
+	}()
 
 	wg.Wait()
+	close(errCh) // Close the channel after all goroutines are done
+
+	// Check for errors outside of the goroutines
+	for err := range errCh {
+		require.NoError(t, err)
+	}
 }
 
 func TestWSClientReconnectFailure(t *testing.T) {
@@ -165,16 +188,24 @@ func TestWSClientReconnectFailure(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	done := make(chan struct{})
+	errCh := make(chan error, 1) // Create an error channel to communicate errors from the goroutine
+
 	go func() {
 		// client should block on this
-		call(t, "b", c)
-		close(done)
+		err := call(t, "b", c)
+		if err != nil {
+			errCh <- err // Send the error to the main goroutine
+			return
+		}
+		close(done) // Close done to signal successful call
 	}()
 
 	// test that client blocks on the second send
 	select {
 	case <-done:
 		t.Fatal("client should block on calling 'b' during reconnect")
+	case err := <-errCh: // Receive any errors from the goroutine
+		require.NoError(t, err) // Assert no error occurred
 	case <-time.After(5 * time.Second):
 		t.Log("All good")
 	}
@@ -188,18 +219,26 @@ func TestNotBlockingOnStop(t *testing.T) {
 	// Let the readRoutine get around to blocking
 	time.Sleep(time.Second)
 	passCh := make(chan struct{})
+	errCh := make(chan error, 1) // Create an error channel to communicate errors from the goroutine
+
 	go func() {
 		// Unless we have a non-blocking write to ResponsesCh from readRoutine
-		// this blocks forever ont the waitgroup
+		// this blocks forever on the waitgroup
 		err := c.Stop()
-		require.NoError(t, err)
-		passCh <- struct{}{}
+		if err != nil {
+			errCh <- err // Send the error to the main goroutine
+			return
+		}
+		close(passCh) // Close passCh to signal successful stop
 	}()
+
 	select {
 	case <-passCh:
 		// Pass
+	case err := <-errCh: // Receive any errors from the goroutine
+		require.NoError(t, err) // Assert no error occurred
 	case <-time.After(timeout):
-		t.Fatalf("WSClient did failed to stop within %v seconds - is one of the read/write routines blocking?",
+		t.Fatalf("WSClient failed to stop within %v seconds - is one of the read/write routines blocking?",
 			timeout.Seconds())
 	}
 }
@@ -214,26 +253,29 @@ func startClient(t *testing.T, addr string) *WSClient {
 	return c
 }
 
-func call(t *testing.T, method string, c *WSClient) {
+func call(t *testing.T, method string, c *WSClient) error {
 	t.Helper()
-	err := c.Call(context.Background(), method, make(map[string]interface{}))
-	require.NoError(t, err)
+	// Call the method on the WSClient and return any error encountered.
+	return c.Call(context.Background(), method, make(map[string]interface{}))
 }
 
-func callWgDoneOnResult(t *testing.T, c *WSClient, wg *sync.WaitGroup) {
+func callWgDoneOnResult(t *testing.T, c *WSClient, wg *sync.WaitGroup, errCh chan<- error) {
 	t.Helper()
-	for {
-		select {
-		case resp := <-c.ResponsesCh:
-			if resp.Error != nil {
-				t.Errorf("unexpected error: %v", resp.Error)
+	go func() {
+		defer close(errCh)
+		for {
+			select {
+			case resp := <-c.ResponsesCh:
+				if resp.Error != nil {
+					errCh <- fmt.Errorf("unexpected error: %v", resp.Error) // Send error to the main goroutine.
+					return
+				}
+				if resp.Result != nil {
+					wg.Done()
+				}
+			case <-c.Quit():
 				return
 			}
-			if resp.Result != nil {
-				wg.Done()
-			}
-		case <-c.Quit():
-			return
 		}
-	}
+	}()
 }

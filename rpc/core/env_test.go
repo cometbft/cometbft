@@ -52,7 +52,7 @@ func TestPaginationPage(t *testing.T) {
 
 	// nil case
 	p, err := validatePage(nil, 1, 1)
-	if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.NoError(t, err) {
 		assert.Equal(t, 1, p)
 	}
 }

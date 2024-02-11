@@ -50,24 +50,33 @@ func TestHangingAsyncCalls(t *testing.T) {
 	s, c := setupClientServer(t, app)
 
 	resp := make(chan error, 1)
+	errChan := make(chan error, 1)
+	defer close(errChan)
 	go func(t *testing.T) {
 		t.Helper()
 		// Call CheckTx
 		reqres, err := c.CheckTxAsync(context.Background(), &types.CheckTxRequest{
 			Type: types.CHECK_TX_TYPE_CHECK,
 		})
-		require.NoError(t, err)
-		// wait 50 ms for all events to travel socket, but
+		if err != nil {
+			errChan <- err // Send the error to the main goroutine
+			return
+		} // wait 50 ms for all events to travel socket, but
 		// no response yet from server
 		time.Sleep(50 * time.Millisecond)
 		// kill the server, so the connections break
 		err = s.Stop()
-		require.NoError(t, err)
-
+		if err != nil {
+			errChan <- err // Send the error to the main goroutine
+			return
+		}
 		// wait for the response from CheckTx
 		reqres.Wait()
 		resp <- c.Error()
 	}(t)
+
+	err := <-errChan        // Receive the error
+	require.NoError(t, err) // Perform the assertion
 
 	select {
 	case <-time.After(time.Second):

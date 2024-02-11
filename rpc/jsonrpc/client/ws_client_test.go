@@ -121,7 +121,7 @@ func TestWSClientReconnectsAfterWriteFailure(t *testing.T) {
 
 	// results in WS write error, the client should resend on reconnect
 	call(t, "a", c)
-	///	require.NoError(t, err) // TODO: THIS SHOULD ERROR BUT DOESN'T
+	//	require.NoError(t, err) // TODO: THIS SHOULD ERROR BUT DOESN'T
 
 	// expect to reconnect almost immediately
 	time.Sleep(10 * time.Millisecond)

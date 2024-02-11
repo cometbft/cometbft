@@ -130,15 +130,18 @@ func Test_Concurrency(t *testing.T) {
 	dbStore := New(dbm.NewMemDB(), "Test_Prune")
 
 	var wg sync.WaitGroup
+	errs := make(chan error, 100) // Channel to collect errors
 	for i := 1; i <= 100; i++ {
 		wg.Add(1)
 		go func(i int64) {
 			defer wg.Done()
 
-			err := dbStore.SaveLightBlock(randLightBlock(i))
-			require.NoError(t, err)
+			if err := dbStore.SaveLightBlock(randLightBlock(i)); err != nil {
+				errs <- err
+				return
+			}
 
-			_, err = dbStore.LightBlock(i)
+			_, err := dbStore.LightBlock(i)
 			if err != nil {
 				t.Log(err)
 			}
@@ -166,6 +169,12 @@ func Test_Concurrency(t *testing.T) {
 	}
 
 	wg.Wait()
+	wg.Wait()
+	close(errs) // Close the channel after all goroutines are done
+
+	for err := range errs {
+		require.NoError(t, err) // Assert no errors occurred, outside of goroutines
+	}
 }
 
 func randLightBlock(height int64) *types.LightBlock {

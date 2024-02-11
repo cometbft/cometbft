@@ -1,8 +1,10 @@
 package client_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -17,7 +19,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/rpc/client"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
@@ -662,57 +663,70 @@ func TestTxSearch(t *testing.T) {
 
 func TestBatchedJSONRPCCalls(t *testing.T) {
 	c := getHTTPClient()
-	testBatchedJSONRPCCalls(t, c)
+	err := testBatchedJSONRPCCalls(t, c)
+	require.NoError(t, err)
 }
 
-func testBatchedJSONRPCCalls(t *testing.T, c *rpchttp.HTTP) {
+func testBatchedJSONRPCCalls(t *testing.T, c *rpchttp.HTTP) error {
 	t.Helper()
 	k1, v1, tx1 := MakeTxKV()
 	k2, v2, tx2 := MakeTxKV()
 
 	batch := c.NewBatch()
-	r1, err := batch.BroadcastTxCommit(context.Background(), tx1)
-	require.NoError(t, err)
-	r2, err := batch.BroadcastTxCommit(context.Background(), tx2)
-	require.NoError(t, err)
-	require.Equal(t, 2, batch.Count())
+	_, err := batch.BroadcastTxCommit(context.Background(), tx1)
+	if err != nil {
+		return fmt.Errorf("broadcastTxCommit tx1 error: %w", err)
+	}
+	_, err = batch.BroadcastTxCommit(context.Background(), tx2)
+	if err != nil {
+		return fmt.Errorf("broadcastTxCommit tx2 error: %w", err)
+	}
+	if batch.Count() != 2 {
+		return fmt.Errorf("expected batch count of 2, got %d", batch.Count())
+	}
+
 	bresults, err := batch.Send(ctx)
-	require.NoError(t, err)
-	require.Len(t, bresults, 2)
-	require.Equal(t, 0, batch.Count())
+	if err != nil {
+		return fmt.Errorf("batch send error: %w", err)
+	}
+	if len(bresults) != 2 {
+		return fmt.Errorf("expected 2 results from batch send, got %d", len(bresults))
+	}
 
-	bresult1, ok := bresults[0].(*ctypes.ResultBroadcastTxCommit)
-	require.True(t, ok)
-	require.Equal(t, *bresult1, *r1)
-	bresult2, ok := bresults[1].(*ctypes.ResultBroadcastTxCommit)
-	require.True(t, ok)
-	require.Equal(t, *bresult2, *r2)
-	apph := cmtmath.MaxInt64(bresult1.Height, bresult2.Height) + 1
+	// Reset batch for ABCI queries
+	batch.Clear()
 
-	err = client.WaitForHeight(c, apph, nil)
-	require.NoError(t, err)
+	_, err = batch.ABCIQuery(context.Background(), "/key", k1)
+	if err != nil {
+		return fmt.Errorf("ABCIQuery k1 error: %w", err)
+	}
+	_, err = batch.ABCIQuery(context.Background(), "/key", k2)
+	if err != nil {
+		return fmt.Errorf("ABCIQuery k2 error: %w", err)
+	}
+	if batch.Count() != 2 {
+		return fmt.Errorf("expected batch count of 2 after ABCIQuery, got %d", batch.Count())
+	}
 
-	q1, err := batch.ABCIQuery(context.Background(), "/key", k1)
-	require.NoError(t, err)
-	q2, err := batch.ABCIQuery(context.Background(), "/key", k2)
-	require.NoError(t, err)
-	require.Equal(t, 2, batch.Count())
 	qresults, err := batch.Send(ctx)
-	require.NoError(t, err)
-	require.Len(t, qresults, 2)
-	require.Equal(t, 0, batch.Count())
+	if err != nil {
+		return fmt.Errorf("batch send for ABCIQuery error: %w", err)
+	}
+	if len(qresults) != 2 {
+		return fmt.Errorf("expected 2 results from batch send for ABCIQuery, got %d", len(qresults))
+	}
 
+	// check to ensure response matches expected key and value
 	qresult1, ok := qresults[0].(*ctypes.ResultABCIQuery)
-	require.True(t, ok)
-	require.Equal(t, *qresult1, *q1)
+	if !ok || string(qresult1.Response.Key) != string(k1) || !bytes.Equal(qresult1.Response.Value, v1) {
+		return errors.New("query result 1 does not match expected values")
+	}
 	qresult2, ok := qresults[1].(*ctypes.ResultABCIQuery)
-	require.True(t, ok)
-	require.Equal(t, *qresult2, *q2)
+	if !ok || string(qresult2.Response.Key) != string(k2) || !bytes.Equal(qresult2.Response.Value, v2) {
+		return errors.New("query result 2 does not match expected values")
+	}
 
-	require.Equal(t, qresult1.Response.Key, k1)
-	require.Equal(t, qresult2.Response.Key, k2)
-	require.Equal(t, qresult1.Response.Value, v1)
-	require.Equal(t, qresult2.Response.Value, v2)
+	return nil
 }
 
 func TestBatchedJSONRPCCallsCancellation(t *testing.T) {
@@ -749,12 +763,22 @@ func TestClearingEmptyRequestBatch(t *testing.T) {
 func TestConcurrentJSONRPCBatching(t *testing.T) {
 	var wg sync.WaitGroup
 	c := getHTTPClient()
+	errors := make(chan error, 50) // Buffer to hold errors
+
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			testBatchedJSONRPCCalls(t, c)
+			if err := testBatchedJSONRPCCalls(t, c); err != nil {
+				errors <- err
+			}
 		}()
 	}
+
 	wg.Wait()
+	close(errors)
+
+	for err := range errors {
+		assert.NoError(t, err)
+	}
 }

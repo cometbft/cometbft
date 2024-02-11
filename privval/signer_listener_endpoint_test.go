@@ -108,41 +108,49 @@ func TestRetryConnToRemoteSigner(t *testing.T) {
 
 		signerServer := NewSignerServer(dialerEndpoint, chainID, mockPV)
 
-		startListenerEndpointAsync(t, listenerEndpoint, endpointIsOpenCh)
-		t.Cleanup(func() {
-			if err := listenerEndpoint.Stop(); err != nil {
+		errCh := make(chan error)
+		startListenerEndpointAsync(t, listenerEndpoint, endpointIsOpenCh, errCh)
+
+		select {
+		case err := <-errCh:
+			require.NoError(t, err)
+		case <-endpointIsOpenCh:
+
+			t.Cleanup(func() {
+				if err := listenerEndpoint.Stop(); err != nil {
+					t.Error(err)
+				}
+			})
+
+			require.NoError(t, signerServer.Start())
+			assert.True(t, signerServer.IsRunning())
+			<-endpointIsOpenCh
+			if err := signerServer.Stop(); err != nil {
 				t.Error(err)
 			}
-		})
 
-		require.NoError(t, signerServer.Start())
-		assert.True(t, signerServer.IsRunning())
-		<-endpointIsOpenCh
-		if err := signerServer.Stop(); err != nil {
-			t.Error(err)
+			dialerEndpoint2 := NewSignerDialerEndpoint(
+				logger,
+				tc.dialer,
+			)
+			signerServer2 := NewSignerServer(dialerEndpoint2, chainID, mockPV)
+
+			// let some pings pass
+			require.NoError(t, signerServer2.Start())
+			assert.True(t, signerServer2.IsRunning())
+			t.Cleanup(func() {
+				if err := signerServer2.Stop(); err != nil {
+					t.Error(err)
+				}
+			})
+
+			// give the client some time to re-establish the conn to the remote signer
+			// should see sth like this in the logs:
+			//
+			// E[10016-01-10|17:12:46.128] Ping                                         err="remote signer timed out"
+			// I[10016-01-10|17:16:42.447] Re-created connection to remote signer       impl=SocketVal
+			time.Sleep(testTimeoutReadWrite * 2)
 		}
-
-		dialerEndpoint2 := NewSignerDialerEndpoint(
-			logger,
-			tc.dialer,
-		)
-		signerServer2 := NewSignerServer(dialerEndpoint2, chainID, mockPV)
-
-		// let some pings pass
-		require.NoError(t, signerServer2.Start())
-		assert.True(t, signerServer2.IsRunning())
-		t.Cleanup(func() {
-			if err := signerServer2.Stop(); err != nil {
-				t.Error(err)
-			}
-		})
-
-		// give the client some time to re-establish the conn to the remote signer
-		// should see sth like this in the logs:
-		//
-		// E[10016-01-10|17:12:46.128] Ping                                         err="remote signer timed out"
-		// I[10016-01-10|17:16:42.447] Re-created connection to remote signer       impl=SocketVal
-		time.Sleep(testTimeoutReadWrite * 2)
 	}
 }
 
@@ -176,11 +184,18 @@ func newSignerListenerEndpoint(logger log.Logger, addr string, timeoutReadWrite 
 	)
 }
 
-func startListenerEndpointAsync(t *testing.T, sle *SignerListenerEndpoint, endpointIsOpenCh chan struct{}) {
+func startListenerEndpointAsync(t *testing.T, sle *SignerListenerEndpoint, endpointIsOpenCh chan struct{}, errCh chan error) {
 	t.Helper()
 	go func(sle *SignerListenerEndpoint) {
-		require.NoError(t, sle.Start())
-		assert.True(t, sle.IsRunning())
+		err := sle.Start()
+		if err != nil {
+			errCh <- err
+			return
+		}
+		if !sle.IsRunning() {
+			errCh <- errors.New("listener endpoint is not running")
+			return
+		}
 		close(endpointIsOpenCh)
 	}(sle)
 }
@@ -206,8 +221,14 @@ func getMockEndpoints(
 	SignerDialerEndpointTimeoutReadWrite(testTimeoutReadWrite)(dialerEndpoint)
 	SignerDialerEndpointConnRetries(1e6)(dialerEndpoint)
 
-	startListenerEndpointAsync(t, listenerEndpoint, endpointIsOpenCh)
+	errCh := make(chan error)
+	startListenerEndpointAsync(t, listenerEndpoint, endpointIsOpenCh, errCh)
 
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-endpointIsOpenCh:
+	}
 	require.NoError(t, dialerEndpoint.Start())
 	assert.True(t, dialerEndpoint.IsRunning())
 

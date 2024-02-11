@@ -47,10 +47,12 @@ func TestInspectRun(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		stoppedWG := &sync.WaitGroup{}
 		stoppedWG.Add(1)
+		errChan := make(chan error, 1)
 		go func() {
-			require.NoError(t, d.Run(ctx))
+			errChan <- d.Run(ctx)
 			stoppedWG.Done()
 		}()
+		require.NoError(t, <-errChan)
 		cancel()
 		stoppedWG.Wait()
 	})
@@ -81,11 +83,16 @@ func TestBlock(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
@@ -133,11 +140,16 @@ func TestTxSearch(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
@@ -181,11 +193,16 @@ func TestTx(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
@@ -230,11 +247,16 @@ func TestConsensusParams(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
@@ -332,11 +354,16 @@ func TestCommit(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
@@ -384,11 +411,16 @@ func TestBlockByHash(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
@@ -436,11 +468,16 @@ func TestBlockchain(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
@@ -488,11 +525,16 @@ func TestValidators(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
@@ -547,11 +589,16 @@ func TestBlockSearch(t *testing.T) {
 
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
+	errChan := make(chan error, 1) // Create an error channel
 	go func() {
-		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		err := d.Run(ctx)
+		errChan <- err // Send error to the main goroutine
 	}()
+	// Wait for the goroutine to finish and check for errors outside the goroutine
+	wg.Wait()
+	err := <-errChan        // Receive error from the channel
+	require.NoError(t, err) // Perform the assertion in the main goroutine
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()

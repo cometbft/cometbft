@@ -61,11 +61,24 @@ func TestNodeStartStop(t *testing.T) {
 		t.Fatal("timed out waiting for the node to produce a block")
 	}
 
-	// stop the node
+	errCh := make(chan error, 1)
 	go func() {
-		err = n.Stop()
-		require.NoError(t, err)
+		errCh <- n.Stop()
 	}()
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		pid := os.Getpid()
+		p, err := os.FindProcess(pid)
+		if err != nil {
+			panic(err)
+		}
+		err = p.Signal(syscall.SIGABRT)
+		fmt.Println(err)
+		t.Fatal("timed out waiting for shutdown")
+	}
 
 	select {
 	case <-n.Quit():
@@ -241,10 +254,12 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 		types.NewMockPV(),
 	)
 
+	errCh := make(chan error, 1)
 	go func() {
-		err := pvsc.Start()
-		require.NoError(t, err)
+		errCh <- pvsc.Start()
 	}()
+	err := <-errCh // Receive error from the channel
+	require.NoError(t, err)
 	defer pvsc.Stop() //nolint:errcheck // ignore for tests
 
 	n, err := DefaultNewNode(config, log.TestingLogger())

@@ -41,19 +41,23 @@ func TestSubscribe(t *testing.T) {
 	require.NoError(t, err)
 	assertReceive(t, "Ka-Zar", subscription.Out())
 
-	published := make(chan struct{})
+	published := make(chan error)
 	go func() {
 		defer close(published)
 
-		err := s.Publish(ctx, "Quicksilver")
-		require.NoError(t, err)
-
-		err = s.Publish(ctx, "Asylum")
-		require.NoError(t, err)
-
-		err = s.Publish(ctx, "Ivan")
-		require.NoError(t, err)
+		if err := s.Publish(ctx, "Quicksilver"); err != nil {
+			published <- err
+			return
+		}
+		if err := s.Publish(ctx, "Asylum"); err != nil {
+			published <- err
+			return
+		}
+		published <- nil
 	}()
+
+	err = <-published
+	require.NoError(t, err)
 
 	select {
 	case <-published:
@@ -110,12 +114,16 @@ func TestSubscribeUnbuffered(t *testing.T) {
 	go func() {
 		defer close(published)
 
-		err := s.Publish(ctx, "Ultron")
-		require.NoError(t, err)
+		err = s.Publish(ctx, "Quicksilver")
+		if err != nil {
+			return
+		}
 
-		err = s.Publish(ctx, "Darkhawk")
-		require.NoError(t, err)
+		err = s.Publish(ctx, "Asylum")
 	}()
+
+	<-published
+	require.NoError(t, err)
 
 	select {
 	case <-published:

@@ -77,7 +77,7 @@ func TestConcurrentWrite(t *testing.T) {
 	go writeLots(t, wg, fooSecConn, fooWriteText, n)
 
 	// Create an error channel
-	errCh := make(chan error, 2) // Adjust the buffer size as needed
+	errCh := make(chan error, 1) // Adjust the buffer size as needed
 
 	// Consume reads from bar's reader, passing the newly created error channel
 	readLots(t, wg, barSecConn, n*2, errCh)
@@ -96,7 +96,7 @@ func TestConcurrentRead(t *testing.T) {
 	fooSecConn, barSecConn := makeSecretConnPair(t)
 	fooWriteText := cmtrand.Str(dataMaxSize)
 	n := 100
-	errCh := make(chan error, 2) // Create a channel to collect errors
+	errCh := make(chan error, 1) // Create a channel to collect errors
 
 	wg := new(sync.WaitGroup)
 	wg.Add(3)

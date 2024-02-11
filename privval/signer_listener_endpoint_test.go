@@ -43,14 +43,20 @@ func TestSignerRemoteRetryTCPOnly(t *testing.T) {
 	require.NoError(t, err)
 
 	// Continuously Accept connection and close {attempts} times
-	go func(ln net.Listener, attemptCh chan<- int) {
+	errCh := make(chan error)
+	go func(ln net.Listener, attemptCh chan<- int, errCh chan<- error) {
 		attempts := 0
 		for {
 			conn, err := ln.Accept()
-			require.NoError(t, err)
-
+			if err != nil {
+				errCh <- err
+				return
+			}
 			err = conn.Close()
-			require.NoError(t, err)
+			if err != nil {
+				errCh <- err
+				return
+			}
 
 			attempts++
 
@@ -59,7 +65,16 @@ func TestSignerRemoteRetryTCPOnly(t *testing.T) {
 				break
 			}
 		}
-	}(ln, attemptCh)
+	}(ln, attemptCh, errCh)
+
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	case attempts := <-attemptCh:
+		assert.Equal(t, retries, attempts)
+	case <-time.After(1500 * time.Millisecond):
+		t.Error("expected remote to observe connection attempts")
+	}
 
 	dialerEndpoint := NewSignerDialerEndpoint(
 		log.TestingLogger(),

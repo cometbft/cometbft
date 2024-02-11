@@ -752,23 +752,45 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 		var wg sync.WaitGroup
 		wg.Add(2)
 
+		errCh := make(chan error, 1)
+
 		go func(h int) {
 			defer wg.Done()
 
 			err := mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
-			require.NoError(t, err)
-			require.Equal(t, int64(h), mp.height.Load(), "height mismatch")
+			if err != nil || mp.height.Load() != int64(h) {
+				errCh <- fmt.Errorf("height mismatch or update error: %v", err)
+			} else {
+				errCh <- nil
+			}
 		}(h)
+
+		// After waiting for goroutines to finish
+		wg.Wait()
+		close(errCh)
+
+		for err := range errCh {
+			require.NoError(t, err)
+		}
 
 		go func(h int) {
 			defer wg.Done()
 
 			tx := kvstore.NewTxFromID(h)
 			mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
-			require.Equal(t, h, mp.Size(), "pool size mismatch")
+			if mp.Size() != h {
+				errCh <- fmt.Errorf("pool size mismatch: expected %d, got %d", h, mp.Size())
+			} else {
+				errCh <- nil // Send nil if there's no error
+			}
 		}(h)
 
-		wg.Wait()
+		wg.Wait()    // Wait for goroutines to finish
+		close(errCh) // Close the channel
+
+		for err := range errCh {
+			require.NoError(t, err) // Assert outside the goroutine
+		}
 	}
 }
 

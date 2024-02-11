@@ -338,6 +338,8 @@ func TestChunkQueue_Next(t *testing.T) {
 
 	// Next should block waiting for the next chunks, even when given out of order.
 	chNext := make(chan *chunk, 10)
+	errCh := make(chan error, 1) // Create an error channel
+
 	go func() {
 		for {
 			c, err := queue.Next()
@@ -345,10 +347,20 @@ func TestChunkQueue_Next(t *testing.T) {
 				close(chNext)
 				break
 			}
-			require.NoError(t, err)
+			if err != nil {
+				errCh <- err // Send error to the main goroutine
+				return
+			}
 			chNext <- c
 		}
 	}()
+
+	// Adding chunks out of order should not trigger the channel
+	select {
+	case err := <-errCh:
+		require.NoError(t, err)
+	default:
+	}
 
 	assert.Empty(t, chNext)
 	_, err := queue.Add(&chunk{Height: 3, Format: 1, Index: 1, Chunk: []byte{3, 1, 1}, Sender: p2p.ID("b")})

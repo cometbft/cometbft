@@ -92,15 +92,18 @@ func TestReactorConcurrency(t *testing.T) {
 		// 1. submit a bunch of txs
 		// 2. update the whole mempool
 		txs := checkTxs(t, reactors[0].mempool, numTxs)
+		var err error
 		go func() {
 			defer wg.Done()
 
 			reactors[0].mempool.Lock()
 			defer reactors[0].mempool.Unlock()
 
-			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			require.NoError(t, err)
+			err = reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
 		}()
+
+		wg.Wait()
+		require.NoError(t, err)
 
 		// 1. submit a bunch of txs
 		// 2. update none
@@ -110,10 +113,11 @@ func TestReactorConcurrency(t *testing.T) {
 
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
-			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
-			require.NoError(t, err)
+			err = reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
 		}()
 
+		wg.Wait()
+		require.NoError(t, err)
 		// 1. flush the mempool
 		reactors[1].mempool.Flush()
 	}

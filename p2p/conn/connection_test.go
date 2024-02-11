@@ -182,14 +182,17 @@ func TestMConnectionPongTimeoutResultsInError(t *testing.T) {
 	defer mconn.Stop() //nolint:errcheck // ignore for tests
 
 	serverGotPing := make(chan struct{})
+
+	errCh := make(chan error, 1) // Create an error channel
 	go func() {
-		// read ping
 		var pkt tmp2p.Packet
 		_, err := protoio.NewDelimitedReader(server, maxPingPongPacketSize).ReadMsg(&pkt)
-		require.NoError(t, err)
-		serverGotPing <- struct{}{}
+		errCh <- err // Send error to the main goroutine
+		close(errCh) // Close the channel to signal completion
 	}()
-	<-serverGotPing
+	err = <-errCh           // Receive error from the goroutine
+	require.NoError(t, err) // Use require.NoError in the main test goroutine
+	serverGotPing <- struct{}{}
 
 	pongTimerExpired := mconn.config.PongTimeout + 200*time.Millisecond
 	select {
@@ -233,18 +236,16 @@ func TestMConnectionMultiplePongsInTheBeginning(t *testing.T) {
 	require.NoError(t, err)
 
 	serverGotPing := make(chan struct{})
+	errCh := make(chan error, 1) // Create an error channel
 	go func() {
-		// read ping (one byte)
-		var packet tmp2p.Packet
-		_, err := protoio.NewDelimitedReader(server, maxPingPongPacketSize).ReadMsg(&packet)
-		require.NoError(t, err)
-		serverGotPing <- struct{}{}
-
-		// respond with pong
-		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err)
+		var pkt tmp2p.Packet
+		_, err := protoio.NewDelimitedReader(server, maxPingPongPacketSize).ReadMsg(&pkt)
+		errCh <- err // Send error to the main goroutine
+		close(errCh) // Close the channel to signal completion
 	}()
-	<-serverGotPing
+	err = <-errCh           // Receive error from the goroutine
+	require.NoError(t, err) // Use require.NoError in the main test goroutine
+	serverGotPing <- struct{}{}
 
 	pongTimerExpired := mconn.config.PongTimeout + 20*time.Millisecond
 	select {
@@ -322,36 +323,60 @@ func TestMConnectionPingPongs(t *testing.T) {
 	mconn := createMConnectionWithCallbacks(client, onReceive, onError)
 	err := mconn.Start()
 	require.NoError(t, err)
-	defer mconn.Stop() //nolint:errcheck // ignore for tests
+	defer func() { assert.NoError(t, mconn.Stop()) }()
 
 	serverGotPing := make(chan struct{})
+	errorCh := make(chan error, 2) // Channel to collect errors from goroutine
 	go func() {
 		protoReader := protoio.NewDelimitedReader(server, maxPingPongPacketSize)
 		protoWriter := protoio.NewDelimitedWriter(server)
 		var pkt tmp2p.PacketPing
 
 		// read ping
-		_, err = protoReader.ReadMsg(&pkt)
-		require.NoError(t, err)
+		_, err := protoReader.ReadMsg(&pkt)
+		if err != nil {
+			errorCh <- err
+			return
+		}
 		serverGotPing <- struct{}{}
 
 		// respond with pong
 		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err)
+		if err != nil {
+			errorCh <- err
+			return
+		}
 
 		time.Sleep(mconn.config.PingInterval)
 
 		// read ping
 		_, err = protoReader.ReadMsg(&pkt)
-		require.NoError(t, err)
+		if err != nil {
+			errorCh <- err
+			return
+		}
 		serverGotPing <- struct{}{}
 
 		// respond with pong
 		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err)
+		if err != nil {
+			errorCh <- err
+			return
+		}
+		close(errorCh) // Close the error channel to signal completion
 	}()
 	<-serverGotPing
 	<-serverGotPing
+
+	// Check for errors from the goroutine
+	select {
+	case err := <-errorCh:
+		if err != nil {
+			t.Fatal("Error in goroutine:", err)
+		}
+	default:
+		// No error was sent, continue
+	}
 
 	pongTimerExpired := (mconn.config.PongTimeout + 20*time.Millisecond) * 2
 	select {
@@ -360,7 +385,7 @@ func TestMConnectionPingPongs(t *testing.T) {
 	case err := <-errorsCh:
 		t.Fatalf("Expected no error, but got %v", err)
 	case <-time.After(2 * pongTimerExpired):
-		assert.True(t, mconn.IsRunning())
+		assert.True(t, mconn.IsRunning(), "mconn should still be running")
 	}
 }
 

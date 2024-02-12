@@ -52,6 +52,7 @@ numbering our ADRs from 100 onwards.
 - [ADR-107: Rename protobuf versions of 0.x releases to pre-v1 betas](adr-107-betaize-proto-versions.md)
 - [ADR-109: Reduce CometBFT Go API Surface Area](adr-109-reduce-go-api-surface.md)
 - [ADR-111: `nop` Mempool](adr-111-nop-mempool.md)
+- [ADR-112: Proposer-Based Timestamps](adr-112-proposer-based-timestamps.md)
 
 ### Implemented
 

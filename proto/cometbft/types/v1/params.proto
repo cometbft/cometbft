@@ -19,7 +19,7 @@ message ConsensusParams {
   // TODO: move ABCI to FeatureParams
   ABCIParams      abci      = 5;
   SynchronyParams synchrony = 6;
-  FeatureParams   feature = 7;
+  FeatureParams   feature   = 7;
 }
 
 // BlockParams contains limits on the block size.
@@ -111,7 +111,8 @@ message SynchronyParams {
       [(gogoproto.stdduration) = true];
 }
 
-message FeatureParams{
+// FeatureParams contains specific feature flag enable heights for both Vote Extensions and Proposer Based Timestamps
+message FeatureParams {
   // vote_extensions_enable_height configures the first height during which
   // vote extensions will be enabled. During this specified height, and for all
   // subsequent heights, precommit messages that do not contain valid extension data

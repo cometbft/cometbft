@@ -34,15 +34,17 @@ CometBFT implements two algorithms for computing block times:
   available, in legacy mode, in version `v1.x`.
 
 - [Proposer-Based Timestamps][pbts-spec]: introduced in version `v1.x`,
-  intended to be a replacement for BFT Time. Users are strongly encouraged to
-  adopt PBTS in new chains, or to switch to PBTS when upgrading existing chains.
+  intended to be a replacement for BFT Time.
+
+Users are strongly encouraged to adopt PBTS in new chains, or to switch to PBTS
+when upgrading existing chains.
 
 The table below compares BFT Time and PBTS algorithms in terms of properties:
 
 | Algorithm | Time Monotonicity | Byzantine Fault Tolerance   | Relation to real time |
 ------------|-------------------|-----------------------------|-----------------------|
-| BFT Time  | Guaranteed        | Tolerates `< n/2` Byzantine nodes     | Best effort and **not** guaranteed |
-| PBTS      | Guaranteed        | Tolerates `< n/3` Byzantine nodes     | Guaranteed within configured synchronous parameters: `PRECISION` and `MSGDELAY` |
+| BFT Time  | Guaranteed        | Tolerates `< 1/3` Byzantine nodes     | Best effort and **not** guaranteed |
+| PBTS      | Guaranteed        | Tolerates `< 2/3` Byzantine nodes     | Guaranteed within configured synchronous parameters: `PRECISION` and `MSGDELAY` |
 
 [spec-time]: ../core/data_structures.md#time
 [spec-header]: ../core/data_structures.md#header

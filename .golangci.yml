@@ -39,11 +39,13 @@ linters:
     - nlreturn
     - nonamedreturns
     - nosnakecase
+    - perfsprint
     - predeclared
     - revive
     - scopelint
     - structcheck
     - tagliatelle
+    - testifylint
     - typecheck
     # Prefer unparam over revive's unused param. It is more thorough in its checking.
     - unparam

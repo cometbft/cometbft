@@ -82,7 +82,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 
 func ensureNoFire(t *testing.T, ch <-chan struct{}) {
 	t.Helper()
-	timer := time.NewTimer(time.Duration(500) * time.Millisecond)
+	timer := time.NewTimer(100 * time.Millisecond)
 	select {
 	case <-ch:
 		t.Fatal("Expected not to fire")
@@ -289,7 +289,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK)
 		callback(reqRes.Request, reqRes.Response)
 	}
-	require.Equal(t, len(txs), mp.Size())
+	require.Len(t, txs, mp.Size())
 	require.Nil(t, mp.recheckCursor)
 
 	// Calling update to remove the first transaction from the mempool.
@@ -374,7 +374,7 @@ func TestTxsAvailable(t *testing.T) {
 	defer cleanup()
 	mp.EnableTxsAvailable()
 
-	timeoutMS := 500
+	timeoutMS := 100
 
 	// with no txs, it shouldn't fire
 	ensureNoFire(t, mp.TxsAvailable())
@@ -764,7 +764,7 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 			defer wg.Done()
 
 			tx := kvstore.NewTxFromID(h)
-			mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+			mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
 			require.Equal(t, h, mp.Size(), "pool size mismatch")
 		}(h)
 
@@ -786,14 +786,14 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 
 	// Adding a new valid tx to the pool will notify a tx is available
 	tx := kvstore.NewTxFromID(1)
-	mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+	mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
 	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Len(t, mp.TxsAvailable(), 1)
 	<-mp.TxsAvailable()
 
 	// Receiving CheckTx response for a tx already in the pool should not notify of available txs
-	mp.resCbFirstTime(tx, abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK}))
+	mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
 	require.Equal(t, 1, mp.Size())
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Empty(t, mp.TxsAvailable())

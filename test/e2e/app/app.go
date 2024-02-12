@@ -565,6 +565,12 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.ProcessProp
 // key/value store ("extensionSum") with the sum of all of the numbers collected
 // from the vote extensions.
 func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteRequest) (*abci.ExtendVoteResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ExtendVote{ExtendVote: &abci.ExtendVoteRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	appHeight, areExtensionsEnabled := app.checkHeightAndExtensions(false, req.Height, "ExtendVote")
 	if !areExtensionsEnabled {
 		panic(fmt.Errorf("received call to ExtendVote at height %d, when vote extensions are disabled", appHeight))
@@ -601,6 +607,12 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteReques
 // without doing anything about them. In this case, it just makes sure that the
 // vote extension is a well-formed integer value.
 func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.VerifyVoteExtensionRequest) (*abci.VerifyVoteExtensionResponse, error) {
+	r := &abci.Request{Value: &abci.Request_VerifyVoteExtension{VerifyVoteExtension: &abci.VerifyVoteExtensionRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	appHeight, areExtensionsEnabled := app.checkHeightAndExtensions(false, req.Height, "VerifyVoteExtension")
 	if !areExtensionsEnabled {
 		panic(fmt.Errorf("received call to VerifyVoteExtension at height %d, when vote extensions are disabled", appHeight))

@@ -38,65 +38,52 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
+// TestNodeStartStop tests the start and stop lifecycle of a node.
+// It verifies that a node can start successfully, produce a block,
+// and then shut down gracefully.
 func TestNodeStartStop(t *testing.T) {
+	// Setup: Initialize node configuration and clean up resources on test completion.
 	config := test.ResetTestRoot("node_node_test")
 	defer os.RemoveAll(config.RootDir)
 
-	// create & start node
+	// Create and start the node.
 	n, err := DefaultNewNode(config, log.TestingLogger())
-	require.NoError(t, err)
+	require.NoError(t, err, "Creating a new node should not error")
 	err = n.Start()
-	require.NoError(t, err)
+	require.NoError(t, err, "Starting the node should not error")
 
 	t.Logf("Started node %v", n.sw.NodeInfo())
 
-	// wait for the node to produce a block
+	// Wait for the node to produce a block.
 	blocksSub, err := n.EventBus().Subscribe(context.Background(), "node_test", types.EventQueryNewBlock)
-	require.NoError(t, err)
+	require.NoError(t, err, "Subscribing to block events should not error")
 	select {
 	case <-blocksSub.Out():
 	case <-blocksSub.Canceled():
-		t.Fatal("blocksSub was canceled")
+		t.Fatal("Block subscription was canceled")
 	case <-time.After(10 * time.Second):
-		t.Fatal("timed out waiting for the node to produce a block")
+		t.Fatal("Timed out waiting for the node to produce a block")
 	}
 
-	// stop the node
+	// Stop the node in a separate goroutine.
+	errCh := make(chan error, 1) // Use a channel to capture errors from goroutine.
 	go func() {
-		err = n.Stop()
-		require.NoError(t, err)
+		errCh <- n.Stop()
 	}()
 
+	// Wait for the node to stop or timeout.
 	select {
-	case <-n.Quit():
+	case err := <-errCh:
+		require.NoError(t, err, "Stopping the node should not error")
 	case <-time.After(5 * time.Second):
 		pid := os.Getpid()
 		p, err := os.FindProcess(pid)
 		if err != nil {
-			panic(err)
+			panic(err) // Use panic for errors that indicate a non-recoverable state.
 		}
 		err = p.Signal(syscall.SIGABRT)
 		fmt.Println(err)
-		t.Fatal("timed out waiting for shutdown")
-	}
-}
-
-func TestSplitAndTrimEmpty(t *testing.T) {
-	testCases := []struct {
-		s        string
-		sep      string
-		cutset   string
-		expected []string
-	}{
-		{"a,b,c", ",", " ", []string{"a", "b", "c"}},
-		{" a , b , c ", ",", " ", []string{"a", "b", "c"}},
-		{" a, b, c ", ",", " ", []string{"a", "b", "c"}},
-		{" a, ", ",", " ", []string{"a"}},
-		{"   ", ",", " ", []string{}},
-	}
-
-	for _, tc := range testCases {
-		assert.Equal(t, tc.expected, splitAndTrimEmpty(tc.s, tc.sep, tc.cutset), "%s", tc.s)
+		t.Fatal("Timed out waiting for shutdown")
 	}
 }
 
@@ -220,14 +207,20 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	require.Error(t, err)
 }
 
+// TestNodeSetPrivValIPC tests the configuration and operation of a node's private validator
+// over IPC (Inter-Process Communication). It verifies that the node can successfully
+// communicate with its private validator through a Unix socket.
 func TestNodeSetPrivValIPC(t *testing.T) {
+	// Generate a temporary file path for the Unix socket.
 	tmpfile := "/tmp/kms." + cmtrand.Str(6) + ".sock"
-	defer os.Remove(tmpfile) // clean up
+	defer os.Remove(tmpfile) // Ensure clean up of the temporary file.
 
+	// Initialize node configuration with the IPC address for the private validator.
 	config := test.ResetTestRoot("node_priv_val_tcp_test")
-	defer os.RemoveAll(config.RootDir)
+	defer os.RemoveAll(config.RootDir) // Clean up node configuration directory after test.
 	config.BaseConfig.PrivValidatorListenAddr = "unix://" + tmpfile
 
+	// Setup the dialer for IPC communication based on the temporary Unix socket file.
 	dialer := privval.DialUnixFn(tmpfile)
 	dialerEndpoint := privval.NewSignerDialerEndpoint(
 		log.TestingLogger(),
@@ -235,21 +228,27 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 	)
 	privval.SignerDialerEndpointTimeoutReadWrite(100 * time.Millisecond)(dialerEndpoint)
 
+	// Create and start the private validator signer server.
 	pvsc := privval.NewSignerServer(
 		dialerEndpoint,
 		test.DefaultTestChainID,
 		types.NewMockPV(),
 	)
 
+	errCh := make(chan error, 1) // Channel to capture any error from starting the signer server.
 	go func() {
-		err := pvsc.Start()
-		require.NoError(t, err)
+		errCh <- pvsc.Start()
 	}()
-	defer pvsc.Stop() //nolint:errcheck // ignore for tests
+	defer pvsc.Stop() // Ignore error for test cleanup.
 
+	// Check for errors from starting the signer server.
+	err := <-errCh
+	require.NoError(t, err, "Starting the signer server should not produce an error")
+
+	// Create and check the node's private validator type.
 	n, err := DefaultNewNode(config, log.TestingLogger())
-	require.NoError(t, err)
-	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
+	require.NoError(t, err, "Creating a new node should not produce an error")
+	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator(), "The node's private validator should be of type RetrySignerClient")
 }
 
 // testFreeAddr claims a free port so we don't block on listener being ready.

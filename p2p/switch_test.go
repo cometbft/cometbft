@@ -114,63 +114,31 @@ func initSwitchFunc(_ int, sw *Switch) *Switch {
 	return sw
 }
 
+// TestSwitches verifies the basic functionality of switch peer communication.
+// It ensures that messages sent from one switch are received by the other.
 func TestSwitches(t *testing.T) {
 	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	t.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
-			t.Error(err)
-		}
+		require.NoError(t, s1.Stop())
 	})
 	t.Cleanup(func() {
-		if err := s2.Stop(); err != nil {
-			t.Error(err)
-		}
+		require.NoError(t, s2.Stop())
 	})
 
-	if s1.Peers().Size() != 1 {
-		t.Errorf("expected exactly 1 peer in s1, got %v", s1.Peers().Size())
-	}
-	if s2.Peers().Size() != 1 {
-		t.Errorf("expected exactly 1 peer in s2, got %v", s2.Peers().Size())
-	}
+	require.Equal(t, 1, s1.Peers().Size(), "expected exactly 1 peer in s1")
+	require.Equal(t, 1, s2.Peers().Size(), "expected exactly 1 peer in s2")
 
-	// Lets send some messages
-	ch0Msg := &p2pproto.PexAddrs{
-		Addrs: []p2pproto.NetAddress{
-			{
-				ID: "1",
-			},
-		},
-	}
-	ch1Msg := &p2pproto.PexAddrs{
-		Addrs: []p2pproto.NetAddress{
-			{
-				ID: "1",
-			},
-		},
-	}
-	ch2Msg := &p2pproto.PexAddrs{
-		Addrs: []p2pproto.NetAddress{
-			{
-				ID: "2",
-			},
-		},
-	}
+	// Send messages across different channels and verify they are received.
+	ch0Msg := &p2pproto.PexAddrs{Addrs: []p2pproto.NetAddress{{ID: "1"}}}
+	ch1Msg := &p2pproto.PexAddrs{Addrs: []p2pproto.NetAddress{{ID: "1"}}}
+	ch2Msg := &p2pproto.PexAddrs{Addrs: []p2pproto.NetAddress{{ID: "2"}}}
 	s1.Broadcast(Envelope{ChannelID: byte(0x00), Message: ch0Msg})
 	s1.Broadcast(Envelope{ChannelID: byte(0x01), Message: ch1Msg})
 	s1.Broadcast(Envelope{ChannelID: byte(0x02), Message: ch2Msg})
-	assertMsgReceivedWithTimeout(t,
-		ch0Msg,
-		byte(0x00),
-		s2.Reactor("foo").(*TestReactor), 200*time.Millisecond, 5*time.Second)
-	assertMsgReceivedWithTimeout(t,
-		ch1Msg,
-		byte(0x01),
-		s2.Reactor("foo").(*TestReactor), 200*time.Millisecond, 5*time.Second)
-	assertMsgReceivedWithTimeout(t,
-		ch2Msg,
-		byte(0x02),
-		s2.Reactor("bar").(*TestReactor), 200*time.Millisecond, 5*time.Second)
+
+	assertMsgReceivedWithTimeout(t, ch0Msg, byte(0x00), s2.Reactor("foo").(*TestReactor), 200*time.Millisecond, 5*time.Second)
+	assertMsgReceivedWithTimeout(t, ch1Msg, byte(0x01), s2.Reactor("foo").(*TestReactor), 200*time.Millisecond, 5*time.Second)
+	assertMsgReceivedWithTimeout(t, ch2Msg, byte(0x02), s2.Reactor("bar").(*TestReactor), 200*time.Millisecond, 5*time.Second)
 }
 
 func assertMsgReceivedWithTimeout(
@@ -204,29 +172,23 @@ func assertMsgReceivedWithTimeout(
 	}
 }
 
+// TestSwitchFiltersOutItself ensures that a switch correctly identifies and rejects its own connection attempts.
 func TestSwitchFiltersOutItself(t *testing.T) {
 	s1 := MakeSwitch(cfg, 1, initSwitchFunc)
 
-	// simulate s1 having a public IP by creating a remote peer with the same ID
+	// Simulate s1 having a public IP by creating a remote peer with the same ID.
 	rp := &remotePeer{PrivKey: s1.nodeKey.PrivKey, Config: cfg}
 	rp.Start()
+	defer rp.Stop()
 
-	// addr should be rejected in addPeer based on the same ID
 	err := s1.DialPeerWithAddress(rp.Addr())
-	if assert.Error(t, err) {
-		if err, ok := err.(ErrRejected); ok {
-			if !err.IsSelf() {
-				t.Errorf("expected self to be rejected")
-			}
-		} else {
-			t.Errorf("expected ErrRejected")
-		}
-	}
+	require.Error(t, err, "expected error when dialing self")
 
-	assert.True(t, s1.addrBook.OurAddress(rp.Addr()))
-	assert.False(t, s1.addrBook.HasAddress(rp.Addr()))
+	var errRejected ErrRejected
+	require.True(t, errors.As(err, &errRejected) && errRejected.IsSelf(), "expected ErrRejected with IsSelf true")
 
-	rp.Stop()
+	require.True(t, s1.addrBook.OurAddress(rp.Addr()), "expected address book to recognize our address")
+	require.False(t, s1.addrBook.HasAddress(rp.Addr()), "expected address book to not include our address")
 
 	assertNoPeersAfterTimeout(t, s1, 100*time.Millisecond)
 }

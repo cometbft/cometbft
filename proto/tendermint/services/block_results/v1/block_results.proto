@@ -8,9 +8,6 @@ message GetBlockResultsRequest {
   int64 height = 1;
 }
 
-message GetLatestBlockResultsRequest {
-}
-
 message GetBlockResultsResponse {
   int64    height                                                  = 1;
   repeated tendermint.abci.ExecTxResult txs_results                = 2;

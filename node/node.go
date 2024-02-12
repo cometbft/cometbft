@@ -281,7 +281,7 @@ func NewNode(ctx context.Context,
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
-		Compact:              config.Storage.CompactOnPruning,
+		Compact:              config.Storage.Compact,
 		CompactionInterval:   config.Storage.CompactionInterval,
 	})
 

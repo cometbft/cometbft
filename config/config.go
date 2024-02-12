@@ -1293,7 +1293,7 @@ func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
 		Pruning:              DefaultPruningConfig(),
-		CompactOnPruning:     false,
+		Compact:              false,
 		CompactionInterval:   1000,
 		GenesisHash:          "",
 	}

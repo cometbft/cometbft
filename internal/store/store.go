@@ -417,7 +417,12 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 		// ALL levels. Another option is to set a predefined range of
 		// specific keys.
 		err = bs.db.Compact(nil, nil)
-		bs.blocksDeleted = 0
+		if err == nil {
+			// If there was no error in compaction we reset the counter.
+			// Otherwise we preserve the number of blocks deleted so
+			// we can trigger compaction in the next pruning iteration
+			bs.blocksDeleted = 0
+		}
 	}
 	return pruned, evidencePoint, err
 }

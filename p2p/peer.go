@@ -121,9 +121,8 @@ type peer struct {
 	// User data
 	Data *cmap.CMap
 
-	metrics       *Metrics
-	metricsTicker *time.Ticker
-	mlc           *metricsLabelCache
+	metrics *Metrics
+	mlc     *metricsLabelCache
 
 	// When removal of a peer fails, we set this flag
 	removalAttemptFailed bool
@@ -143,13 +142,12 @@ func newPeer(
 	options ...PeerOption,
 ) *peer {
 	p := &peer{
-		peerConn:      pc,
-		nodeInfo:      nodeInfo,
-		channels:      nodeInfo.(DefaultNodeInfo).Channels,
-		Data:          cmap.NewCMap(),
-		metricsTicker: time.NewTicker(metricsTickerDuration),
-		metrics:       NopMetrics(),
-		mlc:           mlc,
+		peerConn: pc,
+		nodeInfo: nodeInfo,
+		channels: nodeInfo.(DefaultNodeInfo).Channels,
+		Data:     cmap.NewCMap(),
+		metrics:  NopMetrics(),
+		mlc:      mlc,
 	}
 
 	p.mconn = createMConnection(
@@ -203,17 +201,14 @@ func (p *peer) OnStart() error {
 
 // FlushStop mimics OnStop but additionally ensures that all successful
 // .Send() calls will get flushed before closing the connection.
+//
 // NOTE: it is not safe to call this method more than once.
 func (p *peer) FlushStop() {
-	p.metricsTicker.Stop()
-	p.BaseService.OnStop()
 	p.mconn.FlushStop() // stop everything and close the conn
 }
 
 // OnStop implements BaseService.
 func (p *peer) OnStop() {
-	p.metricsTicker.Stop()
-	p.BaseService.OnStop()
 	if err := p.mconn.Stop(); err != nil { // stop everything and close the conn
 		p.Logger.Debug("Error while stopping peer", "err", err)
 	}
@@ -257,12 +252,16 @@ func (p *peer) Status() cmtconn.ConnectionStatus {
 
 // Send msg bytes to the channel identified by chID byte. Returns false if the
 // send queue is full after timeout, specified by MConnection.
+//
+// thread safe.
 func (p *peer) Send(e Envelope) bool {
 	return p.send(e.ChannelID, e.Message, p.mconn.Send)
 }
 
 // TrySend msg bytes to the channel identified by chID byte. Immediately returns
 // false if the send queue is full.
+//
+// thread safe.
 func (p *peer) TrySend(e Envelope) bool {
 	return p.send(e.ChannelID, e.Message, p.mconn.TrySend)
 }
@@ -295,11 +294,15 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 }
 
 // Get the data for a given key.
+//
+// thread safe.
 func (p *peer) Get(key string) interface{} {
 	return p.Data.Get(key)
 }
 
 // Set sets the data for the given key.
+//
+// thread safe.
 func (p *peer) Set(key string, data interface{}) {
 	p.Data.Set(key, data)
 }
@@ -368,9 +371,12 @@ func PeerMetrics(metrics *Metrics) PeerOption {
 }
 
 func (p *peer) metricsReporter() {
+	metricsTicker := time.NewTicker(metricsTickerDuration)
+	defer metricsTicker.Stop()
+
 	for {
 		select {
-		case <-p.metricsTicker.C:
+		case <-metricsTicker.C:
 			status := p.mconn.Status()
 			var sendQueueSize float64
 			for _, chStatus := range status.Channels {

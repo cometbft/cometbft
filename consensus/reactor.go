@@ -474,7 +474,7 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 	})
 	/*
 		// TODO: Make this broadcast more selective.
-		for _, peer := range conR.Switch.Peers().List() {
+		for _, peer := range conR.Switch.Peers().Copy() {
 			ps, ok := peer.Get(PeerStateKey).(*PeerState)
 			if !ok {
 				panic(fmt.Sprintf("Peer %v has no state", peer))
@@ -996,13 +996,13 @@ func (conR *Reactor) String() string {
 func (conR *Reactor) StringIndented(indent string) string {
 	s := "ConsensusReactor{\n"
 	s += indent + "  " + conR.conS.StringIndented(indent+"  ") + "\n"
-	for _, peer := range conR.Switch.Peers().List() {
+	conR.Switch.Peers().ForEach(func(peer p2p.Peer) {
 		ps, ok := peer.Get(types.PeerStateKey).(*PeerState)
 		if !ok {
 			panic(fmt.Sprintf("Peer %v has no state", peer))
 		}
 		s += indent + "  " + ps.StringIndented(indent+"  ") + "\n"
-	}
+	})
 	s += indent + "}"
 	return s
 }

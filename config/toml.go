@@ -584,7 +584,7 @@ initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockReta
 initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
 
 # If set to true, CometBFT will force compaction to happen for databases that support this feature
-compact_on_pruning = false
+compact = false
 
 # To avoid forcing compaction every time, this parameter instructs CometBFT to wait 
 # the given amount of blocks to be pruned before triggering compaction.

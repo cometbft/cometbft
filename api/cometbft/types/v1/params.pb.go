@@ -30,6 +30,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // ConsensusParams contains consensus critical parameters that determine the
 // validity of blocks.
+// TODO: move ABCI to FeatureParams
 type ConsensusParams struct {
 	Block     *BlockParams     `protobuf:"bytes,1,opt,name=block,proto3" json:"block,omitempty"`
 	Evidence  *EvidenceParams  `protobuf:"bytes,2,opt,name=evidence,proto3" json:"evidence,omitempty"`
@@ -513,6 +514,7 @@ func (m *SynchronyParams) GetPrecision() *time.Duration {
 	return nil
 }
 
+// FeatureParams contains specific feature flag enable heights for both Vote Extensions and Proposer Based Timestamps
 type FeatureParams struct {
 	// vote_extensions_enable_height configures the first height during which
 	// vote extensions will be enabled. During this specified height, and for all

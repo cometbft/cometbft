@@ -442,11 +442,11 @@ func TestSwitchStopPeerForError(t *testing.T) {
 		return initSwitchFunc(i, sw)
 	})
 
-	assert.Len(t, sw1.Peers().List(), 1)
+	assert.Len(t, sw1.Peers().Copy(), 1)
 	assert.EqualValues(t, 1, peersMetricValue())
 
 	// send messages to the peer from sw1
-	p := sw1.Peers().List()[0]
+	p := sw1.Peers().Copy()[0]
 	p.Send(Envelope{
 		ChannelID: 0x1,
 		Message:   &p2pproto.Message{},
@@ -463,7 +463,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	// now call StopPeerForError explicitly, eg. from a reactor
 	sw1.StopPeerForError(p, fmt.Errorf("some err"))
 
-	require.Empty(t, len(sw1.Peers().List()), 0)
+	require.Empty(t, len(sw1.Peers().Copy()), 0)
 	assert.EqualValues(t, 0, peersMetricValue())
 }
 
@@ -489,7 +489,7 @@ func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 
-	p := sw.Peers().List()[0]
+	p := sw.Peers().Copy()[0]
 	err = p.(*peer).CloseConn()
 	require.NoError(t, err)
 
@@ -864,8 +864,8 @@ func TestSwitchRemovalErr(t *testing.T) {
 	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
 		return initSwitchFunc(i, sw)
 	})
-	require.Len(t, sw1.Peers().List(), 1)
-	p := sw1.Peers().List()[0]
+	require.Len(t, sw1.Peers().Copy(), 1)
+	p := sw1.Peers().Copy()[0]
 
 	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))
 

@@ -11,12 +11,12 @@ option (gogoproto.equal_all) = true;
 
 // ConsensusParams contains consensus critical parameters that determine the
 // validity of blocks.
+// TODO: move ABCI to FeatureParams
 message ConsensusParams {
   BlockParams     block     = 1;
   EvidenceParams  evidence  = 2;
   ValidatorParams validator = 3;
   VersionParams   version   = 4;
-  // TODO: move ABCI to FeatureParams
   ABCIParams      abci      = 5;
   SynchronyParams synchrony = 6;
   FeatureParams   feature   = 7;

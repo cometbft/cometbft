@@ -28,8 +28,8 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/crypto v0.18.0
-	golang.org/x/net v0.20.0
+	golang.org/x/crypto v0.19.0
+	golang.org/x/net v0.21.0
 	google.golang.org/grpc v1.61.0
 )
 
@@ -41,7 +41,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/cometbft/cometbft-db v0.10.0
 	github.com/cometbft/cometbft-load-test v0.1.0
-	github.com/cometbft/cometbft/api v0.0.0
+	github.com/cometbft/cometbft/api v1.0.0-alpha.1
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/goccmack/goutil v1.2.3
@@ -64,7 +64,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/cloudflare/circl v1.3.3 // indirect
+	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cockroachdb/errors v1.8.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20190617123548-eb05cc24525f // indirect
 	github.com/cockroachdb/pebble v1.0.0 // indirect
@@ -110,7 +110,7 @@ require (
 	github.com/onsi/gomega v1.28.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
-	github.com/opencontainers/runc v1.1.5 // indirect
+	github.com/opencontainers/runc v1.1.12 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
@@ -133,7 +133,7 @@ require (
 	go.etcd.io/bbolt v1.3.8 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
@@ -142,8 +142,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
 )
-
-replace github.com/cometbft/cometbft/api => ./api
 
 retract (
 	// a regression was introduced

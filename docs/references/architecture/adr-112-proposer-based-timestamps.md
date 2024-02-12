@@ -11,6 +11,7 @@
  - Feb 2 2022: Synchronize logic for timely with latest version of the spec by @williambanfield
  - Feb 1 2024: Renamed to ADR 112 as basis for its adoption ([#1731](https://github.com/cometbft/cometbft/issues/1731)) in CometBFT v1.0 by @cason
  - Feb 7 2024: Multiple revisions, fixes, and backwards compatibility discussion by @cason
+ - Feb 12 2024: More detailed backwards compatibility discussion by @cason
 
 ## Status
 
@@ -85,6 +86,12 @@ These changes will be to the following components:
 * The `internal/consensus/` package.
 * The `internal/state/` package.
 
+The original version of this document ([ADR 071][original-adr]) dir not
+consider that the introduced `PBTS` and the previous method `BFT Time` could 
+be adopted in the same chain/network.
+The [backwards compatibility](#backwards-compatibility) section below was thus
+added to address topic.
+
 <!---
 ### Changes to `CommitSig`
 
@@ -128,6 +135,25 @@ type Vote struct {
 }
 ```
 --->
+
+### Backwards compatibility
+
+In order to ensure backwards compatibility, PBTS should be enabled using a [consensus parameter](#compatibility-parameters).
+The proposed approach is similar to the one adopted to enable vote extensions via
+[`ABCIParams.VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
+
+In summary, the network will migrate from the `BFT Time` method for assigning
+and validating timestamps to the new method for assigning and validating
+timestamps adopted by `PBTS` from a given, configurable height.
+Once `PBTS` is activated, there are no provisions for the network to revert
+back to `BFT Time` (see [issue 2063][issue2063]).
+
+Moreover, when compared to the original ([ADR 071][original-adr]), we will **NOT**:
+
+- Update `CommitSigs` and `Vote` types, removing the `Timestamp` field
+- Remove the `MedianTime` method used by `BFT Time` to produce and validate the block's time
+- Remove the `voteTime` method used by `BFT Time` to set timestamps to precommits
+- Remove the [validation logic](#current-block-time-validation-logic) used by `BFT Time`
 
 ### New consensus parameters
 
@@ -185,6 +211,7 @@ For more discussion of this, see [issue 2197][issue2197].
 CometBFT currently uses the `BFT Time` algorithm to produce the block's `Header.Timestamp`.
 The [block production logic](https://github.com/cometbft/cometbft/blob/1f430f51f0e390cd7c789ba9b1e9b35846e34642/internal/state/state.go#L248)
 sets the weighted median of the times in the `LastCommit.CommitSigs` as the proposed block's `Header.Timestamp`.
+This method will be preserved, but it is only used while operating in `BFT Time` mode.
 
 In PBTS, the proposer will still set a timestamp into the `Header.Timestamp`.
 The timestamp the proposer sets into the `Header` will change depending on whether the block has previously received `2/3+` prevotes in a previous round.
@@ -220,6 +247,7 @@ When the timeout fires, the proposer will finally issue the `Proposal` message.
 
 The rules for validating a proposed block will be modified to implement PBTS.
 We will change the validation logic to ensure that a proposal is `timely`.
+The `timely` verification is adopted once the node enabled PBTS.
 
 Per the PBTS spec, `timely` only needs to be checked if a block has not received a Polka in a previous round.
 If a block previously received a +2/3 majority of prevotes in a round, then +2/3 of the voting power considered the block's timestamp near enough to their own currently known Unix time in that round.
@@ -345,19 +373,6 @@ Notice that the `Proposal` timestamp must match the proposed block's `Time` fiel
 This also means that committed blocks, retrieved from peers via consensus catch-up mechanisms or via block sync,
 will not have their timestamps validated, since the timestamp validation is now part of the consensus logic.
 
-### Backwards compatibility
-
-In order to ensure backwards compatibility, PBTS should be enabled using a [consensus parameter](#compatibility-parameters).
-The proposed approach is similar to the one adopted to enable vote extensions via
-[`ABCIParams.VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
-
-In summary, the network will migrate from the `BFT Time` method for assigning
-and validating timestamps to the new method for assigning and validating
-timestamps adopted by `PBTS` from a given, configurable height.
-Once `PBTS` is activated, there are no provisions for the network to revert back to `BFT Time (considered obsolete).
-
-For more discussion of this, see [issue 2063][issue2063].
-
 
 ## Future Improvements
 
@@ -406,3 +421,4 @@ At this point, the transition from BFT Time to PBTS should be smooth.
 [issue2063]: https://github.com/cometbft/cometbft/issues/2063
 [bfttime]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
 [pbts-spec]: https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp/README.md
+[original-adr]: https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/tendermint-core/adr-071-proposer-based-timestamps.md

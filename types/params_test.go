@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -232,6 +233,31 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: false,
 		},
+		// test pbts
+		{
+			name: "pbts height -1",
+			params: makeParams(
+				makeParamsArgs{
+					blockBytes:   1,
+					evidenceAge:  2,
+					precision:    1,
+					messageDelay: 1,
+					pbtsHeight:   -1,
+				}),
+			valid: false,
+		},
+		{
+			name: "pbts height 0",
+			params: makeParams(
+				makeParamsArgs{
+					blockBytes:   1,
+					evidenceAge:  2,
+					precision:    1,
+					messageDelay: 1,
+					pbtsHeight:   0,
+				}),
+			valid: true,
+		},
 	}
 	for i, tc := range testCases {
 		if tc.valid {
@@ -249,6 +275,7 @@ type makeParamsArgs struct {
 	maxEvidenceBytes    int64
 	pubkeyTypes         []string
 	abciExtensionHeight int64
+	pbtsHeight          int64
 	precision           time.Duration
 	messageDelay        time.Duration
 }
@@ -276,6 +303,9 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 		},
 		ABCI: ABCIParams{
 			VoteExtensionsEnableHeight: args.abciExtensionHeight,
+		},
+		Feature: FeatureParams{
+			PbtsEnableHeight: &args.pbtsHeight,
 		},
 	}
 }
@@ -329,6 +359,16 @@ func TestConsensusParamsUpdate(t *testing.T) {
 				},
 			},
 			updatedParams: makeParams(makeParamsArgs{evidenceAge: 3, precision: 2 * time.Second, messageDelay: 4 * time.Second}),
+		},
+		// pbts update
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
+			updates: &cmtproto.ConsensusParams{
+				Feature: &cmtproto.FeatureParams{
+					PbtsEnableHeight: &types.Int64Value{Value: 1},
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pbtsHeight: 1}),
 		},
 		// fine updates
 		{
@@ -449,6 +489,53 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	}
 }
 
+func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
+	t.Run("set to already enabled height to height in future", func(*testing.T) {
+		initialParams := makeParams(makeParamsArgs{
+			pbtsHeight: 1,
+		})
+		update := &cmtproto.ConsensusParams{
+			Feature: &cmtproto.FeatureParams{
+				PbtsEnableHeight: &types.Int64Value{Value: 10},
+			},
+		}
+		require.Error(t, initialParams.ValidateUpdate(update, 3))
+	})
+	t.Run("disable already enabled height", func(*testing.T) {
+		initialParams := makeParams(makeParamsArgs{
+			pbtsHeight: 1,
+		})
+		update := &cmtproto.ConsensusParams{
+			Feature: &cmtproto.FeatureParams{
+				PbtsEnableHeight: &types.Int64Value{Value: 0},
+			},
+		}
+		require.Error(t, initialParams.ValidateUpdate(update, 3))
+	})
+	t.Run("enable disabled pbts at past height", func(*testing.T) {
+		initialParams := makeParams(makeParamsArgs{
+			pbtsHeight: 0,
+		})
+		update := &cmtproto.ConsensusParams{
+			Feature: &cmtproto.FeatureParams{
+				PbtsEnableHeight: &types.Int64Value{Value: 5},
+			},
+		}
+		require.Error(t, initialParams.ValidateUpdate(update, 10))
+	})
+	t.Run("enable disabled pbts", func(*testing.T) {
+		initialParams := makeParams(makeParamsArgs{
+			pbtsHeight: 0,
+		})
+		update := &cmtproto.ConsensusParams{
+			Feature: &cmtproto.FeatureParams{
+				PbtsEnableHeight: &types.Int64Value{Value: 10},
+			},
+		}
+		require.NoError(t, initialParams.ValidateUpdate(update, 3))
+	})
+}
+
 func TestProto(t *testing.T) {
 	params := []ConsensusParams{
 		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
@@ -462,6 +549,7 @@ func TestProto(t *testing.T) {
 		makeParams(makeParamsArgs{precision: time.Second, messageDelay: time.Minute}),
 		makeParams(makeParamsArgs{precision: time.Nanosecond, messageDelay: time.Millisecond}),
 		makeParams(makeParamsArgs{abciExtensionHeight: 100}),
+		makeParams(makeParamsArgs{pbtsHeight: 1}),
 	}
 
 	for i := range params {

@@ -67,6 +67,8 @@ type pbtsTestConfiguration struct {
 	// The timestamp consensus parameters to be used by the state machine under test.
 	synchronyParams types.SynchronyParams
 
+	featureParams types.FeatureParams
+
 	// The setting to use for the TimeoutPropose configuration parameter.
 	timeoutPropose time.Duration
 
@@ -106,6 +108,7 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	cfg.Consensus.TimeoutPropose = tc.timeoutPropose
 	consensusParams := types.DefaultConsensusParams()
 	consensusParams.Synchrony = tc.synchronyParams
+	consensusParams.Feature = tc.featureParams
 
 	state, privVals := randGenesisStateWithTime(validators, consensusParams, tc.genesisTime)
 	cs := newStateWithConfig(cfg, state, privVals[0], kvstore.NewInMemoryApplication())
@@ -378,6 +381,7 @@ func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
 		height2ProposalTimeDeliveryOffset: 10 * time.Millisecond,
 		height2ProposedBlockOffset:        10 * time.Millisecond,
 		height4ProposedBlockOffset:        30 * time.Millisecond,
+		featureParams:                     pbtsFromHeightParams(1),
 	}
 
 	pbtsTest := newPBTSTestHarness(ctx, t, cfg)
@@ -402,6 +406,7 @@ func TestPBTSProposerWaitsForPreviousBlock(t *testing.T) {
 			Precision:    100 * time.Millisecond,
 			MessageDelay: 500 * time.Millisecond,
 		},
+		featureParams:                     pbtsFromHeightParams(1),
 		timeoutPropose:                    50 * time.Millisecond,
 		genesisTime:                       initialTime,
 		height2ProposalTimeDeliveryOffset: 150 * time.Millisecond,
@@ -471,6 +476,7 @@ func TestPBTSTimelyProposal(t *testing.T) {
 			Precision:    10 * time.Millisecond,
 			MessageDelay: 140 * time.Millisecond,
 		},
+		featureParams:                     pbtsFromHeightParams(1),
 		timeoutPropose:                    40 * time.Millisecond,
 		genesisTime:                       initialTime,
 		height2ProposedBlockOffset:        15 * time.Millisecond,
@@ -492,6 +498,7 @@ func TestPBTSTooFarInThePastProposal(t *testing.T) {
 			Precision:    1 * time.Millisecond,
 			MessageDelay: 10 * time.Millisecond,
 		},
+		featureParams:                     pbtsFromHeightParams(1),
 		timeoutPropose:                    50 * time.Millisecond,
 		height2ProposedBlockOffset:        15 * time.Millisecond,
 		height2ProposalTimeDeliveryOffset: 27 * time.Millisecond,
@@ -513,6 +520,7 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 			Precision:    1 * time.Millisecond,
 			MessageDelay: 10 * time.Millisecond,
 		},
+		featureParams:                     pbtsFromHeightParams(1),
 		timeoutPropose:                    50 * time.Millisecond,
 		height2ProposedBlockOffset:        100 * time.Millisecond,
 		height2ProposalTimeDeliveryOffset: 10 * time.Millisecond,
@@ -523,4 +531,10 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 	results := pbtsTest.run(ctx, t)
 
 	require.Nil(t, results.height2.prevote.BlockID.Hash)
+}
+
+func pbtsFromHeightParams(height int64) types.FeatureParams {
+	return types.FeatureParams{
+		PbtsEnableHeight: &height,
+	}
 }

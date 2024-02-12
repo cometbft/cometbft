@@ -40,15 +40,10 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "anonymous"
 
-<<<<<<< HEAD:docs/core/configuration.md
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
-# * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
-=======
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
->>>>>>> 460f58ccd (chore(docs): alter the section about the effects of `timeout_commit` (#1892)):docs/explanation/core/configuration.md
 #   - pure go
 #   - stable
 # * cleveldb (uses levigo wrapper)
@@ -573,17 +568,11 @@ What happens in reality is, however, a little bit different:
 #4 block - Bob
 ```
 
-<<<<<<< HEAD:docs/core/configuration.md
-That's because Bob is too fast at proposing blocks. This leaves Alice very
-little chances to propose a block and not always be catching up. Note every
-block Bob creates needs a vote from Alice to constitute 2/3+.
-=======
 That's because Bob doesn't wait for a proposal from Alice (prevotes `nil`).
 This leaves Alice no chances to commit a block. Note that every block Bob
 creates needs a vote from Alice to constitute 2/3+. Bob always gets one because
 Alice has `timeout_propose` set to 3s. Alice never gets one because Bob has it
 set to 0s.
->>>>>>> 460f58ccd (chore(docs): alter the section about the effects of `timeout_commit` (#1892)):docs/explanation/core/configuration.md
 
 Imagine now there are ten geographically distributed validators. One of them
 (Bob) sets `timeout_propose` to 0s. Others have it set to 3s. Now, Bob won't be

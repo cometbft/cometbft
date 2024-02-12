@@ -19,11 +19,15 @@ const (
 	clientID = "test-client"
 )
 
+// TestSubscribe tests the subscription mechanism of the pubsub server.
+// It verifies that clients can subscribe and receive published messages in order.
 func TestSubscribe(t *testing.T) {
+	// Initialize a new pubsub server and start it.
 	s := pubsub.NewServer()
 	s.SetLogger(log.TestingLogger())
 	err := s.Start()
 	require.NoError(t, err)
+	// Ensure the server is stopped and resources are cleaned up after the test.
 	t.Cleanup(func() {
 		if err := s.Stop(); err != nil {
 			t.Error(err)
@@ -31,32 +35,51 @@ func TestSubscribe(t *testing.T) {
 	})
 
 	ctx := context.Background()
+	// Subscribe to all messages.
 	subscription, err := s.Subscribe(ctx, clientID, query.All)
 	require.NoError(t, err)
 
+	// Verify the subscription count.
 	assert.Equal(t, 1, s.NumClients())
 	assert.Equal(t, 1, s.NumClientSubscriptions(clientID))
 
+	// Publish a message and verify it is received.
 	err = s.Publish(ctx, "Ka-Zar")
 	require.NoError(t, err)
 	assertReceive(t, "Ka-Zar", subscription.Out())
 
+	// Use a channel to signal when publishing in the goroutine is done.
 	published := make(chan struct{})
+	// Collect errors from goroutine to assert outside.
+	errs := make(chan error, 3)
 	go func() {
 		defer close(published)
 
-		err := s.Publish(ctx, "Quicksilver")
-		require.NoError(t, err)
+		if err := s.Publish(ctx, "Quicksilver"); err != nil {
+			errs <- err
+			return
+		}
 
-		err = s.Publish(ctx, "Asylum")
-		require.NoError(t, err)
+		if err := s.Publish(ctx, "Asylum"); err != nil {
+			errs <- err
+			return
+		}
 
-		err = s.Publish(ctx, "Ivan")
-		require.NoError(t, err)
+		if err := s.Publish(ctx, "Ivan"); err != nil {
+			errs <- err
+			return
+		}
 	}()
 
+	// Wait for publishing to complete or timeout.
 	select {
 	case <-published:
+		// Ensure no errors occurred in the publishing goroutine.
+		close(errs)
+		for err := range errs {
+			require.NoError(t, err)
+		}
+		// Verify the messages are received and the subscription is canceled upon reaching capacity.
 		assertReceive(t, "Quicksilver", subscription.Out())
 		assertCancelled(t, subscription, pubsub.ErrOutOfCapacity)
 	case <-time.After(3 * time.Second):
@@ -91,11 +114,16 @@ func TestSubscribeWithCapacity(t *testing.T) {
 	assertReceive(t, "Aggamon", subscription.Out())
 }
 
+// TestSubscribeUnbuffered tests the unbuffered subscription mechanism of the pubsub server.
+// It verifies that messages are received as they are published, and the publishing should block
+// if the subscriber is not ready to receive the message.
 func TestSubscribeUnbuffered(t *testing.T) {
+	// Initialize a new pubsub server and start it.
 	s := pubsub.NewServer()
 	s.SetLogger(log.TestingLogger())
 	err := s.Start()
 	require.NoError(t, err)
+	// Ensure the server is stopped and resources are cleaned up after the test.
 	t.Cleanup(func() {
 		if err := s.Stop(); err != nil {
 			t.Error(err)
@@ -103,24 +131,39 @@ func TestSubscribeUnbuffered(t *testing.T) {
 	})
 
 	ctx := context.Background()
+	// Subscribe without a buffer, expecting immediate handling of messages.
 	subscription, err := s.SubscribeUnbuffered(ctx, clientID, query.All)
 	require.NoError(t, err)
 
+	// Use a channel to signal when publishing in the goroutine is done.
 	published := make(chan struct{})
+	// Collect errors from goroutine to assert outside.
+	errs := make(chan error, 2)
 	go func() {
 		defer close(published)
 
-		err := s.Publish(ctx, "Ultron")
-		require.NoError(t, err)
+		if err := s.Publish(ctx, "Ultron"); err != nil {
+			errs <- err
+			return
+		}
 
-		err = s.Publish(ctx, "Darkhawk")
-		require.NoError(t, err)
+		if err := s.Publish(ctx, "Darkhawk"); err != nil {
+			errs <- err
+			return
+		}
 	}()
 
+	// Wait for publishing to complete or timeout.
 	select {
 	case <-published:
 		t.Fatal("Expected Publish(Darkhawk) to block")
 	case <-time.After(3 * time.Second):
+		// Ensure no errors occurred in the publishing goroutine.
+		close(errs)
+		for err := range errs {
+			require.NoError(t, err)
+		}
+		// Verify the messages are received.
 		assertReceive(t, "Ultron", subscription.Out())
 		assertReceive(t, "Darkhawk", subscription.Out())
 	}

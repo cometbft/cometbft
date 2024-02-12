@@ -189,7 +189,7 @@ func TestMConnectionPongTimeoutResultsInError(t *testing.T) {
 	mconn := createMConnectionWithCallbacks(client, onReceive, onError)
 	err := mconn.Start()
 	require.NoError(t, err, "Starting MConnection should not produce an error.")
-	defer mconn.Stop() // Note: Ignoring error on stop for cleanup in test context.
+	defer mconn.Stop() // nolint:errcheck // Ignoring error on stop for cleanup in test context.
 
 	// Channel to signal when a ping message is received by the server.
 	serverGotPing := make(chan struct{})
@@ -224,6 +224,9 @@ func TestMConnectionPongTimeoutResultsInError(t *testing.T) {
 // TestMConnectionMultiplePongsInTheBeginning tests the MConnection's behavior when multiple
 // pong messages are received unexpectedly at the start of the connection. This simulates
 // an abuse scenario where the remote end sends pong messages without corresponding ping requests.
+// TestMConnectionMultiplePongsInTheBeginning verifies the MConnection's resilience to protocol abuse,
+// specifically by handling multiple unsolicited pong messages at the start of the connection.
+// It ensures that the connection remains active and does not error out or close unexpectedly.
 func TestMConnectionMultiplePongsInTheBeginning(t *testing.T) {
 	// Establish a server-client connection using net.Pipe for controlled communication.
 	server, client := net.Pipe()
@@ -251,8 +254,9 @@ func TestMConnectionMultiplePongsInTheBeginning(t *testing.T) {
 	// Simulate sending 3 pong messages in a row to abuse the protocol.
 	protoWriter := protoio.NewDelimitedWriter(server)
 	for i := 0; i < 3; i++ {
-		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err, "Sending pong message should not produce an error.")
+		if _, err := protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{})); err != nil {
+			t.Fatalf("Sending pong message should not produce an error: %v", err)
+		}
 	}
 
 	// Channel to signal when a ping message is received by the server.
@@ -260,13 +264,16 @@ func TestMConnectionMultiplePongsInTheBeginning(t *testing.T) {
 	go func() {
 		// Attempt to read a ping message.
 		var packet tmp2p.Packet
-		_, err := protoio.NewDelimitedReader(server, maxPingPongPacketSize).ReadMsg(&packet)
-		require.NoError(t, err, "Reading ping message should not produce an error.")
+		if _, err := protoio.NewDelimitedReader(server, maxPingPongPacketSize).ReadMsg(&packet); err != nil {
+			t.Errorf("Reading ping message should not produce an error: %v", err)
+			return
+		}
 		serverGotPing <- struct{}{}
 
 		// Respond with a pong message.
-		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err, "Sending pong message should not produce an error.")
+		if _, err := protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{})); err != nil {
+			t.Errorf("Sending pong message should not produce an error: %v", err)
+		}
 	}()
 	<-serverGotPing // Wait for the ping message to be received.
 
@@ -330,15 +337,19 @@ func TestMConnectionMultiplePings(t *testing.T) {
 	assert.True(t, mconn.IsRunning())
 }
 
+// TestMConnectionPingPongs verifies the ping-pong mechanism of the MConnection.
+// It ensures that ping messages are correctly responded to with pong messages and
+// checks for goroutine leaks.
 func TestMConnectionPingPongs(t *testing.T) {
-	// check that we are not leaking any go-routines
+	// Setup leak test to ensure no goroutines are leaked.
 	defer leaktest.CheckTimeout(t, 10*time.Second)()
 
+	// Establish a server-client connection using net.Pipe for controlled communication.
 	server, client := net.Pipe()
-
 	defer server.Close()
 	defer client.Close()
 
+	// Channels to capture received messages and errors.
 	receivedCh := make(chan []byte)
 	errorsCh := make(chan interface{})
 	onReceive := func(chID byte, msgBytes []byte) {
@@ -347,48 +358,51 @@ func TestMConnectionPingPongs(t *testing.T) {
 	onError := func(r interface{}) {
 		errorsCh <- r
 	}
+
+	// Create and start the MConnection with the provided callbacks.
 	mconn := createMConnectionWithCallbacks(client, onReceive, onError)
 	err := mconn.Start()
 	require.NoError(t, err)
-	defer mconn.Stop() //nolint:errcheck // ignore for tests
+	defer mconn.Stop() //nolint:errcheck // Ignore error on stop for cleanup in test context.
 
-	serverGotPing := make(chan struct{})
+	// Channel to signal when a ping message is received by the server.
+	serverGotPing := make(chan struct{}, 2) // Buffer to avoid blocking the goroutine.
 	go func() {
 		protoReader := protoio.NewDelimitedReader(server, maxPingPongPacketSize)
 		protoWriter := protoio.NewDelimitedWriter(server)
 		var pkt tmp2p.PacketPing
 
-		// read ping
-		_, err = protoReader.ReadMsg(&pkt)
-		require.NoError(t, err)
-		serverGotPing <- struct{}{}
+		for i := 0; i < 2; i++ {
+			// Attempt to read a ping message.
+			if _, err := protoReader.ReadMsg(&pkt); err != nil {
+				t.Errorf("Reading ping message should not produce an error: %v", err)
+				return
+			}
+			serverGotPing <- struct{}{}
 
-		// respond with pong
-		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err)
-
-		time.Sleep(mconn.config.PingInterval)
-
-		// read ping
-		_, err = protoReader.ReadMsg(&pkt)
-		require.NoError(t, err)
-		serverGotPing <- struct{}{}
-
-		// respond with pong
-		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err)
+			// Respond with a pong message.
+			if _, err := protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{})); err != nil {
+				t.Errorf("Sending pong message should not produce an error: %v", err)
+				return
+			}
+		}
 	}()
+	// Wait for two ping messages to be received and responded to.
 	<-serverGotPing
 	<-serverGotPing
 
+	// Calculate the expected timeout duration for receiving a pong message.
 	pongTimerExpired := (mconn.config.PongTimeout + 20*time.Millisecond) * 2
+
+	// Wait for a message, an error, or the timeout period to expire.
 	select {
 	case msgBytes := <-receivedCh:
 		t.Fatalf("Expected no data, but got %v", msgBytes)
 	case err := <-errorsCh:
 		t.Fatalf("Expected no error, but got %v", err)
 	case <-time.After(2 * pongTimerExpired):
-		assert.True(t, mconn.IsRunning())
+		// Verify that the connection is still running.
+		assert.True(t, mconn.IsRunning(), "MConnection should still be running.")
 	}
 }
 

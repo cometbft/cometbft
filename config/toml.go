@@ -586,7 +586,7 @@ initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialB
 # If set to true, CometBFT will force compaction to happen for databases that support this feature
 compact_on_pruning = false
 
-# To avoid forcing compaction every time, this parameter instructs Comet to wait 
+# To avoid forcing compaction every time, this parameter instructs CometBFT to wait 
 # the given amount of blocks to be pruned before triggering compaction.
 compaction_interval = 1000
 

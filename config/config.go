@@ -1274,7 +1274,7 @@ type StorageConfig struct {
 	Pruning *PruningConfig `mapstructure:"pruning"`
 	// Compaction on pruning - enable or disable in-process compaction
 	// false by default (compaction on pruning is disabled)
-	CompactOnPruning bool `mapstructure:"compact_on_pruning"`
+	Compact bool `mapstructure:"compact"`
 	// Compaction interval - number of blocks to try explicit compaction on
 	// 1000 by default
 	CompactionInterval int64 `mapstructure:"compaction_interval"`

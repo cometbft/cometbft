@@ -426,11 +426,13 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 
 	// We do not want to panic or interrupt consensus on compaction failure
 	if store.StoreOptions.Compact && (to%store.StoreOptions.CompactionInterval == 0 || pruned >= uint64(store.StoreOptions.CompactionInterval)) {
-		// TODO add logger to output error.
-		_ = store.db.Compact(nil, nil)
+		// When the range is nil,nil, the database will try to compact
+		// ALL levels. Another option is to set a predefined range of
+		// specific keys.
+		err = store.db.Compact(nil, nil)
 	}
 
-	return nil
+	return err
 }
 
 // PruneABCIResponses attempts to prune all ABCI responses up to, but not

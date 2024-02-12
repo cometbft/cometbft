@@ -53,14 +53,17 @@ It is a temporal requirement, associated with the following
 
 - Synchronized clocks: the values simultaneously read from clocks of any two correct processes differ by at most `PRECISION`;
 - Bounded transmission delays: the real time interval between the sending of a proposal at a correct process and the reception of the proposal at any correct process is upper bounded by `MSGDELAY`.
+  - With the introduction of [adaptive message delays](./pbts-sysmodel.md#pbts-msg-delay-adaptive0),
+    the `MSGDELAY` parameter should be interpreted as `MSGDELAY(r)`, where `r` is the current round,
+    where it is expected `MSGDELAY(r+1) > MSGDELAY(r)`.
 
 #### **[PBTS-RECEPTION-STEP.1]**
 
-Let `now_p` be the time, read from the clock of process `p`, at which `p` receives the proposed value `v`.
+Let `now_p` be the time, read from the clock of process `p`, at which `p` receives the proposed value `v` of round `r`.
 The proposal time is considered `timely` by `p` when:
 
 1. `now_p >= v.time - PRECISION`
-1. `now_p <= v.time + MSGDELAY + PRECISION`
+1. `now_p <= v.time + MSGDELAY(r) + PRECISION`
 
 The first condition derives from the fact that the generation and sending of `v` precedes its reception.
 The minimum receiving time `now_p` for `v.time` be considered `timely` by `p` is derived from the extreme scenario when
@@ -68,7 +71,7 @@ the clock of `p` is `PRECISION` *behind* of the clock of the proposer of `v`, an
 
 The second condition derives from the assumption of an upper bound for the transmission delay of a proposal.
 The maximum receiving time `now_p` for `v.time` be considered `timely` by `p` is derived from the extreme scenario when
-the clock of `p` is `PRECISION` *ahead* of the clock of the proposer of `v`, and the proposal's transmission delay is `MSGDELAY` (maximum).
+the clock of `p` is `PRECISION` *ahead* of the clock of the proposer of `v`, and the proposal's transmission delay is `MSGDELAY(r)` (maximum).
 
 ## Updated Consensus Algorithm
 

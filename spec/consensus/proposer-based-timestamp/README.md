@@ -32,6 +32,22 @@ This assumption is restricted to `Proposal` messages, broadcast by proposers.
 that define whether the timestamp of a block is acceptable,
 according with the introduced `timely` predicate.
 
+#### Note on Liveness
+
+Setting too much conservative (small) synchronous parameters can compromise,
+possibly in an irreversible way, liveness of consensus.
+This is particularly relevant for the `MSGDELAY` parameter.
+When this end-to-end delay is underestimated or unrealistic, proposed block
+times can be rejected by all correct nodes.
+
+In order to prevent networks with bad parameters from halting, the `MSGDELAY`
+parameter has become adaptive in the implementation.
+This means that the parameter in practice is `MSGDELAY(r)`, where `r` is the
+consensus round, and `MSGDELAY(r+1) > MSGDELAY(r)`.
+The original `MSGDELAY` is therefore in practice `MSGDELAY(0)`.
+
+More details and discussion on [issue 2184][issue2184].
+
 ### Timestamp Validation
 
 The `timely` predicate is defined as follows.
@@ -129,17 +145,12 @@ plus the proposer's flexibility when selecting a `Commit` set,
 and thus determining the timestamp for a block.
 --->
 
-### Open issues
+### Issues
 
-- [tendermint/spec#355: PBTS: evidence][issue355]: not really clear the context, probably not going to be solved.
-- [tendermint/spec#372: PBTS: Treat proposal and block parts explicitly in the spec][issue372]
+- [cometbft#2184: PBTS: should synchrony parameters be adaptive?][issue2184]
+- [tendermint/spec#355: PBTS: evidence][issue355]: can we punish Byzantine proposers?
 - [tendermint/spec#377: PBTS: margins for proposal times assigned by Byzantine proposers][issue377]
 
-### Closed issues
-
-- [tendermint/spec#353: Proposer time - fix message filter condition][issue353]
-- [tendermint/spec#370: PBTS: association between timely predicate and timeout_commit][issue370]
-- [tendermint/spec#371: PBTS: should synchrony parameters be adaptive?][issue371]
 
 [main_v1]: ./v1/pbts_001_draft.md
 
@@ -161,3 +172,4 @@ and thus determining the timestamp for a block.
 [issue371]: https://github.com/tendermint/spec/issues/371
 [issue372]: https://github.com/tendermint/spec/issues/372
 [issue377]: https://github.com/tendermint/spec/issues/377
+[issue2184]: https://github.com/cometbft/cometbft/issues/2184

@@ -26,6 +26,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+// TestInspectConstructor tests the construction of an Inspect instance from a configuration.
+// It ensures that the constructor returns a non-nil instance and no error.
 func TestInspectConstructor(t *testing.T) {
 	cfg := test.ResetTestRoot("test")
 	t.Cleanup(leaktest.Check(t))
@@ -37,6 +39,8 @@ func TestInspectConstructor(t *testing.T) {
 	})
 }
 
+// TestInspectRun tests the execution of the Inspect instance's Run method.
+// It ensures that the method can be started and stopped without error.
 func TestInspectRun(t *testing.T) {
 	cfg := test.ResetTestRoot("test")
 	t.Cleanup(leaktest.Check(t))
@@ -47,16 +51,21 @@ func TestInspectRun(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		stoppedWG := &sync.WaitGroup{}
 		stoppedWG.Add(1)
+		var runErr error
 		go func() {
-			require.NoError(t, d.Run(ctx))
+			runErr = d.Run(ctx)
 			stoppedWG.Done()
 		}()
 		cancel()
 		stoppedWG.Wait()
+		require.NoError(t, runErr)
 	})
 }
 
+// TestBlock tests the retrieval of a block by height.
+// It ensures that the correct block is returned and matches the expected values.
 func TestBlock(t *testing.T) {
+	// Setup and mock dependencies
 	testHeight := int64(1)
 	testBlock := new(types.Block)
 	testBlock.Header.Height = testHeight
@@ -79,15 +88,15 @@ func TestBlock(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
+	var runErr error
 	startedWG := &sync.WaitGroup{}
 	startedWG.Add(1)
 	go func() {
 		startedWG.Done()
 		defer wg.Done()
-		require.NoError(t, d.Run(ctx))
+		runErr = d.Run(ctx)
 	}()
-	// FIXME: used to induce context switch.
-	// Determine more deterministic method for prompting a context switch
+	// Ensure the inspect instance has started
 	startedWG.Wait()
 	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
@@ -98,6 +107,7 @@ func TestBlock(t *testing.T) {
 	require.Equal(t, testBlock.LastCommitHash, resultBlock.Block.LastCommitHash)
 	cancel()
 	wg.Wait()
+	require.NoError(t, runErr)
 
 	blockStoreMock.AssertExpectations(t)
 	stateStoreMock.AssertExpectations(t)

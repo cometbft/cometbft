@@ -83,7 +83,7 @@ type Store interface {
 	// PruneStates takes the height from which to start pruning and which height stop at
 	PruneStates(fromHeight, toHeight, evidenceThresholdHeight int64, previouslyPrunedStates uint64) (uint64, error)
 	// PruneABCIResponses will prune all ABCI responses below the given height.
-	PruneABCIResponses(targetRetainHeight int64) (int64, int64, error)
+	PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (int64, int64, error)
 	// SaveApplicationRetainHeight persists the application retain height from the application
 	SaveApplicationRetainHeight(height int64) error
 	// GetApplicationRetainHeight returns the retain height set by the application
@@ -438,7 +438,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // PruneABCIResponses attempts to prune all ABCI responses up to, but not
 // including, the given height. On success, returns the number of heights
 // pruned and the new retain height.
-func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
+func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (int64, int64, error) {
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}
@@ -477,7 +477,17 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 			defer batch.Close()
 		}
 	}
-	return pruned + batchPruned, targetRetainHeight, batch.WriteSync()
+
+	if err = batch.WriteSync(); err != nil {
+		return pruned + batchPruned, targetRetainHeight, err
+	}
+
+	if forceCompact && store.Compact {
+		if pruned+batchPruned >= store.CompactionInterval || targetRetainHeight-lastRetainHeight >= store.CompactionInterval {
+			err = store.db.Compact(nil, nil)
+		}
+	}
+	return pruned + batchPruned, targetRetainHeight, err
 }
 
 //------------------------------------------------------------------------

@@ -450,10 +450,15 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 		return lastRetainHeight
 	}
 
+	// If the block retain height is 0, pruning of the block and state stores might be disabled
+	// This should not prevent Comet from pruning ABCI results if needed.
+	// We could by default always compact when pruning the responses, but in case the state store
+	// is being compacted we introduce an overhead that might cause performance penalties.
+	forceCompact := p.findMinBlockRetainHeight() == 0
 	// newRetainHeight is the height just after that which we have successfully
 	// pruned. In case of an error it will be 0, but then it will also be
 	// ignored.
-	numPruned, newRetainHeight, err := p.stateStore.PruneABCIResponses(targetRetainHeight)
+	numPruned, newRetainHeight, err := p.stateStore.PruneABCIResponses(targetRetainHeight, forceCompact)
 	if err != nil {
 		p.logger.Error("Failed to prune ABCI responses", "err", err, "targetRetainHeight", targetRetainHeight)
 		return lastRetainHeight

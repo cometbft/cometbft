@@ -366,9 +366,9 @@ func (_m *Store) LoadValidators(height int64) (*types.ValidatorSet, error) {
 	return r0, r1
 }
 
-// PruneABCIResponses provides a mock function with given fields: targetRetainHeight
-func (_m *Store) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
-	ret := _m.Called(targetRetainHeight)
+// PruneABCIResponses provides a mock function with given fields: targetRetainHeight, forceCompact
+func (_m *Store) PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (int64, int64, error) {
+	ret := _m.Called(targetRetainHeight, forceCompact)
 
 	if len(ret) == 0 {
 		panic("no return value specified for PruneABCIResponses")
@@ -377,23 +377,23 @@ func (_m *Store) PruneABCIResponses(targetRetainHeight int64) (int64, int64, err
 	var r0 int64
 	var r1 int64
 	var r2 error
-	if rf, ok := ret.Get(0).(func(int64) (int64, int64, error)); ok {
-		return rf(targetRetainHeight)
+	if rf, ok := ret.Get(0).(func(int64, bool) (int64, int64, error)); ok {
+		return rf(targetRetainHeight, forceCompact)
 	}
-	if rf, ok := ret.Get(0).(func(int64) int64); ok {
-		r0 = rf(targetRetainHeight)
+	if rf, ok := ret.Get(0).(func(int64, bool) int64); ok {
+		r0 = rf(targetRetainHeight, forceCompact)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
 
-	if rf, ok := ret.Get(1).(func(int64) int64); ok {
-		r1 = rf(targetRetainHeight)
+	if rf, ok := ret.Get(1).(func(int64, bool) int64); ok {
+		r1 = rf(targetRetainHeight, forceCompact)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
 
-	if rf, ok := ret.Get(2).(func(int64) error); ok {
-		r2 = rf(targetRetainHeight)
+	if rf, ok := ret.Get(2).(func(int64, bool) error); ok {
+		r2 = rf(targetRetainHeight, forceCompact)
 	} else {
 		r2 = ret.Error(2)
 	}

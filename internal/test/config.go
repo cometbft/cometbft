@@ -46,7 +46,7 @@ var testGenesisFmt = `{
   "genesis_time": "2018-10-10T08:20:13.695936996Z",
   "chain_id": "%s",
   "initial_height": "1",
-	"consensus_params": {
+  "consensus_params": {
 		"block": {
 			"max_bytes": "22020096",
 			"max_gas": "-1",
@@ -69,8 +69,12 @@ var testGenesisFmt = `{
 		"abci": {
 			"vote_extensions_enable_height": "0"
 		},
-		"version": {}
-	},
+		"version": {},
+		"feature": {
+			"vote_extensions_enable_height": "0",
+			"pbts_enable_height": "0"
+		}
+  },
   "validators": [
     {
       "pub_key": {

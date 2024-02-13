@@ -5,5 +5,6 @@ plugins:
     opt:
       - Mgoogle/protobuf/timestamp.proto=github.com/cosmos/gogoproto/types
       - Mgoogle/protobuf/duration.proto=github.com/golang/protobuf/ptypes/duration
+      - Mgoogle/protobuf/wrappers.proto=github.com/cosmos/gogoproto/types
       - plugins=grpc
       - paths=source_relative

@@ -240,6 +240,9 @@ func (state State) MakeBlock(
 	// Build base block with block data.
 	block := types.MakeBlock(height, txs, lastCommit, evidence)
 
+	// TODO(@glnro): Update logic once merged with #2205
+	// Check if PBTS Enabled: state.ConsensusParams.PBTS.PBTSEnabled(height)
+
 	// Fill rest of header with state data.
 	block.Header.Populate(
 		state.Version.Consensus, state.ChainID,

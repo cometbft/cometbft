@@ -72,6 +72,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 			logger.Debug("load", "success", success, "failed", failed, "tx/s", rate)
 		}
 
+		// Check if reached max number of allowed transactions to send.
 		if testnet.LoadMaxTxs > 0 && success >= testnet.LoadMaxTxs {
 			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after reaching %v txs (%v tx/s)...", success, rate))
 			return nil

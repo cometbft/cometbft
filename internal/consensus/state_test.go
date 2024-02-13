@@ -1582,8 +1582,8 @@ func TestStateLock_POLSafety2(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cs1, vss1 := randState(4)
-	cs2, vss2 := randStateWithAppPbts(4)
+	csT1, vssT1 := randState(4)
+	csT2, vssT2 := randStateWithAppPbts(4)
 
 	tcs := []struct {
 		name  string
@@ -1591,28 +1591,28 @@ func TestStateLock_POLSafety2(t *testing.T) {
 		vss   []*validatorStub
 		exp   error
 	}{
-		{name: "Without PBTS", state: cs1, vss: vss1, exp: nil},
-		{name: "With PBTS", state: cs2, vss: vss2, exp: nil},
+		{name: "Without PBTS", state: csT1, vss: vssT1, exp: nil},
+		{name: "With PBTS", state: csT2, vss: vssT2, exp: nil},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			vs2, vs3, vs4 := tc.vss[1], tc.vss[2], tc.vss[3]
-			height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
+			height, round, chainID := tc.state.Height, tc.state.Round, tc.state.state.ChainID
 
 			partSize := types.BlockPartSizeBytes
 
-			proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
-			timeoutWaitCh := subscribe(cs1.eventBus, types.EventQueryTimeoutWait)
-			newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
-			pv1, err := cs1.privValidator.GetPubKey()
+			proposalCh := subscribe(tc.state.eventBus, types.EventQueryCompleteProposal)
+			timeoutWaitCh := subscribe(tc.state.eventBus, types.EventQueryTimeoutWait)
+			newRoundCh := subscribe(tc.state.eventBus, types.EventQueryNewRound)
+			pv1, err := tc.state.privValidator.GetPubKey()
 			require.NoError(t, err)
 			addr := pv1.Address()
-			voteCh := subscribeToVoter(cs1, addr)
+			voteCh := subscribeToVoter(tc.state, addr)
 
 			// the block for R0: gets polkad but we miss it
 			// (even though we signed it, shhh)
-			_, propBlock0 := decideProposal(ctx, t, cs1, tc.vss[0], height, round)
+			_, propBlock0 := decideProposal(ctx, t, tc.state, tc.vss[0], height, round)
 			propBlockHash0 := propBlock0.Hash()
 			propBlockParts0, err := propBlock0.MakePartSet(partSize)
 			require.NoError(t, err)
@@ -1622,7 +1622,7 @@ func TestStateLock_POLSafety2(t *testing.T) {
 			prevotes := signVotes(types.PrevoteType, chainID, propBlockID0, false, vs2, vs3, vs4)
 
 			// the block for round 1
-			prop1, propBlock1 := decideProposal(ctx, t, cs1, vs2, vs2.Height, vs2.Round+1)
+			prop1, propBlock1 := decideProposal(ctx, t, tc.state, vs2, vs2.Height, vs2.Round+1)
 			propBlockParts1, err := propBlock1.MakePartSet(partSize)
 			require.NoError(t, err)
 			propBlockID1 := types.BlockID{Hash: propBlock1.Hash(), PartSetHeader: propBlockParts1.Header()}
@@ -1632,30 +1632,30 @@ func TestStateLock_POLSafety2(t *testing.T) {
 			round++ // moving to the next round
 			t.Log("### ONTO Round 1")
 			// jump in at round 1
-			startTestRound(cs1, height, round)
+			startTestRound(tc.state, height, round)
 			ensureNewRound(newRoundCh, height, round)
 
-			err = cs1.SetProposalAndBlock(prop1, propBlock1, propBlockParts1, "some peer")
+			err = tc.state.SetProposalAndBlock(prop1, propBlock1, propBlockParts1, "some peer")
 			require.NoError(t, err)
 			ensureNewProposal(proposalCh, height, round)
 
 			ensurePrevote(voteCh, height, round)
-			validatePrevote(t, cs1, round, tc.vss[0], propBlockID1.Hash)
+			validatePrevote(t, tc.state, round, tc.vss[0], propBlockID1.Hash)
 
-			signAddVotes(cs1, types.PrevoteType, chainID, propBlockID1, false, vs2, vs3, vs4)
+			signAddVotes(tc.state, types.PrevoteType, chainID, propBlockID1, false, vs2, vs3, vs4)
 
 			ensurePrecommit(voteCh, height, round)
 			// the proposed block should now be locked and our precommit added
-			validatePrecommit(t, cs1, round, round, tc.vss[0], propBlockID1.Hash, propBlockID1.Hash)
+			validatePrecommit(t, tc.state, round, round, tc.vss[0], propBlockID1.Hash, propBlockID1.Hash)
 
 			// add precommits from the rest
-			signAddVotes(cs1, types.PrecommitType, chainID, types.BlockID{}, true, vs2, vs4)
-			signAddVotes(cs1, types.PrecommitType, chainID, propBlockID1, true, vs3)
+			signAddVotes(tc.state, types.PrecommitType, chainID, types.BlockID{}, true, vs2, vs4)
+			signAddVotes(tc.state, types.PrecommitType, chainID, propBlockID1, true, vs3)
 
 			incrementRound(vs2, vs3, vs4)
 
 			// timeout of precommit wait to new round
-			ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
+			ensureNewTimeout(timeoutWaitCh, height, round, tc.state.config.Precommit(round).Nanoseconds())
 
 			round++ // moving to the next round
 			// in round 2 we see the polkad block from round 0
@@ -1666,11 +1666,11 @@ func TestStateLock_POLSafety2(t *testing.T) {
 
 			newProp.Signature = p.Signature
 
-			err = cs1.SetProposalAndBlock(newProp, propBlock0, propBlockParts0, "some peer")
+			err = tc.state.SetProposalAndBlock(newProp, propBlock0, propBlockParts0, "some peer")
 			require.NoError(t, err)
 
 			// Add the pol votes
-			addVotes(cs1, prevotes...)
+			addVotes(tc.state, prevotes...)
 
 			ensureNewRound(newRoundCh, height, round)
 			t.Log("### ONTO Round 2")
@@ -1680,7 +1680,14 @@ func TestStateLock_POLSafety2(t *testing.T) {
 			ensureNewProposal(proposalCh, height, round)
 
 			ensurePrevote(voteCh, height, round)
-			validatePrevote(t, cs1, round, tc.vss[0], nil)
+			validatePrevote(t, tc.state, round, tc.vss[0], nil)
+
+			unsubscribe(tc.state.eventBus, types.EventQueryCompleteProposal)
+			unsubscribe(tc.state.eventBus, types.EventQueryTimeoutWait)
+			unsubscribe(tc.state.eventBus, types.EventQueryNewRound)
+			unsubscribe(tc.state.eventBus, types.EventQueryVote)
+
+			// tc.state.eventBus.UnsubscribeAll(context.Background(), testSubscriber)
 		})
 	}
 }
@@ -3200,6 +3207,14 @@ func subscribe(eventBus *types.EventBus, q cmtpubsub.Query) <-chan cmtpubsub.Mes
 		panic(fmt.Sprintf("failed to subscribe %s to %v; err %v", testSubscriber, q, err))
 	}
 	return sub.Out()
+}
+
+// subscribe subscribes test client to the given query and returns a channel with cap = 1.
+func unsubscribe(eventBus *types.EventBus, q cmtpubsub.Query) {
+	err := eventBus.Unsubscribe(context.Background(), testSubscriber, q)
+	if err != nil {
+		panic(fmt.Sprintf("failed to subscribe %s to %v; err %v", testSubscriber, q, err))
+	}
 }
 
 // subscribe subscribes test client to the given query and returns a channel with cap = 0.

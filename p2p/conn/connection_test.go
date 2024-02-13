@@ -189,7 +189,7 @@ func TestMConnectionPongTimeoutResultsInError(t *testing.T) {
 	mconn := createMConnectionWithCallbacks(client, onReceive, onError)
 	err := mconn.Start()
 	require.NoError(t, err, "Starting MConnection should not produce an error.")
-	defer mconn.Stop() // nolint:errcheck // Ignoring error on stop for cleanup in test context.
+	defer mconn.Stop() //nolint:errcheck // Ignoring error on stop for cleanup in test context.
 
 	// Channel to signal when a ping message is received by the server.
 	serverGotPing := make(chan struct{})

@@ -239,7 +239,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 	go func() {
 		errCh <- pvsc.Start()
 	}()
-	defer pvsc.Stop() // Ignore error for test cleanup.
+	defer pvsc.Stop() //nolint:errcheck // Ignore error for test cleanup.
 
 	// Check for errors from starting the signer server.
 	err := <-errCh

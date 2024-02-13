@@ -42,7 +42,8 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 
 	ensureNewEventOnChannel(newBlockCh) // first block gets committed
 	ensureNoNewEventOnChannel(newBlockCh)
-	deliverTxsRange(t, cs, 1)
+	err = deliverTxsRange(t, cs, 1)
+	require.NoError(t, err)
 	ensureNewEventOnChannel(newBlockCh) // commit txs
 	ensureNewEventOnChannel(newBlockCh) // commit updated app hash
 	ensureNoNewEventOnChannel(newBlockCh)
@@ -99,7 +100,8 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	round = 0
 
 	ensureNewRound(newRoundCh, height, round) // first round at next height
-	deliverTxsRange(t, cs, 1)                 // we deliver txs, but dont set a proposal so we get the next round
+	err := deliverTxsRange(t, cs, 1)          // we deliver txs, but dont set a proposal so we get the next round
+	require.NoError(t, err)
 	ensureNewTimeout(timeoutCh, height, round, cs.config.TimeoutPropose.Nanoseconds())
 
 	round++                                   // moving to the next round

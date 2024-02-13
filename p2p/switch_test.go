@@ -405,7 +405,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	})
 
 	assert.Len(t, sw1.Peers().Copy(), 1)
-	assert.EqualValues(t, 1, peersMetricValue())
+	assert.InEpsilon(t, 1, peersMetricValue(), 0.001)
 
 	// send messages to the peer from sw1
 	p := sw1.Peers().Copy()[0]

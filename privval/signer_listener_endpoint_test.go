@@ -213,6 +213,7 @@ func startListenerEndpointAsync(t *testing.T, sle *SignerListenerEndpoint, endpo
 	// Use require.NoError outside of the goroutine to fail the test immediately if an error occurred.
 	require.NoError(t, err)
 }
+
 func getMockEndpoints(
 	t *testing.T,
 	addr string,

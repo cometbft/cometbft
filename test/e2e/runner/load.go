@@ -63,7 +63,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 			if success == 0 {
 				return errors.New("failed to submit any transactions")
 			}
-			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after %v txs (%.1f tx/s)...", success, rate))
+			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after %v txs (%v tx/s)...", success, rate))
 			return nil
 		}
 
@@ -73,7 +73,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 		}
 
 		if testnet.LoadMaxTxs > 0 && success >= testnet.LoadMaxTxs {
-			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after reaching %v txs (%.1f tx/s)...", success, rate))
+			logger.Info("load", "msg", log.NewLazySprintf("Ending transaction load after reaching %v txs (%v tx/s)...", success, rate))
 			return nil
 		}
 	}

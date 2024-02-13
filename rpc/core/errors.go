@@ -14,7 +14,6 @@ var (
 	errCometBFTExited          = errors.New("cometBFT exited")
 	errConfirmationNotReceived = errors.New("confirmation not received")
 	ErrTimedOutWaitingForTx    = errors.New("timed out waiting for tx to be included in a block")
-	ErrInvalidNodeInfoType     = errors.New("invalid node info type: expected p2p.DefaultNodeInfo")
 	ErrGenesisRespSize         = errors.New("genesis response is too large, please use the genesis_chunked API instead")
 	errChunkNotInitialized     = errors.New("genesis chunks are not initialized")
 	errNoChunks                = errors.New("no chunks")
@@ -134,4 +133,14 @@ type ErrInvalidOrderBy struct {
 
 func (e ErrInvalidOrderBy) Error() string {
 	return fmt.Sprintf("invalid order_by: expected either `asc` or `desc` or empty but got %s", e.OrderBy)
+}
+
+type ErrInvalidNodeType struct {
+	PeerID   string
+	Expected string
+	Actual   string
+}
+
+func (e ErrInvalidNodeType) Error() string {
+	return fmt.Sprintf("peer %s has an invalid node type: expected %s but got %s", e.PeerID, e.Expected, e.Actual)
 }

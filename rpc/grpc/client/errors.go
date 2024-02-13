@@ -5,14 +5,9 @@ import "fmt"
 type ErrBlockResults struct {
 	Height int64
 	Err    error
-	latest bool
 }
 
 func (e ErrBlockResults) Error() string {
-	if e.latest {
-		return fmt.Sprintf("error fetching BlockResults for latest height: %s", e.Err.Error())
-	}
-
 	return fmt.Sprintf("error fetching BlockResults for height %d: %s", e.Height, e.Err.Error())
 }
 

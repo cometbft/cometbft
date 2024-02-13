@@ -75,7 +75,7 @@ See the [install guide](docs/tutorials/install.md).
 ### Quick Start
 
 - [Single node](docs/tutorials/quick-start.md)
-- [Local cluster using docker-compose](./docs/networks/docker-compose.md)
+- [Local cluster using docker-compose](./docs/guides/networks/docker-compose.md)
 
 ## Contributing
 

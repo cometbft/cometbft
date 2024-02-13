@@ -163,7 +163,9 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	if dbProvider == nil {
 		dbProvider = cfg.DefaultDBProvider
 	}
-	blockStore, stateDB, err := initDBs(config, dbProvider)
+	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
+
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()))
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -274,19 +276,23 @@ func NewNode(ctx context.Context,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
-	blockStore, stateDB, err := initDBs(config, dbProvider)
+	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
 	}
-
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
-	})
 
 	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, config.Storage.GenesisHash)
 	if err != nil {
 		return nil, err
 	}
+
+	csMetrics, p2pMetrics, memplMetrics, smMetrics, bstMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+		Metrics:              smMetrics,
+	})
+
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics))
 
 	// The key will be deleted if it existed.
 	// Not checking whether the key is there in case the genesis file was larger than
@@ -298,8 +304,6 @@ func NewNode(ctx context.Context,
 	if err != nil {
 		logger.Error("Failed to delete genesis doc from DB ", err)
 	}
-
-	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 
 	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).
 	proxyApp, err := createAndStartProxyAppConns(clientCreator, logger, abciMetrics)

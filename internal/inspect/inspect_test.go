@@ -1,3 +1,4 @@
+//nolint:testifylint // no success in the needed refator here.  We should attempt in the future.
 package inspect_test
 
 import (

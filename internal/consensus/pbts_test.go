@@ -108,7 +108,6 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	pbtsCfg.Consensus.TimeoutPropose = tc.timeoutPropose
 	consensusParams := types.DefaultConsensusParams()
 	consensusParams.Synchrony = tc.synchronyParams
-	// TODO(@glnro): Update TC's once #2205 merged to include pbts enabled
 	consensusParams.Feature = tc.featureParams
 
 	state, privVals := randGenesisStateWithTime(validators, consensusParams, tc.genesisTime)

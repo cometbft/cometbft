@@ -23,7 +23,7 @@ func createTestGroupWithHeadSizeLimit(t *testing.T, headSizeLimit int64) *Group 
 	headPath := testDir + "/myfile"
 	g, err := OpenGroup(headPath, GroupHeadSizeLimit(headSizeLimit))
 	require.NoError(t, err, "Error opening Group")
-	require.NotEqual(t, nil, g, "Failed to create Group")
+	require.NotEqual(t, nil, g, "Failed to create Group") //nolint:testifylint // testifylint recommends we use require.NotNil instead, but that does not seem to work.
 
 	return g
 }

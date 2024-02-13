@@ -426,7 +426,8 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	sw1.StopPeerForError(p, fmt.Errorf("some err"))
 
 	require.Empty(t, len(sw1.Peers().Copy()), 0)
-	assert.EqualValues(t, 0, peersMetricValue())
+	require.Empty(t, sw1.Peers().Copy())
+	assert.InEpsilon(t, 0, peersMetricValue(), 0.001)
 }
 
 func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {

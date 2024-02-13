@@ -94,7 +94,7 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 		b.Fatal(err)
 	}
 	e := mp.FlushAppConn()
-	require.NotErrorIs(b, nil, e)
+	require.NotErrorIs(b, nil, e) //nolint:testifylint // testifylint recommends using require.InEpsilon, but that fails.
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

@@ -1582,189 +1582,107 @@ func TestStateLock_POLSafety2(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cs1, vss := randState(4)
-	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
-	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
+	cs1, vss1 := randState(4)
+	cs2, vss2 := randStateWithAppPbts(4)
 
-	partSize := types.BlockPartSizeBytes
+	tcs := []struct {
+		name  string
+		state *State
+		vss   []*validatorStub
+		exp   error
+	}{
+		{name: "Without PBTS", state: cs1, vss: vss1, exp: nil},
+		{name: "With PBTS", state: cs2, vss: vss2, exp: nil},
+	}
 
-	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
-	timeoutWaitCh := subscribe(cs1.eventBus, types.EventQueryTimeoutWait)
-	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
-	pv1, err := cs1.privValidator.GetPubKey()
-	require.NoError(t, err)
-	addr := pv1.Address()
-	voteCh := subscribeToVoter(cs1, addr)
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			vs2, vs3, vs4 := tc.vss[1], tc.vss[2], tc.vss[3]
+			height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 
-	// the block for R0: gets polkad but we miss it
-	// (even though we signed it, shhh)
-	_, propBlock0 := decideProposal(ctx, t, cs1, vss[0], height, round)
-	propBlockHash0 := propBlock0.Hash()
-	propBlockParts0, err := propBlock0.MakePartSet(partSize)
-	require.NoError(t, err)
-	propBlockID0 := types.BlockID{Hash: propBlockHash0, PartSetHeader: propBlockParts0.Header()}
+			partSize := types.BlockPartSizeBytes
 
-	// the others sign a polka but we don't see it
-	prevotes := signVotes(types.PrevoteType, chainID, propBlockID0, false, vs2, vs3, vs4)
+			proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
+			timeoutWaitCh := subscribe(cs1.eventBus, types.EventQueryTimeoutWait)
+			newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
+			pv1, err := cs1.privValidator.GetPubKey()
+			require.NoError(t, err)
+			addr := pv1.Address()
+			voteCh := subscribeToVoter(cs1, addr)
 
-	// the block for round 1
-	prop1, propBlock1 := decideProposal(ctx, t, cs1, vs2, vs2.Height, vs2.Round+1)
-	propBlockParts1, err := propBlock1.MakePartSet(partSize)
-	require.NoError(t, err)
-	propBlockID1 := types.BlockID{Hash: propBlock1.Hash(), PartSetHeader: propBlockParts1.Header()}
+			// the block for R0: gets polkad but we miss it
+			// (even though we signed it, shhh)
+			_, propBlock0 := decideProposal(ctx, t, cs1, tc.vss[0], height, round)
+			propBlockHash0 := propBlock0.Hash()
+			propBlockParts0, err := propBlock0.MakePartSet(partSize)
+			require.NoError(t, err)
+			propBlockID0 := types.BlockID{Hash: propBlockHash0, PartSetHeader: propBlockParts0.Header()}
 
-	incrementRound(vs2, vs3, vs4)
+			// the others sign a polka but we don't see it
+			prevotes := signVotes(types.PrevoteType, chainID, propBlockID0, false, vs2, vs3, vs4)
 
-	round++ // moving to the next round
-	t.Log("### ONTO Round 1")
-	// jump in at round 1
-	startTestRound(cs1, height, round)
-	ensureNewRound(newRoundCh, height, round)
+			// the block for round 1
+			prop1, propBlock1 := decideProposal(ctx, t, cs1, vs2, vs2.Height, vs2.Round+1)
+			propBlockParts1, err := propBlock1.MakePartSet(partSize)
+			require.NoError(t, err)
+			propBlockID1 := types.BlockID{Hash: propBlock1.Hash(), PartSetHeader: propBlockParts1.Header()}
 
-	err = cs1.SetProposalAndBlock(prop1, propBlock1, propBlockParts1, "some peer")
-	require.NoError(t, err)
-	ensureNewProposal(proposalCh, height, round)
+			incrementRound(vs2, vs3, vs4)
 
-	ensurePrevote(voteCh, height, round)
-	validatePrevote(t, cs1, round, vss[0], propBlockID1.Hash)
+			round++ // moving to the next round
+			t.Log("### ONTO Round 1")
+			// jump in at round 1
+			startTestRound(cs1, height, round)
+			ensureNewRound(newRoundCh, height, round)
 
-	signAddVotes(cs1, types.PrevoteType, chainID, propBlockID1, false, vs2, vs3, vs4)
+			err = cs1.SetProposalAndBlock(prop1, propBlock1, propBlockParts1, "some peer")
+			require.NoError(t, err)
+			ensureNewProposal(proposalCh, height, round)
 
-	ensurePrecommit(voteCh, height, round)
-	// the proposed block should now be locked and our precommit added
-	validatePrecommit(t, cs1, round, round, vss[0], propBlockID1.Hash, propBlockID1.Hash)
+			ensurePrevote(voteCh, height, round)
+			validatePrevote(t, cs1, round, tc.vss[0], propBlockID1.Hash)
 
-	// add precommits from the rest
-	signAddVotes(cs1, types.PrecommitType, chainID, types.BlockID{}, true, vs2, vs4)
-	signAddVotes(cs1, types.PrecommitType, chainID, propBlockID1, true, vs3)
+			signAddVotes(cs1, types.PrevoteType, chainID, propBlockID1, false, vs2, vs3, vs4)
 
-	incrementRound(vs2, vs3, vs4)
+			ensurePrecommit(voteCh, height, round)
+			// the proposed block should now be locked and our precommit added
+			validatePrecommit(t, cs1, round, round, tc.vss[0], propBlockID1.Hash, propBlockID1.Hash)
 
-	// timeout of precommit wait to new round
-	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
+			// add precommits from the rest
+			signAddVotes(cs1, types.PrecommitType, chainID, types.BlockID{}, true, vs2, vs4)
+			signAddVotes(cs1, types.PrecommitType, chainID, propBlockID1, true, vs3)
 
-	round++ // moving to the next round
-	// in round 2 we see the polkad block from round 0
-	newProp := types.NewProposal(height, round, 0, propBlockID0, propBlock0.Header.Time)
-	p := newProp.ToProto()
-	err = vs3.SignProposal(chainID, p)
-	require.NoError(t, err)
+			incrementRound(vs2, vs3, vs4)
 
-	newProp.Signature = p.Signature
+			// timeout of precommit wait to new round
+			ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
 
-	err = cs1.SetProposalAndBlock(newProp, propBlock0, propBlockParts0, "some peer")
-	require.NoError(t, err)
+			round++ // moving to the next round
+			// in round 2 we see the polkad block from round 0
+			newProp := types.NewProposal(height, round, 0, propBlockID0, propBlock0.Header.Time)
+			p := newProp.ToProto()
+			err = vs3.SignProposal(chainID, p)
+			require.NoError(t, err)
 
-	// Add the pol votes
-	addVotes(cs1, prevotes...)
+			newProp.Signature = p.Signature
 
-	ensureNewRound(newRoundCh, height, round)
-	t.Log("### ONTO Round 2")
-	/*Round2
-	// now we see the polka from round 1, but we shouldn't unlock
-	*/
-	ensureNewProposal(proposalCh, height, round)
+			err = cs1.SetProposalAndBlock(newProp, propBlock0, propBlockParts0, "some peer")
+			require.NoError(t, err)
 
-	ensurePrevote(voteCh, height, round)
-	validatePrevote(t, cs1, round, vss[0], propBlockID1.Hash)
-}
+			// Add the pol votes
+			addVotes(cs1, prevotes...)
 
-// 4 vals.
-// polka P0 at R0, P1 at R1, and P2 at R2,
-// we lock on P0 at R0, don't see P1, and unlock using P2 at R2
-// then we should make sure we don't lock using P1
+			ensureNewRound(newRoundCh, height, round)
+			t.Log("### ONTO Round 2")
+			/*Round2
+			// now we see the polka from round 1, but we shouldn't unlock
+			*/
+			ensureNewProposal(proposalCh, height, round)
 
-// What we want:
-// dont see P0, lock on P1 at R1, dont unlock using P0 at R2.
-func TestStateLock_POLSafety2PBTS(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	cs1, vss := randStateWithAppPbts(4)
-	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
-	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
-
-	partSize := types.BlockPartSizeBytes
-
-	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
-	timeoutWaitCh := subscribe(cs1.eventBus, types.EventQueryTimeoutWait)
-	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
-	pv1, err := cs1.privValidator.GetPubKey()
-	require.NoError(t, err)
-	addr := pv1.Address()
-	voteCh := subscribeToVoter(cs1, addr)
-
-	// the block for R0: gets polkad but we miss it
-	// (even though we signed it, shhh)
-	_, propBlock0 := decideProposal(ctx, t, cs1, vss[0], height, round)
-	propBlockHash0 := propBlock0.Hash()
-	propBlockParts0, err := propBlock0.MakePartSet(partSize)
-	require.NoError(t, err)
-	propBlockID0 := types.BlockID{Hash: propBlockHash0, PartSetHeader: propBlockParts0.Header()}
-
-	// the others sign a polka but we don't see it
-	prevotes := signVotes(types.PrevoteType, chainID, propBlockID0, false, vs2, vs3, vs4)
-
-	// the block for round 1
-	prop1, propBlock1 := decideProposal(ctx, t, cs1, vs2, vs2.Height, vs2.Round+1)
-	propBlockParts1, err := propBlock1.MakePartSet(partSize)
-	require.NoError(t, err)
-	propBlockID1 := types.BlockID{Hash: propBlock1.Hash(), PartSetHeader: propBlockParts1.Header()}
-
-	incrementRound(vs2, vs3, vs4)
-
-	round++ // moving to the next round
-	t.Log("### ONTO Round 1")
-	// jump in at round 1
-	startTestRound(cs1, height, round)
-	ensureNewRound(newRoundCh, height, round)
-
-	err = cs1.SetProposalAndBlock(prop1, propBlock1, propBlockParts1, "some peer")
-	require.NoError(t, err)
-	ensureNewProposal(proposalCh, height, round)
-
-	ensurePrevote(voteCh, height, round)
-	validatePrevote(t, cs1, round, vss[0], propBlockID1.Hash)
-
-	signAddVotes(cs1, types.PrevoteType, chainID, propBlockID1, false, vs2, vs3, vs4)
-
-	ensurePrecommit(voteCh, height, round)
-	// the proposed block should now be locked and our precommit added
-	validatePrecommit(t, cs1, round, round, vss[0], propBlockID1.Hash, propBlockID1.Hash)
-
-	// add precommits from the rest
-	signAddVotes(cs1, types.PrecommitType, chainID, types.BlockID{}, true, vs2, vs4)
-	signAddVotes(cs1, types.PrecommitType, chainID, propBlockID1, true, vs3)
-
-	incrementRound(vs2, vs3, vs4)
-
-	// timeout of precommit wait to new round
-	ensureNewTimeout(timeoutWaitCh, height, round, cs1.config.Precommit(round).Nanoseconds())
-
-	round++ // moving to the next round
-	// in round 2 we see the polkad block from round 0
-	newProp := types.NewProposal(height, round, 0, propBlockID0, propBlock0.Header.Time)
-	p := newProp.ToProto()
-	err = vs3.SignProposal(chainID, p)
-	require.NoError(t, err)
-
-	newProp.Signature = p.Signature
-
-	err = cs1.SetProposalAndBlock(newProp, propBlock0, propBlockParts0, "some peer")
-	require.NoError(t, err)
-
-	// Add the pol votes
-	addVotes(cs1, prevotes...)
-
-	ensureNewRound(newRoundCh, height, round)
-	t.Log("### ONTO Round 2")
-	/*Round2
-	// now we see the polka from round 1, but we shouldn't unlock
-	*/
-	ensureNewProposal(proposalCh, height, round)
-
-	ensurePrevote(voteCh, height, round)
-	validatePrevote(t, cs1, round, vss[0], nil)
+			ensurePrevote(voteCh, height, round)
+			validatePrevote(t, cs1, round, tc.vss[0], nil)
+		})
+	}
 }
 
 // TestState_PrevotePOLFromPreviousRound tests that a validator will prevote

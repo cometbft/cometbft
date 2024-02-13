@@ -498,7 +498,8 @@ func randStateWithApp(nValidators int, app abci.Application) (*State, []*validat
 
 func randStateWithAppPbts(nValidators int) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
-	c.PBTS.PBTSEnableHeight = 1
+	enableHeight := int64(1)
+	c.Feature.PbtsEnableHeight = &enableHeight
 	return randStateWithAppImpl(nValidators, kvstore.NewInMemoryApplication(), c)
 }
 

@@ -22,7 +22,6 @@ type BlockResults struct {
 // BlockResultsServiceClient provides the block results of a given height (or latest if none provided).
 type BlockResultsServiceClient interface {
 	GetBlockResults(ctx context.Context, height int64) (*BlockResults, error)
-	GetLatestBlockResults(ctx context.Context) (*BlockResults, error)
 }
 
 type blockResultServiceClient struct {
@@ -33,22 +32,6 @@ func (b blockResultServiceClient) GetBlockResults(ctx context.Context, height in
 	res, err := b.client.GetBlockResults(ctx, &brs.GetBlockResultsRequest{Height: height})
 	if err != nil {
 		return nil, ErrBlockResults{Height: height, Err: err}
-	}
-
-	return &BlockResults{
-		Height:                res.Height,
-		TxResults:             res.TxResults,
-		FinalizeBlockEvents:   res.FinalizeBlockEvents,
-		ValidatorUpdates:      res.ValidatorUpdates,
-		ConsensusParamUpdates: res.ConsensusParamUpdates,
-		AppHash:               res.AppHash,
-	}, nil
-}
-
-func (b blockResultServiceClient) GetLatestBlockResults(ctx context.Context) (*BlockResults, error) {
-	res, err := b.client.GetLatestBlockResults(ctx, &brs.GetLatestBlockResultsRequest{})
-	if err != nil {
-		return nil, ErrBlockResults{latest: true, Err: err}
 	}
 
 	return &BlockResults{
@@ -75,10 +58,5 @@ func newDisabledBlockResultsServiceClient() BlockResultsServiceClient {
 
 // GetBlockResults implements BlockResultsServiceClient.
 func (*disabledBlockResultsServiceClient) GetBlockResults(_ context.Context, _ int64) (*BlockResults, error) {
-	panic("block results service client is disabled")
-}
-
-// GetLatestBlockResults implements BlockResultsServiceClient.
-func (*disabledBlockResultsServiceClient) GetLatestBlockResults(_ context.Context) (*BlockResults, error) {
 	panic("block results service client is disabled")
 }

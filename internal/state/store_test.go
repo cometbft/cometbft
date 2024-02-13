@@ -33,9 +33,9 @@ func TestStoreLoadValidators(t *testing.T) {
 	vals := types.NewValidatorSet([]*types.Validator{val})
 
 	// 1) LoadValidators loads validators using a height where they were last changed
-	err := sm.SaveValidatorsInfo(stateDB, 1, 1, vals)
+	err := sm.SaveValidatorsInfo(stateDB, 1, 1, vals, "v1")
 	require.NoError(t, err)
-	err = sm.SaveValidatorsInfo(stateDB, 2, 1, vals)
+	err = sm.SaveValidatorsInfo(stateDB, 2, 1, vals, "v1")
 	require.NoError(t, err)
 	loadedVals, err := stateStore.LoadValidators(2)
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestStoreLoadValidators(t *testing.T) {
 
 	// 2) LoadValidators loads validators using a checkpoint height
 
-	err = sm.SaveValidatorsInfo(stateDB, sm.ValSetCheckpointInterval, 1, vals)
+	err = sm.SaveValidatorsInfo(stateDB, sm.ValSetCheckpointInterval, 1, vals, "v1")
 	require.NoError(t, err)
 
 	loadedVals, err = stateStore.LoadValidators(sm.ValSetCheckpointInterval)
@@ -61,6 +61,7 @@ func BenchmarkLoadValidators(b *testing.B) {
 	require.NoError(b, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
+		DBKeyLayout:          "v2",
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	if err != nil {
@@ -75,7 +76,7 @@ func BenchmarkLoadValidators(b *testing.B) {
 	for i := 10; i < 10000000000; i *= 10 { // 10, 100, 1000, ...
 		i := i
 		if err := sm.SaveValidatorsInfo(stateDB,
-			int64(i), state.LastHeightValidatorsChanged, state.NextValidators); err != nil {
+			int64(i), state.LastHeightValidatorsChanged, state.NextValidators, "v2"); err != nil {
 			b.Fatal(err)
 		}
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/go-kit/kit/metrics"
+	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -31,19 +32,33 @@ var (
 	ErrInvalidHeightValue = errors.New("invalid height value")
 )
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------.
+type StateKeyLayout interface {
+	CalcValidatorsKey(height int64) []byte
 
-func calcValidatorsKey(height int64) []byte {
-	return []byte(fmt.Sprintf("validatorsKey:%v", height))
+	CalcConsensusParamsKey(height int64) []byte
+
+	CalcABCIResponsesKey(height int64) []byte
 }
 
-func calcConsensusParamsKey(height int64) []byte {
+type v1LegacyLayout struct{}
+
+// CalcABCIResponsesKey implements StateKeyLayout.
+func (v1LegacyLayout) CalcABCIResponsesKey(height int64) []byte {
+	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
+}
+
+// store.StoreOptions.DBKeyLayout.calcConsensusParamsKey implements StateKeyLayout.
+func (v1LegacyLayout) CalcConsensusParamsKey(height int64) []byte {
 	return []byte(fmt.Sprintf("consensusParamsKey:%v", height))
 }
 
-func calcABCIResponsesKey(height int64) []byte {
-	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
+// store.StoreOptions.DBKeyLayout.CalcValidatorsKey implements StateKeyLayout.
+func (v1LegacyLayout) CalcValidatorsKey(height int64) []byte {
+	return []byte(fmt.Sprintf("validatorsKey:%v", height))
 }
+
+var _ StateKeyLayout = (*v1LegacyLayout)(nil)
 
 //----------------------
 
@@ -52,6 +67,40 @@ var (
 	lastABCIResponsesRetainHeightKey = []byte("lastABCIResponsesRetainHeight")
 	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
 )
+
+var (
+	// prefixes must be unique across all db's.
+	prefixValidators      = int64(6)
+	prefixConsensusParams = int64(7)
+	prefixABCIResponses   = int64(8)
+)
+
+type v2Layout struct{}
+
+func (v2Layout) encodeKey(prefix, height int64) []byte {
+	res, err := orderedcode.Append(nil, prefix, height)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+// CalcABCIResponsesKey implements StateKeyLayout.
+func (v2l v2Layout) CalcABCIResponsesKey(height int64) []byte {
+	return v2l.encodeKey(prefixABCIResponses, height)
+}
+
+// CalcConsensusParamsKey implements StateKeyLayout.
+func (v2l v2Layout) CalcConsensusParamsKey(height int64) []byte {
+	return v2l.encodeKey(prefixConsensusParams, height)
+}
+
+// CalcValidatorsKey implements StateKeyLayout.
+func (v2l v2Layout) CalcValidatorsKey(height int64) []byte {
+	return v2l.encodeKey(prefixValidators, height)
+}
+
+var _ StateKeyLayout = (*v2Layout)(nil)
 
 //go:generate ../../scripts/mockery_generate.sh Store
 
@@ -110,6 +159,8 @@ type Store interface {
 type dbStore struct {
 	db dbm.DB
 
+	DBKeyLayout StateKeyLayout
+
 	StoreOptions
 }
 
@@ -123,6 +174,8 @@ type StoreOptions struct {
 	// Metrics defines the metrics collector to use for the state store.
 	// if none is specified then a NopMetrics collector is used.
 	Metrics *Metrics
+
+	DBKeyLayout string
 }
 
 var _ Store = (*dbStore)(nil)
@@ -140,10 +193,20 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 	if options.Metrics == nil {
 		options.Metrics = NopMetrics()
 	}
-	return dbStore{
+
+	store := dbStore{
 		db:           db,
 		StoreOptions: options,
 	}
+
+	switch options.DBKeyLayout {
+	case "", "v1":
+		store.DBKeyLayout = &v1LegacyLayout{}
+	case "v2":
+		store.DBKeyLayout = v2Layout{}
+	}
+
+	return store
 }
 
 // LoadStateFromDBOrGenesisFile loads the most recent state from the database,
@@ -333,7 +396,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		return fmt.Errorf("from height %v must be lower than to height %v", from, to)
 	}
 
-	valInfo, elapsedTime, err := loadValidatorsInfo(store.db, min(to, evidenceThresholdHeight))
+	valInfo, elapsedTime, err := loadValidatorsInfo(store.db, store.DBKeyLayout.CalcValidatorsKey(min(to, evidenceThresholdHeight)))
 	if err != nil {
 		return fmt.Errorf("validators at height %v not found: %w", to, err)
 	}
@@ -364,7 +427,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		// params, otherwise they will panic if they're retrieved directly (instead of
 		// indirectly via a LastHeightChanged pointer).
 		if keepVals[h] {
-			v, tmpTime, err := loadValidatorsInfo(store.db, h)
+			v, tmpTime, err := loadValidatorsInfo(store.db, store.DBKeyLayout.CalcValidatorsKey(h))
 			elapsedTime += tmpTime
 			if err != nil || v.ValidatorSet == nil {
 				vip, err := store.LoadValidators(h)
@@ -384,13 +447,13 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 				if err != nil {
 					return err
 				}
-				err = batch.Set(calcValidatorsKey(h), bz)
+				err = batch.Set(store.DBKeyLayout.CalcValidatorsKey(h), bz)
 				if err != nil {
 					return err
 				}
 			}
 		} else if h < evidenceThresholdHeight {
-			err = batch.Delete(calcValidatorsKey(h))
+			err = batch.Delete(store.DBKeyLayout.CalcValidatorsKey(h))
 			if err != nil {
 				return err
 			}
@@ -417,19 +480,19 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 					return err
 				}
 
-				err = batch.Set(calcConsensusParamsKey(h), bz)
+				err = batch.Set(store.DBKeyLayout.CalcConsensusParamsKey(h), bz)
 				if err != nil {
 					return err
 				}
 			}
 		} else {
-			err = batch.Delete(calcConsensusParamsKey(h))
+			err = batch.Delete(store.DBKeyLayout.CalcConsensusParamsKey(h))
 			if err != nil {
 				return err
 			}
 		}
 
-		err = batch.Delete(calcABCIResponsesKey(h))
+		err = batch.Delete(store.DBKeyLayout.CalcABCIResponsesKey(h))
 		if err != nil {
 			return err
 		}
@@ -478,7 +541,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 	batchPruned := int64(0)
 
 	for h := lastRetainHeight; h < targetRetainHeight; h++ {
-		if err := batch.Delete(calcABCIResponsesKey(h)); err != nil {
+		if err := batch.Delete(store.DBKeyLayout.CalcABCIResponsesKey(h)); err != nil {
 			return pruned, lastRetainHeight + pruned, fmt.Errorf("failed to delete ABCI responses at height %d: %w", h, err)
 		}
 		batchPruned++
@@ -520,7 +583,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 	}
 
 	start := time.Now()
-	buf, err := store.db.Get(calcABCIResponsesKey(height))
+	buf, err := store.db.Get(store.DBKeyLayout.CalcABCIResponsesKey(height))
 	if err != nil {
 		return nil, err
 	}
@@ -621,7 +684,7 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Finalize
 			return err
 		}
 		start := time.Now()
-		if err := store.db.Set(calcABCIResponsesKey(height), bz); err != nil {
+		if err := store.db.Set(store.DBKeyLayout.CalcABCIResponsesKey(height), bz); err != nil {
 			return err
 		}
 		addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "save_abci_responses"), start)()
@@ -731,14 +794,14 @@ func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
 func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
-	valInfo, elapsedTime, err := loadValidatorsInfo(store.db, height)
+	valInfo, elapsedTime, err := loadValidatorsInfo(store.db, store.DBKeyLayout.CalcValidatorsKey(height))
 	if err != nil {
 		return nil, ErrNoValSetForHeight{height}
 	}
 	// (WARN) This includes time to unmarshal the validator info
 	if valInfo.ValidatorSet == nil {
 		lastStoredHeight := lastStoredHeightFor(height, valInfo.LastHeightChanged)
-		valInfo2, tmpTime, err := loadValidatorsInfo(store.db, lastStoredHeight)
+		valInfo2, tmpTime, err := loadValidatorsInfo(store.db, store.DBKeyLayout.CalcValidatorsKey(lastStoredHeight))
 		elapsedTime += tmpTime
 		if err != nil || valInfo2.ValidatorSet == nil {
 			return nil,
@@ -778,9 +841,9 @@ func lastStoredHeightFor(height, lastHeightChanged int64) int64 {
 }
 
 // CONTRACT: Returned ValidatorsInfo can be mutated.
-func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, float64, error) {
+func loadValidatorsInfo(db dbm.DB, valInfoKey []byte) (*cmtstate.ValidatorsInfo, float64, error) {
 	start := time.Now()
-	buf, err := db.Get(calcValidatorsKey(height))
+	buf, err := db.Get(valInfoKey)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -830,7 +893,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 		return err
 	}
 	start := time.Now()
-	err = batch.Set(calcValidatorsKey(height), bz)
+	err = batch.Set(store.DBKeyLayout.CalcValidatorsKey(height), bz)
 	if err != nil {
 		return err
 	}
@@ -873,7 +936,7 @@ func (store dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, e
 
 func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusParamsInfo, error) {
 	start := time.Now()
-	buf, err := store.db.Get(calcConsensusParamsKey(height))
+	buf, err := store.db.Get(store.DBKeyLayout.CalcConsensusParamsKey(height))
 	if err != nil {
 		return nil, err
 	}
@@ -912,7 +975,7 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 		return err
 	}
 
-	err = batch.Set(calcConsensusParamsKey(nextHeight), bz)
+	err = batch.Set(store.DBKeyLayout.CalcConsensusParamsKey(nextHeight), bz)
 	if err != nil {
 		return err
 	}

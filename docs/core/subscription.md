@@ -36,9 +36,13 @@ method via Websocket along with a valid query.
 Check out [API docs](https://docs.cometbft.com/v0.38/rpc/) for
 more information on query syntax and other options.
 
-You can also use tags, given you had included them into DeliverTx
+You can also use tags, given you had included them into FinalizeBlock
 response, to query transaction results. See [Indexing
+<<<<<<< HEAD:docs/core/subscription.md
 transactions](../app-dev/indexing-transactions.md) for details.
+=======
+transactions](../../guides/app-dev/indexing-transactions.md#adding-events) for details.
+>>>>>>> a6cc64d07 (docs: Fix references about DeliverTx (#2330)):docs/explanation/core/subscription.md
 
 ## Query parameter and event type restrictions
 

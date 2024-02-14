@@ -74,36 +74,30 @@ type FeatureParams struct {
 
 // VoteExtensionsEnabled returns true if vote extensions are enabled at height h
 // and false otherwise.
-func (a FeatureParams) VoteExtensionsEnabled(h int64) bool {
-	if h < 1 {
-		panic(fmt.Errorf("cannot check if vote extensions enabled for height %d (< 1)", h))
-	}
-	if a.VoteExtensionsEnableHeight == nil {
-		return false
-	}
-
-	if *a.VoteExtensionsEnableHeight <= 0 {
-		return false
-	}
-
-	return *a.VoteExtensionsEnableHeight <= h
+func (p FeatureParams) VoteExtensionsEnabled(h int64) bool {
+	return featureEnabled(p.VoteExtensionsEnableHeight, h, "Vote Extensions")
 }
 
 // PbtsEnabled returns true if PBTS are enabled at height h and false otherwise.
 func (p FeatureParams) PbtsEnabled(h int64) bool {
-	if h < 1 {
-		panic(fmt.Errorf("cannot check if PBTS enabled for height %d (< 1)", h))
+	return featureEnabled(p.PbtsEnableHeight, h, "PBTS")
+}
+
+// featureEnabled returns true if `enabled` points to a height that is smaller than `current“.
+func featureEnabled(enabled *int64, current int64, f string) bool {
+	if current < 1 {
+		panic(fmt.Errorf("cannot check if %s is enabled for height %d (< 1)", f, current))
 	}
 
-	if p.PbtsEnableHeight == nil {
+	if enabled == nil {
 		return false
 	}
 
-	if *p.PbtsEnableHeight <= 0 {
+	if *enabled <= 0 {
 		return false
 	}
 
-	return *p.PbtsEnableHeight <= h
+	return *enabled <= current
 }
 
 // SynchronyParams influence the validity of block timestamps.

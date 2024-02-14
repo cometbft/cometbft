@@ -414,7 +414,10 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 			bA2.SetIndex(i, true)
 		}
 	}
-	*bA = *bA2 //nolint:govet
+	// Instead of *bA = *bA2
+	bA.Bits = bA2.Bits
+	bA.Elems = make([]uint64, len(bA2.Elems))
+	copy(bA.Elems, bA2.Elems)
 	return nil
 }
 

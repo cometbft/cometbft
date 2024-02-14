@@ -31,7 +31,6 @@ issues:
     - path: _test\.go
       linters:
         - gosec
-        - revive
   max-same-issues: 50
 
 linters-settings:

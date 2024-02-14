@@ -9,6 +9,7 @@ import (
 func ConsensusParams() *types.ConsensusParams {
 	c := types.DefaultConsensusParams()
 	// enable vote extensions
-	c.ABCI.VoteExtensionsEnableHeight = 1
+	oneHeight := int64(1)
+	c.Feature.VoteExtensionsEnableHeight = &oneHeight
 	return c
 }

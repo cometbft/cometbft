@@ -43,7 +43,8 @@ func randGenesisDoc() (*types.GenesisDoc, []types.PrivValidator) {
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
 	consPar := types.DefaultConsensusParams()
-	consPar.ABCI.VoteExtensionsEnableHeight = 1
+	oneHeight := int64(1)
+	consPar.Feature.VoteExtensionsEnableHeight = &oneHeight
 	return &types.GenesisDoc{
 		GenesisTime:     cmttime.Now(),
 		ChainID:         test.DefaultTestChainID,

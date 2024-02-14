@@ -26,6 +26,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
+	gogo "github.com/cosmos/gogoproto/types" //nolint:allz
 )
 
 const (
@@ -170,8 +171,8 @@ func (app *Application) updateVoteExtensionEnableHeight(currentHeight int64) *cm
 			"current_height", currentHeight,
 			"enable_height", app.cfg.VoteExtensionsEnableHeight)
 		params = &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: app.cfg.VoteExtensionsEnableHeight,
+			Feature: &cmtproto.FeatureParams{
+				VoteExtensionsEnableHeight: &gogo.Int64Value{Value: app.cfg.VoteExtensionsEnableHeight},
 			},
 		}
 		app.logger.Info("updating VoteExtensionsHeight in app_state", "height", app.cfg.VoteExtensionsEnableHeight)
@@ -197,8 +198,8 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	}
 	app.logger.Info("setting ChainID in app_state", "chainId", req.ChainId)
 	app.state.Set(prefixReservedKey+suffixChainID, req.ChainId)
-	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Abci.VoteExtensionsEnableHeight)
-	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
+	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Feature.VoteExtensionsEnableHeight.Value)
+	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Feature.VoteExtensionsEnableHeight.Value, 10))
 	app.logger.Info("setting initial height in app_state", "initial_height", req.InitialHeight)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
 	// Get validators from genesis

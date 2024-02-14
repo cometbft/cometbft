@@ -41,7 +41,7 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 		enableHeight = height
 	}
 
-	return voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: enableHeight}), nil
+	return voteSet.MakeExtendedCommit(FeatureParams{VoteExtensionsEnableHeight: &enableHeight}), nil
 }
 
 func signAddVote(privVal PrivValidator, vote *Vote, voteSet *VoteSet) (bool, error) {

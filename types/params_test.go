@@ -274,7 +274,7 @@ type makeParamsArgs struct {
 	evidenceAge         int64
 	maxEvidenceBytes    int64
 	pubkeyTypes         []string
-	abciExtensionHeight int64
+	voteExtensionHeight int64
 	pbtsHeight          int64
 	precision           time.Duration
 	messageDelay        time.Duration
@@ -301,11 +301,9 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 			Precision:    args.precision,
 			MessageDelay: args.messageDelay,
 		},
-		ABCI: ABCIParams{
-			VoteExtensionsEnableHeight: args.abciExtensionHeight,
-		},
 		Feature: FeatureParams{
-			PbtsEnableHeight: &args.pbtsHeight,
+			VoteExtensionsEnableHeight: &args.voteExtensionHeight,
+			PbtsEnableHeight:           &args.pbtsHeight,
 		},
 	}
 }
@@ -360,7 +358,17 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			},
 			updatedParams: makeParams(makeParamsArgs{evidenceAge: 3, precision: 2 * time.Second, messageDelay: 4 * time.Second}),
 		},
-		// pbts update
+		// update vote extensions
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
+			updates: &cmtproto.ConsensusParams{
+				Feature: &cmtproto.FeatureParams{
+					VoteExtensionsEnableHeight: &types.Int64Value{Value: 1},
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1}),
+		},
+		// update pbts
 		{
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
@@ -369,6 +377,17 @@ func TestConsensusParamsUpdate(t *testing.T) {
 				},
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pbtsHeight: 1}),
+		},
+		// update pbts and vote extensions
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
+			updates: &cmtproto.ConsensusParams{
+				Feature: &cmtproto.FeatureParams{
+					VoteExtensionsEnableHeight: &types.Int64Value{Value: 1},
+					PbtsEnableHeight:           &types.Int64Value{Value: 1},
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1, pbtsHeight: 1}),
 		},
 		// fine updates
 		{
@@ -412,7 +431,7 @@ func TestConsensusParamsUpdate_AppVersion(t *testing.T) {
 	assert.EqualValues(t, 1, updated.Version.App)
 }
 
-func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
+func TestConsensusParamsUpdate_EnableHeight(t *testing.T) {
 	const nilTest = -10000000
 	testCases := []struct {
 		name        string
@@ -421,63 +440,79 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 		to          int64
 		expectedErr bool
 	}{
-		// no change
-		{"current: 3, 0 -> 0", 3, 0, 0, false},
-		{"current: 3, 100 -> 100, ", 3, 100, 100, false},
-		{"current: 100, 100 -> 100, ", 100, 100, 100, false},
-		{"current: 300, 100 -> 100, ", 300, 100, 100, false},
-		// set for the first time
-		{"current: 3, 0 -> 5, ", 3, 0, 5, false},
-		{"current: 4, 0 -> 5, ", 4, 0, 5, false},
-		{"current: 5, 0 -> 5, ", 5, 0, 5, true},
-		{"current: 6, 0 -> 5, ", 6, 0, 5, true},
-		{"current: 50, 0 -> 5, ", 50, 0, 5, true},
-		// reset to 0
-		{"current: 4, 5 -> 0, ", 4, 5, 0, false},
-		{"current: 5, 5 -> 0, ", 5, 5, 0, true},
-		{"current: 6, 5 -> 0, ", 6, 5, 0, true},
-		{"current: 10, 5 -> 0, ", 10, 5, 0, true},
-		// modify backwards
-		{"current: 1, 10 -> 5, ", 1, 10, 5, false},
-		{"current: 4, 10 -> 5, ", 4, 10, 5, false},
-		{"current: 5, 10 -> 5, ", 5, 10, 5, true},
-		{"current: 6, 10 -> 5, ", 6, 10, 5, true},
-		{"current: 9, 10 -> 5, ", 9, 10, 5, true},
-		{"current: 10, 10 -> 5, ", 10, 10, 5, true},
-		{"current: 11, 10 -> 5, ", 11, 10, 5, true},
-		{"current: 100, 10 -> 5, ", 100, 10, 5, true},
-		// modify forward
-		{"current: 3, 10 -> 15, ", 3, 10, 15, false},
-		{"current: 9, 10 -> 15, ", 9, 10, 15, false},
-		{"current: 10, 10 -> 15, ", 10, 10, 15, true},
-		{"current: 11, 10 -> 15, ", 11, 10, 15, true},
-		{"current: 14, 10 -> 15, ", 14, 10, 15, true},
-		{"current: 15, 10 -> 15, ", 15, 10, 15, true},
-		{"current: 16, 10 -> 15, ", 16, 10, 15, true},
-		{"current: 100, 10 -> 15, ", 100, 10, 15, true},
-		// negative values
-		{"current: 3, 0 -> -5", 3, 0, -5, true},
-		{"current: 3, -5 -> 100, ", 3, -5, 100, false},
-		{"current: 3, -10 -> 3, ", 3, -10, 3, true},
-		{"current: 3, -3 -> -3", 3, -3, -3, true},
-		{"current: 100, -8 -> -9, ", 100, -8, -9, true},
-		{"current: 300, -10 -> -8, ", 300, -10, -8, true},
-		// test for nil
-		{"current: 300, 400 -> nil, ", 300, 400, nilTest, false},
-		{"current: 300, 200 -> nil, ", 300, 200, nilTest, false},
+		{"no change: 3, 0 -> 0", 3, 0, 0, false},
+		{"no change: 3, 100 -> 100, ", 3, 100, 100, false},
+		{"no change: 100, 100 -> 100, ", 100, 100, 100, false},
+		{"no change: 300, 100 -> 100, ", 300, 100, 100, false},
+		{"first time: 4, 0 -> 5, ", 4, 0, 5, false},
+		{"first time: 3, 0 -> 5, ", 3, 0, 5, false},
+		{"first time: 5, 0 -> 5, ", 5, 0, 5, true},
+		{"first time: 6, 0 -> 5, ", 6, 0, 5, true},
+		{"first time: 50, 0 -> 5, ", 50, 0, 5, true},
+		{"reset to 0: 4, 5 -> 0, ", 4, 5, 0, false},
+		{"reset to 0: 5, 5 -> 0, ", 5, 5, 0, true},
+		{"reset to 0: 6, 5 -> 0, ", 6, 5, 0, true},
+		{"reset to 0: 10, 5 -> 0, ", 10, 5, 0, true},
+		{"modify backwards: 1, 10 -> 5, ", 1, 10, 5, false},
+		{"modify backwards: 4, 10 -> 5, ", 4, 10, 5, false},
+		{"modify backwards: 5, 10 -> 5, ", 5, 10, 5, true},
+		{"modify backwards: 6, 10 -> 5, ", 6, 10, 5, true},
+		{"modify backwards: 9, 10 -> 5, ", 9, 10, 5, true},
+		{"modify backwards: 10, 10 -> 5, ", 10, 10, 5, true},
+		{"modify backwards: 11, 10 -> 5, ", 11, 10, 5, true},
+		{"modify backwards: 100, 10 -> 5, ", 100, 10, 5, true},
+		{"modify forward: 3, 10 -> 15, ", 3, 10, 15, false},
+		{"modify forward: 9, 10 -> 15, ", 9, 10, 15, false},
+		{"modify forward: 10, 10 -> 15, ", 10, 10, 15, true},
+		{"modify forward: 11, 10 -> 15, ", 11, 10, 15, true},
+		{"modify forward: 14, 10 -> 15, ", 14, 10, 15, true},
+		{"modify forward: 15, 10 -> 15, ", 15, 10, 15, true},
+		{"modify forward: 16, 10 -> 15, ", 16, 10, 15, true},
+		{"modify forward: 100, 10 -> 15, ", 100, 10, 15, true},
+		{"set to negative value: 3, 0 -> -5", 3, 0, -5, true},
+		{"set to negative value: 3, -5 -> 100, ", 3, -5, 100, false},
+		{"set to negative value: 3, -10 -> 3, ", 3, -10, 3, true},
+		{"set to negative value: 3, -3 -> -3", 3, -3, -3, true},
+		{"set to negative value: 100, -8 -> -9, ", 100, -8, -9, true},
+		{"set to negative value: 300, -10 -> -8, ", 300, -10, -8, true},
+		{"nil: 300, 400 -> nil, ", 300, 400, nilTest, false},
+		{"nil: 300, 200 -> nil, ", 300, 200, nilTest, false},
 	}
 
+	// Test VoteExtensions enabling
 	for _, tc := range testCases {
 		t.Run(tc.name, func(*testing.T) {
 			initialParams := makeParams(makeParamsArgs{
-				abciExtensionHeight: tc.from,
+				voteExtensionHeight: tc.from,
 			})
-			update := &cmtproto.ConsensusParams{}
+			update := &cmtproto.ConsensusParams{Feature: &cmtproto.FeatureParams{}}
 			if tc.to == nilTest {
-				update.Abci = nil
+				update.Feature.VoteExtensionsEnableHeight = nil
 			} else {
-				update.Abci = &cmtproto.ABCIParams{
-					VoteExtensionsEnableHeight: tc.to,
+				update.Feature = &cmtproto.FeatureParams{
+					VoteExtensionsEnableHeight: &types.Int64Value{Value: tc.to},
+				}
+			}
+			if tc.expectedErr {
+				require.Error(t, initialParams.ValidateUpdate(update, tc.current))
+			} else {
+				require.NoError(t, initialParams.ValidateUpdate(update, tc.current))
+			}
+		})
+	}
+
+	// Test PBTS enabling
+	for _, tc := range testCases {
+		t.Run(tc.name, func(*testing.T) {
+			initialParams := makeParams(makeParamsArgs{
+				pbtsHeight: tc.from,
+			})
+			update := &cmtproto.ConsensusParams{Feature: &cmtproto.FeatureParams{}}
+			if tc.to == nilTest {
+				update.Feature.PbtsEnableHeight = nil
+			} else {
+				update.Feature = &cmtproto.FeatureParams{
+					PbtsEnableHeight: &types.Int64Value{Value: tc.to},
 				}
 			}
 			if tc.expectedErr {
@@ -489,66 +524,19 @@ func TestConsensusParamsUpdate_VoteExtensionsEnableHeight(t *testing.T) {
 	}
 }
 
-func TestConsensusParamsUpdate_PBTSEnableHeight(t *testing.T) {
-	t.Run("set to already enabled height to height in future", func(*testing.T) {
-		initialParams := makeParams(makeParamsArgs{
-			pbtsHeight: 1,
-		})
-		update := &cmtproto.ConsensusParams{
-			Feature: &cmtproto.FeatureParams{
-				PbtsEnableHeight: &types.Int64Value{Value: 10},
-			},
-		}
-		require.Error(t, initialParams.ValidateUpdate(update, 3))
-	})
-	t.Run("disable already enabled height", func(*testing.T) {
-		initialParams := makeParams(makeParamsArgs{
-			pbtsHeight: 1,
-		})
-		update := &cmtproto.ConsensusParams{
-			Feature: &cmtproto.FeatureParams{
-				PbtsEnableHeight: &types.Int64Value{Value: 0},
-			},
-		}
-		require.Error(t, initialParams.ValidateUpdate(update, 3))
-	})
-	t.Run("enable disabled pbts at past height", func(*testing.T) {
-		initialParams := makeParams(makeParamsArgs{
-			pbtsHeight: 0,
-		})
-		update := &cmtproto.ConsensusParams{
-			Feature: &cmtproto.FeatureParams{
-				PbtsEnableHeight: &types.Int64Value{Value: 5},
-			},
-		}
-		require.Error(t, initialParams.ValidateUpdate(update, 10))
-	})
-	t.Run("enable disabled pbts", func(*testing.T) {
-		initialParams := makeParams(makeParamsArgs{
-			pbtsHeight: 0,
-		})
-		update := &cmtproto.ConsensusParams{
-			Feature: &cmtproto.FeatureParams{
-				PbtsEnableHeight: &types.Int64Value{Value: 10},
-			},
-		}
-		require.NoError(t, initialParams.ValidateUpdate(update, 3))
-	})
-}
-
 func TestProto(t *testing.T) {
 	params := []ConsensusParams{
-		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 2, blockGas: 5, evidenceAge: 7, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 7, evidenceAge: 6, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 9, blockGas: 5, evidenceAge: 4, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 7, blockGas: 8, evidenceAge: 9, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 6, evidenceAge: 5, maxEvidenceBytes: 1, abciExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 2, blockGas: 5, evidenceAge: 7, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 7, evidenceAge: 6, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 9, blockGas: 5, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 7, blockGas: 8, evidenceAge: 9, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 6, evidenceAge: 5, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
 		makeParams(makeParamsArgs{precision: time.Second, messageDelay: time.Minute}),
 		makeParams(makeParamsArgs{precision: time.Nanosecond, messageDelay: time.Millisecond}),
-		makeParams(makeParamsArgs{abciExtensionHeight: 100}),
+		makeParams(makeParamsArgs{voteExtensionHeight: 100}),
 		makeParams(makeParamsArgs{pbtsHeight: 1}),
 	}
 

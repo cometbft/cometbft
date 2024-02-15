@@ -458,7 +458,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // PruneABCIResponses attempts to prune all ABCI responses up to, but not
 // including, the given height. On success, returns the number of heights
 // pruned and the new retain height.
-func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
+func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (pruned int64, retainHeight int64, err error) {
 	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "prune_abci_responses"), time.Now())()
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
@@ -474,7 +474,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 	batch := store.db.NewBatch()
 	defer batch.Close()
 
-	pruned := int64(0)
+	pruned = int64(0)
 	batchPruned := int64(0)
 
 	for h := lastRetainHeight; h < targetRetainHeight; h++ {
@@ -808,7 +808,7 @@ func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, floa
 // `height` is the effective height for which the validator is responsible for
 // signing. It should be called from s.Save(), right before the state itself is
 // persisted.
-func (dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch dbm.Batch) error {
+func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet *types.ValidatorSet, batch dbm.Batch) error {
 	if lastHeightChanged > height {
 		return errors.New("lastHeightChanged cannot be greater than ValidatorsInfo height")
 	}

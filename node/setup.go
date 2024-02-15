@@ -134,7 +134,7 @@ func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (bsDB dbm.DB, stateD
 		return nil, nil, err
 	}
 
-	return blockStore, stateDB, nil
+	return bsDB, stateDB, nil
 }
 
 func createAndStartProxyAppConns(clientCreator proxy.ClientCreator, logger log.Logger, metrics *proxy.Metrics) (proxy.AppConns, error) {

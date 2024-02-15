@@ -1,7 +1,7 @@
 package privval
 
 import (
-	"fmt"
+	"errors"
 	"net"
 	"time"
 
@@ -152,7 +152,7 @@ func (sl *SignerListenerEndpoint) ensureConnection(maxWait time.Duration) error 
 
 func (sl *SignerListenerEndpoint) acceptNewConnection() (net.Conn, error) {
 	if !sl.IsRunning() || sl.listener == nil {
-		return nil, fmt.Errorf("endpoint is closing")
+		return nil, errors.New("endpoint is closing")
 	}
 
 	// wait for a new conn

@@ -88,6 +88,14 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "block_indexer_base_height",
 			Help:      "BlockIndexerBaseHeight shows the first height at which block indices are available",
 		}, labels).With(labelsAndValues...),
+		StoreAccessDurationSeconds: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "store_access_duration_seconds",
+			Help:      "The duration of accesses to the state store labeled by which method was called on the store.",
+
+			Buckets: stdprometheus.ExponentialBuckets(0.0002, 10, 5),
+		}, append(labels, "method")).With(labelsAndValues...),
 	}
 }
 
@@ -105,5 +113,6 @@ func NopMetrics() *Metrics {
 		ABCIResultsBaseHeight:                  discard.NewGauge(),
 		TxIndexerBaseHeight:                    discard.NewGauge(),
 		BlockIndexerBaseHeight:                 discard.NewGauge(),
+		StoreAccessDurationSeconds:             discard.NewHistogram(),
 	}
 }

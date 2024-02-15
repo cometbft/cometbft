@@ -353,7 +353,7 @@ func (cs *State) OnStart() error {
 			repairAttempted = true
 
 			// 2) backup original WAL file
-			corruptedFile := fmt.Sprintf("%s.CORRUPTED", cs.config.WalFile())
+			corruptedFile := cs.config.WalFile() + ".CORRUPTED"
 			if err := cmtos.CopyFile(cs.config.WalFile(), corruptedFile); err != nil {
 				return err
 			}
@@ -1340,8 +1340,8 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
 	// We did not receive a proposal within this round. (and thus executing this from a timeout)
-	if cs.ProposalBlock == nil {
-		logger.Debug("prevote step: ProposalBlock is nil; prevoting nil")
+	if cs.Proposal == nil || cs.ProposalBlock == nil {
+		logger.Debug("prevote step: Proposal or ProposalBlock is nil; prevoting nil")
 		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
@@ -2054,6 +2054,10 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 	} else {
 		cs.evsw.FireEvent(types.EventProposalBlockPart, msg)
 	}
+
+	count, total := cs.ProposalBlockParts.Count(), cs.ProposalBlockParts.Total()
+	cs.Logger.Debug("receive block part", "height", height, "round", round,
+		"index", part.Index, "count", count, "total", total, "from", peerID)
 
 	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
 	if maxBytes == -1 {

@@ -136,8 +136,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 				case "sync":
 					txres, err = c.BroadcastTxSync(ctx, tx)
 				default:
-					errChan <- fmt.Errorf("unknown broadcastMethod %s", broadcastMethod)
-					return
+					panic("Unknown broadcastMethod " + broadcastMethod)
 				}
 				if err != nil {
 					errChan <- err

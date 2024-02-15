@@ -1589,10 +1589,9 @@ func TestStateLock_POLSafety2(t *testing.T) {
 		name  string
 		state *State
 		vss   []*validatorStub
-		exp   error
 	}{
-		{name: "Without PBTS", state: csT1, vss: vssT1, exp: nil},
-		{name: "With PBTS", state: csT2, vss: vssT2, exp: nil},
+		{name: "With BFT Time", state: csT1, vss: vssT1},
+		{name: "With PBTS", state: csT2, vss: vssT2},
 	}
 
 	for _, tc := range tcs {
@@ -1686,8 +1685,6 @@ func TestStateLock_POLSafety2(t *testing.T) {
 			unsubscribe(tc.state.eventBus, types.EventQueryTimeoutWait)
 			unsubscribe(tc.state.eventBus, types.EventQueryNewRound)
 			unsubscribe(tc.state.eventBus, types.EventQueryVote)
-
-			// tc.state.eventBus.UnsubscribeAll(context.Background(), testSubscriber)
 		})
 	}
 }

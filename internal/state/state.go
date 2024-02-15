@@ -244,7 +244,7 @@ func (state State) MakeBlock(
 	var timestamp time.Time
 	switch {
 	case state.ConsensusParams.Feature.PbtsEnabled(height):
-		timestamp = time.Now()
+		timestamp = cmttime.Now()
 	case height == state.InitialHeight:
 		timestamp = state.LastBlockTime // genesis time
 	default:

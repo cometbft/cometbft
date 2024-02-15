@@ -70,7 +70,7 @@ func testNode(t *testing.T, testFunc func(*testing.T, e2e.Node)) {
 //
 // If maxNodes is set to 0 or below, all full nodes and validators will be
 // tested.
-func testFullNodesOrValidators(t *testing.T, maxNodes int, testFunc func(*testing.T, e2e.Node)) {
+func testFullNodesOrValidators(t *testing.T, maxNodes int, testFunc func(*testing.T, e2e.Node)) { //nolint:unparam // maxNodes could be used in future tests
 	t.Helper()
 
 	testnet := loadTestnet(t)

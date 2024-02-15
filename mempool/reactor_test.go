@@ -355,7 +355,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	}
 
 	// Deliver the same sequence of transactions from multiple sources, in parallel.
-	txs := newUniqueTxs(200)
+	txs := newUniqueTxs(1000)
 	mp := reactors[0].mempool
 	for i := 0; i < 3; i++ {
 		go func() {
@@ -392,12 +392,16 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	}
 
 	// Add a bunch transactions to the first reactor.
-	txs := newUniqueTxs(100)
+	txs := newUniqueTxs(1000)
 	callCheckTx(t, reactors[0].mempool, txs)
 
-	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
-	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	// Explicitly wait for the transactions to be gossiped to the second reactor.
+	time.Sleep(1 * time.Second) // Adjust the sleep time based on expected gossip time.
+
+	// Check that the transactions have been received by the second reactor.
 	checkTxsInMempool(t, txs, reactors[1], 0)
+
+	// Ensure no transactions are in the other reactors yet.
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -406,7 +410,11 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	firstPeer := reactors[0].Switch.Peers().Copy()[0]
 	reactors[0].Switch.StopPeerGracefully(firstPeer)
 
-	// Now the third reactor should start receiving transactions from the first reactor; the fourth
+	// Wait for the disconnection to take effect and prevent any further gossiping.
+	time.Sleep(1 * time.Second) // Adjust the sleep time based on expected disconnection time.
+
+	// Now check the state of the reactors after the disconnection.
+	// The third reactor should start receiving transactions from the first reactor; the fourth
 	// reactor's mempool should still be empty.
 	checkTxsInMempool(t, txs, reactors[2], 0)
 	for _, r := range reactors[3:] {

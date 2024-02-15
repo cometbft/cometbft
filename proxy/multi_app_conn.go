@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"fmt"
+
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/service"

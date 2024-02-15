@@ -41,6 +41,7 @@ linters:
     - predeclared
     - revive
     - scopelint
+    - staticcheck
     - structcheck
     - tagliatelle
     - testifylint

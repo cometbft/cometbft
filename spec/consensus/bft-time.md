@@ -14,7 +14,7 @@ BFT Time is a Byzantine fault-tolerant algorithm for computing [block times](./t
 ## Overview
 
 BFT Time computes the `Time` of a block proposed in height `H` of consensus
-from the timestamps (`Time` field) of the `Precommit` messages broadcast by
+from the `Timestamp` field of the `Precommit` messages broadcast by
 validators in the commit round of the previous height `H-1`.
 
 In order to commit a block, a node needs to receive `Precommit` messages for
@@ -29,14 +29,14 @@ computed from the `LastCommit` field of the block, which is a `Commit` set from
 height `H-1`, using the `MedianTime` method defined as follows:
 
 - `MedianTime`: the median time of a `Commit` is equal to the median of the
-  `Time` fields of the `Precommit` messages in the `Commit`, where the value of
-   each `Time` field is counted a number of times proportional to the voting power
+  `Timestamp` fields of the `Precommit` messages forming the `Commit`, where the value of
+   each `Timestamp` field is counted a number of times proportional to the voting power
    of the validator that produced and signed that `Precommit` message.
 
-In other words, the `MedianTime` is the weighted median of `Time` fields, with
+In other words, the `MedianTime` is the weighted median of `Timestamp` fields, with
 heights defined by validators' voting powers.
 The median of a set of values is one of the values of the set, so that the
-`Time` of a proposed block is one of the `Time` fields of the `Precommit`
+`Time` of a proposed block is one of the `Timestamp` fields of the `Precommit`
 messages included in the `LastCommit` set of that block.
 
 ### Example
@@ -49,7 +49,7 @@ Consider the following example:
 most 23 of voting power (since `N = 3F + 1`, where `N` is the total voting
 power and `F` is the maximum voting power of faulty validators).
 - We have the following `Precommit` messages in some `LastCommit` field (we
-ignore all fields except the `Time` field): (p1, 100), (p2, 98), (p3, 1000), (p4, 500).
+ignore all fields except the `Timestamp` field): (p1, 100), (p2, 98), (p3, 1000), (p4, 500).
 We assume that p3 and p4 are faulty validators.
 - Let's assume that the `block.LastCommit` field contains `Precommit`s of
   validators p2, p3 and p4.
@@ -59,22 +59,22 @@ We assume that p3 and p4 are faulty validators.
 
 Notice that, no matter what set of `Precommit` messages with at least `2/3` of
 the total voting power we choose, the `MedianTime` value will always be a
-value among the `Time` values produced by correct validators.
+value among the `Timestamp` values produced by correct validators.
 
 ## Operation
 
-In order to implement BFT Time, validators need to set the `Time` field of
+In order to implement BFT Time, validators need to set the `Timestamp` field of
 `Precommit` messages they sign and broadcast, and block proposers need to
 compute the block `Time` from the `LastCommit` set.
 
 ### Vote Time
 
-When producing a `Precommit` message, a validator should pick the `Time` field as follows:
+When producing a `Precommit` message, a validator should set the `Timestamp` field as follows:
 
 1. Let `now` be the clock time of the validator.
-2. If `LockedBlock` is defined, set `Time = max(now, LockedBlock.Time + 1ms)`.
-3. Else if `ProposalBlock` is defined, set `Time = max(now, ProposalBlock.Time + 1ms)`.
-4. Otherwise, set `Time = now`.
+2. If `LockedBlock` is defined, set `Timestamp = max(now, LockedBlock.Time + 1ms)`.
+3. Else if `ProposalBlock` is defined, set `Timestamp = max(now, ProposalBlock.Time + 1ms)`.
+4. Otherwise, set `Timestamp = now`.
 
 The rationale is that, for ensuring [Time Monotonicity](./time.md#properties),
 the `Time` of the next block should be higher than the time of the current block.
@@ -82,8 +82,8 @@ The `LockedBlock`, if set, is the block for which the validator is issuing a `Pr
 The `ProposalBlock` is the block proposed in that round; in favorable runs, it
 matches the `LockedBlock`.
 
-The validator in some way _proposes_ the `Time` for the next block when setting
-the `Time` field of its `Precommit`.
+The validator in practice _proposes_ the `Time` for the next block when setting
+the `Timestamp` of its `Precommit`.
 The proposed `Time` is, by default, the validator's current clock time.
 The validator, however, cannot propose a `Time` which its smaller than the
 `Time` of the block to be committed in the current height.
@@ -96,20 +96,20 @@ The proposer of a round of consensus produces a block to be proposed.
 The proposed block must include a `Commit` set from the commit round of the
 previous height, as the block's `LastCommit` field.
 
-The `Time` for the proposed block is then set as `block.Time = MedianTime(block.LastCommit)`.
+The `Time` for the proposed block is then set as `Block.Time = MedianTime(block.LastCommit)`.
 
 Since the block `Time` is produced in a deterministic way, every node that
-receives the proposed block, can validate `block.Time` using the same
+receives the proposed block, can validate `Block.Time` using the same
 procedure.  Block with wrongly computed block times are rejected.
 
 ## Properties
 
 BFT Time guarantees the two main [properties](./time.md#properties) for block times:
 
-- **Time Monotonicity**: the [production](#vote-time) of `Time` fields for
+- **Time Monotonicity**: the [production](#vote-time) of `Timestamp` fields for
   `Precommit` messages at correct validators ensures that the `Time` proposed
-   for the next block is bigger than the time of the current block.
-   Since the `Time` of a block is always retrieved from a `Precommit`
+   for the next block is higher than the `Time` of the current block.
+   Since the `Time` of a block is retrieved from a `Precommit`
    produced by a correct validator, monotonicity is guaranteed.
 
 - **Byzantine Fault Tolerance**: given a `Commit` set that forms the

@@ -2443,7 +2443,7 @@ func (cs *State) signVote(
 
 	recoverable, err := types.SignAndCheckVote(vote, cs.privValidator, cs.state.ChainID, extEnabled && (msgType == types.PrecommitType))
 	if err != nil && !recoverable {
-		panic(fmt.Sprintf("non-recoverable error when signing vote (%d/%d)", vote.Height, vote.Round))
+		panic(fmt.Sprintf("non-recoverable error when signing vote (%d/%d): %v", vote.Height, vote.Round, err))
 	}
 
 	return vote, err

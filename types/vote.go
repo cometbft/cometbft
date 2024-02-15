@@ -401,6 +401,7 @@ func VotesToProto(votes []*Vote) []*cmtproto.Vote {
 	return res
 }
 
+// CONTRACT: if extensionsEnabled is true, then vote's type must be PrecommitType.
 func SignAndCheckVote(
 	vote *Vote,
 	privVal PrivValidator,
@@ -414,14 +415,11 @@ func SignAndCheckVote(
 	}
 	vote.Signature = v.Signature
 
-	isPrecommit := vote.Type == PrecommitType
-	if !isPrecommit && extensionsEnabled {
-		// Non-recoverable because the caller passed parameters that don't make sense
-		return false, fmt.Errorf("only Precommit votes may have extensions enabled; vote type: %d", vote.Type)
-	}
-
-	isNil := vote.BlockID.IsNil()
-	extSignature := (len(v.ExtensionSignature) > 0)
+	var (
+		extSignature = (len(v.ExtensionSignature) > 0)
+		isPrecommit  = (vote.Type == PrecommitType)
+		isNil        = vote.BlockID.IsNil()
+	)
 	if extSignature == (!isPrecommit || isNil) {
 		// Non-recoverable because the vote is malformed
 		return false, fmt.Errorf(

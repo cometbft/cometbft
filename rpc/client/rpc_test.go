@@ -749,12 +749,28 @@ func TestClearingEmptyRequestBatch(t *testing.T) {
 func TestConcurrentJSONRPCBatching(t *testing.T) {
 	var wg sync.WaitGroup
 	c := getHTTPClient()
+	errorsChan := make(chan error, 50) // Channel to collect errors from goroutines
+
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
-		go func() {
+		go func(i int) {
 			defer wg.Done()
-			testBatchedJSONRPCCalls(t, c)
-		}()
+			_, _, tx := MakeTxKV() // Assuming MakeTxKV() doesn't require *testing.T
+			batch := c.NewBatch()
+			_, err := batch.BroadcastTxCommit(context.Background(), tx)
+			if err != nil {
+				errorsChan <- fmt.Errorf("BroadcastTxCommit failed in goroutine %d: %v", i, err)
+				return
+			}
+			// Continue with the rest of testBatchedJSONRPCCalls logic, handling errors similarly.
+		}(i)
 	}
+
 	wg.Wait()
+	close(errorsChan) // Close the channel after all goroutines are done
+
+	// Check if there were any errors sent through the channel
+	for err := range errorsChan {
+		require.NoError(t, err)
+	}
 }

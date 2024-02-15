@@ -95,8 +95,8 @@ func TestConcurrentRead(t *testing.T) {
 	// https://golang.org/pkg/net/#Conn
 	wg := new(sync.WaitGroup)
 	wg.Add(3)
-	go readLots(t, wg, fooSecConn, n/2)
-	go readLots(t, wg, fooSecConn, n/2)
+	go readLots(t, wg, fooSecConn, n/2) //nolint:testifylint // this test has proven troublesome to refactor to use channels
+	go readLots(t, wg, fooSecConn, n/2) //nolint:testifylint // this test has proven troublesome to refactor to use channels
 
 	// write to bar
 	writeLots(t, wg, barSecConn, fooWriteText, n)

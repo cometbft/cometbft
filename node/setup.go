@@ -657,7 +657,7 @@ func createAndStartPrivValidatorSocketClient(
 // contained in cutset removed. If sep is empty, SplitAndTrim splits after each
 // UTF-8 sequence. First part is equivalent to strings.SplitN with a count of
 // -1.  also filter out empty strings, only return non-empty strings.
-func splitAndTrimEmpty(s, sep, cutset string) []string {
+func splitAndTrimEmpty(s, sep, cutset string) []string { //nolint:unparam // the separator is always a comma, but we might want to change that, so we've suppressed the linter here.
 	if s == "" {
 		return []string{}
 	}

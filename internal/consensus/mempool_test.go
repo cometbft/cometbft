@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -41,7 +42,8 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 
 	ensureNewEventOnChannel(newBlockCh) // first block gets committed
 	ensureNoNewEventOnChannel(newBlockCh)
-	deliverTxsRange(t, cs, 1)
+	err = deliverTxsRange(t, cs, 1)
+	require.NoError(t, err)
 	ensureNewEventOnChannel(newBlockCh) // commit txs
 	ensureNewEventOnChannel(newBlockCh) // commit updated app hash
 	ensureNoNewEventOnChannel(newBlockCh)
@@ -104,7 +106,8 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	round = 0
 
 	ensureNewRound(newRoundCh, height, round) // first round at next height
-	deliverTxsRange(t, cs, 1)                 // we deliver txs, but dont set a proposal so we get the next round
+	err := deliverTxsRange(t, cs, 1)          // we deliver txs, but dont set a proposal so we get the next round
+	require.NoError(t, err)
 	ensureNewTimeout(timeoutCh, height, round, cs.config.TimeoutPropose.Nanoseconds())
 
 	round++                                   // moving to the next round
@@ -112,15 +115,20 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	ensureNewEventOnChannel(newBlockCh)       // now we can commit the block
 }
 
-func deliverTxsRange(t *testing.T, cs *State, end int) {
+func deliverTxsRange(t *testing.T, cs *State, end int) error {
 	t.Helper()
 	start := 0
 	// Deliver some txs.
 	for i := start; i < end; i++ {
 		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(i), "true"))
-		require.NoError(t, err)
-		require.False(t, reqRes.Response.GetCheckTx().IsErr())
+		if err != nil {
+			return fmt.Errorf("CheckTx failed: %w", err)
+		}
+		if reqRes.Response.GetCheckTx().IsErr() {
+			return fmt.Errorf("Tx check failed: %v", reqRes.Response)
+		}
 	}
+	return nil
 }
 
 func TestMempoolTxConcurrentWithCommit(t *testing.T) {
@@ -133,7 +141,13 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)
 
 	const numTxs int64 = 3000
-	go deliverTxsRange(t, cs, int(numTxs))
+	errCh := make(chan error, 1) // Create a channel to receive errors from goroutines
+	go func() {
+		if err := deliverTxsRange(t, cs, int(numTxs)); err != nil {
+			errCh <- err // Send any errors back to the main goroutine
+		}
+		close(errCh) // Close the channel to signal completion
+	}()
 
 	startTestRound(cs, cs.Height, cs.Round)
 	for n := int64(0); n < numTxs; {
@@ -141,10 +155,14 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 		case msg := <-newBlockEventsCh:
 			event := msg.Data().(types.EventDataNewBlockEvents)
 			n += event.NumTxs
-			t.Log("new transactions", "nTxs", event.NumTxs, "total", n)
+			require.LessOrEqual(t, n, numTxs, "Number of transactions exceeded the expected count")
 		case <-time.After(30 * time.Second):
-			t.Fatal("Timed out waiting 30s to commit blocks with transactions")
+			require.Fail(t, "Timed out waiting 30s to commit blocks with transactions")
 		}
+	}
+	// Check for errors from goroutines
+	for err := range errCh {
+		require.NoError(t, err)
 	}
 }
 

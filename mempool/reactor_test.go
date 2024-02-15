@@ -123,7 +123,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 // Send a bunch of txs to the first reactor's mempool, claiming it came from peer
 // ensure peer gets no txs.
-func TestReactorNoBroadcastToSender(t *testing.T) {
+func TestReactorNoBroadcastToSender(t *testing.T) { //nolint:testifylint // resistant to refactoring to accomodate proper use of channels.
 	config := cfg.TestConfig()
 	const N = 2
 	reactors, _ := makeAndConnectReactors(config, N)

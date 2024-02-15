@@ -2,6 +2,7 @@ package abcicli_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -25,21 +26,30 @@ func TestCalls(t *testing.T) {
 
 	_, c := setupClientServer(t, app)
 
+	var wg sync.WaitGroup
+	wg.Add(1) // Indicate we have one goroutine to wait for
+
 	resp := make(chan error, 1)
 	go func() {
+		defer wg.Done() // Ensure we signal the waitgroup to decrement its counter once the goroutine completes
 		res, err := c.Echo(ctx, "hello")
-		require.NoError(t, err)
-		require.NotNil(t, res)
+		if err != nil {
+			resp <- err
+			return
+		}
+		if res == nil {
+			resp <- errors.New("response is nil")
+			return
+		}
 		resp <- c.Error()
 	}()
 
-	select {
-	case <-time.After(time.Second):
-		require.Fail(t, "No response arrived")
-	case err, ok := <-resp:
-		require.True(t, ok, "Must not close channel")
-		require.NoError(t, err)
-	}
+	wg.Wait()   // Wait for the goroutine to finish
+	close(resp) // Close the channel to signal no more values will be sent
+
+	err, ok := <-resp
+	require.True(t, ok, "Channel should not be closed")
+	require.NoError(t, err)
 }
 
 func TestHangingAsyncCalls(t *testing.T) {
@@ -47,30 +57,44 @@ func TestHangingAsyncCalls(t *testing.T) {
 
 	s, c := setupClientServer(t, app)
 
+	var wg sync.WaitGroup
+	wg.Add(1) // Indicate we have one goroutine to wait for
+
 	resp := make(chan error, 1)
 	go func() {
+		defer wg.Done() // Ensure we signal the waitgroup to decrement its counter once the goroutine completes
+
 		// Call CheckTx
 		reqres, err := c.CheckTxAsync(context.Background(), &types.CheckTxRequest{
 			Type: types.CHECK_TX_TYPE_CHECK,
 		})
-		require.NoError(t, err)
+		if err != nil {
+			resp <- err
+			return
+		}
 		// wait 50 ms for all events to travel socket, but
 		// no response yet from server
 		time.Sleep(50 * time.Millisecond)
 		// kill the server, so the connections break
 		err = s.Stop()
-		require.NoError(t, err)
+		if err != nil {
+			resp <- err
+			return
+		}
 
 		// wait for the response from CheckTx
 		reqres.Wait()
 		resp <- c.Error()
 	}()
 
+	wg.Wait()   // Wait for the goroutine to finish
+	close(resp) // Close the channel to signal no more values will be sent
+
 	select {
 	case <-time.After(time.Second):
-		require.Fail(t, "No response arrived")
+		t.Error("No response arrived")
 	case err, ok := <-resp:
-		require.True(t, ok, "Must not close channel")
+		require.True(t, ok, "Channel must not be closed")
 		require.Error(t, err, "We should get EOF error")
 	}
 }

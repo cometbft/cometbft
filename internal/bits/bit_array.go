@@ -414,8 +414,7 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 			bA2.SetIndex(i, true)
 		}
 	}
-
-	// Instead of *bA = *bA2
+	// Instead of *bA = *bA2, copy fields individually
 	bA.Bits = bA2.Bits
 	bA.Elems = make([]uint64, len(bA2.Elems))
 	copy(bA.Elems, bA2.Elems)

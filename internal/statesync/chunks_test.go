@@ -332,72 +332,79 @@ func TestChunkQueue_GetSender(t *testing.T) {
 	assert.EqualValues(t, "a", queue.GetSender(0))
 }
 
+// TestChunkQueue_Next tests the behavior of the Next method in the ChunkQueue.
+// It ensures that chunks are returned in the correct order, even if they are added out of order,
+// and verifies that the method blocks appropriately when waiting for the next chunks.
 func TestChunkQueue_Next(t *testing.T) {
 	queue, teardown := setupChunkQueue(t)
 	defer teardown()
 
-	// Next should block waiting for the next chunks, even when given out of order.
+	// Channel to receive chunks from the queue.
 	chNext := make(chan *chunk, 10)
+	// Channel to collect errors from goroutines.
+	errs := make(chan error, 10)
+
+	// Start a goroutine to fetch chunks from the queue.
 	go func() {
 		for {
 			c, err := queue.Next()
 			if err == errDone {
-				close(chNext)
-				break
+				close(chNext) // Close the channel to signal completion.
+				return
 			}
-			require.NoError(t, err)
-			chNext <- c
+			if err != nil {
+				errs <- err // Send any errors back to the main goroutine.
+				return
+			}
+			chNext <- c // Send the chunk to the main goroutine.
 		}
 	}()
 
+	// Verify the channel is initially empty.
 	assert.Empty(t, chNext)
+
+	// Add chunks to the queue in a non-sequential order.
 	_, err := queue.Add(&chunk{Height: 3, Format: 1, Index: 1, Chunk: []byte{3, 1, 1}, Sender: p2p.ID("b")})
 	require.NoError(t, err)
+	// Ensure the channel remains empty until the first chunk is added.
 	select {
 	case <-chNext:
 		assert.Fail(t, "channel should be empty")
 	default:
 	}
 
+	// Add the first chunk and verify it's immediately available.
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 0, Chunk: []byte{3, 1, 0}, Sender: p2p.ID("a")})
 	require.NoError(t, err)
+	assert.Equal(t, &chunk{Height: 3, Format: 1, Index: 0, Chunk: []byte{3, 1, 0}, Sender: p2p.ID("a")}, <-chNext)
+	assert.Equal(t, &chunk{Height: 3, Format: 1, Index: 1, Chunk: []byte{3, 1, 1}, Sender: p2p.ID("b")}, <-chNext)
 
-	assert.Equal(t,
-		&chunk{Height: 3, Format: 1, Index: 0, Chunk: []byte{3, 1, 0}, Sender: p2p.ID("a")},
-		<-chNext)
-	assert.Equal(t,
-		&chunk{Height: 3, Format: 1, Index: 1, Chunk: []byte{3, 1, 1}, Sender: p2p.ID("b")},
-		<-chNext)
-
+	// Continue adding chunks and verify they are returned in the correct order.
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 4, Chunk: []byte{3, 1, 4}, Sender: p2p.ID("e")})
 	require.NoError(t, err)
-	select {
-	case <-chNext:
-		assert.Fail(t, "channel should be empty")
-	default:
-	}
-
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 2, Chunk: []byte{3, 1, 2}, Sender: p2p.ID("c")})
 	require.NoError(t, err)
 	_, err = queue.Add(&chunk{Height: 3, Format: 1, Index: 3, Chunk: []byte{3, 1, 3}, Sender: p2p.ID("d")})
 	require.NoError(t, err)
 
-	assert.Equal(t,
-		&chunk{Height: 3, Format: 1, Index: 2, Chunk: []byte{3, 1, 2}, Sender: p2p.ID("c")},
-		<-chNext)
-	assert.Equal(t,
-		&chunk{Height: 3, Format: 1, Index: 3, Chunk: []byte{3, 1, 3}, Sender: p2p.ID("d")},
-		<-chNext)
-	assert.Equal(t,
-		&chunk{Height: 3, Format: 1, Index: 4, Chunk: []byte{3, 1, 4}, Sender: p2p.ID("e")},
-		<-chNext)
+	// Verify the remaining chunks are received in order.
+	assert.Equal(t, &chunk{Height: 3, Format: 1, Index: 2, Chunk: []byte{3, 1, 2}, Sender: p2p.ID("c")}, <-chNext)
+	assert.Equal(t, &chunk{Height: 3, Format: 1, Index: 3, Chunk: []byte{3, 1, 3}, Sender: p2p.ID("d")}, <-chNext)
+	assert.Equal(t, &chunk{Height: 3, Format: 1, Index: 4, Chunk: []byte{3, 1, 4}, Sender: p2p.ID("e")}, <-chNext)
 
+	// Ensure the channel is closed after all chunks are processed.
 	_, ok := <-chNext
 	assert.False(t, ok, "channel should be closed")
 
-	// Calling next on a finished queue should return done
+	// Check for errors from the goroutine.
+	close(errs)
+	for e := range errs {
+		require.NoError(t, e, "No error should occur while processing chunks")
+	}
+
+	// Verify that calling Next on a finished queue returns the expected done error.
 	_, err = queue.Next()
-	assert.Equal(t, errDone, err)
+	assert.Equal(t, errDone, err, "Calling Next on a finished queue should return errDone")
 }
 
 func TestChunkQueue_Next_Closed(t *testing.T) {

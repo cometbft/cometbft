@@ -233,7 +233,7 @@ func TestMempoolUpdate(t *testing.T) {
 		err := mp.Update(1, []types.Tx{tx1}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 		require.NoError(t, err)
 		_, err = mp.CheckTx(tx1)
-		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
 	}
@@ -343,13 +343,13 @@ func TestMempool_KeepInvalidTxsInCache(t *testing.T) {
 
 		// a must be added to the cache
 		_, err = mp.CheckTx(a)
-		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
 
 		// b must remain in the cache
 		_, err = mp.CheckTx(b)
-		if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+		if assert.Error(t, err) {
 			assert.Equal(t, ErrTxInCache, err)
 		}
 	}
@@ -606,7 +606,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 
 	tx4 := kvstore.NewRandomTx(10)
 	_, err = mp.CheckTx(tx4)
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+	if assert.Error(t, err) {
 		assert.IsType(t, ErrMempoolIsFull{}, err)
 	}
 

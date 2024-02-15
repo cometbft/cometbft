@@ -163,97 +163,132 @@ func TestMConnectionStatus(t *testing.T) {
 	assert.Zero(t, status.Channels[0].SendQueueSize)
 }
 
+// TestMConnectionPongTimeoutResultsInError verifies that an error is reported
+// when a pong message is not received within the expected timeout period.
+// This test simulates a scenario where a pong message is expected but not sent,
+// leading to a timeout error.
 func TestMConnectionPongTimeoutResultsInError(t *testing.T) {
+	// Setup a server and client connection using net.Pipe for controlled communication.
 	server, client := net.Pipe()
 	defer server.Close()
 	defer client.Close()
 
+	// Channels to capture received messages and errors.
 	receivedCh := make(chan []byte)
 	errorsCh := make(chan interface{})
+
+	// Callbacks for handling received messages and errors.
 	onReceive := func(chID byte, msgBytes []byte) {
 		receivedCh <- msgBytes
 	}
 	onError := func(r interface{}) {
 		errorsCh <- r
 	}
+
+	// Create and start the MConnection with the provided callbacks.
 	mconn := createMConnectionWithCallbacks(client, onReceive, onError)
 	err := mconn.Start()
-	require.NoError(t, err)
-	defer mconn.Stop() //nolint:errcheck // ignore for tests
+	require.NoError(t, err, "Starting MConnection should not produce an error.")
+	defer mconn.Stop() //nolint:errcheck // Ignoring error on stop for cleanup in test context.
 
+	// Channel to signal when a ping message is received by the server.
 	serverGotPing := make(chan struct{})
 	go func() {
-		// read ping
+		// Attempt to read a ping message.
 		var pkt tmp2p.Packet
 		_, err := protoio.NewDelimitedReader(server, maxPingPongPacketSize).ReadMsg(&pkt)
-		require.NoError(t, err)
+		if err != nil {
+			t.Error("Reading ping message should not produce an error:", err)
+			return
+		}
 		serverGotPing <- struct{}{}
 	}()
-	<-serverGotPing
+	<-serverGotPing // Wait for the ping message to be received.
 
+	// Calculate the expected timeout duration for receiving a pong message.
 	pongTimerExpired := mconn.config.PongTimeout + 200*time.Millisecond
+
+	// Wait for a message, an error, or the timeout period to expire.
 	select {
 	case msgBytes := <-receivedCh:
-		t.Fatalf("Expected error, but got %v", msgBytes)
+		t.Fatalf("Expected error due to pong timeout, but received message: %v", msgBytes)
 	case err := <-errorsCh:
-		assert.NotNil(t, err)
+		if err == nil {
+			t.Fatal("Expected an error due to pong timeout, but error was nil.")
+		}
 	case <-time.After(pongTimerExpired):
-		t.Fatalf("Expected to receive error after %v", pongTimerExpired)
+		t.Fatalf("Expected to receive an error after %v due to pong timeout.", pongTimerExpired)
 	}
 }
 
+// TestMConnectionMultiplePongsInTheBeginning tests the MConnection's behavior when multiple
+// pong messages are received unexpectedly at the start of the connection. This simulates
+// an abuse scenario where the remote end sends pong messages without corresponding ping requests.
+// TestMConnectionMultiplePongsInTheBeginning verifies the MConnection's resilience to protocol abuse,
+// specifically by handling multiple unsolicited pong messages at the start of the connection.
+// It ensures that the connection remains active and does not error out or close unexpectedly.
 func TestMConnectionMultiplePongsInTheBeginning(t *testing.T) {
+	// Establish a server-client connection using net.Pipe for controlled communication.
 	server, client := net.Pipe()
 	defer server.Close()
 	defer client.Close()
 
+	// Channels to capture received messages and errors.
 	receivedCh := make(chan []byte)
 	errorsCh := make(chan interface{})
+
+	// Callbacks for handling received messages and errors.
 	onReceive := func(chID byte, msgBytes []byte) {
 		receivedCh <- msgBytes
 	}
 	onError := func(r interface{}) {
 		errorsCh <- r
 	}
+
+	// Create and start the MConnection with the provided callbacks.
 	mconn := createMConnectionWithCallbacks(client, onReceive, onError)
 	err := mconn.Start()
-	require.NoError(t, err)
-	defer mconn.Stop() //nolint:errcheck // ignore for tests
+	require.NoError(t, err, "Starting MConnection should not produce an error.")
+	defer mconn.Stop() //nolint:errcheck // Ignoring error on stop for cleanup in test context.
 
-	// sending 3 pongs in a row (abuse)
+	// Simulate sending 3 pong messages in a row to abuse the protocol.
 	protoWriter := protoio.NewDelimitedWriter(server)
+	for i := 0; i < 3; i++ {
+		if _, err := protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{})); err != nil {
+			t.Fatalf("Sending pong message should not produce an error: %v", err)
+		}
+	}
 
-	_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-	require.NoError(t, err)
-
-	_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-	require.NoError(t, err)
-
-	_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-	require.NoError(t, err)
-
+	// Channel to signal when a ping message is received by the server.
 	serverGotPing := make(chan struct{})
 	go func() {
-		// read ping (one byte)
+		// Attempt to read a ping message.
 		var packet tmp2p.Packet
-		_, err := protoio.NewDelimitedReader(server, maxPingPongPacketSize).ReadMsg(&packet)
-		require.NoError(t, err)
+		if _, err := protoio.NewDelimitedReader(server, maxPingPongPacketSize).ReadMsg(&packet); err != nil {
+			t.Errorf("Reading ping message should not produce an error: %v", err)
+			return
+		}
 		serverGotPing <- struct{}{}
 
-		// respond with pong
-		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err)
+		// Respond with a pong message.
+		if _, err := protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{})); err != nil {
+			t.Errorf("Sending pong message should not produce an error: %v", err)
+		}
 	}()
-	<-serverGotPing
+	<-serverGotPing // Wait for the ping message to be received.
 
+	// Calculate the expected timeout duration for receiving a pong message.
 	pongTimerExpired := mconn.config.PongTimeout + 20*time.Millisecond
+
+	// Wait for a message, an error, or the timeout period to expire.
 	select {
 	case msgBytes := <-receivedCh:
 		t.Fatalf("Expected no data, but got %v", msgBytes)
 	case err := <-errorsCh:
 		t.Fatalf("Expected no error, but got %v", err)
 	case <-time.After(pongTimerExpired):
-		assert.True(t, mconn.IsRunning())
+		// Verify that the connection is still running despite the abuse.
+		assert.True(t, mconn.IsRunning(), "MConnection should still be running.")
 	}
 }
 
@@ -302,15 +337,19 @@ func TestMConnectionMultiplePings(t *testing.T) {
 	assert.True(t, mconn.IsRunning())
 }
 
+// TestMConnectionPingPongs verifies the ping-pong mechanism of the MConnection.
+// It ensures that ping messages are correctly responded to with pong messages and
+// checks for goroutine leaks.
 func TestMConnectionPingPongs(t *testing.T) {
-	// check that we are not leaking any go-routines
+	// Setup leak test to ensure no goroutines are leaked.
 	defer leaktest.CheckTimeout(t, 10*time.Second)()
 
+	// Establish a server-client connection using net.Pipe for controlled communication.
 	server, client := net.Pipe()
-
 	defer server.Close()
 	defer client.Close()
 
+	// Channels to capture received messages and errors.
 	receivedCh := make(chan []byte)
 	errorsCh := make(chan interface{})
 	onReceive := func(chID byte, msgBytes []byte) {
@@ -319,48 +358,51 @@ func TestMConnectionPingPongs(t *testing.T) {
 	onError := func(r interface{}) {
 		errorsCh <- r
 	}
+
+	// Create and start the MConnection with the provided callbacks.
 	mconn := createMConnectionWithCallbacks(client, onReceive, onError)
 	err := mconn.Start()
 	require.NoError(t, err)
-	defer mconn.Stop() //nolint:errcheck // ignore for tests
+	defer mconn.Stop() //nolint:errcheck // Ignore error on stop for cleanup in test context.
 
-	serverGotPing := make(chan struct{})
+	// Channel to signal when a ping message is received by the server.
+	serverGotPing := make(chan struct{}, 2) // Buffer to avoid blocking the goroutine.
 	go func() {
 		protoReader := protoio.NewDelimitedReader(server, maxPingPongPacketSize)
 		protoWriter := protoio.NewDelimitedWriter(server)
 		var pkt tmp2p.PacketPing
 
-		// read ping
-		_, err = protoReader.ReadMsg(&pkt)
-		require.NoError(t, err)
-		serverGotPing <- struct{}{}
+		for i := 0; i < 2; i++ {
+			// Attempt to read a ping message.
+			if _, err := protoReader.ReadMsg(&pkt); err != nil {
+				t.Errorf("Reading ping message should not produce an error: %v", err)
+				return
+			}
+			serverGotPing <- struct{}{}
 
-		// respond with pong
-		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err)
-
-		time.Sleep(mconn.config.PingInterval)
-
-		// read ping
-		_, err = protoReader.ReadMsg(&pkt)
-		require.NoError(t, err)
-		serverGotPing <- struct{}{}
-
-		// respond with pong
-		_, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
-		require.NoError(t, err)
+			// Respond with a pong message.
+			if _, err := protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{})); err != nil {
+				t.Errorf("Sending pong message should not produce an error: %v", err)
+				return
+			}
+		}
 	}()
+	// Wait for two ping messages to be received and responded to.
 	<-serverGotPing
 	<-serverGotPing
 
+	// Calculate the expected timeout duration for receiving a pong message.
 	pongTimerExpired := (mconn.config.PongTimeout + 20*time.Millisecond) * 2
+
+	// Wait for a message, an error, or the timeout period to expire.
 	select {
 	case msgBytes := <-receivedCh:
 		t.Fatalf("Expected no data, but got %v", msgBytes)
 	case err := <-errorsCh:
 		t.Fatalf("Expected no error, but got %v", err)
 	case <-time.After(2 * pongTimerExpired):
-		assert.True(t, mconn.IsRunning())
+		// Verify that the connection is still running.
+		assert.True(t, mconn.IsRunning(), "MConnection should still be running.")
 	}
 }
 

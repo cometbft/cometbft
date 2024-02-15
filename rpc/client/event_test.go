@@ -2,11 +2,11 @@ package client_test
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -109,16 +109,19 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 			if !c.IsRunning() {
 				// if so, then we start it, listen, and stop it.
 				err := c.Start()
-				require.NoError(t, err)
+				require.NoError(t, err) // This will stop the test if err is not nil.
 				t.Cleanup(func() {
 					if err := c.Stop(); err != nil {
-						t.Error(err)
+						t.Error(err) // Note: t.Error is used here because t.Cleanup does not support failing with require.
 					}
 				})
 			}
 
 			// make the tx
 			_, _, tx := MakeTxKV()
+
+			// Use a channel to capture errors from the goroutine.
+			errChan := make(chan error, 1)
 
 			// send
 			go func() {
@@ -135,10 +138,19 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 				default:
 					panic("Unknown broadcastMethod " + broadcastMethod)
 				}
-				if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
-					require.Equal(t, abci.CodeTypeOK, txres.Code)
+				if err != nil {
+					errChan <- err
+					return
 				}
+				if txres.Code != abci.CodeTypeOK {
+					errChan <- fmt.Errorf("unexpected code: want %v, got %v", abci.CodeTypeOK, txres.Code)
+					return
+				}
+				errChan <- nil
 			}()
+
+			// Check for errors from the goroutine.
+			require.NoError(t, <-errChan)
 
 			// and wait for confirmation
 			evt, err := client.WaitForOneEvent(c, types.EventTx, waitForEventTimeout)

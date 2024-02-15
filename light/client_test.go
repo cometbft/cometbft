@@ -2,6 +2,7 @@ package light_test
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -732,29 +733,44 @@ func TestClient_Concurrency(t *testing.T) {
 	require.NoError(t, err)
 
 	var wg sync.WaitGroup
+	errChan := make(chan error, 100) // Buffered channel to collect errors
+
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			// NOTE: Cleanup, Stop, VerifyLightBlockAtHeight and Verify are not supposed
-			// to be concurrenly safe.
+			// Perform operations and send any errors to errChan
+			if chainID != c.ChainID() {
+				errChan <- errors.New("expected chainID to be equal")
+				return
+			}
 
-			assert.Equal(t, chainID, c.ChainID())
+			if _, err := c.LastTrustedHeight(); err != nil {
+				errChan <- err
+				return
+			}
 
-			_, err := c.LastTrustedHeight()
-			require.NoError(t, err)
+			if _, err := c.FirstTrustedHeight(); err != nil {
+				errChan <- err
+				return
+			}
 
-			_, err = c.FirstTrustedHeight()
-			require.NoError(t, err)
-
-			l, err := c.TrustedLightBlock(1)
-			require.NoError(t, err)
-			assert.NotNil(t, l)
+			if l, err := c.TrustedLightBlock(1); err != nil {
+				errChan <- err
+			} else if l == nil {
+				errChan <- errors.New("expected non-nil light block")
+			}
 		}()
 	}
 
 	wg.Wait()
+	close(errChan) // Close the channel to signal no more errors will be sent
+
+	// Check for errors sent to errChan
+	for err := range errChan {
+		require.NoError(t, err)
+	}
 }
 
 func TestClientReplacesPrimaryWithWitnessIfPrimaryIsUnavailable(t *testing.T) {
@@ -905,7 +921,8 @@ func TestClient_NewClientFromTrustedStore(t *testing.T) {
 }
 
 func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
-	// different headers hash then primary plus less than 1/3 signed (no fork)
+	// Setup: Create two mock providers, one with incorrect header information and another with an empty header.
+	// This simulates witnesses that might provide incorrect or incomplete data.
 	badProvider1 := mockp.New(
 		chainID,
 		map[int64]*types.SignedHeader{
@@ -919,7 +936,6 @@ func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 			2: vals,
 		},
 	)
-	// header is empty
 	badProvider2 := mockp.New(
 		chainID,
 		map[int64]*types.SignedHeader{
@@ -932,9 +948,12 @@ func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 		},
 	)
 
-	lb1, _ := badProvider1.LightBlock(ctx, 2)
-	require.NotEqual(t, lb1.Hash(), l1.Hash())
+	// Verify that the hash from badProvider1 does not match the expected hash, indicating incorrect header information.
+	lb1, err := badProvider1.LightBlock(ctx, 2)
+	require.NoError(t, err, "Fetching light block from badProvider1 should not error")
+	require.NotEqual(t, lb1.Hash(), l1.Hash(), "Expected hash from badProvider1 to differ from l1's hash")
 
+	// Initialize the light client with the primary provider and both bad providers as witnesses.
 	c, err := light.NewClient(
 		ctx,
 		chainID,
@@ -945,24 +964,21 @@ func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 		light.Logger(log.TestingLogger()),
 		light.MaxRetryAttempts(1),
 	)
-	// witness should have behaved properly -> no error
-	require.NoError(t, err)
-	assert.EqualValues(t, 2, len(c.Witnesses()))
+	require.NoError(t, err, "Initializing light client should not error")
+	require.Len(t, c.Witnesses(), 2, "Expected two witnesses to be initially configured")
 
-	// witness behaves incorrectly -> removed from list, no error
+	// Attempt to verify a light block at height 2, expecting the operation to succeed and one witness to be removed.
 	l, err := c.VerifyLightBlockAtHeight(ctx, 2, bTime.Add(2*time.Hour))
-	require.NoError(t, err)
-	assert.EqualValues(t, 1, len(c.Witnesses()))
-	// light block should still be verified
-	assert.EqualValues(t, 2, l.Height)
+	require.NoError(t, err, "Verifying light block at height 2 should not error")
+	require.NotNil(t, l, "Expected a non-nil light block")
+	assert.EqualValues(t, 2, l.Height, "Expected verified light block to be at height 2")
+	assert.Len(t, c.Witnesses(), 1, "Expected one witness to be removed due to incorrect header")
 
-	// remaining witnesses don't have light block -> error
+	// Attempt to verify a light block at height 3, expecting an error due to the remaining witness not having the light block.
 	_, err = c.VerifyLightBlockAtHeight(ctx, 3, bTime.Add(2*time.Hour))
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
-		assert.Equal(t, light.ErrFailedHeaderCrossReferencing, err)
-	}
-	// witness does not have a light block -> left in the list
-	assert.EqualValues(t, 1, len(c.Witnesses()))
+	require.Error(t, err, "Expected an error due to failed header cross-referencing")
+	require.ErrorIs(t, err, light.ErrFailedHeaderCrossReferencing, "Expected specific error for failed header cross-referencing")
+	assert.Len(t, c.Witnesses(), 1, "Expected the remaining witness to be left in the list")
 }
 
 func TestClient_TrustedValidatorSet(t *testing.T) {

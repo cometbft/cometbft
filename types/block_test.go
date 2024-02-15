@@ -816,7 +816,7 @@ func TestDataProtoBuf(t *testing.T) {
 		d, err := DataFromProto(&protoData)
 		if tc.expPass {
 			require.NoError(t, err, tc.msg)
-			require.EqualValues(t, tc.data1, &d, tc.msg)
+			require.EqualValues(t, &d, tc.data1, tc.msg)
 		} else {
 			require.Error(t, err, tc.msg)
 		}
@@ -906,7 +906,7 @@ func TestHeaderProto(t *testing.T) {
 			h, err := HeaderFromProto(pb)
 			if tt.expPass {
 				require.NoError(t, err, tt.msg)
-				require.Equal(t, tt.h1, &h, tt.msg)
+				require.Equal(t, &h, tt.h1, tt.msg)
 			} else {
 				require.Error(t, err, tt.msg)
 			}

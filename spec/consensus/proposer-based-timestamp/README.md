@@ -34,10 +34,10 @@ according with the introduced `timely` predicate.
 
 #### Note on Liveness
 
-Setting too much conservative (small) synchronous parameters can compromise,
+Setting too small values for synchronous parameters can compromise,
 possibly in an irreversible way, liveness of consensus.
 This is particularly relevant for the `MSGDELAY` parameter.
-When this end-to-end delay is underestimated or unrealistic, proposed block
+When the `Proposal` end-to-end delay is underestimated or unrealistic, proposed block
 times can be rejected by all correct nodes.
 
 In order to prevent networks with bad parameters from halting, the `MSGDELAY`

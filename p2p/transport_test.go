@@ -271,10 +271,13 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 		fastc        = make(chan struct{})
 		slowc        = make(chan struct{})
 		slowdonec    = make(chan struct{})
+		ready        = make(chan struct{}) // Channel to signal readiness
 	)
 
 	// Simulate slow Peer.
 	go func() {
+		<-ready // Wait for the listener to be ready
+
 		addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
 
 		c, err := addr.Dial()
@@ -317,7 +320,9 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 
 	// Simulate fast Peer.
 	go func() {
-		<-slowc
+		<-slowc // Ensure slow peer has started dialing
+
+		<-ready // Wait for the listener to be ready
 
 		dialer := newMultiplexTransport(
 			fastNodeInfo,
@@ -337,6 +342,9 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 		<-slowdonec
 		close(errc)
 	}()
+
+	// Before starting the goroutines that dial, signal readiness
+	close(ready)
 
 	if err := <-errc; err != nil {
 		t.Logf("connection failed: %v", err)

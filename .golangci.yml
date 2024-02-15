@@ -39,7 +39,6 @@ linters:
     - nlreturn
     - nonamedreturns
     - nosnakecase
-    - perfsprint
     - predeclared
     - scopelint
     - structcheck

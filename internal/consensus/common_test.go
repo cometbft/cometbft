@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -136,7 +137,7 @@ func signVote(vs *validatorStub, voteType types.SignedMsgType, hash []byte, head
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
 		if voteType != types.PrecommitType {
-			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
+			panic(errors.New("vote type is not precommit but extensions enabled"))
 		}
 		if len(hash) != 0 || !header.IsZero() {
 			ext = []byte("extension")

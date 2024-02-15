@@ -357,7 +357,7 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 // data needed to prove evidence must not be removed.
 func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, error) {
 	if height <= 0 {
-		return 0, -1, fmt.Errorf("height must be greater than 0")
+		return 0, -1, errors.New("height must be greater than 0")
 	}
 	bs.mtx.RLock()
 	if height > bs.height {

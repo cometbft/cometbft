@@ -209,12 +209,12 @@ func computeHashFromAunts(index, total int64, leafHash []byte, innerHashes [][]b
 		panic("Cannot call computeHashFromAunts() with 0 total")
 	case 1:
 		if len(innerHashes) != 0 {
-			return nil, fmt.Errorf("unexpected inner hashes")
+			return nil, errors.New("unexpected inner hashes")
 		}
 		return leafHash, nil
 	default:
 		if len(innerHashes) == 0 {
-			return nil, fmt.Errorf("expected at least one inner hash")
+			return nil, errors.New("expected at least one inner hash")
 		}
 		numLeft := getSplitPoint(total)
 		if index < numLeft {

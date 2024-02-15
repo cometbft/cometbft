@@ -27,11 +27,11 @@ type (
 )
 
 func (e ErrNegativeField) Error() string {
-	return fmt.Sprintf("%s can't be negative", e.Field)
+	return e.Field + " can't be negative"
 }
 
 func (e ErrRequiredField) Error() string {
-	return fmt.Sprintf("%s is required", e.Field)
+	return e.Field + " is required"
 }
 
 func (e ErrInvalidField) Error() string {

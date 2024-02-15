@@ -530,7 +530,7 @@ func (n Node) Validate(testnet Testnet) error {
 		switch perturbation {
 		case PerturbationUpgrade:
 			if upgradeFound {
-				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
+				return errors.New("'upgrade' perturbation can appear at most once per node")
 			}
 			upgradeFound = true
 		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:

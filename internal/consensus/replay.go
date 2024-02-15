@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -56,9 +57,9 @@ func (cs *State) readReplayMessage(msg *TimedWALMessage, newStepSub types.Subscr
 					return fmt.Errorf("roundState mismatch. Got %v; Expected %v", m2, m)
 				}
 			case <-newStepSub.Canceled():
-				return fmt.Errorf("failed to read off newStepSub.Out(). newStepSub was canceled")
+				return errors.New("failed to read off newStepSub.Out(). newStepSub was canceled")
 			case <-ticker:
-				return fmt.Errorf("failed to read off newStepSub.Out()")
+				return errors.New("failed to read off newStepSub.Out()")
 			}
 		}
 	case msgInfo:
@@ -340,7 +341,7 @@ func (h *Handshaker) ReplayBlocks(
 				state.NextValidators = types.NewValidatorSet(vals).CopyIncrementProposerPriority(1)
 			} else if len(h.genDoc.Validators) == 0 {
 				// If validator set is not set in genesis and still empty after InitChain, exit.
-				return nil, fmt.Errorf("validator set is nil in genesis and still empty after InitChain")
+				return nil, errors.New("validator set is nil in genesis and still empty after InitChain")
 			}
 
 			if res.ConsensusParams != nil {

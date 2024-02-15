@@ -53,7 +53,7 @@ version = "1.0.0"
 
 This string validates the configuration file for the binary. The string has to be either a
 [valid semver](https://semver.org) string or an empty string. In any other case, the binary halts with an
-`ERROR: error in config file: invalid version string:` error.
+`ERROR: error in config file: invalid version string` error.
 
 In the future, the code might make restrictions on what version of the file is compatible with what version of the
 binary. There is no such check in place right now. Configuration and binary versions are interchangeable.
@@ -442,7 +442,7 @@ to use this key.
 <!--- Possibly, we should clarify the allowed values better. --->
 
 ### rpc.unsafe
-Activate unsafe RPC endpoints. Calling these endpoints can destroy your database.
+Activate unsafe RPC endpoints.
 ```toml
 unsafe = false
 ```

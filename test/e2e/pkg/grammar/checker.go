@@ -1,6 +1,7 @@
 package grammar
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -126,7 +127,7 @@ func (g *Checker) getExecutionString(reqs []*abci.Request) string {
 // Verify verifies whether a list of request satisfy ABCI grammar.
 func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) {
 	if len(reqs) == 0 {
-		return false, fmt.Errorf("execution with no ABCI calls")
+		return false, errors.New("execution with no ABCI calls")
 	}
 	r := g.filterRequests(reqs)
 	// Check if the execution is incomplete.

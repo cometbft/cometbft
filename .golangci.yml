@@ -38,10 +38,10 @@ linters:
     - nlreturn
     - nonamedreturns
     - nosnakecase
-    - perfsprint
     - predeclared
     - revive
     - scopelint
+    - staticcheck
     - structcheck
     - tagliatelle
     - testifylint

@@ -2,6 +2,7 @@ package digitalocean
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -49,7 +50,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 
 // Currently unsupported.
 func (p Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
-	return fmt.Errorf("SetLatency() currently unsupported for Digital Ocean")
+	return errors.New("SetLatency() currently unsupported for Digital Ocean")
 }
 
 func (p Provider) StopTestnet(ctx context.Context) error {

@@ -40,7 +40,8 @@ This is particularly relevant for the `MSGDELAY` parameter.
 When the `Proposal` end-to-end delay is underestimated or unrealistic, proposed block
 times can be rejected by all correct nodes.
 
-In order to prevent networks with bad parameters from halting, the `MSGDELAY`
+In order to prevent networks with bad parameters from not making progress (that is, 
+stay at the consensus instance for same height forever), the `MSGDELAY`
 parameter has become adaptive in the implementation.
 This means that the parameter in practice is `MSGDELAY(r)`, where `r` is the
 consensus round, and `MSGDELAY(r+1) > MSGDELAY(r)`.

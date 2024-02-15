@@ -263,10 +263,13 @@ func (state State) MakeBlock(
 	return block
 }
 
-// MedianTime computes a median time for a given Commit and the
-// corresponding validator set. The computed time is always of of the timestamps of
-// the commit votes. The BFT Time algorithm ensures that the computed timestamp was produced by an honest process, i.e., faulty processes can not arbitrarily increase or decrease the
-// computed value.
+// MedianTime computes the median time for a Commit based on the associated validator set.
+// The median time is the weighted median of the Timestamp fields of the commit votes,
+// with heights defined by the validator's voting powers.
+// The BFT Time algorithm ensures that the computed median time is always picked among
+// the timestamps produced by honest processes, i.e., faulty processes cannot arbitrarily
+// increase or decrease the median time.
+// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
 func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time {
 	weightedTimes := make([]*cmttime.WeightedTime, len(commit.Signatures))
 	totalVotingPower := int64(0)

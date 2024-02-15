@@ -73,7 +73,7 @@ func TestReactorConcurrency(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				t.Errorf("Failed to stop reactor: %v", err)
+				require.NoError(t, err)
 			}
 		}
 	}()
@@ -83,7 +83,6 @@ func TestReactorConcurrency(t *testing.T) {
 		}
 	}
 	var wg sync.WaitGroup
-	errs := make(chan error, 2000) // Buffer to hold errors
 
 	const numTxs = 5
 
@@ -100,9 +99,7 @@ func TestReactorConcurrency(t *testing.T) {
 			defer reactors[0].mempool.Unlock()
 
 			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			if err != nil {
-				errs <- err
-			}
+			require.NoError(t, err)
 		}()
 
 		// 1. submit a bunch of txs
@@ -114,9 +111,7 @@ func TestReactorConcurrency(t *testing.T) {
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
-			if err != nil {
-				errs <- err
-			}
+			require.NoError(t, err)
 		}()
 
 		// 1. flush the mempool
@@ -124,11 +119,6 @@ func TestReactorConcurrency(t *testing.T) {
 	}
 
 	wg.Wait()
-	close(errs) // Close channel to finish range iteration
-
-	for err := range errs {
-		require.NoError(t, err) // Assert no error for all collected errors
-	}
 }
 
 // Send a bunch of txs to the first reactor's mempool, claiming it came from peer

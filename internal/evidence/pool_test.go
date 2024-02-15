@@ -50,7 +50,7 @@ func TestEvidencePoolBasic(t *testing.T) {
 	stateStore.On("LoadValidators", mock.AnythingOfType("int64")).Return(valSet, nil)
 	stateStore.On("Load").Return(createState(height+1, valSet), nil)
 
-	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
+	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore, evidence.WithDBKeyLayout("v2"))
 	require.NoError(t, err)
 	pool.SetLogger(log.TestingLogger())
 

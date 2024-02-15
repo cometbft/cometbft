@@ -41,10 +41,10 @@ When the `Proposal` end-to-end delay is underestimated or unrealistic, proposed 
 times can be rejected by all correct nodes.
 
 In order to prevent networks with bad parameters from not making progress (that is, 
-stay at the consensus instance for same height forever), the `MSGDELAY`
+remaining at the consensus instance for same height forever), the `MSGDELAY`
 parameter has become adaptive in the implementation.
-This means that the parameter in practice is `MSGDELAY(r)`, where `r` is the
-consensus round, and `MSGDELAY(r+1) > MSGDELAY(r)`.
+This means that the parameter should be interpreted in the form `MSGDELAY(r)`, where `r` is the
+consensus round, where `MSGDELAY(r+1) > MSGDELAY(r)`.
 The original `MSGDELAY` is therefore in practice `MSGDELAY(0)`.
 
 More details and discussion on [issue 2184][issue2184].

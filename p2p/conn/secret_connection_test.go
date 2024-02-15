@@ -90,17 +90,26 @@ func TestConcurrentRead(t *testing.T) {
 	fooWriteText := cmtrand.Str(dataMaxSize)
 	n := 100
 
-	// read from two routines.
-	// should be safe from race according to net.Conn:
-	// https://golang.org/pkg/net/#Conn
 	wg := new(sync.WaitGroup)
 	wg.Add(3)
-	go readLots(t, wg, fooSecConn, n/2)
-	go readLots(t, wg, fooSecConn, n/2)
+	errs := make(chan error, 2) // Channel to collect errors
+
+	go func() {
+		errs <- readLots(t, wg, fooSecConn, n/2)
+	}()
+	go func() {
+		errs <- readLots(t, wg, fooSecConn, n/2)
+	}()
 
 	// write to bar
 	writeLots(t, wg, barSecConn, fooWriteText, n)
 	wg.Wait()
+
+	close(errs) // Close the channel after all goroutines are done
+
+	for err := range errs {
+		require.NoError(t, err) // Assert errors here in the main goroutine
+	}
 
 	if err := fooSecConn.Close(); err != nil {
 		t.Error(err)
@@ -298,14 +307,17 @@ func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n i
 	}
 }
 
-func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
+func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) error {
 	t.Helper()
 	readBuffer := make([]byte, dataMaxSize)
 	for i := 0; i < n; i++ {
 		_, err := conn.Read(readBuffer)
-		require.NoError(t, err)
+		if err != nil {
+			return err // Return the error instead of asserting here
+		}
 	}
 	wg.Done()
+	return nil // No error occurred
 }
 
 // Creates the data for a test vector file.

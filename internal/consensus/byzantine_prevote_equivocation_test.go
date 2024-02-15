@@ -417,10 +417,19 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			for msg := range blocksSubs[i].Out() {
-				block := msg.Data().(types.EventDataNewBlock).Block
-				if len(block.Evidence.Evidence) != 0 {
-					evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+			for {
+				select {
+				case msg, ok := <-blocksSubs[i].Out():
+					if !ok {
+						return // Channel closed, exit goroutine
+					}
+					block := msg.Data().(types.EventDataNewBlock).Block
+					if len(block.Evidence.Evidence) != 0 {
+						evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+						return
+					}
+				case <-time.After(10 * time.Second): // Adjust timeout duration as needed
+					t.Logf("Timeout waiting for evidence from validator %d", i)
 					return
 				}
 			}

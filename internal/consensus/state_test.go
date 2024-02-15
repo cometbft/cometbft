@@ -1582,8 +1582,8 @@ func TestStateLock_POLSafety2(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	csT1, vssT1 := randState(4)
-	csT2, vssT2 := randStateWithAppPbts(4)
+	csT1, vssT1 := randStateWithAppWithBFTTime(4)
+	csT2, vssT2 := randState(4)
 
 	tcs := []struct {
 		name  string

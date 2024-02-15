@@ -491,16 +491,16 @@ func randStateWithAppWithHeight(
 	return randStateWithAppImpl(nValidators, app, c)
 }
 
-func randStateWithApp(nValidators int, app abci.Application) (*State, []*validatorStub) {
+func randStateWithAppWithBFTTime(nValidators int) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
-	return randStateWithAppImpl(nValidators, app, c)
+	return randStateWithAppImpl(nValidators, kvstore.NewInMemoryApplication(), c)
 }
 
-func randStateWithAppPbts(nValidators int) (*State, []*validatorStub) {
+func randStateWithApp(nValidators int, app abci.Application) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
 	enableHeight := int64(1)
 	c.Feature.PbtsEnableHeight = &enableHeight
-	return randStateWithAppImpl(nValidators, kvstore.NewInMemoryApplication(), c)
+	return randStateWithAppImpl(nValidators, app, c)
 }
 
 func randStateWithAppImpl(

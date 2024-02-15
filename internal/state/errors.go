@@ -135,7 +135,7 @@ func (e ErrPrunerFailedToGetRetainHeight) Unwrap() error {
 }
 
 func (e ErrPrunerFailedToLoadState) Error() string {
-	return fmt.Sprintf("failed to load state, cannot prune: %s", e.Err.Error())
+	return "failed to load state, cannot prune: " + e.Err.Error()
 }
 
 func (e ErrPrunerFailedToLoadState) Unwrap() error {

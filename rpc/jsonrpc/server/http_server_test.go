@@ -150,6 +150,7 @@ func TestWriteRPCResponseHTTPError(t *testing.T) {
 	resp := w.Result()
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
+
 	err = resp.Body.Close()
 	require.NoError(t, err)
 

@@ -144,7 +144,7 @@ func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
 // allowed limits, and returns an error if they are not.
 func (params ConsensusParams) ValidateBasic() error {
 	if params.Block.MaxBytes == 0 {
-		return fmt.Errorf("block.MaxBytes cannot be 0")
+		return errors.New("block.MaxBytes cannot be 0")
 	}
 	if params.Block.MaxBytes < -1 {
 		return fmt.Errorf("block.MaxBytes must be -1 or greater than 0. Got %d",

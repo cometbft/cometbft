@@ -89,8 +89,12 @@ The adaptiveness is represented by the assumption that the value of the
 parameter increases over rounds, i.e., `MSGDELAY(r+1) > MSGDELAY(r)`.
 The initial value `MSGDELAY(0)` is equal to `MSGDELAY` as in [PBTS-MSG-DELAY.0].
 
-For the sake of correctness and formal verification, having a fixed and
-well-chosen `MSGDELAY` is enough.
+For the sake of correctness and formal verification, if `MSGDELAY` is
+chosen sufficiently large, then the fact that it increments in later rounds
+(i) in practice will never be experienced,
+and (ii) also has no theoretical implications.
+The adaptation (increment) of `MSGDELAY` is only introduced here to handle
+potential misconfiguration.
 
 ## Problem Statement
 

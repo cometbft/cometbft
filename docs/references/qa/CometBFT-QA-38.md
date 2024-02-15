@@ -17,6 +17,40 @@ range of ABCI++ functionality (ABCI 2.0), and other several improvements
 described in the
 [CHANGELOG](https://github.com/cometbft/cometbft/blob/v0.38.0-alpha.2/CHANGELOG.md).
 
+## Table of Contents
+- [Issues discovered](#issues-discovered)
+- [200 Node Testnet](#200-node-testnet)
+  - [Saturation point](#saturation-point)
+  - [Latencies](#latencies)
+  - [Prometheus Metrics on the Chosen Experiment](#prometheus-metrics-on-the-chosen-experiment)
+    - [Mempool Size](#mempool-size)
+    - [Peers](#peers)
+    - [Consensus Rounds per Height](#consensus-rounds-per-height)
+    - [Blocks Produced per Minute, Transactions Processed per Minute](#blocks-produced-per-minute-transactions-processed-per-minute)
+    - [Memory Resident Set Size](#memory-resident-set-size)
+    - [CPU utilization](#cpu-utilization)
+      - [Comparison to baseline](#comparison-to-baseline)
+      - [Impact of vote extension signature verification](#impact-of-vote-extension-signature-verification)
+  - [Test Results](#test-results)
+- [Rotating Node Testnet](#rotating-node-testnet)
+  - [Latencies](#latencies-1)
+  - [Prometheus Metrics](#prometheus-metrics)
+    - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute)
+    - [Peers](#peers-1)
+    - [Memory Resident Set Size](#memory-resident-set-size-1)
+    - [CPU utilization](#cpu-utilization-1)
+  - [Test Result](#test-result)
+- [Vote Extensions Testbed](#vote-extensions-testbed)
+  - [Latency](#latency)
+  - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute-1)
+    - [Overview](#overview)
+    - [First run](#first-run)
+  - [Number of rounds](#number-of-rounds)
+  - [CPU](#cpu)
+  - [Resident Memory](#resident-memory)
+  - [Mempool size](#mempool-size-1)
+  - [Results](#results)
+
 ## Issues discovered
 
 * (critical, fixed) [\#539] and [\#546] - This bug causes the proposer to crash in

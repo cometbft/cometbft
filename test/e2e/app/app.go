@@ -468,7 +468,7 @@ func (app *Application) PrepareProposal(
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
 	var totalBytes int64
-	extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
+	extTxPrefix := voteExtensionKey + "="
 	sum, err := app.verifyAndSum(areExtensionsEnabled, req.Height, &req.LocalLastCommit, "prepare_proposal")
 	if err != nil {
 		panic(fmt.Errorf("failed to sum and verify in PrepareProposal; err %w", err))
@@ -851,11 +851,11 @@ func (app *Application) verifyAndSum(
 func (app *Application) verifyExtensionTx(height int64, payload string) error {
 	parts := strings.Split(payload, "|")
 	if len(parts) != 2 {
-		return fmt.Errorf("invalid payload format")
+		return errors.New("invalid payload format")
 	}
 	expSumStr := parts[0]
 	if len(expSumStr) == 0 {
-		return fmt.Errorf("sum cannot be empty in vote extension payload")
+		return errors.New("sum cannot be empty in vote extension payload")
 	}
 
 	expSum, err := strconv.Atoi(expSumStr)
@@ -865,17 +865,17 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 
 	extCommitHex := parts[1]
 	if len(extCommitHex) == 0 {
-		return fmt.Errorf("extended commit data cannot be empty in vote extension payload")
+		return errors.New("extended commit data cannot be empty in vote extension payload")
 	}
 
 	extCommitBytes, err := hex.DecodeString(extCommitHex)
 	if err != nil {
-		return fmt.Errorf("could not hex-decode vote extension payload")
+		return errors.New("could not hex-decode vote extension payload")
 	}
 
 	var extCommit abci.ExtendedCommitInfo
 	if extCommit.Unmarshal(extCommitBytes) != nil {
-		return fmt.Errorf("unable to unmarshal extended commit")
+		return errors.New("unable to unmarshal extended commit")
 	}
 
 	sum, err := app.verifyAndSum(true, height, &extCommit, "process_proposal")

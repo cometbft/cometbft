@@ -2,6 +2,7 @@ package abcicli_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -37,7 +38,7 @@ func TestCalls(t *testing.T) {
 			return
 		}
 		if res == nil {
-			resp <- fmt.Errorf("response is nil")
+			resp <- errors.New("response is nil")
 			return
 		}
 		resp <- c.Error()

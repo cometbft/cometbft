@@ -2,7 +2,6 @@ package privval
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -200,7 +199,7 @@ func startListenerEndpointAsync(t *testing.T, sle *SignerListenerEndpoint, endpo
 			return
 		}
 		if !sle.IsRunning() {
-			errChan <- fmt.Errorf("listener endpoint is not running after start")
+			errChan <- errors.New("listener endpoint is not running after start")
 			return
 		}
 		// If no errors occurred, send nil to the channel and close the endpointIsOpenCh to signal readiness.

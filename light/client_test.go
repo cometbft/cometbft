@@ -2,7 +2,7 @@ package light_test
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -742,7 +742,7 @@ func TestClient_Concurrency(t *testing.T) {
 
 			// Perform operations and send any errors to errChan
 			if chainID != c.ChainID() {
-				errChan <- fmt.Errorf("expected chainID to be equal")
+				errChan <- errors.New("expected chainID to be equal")
 				return
 			}
 
@@ -759,7 +759,7 @@ func TestClient_Concurrency(t *testing.T) {
 			if l, err := c.TrustedLightBlock(1); err != nil {
 				errChan <- err
 			} else if l == nil {
-				errChan <- fmt.Errorf("expected non-nil light block")
+				errChan <- errors.New("expected non-nil light block")
 			}
 		}()
 	}

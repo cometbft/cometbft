@@ -170,7 +170,7 @@ func (cfg *Config) ValidateBasic() error {
 		return ErrInSection{Section: "instrumentation", Err: err}
 	}
 	if !cfg.Consensus.CreateEmptyBlocks && cfg.Mempool.Type == MempoolTypeNop {
-		return fmt.Errorf("`nop` mempool does not support create_empty_blocks = false")
+		return errors.New("`nop` mempool does not support create_empty_blocks = false")
 	}
 	return nil
 }

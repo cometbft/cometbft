@@ -428,7 +428,7 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 						evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
 						return
 					}
-				case <-time.After(10 * time.Second): // Adjust timeout duration as needed
+				case <-time.After(10 * time.Second):
 					t.Logf("Timeout waiting for evidence from validator %d", i)
 					return
 				}

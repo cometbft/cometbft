@@ -79,6 +79,7 @@ type Testnet struct {
 	LoadTxSizeBytes                                      int
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
+	LoadMaxTxs                                           int
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -159,6 +160,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:            manifest.LoadTxBatchSize,
 		LoadTxConnections:          manifest.LoadTxConnections,
+		LoadMaxTxs:                 manifest.LoadMaxTxs,
 		ABCIProtocol:               manifest.ABCIProtocol,
 		PrepareProposalDelay:       manifest.PrepareProposalDelay,
 		ProcessProposalDelay:       manifest.ProcessProposalDelay,

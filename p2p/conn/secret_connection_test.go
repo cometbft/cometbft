@@ -77,10 +77,7 @@ func TestConcurrentWrite(t *testing.T) {
 	go writeLots(t, wg, fooSecConn, fooWriteText, n)
 
 	// Consume reads from bar's reader
-	err := readLots(t, wg, barSecConn, n*2)
-
-	require.NoError(t, err)
-
+	readLots(t, wg, barSecConn, n*2)
 	wg.Wait()
 
 	if err := fooSecConn.Close(); err != nil {
@@ -93,27 +90,21 @@ func TestConcurrentRead(t *testing.T) {
 	fooWriteText := cmtrand.Str(dataMaxSize)
 	n := 100
 
-	errChan := make(chan error, 2) // Channel to collect errors from goroutines
-
+	// read from two routines.
+	// should be safe from race according to net.Conn:
+	// https://golang.org/pkg/net/#Conn
 	wg := new(sync.WaitGroup)
 	wg.Add(3)
-	go func() {
-		errChan <- readLots(t, wg, fooSecConn, n/2)
-	}()
-	go func() {
-		errChan <- readLots(t, wg, fooSecConn, n/2)
-	}()
+	go readLots(t, wg, fooSecConn, n/2)
+	go readLots(t, wg, fooSecConn, n/2)
 
 	// write to bar
 	writeLots(t, wg, barSecConn, fooWriteText, n)
 	wg.Wait()
 
-	close(errChan) // Close the channel to finish the range loop below
-	for err := range errChan {
-		require.NoError(t, err) // Now we can use require to check for errors
+	if err := fooSecConn.Close(); err != nil {
+		t.Error(err)
 	}
-
-	require.NoError(t, fooSecConn.Close())
 }
 
 func TestSecretConnectionReadWrite(t *testing.T) {
@@ -307,17 +298,14 @@ func writeLots(t *testing.T, wg *sync.WaitGroup, conn io.Writer, txt string, n i
 	}
 }
 
-func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) error {
+func readLots(t *testing.T, wg *sync.WaitGroup, conn io.Reader, n int) {
 	t.Helper()
-	defer wg.Done()
 	readBuffer := make([]byte, dataMaxSize)
 	for i := 0; i < n; i++ {
 		_, err := conn.Read(readBuffer)
-		if err != nil {
-			return err // Return the error instead of requiring no error
-		}
+		require.NoError(t, err)
 	}
-	return nil
+	wg.Done()
 }
 
 // Creates the data for a test vector file.
@@ -463,14 +451,12 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 	for _, size := range randomMsgSizes {
 		fooWriteBytes = append(fooWriteBytes, cmtrand.Bytes(size))
 	}
-
-	var writeErr error
 	go func() {
 		for i := 0; i < b.N; i++ {
 			idx := cmtrand.Intn(len(fooWriteBytes))
 			_, err := fooSecConn.Write(fooWriteBytes[idx])
 			if err != nil {
-				writeErr = fmt.Errorf("failed to write to fooSecConn: %v, %v,%v", err, i, b.N)
+				b.Errorf("failed to write to fooSecConn: %v, %v,%v", err, i, b.N)
 				return
 			}
 		}
@@ -488,7 +474,4 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 		}
 	}
 	b.StopTimer()
-
-	// Now use require outside of goroutines
-	require.NoError(b, writeErr)
 }

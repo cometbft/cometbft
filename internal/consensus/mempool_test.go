@@ -69,6 +69,12 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 	ensureNewEventOnChannel(newBlockCh)   // until the CreateEmptyBlocksInterval has passed
 }
 
+// TestMempoolProgressInHigherRound tests the scenario where the mempool progresses in a higher round.
+// It first sets up a state with a configuration that does not create empty blocks.
+// Then, it subscribes to new block and new round events.
+// It starts a test round and ensures that a new round starts at the first height and a block gets committed.
+// After moving to the next height, it delivers transactions but does not set a proposal, causing a timeout and moving to the next round.
+// Finally, it ensures that a new round starts at the next height and a block gets committed.
 func TestMempoolProgressInHigherRound(t *testing.T) {
 	config := ResetConfig("consensus_mempool_txs_available_test")
 	defer os.RemoveAll(config.RootDir)

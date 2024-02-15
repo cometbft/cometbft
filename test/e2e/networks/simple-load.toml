@@ -1,0 +1,38 @@
+# Example of a manifest with multiple load instances.
+
+# Default values for all `run` instances.
+load_tx_connections = 1
+load_tx_size_bytes = 1024
+load_max_duration = 5
+load_wait_to_start = 3
+load_wait_to_finish = 2
+
+# `load` instances run sequentially.
+[[load]]
+
+# Default values for all `run`s in this `load`.
+max_duration = 20
+wait_to_start = 1
+wait_to_finish = 4
+
+# This `load` instance has three `run` executions running in parallel.
+run.small_txs = { batch_size = 100, tx_bytes = 1024 }
+run.medium_txs = { batch_size = 10, tx_bytes = 10240, wait_to_run = 3 }
+run.big_txs = { batch_size = 10, tx_bytes = 102400, connections = 10, wait_to_run = 9 }
+run.big_txs.max_txs = 25
+run.big_txs.target = ["validator01"]
+
+[[load]]
+run.1 = { batch_size = 100 }
+
+[[load]]
+run.1 = { batch_size = 200 }
+
+[[load]]
+run.1 = { batch_size = 400 }
+
+# import = "networks/4nodes.toml"
+[node.validator01]
+[node.validator02]
+[node.validator03]
+[node.validator04]

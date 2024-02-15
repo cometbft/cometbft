@@ -33,9 +33,10 @@ const (
 	proxyPortFirst           uint32 = 5701
 	prometheusProxyPortFirst uint32 = 6701
 
-	defaultBatchSize   = 2
-	defaultConnections = 1
-	defaultTxSizeBytes = 1024
+	defaultBatchSize    = 2
+	defaultConnections  = 1
+	defaultTxSizeBytes  = 1024
+	defaultLoadDuration = 60
 
 	localVersion = "cometbft/e2e-node:local-version"
 )
@@ -81,6 +82,7 @@ type Testnet struct {
 	Validators                                           map[*Node]int64
 	ValidatorUpdates                                     map[int64]map[*Node]int64
 	Nodes                                                []*Node
+	Loads                                                []*Load
 	DisablePexReactor                                    bool
 	KeyType                                              string
 	Evidence                                             int
@@ -88,6 +90,9 @@ type Testnet struct {
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
 	LoadMaxTxs                                           int
+	LoadMaxDuration                                      uint32
+	LoadWaitToStart                                      uint32
+	LoadWaitToFinish                                     uint32
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -139,6 +144,27 @@ type Node struct {
 	Zone                    ZoneID
 }
 
+type Load struct {
+	TxBytes      int
+	BatchSize    int
+	Connections  int
+	MaxTxs       int
+	MaxDuration  uint32
+	WaitToStart  uint32
+	WaitToFinish uint32
+	Runs         map[string]*LoadRun
+}
+
+type LoadRun struct {
+	TxBytes         int
+	BatchSize       int
+	Connections     int
+	MaxTxs          int
+	MaxDuration     uint32
+	WaitToRun       uint32
+	TargetNodeNames []string
+}
+
 // LoadTestnet loads a testnet from a manifest file, using the filename to
 // determine the testnet name and directory (from the basename of the file).
 // The testnet generation must be deterministic, since it is generated
@@ -173,12 +199,16 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:                       map[*Node]int64{},
 		ValidatorUpdates:                 map[int64]map[*Node]int64{},
 		Nodes:                            []*Node{},
+		Loads:                            []*Load{},
 		DisablePexReactor:                manifest.DisablePexReactor,
 		Evidence:                         manifest.Evidence,
 		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
 		LoadTxConnections:                manifest.LoadTxConnections,
 		LoadMaxTxs:                       manifest.LoadMaxTxs,
+		LoadMaxDuration:                  manifest.LoadMaxDuration,
+		LoadWaitToStart:                  manifest.LoadWaitToStart,
+		LoadWaitToFinish:                 manifest.LoadWaitToFinish,
 		ABCIProtocol:                     manifest.ABCIProtocol,
 		PrepareProposalDelay:             manifest.PrepareProposalDelay,
 		ProcessProposalDelay:             manifest.ProcessProposalDelay,
@@ -364,6 +394,111 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
 
+	// Create a default transaction load if there is none. Its values may be updated in the next
+	// step.
+	if len(manifest.Loads) == 0 {
+		run := &ManifestLoadRun{
+			TxBytes:     manifest.LoadTxSizeBytes,
+			BatchSize:   manifest.LoadTxBatchSize,
+			Connections: manifest.LoadTxConnections,
+			MaxDuration: manifest.LoadMaxDuration,
+			MaxTxs:      manifest.LoadMaxTxs,
+		}
+		load := &ManifestLoad{
+			Runs: map[string]*ManifestLoadRun{"default": run},
+		}
+		manifest.Loads = []*ManifestLoad{load}
+	}
+
+	// Set up the transaction load instances.
+	for _, loadManifest := range manifest.Loads {
+		runs := make(map[string]*LoadRun, len(loadManifest.Runs))
+		for name, runManifest := range loadManifest.Runs {
+			run := &LoadRun{
+				TxBytes:         manifest.LoadTxSizeBytes,
+				BatchSize:       manifest.LoadTxBatchSize,
+				Connections:     manifest.LoadTxConnections,
+				MaxDuration:     manifest.LoadMaxDuration,
+				MaxTxs:          manifest.LoadMaxTxs,
+				WaitToRun:       runManifest.WaitToRun,
+				TargetNodeNames: runManifest.TargetNodes,
+			}
+			if loadManifest.TxBytes > 0 {
+				run.TxBytes = loadManifest.TxBytes
+			}
+			if runManifest.TxBytes > 0 {
+				run.TxBytes = runManifest.TxBytes
+			}
+			if run.TxBytes == 0 {
+				run.TxBytes = defaultTxSizeBytes
+			}
+			if loadManifest.BatchSize > 0 {
+				run.BatchSize = loadManifest.BatchSize
+			}
+			if runManifest.BatchSize > 0 {
+				run.BatchSize = runManifest.BatchSize
+			}
+			if run.BatchSize == 0 {
+				run.BatchSize = defaultBatchSize
+			}
+			if loadManifest.Connections > 0 {
+				run.Connections = loadManifest.Connections
+			}
+			if runManifest.Connections > 0 {
+				run.Connections = runManifest.Connections
+			}
+			if run.Connections == 0 {
+				run.Connections = defaultConnections
+			}
+			if run.Connections == 0 {
+				run.Connections = defaultConnections
+			}
+			if loadManifest.MaxTxs > 0 {
+				run.MaxTxs = loadManifest.MaxTxs
+			}
+			if runManifest.MaxTxs > 0 {
+				run.MaxTxs = runManifest.MaxTxs
+			}
+			if loadManifest.MaxDuration > 0 {
+				run.MaxDuration = loadManifest.MaxDuration
+			}
+			if runManifest.MaxDuration > 0 {
+				run.MaxDuration = runManifest.MaxDuration
+			}
+			// The run is bound either by the maximum number of transactions or by the duration, but
+			// not both.
+			// if runManifest.MaxTxs > 0 && runManifest.Duration > 0 {
+			// 	run.Duration = 0
+			// } else if runManifest.MaxTxs > 0 {
+			// 	run.Duration = 0
+			// } else if runManifest.Duration > 0 {
+			// 	run.MaxTxs = 0
+			// }
+
+			// When there are more than one load, both the duration and the maximum number of
+			// transactions cannot be unbounded, so we restrict the duration to the default value.
+			if len(manifest.Loads) > 1 && (run.MaxDuration == 0 && run.MaxTxs == 0) {
+				run.MaxDuration = defaultLoadDuration
+			}
+
+			// fmt.Printf("run %v: %v\n", name, run)
+			runs[name] = run
+		}
+		load := &Load{
+			WaitToStart:  loadManifest.WaitToStart,
+			MaxDuration:  loadManifest.MaxDuration,
+			WaitToFinish: loadManifest.WaitToFinish,
+			TxBytes:      loadManifest.TxBytes,
+			BatchSize:    loadManifest.BatchSize,
+			Connections:  loadManifest.Connections,
+			MaxTxs:       loadManifest.MaxTxs,
+			Runs:         runs,
+		}
+
+		// fmt.Printf("load: %v\n", load)
+		testnet.Loads = append(testnet.Loads, load)
+	}
+
 	return testnet, testnet.Validate()
 }
 
@@ -418,6 +553,11 @@ func (t Testnet) Validate() error {
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
+		}
+	}
+	for i, load := range t.Loads {
+		if err := load.Validate(t); err != nil {
+			return fmt.Errorf("invalid load %v: %w", i, err)
 		}
 	}
 	return nil
@@ -545,6 +685,22 @@ func (n Node) Validate(testnet Testnet) error {
 		}
 	}
 
+	return nil
+}
+
+// Validate validates a load.
+func (l Load) Validate(testnet Testnet) error {
+	for name, run := range l.Runs {
+		if err := run.Validate(testnet, l); err != nil {
+			return fmt.Errorf("invalid run %v: %w", name, err)
+		}
+	}
+
+	return nil
+}
+
+// Validate validates a load.
+func (r LoadRun) Validate(testnet Testnet, load Load) error {
 	return nil
 }
 

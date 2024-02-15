@@ -2,11 +2,12 @@ package p2p
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"net"
 	"reflect"
-	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -264,72 +265,33 @@ func testDialer(dialAddr NetAddress, errc chan error) {
 func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 	mt := testSetupMultiplexTransport(t)
 
-	var (
-		fastNodePV   = ed25519.GenPrivKey()
-		fastNodeInfo = testNodeInfo(PubKeyToID(fastNodePV.PubKey()), "fastnode")
-		errc         = make(chan error)
-		fastc        = make(chan struct{})
-		slowc        = make(chan struct{})
-		slowdonec    = make(chan struct{})
-		ready        = make(chan struct{}) // Channel to signal readiness
-	)
+	// Number of peers to simulate
+	numberOfPeers := 250
+	// Channel to signal readiness of the listener
+	ready := make(chan struct{})
+	// Channel to collect errors from goroutines
+	errc := make(chan error, numberOfPeers)
 
-	// Simulate slow Peer.
-	go func() {
+	// Map to store NodeInfo for each peer ID
+	nodeInfoMap := make(map[string]NodeInfo)
+	var mapMutex sync.Mutex // Mutex to protect access to nodeInfoMap
+
+	// Function to simulate a peer
+	simulatePeer := func(peerIndex int, ready chan struct{}, errc chan error) {
 		<-ready // Wait for the listener to be ready
 
-		addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
+		// Generate a new private key for each peer
+		pv := ed25519.GenPrivKey()
+		id := PubKeyToID(pv.PubKey())
+		nodeInfo := testNodeInfo(id, fmt.Sprintf("peer%d", peerIndex))
+		nodeKey := NodeKey{PrivKey: pv}
 
-		c, err := addr.Dial()
-		if err != nil {
-			errc <- err
-			return
-		}
+		// Synchronize access to nodeInfoMap
+		mapMutex.Lock()
+		nodeInfoMap[fmt.Sprintf("%s", id)] = nodeInfo
+		mapMutex.Unlock()
 
-		close(slowc)
-		defer func() {
-			close(slowdonec)
-		}()
-
-		// Make sure we switch to fast peer goroutine.
-		runtime.Gosched()
-
-		select {
-		case <-fastc:
-			// Fast peer connected.
-		case <-time.After(200 * time.Millisecond):
-			// We error if the fast peer didn't succeed.
-			errc <- errors.New("fast peer timed out")
-		}
-
-		sc, err := upgradeSecretConn(c, 200*time.Millisecond, ed25519.GenPrivKey())
-		if err != nil {
-			errc <- err
-			return
-		}
-
-		_, err = handshake(sc, 200*time.Millisecond,
-			testNodeInfo(
-				PubKeyToID(ed25519.GenPrivKey().PubKey()),
-				"slow_peer",
-			))
-		if err != nil {
-			errc <- err
-		}
-	}()
-
-	// Simulate fast Peer.
-	go func() {
-		<-slowc // Ensure slow peer has started dialing
-
-		<-ready // Wait for the listener to be ready
-
-		dialer := newMultiplexTransport(
-			fastNodeInfo,
-			NodeKey{
-				PrivKey: fastNodePV,
-			},
-		)
+		dialer := newMultiplexTransport(nodeInfo, nodeKey)
 		addr := NewNetAddress(mt.nodeKey.ID(), mt.listener.Addr())
 
 		_, err := dialer.Dial(*addr, peerConfig{})
@@ -338,25 +300,49 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 			return
 		}
 
-		close(fastc)
-		<-slowdonec
-		close(errc)
-	}()
+		// Signal successful connection
+		errc <- nil
+	}
 
 	// Before starting the goroutines that dial, signal readiness
 	close(ready)
 
-	if err := <-errc; err != nil {
-		t.Logf("connection failed: %v", err)
+	// Prepare and start simulating peers
+	for i := 0; i < numberOfPeers; i++ {
+		go simulatePeer(i, ready, errc)
 	}
 
-	p, err := mt.Accept(peerConfig{})
-	if err != nil {
-		t.Fatal(err)
+	// Accept connections and ensure the correct NodeInfo is used
+	for i := 0; i < numberOfPeers; i++ {
+		p, err := mt.Accept(peerConfig{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Synchronize access to nodeInfoMap
+		mapMutex.Lock()
+		expectedNodeInfo, exists := nodeInfoMap[fmt.Sprintf("%s", p.NodeInfo().ID())]
+		mapMutex.Unlock()
+
+		if !exists {
+			t.Fatalf("unexpected peer ID: %s", p.NodeInfo().ID())
+		}
+
+		if !reflect.DeepEqual(p.NodeInfo(), expectedNodeInfo) {
+			t.Errorf("have %v, want %v", p.NodeInfo(), expectedNodeInfo)
+		}
 	}
 
-	if have, want := p.NodeInfo(), fastNodeInfo; !reflect.DeepEqual(have, want) {
-		t.Errorf("have %v, want %v", have, want)
+	// Handle errors from peers
+	for i := 0; i < numberOfPeers; i++ {
+		if err := <-errc; err != nil {
+			t.Errorf("connection failed: %v", err)
+		}
+	}
+
+	// Cleanup: Close the multiplex transport
+	if err := mt.Close(); err != nil {
+		t.Errorf("failed to close multiplex transport: %v", err)
 	}
 }
 

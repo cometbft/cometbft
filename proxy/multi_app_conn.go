@@ -163,7 +163,7 @@ func (app *multiAppConn) OnStop() {
 func (app *multiAppConn) killTMOnClientError() {
 	killFn := func(conn string, err error, logger cmtlog.Logger) {
 		logger.Error(
-			fmt.Sprintf("%s connection terminated. Did the application crash? Please restart CometBFT", conn),
+			conn+" connection terminated. Did the application crash? Please restart CometBFT",
 			"err", err)
 		killErr := cmtos.Kill()
 		if killErr != nil {

@@ -465,15 +465,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			if runManifest.MaxDuration > 0 {
 				run.MaxDuration = runManifest.MaxDuration
 			}
-			// The run is bound either by the maximum number of transactions or by the duration, but
-			// not both.
-			// if runManifest.MaxTxs > 0 && runManifest.Duration > 0 {
-			// 	run.Duration = 0
-			// } else if runManifest.MaxTxs > 0 {
-			// 	run.Duration = 0
-			// } else if runManifest.Duration > 0 {
-			// 	run.MaxTxs = 0
-			// }
 
 			// When there are more than one load, both the duration and the maximum number of
 			// transactions cannot be unbounded, so we restrict the duration to the default value.
@@ -481,9 +472,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 				run.MaxDuration = defaultLoadDuration
 			}
 
-			// fmt.Printf("run %v: %v\n", name, run)
 			runs[name] = run
 		}
+
 		load := &Load{
 			WaitToStart:  loadManifest.WaitToStart,
 			MaxDuration:  loadManifest.MaxDuration,
@@ -494,8 +485,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			MaxTxs:       loadManifest.MaxTxs,
 			Runs:         runs,
 		}
-
-		// fmt.Printf("load: %v\n", load)
 		testnet.Loads = append(testnet.Loads, load)
 	}
 

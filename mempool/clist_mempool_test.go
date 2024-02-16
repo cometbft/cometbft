@@ -756,8 +756,8 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 			defer wg.Done()
 
 			err := mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
-			require.NoError(t, err)
-			require.Equal(t, int64(h), mp.height.Load(), "height mismatch")
+			require.NoError(t, err)                                         //nolint:testifylint // fixed in #2005
+			require.Equal(t, int64(h), mp.height.Load(), "height mismatch") //nolint:testifylint // fixed in #2005
 		}(h)
 
 		go func(h int) {
@@ -765,7 +765,7 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 
 			tx := kvstore.NewTxFromID(h)
 			mp.resCbFirstTime(tx, &abci.CheckTxResponse{Code: abci.CodeTypeOK})
-			require.Equal(t, h, mp.Size(), "pool size mismatch")
+			require.Equal(t, h, mp.Size(), "pool size mismatch") //nolint:testifylint // fixed in #2005
 		}(h)
 
 		wg.Wait()

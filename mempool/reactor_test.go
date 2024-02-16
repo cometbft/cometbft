@@ -99,7 +99,7 @@ func TestReactorConcurrency(t *testing.T) {
 			defer reactors[0].mempool.Unlock()
 
 			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			require.NoError(t, err)
+			require.NoError(t, err) //nolint:testifylint // fixed in #2005
 		}()
 
 		// 1. submit a bunch of txs
@@ -111,7 +111,7 @@ func TestReactorConcurrency(t *testing.T) {
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
-			require.NoError(t, err)
+			require.NoError(t, err) //nolint:testifylint // fixed in #2005
 		}()
 
 		// 1. flush the mempool
@@ -123,7 +123,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 // Send a bunch of txs to the first reactor's mempool, claiming it came from peer
 // ensure peer gets no txs.
-func TestReactorNoBroadcastToSender(t *testing.T) { //nolint:testifylint // resistant to refactoring to accomodate proper use of channels.
+func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
 	const N = 2
 	reactors, _ := makeAndConnectReactors(config, N)

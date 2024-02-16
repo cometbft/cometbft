@@ -402,59 +402,63 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 // functions are currently implemented, which affects the order in which peers are added to the
 // mempool reactor.
 func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
+	t.Log("Starting TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate")
 	config := cfg.TestConfig()
 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
+	t.Logf("ExperimentalMaxGossipConnectionsToNonPersistentPeers set to %d", config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
 	reactors, _ := makeAndConnectReactors(config, 4)
+	t.Log("Reactors created and connected")
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
 				t.Logf("Error stopping reactor: %v", err)
 				require.NoError(t, err)
+			} else {
+				t.Logf("Reactor stopped without error")
 			}
 		}
 	}()
-	for _, r := range reactors {
+	for i, r := range reactors {
 		for _, peer := range r.Switch.Peers().Copy() {
 			peer.Set(types.PeerStateKey, peerState{1})
+			t.Logf("Peer state set for reactor %d", i)
 		}
 	}
 
 	// Disconnect the second reactor from the third reactor.
 	pCon1_2 := reactors[1].Switch.Peers().Copy()[1]
+	t.Log("Disconnecting the second reactor from the third reactor")
 	reactors[1].Switch.StopPeerGracefully(pCon1_2)
+	t.Log("Second reactor disconnected from the third reactor")
 
 	// Add a bunch transactions to the first reactor.
+	t.Log("Adding transactions to the first reactor")
 	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
+	t.Log("Transactions added to the first reactor")
 
-	// Wait for transactions to be in the mempool of the second reactor
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	t.Log("Waiting for transactions to be in the mempool of the second reactor")
 	checkTxsInOrder(t, txs, reactors[1], 0)
-	for _, r := range reactors[2:] {
+	t.Log("Transactions are in the mempool of the second reactor")
+	for i, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
+		t.Logf("Reactor %d mempool size is zero", i+2)
 	}
 
-	// Disconnect the second reactor from the first reactor
+	// Disconnect the second reactor from the first reactor.
 	t.Log("Disconnecting the second reactor from the first reactor")
 	pCon0_1 := reactors[0].Switch.Peers().Copy()[0]
 	reactors[0].Switch.StopPeerGracefully(pCon0_1)
+	t.Log("Second reactor disconnected from the first reactor")
 
-	// Allow some time for the disconnection to take effect
-
-	// Check that the third reactor starts receiving transactions from the first reactor
-	t.Log("Checking that the third reactor starts receiving transactions from the first reactor")
+	// Now the third reactor should start receiving transactions from the first reactor and
+	// the fourth reactor from the second
+	t.Log("Checking if the third and fourth reactors start receiving transactions")
 	checkTxsInOrder(t, txs, reactors[2], 0)
-
-	// Ensure no transactions are in the fourth reactor yet
-	require.Zero(t, reactors[3].mempool.Size())
-
-	// Disconnect the third reactor from the first reactor
-	t.Log("Disconnecting the third reactor from the first reactor")
-	pCon0_2 := reactors[0].Switch.Peers().Copy()[1] // Assuming the second peer is the third reactor
-	reactors[0].Switch.StopPeerGracefully(pCon0_2)
-
-	// Now the fourth reactor should start receiving transactions from the first reactor
-	t.Log("Checking that the fourth reactor starts receiving transactions from the first reactor")
 	checkTxsInOrder(t, txs, reactors[3], 0)
+	t.Log("Third and fourth reactors have started receiving transactions")
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping

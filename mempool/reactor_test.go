@@ -401,7 +401,6 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 // Note: in this test we know which gossip connections are active or not because of how the p2p
 // functions are currently implemented, which affects the order in which peers are added to the
 // mempool reactor.
-// NOTE: THIS TEST IS POINTLESS AND SHOULD BE REMOVED.
 func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
@@ -420,12 +419,19 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 		}
 	}
 
-	t.Log("Adding transactions to the first reactor")
+	// Disconnect the second reactor from the third reactor.
+	pCon1_2 := reactors[1].Switch.Peers().Copy()[1]
+	reactors[1].Switch.StopPeerGracefully(pCon1_2)
+
+	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
 
 	// Wait for transactions to be in the mempool of the second reactor
 	checkTxsInOrder(t, txs, reactors[1], 0)
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
 
 	// Disconnect the second reactor from the first reactor
 	t.Log("Disconnecting the second reactor from the first reactor")

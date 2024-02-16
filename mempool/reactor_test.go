@@ -477,6 +477,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 // functions are currently implemented, which affects the order in which peers are added to the
 // mempool reactor.
 func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
+	t.Log("Starting TestMempoolReactorMaxActiveOutboundConnections")
 	config := cfg.TestConfig()
 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
 	reactors, _ := makeAndConnectReactorsStar(config, 0, 4)
@@ -495,6 +496,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(5)
 	callCheckTx(t, reactors[0].mempool, txs)
+	t.Log("Transactions added to the first reactor")
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)

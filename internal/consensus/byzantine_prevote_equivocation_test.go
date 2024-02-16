@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -439,5 +440,5 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 		}(i)
 	}
 	wg.Wait()
-	return evidenceFromEachValidator, nil
+	return evidenceFromEachValidator, errors.New("timed out waiting for evidence from validators")
 }

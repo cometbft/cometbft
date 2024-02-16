@@ -334,40 +334,6 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
-func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
-	if os.Getenv("CI") != "" {
-		t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test during CI.")
-	}
-
-	config := cfg.TestConfig()
-	reactors, _ := makeAndConnectReactors(config, 4)
-	defer func() {
-		for _, r := range reactors {
-			if err := r.Stop(); err != nil {
-				require.NoError(t, err)
-			}
-		}
-	}()
-	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().Copy() {
-			peer.Set(types.PeerStateKey, peerState{1})
-		}
-	}
-
-	// Deliver the same sequence of transactions from multiple sources, in parallel.
-	txs := newUniqueTxs(200)
-	mp := reactors[0].mempool
-	for i := 0; i < 3; i++ {
-		go func() {
-			for _, tx := range txs {
-				mp.CheckTx(tx) //nolint:errcheck
-			}
-		}()
-	}
-
-	// Confirm that FIFO order was respected.
-	checkTxsInOrder(t, txs, reactors[0], 0)
-}
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
 // transactions (only non-persistent peers).

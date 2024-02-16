@@ -69,7 +69,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	t.Log("Collecting evidence from each validator")
-	evidenceFromEachValidator := collectEvidenceFromValidators(t, nValidators, blocksSubs)
+	evidenceFromEachValidator, err := collectEvidenceFromValidators(t, nValidators, blocksSubs)
+	require.NoError(t, err, "Failed to collect evidence from each validator")
 
 	t.Log("Getting public key of the byzantine validator")
 	pubkey, err := bcs.privValidator.GetPubKey()
@@ -409,7 +410,7 @@ func startConsensusReactors(reactors []*Reactor) {
 	}
 }
 
-func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []types.Subscription) []types.Evidence {
+func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []types.Subscription) ([]types.Evidence, error) {
 	t.Helper()
 	evidenceFromEachValidator := make([]types.Evidence, nValidators)
 	wg := new(sync.WaitGroup)
@@ -421,11 +422,13 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 				select {
 				case msg, ok := <-blocksSubs[i].Out():
 					if !ok {
-						return // Channel closed, exit goroutine
+						t.Logf("Channel for validator %d closed, exiting goroutine", i)
+						return
 					}
 					block := msg.Data().(types.EventDataNewBlock).Block
 					if len(block.Evidence.Evidence) != 0 {
 						evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
+						t.Logf("Evidence collected from validator %d: %v", i, evidenceFromEachValidator[i])
 						return
 					}
 				case <-time.After(10 * time.Second):
@@ -436,5 +439,5 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 		}(i)
 	}
 	wg.Wait()
-	return evidenceFromEachValidator
+	return evidenceFromEachValidator, nil
 }

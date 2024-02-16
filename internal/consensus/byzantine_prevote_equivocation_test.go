@@ -430,9 +430,14 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 	wg := new(sync.WaitGroup)
 	wg.Add(nValidators)
 
+	evidenceCollectionTimeout := 10 * time.Second // Set an appropriate timeout duration
+
 	for i := 0; i < nValidators; i++ {
 		go func(i int) {
 			defer wg.Done()
+			evidenceTimer := time.NewTimer(evidenceCollectionTimeout)
+			defer evidenceTimer.Stop()
+
 			for {
 				select {
 				case msg, ok := <-blocksSubs[i].Out():
@@ -446,7 +451,7 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 						t.Logf("Evidence collected from validator %d: %v", i, evidenceFromEachValidator[i])
 						return
 					}
-				case <-time.After(10 * time.Second):
+				case <-evidenceTimer.C:
 					t.Logf("Timeout waiting for evidence from validator %d", i)
 					return
 				}

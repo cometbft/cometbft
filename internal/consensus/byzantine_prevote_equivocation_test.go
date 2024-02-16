@@ -224,6 +224,11 @@ func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subs
 	eventBuses := make([]*types.EventBus, nValidators)
 
 	for i := 0; i < nValidators; i++ {
+		// Log the initialization start for a reactor
+		if css[i] != nil && css[i].Logger != nil {
+			css[i].Logger.Info("Initializing reactor", "index", i)
+		}
+
 		// Create a new reactor for each validator
 		reactors[i] = NewReactor(css[i], true) // so we don't start the consensus states
 
@@ -231,7 +236,9 @@ func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subs
 		if css[i] != nil {
 			reactors[i].SetLogger(css[i].Logger)
 		} else {
-			return nil, nil, nil, fmt.Errorf("consensus state at index %d is nil", i)
+			errMsg := fmt.Sprintf("Consensus state at index %d is nil", i)
+			fmt.Println(errMsg) // Log to stdout as a fallback
+			return nil, nil, nil, errors.New(errMsg)
 		}
 
 		// eventBus is already started with the cs
@@ -253,16 +260,19 @@ func initializeReactors(nValidators int, css []*State) ([]*Reactor, []types.Subs
 				reactors[i].Logger.Error("Failed to save state", "error", err)
 				return nil, nil, nil, err
 			}
+			// Log successful state save
+			reactors[i].Logger.Info("Successfully saved initial state for reactor", "index", i)
 		}
 	}
 
 	// Check for potential lock situations
 	for i := 0; i < nValidators; i++ {
 		if reactors[i].Switch != nil && reactors[i].Switch.IsRunning() {
+			msg := "Potential lock situation detected: reactor switch is already running"
 			if reactors[i].Logger != nil {
-				reactors[i].Logger.Info("Potential lock situation detected: reactor switch is already running")
+				reactors[i].Logger.Info(msg, "index", i)
 			} else {
-				fmt.Printf("Potential lock situation detected: reactor switch is already running at index %d\n", i)
+				fmt.Printf("%s at index %d\n", msg, i)
 			}
 		}
 	}
@@ -310,6 +320,8 @@ func introduceLazyProposer(t *testing.T, lazyProposer *State, ctx context.Contex
 	t.Helper()
 	// Overwrite the decideProposal function
 	lazyProposer.decideProposal = func(height int64, round int32) {
+		lazyProposer.Logger.Info("Starting decideProposal function for lazy proposer", "height", height, "round", round) // Added logging
+
 		// Log the action of the lazy proposer
 		lazyProposer.Logger.Info("Lazy Proposer proposing condensed commit")
 
@@ -405,9 +417,10 @@ func initializeTestEnvironment(t *testing.T, nValidators int, genDoc *types.Gene
 }
 
 func startConsensusReactors(reactors []*Reactor) {
-	for i := 0; i < len(reactors); i++ {
-		s := reactors[i].conS.GetState()
-		reactors[i].SwitchToConsensus(s, false)
+	for i, reactor := range reactors {
+		s := reactor.conS.GetState()
+		reactor.SwitchToConsensus(s, false)
+		reactor.Logger.Info("Started consensus reactor", "reactor", i)
 	}
 }
 
@@ -415,8 +428,9 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 	t.Helper()
 	evidenceFromEachValidator := make([]types.Evidence, nValidators)
 	wg := new(sync.WaitGroup)
+	wg.Add(nValidators)
+
 	for i := 0; i < nValidators; i++ {
-		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 			for {
@@ -439,6 +453,22 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 			}
 		}(i)
 	}
-	wg.Wait()
-	return evidenceFromEachValidator, errors.New("timed out waiting for evidence from validators")
+
+	wg.Wait() // Wait for all goroutines to finish
+
+	// Check if any evidence was collected
+	var collectedEvidence bool
+	for _, ev := range evidenceFromEachValidator {
+		if ev != nil {
+			collectedEvidence = true
+			break
+		}
+	}
+
+	if !collectedEvidence {
+		t.Log("No evidence was collected from any validator")
+		return nil, errors.New("no evidence collected from validators")
+	}
+
+	return evidenceFromEachValidator, nil
 }

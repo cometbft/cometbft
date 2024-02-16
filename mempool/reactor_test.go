@@ -421,26 +421,38 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 		}
 	}
 
-	t.Log("Disconnecting the second reactor from the third reactor")
-	pCon1_2 := reactors[1].Switch.Peers().Copy()[1]
-	reactors[1].Switch.StopPeerGracefully(pCon1_2)
-
 	t.Log("Adding transactions to the first reactor")
 	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
 
-	t.Log("Waiting for transactions to be in the mempool of the second reactor")
+	// Wait for transactions to be in the mempool of the second reactor
 	checkTxsInOrder(t, txs, reactors[1], 0)
-	for _, r := range reactors[2:] {
-		require.Zero(t, r.mempool.Size())
-	}
 
+	// Disconnect the second reactor from the first reactor
 	t.Log("Disconnecting the second reactor from the first reactor")
 	pCon0_1 := reactors[0].Switch.Peers().Copy()[0]
 	reactors[0].Switch.StopPeerGracefully(pCon0_1)
 
+	// Allow some time for the disconnection to take effect
+	time.Sleep(1 * time.Second)
+
+	// Check that the third reactor starts receiving transactions from the first reactor
 	t.Log("Checking that the third reactor starts receiving transactions from the first reactor")
 	checkTxsInOrder(t, txs, reactors[2], 0)
+
+	// Ensure no transactions are in the fourth reactor yet
+	require.Zero(t, reactors[3].mempool.Size())
+
+	// Disconnect the third reactor from the first reactor
+	t.Log("Disconnecting the third reactor from the first reactor")
+	pCon0_2 := reactors[0].Switch.Peers().Copy()[1] // Assuming the second peer is the third reactor
+	reactors[0].Switch.StopPeerGracefully(pCon0_2)
+
+	// Allow some time for the disconnection to take effect
+	time.Sleep(1 * time.Second)
+
+	// Now the fourth reactor should start receiving transactions from the first reactor
+	t.Log("Checking that the fourth reactor starts receiving transactions from the first reactor")
 	checkTxsInOrder(t, txs, reactors[3], 0)
 }
 

@@ -3,7 +3,6 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -83,6 +82,7 @@ func TestReactorConcurrency(t *testing.T) {
 		}
 	}
 	var wg sync.WaitGroup
+	errChan := make(chan error, 2) // Buffer to hold errors from goroutines
 
 	const numTxs = 5
 
@@ -99,7 +99,9 @@ func TestReactorConcurrency(t *testing.T) {
 			defer reactors[0].mempool.Unlock()
 
 			err := reactors[0].mempool.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			require.NoError(t, err)
+			if err != nil {
+				errChan <- err
+			}
 		}()
 
 		// 1. submit a bunch of txs
@@ -111,14 +113,21 @@ func TestReactorConcurrency(t *testing.T) {
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
-			require.NoError(t, err)
+			if err != nil {
+				errChan <- err
+			}
 		}()
-
 		// 1. flush the mempool
 		reactors[1].mempool.Flush()
 	}
 
 	wg.Wait()
+	close(errChan) // Close the channel to signal no more errors will be sent
+
+	// Check for errors sent from goroutines
+	for err := range errChan {
+		require.NoError(t, err)
+	}
 }
 
 // Send a bunch of txs to the first reactor's mempool, claiming it came from peer
@@ -332,41 +341,6 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 
 	// The first reactor should not receive transactions from other peers.
 	require.Zero(t, len(firstReactor.txSenders))
-}
-
-func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
-	if os.Getenv("CI") != "" {
-		t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test during CI.")
-	}
-
-	config := cfg.TestConfig()
-	reactors, _ := makeAndConnectReactors(config, 4)
-	defer func() {
-		for _, r := range reactors {
-			if err := r.Stop(); err != nil {
-				require.NoError(t, err)
-			}
-		}
-	}()
-	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().Copy() {
-			peer.Set(types.PeerStateKey, peerState{1})
-		}
-	}
-
-	// Deliver the same sequence of transactions from multiple sources, in parallel.
-	txs := newUniqueTxs(1000)
-	mp := reactors[0].mempool
-	for i := 0; i < 3; i++ {
-		go func() {
-			for _, tx := range txs {
-				mp.CheckTx(tx) //nolint:errcheck
-			}
-		}()
-	}
-
-	// Confirm that FIFO order was respected.
-	checkTxsInOrder(t, txs, reactors[0], 0)
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping

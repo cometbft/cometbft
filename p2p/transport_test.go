@@ -288,7 +288,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 
 		// Synchronize access to nodeInfoMap
 		mapMutex.Lock()
-		nodeInfoMap[fmt.Sprintf("%s", id)] = nodeInfo
+		nodeInfoMap[string(id)] = nodeInfo
 		mapMutex.Unlock()
 
 		dialer := newMultiplexTransport(nodeInfo, nodeKey)
@@ -321,7 +321,7 @@ func TestTransportMultiplexAcceptNonBlocking(t *testing.T) {
 
 		// Synchronize access to nodeInfoMap
 		mapMutex.Lock()
-		expectedNodeInfo, exists := nodeInfoMap[fmt.Sprintf("%s", p.NodeInfo().ID())]
+		expectedNodeInfo, exists := nodeInfoMap[string(p.NodeInfo().ID())]
 		mapMutex.Unlock()
 
 		if !exists {

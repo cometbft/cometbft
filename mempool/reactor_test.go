@@ -3,7 +3,6 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
-	"os"
 	"sync"
 	"testing"
 	"time"

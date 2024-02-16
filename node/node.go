@@ -165,7 +165,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()))
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval))
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -290,6 +290,8 @@ func NewNode(ctx context.Context,
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 		Metrics:              smMetrics,
+		Compact:              config.Storage.Compact,
+		CompactionInterval:   config.Storage.CompactionInterval,
 	})
 
 	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics))

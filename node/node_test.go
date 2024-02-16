@@ -565,6 +565,9 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	// Before starting the node, ensure the address is free
+	config.P2P.ListenAddress = testFreeAddr(t)
+
 	// Start and stop to close the db for later reading
 	err = n.Start()
 	require.NoError(t, err)
@@ -619,6 +622,9 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	// Get correct hash of correct genesis file
 	jsonBlob, err := os.ReadFile(config.GenesisFile())
 	require.NoError(t, err)
+
+	// Before starting the node, ensure the address is free
+	config.P2P.ListenAddress = testFreeAddr(t)
 
 	incomingChecksum := tmhash.Sum(jsonBlob)
 	// Set genesis flag value to incorrect hash

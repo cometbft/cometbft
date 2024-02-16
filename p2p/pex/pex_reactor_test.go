@@ -58,7 +58,7 @@ func TestPEXReactorAddRemovePeer(t *testing.T) {
 
 // TestPEXReactorRunning tests that the PEX reactor is able to connect to other peers.
 func TestPEXReactorRunning(t *testing.T) {
-	N := 3
+	N := 10
 	switches := make([]*p2p.Switch, N)
 
 	// directory to store address books
@@ -101,9 +101,12 @@ func TestPEXReactorRunning(t *testing.T) {
 
 	// Start all switches
 	for _, sw := range switches {
+		sw := sw // create a new variable for the closure
 		err := sw.Start()
 		require.NoError(t, err)
-		defer sw.Stop() // ensure all switches are stopped
+		defer func(sw *p2p.Switch) {
+			require.NoError(t, sw.Stop()) // use the new variable here
+		}(sw)
 	}
 
 	// Wait for a predefined time to allow connections to establish

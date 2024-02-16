@@ -432,7 +432,16 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 	wg.Add(nValidators)
 
 	evidenceCollectionTimeout := 15 * time.Second
-	logs := make([]string, 0) // Collect logs here
+	logChan := make(chan string, nValidators) // Buffered channel for log messages
+	doneChan := make(chan struct{})           // Signal channel for when logging is done
+
+	// Goroutine for logging
+	go func() {
+		for logMsg := range logChan {
+			t.Log(logMsg)
+		}
+		close(doneChan)
+	}()
 
 	for i := 0; i < nValidators; i++ {
 		go func(i int) {
@@ -444,7 +453,7 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 				select {
 				case msg, ok := <-blocksSubs[i].Out():
 					if !ok {
-						logs = append(logs, fmt.Sprintf("Channel for validator %d closed, exiting goroutine", i))
+						logChan <- fmt.Sprintf("Channel for validator %d closed, exiting goroutine", i)
 						return
 					}
 					block := msg.Data().(types.EventDataNewBlock).Block
@@ -452,11 +461,11 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 						mu.Lock()
 						evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
 						mu.Unlock()
-						logs = append(logs, fmt.Sprintf("Evidence collected from validator %d: %v", i, evidenceFromEachValidator[i]))
+						logChan <- fmt.Sprintf("Evidence collected from validator %d: %v", i, evidenceFromEachValidator[i])
 						return
 					}
 				case <-evidenceTimer.C:
-					logs = append(logs, fmt.Sprintf("Timeout waiting for evidence from validator %d", i))
+					logChan <- fmt.Sprintf("Timeout waiting for evidence from validator %d", i)
 					return
 				}
 			}
@@ -464,11 +473,8 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 	}
 
 	wg.Wait() // Wait for all goroutines to finish
-
-	// Log the collected logs
-	for _, logEntry := range logs {
-		t.Log(logEntry)
-	}
+	close(logChan)
+	<-doneChan // Wait for the logging goroutine to finish
 
 	// Check if any evidence was collected
 	var collectedEvidence bool
@@ -480,7 +486,6 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 	}
 
 	if !collectedEvidence {
-		t.Log("No evidence was collected from any validator")
 		return nil, errors.New("no evidence collected from validators")
 	}
 

@@ -427,12 +427,10 @@ func startConsensusReactors(reactors []*Reactor) {
 func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []types.Subscription) ([]types.Evidence, error) {
 	t.Helper()
 	evidenceFromEachValidator := make([]types.Evidence, nValidators)
-	var mu sync.Mutex // Mutex to protect writes to the slice
 	wg := new(sync.WaitGroup)
 	wg.Add(nValidators)
 
 	evidenceCollectionTimeout := 15 * time.Second
-	logs := make([]string, 0) // Collect logs here
 
 	for i := 0; i < nValidators; i++ {
 		go func(i int) {
@@ -444,19 +442,17 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 				select {
 				case msg, ok := <-blocksSubs[i].Out():
 					if !ok {
-						logs = append(logs, fmt.Sprintf("Channel for validator %d closed, exiting goroutine", i))
+						t.Logf("Channel for validator %d closed, exiting goroutine", i)
 						return
 					}
 					block := msg.Data().(types.EventDataNewBlock).Block
 					if len(block.Evidence.Evidence) != 0 {
-						mu.Lock()
 						evidenceFromEachValidator[i] = block.Evidence.Evidence[0]
-						mu.Unlock()
-						logs = append(logs, fmt.Sprintf("Evidence collected from validator %d: %v", i, evidenceFromEachValidator[i]))
+						t.Logf("Evidence collected from validator %d: %v", i, evidenceFromEachValidator[i])
 						return
 					}
 				case <-evidenceTimer.C:
-					logs = append(logs, fmt.Sprintf("Timeout waiting for evidence from validator %d", i))
+					t.Logf("Timeout waiting for evidence from validator %d", i)
 					return
 				}
 			}
@@ -464,11 +460,6 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 	}
 
 	wg.Wait() // Wait for all goroutines to finish
-
-	// Log the collected logs
-	for _, logEntry := range logs {
-		t.Log(logEntry)
-	}
 
 	// Check if any evidence was collected
 	var collectedEvidence bool

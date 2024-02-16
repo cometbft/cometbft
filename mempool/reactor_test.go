@@ -356,7 +356,6 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
-				t.Logf("Error stopping reactor: %v", err)
 				require.NoError(t, err)
 			}
 		}
@@ -367,29 +366,31 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 		}
 	}
 
-	t.Log("Adding transactions to the first reactor")
+	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(1000)
 	callCheckTx(t, reactors[0].mempool, txs)
 
-	t.Log("Waiting for transactions to be gossiped to the second reactor")
+	// Explicitly wait for the transactions to be gossiped to the second reactor.
 	time.Sleep(1 * time.Second) // Adjust the sleep time based on expected gossip time.
 
-	t.Log("Checking that the transactions have been received by the second reactor")
+	// Check that the transactions have been received by the second reactor.
 	checkTxsInMempool(t, txs, reactors[1], 0)
 
-	t.Log("Ensuring no transactions are in the other reactors yet")
+	// Ensure no transactions are in the other reactors yet.
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
 
-	t.Log("Disconnecting the second reactor from the first reactor")
+	// Disconnect the second reactor from the first reactor.
 	firstPeer := reactors[0].Switch.Peers().Copy()[0]
 	reactors[0].Switch.StopPeerGracefully(firstPeer)
 
-	t.Log("Waiting for the disconnection to take effect")
+	// Wait for the disconnection to take effect and prevent any further gossiping.
 	time.Sleep(1 * time.Second) // Adjust the sleep time based on expected disconnection time.
 
-	t.Log("Checking the state of the reactors after the disconnection")
+	// Now check the state of the reactors after the disconnection.
+	// The third reactor should start receiving transactions from the first reactor; the fourth
+	// reactor's mempool should still be empty.
 	checkTxsInMempool(t, txs, reactors[2], 0)
 	for _, r := range reactors[3:] {
 		require.Zero(t, r.mempool.Size())
@@ -612,9 +613,7 @@ func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc 
 }
 
 // Wait until the mempool has a certain number of transactions.
-func waitForNumTxsInMempool(t *testing.T, ctx context.Context, numTxs int, mempool Mempool) {
-	t.Helper()
-	t.Logf("Waiting for %d transactions to be in the mempool", numTxs)
+func waitForNumTxsInMempool(ctx context.Context, numTxs int, mempool Mempool) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -630,13 +629,12 @@ func waitForNumTxsInMempool(t *testing.T, ctx context.Context, numTxs int, mempo
 
 // Wait until all txs are in the mempool and check that the number of txs in the
 // mempool is as expected.
-func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
+func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
 	t.Helper()
-	t.Logf("Checking that reactor %d has the expected transactions in mempool", reactorIndex)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	waitForNumTxsInMempool(t, ctx, len(txs), reactor.mempool)
+	waitForNumTxsInMempool(ctx, len(txs), reactor.mempool)
 
 	select {
 	case <-ctx.Done():
@@ -655,7 +653,7 @@ func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	waitForNumTxsInMempool(t, ctx, len(txs), reactor.mempool)
+	waitForNumTxsInMempool(ctx, len(txs), reactor.mempool)
 
 	select {
 	case <-ctx.Done():

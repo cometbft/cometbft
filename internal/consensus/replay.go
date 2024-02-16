@@ -252,17 +252,18 @@ func (h *Handshaker) Handshake(ctx context.Context, proxyApp proxy.AppConns) err
 	}
 	appHash := res.LastBlockAppHash
 
+	appVersion := h.initialState.Version.Consensus.App
+	// set app version if it's not set via genesis
+	if h.initialState.LastBlockHeight == 0 && appVersion == 0 && res.AppVersion != 0 {
+		appVersion = res.AppVersion
+		h.initialState.Version.Consensus.App = res.AppVersion
+	}
 	h.logger.Info("ABCI Handshake App Info",
 		"height", blockHeight,
 		"hash", log.NewLazySprintf("%X", appHash),
 		"software-version", res.Version,
-		"protocol-version", res.AppVersion,
+		"app-version", appVersion,
 	)
-
-	// Only set the version if there is no existing state.
-	if h.initialState.LastBlockHeight == 0 {
-		h.initialState.Version.Consensus.App = res.AppVersion
-	}
 
 	// Replay blocks up to the latest in the blockstore.
 	appHash, err = h.ReplayBlocks(ctx, h.initialState, appHash, blockHeight, proxyApp)
@@ -271,7 +272,10 @@ func (h *Handshaker) Handshake(ctx context.Context, proxyApp proxy.AppConns) err
 	}
 
 	h.logger.Info("Completed ABCI Handshake - CometBFT and App are synced",
-		"appHeight", blockHeight, "appHash", log.NewLazySprintf("%X", appHash))
+		"appHeight", blockHeight,
+		"appHash", log.NewLazySprintf("%X", appHash),
+		"appVersion", appVersion,
+	)
 
 	// TODO: (on restart) replay mempool
 

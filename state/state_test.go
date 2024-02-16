@@ -19,6 +19,7 @@ import (
 	"github.com/cometbft/cometbft/internal/test"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	"github.com/cometbft/cometbft/version"
 )
 
 // setupTestCase does setup common to all test cases.
@@ -81,6 +82,21 @@ func TestMakeGenesisStateNilValidators(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, state.Validators.Validators)
 	require.Empty(t, state.NextValidators.Validators)
+}
+
+func TestMakeGenesisStateSetsAppVersion(t *testing.T) {
+	cp := types.DefaultConsensusParams()
+	appVersion := uint64(5)
+	cp.Version.App = appVersion
+	doc := types.GenesisDoc{
+		ChainID:         "dummy",
+		ConsensusParams: cp,
+	}
+	require.Nil(t, doc.ValidateAndComplete())
+	state, err := sm.MakeGenesisState(&doc)
+	require.Nil(t, err)
+	require.Equal(t, appVersion, state.Version.Consensus.App)
+	require.Equal(t, version.BlockProtocol, state.Version.Consensus.Block)
 }
 
 // TestStateSaveLoad tests saving and loading State from a db.

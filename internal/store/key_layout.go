@@ -23,32 +23,32 @@ type BlockKeyLayout interface {
 type v1LegacyLayout struct{}
 
 // CalcBlockCommitKey implements BlockKeyLayout.
-func (v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
+func (*v1LegacyLayout) CalcBlockCommitKey(height int64) []byte {
 	return []byte(fmt.Sprintf("C:%v", height))
 }
 
 // CalcBlockHashKey implements BlockKeyLayout.
-func (v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
+func (*v1LegacyLayout) CalcBlockHashKey(hash []byte) []byte {
 	return []byte(fmt.Sprintf("BH:%x", hash))
 }
 
 // CalcBlockMetaKey implements BlockKeyLayout.
-func (v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
+func (*v1LegacyLayout) CalcBlockMetaKey(height int64) []byte {
 	return []byte(fmt.Sprintf("H:%v", height))
 }
 
 // CalcBlockPartKey implements BlockKeyLayout.
-func (v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
+func (*v1LegacyLayout) CalcBlockPartKey(height int64, partIndex int) []byte {
 	return []byte(fmt.Sprintf("P:%v:%v", height, partIndex))
 }
 
 // CalcExtCommitKey implements BlockKeyLayout.
-func (v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
+func (*v1LegacyLayout) CalcExtCommitKey(height int64) []byte {
 	return []byte(fmt.Sprintf("EC:%v", height))
 }
 
 // CalcSeenCommitKey implements BlockKeyLayout.
-func (v1LegacyLayout) CalcSeenCommitKey(height int64) []byte {
+func (*v1LegacyLayout) CalcSeenCommitKey(height int64) []byte {
 	return []byte(fmt.Sprintf("SC:%v", height))
 }
 

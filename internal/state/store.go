@@ -219,7 +219,6 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		case "1":
 			store.DBKeyLayout = &v1LegacyLayout{}
 		case "2":
-		default:
 			store.DBKeyLayout = v2Layout{}
 		}
 	}

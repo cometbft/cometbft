@@ -185,7 +185,6 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
-		DBKeyLayout:          config.Storage.DBKeyLayoutVersion,
 	})
 
 	defer func() {
@@ -291,7 +290,6 @@ func NewNode(ctx context.Context,
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 		Metrics:              smMetrics,
-		DBKeyLayout:          config.Storage.DBKeyLayoutVersion,
 	})
 
 	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithBlockLayout(config.Storage.DBKeyLayoutVersion))

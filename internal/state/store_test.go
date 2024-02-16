@@ -61,7 +61,6 @@ func BenchmarkLoadValidators(b *testing.B) {
 	require.NoError(b, err)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
-		DBKeyLayout:          "v2",
 	})
 	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
 	if err != nil {

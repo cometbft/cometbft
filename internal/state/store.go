@@ -174,8 +174,6 @@ type StoreOptions struct {
 	// Metrics defines the metrics collector to use for the state store.
 	// if none is specified then a NopMetrics collector is used.
 	Metrics *Metrics
-
-	DBKeyLayout string
 }
 
 var _ Store = (*dbStore)(nil)
@@ -199,13 +197,32 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		StoreOptions: options,
 	}
 
-	switch options.DBKeyLayout {
-	case "", "v1":
-		store.DBKeyLayout = &v1LegacyLayout{}
-	case "v2":
+	empty, _ := IsEmpty(store)
+
+	if empty {
 		store.DBKeyLayout = v2Layout{}
+		if err := store.db.SetSync([]byte("version"), []byte("2")); err != nil {
+			panic(err)
+		}
+
+		return store
 	}
 
+	versionNum, err := db.Get([]byte("version"))
+	if len(versionNum) == 0 && err == nil {
+		store.DBKeyLayout = v1LegacyLayout{}
+		if err := store.db.SetSync([]byte("version"), []byte("1")); err != nil {
+			panic(err)
+		}
+	} else {
+		switch string(versionNum) {
+		case "1":
+			store.DBKeyLayout = &v1LegacyLayout{}
+		case "2":
+		default:
+			store.DBKeyLayout = v2Layout{}
+		}
+	}
 	return store
 }
 

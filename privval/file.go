@@ -16,6 +16,7 @@ import (
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/tempfile"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -272,6 +273,16 @@ func (pv *FilePV) SignProposal(chainID string, proposal *cmtproto.Proposal) erro
 	if err := pv.signProposal(chainID, proposal); err != nil {
 		return fmt.Errorf("error signing proposal: %v", err)
 	}
+	return nil
+}
+
+// SignOracleVote signs a canonical representation of the vote, along with the
+// chainID. Implements PrivValidator.
+func (pv *FilePV) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
+	// TODO TODO TODO: implement sign oracle vote
+	// if err := pv.signVote(chainID, vote); err != nil {
+	// 	return fmt.Errorf("error signing vote: %v", err)
+	// }
 	return nil
 }
 

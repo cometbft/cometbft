@@ -6,6 +6,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
@@ -106,6 +107,27 @@ func (sc *SignerClient) SignVote(chainID string, vote *cmtproto.Vote) error {
 	}
 
 	*vote = resp.Vote
+
+	return nil
+}
+
+// SignVote requests a remote signer to sign a vote
+func (sc *SignerClient) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
+	// TODO TODO TODO: implement sign oracle vote
+	// response, err := sc.endpoint.SendRequest(mustWrapMsg(&privvalproto.SignVoteRequest{Vote: vote, ChainId: chainID}))
+	// if err != nil {
+	// 	return err
+	// }
+
+	// resp := response.GetSignedVoteResponse()
+	// if resp == nil {
+	// 	return ErrUnexpectedResponse
+	// }
+	// if resp.Error != nil {
+	// 	return &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
+	// }
+
+	// *vote = resp.Vote
 
 	return nil
 }

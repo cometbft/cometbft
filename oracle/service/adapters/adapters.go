@@ -16,7 +16,7 @@ func GetAdapterMap(grpcClient *grpc.ClientConn, redisService *redis.Service) map
 		NewMedianFilter(grpcClient, redisService), NewWeightedAverage(grpcClient, redisService),
 		NewFloatHandler(grpcClient, redisService), NewDecimalHandler(grpcClient, redisService),
 		NewMathFilter(grpcClient, redisService), NewOracleResultFetcher(grpcClient, redisService),
-		NewEVMStructParser(grpcClient, redisService), NewEVMFetcher(grpcClient, redisService),
+		NewEVMValueParser(grpcClient, redisService), NewEVMStructParser(grpcClient, redisService), NewEVMFetcher(grpcClient, redisService),
 		NewStaticHandler(grpcClient, redisService),
 	}
 	for _, adapter := range adaptersList {

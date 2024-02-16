@@ -1,0 +1,20 @@
+syntax = "proto3";
+package tendermint.oracle;
+
+option go_package = "github.com/cometbft/cometbft/proto/tendermint/oracle";
+
+message Vote {
+  string validator = 1;
+  string oracle_id = 2;
+  uint64 timestamp = 3;
+  string data = 4;
+}
+
+message GossipVote {
+  string validator = 1;
+  uint64 signed_timestamp = 2;
+  bytes signature = 3;
+  bytes public_key = 4;
+  string sign_type = 5;
+  repeated Vote votes = 6;
+}

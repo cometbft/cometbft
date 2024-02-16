@@ -240,13 +240,13 @@ type ManifestLoad struct {
 
 // ManifestLoadRun defines a transaction load execution.
 type ManifestLoadRun struct {
-	TxBytes     int      `toml:"tx_bytes"`
-	BatchSize   int      `toml:"batch_size"`
-	Connections int      `toml:"connections"`
-	MaxDuration uint32   `toml:"max_duration"`
-	MaxTxs      int      `toml:"max_txs"`
-	WaitToRun   uint32   `toml:"wait_to_run"`
-	TargetNodes []string `toml:"target"`
+	TxBytes         int      `toml:"tx_bytes"`
+	BatchSize       int      `toml:"batch_size"`
+	Connections     int      `toml:"connections"`
+	MaxDuration     uint32   `toml:"max_duration"`
+	MaxTxs          int      `toml:"max_txs"`
+	WaitToRun       uint32   `toml:"wait_to_run"`
+	TargetNodeNames []string `toml:"target"`
 }
 
 // Save saves the testnet manifest to a file.

@@ -156,13 +156,13 @@ type Load struct {
 }
 
 type LoadRun struct {
-	TxBytes         int
-	BatchSize       int
-	Connections     int
-	MaxTxs          int
-	MaxDuration     uint32
-	WaitToRun       uint32
-	TargetNodeNames []string
+	TxBytes     int
+	BatchSize   int
+	Connections int
+	MaxTxs      int
+	MaxDuration uint32
+	WaitToRun   uint32
+	TargetNodes []*Node
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -415,13 +415,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		runs := make(map[string]*LoadRun, len(loadManifest.Runs))
 		for name, runManifest := range loadManifest.Runs {
 			run := &LoadRun{
-				TxBytes:         manifest.LoadTxSizeBytes,
-				BatchSize:       manifest.LoadTxBatchSize,
-				Connections:     manifest.LoadTxConnections,
-				MaxDuration:     manifest.LoadMaxDuration,
-				MaxTxs:          manifest.LoadMaxTxs,
-				WaitToRun:       runManifest.WaitToRun,
-				TargetNodeNames: runManifest.TargetNodes,
+				TxBytes:     manifest.LoadTxSizeBytes,
+				BatchSize:   manifest.LoadTxBatchSize,
+				Connections: manifest.LoadTxConnections,
+				MaxDuration: manifest.LoadMaxDuration,
+				MaxTxs:      manifest.LoadMaxTxs,
+				WaitToRun:   runManifest.WaitToRun,
 			}
 			if loadManifest.TxBytes > 0 {
 				run.TxBytes = loadManifest.TxBytes
@@ -470,6 +469,13 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			// transactions cannot be unbounded, so we restrict the duration to the default value.
 			if len(manifest.Loads) > 1 && (run.MaxDuration == 0 && run.MaxTxs == 0) {
 				run.MaxDuration = defaultLoadDuration
+			}
+
+			run.TargetNodes = make([]*Node, len(runManifest.TargetNodeNames))
+			for i, node := range testnet.Nodes {
+				if slices.Contains(runManifest.TargetNodeNames, node.Name) {
+					run.TargetNodes[i] = node
+				}
 			}
 
 			runs[name] = run

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sync"
 	"time"
 
@@ -21,11 +20,11 @@ const workerPoolSize = 16
 
 // Load generates transactions against the network until the given context is
 // canceled.
-func Load(ctx context.Context, testnet *e2e.Testnet) error {
+func Load(ctx context.Context, loads []*e2e.Load) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	for i, load := range testnet.Loads {
+	for i, load := range loads {
 		wg := &sync.WaitGroup{}
 		logger.Info("load", "step", log.NewLazySprintf("Starting transaction load #%v", i), "workers", workerPoolSize)
 
@@ -40,7 +39,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 			go func(runName string, run *e2e.LoadRun) {
 				defer wg.Done()
 				runID := [16]byte(uuid.New()) // generate run ID on startup
-				if err := loadRun(ctx, testnet, runName, runID[:], run); err != nil {
+				if err := loadRun(ctx, runName, runID[:], run); err != nil {
 					logger.Error("load", "err", err)
 				}
 			}(runName, run)
@@ -58,7 +57,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 	return nil
 }
 
-func loadRun(ctx context.Context, testnet *e2e.Testnet, runName string, runID []byte, run *e2e.LoadRun) error {
+func loadRun(ctx context.Context, runName string, runID []byte, run *e2e.LoadRun) error {
 	logger := logger.With("run", runName)
 
 	if run.WaitToRun > 0 {
@@ -82,13 +81,12 @@ func loadRun(ctx context.Context, testnet *e2e.Testnet, runName string, runID []
 
 	// Spawn one load routine per node, per connection.
 	started := time.Now()
-	for _, n := range testnet.Nodes {
-		nodeIsTarget := len(run.TargetNodeNames) == 0 || slices.Contains(run.TargetNodeNames, n.Name)
-		if n.SendNoLoad || !nodeIsTarget {
+	for _, n := range run.TargetNodes {
+		if n.SendNoLoad {
 			continue
 		}
 
-		for w := 0; w < testnet.LoadTxConnections; w++ {
+		for w := 0; w < run.Connections; w++ {
 			go loadProcess(ctx, txCh, chSuccess, chFailed, n)
 		}
 	}

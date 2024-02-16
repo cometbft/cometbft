@@ -34,6 +34,7 @@ type CListMempool struct {
 	// Function set by the reactor to be called when a transaction is removed
 	// from the mempool.
 	removeTxOnReactorCb func(txKey types.TxKey)
+	proxyMtx            sync.Mutex
 
 	config *config.MempoolConfig
 
@@ -513,14 +514,19 @@ func (mem *CListMempool) TxsAvailable() <-chan struct{} {
 }
 
 func (mem *CListMempool) notifyTxsAvailable() {
-	if mem.Size() == 0 {
-		panic("notified txs available but mempool is empty!")
-	}
-	if mem.txsAvailable != nil && mem.notifiedTxsAvailable.CompareAndSwap(false, true) {
-		// channel cap is 1, so this will send once
-		select {
-		case mem.txsAvailable <- struct{}{}:
-		default:
+	mem.proxyMtx.Lock()
+	defer mem.proxyMtx.Unlock()
+
+	// Only notify if there are transactions available in the mempool
+	if mem.txs.Len() > 0 && !mem.notifiedTxsAvailable.Load() {
+		if mem.txsAvailable != nil {
+			// channel cap is 1, so this will send once
+			select {
+			case mem.txsAvailable <- struct{}{}:
+				mem.notifiedTxsAvailable.Store(true)
+			default:
+				// channel already full, don't block
+			}
 		}
 	}
 }
@@ -576,7 +582,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	}
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
-	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
+	for e := mem.txs.Front(); e != nil && len(txs) < max; e = e.Next() { // Change <= to <
 		memTx := e.Value.(*mempoolTx)
 		txs = append(txs, memTx.tx)
 	}

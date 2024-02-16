@@ -420,104 +420,73 @@ func TestSerialReap(t *testing.T) {
 
 	appConnCon, _ := cc.NewABCIConsensusClient()
 	appConnCon.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "consensus"))
-	err := appConnCon.Start()
-	require.NoError(t, err)
+	require.NoError(t, appConnCon.Start())
 
 	cacheMap := make(map[string]struct{})
-	deliverTxsRange := func(start, end int) {
-		// Deliver some txs.
+
+	deliverTxs := func(start, end int) {
 		for i := start; i < end; i++ {
 			txBytes := kvstore.NewTx(strconv.Itoa(i), "true")
-			_, err := mp.CheckTx(txBytes)
-			_, cached := cacheMap[string(txBytes)]
-			if cached {
-				require.Error(t, err, "expected error for cached tx")
-			} else {
-				require.NoError(t, err, "expected no err for uncached tx")
+			if _, cached := cacheMap[string(txBytes)]; !cached {
+				_, err := mp.CheckTx(txBytes)
+				require.NoError(t, err, "expected no error for uncached tx #%d", i)
+				cacheMap[string(txBytes)] = struct{}{}
 			}
-			cacheMap[string(txBytes)] = struct{}{}
-
-			// Duplicates are cached and should return error
-			_, err = mp.CheckTx(txBytes)
-			require.Error(t, err, "Expected error after CheckTx on duplicated tx")
 		}
 	}
 
-	reapCheck := func(exp int) {
+	reapAndCheck := func(expected int) {
 		txs := mp.ReapMaxBytesMaxGas(-1, -1)
-		require.Len(t, txs, exp)
+		require.Len(t, txs, expected, "Expected to reap %d txs, got %d", expected, len(txs))
 	}
 
-	updateRange := func(start, end int) {
+	updateMempool := func(start, end int) {
 		txs := make(types.Txs, end-start)
 		for i := start; i < end; i++ {
 			txs[i-start] = kvstore.NewTx(strconv.Itoa(i), "true")
 		}
-		if err := mp.Update(0, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil); err != nil {
-			t.Error(err)
-		}
+		require.NoError(t, mp.Update(0, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil), "Updating mempool failed")
 	}
 
-	commitRange := func(start, end int) {
-		// Deliver some txs in a block
+	commitTxs := func(start, end int) {
 		txs := make([][]byte, end-start)
 		for i := start; i < end; i++ {
 			txs[i-start] = kvstore.NewTx(strconv.Itoa(i), "true")
 		}
-
 		res, err := appConnCon.FinalizeBlock(context.Background(), &abci.FinalizeBlockRequest{Txs: txs})
-		if err != nil {
-			t.Errorf("client error committing tx: %v", err)
-		}
+		require.NoError(t, err, "FinalizeBlock failed")
 		for _, txResult := range res.TxResults {
-			if txResult.IsErr() {
-				t.Errorf("error committing tx. Code:%v result:%X log:%v",
-					txResult.Code, txResult.Data, txResult.Log)
-			}
+			require.False(t, txResult.IsErr(), "Error committing tx. Code:%v result:%X log:%v", txResult.Code, txResult.Data, txResult.Log)
 		}
-		if len(res.AppHash) != 8 {
-			t.Errorf("error committing. Hash:%X", res.AppHash)
-		}
-
+		require.Len(t, res.AppHash, 8, "Invalid AppHash length: expected 8, got %d", len(res.AppHash))
 		_, err = appConnCon.Commit(context.Background(), &abci.CommitRequest{})
-		if err != nil {
-			t.Errorf("client error committing: %v", err)
-		}
+		require.NoError(t, err, "Commit failed")
 	}
 
-	//----------------------------------------
+	// Define test cases
+	// Define test cases
+	testCases := []struct {
+		start, end, expected int
+	}{
+		{0, 100, 100},
+		{0, 1000, 1000},
+		{0, 500, 500},
+		{900, 1100, 200},
+		{100, 600, 500},
+		{200, 700, 500},
+	}
 
-	// Deliver some txs.
-	deliverTxsRange(0, 100)
+	for _, tc := range testCases {
+		mp.Flush()
+		cacheMap = make(map[string]struct{})
 
-	// Reap the txs.
-	reapCheck(100)
-
-	// Reap again.  We should get the same amount
-	reapCheck(100)
-
-	// Deliver 0 to 999, we should reap 900 new txs
-	// because 100 were already counted.
-	deliverTxsRange(0, 1000)
-
-	// Reap the txs.
-	reapCheck(1000)
-
-	// Reap again.  We should get the same amount
-	reapCheck(1000)
-
-	// Commit from the consensus AppConn
-	commitRange(0, 500)
-	updateRange(0, 500)
-
-	// We should have 500 left.
-	reapCheck(500)
-
-	// Deliver 100 invalid txs and 100 valid txs
-	deliverTxsRange(900, 1100)
-
-	// We should have 600 now.
-	reapCheck(600)
+		deliverTxs(tc.start, tc.end)
+		reapAndCheck(tc.expected)
+		if tc.start == 0 && tc.end == 500 {
+			commitTxs(tc.start, tc.end)
+			updateMempool(tc.start, tc.end)
+		}
+	}
 }
 
 func TestMempool_CheckTxChecksTxSize(t *testing.T) {

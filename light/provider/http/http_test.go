@@ -37,16 +37,23 @@ func TestProvider(t *testing.T) {
 	for _, path := range []string{"", "/", "/v1", "/v1/"} {
 		app := kvstore.NewInMemoryApplication()
 		app.RetainBlocks = 10
+
+		// Use dynamic port allocation by passing a zero port.
+		cfg := rpctest.GetConfig()
+		cfg.RPC.ListenAddress = "tcp://127.0.0.1:0"
 		node := rpctest.StartCometBFT(app, rpctest.RecreateConfig)
 
-		cfg := rpctest.GetConfig()
+		// Ensure the node and its directories are properly cleaned up.
+		defer rpctest.StopCometBFT(node)
 		defer os.RemoveAll(cfg.RootDir)
-		rpcAddr := cfg.RPC.ListenAddress
+
+		// After starting the node, retrieve the dynamically allocated port.
+		actualAddr := node.Config().RPC.ListenAddress
 		genDoc, err := types.GenesisDocFromFile(cfg.GenesisFile())
 		require.NoError(t, err)
 		chainID := genDoc.ChainID
 
-		c, err := rpchttp.New(rpcAddr + path)
+		c, err := rpchttp.New(actualAddr + path)
 		require.NoError(t, err)
 
 		p := lighthttp.NewWithClient(chainID, c)

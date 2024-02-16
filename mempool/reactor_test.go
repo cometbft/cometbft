@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"sync"
@@ -409,6 +410,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
+				t.Logf("Error stopping reactor: %v", err)
 				require.NoError(t, err)
 			}
 		}
@@ -419,27 +421,25 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 		}
 	}
 
-	// Disconnect the second reactor from the third reactor.
+	t.Log("Disconnecting the second reactor from the third reactor")
 	pCon1_2 := reactors[1].Switch.Peers().Copy()[1]
 	reactors[1].Switch.StopPeerGracefully(pCon1_2)
 
-	// Add a bunch transactions to the first reactor.
+	t.Log("Adding transactions to the first reactor")
 	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
 
-	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
-	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	t.Log("Waiting for transactions to be in the mempool of the second reactor")
 	checkTxsInOrder(t, txs, reactors[1], 0)
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
 
-	// Disconnect the second reactor from the first reactor.
+	t.Log("Disconnecting the second reactor from the first reactor")
 	pCon0_1 := reactors[0].Switch.Peers().Copy()[0]
 	reactors[0].Switch.StopPeerGracefully(pCon0_1)
 
-	// Now the third reactor should start receiving transactions from the first reactor and
-	// the fourth reactor from the second
+	t.Log("Checking that the third reactor starts receiving transactions from the first reactor")
 	checkTxsInOrder(t, txs, reactors[2], 0)
 	checkTxsInOrder(t, txs, reactors[3], 0)
 }
@@ -613,9 +613,17 @@ func waitForReactors(t *testing.T, txs types.Txs, reactors []*Reactor, testFunc 
 }
 
 // Wait until the mempool has a certain number of transactions.
-func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
-	for mempool.Size() < numTxs {
-		time.Sleep(time.Millisecond * 100)
+func waitForNumTxsInMempool(ctx context.Context, numTxs int, mempool Mempool) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if mempool.Size() >= numTxs {
+				return
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
 	}
 }
 
@@ -623,24 +631,40 @@ func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 // mempool is as expected.
 func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
 	t.Helper()
-	waitForNumTxsInMempool(len(txs), reactor.mempool)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
-	require.Len(t, txs, len(reapedTxs))
-	require.Len(t, txs, reactor.mempool.Size())
+	waitForNumTxsInMempool(ctx, len(txs), reactor.mempool)
+
+	select {
+	case <-ctx.Done():
+		t.Fatal("Timeout waiting for transactions to be in the mempool")
+	default:
+		reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+		require.Len(t, txs, len(reapedTxs))
+		require.Len(t, txs, reactor.mempool.Size())
+	}
 }
 
 // Wait until all txs are in the mempool and check that they are in the same
 // order as given.
 func checkTxsInOrder(t *testing.T, txs types.Txs, reactor *Reactor, reactorIndex int) {
 	t.Helper()
-	waitForNumTxsInMempool(len(txs), reactor.mempool)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// Check that all transactions in the mempool are in the same order as txs.
-	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
-	for i, tx := range txs {
-		assert.Equalf(t, tx, reapedTxs[i],
-			"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])
+	waitForNumTxsInMempool(ctx, len(txs), reactor.mempool)
+
+	select {
+	case <-ctx.Done():
+		t.Fatal("Timeout waiting for transactions to be in the mempool")
+	default:
+		// Check that all transactions in the mempool are in the same order as txs.
+		reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+		for i, tx := range txs {
+			assert.Equalf(t, tx, reapedTxs[i],
+				"txs at index %d on reactor %d don't match: %v vs %v", i, reactorIndex, tx, reapedTxs[i])
+		}
 	}
 }
 

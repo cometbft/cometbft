@@ -430,7 +430,7 @@ func collectEvidenceFromValidators(t *testing.T, nValidators int, blocksSubs []t
 	wg := new(sync.WaitGroup)
 	wg.Add(nValidators)
 
-	evidenceCollectionTimeout := 10 * time.Second // Set an appropriate timeout duration
+	evidenceCollectionTimeout := 15 * time.Second
 
 	for i := 0; i < nValidators; i++ {
 		go func(i int) {

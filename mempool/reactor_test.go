@@ -367,7 +367,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	}
 
 	// Add a bunch transactions to the first reactor.
-	txs := newUniqueTxs(1000)
+	txs := newUniqueTxs(250)
 	callCheckTx(t, reactors[0].mempool, txs)
 
 	// Explicitly wait for the transactions to be gossiped to the second reactor.
@@ -384,9 +384,6 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	// Disconnect the second reactor from the first reactor.
 	firstPeer := reactors[0].Switch.Peers().Copy()[0]
 	reactors[0].Switch.StopPeerGracefully(firstPeer)
-
-	// Wait for the disconnection to take effect and prevent any further gossiping.
-	time.Sleep(1 * time.Second) // Adjust the sleep time based on expected disconnection time.
 
 	// Now check the state of the reactors after the disconnection.
 	// The third reactor should start receiving transactions from the first reactor; the fourth

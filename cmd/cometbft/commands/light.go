@@ -183,7 +183,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 			},
 			primaryAddr,
 			witnessesAddrs,
-			dbs.New(db, chainID),
+			dbs.New(db, chainID, dbs.WithLBKeyLayout(config.Storage.DBKeyLayoutVersion)),
 			options...,
 		)
 	} else { // continue from latest state
@@ -192,7 +192,7 @@ func runProxy(_ *cobra.Command, args []string) error {
 			trustingPeriod,
 			primaryAddr,
 			witnessesAddrs,
-			dbs.New(db, chainID),
+			dbs.New(db, chainID, dbs.WithLBKeyLayout(config.Storage.DBKeyLayoutVersion)),
 			options...,
 		)
 	}

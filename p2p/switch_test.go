@@ -549,25 +549,42 @@ func TestSwitchReconnectsToInboundPersistentPeer(t *testing.T) {
 
 func TestSwitchDialPeersAsync(t *testing.T) {
 	if testing.Short() {
+		t.Log("Skipping TestSwitchDialPeersAsync in short mode.")
 		return
 	}
 
+	t.Log("Creating switch")
 	sw := MakeSwitch(cfg, 1, initSwitchFunc)
 	err := sw.Start()
 	require.NoError(t, err)
 	t.Cleanup(func() {
+		t.Log("Stopping switch")
 		if err := sw.Stop(); err != nil {
 			t.Error(err)
 		}
 	})
 
+	t.Log("Starting remote peer")
 	rp := &remotePeer{PrivKey: ed25519.GenPrivKey(), Config: cfg}
 	rp.Start()
-	defer rp.Stop()
+	defer func() {
+		t.Log("Stopping remote peer")
+		rp.Stop()
+	}()
 
+	t.Log("Dialing peers asynchronously")
 	err = sw.DialPeersAsync([]string{rp.Addr().String()})
 	require.NoError(t, err)
+
+	t.Logf("Waiting for %d milliseconds before checking peers", dialRandomizerIntervalMilliseconds)
 	time.Sleep(dialRandomizerIntervalMilliseconds * time.Millisecond)
+
+	t.Log("Checking if the remote peer is connected")
+	if peer := sw.Peers().Get(rp.ID()); peer == nil {
+		t.Log("Peer is nil, indicating the remote peer is not connected")
+	} else {
+		t.Log("Peer is not nil, indicating the remote peer is connected")
+	}
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 }
 

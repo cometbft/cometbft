@@ -163,7 +163,13 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	if dbProvider == nil {
 		dbProvider = cfg.DefaultDBProvider
 	}
+<<<<<<< HEAD
 	blockStore, stateDB, err := initDBs(config, dbProvider)
+=======
+	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
+
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval))
+>>>>>>> cfe8b888a (feat(pruning): trigger explicitly compaction upon pruning (#1972))
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -288,6 +294,19 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
+<<<<<<< HEAD
+=======
+	csMetrics, p2pMetrics, memplMetrics, smMetrics, bstMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+		Metrics:              smMetrics,
+		Compact:              config.Storage.Compact,
+		CompactionInterval:   config.Storage.CompactionInterval,
+	})
+
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics))
+
+>>>>>>> cfe8b888a (feat(pruning): trigger explicitly compaction upon pruning (#1972))
 	// The key will be deleted if it existed.
 	// Not checking whether the key is there in case the genesis file was larger than
 	// the max size of a value (in rocksDB for example), which would cause the check

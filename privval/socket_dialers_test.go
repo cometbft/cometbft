@@ -16,7 +16,7 @@ func getDialerTestCases(t *testing.T) []dialerTestCase {
 	tcpAddr := GetFreeLocalhostAddrPort()
 	unixFilePath, err := testUnixAddr()
 	require.NoError(t, err)
-	unixAddr := fmt.Sprintf("unix://%s", unixFilePath)
+	unixAddr := "unix://" + unixFilePath
 
 	return []dialerTestCase{
 		{

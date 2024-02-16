@@ -441,6 +441,9 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_custom_reactors_test")
 	defer os.RemoveAll(config.RootDir)
 
+	// use dynamic port allocation
+	config.P2P.ListenAddress = testFreeAddr(t)
+
 	cr := p2pmock.NewReactor()
 	cr.Channels = []*conn.ChannelDescriptor{
 		{

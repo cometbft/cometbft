@@ -44,11 +44,14 @@ func Load(ctx context.Context, loads []*e2e.Load) error {
 				}
 			}(runName, run)
 		}
-
 		wg.Wait()
 
-		if load.WaitToFinish > 0 {
-			waitToFinish := time.Duration(load.WaitToFinish) * time.Second
+		if load.WaitUntil == e2e.LoadConditionMempoolsAreEmpty {
+			waitMempoolsAreEmpty(ctx, load.Testnet.Nodes)
+		}
+
+		if load.WaitAtEnd > 0 {
+			waitToFinish := time.Duration(load.WaitAtEnd) * time.Second
 			logger.Info("load", "step", log.NewLazySprintf("Waiting %s to finish load instance", waitToFinish))
 			time.Sleep(waitToFinish)
 		}
@@ -66,7 +69,7 @@ func loadRun(ctx context.Context, runName string, runID []byte, run *e2e.LoadRun
 		time.Sleep(waitToRun)
 	}
 
-	logger.Info("load", "step", "Starting load run",
+	logger.Info("load", "step", "Start",
 		"tx_size", run.TxBytes, "batch_size", run.BatchSize, "connections", run.Connections,
 		"max_duration", run.MaxDuration, "max_txs", run.MaxTxs)
 
@@ -111,13 +114,13 @@ func loadRun(ctx context.Context, runName string, runID []byte, run *e2e.LoadRun
 		case <-time.After(timeout):
 			return fmt.Errorf("unable to submit transactions for %v", timeout)
 		case <-maxDurationCh:
-			logger.Info("load", "step", log.NewLazySprintf("Ending transaction load after reaching %v seconds", run.MaxDuration), "tx/s", rate)
+			logger.Info("load", "step", log.NewLazySprintf("Finished after reaching %v seconds", run.MaxDuration), "success", success, "tx/s", rate)
 			return nil
 		case <-ctx.Done():
 			if success == 0 {
 				return errors.New("failed to submit any transactions")
 			}
-			logger.Info("load", "step", log.NewLazySprintf("Ending transaction load after %v txs", success), "tx/s", rate)
+			logger.Info("load", "step", "Finished transaction load", "success", success, "tx/s", rate)
 			return nil
 		}
 
@@ -130,7 +133,7 @@ func loadRun(ctx context.Context, runName string, runID []byte, run *e2e.LoadRun
 
 		// Check if reached max number of allowed transactions to send.
 		if run.MaxTxs > 0 && success >= run.MaxTxs {
-			logger.Info("load", "step", log.NewLazySprintf("Ending transaction load after sending %v txs", success), "tx/s", rate)
+			logger.Info("load", "step", log.NewLazySprintf("Finished after sending %v txs", success), "tx/s", rate)
 			return nil
 		}
 	}
@@ -221,4 +224,39 @@ func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- str
 		}
 		chSuccess <- s
 	}
+}
+
+// waitMempoolsAreEmpty will block until the mempools of all nodes are empty.
+func waitMempoolsAreEmpty(ctx context.Context, nodes []*e2e.Node) {
+	logger.Info("load", "step", "Wait until mempools are empty")
+	var wg sync.WaitGroup
+	for _, node := range nodes {
+		wg.Add(1)
+		go func(node *e2e.Node) {
+			defer wg.Done()
+			for {
+				isEmpty, err := mempoolIsEmpty(ctx, node)
+				if err != nil || isEmpty {
+					return
+				}
+				time.Sleep(5 * time.Second)
+			}
+		}(node)
+	}
+	wg.Wait()
+}
+
+func mempoolIsEmpty(ctx context.Context, node *e2e.Node) (bool, error) {
+	client, err := node.Client()
+	if err != nil {
+		logger.Error("non-fatal error creating node client", "error", err)
+		return false, err
+	}
+	limit := 1
+	res, err := client.UnconfirmedTxs(ctx, &limit)
+	if err != nil {
+		logger.Error("failed to request unconfirmed txs", "err", err)
+		return false, err
+	}
+	return res.Count == 0, nil
 }

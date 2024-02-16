@@ -69,6 +69,8 @@ const (
 
 	EvidenceAgeHeight int64         = 7
 	EvidenceAgeTime   time.Duration = 500 * time.Millisecond
+
+	LoadConditionMempoolsAreEmpty = "mempools-are-empty"
 )
 
 // Testnet represents a single testnet.
@@ -92,7 +94,8 @@ type Testnet struct {
 	LoadMaxTxs                                           int
 	LoadMaxDuration                                      uint32
 	LoadWaitToStart                                      uint32
-	LoadWaitToFinish                                     uint32
+	LoadWaitUntil                                        string
+	LoadWaitAtEnd                                        uint32
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -145,14 +148,11 @@ type Node struct {
 }
 
 type Load struct {
-	TxBytes      int
-	BatchSize    int
-	Connections  int
-	MaxTxs       int
-	MaxDuration  uint32
-	WaitToStart  uint32
-	WaitToFinish uint32
-	Runs         map[string]*LoadRun
+	Testnet     *Testnet
+	WaitToStart uint32
+	WaitUntil   string
+	WaitAtEnd   uint32
+	Runs        map[string]*LoadRun
 }
 
 type LoadRun struct {
@@ -202,13 +202,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Loads:                            []*Load{},
 		DisablePexReactor:                manifest.DisablePexReactor,
 		Evidence:                         manifest.Evidence,
-		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
-		LoadTxConnections:                manifest.LoadTxConnections,
-		LoadMaxTxs:                       manifest.LoadMaxTxs,
-		LoadMaxDuration:                  manifest.LoadMaxDuration,
-		LoadWaitToStart:                  manifest.LoadWaitToStart,
-		LoadWaitToFinish:                 manifest.LoadWaitToFinish,
 		ABCIProtocol:                     manifest.ABCIProtocol,
 		PrepareProposalDelay:             manifest.PrepareProposalDelay,
 		ProcessProposalDelay:             manifest.ProcessProposalDelay,
@@ -486,14 +479,20 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		}
 
 		load := &Load{
-			WaitToStart:  loadManifest.WaitToStart,
-			MaxDuration:  loadManifest.MaxDuration,
-			WaitToFinish: loadManifest.WaitToFinish,
-			TxBytes:      loadManifest.TxBytes,
-			BatchSize:    loadManifest.BatchSize,
-			Connections:  loadManifest.Connections,
-			MaxTxs:       loadManifest.MaxTxs,
-			Runs:         runs,
+			Testnet:     testnet,
+			WaitToStart: manifest.LoadWaitToStart,
+			WaitUntil:   manifest.LoadWaitUntil,
+			WaitAtEnd:   manifest.LoadWaitAtEnd,
+			Runs:        runs,
+		}
+		if loadManifest.WaitToStart > 0 {
+			load.WaitToStart = loadManifest.WaitToStart
+		}
+		if loadManifest.WaitUntil != "" {
+			load.WaitUntil = loadManifest.WaitUntil
+		}
+		if loadManifest.WaitAtEnd > 0 {
+			load.WaitAtEnd = loadManifest.WaitAtEnd
 		}
 		testnet.Loads = append(testnet.Loads, load)
 	}

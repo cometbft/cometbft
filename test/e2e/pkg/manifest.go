@@ -86,15 +86,16 @@ type Manifest struct {
 	// Currently only uncoordinated upgrade is supported
 	UpgradeVersion string `toml:"upgrade_version"`
 
-	// Settings for transaction loading that apply to all load instances. They can be overwritten by
-	// individual settings in each instance.
+	// Default settings for transaction loading that apply to all load instances. They can be
+	// overwritten by individual settings in each instance.
 	LoadTxSizeBytes   int    `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int    `toml:"load_tx_batch_size"`  // Number of transactions per second, to all nodes, divided on all connections.
 	LoadTxConnections int    `toml:"load_tx_connections"` // Number of connections per node, to split the batch of transactions.
 	LoadMaxTxs        int    `toml:"load_max_txs"`        // Maximum number of transactions to send for each run.
 	LoadMaxDuration   uint32 `toml:"load_max_duration"`   // Duration of each load run in seconds.
 	LoadWaitToStart   uint32 `toml:"load_wait_to_start"`
-	LoadWaitToFinish  uint32 `toml:"load_wait_to_finish"`
+	LoadWaitUntil     string `toml:"load_wait_until"`
+	LoadWaitAtEnd     uint32 `toml:"load_wait_at_end"`
 
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
@@ -219,20 +220,29 @@ type ManifestNode struct {
 
 // ManifestLoad represents an instance of a transaction load process.
 type ManifestLoad struct {
-	// These settings can be overwritten in each individual run.
+	// Default settings for all `run`s in this `load` instance. They can be overwritten in each
+	// individual `run`.
 	TxBytes     int    `toml:"tx_bytes"`
 	BatchSize   int    `toml:"batch_size"`
 	Connections int    `toml:"connections"`
 	MaxTxs      int    `toml:"max_txs"`
 	MaxDuration uint32 `toml:"max_duration"` // Duration of the load instance in seconds.
 
-	// Seconds to wait before start running the load. If `start_after` is set, wait after the
-	// previous run have finished; otherwise count from when the testnet has started.
+	// Seconds to wait before starting the load, to give nodes time to stabilize, if needed. If
+	// `start_after` is set, wait after the previous run have finished; otherwise count from when
+	// the testnet has started.
 	WaitToStart uint32 `toml:"wait_to_start"`
 
-	// Seconds to wait after all the runs have finished. The next load will start when this time has
-	// passed.
-	WaitToFinish uint32 `toml:"wait_to_finish"`
+	// WaitUntil will wait for some condition to be true before stopping the run. Possible values
+	// are:
+	//   - "" (default) means there is no condition.
+	//   - "mempools-are-empty" wait until the mempool of all nodes are empty before stopping the
+	// run.
+	WaitUntil string `toml:"wait_until"`
+
+	// Seconds to wait at the end of the load, to give the nodes time in case they need to finish
+	// processing something.
+	WaitAtEnd uint32 `toml:"wait_at_end"`
 
 	// All runs in a load instance execute in parallel.
 	Runs map[string]*ManifestLoadRun `toml:"run"`

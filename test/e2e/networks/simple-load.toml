@@ -3,17 +3,21 @@
 # Default values for all `run` instances.
 load_tx_connections = 1
 load_tx_size_bytes = 1024
-load_max_duration = 5
-load_wait_to_start = 3
-load_wait_to_finish = 2
+load_max_duration = 20
+load_wait_to_start = 5
+load_wait_until = "mempools-are-empty"
+load_wait_at_end = 5
+
+prometheus = true
 
 # `load` instances run sequentially.
 [[load]]
 
+wait_to_start = 3
+wait_at_end = 3
+
 # Default values for all `run`s in this `load`.
 max_duration = 20
-wait_to_start = 1
-wait_to_finish = 4
 
 # This `load` instance has three `run` executions running in parallel.
 run.small_txs = { batch_size = 100, tx_bytes = 1024 }

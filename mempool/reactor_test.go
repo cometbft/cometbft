@@ -445,6 +445,9 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 	pCon0_2 := reactors[0].Switch.Peers().Copy()[1] // Assuming the second peer is the third reactor
 	reactors[0].Switch.StopPeerForError(pCon0_2, errors.New("this test disconnects the third reactor from the first reactor"))
 
+	// Allow some time for the disconnection to take effect
+	time.Sleep(1 * time.Second)
+
 	// Now the fourth reactor should start receiving transactions from the first reactor
 	t.Log("Checking that the fourth reactor starts receiving transactions from the first reactor")
 	checkTxsInOrder(t, txs, reactors[3], 0)

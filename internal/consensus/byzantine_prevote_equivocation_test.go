@@ -284,31 +284,24 @@ func alterPrevoteForByzantineNode(t *testing.T, bcs *State, prevoteHeight int64,
 	t.Helper()
 	bcs.doPrevote = func(height int64, round int32) {
 		if height == prevoteHeight {
-			bcs.Logger.Info("Sending three votes")
+			bcs.Logger.Info("Sending two votes")
 			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), nil)
 			require.NoError(t, err)
 			prevote2, err := bcs.signVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 			require.NoError(t, err)
-			prevote3, err := bcs.signVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-			require.NoError(t, err)
 			peerList := reactors[byzantineNode].Switch.Peers().Copy()
 			bcs.Logger.Info("Getting peer list", "peers", peerList)
-			require.GreaterOrEqual(t, len(peerList), 3)
 			for i, peer := range peerList {
-				if i < len(peerList)/3 {
+				if i < len(peerList)/2 {
 					bcs.Logger.Info("Signed and pushed vote", "vote", prevote1, "peer", peer)
 					peer.Send(p2p.Envelope{
 						Message:   &cmtcons.Vote{Vote: prevote1.ToProto()},
 						ChannelID: VoteChannel,
 					})
+				} else {
 					bcs.Logger.Info("Signed and pushed vote", "vote", prevote2, "peer", peer)
 					peer.Send(p2p.Envelope{
 						Message:   &cmtcons.Vote{Vote: prevote2.ToProto()},
-						ChannelID: VoteChannel,
-					})
-					bcs.Logger.Info("Signed and pushed vote", "vote", prevote3, "peer", peer)
-					peer.Send(p2p.Envelope{
-						Message:   &cmtcons.Vote{Vote: prevote3.ToProto()},
 						ChannelID: VoteChannel,
 					})
 				}

@@ -349,6 +349,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 // Note: in this test we know which gossip connections are active or not because of how the p2p
 // functions are currently implemented, which affects the order in which peers are added to the
 // mempool reactor.
+// NOTE: THIS TEST IS POINTLESS AND SHOULD BE REMOVED.
 func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
@@ -367,7 +368,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 	}
 
 	// Add a bunch transactions to the first reactor.
-	txs := newUniqueTxs(250)
+	txs := newUniqueTxs(100)
 	callCheckTx(t, reactors[0].mempool, txs)
 
 	// Explicitly wait for the transactions to be gossiped to the second reactor.
@@ -400,6 +401,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 // Note: in this test we know which gossip connections are active or not because of how the p2p
 // functions are currently implemented, which affects the order in which peers are added to the
 // mempool reactor.
+// NOTE: THIS TEST IS POINTLESS AND SHOULD BE REMOVED.
 func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1

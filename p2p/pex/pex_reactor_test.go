@@ -94,7 +94,8 @@ func TestPEXReactorRunning(t *testing.T) {
 				addr := otherSw.NetAddress()
 				err := books[i].AddAddress(addr, addr)
 				require.NoError(t, err)
-				sw.AddPersistentPeers([]string{addr.String()})
+				err = sw.AddPersistentPeers([]string{addr.String()})
+				require.NoError(t, err)
 			}
 		}
 	}

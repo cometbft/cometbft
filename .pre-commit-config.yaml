@@ -5,23 +5,11 @@ repos:
 
  # golangci-lint
  - repo: https://github.com/golangci/golangci-lint
-   rev: v1.56.0
+   rev: v1.56.2
    hooks:
     - id: golangci-lint-full
       args: [--timeout, 10m] # for CI
 
- # gofumpt (does not have .pre-commmit-hooks.yaml)
- - repo: local
-   hooks:
-    - id: gofumpt
-      name: "gofumpt"
-      additional_dependencies:
-       - mvdan.cc/gofumpt@v0.6.0
-      entry: "gofumpt"
-      language: golang
-      args: [-w, .]
-      types: [go]
-      pass_filenames: false
 
  # codespell
  - repo: https://github.com/codespell-project/codespell

@@ -165,7 +165,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()))
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval))
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -180,7 +180,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if !blockStore.IsEmpty() {
-		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
+		return errors.New("blockstore not empty, trying to initialize non empty state")
 	}
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -200,7 +200,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if !state.IsEmpty() {
-		return fmt.Errorf("state not empty, trying to initialize non empty state")
+		return errors.New("state not empty, trying to initialize non empty state")
 	}
 
 	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config), config.Storage.GenesisHash)
@@ -290,6 +290,8 @@ func NewNode(ctx context.Context,
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 		Metrics:              smMetrics,
+		Compact:              config.Storage.Compact,
+		CompactionInterval:   config.Storage.CompactionInterval,
 	})
 
 	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics))
@@ -581,7 +583,7 @@ func (n *Node) OnStart() error {
 	if n.stateSync {
 		bcR, ok := n.bcReactor.(blockSyncReactor)
 		if !ok {
-			return fmt.Errorf("this blocksync reactor does not support switching from state sync")
+			return errors.New("this blocksync reactor does not support switching from state sync")
 		}
 		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
 			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)

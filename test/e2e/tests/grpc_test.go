@@ -110,6 +110,8 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 			// As it happens in the background this lowers the chances
 			// that the block at height=first will be pruned by the time we test
 			// this. If this test starts to fail often, it is worth revisiting this logic.
+			// To reproduce this failure locally, it is advised to set the storage.pruning.interval
+			// to 1s instead of 10s.
 			first += int64(node.RetainBlocks)
 		}
 

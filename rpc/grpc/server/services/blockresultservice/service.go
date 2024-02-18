@@ -54,30 +54,6 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 	}, nil
 }
 
-// GetLatest BlockResults returns the block results of the last committed height.
-func (s *blockResultsService) GetLatestBlockResults(_ context.Context, _ *brs.GetLatestBlockResultsRequest) (*brs.GetLatestBlockResultsResponse, error) {
-	logger := s.logger.With("endpoint", "GetBlockResults")
-	ss, err := s.stateStore.Load()
-	if err != nil {
-		logger.Error("Error loading store", "err", err)
-		return nil, status.Error(codes.Internal, "Internal server error")
-	}
-
-	res, err := s.stateStore.LoadFinalizeBlockResponse(ss.LastBlockHeight)
-	if err != nil {
-		logger.Error("Error fetching BlockResults", "height", ss.LastBlockHeight, "err", err)
-		return nil, status.Error(codes.Internal, "Internal server error")
-	}
-
-	return &brs.GetLatestBlockResultsResponse{
-		Height:              ss.LastBlockHeight,
-		TxResults:           res.TxResults,
-		FinalizeBlockEvents: formatProtoToRef(res.Events),
-		ValidatorUpdates:    formatProtoToRef(res.ValidatorUpdates),
-		AppHash:             res.AppHash,
-	}, nil
-}
-
 func formatProtoToRef[T any](collection []T) []*T {
 	res := []*T{}
 	for i := range collection {

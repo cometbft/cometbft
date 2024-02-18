@@ -228,7 +228,7 @@ func TestSetupTrace(t *testing.T) {
 		require.Equal(t, "", stdout, i)
 		require.NotEqual(t, "", stderr, i)
 		msg := strings.Split(stderr, "\n")
-		desired := fmt.Sprintf("ERROR: %s", tc.expected)
+		desired := "ERROR: " + tc.expected
 		assert.Equal(t, desired, msg[0], i)
 		t.Log(msg)
 		if tc.long && assert.Greater(t, len(msg), 2, i) {

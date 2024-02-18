@@ -47,23 +47,36 @@ type Pool struct {
 	dbKeyLayout EvidenceKeyLayout
 }
 
-type EvidenceOption func(*Pool)
+// // WithDBKeyLayout sets.
+// func WithDBKeyLayout(dbKeyLayout string) EvidenceOption {
+// 	return func(pool *Pool) {
+// 		switch dbKeyLayout {
+// 		case "v1":
+// 			pool.dbKeyLayout = v1LegacyLayout{}
+// 		case "v2":
+// 			pool.dbKeyLayout = &v2Layout{}
+// 		}
+// 	}
+// }
 
-// WithDBKeyLayout sets.
-func WithDBKeyLayout(dbKeyLayout string) EvidenceOption {
-	return func(pool *Pool) {
-		switch dbKeyLayout {
-		case "v1":
-			pool.dbKeyLayout = v1LegacyLayout{}
-		case "v2":
-			pool.dbKeyLayout = &v2Layout{}
-		}
+func isEmpty(evidenceDB dbm.DB) bool {
+	items := 0
+
+	iter, err := evidenceDB.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
 	}
+
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		items++
+	}
+	return items == 0
 }
 
 // NewPool creates an evidence pool. If using an existing evidence store,
 // it will add all pending evidence to the concurrent list.
-func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options ...EvidenceOption) (*Pool, error) {
+func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool, error) {
 	state, err := stateDB.Load()
 	if err != nil {
 		return nil, sm.ErrCannotLoadState{Err: err}
@@ -77,10 +90,37 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options
 		evidenceStore:   evidenceDB,
 		evidenceList:    clist.New(),
 		consensusBuffer: make([]duplicateVoteSet, 0),
-		dbKeyLayout:     v1LegacyLayout{},
 	}
-	for _, option := range options {
-		option(pool)
+
+	if isEmpty(evidenceDB) {
+		fmt.Println("Empty store")
+		pool.dbKeyLayout = v2Layout{}
+		err = evidenceDB.SetSync([]byte("version"), []byte("2"))
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		var (
+			version []byte
+			err     error
+		)
+		if version, err = evidenceDB.Get([]byte("version")); err != nil {
+			panic(err)
+		}
+		if len(version) == 0 {
+			err = evidenceDB.SetSync([]byte("version"), []byte("1"))
+			pool.dbKeyLayout = v1LegacyLayout{}
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			switch string(version) {
+			case "1":
+				pool.dbKeyLayout = v1LegacyLayout{}
+			case "2":
+				pool.dbKeyLayout = v2Layout{}
+			}
+		}
 	}
 
 	// if pending evidence already in db, in event of prior failure, then check for expiration,
@@ -415,7 +455,7 @@ func (evpool *Pool) listEvidence(prefixKey []byte, maxBytes int64) ([]types.Evid
 }
 
 func (evpool *Pool) removeExpiredPendingEvidence() (int64, time.Time) {
-	iter, err := dbm.IteratePrefix(evpool.evidenceStore, []byte{baseKeyPending})
+	iter, err := dbm.IteratePrefix(evpool.evidenceStore, evpool.dbKeyLayout.PrefixToBytesPending())
 	if err != nil {
 		evpool.logger.Error("Unable to iterate over pending evidence", "err", err)
 		return evpool.State().LastBlockHeight, evpool.State().LastBlockTime

@@ -31,7 +31,7 @@ var (
 	ErrVoteNil                       = errors.New("nil vote")
 	ErrVoteExtensionAbsent           = errors.New("vote extension absent")
 	ErrInvalidVoteExtension          = errors.New("invalid vote extension")
-	ErrVoteExtSignatureForNilBlock   = errors.New("vote for a nil block contains extension signature")
+	ErrVoteExtSignatureForNilBlock   = errors.New("precommit for a nil block contains extension signature")
 )
 
 type ErrVoteConflictingVotes struct {
@@ -404,9 +404,8 @@ func VotesToProto(votes []*Vote) []*cmtproto.Vote {
 
 // SignAndCheckVote signs the vote with the given privVal and checks the vote.
 // It returns an error if the vote is invalid and a boolean indicating if the
-// error is recoverable or not.
-//
-// CONTRACT: if extensionsEnabled is true, then vote's type must be PrecommitType.
+// error is recoverable or not. Panics if extensionsEnabled is true and vote is
+// not precommit.
 func SignAndCheckVote(
 	vote *Vote,
 	privVal PrivValidator,
@@ -415,7 +414,8 @@ func SignAndCheckVote(
 ) (bool, error) {
 	v := vote.ToProto()
 	if err := privVal.SignVote(chainID, v); err != nil {
-		// Failing to sign a vote has always been a recoverable error, this function keeps it that way
+		// Failing to sign a vote has always been a recoverable error, this
+		// function keeps it that way.
 		return true, err
 	}
 	vote.Signature = v.Signature
@@ -423,25 +423,16 @@ func SignAndCheckVote(
 	vote.Timestamp = v.Timestamp
 
 	if extensionsEnabled {
-		var (
-			extSignature = (len(v.ExtensionSignature) > 0)
-			isPrecommit  = (vote.Type == PrecommitType)
-			isNil        = vote.BlockID.IsNil()
-		)
-
-		if !isPrecommit {
-			// Non-recoverable because the vote is malformed.
-			panic(fmt.Sprintf("extensions are enabled, but vote is not Precommit (vote type: %T)", vote.Type))
+		if vote.Type != PrecommitType {
+			panic(fmt.Sprintf("Extensions are enabled, but vote is not precommit (vote type: %T)", vote.Type))
 		}
 
-		if !extSignature {
-			// Non-recoverable because the vote is malformed.
-			return false, ErrVoteNoSignature
+		if len(v.ExtensionSignature) == 0 {
+			return false, ErrVoteNoSignature // Non-recoverable because the vote is malformed.
 		}
 
-		if isNil {
-			// Non-recoverable because the vote is malformed.
-			return false, ErrVoteExtSignatureForNilBlock
+		if vote.BlockID.IsNil() {
+			return false, ErrVoteExtSignatureForNilBlock // Non-recoverable because the vote is malformed.
 		}
 
 		vote.ExtensionSignature = v.ExtensionSignature

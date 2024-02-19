@@ -34,7 +34,7 @@ CometBFT implements two algorithms for computing block times:
   available, in legacy mode, in version `v1.x`.
 
 - [Proposer-Based Timestamps][pbts-spec]: introduced in version `v1.x`,
-  intended to be a replacement for BFT Time.
+  as a replacement for BFT Time.
 
 Users are strongly encouraged to adopt PBTS in new chains, or to switch to PBTS
 when upgrading existing chains.

@@ -35,7 +35,7 @@ Both `Proposal` and `Vote` messages include a `Timestamp` field of
 
 Timestamp validation is subtle and there are currently no validations on the
 timestamp included in a received `Proposal` or `Vote`. 
-As a general role, it is expected that validators report in this field their
+As a general rule, it is expected that validators report in the Timestamp field their
 local clock time.
 Timestamps are expected to be strictly monotonic for a given validator, though
 this is not enforced.
@@ -44,7 +44,7 @@ Some timestamps, however, are used by the algorithms adopted for computing
 [block times](./time.md):
 
 - [BFT Time](./bft-time.md): the `Timestamp` field of `Precommit` vote messages
-  are used to compute the `Time` for the next proposed block.
+  is used to compute the `Time` for the next proposed block.
   Correct validators are expected to report their local clock time, provided
   that the time is higher than the current block's time.
   Otherwise, the reported time is the current block's time plus 1ms.

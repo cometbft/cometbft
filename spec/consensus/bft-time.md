@@ -76,18 +76,17 @@ When producing a `Precommit` message, a validator should set the `Timestamp` fie
 3. Else if `ProposalBlock` is defined, set `Timestamp = max(now, ProposalBlock.Time + 1ms)`.
 4. Otherwise, set `Timestamp = now`.
 
-The rationale is that, for ensuring [Time Monotonicity](./time.md#properties),
-the `Time` of the next block should be higher than the time of the current block.
 The `LockedBlock`, if set, is the block for which the validator is issuing a `Precommit`.
 The `ProposalBlock` is the block proposed in that round; in favorable runs, it
 matches the `LockedBlock`.
 
+
 The validator in practice _proposes_ the `Time` for the next block when setting
 the `Timestamp` of its `Precommit`.
 The proposed `Time` is, by default, the validator's current clock time.
-The validator, however, cannot propose a `Time` which its smaller than the
-`Time` of the block to be committed in the current height.
-So in this case, the validator proposes the `Time` of the block to be committed
+To ensure [Time Monotonicity](./time.md#properties), the `Time` of the next block should be 
+higher than the `Time` of the block to be committed in the current height.
+So if `now` is smaller than `Time`, the validator proposes the `Time` of the block to be committed
 plus a small delta, set to `1ms`.
 
 ### Proposed Time

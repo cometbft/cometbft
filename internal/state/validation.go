@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/types"
@@ -118,6 +119,15 @@ func validateBlock(state State, block *types.Block) error {
 				block.Time,
 				state.LastBlockTime,
 			)
+		}
+		if !state.ConsensusParams.Feature.PbtsEnabled(block.Height) {
+			medianTime := MedianTime(block.LastCommit, state.LastValidators)
+			if !block.Time.Equal(medianTime) {
+				return fmt.Errorf("invalid block time. Expected %v, got %v",
+					medianTime.Format(time.RFC3339Nano),
+					block.Time.Format(time.RFC3339Nano),
+				)
+			}
 		}
 
 	case block.Height == state.InitialHeight:

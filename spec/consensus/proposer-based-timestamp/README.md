@@ -24,9 +24,9 @@ consensus algorithm with *synchronous assumptions*:
 - **Synchronized clocks**: simultaneous clock reads at any two correct validators
 differ by at most `PRECISION`;
 
-- **Bounded message delays**: the end-to-end delay for delivering a message to all correct validators
-is bounded by `MSGDELAY`.
-This assumption is restricted to `Proposal` messages, broadcast by proposers.
+- **Bounded message delays**: the end-to-end delay for delivering a `Proposal`
+  message, broadcast by a correct proposer, to all correct validators is 
+  bounded by `MSGDELAY`.
 
 `PRECISION` and `MSGDELAY` are consensus parameters, shared by all validators,
 that define whether the timestamp of a block is acceptable,

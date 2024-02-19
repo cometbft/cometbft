@@ -191,7 +191,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		case lazyProposer.LastCommit.HasTwoThirdsMajority():
 			// Make the commit from LastCommit
 			veHeightParam := types.DefaultFeatureParams()
-			veHeightParam.EnableVoteExtensions(height)
+			veHeightParam.VoteExtensionsEnableHeight = height
 			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
 		default: // This shouldn't happen.
 			lazyProposer.Logger.Error("enterPropose: Cannot propose anything: No commit for the previous block")

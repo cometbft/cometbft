@@ -285,8 +285,8 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 		args.pubkeyTypes = valEd25519
 	}
 	p := DefaultFeatureParams()
-	p.EnableVoteExtensions(args.voteExtensionHeight)
-	p.EnablePbts(args.pbtsHeight)
+	p.VoteExtensionsEnableHeight = args.voteExtensionHeight
+	p.PbtsEnableHeight = args.pbtsHeight
 
 	return ConsensusParams{
 		Block: BlockParams{
@@ -485,7 +485,7 @@ func TestConsensusParamsUpdate_EnableHeight(t *testing.T) {
 
 	// Test VoteExtensions enabling
 	for _, tc := range testCases {
-		t.Run(tc.name, func(*testing.T) {
+		t.Run(tc.name+" VE", func(*testing.T) {
 			initialParams := makeParams(makeParamsArgs{
 				voteExtensionHeight: tc.from,
 			})
@@ -507,7 +507,7 @@ func TestConsensusParamsUpdate_EnableHeight(t *testing.T) {
 
 	// Test PBTS enabling
 	for _, tc := range testCases {
-		t.Run(tc.name, func(*testing.T) {
+		t.Run(tc.name+" PBTS", func(*testing.T) {
 			initialParams := makeParams(makeParamsArgs{
 				pbtsHeight: tc.from,
 			})
@@ -526,13 +526,44 @@ func TestConsensusParamsUpdate_EnableHeight(t *testing.T) {
 			}
 		})
 	}
+
+	// Test PBTS and VE enabling
+	for _, tc := range testCases {
+		t.Run(tc.name+"VE PBTS", func(*testing.T) {
+			initialParams := makeParams(makeParamsArgs{
+				voteExtensionHeight: tc.from,
+				pbtsHeight:          tc.from,
+			})
+			update := &cmtproto.ConsensusParams{Feature: &cmtproto.FeatureParams{}}
+			if tc.to == nilTest {
+				update.Feature.VoteExtensionsEnableHeight = nil
+				update.Feature.PbtsEnableHeight = nil
+			} else {
+				update.Feature = &cmtproto.FeatureParams{
+					VoteExtensionsEnableHeight: &types.Int64Value{Value: tc.to},
+					PbtsEnableHeight:           &types.Int64Value{Value: tc.to},
+				}
+			}
+			if tc.expectedErr {
+				require.Error(t, initialParams.ValidateUpdate(update, tc.current))
+			} else {
+				require.NoError(t, initialParams.ValidateUpdate(update, tc.current))
+			}
+		})
+	}
 }
 
 func TestProto(t *testing.T) {
 	params := []ConsensusParams{
 		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 2, blockGas: 5, evidenceAge: 7, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 7, evidenceAge: 6, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 9, blockGas: 5, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
@@ -541,7 +572,9 @@ func TestProto(t *testing.T) {
 		makeParams(makeParamsArgs{precision: time.Second, messageDelay: time.Minute}),
 		makeParams(makeParamsArgs{precision: time.Nanosecond, messageDelay: time.Millisecond}),
 		makeParams(makeParamsArgs{voteExtensionHeight: 100}),
-		makeParams(makeParamsArgs{pbtsHeight: 1}),
+		makeParams(makeParamsArgs{pbtsHeight: 100}),
+		makeParams(makeParamsArgs{voteExtensionHeight: 100, pbtsHeight: 42}),
+		makeParams(makeParamsArgs{pbtsHeight: 100}),
 	}
 
 	for i := range params {

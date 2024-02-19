@@ -38,7 +38,7 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 
 	p := DefaultFeatureParams()
 	if extEnabled {
-		p.EnableVoteExtensions(height)
+		p.VoteExtensionsEnableHeight = height
 	}
 
 	return voteSet.MakeExtendedCommit(p), nil

@@ -422,7 +422,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 
 	// MakeCommit should fail.
 	veHeightParam := DefaultFeatureParams()
-	veHeightParam.EnableVoteExtensions(height)
+	veHeightParam.VoteExtensionsEnableHeight = height
 	assert.Panics(t, func() { voteSet.MakeExtendedCommit(veHeightParam) }, "Doesn't have +2/3 majority")
 
 	// 7th voted for some other block.

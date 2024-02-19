@@ -535,6 +535,6 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 
 func pbtsFromHeightParams(height int64) types.FeatureParams {
 	p := types.DefaultFeatureParams()
-	p.EnablePbts(height)
+	p.PbtsEnableHeight = height
 	return p
 }

@@ -566,7 +566,7 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 			}
 			p := DefaultFeatureParams()
 			if testCase.includeExtension {
-				p.EnableVoteExtensions(1)
+				p.VoteExtensionsEnableHeight = 1
 			}
 			ec := voteSet.MakeExtendedCommit(p)
 
@@ -701,7 +701,7 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 		}
 
 		veHeightParam := DefaultFeatureParams()
-		veHeightParam.EnableVoteExtensions(0)
+		veHeightParam.VoteExtensionsEnableHeight = 0
 		if tc.valid {
 			extCommit := voteSet.MakeExtendedCommit(veHeightParam) // panics without > 2/3 valid votes
 			assert.NotNil(t, extCommit)

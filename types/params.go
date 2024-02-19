@@ -80,25 +80,11 @@ func (p FeatureParams) VoteExtensionsEnabled(h int64) bool {
 	return featureEnabled(enabledHeight, h, "Vote Extensions")
 }
 
-// EnableVoteExtensions sets the enable height to h.
-// Assumes that the value of h is valid.
-func (p *FeatureParams) EnableVoteExtensions(h int64) *FeatureParams {
-	p.VoteExtensionsEnableHeight = h
-	return p
-}
-
 // PbtsEnabled returns true if PBTS are enabled at height h and false otherwise.
 func (p FeatureParams) PbtsEnabled(h int64) bool {
 	enabledHeight := p.PbtsEnableHeight
 
 	return featureEnabled(enabledHeight, h, "PBTS")
-}
-
-// EnablePbts sets the enable height to h.
-// Assumes that the value of h is valid.
-func (p *FeatureParams) EnablePbts(h int64) *FeatureParams {
-	p.PbtsEnableHeight = h
-	return p
 }
 
 // featureEnabled returns true if `enabled` points to a height that is smaller than `current“.
@@ -422,11 +408,11 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 
 	if params2.Feature != nil {
 		if params2.Feature.VoteExtensionsEnableHeight != nil {
-			res.Feature.EnableVoteExtensions(params2.Feature.GetVoteExtensionsEnableHeight().Value)
+			res.Feature.VoteExtensionsEnableHeight = params2.Feature.GetVoteExtensionsEnableHeight().Value
 		}
 
 		if params2.Feature.PbtsEnableHeight != nil {
-			res.Feature.EnablePbts(params2.Feature.GetPbtsEnableHeight().Value)
+			res.Feature.PbtsEnableHeight = params2.Feature.GetPbtsEnableHeight().Value
 		}
 	}
 	return res

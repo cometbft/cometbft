@@ -73,10 +73,19 @@ indicates that the size of proposal messages is either fixed or upper bounded.
 
 #### **[PBTS-MSG-DELAY-ADAPTIVE.0]**
 
-A practical relaxation of [PBTS-MSG-DELAY.0] is to consider adaptive end-to-end
-delays, namely, that `MSGDELAY` increases each time consensus requires a new round.
-In this way, after a number of rounds, the adopted `MSGDELAY` should match the observed end-to-delay. 
-This is typical for latency parameters in partial synchronous models.
+This specification is written assuming that there exists an end-to-end maximum
+delay `maxMsgDelay` observed in the network, possibly unknown, and
+that the chosen value for `MSGDELAY` is such that `MSGDELAY >= maxMsgDelay`.
+Under this assumption, all properties described in this specification are satisfied.
+
+However, it is possible that in some networks the `MSGDELAY` parameters
+selected by operators is too small, i.e., `MSGDELAY < maxMsgDelay`.
+In order to tolerate this possibility, we propose the adoption of adaptive
+end-to-end delays, namely a relaxation of [PBTS-MSG-DELAY.0] where the
+`MSGDELAY` value increases each time consensus requires a new round.
+In this way, after a number of rounds, the adopted `MSGDELAY` should match the
+actual, but possibly unknown, end-to-delay `maxMsgDelay`. 
+This is a typical approach in partial synchronous models.
 
 The adaptive system parameter `MSGDELAY(r)` is defined as follows.
 Lets `p` and `q` be any correct processes:

@@ -20,7 +20,7 @@ import (
 func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, fmt.Errorf("transaction indexing is disabled")
+		return nil, errors.New("transaction indexing is disabled")
 	}
 
 	r, err := env.TxIndexer.Get(hash)

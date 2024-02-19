@@ -2,7 +2,6 @@ package client_test
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -134,7 +133,7 @@ func testTxEventsSent(t *testing.T, broadcastMethod string) {
 				case "sync":
 					txres, err = c.BroadcastTxSync(ctx, tx)
 				default:
-					panic(fmt.Sprintf("Unknown broadcastMethod %s", broadcastMethod))
+					panic("Unknown broadcastMethod " + broadcastMethod)
 				}
 				if assert.NoError(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					require.Equal(t, abci.CodeTypeOK, txres.Code)

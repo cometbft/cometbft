@@ -118,10 +118,10 @@ timestamps in the network will be carried out using the legacy BFT Time algorith
 While `PbtsEnableHeight` is set to `0`, the network will adopt the legacy BFT
 Time algorithm.
 
-When `PbtsEnableHeight` is set to `H > 0`, the network switch to the PBTS
-algorithm from height `H`.
-The network will adopt the legacy BFT algorithm until height `H - 1`,
-and blocks produced until height `H - 1` will be validated using BFT Time.
+When `PbtsEnableHeight` is set to a height `H > 0`, the network will switch to
+the PBTS algorithm from height `H`.
+The network will still adopt the legacy BFT Time algorithm to produce and
+validate block timestamps until height `H - 1`.
 The enable height `H` must be a future height, i.e., larger than the current
 blockchain height.
 

@@ -362,7 +362,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			},
 			updatedParams: makeParams(makeParamsArgs{evidenceAge: 3, precision: 2 * time.Second, messageDelay: 4 * time.Second}),
 		},
-		// update vote extensions
+		// update enable vote extensions only
 		{
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
@@ -372,7 +372,16 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1}),
 		},
-		// update pbts
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1, pbtsHeight: 4}),
+			updates: &cmtproto.ConsensusParams{
+				Feature: &cmtproto.FeatureParams{
+					VoteExtensionsEnableHeight: &types.Int64Value{Value: 10},
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 10, pbtsHeight: 4}),
+		},
+		// update enabled pbts only
 		{
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
@@ -382,7 +391,16 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pbtsHeight: 1}),
 		},
-		// update pbts and vote extensions
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 4, pbtsHeight: 1}),
+			updates: &cmtproto.ConsensusParams{
+				Feature: &cmtproto.FeatureParams{
+					PbtsEnableHeight: &types.Int64Value{Value: 100},
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pbtsHeight: 100, voteExtensionHeight: 4}),
+		},
+		// update both pbts and vote extensions enable heights
 		{
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
 			updates: &cmtproto.ConsensusParams{
@@ -393,6 +411,17 @@ func TestConsensusParamsUpdate(t *testing.T) {
 			},
 			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1, pbtsHeight: 1}),
 		},
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 1, pbtsHeight: 1}),
+			updates: &cmtproto.ConsensusParams{
+				Feature: &cmtproto.FeatureParams{
+					VoteExtensionsEnableHeight: &types.Int64Value{Value: 10},
+					PbtsEnableHeight:           &types.Int64Value{Value: 100},
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, voteExtensionHeight: 10, pbtsHeight: 100}),
+		},
+
 		// fine updates
 		{
 			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),

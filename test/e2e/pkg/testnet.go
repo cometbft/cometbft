@@ -18,8 +18,14 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+<<<<<<< HEAD
 
 	_ "embed"
+=======
+	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
+	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/types"
+>>>>>>> a45ee35a7 (feat(e2e): Option to set max block size in bytes at genesis (#2362))
 )
 
 const (
@@ -88,6 +94,7 @@ type Testnet struct {
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
 	Prometheus                                           bool
+	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
 	VoteExtensionsUpdateHeight                           int64
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
@@ -147,6 +154,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
+<<<<<<< HEAD
 		Name:                       filepath.Base(dir),
 		File:                       file,
 		Dir:                        dir,
@@ -171,6 +179,36 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Prometheus:                 manifest.Prometheus,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
+=======
+		Name:                             filepath.Base(dir),
+		File:                             file,
+		Dir:                              dir,
+		IP:                               ipNet,
+		InitialHeight:                    1,
+		InitialState:                     manifest.InitialState,
+		Validators:                       map[*Node]int64{},
+		ValidatorUpdates:                 map[int64]map[*Node]int64{},
+		Nodes:                            []*Node{},
+		DisablePexReactor:                manifest.DisablePexReactor,
+		Evidence:                         manifest.Evidence,
+		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
+		LoadTxConnections:                manifest.LoadTxConnections,
+		LoadMaxTxs:                       manifest.LoadMaxTxs,
+		ABCIProtocol:                     manifest.ABCIProtocol,
+		PrepareProposalDelay:             manifest.PrepareProposalDelay,
+		ProcessProposalDelay:             manifest.ProcessProposalDelay,
+		CheckTxDelay:                     manifest.CheckTxDelay,
+		VoteExtensionDelay:               manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
+		UpgradeVersion:                   manifest.UpgradeVersion,
+		Prometheus:                       manifest.Prometheus,
+		BlockMaxBytes:                    manifest.BlockMaxBytes,
+		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
+		VoteExtensionSize:                manifest.VoteExtensionSize,
+		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+>>>>>>> a45ee35a7 (feat(e2e): Option to set max block size in bytes at genesis (#2362))
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}
@@ -345,6 +383,15 @@ func (t Testnet) Validate() error {
 	if len(t.Nodes) == 0 {
 		return errors.New("network has no nodes")
 	}
+<<<<<<< HEAD
+=======
+	if err := t.validateZones(t.Nodes); err != nil {
+		return err
+	}
+	if t.BlockMaxBytes > types.MaxBlockSizeBytes {
+		return fmt.Errorf("value of BlockMaxBytes cannot be higher than %d", types.MaxBlockSizeBytes)
+	}
+>>>>>>> a45ee35a7 (feat(e2e): Option to set max block size in bytes at genesis (#2362))
 	if t.VoteExtensionsUpdateHeight < -1 {
 		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
 			"or -1 (Genesis); update height %d", t.VoteExtensionsUpdateHeight)

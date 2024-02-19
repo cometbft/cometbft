@@ -63,7 +63,7 @@ Let `now_p` be the time, read from the clock of process `p`, at which `p` receiv
 The proposal time is considered `timely` by `p` when:
 
 1. `now_p >= v.time - PRECISION`
-1. `now_p <= v.time + MSGDELAY(r) + PRECISION`
+1. `now_p <= v.time + MSGDELAY + PRECISION`
 
 The first condition derives from the fact that the generation and sending of `v` precedes its reception.
 The minimum receiving time `now_p` for `v.time` be considered `timely` by `p` is derived from the extreme scenario when
@@ -71,7 +71,7 @@ the clock of `p` is `PRECISION` *behind* of the clock of the proposer of `v`, an
 
 The second condition derives from the assumption of an upper bound for the transmission delay of a proposal.
 The maximum receiving time `now_p` for `v.time` be considered `timely` by `p` is derived from the extreme scenario when
-the clock of `p` is `PRECISION` *ahead* of the clock of the proposer of `v`, and the proposal's transmission delay is `MSGDELAY(r)` (maximum).
+the clock of `p` is `PRECISION` *ahead* of the clock of the proposer of `v`, and the proposal's transmission delay is `MSGDELAY` (maximum).
 
 ## Updated Consensus Algorithm
 

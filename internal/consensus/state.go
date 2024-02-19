@@ -1146,7 +1146,7 @@ func (cs *State) enterPropose(height int64, round int32) {
 
 	// If this validator is the proposer of this round, and the previous block time is later than
 	// our local clock time, wait to propose until our local clock time has passed the block time.
-	if cs.privValidatorPubKey != nil && cs.isProposer(cs.privValidatorPubKey.Address()) {
+	if cs.isPBTSEnabled(height) && cs.privValidatorPubKey != nil && cs.isProposer(cs.privValidatorPubKey.Address()) {
 		proposerWaitTime := proposerWaitTime(cmttime.DefaultSource{}, cs.state.LastBlockTime)
 		if proposerWaitTime > 0 {
 			cs.scheduleTimeout(proposerWaitTime, height, round, cstypes.RoundStepNewRound)
@@ -1382,7 +1382,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	if cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
+	if cs.isPBTSEnabled(height) && cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
 		logger.Debug("prevote step: Proposal is not timely; prevoting nil",
 			"proposed",
 			cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
@@ -2464,13 +2464,14 @@ func (cs *State) signVote(
 
 	addr := cs.privValidatorPubKey.Address()
 	valIdx, _ := cs.Validators.GetByAddress(addr)
+	timestamp := cs.voteTime(cs.Height)
 
 	vote := &types.Vote{
 		ValidatorAddress: addr,
 		ValidatorIndex:   valIdx,
 		Height:           cs.Height,
 		Round:            cs.Round,
-		Timestamp:        cmttime.Now(),
+		Timestamp:        timestamp,
 		Type:             msgType,
 		BlockID:          types.BlockID{Hash: hash, PartSetHeader: header},
 	}
@@ -2494,6 +2495,31 @@ func (cs *State) signVote(
 	}
 
 	return vote, err
+}
+
+func (cs *State) voteTime(height int64) time.Time {
+	if cs.isPBTSEnabled(height) {
+		return cmttime.Now()
+	}
+	now := cmttime.Now()
+	minVoteTime := now
+
+	// Minimum time increment between blocks
+	const timeIota = time.Millisecond
+	// TODO: We should remove next line in case we don't vote for v in case cs.ProposalBlock == nil,
+	// even if cs.LockedBlock != nil. See https://github.com/cometbft/cometbft/tree/main/spec/.
+	if cs.LockedBlock != nil {
+		// See the BFT time spec
+		// https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
+		minVoteTime = cs.LockedBlock.Time.Add(timeIota)
+	} else if cs.ProposalBlock != nil {
+		minVoteTime = cs.ProposalBlock.Time.Add(timeIota)
+	}
+
+	if now.After(minVoteTime) {
+		return now
+	}
+	return minVoteTime
 }
 
 // sign the vote and publish on internalMsgQueue
@@ -2685,4 +2711,9 @@ func proposerWaitTime(lt cmttime.Source, bt time.Time) time.Duration {
 		return bt.Sub(t)
 	}
 	return 0
+}
+
+// isPBTSEnabled returns true if PBTS is enabled at the current height.
+func (cs *State) isPBTSEnabled(height int64) bool {
+	return cs.state.ConsensusParams.Feature.PbtsEnabled(height)
 }

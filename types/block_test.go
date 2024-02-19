@@ -564,11 +564,11 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 				require.NoError(t, err)
 				require.True(t, added)
 			}
-			var veHeight int64
+			p := DefaultFeatureParams()
 			if testCase.includeExtension {
-				veHeight = 1
+				p.EnableVoteExtensions(1)
 			}
-			ec := voteSet.MakeExtendedCommit(FeatureParams{VoteExtensionsEnableHeight: &veHeight})
+			ec := voteSet.MakeExtendedCommit(p)
 
 			for i := int32(0); int(i) < len(vals); i++ {
 				vote1 := voteSet.GetByIndex(i)
@@ -700,8 +700,8 @@ func TestCommitToVoteSetWithVotesForNilBlock(t *testing.T) {
 			}
 		}
 
-		zeroHeight := int64(0)
-		veHeightParam := FeatureParams{VoteExtensionsEnableHeight: &zeroHeight}
+		veHeightParam := DefaultFeatureParams()
+		veHeightParam.EnableVoteExtensions(0)
 		if tc.valid {
 			extCommit := voteSet.MakeExtendedCommit(veHeightParam) // panics without > 2/3 valid votes
 			assert.NotNil(t, extCommit)

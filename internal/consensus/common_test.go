@@ -487,7 +487,7 @@ func randStateWithAppWithHeight(
 	height int64,
 ) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
-	c.Feature.VoteExtensionsEnableHeight = &height
+	c.Feature.EnableVoteExtensions(height)
 	return randStateWithAppImpl(nValidators, app, c)
 }
 

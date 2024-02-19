@@ -284,6 +284,10 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 	if args.pubkeyTypes == nil {
 		args.pubkeyTypes = valEd25519
 	}
+	p := DefaultFeatureParams()
+	p.EnableVoteExtensions(args.voteExtensionHeight)
+	p.EnablePbts(args.pbtsHeight)
+
 	return ConsensusParams{
 		Block: BlockParams{
 			MaxBytes: args.blockBytes,
@@ -301,10 +305,7 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 			Precision:    args.precision,
 			MessageDelay: args.messageDelay,
 		},
-		Feature: FeatureParams{
-			VoteExtensionsEnableHeight: &args.voteExtensionHeight,
-			PbtsEnableHeight:           &args.pbtsHeight,
-		},
+		Feature: p,
 	}
 }
 

@@ -332,7 +332,6 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	// The first reactor should not receive transactions from other peers.
 	require.Zero(t, len(firstReactor.txSenders))
 }
-
 // Test the experimental feature that limits the number of outgoing connections for gossiping
 // transactions (only non-persistent peers).
 // Note: in this test we know which gossip connections are active or not because of how the p2p

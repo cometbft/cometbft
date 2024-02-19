@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1590,8 +1591,8 @@ func TestStateLock_POLSafety2(t *testing.T) {
 		state *State
 		vss   []*validatorStub
 	}{
-		{name: "With PBTS", state: csT2, vss: vssT2},
 		{name: "With BFT Time", state: csT1, vss: vssT1},
+		{name: "With PBTS", state: csT2, vss: vssT2},
 	}
 
 	for _, tc := range tcs {
@@ -1621,10 +1622,17 @@ func TestStateLock_POLSafety2(t *testing.T) {
 			prevotes := signVotes(types.PrevoteType, chainID, propBlockID0, false, vs2, vs3, vs4)
 
 			// the block for round 1
+			reqRes, err := assertMempool(tc.state.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(10), "true"))
+			require.NoError(t, err)
+			require.False(t, reqRes.Response.GetCheckTx().IsErr())
+
 			prop1, propBlock1 := decideProposal(ctx, t, tc.state, vs2, vs2.Height, vs2.Round+1)
 			propBlockParts1, err := propBlock1.MakePartSet(partSize)
 			require.NoError(t, err)
 			propBlockID1 := types.BlockID{Hash: propBlock1.Hash(), PartSetHeader: propBlockParts1.Header()}
+
+			// Blocks must be different, which in BFT time case requires a transaction being added.
+			assert.NotEqual(t, propBlockID1, propBlockID0)
 
 			incrementRound(vs2, vs3, vs4)
 

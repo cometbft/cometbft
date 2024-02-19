@@ -1590,8 +1590,8 @@ func TestStateLock_POLSafety2(t *testing.T) {
 		state *State
 		vss   []*validatorStub
 	}{
-		{name: "With BFT Time", state: csT1, vss: vssT1},
 		{name: "With PBTS", state: csT2, vss: vssT2},
+		{name: "With BFT Time", state: csT1, vss: vssT1},
 	}
 
 	for _, tc := range tcs {

@@ -35,9 +35,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 		}
 	}
 
-	p := types.DefaultFeatureParams()
-	p.EnableVoteExtensions(0)
-	return voteSet.MakeExtendedCommit(p).ToCommit(), nil
+	return voteSet.MakeExtendedCommit(types.DefaultFeatureParams()).ToCommit(), nil
 }
 
 func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.ValidatorSet, privVals []types.PrivValidator, chainID string, now time.Time) (*types.Commit, error) {

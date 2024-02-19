@@ -3,7 +3,6 @@ package types
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -69,61 +68,50 @@ type VersionParams struct {
 
 // FeatureParams configure parameters of different features of CometBFT.
 type FeatureParams struct {
-	mux                        *sync.RWMutex `json:"-"`
-	VoteExtensionsEnableHeight *int64        `json:"vote_extensions_enable_height"`
-	PbtsEnableHeight           *int64        `json:"pbts_enable_height"`
+	VoteExtensionsEnableHeight int64 `json:"vote_extensions_enable_height"`
+	PbtsEnableHeight           int64 `json:"pbts_enable_height"`
 }
 
 // VoteExtensionsEnabled returns true if vote extensions are enabled at height h
 // and false otherwise.
 func (p FeatureParams) VoteExtensionsEnabled(h int64) bool {
-	p.mux.RLock()
 	enabledHeight := p.VoteExtensionsEnableHeight
-	p.mux.RUnlock()
 
 	return featureEnabled(enabledHeight, h, "Vote Extensions")
 }
 
 // EnableVoteExtensions sets the enable height to h.
 // Assumes that the value of h is valid.
-func (p *FeatureParams) EnableVoteExtensions(h int64) {
-	p.mux.Lock()
-	p.VoteExtensionsEnableHeight = &h
-	p.mux.Unlock()
+func (p *FeatureParams) EnableVoteExtensions(h int64) *FeatureParams {
+	p.VoteExtensionsEnableHeight = h
+	return p
 }
 
 // PbtsEnabled returns true if PBTS are enabled at height h and false otherwise.
 func (p FeatureParams) PbtsEnabled(h int64) bool {
-	p.mux.RLock()
 	enabledHeight := p.PbtsEnableHeight
-	p.mux.RUnlock()
 
 	return featureEnabled(enabledHeight, h, "PBTS")
 }
 
 // EnablePbts sets the enable height to h.
 // Assumes that the value of h is valid.
-func (p *FeatureParams) EnablePbts(h int64) {
-	p.mux.Lock()
-	p.PbtsEnableHeight = &h
-	p.mux.Unlock()
+func (p *FeatureParams) EnablePbts(h int64) *FeatureParams {
+	p.PbtsEnableHeight = h
+	return p
 }
 
 // featureEnabled returns true if `enabled` points to a height that is smaller than `current“.
-func featureEnabled(enabled *int64, current int64, f string) bool {
+func featureEnabled(enabled int64, current int64, f string) bool {
 	if current < 1 {
 		panic(fmt.Errorf("cannot check if %s is enabled for height %d (< 1)", f, current))
 	}
 
-	if enabled == nil {
+	if enabled <= 0 {
 		return false
 	}
 
-	if *enabled <= 0 {
-		return false
-	}
-
-	return *enabled <= current
+	return enabled <= current
 }
 
 // SynchronyParams influence the validity of block timestamps.
@@ -190,9 +178,8 @@ func DefaultSynchronyParams() SynchronyParams {
 // Disabled by default.
 func DefaultFeatureParams() FeatureParams {
 	return FeatureParams{
-		mux:                        &sync.RWMutex{},
-		VoteExtensionsEnableHeight: nil,
-		PbtsEnableHeight:           nil,
+		VoteExtensionsEnableHeight: 0,
+		PbtsEnableHeight:           0,
 	}
 }
 
@@ -260,16 +247,12 @@ func (params ConsensusParams) ValidateBasic() error {
 			params.Synchrony.Precision)
 	}
 
-	if params.Feature.VoteExtensionsEnableHeight != nil {
-		if *params.Feature.VoteExtensionsEnableHeight < 0 {
-			return fmt.Errorf("Feature.VoteExtensionsEnabledHeight cannot be negative. Got: %d", *params.Feature.VoteExtensionsEnableHeight)
-		}
+	if params.Feature.VoteExtensionsEnableHeight < 0 {
+		return fmt.Errorf("Feature.VoteExtensionsEnabledHeight cannot be negative. Got: %d", params.Feature.VoteExtensionsEnableHeight)
 	}
 
-	if params.Feature.PbtsEnableHeight != nil {
-		if *params.Feature.PbtsEnableHeight < 0 {
-			return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", *params.Feature.PbtsEnableHeight)
-		}
+	if params.Feature.PbtsEnableHeight < 0 {
+		return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", params.Feature.PbtsEnableHeight)
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {
@@ -317,14 +300,14 @@ func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, 
 // The table above reflects all cases covered.
 func validateUpdateFeatures(params FeatureParams, updated cmtproto.FeatureParams, h int64) error {
 	if updated.VoteExtensionsEnableHeight != nil {
-		err := validateUpdateFeatureEnableHeight(*params.VoteExtensionsEnableHeight, updated.VoteExtensionsEnableHeight.Value, h, "Vote Extensions")
+		err := validateUpdateFeatureEnableHeight(params.VoteExtensionsEnableHeight, updated.VoteExtensionsEnableHeight.Value, h, "Vote Extensions")
 		if err != nil {
 			return err
 		}
 	}
 
 	if updated.PbtsEnableHeight != nil {
-		err := validateUpdateFeatureEnableHeight(*params.PbtsEnableHeight, updated.PbtsEnableHeight.Value, h, "PBTS")
+		err := validateUpdateFeatureEnableHeight(params.PbtsEnableHeight, updated.PbtsEnableHeight.Value, h, "PBTS")
 		if err != nil {
 			return err
 		}
@@ -450,14 +433,6 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 }
 
 func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
-	feature := cmtproto.FeatureParams{}
-	if params.Feature.PbtsEnableHeight != nil {
-		feature.PbtsEnableHeight = &gogo.Int64Value{Value: *params.Feature.PbtsEnableHeight}
-	}
-	if params.Feature.VoteExtensionsEnableHeight != nil {
-		feature.VoteExtensionsEnableHeight = &gogo.Int64Value{Value: *params.Feature.VoteExtensionsEnableHeight}
-	}
-
 	return cmtproto.ConsensusParams{
 		Block: &cmtproto.BlockParams{
 			MaxBytes: params.Block.MaxBytes,
@@ -478,7 +453,10 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 			MessageDelay: &params.Synchrony.MessageDelay,
 			Precision:    &params.Synchrony.Precision,
 		},
-		Feature: &feature,
+		Feature: &cmtproto.FeatureParams{
+			PbtsEnableHeight:           &gogo.Int64Value{Value: params.Feature.PbtsEnableHeight},
+			VoteExtensionsEnableHeight: &gogo.Int64Value{Value: params.Feature.VoteExtensionsEnableHeight},
+		},
 	}
 }
 
@@ -509,13 +487,11 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 		}
 	}
 	if pbParams.Feature != nil {
-		c.Feature.mux = &sync.RWMutex{}
-
 		if pbParams.Feature.VoteExtensionsEnableHeight != nil {
-			c.Feature.VoteExtensionsEnableHeight = &pbParams.Feature.VoteExtensionsEnableHeight.Value
+			c.Feature.VoteExtensionsEnableHeight = pbParams.Feature.VoteExtensionsEnableHeight.Value
 		}
 		if pbParams.Feature.PbtsEnableHeight != nil {
-			c.Feature.PbtsEnableHeight = &pbParams.Feature.PbtsEnableHeight.Value
+			c.Feature.PbtsEnableHeight = pbParams.Feature.PbtsEnableHeight.Value
 		}
 	}
 	return c

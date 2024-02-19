@@ -305,7 +305,10 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 			Precision:    args.precision,
 			MessageDelay: args.messageDelay,
 		},
-		Feature: p,
+		Feature: FeatureParams{
+			VoteExtensionsEnableHeight: args.voteExtensionHeight,
+			PbtsEnableHeight:           args.pbtsHeight,
+		},
 	}
 }
 

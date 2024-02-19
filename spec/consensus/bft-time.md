@@ -13,10 +13,6 @@ BFT Time is a Byzantine fault-tolerant algorithm for computing [block times](./t
 
 ## Overview
 
-BFT Time computes the `Time` of a block proposed in height `H` of consensus
-from the `Timestamp` field of the `Precommit` messages broadcast by
-validators in the commit round of the previous height `H-1`.
-
 In order to commit a block, a node needs to receive `Precommit` messages for
 the corresponding `BlockID` from validators whose cumulative voting power is
 more than `2/3` of the total voting power.
@@ -24,17 +20,15 @@ The received `Precommit` messages should refer to the same round, the _commit ro
 A set of `Precommit` messages with the properties above mentioned is a `Commit`.
 A `Commit` set of height `H` is included in blocks proposed in height `H+1`.
 
-The `Time` field of a block proposed in height `H` is deterministically
-computed from the `LastCommit` field of the block, which is a `Commit` set from
+BFT Time computes the `Time` field of a block proposed in height `H` deterministically
+from the `LastCommit` field of the block, which is a `Commit` set from
 height `H-1`, using the `MedianTime` method defined as follows:
 
-- `MedianTime`: the median time of a `Commit` is equal to the median of the
-  `Timestamp` fields of the `Precommit` messages forming the `Commit`, where the value of
+- `MedianTime`: the weighted median of `Timestamp` fields, of the previous block with
+ heights defined by validators' voting powers or, in other words, the median of the
+  `Timestamp` fields of the `Precommit` messages forming a `Commit`, where the value of
    each `Timestamp` field is counted a number of times proportional to the voting power
    of the validator that produced and signed that `Precommit` message.
-
-In other words, the `MedianTime` is the weighted median of `Timestamp` fields, with
-heights defined by validators' voting powers.
 The median of a set of values is one of the values of the set, so that the
 `Time` of a proposed block is one of the `Timestamp` fields of the `Precommit`
 messages included in the `LastCommit` set of that block.

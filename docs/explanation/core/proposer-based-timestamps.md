@@ -75,8 +75,10 @@ the timestamps of blocks proposed by their peers to be valid either.
 ## Consensus Parameters
 
 The functionality of the PBTS algorithm is governed by two consensus parameters.
+A third consensus parameter is used to enable the PBTS algorithm for a new
+network or when upgrading an existing a network.
 Consensus parameters are configured by the ABCI application and are therefore
-the same across all nodes on the network.
+the same across all nodes in the network.
 
 ### `SynchronyParams.Precision`
 
@@ -90,7 +92,7 @@ worst-case for the clock drift among all participants.
 Due to the [leap second events](https://github.com/tendermint/tendermint/issues/7724),
 it is recommended to use set `Precision` to at least `500ms`.
 
-The `Precision` is given in milliseconds.
+The `Precision` parameter is given in milliseconds.
 
 ### `SynchronyParams.MessageDelay`
 
@@ -104,11 +106,39 @@ This delay does not depend, a priori, on the size of proposed blocks, since it
 applies to the `Proposal` messages.
 It does depend on the number of participants and latency of their connections.
 
-The `MessageDelay` is given in milliseconds.
+The `MessageDelay` parameter is given in milliseconds.
+
+### `FeatureParams.PbtsEnableHeight`
+
+The `PbtsEnableHeight` parameter configures the first height at which the PBTS
+algorithm should be adopted for generating and validating block timestamps in a network.
+In heights up to `PbtsEnableHeight - 1`, the generation and validation of block
+timestamps in the network will be carried out using the legacy BFT Time algorithm.
+
+While `PbtsEnableHeight` is set to `0`, the network will adopt the legacy BFT
+Time algorithm.
+
+When `PbtsEnableHeight` is set to `H > 0`, the network switch to the PBTS
+algorithm from height `H`.
+The network will adopt the legacy BFT algorithm until height `H - 1`,
+and blocks produced until height `H - 1` will be validated using BFT Time.
+The enable height `H` must be a future height, i.e., larger than the current
+blockchain height.
+
+Once `PbtsEnableHeight` is set and the PBTS algorithm is enabled (i.e., from height
+`PbtsEnableHeight`), it is not possible to return to the legacy BFT Time algorithm.
+The switch to PBTS is therefore irreversible.
+
+Finally, if `PbtsEnableHeight` is set `1` in the genesis file or by the application
+upon the ABCI `InitChain` method, the network will adopt PBTS from the first
+height. This is the recommended setup for new chains.
+
+The `PbtsEnableHeight` parameter is an integer.
 
 ## See Also
 
 * [Block Time specification][block-time-spec]: overview of block timestamps properties.
+* [Consensus parameters][consensus-parameters]: list of consensus parameters, their usage and validation.
 * [PBTS specification][pbts-spec]: formal specification and all of the details of the PBTS algorithm.
 * [BFT Time specification][bft-time-spec]: all details of the legacy BFT Time algorithm to compute block times.
 

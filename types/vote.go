@@ -434,7 +434,7 @@ func SignAndCheckVote(
 			panic(fmt.Sprintf("extensions are enabled, but vote is not Precommit (vote type: %T)", vote.Type))
 		}
 
-		if extSignature == isNil {
+		if extSignature && isNil {
 			// Non-recoverable because the vote is malformed.
 			return false, ErrVoteExtSignatureForNilBlock
 		}

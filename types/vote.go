@@ -31,7 +31,6 @@ var (
 	ErrVoteNil                       = errors.New("nil vote")
 	ErrVoteExtensionAbsent           = errors.New("vote extension absent")
 	ErrInvalidVoteExtension          = errors.New("invalid vote extension")
-	ErrVoteExtSignatureForNilBlock   = errors.New("precommit for a nil block contains extension signature")
 )
 
 type ErrVoteConflictingVotes struct {
@@ -404,8 +403,7 @@ func VotesToProto(votes []*Vote) []*cmtproto.Vote {
 
 // SignAndCheckVote signs the vote with the given privVal and checks the vote.
 // It returns an error if the vote is invalid and a boolean indicating if the
-// error is recoverable or not. Panics if extensionsEnabled is true and vote is
-// not precommit.
+// error is recoverable or not.
 func SignAndCheckVote(
 	vote *Vote,
 	privVal PrivValidator,
@@ -419,24 +417,31 @@ func SignAndCheckVote(
 		return true, err
 	}
 	vote.Signature = v.Signature
+
+	isPrecommit := vote.Type == PrecommitType
+	if !isPrecommit && extensionsEnabled {
+		// Non-recoverable because the caller passed parameters that don't make sense
+		return false, fmt.Errorf("only Precommit votes may have extensions enabled; vote type: %T", vote.Type)
+	}
+
+	isNil := vote.BlockID.IsNil()
+	extSignature := (len(v.ExtensionSignature) > 0)
+	if extSignature == (!isPrecommit || isNil) {
+		// Non-recoverable because the vote is malformed
+		return false, fmt.Errorf(
+			"extensions must be present IFF vote is a non-nil Precommit; present %t, vote type %T, is nil %t",
+			extSignature,
+			vote.Type,
+			isNil,
+		)
+	}
+
 	vote.ExtensionSignature = nil
-	vote.Timestamp = v.Timestamp
-
 	if extensionsEnabled {
-		if vote.Type != PrecommitType {
-			panic(fmt.Sprintf("Extensions are enabled, but vote is not precommit (vote type: %T)", vote.Type))
-		}
-
-		if len(v.ExtensionSignature) == 0 {
-			return false, ErrVoteNoSignature // Non-recoverable because the vote is malformed.
-		}
-
-		if vote.BlockID.IsNil() {
-			return false, ErrVoteExtSignatureForNilBlock // Non-recoverable because the vote is malformed.
-		}
-
 		vote.ExtensionSignature = v.ExtensionSignature
 	}
+
+	vote.Timestamp = v.Timestamp
 
 	return true, nil
 }

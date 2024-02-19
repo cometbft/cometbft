@@ -89,6 +89,10 @@ type Manifest struct {
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
 
+	// BlockMaxBytes specifies the maximum size in bytes of a block. This
+	// value will be written to the genesis file of all nodes.
+	BlockMaxBytes int64 `toml:"block_max_bytes"`
+
 	// VoteExtensionsEnableHeight configures the first height during which
 	// the chain will use and require vote extension data to be present
 	// in precommit messages.

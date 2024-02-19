@@ -18,6 +18,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 
 	_ "embed"
 )
@@ -88,6 +89,7 @@ type Testnet struct {
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
 	Prometheus                                           bool
+	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
 	VoteExtensionsUpdateHeight                           int64
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
@@ -169,6 +171,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
 		UpgradeVersion:             manifest.UpgradeVersion,
 		Prometheus:                 manifest.Prometheus,
+		BlockMaxBytes:              manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
@@ -344,6 +347,9 @@ func (t Testnet) Validate() error {
 	}
 	if len(t.Nodes) == 0 {
 		return errors.New("network has no nodes")
+	}
+	if t.BlockMaxBytes > types.MaxBlockSizeBytes {
+		return fmt.Errorf("value of BlockMaxBytes cannot be higher than %d", types.MaxBlockSizeBytes)
 	}
 	if t.VoteExtensionsUpdateHeight < -1 {
 		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+

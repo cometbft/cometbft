@@ -490,3 +490,67 @@ func TestVoteProtobuf(t *testing.T) {
 		}
 	}
 }
+
+func TestSignAndCheckVote(t *testing.T) {
+	height, round := int64(1), int32(0)
+	privVal := NewMockPV()
+	pk, err := privVal.GetPubKey()
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name              string
+		extensionsEnabled bool
+		vote              *Vote
+		expectError       bool
+	}{
+		{
+			name:              "precommit with extension signature",
+			extensionsEnabled: true,
+			vote:              examplePrecommit(),
+			expectError:       false,
+		},
+		{
+			name:              "precommit with extension signature for a nil block",
+			extensionsEnabled: true,
+			vote: &Vote{
+				ValidatorAddress:   pk.Address(),
+				ValidatorIndex:     0,
+				Height:             height,
+				Round:              round,
+				Timestamp:          cmttime.Now(),
+				Type:               PrecommitType,
+				BlockID:            BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}},
+				ExtensionSignature: []byte("signature"),
+			},
+			expectError: false,
+		},
+		{
+			name:              "precommit with extension signature for a nil block, but extensionsEnabled is false",
+			extensionsEnabled: false,
+			vote: &Vote{
+				ValidatorAddress:   pk.Address(),
+				ValidatorIndex:     0,
+				Height:             height,
+				Round:              round,
+				Timestamp:          cmttime.Now(),
+				Type:               PrecommitType,
+				BlockID:            BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}},
+				ExtensionSignature: []byte("signature"),
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			recoverable, err := SignAndCheckVote(tc.vote, privVal, "test_chain_id", tc.extensionsEnabled)
+			if tc.expectError {
+				assert.False(t, recoverable)
+				require.Error(t, err)
+			} else {
+				assert.True(t, recoverable)
+				require.NoError(t, err)
+			}
+		})
+	}
+}

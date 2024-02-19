@@ -13,6 +13,10 @@ BFT Time is a Byzantine fault-tolerant algorithm for computing [block times](./t
 
 ## Overview
 
+BFT Time computes the `Time` of a block proposed in height `H` of consensus
+from the `Timestamp` field of the `Precommit` messages broadcast by
+validators in the commit round of the previous height `H-1`.
+
 In order to commit a block, a node needs to receive `Precommit` messages for
 the corresponding `BlockID` from validators whose cumulative voting power is
 more than `2/3` of the total voting power.
@@ -24,11 +28,11 @@ BFT Time computes the `Time` field of a block proposed in height `H` determinist
 from the `LastCommit` field of the block, which is a `Commit` set from
 height `H-1`, using the `MedianTime` method defined as follows:
 
-- `MedianTime`: the weighted median of `Timestamp` fields, of the previous block with
- heights defined by validators' voting powers or, in other words, the median of the
-  `Timestamp` fields of the `Precommit` messages forming a `Commit`, where the value of
-   each `Timestamp` field is counted a number of times proportional to the voting power
-   of the validator that produced and signed that `Precommit` message.
+- `MedianTime`: the weighted median of `Timestamp` fields of `Precommit`
+  messages forming a `Commit` set, with weights defined by the validators' voting powers.
+  The weighted median is produced by considering the value of each `Timestamp`
+value a number of times proportional to the voting power of the corresponding validator.
+
 The median of a set of values is one of the values of the set, so that the
 `Time` of a proposed block is one of the `Timestamp` fields of the `Precommit`
 messages included in the `LastCommit` set of that block.

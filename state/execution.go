@@ -128,6 +128,25 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		maxReapBytes = -1
 	}
 
+	// check which results have 2/3 maj
+	// totalPower := math.NewInt(state.Validators.TotalVotingPower())
+	// minTurnoutRatio := math.LegacyNewDec(67).QuoInt64(100)
+	// minTurnout := minTurnoutRatio.MulInt(totalPower).RoundInt()
+
+	// blockExec.oracleInfo.VoteDataBuffer.UpdateMtx.RLock()
+	// for timestamp, data := range blockExec.oracleInfo.VoteDataBuffer.Buffer {
+	// 	currentPower := math.OneInt()
+	// 	for oracleId, votes := range data {
+	// 		for _, vote := range votes {
+	// 			validator := vote.Validator
+	// 			if state.Validators.HasAddress([]byte(validator)) {
+	// 				// get power of validator
+	// 				power := state.Validators.GetByAddress([]byte(validator))
+	// 			}
+	// 		}
+	// 	}
+	// }
+
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)

@@ -76,17 +76,22 @@ func NewReactor(configPath string, grpcAddress string, pubKey crypto.PubKey, pri
 	}
 
 	gossipVoteBuffer := &oracletypes.GossipVoteBuffer{
-		Buffer: make(map[uint64]*oracleproto.GossipVote),
+		Buffer: make(map[string]*oracleproto.GossipVote),
+	}
+
+	unsignedVoteBuffer := &oracletypes.UnsignedVoteBuffer{
+		Buffer: []*oracletypes.UnsignedVotes{},
 	}
 
 	oracleInfo := &oracletypes.OracleInfo{
-		Oracles:          nil,
-		Config:           config,
-		VoteDataBuffer:   voteDataBuffer,
-		GossipVoteBuffer: gossipVoteBuffer,
-		SignVotesChan:    make(chan *oracleproto.Vote),
-		PubKey:           pubKey,
-		PrivValidator:    privValidator,
+		Oracles:            nil,
+		Config:             config,
+		VoteDataBuffer:     voteDataBuffer,
+		GossipVoteBuffer:   gossipVoteBuffer,
+		UnsignedVoteBuffer: unsignedVoteBuffer,
+		SignVotesChan:      make(chan *oracleproto.Vote),
+		PubKey:             pubKey,
+		PrivValidator:      privValidator,
 	}
 
 	jsonFile.Close()
@@ -194,24 +199,32 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
-		// hash and check if gossipVote already exists
-		gossipVoteHash := runner.HashGossipVote(msg)
-
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
-		_, ok := oracleR.OracleInfo.GossipVoteBuffer.Buffer[gossipVoteHash]
+		currentGossipVote, ok := oracleR.OracleInfo.GossipVoteBuffer.Buffer[msg.Validator]
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 
 		if !ok {
+			// first gossipVote entry from this validator
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-			oracleR.OracleInfo.GossipVoteBuffer.Buffer[gossipVoteHash] = msg
+			oracleR.OracleInfo.GossipVoteBuffer.Buffer[msg.Validator] = msg
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 
 			// safe to assume that if gossipVote does not exist in gossipBuffer, it also does not exist in dataBuffer?
-			oracleR.OracleInfo.VoteDataBuffer.UpdateMtx.Lock()
-			for _, vote := range msg.Votes {
-				runner.AddVoteToDataBuffer(oracleR.OracleInfo, vote)
+			// oracleR.OracleInfo.VoteDataBuffer.UpdateMtx.Lock()
+			// for _, vote := range msg.Votes {
+			// 	runner.AddVoteToDataBuffer(oracleR.OracleInfo, vote)
+			// }
+			// oracleR.OracleInfo.VoteDataBuffer.UpdateMtx.Unlock()
+		} else {
+			// existing gossipVote entry from this validator
+			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+			previousTimestamp := currentGossipVote.SignedTimestamp
+			newTimestamp := msg.SignedTimestamp
+			// only replace if the gossipVote received has a later timestamp than our current one
+			if newTimestamp > previousTimestamp {
+				oracleR.OracleInfo.GossipVoteBuffer.Buffer[msg.Validator] = msg
 			}
-			oracleR.OracleInfo.VoteDataBuffer.UpdateMtx.Unlock()
+			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
 	default:
 		oracleR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)

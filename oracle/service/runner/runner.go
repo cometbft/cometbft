@@ -252,30 +252,6 @@ func RunOracle(oracleInfo *types.OracleInfo, oracle types.Oracle, currentTime ui
 		return errors.New("skipping submission for " + oracle.Id + " as result is empty")
 	}
 
-	// when querying oracle, use go routines to parallelise
-	// each reactor will have a map of id: normalisedTime: votes
-	// each reactor will also have a channel for gossiping
-	// sign the vote and append to the map
-	// signed vote will also be marshalled to bytes and passed to the channel
-	// broadcast routine will read the channel concurrently and gossip the encoded votes
-	// received votes from gossiping will be unmarshalled and placed into their own maps
-	// use the map to check for 2/3 maj to insert into the prepareProposal method
-	// when submitting results that have 2/3 maj, it should only be in one single tx
-	// the single tx consists of the oracle id: result: the validators address and signature
-
-	// need to handle concurrency for reading/writing to the maps
-	// 1. writing your own votes to the map
-	// 2. writing gossiped votes to the map
-	// 3. pruning expired votes from the map, prune every min?
-	// 4. reading the votes to calculate 2/3 maj,
-	// need to have pruning logic
-
-	// need to consider if we want to gossip votes not submitted by us (ie gossip a vote received from other reactors)
-	// if you prune when you submit in proposal, only the validator submitting the proposal will have knowledge of which
-	// votes to prune
-	// have in built pruning logic that runs every 1 min?
-	// every one minute delete gossip
-
 	vote := oracleproto.Vote{
 		Validator: oracleInfo.PubKey.Address().String(),
 		OracleId:  oracle.Id,
@@ -296,7 +272,7 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 			default:
 				interval := oracleInfo.MsgFlushInterval
 				if interval == 0 {
-					interval = 100 * time.Millisecond
+					interval = 500 * time.Millisecond
 				}
 				time.Sleep(interval)
 				ProcessSignVoteQueue(oracleInfo)
@@ -333,42 +309,46 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 		return
 	}
 
-	gossipVote := &oracleproto.GossipVote{
-		Validator: oracleInfo.PubKey.Address().String(),
-		PublicKey: oracleInfo.PubKey.Bytes(),
-		SignType:  oracleInfo.PubKey.Type(),
+	// new batch of unsigned votes
+	newUnsignedVotes := &types.UnsignedVotes{
+		Timestamp: uint64(time.Now().Unix()),
 		Votes:     votes,
 	}
 
+	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
+	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
+	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, newUnsignedVotes)
+	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
+
+	// loop through unsignedVoteBuffer and combine all votes
+	var batchVotes = []*oracleproto.Vote{}
+	oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
+	for _, unsignedVotes := range oracleInfo.UnsignedVoteBuffer.Buffer {
+		batchVotes = append(batchVotes, unsignedVotes.Votes...)
+	}
+	oracleInfo.UnsignedVoteBuffer.UpdateMtx.RUnlock()
+
+	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
+	newGossipVote := &oracleproto.GossipVote{
+		Validator: oracleInfo.PubKey.Address().String(),
+		PublicKey: oracleInfo.PubKey.Bytes(),
+		SignType:  oracleInfo.PubKey.Type(),
+		Votes:     batchVotes,
+	}
+
 	// signing of vote should append the signature field and timestamp field of gossipVote
-	if err := oracleInfo.PrivValidator.SignOracleVote("", gossipVote); err != nil {
+	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
 		log.Errorf("error signing oracle votes")
 	}
+	newGossipVote.SignedTimestamp = uint64(time.Now().Unix())
 
-	gossipVoteHash := HashGossipVote(gossipVote)
+	// replace current gossipVoteBuffer with new one
+	address := oracleInfo.PubKey.Address().String()
 
+	// need to mutex lock as it will clash with concurrent gossip
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-	oracleInfo.GossipVoteBuffer.Buffer[gossipVoteHash] = gossipVote
+	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
-
-	// maybe dont have a channel? maybe just add it to a buffer?
-	// add gossip votes to a gossip buffer
-	// this gossip buffer will be sent to other peers
-	// when sending, loop through gossip buffer and send out each gossipVote one by one
-	// when receiving this gossip buffer, add data to map that we dont have, and add data to gossip buffer that we dont have
-	// check if we have it by hashing the gossipVoteObject
-	// prune the gossip buffer every 3 secs
-	// prune the data map every 3 secs
-	// prune everything with timestamp > 3 secs ago
-	// data map will be in timestamp : oracleId: votes[]
-
-	// after signing, pass into data map
-	oracleInfo.VoteDataBuffer.UpdateMtx.Lock()
-	defer oracleInfo.VoteDataBuffer.UpdateMtx.Unlock()
-
-	for _, vote := range gossipVote.Votes {
-		AddVoteToDataBuffer(oracleInfo, vote)
-	}
 }
 
 func AddVoteToDataBuffer(oracleInfo *types.OracleInfo, vote *oracleproto.Vote) {
@@ -399,20 +379,34 @@ func PruneVoteDataBuffer(oracleInfo *types.OracleInfo) {
 	}(oracleInfo)
 }
 
-func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo) {
+func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo) {
 	go func(oracleInfo *types.OracleInfo) {
 		ticker := time.Tick(3 * time.Second)
 		for range ticker {
-			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+			oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
 			// prune everything older than 3 secs
-			for key, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
-				currTime := uint64(time.Now().Unix())
-				timestamp := gossipVote.SignedTimestamp
+			currTime := uint64(time.Now().Unix())
+			numberOfVotesToPrune := 0
+			count := 0
+			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
+			for _, unsignedVotes := range unsignedVoteBuffer {
+				// unsigned votes are arranged from least recent to most recent
+				timestamp := unsignedVotes.Timestamp
 				if timestamp <= currTime-uint64(3*time.Second) {
-					delete(oracleInfo.GossipVoteBuffer.Buffer, key)
+					numberOfVotesToPrune++
+					count += len(unsignedVotes.Votes)
+				} else {
+					// everything beyond is more recent hence we can early terminate
+					break
 				}
 			}
-			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+			oracleInfo.UnsignedVoteBuffer.UpdateMtx.RUnlock()
+
+			if numberOfVotesToPrune > 0 {
+				oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
+				oracleInfo.UnsignedVoteBuffer.Buffer = oracleInfo.UnsignedVoteBuffer.Buffer[numberOfVotesToPrune:]
+				oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
+			}
 		}
 	}(oracleInfo)
 }
@@ -434,8 +428,8 @@ func Run(oracleInfo *types.OracleInfo) {
 	log.Info("[oracle] Service started.")
 	count := 0
 	RunProcessSignVoteQueue(oracleInfo)
-	PruneGossipVoteBuffer(oracleInfo)
-	PruneVoteDataBuffer(oracleInfo)
+	PruneUnsignedVoteBuffer(oracleInfo)
+	// PruneVoteDataBuffer(oracleInfo)
 	for {
 		if count == 0 { // on init, and every minute
 			oracles, err := SyncOracles(oracleInfo)

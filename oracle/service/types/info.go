@@ -13,26 +13,37 @@ import (
 
 // App struct for app
 type OracleInfo struct {
-	Oracles          []Oracle
-	AdapterMap       map[string]Adapter
-	Redis            redis.Service
-	Config           Config
-	GrpcClient       *grpc.ClientConn
-	VoteDataBuffer   *VoteDataBuffer
-	GossipVoteBuffer *GossipVoteBuffer
-	SignVotesChan    chan *oracleproto.Vote
-	PubKey           crypto.PubKey
-	PrivValidator    types.PrivValidator
-	MsgFlushInterval time.Duration
-	StopChannel      chan int
+	Oracles            []Oracle
+	AdapterMap         map[string]Adapter
+	Redis              redis.Service
+	Config             Config
+	GrpcClient         *grpc.ClientConn
+	VoteDataBuffer     *VoteDataBuffer
+	UnsignedVoteBuffer *UnsignedVoteBuffer
+	GossipVoteBuffer   *GossipVoteBuffer
+	SignVotesChan      chan *oracleproto.Vote
+	PubKey             crypto.PubKey
+	PrivValidator      types.PrivValidator
+	MsgFlushInterval   time.Duration
+	StopChannel        chan int
+}
+
+type UnsignedVotes struct {
+	Timestamp uint64
+	Votes     []*oracleproto.Vote
 }
 
 type GossipVoteBuffer struct {
-	Buffer    map[uint64]*oracleproto.GossipVote
+	Buffer    map[string]*oracleproto.GossipVote
 	UpdateMtx cmtsync.RWMutex
 }
 
 type VoteDataBuffer struct {
 	Buffer    map[uint64]map[string][]*oracleproto.Vote
+	UpdateMtx cmtsync.RWMutex
+}
+
+type UnsignedVoteBuffer struct {
+	Buffer    []*UnsignedVotes // deque of UnsignedVote obj
 	UpdateMtx cmtsync.RWMutex
 }

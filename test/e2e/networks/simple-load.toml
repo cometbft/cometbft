@@ -17,9 +17,9 @@ prometheus = true
 # `load` instances run sequentially.
 [[load]] # load instance #1
 
-wait_to_start = 10
 
-# Default values for all `run`s in this `load`.
+# Default values for all `run`s in this `load` instance.
+wait_to_start = 10
 max_duration = 20
 
 # This `load` instance has three `run` executions running in parallel. The big_txs run will start
@@ -35,14 +35,15 @@ run.big_txs.target = ["validator01"]
 run.1 = { batch_size = 100 }
 
 [[load]] # load instance #3
-run.1 = { batch_size = 200 }
+run.2 = { batch_size = 200 }
 
 [[load]] # load instance #4
-run.1 = { batch_size = 400 }
+run.3 = { batch_size = 400 }
 
 ################################################################################
 # Testnet
 ################################################################################
+
 [node.validator01]
 [node.validator02]
 [node.validator03]

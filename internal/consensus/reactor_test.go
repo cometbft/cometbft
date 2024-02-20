@@ -396,7 +396,7 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 			require.True(t, added)
 
 			veHeightParam := types.DefaultFeatureParams()
-			veHeightParam.EnableVoteExtensions(veHeight)
+			veHeightParam.VoteExtensionsEnableHeight = veHeight
 			if testCase.includeExtensions {
 				cs.blockStore.SaveBlockWithExtendedCommit(propBlock, blockParts, voteSet.MakeExtendedCommit(veHeightParam))
 			} else {

@@ -245,7 +245,9 @@ The state changes caused by processing those
 proposed blocks must never replace the previous state until `FinalizeBlock` confirms
 that the proposed block was decided and `Commit` is invoked for it.
 
-The same is true to Applications that quickly accept blocks and execute the blocks optimistically in parallel with the remaining consensus steps to save time during `FinalizeBlock`; they must only apply state changes in `Commit`.
+The same is true to Applications that quickly accept blocks and execute the
+blocks optimistically in parallel with the remaining consensus steps to save
+time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
@@ -274,11 +276,12 @@ Sources of non-determinism in applications may include:
 
 See [#56](https://github.com/tendermint/abci/issues/56) for the original discussion.
 
-Note that some methods (`Query`, `FinalizeBlock`) return non-deterministic data in the form
-of `Info` and `Log` fields. The `Log` is intended for the literal output from the Application's
-logger, while the `Info` is any additional info that should be returned. These are the only fields
-that are not included in block header computations, so we don't need agreement
-on them. All other fields in the `Response*` must be strictly deterministic.
+Note that some methods (e.g., `Query` and `FinalizeBlock`) may return
+non-deterministic data in the form of `Info`, `Log` and/or `Events` fields. The
+`Log` is intended for the literal output from the Application's logger, while
+the `Info` is any additional info that should be returned. These fields are not
+included in block header computations, so we don't need agreement on them. See
+each field's description on whether it must be deterministic or not.
 
 ## Events
 
@@ -310,9 +313,11 @@ message Event {
 }
 ```
 
-The attributes of an `Event` consist of a `key`, a `value`, and an `index` flag. The
-index flag notifies the CometBFT indexer to index the attribute. The value of
-the `index` flag is non-deterministic and may vary across different nodes in the network.
+The attributes of an `Event` consist of a `key`, a `value`, and an `index`
+flag. The index flag notifies the CometBFT indexer to index the attribute.
+
+The `type` and `attributes` fields are non-deterministic and may vary across
+different nodes in the network.
 
 ```protobuf
 message EventAttribute {

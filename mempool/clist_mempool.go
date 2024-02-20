@@ -3,7 +3,6 @@ package mempool
 import (
 	"bytes"
 	"context"
-	"errors"
 	"sync"
 	"sync/atomic"
 
@@ -24,12 +23,11 @@ import (
 // mempool uses a concurrent list structure for storing transactions that can
 // be efficiently accessed by multiple concurrent readers.
 type CListMempool struct {
-	// Atomic integers
-	height   int64 // the last block Update()'d to
-	txsBytes int64 // total size of mempool, in bytes
+	height   atomic.Int64 // the last block Update()'d to
+	txsBytes atomic.Int64 // total size of mempool, in bytes
 
 	// notify listeners (ie. consensus) when txs are available
-	notifiedTxsAvailable bool
+	notifiedTxsAvailable atomic.Bool
 	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
 
 	// Function set by the reactor to be called when a transaction is removed
@@ -96,6 +94,7 @@ func NewCListMempool(
 		logger:           log.NewNopLogger(),
 		Metrics:          NopMetrics(),
 	}
+	mp.height.Store(height)
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache[types.TxKey](cfg.CacheSize)
@@ -227,12 +226,17 @@ func (mem *CListMempool) Size() int {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) SizeBytes() int64 {
-	return atomic.LoadInt64(&mem.txsBytes)
+	return mem.txsBytes.Load()
 }
 
 // Lock() must be help by the caller during execution.
 func (mem *CListMempool) FlushAppConn() error {
-	return mem.proxyAppConn.Flush(context.TODO())
+	err := mem.proxyAppConn.Flush(context.TODO())
+	if err != nil {
+		return ErrFlushAppConn{Err: err}
+	}
+
+	return nil
 }
 
 // XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
@@ -240,7 +244,7 @@ func (mem *CListMempool) Flush() {
 	mem.updateMtx.RLock()
 	defer mem.updateMtx.RUnlock()
 
-	_ = atomic.SwapInt64(&mem.txsBytes, 0)
+	mem.txsBytes.Store(0)
 	mem.cache.Reset()
 
 	mem.removeAllTxs()
@@ -250,7 +254,7 @@ func (mem *CListMempool) Flush() {
 func (mem *CListMempool) Height() int64 {
 	mem.updateMtx.Lock()
 	defer mem.updateMtx.Unlock()
-	return mem.height
+	return mem.height.Load()
 }
 
 // TxsFront returns the first transaction in the ordered list for peer
@@ -299,15 +303,13 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
-			return nil, ErrPreCheck{
-				Reason: err,
-			}
+			return nil, ErrPreCheck{Err: err}
 		}
 	}
 
 	// NOTE: proxyAppConn may error if tx buffer is full
 	if err := mem.proxyAppConn.Error(); err != nil {
-		return nil, err
+		return nil, ErrAppConnMempool{Err: err}
 	}
 
 	if added := mem.addToCache(tx.Key()); !added {
@@ -321,7 +323,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
 		mem.logger.Error("RequestCheckTx", "err", err)
-		return nil, err
+		return nil, ErrCheckTxAsync{Err: err}
 	}
 
 	return reqRes, nil
@@ -385,7 +387,7 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 func (mem *CListMempool) addTx(memTx *MempoolTx) {
 	e := mem.txs.PushBack(memTx)
 	mem.txsMap.Store(memTx.tx.Key(), e)
-	atomic.AddInt64(&mem.txsBytes, int64(len(memTx.tx)))
+	mem.txsBytes.Add(int64(len(memTx.tx)))
 	mem.Metrics.TxSizeBytes.Observe(float64(len(memTx.tx)))
 }
 
@@ -401,11 +403,11 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
-		tx := elem.Value.(*MempoolTx).tx
-		atomic.AddInt64(&mem.txsBytes, int64(-len(tx)))
+		tx := elem.Value.(*mempoolTx).tx
+		mem.txsBytes.Add(int64(-len(tx)))
 		return nil
 	}
-	return errors.New("transaction not found in mempool")
+	return ErrTxNotFound
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
@@ -456,22 +458,17 @@ func (mem *CListMempool) resCbFirstTime(
 					"transaction already there, not adding it again",
 					"tx", types.Tx(tx).Hash(),
 					"res", r,
-					"height", mem.height,
+					"height", mem.height.Load(),
 					"total", mem.Size(),
 				)
 				return
 			}
 
-			mem.addTx(&MempoolTx{
-				height:    mem.height,
-				gasWanted: r.CheckTx.GasWanted,
-				tx:        tx,
-			})
 			mem.logger.Debug(
 				"added valid transaction",
 				"tx", types.Tx(tx).Hash(),
 				"res", r,
-				"height", mem.height,
+				"height", mem.height.Load(),
 				"total", mem.Size(),
 			)
 			mem.notifyTxsAvailable()
@@ -572,9 +569,8 @@ func (mem *CListMempool) notifyTxsAvailable() {
 	if mem.Size() == 0 {
 		panic("notified txs available but mempool is empty!")
 	}
-	if mem.txsAvailable != nil && !mem.notifiedTxsAvailable {
+	if mem.txsAvailable != nil && mem.notifiedTxsAvailable.CompareAndSwap(false, true) {
 		// channel cap is 1, so this will send once
-		mem.notifiedTxsAvailable = true
 		select {
 		case mem.txsAvailable <- struct{}{}:
 		default:
@@ -650,8 +646,8 @@ func (mem *CListMempool) Update(
 	postCheck PostCheckFunc,
 ) error {
 	// Set height
-	mem.height = height
-	mem.notifiedTxsAvailable = false
+	mem.height.Store(height)
+	mem.notifiedTxsAvailable.Store(false)
 
 	if preCheck != nil {
 		mem.preCheck = preCheck

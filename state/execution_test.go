@@ -36,7 +36,7 @@ import (
 
 var (
 	chainID             = "execution_chain"
-	testPartSize uint32 = 65536
+	testPartSize uint32 = types.BlockPartSizeBytes
 )
 
 func TestApplyBlock(t *testing.T) {
@@ -874,6 +874,63 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	var bytesPerTx int64 = 3
 	maxDataBytes := types.MaxDataBytes(state.ConsensusParams.Block.MaxBytes, 0, nValidators)
 	txs := test.MakeNTxs(height, maxDataBytes/bytesPerTx+2) // +2 so that tx don't fit
+	mp := &mpmocks.Mempool{}
+	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs)
+
+	app := &abcimocks.Application{}
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
+		Txs: txs.ToSliceOfBytes(),
+	}, nil)
+
+	cc := proxy.NewLocalClientCreator(app)
+	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
+	err := proxyApp.Start()
+	require.NoError(t, err)
+	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
+
+	blockStore := store.NewBlockStore(dbm.NewMemDB())
+	blockExec := sm.NewBlockExecutor(
+		stateStore,
+		log.NewNopLogger(),
+		proxyApp.Consensus(),
+		mp,
+		evpool,
+		blockStore,
+	)
+	pa, _ := state.Validators.GetByIndex(0)
+	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
+	require.NoError(t, err)
+	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
+	require.Nil(t, block)
+	require.ErrorContains(t, err, "transaction data size exceeds maximum")
+
+	mp.AssertExpectations(t)
+}
+
+// TestPrepareProposalCountSerializationOverhead tests that the block creation logic returns
+// an error if the ResponsePrepareProposal returned from the application is at the limit of
+// its size and will go beyond the limit upon serialization.
+func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
+	const height = 2
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	state, stateDB, privVals := makeState(1, height)
+	// limit max block size
+	var bytesPerTx int64 = 4
+	const nValidators = 1
+	nonDataSize := 5000 - types.MaxDataBytes(5000, 0, nValidators)
+	state.ConsensusParams.Block.MaxBytes = bytesPerTx*1024 + nonDataSize
+	maxDataBytes := types.MaxDataBytes(state.ConsensusParams.Block.MaxBytes, 0, nValidators)
+
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+
+	evpool := &mocks.EvidencePool{}
+	evpool.On("PendingEvidence", mock.Anything).Return([]types.Evidence{}, int64(0))
+
+	txs := test.MakeNTxs(height, maxDataBytes/bytesPerTx)
 	mp := &mpmocks.Mempool{}
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs)
 

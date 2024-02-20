@@ -193,17 +193,16 @@ response messages.
 The messages are specified here: [ABCI Message
 Types](https://github.com/cometbft/cometbft/blob/v0.38.x/proto/tendermint/abci/types.proto).
 
-The **DeliverTx** message is the work horse of the application. Each
-transaction in the blockchain is delivered with this message. The
+The **FinalizeBlock** message is the work horse of the application. Each
+transaction in the blockchain is finalized within this message. The
 application needs to validate each transaction received with the
-**DeliverTx** message against the current state, application protocol,
-and the cryptographic credentials of the transaction. A validated
-transaction then needs to update the application state — by binding a
-value into a key values store, or by updating the UTXO database, for
-instance.
+**FinalizeBlock** message against the current state, application protocol,
+and the cryptographic credentials of the transaction. FinalizeBlock only
+prepares the update to be made and does not change the state of the application.
+The state change is actually committed in a later stage i.e. in commit phase.
 
-The **CheckTx** message is similar to **DeliverTx**, but it's only for
-validating transactions. CometBFT's mempool first checks the
+The **CheckTx** message is used for validating transactions.
+CometBFT's mempool first checks the
 validity of a transaction with **CheckTx**, and only relays valid
 transactions to its peers. For instance, an application may check an
 incrementing sequence number in the transaction and return an error upon
@@ -220,10 +219,10 @@ lightweight clients, as Merkle-hash proofs can be verified by checking
 against the block hash, and that the block hash is signed by a quorum.
 
 There can be multiple ABCI socket connections to an application.
-CometBFT creates three ABCI connections to the application; one
-for the validation of transactions when broadcasting in the mempool, one
-for the consensus engine to run block proposals, and one more for
-querying the application state.
+CometBFT creates four ABCI connections to the application; one
+for the validation of transactions when broadcasting in the mempool, one for
+the consensus engine to run block proposals, one for creating snapshots of the
+application state, and one more for querying the application state.
 
 It's probably evident that application designers need to very carefully
 design their message handlers to create a blockchain that does anything

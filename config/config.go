@@ -42,6 +42,8 @@ const (
 	DefaultAddrBookName = "addrbook.json"
 
 	DefaultPruningInterval = 10 * time.Second
+	MempoolTypeFlood       = "flood"
+	MempoolTypeNop         = "nop"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -160,6 +162,9 @@ func (cfg *Config) ValidateBasic() error {
 	}
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [instrumentation] section: %w", err)
+	}
+	if !cfg.Consensus.CreateEmptyBlocks && cfg.Mempool.Type == MempoolTypeNop {
+		return fmt.Errorf("`nop` mempool does not support create_empty_blocks = false")
 	}
 	return nil
 }
@@ -750,7 +755,7 @@ type P2PConfig struct { //nolint: maligned
 	// Testing params.
 	// Force dial to fail
 	TestDialFail bool `mapstructure:"test_dial_fail"`
-	// FUzz connection
+	// Fuzz connection
 	TestFuzz       bool            `mapstructure:"test_fuzz"`
 	TestFuzzConfig *FuzzConnConfig `mapstructure:"test_fuzz_config"`
 }
@@ -851,6 +856,15 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 // implementation (previously called v0), and a prioritized mempool (v1), which
 // was removed (see https://github.com/cometbft/cometbft/issues/260).
 type MempoolConfig struct {
+	// The type of mempool for this node to use.
+	//
+	//  Possible types:
+	//  - "flood" : concurrent linked list mempool with flooding gossip protocol
+	//  (default)
+	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
+	//  responsible for storing, disseminating and proposing txs).
+	//  "create_empty_blocks=false" is not supported.
+	Type string `mapstructure:"type"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
@@ -897,12 +911,13 @@ type MempoolConfig struct {
 	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
 	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
-	// We use two independent upper values for persistent peers and for non-persistent peers.
+	// We use two independent upper values for persistent and non-persistent peers.
 	// Unconditional peers are not affected by this feature.
 	// If we are connected to more than the specified number of persistent peers, only send txs to
-	// the first ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
-	// persistent peers disconnects, activate another persistent peer. Similarly for non-persistent
-	// peers, with an upper limit of ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+	// ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+	// persistent peers disconnects, activate another persistent peer.
+	// Similarly for non-persistent peers, with an upper limit of
+	// ExperimentalMaxGossipConnectionsToNonPersistentPeers.
 	// If set to 0, the feature is disabled for the corresponding group of peers, that is, the
 	// number of active connections to that group of peers is not bounded.
 	// For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
@@ -914,6 +929,7 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
+		Type:      MempoolTypeFlood,
 		Recheck:   true,
 		Broadcast: true,
 		WalPath:   "",
@@ -948,6 +964,12 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // ValidateBasic performs basic validation (checking param bounds, etc.) and
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
+	switch cfg.Type {
+	case MempoolTypeFlood, MempoolTypeNop:
+	case "": // allow empty string to be backwards compatible
+	default:
+		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
+	}
 	if cfg.Size < 0 {
 		return errors.New("size can't be negative")
 	}

@@ -44,6 +44,8 @@ numbering our ADRs from 100 onwards.
 
 ### Accepted
 
+- [ADR-111: `nop` Mempool](./adr-111-nop-mempool.md)
+
 ### Implemented
 
 ### Deprecated

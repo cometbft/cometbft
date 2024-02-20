@@ -1,5 +1,144 @@
 # CHANGELOG
 
+## v0.38.5
+
+*January 24, 2024*
+
+This release fixes a problem introduced in `v0.38.3`: if an application
+updates the value of ConsensusParam `VoteExtensionsEnableHeight` to the same value
+(actually a "noop" update) this is accepted in `v0.38.2` but rejected under some
+conditions in `v0.38.3` and `v0.38.4`. Even if rejecting a useless update would make sense
+in general, in a point release we should not reject a set of inputs to
+a function that was previuosly accepted (unless there is a good reason
+for it). The goal of this release is to accept again all "noop" updates, like `v0.38.2` did.
+
+### IMPROVEMENTS
+
+- `[consensus]` Add `chain_size_bytes` metric for measuring the size of the blockchain in bytes
+  ([\#2093](https://github.com/cometbft/cometbft/pull/2093))
+
+## v0.38.4
+
+*January 22, 2024*
+
+This release is aimed at those projects that have a dependency on CometBFT,
+release line `v0.38.x`, and make use of function `SaveBlockStoreState` in package
+`github.com/cometbft/cometbft/store`. This function changed its signature in `v0.38.3`.
+This new release reverts the signature change so that upgrading to the latest release
+of CometBFT on `v0.38.x` does not require any change in the code depending on CometBFT.
+
+### IMPROVEMENTS
+
+- `[e2e]` Add manifest option `VoteExtensionsUpdateHeight` to test
+  vote extension activation via `InitChain` and `FinalizeBlock`.
+  Also, extend the manifest generator to produce different values
+  of this new option
+  ([\#2065](https://github.com/cometbft/cometbft/pull/2065))
+
+## v0.38.3
+
+*January 17, 2024*
+
+This release addresses a high impact security issue reported in advisory
+([ASA-2024-001](https://github.com/cometbft/cometbft/security/advisories/GHSA-qr8r-m495-7hc4)).
+There are other non-security bugs fixes that have been addressed since
+`v0.38.2` was released, as well as some improvements.
+Please check the list below for further details.
+
+### BUG FIXES
+
+- `[consensus]` Fix for "Validation of `VoteExtensionsEnableHeight` can cause chain halt"
+  ([ASA-2024-001](https://github.com/cometbft/cometbft/security/advisories/GHSA-qr8r-m495-7hc4))
+- `[mempool]` Fix data races in `CListMempool` by making atomic the types of `height`, `txsBytes`, and
+  `notifiedTxsAvailable`. ([\#642](https://github.com/cometbft/cometbft/pull/642))
+- `[mempool]` The calculation method of tx size returned by calling proxyapp should be consistent with that of mempool
+  ([\#1687](https://github.com/cometbft/cometbft/pull/1687))
+- `[evidence]` When `VerifyCommitLight` & `VerifyCommitLightTrusting` are called as part
+  of evidence verification, all signatures present in the evidence must be verified
+  ([\#1749](https://github.com/cometbft/cometbft/pull/1749))
+- `[crypto]` `SupportsBatchVerifier` returns false
+  if public key is nil instead of dereferencing nil.
+  ([\#1825](https://github.com/cometbft/cometbft/pull/1825))
+- `[blocksync]` wait for `poolRoutine` to stop in `(*Reactor).OnStop`
+  ([\#1879](https://github.com/cometbft/cometbft/pull/1879))
+
+### IMPROVEMENTS
+
+- `[types]` Validate `Validator#Address` in `ValidateBasic` ([\#1715](https://github.com/cometbft/cometbft/pull/1715))
+- `[abci]` Increase ABCI socket message size limit to 2GB ([\#1730](https://github.com/cometbft/cometbft/pull/1730): @troykessler)
+- `[state]` Save the state using a single DB batch ([\#1735](https://github.com/cometbft/cometbft/pull/1735))
+- `[store]` Save block using a single DB batch if block is less than 640kB, otherwise each block part is saved individually
+  ([\#1755](https://github.com/cometbft/cometbft/pull/1755))
+- `[rpc]` Support setting proxy from env to `DefaultHttpClient`.
+  ([\#1900](https://github.com/cometbft/cometbft/pull/1900))
+- `[rpc]` Use default port for HTTP(S) URLs when there is no explicit port ([\#1903](https://github.com/cometbft/cometbft/pull/1903))
+- `[crypto/merkle]` faster calculation of hashes ([#1921](https://github.com/cometbft/cometbft/pull/1921))
+
+## v0.38.2
+
+*November 27, 2023*
+
+This release provides the **nop** mempool for applications that want to build their own mempool.
+Using this mempool effectively disables all mempool functionality in CometBFT, including transaction dissemination and the `broadcast_tx_*` endpoints.
+
+Also fixes a small bug in the mempool for an experimental feature.
+
+### BUG FIXES
+
+- `[mempool]` Avoid infinite wait in transaction sending routine when
+  using experimental parameters to limiting transaction gossiping to peers
+  ([\#1654](https://github.com/cometbft/cometbft/pull/1654))
+
+### FEATURES
+
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
+
+  If you want to use it, change mempool's `type` to `nop`:
+
+  ```toml
+  [mempool]
+
+  # The type of mempool for this node to use.
+  #
+  # Possible types:
+  # - "flood" : concurrent linked list mempool with flooding gossip protocol
+  # (default)
+  # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+  # for storing, disseminating and proposing txs). "create_empty_blocks=false"
+  # is not supported.
+  type = "nop"
+  ```
+
+## v0.38.1
+
+*November 17, 2023*
+
+This release contains, among other things, an opt-in, experimental feature to
+help reduce the bandwidth consumption associated with the mempool's transaction
+gossip.
+
+### BUG FIXES
+
+- `[state/indexer]` Respect both height params while querying for events
+   ([\#1529](https://github.com/cometbft/cometbft/pull/1529))
+
+### FEATURES
+
+- `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
+  ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
+
+### IMPROVEMENTS
+
+- `[mempool]` Add experimental feature to limit the number of persistent peers and non-persistent
+  peers to which the node gossip transactions.
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
+  `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
+  which the node gossip transactions. 
+  ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
+  ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+
 ## v0.38.0
 
 *September 12, 2023*
@@ -141,6 +280,8 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   Integers are read as "big ints" and represented with as many bits as they need when converting to floats.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
 - `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[consensus]` New metrics (counters) to track duplicate votes and block parts.
+  ([\#896](https://github.com/cometbft/cometbft/pull/896))
 - `[mempool]` Application can now set `ConsensusParams.Block.MaxBytes` to -1
   to gain more control on the max size of transactions in a block.
   It also allows the application to have visibility on all transactions in the

@@ -106,7 +106,13 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 		first := status.SyncInfo.EarliestBlockHeight
 		last := status.SyncInfo.LatestBlockHeight
 		if node.RetainBlocks > 0 {
-			first++
+			// This was done in case pruning is activated.
+			// As it happens in the background this lowers the chances
+			// that the block at height=first will be pruned by the time we test
+			// this. If this test starts to fail often, it is worth revisiting this logic.
+			// To reproduce this failure locally, it is advised to set the storage.pruning.interval
+			// to 1s instead of 10s.
+			first += int64(node.RetainBlocks)
 		}
 
 		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
@@ -136,7 +142,7 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 		errorCases := []struct {
 			requestHeight int64
 		}{
-			{first - 2},
+			{first - int64(node.RetainBlocks) - 2},
 			{last + 100000},
 		}
 

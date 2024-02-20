@@ -1,41 +1,48 @@
-# Example of a manifest with multiple load instances.
+# Example manifest with multiple load instances.
 
 # Default values for all `run` instances.
 load_tx_connections = 1
 load_tx_size_bytes = 1024
-load_max_duration = 20
+load_max_duration = 90
 load_wait_to_start = 5
 load_wait_until = "mempools-are-empty"
 load_wait_at_end = 5
 
 prometheus = true
 
-# `load` instances run sequentially.
-[[load]]
+################################################################################
+# Load instances
+################################################################################
 
-wait_to_start = 3
-wait_at_end = 3
+# `load` instances run sequentially.
+[[load]] # load instance #1
+
+wait_to_start = 10
 
 # Default values for all `run`s in this `load`.
 max_duration = 20
 
-# This `load` instance has three `run` executions running in parallel.
+# This `load` instance has three `run` executions running in parallel. The big_txs run will start
+# later than the others, it will finish after sending max_txs transactions, and it will only send
+# transactions to one node.
 run.small_txs = { batch_size = 100, tx_bytes = 1024 }
-run.medium_txs = { batch_size = 10, tx_bytes = 10240, wait_to_run = 3 }
-run.big_txs = { batch_size = 10, tx_bytes = 102400, connections = 10, wait_to_run = 9 }
+run.medium_txs = { batch_size = 10, tx_bytes = 10240 }
+run.big_txs = { batch_size = 10, tx_bytes = 102400, connections = 10, wait_to_run = 20 }
 run.big_txs.max_txs = 25
 run.big_txs.target = ["validator01"]
 
-[[load]]
+[[load]] # load instance #2
 run.1 = { batch_size = 100 }
 
-[[load]]
+[[load]] # load instance #3
 run.1 = { batch_size = 200 }
 
-[[load]]
+[[load]] # load instance #4
 run.1 = { batch_size = 400 }
 
-# import = "networks/4nodes.toml"
+################################################################################
+# Testnet
+################################################################################
 [node.validator01]
 [node.validator02]
 [node.validator03]

@@ -16,11 +16,6 @@ type Mempool struct {
 	mock.Mock
 }
 
-<<<<<<< HEAD
-// CheckTx provides a mock function with given fields: tx, callback, txInfo
-func (_m *Mempool) CheckTx(tx types.Tx, callback func(*abcitypes.ResponseCheckTx), txInfo mempool.TxInfo) error {
-	ret := _m.Called(tx, callback, txInfo)
-=======
 // CheckNewTx provides a mock function with given fields: tx
 func (_m *Mempool) CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	ret := _m.Called(tx)
@@ -63,7 +58,6 @@ func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 			r0 = ret.Get(0).(*abcicli.ReqRes)
 		}
 	}
->>>>>>> 094c67101 (Add CAT mempool reactor)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(types.Tx, func(*abcitypes.ResponseCheckTx), mempool.TxInfo) error); ok {

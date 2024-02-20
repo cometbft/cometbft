@@ -110,7 +110,7 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 func deliverTxsRange(t *testing.T, cs *State, start, end int) {
 	// Deliver some txs.
 	for i := start; i < end; i++ {
-		err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"), nil, mempl.TxInfo{})
+		_, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(fmt.Sprintf("%d", i), "true"), nil, mempl.TxInfo{})
 		require.NoError(t, err)
 	}
 }
@@ -166,7 +166,7 @@ func TestMempoolRmBadTx(t *testing.T) {
 		// CheckTx should not err, but the app should return a bad abci code
 		// and the tx should get removed from the pool
 		invalidTx := []byte("invalidTx")
-		err := assertMempool(cs.txNotifier).CheckTx(invalidTx, func(r *abci.ResponseCheckTx) {
+		_, err := assertMempool(cs.txNotifier).CheckTx(invalidTx, func(r *abci.ResponseCheckTx) {
 			if r.Code != kvstore.CodeTypeInvalidTxFormat {
 				t.Errorf("expected checktx to return invalid format, got %v", r)
 				return

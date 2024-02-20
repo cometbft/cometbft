@@ -8,8 +8,9 @@ BFT Time is a Byzantine fault-tolerant algorithm for computing [block times](./t
 > :warning:
 > CometBFT `v1.x` introduced [Proposer-Based Timestamps (PBTS)][pbts-spec],
 > intended to be a replacement for BFT Time.
-> Users are strongly encouraged to adopt PBTS in new chains, or when upgrading
-> existing chains.
+> Users are strongly encouraged to adopt the PBTS algorithm in new chains, or
+> when upgrading existing chains, as the BFT Time algorithm MAY be deprecated
+> in a future version of CometBFT.
 
 ## Overview
 

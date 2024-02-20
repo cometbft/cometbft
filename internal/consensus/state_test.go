@@ -3016,26 +3016,26 @@ func TestStateOutputsBlockPartsStats(t *testing.T) {
 	}
 
 	cs.ProposalBlockParts = types.NewPartSetFromHeader(parts.Header())
-	cs.handleMsg(msgInfo{msg, peer.ID(), time.Time{}})
+	cs.handleMsg(msgInfo{Msg: msg, PeerID: peer.ID()})
 
 	statsMessage := <-cs.statsMsgQueue
 	require.Equal(t, msg, statsMessage.Msg, "")
 	require.Equal(t, peer.ID(), statsMessage.PeerID, "")
 
 	// sending the same part from different peer
-	cs.handleMsg(msgInfo{msg, "peer2", time.Time{}})
+	cs.handleMsg(msgInfo{Msg: msg, PeerID: "peer2"})
 
 	// sending the part with the same height, but different round
 	msg.Round = 1
-	cs.handleMsg(msgInfo{msg, peer.ID(), time.Time{}})
+	cs.handleMsg(msgInfo{Msg: msg, PeerID: peer.ID()})
 
 	// sending the part from the smaller height
 	msg.Height = 0
-	cs.handleMsg(msgInfo{msg, peer.ID(), time.Time{}})
+	cs.handleMsg(msgInfo{Msg: msg, PeerID: peer.ID()})
 
 	// sending the part from the bigger height
 	msg.Height = 3
-	cs.handleMsg(msgInfo{msg, peer.ID(), time.Time{}})
+	cs.handleMsg(msgInfo{Msg: msg, PeerID: peer.ID()})
 
 	select {
 	case <-cs.statsMsgQueue:

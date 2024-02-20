@@ -470,9 +470,9 @@ func (cs *State) OpenWAL(walFile string) (WAL, error) {
 // AddVote inputs a vote.
 func (cs *State) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&VoteMessage{vote}, "", time.Time{}}
+		cs.internalMsgQueue <- msgInfo{Msg: &VoteMessage{vote}, PeerID: ""}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&VoteMessage{vote}, peerID, time.Time{}}
+		cs.peerMsgQueue <- msgInfo{Msg: &VoteMessage{vote}, PeerID: peerID}
 	}
 
 	// TODO: wait for event?!
@@ -482,9 +482,9 @@ func (cs *State) AddVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 // SetProposal inputs a proposal.
 func (cs *State) SetProposal(proposal *types.Proposal, peerID p2p.ID) error {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()}
+		cs.internalMsgQueue <- msgInfo{Msg: &ProposalMessage{proposal}, PeerID: "", ReceiveTime: cmttime.Now()}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&ProposalMessage{proposal}, peerID, cmttime.Now()}
+		cs.peerMsgQueue <- msgInfo{Msg: &ProposalMessage{proposal}, PeerID: peerID, ReceiveTime: cmttime.Now()}
 	}
 
 	// TODO: wait for event?!
@@ -494,9 +494,9 @@ func (cs *State) SetProposal(proposal *types.Proposal, peerID p2p.ID) error {
 // AddProposalBlockPart inputs a part of the proposal block.
 func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Part, peerID p2p.ID) error {
 	if peerID == "" {
-		cs.internalMsgQueue <- msgInfo{&BlockPartMessage{height, round, part}, "", time.Time{}}
+		cs.internalMsgQueue <- msgInfo{Msg: &BlockPartMessage{height, round, part}, PeerID: ""}
 	} else {
-		cs.peerMsgQueue <- msgInfo{&BlockPartMessage{height, round, part}, peerID, time.Time{}}
+		cs.peerMsgQueue <- msgInfo{Msg: &BlockPartMessage{height, round, part}, PeerID: peerID}
 	}
 
 	// TODO: wait for event?!
@@ -1247,11 +1247,11 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		proposal.Signature = p.Signature
 
 		// send proposal and block parts on internal msg queue
-		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()})
+		cs.sendInternalMessage(msgInfo{Msg: &ProposalMessage{proposal}, PeerID: "", ReceiveTime: cmttime.Now()})
 
 		for i := 0; i < int(blockParts.Total()); i++ {
 			part := blockParts.GetPart(i)
-			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, "", time.Time{}})
+			cs.sendInternalMessage(msgInfo{Msg: &BlockPartMessage{cs.Height, cs.Round, part}, PeerID: ""})
 		}
 
 		cs.Logger.Debug("signed proposal", "height", height, "round", round, "proposal", proposal)
@@ -2557,7 +2557,7 @@ func (cs *State) signAddVote(
 		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
 	}
-	cs.sendInternalMessage(msgInfo{&VoteMessage{vote}, "", time.Time{}})
+	cs.sendInternalMessage(msgInfo{Msg: &VoteMessage{vote}, PeerID: ""})
 	cs.Logger.Debug("signed and pushed vote", "height", cs.Height, "round", cs.Round, "vote", vote)
 }
 

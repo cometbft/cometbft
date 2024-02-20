@@ -13,8 +13,10 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -82,10 +84,36 @@ func TestWALTruncate(t *testing.T) {
 
 func TestWALEncoderDecoder(t *testing.T) {
 	now := cmttime.Now()
+
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	cs1, vss := randState(1)
+
+	block1 := cmttypes.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: cmttypes.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+
+	p := cmttypes.Proposal{
+		Type:      cmttypes.ProposalType,
+		Height:    42,
+		Round:     13,
+		BlockID:   block1,
+		POLRound:  12,
+		Timestamp: cmttime.Canonical(now),
+	}
+
+	pp := p.ToProto()
+	err := vss[0].SignProposal(cs1.state.ChainID, pp)
+	require.NoError(t, err)
+
+	p.Signature = pp.Signature
+
 	msgs := []TimedWALMessage{
 		{Time: now, Msg: EndHeightMessage{0}},
 		{Time: now, Msg: timeoutInfo{Duration: time.Second, Height: 1, Round: 1, Step: types.RoundStepPropose}},
 		{Time: now, Msg: cmttypes.EventDataRoundState{Height: 1, Round: 1, Step: ""}},
+		{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: now}},
+		{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: time.Time{}}},
 	}
 
 	b := new(bytes.Buffer)

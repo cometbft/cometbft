@@ -32,9 +32,9 @@ height `H-1`, using the `MedianTime` method defined as follows:
 - `MedianTime`: the weighted median of `Timestamp` fields of `Precommit`
   messages forming a `Commit` set, with weights defined by the validators' voting powers.
   The weighted median is produced by considering the value of each `Timestamp`
-value a number of times proportional to the voting power of the corresponding validator.
+  value a number of times proportional to the voting power of the corresponding validator.
 
-The median of a set of values is one of the values of the set, so that the
+The median of a set of values is one of the values of the set, so the
 `Time` of a proposed block is one of the `Timestamp` fields of the `Precommit`
 messages included in the `LastCommit` set of that block.
 
@@ -45,11 +45,11 @@ Consider the following example:
 - We have four validators p1, p2, p3 and p4, with voting power
   distribution: (p1, 23), (p2, 27), (p3, 10), (p4, 10).
   The total voting power is 70, so we assume that the faulty validators have at
-most 23 of voting power (since `N = 3F + 1`, where `N` is the total voting
-power and `F` is the maximum voting power of faulty validators).
+  most 23 of voting power (since `N < 3F`, where `N` is the total voting
+  power and `F` is the maximum voting power of faulty validators).
 - We have the following `Precommit` messages in some `LastCommit` field (we
-ignore all fields except the `Timestamp` field): (p1, 100), (p2, 98), (p3, 1000), (p4, 500).
-We assume that p3 and p4 are faulty validators.
+  ignore all fields except the `Timestamp` field): (p1, 100), (p2, 98), (p3, 1000), (p4, 500).
+  We assume that p3 and p4 are faulty validators.
 - Let's assume that the `block.LastCommit` field contains `Precommit`s of
   validators p2, p3 and p4.
 -  The `MedianTime` is then chosen the following way: the value 98 (p2) is
@@ -98,7 +98,7 @@ The `Time` for the proposed block is then set as `Block.Time = MedianTime(block.
 
 Since the block `Time` is produced in a deterministic way, every node that
 receives the proposed block, can validate `Block.Time` using the same
-procedure.  Block with wrongly computed block times are rejected.
+procedure. Blocks with wrongly computed block times are rejected.
 
 ## Properties
 
@@ -112,9 +112,9 @@ BFT Time guarantees the two main [properties](./time.md#properties) for block ti
 
 - **Byzantine Fault Tolerance**: given a `Commit` set that forms the
   `LastCommit` field, a range of [valid values](#proposed-time) for the `Time` field of the
-block is defined only by `Precommit` messages produced by correct validators,
-i.e., faulty validators cannot arbitrarily influence (increase or decrease) the
-`Time` value.  
+  block is defined only by `Precommit` messages produced by correct validators,
+  i.e., faulty validators cannot arbitrarily influence (increase or decrease) the
+  `Time` value.  
 
 Notice that the guarantees rely on the fact that the voting power owned by
 Byzantine validators is limited, more specifically, is less than 1/3 of the

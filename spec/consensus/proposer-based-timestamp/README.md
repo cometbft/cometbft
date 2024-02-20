@@ -3,6 +3,8 @@
 This document describes a version of the Tendermint consensus algorithm, adopted in CometBFT,
 that uses proposer-based timestamps.
 
+PBTS is a Byzantine fault-tolerant algorithm for computing [block times](../time.md).
+
 ## Overview
 
 With PBTS, the timestamp of a block is assigned by its
@@ -82,52 +84,6 @@ The full solution is detailed and formalized in the [Algorithm Specification][al
 - [System Model and Properties][sysmodel]
 - [Algorithm Specification][algorithm]
 - [TLA+ Specification][proposertla]
-
-<!---
-## BFT Time
-
-CometBFT provides a deterministic, Byzantine fault-tolerant, source of time,
-defined by the `Time` field present in the headers of committed blocks.
-
-In the current consensus implementation, the timestamp of a block is
-computed by the [`BFT Time`][bfttime] algorithm:
-
-- Validators include a timestamp in the `Precommit` messages they broadcast.
-Timestamps are retrieved from the validators' local clocks,
-with the only restriction that they must be **monotonic**:
-
-    - The timestamp of a `Precommit` message voting for a block
-	cannot be earlier than the `Time` field of that block;
-
-- The timestamp of a block is deterministically computed from the timestamps of
-a set of `Precommit` messages that certify the commit of the previous block.
-This certificate, a set of `Precommit` messages from a round of the previous height,
-is selected by the block's proposer and stored in the `Commit` field of the block:
-
-    - The block timestamp is the *median* of the timestamps of the `Precommit` messages
-	included in the `Commit` field, weighted by their voting power.
-	Block timestamps are **monotonic** because
-	timestamps of valid `Precommit` messages are monotonic;
-
-Assuming that the voting power controlled by Byzantine validators is bounded by `f`,
-the cumulative voting power of any valid `Commit` set must be at least `2f+1`.
-As a result, the timestamp computed by `BFT Time` is not influenced by Byzantine validators,
-as the weighted median of `Commit` timestamps comes from the clock of a non-faulty validator.
-
-The consensus algorithm does not make any assumptions regarding the clocks of (correct) validators,
-as block timestamps have no impact in its operation.
-However, the `Time` field of committed blocks is used by other applications that integrate with CometBFT,
-including IBC, as well as Cosmos SDK modules such as evidence, staking, and slashing.
-And it is used based on the common belief that block timestamps
-should bear some resemblance to real time, which is **not guaranteed**.
-
-A more comprehensive discussion of the limitations of `BFT Time`
-can be found in the [first draft][main_v1] of this proposal.
-Of particular interest is to possibility of having validators equipped with "faulty" clocks,
-not fairly accurate with real time, that control more than `f` voting power,
-plus the proposer's flexibility when selecting a `Commit` set,
-and thus determining the timestamp for a block.
---->
 
 ### Open issues
 

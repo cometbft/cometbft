@@ -66,7 +66,7 @@ type VersionParams struct {
 	App uint64 `json:"app"`
 }
 
-// FeatureParams configure parameters of different features of CometBFT.
+// FeatureParams configure the height from which features of CometBFT are enabled.
 type FeatureParams struct {
 	VoteExtensionsEnableHeight int64 `json:"vote_extensions_enable_height"`
 	PbtsEnableHeight           int64 `json:"pbts_enable_height"`
@@ -80,24 +80,24 @@ func (p FeatureParams) VoteExtensionsEnabled(h int64) bool {
 	return featureEnabled(enabledHeight, h, "Vote Extensions")
 }
 
-// PbtsEnabled returns true if PBTS are enabled at height h and false otherwise.
+// PbtsEnabled returns true if PBTS is enabled at height h and false otherwise.
 func (p FeatureParams) PbtsEnabled(h int64) bool {
 	enabledHeight := p.PbtsEnableHeight
 
 	return featureEnabled(enabledHeight, h, "PBTS")
 }
 
-// featureEnabled returns true if `enabled` points to a height that is smaller than `current“.
-func featureEnabled(enabled int64, current int64, f string) bool {
-	if current < 1 {
-		panic(fmt.Errorf("cannot check if %s is enabled for height %d (< 1)", f, current))
+// featureEnabled returns true if `enabledHeight` points to a height that is smaller than `currentHeight“.
+func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
+	if currentHeight < 1 {
+		panic(fmt.Errorf("cannot check if %s is enabled for height %d (< 1)", f, currentHeight))
 	}
 
-	if enabled <= 0 {
+	if enableHeight <= 0 {
 		return false
 	}
 
-	return enabled <= current
+	return enableHeight <= currentHeight
 }
 
 // SynchronyParams influence the validity of block timestamps.
@@ -116,8 +116,8 @@ func DefaultConsensusParams() *ConsensusParams {
 		Evidence:  DefaultEvidenceParams(),
 		Validator: DefaultValidatorParams(),
 		Version:   DefaultVersionParams(),
-		Synchrony: DefaultSynchronyParams(),
 		Feature:   DefaultFeatureParams(),
+		Synchrony: DefaultSynchronyParams(),
 	}
 }
 
@@ -152,20 +152,20 @@ func DefaultVersionParams() VersionParams {
 	}
 }
 
+// Disabled by default.
+func DefaultFeatureParams() FeatureParams {
+	return FeatureParams{
+		VoteExtensionsEnableHeight: 0,
+		PbtsEnableHeight:           0,
+	}
+}
+
 func DefaultSynchronyParams() SynchronyParams {
 	// TODO(@wbanfield): Determine experimental values for these defaults
 	// https://github.com/tendermint/tendermint/issues/7202
 	return SynchronyParams{
 		Precision:    500 * time.Millisecond,
 		MessageDelay: 2 * time.Second,
-	}
-}
-
-// Disabled by default.
-func DefaultFeatureParams() FeatureParams {
-	return FeatureParams{
-		VoteExtensionsEnableHeight: 0,
-		PbtsEnableHeight:           0,
 	}
 }
 
@@ -222,6 +222,13 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("evidence.MaxBytes must be non negative. Got: %d",
 			params.Evidence.MaxBytes)
 	}
+	if params.Feature.VoteExtensionsEnableHeight < 0 {
+		return fmt.Errorf("Feature.VoteExtensionsEnabledHeight cannot be negative. Got: %d", params.Feature.VoteExtensionsEnableHeight)
+	}
+
+	if params.Feature.PbtsEnableHeight < 0 {
+		return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", params.Feature.PbtsEnableHeight)
+	}
 
 	if params.Synchrony.MessageDelay <= 0 {
 		return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
@@ -231,14 +238,6 @@ func (params ConsensusParams) ValidateBasic() error {
 	if params.Synchrony.Precision <= 0 {
 		return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
 			params.Synchrony.Precision)
-	}
-
-	if params.Feature.VoteExtensionsEnableHeight < 0 {
-		return fmt.Errorf("Feature.VoteExtensionsEnabledHeight cannot be negative. Got: %d", params.Feature.VoteExtensionsEnableHeight)
-	}
-
-	if params.Feature.PbtsEnableHeight < 0 {
-		return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", params.Feature.PbtsEnableHeight)
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {
@@ -396,16 +395,6 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Version != nil {
 		res.Version.App = params2.Version.App
 	}
-
-	if params2.Synchrony != nil {
-		if params2.Synchrony.MessageDelay != nil {
-			res.Synchrony.MessageDelay = *params2.Synchrony.GetMessageDelay()
-		}
-		if params2.Synchrony.Precision != nil {
-			res.Synchrony.Precision = *params2.Synchrony.GetPrecision()
-		}
-	}
-
 	if params2.Feature != nil {
 		if params2.Feature.VoteExtensionsEnableHeight != nil {
 			res.Feature.VoteExtensionsEnableHeight = params2.Feature.GetVoteExtensionsEnableHeight().Value
@@ -415,6 +404,15 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 			res.Feature.PbtsEnableHeight = params2.Feature.GetPbtsEnableHeight().Value
 		}
 	}
+	if params2.Synchrony != nil {
+		if params2.Synchrony.MessageDelay != nil {
+			res.Synchrony.MessageDelay = *params2.Synchrony.GetMessageDelay()
+		}
+		if params2.Synchrony.Precision != nil {
+			res.Synchrony.Precision = *params2.Synchrony.GetPrecision()
+		}
+	}
+
 	return res
 }
 
@@ -435,13 +433,13 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 		Version: &cmtproto.VersionParams{
 			App: params.Version.App,
 		},
-		Synchrony: &cmtproto.SynchronyParams{
-			MessageDelay: &params.Synchrony.MessageDelay,
-			Precision:    &params.Synchrony.Precision,
-		},
 		Feature: &cmtproto.FeatureParams{
 			PbtsEnableHeight:           &gogo.Int64Value{Value: params.Feature.PbtsEnableHeight},
 			VoteExtensionsEnableHeight: &gogo.Int64Value{Value: params.Feature.VoteExtensionsEnableHeight},
+		},
+		Synchrony: &cmtproto.SynchronyParams{
+			MessageDelay: &params.Synchrony.MessageDelay,
+			Precision:    &params.Synchrony.Precision,
 		},
 	}
 }
@@ -464,20 +462,20 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 			App: pbParams.Version.App,
 		},
 	}
-	if pbParams.Synchrony != nil {
-		if pbParams.Synchrony.MessageDelay != nil {
-			c.Synchrony.MessageDelay = *pbParams.Synchrony.GetMessageDelay()
-		}
-		if pbParams.Synchrony.Precision != nil {
-			c.Synchrony.Precision = *pbParams.Synchrony.GetPrecision()
-		}
-	}
 	if pbParams.Feature != nil {
 		if pbParams.Feature.VoteExtensionsEnableHeight != nil {
 			c.Feature.VoteExtensionsEnableHeight = pbParams.Feature.VoteExtensionsEnableHeight.Value
 		}
 		if pbParams.Feature.PbtsEnableHeight != nil {
 			c.Feature.PbtsEnableHeight = pbParams.Feature.PbtsEnableHeight.Value
+		}
+	}
+	if pbParams.Synchrony != nil {
+		if pbParams.Synchrony.MessageDelay != nil {
+			c.Synchrony.MessageDelay = *pbParams.Synchrony.GetMessageDelay()
+		}
+		if pbParams.Synchrony.Precision != nil {
+			c.Synchrony.Precision = *pbParams.Synchrony.GetPrecision()
 		}
 	}
 	return c

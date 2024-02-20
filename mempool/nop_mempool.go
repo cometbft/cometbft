@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
@@ -21,8 +22,18 @@ var errNotAllowed = errors.New("not allowed with `nop` mempool")
 var _ Mempool = &NopMempool{}
 
 // CheckTx always returns an error.
-func (*NopMempool) CheckTx(types.Tx, func(*abci.ResponseCheckTx), TxInfo) error {
-	return errNotAllowed
+func (*NopMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
+	return nil, errNotAllowed
+}
+
+// CheckNewTx always returns an error.
+func (*NopMempool) CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error) {
+	return nil, errNotAllowed
+}
+
+// Add the missing method to NopMempool to satisfy the Mempool interface.
+func (*NopMempool) InvokeNewTxReceivedOnReactor(txKey types.TxKey) {
+	// Since this is a no-op implementation, leave the body empty.
 }
 
 // RemoveTxByKey always returns an error.

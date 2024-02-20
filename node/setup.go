@@ -256,7 +256,7 @@ func createMempoolAndMempoolReactor(
 	case cfg.MempoolTypeNop:
 		// Strictly speaking, there's no need to have a `mempl.NopMempoolReactor`, but
 		// adding it leads to a cleaner code.
-		return &mempl.NopMempool{}, &nopReactor
+		return nil, nil
 	default:
 		panic(fmt.Sprintf("unknown mempool type: %q", config.Mempool.Type))
 	}

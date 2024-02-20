@@ -87,7 +87,6 @@ func NewCListMempool(
 		config:           cfg,
 		proxyAppConn:     proxyAppConn,
 		txs:              clist.New(),
-		height:           height,
 		recheckCursor:    nil,
 		recheckEnd:       nil,
 		rejectedTxsCache: NewLRUTxCache[types.TxKey](cfg.CacheSize), // TODO: check size
@@ -403,7 +402,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		mem.txs.Remove(elem)
 		elem.DetachPrev()
 		mem.txsMap.Delete(txKey)
-		tx := elem.Value.(*mempoolTx).tx
+		tx := elem.Value.(*MempoolTx).tx
 		mem.txsBytes.Add(int64(-len(tx)))
 		return nil
 	}

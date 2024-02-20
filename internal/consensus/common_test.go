@@ -493,12 +493,12 @@ func randStateWithAppWithHeight(
 
 func randStateWithAppWithBFTTime(nValidators int) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
+	c.Feature.PbtsEnableHeight = 0 // Disable PBTS
 	return randStateWithAppImpl(nValidators, kvstore.NewInMemoryApplication(), c)
 }
 
 func randStateWithApp(nValidators int, app abci.Application) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
-	c.Feature.PbtsEnableHeight = 1
 	return randStateWithAppImpl(nValidators, app, c)
 }
 
@@ -933,6 +933,9 @@ func randGenesisState(
 	numValidators int,
 	consensusParams *types.ConsensusParams,
 ) (sm.State, []types.PrivValidator) {
+	if consensusParams == nil {
+		consensusParams = test.ConsensusParams()
+	}
 	return randGenesisStateWithTime(numValidators, consensusParams, cmttime.Now())
 }
 

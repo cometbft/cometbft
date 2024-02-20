@@ -725,6 +725,17 @@ func (t Testnet) ArchiveNodes() []*Node {
 	return nodes
 }
 
+// ValidatorNodes returns the list of nodes that are validators.
+func (t Testnet) ValidatorNodes() []*Node {
+	validators := make([]*Node, len(t.Validators))
+	i := 0
+	for validator := range t.Validators {
+		validators[i] = validator
+		i++
+	}
+	return validators
+}
+
 // RandomNode returns a random non-seed node.
 func (t Testnet) RandomNode() *Node {
 	for {

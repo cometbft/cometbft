@@ -47,7 +47,8 @@ func Load(ctx context.Context, loads []*e2e.Load) error {
 		wg.Wait()
 
 		if load.WaitUntil == e2e.LoadConditionMempoolsAreEmpty {
-			waitMempoolsAreEmpty(ctx, load.Testnet.Nodes)
+			// We wait only on the validators; other nodes may never empty their mempool.
+			waitMempoolsAreEmpty(ctx, load.Testnet.ValidatorNodes())
 		}
 
 		if load.WaitAtEnd > 0 {

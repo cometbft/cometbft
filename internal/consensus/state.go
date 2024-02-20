@@ -1382,11 +1382,6 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	// TODO: remove this hack. It tests if PBTS is always enabled in tests.
-	if !cs.isPBTSEnabled(height) {
-		panic("PBTS is disabled")
-	}
-
 	if cs.isPBTSEnabled(height) && cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
 		logger.Debug("prevote step: Proposal is not timely; prevoting nil",
 			"proposed",

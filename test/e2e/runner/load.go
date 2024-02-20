@@ -244,7 +244,18 @@ func waitMempoolsAreEmpty(ctx context.Context, nodes []*e2e.Node) {
 			}
 		}(node)
 	}
-	wg.Wait()
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-time.After(30 * time.Second):
+		logger.Error("load", "msg", "Timed out waiting for validators to empty their mempools")
+	case <-done:
+	}
 }
 
 func mempoolIsEmpty(ctx context.Context, node *e2e.Node) (bool, error) {

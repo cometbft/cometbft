@@ -283,7 +283,7 @@ func extractHelpMessage(cg *ast.CommentGroup) string {
 }
 
 func isMetric(e ast.Expr, mPkgName string) bool {
-	return strings.Contains(types.ExprString(e), fmt.Sprintf("%s.", mPkgName))
+	return strings.Contains(types.ExprString(e), mPkgName+".")
 }
 
 func extractLabels(bl *ast.BasicLit) string {

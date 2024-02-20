@@ -332,6 +332,44 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	// The first reactor should not receive transactions from other peers.
 	require.Zero(t, len(firstReactor.txSenders))
 }
+
+// Finding a solution for guaranteeing FIFO ordering is not easy; it would
+// require changes at the p2p level. The order of messages is just best-effort,
+// but this is not documented anywhere. If this is well understood and
+// documented, we don't need this test. Until then, let's keep the test.
+func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
+	t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test.")
+
+	config := cfg.TestConfig()
+	reactors, _ := makeAndConnectReactors(config, 4)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				require.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().Copy() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
+
+	// Deliver the same sequence of transactions from multiple sources, in parallel.
+	txs := newUniqueTxs(200)
+	mp := reactors[0].mempool
+	for i := 0; i < 3; i++ {
+		go func() {
+			for _, tx := range txs {
+				mp.CheckTx(tx) //nolint:errcheck
+			}
+		}()
+	}
+
+	// Confirm that FIFO order was respected.
+	checkTxsInOrder(t, txs, reactors[0], 0)
+}
+
 // Test the experimental feature that limits the number of outgoing connections for gossiping
 // transactions (only non-persistent peers).
 // Note: in this test we know which gossip connections are active or not because of how the p2p

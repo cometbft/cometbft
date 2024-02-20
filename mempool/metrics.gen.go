@@ -87,16 +87,6 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-<<<<<<< HEAD
-		Size:                      discard.NewGauge(),
-		SizeBytes:                 discard.NewGauge(),
-		TxSizeBytes:               discard.NewHistogram(),
-		FailedTxs:                 discard.NewCounter(),
-		RejectedTxs:               discard.NewCounter(),
-		EvictedTxs:                discard.NewCounter(),
-		RecheckTimes:              discard.NewCounter(),
-		ActiveOutboundConnections: discard.NewGauge(),
-=======
 		Size:               discard.NewGauge(),
 		TxSizeBytes:        discard.NewHistogram(),
 		FailedTxs:          discard.NewCounter(),
@@ -106,6 +96,5 @@ func NopMetrics() *Metrics {
 		RequestedTxs:       discard.NewCounter(),
 		RerequestedTxs:     discard.NewCounter(),
 		NoPeerForTx:        discard.NewCounter(),
->>>>>>> 094c67101 (Add CAT mempool reactor)
 	}
 }

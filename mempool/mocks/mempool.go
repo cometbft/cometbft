@@ -5,6 +5,7 @@ package mocks
 import (
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	mempool "github.com/cometbft/cometbft/mempool"
+	abcicli "github.com/cometbft/cometbft/abci/client"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -16,11 +17,6 @@ type Mempool struct {
 	mock.Mock
 }
 
-<<<<<<< HEAD
-// CheckTx provides a mock function with given fields: tx, callback, txInfo
-func (_m *Mempool) CheckTx(tx types.Tx, callback func(*abcitypes.ResponseCheckTx), txInfo mempool.TxInfo) error {
-	ret := _m.Called(tx, callback, txInfo)
-=======
 // CheckNewTx provides a mock function with given fields: tx
 func (_m *Mempool) CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	ret := _m.Called(tx)
@@ -47,32 +43,21 @@ func (_m *Mempool) CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	return r0, r1
 }
 
-// CheckTx provides a mock function with given fields: tx
 func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	ret := _m.Called(tx)
 
 	var r0 *abcicli.ReqRes
 	var r1 error
 	if rf, ok := ret.Get(0).(func(types.Tx) (*abcicli.ReqRes, error)); ok {
-		return rf(tx)
-	}
-	if rf, ok := ret.Get(0).(func(types.Tx) *abcicli.ReqRes); ok {
-		r0 = rf(tx)
+		r0, r1 = rf(tx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*abcicli.ReqRes)
 		}
-	}
->>>>>>> 094c67101 (Add CAT mempool reactor)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(types.Tx, func(*abcitypes.ResponseCheckTx), mempool.TxInfo) error); ok {
-		r0 = rf(tx, callback, txInfo)
-	} else {
-		r0 = ret.Error(0)
+		r1 = ret.Error(1)
 	}
 
-	return r0
+	return r0, r1
 }
 
 // EnableTxsAvailable provides a mock function with given fields:

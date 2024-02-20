@@ -63,9 +63,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 	for tcIndex, tc := range tests {
 		for i := 0; i < tc.numTxsToCreate; i++ {
 			tx := kvstore.NewTx(fmt.Sprintf("%d", i), "value")
-			err := mp.CheckTx(tx, func(resp *abci.ResponseCheckTx) {
-				require.False(t, resp.IsErr())
-			}, TxInfo{})
+			_, err := mp.CheckTx(tx)
 			require.NoError(t, err)
 		}
 
@@ -79,9 +77,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 
 		for _, v := range tc.reAddIndices {
 			tx := kvstore.NewTx(fmt.Sprintf("%d", v), "value")
-			_ = mp.CheckTx(tx, func(resp *abci.ResponseCheckTx) {
-				require.False(t, resp.IsErr())
-			}, TxInfo{})
+			_, _ = mp.CheckTx(tx)
 		}
 
 		cache := mp.cache.(*LRUTxCache[types.TxKey])

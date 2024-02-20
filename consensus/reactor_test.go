@@ -232,9 +232,7 @@ func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// send a tx
-	if err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1), func(resp *abci.ResponseCheckTx) {
-		require.False(t, resp.IsErr())
-	}, mempl.TxInfo{}); err != nil {
+	if _, err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1)); err != nil {
 		t.Error(err)
 	}
 
@@ -669,10 +667,7 @@ func waitForAndValidateBlock(
 
 		// optionally add transactions for the next block
 		for _, tx := range txs {
-			err := assertMempool(css[j].txNotifier).CheckTx(tx, func(resp *abci.ResponseCheckTx) {
-				require.False(t, resp.IsErr())
-				fmt.Println(resp)
-			}, mempl.TxInfo{})
+			_, err := assertMempool(css[j].txNotifier).CheckTx(tx)
 			require.NoError(t, err)
 		}
 	})

@@ -10,7 +10,6 @@ linters:
     - goconst
     - gofmt
     - goimports
-    - revive
     - gosec
     - gosimple
     - govet

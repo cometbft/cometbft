@@ -418,6 +418,7 @@ func (memR *Reactor) findNewPeerToRequestTx(txKey types.TxKey) {
 	var peerID *p2p.ID
 	for possiblePeer := range seenMap {
 		if !memR.requests.Has(possiblePeer, txKey) {
+			possiblePeer := possiblePeer
 			peerID = &possiblePeer
 			break
 		}

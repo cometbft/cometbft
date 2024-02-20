@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1621,10 +1622,17 @@ func TestStateLock_POLSafety2(t *testing.T) {
 			prevotes := signVotes(types.PrevoteType, chainID, propBlockID0, false, vs2, vs3, vs4)
 
 			// the block for round 1
+			reqRes, err := assertMempool(tc.state.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(10), "true"))
+			require.NoError(t, err)
+			require.False(t, reqRes.Response.GetCheckTx().IsErr())
+
 			prop1, propBlock1 := decideProposal(ctx, t, tc.state, vs2, vs2.Height, vs2.Round+1)
 			propBlockParts1, err := propBlock1.MakePartSet(partSize)
 			require.NoError(t, err)
 			propBlockID1 := types.BlockID{Hash: propBlock1.Hash(), PartSetHeader: propBlockParts1.Header()}
+
+			// Blocks must be different, which in BFT time case requires a transaction being added.
+			assert.NotEqual(t, propBlockID1, propBlockID0)
 
 			incrementRound(vs2, vs3, vs4)
 
@@ -2218,7 +2226,7 @@ func TestVerifyVoteExtensionNotCalledOnAbsentPrecommit(t *testing.T) {
 	m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
 	cs1, vss := randStateWithApp(4, m)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
-	cs1.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = cs1.Height
+	cs1.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = cs1.Height
 
 	proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)
 	newRoundCh := subscribe(cs1.eventBus, types.EventQueryNewRound)
@@ -2521,7 +2529,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			m.On("Commit", mock.Anything, mock.Anything).Return(&abci.CommitResponse{}, nil).Maybe()
 			cs1, vss := randStateWithAppWithHeight(numValidators, m, testCase.enableHeight)
 			height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
-			cs1.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testCase.enableHeight
+			cs1.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = testCase.enableHeight
 
 			timeoutCh := subscribe(cs1.eventBus, types.EventQueryTimeoutPropose)
 			proposalCh := subscribe(cs1.eventBus, types.EventQueryCompleteProposal)

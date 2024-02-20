@@ -487,7 +487,7 @@ func randStateWithAppWithHeight(
 	height int64,
 ) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
-	c.ABCI.VoteExtensionsEnableHeight = height
+	c.Feature.VoteExtensionsEnableHeight = height
 	return randStateWithAppImpl(nValidators, app, c)
 }
 
@@ -498,8 +498,7 @@ func randStateWithAppWithBFTTime(nValidators int) (*State, []*validatorStub) {
 
 func randStateWithApp(nValidators int, app abci.Application) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
-	enableHeight := int64(1)
-	c.Feature.PbtsEnableHeight = &enableHeight
+	c.Feature.PbtsEnableHeight = 1
 	return randStateWithAppImpl(nValidators, app, c)
 }
 

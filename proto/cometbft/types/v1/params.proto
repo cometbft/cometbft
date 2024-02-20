@@ -11,14 +11,12 @@ option (gogoproto.equal_all) = true;
 
 // ConsensusParams contains consensus critical parameters that determine the
 // validity of blocks.
-// TODO: move ABCI to FeatureParams
 message ConsensusParams {
   BlockParams     block     = 1;
   EvidenceParams  evidence  = 2;
   ValidatorParams validator = 3;
   VersionParams   version   = 4;
-  // TODO: move ABCI to FeatureParams
-  ABCIParams      abci      = 5;
+  //TODO: handle backwards compatibility
   SynchronyParams synchrony = 6;
   FeatureParams   feature   = 7;
 }
@@ -81,20 +79,6 @@ message VersionParams {
 message HashedParams {
   int64 block_max_bytes = 1;
   int64 block_max_gas   = 2;
-}
-
-// ABCIParams configure functionality specific to the Application Blockchain Interface.
-message ABCIParams {
-  // vote_extensions_enable_height configures the first height during which
-  // vote extensions will be enabled. During this specified height, and for all
-  // subsequent heights, precommit messages that do not contain valid extension data
-  // will be considered invalid. Prior to this height, vote extensions will not
-  // be used or accepted by validators on the network.
-  //
-  // Once enabled, vote extensions will be created by the application in ExtendVote,
-  // passed to the application for validation in VerifyVoteExtension and given
-  // to the application to use when proposing a block during PrepareProposal.
-  int64 vote_extensions_enable_height = 1;
 }
 
 // SynchronyParams configure the bounds under which a proposed block's timestamp is considered valid.

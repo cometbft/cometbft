@@ -920,6 +920,10 @@ func randGenesisDoc(numValidators int,
 	}
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
+	if consensusParams == nil {
+		consensusParams = test.ConsensusParams()
+	}
+
 	return &types.GenesisDoc{
 		GenesisTime:     genesisTime,
 		InitialHeight:   1,

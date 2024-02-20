@@ -208,13 +208,6 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 			oracleR.OracleInfo.GossipVoteBuffer.Buffer[msg.Validator] = msg
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
-
-			// safe to assume that if gossipVote does not exist in gossipBuffer, it also does not exist in dataBuffer?
-			// oracleR.OracleInfo.VoteDataBuffer.UpdateMtx.Lock()
-			// for _, vote := range msg.Votes {
-			// 	runner.AddVoteToDataBuffer(oracleR.OracleInfo, vote)
-			// }
-			// oracleR.OracleInfo.VoteDataBuffer.UpdateMtx.Unlock()
 		} else {
 			// existing gossipVote entry from this validator
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()

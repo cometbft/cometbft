@@ -1583,7 +1583,7 @@ func TestStateLock_POLSafety2(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 	csT1, vssT1 := randStateWithAppWithBFTTime(4)
+	csT1, vssT1 := randStateWithAppWithBFTTime(4)
 	csT2, vssT2 := randState(4)
 
 	tcs := []struct {
@@ -1591,7 +1591,7 @@ func TestStateLock_POLSafety2(t *testing.T) {
 		state *State
 		vss   []*validatorStub
 	}{
-		// {name: "With BFT Time", state: csT1, vss: vssT1}, // Temporarily disabled
+		{name: "With BFT Time", state: csT1, vss: vssT1},
 		{name: "With PBTS", state: csT2, vss: vssT2},
 	}
 

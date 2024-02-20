@@ -71,6 +71,39 @@ proposal message broadcast by correct processes: it is a *worst-case* parameter.
 As message delays depends on the message size, the above requirement implicitly
 indicates that the size of proposal messages is either fixed or upper bounded.
 
+#### **[PBTS-MSG-DELAY-ADAPTIVE.0]**
+
+This specification is written assuming that there exists an end-to-end maximum
+delay `maxMsgDelay` observed in the network, possibly unknown, and
+that the chosen value for `MSGDELAY` is such that `MSGDELAY >= maxMsgDelay`.
+Under this assumption, all properties described in this specification are satisfied.
+
+However, it is possible that in some networks the `MSGDELAY` parameters
+selected by operators is too small, i.e., `MSGDELAY < maxMsgDelay`.
+In order to tolerate this possibility, we propose the adoption of adaptive
+end-to-end delays, namely a relaxation of [PBTS-MSG-DELAY.0] where the
+`MSGDELAY` value increases each time consensus requires a new round.
+In this way, after a number of rounds, the adopted `MSGDELAY` should match the
+actual, but possibly unknown, end-to-end `maxMsgDelay`. 
+This is a typical approach in partial synchronous models.
+
+The adaptive system parameter `MSGDELAY(r)` is defined as follows.
+Lets `p` and `q` be any correct processes:
+
+- If `p` sends a proposal message `m` from round `r` at real time `t` and `q` receives `m` at
+  real time `t'`, then `t < t' <= t + MSGDELAY(r)`.
+
+The adaptiveness is represented by the assumption that the value of the
+parameter increases over rounds, i.e., `MSGDELAY(r+1) > MSGDELAY(r)`.
+The initial value `MSGDELAY(0)` is equal to `MSGDELAY` as in [PBTS-MSG-DELAY.0].
+
+For the sake of correctness and formal verification, if `MSGDELAY` is
+chosen sufficiently large, then the fact that it increments in later rounds
+(i) in practice will never be experienced,
+and (ii) also has no theoretical implications.
+The adaptation (increment) of `MSGDELAY` is only introduced here to handle
+potential misconfiguration.
+
 ## Problem Statement
 
 This section defines the properties of Tendermint consensus algorithm
@@ -148,7 +181,7 @@ Lets `(v, v.time, v.round)` be a proposal, then `v.time` is considered `timely` 
 
 1. `proposalReceptionTime(p,v.round)` is set, and
 1. `proposalReceptionTime(p,v.round) >= v.time - PRECISION`, and
-1. `proposalReceptionTime(p,v.round) <= v.time + MSGDELAY + PRECISION`.
+1. `proposalReceptionTime(p,v.round) <= v.time + MSGDELAY(v.round) + PRECISION`.
 
 A correct process only sends a `PREVOTE` for `v` at round `v.round` if the
 associated proposal time `v.time` is considered `timely`.
@@ -264,7 +297,7 @@ then there is a correct process `p` (not necessarily the same above considered) 
 
 - `beginRound(p,v.round) <= proposalReceptionTime(p,v.round) <= beginRound(p,v.round+1)` and
 - `v.time <= proposalReceptionTime(p,v.round) + PRECISION` and
-- `v.time >= proposalReceptionTime(p,v.round) - MSGDELAY - PRECISION` 
+- `v.time >= proposalReceptionTime(p,v.round) - MSGDELAY(v.round) - PRECISION` 
 
 That is, a correct process `p` started round `v.round` and, while still at
 round `v.round`, received a `PROPOSAL` message from round `v.round` proposing
@@ -292,7 +325,7 @@ If
 then the proposal `(v, v.time, r)` is accepted by every correct process provided that:
 
 - `min{p is correct : beginRound(p,r)} <= v.time <= max{p is correct : beginRound(p,r)}` and
-- `max{p is correct : beginRound(p,r)} <= v.time + MSGDELAY + PRECISION <= min{p is correct : beginRound(p,r+1)}`
+- `max{p is correct : beginRound(p,r)} <= v.time + MSGDELAY(r) + PRECISION <= min{p is correct : beginRound(p,r+1)}`
 
 The first condition establishes a range of safe proposal times `v.time` for round `r`.
 This condition is trivially observed if a correct proposer `p` sets `v.time` to the time it
@@ -308,7 +341,7 @@ In addition, it requires correct processes to stay long enough in round
 `v.round` so that they can receive the `PROPOSAL` message of round `v.round`.
 It assumed here that the proposer of `v` broadcasts a `PROPOSAL` message at
 time `v.time`, according to its local clock, so that every correct process
-should receive this message by time `v.time + MSGDELAY + PRECISION`, according
+should receive this message by time `v.time + MSGDELAY(v.round) + PRECISION`, according
 to their local clocks.
 
 Back to [main document][main].

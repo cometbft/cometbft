@@ -53,10 +53,13 @@ It is a temporal requirement, associated with the following
 
 - Synchronized clocks: the values simultaneously read from clocks of any two correct processes differ by at most `PRECISION`;
 - Bounded transmission delays: the real time interval between the sending of a proposal at a correct process and the reception of the proposal at any correct process is upper bounded by `MSGDELAY`.
+  - With the introduction of [adaptive message delays](./pbts-sysmodel.md#pbts-msg-delay-adaptive0),
+    the `MSGDELAY` parameter should be interpreted as `MSGDELAY(r)`, where `r` is the current round,
+    where it is expected `MSGDELAY(r+1) > MSGDELAY(r)`.
 
 #### **[PBTS-RECEPTION-STEP.1]**
 
-Let `now_p` be the time, read from the clock of process `p`, at which `p` receives the proposed value `v`.
+Let `now_p` be the time, read from the clock of process `p`, at which `p` receives the proposed value `v` of round `r`.
 The proposal time is considered `timely` by `p` when:
 
 1. `now_p >= v.time - PRECISION`

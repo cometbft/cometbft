@@ -84,14 +84,14 @@ In order to tolerate this possibility, we propose the adoption of adaptive
 end-to-end delays, namely a relaxation of [PBTS-MSG-DELAY.0] where the
 `MSGDELAY` value increases each time consensus requires a new round.
 In this way, after a number of rounds, the adopted `MSGDELAY` should match the
-actual, but possibly unknown, end-to-delay `maxMsgDelay`. 
+actual, but possibly unknown, end-to-end `maxMsgDelay`. 
 This is a typical approach in partial synchronous models.
 
 The adaptive system parameter `MSGDELAY(r)` is defined as follows.
 Lets `p` and `q` be any correct processes:
 
 - If `p` sends a proposal message `m` from round `r` at real time `t` and `q` receives `m` at
-  real time `t'`, then `t <= t' <= t + MSGDELAY(r)`.
+  real time `t'`, then `t < t' <= t + MSGDELAY(r)`.
 
 The adaptiveness is represented by the assumption that the value of the
 parameter increases over rounds, i.e., `MSGDELAY(r+1) > MSGDELAY(r)`.

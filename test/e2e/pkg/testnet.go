@@ -467,10 +467,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			if len(runManifest.TargetNodeNames) == 0 {
 				run.TargetNodes = testnet.Nodes
 			} else {
-				run.TargetNodes = make([]*Node, len(runManifest.TargetNodeNames))
-				for i, node := range testnet.Nodes {
+				for _, node := range testnet.Nodes {
 					if slices.Contains(runManifest.TargetNodeNames, node.Name) {
-						run.TargetNodes[i] = node
+						run.TargetNodes = append(run.TargetNodes, node)
 					}
 				}
 			}

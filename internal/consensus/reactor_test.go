@@ -901,8 +901,11 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
-				assert.Contains(t, err.Error(), tc.expErr)
+			if tc.expErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expErr)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -934,8 +937,11 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
-				assert.Contains(t, err.Error(), tc.expErr)
+			if tc.expErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expErr)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -1092,8 +1098,11 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 
 			tc.malleateFn(msg)
 			err := msg.ValidateBasic()
-			if tc.expErr != "" && assert.Error(t, err) {
-				assert.Contains(t, err.Error(), tc.expErr)
+			if tc.expErr != "" {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expErr)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

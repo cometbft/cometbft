@@ -344,7 +344,6 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
-
 // Finding a solution for guaranteeing FIFO ordering is not easy; it would
 // require changes at the p2p level. The order of messages is just best-effort,
 // but this is not documented anywhere. If this is well understood and

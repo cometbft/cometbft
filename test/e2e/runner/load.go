@@ -26,11 +26,11 @@ func Load(ctx context.Context, loads []*e2e.Load) error {
 
 	for i, load := range loads {
 		wg := &sync.WaitGroup{}
-		logger.Info("load", "step", log.NewLazySprintf("Starting transaction load #%v", i), "workers", workerPoolSize)
+		logger.Info("load", "step", log.NewLazySprintf("Start transaction load #%v", i), "workers", workerPoolSize)
 
 		if load.WaitToStart > 0 {
 			waitTostart := time.Duration(load.WaitToStart) * time.Second
-			logger.Info("load", "step", log.NewLazySprintf("Waiting %v before starting load instance", waitTostart))
+			logger.Info("load", "step", log.NewLazySprintf("Wait %v before starting load instance", waitTostart))
 			time.Sleep(waitTostart)
 		}
 
@@ -53,7 +53,7 @@ func Load(ctx context.Context, loads []*e2e.Load) error {
 
 		if load.WaitAtEnd > 0 {
 			waitToFinish := time.Duration(load.WaitAtEnd) * time.Second
-			logger.Info("load", "step", log.NewLazySprintf("Waiting %s to finish load instance", waitToFinish))
+			logger.Info("load", "step", log.NewLazySprintf("Wait %s to finish load instance", waitToFinish))
 			time.Sleep(waitToFinish)
 		}
 		logger.Info("load", "step", "Finished transaction load", "#load", i)
@@ -66,7 +66,7 @@ func loadRun(ctx context.Context, runName string, runID []byte, run *e2e.LoadRun
 
 	if run.WaitToRun > 0 {
 		waitToRun := time.Duration(run.WaitToRun) * time.Second
-		logger.Info("load", "step", log.NewLazySprintf("Waiting %v to start load run instance", waitToRun))
+		logger.Info("load", "step", log.NewLazySprintf("Wait %v to start load run instance", waitToRun))
 		time.Sleep(waitToRun)
 	}
 
@@ -128,7 +128,7 @@ func loadRun(ctx context.Context, runName string, runID []byte, run *e2e.LoadRun
 		// Log every ~1 second the number of sent transactions.
 		total := success + failed
 		if total%run.BatchSize == 0 {
-			succcessRate := log.NewLazySprintf("%.1f", float64(success)/float64(total))
+			succcessRate := log.NewLazySprintf("%.2f", float64(success)/float64(total))
 			logger.Debug("load", "success", success, "failed", failed, "success/total", succcessRate, "tx/s", rate)
 		}
 

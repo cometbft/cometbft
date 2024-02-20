@@ -464,14 +464,15 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 				run.MaxDuration = defaultLoadDuration
 			}
 
-			if len(runManifest.TargetNodeNames) == 0 {
-				run.TargetNodes = testnet.Nodes
-			} else {
-				for _, node := range testnet.Nodes {
-					if slices.Contains(runManifest.TargetNodeNames, node.Name) {
-						run.TargetNodes = append(run.TargetNodes, node)
-					}
+			// Set target nodes by filtering the list of all nodes. If no node is left, use all
+			// nodes.
+			for _, node := range testnet.Nodes {
+				if slices.Contains(runManifest.TargetNodeNames, node.Name) {
+					run.TargetNodes = append(run.TargetNodes, node)
 				}
+			}
+			if len(run.TargetNodes) == 0 {
+				run.TargetNodes = testnet.Nodes
 			}
 
 			runs[name] = run

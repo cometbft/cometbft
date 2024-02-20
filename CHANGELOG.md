@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v0.38.5
+
+*January 24, 2024*
+
+This release fixes a problem introduced in `v0.38.3`: if an application
+updates the value of ConsensusParam `VoteExtensionsEnableHeight` to the same value
+(actually a "noop" update) this is accepted in `v0.38.2` but rejected under some
+conditions in `v0.38.3` and `v0.38.4`. Even if rejecting a useless update would make sense
+in general, in a point release we should not reject a set of inputs to
+a function that was previuosly accepted (unless there is a good reason
+for it). The goal of this release is to accept again all "noop" updates, like `v0.38.2` did.
+
+### IMPROVEMENTS
+
+- `[consensus]` Add `chain_size_bytes` metric for measuring the size of the blockchain in bytes
+  ([\#2093](https://github.com/cometbft/cometbft/pull/2093))
+
 ## v0.38.4
 
 *January 22, 2024*

@@ -26,13 +26,30 @@ consensus algorithm with *synchronous assumptions*:
 - **Synchronized clocks**: simultaneous clock reads at any two correct validators
 differ by at most `PRECISION`;
 
-- **Bounded message delays**: the end-to-end delay for delivering a message to all correct validators
-is bounded by `MSGDELAY`.
-This assumption is restricted to `Proposal` messages, broadcast by proposers.
+- **Bounded message delays**: the end-to-end delay for delivering a `Proposal`
+  message, broadcast by a correct proposer, to all correct validators is 
+  bounded by `MSGDELAY`.
 
 `PRECISION` and `MSGDELAY` are consensus parameters, shared by all validators,
 that define whether the timestamp of a block is acceptable,
 according with the introduced `timely` predicate.
+
+#### Note on Liveness
+
+Setting too small values for synchronous parameters can compromise,
+possibly in an irreversible way, liveness of consensus.
+This is particularly relevant for the `MSGDELAY` parameter.
+When the `Proposal` end-to-end delay is underestimated or unrealistic, proposed block
+times can be rejected by all correct nodes.
+
+In order to prevent networks with bad parameters from not making progress (that is, 
+remaining at the consensus instance for same height forever), the `MSGDELAY`
+parameter has become adaptive in the implementation.
+This means that the `MSGDELAY` parameter should be interpreted in the form `MSGDELAY(r)`, where `r` is the
+consensus round, with `MSGDELAY(r+1) > MSGDELAY(r)`.
+The original `MSGDELAY` is therefore in practice `MSGDELAY(0)`.
+
+More details and discussion on [issue 2184][issue2184].
 
 ### Timestamp Validation
 
@@ -85,17 +102,12 @@ The full solution is detailed and formalized in the [Algorithm Specification][al
 - [Algorithm Specification][algorithm]
 - [TLA+ Specification][proposertla]
 
-### Open issues
+### Issues
 
-- [tendermint/spec#355: PBTS: evidence][issue355]: not really clear the context, probably not going to be solved.
-- [tendermint/spec#372: PBTS: Treat proposal and block parts explicitly in the spec][issue372]
+- [cometbft#2184: PBTS: should synchrony parameters be adaptive?][issue2184]
+- [tendermint/spec#355: PBTS: evidence][issue355]: can we punish Byzantine proposers?
 - [tendermint/spec#377: PBTS: margins for proposal times assigned by Byzantine proposers][issue377]
 
-### Closed issues
-
-- [tendermint/spec#353: Proposer time - fix message filter condition][issue353]
-- [tendermint/spec#370: PBTS: association between timely predicate and timeout_commit][issue370]
-- [tendermint/spec#371: PBTS: should synchrony parameters be adaptive?][issue371]
 
 [main_v1]: ./v1/pbts_001_draft.md
 
@@ -117,3 +129,4 @@ The full solution is detailed and formalized in the [Algorithm Specification][al
 [issue371]: https://github.com/tendermint/spec/issues/371
 [issue372]: https://github.com/tendermint/spec/issues/372
 [issue377]: https://github.com/tendermint/spec/issues/377
+[issue2184]: https://github.com/cometbft/cometbft/issues/2184

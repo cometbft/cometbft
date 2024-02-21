@@ -3,7 +3,6 @@ package mempool
 import (
 	"encoding/hex"
 	"errors"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -334,10 +333,12 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 	require.Zero(t, len(firstReactor.txSenders))
 }
 
+// Finding a solution for guaranteeing FIFO ordering is not easy; it would
+// require changes at the p2p level. The order of messages is just best-effort,
+// but this is not documented anywhere. If this is well understood and
+// documented, we don't need this test. Until then, let's keep the test.
 func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
-	if os.Getenv("CI") != "" {
-		t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test during CI.")
-	}
+	t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test.")
 
 	config := cfg.TestConfig()
 	reactors, _ := makeAndConnectReactors(config, 4)

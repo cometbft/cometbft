@@ -273,6 +273,7 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 
 		var rtp *time.Time = nil
 		if !msg.ReceiveTime.IsZero() {
+			// Only record the `ReceiveTiime` if explicitly set.
 			rt := msg.ReceiveTime
 			rtp = &rt
 		}
@@ -286,7 +287,6 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 				},
 			},
 		}
-
 	case timeoutInfo:
 		pb = cmtcons.WALMessage{
 			Sum: &cmtcons.WALMessage_TimeoutInfo{

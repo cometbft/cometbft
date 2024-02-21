@@ -583,12 +583,12 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 // This method is used for recovering in the case that we called the Commit ABCI
 // method on the application but crashed before persisting the results.
 func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
-  start := time.Now()
+	start := time.Now()
 	buf, err := store.db.Get(calcABCIResponsesKey(height))
 	if err != nil {
 		return nil, err
 	}
-  addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_last_abci_response"), start)()
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_last_abci_response"), start)()
 	if len(buf) == 0 {
 		// DEPRECATED lastABCIResponseKey
 		// It is possible if this is called directly after an upgrade that
@@ -650,16 +650,16 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Finalize
 	// We always save the last ABCI response for crash recovery.
 	// If `store.DiscardABCIResponses` is true, then we delete the previous ABCI response.
 	start := time.Now()
-  if store.DiscardABCIResponses && height > 1 {
+	if store.DiscardABCIResponses && height > 1 {
 		if err := store.db.Delete(calcABCIResponsesKey(height - 1)); err != nil {
 			return err
 		}
-  }
-  if err := store.db.SetSync(calcABCIResponsesKey(height), bz); err != nil {
-    return err
-  }
-  addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "save_abci_responses"), start)()
-  return nil
+	}
+	if err := store.db.SetSync(calcABCIResponsesKey(height), bz); err != nil {
+		return err
+	}
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "save_abci_responses"), start)()
+	return nil
 }
 
 func (store dbStore) getValue(key []byte) ([]byte, error) {

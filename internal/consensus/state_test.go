@@ -2558,7 +2558,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			}
 
 			for _, vs := range vss[1:] {
-				vote, err := vs.signVote(types.PrecommitType, chainID, blockID, ext, testCase.hasExtension)
+				vote, err := vs.signVote(types.PrecommitType, chainID, blockID, ext, testCase.hasExtension, vs.clock.Now())
 				require.NoError(t, err)
 				addVotes(cs1, vote)
 			}
@@ -3240,7 +3240,7 @@ func signAddPrecommitWithExtension(
 	stub *validatorStub,
 ) {
 	t.Helper()
-	v, err := stub.signVote(types.PrecommitType, chainID, blockID, extension, true)
+	v, err := stub.signVote(types.PrecommitType, chainID, blockID, extension, true, stub.clock.Now())
 	require.NoError(t, err, "failed to sign vote")
 	addVotes(cs, v)
 }

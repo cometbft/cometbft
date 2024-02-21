@@ -94,6 +94,7 @@ func (vs *validatorStub) signVote(
 	blockID types.BlockID,
 	voteExtension []byte,
 	extEnabled bool,
+	timestamp time.Time,
 ) (*types.Vote, error) {
 	pubKey, err := vs.PrivValidator.GetPubKey()
 	if err != nil {
@@ -104,7 +105,7 @@ func (vs *validatorStub) signVote(
 		Height:           vs.Height,
 		Round:            vs.Round,
 		BlockID:          blockID,
-		Timestamp:        vs.clock.Now(),
+		Timestamp:        timestamp,
 		ValidatorAddress: pubKey.Address(),
 		ValidatorIndex:   vs.Index,
 		Extension:        voteExtension,
@@ -133,7 +134,8 @@ func (vs *validatorStub) signVote(
 }
 
 // Sign vote for type/hash/header.
-func signVote(vs *validatorStub, voteType types.SignedMsgType, chainID string, blockID types.BlockID, extEnabled bool) *types.Vote {
+func signVoteWithTimestamp(vs *validatorStub, voteType types.SignedMsgType, chainID string,
+	blockID types.BlockID, extEnabled bool, timestamp time.Time) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
@@ -144,7 +146,7 @@ func signVote(vs *validatorStub, voteType types.SignedMsgType, chainID string, b
 			ext = []byte("extension")
 		}
 	}
-	v, err := vs.signVote(voteType, chainID, blockID, ext, extEnabled)
+	v, err := vs.signVote(voteType, chainID, blockID, ext, extEnabled, timestamp)
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
 	}
@@ -152,6 +154,10 @@ func signVote(vs *validatorStub, voteType types.SignedMsgType, chainID string, b
 	vs.lastVote = v
 
 	return v
+}
+
+func signVote(vs *validatorStub, voteType types.SignedMsgType, chainID string, blockID types.BlockID, extEnabled bool) *types.Vote {
+	return signVoteWithTimestamp(vs, voteType, chainID, blockID, extEnabled, vs.clock.Now())
 }
 
 func signVotes(
@@ -171,6 +177,7 @@ func signVotes(
 func incrementHeight(vss ...*validatorStub) {
 	for _, vs := range vss {
 		vs.Height++
+		vs.Round = 0
 	}
 }
 
@@ -603,9 +610,9 @@ func ensureNewTimeout(timeoutCh <-chan cmtpubsub.Message, height int64, round in
 		"Timeout expired while waiting for NewTimeout event")
 }
 
-func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32) {
+func ensureNewProposalWithTimeout(proposalCh <-chan cmtpubsub.Message, height int64, round int32, timeout time.Duration) {
 	select {
-	case <-time.After(ensureTimeout):
+	case <-time.After(timeout):
 		panic("Timeout expired while waiting for NewProposal event")
 	case msg := <-proposalCh:
 		proposalEvent, ok := msg.Data().(types.EventDataCompleteProposal)
@@ -620,6 +627,10 @@ func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round 
 			panic(fmt.Sprintf("expected round %v, got %v", round, proposalEvent.Round))
 		}
 	}
+}
+
+func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32) {
+	ensureNewProposalWithTimeout(proposalCh, height, round, ensureTimeout)
 }
 
 func ensureNewValidBlock(validBlockCh <-chan cmtpubsub.Message, height int64, round int32) {

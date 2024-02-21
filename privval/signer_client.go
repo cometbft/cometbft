@@ -114,20 +114,20 @@ func (sc *SignerClient) SignVote(chainID string, vote *cmtproto.Vote) error {
 // SignVote requests a remote signer to sign a vote
 func (sc *SignerClient) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
 	// TODO TODO TODO: implement sign oracle vote
-	// response, err := sc.endpoint.SendRequest(mustWrapMsg(&privvalproto.SignVoteRequest{Vote: vote, ChainId: chainID}))
-	// if err != nil {
-	// 	return err
-	// }
+	response, err := sc.endpoint.SendRequest(mustWrapMsg(&privvalproto.SignOracleVoteRequest{Vote: vote, ChainId: chainID}))
+	if err != nil {
+		return err
+	}
 
-	// resp := response.GetSignedVoteResponse()
-	// if resp == nil {
-	// 	return ErrUnexpectedResponse
-	// }
-	// if resp.Error != nil {
-	// 	return &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
-	// }
+	resp := response.GetSignedOracleVoteResponse()
+	if resp == nil {
+		return ErrUnexpectedResponse
+	}
+	if resp.Error != nil {
+		return &RemoteSignerError{Code: int(resp.Error.Code), Description: resp.Error.Description}
+	}
 
-	// *vote = resp.Vote
+	*vote = resp.Vote
 
 	return nil
 }

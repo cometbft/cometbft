@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -103,30 +104,14 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 // Implements PrivValidator.
 func (pv MockPV) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
 	// TODO TODO TODO: implement sign oracle vote
-	// useChainID := chainID
-	// if pv.breakVoteSigning {
-	// 	useChainID = "incorrect-chain-id"
-	// }
+	signBytes := OracleVoteSignBytes(vote)
+	sig, err := pv.PrivKey.Sign(signBytes)
+	if err != nil {
+		return err
+	}
+	vote.SignedTimestamp = uint64(time.Now().Unix())
+	vote.Signature = sig
 
-	// signBytes := VoteSignBytes(useChainID, vote)
-	// sig, err := pv.PrivKey.Sign(signBytes)
-	// if err != nil {
-	// 	return err
-	// }
-	// vote.Signature = sig
-
-	// var extSig []byte
-	// // We only sign vote extensions for non-nil precommits
-	// if vote.Type == cmtproto.PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
-	// 	extSignBytes := VoteExtensionSignBytes(useChainID, vote)
-	// 	extSig, err = pv.PrivKey.Sign(extSignBytes)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// } else if len(vote.Extension) > 0 {
-	// 	return errors.New("unexpected vote extension - vote extensions are only allowed in non-nil precommits")
-	// }
-	// vote.ExtensionSignature = extSig
 	return nil
 }
 

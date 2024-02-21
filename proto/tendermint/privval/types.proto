@@ -3,6 +3,7 @@ package tendermint.privval;
 
 import "tendermint/crypto/keys.proto";
 import "tendermint/types/types.proto";
+import "tendermint/oracle/types.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/privval";
@@ -56,6 +57,18 @@ message SignedProposalResponse {
   RemoteSignerError         error    = 2;
 }
 
+// SignOracleVoteRequest is a request to sign a vote
+message SignOracleVoteRequest {
+  tendermint.oracle.GossipVote vote     = 1;
+  string                chain_id = 2;
+}
+
+// SignedOracleVoteResponse is a response containing a signed vote or an error
+message SignedOracleVoteResponse {
+  tendermint.oracle.GossipVote vote  = 1 [(gogoproto.nullable) = false];
+  RemoteSignerError     error = 2;
+}
+
 // PingRequest is a request to confirm that the connection is alive.
 message PingRequest {}
 
@@ -72,5 +85,7 @@ message Message {
     SignedProposalResponse signed_proposal_response = 6;
     PingRequest            ping_request             = 7;
     PingResponse           ping_response            = 8;
+    SignOracleVoteRequest sign_oracle_vote_request = 9;
+    SignedOracleVoteResponse signed_oracle_vote_response = 10;
   }
 }

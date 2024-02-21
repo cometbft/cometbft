@@ -2,8 +2,6 @@ package runner
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -281,18 +279,6 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 	}(oracleInfo)
 }
 
-func HashGossipVote(gossipVote *oracleproto.GossipVote) uint64 {
-	h := sha256.New()
-	encoding, err := gossipVote.Marshal()
-	if err != nil {
-		panic(err)
-	}
-	h.Write(encoding)
-	hashBytes := h.Sum(nil)
-	hashUint64 := binary.BigEndian.Uint64(hashBytes)
-	return hashUint64
-}
-
 func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 	votes := []*oracleproto.Vote{}
 	for {
@@ -340,7 +326,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
 		log.Errorf("error signing oracle votes")
 	}
-	newGossipVote.SignedTimestamp = uint64(time.Now().Unix())
 
 	// replace current gossipVoteBuffer with new one
 	address := oracleInfo.PubKey.Address().String()

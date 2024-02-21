@@ -177,7 +177,7 @@ func TestPruneStates(t *testing.T) {
 			}
 
 			// Test assertions
-			err := stateStore.PruneStates(tc.pruneFrom, tc.pruneTo, tc.evidenceThresholdHeight)
+			_, err := stateStore.PruneStates(tc.pruneFrom, tc.pruneTo, tc.evidenceThresholdHeight, 0)
 			if tc.expectErr {
 				require.Error(t, err)
 				return
@@ -255,7 +255,7 @@ func makeStateAndBlockStoreAndIndexers() (sm.State, *store.BlockStore, txindex.T
 	})
 	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
 	if err != nil {
-		panic(fmt.Sprintf("error constructing state from genesis file: %s", err.Error()))
+		panic("error constructing state from genesis file: " + err.Error())
 	}
 
 	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, "test")

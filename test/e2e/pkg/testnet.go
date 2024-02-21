@@ -25,6 +25,7 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -95,6 +96,7 @@ type Testnet struct {
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
 	Prometheus                                           bool
+	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
 	VoteExtensionsUpdateHeight                           int64
 	VoteExtensionSize                                    uint
@@ -185,6 +187,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
 		UpgradeVersion:                   manifest.UpgradeVersion,
 		Prometheus:                       manifest.Prometheus,
+		BlockMaxBytes:                    manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
@@ -378,6 +381,9 @@ func (t Testnet) Validate() error {
 	if err := t.validateZones(t.Nodes); err != nil {
 		return err
 	}
+	if t.BlockMaxBytes > types.MaxBlockSizeBytes {
+		return fmt.Errorf("value of BlockMaxBytes cannot be higher than %d", types.MaxBlockSizeBytes)
+	}
 	if t.VoteExtensionsUpdateHeight < -1 {
 		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
 			"or -1 (Genesis); update height %d", t.VoteExtensionsUpdateHeight)
@@ -530,7 +536,7 @@ func (n Node) Validate(testnet Testnet) error {
 		switch perturbation {
 		case PerturbationUpgrade:
 			if upgradeFound {
-				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
+				return errors.New("'upgrade' perturbation can appear at most once per node")
 			}
 			upgradeFound = true
 		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:

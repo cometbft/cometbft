@@ -9,10 +9,9 @@ import (
 	v1 "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	v1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	grpc1 "github.com/cosmos/gogoproto/grpc"
-	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/cosmos/gogoproto/types"
-	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -1255,7 +1254,6 @@ type Response struct {
 	// Sum of all possible messages.
 	//
 	// Types that are valid to be assigned to Value:
-	//
 	//	*Response_Exception
 	//	*Response_Echo
 	//	*Response_Flush
@@ -3510,10 +3508,10 @@ type ABCIApplicationClient interface {
 }
 
 type aBCIApplicationClient struct {
-	cc grpc1.ClientConn
+	cc *grpc.ClientConn
 }
 
-func NewABCIApplicationClient(cc grpc1.ClientConn) ABCIApplicationClient {
+func NewABCIApplicationClient(cc *grpc.ClientConn) ABCIApplicationClient {
 	return &aBCIApplicationClient{cc}
 }
 
@@ -3736,7 +3734,7 @@ func (*UnimplementedABCIApplicationServer) ApplySnapshotChunk(ctx context.Contex
 	return nil, status.Errorf(codes.Unimplemented, "method ApplySnapshotChunk not implemented")
 }
 
-func RegisterABCIApplicationServer(s grpc1.Server, srv ABCIApplicationServer) {
+func RegisterABCIApplicationServer(s *grpc.Server, srv ABCIApplicationServer) {
 	s.RegisterService(&_ABCIApplication_serviceDesc, srv)
 }
 
@@ -4621,7 +4619,7 @@ func (m *RequestInitChain) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	n17, err17 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Time, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Time):])
+	n17, err17 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Time, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Time):])
 	if err17 != nil {
 		return 0, err17
 	}
@@ -6591,7 +6589,7 @@ func (m *Evidence) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x28
 	}
-	n49, err49 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Time, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Time):])
+	n49, err49 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Time, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Time):])
 	if err49 != nil {
 		return 0, err49
 	}
@@ -6941,7 +6939,7 @@ func (m *RequestInitChain) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Time)
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Time)
 	n += 1 + l + sovTypes(uint64(l))
 	l = len(m.ChainId)
 	if l > 0 {
@@ -7866,7 +7864,7 @@ func (m *Evidence) Size() (n int) {
 	if m.Height != 0 {
 		n += 1 + sovTypes(uint64(m.Height))
 	}
-	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Time)
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Time)
 	n += 1 + l + sovTypes(uint64(l))
 	if m.TotalVotingPower != 0 {
 		n += 1 + sovTypes(uint64(m.TotalVotingPower))
@@ -8905,7 +8903,7 @@ func (m *RequestInitChain) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Time, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Time, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -14357,7 +14355,7 @@ func (m *Evidence) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Time, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Time, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

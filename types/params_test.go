@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	valEd25519   = []string{ABCIPubKeyTypeEd25519}
-	valSecp256k1 = []string{ABCIPubKeyTypeSecp256k1}
+	valEd25519   = ABCIPubKeyTypeEd25519
+	valSecp256k1 = ABCIPubKeyTypeSecp256k1
 )
 
 func TestConsensusParamsValidation(t *testing.T) {
@@ -36,9 +36,9 @@ func TestConsensusParamsValidation(t *testing.T) {
 		9:  {makeParams(1000, 0, 2, 1, valEd25519, 0), true},
 		10: {makeParams(1, 0, -1, 0, valEd25519, 0), false},
 		// test no pubkey type provided
-		11: {makeParams(1, 0, 2, 0, []string{}, 0), false},
+		11: {makeParams(1, 0, 2, 0, "", 0), false},
 		// test invalid pubkey type provided
-		12: {makeParams(1, 0, 2, 0, []string{"potatoes make good pubkeys"}, 0), false},
+		12: {makeParams(1, 0, 2, 0, "potatoes make good pubkeys", 0), false},
 		13: {makeParams(-1, 0, 2, 0, valEd25519, 0), true},
 		14: {makeParams(-2, 0, 2, 0, valEd25519, 0), false},
 	}
@@ -55,7 +55,7 @@ func makeParams(
 	blockBytes, blockGas int64,
 	evidenceAge int64,
 	maxEvidenceBytes int64,
-	pubkeyTypes []string,
+	pubkeyType string,
 	abciExtensionHeight int64,
 ) ConsensusParams {
 	return ConsensusParams{
@@ -69,7 +69,7 @@ func makeParams(
 			MaxBytes:        maxEvidenceBytes,
 		},
 		Validator: ValidatorParams{
-			PubKeyTypes: pubkeyTypes,
+			PubKeyType: pubkeyType,
 		},
 		ABCI: ABCIParams{
 			VoteExtensionsEnableHeight: abciExtensionHeight,
@@ -130,7 +130,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 					MaxBytes:        50,
 				},
 				Validator: &cmtproto.ValidatorParams{
-					PubKeyTypes: valSecp256k1,
+					PubKeyType: valSecp256k1,
 				},
 			},
 			makeParams(100, 200, 300, 50, valSecp256k1, 0),

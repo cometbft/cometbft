@@ -6,7 +6,7 @@ package v1
 import (
 	fmt "fmt"
 	v1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"

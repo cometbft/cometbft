@@ -6,8 +6,7 @@ package v1
 import (
 	context "context"
 	fmt "fmt"
-	grpc1 "github.com/cosmos/gogoproto/grpc"
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -63,10 +62,10 @@ type BlockResultsServiceClient interface {
 }
 
 type blockResultsServiceClient struct {
-	cc grpc1.ClientConn
+	cc *grpc.ClientConn
 }
 
-func NewBlockResultsServiceClient(cc grpc1.ClientConn) BlockResultsServiceClient {
+func NewBlockResultsServiceClient(cc *grpc.ClientConn) BlockResultsServiceClient {
 	return &blockResultsServiceClient{cc}
 }
 
@@ -93,7 +92,7 @@ func (*UnimplementedBlockResultsServiceServer) GetBlockResults(ctx context.Conte
 	return nil, status.Errorf(codes.Unimplemented, "method GetBlockResults not implemented")
 }
 
-func RegisterBlockResultsServiceServer(s grpc1.Server, srv BlockResultsServiceServer) {
+func RegisterBlockResultsServiceServer(s *grpc.Server, srv BlockResultsServiceServer) {
 	s.RegisterService(&_BlockResultsService_serviceDesc, srv)
 }
 

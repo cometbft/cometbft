@@ -6,8 +6,7 @@ package v1
 import (
 	context "context"
 	fmt "fmt"
-	grpc1 "github.com/cosmos/gogoproto/grpc"
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -69,10 +68,10 @@ type BlockServiceClient interface {
 }
 
 type blockServiceClient struct {
-	cc grpc1.ClientConn
+	cc *grpc.ClientConn
 }
 
-func NewBlockServiceClient(cc grpc1.ClientConn) BlockServiceClient {
+func NewBlockServiceClient(cc *grpc.ClientConn) BlockServiceClient {
 	return &blockServiceClient{cc}
 }
 
@@ -139,7 +138,7 @@ func (*UnimplementedBlockServiceServer) GetLatestHeight(req *GetLatestHeightRequ
 	return status.Errorf(codes.Unimplemented, "method GetLatestHeight not implemented")
 }
 
-func RegisterBlockServiceServer(s grpc1.Server, srv BlockServiceServer) {
+func RegisterBlockServiceServer(s *grpc.Server, srv BlockServiceServer) {
 	s.RegisterService(&_BlockService_serviceDesc, srv)
 }
 

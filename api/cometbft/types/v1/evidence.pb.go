@@ -6,9 +6,9 @@ package v1
 import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/cosmos/gogoproto/proto"
 	_ "github.com/cosmos/gogoproto/types"
-	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -455,7 +455,7 @@ func (m *DuplicateVoteEvidence) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	n3, err3 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp):])
+	n3, err3 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp):])
 	if err3 != nil {
 		return 0, err3
 	}
@@ -520,7 +520,7 @@ func (m *LightClientAttackEvidence) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	_ = i
 	var l int
 	_ = l
-	n6, err6 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp):])
+	n6, err6 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp):])
 	if err6 != nil {
 		return 0, err6
 	}
@@ -671,7 +671,7 @@ func (m *DuplicateVoteEvidence) Size() (n int) {
 	if m.ValidatorPower != 0 {
 		n += 1 + sovEvidence(uint64(m.ValidatorPower))
 	}
-	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp)
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp)
 	n += 1 + l + sovEvidence(uint64(l))
 	return n
 }
@@ -698,7 +698,7 @@ func (m *LightClientAttackEvidence) Size() (n int) {
 	if m.TotalVotingPower != 0 {
 		n += 1 + sovEvidence(uint64(m.TotalVotingPower))
 	}
-	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Timestamp)
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp)
 	n += 1 + l + sovEvidence(uint64(l))
 	return n
 }
@@ -1012,7 +1012,7 @@ func (m *DuplicateVoteEvidence) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -1203,7 +1203,7 @@ func (m *LightClientAttackEvidence) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Timestamp, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

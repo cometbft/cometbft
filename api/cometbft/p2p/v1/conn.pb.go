@@ -7,7 +7,7 @@ import (
 	fmt "fmt"
 	v1 "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -165,7 +165,6 @@ type Packet struct {
 	// Sum of all possible messages.
 	//
 	// Types that are valid to be assigned to Sum:
-	//
 	//	*Packet_PacketPing
 	//	*Packet_PacketPong
 	//	*Packet_PacketMsg

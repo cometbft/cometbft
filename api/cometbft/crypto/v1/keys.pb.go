@@ -7,7 +7,7 @@ import (
 	bytes "bytes"
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"
@@ -29,7 +29,6 @@ type PublicKey struct {
 	// The type of key.
 	//
 	// Types that are valid to be assigned to Sum:
-	//
 	//	*PublicKey_Ed25519
 	//	*PublicKey_Secp256K1
 	Sum isPublicKey_Sum `protobuf_oneof:"sum"`

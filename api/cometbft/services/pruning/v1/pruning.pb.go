@@ -5,7 +5,7 @@ package cometbft_services_pruning_v1
 
 import (
 	fmt "fmt"
-	proto "github.com/cosmos/gogoproto/proto"
+	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"

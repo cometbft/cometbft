@@ -57,7 +57,7 @@ type EvidenceParams struct {
 // ValidatorParams restrict the public key types validators can use.
 // NOTE: uses ABCI pubkey naming, not Amino names.
 type ValidatorParams struct {
-	PubKeyTypes []string `json:"pub_key_types"`
+	PubKeyType string `json:"pub_key_type"`
 }
 
 type VersionParams struct {
@@ -114,7 +114,7 @@ func DefaultEvidenceParams() EvidenceParams {
 // only ed25519 pubkeys.
 func DefaultValidatorParams() ValidatorParams {
 	return ValidatorParams{
-		PubKeyTypes: []string{ABCIPubKeyTypeEd25519},
+		PubKeyType: ABCIPubKeyTypeEd25519,
 	}
 }
 
@@ -132,10 +132,8 @@ func DefaultABCIParams() ABCIParams {
 }
 
 func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
-	for i := 0; i < len(params.PubKeyTypes); i++ {
-		if params.PubKeyTypes[i] == pubkeyType {
-			return true
-		}
+	if params.PubKeyType == pubkeyType {
+		return true
 	}
 	return false
 }
@@ -189,17 +187,15 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("ABCI.VoteExtensionsEnableHeight cannot be negative. Got: %d", params.ABCI.VoteExtensionsEnableHeight)
 	}
 
-	if len(params.Validator.PubKeyTypes) == 0 {
+	if params.Validator.PubKeyType == "" {
 		return errors.New("len(Validator.PubKeyTypes) must be greater than 0")
 	}
 
 	// Check if keyType is a known ABCIPubKeyType
-	for i := 0; i < len(params.Validator.PubKeyTypes); i++ {
-		keyType := params.Validator.PubKeyTypes[i]
-		if _, ok := ABCIPubKeyTypesToNames[keyType]; !ok {
-			return fmt.Errorf("params.Validator.PubKeyTypes[%d], %s, is an unknown pubkey type",
-				i, keyType)
-		}
+	keyType := params.Validator.PubKeyType
+	if _, ok := ABCIPubKeyTypesToNames[keyType]; !ok {
+		return fmt.Errorf("params.Validator.PubKeyType, %s, is an unknown pubkey type",
+			keyType)
 	}
 
 	return nil
@@ -312,7 +308,7 @@ func (params ConsensusParams) Update(params2 *cmtproto.ConsensusParams) Consensu
 	if params2.Validator != nil {
 		// Copy params2.Validator.PubkeyTypes, and set result's value to the copy.
 		// This avoids having to initialize the slice to 0 values, and then write to it again.
-		res.Validator.PubKeyTypes = append([]string{}, params2.Validator.PubKeyTypes...)
+		res.Validator.PubKeyType = params2.Validator.PubKeyType
 	}
 	if params2.Version != nil {
 		res.Version.App = params2.Version.App
@@ -335,7 +331,7 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 			MaxBytes:        params.Evidence.MaxBytes,
 		},
 		Validator: &cmtproto.ValidatorParams{
-			PubKeyTypes: params.Validator.PubKeyTypes,
+			PubKeyType: params.Validator.PubKeyType,
 		},
 		Version: &cmtproto.VersionParams{
 			App: params.Version.App,
@@ -358,7 +354,7 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 			MaxBytes:        pbParams.Evidence.MaxBytes,
 		},
 		Validator: ValidatorParams{
-			PubKeyTypes: pbParams.Validator.PubKeyTypes,
+			PubKeyType: pbParams.Validator.PubKeyType,
 		},
 		Version: VersionParams{
 			App: pbParams.Version.App,

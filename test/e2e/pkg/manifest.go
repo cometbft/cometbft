@@ -51,6 +51,22 @@ type Manifest struct {
 	// Loads is a list of transaction load instances that are executed sequentially.
 	Loads []*ManifestLoad `toml:"load"`
 
+	// Default settings for transaction loading that apply to all `load` instances. They can be
+	// overwritten by individual settings in each `load` instance. See the full description in the
+	// corresponding fields of `ManifestLoad`.
+	LoadWaitToStart int    `toml:"load_wait_to_start"`
+	LoadWaitUntil   string `toml:"load_wait_until"`
+	LoadWaitAtEnd   int    `toml:"load_wait_at_end"`
+
+	// Default settings for transaction loading that apply to all `run` executions of any `load`
+	// instance. They can be overwritten by individual settings in each `run` or `load` instance.
+	// See the full description in the corresponding fields of `ManifestLoadRun`.
+	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
+	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
+	LoadTxConnections int `toml:"load_tx_connections"`
+	LoadMaxTxs        int `toml:"load_max_txs"`
+	LoadMaxDuration   int `toml:"load_max_duration"`
+
 	// Disable the peer-exchange reactor on all nodes.
 	DisablePexReactor bool `toml:"disable_pex"`
 
@@ -85,17 +101,6 @@ type Manifest struct {
 	// UpgradeVersion specifies to which version nodes need to upgrade.
 	// Currently only uncoordinated upgrade is supported
 	UpgradeVersion string `toml:"upgrade_version"`
-
-	// Default settings for transaction loading that apply to all load instances. They can be
-	// overwritten by individual settings in each instance.
-	LoadTxSizeBytes   int    `toml:"load_tx_size_bytes"`
-	LoadTxBatchSize   int    `toml:"load_tx_batch_size"`  // Number of transactions per second, to all nodes, divided on all connections.
-	LoadTxConnections int    `toml:"load_tx_connections"` // Number of connections per node, to split the batch of transactions.
-	LoadMaxTxs        int    `toml:"load_max_txs"`        // Maximum number of transactions to send for each run.
-	LoadMaxDuration   uint32 `toml:"load_max_duration"`   // Duration of each load run in seconds.
-	LoadWaitToStart   uint32 `toml:"load_wait_to_start"`
-	LoadWaitUntil     string `toml:"load_wait_until"`
-	LoadWaitAtEnd     uint32 `toml:"load_wait_at_end"`
 
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
@@ -220,29 +225,29 @@ type ManifestNode struct {
 
 // ManifestLoad represents an instance of a transaction load process.
 type ManifestLoad struct {
-	// Default settings for all `run`s in this `load` instance. They can be overwritten in each
-	// individual `run`.
-	TxBytes     int    `toml:"tx_bytes"`
-	BatchSize   int    `toml:"batch_size"`
-	Connections int    `toml:"connections"`
-	MaxTxs      int    `toml:"max_txs"`
-	MaxDuration uint32 `toml:"max_duration"` // Duration of the load instance in seconds.
+	// WaitToStart defines the seconds to wait before starting the load, for example to give nodes
+	// time to stabilize, if needed. If `start_after` is set, wait after the previous run have
+	// finished; otherwise count from when the testnet has started.
+	WaitToStart int `toml:"wait_to_start"`
 
-	// Seconds to wait before starting the load, to give nodes time to stabilize, if needed. If
-	// `start_after` is set, wait after the previous run have finished; otherwise count from when
-	// the testnet has started.
-	WaitToStart uint32 `toml:"wait_to_start"`
-
-	// WaitUntil will wait for some condition to be true before stopping the run. Possible values
-	// are:
+	// WaitUntil is a condition that instructs this load instance to wait until the condition holds
+	// before stopping all `run` executions. Possible values are:
 	//   - "" (default) means there is no condition.
-	//   - "mempools-are-empty" wait until the mempool of all nodes are empty before stopping the
-	// run.
+	//   - "mempools-are-empty" waits until the mempool of all nodes are empty before stop loading.
 	WaitUntil string `toml:"wait_until"`
 
-	// Seconds to wait at the end of the load, to give the nodes time in case they need to finish
-	// processing something.
-	WaitAtEnd uint32 `toml:"wait_at_end"`
+	// WaitAtEnd defines the seconds to wait at the end of the load, for example to give the nodes
+	// time in case they need to finish processing something.
+	WaitAtEnd int `toml:"wait_at_end"`
+
+	// Default settings for transaction loading that apply to all load instances. They can be
+	// overwritten by individual settings in each `run` instance. See the full description in the
+	// corresponding fields of `ManifestLoadRun`.
+	TxBytes     int `toml:"tx_bytes"`
+	BatchSize   int `toml:"batch_size"`
+	Connections int `toml:"connections"`
+	MaxTxs      int `toml:"max_txs"`
+	MaxDuration int `toml:"max_duration"` // Duration of the load instance in seconds.
 
 	// All runs in a load instance execute in parallel.
 	Runs map[string]*ManifestLoadRun `toml:"run"`
@@ -250,12 +255,23 @@ type ManifestLoad struct {
 
 // ManifestLoadRun defines a transaction load execution.
 type ManifestLoadRun struct {
-	TxBytes         int      `toml:"tx_bytes"`
-	BatchSize       int      `toml:"batch_size"`
-	Connections     int      `toml:"connections"`
-	MaxDuration     uint32   `toml:"max_duration"`
-	MaxTxs          int      `toml:"max_txs"`
-	WaitToRun       uint32   `toml:"wait_to_run"`
+	// TxBytes is the size in bytes of each transaction.
+	TxBytes int `toml:"tx_bytes"`
+	// BatchSize is the number of transactions that is send every second.
+	BatchSize int `toml:"batch_size"`
+	// Connections is the number of RPC connections to each target node, used to parallelize the
+	// load.
+	Connections int `toml:"connections"`
+	// MaxDuration is the maximum number of seconds that this load execution will run before
+	// finishing, except if MaxTxs is reached before.
+	MaxDuration int `toml:"max_duration"`
+	// MaxTxs is the maximum number of transactions that this load execution will send before
+	// finishing, except if MaxDuration is reached before.
+	MaxTxs int `toml:"max_txs"`
+	// WaitToRun is the number of seconds to wait before start running this load execution.
+	WaitToRun int `toml:"wait_to_run"`
+	// TargetNodeNames is the list of node names to which this load execution will send
+	// transactions.
 	TargetNodeNames []string `toml:"target"`
 }
 

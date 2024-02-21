@@ -88,14 +88,6 @@ type Testnet struct {
 	DisablePexReactor                                    bool
 	KeyType                                              string
 	Evidence                                             int
-	LoadTxSizeBytes                                      int
-	LoadTxBatchSize                                      int
-	LoadTxConnections                                    int
-	LoadMaxTxs                                           int
-	LoadMaxDuration                                      uint32
-	LoadWaitToStart                                      uint32
-	LoadWaitUntil                                        string
-	LoadWaitAtEnd                                        uint32
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -149,9 +141,9 @@ type Node struct {
 
 type Load struct {
 	Testnet     *Testnet
-	WaitToStart uint32
+	WaitToStart int
 	WaitUntil   string
-	WaitAtEnd   uint32
+	WaitAtEnd   int
 	Runs        map[string]*LoadRun
 }
 
@@ -160,8 +152,8 @@ type LoadRun struct {
 	BatchSize   int
 	Connections int
 	MaxTxs      int
-	MaxDuration uint32
-	WaitToRun   uint32
+	MaxDuration int
+	WaitToRun   int
 	TargetNodes []*Node
 }
 
@@ -231,15 +223,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.UpgradeVersion == "" {
 		testnet.UpgradeVersion = localVersion
-	}
-	if testnet.LoadTxConnections == 0 {
-		testnet.LoadTxConnections = defaultConnections
-	}
-	if testnet.LoadTxBatchSize == 0 {
-		testnet.LoadTxBatchSize = defaultBatchSize
-	}
-	if testnet.LoadTxSizeBytes == 0 {
-		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
 	for _, name := range sortNodeNames(manifest) {
@@ -687,6 +670,7 @@ func (n Node) Validate(testnet Testnet) error {
 }
 
 // Validate validates a load.
+// TODO: complete.
 func (l Load) Validate(testnet Testnet) error {
 	for name, run := range l.Runs {
 		if err := run.Validate(testnet, l); err != nil {
@@ -698,6 +682,7 @@ func (l Load) Validate(testnet Testnet) error {
 }
 
 // Validate validates a load.
+// TODO: complete.
 func (r LoadRun) Validate(testnet Testnet, load Load) error {
 	return nil
 }

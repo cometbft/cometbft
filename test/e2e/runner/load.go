@@ -95,6 +95,7 @@ func loadRun(ctx context.Context, runName string, runID []byte, run *e2e.LoadRun
 		}
 	}
 
+	// Set the timeout channel.
 	var maxDurationCh <-chan time.Time
 	if run.MaxDuration > 0 {
 		maxDurationCh = time.After(time.Duration(run.MaxDuration) * time.Second)

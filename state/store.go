@@ -41,8 +41,16 @@ func calcABCIResponsesKey(height int64) []byte {
 
 //----------------------
 
+<<<<<<< HEAD:state/store.go
 var lastABCIResponseKey = []byte("lastABCIResponseKey")
 var offlineStateSyncHeight = []byte("offlineStateSyncHeightKey")
+=======
+var (
+	lastABCIResponseKey              = []byte("lastABCIResponseKey") // DEPRECATED
+	lastABCIResponsesRetainHeightKey = []byte("lastABCIResponsesRetainHeight")
+	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
+)
+>>>>>>> f2c746638 (perf(internal/state): avoid double-saving FinalizeBlockResponse (#2017)):internal/state/store.go
 
 //go:generate ../scripts/mockery_generate.sh Store
 
@@ -413,7 +421,7 @@ func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 }
 
 // LoadFinalizeBlockResponse loads the DiscardABCIResponses for the given height from the
-// database. If the node has D set to true, ErrABCIResponsesNotPersisted
+// database. If the node has D set to true, ErrFinalizeBlockResponsesNotPersisted
 // is persisted. If not found, ErrNoABCIResponsesForHeight is returned.
 func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
 	if store.DiscardABCIResponses {
@@ -436,7 +444,6 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 		legacyResp := new(cmtstate.LegacyABCIResponses)
 		rerr := legacyResp.Unmarshal(buf)
 		if rerr != nil {
-			// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
 			cmtos.Exit(fmt.Sprintf(`LoadFinalizeBlockResponse: Data has been corrupted or its spec has
 					changed: %v\n`, err))
 		}
@@ -457,6 +464,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 //
 // This method is used for recovering in the case that we called the Commit ABCI
 // method on the application but crashed before persisting the results.
+<<<<<<< HEAD:state/store.go
 func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
 	bz, err := store.db.Get(lastABCIResponseKey)
 	if err != nil {
@@ -486,11 +494,53 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 		// sanity check
 		if info.LegacyAbciResponses == nil {
 			panic("state store contains last abci response but it is empty")
-		}
-		return responseFinalizeBlockFromLegacy(info.LegacyAbciResponses), nil
+=======
+func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
+	start := time.Now()
+	buf, err := store.db.Get(calcABCIResponsesKey(height))
+	if err != nil {
+		return nil, err
 	}
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_last_abci_response"), start)()
+	if len(buf) == 0 {
+		// DEPRECATED lastABCIResponseKey
+		// It is possible if this is called directly after an upgrade that
+		// `lastABCIResponseKey` contains the last ABCI responses.
+		bz, err := store.db.Get(lastABCIResponseKey)
+		if err == nil && len(bz) > 0 {
+			info := new(cmtstate.ABCIResponsesInfo)
+			err = info.Unmarshal(bz)
+			if err != nil {
+				cmtos.Exit(fmt.Sprintf(`LoadLastFinalizeBlockResponse: Data has been corrupted or its spec has changed: %v\n`, err))
+			}
+			// Here we validate the result by comparing its height to the expected height.
+			if height != info.GetHeight() {
+				return nil, fmt.Errorf("expected height %d but last stored abci responses was at height %d", height, info.GetHeight())
+			}
+			if info.FinalizeBlock == nil {
+				// sanity check
+				if info.LegacyAbciResponses == nil {
+					panic("state store contains last abci response but it is empty")
+				}
+				return responseFinalizeBlockFromLegacy(info.LegacyAbciResponses), nil
+			}
+			return info.FinalizeBlock, nil
+>>>>>>> f2c746638 (perf(internal/state): avoid double-saving FinalizeBlockResponse (#2017)):internal/state/store.go
+		}
+		// END OF DEPRECATED lastABCIResponseKey
+		return nil, fmt.Errorf("expected last ABCI responses at height %d, but none are found", height)
+	}
+<<<<<<< HEAD:state/store.go
 
 	return info.ResponseFinalizeBlock, nil
+=======
+	resp := new(abci.FinalizeBlockResponse)
+	err = resp.Unmarshal(buf)
+	if err != nil {
+		cmtos.Exit(fmt.Sprintf(`LoadLastFinalizeBlockResponse: Data has been corrupted or its spec has changed: %v\n`, err))
+	}
+	return resp, nil
+>>>>>>> f2c746638 (perf(internal/state): avoid double-saving FinalizeBlockResponse (#2017)):internal/state/store.go
 }
 
 // SaveFinalizeBlockResponse persists the ResponseFinalizeBlock to the database.
@@ -509,6 +559,7 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 	}
 	resp.TxResults = dtxs
 
+<<<<<<< HEAD:state/store.go
 	// If the flag is false then we save the ABCIResponse. This can be used for the /BlockResults
 	// query or to reindex an event using the command line.
 	if !store.DiscardABCIResponses {
@@ -528,11 +579,28 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Response
 		Height:                height,
 	}
 	bz, err := response.Marshal()
+=======
+	bz, err := resp.Marshal()
+>>>>>>> f2c746638 (perf(internal/state): avoid double-saving FinalizeBlockResponse (#2017)):internal/state/store.go
 	if err != nil {
 		return err
 	}
 
-	return store.db.SetSync(lastABCIResponseKey, bz)
+	// Save the ABCI response.
+	//
+	// We always save the last ABCI response for crash recovery.
+	// If `store.DiscardABCIResponses` is true, then we delete the previous ABCI response.
+	start := time.Now()
+	if store.DiscardABCIResponses && height > 1 {
+		if err := store.db.Delete(calcABCIResponsesKey(height - 1)); err != nil {
+			return err
+		}
+	}
+	if err := store.db.SetSync(calcABCIResponsesKey(height), bz); err != nil {
+		return err
+	}
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "save_abci_responses"), start)()
+	return nil
 }
 
 //-----------------------------------------------------------------------------

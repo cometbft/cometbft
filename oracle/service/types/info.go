@@ -18,7 +18,6 @@ type OracleInfo struct {
 	Redis              redis.Service
 	Config             Config
 	GrpcClient         *grpc.ClientConn
-	VoteDataBuffer     *VoteDataBuffer
 	UnsignedVoteBuffer *UnsignedVoteBuffer
 	GossipVoteBuffer   *GossipVoteBuffer
 	SignVotesChan      chan *oracleproto.Vote
@@ -35,11 +34,6 @@ type UnsignedVotes struct {
 
 type GossipVoteBuffer struct {
 	Buffer    map[string]*oracleproto.GossipVote
-	UpdateMtx cmtsync.RWMutex
-}
-
-type VoteDataBuffer struct {
-	Buffer    map[uint64]map[string][]*oracleproto.Vote
 	UpdateMtx cmtsync.RWMutex
 }
 

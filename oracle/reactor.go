@@ -71,10 +71,6 @@ func NewReactor(configPath string, grpcAddress string, pubKey crypto.PubKey, pri
 		logrus.Warnf("[oracle] error parsing oracle.json config file: %v", err)
 	}
 
-	voteDataBuffer := &oracletypes.VoteDataBuffer{
-		Buffer: make(map[uint64]map[string][]*oracleproto.Vote),
-	}
-
 	gossipVoteBuffer := &oracletypes.GossipVoteBuffer{
 		Buffer: make(map[string]*oracleproto.GossipVote),
 	}
@@ -86,7 +82,6 @@ func NewReactor(configPath string, grpcAddress string, pubKey crypto.PubKey, pri
 	oracleInfo := &oracletypes.OracleInfo{
 		Oracles:            nil,
 		Config:             config,
-		VoteDataBuffer:     voteDataBuffer,
 		GossipVoteBuffer:   gossipVoteBuffer,
 		UnsignedVoteBuffer: unsignedVoteBuffer,
 		SignVotesChan:      make(chan *oracleproto.Vote),

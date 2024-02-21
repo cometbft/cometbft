@@ -336,34 +336,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 }
 
-func AddVoteToDataBuffer(oracleInfo *types.OracleInfo, vote *oracleproto.Vote) {
-	_, ok := oracleInfo.VoteDataBuffer.Buffer[vote.Timestamp]
-	if !ok {
-		oracleInfo.VoteDataBuffer.Buffer[vote.Timestamp] = make(map[string][]*oracleproto.Vote)
-	}
-
-	oracleMap := oracleInfo.VoteDataBuffer.Buffer[vote.Timestamp]
-	oracleMap[vote.OracleId] = append(oracleMap[vote.OracleId], vote)
-	oracleInfo.VoteDataBuffer.Buffer[vote.Timestamp] = oracleMap
-}
-
-func PruneVoteDataBuffer(oracleInfo *types.OracleInfo) {
-	go func(oracleInfo *types.OracleInfo) {
-		ticker := time.Tick(3 * time.Second)
-		for range ticker {
-			oracleInfo.VoteDataBuffer.UpdateMtx.Lock()
-			// prune everything older than 3 secs
-			for timestamp, _ := range oracleInfo.VoteDataBuffer.Buffer {
-				currTime := uint64(time.Now().Unix())
-				if timestamp <= currTime-uint64(3*time.Second) {
-					delete(oracleInfo.VoteDataBuffer.Buffer, timestamp)
-				}
-			}
-			oracleInfo.VoteDataBuffer.UpdateMtx.Unlock()
-		}
-	}(oracleInfo)
-}
-
 func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo) {
 	go func(oracleInfo *types.OracleInfo) {
 		ticker := time.Tick(3 * time.Second)
@@ -414,7 +386,6 @@ func Run(oracleInfo *types.OracleInfo) {
 	count := 0
 	RunProcessSignVoteQueue(oracleInfo)
 	PruneUnsignedVoteBuffer(oracleInfo)
-	// PruneVoteDataBuffer(oracleInfo)
 	for {
 		if count == 0 { // on init, and every minute
 			oracles, err := SyncOracles(oracleInfo)

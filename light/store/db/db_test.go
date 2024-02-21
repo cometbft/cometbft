@@ -127,7 +127,7 @@ func Test_Prune(t *testing.T) {
 }
 
 func Test_Concurrency(t *testing.T) {
-	dbStore := New(dbm.NewMemDB(), "Test_Prune", WithLBKeyLayout("v2"))
+	dbStore := New(dbm.NewMemDB(), "Test_Prune")
 
 	var wg sync.WaitGroup
 	for i := 1; i <= 100; i++ {

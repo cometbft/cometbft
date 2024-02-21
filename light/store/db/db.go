@@ -24,30 +24,54 @@ type dbs struct {
 	dbKeyLayout LightStoreKeyLayout
 }
 
-type DBStoreOption func(*dbs)
+func isEmpty(db dbm.DB) bool {
+	items := 0
 
-// WithLightBlockKeyLayout sets the layout of the
-// keys in the database.
-func WithLBKeyLayout(dbKeyLayout string) DBStoreOption {
-	return func(db *dbs) {
-		switch dbKeyLayout {
-		case "v2":
-			db.dbKeyLayout = v2Layout{}
-		case "v1":
-		default:
-			db.dbKeyLayout = v1LegacyLayout{}
+	iter, err := db.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		items++
+		break
+	}
+	return items == 0
+}
+
+func setDBKeyLayout(db dbm.DB, lightStore *dbs) {
+	if isEmpty(db) {
+		lightStore.dbKeyLayout = &v2Layout{}
+		if err := lightStore.db.SetSync([]byte("version"), []byte("2")); err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	versionNum, err := lightStore.db.Get([]byte("version"))
+	fmt.Println(string(versionNum), err)
+	if len(versionNum) == 0 && err == nil {
+		lightStore.dbKeyLayout = &v1LegacyLayout{}
+		if err := lightStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
+			panic(err)
+		}
+	} else {
+		switch string(versionNum) {
+		case "1":
+			lightStore.dbKeyLayout = &v1LegacyLayout{}
+		case "2":
+			lightStore.dbKeyLayout = &v2Layout{}
 		}
 	}
 }
 
 // New returns a Store that wraps any DB (with an optional prefix in case you
 // want to use one DB with many light clients).
-func New(db dbm.DB, prefix string, options ...DBStoreOption) store.Store {
-	dbStore := &dbs{db: db, prefix: prefix, dbKeyLayout: &v1LegacyLayout{}}
+func New(db dbm.DB, prefix string) store.Store {
+	dbStore := &dbs{db: db, prefix: prefix}
 
-	for _, option := range options {
-		option(dbStore)
-	}
+	setDBKeyLayout(db, dbStore)
 
 	size := uint16(0)
 	bz, err := db.Get(dbStore.dbKeyLayout.SizeKey(prefix))

@@ -246,7 +246,7 @@ The thick red dashed line represents the moving average over a sliding window of
 
 #### Baseline
 
-The following graph shows the that the number of peers was stable throughout the experiment.
+The following graph shows that the number of peers was stable throughout the experiment.
 Seed nodes typically have a higher number of peers.
 The fact that non-seed nodes reach more than 50 peers is due to
 [#9548](https://github.com/tendermint/tendermint/issues/9548).
@@ -407,7 +407,7 @@ As expected, the average plot also looks similar.
 The comparison of the baseline results and the homogeneous case show that both scenarios had similar numbers and are therefore equivalent.
 
 The mixed nodes cases show that networks operate normally with a mix of compatible Tendermint Core and CometBFT versions.
-Although not the main goal, a comparison of metric numbers with the homogeneous case and the baseline scenarios show similar results and therefore we can conclude that mixing compatible Tendermint Core and CometBFT introduces not performance degradation.
+Although not the main goal, a comparison of metric numbers with the homogeneous case and the baseline scenarios show similar results and therefore we can conclude that mixing compatible Tendermint Core and CometBFT introduces no performance degradation.
 
 A conclusion of these tests is shown in the following table, along with the commit versions used in the experiments.
 

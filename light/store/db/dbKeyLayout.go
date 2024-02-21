@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -43,7 +44,7 @@ var keyPattern = regexp.MustCompile(`^(lb)/([^/]*)/([0-9]+)$`)
 func parseKey(key []byte) (part string, prefix string, height int64, err error) {
 	submatch := keyPattern.FindSubmatch(key)
 	if submatch == nil {
-		return "", "", 0, fmt.Errorf("not a light block key")
+		return "", "", 0, errors.New("not a light block key")
 	}
 	part = string(submatch[1])
 	prefix = string(submatch[2])

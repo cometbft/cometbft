@@ -81,6 +81,31 @@ func WithMetrics(metrics *Metrics) BlockStoreOption {
 	return func(bs *BlockStore) { bs.metrics = metrics }
 }
 
+func setDBLayout(bStore *BlockStore) {
+	if bStore.IsEmpty() {
+		bStore.dbKeyLayout = &v2Layout{}
+		if err := bStore.db.SetSync([]byte("version"), []byte("2")); err != nil {
+			panic(err)
+		}
+		return
+	}
+	versionNum, err := bStore.db.Get([]byte("version"))
+	fmt.Println(string(versionNum), err)
+	if len(versionNum) == 0 && err == nil {
+		bStore.dbKeyLayout = &v1LegacyLayout{}
+		if err := bStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
+			panic(err)
+		}
+	} else {
+		switch string(versionNum) {
+		case "1":
+			bStore.dbKeyLayout = &v1LegacyLayout{}
+		case "2":
+			bStore.dbKeyLayout = &v2Layout{}
+		}
+	}
+}
+
 // NewBlockStore returns a new BlockStore with the given DB,
 // initialized to the last height that was committed to the DB.
 func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
@@ -95,28 +120,7 @@ func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
 		metrics: NopMetrics(),
 	}
 
-	if bStore.IsEmpty() {
-		bStore.dbKeyLayout = &v2Layout{}
-		if err := bStore.db.SetSync([]byte("version"), []byte("2")); err != nil {
-			panic(err)
-		}
-	} else {
-		versionNum, err := bStore.db.Get([]byte("version"))
-		fmt.Println(string(versionNum), err)
-		if len(versionNum) == 0 && err == nil {
-			bStore.dbKeyLayout = &v1LegacyLayout{}
-			if err := bStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
-				panic(err)
-			}
-		} else {
-			switch string(versionNum) {
-			case "1":
-				bStore.dbKeyLayout = &v1LegacyLayout{}
-			case "2":
-				bStore.dbKeyLayout = &v2Layout{}
-			}
-		}
-	}
+	setDBLayout(bStore)
 
 	for _, option := range options {
 		option(bStore)

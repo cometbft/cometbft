@@ -47,18 +47,6 @@ type Pool struct {
 	dbKeyLayout EvidenceKeyLayout
 }
 
-// // WithDBKeyLayout sets.
-// func WithDBKeyLayout(dbKeyLayout string) EvidenceOption {
-// 	return func(pool *Pool) {
-// 		switch dbKeyLayout {
-// 		case "v1":
-// 			pool.dbKeyLayout = v1LegacyLayout{}
-// 		case "v2":
-// 			pool.dbKeyLayout = &v2Layout{}
-// 		}
-// 	}
-// }
-
 func isEmpty(evidenceDB dbm.DB) bool {
 	items := 0
 
@@ -70,8 +58,42 @@ func isEmpty(evidenceDB dbm.DB) bool {
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		items++
+		break
 	}
 	return items == 0
+}
+
+func setDBLayout(evidenceDB dbm.DB, pool *Pool) {
+	if isEmpty(evidenceDB) {
+		fmt.Println("Empty store")
+		pool.dbKeyLayout = v2Layout{}
+		err := evidenceDB.SetSync([]byte("version"), []byte("2"))
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+	var (
+		version []byte
+		err     error
+	)
+	if version, err = evidenceDB.Get([]byte("version")); err != nil {
+		panic(err)
+	}
+	if len(version) == 0 {
+		err = evidenceDB.SetSync([]byte("version"), []byte("1"))
+		pool.dbKeyLayout = v1LegacyLayout{}
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		switch string(version) {
+		case "1":
+			pool.dbKeyLayout = v1LegacyLayout{}
+		case "2":
+			pool.dbKeyLayout = v2Layout{}
+		}
+	}
 }
 
 // NewPool creates an evidence pool. If using an existing evidence store,
@@ -92,36 +114,7 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool,
 		consensusBuffer: make([]duplicateVoteSet, 0),
 	}
 
-	if isEmpty(evidenceDB) {
-		fmt.Println("Empty store")
-		pool.dbKeyLayout = v2Layout{}
-		err = evidenceDB.SetSync([]byte("version"), []byte("2"))
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		var (
-			version []byte
-			err     error
-		)
-		if version, err = evidenceDB.Get([]byte("version")); err != nil {
-			panic(err)
-		}
-		if len(version) == 0 {
-			err = evidenceDB.SetSync([]byte("version"), []byte("1"))
-			pool.dbKeyLayout = v1LegacyLayout{}
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			switch string(version) {
-			case "1":
-				pool.dbKeyLayout = v1LegacyLayout{}
-			case "2":
-				pool.dbKeyLayout = v2Layout{}
-			}
-		}
-	}
+	setDBLayout(evidenceDB, pool)
 
 	// if pending evidence already in db, in event of prior failure, then check for expiration,
 	// update the size and load it back to the evidenceList

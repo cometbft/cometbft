@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/internal/state"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
@@ -103,4 +104,25 @@ func TestBlock_Range(t *testing.T) {
 			require.Error(t, err)
 		}
 	})
+}
+
+// Tests that time is monotonically increasing,
+// and that blocks produced according to BFT Time follow MedianTime calculation.
+func TestBlock_Time(t *testing.T) {
+	t.Helper()
+	blocks := fetchBlockChain(t)
+	testnet := loadTestnet(t)
+
+	lastBlock := blocks[0]
+	valSchedule := newValidatorSchedule(testnet)
+	for _, block := range blocks[1:] {
+		require.Less(t, lastBlock.Time, block.Time)
+		lastBlock = block
+
+		valSchedule.Increment(1)
+		if testnet.PbtsEnableHeight == 0 || block.Height < testnet.PbtsEnableHeight {
+			expTime := state.MedianTime(block.LastCommit, valSchedule.Set)
+			require.Equal(t, expTime, block.Time, "height=%d", block.Height)
+		}
+	}
 }

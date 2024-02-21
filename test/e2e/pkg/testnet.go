@@ -103,6 +103,8 @@ type Testnet struct {
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 	ABCITestsEnabled                                     bool
 	DefaultZone                                          string
+	PbtsEnableHeight                                     int64
+	PbtsUpdateHeight                                     int64
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -193,6 +195,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 		ABCITestsEnabled: manifest.ABCITestsEnabled,
 		DefaultZone:      manifest.DefaultZone,
+		PbtsEnableHeight: manifest.PbtsEnableHeight,
+		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -406,6 +410,33 @@ func (t Testnet) Validate() error {
 				"must be greater than VoteExtensionsUpdateHeight; "+
 				"update height %d, enable height %d",
 				t.VoteExtensionsUpdateHeight, t.VoteExtensionsEnableHeight,
+			)
+		}
+	}
+	if t.PbtsEnableHeight < 0 {
+		return fmt.Errorf("value of PbtsEnableHeight must be positive, or 0 (disable); "+
+			"enable height %d", t.PbtsEnableHeight)
+	}
+	if t.PbtsUpdateHeight > 0 && t.PbtsUpdateHeight < t.InitialHeight {
+		return fmt.Errorf("a value of PbtsUpdateHeight greater than 0 "+
+			"must not be less than InitialHeight; "+
+			"update height %d, initial height %d",
+			t.PbtsUpdateHeight, t.InitialHeight,
+		)
+	}
+	if t.PbtsEnableHeight > 0 {
+		if t.PbtsEnableHeight < t.InitialHeight {
+			return fmt.Errorf("a value of PbtsEnableHeight greater than 0 "+
+				"must not be less than InitialHeight; "+
+				"enable height %d, initial height %d",
+				t.PbtsEnableHeight, t.InitialHeight,
+			)
+		}
+		if t.PbtsEnableHeight <= t.PbtsUpdateHeight {
+			return fmt.Errorf("a value of PbtsEnableHeight greater than 0 "+
+				"must be greater than PbtsUpdateHeight; "+
+				"update height %d, enable height %d",
+				t.PbtsUpdateHeight, t.PbtsEnableHeight,
 			)
 		}
 	}

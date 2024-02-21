@@ -120,6 +120,17 @@ type Manifest struct {
 	// Default geographical zone ID for simulating latencies, assigned to nodes that don't have a
 	// specific zone assigned.
 	DefaultZone string `toml:"default_zone"`
+
+	// PbtsEnableHeight configures the first height during which
+	// the chain will start using Proposer-Based Timestamps (PBTS)
+	// to create and validate new blocks.
+	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
+
+	// PbtsUpdateHeight configures the height at which consensus
+	// param PbtsEnableHeight will be set.
+	// -1 denotes it is set at genesis.
+	// 0 denotes it is set at InitChain.
+	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

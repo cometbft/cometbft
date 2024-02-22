@@ -3,9 +3,10 @@
 package mocks
 
 import (
-	abcitypes "github.com/cometbft/cometbft/abci/types"
-	mempool "github.com/cometbft/cometbft/mempool"
 	abcicli "github.com/cometbft/cometbft/abci/client"
+	abcitypes "github.com/cometbft/cometbft/abci/types"
+
+	mempool "github.com/cometbft/cometbft/mempool"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -20,6 +21,10 @@ type Mempool struct {
 // CheckNewTx provides a mock function with given fields: tx
 func (_m *Mempool) CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	ret := _m.Called(tx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckNewTx")
+	}
 
 	var r0 *abcicli.ReqRes
 	var r1 error
@@ -43,17 +48,30 @@ func (_m *Mempool) CheckNewTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	return r0, r1
 }
 
+// CheckTx provides a mock function with given fields: tx
 func (_m *Mempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	ret := _m.Called(tx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTx")
+	}
 
 	var r0 *abcicli.ReqRes
 	var r1 error
 	if rf, ok := ret.Get(0).(func(types.Tx) (*abcicli.ReqRes, error)); ok {
-		r0, r1 = rf(tx)
+		return rf(tx)
+	}
+	if rf, ok := ret.Get(0).(func(types.Tx) *abcicli.ReqRes); ok {
+		r0 = rf(tx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*abcicli.ReqRes)
 		}
+	}
+
+	if rf, ok := ret.Get(1).(func(types.Tx) error); ok {
+		r1 = rf(tx)
+	} else {
 		r1 = ret.Error(1)
 	}
 
@@ -73,6 +91,10 @@ func (_m *Mempool) Flush() {
 // FlushAppConn provides a mock function with given fields:
 func (_m *Mempool) FlushAppConn() error {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for FlushAppConn")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -98,6 +120,10 @@ func (_m *Mempool) Lock() {
 func (_m *Mempool) ReapMaxBytesMaxGas(maxBytes int64, maxGas int64) types.Txs {
 	ret := _m.Called(maxBytes, maxGas)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ReapMaxBytesMaxGas")
+	}
+
 	var r0 types.Txs
 	if rf, ok := ret.Get(0).(func(int64, int64) types.Txs); ok {
 		r0 = rf(maxBytes, maxGas)
@@ -113,6 +139,10 @@ func (_m *Mempool) ReapMaxBytesMaxGas(maxBytes int64, maxGas int64) types.Txs {
 // ReapMaxTxs provides a mock function with given fields: max
 func (_m *Mempool) ReapMaxTxs(max int) types.Txs {
 	ret := _m.Called(max)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReapMaxTxs")
+	}
 
 	var r0 types.Txs
 	if rf, ok := ret.Get(0).(func(int) types.Txs); ok {
@@ -130,6 +160,10 @@ func (_m *Mempool) ReapMaxTxs(max int) types.Txs {
 func (_m *Mempool) RemoveTxByKey(txKey types.TxKey) error {
 	ret := _m.Called(txKey)
 
+	if len(ret) == 0 {
+		panic("no return value specified for RemoveTxByKey")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(types.TxKey) error); ok {
 		r0 = rf(txKey)
@@ -143,6 +177,10 @@ func (_m *Mempool) RemoveTxByKey(txKey types.TxKey) error {
 // Size provides a mock function with given fields:
 func (_m *Mempool) Size() int {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Size")
+	}
 
 	var r0 int
 	if rf, ok := ret.Get(0).(func() int); ok {
@@ -158,6 +196,10 @@ func (_m *Mempool) Size() int {
 func (_m *Mempool) SizeBytes() int64 {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for SizeBytes")
+	}
+
 	var r0 int64
 	if rf, ok := ret.Get(0).(func() int64); ok {
 		r0 = rf()
@@ -171,6 +213,10 @@ func (_m *Mempool) SizeBytes() int64 {
 // TxsAvailable provides a mock function with given fields:
 func (_m *Mempool) TxsAvailable() <-chan struct{} {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for TxsAvailable")
+	}
 
 	var r0 <-chan struct{}
 	if rf, ok := ret.Get(0).(func() <-chan struct{}); ok {
@@ -193,6 +239,10 @@ func (_m *Mempool) Unlock() {
 func (_m *Mempool) Update(blockHeight int64, blockTxs types.Txs, deliverTxResponses []*abcitypes.ExecTxResult, newPreFn mempool.PreCheckFunc, newPostFn mempool.PostCheckFunc) error {
 	ret := _m.Called(blockHeight, blockTxs, deliverTxResponses, newPreFn, newPostFn)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64, types.Txs, []*abcitypes.ExecTxResult, mempool.PreCheckFunc, mempool.PostCheckFunc) error); ok {
 		r0 = rf(blockHeight, blockTxs, deliverTxResponses, newPreFn, newPostFn)
@@ -203,13 +253,12 @@ func (_m *Mempool) Update(blockHeight int64, blockTxs types.Txs, deliverTxRespon
 	return r0
 }
 
-type mockConstructorTestingTNewMempool interface {
+// NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewMempool(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewMempool creates a new instance of Mempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewMempool(t mockConstructorTestingTNewMempool) *Mempool {
+}) *Mempool {
 	mock := &Mempool{}
 	mock.Mock.Test(t)
 

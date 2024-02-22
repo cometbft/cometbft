@@ -607,11 +607,10 @@ func TestPBTSEnableHeight(t *testing.T) {
 			}
 			block, blockParts, blockID = createProposalBlock(t, cs, ts)
 			proposal := types.NewProposal(height, round, -1, blockID, block.Header.Time)
-			// TODO: currently breaks, as we check proposal
-			// timestamp also when running BFT Time
-			//			if height < pbtsSetHeight {
-			//				proposal.Timestamp = time.Now()
-			//			}
+			// BFT Time should not care about Proposal's timestamps
+			if height < pbtsSetHeight {
+				proposal.Timestamp = time.Now()
+			}
 			signProposal(t, proposal, chainID, vss[proposer])
 			cs.SetProposalAndBlock(proposal, block, blockParts, "p")
 			ensureNewProposal(proposalCh, height, round)

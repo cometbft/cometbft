@@ -21,6 +21,10 @@ type AppConnMempool struct {
 func (_m *AppConnMempool) CheckTx(_a0 context.Context, _a1 *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTx")
+	}
+
 	var r0 *types.ResponseCheckTx
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)); ok {
@@ -46,6 +50,10 @@ func (_m *AppConnMempool) CheckTx(_a0 context.Context, _a1 *types.RequestCheckTx
 // CheckTxAsync provides a mock function with given fields: _a0, _a1
 func (_m *AppConnMempool) CheckTxAsync(_a0 context.Context, _a1 *types.RequestCheckTx) (*abcicli.ReqRes, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTxAsync")
+	}
 
 	var r0 *abcicli.ReqRes
 	var r1 error
@@ -73,6 +81,10 @@ func (_m *AppConnMempool) CheckTxAsync(_a0 context.Context, _a1 *types.RequestCh
 func (_m *AppConnMempool) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -86,6 +98,10 @@ func (_m *AppConnMempool) Error() error {
 // Flush provides a mock function with given fields: _a0
 func (_m *AppConnMempool) Flush(_a0 context.Context) error {
 	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Flush")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
@@ -102,13 +118,12 @@ func (_m *AppConnMempool) SetResponseCallback(_a0 abcicli.Callback) {
 	_m.Called(_a0)
 }
 
-type mockConstructorTestingTNewAppConnMempool interface {
+// NewAppConnMempool creates a new instance of AppConnMempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewAppConnMempool(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewAppConnMempool creates a new instance of AppConnMempool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewAppConnMempool(t mockConstructorTestingTNewAppConnMempool) *AppConnMempool {
+}) *AppConnMempool {
 	mock := &AppConnMempool{}
 	mock.Mock.Test(t)
 

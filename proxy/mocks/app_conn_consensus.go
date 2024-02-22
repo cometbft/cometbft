@@ -19,6 +19,10 @@ type AppConnConsensus struct {
 func (_m *AppConnConsensus) Commit(_a0 context.Context) (*types.ResponseCommit, error) {
 	ret := _m.Called(_a0)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Commit")
+	}
+
 	var r0 *types.ResponseCommit
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context) (*types.ResponseCommit, error)); ok {
@@ -45,6 +49,10 @@ func (_m *AppConnConsensus) Commit(_a0 context.Context) (*types.ResponseCommit, 
 func (_m *AppConnConsensus) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -58,6 +66,10 @@ func (_m *AppConnConsensus) Error() error {
 // ExtendVote provides a mock function with given fields: _a0, _a1
 func (_m *AppConnConsensus) ExtendVote(_a0 context.Context, _a1 *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ExtendVote")
+	}
 
 	var r0 *types.ResponseExtendVote
 	var r1 error
@@ -85,6 +97,10 @@ func (_m *AppConnConsensus) ExtendVote(_a0 context.Context, _a1 *types.RequestEx
 func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for FinalizeBlock")
+	}
+
 	var r0 *types.ResponseFinalizeBlock
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error)); ok {
@@ -110,6 +126,10 @@ func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *types.Reques
 // InitChain provides a mock function with given fields: _a0, _a1
 func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *types.RequestInitChain) (*types.ResponseInitChain, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for InitChain")
+	}
 
 	var r0 *types.ResponseInitChain
 	var r1 error
@@ -137,6 +157,10 @@ func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *types.RequestIni
 func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for PrepareProposal")
+	}
+
 	var r0 *types.ResponsePrepareProposal
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error)); ok {
@@ -162,6 +186,10 @@ func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *types.Requ
 // ProcessProposal provides a mock function with given fields: _a0, _a1
 func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ProcessProposal")
+	}
 
 	var r0 *types.ResponseProcessProposal
 	var r1 error
@@ -189,6 +217,10 @@ func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *types.Requ
 func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for VerifyVoteExtension")
+	}
+
 	var r0 *types.ResponseVerifyVoteExtension
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error)); ok {
@@ -211,13 +243,12 @@ func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *types.
 	return r0, r1
 }
 
-type mockConstructorTestingTNewAppConnConsensus interface {
+// NewAppConnConsensus creates a new instance of AppConnConsensus. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewAppConnConsensus(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewAppConnConsensus creates a new instance of AppConnConsensus. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewAppConnConsensus(t mockConstructorTestingTNewAppConnConsensus) *AppConnConsensus {
+}) *AppConnConsensus {
 	mock := &AppConnConsensus{}
 	mock.Mock.Test(t)
 

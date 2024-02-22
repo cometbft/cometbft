@@ -130,6 +130,16 @@ func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
 	return bStore
 }
 
+func (bs *BlockStore) GetVersion() string {
+	switch bs.dbKeyLayout.(type) {
+	case *v1LegacyLayout:
+		return "v1"
+	case *v2Layout:
+		return "v2"
+	}
+	return "no version set"
+}
+
 func (bs *BlockStore) IsEmpty() bool {
 	bs.mtx.RLock()
 	defer bs.mtx.RUnlock()

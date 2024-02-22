@@ -54,9 +54,7 @@ func (*v1LegacyLayout) CalcSeenCommitKey(height int64) []byte {
 
 var _ BlockKeyLayout = (*v1LegacyLayout)(nil)
 
-type v2Layout struct {
-	// prefixes are unique across all tm db's.
-}
+type v2Layout struct{}
 
 // key prefixes.
 const (

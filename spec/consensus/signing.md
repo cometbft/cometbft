@@ -30,14 +30,30 @@ All signed messages must correspond to one of these types.
 
 ## Timestamp
 
-Timestamp validation is subtle and there are currently no bounds placed on the
-timestamp included in a proposal or vote. It is expected that validators will honestly
-report their local clock time. The median of all timestamps
-included in a commit is used as the timestamp for the next block height.
+Both `Proposal` and `Vote` messages include a `Timestamp` field of
+[Time](../core/data_structures.md#time) data type.
 
+Timestamp validation is subtle and there are currently no validations on the
+timestamp included in a received `Proposal` or `Vote`. 
+As a general rule, it is expected that validators report in the Timestamp field their
+local clock time.
 Timestamps are expected to be strictly monotonic for a given validator, though
-this is not currently enforced.
+this is not enforced.
 
+Some timestamps, however, are used by the algorithms adopted for computing
+[block times](./time.md):
+
+- [BFT Time](./bft-time.md): the `Timestamp` field of `Precommit` vote messages
+  is used to compute the `Time` for the next proposed block.
+  Correct validators are expected to report their local clock time, provided
+  that the time is higher than the current block's time.
+  Otherwise, the reported time is the current block's time plus 1ms.
+
+- [PBTS](./proposer-based-timestamp/README.md): the `Timestamp` field of a
+  `Proposal` message must match the proposed `Block.Time`.
+   Otherwise, the `Proposal` will be rejected by correct validators.
+   There are no requirements for `Vote.Timestamp` values.
+  
 ## ChainID
 
 ChainID is an unstructured string with a max length of 50-bytes.

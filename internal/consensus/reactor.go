@@ -794,7 +794,7 @@ OUTER_LOOP:
 			func() {
 				conR.conS.mtx.RLock()
 				defer conR.conS.mtx.RUnlock()
-				veEnabled = conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
+				veEnabled = conR.conS.state.ConsensusParams.Feature.VoteExtensionsEnabled(prs.Height)
 			}()
 			if veEnabled {
 				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)

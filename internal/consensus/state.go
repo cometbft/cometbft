@@ -589,7 +589,7 @@ func (cs *State) reconstructSeenCommit(state sm.State) {
 // the method will panic on an absent ExtendedCommit or an ExtendedCommit without
 // extension data.
 func (cs *State) reconstructLastCommit(state sm.State) {
-	extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight)
+	extensionsEnabled := state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight)
 	if !extensionsEnabled {
 		cs.reconstructSeenCommit(state)
 		return
@@ -735,7 +735,7 @@ func (cs *State) updateToState(state sm.State) {
 	cs.ValidRound = -1
 	cs.ValidBlock = nil
 	cs.ValidBlockParts = nil
-	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(height) {
+	if state.ConsensusParams.Feature.VoteExtensionsEnabled(height) {
 		cs.Votes = cstypes.NewExtendedHeightVoteSet(state.ChainID, height, validators)
 	} else {
 		cs.Votes = cstypes.NewHeightVoteSet(state.ChainID, height, validators)
@@ -1146,7 +1146,7 @@ func (cs *State) enterPropose(height int64, round int32) {
 
 	// If this validator is the proposer of this round, and the previous block time is later than
 	// our local clock time, wait to propose until our local clock time has passed the block time.
-	if cs.privValidatorPubKey != nil && cs.isProposer(cs.privValidatorPubKey.Address()) {
+	if cs.isPBTSEnabled(height) && cs.privValidatorPubKey != nil && cs.isProposer(cs.privValidatorPubKey.Address()) {
 		proposerWaitTime := proposerWaitTime(cmttime.DefaultSource{}, cs.state.LastBlockTime)
 		if proposerWaitTime > 0 {
 			cs.scheduleTimeout(proposerWaitTime, height, round, cstypes.RoundStepNewRound)
@@ -1297,7 +1297,7 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 
 	case cs.LastCommit.HasTwoThirdsMajority():
 		// Make the commit from LastCommit
-		lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.ABCI)
+		lastExtCommit = cs.LastCommit.MakeExtendedCommit(cs.state.ConsensusParams.Feature)
 
 	default: // This shouldn't happen.
 		return nil, ErrProposalWithoutPreviousCommit
@@ -1382,7 +1382,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	if cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
+	if cs.isPBTSEnabled(height) && cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
 		logger.Debug("prevote step: Proposal is not timely; prevoting nil",
 			"proposed",
 			cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
@@ -1842,8 +1842,8 @@ func (cs *State) finalizeCommit(height int64) {
 	if cs.blockStore.Height() < block.Height {
 		// NOTE: the seenCommit is local justification to commit this block,
 		// but may differ from the LastCommit included in the next block
-		seenExtendedCommit := cs.Votes.Precommits(cs.CommitRound).MakeExtendedCommit(cs.state.ConsensusParams.ABCI)
-		if cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(block.Height) {
+		seenExtendedCommit := cs.Votes.Precommits(cs.CommitRound).MakeExtendedCommit(cs.state.ConsensusParams.Feature)
+		if cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(block.Height) {
 			cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, seenExtendedCommit)
 		} else {
 			cs.blockStore.SaveBlock(block, blockParts, seenExtendedCommit.ToCommit())
@@ -2289,7 +2289,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	}
 
 	// Check to see if the chain is configured to extend votes.
-	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
+	extEnabled := cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(vote.Height)
 	if extEnabled {
 		// The chain is configured to extend votes, check that the vote is
 		// not for a nil block and verify the extensions signature against the
@@ -2464,18 +2464,19 @@ func (cs *State) signVote(
 
 	addr := cs.privValidatorPubKey.Address()
 	valIdx, _ := cs.Validators.GetByAddress(addr)
+	timestamp := cs.voteTime(cs.Height)
 
 	vote := &types.Vote{
 		ValidatorAddress: addr,
 		ValidatorIndex:   valIdx,
 		Height:           cs.Height,
 		Round:            cs.Round,
-		Timestamp:        cmttime.Now(),
+		Timestamp:        timestamp,
 		Type:             msgType,
 		BlockID:          types.BlockID{Hash: hash, PartSetHeader: header},
 	}
 
-	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
+	extEnabled := cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(vote.Height)
 	if msgType == types.PrecommitType && !vote.BlockID.IsNil() {
 		// if the signedMessage type is for a non-nil precommit, add
 		// VoteExtension
@@ -2494,6 +2495,31 @@ func (cs *State) signVote(
 	}
 
 	return vote, err
+}
+
+func (cs *State) voteTime(height int64) time.Time {
+	if cs.isPBTSEnabled(height) {
+		return cmttime.Now()
+	}
+	now := cmttime.Now()
+	minVoteTime := now
+
+	// Minimum time increment between blocks
+	const timeIota = time.Millisecond
+	// TODO: We should remove next line in case we don't vote for v in case cs.ProposalBlock == nil,
+	// even if cs.LockedBlock != nil. See https://github.com/cometbft/cometbft/tree/main/spec/.
+	if cs.LockedBlock != nil {
+		// See the BFT time spec
+		// https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
+		minVoteTime = cs.LockedBlock.Time.Add(timeIota)
+	} else if cs.ProposalBlock != nil {
+		minVoteTime = cs.ProposalBlock.Time.Add(timeIota)
+	}
+
+	if now.After(minVoteTime) {
+		return now
+	}
+	return minVoteTime
 }
 
 // sign the vote and publish on internalMsgQueue
@@ -2526,7 +2552,7 @@ func (cs *State) signAddVote(
 		return
 	}
 	hasExt := len(vote.ExtensionSignature) > 0
-	extEnabled := cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(vote.Height)
+	extEnabled := cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(vote.Height)
 	if vote.Type == types.PrecommitType && !vote.BlockID.IsNil() && hasExt != extEnabled {
 		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
@@ -2685,4 +2711,9 @@ func proposerWaitTime(lt cmttime.Source, bt time.Time) time.Duration {
 		return bt.Sub(t)
 	}
 	return 0
+}
+
+// isPBTSEnabled returns true if PBTS is enabled at the current height.
+func (cs *State) isPBTSEnabled(height int64) bool {
+	return cs.state.ConsensusParams.Feature.PbtsEnabled(height)
 }

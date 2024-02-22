@@ -360,7 +360,7 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 
 			cs.state.LastBlockHeight = testCase.storedHeight
 			cs.state.LastValidators = cs.state.Validators.Copy()
-			cs.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testCase.initialRequiredHeight
+			cs.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = testCase.initialRequiredHeight
 
 			propBlock, err := cs.createProposalBlock(ctx)
 			require.NoError(t, err)
@@ -395,7 +395,8 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 			require.NoError(t, err)
 			require.True(t, added)
 
-			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: veHeight}
+			veHeightParam := types.DefaultFeatureParams()
+			veHeightParam.VoteExtensionsEnableHeight = veHeight
 			if testCase.includeExtensions {
 				cs.blockStore.SaveBlockWithExtendedCommit(propBlock, blockParts, voteSet.MakeExtendedCommit(veHeightParam))
 			} else {

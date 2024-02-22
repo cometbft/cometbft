@@ -182,8 +182,9 @@ Part defines a part of a block. In CometBFT blocks are broken into `parts` for g
 
 ## Time
 
-CometBFT uses the [Google.Protobuf.Timestamp](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp)
+CometBFT uses the [Google.Protobuf.Timestamp](https://protobuf.dev/reference/protobuf/google.protobuf/#timestamp)
 format, which uses two integers, one 64 bit integer for Seconds and a 32 bit integer for Nanoseconds.
+Time is aligned with the Coordinated Universal Time (UTC).
 
 ## Data
 

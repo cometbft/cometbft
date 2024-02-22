@@ -663,7 +663,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 // method on the application but crashed before persisting the results.
 func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	start := time.Now()
-	buf, err := store.db.Get(calcABCIResponsesKey(height))
+	buf, err := store.db.Get(store.DBKeyLayout.CalcABCIResponsesKey(height))
 	if err != nil {
 		return nil, err
 	}

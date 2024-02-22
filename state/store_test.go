@@ -250,13 +250,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		responses, err := stateStore.LoadFinalizeBlockResponse(1)
 		require.Error(t, err)
 		require.Nil(t, responses)
-<<<<<<< HEAD:state/store_test.go
-		// stub the abciresponses.
 		response1 := &abci.ResponseFinalizeBlock{
-=======
-
-		response1 := &abci.FinalizeBlockResponse{
->>>>>>> f2c746638 (perf(internal/state): avoid double-saving FinalizeBlockResponse (#2017)):internal/state/store_test.go
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
@@ -275,19 +269,12 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, lastResponse, response1)
-<<<<<<< HEAD:state/store_test.go
-		// use an incorret height to make sure the state store errors.
-		_, err = stateStore.LoadLastFinalizeBlockResponse(height + 1)
-		assert.Error(t, err)
-		// check if the abci response didnt save in the abciresponses.
-=======
 
 		// use an incorrect height to make sure the state store errors.
 		_, err = stateStore.LoadLastFinalizeBlockResponse(height + 1)
 		require.Error(t, err)
 
 		// check if the abci response didn't save in the abciresponses.
->>>>>>> f2c746638 (perf(internal/state): avoid double-saving FinalizeBlockResponse (#2017)):internal/state/store_test.go
 		responses, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err, responses)
 		require.Equal(t, response1, responses)
@@ -296,13 +283,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 	t.Run("not persisting responses", func(t *testing.T) {
 		stateDB := dbm.NewMemDB()
 		height := int64(10)
-<<<<<<< HEAD:state/store_test.go
-		// stub the second abciresponse.
 		response2 := &abci.ResponseFinalizeBlock{
-=======
-
-		response2 := &abci.FinalizeBlockResponse{
->>>>>>> f2c746638 (perf(internal/state): avoid double-saving FinalizeBlockResponse (#2017)):internal/state/store_test.go
 			TxResults: []*abci.ExecTxResult{
 				{Code: 44, Data: []byte("Hello again"), Log: "????"},
 			},

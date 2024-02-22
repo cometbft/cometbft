@@ -19,6 +19,22 @@ _200 Node Test_, and _Rotating Nodes Test_.
 
 [releases]: https://github.com/cometbft/cometbft/blob/main/RELEASES.md#large-scale-testnets
 
+## Table of Contents
+- [Software Dependencies](#software-dependencies)
+  - [Infrastructure Requirements to Run the Tests](#infrastructure-requirements-to-run-the-tests)
+  - [Requirements for Result Extraction](#requirements-for-result-extraction)
+- [200 Node Testnet](#200-node-testnet)
+  - [Running the test](#running-the-test)
+  - [Result Extraction](#result-extraction)
+    - [Steps](#steps)
+    - [Extracting Prometheus Metrics](#extracting-prometheus-metrics)
+- [Rotating Node Testnet](#rotating-node-testnet)
+  - [Running the test](#running-the-test-1)
+  - [Result Extraction](#result-extraction-1)
+- [Vote Extensions Testnet](#vote-extensions-testnet)
+  - [Running the test](#running-the-test-2)
+  - [Result Extraction](#result-extraction-2)
+
 ## Software Dependencies
 
 ### Infrastructure Requirements to Run the Tests
@@ -47,13 +63,27 @@ _200 Node Test_, and _Rotating Nodes Test_.
 
 ## 200 Node Testnet
 
+This experiment consists of spinning up 200 nodes (175 validators + 20 full nodes + 5 seed nodes) and running the script
+[200-node-loadscript.sh](https://github.com/cometbft/qa-infra/blob/main/ansible/scripts/200-node-loadscript.sh).
+
+This script runs multiple transaction load instances with all possible combinations of the following parameters:
+- number of transactions sent per second (the rate): 200, 400, 800, 1600.
+- number of connections to the target node: 1, 2, and 4.
+
+Additionally:
+- The size of each transaction is 1024 bytes.
+- The duration of each test is 90 seconds.
+- There is one target node (a validator) that receives all the load.
+- After each test iteration, it waits that the mempool is empty and then wait `120 + rate /60`
+  seconds more.
+
 ### Running the test
 
 This section explains how the tests were carried out for reproducibility purposes.
 
 1. [If you haven't done it before]
    Follow steps 1-5 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
-2. Copy file `testnets/testnet200.toml` onto `testnet.toml` (do NOT commit this change)
+2. Change the variable `MANIFEST` in `experiment.mk` to point to the file `testnets/testnet200.toml` (do NOT commit this change)
 3. Set the variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
    * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),
      then make sure makefile variable `VERSION2_WEIGHT` is set to 0
@@ -179,35 +209,35 @@ This section explains how the tests were carried out for reproducibility purpose
 1. [If you haven't done it before]
    Follow the [set up][qa-setup] steps of the `README.md` at the top of the testnet repository to
    configure Terraform, and `doctl`.
-2. Copy file `testnet_rotating.toml` onto `testnet.toml` (do NOT commit this change)
+2. Change the variable `MANIFEST` in `experiment.mk` to point to the file `testnets/rotating.toml` (do NOT commit this change)
 3. Set variable `VERSION_TAG` to the git hash that is to be tested.
 4. Follow the [testnet starting][qa-start] steps of the `README.md` to configure and start the
   "stable" part of the rotating node testnet. On the `terraform-apply` step, set the
    value of the `EPHEMERAL_SIZE` parameter: `make terraform-apply EPHEMERAL_SIZE=25`
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests.
-5. As a sanity check, connect to the Prometheus node's web interface and check the graph for the `tendermint_consensus_height` metric.
-   All nodes should be increasing their heights.
-6. On a different shell,
+1. As a sanity check, connect to the Prometheus node's web interface and check the graph for the
+   `cometbft_consensus_height` metric. All nodes should be increasing their heights.
+2. On a different shell,
     * run `make runload LOAD_CONNECTIONS=X LOAD_TX_RATE=Y LOAD_TOTAL_TIME=Z`
     * `X` and `Y` should reflect a load below the saturation point (see, e.g.,
       [this paragraph](CometBFT-QA-34.md#finding-the-saturation-point) for further info)
     * `Z` (in seconds) should be big enough to keep running throughout the test, until we manually stop it in step 9.
       In principle, a good value for `Z` is `7200` (2 hours)
-7. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
+3. Run `make rotate` to start the script that creates the ephemeral nodes, and kills them when they are caught up.
     * WARNING: If you run this command from your laptop, the laptop needs to be up and connected for the full length
       of the experiment.
     * [This](http://<PROMETHEUS-NODE-IP>:9090/classic/graph?g0.range_input=100m&g0.expr=cometbft_consensus_height%7Bjob%3D~%22ephemeral.*%22%7D%20or%20cometbft_blocksync_latest_block_height%7Bjob%3D~%22ephemeral.*%22%7D&g0.tab=0&g1.range_input=100m&g1.expr=cometbft_mempool_size%7Bjob!~%22ephemeral.*%22%7D&g1.tab=0&g2.range_input=100m&g2.expr=cometbft_consensus_num_txs%7Bjob!~%22ephemeral.*%22%7D&g2.tab=0)
       is an example Prometheus URL you can use to monitor the test case's progress
-8. When the height of the chain reaches 3000, stop the `make runload` script.
-9. When the rotate script has made two iterations (i.e., all ephemeral nodes have caught up twice)
+4. When the height of the chain reaches 3000, stop the `make runload` script.
+5. When the rotate script has made two iterations (i.e., all ephemeral nodes have caught up twice)
     after height 3000 was reached, stop `make rotate`
-10. Run `make stop-network`
-11. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
-12. Verify that the data was collected without errors
+6.  Run `make stop-network`
+7.  Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
+8.  Verify that the data was collected without errors
     * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node
     * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
-13. **Run `make terraform-destroy`**
+9.  **Run `make terraform-destroy`**
 
 Steps 8 to 10 are highly manual at the moment and will be improved in next iterations.
 
@@ -237,7 +267,6 @@ This section explains how the tests were carried out for reproducibility purpose
     * set `ROTATE_TOTAL_TIME` to 150 (seconds).
     * set `ITERATIONS` to the number of iterations that each configuration should run for.
 6. Execute the [testnet starting][qa-start] steps of the `README.md` file at the testnet repository.
-
 7. Repeat the following steps for each desired `vote_extension_size`
     1. Update the configuration (you can skip this step if you didn't change the `vote_extension_size`)
         * Update the `vote_extensions_size` in the `testnet.toml` to the desired value.

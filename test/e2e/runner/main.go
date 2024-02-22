@@ -27,10 +27,11 @@ func main() {
 
 // CLI is the Cobra-based command-line interface.
 type CLI struct {
-	root     *cobra.Command
-	testnet  *e2e.Testnet
-	preserve bool
-	infp     infra.Provider
+	root          *cobra.Command
+	testnet       *e2e.Testnet
+	preserve      bool
+	infp          infra.Provider
+	useInternalIP bool
 }
 
 // NewCLI sets up the CLI.
@@ -80,7 +81,7 @@ func NewCLI() *CLI {
 				return fmt.Errorf("unknown infrastructure type '%s'", inft)
 			}
 
-			testnet, err := e2e.LoadTestnet(file, ifd)
+			testnet, err := e2e.LoadTestnet(file, ifd, cli.useInternalIP)
 			if err != nil {
 				return fmt.Errorf("loading testnet: %s", err)
 			}
@@ -178,6 +179,9 @@ func NewCLI() *CLI {
 	cli.root.PersistentFlags().StringP("infrastructure-type", "", "docker", "Backing infrastructure used to run the testnet. Either 'digital-ocean' or 'docker'")
 
 	cli.root.PersistentFlags().StringP("infrastructure-data", "", "", "path to the json file containing the infrastructure data. Only used if the 'infrastructure-type' is set to a value other than 'docker'")
+
+	cli.root.PersistentFlags().BoolVar(&cli.useInternalIP, "internal-ip", false,
+		"Connect to nodes in the network using their internal IP address instead of the external one")
 
 	cli.root.Flags().BoolVarP(&cli.preserve, "preserve", "p", false,
 		"Preserves the running of the test net after tests are completed")

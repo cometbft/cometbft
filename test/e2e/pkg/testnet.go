@@ -117,6 +117,7 @@ type Node struct {
 	NodeKey                 crypto.PrivKey
 	InternalIP              net.IP
 	ExternalIP              net.IP
+	UseInternalIP           bool
 	RPCProxyPort            uint32
 	GRPCProxyPort           uint32
 	GRPCPrivilegedProxyPort uint32
@@ -144,16 +145,16 @@ type Node struct {
 // The testnet generation must be deterministic, since it is generated
 // separately by the runner and the test cases. For this reason, testnets use a
 // random seed to generate e.g. keys.
-func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
+func LoadTestnet(file string, ifd InfrastructureData, useInternalIP bool) (*Testnet, error) {
 	manifest, err := LoadManifest(file)
 	if err != nil {
 		return nil, err
 	}
-	return NewTestnetFromManifest(manifest, file, ifd)
+	return NewTestnetFromManifest(manifest, file, ifd, useInternalIP)
 }
 
 // NewTestnetFromManifest creates and validates a testnet from a manifest.
-func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
+func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData, useInternalIP bool) (*Testnet, error) {
 	dir := strings.TrimSuffix(file, filepath.Ext(file))
 
 	keyGen := newKeyGenerator(randomSeed)
@@ -242,6 +243,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			NodeKey:                 keyGen.Generate("ed25519"),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
+			UseInternalIP:           useInternalIP,
 			RPCProxyPort:            ind.RPCPort,
 			GRPCProxyPort:           ind.GRPCPort,
 			GRPCPrivilegedProxyPort: ind.PrivilegedGRPCPort,
@@ -650,8 +652,12 @@ func (n Node) AddressRPC() string {
 
 // Client returns an RPC client for the node.
 func (n Node) Client() (*rpchttp.HTTP, error) {
+	ip := n.ExternalIP
+	if n.UseInternalIP {
+		ip = n.InternalIP
+	}
 	//nolint:nosprintfhostport
-	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
+	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", ip, n.RPCProxyPort))
 }
 
 // GRPCClient creates a gRPC client for the node.

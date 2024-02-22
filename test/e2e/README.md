@@ -104,7 +104,7 @@ one in `upgrade_version`.
 
 ## Test Stages
 
-The test runner has the following stages, which can also be executed explicitly by running `./build/runner -f <manifest> <stage>`:
+The test runner has the following stages, which can also be executed explicitly by running `./build/runner -f <manifest> [--internal-ip] <stage>`:
 
 * `setup`: generates configuration files.
 
@@ -128,6 +128,10 @@ Auxiliary commands:
 
 * `tail`: tails (follows) node logs until canceled.
 
+The optional flag `--internal-ip` instructs the tool to use internal IP addresses when communicating
+with nodes in the network. This is needed when you are running the tool from one of the nodes. For
+example, when a node in the network is dedicated to transaction loading.
+
 ## Tests
 
 Test cases are written as normal Go tests in `tests/`. They use a `testNode()` helper which executes each test as a parallel subtest for each node in the network.
@@ -141,7 +145,9 @@ To run tests manually, set the `E2E_MANIFEST` environment variable to the path o
 E2E_MANIFEST=networks/ci.toml go test -v ./tests/...
 ```
 
-Optionally, `E2E_NODE` specifies the name of a single testnet node to test.
+Optionally, `E2E_NODE` specifies the name of a single testnet node to test. Set
+`E2E_USE_INTERNAL_IP=true` to flag that you want to connect with the nodes in network using their
+internal IP address.
 
 These environment variables can also be specified in `tests/e2e_test.go` to run tests from an editor or IDE:
 
@@ -151,6 +157,7 @@ func init() {
 	// run tests against. The testnet must have been started by the runner first.
 	os.Setenv("E2E_MANIFEST", "networks/ci.toml")
 	os.Setenv("E2E_NODE", "validator01")
+	os.Setenv("E2E_USE_INTERNAL_IP", "true")
 }
 ```
 

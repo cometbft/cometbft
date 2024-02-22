@@ -24,6 +24,7 @@ func init() {
 	// run tests against. The testnet must have been started by the runner first.
 	// os.Setenv("E2E_MANIFEST", "networks/ci.toml")
 	// os.Setenv("E2E_NODE", "validator01")
+	// os.Setenv("E2E_USE_INTERNAL_IP", "true")
 }
 
 var (
@@ -137,7 +138,8 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	}
 	require.NoError(t, err)
 
-	testnet, err := e2e.LoadTestnet(manifestFile, ifd)
+	useInternalIP := os.Getenv("E2E_USE_INTERNAL_IP")
+	testnet, err := e2e.LoadTestnet(manifestFile, ifd, useInternalIP == "true")
 	require.NoError(t, err)
 	testnetCache[manifestFile] = *testnet
 	return *testnet

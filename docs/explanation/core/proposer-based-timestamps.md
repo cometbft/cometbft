@@ -4,9 +4,10 @@ order: 14
 
 # Proposer-Based Timestamp (PBTS)
 
-This document provides an overview of the Proposer-Based Timestamp (PBTS)
-algorithm introduced in CometBFT in the v1.0 release. It outlines the core
-functionality as well as the parameters and constraints of the this algorithm.
+This document overviews the Proposer-Based Timestamp (PBTS)
+algorithm introduced in CometBFT version v1.0.
+It outlines the core functionality of the algorithm and details the consensus
+parameters that govern its operation.
 
 ## Overview 
 
@@ -32,6 +33,18 @@ The following protocols and application features require a reliable source of ti
 * IBC packets can use either a [timestamp or a height to timeout packet
  delivery](https://ibc.cosmos.network/v8/ibc/light-clients/updates-and-misbehaviour?_highlight=time#checkformisbehaviour).
 
+### Enabling PBTS
+
+The PBTS algorithm is **not enabled by default** in CometBFT v1.0.
+
+If a network upgrades to CometBFT v1.0, it will still use the BFT Time
+algorithm until PBTS is enabled.
+The same applies to new networks that do not change the default values for
+consensus parameters in the genesis file.
+
+Enabling PBTS requires configuring the [consensus parameters](#consensus-parameters)
+that govern the operation of the algorithm.
+
 ### Selecting a Timestamp
 
 When a validator creates a new block, it reads the time from its local clock
@@ -55,7 +68,8 @@ no more than `Precision` greater than the node's local clock
 (i.e., not in the future)
 and no less than `MessageDelay + Precision` behind than the node's local clock
 (i.e., not too far in the past).
-`Precision` and `MessageDelay` are consensus parameters, detailed in following.
+`Precision` and `MessageDelay` are consensus parameters, 
+and are the same across all nodes.
 
 If the proposed block's timestamp is within the window of acceptable
 timestamps, the timestamp is considered **timely**.
@@ -68,17 +82,20 @@ The PBTS algorithm requires the clocks of the validators in the network to be
 within `Precision` of each other. In practice, this means that validators
 should periodically synchronize their clocks to a reliable NTP server.
 Validators whose clocks drift too far away from the rest of the network will no
-longer propose blocks with valid timestamps. Additionally, they will not view
+longer propose blocks with valid timestamps. Additionally, they will not consider
 the timestamps of blocks proposed by their peers to be valid either.
 
 
 ## Consensus Parameters
 
-The functionality of the PBTS algorithm is governed by two consensus parameters.
-A third consensus parameter is used to enable the PBTS algorithm for a new
-network or when upgrading an existing a network.
-Consensus parameters are configured by the ABCI application and are therefore
-the same across all nodes in the network.
+The functionality of the PBTS algorithm is governed by two consensus
+parameters: the synchronous parameters `Precision` and `MessageDelay`.
+An additional consensus parameter `PbtsEnableHeight` is used to enable PBTS
+when instantiating a new network or when upgrading an existing a network that
+uses BFT Time.
+
+Consensus parameters are configured by the ABCI application and are the same
+across all nodes in the network.
 
 ### `SynchronyParams.Precision`
 

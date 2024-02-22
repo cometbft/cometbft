@@ -152,16 +152,55 @@ height. This is the recommended setup for new chains.
 
 The `PbtsEnableHeight` parameter is an integer.
 
+## Important Notes
+
+When configuring a network to adopt the PBTS algorithm, the follow steps must be considered:
+
+1. Make sure that the clocks of validators are [synchronized](#clock-synchronization) **before** enabling PBTS.
+1. Make sure that the configured value for [`SynchronyParams.Precision`](#synchronyparamsprecision) is
+   reasonable.
+1. Make sure that the configured value for [`SynchronyParams.MessageDelay`](#synchronyparamsmessagedelay) is
+   reasonable and large enough to reflect the worst-case delay for messages in the network.
+   Setting this parameter to a small value may impact the progress of the
+   network, namely blocks may take very long to be committed.
+1. Make sure that the block times **currently** produced by the network do not
+   differ too much from real time.
+
+Observation 4. is important because, with the adoption of PBTS, block times are
+expected to converge to values that bear resemblance to real time.
+At the same time, the same property of monotonic block times guaranteed by BFT
+Time is also ensured by PBTS.
+This means that proposers using PBTS will **wait** until the time they read
+from their local clocks becomes bigger than the time of the last committed
+block before proposing a new block.
+
+As a result, if the time of the last block produced using BFT Time is far in
+the future, then the first block produced using PBTS will take very long to be
+committed: the time it takes for the clock of the proposer to reach the time of
+the previously committed block.
+To prevent this from happening, first, follow recommendation 1., i.e., synchronize
+the validators' clocks.
+Then wait until the block times produced by BFT Time converge to values that do
+not differ too much from real time (observation 4.).
+This may take a long time, because in BFT Time if the value a validator reads
+from its local clock is smaller than the time of the previous block, then the
+time it sets to a new block will be the time of the previous block plus `1ms`.
+It may take a while, but blocks times eventually converge to real time.
+
 ## See Also
 
 * [Block Time specification][block-time-spec]: overview of block timestamps properties.
 * [Consensus parameters][consensus-parameters]: list of consensus parameters, their usage and validation.
 * [PBTS specification][pbts-spec]: formal specification and all of the details of the PBTS algorithm.
 * [BFT Time specification][bft-time-spec]: all details of the legacy BFT Time algorithm to compute block times.
+* [Proposer-Based Timestamps Runbook][pbts-runbook]: a guide for diagnosing and
+  fix issues related to clock synchronization and the configuration of the
+  `SynchronyParams` consensus parameters adopted by PBTS.
 
 [pbts-spec]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/README.md
 [bft-time-spec]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
 [block-time-spec]: https://github.com/cometbft/cometbft/blob/main/spec/consensus/time.md
+[pbts-runbook]: ../../guides/tools/proposer-based-timestamps-runbook.md
 
 [consensus-parameters]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_app_requirements.md#consensus-parameters
 

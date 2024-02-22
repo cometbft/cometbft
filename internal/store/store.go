@@ -602,10 +602,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	pbsc := seenCommit.ToProto()
 	seenCommitBytes := mustEncode(pbsc)
 
-<<<<<<< HEAD
-=======
 	blockMetaMarshallDiff += time.Since(marshallTime).Seconds()
->>>>>>> dfd3f6cd0 (feat(storage/metrics): Metrics to measure storage (#1974))
 	if err := batch.Set(calcSeenCommitKey(height), seenCommitBytes); err != nil {
 		return err
 	}

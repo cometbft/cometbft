@@ -12,8 +12,6 @@ import (
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
-// var sizeKey = []byte("size")
-
 type dbs struct {
 	db     dbm.DB
 	prefix string

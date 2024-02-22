@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/cosmos/gogoproto/proto"
 
@@ -460,12 +459,10 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 // This method is used for recovering in the case that we called the Commit ABCI
 // method on the application but crashed before persisting the results.
 func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.ResponseFinalizeBlock, error) {
-	start := time.Now()
 	buf, err := store.db.Get(calcABCIResponsesKey(height))
 	if err != nil {
 		return nil, err
 	}
-	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_last_abci_response"), start)()
 	if len(buf) == 0 {
 		// DEPRECATED lastABCIResponseKey
 		// It is possible if this is called directly after an upgrade that
@@ -481,14 +478,14 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Response
 			if height != info.GetHeight() {
 				return nil, fmt.Errorf("expected height %d but last stored abci responses was at height %d", height, info.GetHeight())
 			}
-			if info.FinalizeBlock == nil {
+			if info.ResponseFinalizeBlock == nil {
 				// sanity check
 				if info.LegacyAbciResponses == nil {
 					panic("state store contains last abci response but it is empty")
 				}
 				return responseFinalizeBlockFromLegacy(info.LegacyAbciResponses), nil
 			}
-			return info.FinalizeBlock, nil
+			return info.ResponseFinalizeBlock, nil
 		}
 		// END OF DEPRECATED lastABCIResponseKey
 		return nil, fmt.Errorf("expected last ABCI responses at height %d, but none are found", height)

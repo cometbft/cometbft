@@ -135,7 +135,8 @@ func (vs *validatorStub) signVote(
 
 // Sign vote for type/hash/header.
 func signVoteWithTimestamp(vs *validatorStub, voteType types.SignedMsgType, chainID string,
-	blockID types.BlockID, extEnabled bool, timestamp time.Time) *types.Vote {
+	blockID types.BlockID, extEnabled bool, timestamp time.Time,
+) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {

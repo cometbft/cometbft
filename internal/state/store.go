@@ -15,6 +15,7 @@ import (
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtos "github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/types"
 )
@@ -178,6 +179,8 @@ type StoreOptions struct {
 	// Metrics defines the metrics collector to use for the state store.
 	// if none is specified then a NopMetrics collector is used.
 	Metrics *Metrics
+
+	Logger log.Logger
 }
 
 var _ Store = (*dbStore)(nil)
@@ -208,7 +211,9 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		if err := store.db.SetSync([]byte("version"), []byte("2")); err != nil {
 			panic(err)
 		}
-
+		if options.Logger != nil {
+			options.Logger.Info("State store version ", "version", "v2")
+		}
 		return store
 	}
 
@@ -225,6 +230,10 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		case "2":
 			store.DBKeyLayout = v2Layout{}
 		}
+	}
+
+	if options.Logger != nil {
+		options.Logger.Info("State store version ", "version", string(versionNum))
 	}
 	return store
 }

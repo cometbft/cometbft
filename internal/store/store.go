@@ -90,7 +90,6 @@ func setDBLayout(bStore *BlockStore) {
 		return
 	}
 	versionNum, err := bStore.db.Get([]byte("version"))
-	fmt.Println(string(versionNum), err)
 	if len(versionNum) == 0 && err == nil {
 		bStore.dbKeyLayout = &v1LegacyLayout{}
 		if err := bStore.db.SetSync([]byte("version"), []byte("1")); err != nil {

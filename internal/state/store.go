@@ -223,6 +223,7 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		if err := store.db.SetSync([]byte("version"), []byte("1")); err != nil {
 			panic(err)
 		}
+		versionNum = []byte("1")
 	} else {
 		switch string(versionNum) {
 		case "1":
@@ -233,7 +234,7 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 	}
 
 	if options.Logger != nil {
-		options.Logger.Info("State store version ", "version", string(versionNum))
+		options.Logger.Info("State store version ", "version", "v"+string(versionNum))
 	}
 	return store
 }

@@ -50,7 +50,7 @@ func setDBKeyLayout(db dbm.DB, lightStore *dbs) {
 	}
 
 	versionNum, err := lightStore.db.Get([]byte("version"))
-	fmt.Println(string(versionNum), err)
+
 	if len(versionNum) == 0 && err == nil {
 		lightStore.dbKeyLayout = &v1LegacyLayout{}
 		if err := lightStore.db.SetSync([]byte("version"), []byte("1")); err != nil {

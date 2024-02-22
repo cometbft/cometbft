@@ -33,17 +33,23 @@ func TestStoreLoadValidators(t *testing.T) {
 	vals := types.NewValidatorSet([]*types.Validator{val})
 
 	// 1) LoadValidators loads validators using a height where they were last changed
-	err := sm.SaveValidatorsInfo(stateDB, 1, 1, vals, "v1")
+	err := sm.SaveValidatorsInfo(stateDB, 1, 1, vals, "v2")
 	require.NoError(t, err)
 	err = sm.SaveValidatorsInfo(stateDB, 2, 1, vals, "v1")
 	require.NoError(t, err)
+	_, err = stateStore.LoadValidators(2)
+	require.Error(t, err)
+
+	err = sm.SaveValidatorsInfo(stateDB, 2, 1, vals, "v2")
+	require.NoError(t, err)
 	loadedVals, err := stateStore.LoadValidators(2)
 	require.NoError(t, err)
+
 	assert.NotZero(t, loadedVals.Size())
 
 	// 2) LoadValidators loads validators using a checkpoint height
 
-	err = sm.SaveValidatorsInfo(stateDB, sm.ValSetCheckpointInterval, 1, vals, "v1")
+	err = sm.SaveValidatorsInfo(stateDB, sm.ValSetCheckpointInterval, 1, vals, "v2")
 	require.NoError(t, err)
 
 	loadedVals, err = stateStore.LoadValidators(sm.ValSetCheckpointInterval)

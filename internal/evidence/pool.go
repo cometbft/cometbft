@@ -65,7 +65,6 @@ func isEmpty(evidenceDB dbm.DB) bool {
 
 func setDBLayout(evidenceDB dbm.DB, pool *Pool) {
 	if isEmpty(evidenceDB) {
-		fmt.Println("Empty store")
 		pool.dbKeyLayout = v2Layout{}
 		err := evidenceDB.SetSync([]byte("version"), []byte("2"))
 		if err != nil {

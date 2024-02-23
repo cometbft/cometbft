@@ -199,6 +199,7 @@ In order to ensure backwards compatibility, PBTS should be enabled using a conse
 ```go
 type FeatureParams struct {
         PbtsEnableHeight int64 `json:"pbts_enable_height"`
+        ...
 }
 ```
 

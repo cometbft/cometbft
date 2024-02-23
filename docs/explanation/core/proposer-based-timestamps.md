@@ -14,7 +14,7 @@ parameters that govern its operation.
 The PBTS algorithm defines a way for a blockchain to create block
 timestamps that are within a reasonable bound of the clocks of the validators on
 the network. 
-It replaces the BFT Time algorithm for timestamp assignment, that computes the
+It replaces the BFT Time algorithm for timestamp assignment, which computes the
 timestamp of a block using the timestamps included in precommit messages.
 
 ### Block Timestamps
@@ -50,7 +50,7 @@ that govern the operation of the algorithm.
 When a validator creates a new block, it reads the time from its local clock
 and uses this reading as the timestamp for the block.
 The proposer of a block is thus free to select the block timestamp, but this
-timestamp have to be validated by other nodes in the network.
+timestamp has to be validated by other nodes in the network.
 
 ### Validating Timestamps
 
@@ -63,14 +63,13 @@ signaling to the rest of the network that the proposed block is not valid.
 The PBTS algorithm performs a validity check on the timestamp of proposed
 blocks. When a validator receives a proposal it ensures that the timestamp in
 the proposal is within a bound of the validator's local clock.
+For that it uses `Precision` and `MessageDelay` consensus parameters, 
+ which are the same across all nodes.
 Specifically, the algorithm checks that the timestamp is
 no more than `Precision` greater than the node's local clock
 (i.e., not in the future)
-and no less than `MessageDelay + Precision` behind than the node's local clock
+and no less than `MessageDelay + Precision` behind the node's local clock
 (i.e., not too far in the past).
-`Precision` and `MessageDelay` are consensus parameters, 
-and are the same across all nodes.
-
 If the proposed block's timestamp is within the window of acceptable
 timestamps, the timestamp is considered **timely**.
 If the block timestamp is **not timely**, the validator rejects the block by
@@ -94,7 +93,7 @@ An additional consensus parameter `PbtsEnableHeight` is used to enable PBTS
 when instantiating a new network or when upgrading an existing a network that
 uses BFT Time.
 
-Consensus parameters are configured by the ABCI application and are the same
+Consensus parameters are configured through the genesis file, for new chains, or by the ABCI application, for new and existing chains, and are the same
 across all nodes in the network.
 
 ### `SynchronyParams.Precision`
@@ -104,12 +103,12 @@ among all of the validators in the network.
 Any two validators are expected to have clocks that differ by at most
 `Precision` at any given instant.
 
+The `Precision` parameter is given in milliseconds.
+
 Networks should choose a `Precision` that is large enough to represent the
 worst-case for the clock drift among all participants.
 Due to the [leap second events](https://github.com/tendermint/tendermint/issues/7724),
 it is recommended to use set `Precision` to at least `500ms`.
-
-The `Precision` parameter is given in milliseconds.
 
 ### `SynchronyParams.MessageDelay`
 
@@ -117,20 +116,20 @@ The `MessageDelay` parameter configures the acceptable upper-bound for the
 end-to-end delay for transmitting a `Proposal` message from the proposer to
 _all_ validators in the network.
 
+The `MessageDelay` parameter is given in milliseconds.
+
 Networks should choose a `MessageDelay` that is large enough to represent the
 worst-case delay for a message to reach all participants.
 This delay does not depend, a priori, on the size of proposed blocks, since it
 applies to the `Proposal` messages.
 It does depend on the number of participants and latency of their connections.
 
-The `MessageDelay` parameter is given in milliseconds.
-
 ### `FeatureParams.PbtsEnableHeight`
 
 The `PbtsEnableHeight` parameter configures the first height at which the PBTS
 algorithm should be adopted for generating and validating block timestamps in a network.
-In heights up to `PbtsEnableHeight - 1`, the generation and validation of block
-timestamps in the network will be carried out using the legacy BFT Time algorithm.
+
+The `PbtsEnableHeight` parameter is an integer.
 
 While `PbtsEnableHeight` is set to `0`, the network will adopt the legacy BFT
 Time algorithm.
@@ -150,7 +149,6 @@ Finally, if `PbtsEnableHeight` is set `1` in the genesis file or by the applicat
 upon the ABCI `InitChain` method, the network will adopt PBTS from the first
 height. This is the recommended setup for new chains.
 
-The `PbtsEnableHeight` parameter is an integer.
 
 ## Important Notes
 

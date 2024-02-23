@@ -490,8 +490,9 @@ func SumTruncated(bz []byte) []byte {
 | max_bytes | int64 | Maximum size of a block, in bytes.                      | 1            |
 | max_gas   | int64 | Maximum gas wanted by transactions included in a block. | 2            |
 
-The `max_bytes` parameter must be greater or equal to -1.
-If set to -1, the limit is the maximum size for a block, hard-coded to 100MB.
+The `max_bytes` parameter must be greater or equal to -1, and cannot be greater
+than the hard-coded maximum block size, which is 100MB.
+If set to -1, the limit is the hard-coded maximum block size.
 
 The `max_gas` parameter must be greater or equal to -1.
 If set to -1, no limit is enforced.
@@ -549,6 +550,7 @@ The `ABCIParams` type has been **deprecated** from CometBFT `v1.0`.
 From the configured height, and for all subsequent heights, the corresponding
 feature will be enabled.
 Cannot be set to heights lower or equal to the current blockchain height.
+A value of 0 indicates that the feature is disabled.
 
 ### SynchronyParams
 

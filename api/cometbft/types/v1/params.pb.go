@@ -119,8 +119,10 @@ func (m *ConsensusParams) GetFeature() *FeatureParams {
 type BlockParams struct {
 	// Maximum size of a block, in bytes.
 	//
-	// Must be greater or equal to -1. If set to -1, the limit is the maximum
-	// size for a block, hard-coded to 100MB.
+	// Must be greater or equal to -1 and cannot be greater than the hard-coded
+	// maximum block size, which is 100MB.
+	//
+	// If set to -1, the limit is the hard-coded maximum block size.
 	MaxBytes int64 `protobuf:"varint,1,opt,name=max_bytes,json=maxBytes,proto3" json:"max_bytes,omitempty"`
 	// Maximum gas wanted by transactions included in a block.
 	//
@@ -404,6 +406,7 @@ func (m *HashedParams) GetBlockMaxGas() int64 {
 // These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
 // For more information on the relationship of the synchrony parameters to
 // block timestamps validity, refer to the PBTS specification:
+// https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md
 type SynchronyParams struct {
 	// Bound for how skewed a proposer's clock may be from any validator on the
 	// network while still producing valid proposals.
@@ -466,12 +469,12 @@ type FeatureParams struct {
 	//
 	// During the specified height, and for all subsequent heights, precommit
 	// messages that do not contain valid extension data will be considered
-	// invalid. Prior to this height, vote extensions will not be used or
-	// accepted by validators on the network.
+	// invalid. Prior to this height, or when this height is set to 0, vote
+	// extensions will not be used or accepted by validators on the network.
 	//
-	// Once enabled, vote extensions will be created by the application in ExtendVote,
-	// passed to the application for validation in VerifyVoteExtension and given
-	// to the application to use when proposing a block during PrepareProposal.
+	// Once enabled, vote extensions will be created by the application in
+	// ExtendVote, validated by the application in VerifyVoteExtension, and
+	// used by the application in PrepareProposal, when proposing the next block.
 	//
 	// Cannot be set to heights lower or equal to the current blockchain height.
 	VoteExtensionsEnableHeight *types.Int64Value `protobuf:"bytes,1,opt,name=vote_extensions_enable_height,json=voteExtensionsEnableHeight,proto3" json:"vote_extensions_enable_height,omitempty"`

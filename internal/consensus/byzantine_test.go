@@ -541,7 +541,7 @@ func sendProposalAndParts(
 
 	// votes
 	cs.mtx.Lock()
-	prevote, _ := cs.signVote(types.PrevoteType, blockHash, parts.Header(), block)
+	prevote, _ := cs.signVote(types.PrevoteType, blockHash, parts.Header(), nil)
 	precommit, _ := cs.signVote(types.PrecommitType, blockHash, parts.Header(), block)
 	cs.mtx.Unlock()
 	peer.Send(p2p.Envelope{

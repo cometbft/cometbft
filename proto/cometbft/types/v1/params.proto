@@ -110,7 +110,7 @@ message FeatureParams {
   // 
   // During the specified height, and for all subsequent heights, precommit
   // messages that do not contain valid extension data will be considered
-  // invalid. Prior to this height, vote extensions will not be used or
+  // invalid. Prior to this height, or when this height is set to 0, vote extensions will not be used or
   // accepted by validators on the network.
   //
   // Once enabled, vote extensions will be created by the application in ExtendVote,

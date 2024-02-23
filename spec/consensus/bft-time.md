@@ -50,7 +50,7 @@ Consider the following example:
 - We have the following `Precommit` messages in some `Commit` field (notice that we
   ignore all fields except the validator name and the `Timestamp` field): (p1, 100), (p2, 98), (p3, 1000), (p4, 500).
   We assume that p3 and p4 are faulty validators, as they propose block times
-  far much higher (fart in the future) than p1 and p2.
+  far much higher (far in the future) than p1 and p2.
 - Let's assume that the `block.LastCommit` field contains `Precommit`s of
   validators p2, p3 and p4.
 -  The `MedianTime` is then chosen the following way: the value 98 (p2) is

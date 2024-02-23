@@ -16,15 +16,19 @@ The Time produced by CometBFT satisfies the following properties:
   two block headers `H1` of height `h1` and `H2` of height `h2`,
   it is guaranteed that if `h2 > h1` then `H2.Time > H1.Time`.
 
-- **Byzantine Fault Tolerance**: faulty or malicious processes should not be able
-  to arbitrarily influence (increase or decrease) the block Time.
-  In other words, the Time of blocks should be defined by correct processes.
+- **Byzantine Fault Tolerance**: malicious nodes or nodes with inaccurate clocks should not be able
+  to arbitrarily increase or decrease the block Time.
+  In other words, the Time of blocks should be defined by correct nodes.
 
 In addition, the Time produced by CometBFT is expected, by external observers, to provide:
 
 - **Relation to real time**: block times bear some resemblance to real time.
   In other words, block times should represent, within some reasonable accuracy,
-  the actual time at which blocks were produced.
+  the actual clock time at which blocks were produced.
+  More formally, lets `t` be the clock time at which a block with header `H`
+  was first proposed.
+  Then there exists a, possibly unknown but reasonably small, bound `ACCURACY`
+  so that `|H.Time - t| < ACCURACY`.
 
 ## Implementations
 
@@ -36,15 +40,19 @@ CometBFT implements two algorithms for computing block times:
 - [Proposer-Based Timestamps][pbts-spec]: introduced in version `v1.x`,
   as a replacement for BFT Time.
 
-Users are strongly encouraged to adopt PBTS in new chains, or to switch to PBTS
+Users are strongly encouraged to adopt PBTS in new chains or switch to PBTS
 when upgrading existing chains.
 
 The table below compares BFT Time and PBTS algorithms in terms of properties:
 
-| Algorithm | Time Monotonicity | Byzantine Fault Tolerance   | Relation to real time |
-------------|-------------------|-----------------------------|-----------------------|
-| BFT Time  | Guaranteed        | Tolerates `< 1/3` Byzantine nodes     | Best effort and **not** guaranteed |
-| PBTS      | Guaranteed        | Tolerates `< 2/3` Byzantine nodes     | Guaranteed within configured synchronous parameters: `PRECISION` and `MSGDELAY` |
+| Algorithm | Time Monotonicity | Byzantine Fault Tolerance         | Relation to real time                                                                         |
+|-----------|:-----------------:|:---------------------------------:|-----------------------------------------------------------------------------------------------|
+| BFT Time  | Guaranteed        | Tolerates `< 1/3` Byzantine nodes | Best effort and **not guaranteed**.                                                           |
+| PBTS      | Guaranteed        | Tolerates `< 2/3` Byzantine nodes | Guaranteed with `ACCURACY` determined by the consensus parameters `PRECISION` and `MSGDELAY`. |
+
+Note that by Byzantine nodes we consider both malicious nodes, that purposely
+try to increase or decrease block times, and nodes that produce or propose
+inaccurate block times because they rely on inaccurate local clocks.
 
 [spec-time]: ../core/data_structures.md#time
 [spec-header]: ../core/data_structures.md#header

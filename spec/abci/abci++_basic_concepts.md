@@ -6,21 +6,21 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-  - [ABCI++ vs. ABCI](#abci-vs-abci)
-  - [Method overview](#method-overview)
-    - [Consensus/block execution methods](#consensusblock-execution-methods)
-    - [Mempool methods](#mempool-methods)
-    - [Info methods](#info-methods)
-    - [State-sync methods](#state-sync-methods)
-    - [Other methods](#other-methods)
-  - [Proposal timeout](#proposal-timeout)
-  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-  - [Events](#events)
-  - [Evidence](#evidence)
-  - [Errors](#errors)
-    - [`CheckTx`](#checktx)
-    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
-    - [`Query`](#query)
+    - [ABCI++ vs. ABCI](#abci-vs-abci)
+    - [Method overview](#method-overview)
+        - [Consensus/block execution methods](#consensusblock-execution-methods)
+        - [Mempool methods](#mempool-methods)
+        - [Info methods](#info-methods)
+        - [State-sync methods](#state-sync-methods)
+        - [Other methods](#other-methods)
+    - [Proposal timeout](#proposal-timeout)
+    - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+    - [Events](#events)
+    - [Evidence](#evidence)
+    - [Errors](#errors)
+        - [`CheckTx`](#checktx)
+        - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+        - [`Query`](#query)
 
 # Overview and basic concepts
 
@@ -75,7 +75,7 @@ call sequences of these methods.
   proposer to perform application-dependent work in a block before proposing it.
   This enables, for instance, batch optimizations to a block, which has been empirically
   demonstrated to be a key component for improved performance. Method `PrepareProposal` is called
-  every time CometBFT is about to broadcast a Proposal message and _validValue_ is `nil`.
+  every time CometBFT is about to broadcast a Proposal message and *validValue* is `nil`.
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
   `PrepareProposal` with the newly created proposal, called *raw proposal*. The Application
@@ -88,7 +88,7 @@ call sequences of these methods.
   perform application-dependent work in a proposed block. This enables features such as immediate
   block execution, and allows the Application to reject invalid blocks.
 
-  CometBFT calls it when it receives a proposal and _validValue_ is `nil`.
+  CometBFT calls it when it receives a proposal and *validValue* is `nil`.
   The Application cannot modify the proposal at this point but can reject it if
   invalid. If that is the case, the consensus algorithm will prevote `nil` on the proposal, which has
   strong liveness implications for CometBFT. As a general rule, the Application
@@ -114,10 +114,10 @@ call sequences of these methods.
   This has a negative impact on liveness, i.e., if vote extensions repeatedly cannot be
   verified by correct validators, the consensus algorithm may not be able to finalize a block even if sufficiently
   many (+2/3) validators send precommit votes for that block. Thus, `VerifyVoteExtension`
-  should be used with special care.
+  should be implemented with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
   accept it in `VerifyVoteExtensionResponse` and ignore it in its own logic. CometBFT calls it when
-  a process receives a precommit message with a (possibly empty) vote extension.
+  a process receives a precommit message with a (possibly empty) vote extension, for the current height.
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
@@ -251,7 +251,8 @@ time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
-They can only be used when their data is provided in a `PrepareProposal` call.
+Their data can only be used when provided in a `PrepareProposal` call, but again,
+without side effects to the app state.
 
 If there is some non-determinism in the state machine, consensus will eventually
 fail as nodes disagree over the correct values for the block header. The

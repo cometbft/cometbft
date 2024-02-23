@@ -1,4 +1,5 @@
 version: v1
+name: buf.build/Switcheo/cometbft
 deps:
   - buf.build/cosmos/cosmos-proto
   - buf.build/cosmos/gogo-proto

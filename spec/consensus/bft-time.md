@@ -16,12 +16,12 @@ BFT Time is a Byzantine fault-tolerant algorithm for computing [block times](./t
 
 BFT Time computes the `Time` of a block proposed in height `H` of consensus
 from the `Timestamp` field of the `Precommit` messages broadcast by
-validators in the commit round of the previous height `H-1`.
+validators in the commit `Round` of the previous height `H-1`.
 
 In order to commit a block, a node needs to receive `Precommit` messages for
 the corresponding `BlockID` from validators whose cumulative voting power is
 more than `2/3` of the total voting power.
-The received `Precommit` messages should refer to the same round, the _commit round_.
+The received `Precommit` messages should refer to the same round, the commit `Round`.
 A set of `Precommit` messages with the properties above mentioned is a `Commit`.
 A `Commit` set of height `H` is included in blocks proposed in height `H+1`.
 
@@ -47,9 +47,10 @@ Consider the following example:
   The total voting power is 70, so we assume that the faulty validators have at
   most 23 of voting power (since `N < 3F`, where `N` is the total voting
   power and `F` is the maximum voting power of faulty validators).
-- We have the following `Precommit` messages in some `LastCommit` field (we
-  ignore all fields except the `Timestamp` field): (p1, 100), (p2, 98), (p3, 1000), (p4, 500).
-  We assume that p3 and p4 are faulty validators.
+- We have the following `Precommit` messages in some `Commit` field (notice that we
+  ignore all fields except the validator name and the `Timestamp` field): (p1, 100), (p2, 98), (p3, 1000), (p4, 500).
+  We assume that p3 and p4 are faulty validators, as they propose block times
+  far much higher (fart in the future) than p1 and p2.
 - Let's assume that the `block.LastCommit` field contains `Precommit`s of
   validators p2, p3 and p4.
 -  The `MedianTime` is then chosen the following way: the value 98 (p2) is
@@ -59,6 +60,8 @@ Consider the following example:
 Notice that, no matter what set of `Precommit` messages with at least `2/3` of
 the total voting power we choose, the `MedianTime` value will always be a
 value among the `Timestamp` values produced by correct validators.
+By correct here we assume non-malicious validators whose clocks are reasonably
+accurated with to time.
 
 ## Operation
 

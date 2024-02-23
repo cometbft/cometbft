@@ -473,7 +473,6 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // including, the given height. On success, returns the number of heights
 // pruned and the new retain height.
 func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (int64, int64, error) {
-
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}

@@ -16,15 +16,14 @@ var (
 	// ErrFailedHeaderCrossReferencing is returned when the detector was not able to cross reference the header
 	// with any of the connected witnesses.
 	ErrFailedHeaderCrossReferencing = errors.New("all witnesses have either not responded, don't have the " +
-		" blocks or sent invalid blocks. You should look to change your witnesses" +
-		"  or review the light client's logs for more information")
+		"blocks or sent invalid blocks. You should look to change your witnesses " +
+		"or review the light client's logs for more information")
 	// ErrLightClientAttack is returned when the light client has detected an attempt
 	// to verify a false header and has sent the evidence to either a witness or primary.
 	ErrLightClientAttack = errors.New(`attempted attack detected.
 Light client received valid conflicting header from witness.
 Unable to verify header. Evidence has been sent to both providers.
-Check logs for full evidence and trace`,
-	)
+Check logs for full evidence and trace`)
 
 	// ErrNoWitnesses means that there are not enough witnesses connected to
 	// continue running the light client.
@@ -63,21 +62,21 @@ func (e ErrTargetBlockHeightLessThanTrusted) Error() string {
 }
 
 type ErrHeaderHeightNotMonotonic struct {
-	WantHeight int64
-	GetHeight  int64
+	GotHeight int64
+	OldHeight int64
 }
 
 func (e ErrHeaderHeightNotMonotonic) Error() string {
-	return fmt.Sprintf("expected new header height %d to be greater than one of old header %d", e.WantHeight, e.GetHeight)
+	return fmt.Sprintf("expected new header height %d to be greater than one of old header %d", e.GotHeight, e.OldHeight)
 }
 
 type ErrHeaderTimeNotMonotonic struct {
-	WantTime time.Time
-	GetTime  time.Time
+	GotTime time.Time
+	OldTime time.Time
 }
 
 func (e ErrHeaderTimeNotMonotonic) Error() string {
-	return fmt.Sprintf("expected new header time %v to be after old header time %v", e.WantTime, e.GetTime)
+	return fmt.Sprintf("expected new header time %v to be after old header time %v", e.GotTime, e.OldTime)
 }
 
 type ErrHeaderTimeExceedMaxClockDrift struct {
@@ -108,7 +107,7 @@ func (e ErrInvalidTrustLevel) Error() string {
 
 type ErrValidatorsMismatch struct {
 	HeaderHash     cmtbytes.HexBytes
-	ValidatorsHash []byte
+	ValidatorsHash cmtbytes.HexBytes
 	Height         int64
 }
 
@@ -135,12 +134,12 @@ func (e ErrBlockHashMismatch) Error() string {
 }
 
 type ErrHeaderHashMismatch struct {
-	Want cmtbytes.HexBytes
-	Get  cmtbytes.HexBytes
+	Expected cmtbytes.HexBytes
+	Actual   cmtbytes.HexBytes
 }
 
 func (e ErrHeaderHashMismatch) Error() string {
-	return fmt.Sprintf("expected header's hash %X, but got %X", e.Want, e.Get)
+	return fmt.Sprintf("expected header's hash %X, but got %X", e.Expected, e.Actual)
 }
 
 type ErrExistingHeaderHashMismatch struct {
@@ -153,32 +152,32 @@ func (e ErrExistingHeaderHashMismatch) Error() string {
 }
 
 type ErrLightHeaderHashMismatch struct {
-	Light cmtbytes.HexBytes
-	New   cmtbytes.HexBytes
+	Existing cmtbytes.HexBytes
+	New      cmtbytes.HexBytes
 }
 
 func (e ErrLightHeaderHashMismatch) Error() string {
-	return fmt.Sprintf("light block header %X does not match newHeader %X", e.Light, e.New)
+	return fmt.Sprintf("light block header %X does not match newHeader %X", e.Existing, e.New)
 }
 
 type ErrInvalidHashSize struct {
-	Want int
-	Got  int
+	Expected int
+	Actual   int
 }
 
 func (e ErrInvalidHashSize) Error() string {
-	return fmt.Sprintf("expected hash size to be %d bytes, got %d bytes", e.Want, e.Got)
+	return fmt.Sprintf("expected hash size to be %d bytes, got %d bytes", e.Expected, e.Actual)
 }
 
 type ErrUnexpectedChainID struct {
-	Index   int
-	Witness provider.Provider
-	Get     string
-	Want    string
+	Index    int
+	Witness  provider.Provider
+	Actual   string
+	Expected string
 }
 
 func (e ErrUnexpectedChainID) Error() string {
-	return fmt.Sprintf("witness #%d: %v is on another chain %s, expected %s", e.Index, e.Witness, e.Get, e.Want)
+	return fmt.Sprintf("witness #%d: %v is on another chain %s, expected %s", e.Index, e.Witness, e.Actual, e.Expected)
 }
 
 // ErrNewValSetCantBeTrusted means the new validator set cannot be trusted
@@ -379,7 +378,7 @@ type ErrCleanupAfter struct {
 }
 
 func (e ErrCleanupAfter) Error() string {
-	return fmt.Sprintf("cleanupAfter(%d): %v", e.Height, e.Err)
+	return fmt.Sprintf("cleanup after height %d failed: %v", e.Height, e.Err)
 }
 
 func (e ErrCleanupAfter) Unwrap() error {

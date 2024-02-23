@@ -42,7 +42,7 @@ func (opts TrustOptions) ValidateBasic() error {
 		return ErrNegativeOrZeroHeight
 	}
 	if len(opts.Hash) != tmhash.Size {
-		return ErrInvalidHashSize{Want: tmhash.Size, Got: len(opts.Hash)}
+		return ErrInvalidHashSize{Expected: tmhash.Size, Actual: len(opts.Hash)}
 	}
 	return nil
 }

@@ -246,7 +246,7 @@ func NewClientFromTrustedStore(
 	// Verify witnesses are all on the same chain.
 	for i, w := range witnesses {
 		if w.ChainID() != chainID {
-			return nil, ErrUnexpectedChainID{Index: i, Witness: w, Get: w.ChainID(), Want: chainID}
+			return nil, ErrUnexpectedChainID{Index: i, Witness: w, Actual: w.ChainID(), Expected: chainID}
 		}
 	}
 
@@ -373,7 +373,7 @@ func (c *Client) initializeWithTrustOptions(ctx context.Context, options TrustOp
 	}
 
 	if !bytes.Equal(l.Hash(), options.Hash) {
-		return ErrHeaderHashMismatch{Want: options.Hash, Get: l.Hash()}
+		return ErrHeaderHashMismatch{Expected: options.Hash, Actual: l.Hash()}
 	}
 
 	// 2) Ensure that +2/3 of validators signed correctly.
@@ -548,7 +548,7 @@ func (c *Client) VerifyHeader(ctx context.Context, newHeader *types.Header, now 
 	}
 
 	if !bytes.Equal(l.Hash(), newHeader.Hash()) {
-		return ErrLightHeaderHashMismatch{Light: l.Hash(), New: newHeader.Hash()}
+		return ErrLightHeaderHashMismatch{Existing: l.Hash(), New: newHeader.Hash()}
 	}
 
 	return c.verifyLightBlock(ctx, l, now)

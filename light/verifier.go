@@ -156,11 +156,11 @@ func verifyNewHeaderAndVals(
 	}
 
 	if untrustedHeader.Height <= trustedHeader.Height {
-		return ErrHeaderHeightNotMonotonic{WantHeight: untrustedHeader.Height, GetHeight: trustedHeader.Height}
+		return ErrHeaderHeightNotMonotonic{GotHeight: untrustedHeader.Height, OldHeight: trustedHeader.Height}
 	}
 
 	if !untrustedHeader.Time.After(trustedHeader.Time) {
-		return ErrHeaderTimeNotMonotonic{WantTime: untrustedHeader.Time, GetTime: trustedHeader.Time}
+		return ErrHeaderTimeNotMonotonic{GotTime: untrustedHeader.Time, OldTime: trustedHeader.Time}
 	}
 
 	if !untrustedHeader.Time.Before(now.Add(maxClockDrift)) {

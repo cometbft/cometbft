@@ -381,7 +381,7 @@ func NewNodeWithContext(ctx context.Context,
 	}
 
 	// Make OracleReactor
-	oracleReactor := oracle.NewReactor("", "13.215.29.72:9090", pubKey, privValidator)
+	oracleReactor := oracle.NewReactor("", "13.215.29.72:9090", pubKey, privValidator, state.Validators)
 	oracleInfo := oracleReactor.OracleInfo
 
 	// make block executor for consensus and blocksync reactors to execute blocks
@@ -955,6 +955,7 @@ func makeNodeInfo(
 			bc.BlocksyncChannel,
 			cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
 			mempl.MempoolChannel,
+			oracle.OracleChannel,
 			evidence.EvidenceChannel,
 			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},

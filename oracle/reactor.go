@@ -53,7 +53,7 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(configPath string, grpcAddress string, pubKey crypto.PubKey, privValidator types.PrivValidator) *Reactor {
+func NewReactor(configPath string, grpcAddress string, pubKey crypto.PubKey, privValidator types.PrivValidator, validatorSet *types.ValidatorSet) *Reactor {
 	// load oracle.json config if present
 	jsonFile, openErr := os.Open(configPath)
 	if openErr != nil {
@@ -87,6 +87,7 @@ func NewReactor(configPath string, grpcAddress string, pubKey crypto.PubKey, pri
 		SignVotesChan:      make(chan *oracleproto.Vote),
 		PubKey:             pubKey,
 		PrivValidator:      privValidator,
+		ValidatorSet:       validatorSet,
 	}
 
 	jsonFile.Close()
@@ -152,8 +153,9 @@ func (oracleR *Reactor) OnStart() error {
 
 	oracleR.OracleInfo.AdapterMap = adapters.GetAdapterMap(oracleR.OracleInfo.GrpcClient, &oracleR.OracleInfo.Redis)
 	logrus.Info("[oracle] running oracle service...")
-	runner.Run(oracleR.OracleInfo)
-
+	go func() {
+		runner.Run(oracleR.OracleInfo)
+	}()
 	return nil
 }
 
@@ -166,10 +168,10 @@ func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 		{
 			ID:                  OracleChannel,
 			Priority:            5,
-			RecvMessageCapacity: 1024,
+			RecvMessageCapacity: 4096,
 			RecvBufferCapacity:  50 * 4096,
 			SendQueueCapacity:   1000,
-			MessageType:         &oracleproto.Vote{},
+			MessageType:         &oracleproto.GossipVote{},
 		},
 	}
 }
@@ -178,7 +180,10 @@ func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (oracleR *Reactor) AddPeer(peer p2p.Peer) {
 	// if oracleR.config.Broadcast {
-	go oracleR.broadcastVoteRoutine(peer)
+	go func() {
+		oracleR.broadcastVoteRoutine(peer)
+		time.Sleep(100 * time.Millisecond)
+	}()
 	// }
 }
 
@@ -194,14 +199,29 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
+		// verify sig of incoming gossip vote, throw if verification fails
+		_, val := oracleR.OracleInfo.ValidatorSet.GetByAddress(msg.Validator)
+		if val == nil {
+			oracleR.Logger.Info("failed signature verification", msg)
+			logrus.Info("NOT A VALIDATOR!!!!!!!!!!!!!!")
+			return
+		}
+		pubKey := val.PubKey
+		// need to use pubkey of signer
+		if !pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature) {
+			oracleR.Logger.Info("failed signature verification", msg)
+			logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
+			return
+		}
+
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
-		currentGossipVote, ok := oracleR.OracleInfo.GossipVoteBuffer.Buffer[msg.Validator]
+		currentGossipVote, ok := oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()]
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 
 		if !ok {
 			// first gossipVote entry from this validator
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-			oracleR.OracleInfo.GossipVoteBuffer.Buffer[msg.Validator] = msg
+			oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()] = msg
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		} else {
 			// existing gossipVote entry from this validator
@@ -210,13 +230,13 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			newTimestamp := msg.SignedTimestamp
 			// only replace if the gossipVote received has a later timestamp than our current one
 			if newTimestamp > previousTimestamp {
-				oracleR.OracleInfo.GossipVoteBuffer.Buffer[msg.Validator] = msg
+				oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()] = msg
 			}
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
 	default:
 		oracleR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-		oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
+		oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle cannot handle message of type: %T", e.Message))
 		return
 	}
 
@@ -275,16 +295,20 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		// https://github.com/tendermint/tendermint/issues/5796
 
 		// if !memTx.isSender(peerID) {
+		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: OracleChannel,
 				Message:   gossipVote,
 			})
 			if !success {
+				logrus.Info("FAILED TO SEND!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
 		}
+		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
+		time.Sleep(200 * time.Millisecond)
 		// }
 
 		// select {

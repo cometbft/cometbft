@@ -251,7 +251,7 @@ func RunOracle(oracleInfo *types.OracleInfo, oracle types.Oracle, currentTime ui
 	}
 
 	vote := oracleproto.Vote{
-		Validator: oracleInfo.PubKey.Address().String(),
+		Validator: oracleInfo.PubKey.Address(),
 		OracleId:  oracle.Id,
 		Timestamp: normalizedTime,
 		Data:      resultData,
@@ -316,7 +316,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
 	newGossipVote := &oracleproto.GossipVote{
-		Validator: oracleInfo.PubKey.Address().String(),
+		Validator: oracleInfo.PubKey.Address(),
 		PublicKey: oracleInfo.PubKey.Bytes(),
 		SignType:  oracleInfo.PubKey.Type(),
 		Votes:     batchVotes,
@@ -389,6 +389,11 @@ func Run(oracleInfo *types.OracleInfo) {
 	for {
 		if count == 0 { // on init, and every minute
 			oracles, err := SyncOracles(oracleInfo)
+			oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
+			for address := range oracleInfo.GossipVoteBuffer.Buffer {
+				log.Infof("THIS IS MY VALIDATOR ADDRESS: %s \n\n\n", address)
+			}
+			oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 			if err != nil {
 				log.Warn(err)
 				time.Sleep(time.Second)
@@ -401,7 +406,7 @@ func Run(oracleInfo *types.OracleInfo) {
 		time.Sleep(100 * time.Millisecond)
 
 		count++
-		if count > 600 { // 600 * 0.1s = 60s = every minute
+		if count > 300 { // 600 * 0.1s = 60s = every minute
 			count = 0
 		}
 	}

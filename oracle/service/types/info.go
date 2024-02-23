@@ -25,6 +25,7 @@ type OracleInfo struct {
 	PrivValidator      types.PrivValidator
 	MsgFlushInterval   time.Duration
 	StopChannel        chan int
+	ValidatorSet       *types.ValidatorSet
 }
 
 type UnsignedVotes struct {

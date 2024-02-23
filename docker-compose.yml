@@ -1,14 +1,28 @@
 version: '3'
 
 services:
+  redis:
+    image: redis:6.2
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      localnet:
+        ipv4_address: 192.167.10.6
+
   node0:
     container_name: node0
     image: "cometbft/localnode"
+    depends_on:
+      - redis
     ports:
       - "26656-26657:26656-26657"
     environment:
       - ID=0
       - LOG=${LOG:-cometbft.log}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./build:/cometbft:Z
     networks:
@@ -18,11 +32,15 @@ services:
   node1:
     container_name: node1
     image: "cometbft/localnode"
+    depends_on:
+      - redis
     ports:
       - "26659-26660:26656-26657"
     environment:
       - ID=1
       - LOG=${LOG:-cometbft.log}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./build:/cometbft:Z
     networks:
@@ -32,9 +50,13 @@ services:
   node2:
     container_name: node2
     image: "cometbft/localnode"
+    depends_on:
+      - redis
     environment:
       - ID=2
       - LOG=${LOG:-cometbft.log}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     ports:
       - "26661-26662:26656-26657"
     volumes:
@@ -46,9 +68,13 @@ services:
   node3:
     container_name: node3
     image: "cometbft/localnode"
+    depends_on:
+      - redis
     environment:
       - ID=3
       - LOG=${LOG:-cometbft.log}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     ports:
       - "26663-26664:26656-26657"
     volumes:
@@ -64,3 +90,7 @@ networks:
       driver: default
       config:
         - subnet: 192.167.10.0/16
+
+# Define volumes
+volumes:
+  redis_data:

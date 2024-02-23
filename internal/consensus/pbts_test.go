@@ -590,7 +590,7 @@ func TestPBTSEnableHeight(t *testing.T) {
 			// Wait until we receive our own proposal
 			// This may take longer when switching to PBTS since
 			// BFT Time timestamps are shifted to the future.
-			ensureNewProposalWithTimeout(proposalCh, height, round, 2*time.Second)
+			ensureProposalWithTimeout(proposalCh, height, round, nil, 2*time.Second)
 			rs := cs.GetRoundState()
 			block, blockParts = rs.ProposalBlock, rs.ProposalBlockParts
 			blockID = rs.Proposal.BlockID
@@ -613,7 +613,7 @@ func TestPBTSEnableHeight(t *testing.T) {
 			}
 			signProposal(t, proposal, chainID, vss[proposer])
 			cs.SetProposalAndBlock(proposal, block, blockParts, "p")
-			ensureNewProposal(proposalCh, height, round)
+			ensureProposal(proposalCh, height, round, blockID)
 		}
 
 		delta := time.Now().Sub(block.Time)

@@ -611,29 +611,6 @@ func ensureNewTimeout(timeoutCh <-chan cmtpubsub.Message, height int64, round in
 		"Timeout expired while waiting for NewTimeout event")
 }
 
-func ensureNewProposalWithTimeout(proposalCh <-chan cmtpubsub.Message, height int64, round int32, timeout time.Duration) {
-	select {
-	case <-time.After(timeout):
-		panic("Timeout expired while waiting for NewProposal event")
-	case msg := <-proposalCh:
-		proposalEvent, ok := msg.Data().(types.EventDataCompleteProposal)
-		if !ok {
-			panic(fmt.Sprintf("expected a EventDataCompleteProposal, got %T. Wrong subscription channel?",
-				msg.Data()))
-		}
-		if proposalEvent.Height != height {
-			panic(fmt.Sprintf("expected height %v, got %v", height, proposalEvent.Height))
-		}
-		if proposalEvent.Round != round {
-			panic(fmt.Sprintf("expected round %v, got %v", round, proposalEvent.Round))
-		}
-	}
-}
-
-func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32) {
-	ensureNewProposalWithTimeout(proposalCh, height, round, ensureTimeout)
-}
-
 func ensureNewValidBlock(validBlockCh <-chan cmtpubsub.Message, height int64, round int32) {
 	ensureNewEvent(validBlockCh, height, round, ensureTimeout,
 		"Timeout expired while waiting for NewValidBlock event")
@@ -684,10 +661,6 @@ func ensureRelock(relockCh <-chan cmtpubsub.Message, height int64, round int32) 
 		"Timeout expired while waiting for RelockValue event")
 }
 
-func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID types.BlockID) {
-	ensureProposalWithTimeout(proposalCh, height, round, &propID, ensureTimeout)
-}
-
 func ensureProposalWithTimeout(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID *types.BlockID, timeout time.Duration) {
 	select {
 	case <-time.After(timeout):
@@ -710,6 +683,15 @@ func ensureProposalWithTimeout(proposalCh <-chan cmtpubsub.Message, height int64
 			}
 		}
 	}
+}
+
+func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID types.BlockID) {
+	ensureProposalWithTimeout(proposalCh, height, round, &propID, ensureTimeout)
+}
+
+// For the propose, as we do not know the blockID in advance
+func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32) {
+	ensureProposalWithTimeout(proposalCh, height, round, nil, ensureTimeout)
 }
 
 func ensurePrecommit(voteCh <-chan cmtpubsub.Message, height int64, round int32) {

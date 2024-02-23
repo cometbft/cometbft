@@ -911,3 +911,220 @@ persistent_peers_max_dial_period = "0s"
 If `"0s"` is set, then exponential backoff is applied to re-dial the remote node over and over.
 
 <!--- Todo: add if there are any limitations to the exponential back-off. --->
+
+### p2p.flush_throttle_timeout
+Time to wait before flushing messages out on the connection.
+```toml
+flush_throttle_timeout = "100ms"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0ms"`     |
+
+Write (flush) any buffered data to the connection. The flush is throttled, so if multiple triggers come in within the
+duration, only one flush is executed.
+
+Setting the value to `0ms` is possible, but the behaviour is undefined.
+
+<!--- Todo: trace the code and update what happens if this is set to 0. --->
+
+### p2p.max_packet_msg_payload_size
+Maximum size of a message packet payload, in bytes.
+```toml
+max_packet_msg_payload_size = 1024
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt; 0  |
+
+The value represents the maximum size of a message payload (or message data) in bytes.
+
+### p2p.send_rate
+Rate at which packets can be sent, in bytes/second.
+```toml
+send_rate = 5120000
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt; 0  |
+
+The value represents the amount of packet bytes that can be sent per second.
+
+### p2p.recv_rate
+Rate at which packets can be received, in bytes/second.
+```toml
+recv_rate = 5120000
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt; 0  |
+
+The value represents the amount of packet bytes that can be received per second.
+
+### p2p.pex
+Enable peer exchange reactor.
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `true`  |
+|                     | `false` |
+
+The peer exchange reactor is responsible for exchanging peer addresses among different nodes. If this is disabled, the
+node can only connect to addresses preconfigured in [`p2p.seeds`](#p2pseeds) or
+[`p2p.persistent_peers`](#p2ppersistent_peers).
+
+### p2p.seed_mode
+In seed mode, the node crawls the network and looks for peers. Any incoming connections will provide the gathered
+addresses and then it disconnects without providing any other information.
+```toml
+seed_mode = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+In seed mode, the node becomes an online address book. Any incoming connections can receive the gathered addresses but
+no other information (for example blocks or consensus data) is provided. The node simply disconnects after sending the
+addresses.
+
+The [`p2p.pex`](#p2ppex) option has to be set to `true` for the seed mode to work.
+
+### p2p.private_peer_ids
+Comma separated list of peer IDs to keep private (will not be gossiped to other peers)
+```toml
+private_peer_ids = ""
+```
+
+| Value type                        | string (comma-separated list)     |
+|:----------------------------------|:----------------------------------|
+| **Possible values within commas** | nodeID (`"abcdef0123456789abcd"`) |
+|                                   | `""`                              |
+
+The addresses with the listed node IDs will not be sent to other peers, when the peer exchange reactor
+([`p2p.pex`](#p2ppex)) is enabled. This allows a more granular setting instead of completely disabling the peer exchange
+reactor.
+
+For example, sentry nodes in the
+[Sentry Node Architecture](https://forum.cosmos.network/t/sentry-node-architecture-overview/454) on the Cosmos Hub can
+use this setting to make sure they do not gossip the node ID of the validator node, while they can still accept node
+addresses from the Internet.
+
+### p2p.allow_duplicate_ip
+Toggle to disable guard against peers connecting from the same ip.
+```toml
+allow_duplicate_ip = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+When this setting is set to `true`, multiple connections are allowed from the same IP address (for example on different
+ports).
+
+### p2p.handshake_timeout
+Timeout duration for protocol handshake (or secret connection negotiation).
+```toml
+handshake_timeout = "20s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
+This high-level timeout value is applied when the TCP connection has been made and the peers are negotiating an upgrade
+to secret connection.
+
+The value `"0s"` is undefined, and it can lead to unexpected behaviour.
+
+### p2p.dial_timeout
+Timeout duration for the low-level dialer that connects to the remote address on the TCP network.
+```toml
+dial_timeout = "3s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
+This parameter is the timeout value for dialing on TCP networks. If a hostname is used instead of an IP address and the
+hostname resolves to multiple IP addresses, the timeout is spread over each consecutive dial, such that each is given an
+appropriate fraction of the time to connect.
+
+Setting the value to `"0s"` disables timeout.
+
+## Mempool
+
+### mempool.type
+### mempool.recheck
+### mempool.broadcast
+### mempool.wal_dir
+### mempool.size
+### mempool.max_txs_bytes
+### mempool.cache_size
+### mempool.keep-invalid-txs-in-cache
+### mempool.max_tx_bytes
+### mempool.experimental_max_gossip_connections_to_persistent_peers
+### mempool.experimental_max_gossip_connections_to_non_persistent_peers
+
+## State synchronization
+
+### statesync.enable
+### statesync.rpc_servers
+### statesync.trust_height
+### statesync.trust_hash
+### statesync.trust_period
+### statesync.discovery_time
+### statesync.temp_dir
+### statesync.chunk_request_timeout
+### statesync.chunk_fetchers
+
+## Block synchronization
+
+### blocksync.version
+
+## Consensus
+
+### consensus.wal_file
+### consensus.timeout_propose
+### consensus.timeout_propose_delta
+### consensus.timeout_prevote
+### consensus.timeout_prevote_delta
+### consensus.timeout_precommit
+### consensus.timeout_precommit_delta
+### consensus.timeout_commit
+### consensus.double_sign_check_height
+### consensus.skip_timeout_commit
+### consensus.create_empty_blocks
+### consensus.create_empty_blocks_interval
+### consensus.peer_gossip_sleep_duration
+### consensus.peer_gossip_intraloop_sleep_duration
+### consensus.peer_query_maj23_sleep_duration
+
+## Storage
+
+### storage.discard_abci_responses
+### storage.pruning.interval
+### storage.pruning.data_companion.enabled
+### storage.pruning.data_companion.initial_block_retain_height
+### storage.pruning.data_companion.initial_block_results_retain_height
+### storage.pruning.data_companion.genesis_hash
+
+## Transaction indexer
+
+### tx_index.indexer
+### tx_index.psql-conn
+
+## Prometheus Instrumentation
+
+### instrumentation.prometheus
+### instrumentation.prometheus_listen_addr
+### instrumentation.max_open_connections
+### instrumentation.namespace

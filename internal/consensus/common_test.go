@@ -88,6 +88,14 @@ func newValidatorStub(privValidator types.PrivValidator, valIndex int32) *valida
 	}
 }
 
+func signProposal(t *testing.T, proposal *types.Proposal, chainID string, vss *validatorStub) {
+	t.Helper()
+	p := proposal.ToProto()
+	err := vss.SignProposal(chainID, p)
+	require.NoError(t, err)
+	proposal.Signature = p.Signature
+}
+
 func (vs *validatorStub) signVote(
 	voteType types.SignedMsgType,
 	chainID string,

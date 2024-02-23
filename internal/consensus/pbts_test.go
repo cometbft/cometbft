@@ -686,11 +686,3 @@ func createProposalBlock(t *testing.T, cs *State, timestamp time.Time) (*types.B
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
 	return block, blockParts, blockID
 }
-
-func signProposal(t *testing.T, proposal *types.Proposal, chainID string, vss *validatorStub) {
-	t.Helper()
-	p := proposal.ToProto()
-	err := vss.SignProposal(chainID, p)
-	require.NoError(t, err)
-	proposal.Signature = p.Signature
-}

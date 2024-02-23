@@ -223,11 +223,7 @@ func TestStateBadProposal(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID, propBlock.Header.Time)
-	p := proposal.ToProto()
-	err = vs2.SignProposal(chainID, p)
-	require.NoError(t, err)
-
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vs2)
 
 	// set the proposal block
 	err = cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer")
@@ -288,10 +284,7 @@ func TestStateOversizedBlock(t *testing.T) {
 
 			blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 			proposal := types.NewProposal(height, round, -1, blockID, propBlock.Header.Time)
-			p := proposal.ToProto()
-			err := vs2.SignProposal(chainID, p)
-			require.NoError(t, err)
-			proposal.Signature = p.Signature
+			signProposal(t, proposal, chainID, vs2)
 
 			totalBytes := 0
 			for i := 0; i < int(propBlockParts.Total()); i++ {
@@ -305,7 +298,7 @@ func TestStateOversizedBlock(t *testing.T) {
 			}
 			numBlockParts := int64(propBlockParts.Total())
 
-			err = cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer")
+			err := cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer")
 			require.NoError(t, err)
 
 			// start the machine
@@ -817,10 +810,7 @@ func TestStateLock_POLRelock(t *testing.T) {
 	incrementRound(vs2, vs3, vs4)
 	round++
 	propR1 := types.NewProposal(height, round, cs1.ValidRound, blockID, theBlock.Header.Time)
-	p := propR1.ToProto()
-	err = vs2.SignProposal(chainID, p)
-	require.NoError(t, err)
-	propR1.Signature = p.Signature
+	signProposal(t, propR1, chainID, vs2)
 	err = cs1.SetProposalAndBlock(propR1, theBlock, theBlockParts, "")
 	require.NoError(t, err)
 
@@ -1667,11 +1657,7 @@ func TestStateLock_POLSafety2(t *testing.T) {
 			round++ // moving to the next round
 			// in round 2 we see the polkad block from round 0
 			newProp := types.NewProposal(height, round, 0, propBlockID0, propBlock0.Header.Time)
-			p := newProp.ToProto()
-			err = vs3.SignProposal(chainID, p)
-			require.NoError(t, err)
-
-			newProp.Signature = p.Signature
+			signProposal(t, newProp, chainID, vs3)
 
 			err = tc.state.SetProposalAndBlock(newProp, propBlock0, propBlockParts0, "some peer")
 			require.NoError(t, err)
@@ -1811,10 +1797,7 @@ func TestState_PrevotePOLFromPreviousRound(t *testing.T) {
 	incrementRound(vs2, vs3, vs4)
 	round++
 	propR2 := types.NewProposal(height, round, 1, r1BlockID, propBlockR1.Header.Time)
-	p := propR2.ToProto()
-	err = vs3.SignProposal(chainID, p)
-	require.NoError(t, err)
-	propR2.Signature = p.Signature
+	signProposal(t, propR2, chainID, vs3)
 
 	// cs1 receives a proposal for D, the block that received a POL in round 1.
 	err = cs1.SetProposalAndBlock(propR2, propBlockR1, propBlockR1Parts, "")
@@ -3137,10 +3120,7 @@ func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
 
 	// Create a proposal with a timestamp that does not match the timestamp of the block.
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID, propBlock.Header.Time.Add(time.Millisecond))
-	p := proposal.ToProto()
-	err = vs2.SignProposal(chainID, p)
-	require.NoError(t, err)
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vs2)
 	require.NoError(t, cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"))
 
 	startTestRound(cs1, height, round)
@@ -3186,10 +3166,7 @@ func TestStateTimestamp_ProposalMatch(t *testing.T) {
 
 	// Create a proposal with a timestamp that matches the timestamp of the block.
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID, propBlock.Header.Time)
-	p := proposal.ToProto()
-	err = vs2.SignProposal(chainID, p)
-	require.NoError(t, err)
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vs2)
 	require.NoError(t, cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"))
 
 	startTestRound(cs1, height, round)

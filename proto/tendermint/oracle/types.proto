@@ -19,6 +19,10 @@ message GossipVote {
   bytes signature = 6;
 }
 
+message GossipVotes {
+  repeated GossipVote gossip_votes = 1;
+}
+
 message CanonicalGossipVote {
   bytes validator = 1;
   bytes public_key = 2;

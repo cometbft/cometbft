@@ -163,6 +163,8 @@ When configuring a network to adopt the PBTS algorithm, the follow steps must be
    network, namely blocks may take very long to be committed.
 1. Make sure that the block times **currently** produced by the network do not
    differ too much from real time.
+   This is specially relevant when block times produced by BFT time are in the
+   future, with respect to real time.
 
 Observation 4. is important because, with the adoption of PBTS, block times are
 expected to converge to values that bear resemblance to real time.

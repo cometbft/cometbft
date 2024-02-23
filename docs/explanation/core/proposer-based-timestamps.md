@@ -103,7 +103,7 @@ among all of the validators in the network.
 Any two validators are expected to have clocks that differ by at most
 `Precision` at any given instant.
 
-The `Precision` parameter is given in milliseconds.
+The `Precision` parameter is of [`time.Duration`](https://pkg.go.dev/time#Duration) type.
 
 Networks should choose a `Precision` that is large enough to represent the
 worst-case for the clock drift among all participants.
@@ -116,7 +116,7 @@ The `MessageDelay` parameter configures the acceptable upper-bound for the
 end-to-end delay for transmitting a `Proposal` message from the proposer to
 _all_ validators in the network.
 
-The `MessageDelay` parameter is given in milliseconds.
+The `MessageDelay` parameter is of [`time.Duration`](https://pkg.go.dev/time#Duration) type.
 
 Networks should choose a `MessageDelay` that is large enough to represent the
 worst-case delay for a message to reach all participants.

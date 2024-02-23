@@ -937,9 +937,6 @@ func randGenesisState(
 	numValidators int,
 	consensusParams *types.ConsensusParams,
 ) (sm.State, []types.PrivValidator) {
-	if consensusParams == nil {
-		consensusParams = test.ConsensusParams()
-	}
 	return randGenesisStateWithTime(numValidators, consensusParams, cmttime.Now())
 }
 

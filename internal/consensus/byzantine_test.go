@@ -143,7 +143,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		// allow first height to happen normally so that byzantine validator is no longer proposer
 		if height == prevoteHeight {
 			bcs.Logger.Info("Sending two votes")
-			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), bcs.ProposalBlock)
+			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), nil)
 			require.NoError(t, err)
 			prevote2, err := bcs.signVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 			require.NoError(t, err)

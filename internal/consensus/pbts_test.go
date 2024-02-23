@@ -601,8 +601,8 @@ func TestPBTSEnableHeight(t *testing.T) {
 				ts = time.Now()
 				rejectProposal = true
 			} else if height >= pbtsEnableHeight {
-				// Shift timestamp to the future => not timely
-				ts = time.Now().Add(time.Second)
+				// Shift timestamp to the future 2*PRECISION => not timely
+				ts = time.Now().Add(2 * c.Synchrony.Precision)
 				rejectProposal = true
 			}
 			block, blockParts, blockID = createProposalBlock(t, cs, ts)

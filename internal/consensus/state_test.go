@@ -1320,9 +1320,6 @@ func TestStateLock_MissingProposalWhenPOLForLockedBlock(t *testing.T) {
 // misses the round's Proposal, but receives a Polka for a block and the full
 // block, precommits the valid block even though the Proposal is missing.
 func TestState_MissingProposalValidBlockReceivedPrecommit(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	cs1, vss := randState(4)
 	height, round := cs1.Height, cs1.Round
 	chainID := cs1.state.ChainID
@@ -1332,14 +1329,7 @@ func TestState_MissingProposalValidBlockReceivedPrecommit(t *testing.T) {
 	voteCh := subscribe(cs1.eventBus, types.EventQueryVote)
 
 	// Produce a block
-	block, err := cs1.createProposalBlock(ctx)
-	require.NoError(t, err)
-	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	blockID := types.BlockID{
-		Hash:          block.Hash(),
-		PartSetHeader: blockParts.Header(),
-	}
+	_, blockParts, blockID := createProposalBlock(t, cs1)
 
 	// Skip round 0 and start consensus
 	round++
@@ -3096,9 +3086,6 @@ func TestSignSameVoteTwice(t *testing.T) {
 // proposed block if the timestamp in the block does not match the timestamp in the
 // corresponding proposal message.
 func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	cs1, vss := randState(4)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -3109,14 +3096,10 @@ func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
-	propBlock, err := cs1.createProposalBlock(ctx)
-	require.NoError(t, err)
+	propBlock, propBlockParts, blockID := createProposalBlock(t, cs1)
+
 	round++
 	incrementRound(vss[1:]...)
-
-	propBlockParts, err := propBlock.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
 	// Create a proposal with a timestamp that does not match the timestamp of the block.
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID, propBlock.Header.Time.Add(time.Millisecond))
@@ -3142,9 +3125,6 @@ func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
 // proposed block if the timestamp in the block matches the timestamp in the
 // corresponding proposal message.
 func TestStateTimestamp_ProposalMatch(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	cs1, vss := randState(4)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -3155,14 +3135,10 @@ func TestStateTimestamp_ProposalMatch(t *testing.T) {
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
-	propBlock, err := cs1.createProposalBlock(ctx)
-	require.NoError(t, err)
+	propBlock, propBlockParts, blockID := createProposalBlock(t, cs1)
+
 	round++
 	incrementRound(vss[1:]...)
-
-	propBlockParts, err := propBlock.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
 	// Create a proposal with a timestamp that matches the timestamp of the block.
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID, propBlock.Header.Time)

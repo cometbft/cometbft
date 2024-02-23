@@ -605,7 +605,7 @@ func TestPBTSEnableHeight(t *testing.T) {
 				ts = time.Now().Add(2 * c.Synchrony.Precision)
 				rejectProposal = true
 			}
-			block, blockParts, blockID = createProposalBlock(t, cs, ts)
+			block, blockParts, blockID = createProposalBlockWithTime(t, cs, ts)
 			proposal := types.NewProposal(height, round, -1, blockID, block.Header.Time)
 			// BFT Time should not care about Proposal's timestamps
 			if height < pbtsSetHeight {
@@ -672,17 +672,4 @@ func TestPBTSEnableHeight(t *testing.T) {
 	}
 	// Last call to FinalizeBlock
 	ensureNewRound(newRoundCh, height, round)
-}
-
-func createProposalBlock(t *testing.T, cs *State, timestamp time.Time) (*types.Block, *types.PartSet, types.BlockID) {
-	t.Helper()
-	block, err := cs.createProposalBlock(context.Background())
-	if !timestamp.IsZero() {
-		block.Time = cmttime.Canonical(timestamp)
-	}
-	assert.NoError(t, err)
-	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
-	assert.NoError(t, err)
-	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
-	return block, blockParts, blockID
 }

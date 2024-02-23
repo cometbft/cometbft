@@ -234,6 +234,23 @@ func startTestRound(cs *State, height int64, round int32) {
 	cs.startRoutines(0)
 }
 
+func createProposalBlockWithTime(t *testing.T, cs *State, time time.Time) (*types.Block, *types.PartSet, types.BlockID) {
+	t.Helper()
+	block, err := cs.createProposalBlock(context.Background())
+	if !time.IsZero() {
+		block.Time = cmttime.Canonical(time)
+	}
+	assert.NoError(t, err)
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	assert.NoError(t, err)
+	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
+	return block, blockParts, blockID
+}
+
+func createProposalBlock(t *testing.T, cs *State) (*types.Block, *types.PartSet, types.BlockID) {
+	return createProposalBlockWithTime(t, cs, time.Time{})
+}
+
 // Create proposal block from cs1 but sign it with vs.
 func decideProposal(
 	ctx context.Context,
@@ -244,11 +261,10 @@ func decideProposal(
 	round int32,
 ) (*types.Proposal, *types.Block) {
 	t.Helper()
+
 	cs1.mtx.Lock()
-	block, err := cs1.createProposalBlock(ctx)
-	require.NoError(t, err)
-	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
+	block, _, propBlockID := createProposalBlock(t, cs1)
+
 	validRound := cs1.ValidRound
 	chainID := cs1.state.ChainID
 	cs1.mtx.Unlock()
@@ -257,8 +273,7 @@ func decideProposal(
 	}
 
 	// Make proposal
-	polRound, propBlockID := validRound, types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
-	proposal := types.NewProposal(height, round, polRound, propBlockID, block.Header.Time)
+	proposal := types.NewProposal(height, round, validRound, propBlockID, block.Header.Time)
 	p := proposal.ToProto()
 	if err := vs.SignProposal(chainID, p); err != nil {
 		panic(err)

@@ -460,11 +460,8 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	// Avoid sending on internalMsgQueue and running consensus state.
 
 	// Create a new proposal block from state/txs from the mempool.
-	block1, err := cs.createProposalBlock(ctx)
-	require.NoError(t, err)
-	blockParts1, err := block1.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	polRound, propBlockID := cs.ValidRound, types.BlockID{Hash: block1.Hash(), PartSetHeader: blockParts1.Header()}
+	block1, blockParts1, propBlockID := createProposalBlock(t, cs)
+	polRound := cs.ValidRound
 	proposal1 := types.NewProposal(height, round, polRound, propBlockID, block1.Time)
 	p1 := proposal1.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p1); err != nil {
@@ -477,11 +474,8 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	deliverTxsRange(t, cs, 1)
 
 	// Create a new proposal block from state/txs from the mempool.
-	block2, err := cs.createProposalBlock(ctx)
-	require.NoError(t, err)
-	blockParts2, err := block2.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	polRound, propBlockID = cs.ValidRound, types.BlockID{Hash: block2.Hash(), PartSetHeader: blockParts2.Header()}
+	block2, blockParts2, propBlockID := createProposalBlock(t, cs)
+	polRound = cs.ValidRound
 	proposal2 := types.NewProposal(height, round, polRound, propBlockID, block2.Time)
 	p2 := proposal2.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p2); err != nil {

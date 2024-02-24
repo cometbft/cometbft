@@ -294,7 +294,7 @@ func NewNode(ctx context.Context,
 		CompactionInterval:   config.Storage.CompactionInterval,
 	})
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics))
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval))
 
 	// The key will be deleted if it existed.
 	// Not checking whether the key is there in case the genesis file was larger than

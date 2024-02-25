@@ -121,7 +121,7 @@ func (env *Environment) GenesisChunked(_ *rpctypes.Context, chunk uint) (*ctypes
 		return nil, ErrServiceConfig{errNoChunks}
 	}
 
-	id := int(chunk)
+  id := int(chunk)
 
 	if id > len(env.genChunks)-1 {
 		return nil, ErrInvalidChunkID{id, len(env.genChunks) - 1}

@@ -58,6 +58,8 @@ func (env *Environment) BlockchainInfo(
 func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	// filter negatives
 	if min < 0 || max < 0 {
+    
+    
 		return min, max, errNegativeHeight
 	}
 

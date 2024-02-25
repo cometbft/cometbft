@@ -739,7 +739,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 	// XXX(xla): Remove the leakage of test concerns in implementation.
 	if cfg.TestDialFail {
 		go sw.reconnectToPeer(addr)
-		return fmt.Errorf("dial err (peerConfig.DialFail == true)")
+		return errors.New("dial err (peerConfig.DialFail == true)")
 	}
 
 	p, err := sw.transport.Dial(*addr, peerConfig{

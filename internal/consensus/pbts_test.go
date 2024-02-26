@@ -688,7 +688,7 @@ func TestPbtsAdaptiveMessageDelay(t *testing.T) {
 
 	c := test.ConsensusParams()
 	app := kvstore.NewInMemoryApplication()
-	genesisTime := cmttime.Now().Add(-5 * time.Second)
+	genesisTime := cmttime.Now().Add(-10 * time.Second)
 	cs, vss := randStateWithAppImplGenesisTime(numValidators, app, c, genesisTime)
 
 	myPrivKey, err := vss[0].GetPubKey()

@@ -190,8 +190,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			extCommit = &types.ExtendedCommit{}
 		case lazyProposer.LastCommit.HasTwoThirdsMajority():
 			// Make the commit from LastCommit
-			veHeightParam := types.DefaultFeatureParams()
-			veHeightParam.VoteExtensionsEnableHeight = height
+			// Vote extensions are enabled by default for test units
+			veHeightParam := lazyProposer.state.ConsensusParams.Feature
 			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
 		default: // This shouldn't happen.
 			lazyProposer.Logger.Error("enterPropose: Cannot propose anything: No commit for the previous block")
@@ -499,9 +499,9 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	t.Logf("Byzantine: broadcasting conflicting proposals to %d peers", len(peers))
 	for i, peer := range peers {
 		if i < len(peers)/2 {
-			go sendProposalAndParts(height, round, cs, peer, proposal1, block1Hash, blockParts1)
+			go sendProposalAndParts(height, round, cs, peer, proposal1, block1, block1Hash, blockParts1)
 		} else {
-			go sendProposalAndParts(height, round, cs, peer, proposal2, block2Hash, blockParts2)
+			go sendProposalAndParts(height, round, cs, peer, proposal2, block2, block2Hash, blockParts2)
 		}
 	}
 }
@@ -512,6 +512,7 @@ func sendProposalAndParts(
 	cs *State,
 	peer p2p.Peer,
 	proposal *types.Proposal,
+	block *types.Block,
 	blockHash []byte,
 	parts *types.PartSet,
 ) {
@@ -541,7 +542,7 @@ func sendProposalAndParts(
 	// votes
 	cs.mtx.Lock()
 	prevote, _ := cs.signVote(types.PrevoteType, blockHash, parts.Header(), nil)
-	precommit, _ := cs.signVote(types.PrecommitType, blockHash, parts.Header(), nil)
+	precommit, _ := cs.signVote(types.PrecommitType, blockHash, parts.Header(), block)
 	cs.mtx.Unlock()
 	peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,

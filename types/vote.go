@@ -49,6 +49,15 @@ func NewConflictingVoteError(vote1, vote2 *Vote) *ErrVoteConflictingVotes {
 	}
 }
 
+// The vote extension is only valid for non-nil precommits.
+type ErrVoteExtensionInvalid struct {
+	ExtSignature []byte
+}
+
+func (err *ErrVoteExtensionInvalid) Error() string {
+	return fmt.Sprintf("extensions must be present IFF vote is a non-nil Precommit; extension signature: %X", err.ExtSignature)
+}
+
 // Address is hex bytes.
 type Address = crypto.Address
 
@@ -421,19 +430,14 @@ func SignAndCheckVote(
 	isPrecommit := vote.Type == PrecommitType
 	if !isPrecommit && extensionsEnabled {
 		// Non-recoverable because the caller passed parameters that don't make sense
-		return false, fmt.Errorf("only Precommit votes may have extensions enabled; vote type: %T", vote.Type)
+		return false, &ErrVoteExtensionInvalid{ExtSignature: v.ExtensionSignature}
 	}
 
 	isNil := vote.BlockID.IsNil()
 	extSignature := (len(v.ExtensionSignature) > 0)
 	if extSignature == (!isPrecommit || isNil) {
 		// Non-recoverable because the vote is malformed
-		return false, fmt.Errorf(
-			"extensions must be present IFF vote is a non-nil Precommit; present %t, vote type %T, is nil %t",
-			extSignature,
-			vote.Type,
-			isNil,
-		)
+		return false, &ErrVoteExtensionInvalid{ExtSignature: v.ExtensionSignature}
 	}
 
 	vote.ExtensionSignature = nil

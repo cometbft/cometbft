@@ -715,7 +715,7 @@ func TestPbtsAdaptiveMessageDelay(t *testing.T) {
 		maxDelta := c.Synchrony.MessageDelay + c.Synchrony.Precision
 
 		if proposer != 0 {
-			shift := maxDelta
+			shift := maxDelta + time.Second
 			ts := cmttime.Now().Add(-shift)
 			if ts.Before(genesisTime) {
 				ts = genesisTime

@@ -12,6 +12,7 @@
  - Feb 1 2024: Renamed to ADR 112 as basis for its adoption ([#1731](https://github.com/cometbft/cometbft/issues/1731)) in CometBFT v1.0 by @cason
  - Feb 7 2024: Multiple revisions, fixes, and backwards compatibility discussion by @cason
  - Feb 12 2024: More detailed backwards compatibility discussion by @cason
+ - Feb 22 2024: Consensus parameters for backwards compatibility by @cason
 
 ## Status
 
@@ -140,7 +141,7 @@ type Vote struct {
 
 In order to ensure backwards compatibility, PBTS should be enabled using a [consensus parameter](#compatibility-parameters).
 The proposed approach is similar to the one adopted to enable vote extensions via
-[`ABCIParams.VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
+[`VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#featureparamsvoteextensionsenableheight).
 
 In summary, the network will migrate from the `BFT Time` method for assigning
 and validating timestamps to the new method for assigning and validating
@@ -169,7 +170,7 @@ type ConsensusParams struct {
         Version   VersionParams   `json:"version"`
         ABCI      ABCIParams      `json:"abci"`
 ++      Synchrony SynchronyParams `json:"synchrony"`
-++      XXX       XXXParams       `json:"xxx"`
+++      Feature   FeatureParams   `json:"feature"`
 }
 ```
 
@@ -193,13 +194,21 @@ type SynchronyParams struct {
 
 #### Compatibility parameters
 
-In order to ensure backwards compatibility, PBTS should be enabled using a consensus parameter.
+In order to ensure backwards compatibility, PBTS should be enabled using a consensus parameter:
 
 ```go
-type XXXParams struct {
-        EnableHeight    int64 `json:"enable_height"`
+type FeatureParams struct {
+        PbtsEnableHeight int64 `json:"pbts_enable_height"`
+        ...
 }
 ```
+
+The semantics are similar to the ones adopted to enable vote extensions via
+[`VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
+The PBTS algorithm is enabled from `FeatureParams.PbtsEnableHeight`, when this
+parameter is set to a value greater than zero, and greater to the height at
+which it was set.
+Until that height, the BFT Time algorithm is used.
 
 For more discussion of this, see [issue 2197][issue2197].
 

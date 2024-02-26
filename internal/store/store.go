@@ -89,18 +89,20 @@ func setDBLayout(bStore *BlockStore) {
 		}
 		return
 	}
-	versionNum, err := bStore.db.Get([]byte("version"))
-	if len(versionNum) == 0 && err == nil {
+	version, err := bStore.db.Get([]byte("version"))
+	if len(version) == 0 && err == nil {
 		bStore.dbKeyLayout = &v1LegacyLayout{}
 		if err := bStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
 			panic(err)
 		}
 	} else {
-		switch string(versionNum) {
+		switch string(version) {
 		case "1":
 			bStore.dbKeyLayout = &v1LegacyLayout{}
 		case "2":
 			bStore.dbKeyLayout = &v2Layout{}
+		default:
+			panic("Unknown version. Expected 1 or 2, given" + string(version))
 		}
 	}
 }

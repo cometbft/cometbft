@@ -217,24 +217,26 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		return store
 	}
 
-	versionNum, err := db.Get([]byte("version"))
-	if len(versionNum) == 0 && err == nil {
+	version, err := db.Get([]byte("version"))
+	if len(version) == 0 && err == nil {
 		store.DBKeyLayout = v1LegacyLayout{}
 		if err := store.db.SetSync([]byte("version"), []byte("1")); err != nil {
 			panic(err)
 		}
-		versionNum = []byte("1")
+		version = []byte("1")
 	} else {
-		switch string(versionNum) {
+		switch string(version) {
 		case "1":
 			store.DBKeyLayout = &v1LegacyLayout{}
 		case "2":
 			store.DBKeyLayout = v2Layout{}
+		default:
+			panic("Unknown version. Expected 1 or 2, given" + string(version))
 		}
 	}
 
 	if options.Logger != nil {
-		options.Logger.Info("State store version ", "version", "v"+string(versionNum))
+		options.Logger.Info("State store version ", "version", "v"+string(version))
 	}
 	return store
 }

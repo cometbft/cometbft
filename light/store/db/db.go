@@ -23,8 +23,6 @@ type dbs struct {
 }
 
 func isEmpty(db dbm.DB) bool {
-	items := 0
-
 	iter, err := db.Iterator(nil, nil)
 	if err != nil {
 		panic(err)
@@ -32,10 +30,9 @@ func isEmpty(db dbm.DB) bool {
 
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
-		items++
-		break
+		return false
 	}
-	return items == 0
+	return true
 }
 
 func setDBKeyLayout(db dbm.DB, lightStore *dbs) {
@@ -47,19 +44,21 @@ func setDBKeyLayout(db dbm.DB, lightStore *dbs) {
 		return
 	}
 
-	versionNum, err := lightStore.db.Get([]byte("version"))
+	version, err := lightStore.db.Get([]byte("version"))
 
-	if len(versionNum) == 0 && err == nil {
+	if len(version) == 0 && err == nil {
 		lightStore.dbKeyLayout = &v1LegacyLayout{}
 		if err := lightStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
 			panic(err)
 		}
 	} else {
-		switch string(versionNum) {
+		switch string(version) {
 		case "1":
 			lightStore.dbKeyLayout = &v1LegacyLayout{}
 		case "2":
 			lightStore.dbKeyLayout = &v2Layout{}
+		default:
+			panic("Unknown version. Expected 1 or 2, given" + string(version))
 		}
 	}
 }

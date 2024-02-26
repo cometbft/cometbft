@@ -9,6 +9,30 @@ make
 
 This creates and runs a testnet named `ci` under `networks/ci/`.
 
+<<<<<<< HEAD
+=======
+To generate the testnet files in a different directory, run:
+```sh
+./build/runner -f networks/ci.toml -d networks/foo/bar/
+```
+
+### Fast compiling
+
+If you need to run experiments on a testnet, you will probably want to compile the code multiple
+times and `make` could be slow. This is because `make` builds an image by first copying all the
+source code into it and then compiling the binary from inside. This is needed if, for example, you
+want to create a binary that uses a different database (as in `networks/ci.toml`), or to emulate
+latencies by running the Python script.
+
+If you just need to (re-)compile and run the binary without any extra building options, you can use
+`make fast`, which will first compile the code and then make a slim Docker image with the binary.
+For example:
+```sh
+make fast
+./build/runner -f networks/simple.toml
+```
+
+>>>>>>> 4ce0277b3 (feat(e2e): add parameter to set a custom output directory for testnet files (#2433))
 ## Conceptual Overview
 
 End-to-end testnets are used to test Tendermint functionality as a user would use it, by spinning up a set of nodes with various configurations and making sure the nodes and network behave correctly. The background for the E2E test suite is outlined in [RFC-001](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-066-e2e-testing.md).
@@ -125,6 +149,8 @@ To run tests manually, set the `E2E_MANIFEST` environment variable to the path o
 E2E_MANIFEST=networks/ci.toml go test -v ./tests/...
 ```
 
+If the testnet files are located in a custom directory, you need to set it in the `E2E_TESTNET_DIR` environment variable.
+
 Optionally, `E2E_NODE` specifies the name of a single testnet node to test.
 
 These environment variables can also be specified in `tests/e2e_test.go` to run tests from an editor or IDE:
@@ -134,6 +160,7 @@ func init() {
 	// This can be used to manually specify a testnet manifest and/or node to
 	// run tests against. The testnet must have been started by the runner first.
 	os.Setenv("E2E_MANIFEST", "networks/ci.toml")
+	os.Setenv("E2E_TESTNET_DIR", "networks/foo")
 	os.Setenv("E2E_NODE", "validator01")
 }
 ```

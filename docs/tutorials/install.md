@@ -6,7 +6,7 @@ order: 3
 
 ## From Go Package
 
-Install CometBFT with the following command:
+Install the latest version of CometBFT's Go package:
 
 ```sh
 go install github.com/cometbft/cometbft/cmd/cometbft@latest

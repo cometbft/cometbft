@@ -245,3 +245,7 @@ func (cli *grpcClient) VerifyVoteExtension(ctx context.Context, req *types.Reque
 func (cli *grpcClient) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
 	return cli.client.FinalizeBlock(ctx, types.ToRequestFinalizeBlock(req).GetFinalizeBlock(), grpc.WaitForReady(true))
 }
+
+func (cli *grpcClient) SignGossipVote(ctx context.Context, req *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
+	return cli.client.SignGossipVote(ctx, types.ToRequestSignGossipVote(req).GetSignGossipVote(), grpc.WaitForReady(true))
+}

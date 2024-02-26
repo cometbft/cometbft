@@ -185,6 +185,32 @@ func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *types.Requ
 	return r0, r1
 }
 
+// SignGossipVote provides a mock function with given fields: _a0, _a1
+func (_m *AppConnConsensus) SignGossipVote(_a0 context.Context, _a1 *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *types.ResponseSignGossipVote
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestSignGossipVote) *types.ResponseSignGossipVote); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseSignGossipVote)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestSignGossipVote) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // VerifyVoteExtension provides a mock function with given fields: _a0, _a1
 func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
 	ret := _m.Called(_a0, _a1)

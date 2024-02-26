@@ -123,6 +123,12 @@ func ToRequestFinalizeBlock(req *RequestFinalizeBlock) *Request {
 	}
 }
 
+func ToRequestSignGossipVote(req *RequestSignGossipVote) *Request {
+	return &Request{
+		Value: &Request_SignGossipVote{req},
+	}
+}
+
 //----------------------------------------
 
 func ToResponseException(errStr string) *Response {
@@ -224,5 +230,11 @@ func ToResponseVerifyVoteExtension(res *ResponseVerifyVoteExtension) *Response {
 func ToResponseFinalizeBlock(res *ResponseFinalizeBlock) *Response {
 	return &Response{
 		Value: &Response_FinalizeBlock{res},
+	}
+}
+
+func ToResponseSignGossipVote(res *ResponseSignGossipVote) *Response {
+	return &Response{
+		Value: &Response_SignGossipVote{res},
 	}
 }

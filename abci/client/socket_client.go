@@ -412,6 +412,17 @@ func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.RequestFi
 	return reqRes.Response.GetFinalizeBlock(), cli.Error()
 }
 
+func (cli *socketClient) SignGossipVote(ctx context.Context, req *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestSignGossipVote(req))
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Flush(ctx); err != nil {
+		return nil, err
+	}
+	return reqRes.Response.GetSignGossipVote(), cli.Error()
+}
+
 func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (*ReqRes, error) {
 	reqres := NewReqRes(req)
 
@@ -493,6 +504,8 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_ProcessProposal)
 	case *types.Request_FinalizeBlock:
 		_, ok = res.Value.(*types.Response_FinalizeBlock)
+	case *types.Request_SignGossipVote:
+		_, ok = res.Value.(*types.Response_SignGossipVote)
 	}
 	return ok
 }

@@ -24,6 +24,7 @@ type AppConnConsensus interface {
 	VerifyVoteExtension(context.Context, *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error)
 	FinalizeBlock(context.Context, *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error)
 	Commit(context.Context) (*types.ResponseCommit, error)
+	SignGossipVote(context.Context, *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error)
 }
 
 type AppConnMempool interface {
@@ -107,6 +108,11 @@ func (app *appConnConsensus) FinalizeBlock(ctx context.Context, req *types.Reque
 func (app *appConnConsensus) Commit(ctx context.Context) (*types.ResponseCommit, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
 	return app.appConn.Commit(ctx, &types.RequestCommit{})
+}
+
+func (app *appConnConsensus) SignGossipVote(ctx context.Context, req *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
+	return app.appConn.SignGossipVote(ctx, req)
 }
 
 //------------------------------------------------

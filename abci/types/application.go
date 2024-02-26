@@ -1,6 +1,8 @@
 package types
 
-import "context"
+import (
+	"context"
+)
 
 //go:generate ../../scripts/mockery_generate.sh Application
 
@@ -32,6 +34,9 @@ type Application interface {
 	OfferSnapshot(context.Context, *RequestOfferSnapshot) (*ResponseOfferSnapshot, error)                // Offer a snapshot to the application
 	LoadSnapshotChunk(context.Context, *RequestLoadSnapshotChunk) (*ResponseLoadSnapshotChunk, error)    // Load a snapshot chunk
 	ApplySnapshotChunk(context.Context, *RequestApplySnapshotChunk) (*ResponseApplySnapshotChunk, error) // Apply a shapshot chunk
+
+	// Hooks
+	SignGossipVote(context.Context, *RequestSignGossipVote) (*ResponseSignGossipVote, error)
 }
 
 //-------------------------------------------------------
@@ -116,4 +121,8 @@ func (BaseApplication) FinalizeBlock(_ context.Context, req *RequestFinalizeBloc
 	return &ResponseFinalizeBlock{
 		TxResults: txs,
 	}, nil
+}
+
+func (BaseApplication) SignGossipVote(_ context.Context, req *RequestSignGossipVote) (*ResponseSignGossipVote, error) {
+	return &ResponseSignGossipVote{}, nil
 }

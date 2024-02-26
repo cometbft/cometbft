@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 
 	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 )
 
 //-----------------------------------------------------------------------------
@@ -128,33 +129,40 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		maxReapBytes = -1
 	}
 
-	// check which results have 2/3 maj
-	// totalPower := math.NewInt(state.Validators.TotalVotingPower())
-	// minTurnoutRatio := math.LegacyNewDec(67).QuoInt64(100)
-	// minTurnout := minTurnoutRatio.MulInt(totalPower).RoundInt()
+	// check if oracle's gossipVoteMap has any results
+	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
+	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
+	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 
-	// blockExec.oracleInfo.VoteDataBuffer.UpdateMtx.RLock()
-	// for timestamp, data := range blockExec.oracleInfo.VoteDataBuffer.Buffer {
-	// 	currentPower := math.OneInt()
-	// 	for oracleId, votes := range data {
-	// 		for _, vote := range votes {
-	// 			validator := vote.Validator
-	// 			if state.Validators.HasAddress([]byte(validator)) {
-	// 				// get power of validator
-	// 				power := state.Validators.GetByAddress([]byte(validator))
-	// 			}
-	// 		}
-	// 	}
-	// }
+	var signGossipVoteTxBz []byte
+	if len(oracleVotesBuffer) > 0 {
+		votes := []*oracleproto.GossipVote{}
+		for _, vote := range oracleVotesBuffer {
+			votes = append(votes, vote)
+		}
+		resp, err := blockExec.proxyApp.SignGossipVote(ctx, &abci.RequestSignGossipVote{
+			GossipVotes: votes,
+		})
+		if err != nil {
+			blockExec.logger.Error("error in proxyAppConn.SignGossipVote", "err", err)
+		}
+		signGossipVoteTxBz = resp.EncodedTx
+	}
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
+	txSlice := block.Txs.ToSliceOfBytes()
+
+	if len(signGossipVoteTxBz) > 0 {
+		txSlice = append([][]byte{signGossipVoteTxBz}, txSlice...)
+	}
+
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{
 			MaxTxBytes:         maxDataBytes,
-			Txs:                block.Txs.ToSliceOfBytes(),
+			Txs:                txSlice,
 			LocalLastCommit:    buildExtendedCommitInfo(lastExtCommit, blockExec.store, state.InitialHeight, state.ConsensusParams.ABCI),
 			Misbehavior:        block.Evidence.Evidence.ToABCI(),
 			Height:             block.Height,

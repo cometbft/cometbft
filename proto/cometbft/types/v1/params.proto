@@ -16,7 +16,7 @@ message ConsensusParams {
   EvidenceParams  evidence  = 2;
   ValidatorParams validator = 3;
   VersionParams   version   = 4;
-  //TODO: handle backwards compatibility
+  ABCIParams      abci      = 5 [deprecated = true]; // Use FeatureParams.vote_extensions_enable_height instead
   SynchronyParams synchrony = 6;
   FeatureParams   feature   = 7;
 }
@@ -116,4 +116,11 @@ message FeatureParams {
   // pbts_enable_height configures the first height that the chain will use
   // proposer base timestamps instead of BFT time.
   google.protobuf.Int64Value pbts_enable_height = 2 [(gogoproto.nullable) = true];
+}
+
+message ABCIParams {
+  option deprecated = true;
+  // vote_extensions_enable_height has been deprecated.
+  // Instead, use FeatureParams.vote_extensions_enable_height.
+  int64 vote_extensions_enable_height = 1;
 }

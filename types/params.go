@@ -445,7 +445,7 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 }
 
 func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams {
-	c := ConsensusParams{
+	c := ConsensusParams{ // TODO: Should we use DefaultConsensusParams here?
 		Block: BlockParams{
 			MaxBytes: pbParams.Block.MaxBytes,
 			MaxGas:   pbParams.Block.MaxGas,
@@ -461,22 +461,20 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 		Version: VersionParams{
 			App: pbParams.Version.App,
 		},
+		Feature: FeatureParams{
+			VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue(),
+			PbtsEnableHeight:           pbParams.GetFeature().GetPbtsEnableHeight().GetValue(),
+		},
+		Synchrony: SynchronyParams{
+			MessageDelay: *pbParams.GetSynchrony().GetMessageDelay(),
+			Precision:    *pbParams.GetSynchrony().GetPrecision(),
+		},
 	}
-	if pbParams.Feature != nil {
-		if pbParams.Feature.VoteExtensionsEnableHeight != nil {
-			c.Feature.VoteExtensionsEnableHeight = pbParams.Feature.VoteExtensionsEnableHeight.Value
-		}
-		if pbParams.Feature.PbtsEnableHeight != nil {
-			c.Feature.PbtsEnableHeight = pbParams.Feature.PbtsEnableHeight.Value
-		}
-	}
-	if pbParams.Synchrony != nil {
-		if pbParams.Synchrony.MessageDelay != nil {
-			c.Synchrony.MessageDelay = *pbParams.Synchrony.GetMessageDelay()
-		}
-		if pbParams.Synchrony.Precision != nil {
-			c.Synchrony.Precision = *pbParams.Synchrony.GetPrecision()
-		}
+	if pbParams.GetAbci().GetVoteExtensionsEnableHeight() > 0 {
+		// Value set before the upgrade to V1.
+		// ABCIParams are only set in <V1 and FeatureParams is only present in >=V1, hence
+		// we can safely overwrite here.
+		c.Feature.VoteExtensionsEnableHeight = pbParams.Abci.VoteExtensionsEnableHeight
 	}
 	return c
 }

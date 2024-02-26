@@ -82,9 +82,8 @@ and no less than `MessageDelay + Precision` behind the node's local clock
 (i.e., not too far in the past).
 If the proposed block's timestamp is within the window of acceptable
 timestamps, the timestamp is considered **timely**.
-If the block timestamp is **not timely**, the validator rejects the block by
+If the block timestamp is **not timely**, the validator rejects the proposed block by
 issuing a `nil` prevote.
-Notice that this 
 
 ### Clock Synchronization
 

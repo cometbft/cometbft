@@ -370,8 +370,6 @@ func TestWALMsgProto(t *testing.T) {
 			}
 		})
 	}
-
-	// TODO: Test here instead of wherever?
 }
 
 //nolint:lll //ignore line length for tests

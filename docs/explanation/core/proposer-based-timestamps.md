@@ -50,7 +50,7 @@ that govern the operation of the algorithm.
 When a validator creates a new block, it reads the time from its local clock
 and uses this reading as the timestamp for the block.
 The proposer of a block is thus free to select the block timestamp, but this
-timestamp has to be validated by other nodes in the network.
+timestamp must be validated by other nodes in the network.
 
 ### Validating Timestamps
 
@@ -65,7 +65,7 @@ blocks. When a validator receives a proposal it ensures that the timestamp in
 the proposal is within a bound of the validator's local clock.
 For that it uses `Precision` and `MessageDelay` consensus parameters, 
 which are the same across all nodes for a given height.
-Specifically, the algorithm checks that the timestamp is
+Specifically, the algorithm checks that the proposed block's timestamp is
 no more than `Precision` greater than the node's local clock
 (i.e., not in the future)
 and no less than `MessageDelay + Precision` behind the node's local clock

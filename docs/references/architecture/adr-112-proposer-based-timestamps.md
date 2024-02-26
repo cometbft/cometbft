@@ -12,7 +12,7 @@
  - Feb 1 2024: Renamed to ADR 112 as basis for its adoption ([#1731](https://github.com/cometbft/cometbft/issues/1731)) in CometBFT v1.0 by @cason
  - Feb 7 2024: Multiple revisions, fixes, and backwards compatibility discussion by @cason
  - Feb 12 2024: More detailed backwards compatibility discussion by @cason
- - Feb 22 2021: Consensus parameters for backwards compatibility by @cason
+ - Feb 22 2024: Consensus parameters for backwards compatibility by @cason
 
 ## Status
 
@@ -203,7 +203,7 @@ type FeatureParams struct {
 }
 ```
 
-The semantics is identical to the one adopted to enable vote extensions via
+The semantics are identical to the ones adopted to enable vote extensions via
 [`VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
 The PBTS algorithm is enabled from `FeatureParams.PbtsEnableHeight`, when this
 parameter is set to a value greater than zero, and greater to the height at

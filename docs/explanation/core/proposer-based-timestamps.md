@@ -12,10 +12,10 @@ parameters that govern its operation.
 ## Overview 
 
 The PBTS algorithm defines a way for a blockchain to create block
-timestamps that are within a reasonable bound of the clocks of the validators on
+timestamps that are within a reasonable bound of the validators' clocks on
 the network. 
-It replaces the BFT Time algorithm for timestamp assignment, which computes the
-timestamp of a block using the timestamps included in precommit messages.
+It replaces the BFT Time algorithm for timestamp calculation and assignment, which computes the
+timestamp of a block using the timestamps aggregated from precommit messages.
 
 ### Block Timestamps
 
@@ -64,7 +64,7 @@ The PBTS algorithm performs a validity check on the timestamp of proposed
 blocks. When a validator receives a proposal it ensures that the timestamp in
 the proposal is within a bound of the validator's local clock.
 For that it uses `Precision` and `MessageDelay` consensus parameters, 
- which are the same across all nodes.
+which are the same across all nodes for a given height.
 Specifically, the algorithm checks that the timestamp is
 no more than `Precision` greater than the node's local clock
 (i.e., not in the future)
@@ -79,7 +79,7 @@ issuing a `nil` prevote.
 
 The PBTS algorithm requires the clocks of the validators in the network to be
 within `Precision` of each other. In practice, this means that validators
-should periodically synchronize their clocks to a reliable NTP server.
+should periodically synchronize their clocks, e.g. to a reliable NTP server.
 Validators whose clocks drift too far away from the rest of the network will no
 longer propose blocks with valid timestamps. Additionally, they will not consider
 the timestamps of blocks proposed by their peers to be valid either.
@@ -94,7 +94,7 @@ when instantiating a new network or when upgrading an existing a network that
 uses BFT Time.
 
 Consensus parameters are configured through the genesis file, for new chains, or by the ABCI application, for new and existing chains, and are the same
-across all nodes in the network.
+across all nodes in the network at any given height.
 
 ### `SynchronyParams.Precision`
 
@@ -108,7 +108,7 @@ The `Precision` parameter is of [`time.Duration`](https://pkg.go.dev/time#Durati
 Networks should choose a `Precision` that is large enough to represent the
 worst-case for the clock drift among all participants.
 Due to the [leap second events](https://github.com/tendermint/tendermint/issues/7724),
-it is recommended to use set `Precision` to at least `500ms`.
+it is recommended to set `Precision` to at least `500ms`.
 
 ### `SynchronyParams.MessageDelay`
 
@@ -122,8 +122,8 @@ Networks should choose a `MessageDelay` that is large enough to represent the
 delay for a `Proposal` message to reach all participants.
 As `Proposal` messages are fixed-size, this delay should not depend, a priori,
 on the size of proposed blocks.
-But it does depend on the number of nodes in the network and latency of their
-connections.
+But it does depend on the number of nodes in the network, the latency of their
+connections, and the level of congestion in the network.
 
 ### `FeatureParams.PbtsEnableHeight`
 
@@ -136,24 +136,24 @@ While `PbtsEnableHeight` is set to `0`, the network will adopt the legacy BFT
 Time algorithm.
 
 When `PbtsEnableHeight` is set to a height `H > 0`, the network will switch to
-the PBTS algorithm from height `H`.
+the PBTS algorithm from height `H` on.
 The network will still adopt the legacy BFT Time algorithm to produce and
 validate block timestamps until height `H - 1`.
-The enable height `H` must be a future height, i.e., larger than the current
+The enable height `H` must be a future height when it is set, i.e., larger than the current
 blockchain height.
 
 Once `PbtsEnableHeight` is set and the PBTS algorithm is enabled (i.e., from height
 `PbtsEnableHeight`), it is not possible to return to the legacy BFT Time algorithm.
 The switch to PBTS is therefore irreversible.
 
-Finally, if `PbtsEnableHeight` is set `1` in the genesis file or by the application
-upon the ABCI `InitChain` method, the network will adopt PBTS from the first
+Finally, if `PbtsEnableHeight` is set to `InitialHeight` in the genesis file or by the application
+upon the ABCI `InitChain` method, the network will adopt PBTS from the initial
 height. This is the recommended setup for new chains.
 
 
 ## Important Notes
 
-When configuring a network to adopt the PBTS algorithm, the follow steps must be considered:
+When configuring a network to adopt the PBTS algorithm, the following steps must be considered:
 
 1. Make sure that the clocks of validators are [synchronized](#clock-synchronization) **before** enabling PBTS.
 1. Make sure that the configured value for [`SynchronyParams.Precision`](#synchronyparamsprecision) is
@@ -174,13 +174,13 @@ When configuring a network to adopt the PBTS algorithm, the follow steps must be
 
 Observation 4. is important because, with the adoption of PBTS, block times are
 expected to converge to values that bear resemblance to real time.
-At the same time, the same property of monotonic block times guaranteed by BFT
-Time is also ensured by PBTS.
+At the same time, the property of monotonicity of block times is guaranteed by both BFT
+Time and PBTS.
 This means that proposers using PBTS will **wait** until the time they read
 from their local clocks becomes bigger than the time of the last committed
 block before proposing a new block.
 
-As a result, if the time of the last block produced using BFT Time is far in
+As a result, if the time of the last block produced using BFT Time is too far in
 the future, then the first block produced using PBTS will take very long to be
 committed: the time it takes for the clock of the proposer to reach the time of
 the previously committed block.
@@ -191,7 +191,7 @@ not differ too much from real time (observation 4.).
 This may take a long time, because in BFT Time if the value a validator reads
 from its local clock is smaller than the time of the previous block, then the
 time it sets to a new block will be the time of the previous block plus `1ms`.
-It may take a while, but blocks times eventually converge to real time.
+It may take a while, but block times will eventually converge to real time.
 
 ## See Also
 

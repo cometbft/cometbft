@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/internal/state"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
@@ -121,7 +120,7 @@ func TestBlock_Time(t *testing.T) {
 
 		valSchedule.Increment(1)
 		if testnet.PbtsEnableHeight == 0 || block.Height < testnet.PbtsEnableHeight {
-			expTime := state.MedianTime(block.LastCommit, valSchedule.Set)
+			expTime := block.LastCommit.MedianTime(valSchedule.Set)
 			require.Equal(t, expTime, block.Time, "height=%d", block.Height)
 		}
 	}

@@ -42,7 +42,6 @@ import (
 
 const (
 	testSubscriber = "test-client"
-	chainID        = "execution_chain"
 )
 
 // A cleanupFunc cleans up any config / test files created for a particular
@@ -1027,7 +1026,7 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 		bytes.Equal(v1.Extension, v2.Extension)
 }
 
-func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+func makeState(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
 	vals := make([]types.GenesisValidator, nVals)
 	privVals := make(map[string]types.PrivValidator, nVals)
 	for i := 0; i < nVals; i++ {

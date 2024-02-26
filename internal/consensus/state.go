@@ -1352,10 +1352,11 @@ func (cs *State) enterPrevote(height int64, round int32) {
 }
 
 func (cs *State) proposalIsTimely() bool {
-	sp := types.SynchronyParams{
-		Precision:    cs.state.ConsensusParams.Synchrony.Precision,
-		MessageDelay: cs.state.ConsensusParams.Synchrony.MessageDelay,
-	}
+	sp := types.AdaptiveSynchronyParams(
+		cs.state.ConsensusParams.Synchrony.Precision,
+		cs.state.ConsensusParams.Synchrony.MessageDelay,
+		cs.Round,
+	)
 
 	return cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
 }
@@ -2688,10 +2689,11 @@ func repairWalFile(src, dst string) error {
 
 func (cs *State) calculateProposalTimestampDifferenceMetric() {
 	if cs.Proposal != nil && cs.Proposal.POLRound == -1 {
-		tp := types.SynchronyParams{
-			Precision:    cs.state.ConsensusParams.Synchrony.Precision,
-			MessageDelay: cs.state.ConsensusParams.Synchrony.MessageDelay,
-		}
+		tp := types.AdaptiveSynchronyParams(
+			cs.state.ConsensusParams.Synchrony.Precision,
+			cs.state.ConsensusParams.Synchrony.MessageDelay,
+			cs.Round,
+		)
 
 		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, tp)
 		cs.metrics.ProposalTimestampDifference.With("is_timely", strconv.FormatBool(isTimely)).

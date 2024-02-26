@@ -156,6 +156,7 @@ func LoadTestnet(file string, ifd InfrastructureData, dir string) (*Testnet, err
 // NewTestnetFromManifest creates and validates a testnet from a manifest.
 func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData, dir string) (*Testnet, error) {
 	if dir == "" {
+		// Set default testnet directory.
 		dir = strings.TrimSuffix(file, filepath.Ext(file))
 	}
 

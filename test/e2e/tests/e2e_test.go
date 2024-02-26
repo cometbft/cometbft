@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/test/e2e/app"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -139,6 +139,9 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	require.NoError(t, err)
 
 	testnetDir := os.Getenv("E2E_TESTNET_DIR")
+	if !filepath.IsAbs(testnetDir) {
+		testnetDir = filepath.Join("..", testnetDir)
+	}
 
 	testnet, err := e2e.LoadTestnet(manifestFile, ifd, testnetDir)
 	require.NoError(t, err)
@@ -230,6 +233,5 @@ func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error)
 }
 
 func fetchNodeLogs(testnet e2e.Testnet) ([]byte, error) {
-	dir := filepath.Join(testnet.Dir, "docker-compose.yml")
-	return exec.Command("docker-compose", "-f", dir, "logs").Output()
+	return docker.ExecComposeOutput(context.Background(), testnet.Dir, "logs")
 }

@@ -8,7 +8,7 @@ import (
 	v11 "github.com/cometbft/cometbft/api/cometbft/libs/bits/v1"
 	v1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	_ "github.com/cosmos/gogoproto/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
+	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
 	math "math"
 	math_bits "math/bits"

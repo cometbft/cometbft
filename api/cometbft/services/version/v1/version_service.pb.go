@@ -6,7 +6,8 @@ package v1
 import (
 	context "context"
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -62,10 +63,10 @@ type VersionServiceClient interface {
 }
 
 type versionServiceClient struct {
-	cc *grpc.ClientConn
+	cc grpc1.ClientConn
 }
 
-func NewVersionServiceClient(cc *grpc.ClientConn) VersionServiceClient {
+func NewVersionServiceClient(cc grpc1.ClientConn) VersionServiceClient {
 	return &versionServiceClient{cc}
 }
 
@@ -93,7 +94,7 @@ func (*UnimplementedVersionServiceServer) GetVersion(ctx context.Context, req *G
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
 }
 
-func RegisterVersionServiceServer(s *grpc.Server, srv VersionServiceServer) {
+func RegisterVersionServiceServer(s grpc1.Server, srv VersionServiceServer) {
 	s.RegisterService(&_VersionService_serviceDesc, srv)
 }
 

@@ -6,7 +6,8 @@ package v1
 import (
 	context "context"
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -109,10 +110,10 @@ type ABCIServiceClient interface {
 }
 
 type aBCIServiceClient struct {
-	cc *grpc.ClientConn
+	cc grpc1.ClientConn
 }
 
-func NewABCIServiceClient(cc *grpc.ClientConn) ABCIServiceClient {
+func NewABCIServiceClient(cc grpc1.ClientConn) ABCIServiceClient {
 	return &aBCIServiceClient{cc}
 }
 
@@ -349,7 +350,7 @@ func (*UnimplementedABCIServiceServer) FinalizeBlock(ctx context.Context, req *F
 	return nil, status.Errorf(codes.Unimplemented, "method FinalizeBlock not implemented")
 }
 
-func RegisterABCIServiceServer(s *grpc.Server, srv ABCIServiceServer) {
+func RegisterABCIServiceServer(s grpc1.Server, srv ABCIServiceServer) {
 	s.RegisterService(&_ABCIService_serviceDesc, srv)
 }
 

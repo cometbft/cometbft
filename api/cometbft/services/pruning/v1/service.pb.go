@@ -6,7 +6,8 @@ package cometbft_services_pruning_v1
 import (
 	context "context"
 	fmt "fmt"
-	proto "github.com/gogo/protobuf/proto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -97,10 +98,10 @@ type PruningServiceClient interface {
 }
 
 type pruningServiceClient struct {
-	cc *grpc.ClientConn
+	cc grpc1.ClientConn
 }
 
-func NewPruningServiceClient(cc *grpc.ClientConn) PruningServiceClient {
+func NewPruningServiceClient(cc grpc1.ClientConn) PruningServiceClient {
 	return &pruningServiceClient{cc}
 }
 
@@ -240,7 +241,7 @@ func (*UnimplementedPruningServiceServer) GetBlockIndexerRetainHeight(ctx contex
 	return nil, status.Errorf(codes.Unimplemented, "method GetBlockIndexerRetainHeight not implemented")
 }
 
-func RegisterPruningServiceServer(s *grpc.Server, srv PruningServiceServer) {
+func RegisterPruningServiceServer(s grpc1.Server, srv PruningServiceServer) {
 	s.RegisterService(&_PruningService_serviceDesc, srv)
 }
 

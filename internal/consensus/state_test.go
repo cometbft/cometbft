@@ -223,11 +223,7 @@ func TestStateBadProposal(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID, propBlock.Header.Time)
-	p := proposal.ToProto()
-	err = vs2.SignProposal(chainID, p)
-	require.NoError(t, err)
-
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vs2)
 
 	// set the proposal block
 	err = cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer")
@@ -288,10 +284,7 @@ func TestStateOversizedBlock(t *testing.T) {
 
 			blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 			proposal := types.NewProposal(height, round, -1, blockID, propBlock.Header.Time)
-			p := proposal.ToProto()
-			err := vs2.SignProposal(chainID, p)
-			require.NoError(t, err)
-			proposal.Signature = p.Signature
+			signProposal(t, proposal, chainID, vs2)
 
 			totalBytes := 0
 			for i := 0; i < int(propBlockParts.Total()); i++ {
@@ -305,7 +298,7 @@ func TestStateOversizedBlock(t *testing.T) {
 			}
 			numBlockParts := int64(propBlockParts.Total())
 
-			err = cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer")
+			err := cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer")
 			require.NoError(t, err)
 
 			// start the machine
@@ -817,10 +810,7 @@ func TestStateLock_POLRelock(t *testing.T) {
 	incrementRound(vs2, vs3, vs4)
 	round++
 	propR1 := types.NewProposal(height, round, cs1.ValidRound, blockID, theBlock.Header.Time)
-	p := propR1.ToProto()
-	err = vs2.SignProposal(chainID, p)
-	require.NoError(t, err)
-	propR1.Signature = p.Signature
+	signProposal(t, propR1, chainID, vs2)
 	err = cs1.SetProposalAndBlock(propR1, theBlock, theBlockParts, "")
 	require.NoError(t, err)
 
@@ -1330,9 +1320,6 @@ func TestStateLock_MissingProposalWhenPOLForLockedBlock(t *testing.T) {
 // misses the round's Proposal, but receives a Polka for a block and the full
 // block, precommits the valid block even though the Proposal is missing.
 func TestState_MissingProposalValidBlockReceivedPrecommit(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	cs1, vss := randState(4)
 	height, round := cs1.Height, cs1.Round
 	chainID := cs1.state.ChainID
@@ -1342,14 +1329,7 @@ func TestState_MissingProposalValidBlockReceivedPrecommit(t *testing.T) {
 	voteCh := subscribe(cs1.eventBus, types.EventQueryVote)
 
 	// Produce a block
-	block, err := cs1.createProposalBlock(ctx)
-	require.NoError(t, err)
-	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	blockID := types.BlockID{
-		Hash:          block.Hash(),
-		PartSetHeader: blockParts.Header(),
-	}
+	_, blockParts, blockID := createProposalBlock(t, cs1)
 
 	// Skip round 0 and start consensus
 	round++
@@ -1667,11 +1647,7 @@ func TestStateLock_POLSafety2(t *testing.T) {
 			round++ // moving to the next round
 			// in round 2 we see the polkad block from round 0
 			newProp := types.NewProposal(height, round, 0, propBlockID0, propBlock0.Header.Time)
-			p := newProp.ToProto()
-			err = vs3.SignProposal(chainID, p)
-			require.NoError(t, err)
-
-			newProp.Signature = p.Signature
+			signProposal(t, newProp, chainID, vs3)
 
 			err = tc.state.SetProposalAndBlock(newProp, propBlock0, propBlockParts0, "some peer")
 			require.NoError(t, err)
@@ -1811,10 +1787,7 @@ func TestState_PrevotePOLFromPreviousRound(t *testing.T) {
 	incrementRound(vs2, vs3, vs4)
 	round++
 	propR2 := types.NewProposal(height, round, 1, r1BlockID, propBlockR1.Header.Time)
-	p := propR2.ToProto()
-	err = vs3.SignProposal(chainID, p)
-	require.NoError(t, err)
-	propR2.Signature = p.Signature
+	signProposal(t, propR2, chainID, vs3)
 
 	// cs1 receives a proposal for D, the block that received a POL in round 1.
 	err = cs1.SetProposalAndBlock(propR2, propBlockR1, propBlockR1Parts, "")
@@ -2558,7 +2531,7 @@ func TestVoteExtensionEnableHeight(t *testing.T) {
 			}
 
 			for _, vs := range vss[1:] {
-				vote, err := vs.signVote(types.PrecommitType, chainID, blockID, ext, testCase.hasExtension)
+				vote, err := vs.signVote(types.PrecommitType, chainID, blockID, ext, testCase.hasExtension, vs.clock.Now())
 				require.NoError(t, err)
 				addVotes(cs1, vote)
 			}
@@ -3113,9 +3086,6 @@ func TestSignSameVoteTwice(t *testing.T) {
 // proposed block if the timestamp in the block does not match the timestamp in the
 // corresponding proposal message.
 func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	cs1, vss := randState(4)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -3126,21 +3096,14 @@ func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
-	propBlock, err := cs1.createProposalBlock(ctx)
-	require.NoError(t, err)
+	propBlock, propBlockParts, blockID := createProposalBlock(t, cs1)
+
 	round++
 	incrementRound(vss[1:]...)
 
-	propBlockParts, err := propBlock.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
-
 	// Create a proposal with a timestamp that does not match the timestamp of the block.
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID, propBlock.Header.Time.Add(time.Millisecond))
-	p := proposal.ToProto()
-	err = vs2.SignProposal(chainID, p)
-	require.NoError(t, err)
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vs2)
 	require.NoError(t, cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"))
 
 	startTestRound(cs1, height, round)
@@ -3162,9 +3125,6 @@ func TestStateTimestamp_ProposalNotMatch(t *testing.T) {
 // proposed block if the timestamp in the block matches the timestamp in the
 // corresponding proposal message.
 func TestStateTimestamp_ProposalMatch(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	cs1, vss := randState(4)
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -3175,21 +3135,14 @@ func TestStateTimestamp_ProposalMatch(t *testing.T) {
 	addr := pv1.Address()
 	voteCh := subscribeToVoter(cs1, addr)
 
-	propBlock, err := cs1.createProposalBlock(ctx)
-	require.NoError(t, err)
+	propBlock, propBlockParts, blockID := createProposalBlock(t, cs1)
+
 	round++
 	incrementRound(vss[1:]...)
 
-	propBlockParts, err := propBlock.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
-
 	// Create a proposal with a timestamp that matches the timestamp of the block.
 	proposal := types.NewProposal(vs2.Height, round, -1, blockID, propBlock.Header.Time)
-	p := proposal.ToProto()
-	err = vs2.SignProposal(chainID, p)
-	require.NoError(t, err)
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vs2)
 	require.NoError(t, cs1.SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"))
 
 	startTestRound(cs1, height, round)
@@ -3240,7 +3193,7 @@ func signAddPrecommitWithExtension(
 	stub *validatorStub,
 ) {
 	t.Helper()
-	v, err := stub.signVote(types.PrecommitType, chainID, blockID, extension, true)
+	v, err := stub.signVote(types.PrecommitType, chainID, blockID, extension, true, stub.clock.Now())
 	require.NoError(t, err, "failed to sign vote")
 	addVotes(cs, v)
 }

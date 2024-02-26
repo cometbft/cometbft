@@ -248,7 +248,7 @@ func (state State) MakeBlock(
 	case height == state.InitialHeight:
 		timestamp = state.LastBlockTime // genesis time
 	default:
-		timestamp = MedianTime(lastCommit, state.LastValidators)
+		timestamp = lastCommit.MedianTime(state.LastValidators)
 	}
 
 	// Fill rest of header with state data.
@@ -261,32 +261,6 @@ func (state State) MakeBlock(
 	)
 
 	return block
-}
-
-// MedianTime computes the median time for a Commit based on the associated validator set.
-// The median time is the weighted median of the Timestamp fields of the commit votes,
-// with heights defined by the validator's voting powers.
-// The BFT Time algorithm ensures that the computed median time is always picked among
-// the timestamps produced by honest processes, i.e., faulty processes cannot arbitrarily
-// increase or decrease the median time.
-// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/bft-time.md
-func MedianTime(commit *types.Commit, validators *types.ValidatorSet) time.Time {
-	weightedTimes := make([]*cmttime.WeightedTime, len(commit.Signatures))
-	totalVotingPower := int64(0)
-
-	for i, commitSig := range commit.Signatures {
-		if commitSig.BlockIDFlag == types.BlockIDFlagAbsent {
-			continue
-		}
-		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)
-		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
-		if validator != nil {
-			totalVotingPower += validator.VotingPower
-			weightedTimes[i] = cmttime.NewWeightedTime(commitSig.Timestamp, validator.VotingPower)
-		}
-	}
-
-	return cmttime.WeightedMedian(weightedTimes, totalVotingPower)
 }
 
 //------------------------------------------------------------------------

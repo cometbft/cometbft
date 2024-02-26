@@ -23,6 +23,7 @@ func init() {
 	// This can be used to manually specify a testnet manifest and/or node to
 	// run tests against. The testnet must have been started by the runner first.
 	// os.Setenv("E2E_MANIFEST", "networks/ci.toml")
+	// os.Setenv("E2E_TESTNET_DIR", "networks/ci")
 	// os.Setenv("E2E_NODE", "validator01")
 }
 
@@ -137,7 +138,9 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	}
 	require.NoError(t, err)
 
-	testnet, err := e2e.LoadTestnet(manifestFile, ifd)
+	testnetDir := os.Getenv("E2E_TESTNET_DIR")
+
+	testnet, err := e2e.LoadTestnet(manifestFile, ifd, testnetDir)
 	require.NoError(t, err)
 	testnetCache[manifestFile] = *testnet
 	return *testnet

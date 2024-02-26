@@ -1377,24 +1377,28 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
-		logger.Debug("prevote step: proposal timestamp not equal; prevoting nil")
-		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-		return
-	}
+	// Timestamp validation using Proposed-Based TimeStamp (PBTS) algorithm.
+	// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/README.md
+	if cs.isPBTSEnabled(height) {
+		if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
+			logger.Debug("prevote step: proposal timestamp not equal; prevoting nil")
+			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+			return
+		}
 
-	if cs.isPBTSEnabled(height) && cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
-		logger.Debug("prevote step: Proposal is not timely; prevoting nil",
-			"proposed",
-			cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
-			"received",
-			cmttime.Canonical(cs.ProposalReceiveTime).Format(time.RFC3339Nano),
-			"msg_delay",
-			cs.state.ConsensusParams.Synchrony.MessageDelay,
-			"precision",
-			cs.state.ConsensusParams.Synchrony.Precision)
-		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-		return
+		if cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
+			logger.Debug("prevote step: Proposal is not timely; prevoting nil",
+				"proposed",
+				cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
+				"received",
+				cmttime.Canonical(cs.ProposalReceiveTime).Format(time.RFC3339Nano),
+				"msg_delay",
+				cs.state.ConsensusParams.Synchrony.MessageDelay,
+				"precision",
+				cs.state.ConsensusParams.Synchrony.Precision)
+			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+			return
+		}
 	}
 
 	// Validate proposal block, from consensus' perspective

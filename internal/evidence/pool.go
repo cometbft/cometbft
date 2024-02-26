@@ -48,8 +48,6 @@ type Pool struct {
 }
 
 func isEmpty(evidenceDB dbm.DB) bool {
-	items := 0
-
 	iter, err := evidenceDB.Iterator(nil, nil)
 	if err != nil {
 		panic(err)
@@ -58,7 +56,6 @@ func isEmpty(evidenceDB dbm.DB) bool {
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		return false
-		break
 	}
 	return true
 }
@@ -92,7 +89,7 @@ func setDBLayout(evidenceDB dbm.DB, pool *Pool) {
 		case "2":
 			pool.dbKeyLayout = v2Layout{}
 		default:
-		        panic(fmt.Sprintf("Unknown version. Expected 1 or 2, given %s", string(version)))
+			panic("Unknown version. Expected 1 or 2, given" + string(version))
 		}
 	}
 }

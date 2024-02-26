@@ -3,10 +3,8 @@ package state_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"time"
 
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -116,46 +114,6 @@ func makeValidCommit(
 		BlockID:            blockID,
 		ExtendedSignatures: sigs,
 	}, nil
-}
-
-func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValidator) {
-	vals := make([]types.GenesisValidator, nVals)
-	privVals := make(map[string]types.PrivValidator, nVals)
-	for i := 0; i < nVals; i++ {
-		secret := []byte(fmt.Sprintf("test%d", i))
-		pk := ed25519.GenPrivKeyFromSecret(secret)
-		valAddr := pk.PubKey().Address()
-		vals[i] = types.GenesisValidator{
-			Address: valAddr,
-			PubKey:  pk.PubKey(),
-			Power:   1000,
-			Name:    fmt.Sprintf("test%d", i),
-		}
-		privVals[valAddr.String()] = types.NewMockPVWithParams(pk, false, false)
-	}
-	s, _ := sm.MakeGenesisState(&types.GenesisDoc{
-		ChainID:    chainID,
-		Validators: vals,
-		AppHash:    nil,
-	})
-
-	stateDB := dbm.NewMemDB()
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	if err := stateStore.Save(s); err != nil {
-		panic(err)
-	}
-
-	for i := 1; i < height; i++ {
-		s.LastBlockHeight++
-		s.LastValidators = s.Validators.Copy()
-		if err := stateStore.Save(s); err != nil {
-			panic(err)
-		}
-	}
-
-	return s, stateDB, privVals
 }
 
 func genValSet(size int) *types.ValidatorSet {

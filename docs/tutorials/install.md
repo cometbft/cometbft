@@ -12,7 +12,7 @@ Install CometBFT with the following command:
 go install github.com/cometbft/cometbft/cmd/cometbft@latest
 ```
 
-Otherwise, you can install a specific version of CometBFT with the following command:
+Install a specific version of CometBFT's Go package:
 
 ```sh
 go install github.com/cometbft/cometbft/cmd/cometbft@v0.38

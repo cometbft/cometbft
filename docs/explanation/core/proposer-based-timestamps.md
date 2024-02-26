@@ -69,7 +69,7 @@ blocks.
 This only applies to the first time at which a block is proposed.
 If the same block is re-proposed in a future round because it was deemed valid
 by the network, this check is not performed.
-Refer to the PBTS specfication for more details.
+Refer to the PBTS specification for more details.
 
 When a validator receives a proposal for a new block, it ensures that the timestamp in
 the proposal is within a bound of the validator's local clock.

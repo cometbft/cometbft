@@ -199,7 +199,7 @@ the previously committed block.
 To prevent this from happening, first, follow recommendation 1., i.e., synchronize
 the validators' clocks.
 Then wait until the block times produced by BFT Time converge to values that do
-not differ too much from real time (observation 4.).
+not differ too much from real time.
 This may take a long time, because in BFT Time if the value a validator reads
 from its local clock is smaller than the time of the previous block, then the
 time it sets to a new block will be the time of the previous block plus `1ms`.

@@ -203,7 +203,7 @@ type FeatureParams struct {
 }
 ```
 
-The semantics are identical to the ones adopted to enable vote extensions via
+The semantics are similar to the ones adopted to enable vote extensions via
 [`VoteExtensionsEnableHeight`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_app_requirements.md#abciparamsvoteextensionsenableheight).
 The PBTS algorithm is enabled from `FeatureParams.PbtsEnableHeight`, when this
 parameter is set to a value greater than zero, and greater to the height at

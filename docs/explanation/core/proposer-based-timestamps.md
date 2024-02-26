@@ -61,7 +61,13 @@ If the block is considered invalid, the validator issues a `nil` prevote,
 signaling to the rest of the network that the proposed block is not valid.
 
 The PBTS algorithm performs a validity check on the timestamp of proposed
-blocks. When a validator receives a proposal it ensures that the timestamp in
+blocks.
+This only applies to the first time at which a block is proposed.
+If the same block is re-proposed in a future round because it was deemed valid
+by the network, this check is not performed.
+Refer to the PBTS specfication for more details.
+
+When a validator receives a proposal for a new block, it ensures that the timestamp in
 the proposal is within a bound of the validator's local clock.
 For that it uses `Precision` and `MessageDelay` consensus parameters, 
 which are the same across all nodes for a given height.
@@ -74,6 +80,7 @@ If the proposed block's timestamp is within the window of acceptable
 timestamps, the timestamp is considered **timely**.
 If the block timestamp is **not timely**, the validator rejects the block by
 issuing a `nil` prevote.
+Notice that this 
 
 ### Clock Synchronization
 

@@ -3,6 +3,7 @@ package types
 import (
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -107,6 +108,20 @@ func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
 type SynchronyParams struct {
 	Precision    time.Duration `json:"precision,string"`
 	MessageDelay time.Duration `json:"message_delay,string"`
+}
+
+/*
+AdaptiveSynchronyParams ensures an exponential backoff for timestamp validation by relaxing MessageDelay by a factor of
+10% each subsequent round a proposal's timeliness is calculated. This is meant to facilitate the progression of
+consensus if bad synchrony parameters are set or become insufficient to preserve liveness.
+
+Where r is the consensus round, MSGDELAY(r) == MSGDELAY(0) * (1.1)^r.
+*/
+func AdaptiveSynchronyParams(precision time.Duration, messageDelay time.Duration, round int32) SynchronyParams {
+	return SynchronyParams{
+		Precision:    precision,
+		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(messageDelay)),
+	}
 }
 
 // DefaultConsensusParams returns a default ConsensusParams.

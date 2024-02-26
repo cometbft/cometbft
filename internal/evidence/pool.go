@@ -57,10 +57,10 @@ func isEmpty(evidenceDB dbm.DB) bool {
 
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
-		items++
+		return false
 		break
 	}
-	return items == 0
+	return true
 }
 
 func setDBLayout(evidenceDB dbm.DB, pool *Pool) {
@@ -91,6 +91,8 @@ func setDBLayout(evidenceDB dbm.DB, pool *Pool) {
 			pool.dbKeyLayout = v1LegacyLayout{}
 		case "2":
 			pool.dbKeyLayout = v2Layout{}
+		default:
+		        panic(fmt.Sprintf("Unknown version. Expected 1 or 2, given %s", string(version)))
 		}
 	}
 }

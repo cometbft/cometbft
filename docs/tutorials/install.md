@@ -15,7 +15,7 @@ go install github.com/cometbft/cometbft/cmd/cometbft@latest
 Otherwise, you can install a specific version of CometBFT with the following command:
 
 ```sh
-go install github.com/cometbft/cometbft/cmd/cometbft@v0.38.5
+go install github.com/cometbft/cometbft/cmd/cometbft@v0.38
 ```
 
 ## From Binary

@@ -33,9 +33,10 @@ const (
 	proxyPortFirst           uint32 = 5701
 	prometheusProxyPortFirst uint32 = 6701
 
-	defaultBatchSize   = 2
-	defaultConnections = 1
-	defaultTxSizeBytes = 1024
+	defaultBatchSize    = 2
+	defaultConnections  = 1
+	defaultTxSizeBytes  = 1024
+	defaultLoadDuration = 60
 
 	localVersion = "cometbft/e2e-node:local-version"
 )
@@ -68,6 +69,8 @@ const (
 
 	EvidenceAgeHeight int64         = 7
 	EvidenceAgeTime   time.Duration = 500 * time.Millisecond
+
+	LoadConditionMempoolsAreEmpty = "mempools-are-empty"
 )
 
 // Testnet represents a single testnet.
@@ -81,13 +84,10 @@ type Testnet struct {
 	Validators                                           map[*Node]int64
 	ValidatorUpdates                                     map[int64]map[*Node]int64
 	Nodes                                                []*Node
+	Loads                                                []*Load
 	DisablePexReactor                                    bool
 	KeyType                                              string
 	Evidence                                             int
-	LoadTxSizeBytes                                      int
-	LoadTxBatchSize                                      int
-	LoadTxConnections                                    int
-	LoadMaxTxs                                           int
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -139,6 +139,24 @@ type Node struct {
 	Zone                    ZoneID
 }
 
+type Load struct {
+	Testnet     *Testnet
+	WaitToStart int
+	WaitUntil   string
+	WaitAtEnd   int
+	Runs        map[string]*LoadRun
+}
+
+type LoadRun struct {
+	TxBytes     int
+	BatchSize   int
+	Connections int
+	MaxTxs      int
+	MaxDuration int
+	WaitToRun   int
+	TargetNodes []*Node
+}
+
 // LoadTestnet loads a testnet from a manifest file, using the filename to
 // determine the testnet name and directory (from the basename of the file).
 // The testnet generation must be deterministic, since it is generated
@@ -173,12 +191,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		Validators:                       map[*Node]int64{},
 		ValidatorUpdates:                 map[int64]map[*Node]int64{},
 		Nodes:                            []*Node{},
+		Loads:                            []*Load{},
 		DisablePexReactor:                manifest.DisablePexReactor,
 		Evidence:                         manifest.Evidence,
-		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
-		LoadTxConnections:                manifest.LoadTxConnections,
-		LoadMaxTxs:                       manifest.LoadMaxTxs,
 		ABCIProtocol:                     manifest.ABCIProtocol,
 		PrepareProposalDelay:             manifest.PrepareProposalDelay,
 		ProcessProposalDelay:             manifest.ProcessProposalDelay,
@@ -208,15 +223,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.UpgradeVersion == "" {
 		testnet.UpgradeVersion = localVersion
-	}
-	if testnet.LoadTxConnections == 0 {
-		testnet.LoadTxConnections = defaultConnections
-	}
-	if testnet.LoadTxBatchSize == 0 {
-		testnet.LoadTxBatchSize = defaultBatchSize
-	}
-	if testnet.LoadTxSizeBytes == 0 {
-		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 
 	for _, name := range sortNodeNames(manifest) {
@@ -364,6 +370,116 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.ValidatorUpdates[int64(height)] = valUpdate
 	}
 
+	// Create a default transaction load if there is none. Its values may be updated in the next
+	// step.
+	if len(manifest.Loads) == 0 {
+		run := &ManifestLoadRun{
+			TxBytes:     manifest.LoadTxSizeBytes,
+			BatchSize:   manifest.LoadTxBatchSize,
+			Connections: manifest.LoadTxConnections,
+			MaxDuration: manifest.LoadMaxDuration,
+			MaxTxs:      manifest.LoadMaxTxs,
+		}
+		load := &ManifestLoad{
+			Runs: map[string]*ManifestLoadRun{"default": run},
+		}
+		manifest.Loads = []*ManifestLoad{load}
+	}
+
+	// Set up the transaction load instances.
+	for _, loadManifest := range manifest.Loads {
+		runs := make(map[string]*LoadRun, len(loadManifest.Runs))
+		for name, runManifest := range loadManifest.Runs {
+			run := &LoadRun{
+				TxBytes:     manifest.LoadTxSizeBytes,
+				BatchSize:   manifest.LoadTxBatchSize,
+				Connections: manifest.LoadTxConnections,
+				MaxDuration: manifest.LoadMaxDuration,
+				MaxTxs:      manifest.LoadMaxTxs,
+				WaitToRun:   runManifest.WaitToRun,
+			}
+			if loadManifest.TxBytes > 0 {
+				run.TxBytes = loadManifest.TxBytes
+			}
+			if runManifest.TxBytes > 0 {
+				run.TxBytes = runManifest.TxBytes
+			}
+			if run.TxBytes == 0 {
+				run.TxBytes = defaultTxSizeBytes
+			}
+			if loadManifest.BatchSize > 0 {
+				run.BatchSize = loadManifest.BatchSize
+			}
+			if runManifest.BatchSize > 0 {
+				run.BatchSize = runManifest.BatchSize
+			}
+			if run.BatchSize == 0 {
+				run.BatchSize = defaultBatchSize
+			}
+			if loadManifest.Connections > 0 {
+				run.Connections = loadManifest.Connections
+			}
+			if runManifest.Connections > 0 {
+				run.Connections = runManifest.Connections
+			}
+			if run.Connections == 0 {
+				run.Connections = defaultConnections
+			}
+			if run.Connections == 0 {
+				run.Connections = defaultConnections
+			}
+			if loadManifest.MaxTxs > 0 {
+				run.MaxTxs = loadManifest.MaxTxs
+			}
+			if runManifest.MaxTxs > 0 {
+				run.MaxTxs = runManifest.MaxTxs
+			}
+			if loadManifest.MaxDuration > 0 {
+				run.MaxDuration = loadManifest.MaxDuration
+			}
+			if runManifest.MaxDuration > 0 {
+				run.MaxDuration = runManifest.MaxDuration
+			}
+
+			// When there are more than one load, both the duration and the maximum number of
+			// transactions cannot be unbounded, so we restrict the duration to the default value.
+			if len(manifest.Loads) > 1 && (run.MaxDuration == 0 && run.MaxTxs == 0) {
+				run.MaxDuration = defaultLoadDuration
+			}
+
+			// Set target nodes by filtering the list of all nodes. If no node is left, use all
+			// nodes.
+			for _, node := range testnet.Nodes {
+				if slices.Contains(runManifest.TargetNodeNames, node.Name) {
+					run.TargetNodes = append(run.TargetNodes, node)
+				}
+			}
+			if len(run.TargetNodes) == 0 {
+				run.TargetNodes = testnet.Nodes
+			}
+
+			runs[name] = run
+		}
+
+		load := &Load{
+			Testnet:     testnet,
+			WaitToStart: manifest.LoadWaitToStart,
+			WaitUntil:   manifest.LoadWaitUntil,
+			WaitAtEnd:   manifest.LoadWaitAtEnd,
+			Runs:        runs,
+		}
+		if loadManifest.WaitToStart > 0 {
+			load.WaitToStart = loadManifest.WaitToStart
+		}
+		if loadManifest.WaitUntil != "" {
+			load.WaitUntil = loadManifest.WaitUntil
+		}
+		if loadManifest.WaitAtEnd > 0 {
+			load.WaitAtEnd = loadManifest.WaitAtEnd
+		}
+		testnet.Loads = append(testnet.Loads, load)
+	}
+
 	return testnet, testnet.Validate()
 }
 
@@ -418,6 +534,11 @@ func (t Testnet) Validate() error {
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
+		}
+	}
+	for i, load := range t.Loads {
+		if err := load.Validate(t); err != nil {
+			return fmt.Errorf("invalid load %v: %w", i, err)
 		}
 	}
 	return nil
@@ -548,6 +669,24 @@ func (n Node) Validate(testnet Testnet) error {
 	return nil
 }
 
+// Validate validates a load.
+// TODO: complete.
+func (l Load) Validate(testnet Testnet) error {
+	for name, run := range l.Runs {
+		if err := run.Validate(testnet, l); err != nil {
+			return fmt.Errorf("invalid run %v: %w", name, err)
+		}
+	}
+
+	return nil
+}
+
+// Validate validates a load.
+// TODO: complete.
+func (r LoadRun) Validate(testnet Testnet, load Load) error {
+	return nil
+}
+
 // LookupNode looks up a node by name. For now, simply do a linear search.
 func (t Testnet) LookupNode(name string) *Node {
 	for _, node := range t.Nodes {
@@ -569,6 +708,17 @@ func (t Testnet) ArchiveNodes() []*Node {
 		}
 	}
 	return nodes
+}
+
+// ValidatorNodes returns the list of nodes that are validators.
+func (t Testnet) ValidatorNodes() []*Node {
+	validators := make([]*Node, len(t.Validators))
+	i := 0
+	for validator := range t.Validators {
+		validators[i] = validator
+		i++
+	}
+	return validators
 }
 
 // RandomNode returns a random non-seed node.

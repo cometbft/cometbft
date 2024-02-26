@@ -120,7 +120,7 @@ func NewCLI() *CLI {
 			ctx, loadCancel := context.WithCancel(context.Background())
 			defer loadCancel()
 			go func() {
-				err := Load(ctx, cli.testnet)
+				err := Load(ctx, cli.testnet.Loads)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Transaction load failed: %v", err.Error()))
 				}
@@ -234,7 +234,7 @@ func NewCLI() *CLI {
 		Use:   "load",
 		Short: "Generates transaction load until the command is canceled",
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			return Load(context.Background(), cli.testnet)
+			return Load(context.Background(), cli.testnet.Loads)
 		},
 	})
 
@@ -317,7 +317,7 @@ Does not run any perturbations.
 			ctx, loadCancel := context.WithCancel(cmd.Context())
 			defer loadCancel()
 			go func() {
-				err := Load(ctx, cli.testnet)
+				err := Load(ctx, cli.testnet.Loads)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Transaction load errored: %v", err.Error()))
 				}

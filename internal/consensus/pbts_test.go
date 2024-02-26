@@ -702,6 +702,8 @@ func TestPbtsAdaptiveMessageDelay(t *testing.T) {
 	height, round := cs.Height, cs.Round
 	chainID := cs.state.ChainID
 
+	originMaxDelta := c.Synchrony.Precision + c.Synchrony.MessageDelay
+
 	maximumRound := round + 10
 	startTestRound(cs, height, round)
 
@@ -712,10 +714,12 @@ func TestPbtsAdaptiveMessageDelay(t *testing.T) {
 		t.Log("Starting round", round)
 		ensureNewRound(newRoundCh, height, round)
 		proposer := election(height, round)
-		maxDelta := c.Synchrony.MessageDelay + c.Synchrony.Precision
+		ac := types.AdaptiveSynchronyParams(c.Synchrony.Precision,
+			c.Synchrony.MessageDelay, round)
+		maxDelta := ac.Precision + ac.MessageDelay
 
 		if proposer != 0 {
-			shift := maxDelta + time.Second
+			shift := originMaxDelta + c.Synchrony.MessageDelay/2
 			ts := cmttime.Now().Add(-shift)
 			if ts.Before(genesisTime) {
 				ts = genesisTime

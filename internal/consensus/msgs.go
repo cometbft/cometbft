@@ -271,7 +271,7 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 			return nil, err
 		}
 
-		var rtp *time.Time = nil
+		var rtp *time.Time
 		if !msg.ReceiveTime.IsZero() {
 			// Only record the `ReceiveTime` if explicitly set.
 			rt := msg.ReceiveTime

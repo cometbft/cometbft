@@ -13,6 +13,7 @@ It is intended to be used by engineers reproducing the experimental setup for fu
 The (first iteration of the) QA process as described [in the RELEASES.md document][releases]
 was applied to version v0.34.x in order to have a set of results acting as benchmarking baseline.
 This baseline is then compared with results obtained in later versions.
+See [RELEASES.md][releases] for a description of the tests that we run on the QA process.
 
 Out of the testnet-based test cases described in [the releases document][releases] we focused on two of them:
 _200 Node Test_, and _Rotating Nodes Test_.
@@ -63,11 +64,15 @@ _200 Node Test_, and _Rotating Nodes Test_.
 
 ## 200 Node Testnet
 
-This experiment consists of spinning up 200 nodes (175 validators + 20 full nodes + 5 seed nodes) and running the script
-[200-node-loadscript.sh](https://github.com/cometbft/qa-infra/blob/main/ansible/scripts/200-node-loadscript.sh).
+This test consists in spinning up 200 nodes (175 validators + 20 full nodes + 5 seed nodes) and
+performing two of experiments:
+- First we find the [saturation point](saturation) of the network by running the script
+  [200-node-loadscript.sh][200-node-loadscript.sh].
+- Then we run several times the testnet using the saturation point to collect data.
 
-This script runs multiple transaction load instances with all possible combinations of the following parameters:
-- number of transactions sent per second (the rate): 200, 400, 800, 1600.
+The script [200-node-loadscript.sh] runs multiple transaction load instances with all possible
+combinations of the following parameters:
+- number of transactions sent per second (the rate): 200, 400, 800, and 1600.
 - number of connections to the target node: 1, 2, and 4.
 
 Additionally:
@@ -76,6 +81,9 @@ Additionally:
 - There is one target node (a validator) that receives all the load.
 - After each test iteration, it waits that the mempool is empty and then wait `120 + rate /60`
   seconds more.
+
+[200-node-loadscript.sh]: https://github.com/cometbft/qa-infra/blob/main/ansible/scripts/200-node-loadscript.sh
+[saturation]: CometBFT-QA-34.md#saturation-point
 
 ### Running the test
 

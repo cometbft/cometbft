@@ -45,8 +45,12 @@ func setDBKeyLayout(db dbm.DB, lightStore *dbs) {
 	}
 
 	version, err := lightStore.db.Get([]byte("version"))
-
-	if len(version) == 0 && err == nil {
+	if err != nil {
+		// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+		// If this behavior changes we need to account for that.
+		panic(err)
+	}
+	if len(version) == 0 {
 		lightStore.dbKeyLayout = &v1LegacyLayout{}
 		if err := lightStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
 			panic(err)

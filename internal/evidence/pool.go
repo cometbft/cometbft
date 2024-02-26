@@ -74,6 +74,8 @@ func setDBLayout(evidenceDB dbm.DB, pool *Pool) {
 		err     error
 	)
 	if version, err = evidenceDB.Get([]byte("version")); err != nil {
+		// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+		// If this behavior changes we need to account for that.
 		panic(err)
 	}
 	if len(version) == 0 {

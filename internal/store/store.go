@@ -90,7 +90,12 @@ func setDBLayout(bStore *BlockStore) {
 		return
 	}
 	version, err := bStore.db.Get([]byte("version"))
-	if len(version) == 0 && err == nil {
+	// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+	// If this behavior changes we need to account for that.
+	if err != nil {
+		panic(err)
+	}
+	if len(version) == 0 {
 		bStore.dbKeyLayout = &v1LegacyLayout{}
 		if err := bStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
 			panic(err)

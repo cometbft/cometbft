@@ -9,7 +9,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-func State(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+func MakeState(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
 	vals := make([]types.GenesisValidator, nVals)
 	privVals := make(map[string]types.PrivValidator, nVals)
 	for i := 0; i < nVals; i++ {

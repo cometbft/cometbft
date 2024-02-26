@@ -30,7 +30,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := test.State(3, 1, "execution-chain")
+	state, stateDB, privVals := test.MakeState(3, 1, "execution-chain")
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -127,7 +127,7 @@ func TestValidateBlockCommit(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := test.State(1, 1, "execution-chain")
+	state, stateDB, privVals := test.MakeState(1, 1, "execution-chain")
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -271,7 +271,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := test.State(4, 1, "execution-chain")
+	state, stateDB, privVals := test.MakeState(4, 1, "execution-chain")
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

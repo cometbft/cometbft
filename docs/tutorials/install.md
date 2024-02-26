@@ -4,7 +4,7 @@ order: 3
 
 # Install CometBFT
 
-## From Go Install
+## From Go Package
 
 Install CometBFT with the following command:
 

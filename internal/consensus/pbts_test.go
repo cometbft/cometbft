@@ -673,3 +673,100 @@ func TestPBTSEnableHeight(t *testing.T) {
 	// Last call to FinalizeBlock
 	ensureNewRound(newRoundCh, height, round)
 }
+
+// TestPbtsAdaptiveMessageDelay tests whether proposals with timestamps in the
+// past are eventually accepted by validators. The test runs multiple rounds.
+// Rounds where the tested node is the proposer are skipped. Rounds with other
+// proposers uses a Proposal with a tweaked timestamp, which is too far in the
+// past. After a maximum number of rounds, if PBTS validation is adaptive, the
+// synchronous parameters will be large enough to accept the proposal.
+func TestPbtsAdaptiveMessageDelay(t *testing.T) {
+	numValidators := 4
+	election := func(h int64, r int32) int {
+		return (int(h-1) + int(r)) % numValidators
+	}
+
+	c := test.ConsensusParams()
+	app := kvstore.NewInMemoryApplication()
+	genesisTime := cmttime.Now().Add(-5 * time.Second)
+	cs, vss := randStateWithAppImplGenesisTime(numValidators, app, c, genesisTime)
+
+	myPrivKey, err := vss[0].GetPubKey()
+	require.NoError(t, err)
+	myAddress := myPrivKey.Address()
+
+	proposalCh := subscribe(cs.eventBus, types.EventQueryCompleteProposal)
+	newRoundCh := subscribe(cs.eventBus, types.EventQueryNewRound)
+	voteCh := subscribe(cs.eventBus, types.EventQueryVote)
+
+	height, round := cs.Height, cs.Round
+	chainID := cs.state.ChainID
+
+	maximumRound := round + 10
+	startTestRound(cs, height, round)
+
+	for ; round < maximumRound; round++ {
+		var vote types.BlockID
+		assert.True(t, vote.IsNil()) // default is vote nil
+
+		t.Log("Starting round", round)
+		ensureNewRound(newRoundCh, height, round)
+		proposer := election(height, round)
+		maxDelta := c.Synchrony.MessageDelay + c.Synchrony.Precision
+
+		if proposer != 0 {
+			shift := maxDelta
+			ts := cmttime.Now().Add(-shift)
+			if ts.Before(genesisTime) {
+				ts = genesisTime
+			}
+
+			// Create block and proposal with the tweaked timestamp
+			block, blockParts, blockID := createProposalBlockWithTime(t, cs, ts)
+			proposal := types.NewProposal(height, round, -1, blockID, block.Header.Time)
+			signProposal(t, proposal, chainID, vss[proposer])
+
+			require.NoError(t, cs.SetProposalAndBlock(proposal, block, blockParts, "p"))
+			maxReceiveTime := cmttime.Now()
+
+			ensureProposal(proposalCh, height, round, blockID)
+			ensurePrevote(voteCh, height, round)
+			vote = cs.Votes.Prevotes(round).GetByAddress(myAddress).BlockID
+
+			delta := maxReceiveTime.Sub(ts)
+			t.Log("Proposal timestamp", ts.Format(time.StampMicro),
+				"maximum receive time", maxReceiveTime.Format(time.StampMicro),
+				"delta", delta,
+				"maximum allowed delta", maxDelta)
+			t.Logf("Round %d, expected timely=%v, got timely=%v\n",
+				round, (delta < maxDelta), !vote.IsNil())
+		} else {
+			// The node will accept its own proposal.
+			// Just make everyone to vote nil and skip the round.
+			ensureNewProposal(proposalCh, height, round)
+			ensurePrevote(voteCh, height, round)
+		}
+
+		for _, vs := range vss[2:] {
+			signAddVotes(cs, types.PrevoteType, chainID, vote, false, vs)
+			ensurePrevote(voteCh, height, round)
+		}
+		ensurePrecommit(voteCh, height, round)
+
+		for _, vs := range vss[2:] {
+			signAddVotes(cs, types.PrecommitType, chainID, vote, true, vs)
+			ensurePrecommit(voteCh, height, round)
+		}
+
+		if vote.IsNil() {
+			// No decision, new round required
+			incrementRound(vss[1:]...)
+		} else {
+			// Decide, so we are good!
+			ensureNewRound(newRoundCh, height+1, 0)
+			t.Log("Decided at round", round)
+			return
+		}
+	}
+	t.Error("Did not decide after round", round)
+}

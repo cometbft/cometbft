@@ -119,10 +119,11 @@ _all_ validators in the network.
 The `MessageDelay` parameter is of [`time.Duration`](https://pkg.go.dev/time#Duration) type.
 
 Networks should choose a `MessageDelay` that is large enough to represent the
-worst-case delay for a message to reach all participants.
-This delay does not depend, a priori, on the size of proposed blocks, since it
-applies to the `Proposal` messages.
-It does depend on the number of participants and latency of their connections.
+delay for a `Proposal` message to reach all participants.
+As `Proposal` messages are fixed-size, this delay should not depend, a priori,
+on the size of proposed blocks.
+But it does depend on the number of nodes in the network and latency of their
+connections.
 
 ### `FeatureParams.PbtsEnableHeight`
 
@@ -158,9 +159,14 @@ When configuring a network to adopt the PBTS algorithm, the follow steps must be
 1. Make sure that the configured value for [`SynchronyParams.Precision`](#synchronyparamsprecision) is
    reasonable.
 1. Make sure that the configured value for [`SynchronyParams.MessageDelay`](#synchronyparamsmessagedelay) is
-   reasonable and large enough to reflect the worst-case delay for messages in the network.
+   reasonable and large enough to reflect the maximum expected delay for messages in the network.
    Setting this parameter to a small value may impact the progress of the
    network, namely blocks may take very long to be committed.
+   - An approach to define this parameter is to observe the latency for
+     fixed-size messages (e.g., `Vote` and `Proposal`) over time and define an
+     empirical distribution of message delays.
+     Then pick as value for the `MessageDelay` parameter, a high percentile of
+     this distribution (e.g., the 99th or 99.9th percentiles).
 1. Make sure that the block times **currently** produced by the network do not
    differ too much from real time.
    This is specially relevant when block times produced by BFT time are in the

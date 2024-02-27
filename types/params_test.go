@@ -612,6 +612,45 @@ func TestProto(t *testing.T) {
 	}
 }
 
+func TestProtoUpgrade(t *testing.T) {
+	params := []ConsensusParams{
+		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 2, blockGas: 5, evidenceAge: 7, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 7, evidenceAge: 6, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 9, blockGas: 5, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 7, blockGas: 8, evidenceAge: 9, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 6, evidenceAge: 5, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
+		makeParams(makeParamsArgs{precision: time.Second, messageDelay: time.Minute}),
+		makeParams(makeParamsArgs{precision: time.Nanosecond, messageDelay: time.Millisecond}),
+		makeParams(makeParamsArgs{voteExtensionHeight: 100}),
+		makeParams(makeParamsArgs{pbtsHeight: 100}),
+		makeParams(makeParamsArgs{voteExtensionHeight: 100, pbtsHeight: 42}),
+		makeParams(makeParamsArgs{pbtsHeight: 100}),
+	}
+
+	for i := range params {
+		pbParams := params[i].ToProto()
+
+		// Downgrade
+		if pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue() > 0 {
+			pbParams.Abci = &cmtproto.ABCIParams{VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue()}
+			pbParams.Feature.VoteExtensionsEnableHeight = nil
+		}
+
+		oriParams := ConsensusParamsFromProto(pbParams)
+
+		assert.Equal(t, params[i], oriParams)
+	}
+}
+
 func durationPtr(t time.Duration) *time.Duration {
 	return &t
 }

@@ -1294,6 +1294,15 @@ type StorageConfig struct {
 	// Note that if the provided has does not match the hash of the genesis file
 	// the node will report an error and not boot.
 	GenesisHash string `mapstructure:"genesis_hash"`
+
+	// The representation of keys in the database.
+	// v1 - the legacy layout existing in Comet prior to v1.
+	// v2 - Order preserving representation ordering entries by height.
+	// v2 is more performant especially in cases pruning of data is required.
+	// The layouts cannot be used interchange-ably. It is either one or the other.
+	// If the database was initially created with v1, it is necessary to migrate the DB
+	// before switching to v2. The migration is not done automatically.
+	DBKeyLayoutVersion string `mapstructure:"db_key_layout_version"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
@@ -1305,6 +1314,7 @@ func DefaultStorageConfig() *StorageConfig {
 		Compact:              false,
 		CompactionInterval:   1000,
 		GenesisHash:          "",
+		DBKeyLayoutVersion:   "v1",
 	}
 }
 

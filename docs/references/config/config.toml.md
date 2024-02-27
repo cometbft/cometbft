@@ -1061,22 +1061,215 @@ appropriate fraction of the time to connect.
 Setting the value to `"0s"` disables timeout.
 
 ## Mempool
+Mempool allows gathering and broadcasting uncommitted transactions among nodes.
+
+The **mempool** is a storage for uncommitted transactions; the **mempool cache** is an internal storage within the
+mempool, for invalid transactions. The mempool cache provides a list of known invalid transactions to filter out
+incoming duplicate transactions without running a full validation on them.
 
 ### mempool.type
+The type of mempool this node will use.
+```toml
+type = "flood"
+```
+
+| Value type          | string    |
+|:--------------------|:----------|
+| **Possible values** | `"flood"` |
+|                     | `"nop"`   |
+
+`"flood"` is the original mempool implemented for CometBFT. It is a concurrent linked list with flooding gossip
+protocol.
+
+`"nop"` is a "no operation" or disabled mempool, where the ABCI application is responsible storing, disseminating and
+proposing transactions. Note, that it requires empty blocks to be created:
+[`consensus.create_empty_blocks = true`](#consensuscreate_empty_blocks) has to be set.
+
 ### mempool.recheck
+Transaction validity check.
+```toml
+recheck = true
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `true`  |
+|                     | `false` |
+
+Committing a block affects the application state, hence the remaining transactions in the mempool after a block commit
+might become invalid. Setting `recheck = true` will go through the remaining transactions and remove invalid ones.
+
 ### mempool.broadcast
+Broadcast the mempool content (uncommitted transactions) to other nodes.
+```toml
+broadcast = true
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `true`  |
+|                     | `false` |
+
+This ensures that uncommitted transactions have a chance to reach multiple validators and get committed by one of them.
+
+Setting this to `false` will stop the mempool from relaying transactions to other peers until they are included in a
+block. Only the peer you send the tx to will see it until it is included in a block.
+
 ### mempool.wal_dir
+Mempool write-ahead log folder path.
+```toml
+wal_dir = ""
+```
+
+| Value type          | string                                          |
+|:--------------------|:------------------------------------------------|
+| **Possible values** | relative directory path, appended to `$CMTHOME` |
+|                     | absolute directory path                         |
+|                     | `""`                                            |
+
+In case `$CMTHOME` is unset, it defaults to `$HOME/.cometbft`.
+
+Configures the location of the Write Ahead Log (WAL) for the mempool. `""`  disables the WAL.
+
 ### mempool.size
+Maximum number of transactions in the mempool.
+```toml
+size = 5000
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+If the mempool is full, incoming transactions are dropped.
+
+The value `0` is undefined.
+
 ### mempool.max_txs_bytes
+The maximum size of all transactions accepted in the mempool.
+```toml
+max_txs_bytes = 1073741824
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+This is the raw, total transaction size. Given 1MB transactions and a 5MB maximum transaction size, mempool will only
+accept five transactions.
+
+The default value is 1 Gibibytes (2^30 bytes).
+
 ### mempool.cache_size
+Mempool internal cache size for invalid transactions.
+```toml
+cache_size = 10000
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+The mempool cache is an internal store for invalid transactions. Storing invalid transactions help in filtering incoming
+transactions: we can compare incoming transactions to known invalid transactions and filter them out without going
+through the process of validating the incoming transaction.
+
 ### mempool.keep-invalid-txs-in-cache
+Invalid transactions might become valid in the future, hence they are regularly removed from the mempool cache of
+invalid transactions. Turning this setting on will keep them in the list of invalid transactions forever.
+# Do not remove invalid transactions from the cache (default: false)
+# Set to true if it's not possible for any invalid transaction to become valid
+# again in the future.
+```toml
+keep-invalid-txs-in-cache = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+Invalid transactions might become valid at a later time. The mempool cache clears invalid transactions regularly so the
+transactions can be re-validated.
+
+If this setting is set to `true`, the mempool cache will NOT remove the invalid transactions. It is useful in cases when
+invalidated transactions can never become valid again.
+
+This setting can be used by operators to lower the impact of some spam transactions: when a large number of duplicate
+spam transactions are noted on the network, temporarily turning this setting to `true` will filter out the duplicates
+quicker than validating each transaction one-by-one. It will also filter out transactions that are supposed to become
+valid at a later date, so it is not advised to keep this `true` for a long time on regular networks as it can lead to
+valid transactions failing.
+
 ### mempool.max_tx_bytes
+Maximum size of a single transaction accepted into the mempool.
+```toml
+max_tx_bytes = 1048576
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+This is the maximum size of a transaction allowed to be transmitted over the network.
+
 ### mempool.experimental_max_gossip_connections_to_persistent_peers
+> EXPERIMENTAL parameter!
+
+Limit the number of persistent peer nodes that get mempool transaction broadcasts.
+```toml
+experimental_max_gossip_connections_to_persistent_peers = 0
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+When set to `0`, the mempool is broadcasting to all the nodes listed in the
+[`p2p.persistent_peers`](#p2ppersistent_peers) list. If the number is above `0`, the number of nodes that get broadcasts
+will be limited to this setting.
+
+Unconditional peers and peers not listed in the [`p2p.persistent_peers`](#p2ppersistent_peers) list are not affected by
+this parameter.
+
+See
+[`mempool.experimental_max_gossip_connections_to_non_persistent_peers`](#mempoolexperimental_max_gossip_connections_to_persistent_peers)
+to limit mempool broadcasts that are not in the list of [`p2p.persistent_peers`](#p2ppersistent_peers).
+
 ### mempool.experimental_max_gossip_connections_to_non_persistent_peers
+> EXPERIMENTAL parameter!
+
+Limit the number of peer nodes that get mempool transaction broadcasts. This parameter does not limit nodes that are
+in the [`p2p.persistent_peers`](#p2ppersistent_peers) list.
+```toml
+experimental_max_gossip_connections_to_non_persistent_peers = 0
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+When set to `0`, the mempool is broadcasting to all the nodes. If the number is above `0`, the number of nodes that get
+broadcasts will be limited to this setting.
+
+Unconditional peers and peers listed in the [`p2p.persistent_peers`](#p2ppersistent_peers) list are not affected by
+this parameter.
+
+See
+[`mempool.experimental_max_gossip_connections_to_persistent_peers`](#mempoolexperimental_max_gossip_connections_to_persistent_peers)
+to limit broadcasts to persistent peer nodes.
+
+For non-persistent peers, if enabled, a value of 10 is recommended based on experimental performance results using the
+default P2P configuration.
 
 ## State synchronization
+State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine snapshot from peers
+instead of fetching and replaying historical blocks. Requires some peers in the network to take and serve state machine
+snapshots. State sync is not attempted if the node has any local state (LastBlockHeight > 0). The node will have a
+truncated block history, starting from the height of the snapshot.
 
 ### statesync.enable
+
 ### statesync.rpc_servers
 ### statesync.trust_height
 ### statesync.trust_hash

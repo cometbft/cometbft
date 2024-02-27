@@ -538,8 +538,17 @@ func randStateWithAppImpl(
 	app abci.Application,
 	consensusParams *types.ConsensusParams,
 ) (*State, []*validatorStub) {
+	return randStateWithAppImplGenesisTime(nValidators, app, consensusParams, cmttime.Now())
+}
+
+func randStateWithAppImplGenesisTime(
+	nValidators int,
+	app abci.Application,
+	consensusParams *types.ConsensusParams,
+	genesisTime time.Time,
+) (*State, []*validatorStub) {
 	// Get State
-	state, privVals := randGenesisState(nValidators, consensusParams)
+	state, privVals := randGenesisStateWithTime(nValidators, consensusParams, genesisTime)
 
 	vss := make([]*validatorStub, nValidators)
 

@@ -445,7 +445,7 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 }
 
 func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams {
-	c := ConsensusParams{ // TODO: Should we use DefaultConsensusParams here?
+	c := ConsensusParams{
 		Block: BlockParams{
 			MaxBytes: pbParams.Block.MaxBytes,
 			MaxGas:   pbParams.Block.MaxGas,
@@ -471,9 +471,8 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 		},
 	}
 	if pbParams.GetAbci().GetVoteExtensionsEnableHeight() > 0 {
-		// Value set before the upgrade to V1.
-		// ABCIParams are only set in <V1 and FeatureParams is only present in >=V1, hence
-		// we can safely overwrite here.
+		// Value set before the upgrade to V1. We can safely overwrite here because
+		// ABCIParams and FeatureParams being set is mutually exclusive (<V1 and >=V1).
 		c.Feature.VoteExtensionsEnableHeight = pbParams.Abci.VoteExtensionsEnableHeight
 	}
 	return c

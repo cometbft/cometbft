@@ -1,5 +1,4 @@
 ipv6 = false
-initial_height = 0
 key_type = ""
 evidence = 10
 vote_extensions_enable_height = 100

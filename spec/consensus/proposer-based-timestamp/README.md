@@ -1,9 +1,9 @@
 # Proposer-Based Timestamps (PBTS)
 
-This document describes a version of the Tendermint consensus algorithm, adopted in CometBFT,
+This document describes a version of the Tendermint consensus algorithm
 that uses proposer-based timestamps.
 
-PBTS is a Byzantine fault-tolerant algorithm for computing [block times](../time.md).
+PBTS is a Byzantine fault-tolerant algorithm used by CometBFT for computing [block times](../time.md).
 
 ## Overview
 

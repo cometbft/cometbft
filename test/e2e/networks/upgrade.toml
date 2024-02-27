@@ -1,0 +1,44 @@
+ipv6 = false
+initial_height = 0
+key_type = ""
+evidence = 10
+vote_extensions_enable_height = 100
+abci_protocol = "tcp"
+upgrade_version = "cometbft/e2e-node:local-version"
+
+# Image cometbft/v0.38.x built with v0.38.x as of feb 27/2024
+
+[initial_state]
+
+[validators]
+  validator01 = 50
+  validator02 = 50
+  validator03 = 50
+  validator04 = 50
+
+[validator_update]
+
+[node]
+  [node.validator01]
+    mode = "validator"
+    version = "cometbft/v0.38.x"
+    perturb = ["upgrade"]
+    send_no_load = true
+  [node.validator02]
+    mode = "validator"
+    version = "cometbft/v0.38.x"
+    persistent_peers = ["validator01"]
+    perturb = []
+    send_no_load = true
+  [node.validator03]
+    mode = "validator"
+    version = "cometbft/v0.38.x"
+    persistent_peers = ["validator01"]
+    perturb = []
+    send_no_load = true
+  [node.validator04]
+    mode = "validator"
+    version = "cometbft/v0.38.x"
+    persistent_peers = ["validator01"]
+    perturb = []
+    send_no_load = true

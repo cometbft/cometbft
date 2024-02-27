@@ -465,14 +465,19 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 			VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue(),
 			PbtsEnableHeight:           pbParams.GetFeature().GetPbtsEnableHeight().GetValue(),
 		},
-		Synchrony: SynchronyParams{
-			MessageDelay: *pbParams.GetSynchrony().GetMessageDelay(),
-			Precision:    *pbParams.GetSynchrony().GetPrecision(),
-		},
+	}
+	if pbParams.GetSynchrony().GetMessageDelay() != nil {
+		c.Synchrony.MessageDelay = *pbParams.GetSynchrony().GetMessageDelay()
+	}
+	if pbParams.GetSynchrony().GetPrecision() != nil {
+		c.Synchrony.Precision = *pbParams.GetSynchrony().GetPrecision()
 	}
 	if pbParams.GetAbci().GetVoteExtensionsEnableHeight() > 0 {
 		// Value set before the upgrade to V1. We can safely overwrite here because
 		// ABCIParams and FeatureParams being set is mutually exclusive (<V1 and >=V1).
+		if pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue() > 0 {
+			panic("vote_extension_enable_height is set in two different places")
+		}
 		c.Feature.VoteExtensionsEnableHeight = pbParams.Abci.VoteExtensionsEnableHeight
 	}
 	return c

@@ -11,8 +11,6 @@ upgrade_version = "cometbft/e2e-node:local-version"
   validator03 = 50
   validator04 = 50
 
-[validator_update]
-
 [node]
   [node.validator01]
     mode = "validator"

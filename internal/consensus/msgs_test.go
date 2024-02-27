@@ -17,6 +17,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 func TestMsgToProto(t *testing.T) {
@@ -227,12 +228,14 @@ func TestWALMsgProto(t *testing.T) {
 	}
 	pbParts, err := parts.ToProto()
 	require.NoError(t, err)
+	now := cmttime.Now()
 
 	testsCases := []struct {
-		testName string
-		msg      WALMessage
-		want     *cmtcons.WALMessage
-		wantErr  bool
+		testName    string
+		msg         WALMessage
+		want        *cmtcons.WALMessage
+		wantErr     bool
+		equalValues bool // False for msgInfo, since equalValues does not see nil and time{} as equivalent
 	}{
 		{"successful EventDataRoundState", types.EventDataRoundState{
 			Height: 2,
@@ -246,7 +249,7 @@ func TestWALMsgProto(t *testing.T) {
 					Step:   "ronies",
 				},
 			},
-		}, false},
+		}, false, true},
 		{"successful msgInfo", msgInfo{
 			Msg: &BlockPartMessage{
 				Height: 100,
@@ -269,7 +272,55 @@ func TestWALMsgProto(t *testing.T) {
 					PeerID: "string",
 				},
 			},
-		}, false},
+		}, false, false},
+		{"successful msgInfo with receive time", msgInfo{
+			Msg: &BlockPartMessage{
+				Height: 100,
+				Round:  1,
+				Part:   &parts,
+			},
+			PeerID: p2p.ID("string"),
+		}, &cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_MsgInfo{
+				MsgInfo: &cmtcons.MsgInfo{
+					Msg: cmtcons.Message{
+						Sum: &cmtcons.Message_BlockPart{
+							BlockPart: &cmtcons.BlockPart{
+								Height: 100,
+								Round:  1,
+								Part:   *pbParts,
+							},
+						},
+					},
+					PeerID:      "string",
+					ReceiveTime: &time.Time{},
+				},
+			},
+		}, false, false},
+		{"successful msgInfo with receive time explicit", msgInfo{
+			Msg: &BlockPartMessage{
+				Height: 100,
+				Round:  1,
+				Part:   &parts,
+			},
+			PeerID: p2p.ID("string"),
+		}, &cmtcons.WALMessage{
+			Sum: &cmtcons.WALMessage_MsgInfo{
+				MsgInfo: &cmtcons.MsgInfo{
+					Msg: cmtcons.Message{
+						Sum: &cmtcons.Message_BlockPart{
+							BlockPart: &cmtcons.BlockPart{
+								Height: 100,
+								Round:  1,
+								Part:   *pbParts,
+							},
+						},
+					},
+					PeerID:      "string",
+					ReceiveTime: &now,
+				},
+			},
+		}, false, false},
 		{"successful timeoutInfo", timeoutInfo{
 			Duration: time.Duration(100),
 			Height:   1,
@@ -284,7 +335,7 @@ func TestWALMsgProto(t *testing.T) {
 					Step:     1,
 				},
 			},
-		}, false},
+		}, false, true},
 		{"successful EndHeightMessage", EndHeightMessage{
 			Height: 1,
 		}, &cmtcons.WALMessage{
@@ -293,18 +344,21 @@ func TestWALMsgProto(t *testing.T) {
 					Height: 1,
 				},
 			},
-		}, false},
-		{"failure", nil, &cmtcons.WALMessage{}, true},
+		}, false, true},
+		{"failure", nil, &cmtcons.WALMessage{}, true, true},
 	}
 	for _, tt := range testsCases {
 		tt := tt
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := WALToProto(tt.msg)
-			if tt.wantErr == true {
+			if tt.wantErr {
 				assert.Equal(t, tt.wantErr, err != nil)
 				return
 			}
-			assert.EqualValues(t, tt.want, pb, tt.testName)
+
+			if tt.equalValues {
+				assert.EqualValues(t, tt.want, pb, tt.testName)
+			}
 
 			msg, err := WALFromProto(pb)
 

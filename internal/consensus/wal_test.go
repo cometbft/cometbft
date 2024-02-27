@@ -3,6 +3,9 @@ package consensus
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,8 +16,10 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -82,10 +87,37 @@ func TestWALTruncate(t *testing.T) {
 
 func TestWALEncoderDecoder(t *testing.T) {
 	now := cmttime.Now()
+
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	cs1, vss := randState(1)
+
+	block1 := cmttypes.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: cmttypes.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+
+	p := cmttypes.Proposal{
+		Type:      cmttypes.ProposalType,
+		Height:    42,
+		Round:     13,
+		BlockID:   block1,
+		POLRound:  12,
+		Timestamp: cmttime.Canonical(now),
+	}
+
+	pp := p.ToProto()
+	err := vss[0].SignProposal(cs1.state.ChainID, pp)
+	require.NoError(t, err)
+
+	p.Signature = pp.Signature
+
 	msgs := []TimedWALMessage{
 		{Time: now, Msg: EndHeightMessage{0}},
 		{Time: now, Msg: timeoutInfo{Duration: time.Second, Height: 1, Round: 1, Step: types.RoundStepPropose}},
 		{Time: now, Msg: cmttypes.EventDataRoundState{Height: 1, Round: 1, Step: ""}},
+		{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: now}},
+		{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: time.Time{}}},
+		{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody"}},
 	}
 
 	b := new(bytes.Buffer)
@@ -105,6 +137,117 @@ func TestWALEncoderDecoder(t *testing.T) {
 		assert.Equal(t, msg.Time.UTC(), decoded.Time)
 		assert.Equal(t, msg.Msg, decoded.Msg)
 	}
+}
+
+func TestWALEncoderDecoderMultiVersion(t *testing.T) {
+	now := time.Time{}.AddDate(100, 10, 20)
+	v038Data, _ := hex.DecodeString("a570586b000000c50a0b0880e2c3b1a4feffffff0112b50112b2010aa7011aa4010aa1010820102a180d200c2a480a2001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa6612240805122001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa66320b0880e2c3b1a4feffffff013a404942b2803552651e1c7e7b72557cdade0a4c5a638dcda9822ec402d42c5f75c767f62c0f3fb0d58aef7842a4e18964faaff3d17559989cf1f11dd006e31a9d0f12064e6f626f6479")
+
+	ss, _, privVals := makeState(1, 1, "execution_chain")
+	var pVal cmttypes.PrivValidator
+	for mk := range privVals {
+		pVal = privVals[mk]
+	}
+	vs := newValidatorStub(pVal, 1)
+
+	cmtrand.Seed(0)
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	block1 := cmttypes.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: cmttypes.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+
+	p := cmttypes.Proposal{
+		Type:      cmttypes.ProposalType,
+		Height:    42,
+		Round:     13,
+		BlockID:   block1,
+		POLRound:  12,
+		Timestamp: cmttime.Canonical(now),
+	}
+
+	pp := p.ToProto()
+	err := vs.SignProposal(ss.ChainID, pp)
+	require.NoError(t, err)
+	p.Signature = pp.Signature
+
+	cases := []struct {
+		twm           TimedWALMessage
+		expectFailure bool
+	}{
+		{twm: TimedWALMessage{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: now}}, expectFailure: true},
+		{twm: TimedWALMessage{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: time.Time{}}}, expectFailure: false},
+		{twm: TimedWALMessage{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody"}}, expectFailure: false},
+	}
+
+	b := new(bytes.Buffer)
+	b.Reset()
+
+	_, err = b.Write(v038Data)
+	require.NoError(t, err)
+
+	dec := NewWALDecoder(b)
+	v038decoded, err := dec.Decode()
+	require.NoError(t, err)
+	twmV038 := v038decoded.Msg
+	msgInfoV038 := twmV038.(msgInfo)
+
+	for _, tc := range cases {
+		if tc.expectFailure {
+			assert.NotEqual(t, tc.twm.Msg, msgInfoV038)
+		} else {
+			assert.Equal(t, tc.twm.Msg, msgInfoV038)
+		}
+	}
+}
+
+func TestWALEncoder(t *testing.T) {
+	now := time.Time{}.AddDate(100, 10, 20)
+
+	ss, _, privVals := makeState(1, 1, "execution_chain")
+	var pVal cmttypes.PrivValidator
+	for mk := range privVals {
+		pVal = privVals[mk]
+	}
+	vs := newValidatorStub(pVal, 1)
+
+	cmtrand.Seed(0)
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	block1 := cmttypes.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: cmttypes.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+
+	p := cmttypes.Proposal{
+		Type:      cmttypes.ProposalType,
+		Height:    42,
+		Round:     13,
+		BlockID:   block1,
+		POLRound:  12,
+		Timestamp: cmttime.Canonical(now),
+	}
+
+	pp := p.ToProto()
+	err := vs.SignProposal(ss.ChainID, pp)
+	require.NoError(t, err)
+	p.Signature = pp.Signature
+
+	b := new(bytes.Buffer)
+	enc := NewWALEncoder(b)
+	twm := TimedWALMessage{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody"}}
+	err = enc.Encode(&twm)
+	require.NoError(t, err)
+
+	var b1 bytes.Buffer
+	tee := io.TeeReader(b, &b1)
+	b2, err := io.ReadAll(tee)
+	require.NoError(t, err)
+	fmt.Printf("%s\n", hex.EncodeToString(b1.Bytes()))
+
+	// Encoded string generated with v0.38 (before PBTS)
+	data, err := hex.DecodeString("a570586b000000c50a0b0880e2c3b1a4feffffff0112b50112b2010aa7011aa4010aa1010820102a180d200c2a480a2001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa6612240805122001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa66320b0880e2c3b1a4feffffff013a404942b2803552651e1c7e7b72557cdade0a4c5a638dcda9822ec402d42c5f75c767f62c0f3fb0d58aef7842a4e18964faaff3d17559989cf1f11dd006e31a9d0f12064e6f626f6479")
+	require.NoError(t, err)
+	require.Equal(t, data, b2)
 }
 
 func TestWALWrite(t *testing.T) {

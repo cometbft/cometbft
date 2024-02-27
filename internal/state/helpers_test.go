@@ -118,7 +118,8 @@ func makeValidCommit(
 	}, nil
 }
 
-func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+// TODO: get rid of duplication with internal/consensus/common_test.go.
+func makeState(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
 	vals := make([]types.GenesisValidator, nVals)
 	privVals := make(map[string]types.PrivValidator, nVals)
 	for i := 0; i < nVals; i++ {

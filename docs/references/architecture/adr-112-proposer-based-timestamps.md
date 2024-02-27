@@ -305,11 +305,13 @@ A very common way to update `ConsensusParams` is by executing a transaction incl
 However, if the network is unable to produce blocks because of this liveness issue, no such transaction may be executed.
 To prevent this dangerous condition, we will add a relaxation mechanism to the `Timely` predicate.
 
-<!---
-If consensus takes more than 10 rounds to produce a block for any reason, the `MessageDelay` will be doubled.
-This doubling will continue for each subsequent 10 rounds of consensus.
-This will enable chains that selected too small of a value for the `MessageDelay` parameter to eventually issue a transaction and readjust the parameters to more accurately reflect the broadcast time.
---->
+The chosen solution for this issue is to adopt the configured `MessageDelay`
+for the first round (0) of consensus.
+Then, as more rounds are needed to commit a value, we slowly increase the
+adopted value for `MessageDelay`, at a rate of 10% per additional round.
+More precisely, the `MessageDelay(r)` adopted for round `r` of consensus is
+given by `MessageDelay(r) = MessageDelay * (1.1)^r`.
+Of course, `MessageDelay(0) = MessageDelay`.
 
 This liveness issue is not as problematic for chains with very small `Precision` values.
 Operators can more easily readjust local validator clocks to be more aligned.

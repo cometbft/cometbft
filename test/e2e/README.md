@@ -9,8 +9,6 @@ make
 
 This creates and runs a testnet named `ci` under `networks/ci/`.
 
-<<<<<<< HEAD
-=======
 To generate the testnet files in a different directory, run:
 ```sh
 ./build/runner -f networks/ci.toml -d networks/foo/bar/
@@ -32,7 +30,6 @@ make fast
 ./build/runner -f networks/simple.toml
 ```
 
->>>>>>> 4ce0277b3 (feat(e2e): add parameter to set a custom output directory for testnet files (#2433))
 ## Conceptual Overview
 
 End-to-end testnets are used to test Tendermint functionality as a user would use it, by spinning up a set of nodes with various configurations and making sure the nodes and network behave correctly. The background for the E2E test suite is outlined in [RFC-001](https://github.com/tendermint/tendermint/blob/master/docs/architecture/adr-066-e2e-testing.md).

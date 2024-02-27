@@ -307,7 +307,7 @@ To prevent this dangerous condition, we will add a relaxation mechanism to the `
 
 The chosen solution for this issue is to adopt the configured `MessageDelay`
 for the first round (0) of consensus.
-Then, as more rounds are needed to commit a value, we slowly increase the
+Then, as more rounds are needed to commit a value, we increase the
 adopted value for `MessageDelay`, at a rate of 10% per additional round.
 More precisely, the `MessageDelay(r)` adopted for round `r` of consensus is
 given by `MessageDelay(r) = MessageDelay * (1.1)^r`.

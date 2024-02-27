@@ -187,8 +187,8 @@ When configuring a network to adopt the PBTS algorithm, the following steps must
 
 Observation 3. is important because a network that sets
 [`SynchronyParams.MessageDelay`](#synchronyparamsmessagedelay) 
-to a small value is likely to suffer with long block latencies
-and even, in extreme cases, with the complete halt of the network.
+to a small value is likely to suffer from long block latencies
+and even, in extreme cases, from the complete halt of the network.
 By a small value here we mean a message delay that is not enough for an important
 portion of the validators to receive the `Proposal` message broadcast by the
 proposer of a round within the configured message delay.
@@ -207,7 +207,7 @@ The maximum message delay for round 0 is still the configured
 `SynchronyParams.MessageDelay`; most blocks are committed in round 0, so there
 are no changes for the regular case.
 From round 1, the maximum message delay adopted by PBTS slowly increases, at a
-rate of 10% percent per round.
+rate of 10% per round.
 As a result, the adopted maximum message delay will eventually converge to the
 actual message delay observed in the network.
 
@@ -217,7 +217,9 @@ For example, if the configured `SynchronyParams.MessageDelay` is 0.5s but an
 important portion of nodes regularly receive the `Proposal` message after 1s,
 between 7 and 8 rounds will be necessary to commit a block.
 This is an important performance penalty that network operators must avoid at
-all costs.
+all costs. Upon noticing this problem, as the network will not halt because of this,
+network operators can agree to increase the value of `SynchronyParams.MessageDelay`
+in order to fix the problem.
 
 ### BFT Times in the future
 

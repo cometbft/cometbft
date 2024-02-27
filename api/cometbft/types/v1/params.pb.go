@@ -544,6 +544,8 @@ func (m *FeatureParams) GetPbtsEnableHeight() *types.Int64Value {
 	return nil
 }
 
+// ABCIParams is deprecated and its contents moved to FeatureParams
+//
 // Deprecated: Do not use.
 type ABCIParams struct {
 	// vote_extensions_enable_height has been deprecated.

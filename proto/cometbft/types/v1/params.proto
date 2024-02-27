@@ -134,6 +134,7 @@ message FeatureParams {
   google.protobuf.Int64Value pbts_enable_height = 2 [(gogoproto.nullable) = true];
 }
 
+// ABCIParams is deprecated and its contents moved to FeatureParams
 message ABCIParams {
   option deprecated = true;
   // vote_extensions_enable_height has been deprecated.

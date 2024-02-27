@@ -691,9 +691,9 @@ func TestPbtsAdaptiveMessageDelay(t *testing.T) {
 	genesisTime := cmttime.Now().Add(-10 * time.Second)
 	cs, vss := randStateWithAppImplGenesisTime(numValidators, app, c, genesisTime)
 
-	myPrivKey, err := vss[0].GetPubKey()
+	myPubKey, err := vss[0].GetPubKey()
 	require.NoError(t, err)
-	myAddress := myPrivKey.Address()
+	myAddress := myPubKey.Address()
 
 	proposalCh := subscribe(cs.eventBus, types.EventQueryCompleteProposal)
 	newRoundCh := subscribe(cs.eventBus, types.EventQueryNewRound)

@@ -100,9 +100,6 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 		parsedURL.Scheme = protoWS
 	}
 
-<<<<<<< HEAD
-	dialFn, err := makeHTTPDialer(remoteAddr)
-=======
 	// extract username and password from URL if any
 	username := ""
 	password := ""
@@ -111,8 +108,7 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 		password, _ = parsedURL.User.Password()
 	}
 
-	dialFn, err := MakeHTTPDialer(remoteAddr)
->>>>>>> 8bf81d423 (fix(jsonrpc): enable HTTP basic auth in WS client (#2434))
+	dialFn, err := makeHTTPDialer(remoteAddr)
 	if err != nil {
 		return nil, err
 	}

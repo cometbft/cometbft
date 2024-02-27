@@ -217,11 +217,12 @@ This section explains how the tests were carried out for reproducibility purpose
 1. [If you haven't done it before]
    Follow the [set up][qa-setup] steps of the `README.md` at the top of the testnet repository to
    configure Terraform, and `doctl`.
-2. Change the variable `MANIFEST` in `experiment.mk` to point to the file `testnets/rotating.toml` (do NOT commit this change)
-3. Set variable `VERSION_TAG` to the git hash that is to be tested.
-4. Follow the [testnet starting][qa-start] steps of the `README.md` to configure and start the
-  "stable" part of the rotating node testnet. On the `terraform-apply` step, set the
-   value of the `EPHEMERAL_SIZE` parameter: `make terraform-apply EPHEMERAL_SIZE=25`
+2. In the `experiment.mk` file, set the following variables (do NOT commit these changes):
+   1. Set `MANIFEST` to point to the file `testnets/rotating.toml`.
+   2. Set `VERSION_TAG` to the git hash that is to be tested.
+   3. Set `EPHEMERAL_SIZE` to 25.
+3. Follow the [testnet starting][qa-start] steps of the `README.md` to configure and start the
+  "stable" part of the rotating node testnet.
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests.
 1. As a sanity check, connect to the Prometheus node's web interface and check the graph for the
    `cometbft_consensus_height` metric. All nodes should be increasing their heights.

@@ -17,13 +17,13 @@ func Now() time.Time {
 }
 
 func init() {
-	skewStr := os.Getenv("CLOCK_SKEW")
+	skewStr := os.Getenv("COMETBFT_CLOCK_SKEW")
 	if len(skewStr) == 0 {
 		return
 	}
 	skew, err := time.ParseDuration(skewStr)
 	if err != nil {
-		panic(fmt.Sprintf("contents of env variable CLOCK_SKEW (%q) must be empty or a duration expression", skewStr))
+		panic(fmt.Sprintf("contents of env variable COMETBFT_CLOCK_SKEW (%q) must be empty or a duration expression", skewStr))
 	}
 	clockSkew = skew
 }

@@ -8,6 +8,7 @@ import (
 
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
@@ -156,7 +157,7 @@ func (m *Metrics) MarkVoteReceived(vt types.SignedMsgType, power, totalPower int
 
 func (m *Metrics) MarkRound(r int32, st time.Time) {
 	m.Rounds.Set(float64(r))
-	roundTime := time.Since(st).Seconds()
+	roundTime := cmttime.Now().Sub(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
 	pvt := types.PrevoteType
@@ -175,9 +176,9 @@ func (m *Metrics) MarkLateVote(vt types.SignedMsgType) {
 
 func (m *Metrics) MarkStep(s cstypes.RoundStepType) {
 	if !m.stepStart.IsZero() {
-		stepTime := time.Since(m.stepStart).Seconds()
+		stepTime := cmttime.Now().Sub(m.stepStart).Seconds()
 		stepName := strings.TrimPrefix(s.String(), "RoundStep")
 		m.StepDurationSeconds.With("step", stepName).Observe(stepTime)
 	}
-	m.stepStart = time.Now()
+	m.stepStart = cmttime.Now()
 }

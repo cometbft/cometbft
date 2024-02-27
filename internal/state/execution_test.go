@@ -84,7 +84,7 @@ func TestApplyBlock(t *testing.T) {
 // block.
 func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 	app := &testApp{}
-	baseTime := time.Now()
+	baseTime := cmttime.Now()
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
@@ -402,7 +402,7 @@ func TestProcessProposal(t *testing.T) {
 		pk, err := privVal.GetPubKey()
 		require.NoError(t, err)
 		idx, _ := state.Validators.GetByAddress(pk.Address())
-		vote := types.MakeVoteNoError(t, privVal, block0.Header.ChainID, idx, height-1, 0, 2, blockID, time.Now())
+		vote := types.MakeVoteNoError(t, privVal, block0.Header.ChainID, idx, height-1, 0, 2, blockID, cmttime.Now())
 		addr := pk.Address()
 		voteInfos = append(voteInfos,
 			abci.VoteInfo{

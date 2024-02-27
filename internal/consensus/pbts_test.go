@@ -95,7 +95,7 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	clock := new(cmttimemocks.Source)
 
 	if tc.genesisTime.IsZero() {
-		tc.genesisTime = time.Now()
+		tc.genesisTime = cmttime.Now()
 	}
 
 	if tc.height4ProposedBlockOffset == 0 {
@@ -149,7 +149,7 @@ func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t
 
 	ensureNewRound(p.roundCh, p.currentHeight, p.currentRound)
 
-	timeout := time.Until(previousBlockTime.Add(ensureTimeout))
+	timeout := previousBlockTime.Add(ensureTimeout).Sub(cmttime.Now())
 	if timeout < ensureTimeout {
 		timeout = ensureTimeout
 	}
@@ -195,7 +195,7 @@ func (p *pbtsTestHarness) intermediateHeights(ctx context.Context, t *testing.T)
 	p.nextHeight(ctx, t, signer,
 		p.firstBlockTime.Add(p.height4ProposedBlockOffset),
 		p.firstBlockTime.Add(p.height4ProposedBlockOffset),
-		time.Now())
+		cmttime.Now())
 }
 
 func (p *pbtsTestHarness) height5(ctx context.Context, t *testing.T) (heightResult, time.Time) {
@@ -232,7 +232,7 @@ func (p *pbtsTestHarness) nextHeight(
 	err = proposer.SignProposal(p.chainID, tp)
 	require.NoError(t, err)
 
-	time.Sleep(time.Until(deliverTime))
+	time.Sleep(deliverTime.Sub(cmttime.Now()))
 	prop.Signature = tp.Signature
 	err = p.observedState.SetProposalAndBlock(prop, b, ps, "peerID")
 	require.NoError(t, err)
@@ -400,7 +400,7 @@ func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
 func TestPBTSProposerWaitsForPreviousBlock(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	initialTime := time.Now().Add(time.Millisecond * 50)
+	initialTime := cmttime.Now().Add(time.Millisecond * 50)
 	cfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
 			Precision:    100 * time.Millisecond,
@@ -468,7 +468,7 @@ func TestPBTSTimelyProposal(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	initialTime := time.Now()
+	initialTime := cmttime.Now()
 
 	cfg := pbtsTestConfiguration{
 		synchronyParams: types.SynchronyParams{
@@ -598,25 +598,25 @@ func TestPBTSEnableHeight(t *testing.T) {
 			var ts time.Time
 			if height >= pbtsSetHeight && height < pbtsEnableHeight {
 				// Use PBTS logic while PBTS is not yet activated
-				ts = time.Now()
+				ts = cmttime.Now()
 				rejectProposal = true
 			} else if height >= pbtsEnableHeight {
 				// Shift timestamp to the future 2*PRECISION => not timely
-				ts = time.Now().Add(2 * c.Synchrony.Precision)
+				ts = cmttime.Now().Add(2 * c.Synchrony.Precision)
 				rejectProposal = true
 			}
 			block, blockParts, blockID = createProposalBlockWithTime(t, cs, ts)
 			proposal := types.NewProposal(height, round, -1, blockID, block.Header.Time)
 			// BFT Time should not care about Proposal's timestamps
 			if height < pbtsSetHeight {
-				proposal.Timestamp = time.Now()
+				proposal.Timestamp = cmttime.Now()
 			}
 			signProposal(t, proposal, chainID, vss[proposer])
 			cs.SetProposalAndBlock(proposal, block, blockParts, "p")
 			ensureProposal(proposalCh, height, round, blockID)
 		}
 
-		delta := time.Now().Sub(block.Time)
+		delta := cmttime.Now().Sub(block.Time)
 		t.Log("BLOCK", height, round, "PROPOSER", proposer, "PBTS", pbtsEnabled,
 			"TIMESTAMP", block.Time, delta, "ACCEPTED", !rejectProposal)
 
@@ -652,7 +652,7 @@ func TestPBTSEnableHeight(t *testing.T) {
 		ensurePrecommit(voteCh, height, round)
 		validatePrecommit(t, cs, round, lockedRound, vss[0], myVote, myVote)
 		for _, vs := range vss[2:] {
-			ts := time.Now()
+			ts := cmttime.Now()
 			// Shift the next block timestamp while running BFT Time
 			if height >= pbtsSetHeight-1 && height < pbtsEnableHeight {
 				ts = ts.Add(time.Second)

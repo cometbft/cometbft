@@ -53,7 +53,7 @@ func TestMsgToProto(t *testing.T) {
 		Round:     1,
 		POLRound:  1,
 		BlockID:   bi,
-		Timestamp: time.Now(),
+		Timestamp: cmttime.Now(),
 		Signature: cmtrand.Bytes(20),
 	}
 	pbProposal := proposal.ToProto()
@@ -67,7 +67,7 @@ func TestMsgToProto(t *testing.T) {
 		0,
 		types.PrecommitType,
 		bi,
-		time.Now(),
+		cmttime.Now(),
 	)
 	pbVote := vote.ToProto()
 

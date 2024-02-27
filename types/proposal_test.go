@@ -206,7 +206,7 @@ func TestIsTimely(t *testing.T) {
 		msgDelay       time.Duration
 		expectTimely   bool
 	}{
-		// proposalTime - precision <= localTime <= proposalTime + msgDelay + precision
+		// proposalTime - precision <= localTime <= proposalTime + (msgDelay * (1.1)^round) + precision
 		{
 			// Checking that the following inequality evaluates to true:
 			// 0 - 2 <= 1 <= 0 + 1 + 2

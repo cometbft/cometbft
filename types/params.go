@@ -111,11 +111,11 @@ type SynchronyParams struct {
 }
 
 /*
-AdaptiveSynchronyParams ensures an exponential backoff for timestamp validation by relaxing MessageDelay by a factor of
+AdaptiveSynchronyParams ensures an exponential backoff for timestamp validation by increasing MessageDelay by a factor of
 10% each subsequent round a proposal's timeliness is calculated. This is meant to facilitate the progression of
 consensus if bad synchrony parameters are set or become insufficient to preserve liveness.
 
-Where r is the consensus round, MSGDELAY(r) == MSGDELAY(0) * (1.1)^r.
+Where round is the consensus round, MessageDelay(round) == MessageDelay * (1.1)^round.
 */
 func AdaptiveSynchronyParams(precision time.Duration, messageDelay time.Duration, round int32) SynchronyParams {
 	return SynchronyParams{

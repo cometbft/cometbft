@@ -46,6 +46,7 @@ perturb = ["restart"]
 seeds = ["seed01"]
 snapshot_interval = 5
 perturb = ["disconnect"]
+clock_skew = "20s"
 
 [node.validator02]
 seeds = ["seed01"]

@@ -64,6 +64,10 @@ func TestValidator_Propose(t *testing.T) {
 		if node.Mode != e2e.ModeValidator {
 			return
 		}
+		if node.ClockSkew != 0 && node.Testnet.PbtsEnableHeight != 0 {
+			// Clock skew may render all proposals from this validator untimely
+			return
+		}
 		address := node.PrivvalKey.PubKey().Address()
 		valSchedule := newValidatorSchedule(*node.Testnet)
 

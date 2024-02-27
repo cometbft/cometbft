@@ -137,6 +137,7 @@ type Node struct {
 	Prometheus              bool
 	PrometheusProxyPort     uint32
 	Zone                    ZoneID
+	ClockSkew               time.Duration
 }
 
 // LoadTestnet loads a testnet from a manifest file, using the filename to
@@ -261,6 +262,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
 			Zone:                    ZoneID(nodeManifest.Zone),
+			ClockSkew:               nodeManifest.ClockSkew,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -528,6 +530,9 @@ func (n Node) Validate(testnet Testnet) error {
 	}
 	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinConnSync {
 		return errors.New("light client must use builtin protocol")
+	}
+	if n.Mode != ModeFull && n.Mode != ModeValidator && n.ClockSkew != 0 {
+		return errors.New("clock skew configuration only supported on full nodes")
 	}
 	switch n.PrivvalProtocol {
 	case ProtocolFile, ProtocolUNIX, ProtocolTCP:

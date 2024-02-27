@@ -43,14 +43,13 @@ type ConsensusParams struct {
 	Feature   FeatureParams   `json:"feature"`
 }
 
-// BlockParams define limits on the block size and gas plus minimum time
-// between blocks.
+// BlockParams define limits on the block size and gas.
 type BlockParams struct {
 	MaxBytes int64 `json:"max_bytes"`
 	MaxGas   int64 `json:"max_gas"`
 }
 
-// EvidenceParams determine how we handle evidence of malfeasance.
+// EvidenceParams determine the validity of evidences of Byzantine behavior.
 type EvidenceParams struct {
 	MaxAgeNumBlocks int64         `json:"max_age_num_blocks"` // only accept new evidence more recent than this
 	MaxAgeDuration  time.Duration `json:"max_age_duration"`
@@ -63,6 +62,7 @@ type ValidatorParams struct {
 	PubKeyTypes []string `json:"pub_key_types"`
 }
 
+// VersionParams contain the version of specific components of CometBFT.
 type VersionParams struct {
 	App uint64 `json:"app"`
 }
@@ -101,9 +101,11 @@ func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
 	return enableHeight <= currentHeight
 }
 
-// SynchronyParams influence the validity of block timestamps.
+// SynchronyParams determine the validity of block timestamps.
+//
+// These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
 // For more information on the relationship of the synchrony parameters to
-// block validity, see the Proposer-Based Timestamps specification:
+// block timestamps validity, refer to the PBTS specification:
 // https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md
 type SynchronyParams struct {
 	Precision    time.Duration `json:"precision,string"`

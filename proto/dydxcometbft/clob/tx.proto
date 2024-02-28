@@ -2,9 +2,8 @@ syntax = "proto3";
 package dydxcometbft.clob;
 
 import "gogoproto/gogo.proto";
-import "cosmos_proto/cosmos.proto";
 import "dydxcometbft/clob/order.proto";
-import "dydxcometbft/clob/matches.proto";
+import "dydxcometbft/subaccounts/subaccount.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
 
@@ -33,3 +32,29 @@ message MsgCancelOrder {
     fixed32 good_til_block_time = 3;
   }
 }
+
+// MsgBatchCancel is a request type used for batch canceling orders.
+// This msg is not atomic. Cancels will be performed optimistically even
+// if some cancels are invalid or fail.
+message MsgBatchCancel {
+  // The subaccount this batch cancel will be applied for.
+  dydxcometbft.subaccounts.SubaccountId  subaccount_id = 1
+      [ (gogoproto.nullable) = false ];
+
+  // The batch of short term orders that will be cancelled.
+  repeated OrderBatch short_term_cancels = 2 [ (gogoproto.nullable) = false ];
+
+  // The last block the short term order cancellations can be executed at.
+  uint32 good_til_block = 3;
+}
+
+// OrderBatch represents a batch of orders all belonging to a single clob pair
+// id. Along with a subaccount id and an order flag, is used to represent a
+// batch of orders that share the same subaccount, order flag, and clob pair id.
+message OrderBatch {
+  // The Clob Pair ID all orders in this order batch belong to.
+  uint32 clob_pair_id = 1;
+  // List of client ids in this order batch.
+  repeated fixed32 client_ids = 2;
+}
+

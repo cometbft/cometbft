@@ -6,7 +6,7 @@ package clob
 import (
 	encoding_binary "encoding/binary"
 	fmt "fmt"
-	_ "github.com/cosmos/cosmos-proto"
+	subaccounts "github.com/cometbft/cometbft/proto/dydxcometbft/subaccounts"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
@@ -166,35 +166,168 @@ func (*MsgCancelOrder) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// MsgBatchCancel is a request type used for batch canceling orders.
+// This msg is not atomic. Cancels will be performed optimistically even
+// if some cancels are invalid or fail.
+type MsgBatchCancel struct {
+	// The subaccount this batch cancel will be applied for.
+	SubaccountId subaccounts.SubaccountId `protobuf:"bytes,1,opt,name=subaccount_id,json=subaccountId,proto3" json:"subaccount_id"`
+	// The batch of short term orders that will be cancelled.
+	ShortTermCancels []OrderBatch `protobuf:"bytes,2,rep,name=short_term_cancels,json=shortTermCancels,proto3" json:"short_term_cancels"`
+	// The last block the short term order cancellations can be executed at.
+	GoodTilBlock uint32 `protobuf:"varint,3,opt,name=good_til_block,json=goodTilBlock,proto3" json:"good_til_block,omitempty"`
+}
+
+func (m *MsgBatchCancel) Reset()         { *m = MsgBatchCancel{} }
+func (m *MsgBatchCancel) String() string { return proto.CompactTextString(m) }
+func (*MsgBatchCancel) ProtoMessage()    {}
+func (*MsgBatchCancel) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1ad81d2b2aff9221, []int{2}
+}
+func (m *MsgBatchCancel) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MsgBatchCancel) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MsgBatchCancel.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MsgBatchCancel) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgBatchCancel.Merge(m, src)
+}
+func (m *MsgBatchCancel) XXX_Size() int {
+	return m.Size()
+}
+func (m *MsgBatchCancel) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgBatchCancel.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MsgBatchCancel proto.InternalMessageInfo
+
+func (m *MsgBatchCancel) GetSubaccountId() subaccounts.SubaccountId {
+	if m != nil {
+		return m.SubaccountId
+	}
+	return subaccounts.SubaccountId{}
+}
+
+func (m *MsgBatchCancel) GetShortTermCancels() []OrderBatch {
+	if m != nil {
+		return m.ShortTermCancels
+	}
+	return nil
+}
+
+func (m *MsgBatchCancel) GetGoodTilBlock() uint32 {
+	if m != nil {
+		return m.GoodTilBlock
+	}
+	return 0
+}
+
+// OrderBatch represents a batch of orders all belonging to a single clob pair
+// id. Along with a subaccount id and an order flag, is used to represent a
+// batch of orders that share the same subaccount, order flag, and clob pair id.
+type OrderBatch struct {
+	// The Clob Pair ID all orders in this order batch belong to.
+	ClobPairId uint32 `protobuf:"varint,1,opt,name=clob_pair_id,json=clobPairId,proto3" json:"clob_pair_id,omitempty"`
+	// List of client ids in this order batch.
+	ClientIds []uint32 `protobuf:"fixed32,2,rep,packed,name=client_ids,json=clientIds,proto3" json:"client_ids,omitempty"`
+}
+
+func (m *OrderBatch) Reset()         { *m = OrderBatch{} }
+func (m *OrderBatch) String() string { return proto.CompactTextString(m) }
+func (*OrderBatch) ProtoMessage()    {}
+func (*OrderBatch) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1ad81d2b2aff9221, []int{3}
+}
+func (m *OrderBatch) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OrderBatch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OrderBatch.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OrderBatch) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OrderBatch.Merge(m, src)
+}
+func (m *OrderBatch) XXX_Size() int {
+	return m.Size()
+}
+func (m *OrderBatch) XXX_DiscardUnknown() {
+	xxx_messageInfo_OrderBatch.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OrderBatch proto.InternalMessageInfo
+
+func (m *OrderBatch) GetClobPairId() uint32 {
+	if m != nil {
+		return m.ClobPairId
+	}
+	return 0
+}
+
+func (m *OrderBatch) GetClientIds() []uint32 {
+	if m != nil {
+		return m.ClientIds
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*MsgPlaceOrder)(nil), "dydxcometbft.clob.MsgPlaceOrder")
 	proto.RegisterType((*MsgCancelOrder)(nil), "dydxcometbft.clob.MsgCancelOrder")
+	proto.RegisterType((*MsgBatchCancel)(nil), "dydxcometbft.clob.MsgBatchCancel")
+	proto.RegisterType((*OrderBatch)(nil), "dydxcometbft.clob.OrderBatch")
 }
 
 func init() { proto.RegisterFile("dydxcometbft/clob/tx.proto", fileDescriptor_1ad81d2b2aff9221) }
 
 var fileDescriptor_1ad81d2b2aff9221 = []byte{
-	// 315 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0xcf, 0x4a, 0xc3, 0x40,
-	0x10, 0x87, 0xb3, 0xfe, 0xab, 0xac, 0xb6, 0xd4, 0xe8, 0x21, 0x06, 0xdc, 0x96, 0x1e, 0xa4, 0xa7,
-	0x04, 0xb4, 0x37, 0x6f, 0x11, 0xa1, 0x1e, 0xaa, 0x52, 0x7a, 0xf2, 0x12, 0x9a, 0xdd, 0xed, 0x76,
-	0x71, 0xb7, 0x23, 0xcd, 0x0a, 0xf5, 0x2d, 0x7c, 0x1c, 0x1f, 0xa1, 0xc7, 0x1e, 0x3d, 0x89, 0xb4,
-	0x2f, 0x22, 0xc9, 0x46, 0x8c, 0x04, 0x6f, 0x33, 0xf3, 0xfd, 0xe6, 0x63, 0x99, 0xc5, 0x3e, 0x7b,
-	0x65, 0x0b, 0x0a, 0x9a, 0x9b, 0x64, 0x62, 0x42, 0xaa, 0x20, 0x09, 0xcd, 0x22, 0x78, 0x9e, 0x83,
-	0x01, 0xf7, 0xa8, 0xcc, 0x82, 0x8c, 0xf9, 0x27, 0x02, 0x04, 0xe4, 0x34, 0xcc, 0x2a, 0x1b, 0xf4,
-	0x4f, 0x29, 0xa4, 0x1a, 0xd2, 0xd8, 0x02, 0xdb, 0x14, 0xe8, 0xac, 0xea, 0x87, 0x39, 0xe3, 0xf3,
-	0x02, 0xb7, 0xaa, 0x58, 0x8f, 0x0d, 0x9d, 0xf2, 0x62, 0xbf, 0x73, 0x83, 0xeb, 0x83, 0x54, 0x3c,
-	0xa8, 0x31, 0xe5, 0xf7, 0xd9, 0x9e, 0xdb, 0xc3, 0xbb, 0xb9, 0xc0, 0x43, 0x6d, 0xd4, 0x3d, 0xb8,
-	0xf0, 0x82, 0xca, 0x23, 0x83, 0x3c, 0x18, 0xed, 0x2c, 0x3f, 0x5b, 0xce, 0xd0, 0x86, 0x3b, 0xef,
-	0x08, 0x37, 0x06, 0xa9, 0xb8, 0x1e, 0xcf, 0x28, 0x57, 0x56, 0x74, 0x85, 0xf7, 0x73, 0x16, 0x4b,
-	0x56, 0xb8, 0xfc, 0xff, 0x5c, 0xb7, 0xac, 0xb0, 0xd5, 0xc0, 0xb6, 0xee, 0x39, 0x6e, 0x08, 0x00,
-	0x16, 0x1b, 0xa9, 0xe2, 0x44, 0x01, 0x7d, 0xf2, 0xb6, 0xda, 0xa8, 0x5b, 0xef, 0x3b, 0xc3, 0xc3,
-	0x6c, 0x3e, 0x92, 0x2a, 0xca, 0xa6, 0x6e, 0x88, 0x8f, 0xff, 0xe6, 0x62, 0x23, 0x35, 0xf7, 0xb6,
-	0xdb, 0xa8, 0x5b, 0xeb, 0x3b, 0xc3, 0x66, 0x39, 0x3c, 0x92, 0x9a, 0x47, 0xcd, 0x92, 0x18, 0x66,
-	0x1c, 0x26, 0xd1, 0xdd, 0x72, 0x4d, 0xd0, 0x6a, 0x4d, 0xd0, 0xd7, 0x9a, 0xa0, 0xb7, 0x0d, 0x71,
-	0x56, 0x1b, 0xe2, 0x7c, 0x6c, 0x88, 0xf3, 0xd8, 0x13, 0xd2, 0x4c, 0x5f, 0x92, 0x80, 0x82, 0x0e,
-	0x7f, 0x6f, 0xf8, 0x53, 0xd8, 0xcf, 0xa8, 0xdc, 0x37, 0xd9, 0xcb, 0xc1, 0xe5, 0x77, 0x00, 0x00,
-	0x00, 0xff, 0xff, 0xcf, 0x43, 0xf9, 0x7a, 0xfa, 0x01, 0x00, 0x00,
+	// 433 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x92, 0xc1, 0x6e, 0x94, 0x40,
+	0x1c, 0xc6, 0x99, 0x56, 0x5d, 0x9d, 0x2e, 0xcd, 0x3a, 0x7a, 0x20, 0x9b, 0x2c, 0x92, 0x8d, 0x69,
+	0xf0, 0x02, 0x49, 0xed, 0xcd, 0x1b, 0xc6, 0xa4, 0x3d, 0xac, 0xb6, 0xb8, 0x27, 0x2f, 0x04, 0x86,
+	0x29, 0x3b, 0x11, 0xf6, 0xdf, 0x30, 0xb3, 0x49, 0x7d, 0x0b, 0x1f, 0xc7, 0x47, 0xe8, 0xb1, 0x47,
+	0x0f, 0xc6, 0x98, 0xdd, 0x17, 0x31, 0x33, 0x43, 0x17, 0x08, 0xe9, 0xed, 0xcf, 0xff, 0xfb, 0xf8,
+	0xf1, 0xcd, 0xc7, 0xe0, 0x69, 0xfe, 0x23, 0xbf, 0xa5, 0x50, 0x31, 0x99, 0x5d, 0xcb, 0x90, 0x96,
+	0x90, 0x85, 0xf2, 0x36, 0xb8, 0xa9, 0x41, 0x02, 0x79, 0xd9, 0xd5, 0x02, 0xa5, 0x4d, 0x5f, 0x17,
+	0x50, 0x80, 0x56, 0x43, 0x35, 0x19, 0xe3, 0x74, 0x36, 0x84, 0x40, 0x9d, 0xb3, 0xba, 0x91, 0xdf,
+	0xf5, 0x64, 0xb1, 0xc9, 0x52, 0x4a, 0x61, 0xb3, 0x96, 0xa2, 0x33, 0x1b, 0xeb, 0xfc, 0x13, 0xb6,
+	0x17, 0xa2, 0xb8, 0x2c, 0x53, 0xca, 0xbe, 0x28, 0x02, 0x39, 0xc3, 0x4f, 0x35, 0xca, 0x41, 0x1e,
+	0xf2, 0x8f, 0x4e, 0x9d, 0x60, 0x90, 0x29, 0xd0, 0xc6, 0xe8, 0xc9, 0xdd, 0xdf, 0x37, 0x56, 0x6c,
+	0xcc, 0xf3, 0x5f, 0x08, 0x1f, 0x2f, 0x44, 0xf1, 0x31, 0x5d, 0x53, 0x56, 0x1a, 0xd0, 0x07, 0xfc,
+	0x5c, 0x6b, 0x09, 0xcf, 0x1b, 0xd6, 0xf4, 0x31, 0xd6, 0x45, 0xde, 0xd0, 0x46, 0x60, 0x1e, 0xc9,
+	0x09, 0x3e, 0x2e, 0x00, 0xf2, 0x44, 0xf2, 0x32, 0xc9, 0x4a, 0xa0, 0xdf, 0x9d, 0x03, 0x0f, 0xf9,
+	0xf6, 0xb9, 0x15, 0x8f, 0xd5, 0x7e, 0xc9, 0xcb, 0x48, 0x6d, 0x49, 0x88, 0x5f, 0xf5, 0x7d, 0x89,
+	0xe4, 0x15, 0x73, 0x0e, 0x3d, 0xe4, 0x8f, 0xce, 0xad, 0x78, 0xd2, 0x35, 0x2f, 0x79, 0xc5, 0xa2,
+	0x49, 0x07, 0x0c, 0x6b, 0x06, 0xd7, 0xf3, 0x3f, 0x26, 0x7a, 0x94, 0x4a, 0xba, 0x32, 0xf9, 0xc9,
+	0x15, 0xb6, 0xdb, 0xa2, 0xda, 0xfc, 0x27, 0xfd, 0xfc, 0x9d, 0x5e, 0x83, 0xaf, 0xfb, 0x79, 0x7f,
+	0x96, 0xb1, 0xe8, 0xec, 0xc8, 0x15, 0x26, 0x62, 0x05, 0xb5, 0x4c, 0x24, 0xab, 0xab, 0x84, 0xea,
+	0xef, 0x08, 0xe7, 0xc0, 0x3b, 0xf4, 0x8f, 0x4e, 0x67, 0x8f, 0x76, 0xac, 0x32, 0x35, 0xb8, 0x89,
+	0x7e, 0x7d, 0xc9, 0xea, 0xca, 0x84, 0x14, 0xe4, 0xed, 0xa0, 0x23, 0x75, 0x6c, 0xbb, 0xdf, 0xd0,
+	0x7c, 0x81, 0x71, 0xcb, 0x22, 0x1e, 0x1e, 0x2b, 0x7c, 0x72, 0x93, 0xf2, 0xfd, 0x8f, 0xb1, 0x63,
+	0xac, 0x76, 0x97, 0x29, 0x57, 0xcd, 0xcf, 0x30, 0xa6, 0x25, 0x67, 0xfa, 0xdc, 0x26, 0xe0, 0x28,
+	0x7e, 0x61, 0x36, 0x17, 0xb9, 0x88, 0x3e, 0xdf, 0x6d, 0x5d, 0x74, 0xbf, 0x75, 0xd1, 0xbf, 0xad,
+	0x8b, 0x7e, 0xee, 0x5c, 0xeb, 0x7e, 0xe7, 0x5a, 0xbf, 0x77, 0xae, 0xf5, 0xed, 0xac, 0xe0, 0x72,
+	0xb5, 0xc9, 0x02, 0x0a, 0x55, 0xd8, 0x5e, 0xcd, 0x87, 0xc1, 0x5c, 0xe1, 0xc1, 0xb5, 0xcd, 0x9e,
+	0x69, 0xe1, 0xfd, 0xff, 0x00, 0x00, 0x00, 0xff, 0xff, 0xf2, 0x2d, 0x9d, 0xb8, 0x17, 0x03, 0x00,
+	0x00,
 }
 
 func (m *MsgPlaceOrder) Marshal() (dAtA []byte, err error) {
@@ -297,6 +430,95 @@ func (m *MsgCancelOrder_GoodTilBlockTime) MarshalToSizedBuffer(dAtA []byte) (int
 	dAtA[i] = 0x1d
 	return len(dAtA) - i, nil
 }
+func (m *MsgBatchCancel) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MsgBatchCancel) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MsgBatchCancel) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.GoodTilBlock != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.GoodTilBlock))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.ShortTermCancels) > 0 {
+		for iNdEx := len(m.ShortTermCancels) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ShortTermCancels[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintTx(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	{
+		size, err := m.SubaccountId.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintTx(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *OrderBatch) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OrderBatch) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OrderBatch) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ClientIds) > 0 {
+		for iNdEx := len(m.ClientIds) - 1; iNdEx >= 0; iNdEx-- {
+			i -= 4
+			encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(m.ClientIds[iNdEx]))
+		}
+		i = encodeVarintTx(dAtA, i, uint64(len(m.ClientIds)*4))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ClobPairId != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.ClobPairId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTx(v)
 	base := offset
@@ -349,6 +571,40 @@ func (m *MsgCancelOrder_GoodTilBlockTime) Size() (n int) {
 	var l int
 	_ = l
 	n += 5
+	return n
+}
+func (m *MsgBatchCancel) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.SubaccountId.Size()
+	n += 1 + l + sovTx(uint64(l))
+	if len(m.ShortTermCancels) > 0 {
+		for _, e := range m.ShortTermCancels {
+			l = e.Size()
+			n += 1 + l + sovTx(uint64(l))
+		}
+	}
+	if m.GoodTilBlock != 0 {
+		n += 1 + sovTx(uint64(m.GoodTilBlock))
+	}
+	return n
+}
+
+func (m *OrderBatch) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ClobPairId != 0 {
+		n += 1 + sovTx(uint64(m.ClobPairId))
+	}
+	if len(m.ClientIds) > 0 {
+		n += 1 + sovTx(uint64(len(m.ClientIds)*4)) + len(m.ClientIds)*4
+	}
 	return n
 }
 
@@ -534,6 +790,263 @@ func (m *MsgCancelOrder) Unmarshal(dAtA []byte) error {
 			v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
 			iNdEx += 4
 			m.GoodTilOneof = &MsgCancelOrder_GoodTilBlockTime{v}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *MsgBatchCancel) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MsgBatchCancel: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MsgBatchCancel: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SubaccountId", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.SubaccountId.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ShortTermCancels", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTx
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTx
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ShortTermCancels = append(m.ShortTermCancels, OrderBatch{})
+			if err := m.ShortTermCancels[len(m.ShortTermCancels)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GoodTilBlock", wireType)
+			}
+			m.GoodTilBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.GoodTilBlock |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTx(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTx
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *OrderBatch) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTx
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OrderBatch: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OrderBatch: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClobPairId", wireType)
+			}
+			m.ClobPairId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTx
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ClobPairId |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType == 5 {
+				var v uint32
+				if (iNdEx + 4) > l {
+					return io.ErrUnexpectedEOF
+				}
+				v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+				iNdEx += 4
+				m.ClientIds = append(m.ClientIds, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowTx
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthTx
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthTx
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				elementCount = packedLen / 4
+				if elementCount != 0 && len(m.ClientIds) == 0 {
+					m.ClientIds = make([]uint32, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint32
+					if (iNdEx + 4) > l {
+						return io.ErrUnexpectedEOF
+					}
+					v = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+					iNdEx += 4
+					m.ClientIds = append(m.ClientIds, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field ClientIds", wireType)
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipTx(dAtA[iNdEx:])

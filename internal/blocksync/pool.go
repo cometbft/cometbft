@@ -391,6 +391,12 @@ func (pool *BlockPool) makeNextRequester() {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
+	// Limit the maximum number of requesters to 100.
+	if pool.requestersLen() > maxDiffBetweenCurrentAndReceivedBlockHeight {
+		return
+	}
+
+	// Do not request blocks beyond the maxPeerHeight.
 	nextHeight := pool.height + pool.requestersLen()
 	if nextHeight > pool.maxPeerHeight {
 		return

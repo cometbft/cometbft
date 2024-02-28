@@ -83,7 +83,7 @@ func (fetcherMultiple *FetcherMultiple) Perform(job types.OracleJob, result type
 	timeout := job.ConfigValue("timeout").Uint64()
 	reqBody := job.ConfigValue("request_body").String()
 
-	responseStr := getUrlResponse(url, timeout, reqBody)
+	responseStr := GetUrlResponse(url, timeout, reqBody)
 	if responseStr == "" {
 		return result, fmt.Errorf("empty response from %s", url)
 	}

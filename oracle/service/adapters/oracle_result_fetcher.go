@@ -1,7 +1,6 @@
 package adapters
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -50,19 +49,18 @@ func (oracleResultFetcher *OracleResultFetcher) Validate(job types.OracleJob) er
 }
 
 // Perform handles cache fetcher operations
-func (oracleResultFetcher *OracleResultFetcher) Perform(job types.OracleJob, result types.AdapterResult, runTimeInput types.AdapterRunTimeInput, store *types.AdapterStore) (types.AdapterResult, error) {
-	oracleId := job.ConfigValue(ORACLE_ID).String()
+func (oracleResultFetcher *OracleResultFetcher) Perform(job types.OracleJob, result types.AdapterResult, _ types.AdapterRunTimeInput, _ *types.AdapterStore) (types.AdapterResult, error) {
+	oracleID := job.ConfigValue(ORACLE_ID).String()
 	staleAllowance := job.ConfigValue(STALE_ALLOWANCE).String()
 
-	price, cacheErr := getOracleResultFromCache(oracleId, staleAllowance, *oracleResultFetcher.redisService)
+	price, cacheErr := getOracleResultFromCache(oracleID, staleAllowance, *oracleResultFetcher.redisService)
 
 	if cacheErr != nil {
-		// rework to re-perform job as we cant use carbon query client due to circular depedency
 		logrus.Error(cacheErr)
-		var grpcErr error
-		price, grpcErr = getOracleResultFromGrpc(oracleId, oracleResultFetcher.grpcClient)
-		if grpcErr != nil {
-			return result, grpcErr
+		var apiErr error
+		price, apiErr = getOracleResultFromAPI(oracleID)
+		if apiErr != nil {
+			return result, apiErr
 		}
 	}
 
@@ -103,23 +101,25 @@ func getOracleResultFromCache(oracleId string, staleAllowance string, redisServi
 	return oracleCache.Price, nil
 }
 
-func getOracleResultFromGrpc(oracleId string, grpcClient *grpc.ClientConn) (string, error) {
-	oracleClient := oracle.NewQueryClient(grpcClient)
-	request := &oracle.QueryResultsRequest{
-		OracleId: oracleId,
+func getOracleResultFromAPI(oracleID string) (string, error) {
+	oracleResultsURL := "https://api.carbon.network/carbon/oracle/v1/results/" + oracleID
+	response := HTTPRequest(oracleResultsURL, 10)
+
+	if len(response) == 0 {
+		return "", fmt.Errorf("empty response from %s", oracleResultsURL)
 	}
 
-	// Call the gRPC method to fetch data from the Oracle
-	response, err := oracleClient.Results(context.Background(), request)
-	if err != nil {
+	type Response struct {
+		Results []oracle.Result `json:"results"`
+	}
+
+	var parsedResponse Response
+
+	if err := json.Unmarshal(response, &parsedResponse); err != nil {
 		return "", err
 	}
 
-	if len(response.Results) == 0 {
-		return "", fmt.Errorf("oracle: %s RPC result is empty", oracleId)
-	}
-
-	grpcResult := []oracle.Result{response.Results[len(response.Results)-1]}
+	grpcResult := []oracle.Result{parsedResponse.Results[len(parsedResponse.Results)-1]}
 
 	return grpcResult[0].Data, nil
 }

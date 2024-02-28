@@ -11,17 +11,17 @@ message Oracle {
   string id                     = 2;
   string description            = 3;
   string status                 = 4;
-  int64  min_turnout_percentage = 5;
-  int64  max_result_age         = 6;
+  string  min_turnout_percentage = 5;
+  string  max_result_age         = 6;
   string security_type          = 7;
   string result_strategy        = 8;
-  int64  resolution             = 9;
+  string  resolution             = 9;
   string spec                   = 10;
 }
 
 message Result {
   string oracle_id = 1 [ (gogoproto.moretags) = "db:\"oracle_id\"" ];
-  int64 timestamp = 3 [ (gogoproto.moretags) = "db:\"timestamp\"" ];
+  string timestamp = 3 [ (gogoproto.moretags) = "db:\"timestamp\"" ];
   string data = 4 [ (gogoproto.moretags) = "db:\"data\"" ];
 }
 

@@ -56,7 +56,7 @@ func (fetcher *Fetcher) Perform(job types.OracleJob, result types.AdapterResult,
 	timeout := job.ConfigValue("timeout").Uint64()
 	reqBody := job.ConfigValue("request_body").String()
 
-	responseStr := getUrlResponse(url, timeout, reqBody)
+	responseStr := GetUrlResponse(url, timeout, reqBody)
 	if responseStr == "" {
 		return result, fmt.Errorf("empty response for %s", url)
 	}
@@ -76,9 +76,32 @@ func (fetcher *Fetcher) Perform(job types.OracleJob, result types.AdapterResult,
 	return result, nil
 }
 
+func HTTPRequest(url string, timeout uint64) []byte {
+	httpClient := http.Client{
+		Timeout: time.Duration(timeout) * time.Second,
+	}
+
+	var response *http.Response
+	response, err := httpClient.Get(url)
+
+	if err != nil {
+		return []byte{}
+	}
+
+	defer response.Body.Close()
+
+	body, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return []byte{}
+	}
+
+	return body
+}
+
 // getUrlResponse attempts to get a url response from redis cache
 // if redis cache is empty, it will make a http call and populate redis with the url as key
-func getUrlResponse(url string, timeout uint64, reqBody string) string {
+func GetUrlResponse(url string, timeout uint64, reqBody string) string {
 	redService := redis.NewService(0)
 	defer redService.Client.Close()
 	pool := goredis.NewPool(redService.Client)

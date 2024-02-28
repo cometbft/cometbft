@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -125,22 +124,26 @@ func overwriteData(oracleId string, data string) string {
 
 // SyncOracles sync oracles with active on-chain oracles
 func SyncOracles(oracleInfo *types.OracleInfo) (oracles []types.Oracle, err error) {
-	// fetch oracle list first
-	oracleClient := oracletypes.NewQueryClient(oracleInfo.GrpcClient)
-	oracleRes, err := oracleClient.OracleAll(
-		context.Background(),
-		&oracletypes.QueryAllOracleRequest{
-			//Pagination: &sdkquerytypes.PageRequest{}
-		},
-	)
-	if err != nil {
-		log.Error(err)
+	oraclesURL := "https://test-api.carbon.network/carbon/oracle/v1/oracles"
+	response := adapters.HTTPRequest(oraclesURL, 10)
+
+	if len(response) == 0 {
+		return nil, fmt.Errorf("empty response from %s", oraclesURL)
+	}
+
+	type Response struct {
+		Oracles []oracletypes.Oracle `json:"oracles"`
+	}
+
+	var parsedResponse Response
+
+	if err := json.Unmarshal(response, &parsedResponse); err != nil {
 		return nil, err
 	}
 
-	oraclesData := oracleRes.Oracles
+	oraclesData := parsedResponse
 
-	for _, oracle := range oraclesData {
+	for _, oracle := range oraclesData.Oracles {
 		var spec types.OracleSpec
 		err = json.Unmarshal([]byte(oracle.Spec), &spec)
 		if err != nil {
@@ -157,9 +160,16 @@ func SyncOracles(oracleInfo *types.OracleInfo) (oracles []types.Oracle, err erro
 			log.Warnf("[oracle: %v,] invalid oracle jobs: %v", oracle.Id, err)
 			continue
 		}
+
+		resoUint64, err := strconv.ParseUint(oracle.Resolution, 10, 64)
+		if err != nil {
+			log.Warnf("[oracle: %v,] unable to parse reso to uint64: %v", oracle.Id, err)
+			continue
+		}
+
 		oracles = append(oracles, types.Oracle{
 			Id:         oracle.Id,
-			Resolution: uint64(oracle.Resolution),
+			Resolution: resoUint64,
 			Spec:       spec,
 		})
 	}

@@ -515,6 +515,7 @@ func startStateSync(
 	stateStore sm.Store,
 	blockStore *store.BlockStore,
 	state sm.State,
+	dbKeyLayoutVersion string,
 ) error {
 	ssR.Logger.Info("Starting state sync")
 
@@ -522,14 +523,15 @@ func startStateSync(
 		var err error
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		stateProvider, err = statesync.NewLightClientStateProvider(
+		stateProvider, err = statesync.NewLightClientStateProviderWithDBKeyVersion(
 			ctx,
 			state.ChainID, state.Version, state.InitialHeight,
 			config.RPCServers, light.TrustOptions{
 				Period: config.TrustPeriod,
 				Height: config.TrustHeight,
 				Hash:   config.TrustHashBytes(),
-			}, ssR.Logger.With("module", "light"))
+			}, ssR.Logger.With("module", "light"),
+			dbKeyLayoutVersion)
 		if err != nil {
 			return fmt.Errorf("failed to set up light client state provider: %w", err)
 		}

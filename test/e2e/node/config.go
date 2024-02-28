@@ -37,6 +37,8 @@ type Config struct {
 	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
 
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
+
+	DBKeyLayoutVersion string `toml:"db_key_layout"`
 }
 
 // App extracts out the application specific configuration parameters.

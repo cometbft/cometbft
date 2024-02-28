@@ -172,7 +172,7 @@ func startLightClient(cfg *Config) error {
 		},
 		providers[0],
 		providers[1:],
-		dbs.New(lightDB, "light"),
+		dbs.NewWithDBVersion(lightDB, "light", cfg.DBKeyLayoutVersion),
 		light.Logger(nodeLogger),
 	)
 	if err != nil {

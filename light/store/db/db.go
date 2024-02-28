@@ -35,44 +35,47 @@ func isEmpty(db dbm.DB) bool {
 	return true
 }
 
-func setDBKeyLayout(db dbm.DB, lightStore *dbs) {
-	if isEmpty(db) {
-		lightStore.dbKeyLayout = &v2Layout{}
-		if err := lightStore.db.SetSync([]byte("version"), []byte("2")); err != nil {
+func setDBKeyLayout(db dbm.DB, lightStore *dbs, dbKeyLayoutVersion string) {
+	if !isEmpty(db) {
+		var version []byte
+		var err error
+		if version, err = lightStore.db.Get([]byte("version")); err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
 			panic(err)
 		}
-		return
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
 	}
 
-	version, err := lightStore.db.Get([]byte("version"))
-	if err != nil {
-		// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
-		// If this behavior changes we need to account for that.
-		panic(err)
-	}
-	if len(version) == 0 {
+	switch dbKeyLayoutVersion {
+	case "1":
 		lightStore.dbKeyLayout = &v1LegacyLayout{}
-		if err := lightStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
-			panic(err)
-		}
-	} else {
-		switch string(version) {
-		case "1":
-			lightStore.dbKeyLayout = &v1LegacyLayout{}
-		case "2":
-			lightStore.dbKeyLayout = &v2Layout{}
-		default:
-			panic("Unknown version. Expected 1 or 2, given" + string(version))
-		}
+	case "2":
+		lightStore.dbKeyLayout = &v2Layout{}
+	case "":
+		lightStore.dbKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "1"
+	default:
+		panic("unknown key layout version")
+	}
+
+	if err := lightStore.db.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
+		panic(err)
 	}
 }
 
 // New returns a Store that wraps any DB (with an optional prefix in case you
 // want to use one DB with many light clients).
 func New(db dbm.DB, prefix string) store.Store {
+	return NewWithDBVersion(db, prefix, "")
+}
+
+func NewWithDBVersion(db dbm.DB, prefix string, dbKeyVersion string) store.Store {
 	dbStore := &dbs{db: db, prefix: prefix}
 
-	setDBKeyLayout(db, dbStore)
+	setDBKeyLayout(db, dbStore, dbKeyVersion)
 
 	size := uint16(0)
 	bz, err := db.Get(dbStore.dbKeyLayout.SizeKey(prefix))

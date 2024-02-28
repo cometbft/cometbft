@@ -44,15 +44,14 @@ type lightClientStateProvider struct {
 	providers     map[lightprovider.Provider]string
 }
 
-// NewLightClientStateProvider creates a new StateProvider using a light client and RPC clients.
-func NewLightClientStateProvider(
-	ctx context.Context,
+func NewLightClientStateProviderWithDBKeyVersion(ctx context.Context,
 	chainID string,
 	version cmtstate.Version,
 	initialHeight int64,
 	servers []string,
 	trustOptions light.TrustOptions,
 	logger log.Logger,
+	dbKeyLayoutVereson string,
 ) (StateProvider, error) {
 	if len(servers) < 2 {
 		return nil, fmt.Errorf("at least 2 RPC servers are required, got %v", len(servers))
@@ -73,7 +72,7 @@ func NewLightClientStateProvider(
 	}
 
 	lc, err := light.NewClient(ctx, chainID, trustOptions, providers[0], providers[1:],
-		lightdb.New(dbm.NewMemDB(), ""), light.Logger(logger), light.MaxRetryAttempts(5))
+		lightdb.NewWithDBVersion(dbm.NewMemDB(), "", dbKeyLayoutVereson), light.Logger(logger), light.MaxRetryAttempts(5))
 	if err != nil {
 		return nil, err
 	}
@@ -83,6 +82,21 @@ func NewLightClientStateProvider(
 		initialHeight: initialHeight,
 		providers:     providerRemotes,
 	}, nil
+}
+
+// NewLightClientStateProvider creates a new StateProvider using a light client and RPC clients.
+// DB Key layout will default to v1.
+func NewLightClientStateProvider(
+	ctx context.Context,
+	chainID string,
+	version cmtstate.Version,
+	initialHeight int64,
+	servers []string,
+	trustOptions light.TrustOptions,
+	logger log.Logger,
+) (StateProvider, error) {
+	return NewLightClientStateProviderWithDBKeyVersion(ctx,
+		chainID, version, initialHeight, servers, trustOptions, logger, "")
 }
 
 // AppHash implements StateProvider.

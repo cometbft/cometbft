@@ -360,9 +360,9 @@ FOR_LOOP:
 	for {
 		select {
 		case <-switchToConsensusTicker.C:
-			height, numPending, lenRequesters := bcR.pool.GetStatus()
+			height, lenRequesters := bcR.pool.GetStatus()
 			outbound, inbound, _ := bcR.Switch.NumPeers()
-			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
+			bcR.Logger.Debug("Consensus ticker", "total", lenRequesters,
 				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
 			// The "if" statement below is a bit confusing, so here is a breakdown

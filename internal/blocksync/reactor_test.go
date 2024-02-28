@@ -363,9 +363,9 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 		if time.Since(startTime) > 90*time.Second {
 			msg := "timeout: reactors didn't catch up;"
 			for i, r := range reactorPairs {
-				h, p, lr := r.reactor.pool.GetStatus()
+				h, lr := r.reactor.pool.GetStatus()
 				c := r.reactor.pool.IsCaughtUp()
-				msg += fmt.Sprintf(" reactor#%d (h %d, p %d, lr %d, c %t);", i, h, p, lr, c)
+				msg += fmt.Sprintf(" reactor#%d (h %d, lr %d, c %t);", i, h, lr, c)
 			}
 			require.Fail(t, msg)
 		}

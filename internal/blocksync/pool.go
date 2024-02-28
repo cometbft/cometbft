@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sync/atomic"
 	"time"
 
 	flow "github.com/cometbft/cometbft/internal/flowrate"
@@ -28,9 +27,8 @@ eg, L = latency = 0.1s
 */
 
 const (
-	requestIntervalMS         = 2
-	maxTotalRequesters        = 600
-	maxPendingRequests        = maxTotalRequesters
+	requestIntervalMS         = 2   // timeout between requests
+	maxTotalRequesters        = 100 // maximum N of blocks requested in parallel
 	maxPendingRequestsPerPeer = 20
 	requestRetrySeconds       = 30
 
@@ -56,7 +54,7 @@ var peerTimeout = 15 * time.Second // not const so we can override with tests
 
 	Requests are continuously made for blocks of higher heights until
 	the limit is reached. If most of the requests have no available peers, and we
-	are not at peer limits, we can probably switch to consensus reactor
+	are not at peer limits, we can probably switch to consensus reactor.
 */
 
 // BlockPool keeps track of the block sync peers, block requests and block responses.
@@ -72,9 +70,6 @@ type BlockPool struct {
 	peers         map[p2p.ID]*bpPeer
 	maxPeerHeight int64 // the biggest reported height
 
-	// atomic
-	numPending int32 // number of requests pending assignment or block response
-
 	requestsCh chan<- BlockRequest
 	errorsCh   chan<- peerError
 }
@@ -87,7 +82,6 @@ func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- p
 
 		requesters: make(map[int64]*bpRequester),
 		height:     start,
-		numPending: 0,
 
 		requestsCh: requestsCh,
 		errorsCh:   errorsCh,
@@ -108,23 +102,15 @@ func (pool *BlockPool) OnStart() error {
 func (pool *BlockPool) makeRequestersRoutine() {
 	for {
 		if !pool.IsRunning() {
-			break
+			return
 		}
 
-		_, numPending, lenRequesters := pool.GetStatus()
+		_, lenRequesters := pool.GetStatus()
 		switch {
-		case numPending >= maxPendingRequests:
-			// sleep for a bit.
-			time.Sleep(requestIntervalMS * time.Millisecond)
-			// check for timed out peers
-			pool.removeTimedoutPeers()
 		case lenRequesters >= maxTotalRequesters:
-			// sleep for a bit.
 			time.Sleep(requestIntervalMS * time.Millisecond)
-			// check for timed out peers
 			pool.removeTimedoutPeers()
 		default:
-			// request for more blocks.
 			pool.makeNextRequester()
 		}
 	}
@@ -154,13 +140,12 @@ func (pool *BlockPool) removeTimedoutPeers() {
 	}
 }
 
-// GetStatus returns pool's height, numPending requests and the number of
-// requesters.
-func (pool *BlockPool) GetStatus() (height int64, numPending int32, lenRequesters int) {
+// GetStatus returns pool's height and the number of requesters.
+func (pool *BlockPool) GetStatus() (height int64, lenRequesters int) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
-	return pool.height, atomic.LoadInt32(&pool.numPending), len(pool.requesters)
+	return pool.height, len(pool.requesters)
 }
 
 // IsCaughtUp returns true if this node is caught up, false - otherwise.
@@ -285,7 +270,6 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 		return fmt.Errorf("%w (peer: %s, requester: %s, block height: %d)", err, peerID, requester.getPeerID(), block.Height)
 	}
 
-	atomic.AddInt32(&pool.numPending, -1)
 	peer := pool.peers[peerID]
 	if peer != nil {
 		peer.decrPending(blockSize)
@@ -387,14 +371,10 @@ func (pool *BlockPool) pickIncrAvailablePeer(height int64) *bpPeer {
 	return nil
 }
 
+// makeNextRequester creates a new requester for the next height.
 func (pool *BlockPool) makeNextRequester() {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
-
-	// Limit the maximum number of requesters to 100.
-	if pool.requestersLen() > maxDiffBetweenCurrentAndReceivedBlockHeight {
-		return
-	}
 
 	// Do not request blocks beyond the maxPeerHeight.
 	nextHeight := pool.height + pool.requestersLen()
@@ -403,12 +383,9 @@ func (pool *BlockPool) makeNextRequester() {
 	}
 
 	request := newBPRequester(pool, nextHeight)
-
 	pool.requesters[nextHeight] = request
-	atomic.AddInt32(&pool.numPending, 1)
 
-	err := request.Start()
-	if err != nil {
+	if err := request.Start(); err != nil {
 		request.Logger.Error("Error starting request", "err", err)
 	}
 }
@@ -600,10 +577,6 @@ func (bpr *bpRequester) getPeerID() p2p.ID {
 func (bpr *bpRequester) reset() {
 	bpr.mtx.Lock()
 	defer bpr.mtx.Unlock()
-
-	if bpr.block != nil {
-		atomic.AddInt32(&bpr.pool.numPending, 1)
-	}
 
 	bpr.peerID = ""
 	bpr.block = nil

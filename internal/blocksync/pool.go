@@ -39,9 +39,6 @@ const (
 	// Assuming a DSL connection (not a good choice) 128 Kbps (upload) ~ 15 KB/s,
 	// sending data across atlantic ~ 7.5 KB/s.
 	minRecvRate = 7680
-
-	// Maximum difference between current and new block's height.
-	maxDiffBetweenCurrentAndReceivedBlockHeight = 100
 )
 
 var peerTimeout = 15 * time.Second // not const so we can override with tests
@@ -258,7 +255,8 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 		if diff < 0 {
 			diff *= -1
 		}
-		if diff > maxDiffBetweenCurrentAndReceivedBlockHeight {
+		const maxDiff = 100 // maximum difference between current and received block height
+		if diff > maxDiff {
 			pool.sendError(errors.New("peer sent us a block we didn't expect with a height too far ahead/behind"), peerID)
 		}
 		return fmt.Errorf("peer sent us a block we didn't expect (peer: %s, current height: %d, block height: %d)", peerID, pool.height, block.Height)

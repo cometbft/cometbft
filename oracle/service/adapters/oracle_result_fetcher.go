@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/oracle/service/types"
-	oracle "github.com/cometbft/cometbft/oracle/types"
+	"github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/redis"
 	"github.com/sirupsen/logrus"
 

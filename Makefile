@@ -139,7 +139,6 @@ proto-gen: check-proto-deps
 	@go run github.com/bufbuild/buf/cmd/buf generate
 	@mv ./proto/tendermint/abci/types.pb.go ./abci/types/
 	@cp ./proto/tendermint/rpc/grpc/types.pb.go ./rpc/grpc
-	@mv ./proto/Switcheo/carbon/oracle/*.pb.go ./oracle/types/
 .PHONY: proto-gen
 
 # These targets are provided for convenience and are intended for local

@@ -13,7 +13,7 @@ import (
 	"github.com/cometbft/cometbft/oracle/service/adapters"
 	"github.com/cometbft/cometbft/oracle/service/parser"
 	"github.com/cometbft/cometbft/oracle/service/types"
-	oracletypes "github.com/cometbft/cometbft/oracle/types"
+	"github.com/cometbft/cometbft/proto/tendermint/oracle"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/redis"
 )
@@ -132,7 +132,7 @@ func SyncOracles(oracleInfo *types.OracleInfo) (oracles []types.Oracle, err erro
 	}
 
 	type Response struct {
-		Oracles []oracletypes.Oracle `json:"oracles"`
+		Oracles []oracle.Oracle `json:"oracles"`
 	}
 
 	var parsedResponse Response

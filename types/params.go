@@ -3,6 +3,7 @@ package types
 import (
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -109,6 +110,20 @@ func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
 type SynchronyParams struct {
 	Precision    time.Duration `json:"precision,string"`
 	MessageDelay time.Duration `json:"message_delay,string"`
+}
+
+/*
+AdaptiveSynchronyParams ensures an exponential backoff for timestamp validation by increasing MessageDelay by a factor of
+10% each subsequent round a proposal's timeliness is calculated. This is meant to facilitate the progression of
+consensus if bad synchrony parameters are set or become insufficient to preserve liveness.
+
+Where round is the consensus round, MessageDelay(round) == MessageDelay * (1.1)^round.
+*/
+func AdaptiveSynchronyParams(precision time.Duration, messageDelay time.Duration, round int32) SynchronyParams {
+	return SynchronyParams{
+		Precision:    precision,
+		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(messageDelay)),
+	}
 }
 
 // DefaultConsensusParams returns a default ConsensusParams.
@@ -463,22 +478,24 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 		Version: VersionParams{
 			App: pbParams.Version.App,
 		},
+		Feature: FeatureParams{
+			VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue(),
+			PbtsEnableHeight:           pbParams.GetFeature().GetPbtsEnableHeight().GetValue(),
+		},
 	}
-	if pbParams.Feature != nil {
-		if pbParams.Feature.VoteExtensionsEnableHeight != nil {
-			c.Feature.VoteExtensionsEnableHeight = pbParams.Feature.VoteExtensionsEnableHeight.Value
-		}
-		if pbParams.Feature.PbtsEnableHeight != nil {
-			c.Feature.PbtsEnableHeight = pbParams.Feature.PbtsEnableHeight.Value
-		}
+	if pbParams.GetSynchrony().GetMessageDelay() != nil {
+		c.Synchrony.MessageDelay = *pbParams.GetSynchrony().GetMessageDelay()
 	}
-	if pbParams.Synchrony != nil {
-		if pbParams.Synchrony.MessageDelay != nil {
-			c.Synchrony.MessageDelay = *pbParams.Synchrony.GetMessageDelay()
+	if pbParams.GetSynchrony().GetPrecision() != nil {
+		c.Synchrony.Precision = *pbParams.GetSynchrony().GetPrecision()
+	}
+	if pbParams.GetAbci().GetVoteExtensionsEnableHeight() > 0 {
+		// Value set before the upgrade to V1. We can safely overwrite here because
+		// ABCIParams and FeatureParams being set is mutually exclusive (<V1 and >=V1).
+		if pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue() > 0 {
+			panic("vote_extension_enable_height is set in two different places")
 		}
-		if pbParams.Synchrony.Precision != nil {
-			c.Synchrony.Precision = *pbParams.Synchrony.GetPrecision()
-		}
+		c.Feature.VoteExtensionsEnableHeight = pbParams.Abci.VoteExtensionsEnableHeight
 	}
 	return c
 }

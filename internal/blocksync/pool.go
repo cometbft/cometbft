@@ -653,7 +653,6 @@ OUTER_LOOP:
 		bpr.peerID = peer.id
 		bpr.mtx.Unlock()
 
-		to := time.NewTimer(requestRetrySeconds * time.Second)
 		// Send request and wait.
 		bpr.pool.sendRequest(bpr.height, peer.id)
 	WAIT_LOOP:
@@ -666,7 +665,7 @@ OUTER_LOOP:
 				return
 			case <-bpr.Quit():
 				return
-			case <-to.C:
+			case <-time.After(requestRetrySeconds * time.Second):
 				bpr.Logger.Debug("Retrying block request after timeout", "height", bpr.height, "peer", bpr.peerID)
 				// Simulate a redo
 				bpr.reset()

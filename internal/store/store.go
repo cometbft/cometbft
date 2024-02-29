@@ -81,34 +81,37 @@ func WithMetrics(metrics *Metrics) BlockStoreOption {
 	return func(bs *BlockStore) { bs.metrics = metrics }
 }
 
-func setDBLayout(bStore *BlockStore) {
-	if bStore.IsEmpty() {
-		bStore.dbKeyLayout = &v2Layout{}
-		if err := bStore.db.SetSync([]byte("version"), []byte("2")); err != nil {
+// WithDBKeyLayout the metrics.
+func WithDBKeyLayout(dbKeyLayout string) BlockStoreOption {
+	return func(bs *BlockStore) { setDBLayout(bs, dbKeyLayout) }
+}
+
+func setDBLayout(bStore *BlockStore, dbKeyLayoutVersion string) {
+	if !bStore.IsEmpty() {
+		var version []byte
+		var err error
+		if version, err = bStore.db.Get([]byte("version")); err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
 			panic(err)
 		}
-		return
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
 	}
-	version, err := bStore.db.Get([]byte("version"))
-	// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
-	// If this behavior changes we need to account for that.
-	if err != nil {
-		panic(err)
-	}
-	if len(version) == 0 {
+	switch dbKeyLayoutVersion {
+	case "1":
 		bStore.dbKeyLayout = &v1LegacyLayout{}
-		if err := bStore.db.SetSync([]byte("version"), []byte("1")); err != nil {
-			panic(err)
-		}
-	} else {
-		switch string(version) {
-		case "1":
-			bStore.dbKeyLayout = &v1LegacyLayout{}
-		case "2":
-			bStore.dbKeyLayout = &v2Layout{}
-		default:
-			panic("Unknown version. Expected 1 or 2, given" + string(version))
-		}
+	case "2":
+		bStore.dbKeyLayout = &v2Layout{}
+	case "":
+		bStore.dbKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "1"
+	default:
+		panic("unknown key layout version")
+	}
+	if err := bStore.db.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
+		panic(err)
 	}
 }
 
@@ -126,10 +129,12 @@ func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
 		metrics: NopMetrics(),
 	}
 
-	setDBLayout(bStore)
-
 	for _, option := range options {
 		option(bStore)
+	}
+
+	if bStore.dbKeyLayout == nil {
+		setDBLayout(bStore, "1")
 	}
 
 	addTimeSample(bStore.metrics.BlockStoreAccessDurationSeconds.With("method", "new_block_store"), start)()

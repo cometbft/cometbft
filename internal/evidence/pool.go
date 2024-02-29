@@ -122,7 +122,7 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options
 	}
 
 	if pool.dbKeyLayout == nil {
-		pool.dbKeyLayout = v1LegacyLayout{}
+		setDBLayout(pool, "1")
 	}
 
 	// if pending evidence already in db, in event of prior failure, then check for expiration,

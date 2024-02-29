@@ -77,7 +77,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	if err != nil {
 		return nil, nil, err
 	}
-	blockStore := store.NewBlockStore(blockStoreDB)
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithDBKeyLayout(config.Storage.DBKeyLayoutVersion))
 
 	if !os.FileExists(filepath.Join(config.DBDir(), "state.db")) {
 		return nil, nil, fmt.Errorf("no statestore found in %v", config.DBDir())

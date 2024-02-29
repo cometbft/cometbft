@@ -463,22 +463,24 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 		Version: VersionParams{
 			App: pbParams.Version.App,
 		},
+		Feature: FeatureParams{
+			VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue(),
+			PbtsEnableHeight:           pbParams.GetFeature().GetPbtsEnableHeight().GetValue(),
+		},
 	}
-	if pbParams.Feature != nil {
-		if pbParams.Feature.VoteExtensionsEnableHeight != nil {
-			c.Feature.VoteExtensionsEnableHeight = pbParams.Feature.VoteExtensionsEnableHeight.Value
-		}
-		if pbParams.Feature.PbtsEnableHeight != nil {
-			c.Feature.PbtsEnableHeight = pbParams.Feature.PbtsEnableHeight.Value
-		}
+	if pbParams.GetSynchrony().GetMessageDelay() != nil {
+		c.Synchrony.MessageDelay = *pbParams.GetSynchrony().GetMessageDelay()
 	}
-	if pbParams.Synchrony != nil {
-		if pbParams.Synchrony.MessageDelay != nil {
-			c.Synchrony.MessageDelay = *pbParams.Synchrony.GetMessageDelay()
+	if pbParams.GetSynchrony().GetPrecision() != nil {
+		c.Synchrony.Precision = *pbParams.GetSynchrony().GetPrecision()
+	}
+	if pbParams.GetAbci().GetVoteExtensionsEnableHeight() > 0 {
+		// Value set before the upgrade to V1. We can safely overwrite here because
+		// ABCIParams and FeatureParams being set is mutually exclusive (<V1 and >=V1).
+		if pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue() > 0 {
+			panic("vote_extension_enable_height is set in two different places")
 		}
-		if pbParams.Synchrony.Precision != nil {
-			c.Synchrony.Precision = *pbParams.Synchrony.GetPrecision()
-		}
+		c.Feature.VoteExtensionsEnableHeight = pbParams.Abci.VoteExtensionsEnableHeight
 	}
 	return c
 }

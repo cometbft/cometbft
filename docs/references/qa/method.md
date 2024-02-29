@@ -119,11 +119,9 @@ This section explains how the tests were carried out for reproducibility purpose
         * Find the IP address of the `testnet-load-runner` node in
           `ansible/hosts` under section `[loadrunners]`.
         * `ssh` into `testnet-load-runner`.
-          * Edit the script `/root/200-node-loadscript.sh` in the load runner
-            node to provide the IP address of a full node (for example,
-            `validator000`). This node will receive all transactions from the
-            load runner node.
-          * Run `/root/200-node-loadscript.sh` from the load runner node.
+          * Run `/root/200-node-loadscript.sh <INTERNAL_IP>` from the load runner node, where
+            `<INTERNAL_IP>` is the internal IP address of a full node (for example, `validator000`).
+            This node will receive all transactions from the load runner node.
             * This script will take about 40 mins to run, so it is suggested to
               first run `tmux` in case the ssh session breaks.
             * It is running 90-seconds-long experiments in a loop with different

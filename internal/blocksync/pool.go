@@ -27,7 +27,7 @@ eg, L = latency = 0.1s
 */
 
 const (
-	requestIntervalMS         = 2 // timeout between requests
+	requestIntervalMS         = 10 // timeout between requests
 	maxPendingRequestsPerPeer = 10
 	requestRetrySeconds       = 30
 

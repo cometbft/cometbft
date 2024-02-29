@@ -73,7 +73,7 @@ type Metrics struct {
 	DuplicateVote metrics.Counter
 
 	// Histogram of durations for each step in the consensus protocol.
-	StepDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.1, 100, 8" metrics_buckettype:"exprange" metrics_labels:"step"`
+	StepDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.1, 500, 8" metrics_buckettype:"exprange" metrics_labels:"step"`
 	stepStart           time.Time
 
 	// Number of block parts received by the node, separated by whether the part

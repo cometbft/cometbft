@@ -363,10 +363,8 @@ FOR_LOOP:
 	for {
 		select {
 		case <-switchToConsensusTicker.C:
-			height, lenRequesters, nPeers := bcR.pool.GetStatus()
 			outbound, inbound, _ := bcR.Switch.NumPeers()
-			bcR.Logger.Debug("Consensus ticker", "total", lenRequesters, "peers", nPeers,
-				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+			bcR.Logger.Debug("Consensus ticker", "outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
 			// The "if" statement below is a bit confusing, so here is a breakdown
 			// of its logic and purpose:
@@ -397,14 +395,13 @@ FOR_LOOP:
 			if missingExtension {
 				bcR.Logger.Info(
 					"no extended commit yet",
-					"height", height,
 					"last_block_height", state.LastBlockHeight,
 					"initial_height", state.InitialHeight,
-					"max_peer_height", bcR.pool.MaxPeerHeight(),
 				)
 				continue FOR_LOOP
 			}
-			if bcR.pool.IsCaughtUp() {
+
+			if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp {
 				bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 				if err := bcR.pool.Stop(); err != nil {
 					bcR.Logger.Error("Error stopping pool", "err", err)
@@ -540,9 +537,9 @@ FOR_LOOP:
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
+				_, height, maxPeerHeight := bcR.pool.IsCaughtUp()
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
-				bcR.Logger.Info("Block Sync Rate", "height", bcR.pool.height,
-					"max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
+				bcR.Logger.Info("Block Sync Rate", "height", height, "max_peer_height", maxPeerHeight, "blocks/s", lastRate)
 				lastHundred = time.Now()
 			}
 

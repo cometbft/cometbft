@@ -124,6 +124,7 @@ This section explains how the tests were carried out for reproducibility purpose
             This node will receive all transactions from the load runner node.
             * This script will take about 40 mins to run, so it is suggested to
               first run `tmux` in case the ssh session breaks.
+                * `tmux` quick cheat sheet: `ctrl-b %` to split the current pane vertically; `ctrl-b ;` to toggle to last active pane.
             * It is running 90-seconds-long experiments in a loop with different
               loads.
     * If you already know the saturation load, you can simply run the test (several times) for 90 seconds with a load somewhat

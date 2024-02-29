@@ -58,7 +58,7 @@ func TestDBKeyLayoutVersioning(t *testing.T) {
 
 	prefix = "TestDBKeyLayoutVersioningV2"
 	db2 := dbm.NewMemDB()
-	dbStore2 := NewWithDBVersion(db2, prefix, "2")
+	dbStore2 := NewWithDBVersion(db2, prefix, "v2")
 
 	// Empty store
 	height, err = dbStore2.LastLightBlockHeight()

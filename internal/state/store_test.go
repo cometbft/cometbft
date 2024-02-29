@@ -50,7 +50,7 @@ func TestStoreLoadValidators(t *testing.T) {
 
 	// 2) LoadValidators loads validators using a checkpoint height
 
-	err = sm.SaveValidatorsInfo(stateDB, sm.ValSetCheckpointInterval, 1, vals, "2")
+	err = sm.SaveValidatorsInfo(stateDB, sm.ValSetCheckpointInterval, 1, vals, "v2")
 	require.NoError(t, err)
 
 	loadedVals, err = stateStore.LoadValidators(sm.ValSetCheckpointInterval)

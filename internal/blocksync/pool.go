@@ -126,6 +126,8 @@ func (pool *BlockPool) makeRequestersRoutine() {
 		default:
 			// request for more blocks.
 			pool.makeNextRequester()
+			// Sleep for a bit to make the requests more ordered.
+			time.Sleep(requestIntervalMS * time.Millisecond)
 		}
 	}
 }
@@ -226,10 +228,10 @@ func (pool *BlockPool) PopRequest() {
 	pool.height++
 }
 
-// RedoRequest invalidates the block at pool.height,
-// Remove the peer and redo request from others.
+// RemovePeerAndRedoAllPeerRequests retries the request at the given height and
+// all the requests made to the same peer. The peer is removed from the pool.
 // Returns the ID of the removed peer.
-func (pool *BlockPool) RedoRequest(height int64) p2p.ID {
+func (pool *BlockPool) RemovePeerAndRedoAllPeerRequests(height int64) p2p.ID {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
@@ -240,6 +242,19 @@ func (pool *BlockPool) RedoRequest(height int64) p2p.ID {
 		pool.removePeer(peerID)
 	}
 	return peerID
+}
+
+// RedoRequest retries the request at the given height. It does not remove the
+// peer.
+func (pool *BlockPool) RedoRequest(height int64, peerID p2p.ID) {
+	pool.mtx.Lock()
+	defer pool.mtx.Unlock()
+
+	if requester, ok := pool.requesters[height]; ok { // If we requested this block
+		if requester.getPeerID() == peerID { // From this specific peer
+			requester.redo(peerID)
+		}
+	}
 }
 
 // AddBlock validates that the block comes from the peer it was expected from

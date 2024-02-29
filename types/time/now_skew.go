@@ -23,7 +23,7 @@ func init() {
 	}
 	skew, err := time.ParseDuration(skewStr)
 	if err != nil {
-		panic(fmt.Sprintf("Contents of env variable CLOCK_SKEW (%q) must be empty or a duration expression", skewStr))
+		panic(fmt.Sprintf("contents of env variable CLOCK_SKEW (%q) must be empty or a duration expression", skewStr))
 	}
 	clockSkew = skew
 }

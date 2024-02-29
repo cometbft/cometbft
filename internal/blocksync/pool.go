@@ -27,9 +27,8 @@ eg, L = latency = 0.1s
 */
 
 const (
-	requestIntervalMS         = 2   // timeout between requests
-	maxTotalRequesters        = 100 // maximum N of blocks requested in parallel
-	maxPendingRequestsPerPeer = 20
+	requestIntervalMS         = 2 // timeout between requests
+	maxPendingRequestsPerPeer = 10
 	requestRetrySeconds       = 30
 
 	// Minimum recv rate to ensure we're receiving blocks from a peer fast
@@ -102,9 +101,9 @@ func (pool *BlockPool) makeRequestersRoutine() {
 			return
 		}
 
-		_, lenRequesters := pool.GetStatus()
+		_, lenRequesters, nPeers := pool.GetStatus()
 		switch {
-		case lenRequesters >= maxTotalRequesters:
+		case lenRequesters >= nPeers*maxPendingRequestsPerPeer:
 			time.Sleep(requestIntervalMS * time.Millisecond)
 			pool.removeTimedoutPeers()
 		default:
@@ -138,11 +137,11 @@ func (pool *BlockPool) removeTimedoutPeers() {
 }
 
 // GetStatus returns pool's height and the number of requesters.
-func (pool *BlockPool) GetStatus() (height int64, lenRequesters int) {
+func (pool *BlockPool) GetStatus() (height int64, lenRequesters int, nPeers int) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
-	return pool.height, len(pool.requesters)
+	return pool.height, len(pool.requesters), len(pool.peers)
 }
 
 // IsCaughtUp returns true if this node is caught up, false - otherwise.

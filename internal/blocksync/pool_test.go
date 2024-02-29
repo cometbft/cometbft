@@ -84,8 +84,8 @@ func TestBlockPoolBasic(t *testing.T) {
 	var (
 		start      = int64(42)
 		peers      = makePeers(10, start, 1000)
-		errorsCh   = make(chan peerError, 1000)
-		requestsCh = make(chan BlockRequest, 1000)
+		errorsCh   = make(chan peerError)
+		requestsCh = make(chan BlockRequest)
 	)
 
 	pool := NewBlockPool(start, requestsCh, errorsCh)
@@ -146,8 +146,8 @@ func TestBlockPoolTimeout(t *testing.T) {
 	var (
 		start      = int64(42)
 		peers      = makePeers(10, start, 1000)
-		errorsCh   = make(chan peerError, 1000)
-		requestsCh = make(chan BlockRequest, 1000)
+		errorsCh   = make(chan peerError)
+		requestsCh = make(chan BlockRequest)
 	)
 
 	pool := NewBlockPool(start, requestsCh, errorsCh)

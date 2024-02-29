@@ -183,6 +183,46 @@ When configuring a network to adopt the PBTS algorithm, the following steps must
    This is specially relevant when block times produced by BFT time are in the
    future, with respect to real time.
 
+### Adaptive MessageDelay
+
+Observation 3. is important because a network that sets
+[`SynchronyParams.MessageDelay`](#synchronyparamsmessagedelay) 
+to a small value is likely to suffer from long block latencies
+and even, in extreme cases, from the complete halt of the network.
+By a small value here we mean a message delay that is not enough for an important
+portion of the validators to receive the `Proposal` message broadcast by the
+proposer of a round within the configured message delay.
+If the subset of validators that are unlikely to receive the proposal within the
+configured `SynchronyParams.MessageDelay` hold more than 1/3 of the total
+voting power of the network, the network could stop producing blocks
+indefinitely.
+
+To prevent the network from halting due to the configuration of a small value
+for `SynchronyParams.MessageDelay`, we have introduced the concept of
+[adaptive synchronous parameters](https://github.com/cometbft/cometbft/issues/2184).
+In summary, this means that the synchrony parameters adopted to verify whether
+a proposal timestamp is timely are relaxed as more rounds are required to
+commit a block.
+The maximum message delay for round 0 is still the configured
+`SynchronyParams.MessageDelay`; most blocks are committed in round 0, so there
+are no changes for the regular case.
+From round 1, the maximum message delay adopted by PBTS slowly increases, at a
+rate of 10% per round.
+As a result, the adopted maximum message delay will eventually converge to the
+actual message delay observed in the network.
+
+While this solution prevents the network from halting, it still delays the
+commit of a block by several rounds.
+For example, if the configured `SynchronyParams.MessageDelay` is 0.5s but an
+important portion of nodes regularly receive the `Proposal` message after 1s,
+between 7 and 8 rounds will be necessary to commit a block.
+This is an important performance penalty that network operators must avoid at
+all costs. Upon noticing this problem, as the network will not halt because of this,
+network operators can agree to increase the value of `SynchronyParams.MessageDelay`
+in order to fix the problem.
+
+### BFT Times in the future
+
 Observation 4. is important because, with the adoption of PBTS, block times are
 expected to converge to values that bear resemblance to real time.
 At the same time, the property of monotonicity of block times is guaranteed by both BFT

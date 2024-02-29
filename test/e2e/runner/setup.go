@@ -282,6 +282,10 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.Instrumentation.Prometheus = true
 	}
 
+	if node.DBKeyLayoutVersion != "" {
+		cfg.Storage.DBKeyLayoutVersion = node.DBKeyLayoutVersion
+	}
+
 	return cfg, nil
 }
 

@@ -38,7 +38,7 @@ type Config struct {
 
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 
-	DBKeyLayoutVersion string `toml:"db_key_layout"`
+	DBKeyLayoutVersion string `toml:"db_key_layout_version"`
 }
 
 // App extracts out the application specific configuration parameters.

@@ -77,7 +77,7 @@ func setDBLayout(pool *Pool, dbKeyLayoutVersion string) {
 	switch dbKeyLayoutVersion {
 	case "v1":
 		pool.dbKeyLayout = &v1LegacyLayout{}
-	case "2":
+	case "v2":
 		pool.dbKeyLayout = &v2Layout{}
 	case "":
 		pool.dbKeyLayout = &v1LegacyLayout{}

@@ -117,7 +117,7 @@ func TestLast_FirstLightBlockHeight(t *testing.T) {
 }
 
 func Test_SaveLightBlockCustomConfig(t *testing.T) {
-	dbStore := NewWithDBVersion(dbm.NewMemDB(), "Test_SaveLightBlockAndValidatorSet", "2")
+	dbStore := NewWithDBVersion(dbm.NewMemDB(), "Test_SaveLightBlockAndValidatorSet", "v2")
 
 	// Empty store
 	h, err := dbStore.LightBlock(1)

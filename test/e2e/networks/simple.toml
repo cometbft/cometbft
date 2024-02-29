@@ -1,4 +1,6 @@
+[node]
 [node.validator01]
+db_key_layout_version = "v2"
 [node.validator02]
 [node.validator03]
 [node.validator04]

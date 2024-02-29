@@ -207,6 +207,9 @@ type ManifestNode struct {
 
 	// Geographical zone ID for simulating latencies.
 	Zone string `toml:"zone"`
+
+	// DBKeyLayoutVersion sets the key representation in the DB
+	DBKeyLayoutVersion string `toml:"db_key_layout_version"`
 }
 
 // Save saves the testnet manifest to a file.

@@ -553,6 +553,15 @@ peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 # reindex events in the command-line tool.
 discard_abci_responses = {{ .Storage.DiscardABCIResponses}}
 
+# The representation of keys in the database.
+# v1 - the legacy layout existing in Comet prior to v1.
+# v2 - Order preserving representation ordering entries by height.
+# v2 is more performant especially in cases pruning of data is required.
+# The layouts cannot be used interchange-ably. It is either one or the other.
+# If the database was initially created with v1, it is necessary to migrate the DB
+# before switching to v2. The migration is not done automatically.
+db_key_layout_version = "{{ .Storage.DBKeyLayoutVersion }}"
+
 [storage.pruning]
 
 # The time period between automated background pruning operations.
@@ -600,15 +609,6 @@ compaction_interval = 1000
 # If this hash mismatches the hash that CometBFT computes on the genesis file,
 # the node is not able to boot.
 genesis_hash = "{{ .Storage.GenesisHash }}"
-
-# The representation of keys in the database.
-# v1 - the legacy layout existing in Comet prior to v1.
-# v2 - Order preserving representation ordering entries by height.
-# v2 is more performant especially in cases pruning of data is required.
-# The layouts cannot be used interchange-ably. It is either one or the other.
-# If the database was initially created with v1, it is necessary to migrate the DB
-# before switching to v2. The migration is not done automatically.
-db_key_layout_version = "{{ .Storage.DBKeyLayoutVersion }}"
 
 #######################################################
 ###   Transaction Indexer Configuration Options     ###

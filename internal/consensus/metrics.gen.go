@@ -202,9 +202,9 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "proposal_timestamp_difference",
-			Help:      "Difference between the timestamp in the proposal message and the local time of the validator at the time it received the message.",
+			Help:      "Difference in seconds between the local time when a proposal message is received and the timestamp in the proposal message.",
 
-			Buckets: []float64{-10, -.5, -.025, 0, .1, .5, 1, 1.5, 2, 10},
+			Buckets: []float64{-1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8.0, 10.0},
 		}, append(labels, "is_timely")).With(labelsAndValues...),
 	}
 }

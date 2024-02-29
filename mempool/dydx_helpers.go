@@ -9,7 +9,7 @@ import (
 
 // IsShortTermClobOrderTransaction returns true if the provided `tx` is a
 // Cosmos transaction containing a short-term `MsgPlaceOrder` or
-// short-term `MsgCancelOrder` message.
+// short-term `MsgCancelOrder` or `MsgBatchCancel` message.
 func IsShortTermClobOrderTransaction(
 	tx types.Tx,
 	mempoolLogger log.Logger,
@@ -43,6 +43,10 @@ func IsShortTermClobOrderTransaction(
 				panic("Failed to unmarshal MsgCancelOrder from Cosmos transaction.")
 			}
 			return msgCancelOrder.OrderId.IsShortTermOrder()
+		}
+		if cosmosTx.Body.Messages[0].TypeUrl == "/dydxprotocol.clob.MsgBatchCancel" {
+			// MsgBatchCancel only processes short term order cancellations as of right now.
+			return true
 		}
 	}
 

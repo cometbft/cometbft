@@ -14,6 +14,13 @@ const (
 	echoRetryIntervalSeconds = 1
 )
 
+//go:generate ../../scripts/mockery_generate.sh Bla
+
+// This is bla bla bla ble bli blo blu.
+type Bla interface {
+	Ble() error
+}
+
 //go:generate ../../scripts/mockery_generate.sh Client
 
 // Client defines the interface for an ABCI client.

@@ -570,13 +570,11 @@ var (
 	genesisDocHashKey = []byte("genesisDocHash")
 )
 
-// LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
-// database, or creates one using the given genesisDocProvider. On success this also
-// returns the genesis doc loaded through the given provider.
-func LoadStateFromDBOrGenesisDocProvider(
+func LoadStateFromDBOrGenesisDocProviderWithConfig(
 	stateDB dbm.DB,
 	genesisDocProvider GenesisDocProvider,
 	operatorGenesisHashHex string,
+	config *cfg.Config,
 ) (sm.State, *types.GenesisDoc, error) {
 	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
@@ -614,14 +612,34 @@ func LoadStateFromDBOrGenesisDocProvider(
 		}
 	}
 
+	dbKeyLayoutVersion := ""
+	if config != nil {
+		dbKeyLayoutVersion = config.Storage.DBKeyLayoutVersion
+	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
+		DBKeyLayout:          dbKeyLayoutVersion,
 	})
+
 	state, err := stateStore.LoadFromDBOrGenesisDoc(csGenDoc.GenesisDoc)
 	if err != nil {
 		return sm.State{}, nil, err
 	}
 	return state, csGenDoc.GenesisDoc, nil
+}
+
+// LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
+// database, or creates one using the given genesisDocProvider. On success this also
+// returns the genesis doc loaded through the given provider.
+
+// Note that if you don't have a version of the key layout set in your DB already,
+// and no config is passed, it will default to v1.
+func LoadStateFromDBOrGenesisDocProvider(
+	stateDB dbm.DB,
+	genesisDocProvider GenesisDocProvider,
+	operatorGenesisHashHex string,
+) (sm.State, *types.GenesisDoc, error) {
+	return LoadStateFromDBOrGenesisDocProviderWithConfig(stateDB, genesisDocProvider, operatorGenesisHashHex, nil)
 }
 
 func createAndStartPrivValidatorSocketClient(

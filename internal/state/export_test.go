@@ -42,9 +42,9 @@ func ValidateValidatorUpdates(abciUpdates []abci.ValidatorUpdate, params types.V
 func SaveValidatorsInfo(db dbm.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet, keyLayoutVersion string) error {
 	var keyLayout StateKeyLayout
 	switch keyLayoutVersion {
-	case "v1", "":
+	case "1", "":
 		keyLayout = v1LegacyLayout{}
-	case "v2":
+	case "2":
 		keyLayout = v2Layout{}
 	}
 	stateStore := dbStore{db, keyLayout, StoreOptions{DiscardABCIResponses: false, Metrics: NopMetrics()}}

@@ -187,6 +187,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 		Logger:               logger,
+		DBKeyLayout:          config.Storage.DBKeyLayoutVersion,
 	})
 
 	defer func() {
@@ -205,6 +206,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		return errors.New("state not empty, trying to initialize non empty state")
 	}
 
+	// The state store will use the DBKeyLayout set in config or already existing in the DB.
 	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config), config.Storage.GenesisHash)
 	if err != nil {
 		return err
@@ -296,6 +298,7 @@ func NewNode(ctx context.Context,
 		Compact:              config.Storage.Compact,
 		CompactionInterval:   config.Storage.CompactionInterval,
 		Logger:               logger,
+		DBKeyLayout:          config.Storage.DBKeyLayoutVersion,
 	})
 
 	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.DBKeyLayoutVersion), store.WithDBKeyLayout(config.Storage.DBKeyLayoutVersion))

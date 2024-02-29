@@ -60,45 +60,48 @@ func isEmpty(evidenceDB dbm.DB) bool {
 	return true
 }
 
-func setDBLayout(evidenceDB dbm.DB, pool *Pool) {
-	if isEmpty(evidenceDB) {
-		pool.dbKeyLayout = v2Layout{}
-		err := evidenceDB.SetSync([]byte("version"), []byte("2"))
-		if err != nil {
+func setDBLayout(pool *Pool, dbKeyLayoutVersion string) {
+	if !isEmpty(pool.evidenceStore) {
+		var version []byte
+		var err error
+		if version, err = pool.evidenceStore.Get([]byte("version")); err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
 			panic(err)
 		}
-		return
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
 	}
-	var (
-		version []byte
-		err     error
-	)
-	if version, err = evidenceDB.Get([]byte("version")); err != nil {
-		// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
-		// If this behavior changes we need to account for that.
+
+	switch dbKeyLayoutVersion {
+	case "1":
+		pool.dbKeyLayout = &v1LegacyLayout{}
+	case "2":
+		pool.dbKeyLayout = &v2Layout{}
+	case "":
+		pool.dbKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "1"
+	default:
+		panic("unknown key layout version")
+	}
+	if err := pool.evidenceStore.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
 		panic(err)
 	}
-	if len(version) == 0 {
-		err = evidenceDB.SetSync([]byte("version"), []byte("1"))
-		pool.dbKeyLayout = v1LegacyLayout{}
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		switch string(version) {
-		case "1":
-			pool.dbKeyLayout = v1LegacyLayout{}
-		case "2":
-			pool.dbKeyLayout = v2Layout{}
-		default:
-			panic("Unknown version. Expected 1 or 2, given" + string(version))
-		}
+}
+
+type EvidencePoolOptions func(*Pool)
+
+// WithCompaction sets the compaciton parameters.
+func WithDBKeyLayout(dbKeyLayoutV string) EvidencePoolOptions {
+	return func(pool *Pool) {
+		setDBLayout(pool, dbKeyLayoutV)
 	}
 }
 
 // NewPool creates an evidence pool. If using an existing evidence store,
 // it will add all pending evidence to the concurrent list.
-func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool, error) {
+func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options ...EvidencePoolOptions) (*Pool, error) {
 	state, err := stateDB.Load()
 	if err != nil {
 		return nil, sm.ErrCannotLoadState{Err: err}
@@ -114,7 +117,13 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool,
 		consensusBuffer: make([]duplicateVoteSet, 0),
 	}
 
-	setDBLayout(evidenceDB, pool)
+	for _, option := range options {
+		option(pool)
+	}
+
+	if pool.dbKeyLayout == nil {
+		pool.dbKeyLayout = v1LegacyLayout{}
+	}
 
 	// if pending evidence already in db, in event of prior failure, then check for expiration,
 	// update the size and load it back to the evidenceList

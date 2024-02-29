@@ -201,11 +201,12 @@ func TestIsTimely(t *testing.T) {
 		proposalHeight int64
 		proposalTime   time.Time
 		recvTime       time.Time
+		round          int32
 		precision      time.Duration
 		msgDelay       time.Duration
 		expectTimely   bool
 	}{
-		// proposalTime - precision <= localTime <= proposalTime + msgDelay + precision
+		// proposalTime - precision <= localTime <= proposalTime + (msgDelay * (1.1)^round) + precision
 		{
 			// Checking that the following inequality evaluates to true:
 			// 0 - 2 <= 1 <= 0 + 1 + 2
@@ -213,6 +214,7 @@ func TestIsTimely(t *testing.T) {
 			proposalHeight: 2,
 			proposalTime:   genesisTime,
 			recvTime:       genesisTime.Add(1 * time.Nanosecond),
+			round:          0,
 			precision:      time.Nanosecond * 2,
 			msgDelay:       time.Nanosecond,
 			expectTimely:   true,
@@ -224,6 +226,7 @@ func TestIsTimely(t *testing.T) {
 			proposalHeight: 2,
 			proposalTime:   genesisTime,
 			recvTime:       genesisTime.Add(4 * time.Nanosecond),
+			round:          0,
 			precision:      time.Nanosecond * 2,
 			msgDelay:       time.Nanosecond,
 			expectTimely:   false,
@@ -235,9 +238,34 @@ func TestIsTimely(t *testing.T) {
 			proposalHeight: 2,
 			proposalTime:   genesisTime.Add(4 * time.Nanosecond),
 			recvTime:       genesisTime,
+			round:          0,
 			precision:      time.Nanosecond * 2,
 			msgDelay:       time.Nanosecond,
 			expectTimely:   false,
+		},
+		{
+			/*
+				With adaptive synchrony params after 4 rounds, MSGDELAY(4) = 1.4641 * 2000ns
+				Recv time must not exceed proposalTime + 2928ns (msgDelay) + 50ns (prcision) = 2978ns
+			*/
+			name:           "proposal time too large for round",
+			proposalHeight: 2,
+			proposalTime:   genesisTime,
+			recvTime:       genesisTime.Add(2980 * time.Nanosecond),
+			round:          4,
+			precision:      time.Nanosecond * 50,
+			msgDelay:       time.Nanosecond * 2000,
+			expectTimely:   false,
+		},
+		{
+			name:           "proposal timely for round",
+			proposalHeight: 2,
+			proposalTime:   genesisTime,
+			recvTime:       genesisTime.Add(2970 * time.Nanosecond),
+			round:          4,
+			precision:      time.Nanosecond * 50,
+			msgDelay:       time.Nanosecond * 2000,
+			expectTimely:   true,
 		},
 	}
 
@@ -246,12 +274,14 @@ func TestIsTimely(t *testing.T) {
 			p := Proposal{
 				Height:    testCase.proposalHeight,
 				Timestamp: testCase.proposalTime,
+				Round:     testCase.round,
 			}
 
-			sp := SynchronyParams{
-				Precision:    testCase.precision,
-				MessageDelay: testCase.msgDelay,
-			}
+			sp := AdaptiveSynchronyParams(
+				testCase.precision,
+				testCase.msgDelay,
+				testCase.round,
+			)
 
 			ti := p.IsTimely(testCase.recvTime, sp)
 			assert.Equal(t, testCase.expectTimely, ti)

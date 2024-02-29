@@ -286,6 +286,17 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.Storage.DBKeyLayoutVersion = node.DBKeyLayoutVersion
 	}
 
+	if node.Compact {
+		cfg.Storage.Compact = node.Compact
+	}
+
+	if node.DiscardABCIResponses {
+		cfg.Storage.DiscardABCIResponses = node.DiscardABCIResponses
+	}
+
+	if node.Indexer != "" {
+		cfg.TxIndex.Indexer = node.Indexer
+	}
 	return cfg, nil
 }
 

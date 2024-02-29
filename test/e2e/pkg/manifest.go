@@ -210,6 +210,15 @@ type ManifestNode struct {
 
 	// DBKeyLayoutVersion sets the key representation in the DB
 	DBKeyLayoutVersion string `toml:"db_key_layout_version"`
+
+	// Compact triggers compaction on the DB after pruning
+	Compact bool `toml:"compact"`
+
+	// DiscardABCIResponses disables abci rsponses
+	DiscardABCIResponses bool `toml:"discard_abci_responses"`
+
+	// Indexer sets the indexer, default kv
+	Indexer string `toml:"indexer"`
 }
 
 // Save saves the testnet manifest to a file.

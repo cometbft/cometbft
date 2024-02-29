@@ -138,6 +138,9 @@ type Node struct {
 	PrometheusProxyPort     uint32
 	Zone                    ZoneID
 	DBKeyLayoutVersion      string
+	Compact                 bool
+	DiscardABCIResponses    bool
+	Indexer                 string
 }
 
 // LoadTestnet loads a testnet from a manifest file. The testnet files are
@@ -266,6 +269,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Prometheus:              testnet.Prometheus,
 			Zone:                    ZoneID(nodeManifest.Zone),
 			DBKeyLayoutVersion:      nodeManifest.DBKeyLayoutVersion,
+			Compact:                 nodeManifest.Compact,
+			DiscardABCIResponses:    nodeManifest.DiscardABCIResponses,
+			Indexer:                 nodeManifest.Indexer,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this

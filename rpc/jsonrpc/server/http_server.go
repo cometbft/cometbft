@@ -215,7 +215,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 			}
 
 			// Finally, log.
-			durationMS := cmttime.Now().Sub(begin).Nanoseconds() / 1000000
+			durationMS := cmttime.Since(begin).Nanoseconds() / 1000000
 			if rww.Status == -1 {
 				rww.Status = 200
 			}

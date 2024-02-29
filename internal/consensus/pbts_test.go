@@ -149,7 +149,7 @@ func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t
 
 	ensureNewRound(p.roundCh, p.currentHeight, p.currentRound)
 
-	timeout := previousBlockTime.Add(ensureTimeout).Sub(cmttime.Now())
+	timeout := cmttime.Until(previousBlockTime.Add(ensureTimeout))
 	if timeout < ensureTimeout {
 		timeout = ensureTimeout
 	}
@@ -232,7 +232,7 @@ func (p *pbtsTestHarness) nextHeight(
 	err = proposer.SignProposal(p.chainID, tp)
 	require.NoError(t, err)
 
-	time.Sleep(deliverTime.Sub(cmttime.Now()))
+	time.Sleep(cmttime.Until(deliverTime))
 	prop.Signature = tp.Signature
 	err = p.observedState.SetProposalAndBlock(prop, b, ps, "peerID")
 	require.NoError(t, err)

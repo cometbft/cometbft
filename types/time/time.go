@@ -19,6 +19,18 @@ type Source interface {
 	Now() time.Time
 }
 
+// Until returns the duration until t.
+// It is shorthand for t.Sub(time.Now()).
+func Until(t time.Time) time.Duration {
+	return t.Sub(Now())
+}
+
+// Since returns the time elapsed since t.
+// It is shorthand for time.Now().Sub(t).
+func Since(t time.Time) time.Duration {
+	return Now().Sub(t)
+}
+
 // DefaultSource implements the Source interface using the system clock provided by the standard library.
 type DefaultSource struct{}
 

@@ -157,7 +157,7 @@ func (m *Metrics) MarkVoteReceived(vt types.SignedMsgType, power, totalPower int
 
 func (m *Metrics) MarkRound(r int32, st time.Time) {
 	m.Rounds.Set(float64(r))
-	roundTime := cmttime.Now().Sub(st).Seconds()
+	roundTime := cmttime.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
 	pvt := types.PrevoteType
@@ -176,7 +176,7 @@ func (m *Metrics) MarkLateVote(vt types.SignedMsgType) {
 
 func (m *Metrics) MarkStep(s cstypes.RoundStepType) {
 	if !m.stepStart.IsZero() {
-		stepTime := cmttime.Now().Sub(m.stepStart).Seconds()
+		stepTime := cmttime.Since(m.stepStart).Seconds()
 		stepName := strings.TrimPrefix(s.String(), "RoundStep")
 		m.StepDurationSeconds.With("step", stepName).Observe(stepTime)
 	}

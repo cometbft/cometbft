@@ -222,13 +222,13 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		}
 	}
 	switch dbKeyLayoutVersion {
-	case "1":
+	case "v1":
 		store.DBKeyLayout = &v1LegacyLayout{}
-	case "2":
+	case "v2":
 		store.DBKeyLayout = v2Layout{}
 	case "":
 		store.DBKeyLayout = &v1LegacyLayout{}
-		dbKeyLayoutVersion = "1"
+		dbKeyLayoutVersion = "v1"
 	default:
 		panic("Unknown version. Expected 1 or 2, given" + dbKeyLayoutVersion)
 	}

@@ -75,13 +75,13 @@ func setDBLayout(pool *Pool, dbKeyLayoutVersion string) {
 	}
 
 	switch dbKeyLayoutVersion {
-	case "1":
+	case "v1":
 		pool.dbKeyLayout = &v1LegacyLayout{}
 	case "2":
 		pool.dbKeyLayout = &v2Layout{}
 	case "":
 		pool.dbKeyLayout = &v1LegacyLayout{}
-		dbKeyLayoutVersion = "1"
+		dbKeyLayoutVersion = "v1"
 	default:
 		panic("unknown key layout version")
 	}
@@ -122,7 +122,7 @@ func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options
 	}
 
 	if pool.dbKeyLayout == nil {
-		setDBLayout(pool, "1")
+		setDBLayout(pool, "v1")
 	}
 
 	// if pending evidence already in db, in event of prior failure, then check for expiration,

@@ -100,13 +100,13 @@ func setDBLayout(bStore *BlockStore, dbKeyLayoutVersion string) {
 		}
 	}
 	switch dbKeyLayoutVersion {
-	case "1":
+	case "v1":
 		bStore.dbKeyLayout = &v1LegacyLayout{}
-	case "2":
+	case "v2":
 		bStore.dbKeyLayout = &v2Layout{}
 	case "":
 		bStore.dbKeyLayout = &v1LegacyLayout{}
-		dbKeyLayoutVersion = "1"
+		dbKeyLayoutVersion = "v1"
 	default:
 		panic("unknown key layout version")
 	}
@@ -134,7 +134,7 @@ func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
 	}
 
 	if bStore.dbKeyLayout == nil {
-		setDBLayout(bStore, "1")
+		setDBLayout(bStore, "v1")
 	}
 
 	addTimeSample(bStore.metrics.BlockStoreAccessDurationSeconds.With("method", "new_block_store"), start)()

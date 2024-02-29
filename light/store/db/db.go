@@ -50,13 +50,13 @@ func setDBKeyLayout(db dbm.DB, lightStore *dbs, dbKeyLayoutVersion string) {
 	}
 
 	switch dbKeyLayoutVersion {
-	case "1":
+	case "v1":
 		lightStore.dbKeyLayout = &v1LegacyLayout{}
-	case "2":
+	case "v2":
 		lightStore.dbKeyLayout = &v2Layout{}
 	case "":
 		lightStore.dbKeyLayout = &v1LegacyLayout{}
-		dbKeyLayoutVersion = "1"
+		dbKeyLayoutVersion = "v1"
 	default:
 		panic("unknown key layout version")
 	}

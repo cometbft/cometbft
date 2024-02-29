@@ -608,7 +608,7 @@ genesis_hash = "{{ .Storage.GenesisHash }}"
 # The layouts cannot be used interchange-ably. It is either one or the other.
 # If the database was initially created with v1, it is necessary to migrate the DB
 # before switching to v2. The migration is not done automatically.
-db_key_layout = "{{ .Storage.DBKeyLayoutVersion }}"
+db_key_layout_version = "{{ .Storage.DBKeyLayoutVersion }}"
 
 #######################################################
 ###   Transaction Indexer Configuration Options     ###

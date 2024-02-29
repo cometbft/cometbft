@@ -230,7 +230,7 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		store.DBKeyLayout = &v1LegacyLayout{}
 		dbKeyLayoutVersion = "v1"
 	default:
-		panic("Unknown version. Expected 1 or 2, given" + dbKeyLayoutVersion)
+		panic("Unknown version. Expected v1 or v2, given " + dbKeyLayoutVersion)
 	}
 
 	if options.Logger != nil {

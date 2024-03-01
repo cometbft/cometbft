@@ -29,7 +29,8 @@ jobs:
 
           make mockery
 
-          if ! git diff --stat --exit-code ; then
+          git add .
+          if ! git diff HEAD --stat --exit-code ; then
             echo ">> ERROR:"
             echo ">>"
             echo ">> Generated mocks require update (either Mockery or source files may have changed)."
@@ -55,7 +56,8 @@ jobs:
 
           make proto-gen
 
-          if ! git diff --stat --exit-code ; then
+          git add .
+          if ! git diff HEAD --stat --exit-code ; then
             echo ">> ERROR:"
             echo ">>"
             echo ">> Protobuf generated code requires update (either tools or .proto files may have changed)."

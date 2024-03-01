@@ -112,11 +112,11 @@ type SynchronyParams struct {
 	MessageDelay time.Duration `json:"message_delay,string"`
 }
 
-// InRound ensures an exponential back-off of SynchronyParams for block timestamps
-// validation, as the associated proposal rounds increase.
+// InRound ensures an exponential back-off of SynchronyParams.MessageDelay for
+// block timestamps validation, as the associated proposal rounds increase.
 //
 // The adaptation is achieve by increasing MessageDelay by a factor of 10% each
-// subsequent round a proposal's timeliness is calculated. Namely:
+// subsequent round a proposal's timeliness is calculated, namely:
 //
 //	MessageDelay(round) == MessageDelay * (1.1)^round
 //

@@ -143,7 +143,7 @@ func newReactor(
 			0,
 			types.PrecommitType,
 			blockID,
-			time.Now(),
+			cmttime.Now(),
 		)
 		if err != nil {
 			panic(err)

@@ -106,19 +106,23 @@ func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
 // These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
 // For more information on the relationship of the synchrony parameters to
 // block timestamps validity, refer to the PBTS specification:
-// https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md
+// https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/
 type SynchronyParams struct {
 	Precision    time.Duration `json:"precision,string"`
 	MessageDelay time.Duration `json:"message_delay,string"`
 }
 
-/*
-AdaptiveSynchronyParams ensures an exponential backoff for timestamp validation by increasing MessageDelay by a factor of
-10% each subsequent round a proposal's timeliness is calculated. This is meant to facilitate the progression of
-consensus if bad synchrony parameters are set or become insufficient to preserve liveness.
-
-Where round is the consensus round, MessageDelay(round) == MessageDelay * (1.1)^round.
-*/
+// AdaptiveSynchronyParams ensures an exponential back-off for block timestamps
+// validation, as the associated proposal rounds increase.
+//
+// The adaptation is achieve by increasing MessageDelay by a factor of 10% each
+// subsequent round a proposal's timeliness is calculated. Namely:
+//
+//	MessageDelay(round) == MessageDelay * (1.1)^round
+//
+// The goal is facilitate the progression of consensus when improper synchrony
+// parameters are set or become insufficient to preserve liveness. Refer to
+// https://github.com/cometbft/cometbft/issues/2184 for more details.
 func AdaptiveSynchronyParams(precision time.Duration, messageDelay time.Duration, round int32) SynchronyParams {
 	return SynchronyParams{
 		Precision:    precision,
@@ -247,11 +251,11 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", params.Feature.PbtsEnableHeight)
 	}
 
+	// FIXME: should we enforce something more than > 0? Maybe >= time.Millisecond?
 	if params.Synchrony.MessageDelay <= 0 {
 		return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
 			params.Synchrony.MessageDelay)
 	}
-
 	if params.Synchrony.Precision <= 0 {
 		return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
 			params.Synchrony.Precision)

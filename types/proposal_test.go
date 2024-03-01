@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -127,6 +128,8 @@ func BenchmarkProposalVerifySignature(b *testing.B) {
 
 func TestProposalValidateBasic(t *testing.T) {
 	privVal := NewMockPV()
+	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
+
 	testCases := []struct {
 		testName         string
 		malleateProposal func(*Proposal)
@@ -135,32 +138,38 @@ func TestProposalValidateBasic(t *testing.T) {
 		{"Good Proposal", func(p *Proposal) {}, false},
 		{"Invalid Type", func(p *Proposal) { p.Type = PrecommitType }, true},
 		{"Invalid Height", func(p *Proposal) { p.Height = -1 }, true},
+		{"Zero Height", func(p *Proposal) { p.Height = 0 }, true},
 		{"Invalid Round", func(p *Proposal) { p.Round = -1 }, true},
 		{"Invalid POLRound", func(p *Proposal) { p.POLRound = -2 }, true},
+		{"POLRound == Round", func(p *Proposal) { p.POLRound = p.Round }, true},
 		{"Invalid BlockId", func(p *Proposal) {
 			p.BlockID = BlockID{[]byte{1, 2, 3}, PartSetHeader{111, []byte("blockparts")}}
 		}, true},
 		{"Invalid Signature", func(p *Proposal) {
 			p.Signature = make([]byte, 0)
 		}, true},
+		{"Small Signature", func(p *Proposal) {
+			p.Signature = make([]byte, MaxSignatureSize-1)
+		}, false},
 		{"Too big Signature", func(p *Proposal) {
 			p.Signature = make([]byte, MaxSignatureSize+1)
 		}, true},
 	}
-	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
-
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			prop := NewProposal(
-				4, 2, 2,
+				4, 2, 1,
 				blockID, cmttime.Now())
 			p := prop.ToProto()
 			err := privVal.SignProposal("test_chain_id", p)
 			prop.Signature = p.Signature
 			require.NoError(t, err)
+
 			tc.malleateProposal(prop)
-			assert.Equal(t, tc.expectErr, prop.ValidateBasic() != nil, "Validate Basic had an unexpected result")
+			err = prop.ValidateBasic()
+			errMessage := fmt.Sprintf("Validate Basic had an unexpected error: %v", err)
+			assert.Equal(t, tc.expectErr, prop.ValidateBasic() != nil, errMessage)
 		})
 	}
 }

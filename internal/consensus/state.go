@@ -1390,7 +1390,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	}
 
 	// Timestamp validation using Proposed-Based TimeStamp (PBTS) algorithm.
-	// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/README.md
+	// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/
 	if cs.isPBTSEnabled(height) {
 		if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
 			logger.Debug("prevote step: proposal timestamp not equal; prevoting nil")
@@ -1398,7 +1398,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			return
 		}
 
-		if cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
+		if cs.Proposal.POLRound == -1 && !cs.proposalIsTimely() {
 			lowerBound, upperBound := cs.timelyProposalMargins()
 			logger.Info("prevote step: Proposal is not timely; prevoting nil",
 				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),

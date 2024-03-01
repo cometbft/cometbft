@@ -405,9 +405,9 @@ and _p_'s _validValue_ is `nil`:
         * modify transactions (e.g. aggregate them). As explained above, this compromises client traceability, unless
           it is implemented at the Application level.
         * reorder transactions - the Application reorders transactions in the list
-    * the Application MAY use the vote extensions in the commit info to modify the proposal, in which case it suggested
-     that extensions are validated in the same maner as done in `VerifyVoteExtension`, since extensions of votes included
-     in the commit info after the minimum of +2/3 had been reached, have not been verified.
+    * the Application MAY use the vote extensions in the commit info to modify the proposal, in which case it is suggested
+     that extensions be validated in the same maner as done in `VerifyVoteExtension`, since extensions of votes included
+     in the commit info after the minimum of +2/3 had been reached are not verified.
 4. The Application includes the transaction list (whether modified or not) in the return parameters
    (see the rules in section _Usage_), and returns from the call.
 5. _p_ uses the (possibly) modified block as _p_'s proposal in round _r_, height _h_.

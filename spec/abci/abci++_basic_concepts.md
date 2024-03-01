@@ -79,8 +79,7 @@ call sequences of these methods.
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
   `PrepareProposal` with the newly created proposal, called *raw proposal*. The Application
-  can make changes to the raw proposal, such as modifying the set of transactions or the order
-  in which they appear, and returns the
+  can make changes to the raw proposal, such as reordering, adding and removing transactions, before returning the
   (potentially) modified proposal, called *prepared proposal* in the `PrepareProposalResponse`.
   The logic modifying the raw proposal MAY be non-deterministic.
 
@@ -117,7 +116,7 @@ call sequences of these methods.
   should be implemented with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
   accept it in `VerifyVoteExtensionResponse` and ignore it in its own logic. CometBFT calls it when
-  a process receives a precommit message with a (possibly empty) vote extension, for the current height.
+  a process receives a precommit message with a (possibly empty) vote extension, for the current height. It is not called for precommit votes received after the height is concluded but while waiting to accumulate more votes.
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
@@ -251,7 +250,7 @@ time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
-Their data can only be used when provided in a `PrepareProposal` call, but again,
+Their data can only be used when provided in a `PrepareProposal` call but, again,
 without side effects to the app state.
 
 If there is some non-determinism in the state machine, consensus will eventually

@@ -112,7 +112,7 @@ type SynchronyParams struct {
 	MessageDelay time.Duration `json:"message_delay,string"`
 }
 
-// AdaptiveSynchronyParams ensures an exponential back-off for block timestamps
+// InRound ensures an exponential back-off of SynchronyParams for block timestamps
 // validation, as the associated proposal rounds increase.
 //
 // The adaptation is achieve by increasing MessageDelay by a factor of 10% each
@@ -123,10 +123,10 @@ type SynchronyParams struct {
 // The goal is facilitate the progression of consensus when improper synchrony
 // parameters are set or become insufficient to preserve liveness. Refer to
 // https://github.com/cometbft/cometbft/issues/2184 for more details.
-func AdaptiveSynchronyParams(precision time.Duration, messageDelay time.Duration, round int32) SynchronyParams {
+func (sp SynchronyParams) InRound(round int32) SynchronyParams {
 	return SynchronyParams{
-		Precision:    precision,
-		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(messageDelay)),
+		Precision:    sp.Precision,
+		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(sp.MessageDelay)),
 	}
 }
 

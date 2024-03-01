@@ -656,18 +656,13 @@ func durationPtr(t time.Duration) *time.Duration {
 }
 
 func TestParamsAdaptiveSynchronyParams(t *testing.T) {
-	// This is most concise version of AdaptiveSynchronyParams method
-	adaptiveSP := func(sp SynchronyParams, round int32) SynchronyParams {
-		return AdaptiveSynchronyParams(sp.Precision, sp.MessageDelay, round)
-	}
-
 	originalSP := DefaultSynchronyParams()
-	assert.Equal(t, originalSP, adaptiveSP(originalSP, 0),
+	assert.Equal(t, originalSP, originalSP.InRound(0),
 		"SynchronyParams(0) must be equal to SynchronyParams")
 
 	lastSP := originalSP
 	for round := int32(1); round <= 10; round++ {
-		adaptedSP := adaptiveSP(originalSP, round)
+		adaptedSP := originalSP.InRound(round)
 		assert.NotEqual(t, adaptedSP, lastSP)
 		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
 			"Precision must not change over rounds")

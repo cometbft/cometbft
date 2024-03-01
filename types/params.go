@@ -251,7 +251,6 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", params.Feature.PbtsEnableHeight)
 	}
 
-	// FIXME: should we enforce something more than > 0? Maybe >= time.Millisecond?
 	if params.Synchrony.MessageDelay <= 0 {
 		return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
 			params.Synchrony.MessageDelay)

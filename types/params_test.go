@@ -276,6 +276,18 @@ func TestConsensusParamsValidation(t *testing.T) {
 				}),
 			valid: true,
 		},
+		{
+			name: "pbts valid height",
+			params: makeParams(
+				makeParamsArgs{
+					blockBytes:   1,
+					evidenceAge:  2,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
+					pbtsHeight:   100,
+				}),
+			valid: true,
+		},
 	}
 	for i, tc := range testCases {
 		if tc.valid {

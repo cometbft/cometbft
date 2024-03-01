@@ -12,6 +12,7 @@ import (
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -243,7 +244,7 @@ func (state State) MakeBlock(
 	var timestamp time.Time
 	switch {
 	case state.ConsensusParams.Feature.PbtsEnabled(height):
-		timestamp = time.Now()
+		timestamp = cmttime.Now()
 	case height == state.InitialHeight:
 		timestamp = state.LastBlockTime // genesis time
 	default:

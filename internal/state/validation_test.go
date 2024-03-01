@@ -84,7 +84,7 @@ func TestValidateBlockHeader(t *testing.T) {
 			if block.Height > 1 && block.Height < pbtsEnableHeight {
 				block.Time = block.Time.Add(time.Millisecond) // BFT Time
 			} else {
-				block.Time = time.Time{}
+				block.Time = time.Now() // not canonical
 			}
 		}},
 

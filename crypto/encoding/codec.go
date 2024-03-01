@@ -14,6 +14,7 @@ func init() {
 	json.RegisterType((*pc.PublicKey)(nil), "tendermint.crypto.PublicKey")
 	json.RegisterType((*pc.PublicKey_Ed25519)(nil), "tendermint.crypto.PublicKey_Ed25519")
 	json.RegisterType((*pc.PublicKey_Secp256K1)(nil), "tendermint.crypto.PublicKey_Secp256K1")
+	json.RegisterType((*pc.PublicKey_Secp256K1Uncompressed)(nil), "tendermint.crypto.PublicKey_Secp256K1Uncompressed")
 }
 
 // PubKeyToProto takes crypto.PubKey and transforms it to a protobuf Pubkey
@@ -28,8 +29,14 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 		}
 	case secp256k1.PubKey:
 		kp = pc.PublicKey{
-			Sum: &pc.PublicKey_Secp256K1{
-				Secp256K1: k,
+			Sum: &pc.PublicKey_Secp256K1Uncompressed{
+				Secp256K1Uncompressed: k,
+			},
+		}
+	case secp256k1.PubKeyOld:
+		kp = pc.PublicKey{
+			Sum: &pc.PublicKey_Secp256K1Uncompressed{
+				Secp256K1Uncompressed: k,
 			},
 		}
 	default:
@@ -49,13 +56,13 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		pk := make(ed25519.PubKey, ed25519.PubKeySize)
 		copy(pk, k.Ed25519)
 		return pk, nil
-	case *pc.PublicKey_Secp256K1:
-		if len(k.Secp256K1) != secp256k1.PubKeySize {
+	case *pc.PublicKey_Secp256K1Uncompressed:
+		if len(k.Secp256K1Uncompressed) != secp256k1.PubKeySize {
 			return nil, fmt.Errorf("invalid size for PubKeySecp256k1. Got %d, expected %d",
-				len(k.Secp256K1), secp256k1.PubKeySize)
+				len(k.Secp256K1Uncompressed), secp256k1.PubKeySize)
 		}
 		pk := make(secp256k1.PubKey, secp256k1.PubKeySize)
-		copy(pk, k.Secp256K1)
+		copy(pk, k.Secp256K1Uncompressed)
 		return pk, nil
 	default:
 		return nil, fmt.Errorf("fromproto: key type %v is not supported", k)

@@ -7,6 +7,7 @@ type level byte
 const (
 	levelDebug level = 1 << iota
 	levelInfo
+	levelWarn
 	levelError
 )
 
@@ -44,6 +45,14 @@ func (l *filter) Info(msg string, keyvals ...interface{}) {
 		return
 	}
 	l.next.Info(msg, keyvals...)
+}
+
+func (l *filter) Warn(msg string, keyvals ...interface{}) {
+	levelAllowed := l.allowed&levelWarn != 0
+	if !levelAllowed {
+		return
+	}
+	l.next.Warn(msg, keyvals...)
 }
 
 func (l *filter) Debug(msg string, keyvals ...interface{}) {

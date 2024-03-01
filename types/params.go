@@ -112,9 +112,10 @@ func DefaultEvidenceParams() EvidenceParams {
 
 // DefaultValidatorParams returns a default ValidatorParams, which allows
 // only ed25519 pubkeys.
+// TODO HV2: This should probably be secp256k1 in our case
 func DefaultValidatorParams() ValidatorParams {
 	return ValidatorParams{
-		PubKeyTypes: []string{ABCIPubKeyTypeEd25519},
+		PubKeyTypes: []string{ABCIPubKeyTypeSecp256k1},
 	}
 }
 

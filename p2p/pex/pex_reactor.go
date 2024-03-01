@@ -543,6 +543,12 @@ func (r *Reactor) dialAttemptsInfo(addr *p2p.NetAddress) (attempts int, lastDial
 }
 
 func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
+	if r.Switch.Peers().Size() == 0 {
+		r.Logger.Error("Peer Info", "numPeers", r.Switch.Peers().Size())
+	} else {
+		r.Logger.Info("Peer Info", "numPeers", r.Switch.Peers().Size())
+	}
+
 	attempts, lastDialed := r.dialAttemptsInfo(addr)
 	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
 		r.book.MarkBad(addr, defaultBanTime)

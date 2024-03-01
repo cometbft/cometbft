@@ -9,7 +9,9 @@ var (
 	// MaxSignatureSize is a maximum allowed signature size for the Proposal
 	// and Vote.
 	// XXX: secp256k1 does not have Size nor MaxSize defined.
-	MaxSignatureSize = cmtmath.MaxInt(ed25519.SignatureSize, 64)
+	// NOTE(Heimdall-v2): This is a minimal tweak to allow max signature size for ECDSA
+	// and reduce changes from upstream.
+	MaxSignatureSize = cmtmath.MaxInt(ed25519.SignatureSize, 65)
 )
 
 // Signable is an interface for all signable things.

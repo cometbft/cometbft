@@ -1351,6 +1351,18 @@ func (cs *State) enterPrevote(height int64, round int32) {
 	// (so we have more time to try and collect +2/3 prevotes for a single block)
 }
 
+func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
+	sp := types.AdaptiveSynchronyParams(
+		cs.state.ConsensusParams.Synchrony.Precision,
+		cs.state.ConsensusParams.Synchrony.MessageDelay,
+		cs.Round,
+	)
+
+	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
+	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
+	return -sp.Precision, sp.MessageDelay + sp.Precision
+}
+
 func (cs *State) proposalIsTimely() bool {
 	sp := types.AdaptiveSynchronyParams(
 		cs.state.ConsensusParams.Synchrony.Precision,
@@ -1387,15 +1399,14 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		}
 
 		if cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
+			minimumDifference, maximumDifference := cs.timelyProposalMargins()
 			logger.Debug("prevote step: Proposal is not timely; prevoting nil",
 				"proposed",
 				cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
 				"received",
 				cmttime.Canonical(cs.ProposalReceiveTime).Format(time.RFC3339Nano),
-				"msg_delay",
-				cs.state.ConsensusParams.Synchrony.MessageDelay,
-				"precision",
-				cs.state.ConsensusParams.Synchrony.Precision)
+				"minimum_difference", minimumDifference,
+				"maximum_difference", maximumDifference)
 			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 			return
 		}

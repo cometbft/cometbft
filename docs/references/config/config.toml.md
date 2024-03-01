@@ -1264,60 +1264,486 @@ default P2P configuration.
 
 ## State synchronization
 State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine snapshot from peers
-instead of fetching and replaying historical blocks. Requires some peers in the network to take and serve state machine
-snapshots. State sync is not attempted if the node has any local state (LastBlockHeight > 0). The node will have a
-truncated block history, starting from the height of the snapshot.
+instead of fetching and replaying historical blocks. It requires some peers in the network to take and serve state
+machine snapshots. State sync is not attempted if the node has any local state (LastBlockHeight > 0).
+
+The node will have a truncated block history, starting from the height of the snapshot.
 
 ### statesync.enable
+Enable state synchronization.
+```toml
+enable = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+Enable state synchronization on first start.
 
 ### statesync.rpc_servers
+Comma-separated list of RPC servers for light client verification of the synced state machine,
+and retrieval of state data for node bootstrapping.
+```toml
+rpc_servers = ""
+```
+
+| Value type                        | string (comma-separated list)      |
+|:----------------------------------|:-----------------------------------|
+| **Possible values within commas** | nodeID@IP:port (`"1.2.3.4:26657"`) |
+|                                   | `""`                               |
+
+At least two RPC servers have to be defined for state synchronization to work.
+
 ### statesync.trust_height
+The height of the trusted header hash.
+```toml
+trust_height = 0
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+`0` is only allowed when state synchronization is disabled.
+
 ### statesync.trust_hash
+Header hash obtained from a trusted source.
+```toml
+trust_hash = ""
+```
+
+| Value type          | string             |
+|:--------------------|:-------------------|
+| **Possible values** | hex-encoded number |
+|                     | ""                 |
+
+`""` is only allowed when state synchronization is disabled.
+
+This is the header hash value obtained from the trusted source at height
+[statesync.trust_height](#statesynctrust_height).
+
 ### statesync.trust_period
+The period during which validators can be trusted.
+```toml
+trust_period = "168h0m0s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
+For Cosmos SDK-based chains, `statesync.trust_period` should usually be about 2/3rd of the unbonding period
+(about 2 weeks) during which they can be financially punished (slashed) for misbehavior.
+
 ### statesync.discovery_time
+Time to spend discovering snapshots before initiating a restore.
+```toml
+discovery_time = "15s"
+```
+
+<!--- What happens when this time expires? --->
+
 ### statesync.temp_dir
+Temporary directory for state sync snapshot chunks.
+```toml
+temp_dir = ""
+```
+
+| Value type          | string                  |
+|:--------------------|:------------------------|
+| **Possible values** | undefined               |
+
+This value is unused by CometBFT. It was not hooked up to the state sync reactor.
+
+The codebase will always revert to `/tmp/<random_name>` for state snapshot chunks. Make sure you have enough space on
+your drive that holds `/tmp`.
+
 ### statesync.chunk_request_timeout
+The timeout duration before re-requesting a chunk, possibly from a different peer.
+```toml
+chunk_request_timeout = "10s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"5s"`      |
+
+If a smaller duration is set when state syncing is enabled, an error message is raised.
+
 ### statesync.chunk_fetchers
+The number of concurrent chunk fetchers to run.
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+`0` is only allowed when state synchronization is disabled.
 
 ## Block synchronization
+Block synchronization configuration is limited to defining a version of block synchronization to use.
 
 ### blocksync.version
+Block Sync version to use.
+```toml
+version = "v0"
+```
+
+| Value type          | string  |
+|:--------------------|:--------|
+| **Possible values** | `"v0"`  |
+
+All other versions are deprecated.
 
 ## Consensus
+Consensus parameters define how the consensus protocol should behave.
 
 ### consensus.wal_file
+```toml
+wal_file = "data/cs.wal/wal"
+```
+
+| Value type          | string                                          |
+|:--------------------|:------------------------------------------------|
+| **Possible values** | relative directory path, appended to `$CMTHOME` |
+|                     | absolute directory path                         |
+
+The default relative path translates to `$CMTHOME/data/cs.wal/wal`. In case `$CMTHOME` is unset, it defaults to
+`$HOME/.cometbft/data/cs.wal/wal`.
+
 ### consensus.timeout_propose
+How long we wait for a proposal block before prevoting nil.
+```toml
+timeout_propose = "3s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
 ### consensus.timeout_propose_delta
+How much timeout_propose increases with each round.
+```toml
+timeout_propose_delta = "500ms"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0ms"`     |
+
 ### consensus.timeout_prevote
+How long we wait after receiving +2/3 prevotes for “anything” (ie. not a single block or nil).
+```toml
+timeout_prevote = "1s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
 ### consensus.timeout_prevote_delta
+How much the timeout_prevote increases with each round.
+```toml
+timeout_prevote_delta = "500ms"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0ms"`     |
+
 ### consensus.timeout_precommit
+How long we wait after receiving +2/3 precommits for “anything” (ie. not a single block or nil).
+```toml
+timeout_precommit = "1s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
 ### consensus.timeout_precommit_delta
+How much the timeout_precommit increases with each round.
+```toml
+timeout_precommit_delta = "500ms"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0ms"`     |
+
 ### consensus.timeout_commit
+How long we wait after committing a block, before starting on the new height.
+This gives us a chance to receive some more precommits, even though we already have +2/3.
+```toml
+timeout_commit = "1s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
 ### consensus.double_sign_check_height
+How many blocks to look back to check existence of the node's consensus votes before joining consensus.
+```toml
+double_sign_check_height = 0
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+When non-zero, the node will panic upon restart if the same consensus key was used to sign {double_sign_check_height}
+last blocks. So, validators should stop the state machine, wait for some blocks, and then restart the state machine to
+avoid panic.
+
 ### consensus.skip_timeout_commit
+Make progress as soon as we have all the precommits.
+```toml
+skip_timeout_commit = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+This is similar to setting [`consensus.timeout_commit`](#consensustimeout_commit) to `"0s"`.
+
 ### consensus.create_empty_blocks
+If there are no transactions in the mempool, empty blocks are proposed to indicate that the chain is still running.
+```toml
+create_empty_blocks = true
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `true`  |
+|                     | `false` |
+
+This is more relevant to networks with a low number of transactions.
+
 ### consensus.create_empty_blocks_interval
+If there are no transactions in the mempool, empty blocks are proposed to indicate that the chain is still running at
+this interval.
+```toml
+create_empty_blocks_interval = "0s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
 ### consensus.peer_gossip_sleep_duration
+Consensus reactor internal sleep duration when waiting for the next piece of calculation.
+```toml
+peer_gossip_sleep_duration = "100ms"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0ms"`     |
+
+This is a generic sleep duration for the consensus reactor that allows other threads to run when the reactor has no work
+to do.
+
 ### consensus.peer_gossip_intraloop_sleep_duration
+Consensus reactor upper bound for a random sleep duration.
+```toml
+peer_gossip_intraloop_sleep_duration = "0s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`     |
+
+Random sleeps are inserted in the consensus reactor when it is waiting for HasProposalBlockPart messages and HasVote
+messages, so it can reduce the amount of these messages sent. This parameter sets an upper bound for the random value
+that is used for these sleep commands.
+
 ### consensus.peer_query_maj23_sleep_duration
+Consensus reactor `queryMaj23Routine` function sleep time.
+```toml
+peer_query_maj23_sleep_duration = "2s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
+Sleep time for the `queryMaj23Routine` function.
 
 ## Storage
+Storage parameters are important in production settings as it can make the difference between a 2GB data folder and a
+20GB one.
+
+Storage pruning sets a flag in the CometBFT database for data that has expired. The database only deletes this data from
+the file system, when data compaction is called.
 
 ### storage.discard_abci_responses
+Discard ABCI responses from the state store, which can save a considerable amount of disk space.
+```toml
+discard_abci_responses = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+Set to `false` to ensure ABCI responses are kept.
+
+ABCI responses are required for the `/block_results` RPC queries, and to reindex events in the command-line tool.
+
 ### storage.pruning.interval
+The time period between automated background pruning operations.
+```toml
+interval = "10s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
 ### storage.pruning.data_companion.enabled
+Tell the automatic pruning function to respect values set by the data companion.
+
+```toml
+enabled = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+If disabled, only the application retain height will influence block pruning (but not block results pruning).
+
+Only enabling this at a later stage will potentially mean that blocks below the application-set retain height at the
+time will not be available to the data companion.
+
 ### storage.pruning.data_companion.initial_block_retain_height
+The initial value for the data companion block retain height if the data companion has not yet explicitly set one.
+If the data companion has already set a block retain height, this is ignored.
+```toml
+double_sign_check_height = 0
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
 ### storage.pruning.data_companion.initial_block_results_retain_height
+The initial value for the data companion block results retain height if the data companion has not yet explicitly set
+one. If the data companion has already set a block results retain height, this is ignored.
+```toml
+initial_block_results_retain_height = 0
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
 ### storage.pruning.data_companion.genesis_hash
+Hash of the Genesis file, passed to CometBFT via the command line.
+```toml
+genesis_hash = ""
+```
+
+| Value type          | string             |
+|:--------------------|:-------------------|
+| **Possible values** | hex-encoded number |
+|                     | `""`               |
+
+If this hash mismatches the hash that CometBFT computes on the genesis file, the node is not able to boot.
 
 ## Transaction indexer
+Transaction indexer settings.
+
+The application will set which txs to index.
+In some cases a node operator will be able to decide which txs to index based on configuration set in the application.
 
 ### tx_index.indexer
+What indexer to use for transactions.
+```toml
+indexer = "kv"
+```
+
+| Value type          | string   |
+|:--------------------|:---------|
+| **Possible values** | `"kv"`   |
+|                     | `"null"` |
+|                     | `"psql"` |
+
+`"null"` indexer indexes nothing.
+
+`"kv"` is the simplest possible indexer, backed by a key-value storage.
+The key-value storage database backend is defined in [`db_backend`](#db_backend).
+
+`"psql"` indexer is backed by an external PostgreSQL server.
+The server connection string is defined in [`tx_index.psql-conn`](#tx_indexpsql-conn).
+
+The transaction height and transaction hash is always indexed, except with the `"null"` indexer.
+
 ### tx_index.psql-conn
+The PostgreSQL connection configuration.
+```toml
+psql-conn = ""
+```
+
+| Value type          | string                                                       |
+|:--------------------|:-------------------------------------------------------------|
+| **Possible values** | `"postgresql://<user>:<password>@<host>:<port>/<db>?<opts>"` |
+|                     | `""`                                                         |
 
 ## Prometheus Instrumentation
+An extensive amount of Prometheus metrics are built into CometBFT.
 
 ### instrumentation.prometheus
+Enable or disabled presenting the Prometheus metrics at an endpoint.
+```toml
+prometheus = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+When enabled, metrics are served under the `/metrics` endpoint on the
+[instrumentation.prometheus_listen_addr](#instrumentationprometheus_listen_addr) address.
+
 ### instrumentation.prometheus_listen_addr
+Address to listen for Prometheus collector(s) connections.
+```toml
+prometheus_listen_addr = ":26660"
+```
+
+| Value type          | string                                |
+|:--------------------|:--------------------------------------|
+| **Possible values** | Network address (`"127.0.0.1:26657"`) |
+
+The metrics endpoint only supports HTTP.
+
 ### instrumentation.max_open_connections
+Maximum number of simultaneous connections.
+```toml
+max_open_connections = 3
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+`0` allows unlimited connections.
+
 ### instrumentation.namespace
+Instrumentation namespace
+```toml
+namespace = "cometbft"
+```
+
+| Value type          | string                    |
+|:--------------------|:--------------------------|
+| **Possible values** | Prometheus namespace name |
+

@@ -19,6 +19,7 @@ import (
 
 var (
 	testProposal *Proposal
+	testBlockID  BlockID
 	pbp          *cmtproto.Proposal
 )
 
@@ -27,14 +28,16 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	testBlockID = BlockID{
+		Hash:          []byte("--June_15_2020_amino_was_removed"),
+		PartSetHeader: PartSetHeader{Total: 111, Hash: []byte("--June_15_2020_amino_was_removed")},
+	}
 	testProposal = &Proposal{
-		Type:   ProposalType,
-		Height: 12345,
-		Round:  23456,
-		BlockID: BlockID{
-			Hash:          []byte("--June_15_2020_amino_was_removed"),
-			PartSetHeader: PartSetHeader{Total: 111, Hash: []byte("--June_15_2020_amino_was_removed")},
-		},
+		Type:      ProposalType,
+		Height:    12345,
+		Round:     23456,
+		BlockID:   testBlockID,
 		POLRound:  -1,
 		Timestamp: stamp,
 	}
@@ -219,97 +222,67 @@ func TestProposalProtoBuf(t *testing.T) {
 	}
 }
 
-func TestIsTimely(t *testing.T) {
-	genesisTime, err := time.Parse(time.RFC3339, "2019-03-13T23:00:00Z")
+func TestProposalIsTimely(t *testing.T) {
+	timestamp, err := time.Parse(time.RFC3339, "2019-03-13T23:00:00Z")
+	sp := SynchronyParams{
+		Precision:    time.Nanosecond,
+		MessageDelay: 2 * time.Nanosecond,
+	}
 	require.NoError(t, err)
 	testCases := []struct {
-		name           string
-		proposalHeight int64
-		proposalTime   time.Time
-		recvTime       time.Time
-		round          int32
-		precision      time.Duration
-		msgDelay       time.Duration
-		expectTimely   bool
+		name                string
+		proposalHeight      int64
+		proposalTimestamp   time.Time
+		proposalReceiveTime time.Time
+		expectTimely        bool
 	}{
-		// proposalTime - precision <= localTime <= proposalTime + (msgDelay * (1.1)^round) + precision
+		// Timely requirements:
+		// proposalReceiveTime >= proposalTimestamp - PRECISION
+		// proposalReceiveTime <= proposalTimestamp + MSGDELAY + PRECISION
 		{
-			// Checking that the following inequality evaluates to true:
-			// 0 - 2 <= 1 <= 0 + 1 + 2
-			name:           "basic timely",
-			proposalHeight: 2,
-			proposalTime:   genesisTime,
-			recvTime:       genesisTime.Add(1 * time.Nanosecond),
-			round:          0,
-			precision:      time.Nanosecond * 2,
-			msgDelay:       time.Nanosecond,
-			expectTimely:   true,
+			name:                "timestamp in the past",
+			proposalHeight:      2,
+			proposalTimestamp:   timestamp,
+			proposalReceiveTime: timestamp.Add(sp.Precision + sp.MessageDelay),
+			expectTimely:        true,
 		},
 		{
-			// Checking that the following inequality evaluates to false:
-			// 0 - 2 <= 4 <= 0 + 1 + 2
-			name:           "local time too large",
-			proposalHeight: 2,
-			proposalTime:   genesisTime,
-			recvTime:       genesisTime.Add(4 * time.Nanosecond),
-			round:          0,
-			precision:      time.Nanosecond * 2,
-			msgDelay:       time.Nanosecond,
-			expectTimely:   false,
+			name:                "timestamp far in the past",
+			proposalHeight:      2,
+			proposalTimestamp:   timestamp,
+			proposalReceiveTime: timestamp.Add(sp.Precision + sp.MessageDelay + 1),
+			expectTimely:        false,
 		},
 		{
-			// Checking that the following inequality evaluates to false:
-			// 4 - 2 <= 0 <= 4 + 2 + 1
-			name:           "proposal time too large",
-			proposalHeight: 2,
-			proposalTime:   genesisTime.Add(4 * time.Nanosecond),
-			recvTime:       genesisTime,
-			round:          0,
-			precision:      time.Nanosecond * 2,
-			msgDelay:       time.Nanosecond,
-			expectTimely:   false,
+			name:                "timestamp in the future",
+			proposalHeight:      2,
+			proposalTimestamp:   timestamp.Add(sp.Precision),
+			proposalReceiveTime: timestamp,
+			expectTimely:        true,
 		},
 		{
-			/*
-				With adaptive synchrony params after 4 rounds, MSGDELAY(4) = 1.4641 * 2000ns
-				Recv time must not exceed proposalTime + 2928ns (msgDelay) + 50ns (prcision) = 2978ns
-			*/
-			name:           "proposal time too large for round",
-			proposalHeight: 2,
-			proposalTime:   genesisTime,
-			recvTime:       genesisTime.Add(2980 * time.Nanosecond),
-			round:          4,
-			precision:      time.Nanosecond * 50,
-			msgDelay:       time.Nanosecond * 2000,
-			expectTimely:   false,
-		},
-		{
-			name:           "proposal timely for round",
-			proposalHeight: 2,
-			proposalTime:   genesisTime,
-			recvTime:       genesisTime.Add(2970 * time.Nanosecond),
-			round:          4,
-			precision:      time.Nanosecond * 50,
-			msgDelay:       time.Nanosecond * 2000,
-			expectTimely:   true,
+			name:                "timestamp far in the future",
+			proposalHeight:      2,
+			proposalTimestamp:   timestamp.Add(sp.Precision + 1),
+			proposalReceiveTime: timestamp,
+			expectTimely:        false,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			p := Proposal{
+				Type:      ProposalType,
 				Height:    testCase.proposalHeight,
-				Timestamp: testCase.proposalTime,
-				Round:     testCase.round,
+				Timestamp: testCase.proposalTimestamp,
+				Round:     0,
+				POLRound:  -1,
+				BlockID:   testBlockID,
+				Signature: []byte{1},
 			}
+			require.NoError(t, p.ValidateBasic())
 
-			sp := AdaptiveSynchronyParams(
-				testCase.precision,
-				testCase.msgDelay,
-				testCase.round,
-			)
-
-			ti := p.IsTimely(testCase.recvTime, sp)
+			ti := p.IsTimely(testCase.proposalReceiveTime, sp)
 			assert.Equal(t, testCase.expectTimely, ti)
 		})
 	}

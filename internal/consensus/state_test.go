@@ -52,6 +52,7 @@ next round, so we precommit nil but maintain lock
 x * TestStateLock_MissingProposalWhenPOLSeenDoesNotUpdateLock - 4 vals, 1 misses proposal but sees POL.
 x * TestStateLock_MissingProposalWhenPOLSeenDoesNotUnlock - 4 vals, 1 misses proposal but sees POL.
   * TestStateLock_MissingProposalWhenPOLForLockedBlock - 4 vals, 1 misses proposal but sees POL for locked block.
+x * TestState_MissingProposalValidBlockReceivedTimeout - 4 vals, 1 misses proposal but receives full block.
 x * TestState_MissingProposalValidBlockReceivedPrecommit - 4 vals, 1 misses proposal but receives full block.
 x * TestStateLock_POLSafety1 - 4 vals. We shouldn't change lock based on polka at earlier round
 x * TestStateLock_POLSafety2 - 4 vals. We shouldn't accept a proposal with POLRound smaller than our locked round.
@@ -1313,6 +1314,63 @@ func TestStateLock_MissingProposalWhenPOLForLockedBlock(t *testing.T) {
 	// prevotes in the previous round).
 	ensurePrecommit(voteCh, height, round)
 	validatePrecommit(t, cs1, round, round, vss[0], blockID.Hash, blockID.Hash)
+}
+
+// TestState_MissingProposalValidBlockReceivedTimeout tests if a node that
+// misses the round's Proposal but receives a Polka for a block and the full
+// block will not prevote for the valid block because the Proposal was missing.
+func TestState_MissingProposalValidBlockReceivedTimeout(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cs1, vss := randState(4)
+	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID
+
+	timeoutProposeCh := subscribe(cs1.eventBus, types.EventQueryTimeoutPropose)
+	voteCh := subscribe(cs1.eventBus, types.EventQueryVote)
+	validBlockCh := subscribe(cs1.eventBus, types.EventQueryValidBlock)
+
+	// Produce a block
+	block, err := cs1.createProposalBlock(ctx)
+	require.NoError(t, err)
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	require.NoError(t, err)
+	blockID := types.BlockID{
+		Hash:          block.Hash(),
+		PartSetHeader: blockParts.Header(),
+	}
+
+	// Skip round 0 and start consensus threads
+	round++
+	incrementRound(vss[1:]...)
+	startTestRound(cs1, height, round)
+
+	// Receive prevotes(height, round=1, blockID) from all other validators.
+	for i := 1; i < len(vss); i++ {
+		signAddVotes(cs1, types.PrevoteType, chainID, blockID, false, vss[i])
+		ensurePrevote(voteCh, height, round)
+	}
+
+	// We have polka for blockID so we can accept the associated full block.
+	for i := 0; i < int(blockParts.Total()); i++ {
+		err := cs1.AddProposalBlockPart(height, round, blockParts.GetPart(i), "peer")
+		require.NoError(t, err)
+	}
+	ensureNewValidBlock(validBlockCh, height, round)
+
+	// We don't prevote right now because we didn't receive the round's
+	// Proposal. Wait for the propose timeout.
+	ensureNewTimeout(timeoutProposeCh, height, round, cs1.config.Propose(round).Nanoseconds())
+
+	rs := cs1.GetRoundState()
+	assert.Equal(t, rs.ValidRound, round)
+	assert.Equal(t, rs.ValidBlock.Hash(), blockID.Hash)
+
+	// Since we didn't see the round's Proposal, we should prevote nil.
+	// NOTE: introduced by https://github.com/cometbft/cometbft/pull/1203.
+	// In branches v0.{34,37,38}.x, the node prevotes for the valid block.
+	ensurePrevote(voteCh, height, round)
+	validatePrevote(t, cs1, round, vss[0], nil)
 }
 
 // TestState_MissingProposalValidBlockReceivedPrecommit tests if a node that
@@ -3134,7 +3192,7 @@ func subscribe(eventBus *types.EventBus, q cmtpubsub.Query) <-chan cmtpubsub.Mes
 }
 
 // subscribe subscribes test client to the given query and returns a channel with cap = 1.
-func unsubscribe(eventBus *types.EventBus, q cmtpubsub.Query) {
+func unsubscribe(eventBus *types.EventBus, q cmtpubsub.Query) { //nolint: unused
 	err := eventBus.Unsubscribe(context.Background(), testSubscriber, q)
 	if err != nil {
 		panic(fmt.Sprintf("failed to subscribe %s to %v; err %v", testSubscriber, q, err))

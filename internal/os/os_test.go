@@ -2,7 +2,6 @@ package os
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,7 +20,7 @@ func TestCopyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	copyfile := fmt.Sprintf("%s.copy", tmpfile.Name())
+	copyfile := tmpfile.Name() + ".copy"
 	if err := CopyFile(tmpfile.Name(), copyfile); err != nil {
 		t.Fatal(err)
 	}

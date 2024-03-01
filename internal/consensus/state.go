@@ -1401,14 +1401,20 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		if cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
 			minimumDifference, maximumDifference := cs.timelyProposalMargins()
 			logger.Debug("prevote step: Proposal is not timely; prevoting nil",
-				"proposed",
-				cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
-				"received",
-				cmttime.Canonical(cs.ProposalReceiveTime).Format(time.RFC3339Nano),
+				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp),
 				"minimum_difference", minimumDifference,
 				"maximum_difference", maximumDifference)
 			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 			return
+		}
+
+		if cs.Proposal.POLRound == -1 {
+			logger.Debug("prevote step: Proposal is timely",
+				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp))
 		}
 	}
 

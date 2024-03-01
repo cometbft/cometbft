@@ -106,7 +106,15 @@ Re-run the `timedatectl` command and verify that the change has taken effect.
 
 #### Check if Your NTP Daemon is Synchronized
 
-Check the status of your local `chrony` NTP daemon using by running the following:
+We provide two examples here, for `chrony` and `timesync`, but these steps
+should be adapted if you are using a different daemon.
+
+If you find that the NTP is not synchronizing, remember allow NTP traffic
+(123/UDP) to your NTP servers.
+
+##### `chrony` 
+
+Check the status of your `chrony` deamon by running the following command:
 
 ```shell
 $ chronyc tracking
@@ -119,6 +127,27 @@ The `System time` field of the response should show a value that is much smaller
 milliseconds.
 
 If the value is very large, restart the `chronyd` daemon.
+
+##### `timesync`
+
+If you are using `timesyncd`, then execute the following command:
+
+```shell
+$ timedatectl timesync-status --monitor
+```
+
+If the output indicates an error, restart the service by running
+
+```shell
+$ timedatectl set-ntp false
+$ timedatectl set-ntp true
+```
+
+Once running, the output should include a `Packet count`, indicating how many times the protocol
+has been executed, and a small `Precision` value.
+Observe that this deamon increases the polling interval over time, up to a limit.
+You may want to decrease the maximum value of the polling interval by tweaking
+the `/etc/systemd/timesyncd.conf` file.
 
 ## Debugging a Network
 

@@ -129,6 +129,8 @@ func BenchmarkProposalVerifySignature(b *testing.B) {
 func TestProposalValidateBasic(t *testing.T) {
 	privVal := NewMockPV()
 	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
+	location, err := time.LoadLocation("CET")
+	require.NoError(t, err)
 
 	testCases := []struct {
 		testName         string
@@ -153,6 +155,12 @@ func TestProposalValidateBasic(t *testing.T) {
 		}, false},
 		{"Too big Signature", func(p *Proposal) {
 			p.Signature = make([]byte, MaxSignatureSize+1)
+		}, true},
+		{"Non canonical time", func(p *Proposal) {
+			p.Timestamp = time.Now().In(location)
+		}, true},
+		{"Not rounded time", func(p *Proposal) {
+			p.Timestamp = time.Now()
 		}, true},
 	}
 	for _, tc := range testCases {

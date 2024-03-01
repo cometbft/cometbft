@@ -139,22 +139,26 @@ type Node struct {
 	Zone                    ZoneID
 }
 
-// LoadTestnet loads a testnet from a manifest file, using the filename to
-// determine the testnet name and directory (from the basename of the file).
+// LoadTestnet loads a testnet from a manifest file. The testnet files are
+// generated in the given directory, which is also use to determine the testnet
+// name (the directory's basename).
 // The testnet generation must be deterministic, since it is generated
 // separately by the runner and the test cases. For this reason, testnets use a
 // random seed to generate e.g. keys.
-func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
+func LoadTestnet(file string, ifd InfrastructureData, dir string) (*Testnet, error) {
 	manifest, err := LoadManifest(file)
 	if err != nil {
 		return nil, err
 	}
-	return NewTestnetFromManifest(manifest, file, ifd)
+	return NewTestnetFromManifest(manifest, file, ifd, dir)
 }
 
 // NewTestnetFromManifest creates and validates a testnet from a manifest.
-func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
-	dir := strings.TrimSuffix(file, filepath.Ext(file))
+func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData, dir string) (*Testnet, error) {
+	if dir == "" {
+		// Set default testnet directory.
+		dir = strings.TrimSuffix(file, filepath.Ext(file))
+	}
 
 	keyGen := newKeyGenerator(randomSeed)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)

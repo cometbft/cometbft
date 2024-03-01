@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -22,6 +23,7 @@ func examplePrevote() *Vote {
 
 func examplePrecommit() *Vote {
 	vote := exampleVote(byte(PrecommitType))
+	vote.Extension = []byte("extension")
 	vote.ExtensionSignature = []byte("signature")
 	return vote
 }
@@ -312,7 +314,7 @@ func TestVoteVerify(t *testing.T) {
 
 func TestVoteString(t *testing.T) {
 	str := examplePrecommit().String()
-	expected := `Vote{56789:6AF1F4111082 12345/02/SIGNED_MSG_TYPE_PRECOMMIT(Precommit) 8B01023386C3 000000000000 000000000000 @ 2017-12-25T03:00:01.234Z}` //nolint:lll //ignore line length for tests
+	expected := `Vote{56789:6AF1F4111082 12345/02/SIGNED_MSG_TYPE_PRECOMMIT(Precommit) 8B01023386C3 000000000000 657874656E73 @ 2017-12-25T03:00:01.234Z}` //nolint:lll //ignore line length for tests
 	if str != expected {
 		t.Errorf("got unexpected string for Vote. Expected:\n%v\nGot:\n%v", expected, str)
 	}
@@ -488,5 +490,112 @@ func TestVoteProtobuf(t *testing.T) {
 		} else {
 			require.Error(t, err)
 		}
+	}
+}
+
+func TestSignAndCheckVote(t *testing.T) {
+	privVal := NewMockPV()
+
+	testCases := []struct {
+		name              string
+		extensionsEnabled bool
+		vote              *Vote
+		expectError       bool
+	}{
+		{
+			name:              "precommit with extension signature",
+			extensionsEnabled: true,
+			vote:              examplePrecommit(),
+			expectError:       false,
+		},
+		{
+			name:              "precommit with extension signature",
+			extensionsEnabled: false,
+			vote:              examplePrecommit(),
+			expectError:       false,
+		},
+		{
+			name:              "precommit with extension signature for a nil block",
+			extensionsEnabled: true,
+			vote: func() *Vote {
+				v := examplePrecommit()
+				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}}
+				return v
+			}(),
+			expectError: true,
+		},
+		{
+			name:              "precommit with extension signature for a nil block",
+			extensionsEnabled: false,
+			vote: func() *Vote {
+				v := examplePrecommit()
+				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}}
+				return v
+			}(),
+			expectError: true,
+		},
+		{
+			name:              "precommit without extension",
+			extensionsEnabled: true,
+			vote: func() *Vote {
+				v := examplePrecommit()
+				v.Extension = make([]byte, 0)
+				return v
+			}(),
+			expectError: false,
+		},
+		{
+			name:              "precommit without extension",
+			extensionsEnabled: false,
+			vote: func() *Vote {
+				v := examplePrecommit()
+				v.Extension = make([]byte, 0)
+				return v
+			}(),
+			expectError: false,
+		},
+		{
+			name:              "prevote",
+			extensionsEnabled: true,
+			vote:              examplePrevote(),
+			expectError:       true,
+		},
+		{
+			name:              "prevote",
+			extensionsEnabled: false,
+			vote:              examplePrevote(),
+			expectError:       false,
+		},
+		{
+			name:              "prevote with extension",
+			extensionsEnabled: true,
+			vote: func() *Vote {
+				v := examplePrevote()
+				v.Extension = []byte("extension")
+				return v
+			}(),
+			expectError: true,
+		},
+		{
+			name:              "prevote with extension",
+			extensionsEnabled: false,
+			vote: func() *Vote {
+				v := examplePrevote()
+				v.Extension = []byte("extension")
+				return v
+			}(),
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s (extensionsEnabled: %t) ", tc.name, tc.extensionsEnabled), func(t *testing.T) {
+			_, err := SignAndCheckVote(tc.vote, privVal, "test_chain_id", tc.extensionsEnabled)
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
 	}
 }

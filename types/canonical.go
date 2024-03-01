@@ -42,9 +42,9 @@ func CanonicalizePartSetHeader(psh cmtproto.PartSetHeader) cmtproto.CanonicalPar
 func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.CanonicalProposal {
 	return cmtproto.CanonicalProposal{
 		Type:      ProposalType,
-		Height:    proposal.Height,       // encoded as sfixed64
-		Round:     int64(proposal.Round), // encoded as sfixed64
-		POLRound:  int64(proposal.PolRound),
+		Height:    proposal.Height,          // encoded as sfixed64
+		Round:     int64(proposal.Round),    // encoded as sfixed64
+		POLRound:  int64(proposal.PolRound), // FIXME: not matching
 		BlockID:   CanonicalizeBlockID(proposal.BlockID),
 		Timestamp: proposal.Timestamp,
 		ChainID:   chainID,

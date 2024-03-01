@@ -76,27 +76,28 @@ func (p *Proposal) ValidateBasic() error {
 	if len(p.Signature) == 0 {
 		return errors.New("signature is missing")
 	}
-
 	if len(p.Signature) > MaxSignatureSize {
 		return fmt.Errorf("signature is too big (max: %d)", MaxSignatureSize)
 	}
 	return nil
 }
 
-// IsTimely validates that the block timestamp is 'timely' according to the proposer-based timestamp algorithm.
-// To evaluate if a block is timely, its timestamp is compared to the local time of the validator along with the
-// configured Precision and MsgDelay parameters.
-// Specifically, a proposed block timestamp is considered timely if it is satisfies the following inequalities:
+// IsTimely validates that the proposal timestamp is 'timely' according to the
+// proposer-based timestamp algorithm. To evaluate if a proposal is timely, its
+// timestamp is compared to the local time of the validator when it receives
+// the proposal along with the configured Precision and MessageDelay
+// parameters. Specifically, a proposed proposal timestamp is considered timely
+// if it is satisfies the following inequalities:
 //
-// localtime >= proposedBlockTime - Precision
-// localtime <= proposedBlockTime + MsgDelay + Precision
+// proposalReceiveTime >= proposalTimestamp - Precision
+// proposalReceiveTime <= proposalTimestamp + MessageDelay + Precision
 //
-// For more information on the meaning of 'timely', see the proposer-based timestamp specification:
+// For more information on the meaning of 'timely', refer to the specification:
 // https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
 func (p *Proposal) IsTimely(recvTime time.Time, sp SynchronyParams) bool {
-	// lhs is `proposedBlockTime - Precision` in the first inequality
+	// lhs is `proposalTimestamp - Precision` in the first inequality
 	lhs := p.Timestamp.Add(-sp.Precision)
-	// rhs is `proposedBlockTime + MsgDelay + Precision` in the second inequality
+	// rhs is `proposalTimestamp + MessageDelay + Precision` in the second inequality
 	rhs := p.Timestamp.Add(sp.MessageDelay).Add(sp.Precision)
 
 	if recvTime.Before(lhs) || recvTime.After(rhs) {
@@ -154,7 +155,7 @@ func (p *Proposal) ToProto() *cmtproto.Proposal {
 	pb.Type = p.Type
 	pb.Height = p.Height
 	pb.Round = p.Round
-	pb.PolRound = p.POLRound
+	pb.PolRound = p.POLRound // FIXME: not matching
 	pb.Timestamp = p.Timestamp
 	pb.Signature = p.Signature
 
@@ -179,7 +180,7 @@ func ProposalFromProto(pp *cmtproto.Proposal) (*Proposal, error) {
 	p.Type = pp.Type
 	p.Height = pp.Height
 	p.Round = pp.Round
-	p.POLRound = pp.PolRound
+	p.POLRound = pp.PolRound // FIXME: not matching
 	p.Timestamp = pp.Timestamp
 	p.Signature = pp.Signature
 

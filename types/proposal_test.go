@@ -64,7 +64,7 @@ func TestProposalVerifySignature(t *testing.T) {
 	require.NoError(t, err)
 
 	prop := NewProposal(
-		4, 2, 2,
+		4, 2, 1,
 		BlockID{cmtrand.Bytes(tmhash.Size), PartSetHeader{777, cmtrand.Bytes(tmhash.Size)}}, cmttime.Now())
 	p := prop.ToProto()
 	signBytes := ProposalSignBytes("test_chain_id", p)
@@ -183,9 +183,9 @@ func TestProposalValidateBasic(t *testing.T) {
 }
 
 func TestProposalProtoBuf(t *testing.T) {
-	proposal := NewProposal(1, 2, 3, makeBlockID([]byte("hash"), 2, []byte("part_set_hash")), cmttime.Now())
+	proposal := NewProposal(1, 2, 1, makeBlockID([]byte("hash"), 2, []byte("part_set_hash")), cmttime.Now())
 	proposal.Signature = []byte("sig")
-	proposal2 := NewProposal(1, 2, 3, BlockID{}, cmttime.Now())
+	proposal2 := NewProposal(1, 2, 1, BlockID{}, cmttime.Now())
 
 	testCases := []struct {
 		msg     string

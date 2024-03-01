@@ -170,7 +170,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: true,
 		},
-		// test no pubkey type provided
+		// pubkey params
 		{
 			name: "empty pubkeyTypes",
 			params: makeParams(makeParamsArgs{
@@ -182,7 +182,6 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: false,
 		},
-		// test invalid pubkey type provided
 		{
 			name: "bad pubkeyTypes",
 			params: makeParams(makeParamsArgs{
@@ -194,6 +193,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: false,
 		},
+		// blockBytes can be -1
 		{
 			name: "blockBytes -1",
 			params: makeParams(makeParamsArgs{
@@ -214,13 +214,22 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: false,
 		},
-		// test invalid synchrony params
+		// invalid synchrony params
 		{
 			name: "messageDelay 0",
 			params: makeParams(makeParamsArgs{
 				evidenceAge:  2,
 				precision:    time.Nanosecond,
 				messageDelay: 0,
+			}),
+			valid: false,
+		},
+		{
+			name: "messageDelay negative",
+			params: makeParams(makeParamsArgs{
+				evidenceAge:  2,
+				precision:    time.Nanosecond,
+				messageDelay: -1,
 			}),
 			valid: false,
 		},
@@ -233,7 +242,16 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: false,
 		},
-		// test pbts
+		{
+			name: "precision negative",
+			params: makeParams(makeParamsArgs{
+				evidenceAge:  2,
+				precision:    -1,
+				messageDelay: time.Nanosecond,
+			}),
+			valid: false,
+		},
+		// pbts enable height
 		{
 			name: "pbts height -1",
 			params: makeParams(
@@ -255,6 +273,18 @@ func TestConsensusParamsValidation(t *testing.T) {
 					precision:    time.Nanosecond,
 					messageDelay: time.Nanosecond,
 					pbtsHeight:   0,
+				}),
+			valid: true,
+		},
+		{
+			name: "pbts valid height",
+			params: makeParams(
+				makeParamsArgs{
+					blockBytes:   1,
+					evidenceAge:  2,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
+					pbtsHeight:   100,
 				}),
 			valid: true,
 		},

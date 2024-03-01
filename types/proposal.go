@@ -155,7 +155,7 @@ func (p *Proposal) ToProto() *cmtproto.Proposal {
 	pb.Type = p.Type
 	pb.Height = p.Height
 	pb.Round = p.Round
-	pb.PolRound = p.POLRound // FIXME: not matching
+	pb.PolRound = p.POLRound // FIXME: names do not match
 	pb.Timestamp = p.Timestamp
 	pb.Signature = p.Signature
 
@@ -180,7 +180,7 @@ func ProposalFromProto(pp *cmtproto.Proposal) (*Proposal, error) {
 	p.Type = pp.Type
 	p.Height = pp.Height
 	p.Round = pp.Round
-	p.POLRound = pp.PolRound // FIXME: not matching
+	p.POLRound = pp.PolRound // FIXME: names do not match
 	p.Timestamp = pp.Timestamp
 	p.Signature = pp.Signature
 

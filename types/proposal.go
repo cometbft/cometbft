@@ -69,9 +69,10 @@ func (p *Proposal) ValidateBasic() error {
 	if !p.BlockID.IsComplete() {
 		return fmt.Errorf("expected a complete, non-empty BlockID, got: %v", p.BlockID)
 	}
-
-	// NOTE: Timestamp validation is subtle and handled elsewhere.
-
+	// Times must be canonical
+	if cmttime.Canonical(p.Timestamp) != p.Timestamp {
+		return fmt.Errorf("expected a canonical timestamp, got: %v", p.Timestamp)
+	}
 	if len(p.Signature) == 0 {
 		return errors.New("signature is missing")
 	}

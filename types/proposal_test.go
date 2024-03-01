@@ -28,6 +28,7 @@ func init() {
 		panic(err)
 	}
 	testProposal = &Proposal{
+		Type:   ProposalType,
 		Height: 12345,
 		Round:  23456,
 		BlockID: BlockID{
@@ -138,6 +139,14 @@ func TestProposalValidateBasic(t *testing.T) {
 		expectErr        bool
 	}{
 		{"Good Proposal", func(p *Proposal) {}, false},
+		{"Test Proposal", func(p *Proposal) {
+			p.Type = testProposal.Type
+			p.Height = testProposal.Height
+			p.Round = testProposal.Round
+			p.BlockID = testProposal.BlockID
+			p.POLRound = testProposal.POLRound
+			p.Timestamp = testProposal.Timestamp
+		}, false},
 		{"Invalid Type", func(p *Proposal) { p.Type = PrecommitType }, true},
 		{"Invalid Height", func(p *Proposal) { p.Height = -1 }, true},
 		{"Zero Height", func(p *Proposal) { p.Height = 0 }, true},

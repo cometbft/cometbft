@@ -50,10 +50,10 @@ func TestMsgToProto(t *testing.T) {
 	proposal := types.Proposal{
 		Type:      types.ProposalType,
 		Height:    1,
-		Round:     1,
+		Round:     2,
 		POLRound:  1,
 		BlockID:   bi,
-		Timestamp: time.Now(),
+		Timestamp: cmttime.Now(),
 		Signature: cmtrand.Bytes(20),
 	}
 	pbProposal := proposal.ToProto()

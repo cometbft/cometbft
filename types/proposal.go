@@ -50,14 +50,17 @@ func (p *Proposal) ValidateBasic() error {
 	if p.Type != ProposalType {
 		return errors.New("invalid Type")
 	}
-	if p.Height < 0 {
-		return errors.New("negative Height")
+	if p.Height <= 0 {
+		return errors.New("non positive Height")
 	}
 	if p.Round < 0 {
 		return errors.New("negative Round")
 	}
 	if p.POLRound < -1 {
 		return errors.New("negative POLRound (exception: -1)")
+	}
+	if p.POLRound >= p.Round {
+		return errors.New("POLRound >= Round")
 	}
 	if err := p.BlockID.ValidateBasic(); err != nil {
 		return fmt.Errorf("wrong BlockID: %w", err)

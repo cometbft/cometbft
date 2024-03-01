@@ -654,3 +654,34 @@ func TestProtoUpgrade(t *testing.T) {
 func durationPtr(t time.Duration) *time.Duration {
 	return &t
 }
+
+func TestParamsAdaptiveSynchronyParams(t *testing.T) {
+	originalSP := DefaultSynchronyParams()
+	adaptiveSP := func(sp SynchronyParams, round int32) SynchronyParams {
+		return AdaptiveSynchronyParams(sp.Precision, sp.MessageDelay, round)
+	}
+
+	assert.Equal(t, originalSP, adaptiveSP(originalSP, 0),
+		"SynchronyParams(0) must be equal to SynchronyParams")
+
+	sp, lastSp := originalSP, originalSP
+	for round := int32(1); round <= 10; round++ {
+		sp = adaptiveSP(sp, round)
+		assert.NotEqual(t, sp, lastSp)
+		assert.Equal(t, sp.Precision, lastSp.Precision,
+			"Precision must not change over rounds")
+		assert.Greater(t, sp.MessageDelay, lastSp.MessageDelay,
+			"MessageDelay must be increase over rounds")
+
+		// It should not increase by that much, say 20%
+		upperMessageDelay := lastSp.MessageDelay + lastSp.MessageDelay/20
+		assert.LessOrEqual(t, sp.MessageDelay, upperMessageDelay)
+
+		lastSp = sp
+	}
+
+	assert.GreaterOrEqual(t, lastSp.MessageDelay, originalSP.MessageDelay*2,
+		"MessageDelay must at least double after 10 rounds")
+	assert.LessOrEqual(t, lastSp.MessageDelay, originalSP.MessageDelay*10,
+		"MessageDelay must not increase by more than 10 times after 10 rounds")
+}

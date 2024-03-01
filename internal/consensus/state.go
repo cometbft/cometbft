@@ -2693,14 +2693,16 @@ func repairWalFile(src, dst string) error {
 
 func (cs *State) calculateProposalTimestampDifferenceMetric() {
 	if cs.Proposal != nil && cs.Proposal.POLRound == -1 {
+		// If PBTS is disabled, default SynchronyParams are used
 		tp := types.AdaptiveSynchronyParams(
 			cs.state.ConsensusParams.Synchrony.Precision,
 			cs.state.ConsensusParams.Synchrony.MessageDelay,
-			cs.Round,
+			cs.Proposal.Round,
 		)
 
 		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, tp)
-		cs.metrics.ProposalTimestampDifference.With("is_timely", strconv.FormatBool(isTimely)).
+		cs.metrics.ProposalTimestampDifference.
+			With("is_timely", strconv.FormatBool(isTimely)).
 			Observe(cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp).Seconds())
 	}
 }

@@ -1351,12 +1351,16 @@ func (cs *State) enterPrevote(height int64, round int32) {
 	// (so we have more time to try and collect +2/3 prevotes for a single block)
 }
 
+func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
+	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Round)
+
+	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
+	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
+	return -sp.Precision, sp.MessageDelay + sp.Precision
+}
+
 func (cs *State) proposalIsTimely() bool {
-	sp := types.AdaptiveSynchronyParams(
-		cs.state.ConsensusParams.Synchrony.Precision,
-		cs.state.ConsensusParams.Synchrony.MessageDelay,
-		cs.Round,
-	)
+	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
 
 	return cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
 }
@@ -1378,7 +1382,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	}
 
 	// Timestamp validation using Proposed-Based TimeStamp (PBTS) algorithm.
-	// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/README.md
+	// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/
 	if cs.isPBTSEnabled(height) {
 		if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
 			logger.Debug("prevote step: proposal timestamp not equal; prevoting nil")
@@ -1386,18 +1390,24 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			return
 		}
 
-		if cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
-			logger.Debug("prevote step: Proposal is not timely; prevoting nil",
-				"proposed",
-				cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
-				"received",
-				cmttime.Canonical(cs.ProposalReceiveTime).Format(time.RFC3339Nano),
-				"msg_delay",
-				cs.state.ConsensusParams.Synchrony.MessageDelay,
-				"precision",
-				cs.state.ConsensusParams.Synchrony.Precision)
+		if cs.Proposal.POLRound == -1 && !cs.proposalIsTimely() {
+			lowerBound, upperBound := cs.timelyProposalMargins()
+			// TODO: use Warn level once available.
+			logger.Info("prevote step: Proposal is not timely; prevoting nil",
+				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp),
+				"lower_bound", lowerBound,
+				"upper_bound", upperBound)
 			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 			return
+		}
+
+		if cs.Proposal.POLRound == -1 {
+			logger.Debug("prevote step: Proposal is timely",
+				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp))
 		}
 	}
 
@@ -2693,14 +2703,11 @@ func repairWalFile(src, dst string) error {
 
 func (cs *State) calculateProposalTimestampDifferenceMetric() {
 	if cs.Proposal != nil && cs.Proposal.POLRound == -1 {
-		tp := types.AdaptiveSynchronyParams(
-			cs.state.ConsensusParams.Synchrony.Precision,
-			cs.state.ConsensusParams.Synchrony.MessageDelay,
-			cs.Round,
-		)
+		sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
 
-		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, tp)
-		cs.metrics.ProposalTimestampDifference.With("is_timely", strconv.FormatBool(isTimely)).
+		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
+		cs.metrics.ProposalTimestampDifference.
+			With("is_timely", strconv.FormatBool(isTimely)).
 			Observe(cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp).Seconds())
 	}
 }

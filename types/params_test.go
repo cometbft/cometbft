@@ -30,8 +30,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: true,
 		},
@@ -40,8 +40,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   0,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
@@ -50,8 +50,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   47 * 1024 * 1024,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: true,
 		},
@@ -60,8 +60,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   10,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: true,
 		},
@@ -70,8 +70,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   100 * 1024 * 1024,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: true,
 		},
@@ -80,8 +80,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   100*1024*1024 + 1,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
@@ -90,8 +90,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   101 * 1024 * 1024,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
@@ -100,8 +100,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1024 * 1024 * 1024,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
@@ -110,8 +110,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1024 * 1024 * 1024,
 				evidenceAge:  -1,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
@@ -122,8 +122,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:       1,
 				evidenceAge:      0,
 				maxEvidenceBytes: 0,
-				precision:        1,
-				messageDelay:     1,
+				precision:        time.Nanosecond,
+				messageDelay:     time.Nanosecond,
 			}),
 			valid: false,
 		},
@@ -132,8 +132,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1 * 1024 * 1024,
 				evidenceAge:  -1,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
@@ -143,8 +143,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:       1,
 				evidenceAge:      2,
 				maxEvidenceBytes: 2,
-				precision:        1,
-				messageDelay:     1,
+				precision:        time.Nanosecond,
+				messageDelay:     time.Nanosecond,
 			}),
 			valid: false,
 		},
@@ -154,8 +154,8 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:       1000,
 				evidenceAge:      2,
 				maxEvidenceBytes: 1,
-				precision:        1,
-				messageDelay:     1,
+				precision:        time.Nanosecond,
+				messageDelay:     time.Nanosecond,
 			}),
 			valid: true,
 		},
@@ -165,42 +165,42 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:       1,
 				evidenceAge:      1,
 				maxEvidenceBytes: 0,
-				precision:        1,
-				messageDelay:     1,
+				precision:        time.Nanosecond,
+				messageDelay:     time.Nanosecond,
 			}),
 			valid: true,
 		},
-		// test no pubkey type provided
+		// pubkey params
 		{
 			name: "empty pubkeyTypes",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
 				evidenceAge:  2,
 				pubkeyTypes:  []string{},
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
-		// test invalid pubkey type provided
 		{
 			name: "bad pubkeyTypes",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
 				evidenceAge:  2,
 				pubkeyTypes:  []string{"potatoes make good pubkeys"},
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
+		// blockBytes can be -1
 		{
 			name: "blockBytes -1",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   -1,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: true,
 		},
@@ -209,39 +209,57 @@ func TestConsensusParamsValidation(t *testing.T) {
 			params: makeParams(makeParamsArgs{
 				blockBytes:   -2,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
-		// test invalid pubkey type provided
+		// invalid synchrony params
 		{
-			name: "messageDelay -1",
+			name: "messageDelay 0",
 			params: makeParams(makeParamsArgs{
 				evidenceAge:  2,
-				precision:    1,
+				precision:    time.Nanosecond,
+				messageDelay: 0,
+			}),
+			valid: false,
+		},
+		{
+			name: "messageDelay negative",
+			params: makeParams(makeParamsArgs{
+				evidenceAge:  2,
+				precision:    time.Nanosecond,
 				messageDelay: -1,
 			}),
 			valid: false,
 		},
 		{
-			name: "precision -1",
+			name: "precision 0",
 			params: makeParams(makeParamsArgs{
 				evidenceAge:  2,
-				precision:    -1,
-				messageDelay: 1,
+				precision:    0,
+				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
-		// test pbts
+		{
+			name: "precision negative",
+			params: makeParams(makeParamsArgs{
+				evidenceAge:  2,
+				precision:    -1,
+				messageDelay: time.Nanosecond,
+			}),
+			valid: false,
+		},
+		// pbts enable height
 		{
 			name: "pbts height -1",
 			params: makeParams(
 				makeParamsArgs{
 					blockBytes:   1,
 					evidenceAge:  2,
-					precision:    1,
-					messageDelay: 1,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
 					pbtsHeight:   -1,
 				}),
 			valid: false,
@@ -252,9 +270,21 @@ func TestConsensusParamsValidation(t *testing.T) {
 				makeParamsArgs{
 					blockBytes:   1,
 					evidenceAge:  2,
-					precision:    1,
-					messageDelay: 1,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
 					pbtsHeight:   0,
+				}),
+			valid: true,
+		},
+		{
+			name: "pbts valid height",
+			params: makeParams(
+				makeParamsArgs{
+					blockBytes:   1,
+					evidenceAge:  2,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
+					pbtsHeight:   100,
 				}),
 			valid: true,
 		},
@@ -653,4 +683,32 @@ func TestProtoUpgrade(t *testing.T) {
 
 func durationPtr(t time.Duration) *time.Duration {
 	return &t
+}
+
+func TestParamsAdaptiveSynchronyParams(t *testing.T) {
+	originalSP := DefaultSynchronyParams()
+	assert.Equal(t, originalSP, originalSP.InRound(0),
+		"SynchronyParams(0) must be equal to SynchronyParams")
+
+	lastSP := originalSP
+	for round := int32(1); round <= 10; round++ {
+		adaptedSP := originalSP.InRound(round)
+		assert.NotEqual(t, adaptedSP, lastSP)
+		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
+			"Precision must not change over rounds")
+		assert.Greater(t, adaptedSP.MessageDelay, lastSP.MessageDelay,
+			"MessageDelay must increase over rounds")
+
+		// It should not increase a lot per round, say more than 25%
+		maxMessageDelay := lastSP.MessageDelay + lastSP.MessageDelay*25/100
+		assert.LessOrEqual(t, adaptedSP.MessageDelay, maxMessageDelay,
+			"MessageDelay should not increase by more than 25% per round")
+
+		lastSP = adaptedSP
+	}
+
+	assert.GreaterOrEqual(t, lastSP.MessageDelay, originalSP.MessageDelay*2,
+		"MessageDelay must at least double after 10 rounds")
+	assert.LessOrEqual(t, lastSP.MessageDelay, originalSP.MessageDelay*10,
+		"MessageDelay must not increase by more than 10 times after 10 rounds")
 }

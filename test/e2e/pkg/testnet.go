@@ -139,6 +139,7 @@ type Node struct {
 	Zone                    ZoneID
 	DBKeyLayoutVersion      string
 	Compact                 bool
+	CompactionInterval      int64
 	DiscardABCIResponses    bool
 	Indexer                 string
 }
@@ -270,6 +271,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Zone:                    ZoneID(nodeManifest.Zone),
 			DBKeyLayoutVersion:      nodeManifest.DBKeyLayoutVersion,
 			Compact:                 nodeManifest.Compact,
+			CompactionInterval:      nodeManifest.CompactionInterval,
 			DiscardABCIResponses:    nodeManifest.DiscardABCIResponses,
 			Indexer:                 nodeManifest.Indexer,
 		}

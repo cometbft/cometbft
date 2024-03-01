@@ -214,6 +214,9 @@ type ManifestNode struct {
 	// Compact triggers compaction on the DB after pruning
 	Compact bool `toml:"compact"`
 
+	// CompactionInterval sets the number of blocks at which we trigger compaction
+	CompactionInterval int64 `toml:"compaction_interval"`
+
 	// DiscardABCIResponses disables abci rsponses
 	DiscardABCIResponses bool `toml:"discard_abci_responses"`
 

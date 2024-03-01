@@ -42,6 +42,8 @@ type Config struct {
 
 	Compact bool `toml:"compact"`
 
+	CompactionInterval bool `toml:"compaction_interval"`
+
 	DiscardABCIResponses bool `toml:"discard_abci_responses"`
 
 	Indexer string `toml:"indexer"`

@@ -297,6 +297,10 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	if node.Indexer != "" {
 		cfg.TxIndex.Indexer = node.Indexer
 	}
+
+	if node.CompactionInterval != 0 && node.Compact {
+		cfg.Storage.CompactionInterval = node.CompactionInterval
+	}
 	return cfg, nil
 }
 

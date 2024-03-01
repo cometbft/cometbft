@@ -12,7 +12,7 @@ The node ID, the IP address of the host and the P2P port together identify a nod
 The easiest way to get the node ID is running the `cometbft show-node-id` command.
 
 The `node_key.json` file resides at `$CMTHOME/config/node_key.json`. This can be overridden at the
-[node_key_file](#node_key_file) parameter in the [`config.toml`](#the-configtoml-file) file.
+[node_key_file](config.toml.md#node_key_file) parameter in the [`config.toml`](config.toml.md) file.
 
 The file contains a private key (in [priv_key.value](#priv_keyvalue)) to an asymmetric algorithm
 (in [priv_key.type](#priv_keytype)).
@@ -42,11 +42,11 @@ Default example in context:
 The string values are derived from the asymmetric cryptographic implementations defined in the `crypto` package.
 
 CometBFT will always generate an Ed25519 key-pair for node ID using the `cometbft init` or the `cometbft gen-node-key`
-command. Other types of encryption keys have to be created manually. (See examples under
+commands. Other types of encryption keys have to be created manually. (See examples under
 [priv_key.value](#priv_keyvalue).)
 
 ### priv_key.value
-Base64-encoded bytes, typically the private key of an asymmetric encryption algorithm.
+Base64-encoded bytes, the private key of an asymmetric encryption algorithm.
 The type of encryption is defined in [priv_key.type](#priv_keytype).
 
 Default example in context:

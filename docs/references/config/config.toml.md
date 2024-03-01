@@ -14,13 +14,13 @@ These style suggestions make it more readable.
 </style>
 
 <!--- Entry template: Use this as a template to add more parameter descriptions.
-### tablename.property_key
+### tablename.property_key <- full path to property in the file
 This is the two-sentence summary of the parameter. It does all kinds of stuff.
 ```toml
 tablename.property_key = "default value"
 ```
 
-| Value type          | string/bool/int/etc                |
+| Value type          | string/bool/int/etc                | <- can be further clarified (duration, hex, base64-encoded)
 |:--------------------|:-----------------------------------|
 | **Possible values** | `"default value or exact example"` |
 |                     | `generic description`              |

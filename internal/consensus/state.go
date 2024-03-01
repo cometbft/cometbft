@@ -1352,11 +1352,7 @@ func (cs *State) enterPrevote(height int64, round int32) {
 }
 
 func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
-	sp := types.AdaptiveSynchronyParams(
-		cs.state.ConsensusParams.Synchrony.Precision,
-		cs.state.ConsensusParams.Synchrony.MessageDelay,
-		cs.Round,
-	)
+	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Round)
 
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
@@ -1364,11 +1360,7 @@ func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
 }
 
 func (cs *State) proposalIsTimely() bool {
-	sp := types.AdaptiveSynchronyParams(
-		cs.state.ConsensusParams.Synchrony.Precision,
-		cs.state.ConsensusParams.Synchrony.MessageDelay,
-		cs.Round,
-	)
+	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
 
 	return cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
 }
@@ -2711,14 +2703,9 @@ func repairWalFile(src, dst string) error {
 
 func (cs *State) calculateProposalTimestampDifferenceMetric() {
 	if cs.Proposal != nil && cs.Proposal.POLRound == -1 {
-		// If PBTS is disabled, default SynchronyParams are used
-		tp := types.AdaptiveSynchronyParams(
-			cs.state.ConsensusParams.Synchrony.Precision,
-			cs.state.ConsensusParams.Synchrony.MessageDelay,
-			cs.Proposal.Round,
-		)
+		sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
 
-		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, tp)
+		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
 		cs.metrics.ProposalTimestampDifference.
 			With("is_timely", strconv.FormatBool(isTimely)).
 			Observe(cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp).Seconds())

@@ -656,33 +656,34 @@ func durationPtr(t time.Duration) *time.Duration {
 }
 
 func TestParamsAdaptiveSynchronyParams(t *testing.T) {
-	originalSP := DefaultSynchronyParams()
+	// This is most concise version of AdaptiveSynchronyParams method
 	adaptiveSP := func(sp SynchronyParams, round int32) SynchronyParams {
 		return AdaptiveSynchronyParams(sp.Precision, sp.MessageDelay, round)
 	}
 
+	originalSP := DefaultSynchronyParams()
 	assert.Equal(t, originalSP, adaptiveSP(originalSP, 0),
 		"SynchronyParams(0) must be equal to SynchronyParams")
 
-	sp, lastSp := originalSP, originalSP
+	lastSP := originalSP
 	for round := int32(1); round <= 10; round++ {
-		sp = adaptiveSP(originalSP, round)
-		assert.NotEqual(t, sp, lastSp)
-		assert.Equal(t, sp.Precision, lastSp.Precision,
+		adaptedSP := adaptiveSP(originalSP, round)
+		assert.NotEqual(t, adaptedSP, lastSP)
+		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
 			"Precision must not change over rounds")
-		assert.Greater(t, sp.MessageDelay, lastSp.MessageDelay,
-			"MessageDelay must be increase over rounds")
+		assert.Greater(t, adaptedSP.MessageDelay, lastSP.MessageDelay,
+			"MessageDelay must increase over rounds")
 
 		// It should not increase a lot per round, say more than 25%
-		maxMessageDelay := lastSp.MessageDelay + lastSp.MessageDelay*25/100
-		assert.LessOrEqual(t, sp.MessageDelay, maxMessageDelay,
+		maxMessageDelay := lastSP.MessageDelay + lastSP.MessageDelay*25/100
+		assert.LessOrEqual(t, adaptedSP.MessageDelay, maxMessageDelay,
 			"MessageDelay should not increase by more than 25% per round")
 
-		lastSp = sp
+		lastSP = adaptedSP
 	}
 
-	assert.GreaterOrEqual(t, lastSp.MessageDelay, originalSP.MessageDelay*2,
+	assert.GreaterOrEqual(t, lastSP.MessageDelay, originalSP.MessageDelay*2,
 		"MessageDelay must at least double after 10 rounds")
-	assert.LessOrEqual(t, lastSp.MessageDelay, originalSP.MessageDelay*10,
+	assert.LessOrEqual(t, lastSP.MessageDelay, originalSP.MessageDelay*10,
 		"MessageDelay must not increase by more than 10 times after 10 rounds")
 }

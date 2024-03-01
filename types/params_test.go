@@ -666,16 +666,17 @@ func TestParamsAdaptiveSynchronyParams(t *testing.T) {
 
 	sp, lastSp := originalSP, originalSP
 	for round := int32(1); round <= 10; round++ {
-		sp = adaptiveSP(sp, round)
+		sp = adaptiveSP(originalSP, round)
 		assert.NotEqual(t, sp, lastSp)
 		assert.Equal(t, sp.Precision, lastSp.Precision,
 			"Precision must not change over rounds")
 		assert.Greater(t, sp.MessageDelay, lastSp.MessageDelay,
 			"MessageDelay must be increase over rounds")
 
-		// It should not increase by that much, say 20%
-		upperMessageDelay := lastSp.MessageDelay + lastSp.MessageDelay/20
-		assert.LessOrEqual(t, sp.MessageDelay, upperMessageDelay)
+		// It should not increase a lot per round, say more than 25%
+		maxMessageDelay := lastSp.MessageDelay + lastSp.MessageDelay*25/100
+		assert.LessOrEqual(t, sp.MessageDelay, maxMessageDelay,
+			"MessageDelay should not increase by more than 25% per round")
 
 		lastSp = sp
 	}

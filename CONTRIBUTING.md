@@ -485,12 +485,28 @@ means that you shouldn't update someone else's branch for them; even if it seems
 like you're doing them a favor, you may be interfering with their git flow in
 some way!)
 
-### Formatting
+### Formatting & Linting
 
-Make sure to format your code with [gofumpt](https://github.com/mvdan/gofumpt).
-To install a Git pre-commit hook, run `make gofumpt-pre-commit`. The hook
-automatically applies `gofumpt` to the staged Go files, so you don't need to do
-anything.
+When submitting a change, please make sure to:
+
+1. Format the code using [gofumpt](https://github.com/mvdan/gofumpt)
+2. Lint the code using [golangci-lint](https://golangci-lint.run/)
+3. Check the code and docs for spelling errors using [codespell](https://github.com/codespell-project/codespell).
+
+It's recommended to install a Git pre-commit hook: `make pre-commit`. The hook will
+automatically run the above steps for you every time you commit something. You
+can also do this manually with `make lint`.
+
+The pre-commit hook uses [the pre-commit framework](https://pre-commit.com/).
+If you have Python 3 installed, you don't need to do anything else. Otherwise,
+please refer to [the installation guide](https://pre-commit.com/#install).
+
+In rare cases, you may want to skip the pre-commit hook. You can do so by adding
+`-n` (or `--no-verify`) flag to `git commit`:
+
+```bash
+git commit -n -m "add X"
+```
 
 #### Merging Pull Requests
 

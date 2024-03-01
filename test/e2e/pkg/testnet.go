@@ -1,3 +1,4 @@
+// nolint: goconst
 package e2e
 
 import (
@@ -25,6 +26,7 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -95,6 +97,7 @@ type Testnet struct {
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
 	Prometheus                                           bool
+	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
 	VoteExtensionsUpdateHeight                           int64
 	VoteExtensionSize                                    uint
@@ -140,22 +143,26 @@ type Node struct {
 	ClockSkew               time.Duration
 }
 
-// LoadTestnet loads a testnet from a manifest file, using the filename to
-// determine the testnet name and directory (from the basename of the file).
+// LoadTestnet loads a testnet from a manifest file. The testnet files are
+// generated in the given directory, which is also use to determine the testnet
+// name (the directory's basename).
 // The testnet generation must be deterministic, since it is generated
 // separately by the runner and the test cases. For this reason, testnets use a
 // random seed to generate e.g. keys.
-func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
+func LoadTestnet(file string, ifd InfrastructureData, dir string) (*Testnet, error) {
 	manifest, err := LoadManifest(file)
 	if err != nil {
 		return nil, err
 	}
-	return NewTestnetFromManifest(manifest, file, ifd)
+	return NewTestnetFromManifest(manifest, file, ifd, dir)
 }
 
 // NewTestnetFromManifest creates and validates a testnet from a manifest.
-func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
-	dir := strings.TrimSuffix(file, filepath.Ext(file))
+func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData, dir string) (*Testnet, error) {
+	if dir == "" {
+		// Set default testnet directory.
+		dir = strings.TrimSuffix(file, filepath.Ext(file))
+	}
 
 	keyGen := newKeyGenerator(randomSeed)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
@@ -188,6 +195,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
 		UpgradeVersion:                   manifest.UpgradeVersion,
 		Prometheus:                       manifest.Prometheus,
+		BlockMaxBytes:                    manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
 		VoteExtensionSize:                manifest.VoteExtensionSize,
@@ -384,6 +392,9 @@ func (t Testnet) Validate() error {
 	if err := t.validateZones(t.Nodes); err != nil {
 		return err
 	}
+	if t.BlockMaxBytes > types.MaxBlockSizeBytes {
+		return fmt.Errorf("value of BlockMaxBytes cannot be higher than %d", types.MaxBlockSizeBytes)
+	}
 	if t.VoteExtensionsUpdateHeight < -1 {
 		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
 			"or -1 (Genesis); update height %d", t.VoteExtensionsUpdateHeight)
@@ -566,7 +577,7 @@ func (n Node) Validate(testnet Testnet) error {
 		switch perturbation {
 		case PerturbationUpgrade:
 			if upgradeFound {
-				return fmt.Errorf("'upgrade' perturbation can appear at most once per node")
+				return errors.New("'upgrade' perturbation can appear at most once per node")
 			}
 			upgradeFound = true
 		case PerturbationDisconnect, PerturbationKill, PerturbationPause, PerturbationRestart:

@@ -143,7 +143,7 @@ func newPBTSTestHarness(ctx context.Context, t *testing.T, tc pbtsTestConfigurat
 	}
 }
 
-func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t *testing.T, previousBlockTime time.Time) (heightResult, time.Time) {
+func (p *pbtsTestHarness) observedValidatorProposerHeight(t *testing.T, previousBlockTime time.Time) (heightResult, time.Time) {
 	t.Helper()
 	p.validatorClock.On("Now").Return(p.genesisTime.Add(p.height2ProposedBlockOffset)).Times(2 * len(p.otherValidators))
 
@@ -167,7 +167,7 @@ func (p *pbtsTestHarness) observedValidatorProposerHeight(ctx context.Context, t
 
 	vk, err := p.observedValidator.GetPubKey()
 	require.NoError(t, err)
-	res := collectHeightResults(ctx, t, p.eventCh, p.currentHeight, vk.Address())
+	res := collectHeightResults(t, p.eventCh, p.currentHeight, vk.Address())
 
 	p.currentHeight++
 	incrementHeight(p.otherValidators...)
@@ -198,9 +198,9 @@ func (p *pbtsTestHarness) intermediateHeights(ctx context.Context, t *testing.T)
 		cmttime.Now())
 }
 
-func (p *pbtsTestHarness) height5(ctx context.Context, t *testing.T) (heightResult, time.Time) {
+func (p *pbtsTestHarness) height5(t *testing.T) (heightResult, time.Time) {
 	t.Helper()
-	return p.observedValidatorProposerHeight(ctx, t, p.firstBlockTime.Add(p.height4ProposedBlockOffset))
+	return p.observedValidatorProposerHeight(t, p.firstBlockTime.Add(p.height4ProposedBlockOffset))
 }
 
 func (p *pbtsTestHarness) nextHeight(
@@ -246,7 +246,7 @@ func (p *pbtsTestHarness) nextHeight(
 
 	vk, err := p.observedValidator.GetPubKey()
 	require.NoError(t, err)
-	res := collectHeightResults(ctx, t, p.eventCh, p.currentHeight, vk.Address())
+	res := collectHeightResults(t, p.eventCh, p.currentHeight, vk.Address())
 	ensureNewBlock(p.blockCh, p.currentHeight)
 
 	p.currentHeight++
@@ -289,7 +289,7 @@ func timestampedCollector(ctx context.Context, t *testing.T, eb *types.EventBus)
 	return eventCh
 }
 
-func collectHeightResults(ctx context.Context, t *testing.T, eventCh <-chan timestampedEvent, height int64, address []byte) heightResult {
+func collectHeightResults(t *testing.T, eventCh <-chan timestampedEvent, height int64, address []byte) heightResult {
 	t.Helper()
 	var res heightResult
 	for event := range eventCh {
@@ -335,11 +335,11 @@ func (p *pbtsTestHarness) run(ctx context.Context, t *testing.T) resultSet {
 	t.Helper()
 	startTestRound(p.observedState, p.currentHeight, p.currentRound)
 
-	r1, proposalBlockTime := p.observedValidatorProposerHeight(ctx, t, p.genesisTime)
+	r1, proposalBlockTime := p.observedValidatorProposerHeight(t, p.genesisTime)
 	p.firstBlockTime = proposalBlockTime
 	r2 := p.height2(ctx, t)
 	p.intermediateHeights(ctx, t)
-	r5, _ := p.height5(ctx, t)
+	r5, _ := p.height5(t)
 	return resultSet{
 		genesisHeight: r1,
 		height2:       r2,
@@ -529,12 +529,6 @@ func TestPBTSTooFarInTheFutureProposal(t *testing.T) {
 	require.Nil(t, results.height2.prevote.BlockID.Hash)
 }
 
-func pbtsFromHeightParams(height int64) types.FeatureParams {
-	p := types.DefaultFeatureParams()
-	p.PbtsEnableHeight = height
-	return p
-}
-
 // TestPBTSEnableHeight tests the transition between BFT Time and PBTS.
 // The test runs multiple heights. BFT Time is used until the configured
 // PbtsEnableHeight. During some of these heights, the timestamp of votes
@@ -577,7 +571,6 @@ func TestPBTSEnableHeight(t *testing.T) {
 	startTestRound(cs, height, round)
 	for height <= lastHeight {
 		var block *types.Block
-		var blockParts *types.PartSet
 		var blockID types.BlockID
 
 		ensureNewRound(newRoundCh, height, round)
@@ -592,10 +585,12 @@ func TestPBTSEnableHeight(t *testing.T) {
 			// BFT Time timestamps are shifted to the future.
 			ensureProposalWithTimeout(proposalCh, height, round, nil, 2*time.Second)
 			rs := cs.GetRoundState()
-			block, blockParts = rs.ProposalBlock, rs.ProposalBlockParts
+			block, _ = rs.ProposalBlock, rs.ProposalBlockParts
 			blockID = rs.Proposal.BlockID
 		} else {
 			var ts time.Time
+			var blockParts *types.PartSet
+
 			if height >= pbtsSetHeight && height < pbtsEnableHeight {
 				// Use PBTS logic while PBTS is not yet activated
 				ts = cmttime.Now()
@@ -612,11 +607,12 @@ func TestPBTSEnableHeight(t *testing.T) {
 				proposal.Timestamp = cmttime.Now()
 			}
 			signProposal(t, proposal, chainID, vss[proposer])
-			cs.SetProposalAndBlock(proposal, block, blockParts, "p")
+			err := cs.SetProposalAndBlock(proposal, block, blockParts, "p")
+			require.NoError(t, err)
 			ensureProposal(proposalCh, height, round, blockID)
 		}
 
-		delta := cmttime.Now().Sub(block.Time)
+		delta := cmttime.Since(block.Time)
 		t.Log("BLOCK", height, round, "PROPOSER", proposer, "PBTS", pbtsEnabled,
 			"TIMESTAMP", block.Time, delta, "ACCEPTED", !rejectProposal)
 
@@ -666,7 +662,7 @@ func TestPBTSEnableHeight(t *testing.T) {
 			height, round = height+1, 0
 			incrementHeight(vss[1:]...)
 		} else {
-			height, round = height, round+1
+			round = round + 1
 			incrementRound(vss[1:]...)
 		}
 	}
@@ -714,8 +710,7 @@ func TestPbtsAdaptiveMessageDelay(t *testing.T) {
 		t.Log("Starting round", round)
 		ensureNewRound(newRoundCh, height, round)
 		proposer := election(height, round)
-		ac := types.AdaptiveSynchronyParams(c.Synchrony.Precision,
-			c.Synchrony.MessageDelay, round)
+		ac := c.Synchrony.InRound(round)
 		maxDelta := ac.Precision + ac.MessageDelay
 
 		if proposer != 0 {

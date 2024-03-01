@@ -184,7 +184,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 		return false, err
 	}
 	if resp.IsStatusUnknown() {
-		panic(fmt.Sprintf("ProcessProposal responded with status %s", resp.Status.String()))
+		panic("ProcessProposal responded with status " + resp.Status.String())
 	}
 
 	return resp.IsAccepted(), nil
@@ -369,7 +369,7 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 		panic(fmt.Errorf("VerifyVoteExtension call failed: %w", err))
 	}
 	if resp.IsStatusUnknown() {
-		panic(fmt.Sprintf("VerifyVoteExtension responded with status %s", resp.Status.String()))
+		panic("VerifyVoteExtension responded with status " + resp.Status.String())
 	}
 
 	if !resp.IsAccepted() {

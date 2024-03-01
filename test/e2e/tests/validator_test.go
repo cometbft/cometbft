@@ -30,7 +30,13 @@ func TestValidator_Sets(t *testing.T) {
 
 		// skip first block if node is pruning blocks, to avoid race conditions
 		if node.RetainBlocks > 0 {
-			first++
+			// This was done in case pruning is activated.
+			// As it happens in the background this lowers the chances
+			// that the block at height=first will be pruned by the time we test
+			// this. If this test starts to fail often, it is worth revisiting this logic.
+			// To reproduce this failure locally, it is advised to set the storage.pruning.interval
+			// to 1s instead of 10s.
+			first += int64(node.RetainBlocks)
 		}
 
 		valSchedule := newValidatorSchedule(*node.Testnet)

@@ -2,6 +2,7 @@ package statesync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -172,7 +173,7 @@ func (s *lightClientStateProvider) State(ctx context.Context, height uint64) (sm
 	// We'll also need to fetch consensus params via RPC, using light client verification.
 	primaryURL, ok := s.providers[s.lc.Primary()]
 	if !ok || primaryURL == "" {
-		return sm.State{}, fmt.Errorf("could not find address for primary light client provider")
+		return sm.State{}, errors.New("could not find address for primary light client provider")
 	}
 	primaryRPC, err := rpcClient(primaryURL)
 	if err != nil {

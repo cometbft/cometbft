@@ -6,11 +6,12 @@ import (
 	"math"
 	"time"
 
+	gogo "github.com/cosmos/gogoproto/types"
+
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	gogo "github.com/cosmos/gogoproto/types" //nolint:allz
 )
 
 const (
@@ -106,23 +107,27 @@ func featureEnabled(enableHeight int64, currentHeight int64, f string) bool {
 // These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
 // For more information on the relationship of the synchrony parameters to
 // block timestamps validity, refer to the PBTS specification:
-// https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md
+// // https://github.com/cometbft/cometbft/tree/main/spec/consensus/proposer-based-timestamp
 type SynchronyParams struct {
 	Precision    time.Duration `json:"precision,string"`
 	MessageDelay time.Duration `json:"message_delay,string"`
 }
 
-/*
-AdaptiveSynchronyParams ensures an exponential backoff for timestamp validation by increasing MessageDelay by a factor of
-10% each subsequent round a proposal's timeliness is calculated. This is meant to facilitate the progression of
-consensus if bad synchrony parameters are set or become insufficient to preserve liveness.
-
-Where round is the consensus round, MessageDelay(round) == MessageDelay * (1.1)^round.
-*/
-func AdaptiveSynchronyParams(precision time.Duration, messageDelay time.Duration, round int32) SynchronyParams {
+// InRound ensures an exponential back-off of SynchronyParams.MessageDelay for
+// block timestamps validation, as the associated proposal rounds increase.
+//
+// The adaptation is achieve by increasing MessageDelay by a factor of 10% each
+// subsequent round a proposal's timeliness is calculated, namely:
+//
+//	MessageDelay(round) == MessageDelay * (1.1)^round
+//
+// The goal is facilitate the progression of consensus when improper synchrony
+// parameters are set or become insufficient to preserve liveness. Refer to
+// https://github.com/cometbft/cometbft/issues/2184 for more details.
+func (sp SynchronyParams) InRound(round int32) SynchronyParams {
 	return SynchronyParams{
-		Precision:    precision,
-		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(messageDelay)),
+		Precision:    sp.Precision,
+		MessageDelay: time.Duration(math.Pow(1.1, float64(round)) * float64(sp.MessageDelay)),
 	}
 }
 
@@ -199,7 +204,7 @@ func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
 // allowed limits, and returns an error if they are not.
 func (params ConsensusParams) ValidateBasic() error {
 	if params.Block.MaxBytes == 0 {
-		return fmt.Errorf("block.MaxBytes cannot be 0")
+		return errors.New("block.MaxBytes cannot be 0")
 	}
 	if params.Block.MaxBytes < -1 {
 		return fmt.Errorf("block.MaxBytes must be -1 or greater than 0. Got %d",
@@ -251,7 +256,6 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
 			params.Synchrony.MessageDelay)
 	}
-
 	if params.Synchrony.Precision <= 0 {
 		return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
 			params.Synchrony.Precision)
@@ -489,7 +493,7 @@ func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams
 	if pbParams.GetSynchrony().GetPrecision() != nil {
 		c.Synchrony.Precision = *pbParams.GetSynchrony().GetPrecision()
 	}
-	if pbParams.GetAbci().GetVoteExtensionsEnableHeight() > 0 {
+	if pbParams.GetAbci().GetVoteExtensionsEnableHeight() > 0 { //nolint: staticcheck
 		// Value set before the upgrade to V1. We can safely overwrite here because
 		// ABCIParams and FeatureParams being set is mutually exclusive (<V1 and >=V1).
 		if pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue() > 0 {

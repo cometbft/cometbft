@@ -40,7 +40,7 @@ const (
 
 // Setup sets up the testnet configuration.
 func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
-	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %q", testnet.Dir))
+	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %#q", testnet.Dir))
 
 	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
 		return err
@@ -138,6 +138,9 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	if testnet.BlockMaxBytes != 0 {
+		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
+	}
 	if testnet.VoteExtensionsUpdateHeight == -1 {
 		genesis.ConsensusParams.Feature.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
 	}

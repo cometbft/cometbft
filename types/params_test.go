@@ -609,8 +609,8 @@ func TestConsensusParamsUpdate_EnableHeight(t *testing.T) {
 	}
 }
 
-func TestProto(t *testing.T) {
-	params := []ConsensusParams{
+func consensusParamsForTestProto() []ConsensusParams {
+	return []ConsensusParams{
 		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, pbtsHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
@@ -632,6 +632,10 @@ func TestProto(t *testing.T) {
 		makeParams(makeParamsArgs{voteExtensionHeight: 100, pbtsHeight: 42}),
 		makeParams(makeParamsArgs{pbtsHeight: 100}),
 	}
+}
+
+func TestProto(t *testing.T) {
+	params := consensusParamsForTestProto()
 
 	for i := range params {
 		pbParams := params[i].ToProto()
@@ -643,35 +647,14 @@ func TestProto(t *testing.T) {
 }
 
 func TestProtoUpgrade(t *testing.T) {
-	params := []ConsensusParams{
-		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, pbtsHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, pbtsHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 4, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, pbtsHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 2, blockGas: 5, evidenceAge: 7, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 1, blockGas: 7, evidenceAge: 6, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 9, blockGas: 5, evidenceAge: 4, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 7, blockGas: 8, evidenceAge: 9, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
-		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 6, evidenceAge: 5, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
-		makeParams(makeParamsArgs{precision: time.Second, messageDelay: time.Minute}),
-		makeParams(makeParamsArgs{precision: time.Nanosecond, messageDelay: time.Millisecond}),
-		makeParams(makeParamsArgs{voteExtensionHeight: 100}),
-		makeParams(makeParamsArgs{pbtsHeight: 100}),
-		makeParams(makeParamsArgs{voteExtensionHeight: 100, pbtsHeight: 42}),
-		makeParams(makeParamsArgs{pbtsHeight: 100}),
-	}
+	params := consensusParamsForTestProto()
 
 	for i := range params {
 		pbParams := params[i].ToProto()
 
 		// Downgrade
 		if pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue() > 0 {
-			pbParams.Abci = &cmtproto.ABCIParams{VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue()}
+			pbParams.Abci = &cmtproto.ABCIParams{VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue()} //nolint: staticcheck
 			pbParams.Feature.VoteExtensionsEnableHeight = nil
 		}
 
@@ -686,18 +669,13 @@ func durationPtr(t time.Duration) *time.Duration {
 }
 
 func TestParamsAdaptiveSynchronyParams(t *testing.T) {
-	// This is most concise version of AdaptiveSynchronyParams method
-	adaptiveSP := func(sp SynchronyParams, round int32) SynchronyParams {
-		return AdaptiveSynchronyParams(sp.Precision, sp.MessageDelay, round)
-	}
-
 	originalSP := DefaultSynchronyParams()
-	assert.Equal(t, originalSP, adaptiveSP(originalSP, 0),
+	assert.Equal(t, originalSP, originalSP.InRound(0),
 		"SynchronyParams(0) must be equal to SynchronyParams")
 
 	lastSP := originalSP
 	for round := int32(1); round <= 10; round++ {
-		adaptedSP := adaptiveSP(originalSP, round)
+		adaptedSP := originalSP.InRound(round)
 		assert.NotEqual(t, adaptedSP, lastSP)
 		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
 			"Precision must not change over rounds")

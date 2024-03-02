@@ -355,7 +355,7 @@ func (cs *State) OnStart() error {
 			repairAttempted = true
 
 			// 2) backup original WAL file
-			corruptedFile := fmt.Sprintf("%s.CORRUPTED", cs.config.WalFile())
+			corruptedFile := cs.config.WalFile() + ".CORRUPTED"
 			if err := cmtos.CopyFile(cs.config.WalFile(), corruptedFile); err != nil {
 				return err
 			}
@@ -1352,11 +1352,7 @@ func (cs *State) enterPrevote(height int64, round int32) {
 }
 
 func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
-	sp := types.AdaptiveSynchronyParams(
-		cs.state.ConsensusParams.Synchrony.Precision,
-		cs.state.ConsensusParams.Synchrony.MessageDelay,
-		cs.Round,
-	)
+	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Round)
 
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
 	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
@@ -1364,11 +1360,7 @@ func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
 }
 
 func (cs *State) proposalIsTimely() bool {
-	sp := types.AdaptiveSynchronyParams(
-		cs.state.ConsensusParams.Synchrony.Precision,
-		cs.state.ConsensusParams.Synchrony.MessageDelay,
-		cs.Round,
-	)
+	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
 
 	return cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
 }
@@ -1377,8 +1369,8 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
 	// We did not receive a proposal within this round. (and thus executing this from a timeout)
-	if cs.ProposalBlock == nil {
-		logger.Debug("prevote step: ProposalBlock is nil; prevoting nil")
+	if cs.Proposal == nil || cs.ProposalBlock == nil {
+		logger.Debug("prevote step: Proposal or ProposalBlock is nil; prevoting nil")
 		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
@@ -2129,6 +2121,10 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		cs.evsw.FireEvent(types.EventProposalBlockPart, msg)
 	}
 
+	count, total := cs.ProposalBlockParts.Count(), cs.ProposalBlockParts.Total()
+	cs.Logger.Debug("receive block part", "height", height, "round", round,
+		"index", part.Index, "count", count, "total", total, "from", peerID)
+
 	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
 	if maxBytes == -1 {
 		maxBytes = int64(types.MaxBlockSizeBytes)
@@ -2514,7 +2510,7 @@ func (cs *State) signVote(
 
 	recoverable, err := types.SignAndCheckVote(vote, cs.privValidator, cs.state.ChainID, extEnabled && (msgType == types.PrecommitType))
 	if err != nil && !recoverable {
-		panic(fmt.Sprintf("non-recoverable error when signing vote (%d/%d)", vote.Height, vote.Round))
+		panic(fmt.Sprintf("non-recoverable error when signing vote %v: %v", vote, err))
 	}
 
 	return vote, err
@@ -2711,14 +2707,9 @@ func repairWalFile(src, dst string) error {
 
 func (cs *State) calculateProposalTimestampDifferenceMetric() {
 	if cs.Proposal != nil && cs.Proposal.POLRound == -1 {
-		// If PBTS is disabled, default SynchronyParams are used
-		tp := types.AdaptiveSynchronyParams(
-			cs.state.ConsensusParams.Synchrony.Precision,
-			cs.state.ConsensusParams.Synchrony.MessageDelay,
-			cs.Proposal.Round,
-		)
+		sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
 
-		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, tp)
+		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
 		cs.metrics.ProposalTimestampDifference.
 			With("is_timely", strconv.FormatBool(isTimely)).
 			Observe(cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp).Seconds())

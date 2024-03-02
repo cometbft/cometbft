@@ -37,7 +37,7 @@ type ErrDenyMessageOverflow struct {
 }
 
 func (e ErrDenyMessageOverflow) Error() string {
-	return fmt.Sprintf("denying message due to possible overflow: %s", e.Err.Error())
+	return "denying message due to possible overflow: " + e.Err.Error()
 }
 
 func (e ErrDenyMessageOverflow) Unwrap() error {

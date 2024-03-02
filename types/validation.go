@@ -233,7 +233,7 @@ func verifyCommitBatch(
 	// re-check if batch verification is supported
 	if !ok || len(commit.Signatures) < batchVerifyThreshold {
 		// This should *NEVER* happen.
-		return fmt.Errorf("unsupported signature algorithm or insufficient signatures for batch verification")
+		return errors.New("unsupported signature algorithm or insufficient signatures for batch verification")
 	}
 
 	for idx, commitSig := range commit.Signatures {
@@ -314,7 +314,7 @@ func verifyCommitBatch(
 	// happened:
 	//  * non-zero tallied voting power, empty batch (impossible?)
 	//  * bv.Verify() returned `false, []bool{true, ..., true}` (BUG)
-	return fmt.Errorf("BUG: batch verification failed with no invalid signatures")
+	return errors.New("BUG: batch verification failed with no invalid signatures")
 }
 
 // Single Verification

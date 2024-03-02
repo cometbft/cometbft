@@ -112,7 +112,6 @@ testdata-metrics:
 #? mockery: Generate test mocks
 mockery:
 	go generate -run="./scripts/mockery_generate.sh" ./...
-	@go run mvdan.cc/gofumpt@latest -l -w .
 .PHONY: mockery
 
 ###############################################################################
@@ -121,8 +120,8 @@ mockery:
 
 #? check-proto-deps: Check protobuf deps
 check-proto-deps:
-ifeq (,$(shell which protoc-gen-gogofaster))
-	@go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
+ifeq (,$(shell which protoc-gen-gocosmos))
+	@go install github.com/cosmos/gogoproto/protoc-gen-gocosmos@latest
 endif
 .PHONY: check-proto-deps
 

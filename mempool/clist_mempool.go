@@ -217,6 +217,7 @@ func (mem *CListMempool) FlushAppConn() error {
 	return nil
 }
 
+// XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
 func (mem *CListMempool) Flush() {
 	mem.updateMtx.Lock()
 	defer mem.updateMtx.Unlock()

@@ -390,7 +390,7 @@ func (mem *CListMempool) isFull(txSize int) error {
 		txsBytes = mem.SizeBytes()
 	)
 
-	if memSize >= mem.config.Size || int64(txSize)+txsBytes > mem.config.MaxTxsBytes {
+	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) {
 		return ErrMempoolIsFull{
 			NumTxs:      memSize,
 			MaxTxs:      mem.config.Size,

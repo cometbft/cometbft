@@ -420,7 +420,7 @@ func SignAndCheckVote(
 	extensionsEnabled bool,
 ) (bool, error) {
 	v := vote.ToProto()
-	if err := privVal.SignVote(chainID, v); err != nil {
+	if err := privVal.SignVote(chainID, v, extensionsEnabled); err != nil {
 		// Failing to sign a vote has always been a recoverable error, this
 		// function keeps it that way.
 		return true, err
@@ -433,15 +433,15 @@ func SignAndCheckVote(
 		return false, &ErrVoteExtensionInvalid{ExtSignature: v.ExtensionSignature}
 	}
 
-	isNil := vote.BlockID.IsNil()
-	extSignature := (len(v.ExtensionSignature) > 0)
-	if extSignature == (!isPrecommit || isNil) {
-		// Non-recoverable because the vote is malformed
-		return false, &ErrVoteExtensionInvalid{ExtSignature: v.ExtensionSignature}
-	}
-
 	vote.ExtensionSignature = nil
 	if extensionsEnabled {
+		isNil := vote.BlockID.IsNil()
+		extSignature := (len(v.ExtensionSignature) > 0)
+		if extSignature == (!isPrecommit || isNil) {
+			// Non-recoverable because the vote is malformed
+			return false, &ErrVoteExtensionInvalid{ExtSignature: v.ExtensionSignature}
+		}
+
 		vote.ExtensionSignature = v.ExtensionSignature
 	}
 

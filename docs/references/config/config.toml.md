@@ -882,7 +882,7 @@ Nodes on non-routable networks have to set their gateway to port-forward the P2P
 the node. Outbound connections can be initiated as long as the node has generic Internet access. (Using NAT or methods.)
 
 ### p2p.unconditional_peer_ids
-List of node IDs, to which a connection will be (re)established ignoring any existing limits.
+List of node IDs, that are allowed to connect to the node even when connection limits are exceeded.
 ```toml
 unconditional_peer_ids = ""
 ```

@@ -34,7 +34,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	pbtsEnableHeight := validationTestsStopHeight / 2
 	cp.Feature.PbtsEnableHeight = pbtsEnableHeight
 
-	state, stateDB, privVals := test.MakeState(3, 1, cp, chainID)
+	state, stateDB, privVals := sm.MakeState(3, 1, cp, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -138,7 +138,7 @@ func TestValidateBlockCommit(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := test.MakeState(1, 1, nil, chainID)
+	state, stateDB, privVals := sm.MakeState(1, 1, nil, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -282,7 +282,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := test.MakeState(4, 1, nil, chainID)
+	state, stateDB, privVals := sm.MakeState(4, 1, nil, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

@@ -9,8 +9,10 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
+	dbm "github.com/cometbft/cometbft-db"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
@@ -330,4 +332,49 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 
 		AppHash: genDoc.AppHash,
 	}, nil
+}
+
+// This is a testing function. Had to be placed here to avoid import cycles.
+func MakeState(nVals, height int, params *types.ConsensusParams, chainID string) (State, dbm.DB, map[string]types.PrivValidator) {
+	vals := make([]types.GenesisValidator, nVals)
+	privVals := make(map[string]types.PrivValidator, nVals)
+	for i := 0; i < nVals; i++ {
+		secret := []byte(fmt.Sprintf("test%d", i))
+		pk := ed25519.GenPrivKeyFromSecret(secret)
+		valAddr := pk.PubKey().Address()
+		vals[i] = types.GenesisValidator{
+			Address: valAddr,
+			PubKey:  pk.PubKey(),
+			Power:   1000,
+			Name:    fmt.Sprintf("test%d", i),
+		}
+		privVals[valAddr.String()] = types.NewMockPVWithParams(pk, false, false)
+	}
+
+	if params == nil { //nolint: staticcheck
+	}
+	s, _ := MakeGenesisState(&types.GenesisDoc{
+		ChainID:         chainID,
+		Validators:      vals,
+		AppHash:         nil,
+		ConsensusParams: params,
+	})
+
+	stateDB := dbm.NewMemDB()
+	stateStore := NewStore(stateDB, StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	if err := stateStore.Save(s); err != nil {
+		panic(err)
+	}
+
+	for i := 1; i < height; i++ {
+		s.LastBlockHeight++
+		s.LastValidators = s.Validators.Copy()
+		if err := stateStore.Save(s); err != nil {
+			panic(err)
+		}
+	}
+
+	return s, stateDB, privVals
 }

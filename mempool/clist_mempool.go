@@ -217,10 +217,9 @@ func (mem *CListMempool) FlushAppConn() error {
 	return nil
 }
 
-// XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
 func (mem *CListMempool) Flush() {
-	mem.updateMtx.RLock()
-	defer mem.updateMtx.RUnlock()
+	mem.updateMtx.Lock()
+	defer mem.updateMtx.Unlock()
 
 	mem.txsBytes.Store(0)
 	mem.cache.Reset()
@@ -249,9 +248,9 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 // It blocks if we're waiting on Update() or Reap().
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
-	mem.updateMtx.RLock()
+	mem.updateMtx.Lock()
 	// use defer to unlock mutex because application (*local client*) might panic
-	defer mem.updateMtx.RUnlock()
+	defer mem.updateMtx.Unlock()
 
 	txSize := len(tx)
 

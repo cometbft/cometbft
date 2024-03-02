@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -258,4 +259,8 @@ func (app *testApp) ProcessProposal(
 		}
 	}
 	return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
+}
+
+func makeStateNilParams(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+	return sm.MakeState(nVals, height, test.ConsensusParams(), chainID)
 }

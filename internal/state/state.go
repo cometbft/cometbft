@@ -351,8 +351,6 @@ func MakeState(nVals, height int, params *types.ConsensusParams, chainID string)
 		privVals[valAddr.String()] = types.NewMockPVWithParams(pk, false, false)
 	}
 
-	if params == nil { //nolint: staticcheck
-	}
 	s, _ := MakeGenesisState(&types.GenesisDoc{
 		ChainID:         chainID,
 		Validators:      vals,

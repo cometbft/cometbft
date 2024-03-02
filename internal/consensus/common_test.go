@@ -1057,3 +1057,7 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 		v1.ValidatorIndex == v2.GetValidatorIndex() &&
 		bytes.Equal(v1.Extension, v2.Extension)
 }
+
+func makeStateNilParams(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+	return sm.MakeState(nVals, height, test.ConsensusParams(), chainID)
+}

@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -150,7 +151,7 @@ func signVoteWithTimestamp(vs *validatorStub, voteType types.SignedMsgType, chai
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
 		if voteType != types.PrecommitType {
-			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
+			panic(errors.New("vote type is not precommit but extensions enabled"))
 		}
 		if len(blockID.Hash) != 0 || !blockID.PartSetHeader.IsZero() {
 			ext = []byte("extension")
@@ -249,12 +250,13 @@ func createProposalBlockWithTime(t *testing.T, cs *State, time time.Time) (*type
 }
 
 func createProposalBlock(t *testing.T, cs *State) (*types.Block, *types.PartSet, types.BlockID) {
+	t.Helper()
 	return createProposalBlockWithTime(t, cs, time.Time{})
 }
 
 // Create proposal block from cs1 but sign it with vs.
 func decideProposal(
-	ctx context.Context,
+	_ context.Context,
 	t *testing.T,
 	cs1 *State,
 	vs *validatorStub,
@@ -318,7 +320,9 @@ func validatePrevote(t *testing.T, cs *State, round int32, privVal *validatorStu
 			panic(fmt.Sprintf("Expected prevote to be for nil, got %X", vote.BlockID.Hash))
 		}
 	} else {
-		if !bytes.Equal(vote.BlockID.Hash, blockHash) {
+		if vote.BlockID.Hash == nil {
+			panic(fmt.Sprintf("Expected prevote to be for %X, got <nil>", blockHash))
+		} else if !bytes.Equal(vote.BlockID.Hash, blockHash) {
 			panic(fmt.Sprintf("Expected prevote to be for %X, got %X", blockHash, vote.BlockID.Hash))
 		}
 	}
@@ -523,12 +527,6 @@ func randStateWithAppWithHeight(
 	return randStateWithAppImpl(nValidators, app, c)
 }
 
-func randStateWithAppWithBFTTime(nValidators int) (*State, []*validatorStub) {
-	c := test.ConsensusParams()
-	c.Feature.PbtsEnableHeight = 0 // Disable PBTS
-	return randStateWithAppImpl(nValidators, kvstore.NewInMemoryApplication(), c)
-}
-
 func randStateWithApp(nValidators int, app abci.Application) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
 	return randStateWithAppImpl(nValidators, app, c)
@@ -722,7 +720,7 @@ func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int
 	ensureProposalWithTimeout(proposalCh, height, round, &propID, ensureTimeout)
 }
 
-// For the propose, as we do not know the blockID in advance
+// For the propose, as we do not know the blockID in advance.
 func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32) {
 	ensureProposalWithTimeout(proposalCh, height, round, nil, ensureTimeout)
 }
@@ -961,8 +959,8 @@ func randGenesisDoc(numValidators int,
 }
 
 func randGenesisState(
-	numValidators int,
-	consensusParams *types.ConsensusParams,
+	numValidators int, //nolint: unparam
+	consensusParams *types.ConsensusParams, //nolint: unparam
 ) (sm.State, []types.PrivValidator) {
 	if consensusParams == nil {
 		consensusParams = test.ConsensusParams()
@@ -1060,7 +1058,7 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 }
 
 // TODO: get rid of duplication with internal/state/helpers_test.go.
-func makeState(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+func makeState(nVals, height int, chainID string) (sm.State, map[string]types.PrivValidator) {
 	vals := make([]types.GenesisValidator, nVals)
 	privVals := make(map[string]types.PrivValidator, nVals)
 	for i := 0; i < nVals; i++ {
@@ -1097,5 +1095,5 @@ func makeState(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]
 		}
 	}
 
-	return s, stateDB, privVals
+	return s, privVals
 }

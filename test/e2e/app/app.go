@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	gogo "github.com/cosmos/gogoproto/types"
+
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
@@ -26,7 +28,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
-	gogo "github.com/cosmos/gogoproto/types" //nolint:allz
 )
 
 const (
@@ -495,7 +496,7 @@ func (app *Application) PrepareProposal(
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
 	var totalBytes int64
-	extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
+	extTxPrefix := voteExtensionKey + "="
 	sum, err := app.verifyAndSum(areExtensionsEnabled, req.Height, &req.LocalLastCommit, "prepare_proposal")
 	if err != nil {
 		panic(fmt.Errorf("failed to sum and verify in PrepareProposal; err %w", err))
@@ -592,6 +593,12 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.ProcessProp
 // key/value store ("extensionSum") with the sum of all of the numbers collected
 // from the vote extensions.
 func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteRequest) (*abci.ExtendVoteResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ExtendVote{ExtendVote: &abci.ExtendVoteRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	appHeight, areExtensionsEnabled := app.checkHeightAndExtensions(false, req.Height, "ExtendVote")
 	if !areExtensionsEnabled {
 		panic(fmt.Errorf("received call to ExtendVote at height %d, when vote extensions are disabled", appHeight))
@@ -628,6 +635,12 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteReques
 // without doing anything about them. In this case, it just makes sure that the
 // vote extension is a well-formed integer value.
 func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.VerifyVoteExtensionRequest) (*abci.VerifyVoteExtensionResponse, error) {
+	r := &abci.Request{Value: &abci.Request_VerifyVoteExtension{VerifyVoteExtension: &abci.VerifyVoteExtensionRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	appHeight, areExtensionsEnabled := app.checkHeightAndExtensions(false, req.Height, "VerifyVoteExtension")
 	if !areExtensionsEnabled {
 		panic(fmt.Errorf("received call to VerifyVoteExtension at height %d, when vote extensions are disabled", appHeight))
@@ -878,11 +891,11 @@ func (app *Application) verifyAndSum(
 func (app *Application) verifyExtensionTx(height int64, payload string) error {
 	parts := strings.Split(payload, "|")
 	if len(parts) != 2 {
-		return fmt.Errorf("invalid payload format")
+		return errors.New("invalid payload format")
 	}
 	expSumStr := parts[0]
 	if len(expSumStr) == 0 {
-		return fmt.Errorf("sum cannot be empty in vote extension payload")
+		return errors.New("sum cannot be empty in vote extension payload")
 	}
 
 	expSum, err := strconv.Atoi(expSumStr)
@@ -892,17 +905,17 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 
 	extCommitHex := parts[1]
 	if len(extCommitHex) == 0 {
-		return fmt.Errorf("extended commit data cannot be empty in vote extension payload")
+		return errors.New("extended commit data cannot be empty in vote extension payload")
 	}
 
 	extCommitBytes, err := hex.DecodeString(extCommitHex)
 	if err != nil {
-		return fmt.Errorf("could not hex-decode vote extension payload")
+		return errors.New("could not hex-decode vote extension payload")
 	}
 
 	var extCommit abci.ExtendedCommitInfo
 	if extCommit.Unmarshal(extCommitBytes) != nil {
-		return fmt.Errorf("unable to unmarshal extended commit")
+		return errors.New("unable to unmarshal extended commit")
 	}
 
 	sum, err := app.verifyAndSum(true, height, &extCommit, "process_proposal")

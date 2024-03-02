@@ -1,4 +1,3 @@
-// nolint: goconst
 package e2e
 
 import (
@@ -403,7 +402,7 @@ func (t Testnet) Validate() error {
 	}
 	if t.VoteExtensionsUpdateHeight > 0 && t.VoteExtensionsUpdateHeight < t.InitialHeight {
 		return fmt.Errorf("a value of VoteExtensionsUpdateHeight greater than 0 "+
-			"must not be less than InitialHeight; "+
+			"must not be less than InitialHeight; "+ //nolint: goconst
 			"update height %d, initial height %d",
 			t.VoteExtensionsUpdateHeight, t.InitialHeight,
 		)

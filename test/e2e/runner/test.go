@@ -16,6 +16,10 @@ func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
 	if err != nil {
 		return err
 	}
+	err = os.Setenv("E2E_TESTNET_DIR", testnet.Dir)
+	if err != nil {
+		return err
+	}
 	if p := ifd.Path; p != "" {
 		err = os.Setenv("INFRASTRUCTURE_FILE", p)
 		if err != nil {

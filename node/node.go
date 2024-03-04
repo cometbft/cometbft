@@ -373,6 +373,7 @@ func NewNode(ctx context.Context,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
+	// Don't start block sync if we're doing a state sync first.
 	blockSync := !stateSync && !onlyValidatorIsUs(state, pubKey)
 	waitSync := stateSync || blockSync
 
@@ -423,7 +424,6 @@ func NewNode(ctx context.Context,
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
-	// Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)

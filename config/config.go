@@ -259,6 +259,12 @@ type BaseConfig struct {
 	// If true, query the ABCI app on connecting to a new peer
 	// so the app can decide if we should keep the connection or not
 	FilterPeers bool `mapstructure:"filter_peers"` // false
+
+	// If true, the node will not attempt to state or block sync. Instead, it
+	// will immediately start the consensus. Note that normally this is only
+	// allowed when the node is the only validator in the network. This flag
+	// ignores this check. Only use this flag for testing.
+	TestnetSkipSync bool `mapstructure:"testnet_skip_sync"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a CometBFT node.
@@ -277,6 +283,7 @@ func DefaultBaseConfig() BaseConfig {
 		FilterPeers:        false,
 		DBBackend:          "goleveldb",
 		DBPath:             DefaultDataDir,
+		TestnetSkipSync:    false,
 	}
 }
 

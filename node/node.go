@@ -349,6 +349,10 @@ func NewNode(ctx context.Context,
 		logger.Info("Found local state with non-zero height, skipping state sync")
 		stateSync = false
 	}
+	if config.TestnetSkipSync {
+		logger.Info("testnet_skip_sync is set; skipping state sync")
+		stateSync = false
+	}
 
 	// Create the handshaker, which calls RequestInfo, sets the AppVersion on the state,
 	// and replays any blocks as necessary to sync CometBFT with the app.
@@ -369,8 +373,14 @@ func NewNode(ctx context.Context,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := !onlyValidatorIsUs(state, pubKey)
+	blockSync := !stateSync && !onlyValidatorIsUs(state, pubKey)
 	waitSync := stateSync || blockSync
+
+	if config.TestnetSkipSync {
+		logger.Info("testnet_skip_sync is set; skipping block sync")
+		blockSync = false
+		waitSync = false
+	}
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
@@ -414,7 +424,7 @@ func NewNode(ctx context.Context,
 		}
 	}
 	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}

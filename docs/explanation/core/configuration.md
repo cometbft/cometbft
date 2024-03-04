@@ -101,6 +101,12 @@ abci = "socket"
 # so the app can decide if we should keep the connection or not
 filter_peers = false
 
+# If true, the node will not attempt to state or block sync. Instead, it
+# will immediately start the consensus. Note that normally this is only
+# allowed when the node is the only validator in the network. This flag
+# ignores this check. Only use this flag for testing.
+testnet_skip_sync = false
+
 
 #######################################################################
 ###                 Advanced Configuration Options                  ###

@@ -29,9 +29,7 @@ eg, L = latency = 0.1s
 
 const (
 	requestIntervalMS         = 2
-	maxTotalRequesters        = 600
-	maxPendingRequests        = maxTotalRequesters
-	maxPendingRequestsPerPeer = 20
+	maxPendingRequestsPerPeer = 10
 	requestRetrySeconds       = 30
 
 	// Minimum recv rate to ensure we're receiving blocks from a peer fast
@@ -41,9 +39,6 @@ const (
 	// Assuming a DSL connection (not a good choice) 128 Kbps (upload) ~ 15 KB/s,
 	// sending data across atlantic ~ 7.5 KB/s.
 	minRecvRate = 7680
-
-	// Maximum difference between current and new block's height.
-	maxDiffBetweenCurrentAndReceivedBlockHeight = 100
 )
 
 var peerTimeout = 15 * time.Second // not const so we can override with tests
@@ -108,21 +103,24 @@ func (pool *BlockPool) OnStart() error {
 func (pool *BlockPool) makeRequestersRoutine() {
 	for {
 		if !pool.IsRunning() {
-			break
+			return
 		}
 
-		_, numPending, lenRequesters := pool.GetStatus()
+		pool.mtx.Lock()
+		var (
+			maxRequestersCreated = len(pool.requesters) >= len(pool.peers)*maxPendingRequestsPerPeer
+
+			nextHeight           = pool.height + int64(len(pool.requesters))
+			maxPeerHeightReached = nextHeight > pool.maxPeerHeight
+		)
+		pool.mtx.Unlock()
+
 		switch {
-		case numPending >= maxPendingRequests:
-			// sleep for a bit.
+		case maxRequestersCreated: // If we have enough requesters, wait for them to finish.
 			time.Sleep(requestIntervalMS * time.Millisecond)
-			// check for timed out peers
 			pool.removeTimedoutPeers()
-		case lenRequesters >= maxTotalRequesters:
-			// sleep for a bit.
+		case maxPeerHeightReached: // If we're caught up, wait for a bit so reactor could finish or a higher height is reported.
 			time.Sleep(requestIntervalMS * time.Millisecond)
-			// check for timed out peers
-			pool.removeTimedoutPeers()
 		default:
 			// request for more blocks.
 			pool.makeNextRequester()
@@ -277,7 +275,8 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 		if diff < 0 {
 			diff *= -1
 		}
-		if diff > maxDiffBetweenCurrentAndReceivedBlockHeight {
+		const maxDiff = 100 // maximum difference between current and received block height
+		if diff > maxDiff {
 			pool.sendError(errors.New("peer sent us a block we didn't expect with a height too far ahead/behind"), peerID)
 		}
 		return fmt.Errorf("peer sent us a block we didn't expect (peer: %s, current height: %d, block height: %d)", peerID, pool.height, block.Height)
@@ -391,28 +390,18 @@ func (pool *BlockPool) pickIncrAvailablePeer(height int64) *bpPeer {
 	return nil
 }
 
-func (pool *BlockPool) makeNextRequester() {
+func (pool *BlockPool) makeNextRequester(nextHeight int64) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
-
-	nextHeight := pool.height + pool.requestersLen()
-	if nextHeight > pool.maxPeerHeight {
-		return
-	}
 
 	request := newBPRequester(pool, nextHeight)
 
 	pool.requesters[nextHeight] = request
 	atomic.AddInt32(&pool.numPending, 1)
 
-	err := request.Start()
-	if err != nil {
+	if err := request.Start(); err != nil {
 		request.Logger.Error("Error starting request", "err", err)
 	}
-}
-
-func (pool *BlockPool) requestersLen() int64 {
-	return int64(len(pool.requesters))
 }
 
 func (pool *BlockPool) sendRequest(height int64, peerID p2p.ID) {
@@ -437,7 +426,7 @@ func (pool *BlockPool) debug() string {
 	defer pool.mtx.Unlock()
 
 	str := ""
-	nextHeight := pool.height + pool.requestersLen()
+	nextHeight := pool.height + int64(len(pool.requesters))
 	for h := pool.height; h < nextHeight; h++ {
 		if pool.requesters[h] == nil {
 			str += fmt.Sprintf("H(%v):X ", h)

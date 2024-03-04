@@ -175,14 +175,14 @@ func TestFilterLastHeight(t *testing.T) {
 	reqs := []*abci.Request{initChain, finalizeBlock}
 	checker := NewGrammarChecker(DefaultConfig())
 	r, n := checker.filterLastHeight(reqs)
-	require.Equal(t, len(r), 0)
-	require.Equal(t, n, 2)
+	require.Empty(t, r)
+	require.Equal(t, 2, n)
 	reqs = append(reqs, commit)
 	r, n = checker.filterLastHeight(reqs)
 	require.Equal(t, len(r), len(reqs))
 	require.Zero(t, n)
 	reqs = append(reqs, []*abci.Request{prepareProposal, processProposal}...)
 	r, n = checker.filterLastHeight(reqs)
-	require.Equal(t, len(r), 3)
-	require.Equal(t, n, 2)
+	require.Len(t, r, 3)
+	require.Equal(t, 2, n)
 }

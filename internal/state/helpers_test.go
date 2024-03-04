@@ -3,7 +3,6 @@ package state_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
@@ -263,20 +262,7 @@ func (app *testApp) ProcessProposal(
 }
 
 func makeState(nVals, height int, params *types.ConsensusParams, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
-	vals := make([]types.GenesisValidator, nVals)
-	privVals := make(map[string]types.PrivValidator, nVals)
-	for i := 0; i < nVals; i++ {
-		secret := []byte(fmt.Sprintf("test%d", i))
-		pk := ed25519.GenPrivKeyFromSecret(secret)
-		valAddr := pk.PubKey().Address()
-		vals[i] = types.GenesisValidator{
-			Address: valAddr,
-			PubKey:  pk.PubKey(),
-			Power:   1000,
-			Name:    fmt.Sprintf("test%d", i),
-		}
-		privVals[valAddr.String()] = types.NewMockPVWithParams(pk, false, false)
-	}
+	vals, privVals := test.GenesisValidatorSet(nVals)
 
 	s, _ := sm.MakeGenesisState(&types.GenesisDoc{
 		ChainID:         chainID,

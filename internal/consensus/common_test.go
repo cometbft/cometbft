@@ -1057,7 +1057,8 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 		bytes.Equal(v1.Extension, v2.Extension)
 }
 
-func makeStateNilParams(nVals, height int, chainID string) (sm.State, map[string]types.PrivValidator) {
+// TODO: wal_test.go uses this helper, but probably don't need this full setup.
+func makeStateNilParams(nVals int, chainID string) (sm.State, map[string]types.PrivValidator) {
 	vals := make([]types.GenesisValidator, nVals)
 	privVals := make(map[string]types.PrivValidator, nVals)
 	for i := 0; i < nVals; i++ {
@@ -1086,14 +1087,6 @@ func makeStateNilParams(nVals, height int, chainID string) (sm.State, map[string
 	})
 	if err := stateStore.Save(s); err != nil {
 		panic(err)
-	}
-
-	for i := 1; i < height; i++ {
-		s.LastBlockHeight++
-		s.LastValidators = s.Validators.Copy()
-		if err := stateStore.Save(s); err != nil {
-			panic(err)
-		}
 	}
 
 	return s, privVals

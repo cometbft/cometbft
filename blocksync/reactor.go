@@ -85,7 +85,10 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
 			storeHeight))
 	}
-	requestsCh := make(chan BlockRequest, maxTotalRequesters)
+
+	// It's okay to block since sendRequest is called from a separate goroutine
+	// (bpRequester#requestRoutine; 1 per each peer).
+	requestsCh := make(chan BlockRequest)
 
 	const capacity = 1000                      // must be bigger than peers count
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock

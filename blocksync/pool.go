@@ -123,7 +123,7 @@ func (pool *BlockPool) makeRequestersRoutine() {
 			time.Sleep(requestIntervalMS * time.Millisecond)
 		default:
 			// request for more blocks.
-			pool.makeNextRequester()
+			pool.makeNextRequester(nextHeight)
 		}
 	}
 }

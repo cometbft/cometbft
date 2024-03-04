@@ -85,6 +85,8 @@ to make sure your local clock is properly synchronized to NTP.
 
 NTP configuration and tooling is very specific to the operating system and distribution
 that your validator node is running. This guide assumes you have `timedatectl` installed with
+[`systemd-timesyncd`](https://www.freedesktop.org/software/systemd/man/latest/systemd-timesyncd.service.html),
+a simple NTP client or the more complete
 [chrony](https://chrony.tuxfamily.org/), a popular tool for interacting with time
 synchronization on Linux distributions. If you are using an operating system or
 distribution with a different time synchronization mechanism, please consult the
@@ -93,23 +95,31 @@ documentation for your operating system to check the status and re-synchronize t
 #### Check if NTP is Enabled
 
 ```shell
-$ timedatectl
+timedatectl
 ```
 
 From the output, ensure that `NTP service` is `active`. If `NTP service` is `inactive`, run:
 
 ```shell
-$ timedatectl set-ntp true
+timedatectl set-ntp true
 ```
 
 Re-run the `timedatectl` command and verify that the change has taken effect.
 
 #### Check if Your NTP Daemon is Synchronized
 
-Check the status of your local `chrony` NTP daemon using by running the following:
+We provide two examples here, for `chrony` and `timesync`, but these steps
+should be adapted if you are using a different daemon.
+
+If you find that the NTP is not synchronizing, remember to allow NTP traffic
+(123/UDP) to your NTP servers.
+
+##### `chrony`
+
+Check the status of your `chrony` daemon by running the following command:
 
 ```shell
-$ chronyc tracking
+chronyc tracking
 ```
 
 If the `chrony` daemon is running, you will see output that indicates its current status.
@@ -119,6 +129,27 @@ The `System time` field of the response should show a value that is much smaller
 milliseconds.
 
 If the value is very large, restart the `chronyd` daemon.
+
+##### `timesync`
+
+If you are using `systemd-timesyncd`, then execute the following command:
+
+```shell
+timedatectl timesync-status --monitor
+```
+
+If the output indicates an error, restart the service by running
+
+```shell
+timedatectl set-ntp false
+timedatectl set-ntp true
+```
+
+Once running, the output should include a `Packet count`, indicating how many times the protocol
+has been executed, and a small `Precision` value.
+Observe that this daemon increases the polling interval over time, up to a limit.
+You may want to decrease the maximum value of the polling interval by tweaking
+the `/etc/systemd/timesyncd.conf` file.
 
 ## Debugging a Network
 
@@ -187,7 +218,7 @@ request to your node's RPC endpoint. For a node running locally with the RPC ser
 exposed on port `26657`, run the following command:
 
 ```shell
-$ curl localhost:26657/consensus_params
+curl localhost:26657/consensus_params
 ```
 
 The json output will contain a field named `synchrony`, with the following structure:

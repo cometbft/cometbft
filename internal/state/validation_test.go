@@ -34,7 +34,7 @@ func TestValidateBlockHeader(t *testing.T) {
 	pbtsEnableHeight := validationTestsStopHeight / 2
 	cp.Feature.PbtsEnableHeight = pbtsEnableHeight
 
-	state, stateDB, privVals := sm.MakeState(3, 1, cp, chainID)
+	state, stateDB, privVals := makeState(3, 1, cp, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})

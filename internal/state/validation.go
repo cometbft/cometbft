@@ -8,6 +8,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 //-----------------------------------------------------
@@ -112,6 +113,10 @@ func validateBlock(state State, block *types.Block) error {
 	}
 
 	// Validate block Time
+	if block.Time != cmttime.Canonical(block.Time) {
+		return fmt.Errorf("block time %v is not canonical", block.Time)
+	}
+
 	switch {
 	case block.Height > state.InitialHeight:
 		if !block.Time.After(state.LastBlockTime) {

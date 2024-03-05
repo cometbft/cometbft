@@ -14,12 +14,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cometbft/cometbft-db"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -143,7 +145,7 @@ func TestWALEncoderDecoderMultiVersion(t *testing.T) {
 	now := time.Time{}.AddDate(100, 10, 20)
 	v038Data, _ := hex.DecodeString("a570586b000000c50a0b0880e2c3b1a4feffffff0112b50112b2010aa7011aa4010aa1010820102a180d200c2a480a2001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa6612240805122001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa66320b0880e2c3b1a4feffffff013a404942b2803552651e1c7e7b72557cdade0a4c5a638dcda9822ec402d42c5f75c767f62c0f3fb0d58aef7842a4e18964faaff3d17559989cf1f11dd006e31a9d0f12064e6f626f6479")
 
-	ss, privVals := makeState(1, 1, "execution_chain")
+	ss, privVals := makeState(1, "execution_chain")
 	var pVal cmttypes.PrivValidator
 	for mk := range privVals {
 		pVal = privVals[mk]
@@ -204,7 +206,7 @@ func TestWALEncoderDecoderMultiVersion(t *testing.T) {
 func TestWALEncoder(t *testing.T) {
 	now := time.Time{}.AddDate(100, 10, 20)
 
-	ss, privVals := makeState(1, 1, "execution_chain")
+	ss, privVals := makeState(1, "execution_chain")
 	var pVal cmttypes.PrivValidator
 	for mk := range privVals {
 		pVal = privVals[mk]
@@ -358,6 +360,28 @@ func TestWALPeriodicSync(t *testing.T) {
 	if gr != nil {
 		gr.Close()
 	}
+}
+
+// FIXME: this helper is very similar to the one in internal/state/helpers_test.go.
+func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivValidator) {
+	vals, privVals := test.GenesisValidatorSet(nVals)
+
+	s, _ := sm.MakeGenesisState(&cmttypes.GenesisDoc{
+		ChainID:         chainID,
+		Validators:      vals,
+		AppHash:         nil,
+		ConsensusParams: test.ConsensusParams(),
+	})
+
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	if err := stateStore.Save(s); err != nil {
+		panic(err)
+	}
+
+	return s, privVals
 }
 
 /*

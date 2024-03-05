@@ -106,10 +106,19 @@ The impact of this changes is best demonstrated by reporting from Informal staki
 3. *injective-pruning* comet="modified" , pruning="600blocks" , keylayout=old
 4. *injective-newlayout* comet="modified" , pruning="600blocks" , keylayout=new
 
-We report the time to execute Commit along with the time to process blocks:
+Comet v0.37 is the current 0.37 release used in production where pruning is not happening within a background process. 
+
+We report the time to execute Commit:
 ![injective-commit](img/injective_commit.png "Injective - commit")
 
+
+The time to complete Commit for pruning done within the same thread, the Commit step takes 412ms vs 286ms when no pruning is activated. Using these numbers as baseline, the new changes for both layout do not degrade performance. The duration of Commit with pruning over the current DB key layout is 253ms, and 260ms on the new layout. 
+
+The graph below plots the block processing time for the 4 nodes.
+
 ![injective-bpt](img/injective_block_processing_time.png "Injective - average block processing time")
+
+The new changes lead to faster block processing time compared even to the node that has no pruning active. However, the new layout seems to be slightly slower. We will discuss this in more details below. 
 
 
 #### *Database key layout and pruning*
@@ -119,11 +128,23 @@ These results clearly show that pruning is not impacting the nodes performance a
 Namely when running experiments in the **1-node-local** setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (meaured by num of txs processed within 1h), decreased with pruning (with and without compaction) usng the current layout - 500txs/s vs 700 txs/s with the new layout. The duration of the compaction operation itself was also much lower than with the old key layout. The block processing time difference is between 100 and 200ms which for some chains can be significant. 
 The same was true for additional parameters such as RAM usage (200-300MB). 
 
+We show the findings in the table below. `v1` is the current DB key layout and `v2` is the new key representation leveraging ordercode. 
+
+
+| Metric              | No pruning v1 | No pruning v2 | Pruning v1 | Pruning v2 | Pruning + compaction v1 | Pruning + compaction v2
+| :---------------- | :------: | ----: | ------: | ----: | ------: | ----: |
+| Total tx       |   2538767   | 2601857 | 2063870 | 2492327 | 2062080 | 2521171 |
+| Tx/s           |   705.21   | 722.74 | 573.30 | 692.31 | 572.80 | 700.33 |
+| Chain height   |   4936   | 5095 | 4277 | 4855 | 4398 | 5104 |
+| RAM (MB)    |  550   | 470 | 650 | 510 | 660 | 510|
+| Block processing time |  1.9   | 2.1 | 2.2 | 2.1 | 2.0 | 1.9 |
+
+(TODO)  - ADD numbers from new metrics. The access times are very low but its weird not to show data obtained by new metrics. 
+ 
+
 We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB for with the new layout. 
 
-When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results. However, this is not what they observed on mainnet.
-
-(TODO add table showcasing this)
+When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results. However, this is not what they observed on mainnet. In the graphs above, we see that the new layout, while still improving performance compared to CometBFT v0.37.x, introduced a ~10ms latency in this particular case. According to the operators, this was a big difference for some chains. 
 
 
 (TODO add results from e2e if they add anything here)
@@ -137,7 +158,7 @@ The support for both layouts will allow users to benchmark their applications. I
 
 ## Pebble
 
-`PebbleDB` was recently added to `cometbft-db` by Notional and based on their benchmarks it was superior to goleveldDB. 
+`PebbleDB` was recently added to `cometbft-db` by Notional labs and based on their benchmarks it was superior to goleveldDB. 
 
 We repeated our tests done in **1-node-local** using PebbleDB as the underlying database. While the difference in performance it self was slightly better, the most impressive difference is that PebbleDB seemed to handle compaction itself very well. 
 
@@ -146,3 +167,12 @@ In the graph below, we see the old layout without any compaction and the new lay
 
 ![pebble](img/pebble.png "Pebble")
 
+The table below shows the performance metrics for Pebble:
+
+| Metric              | No pruning v1 | No pruning v2 | Pruning v1 | Pruning v2 | Pruning + compaction v1 | Pruning + compaction v2
+| :---------------- | :------: | ----: | ------: | ----: | ------: | ----: |
+| Total tx       |   -   | 2906186 | 2851298 | 2873765 | - | 2881003 |
+| Tx/s           |   -   | 807.27 | 792.03 | 798.27 | - | 800.28 |
+| Chain height   |   -   | 5666 | 5553| 5739 | - | 5752 |
+| RAM (MB)    |  -   | 445 | 456 | 445 | - | 461 |
+| Block processing time |  -   | 5.9(Double check) | 2.1 | 2.1 | - | 2.1 |

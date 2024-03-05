@@ -89,7 +89,7 @@ func TestValidatorSet_VerifyCommit_All(t *testing.T) {
 
 				v := vote.ToProto()
 
-				require.NoError(t, vals[vi%len(vals)].SignVote(tc.chainID, v))
+				require.NoError(t, vals[vi%len(vals)].SignVote(tc.chainID, v, false))
 				vote.Signature = v.Signature
 
 				sigs[vi] = vote.CommitSig()
@@ -169,7 +169,7 @@ func TestValidatorSet_VerifyCommit_CheckAllSignatures(t *testing.T) {
 	// malleate 4th signature
 	vote := voteSet.GetByIndex(3)
 	v := vote.ToProto()
-	err = vals[3].SignVote("CentaurusA", v)
+	err = vals[3].SignVote("CentaurusA", v, true)
 	require.NoError(t, err)
 	vote.Signature = v.Signature
 	vote.ExtensionSignature = v.ExtensionSignature
@@ -200,7 +200,7 @@ func TestValidatorSet_VerifyCommitLight_ReturnsAsSoonAsMajOfVotingPowerSignedIff
 	// malleate 4th signature (3 signatures are enough for 2/3+)
 	vote := voteSet.GetByIndex(3)
 	v := vote.ToProto()
-	err = vals[3].SignVote("CentaurusA", v)
+	err = vals[3].SignVote("CentaurusA", v, true)
 	require.NoError(t, err)
 	vote.Signature = v.Signature
 	vote.ExtensionSignature = v.ExtensionSignature
@@ -235,7 +235,7 @@ func TestValidatorSet_VerifyCommitLightTrusting_ReturnsAsSoonAsTrustLevelSignedI
 	// malleate 3rd signature (2 signatures are enough for 1/3+ trust level)
 	vote := voteSet.GetByIndex(2)
 	v := vote.ToProto()
-	err = vals[2].SignVote("CentaurusA", v)
+	err = vals[2].SignVote("CentaurusA", v, true)
 	require.NoError(t, err)
 	vote.Signature = v.Signature
 	vote.ExtensionSignature = v.ExtensionSignature

@@ -92,7 +92,7 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 			},
 		}
 		p := precommit.ToProto()
-		err = cs.privValidator.SignVote(cs.state.ChainID, p)
+		err = cs.privValidator.SignVote(cs.state.ChainID, p, true)
 		if err != nil {
 			t.Error(err)
 		}

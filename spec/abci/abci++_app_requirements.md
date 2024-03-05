@@ -6,7 +6,6 @@ title: Requirements for the Application
 # Requirements for the Application
 
 - [Requirements for the Application](#requirements-for-the-application)
-
     - [Formal Requirements](#formal-requirements)
         - [Consensus Connection Requirements](#consensus-connection-requirements)
         - [Mempool Connection Requirements](#mempool-connection-requirements)

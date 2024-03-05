@@ -14,12 +14,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cometbft/cometbft-db"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -358,6 +360,28 @@ func TestWALPeriodicSync(t *testing.T) {
 	if gr != nil {
 		gr.Close()
 	}
+}
+
+// FIXME: this helper is very similar to the one in internal/state/helpers_test.go.
+func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivValidator) {
+	vals, privVals := test.GenesisValidatorSet(nVals)
+
+	s, _ := sm.MakeGenesisState(&cmttypes.GenesisDoc{
+		ChainID:         chainID,
+		Validators:      vals,
+		AppHash:         nil,
+		ConsensusParams: test.ConsensusParams(),
+	})
+
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	if err := stateStore.Save(s); err != nil {
+		panic(err)
+	}
+
+	return s, privVals
 }
 
 /*

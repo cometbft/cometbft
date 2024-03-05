@@ -1055,24 +1055,3 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 		v1.ValidatorIndex == v2.GetValidatorIndex() &&
 		bytes.Equal(v1.Extension, v2.Extension)
 }
-
-func makeState(nVals int, chainID string) (sm.State, map[string]types.PrivValidator) {
-	vals, privVals := test.GenesisValidatorSet(nVals)
-
-	s, _ := sm.MakeGenesisState(&types.GenesisDoc{
-		ChainID:         chainID,
-		Validators:      vals,
-		AppHash:         nil,
-		ConsensusParams: test.ConsensusParams(),
-	})
-
-	stateDB := dbm.NewMemDB()
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	if err := stateStore.Save(s); err != nil {
-		panic(err)
-	}
-
-	return s, privVals
-}

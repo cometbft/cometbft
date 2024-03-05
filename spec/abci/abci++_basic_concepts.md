@@ -6,39 +6,21 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-<<<<<<< HEAD
-  - [ABCI++ vs. ABCI](#abci-vs-abci)
-  - [Methods overview](#methods-overview)
-    - [Consensus/block execution methods](#consensusblock-execution-methods)
-    - [Mempool methods](#mempool-methods)
-    - [Info methods](#info-methods)
-    - [State-sync methods](#state-sync-methods)
-    - [Other methods](#other-methods)
-  - [Proposal timeout](#proposal-timeout)
-  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-  - [Events](#events)
-  - [Evidence](#evidence)
-  - [Errors](#errors)
-    - [`CheckTx`](#checktx)
-    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
-    - [`Query`](#query)
-=======
     - [ABCI++ vs. ABCI](#abci-vs-abci)
-    - [Method overview](#method-overview)
+    - [Methods overview](#methods-overview)
         - [Consensus/block execution methods](#consensusblock-execution-methods)
         - [Mempool methods](#mempool-methods)
         - [Info methods](#info-methods)
         - [State-sync methods](#state-sync-methods)
         - [Other methods](#other-methods)
-    - [Proposal timeout](#proposal-timeout)
-    - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-    - [Events](#events)
-    - [Evidence](#evidence)
-    - [Errors](#errors)
-        - [`CheckTx`](#checktx)
-        - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
-        - [`Query`](#query)
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
+        - [Proposal timeout](#proposal-timeout)
+        - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+        - [Events](#events)
+        - [Evidence](#evidence)
+        - [Errors](#errors)
+            - [`CheckTx`](#checktx)
+            - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+            - [`Query`](#query)
 
 # Overview and basic concepts
 
@@ -95,17 +77,9 @@ call sequences of these methods.
   every time CometBFT is about to broadcast a Proposal message and *validValue* is `nil`.
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
-<<<<<<< HEAD
   `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
-  can make changes to the raw proposal, such as modifying the set of transactions or the order
-  in which they appear, and returns the
-  (potentially) modified proposal, called *prepared proposal* in the `ResponsePrepareProposal`
-  call.
-=======
-  `PrepareProposal` with the newly created proposal, called *raw proposal*. The Application
   can make changes to the raw proposal, such as reordering, adding and removing transactions, before returning the
-  (potentially) modified proposal, called *prepared proposal* in the `PrepareProposalResponse`.
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
+  (potentially) modified proposal, called *prepared proposal* in the `ResponsePrepareProposal`.
   The logic modifying the raw proposal MAY be non-deterministic.
 
 - [**ProcessProposal:**](./abci++_methods.md#processproposal) It allows a validator to
@@ -140,13 +114,8 @@ call sequences of these methods.
   many (+2/3) validators send precommit votes for that block. Thus, `VerifyVoteExtension`
   should be implemented with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
-<<<<<<< HEAD
   accept it in `ResponseVerifyVoteExtension` and ignore it in its own logic. CometBFT calls it when
-  a process receives a precommit message with a (possibly empty) vote extension.
-=======
-  accept it in `VerifyVoteExtensionResponse` and ignore it in its own logic. CometBFT calls it when
   a process receives a precommit message with a (possibly empty) vote extension, for the current height. It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
@@ -280,12 +249,8 @@ time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
-<<<<<<< HEAD
-They can only be used when their data is provided in a `RequestPrepareProposal` call.
-=======
-Their data can only be used when provided in a `PrepareProposal` call but, again,
+They can only be used when their data is provided in a `RequestPrepareProposal` call but, again,
 without side effects to the app state.
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
 
 If there is some non-determinism in the state machine, consensus will eventually
 fail as nodes disagree over the correct values for the block header. The

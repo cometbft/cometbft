@@ -6,54 +6,7 @@ title: Requirements for the Application
 # Requirements for the Application
 
 - [Requirements for the Application](#requirements-for-the-application)
-<<<<<<< HEAD
-  - [Formal Requirements](#formal-requirements)
-    - [Consensus Connection Requirements](#consensus-connection-requirements)
-    - [Mempool Connection Requirements](#mempool-connection-requirements)
-  - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
-    - [Connection State](#connection-state)
-      - [Concurrency](#concurrency)
-      - [FinalizeBlock](#finalizeblock)
-      - [Commit](#commit)
-      - [Candidate States](#candidate-states)
-    - [States and ABCI++ Connections](#states-and-abci-connections)
-      - [Consensus Connection](#consensus-connection)
-      - [Mempool Connection](#mempool-connection)
-        - [Replay Protection](#replay-protection)
-      - [Info/Query Connection](#infoquery-connection)
-      - [Snapshot Connection](#snapshot-connection)
-    - [Transaction Results](#transaction-results)
-      - [Gas](#gas)
-      - [Specifics of `ResponseCheckTx`](#specifics-of-responsechecktx)
-      - [Specifics of `ExecTxResult`](#specifics-of-exectxresult)
-    - [Updating the Validator Set](#updating-the-validator-set)
-    - [Consensus Parameters](#consensus-parameters)
-      - [List of Parameters](#list-of-parameters)
-        - [BlockParams.MaxBytes](#blockparamsmaxbytes)
-        - [BlockParams.MaxGas](#blockparamsmaxgas)
-        - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
-        - [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
-        - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-        - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
-        - [VersionParams.App](#versionparamsapp)
-        - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
-      - [Updating Consensus Parameters](#updating-consensus-parameters)
-        - [`InitChain`](#initchain)
-        - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
-    - [`Query`](#query)
-      - [Query Proofs](#query-proofs)
-      - [Peer Filtering](#peer-filtering)
-      - [Paths](#paths)
-    - [Crash Recovery](#crash-recovery)
-    - [State Sync](#state-sync)
-      - [Taking Snapshots](#taking-snapshots)
-      - [Bootstrapping a Node](#bootstrapping-a-node)
-        - [Snapshot Discovery](#snapshot-discovery)
-        - [Snapshot Restoration](#snapshot-restoration)
-        - [Snapshot Verification](#snapshot-verification)
-        - [Transition to Consensus](#transition-to-consensus)
-  - [Application configuration required to switch to ABCI 2.0](#application-configuration-required-to-switch-to-abci-20)
-=======
+
     - [Formal Requirements](#formal-requirements)
         - [Consensus Connection Requirements](#consensus-connection-requirements)
         - [Mempool Connection Requirements](#mempool-connection-requirements)
@@ -71,7 +24,7 @@ title: Requirements for the Application
             - [Snapshot Connection](#snapshot-connection)
         - [Transaction Results](#transaction-results)
             - [Gas](#gas)
-            - [Specifics of `CheckTxResponse`](#specifics-of-checktxresponse)
+            - [Specifics of `ResponseCheckTx`](#specifics-of-responsechecktx)
             - [Specifics of `ExecTxResult`](#specifics-of-exectxresult)
         - [Updating the Validator Set](#updating-the-validator-set)
         - [Consensus Parameters](#consensus-parameters)
@@ -100,7 +53,6 @@ title: Requirements for the Application
                 - [Snapshot Verification](#snapshot-verification)
                 - [Transition to Consensus](#transition-to-consensus)
     - [Application configuration required to switch to ABCI 2.0](#application-configuration-required-to-switch-to-abci-20)
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
 
 
 ## Formal Requirements
@@ -136,13 +88,8 @@ compromise liveness because even though `TimeoutPropose` is used as the initial
 value for proposal timeouts, CometBFT will be dynamically adjust these timeouts
 such that they will eventually be enough for completing `PrepareProposal`.
 
-<<<<<<< HEAD
-* Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
+- Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
   total size in bytes of the transactions returned does not exceed `RequestPrepareProposal.max_tx_bytes`.
-=======
-- Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `PrepareProposal`, the
-  total size in bytes of the transactions returned does not exceed `PrepareProposalRequest.max_tx_bytes`.
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
 
 Busy blockchains might seek to gain full visibility into transactions in CometBFT's mempool,
 rather than having visibility only on *a* subset of those transactions that fit in a block.
@@ -153,15 +100,9 @@ Under these settings, the aggregated size of all transactions may exceed `Reques
 Hence, Requirement 2 ensures that the size in bytes of the transaction list returned by the application will never
 cause the resulting block to go beyond its byte size limit.
 
-<<<<<<< HEAD
-* Requirement 3 [`PrepareProposal`, `ProcessProposal`, coherence]: For any two correct processes *p* and *q*,
+- Requirement 3 [`PrepareProposal`, `ProcessProposal`, coherence]: For any two correct processes *p* and *q*,
   if *q*'s CometBFT calls `RequestProcessProposal` on *u<sub>p</sub>*,
   *q*'s Application returns Accept in `ResponseProcessProposal`.
-=======
-- Requirement 3 [`PrepareProposal`, `ProcessProposal`, coherence]: For any two correct processes *p* and *q*,
-  if *q*'s CometBFT calls `ProcessProposal` on *u<sub>p</sub>*,
-  *q*'s Application returns Accept in `ProcessProposalResponse`.
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
 
 Requirement 3 makes sure that blocks proposed by correct processes *always* pass the correct receiving process's
 `ProcessProposal` check.
@@ -238,20 +179,12 @@ Requirements 7 and 8 can be violated by a bug inducing non-determinism in
 Extra care should be put in the implementation of `ExtendVote` and `VerifyVoteExtension`.
 As a general rule, `VerifyVoteExtension` SHOULD always accept the vote extension.
 
-<<<<<<< HEAD
-* Requirement 9 [*all*, no-side-effects]: *p*'s calls to `RequestPrepareProposal`,
+- Requirement 9 [*all*, no-side-effects]: *p*'s calls to `RequestPrepareProposal`,
   `RequestProcessProposal`, `RequestExtendVote`, and `RequestVerifyVoteExtension` at height *h* do
   not modify *s<sub>p,h-1</sub>*.
 
 
-* Requirement 10 [`ExtendVote`, `FinalizeBlock`, non-dependency]: for any correct process *p*,
-=======
-- Requirement 9 [*all*, no-side-effects]: *p*'s calls to `PrepareProposal`,
-  `ProcessProposal`, `ExtendVote`, and `VerifyVoteExtension` at height *h* do
-  not modify *s<sub>p,h-1</sub>*.
-
 - Requirement 10 [`ExtendVote`, `FinalizeBlock`, non-dependency]: for any correct process *p*,
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
 and any vote extension *e* that *p* received at height *h*, the computation of
 *s<sub>p,h</sub>* does not depend on *e*.
 
@@ -931,15 +864,9 @@ For such applications, the `AppHash` provides a much more efficient way to verif
 ABCI applications can take advantage of more efficient light-client proofs for
 their state as follows:
 
-<<<<<<< HEAD
-* return the Merkle root of the deterministic application state in
-  `ResponseFinalizeBlock.Data`. This Merkle root will be included as the `AppHash` in the next block.
-* return efficient Merkle proofs about that application state in `ResponseQuery.Proof`
-=======
 - return the Merkle root of the deterministic application state in
-  `FinalizeBlockResponse.Data`. This Merkle root will be included as the `AppHash` in the next block.
-- return efficient Merkle proofs about that application state in `QueryResponse.Proof`
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
+  `ResponseFinalizeBlock.Data`. This Merkle root will be included as the `AppHash` in the next block.
+- return efficient Merkle proofs about that application state in `ResponseQuery.Proof`
   that can be verified using the `AppHash` of the corresponding block.
 
 For instance, this allows an application's light-client to verify proofs of
@@ -1193,11 +1120,8 @@ from the genesis file and light client RPC servers. It also calls `Info` to veri
 
 - that the app hash from the snapshot it has delivered to the Application matches the apphash
   stored in the next height's block
-<<<<<<< HEAD
-* that the version that the Application returns in `ResponseInfo` matches the version in the
-=======
-- that the version that the Application returns in `InfoResponse` matches the version in the
->>>>>>> b53769764 (spec(abci): fixes the spec to inform about the presence of invalid extensions in `last_commit` (#2423))
+
+- that the version that the Application returns in `ResponseInfo` matches the version in the
   current height's block header
 
 Once the state machine has been restored and CometBFT has gathered this additional
@@ -1221,6 +1145,7 @@ There is a newly introduced [**consensus parameter**](./abci%2B%2B_app_requireme
 This parameter represents the height at which vote extensions are
 required for consensus to proceed, with 0 being the default value (no vote extensions).
 A chain can enable vote extensions either:
+
 - at genesis by setting `VoteExtensionsEnableHeight` to be equal, e.g., to the `InitialHeight`
 - or via the application logic by changing the `ConsensusParam` to configure the
 `VoteExtensionsEnableHeight`.

@@ -8,18 +8,15 @@ import (
 	"github.com/cometbft/cometbft/redis"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	"google.golang.org/grpc"
 )
 
 // FetcherMultiple struct for fetcherMultiple
 type FetcherMultiple struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewFetcherMultiple(grpcClient *grpc.ClientConn, redisService *redis.Service) *FetcherMultiple {
+func NewFetcherMultiple(redisService *redis.Service) *FetcherMultiple {
 	return &FetcherMultiple{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

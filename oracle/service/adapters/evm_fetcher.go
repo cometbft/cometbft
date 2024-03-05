@@ -13,18 +13,15 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/ethclient"
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 // EVMFetcher struct for evmFetcher
 type EVMFetcher struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewEVMFetcher(grpcClient *grpc.ClientConn, redisService *redis.Service) *EVMFetcher {
+func NewEVMFetcher(redisService *redis.Service) *EVMFetcher {
 	return &EVMFetcher{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

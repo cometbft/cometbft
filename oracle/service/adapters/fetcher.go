@@ -13,18 +13,15 @@ import (
 	"github.com/go-redsync/redsync/v4/redis/goredis"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	"google.golang.org/grpc"
 )
 
 // Fetcher struct for fetcher
 type Fetcher struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewFetcher(grpcClient *grpc.ClientConn, redisService *redis.Service) *Fetcher {
+func NewFetcher(redisService *redis.Service) *Fetcher {
 	return &Fetcher{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

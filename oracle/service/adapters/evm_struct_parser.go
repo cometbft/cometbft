@@ -9,18 +9,15 @@ import (
 	"github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/redis"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"google.golang.org/grpc"
 )
 
 // EVMStructParser struct for evmStructParser
 type EVMStructParser struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewEVMStructParser(grpcClient *grpc.ClientConn, redisService *redis.Service) *EVMStructParser {
+func NewEVMStructParser(redisService *redis.Service) *EVMStructParser {
 	return &EVMStructParser{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

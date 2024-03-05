@@ -6,18 +6,15 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/redis"
-	"google.golang.org/grpc"
 )
 
 // StaticHandler struct for decimal handler
 type StaticHandler struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewStaticHandler(grpcClient *grpc.ClientConn, redisService *redis.Service) *StaticHandler {
+func NewStaticHandler(redisService *redis.Service) *StaticHandler {
 	return &StaticHandler{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

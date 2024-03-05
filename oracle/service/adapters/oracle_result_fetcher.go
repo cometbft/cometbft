@@ -10,8 +10,6 @@ import (
 	"github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/redis"
 	"github.com/sirupsen/logrus"
-
-	"google.golang.org/grpc"
 )
 
 const ORACLE_ID = "oracle_id"
@@ -19,13 +17,11 @@ const STALE_ALLOWANCE = "stale_allowance"
 
 // OracleResultFetcher struct for float handler
 type OracleResultFetcher struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewOracleResultFetcher(grpcClient *grpc.ClientConn, redisService *redis.Service) *OracleResultFetcher {
+func NewOracleResultFetcher(redisService *redis.Service) *OracleResultFetcher {
 	return &OracleResultFetcher{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

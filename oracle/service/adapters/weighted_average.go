@@ -5,18 +5,15 @@ import (
 
 	"github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/redis"
-	"google.golang.org/grpc"
 )
 
 // WeightedAverage struct for weighted average
 type WeightedAverage struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewWeightedAverage(grpcClient *grpc.ClientConn, redisService *redis.Service) *WeightedAverage {
+func NewWeightedAverage(redisService *redis.Service) *WeightedAverage {
 	return &WeightedAverage{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

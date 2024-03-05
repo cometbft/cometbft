@@ -21,10 +21,6 @@ import (
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/redis"
 	"github.com/cometbft/cometbft/types"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -45,15 +41,14 @@ const (
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	OracleInfo  *oracletypes.OracleInfo
-	grpcAddress string
+	OracleInfo *oracletypes.OracleInfo
 	// config  *cfg.MempoolConfig
 	// mempool *CListMempool
 	ids *oracleIDs
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(configPath string, grpcAddress string, pubKey crypto.PubKey, privValidator types.PrivValidator, validatorSet *types.ValidatorSet) *Reactor {
+func NewReactor(configPath string, pubKey crypto.PubKey, privValidator types.PrivValidator, validatorSet *types.ValidatorSet) *Reactor {
 	// load oracle.json config if present
 	jsonFile, openErr := os.Open(configPath)
 	if openErr != nil {
@@ -93,9 +88,8 @@ func NewReactor(configPath string, grpcAddress string, pubKey crypto.PubKey, pri
 	jsonFile.Close()
 
 	oracleR := &Reactor{
-		OracleInfo:  oracleInfo,
-		grpcAddress: grpcAddress,
-		ids:         newOracleIDs(),
+		OracleInfo: oracleInfo,
+		ids:        newOracleIDs(),
 	}
 	oracleR.BaseReactor = *p2p.NewBaseReactor("Oracle", oracleR)
 
@@ -117,41 +111,7 @@ func (oracleR *Reactor) SetLogger(l log.Logger) {
 // OnStart implements p2p.BaseReactor.
 func (oracleR *Reactor) OnStart() error {
 	oracleR.OracleInfo.Redis = redis.NewService(0)
-
-	grpcMaxRetryCount := 12
-	retryCount := 0
-	sleepTime := time.Second
-	var client *grpc.ClientConn
-
-	for {
-		logrus.Infof("[oracle] trying to connect to grpc with address %s : %d", oracleR.grpcAddress, retryCount)
-		if retryCount == grpcMaxRetryCount {
-			panic("failed to connect to grpc:grpcClient after 12 tries")
-		}
-		time.Sleep(sleepTime)
-
-		// reinit otherwise connection will be idle, in idle we can't tell if it's really ready
-		var err error
-		client, err = grpc.Dial(
-			oracleR.grpcAddress,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-		)
-		if err != nil {
-			panic(err)
-		}
-		// give it some time to connect after dailing, but not too long as connection can become idle
-		time.Sleep(time.Duration(retryCount*int(time.Second) + 1))
-
-		if client.GetState() == connectivity.Ready {
-			oracleR.OracleInfo.GrpcClient = client
-			break
-		}
-		client.Close()
-		retryCount++
-		sleepTime *= 2
-	}
-
-	oracleR.OracleInfo.AdapterMap = adapters.GetAdapterMap(oracleR.OracleInfo.GrpcClient, &oracleR.OracleInfo.Redis)
+	oracleR.OracleInfo.AdapterMap = adapters.GetAdapterMap(&oracleR.OracleInfo.Redis)
 	logrus.Info("[oracle] running oracle service...")
 	go func() {
 		runner.Run(oracleR.OracleInfo)

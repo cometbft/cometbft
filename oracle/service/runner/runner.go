@@ -416,7 +416,7 @@ func Run(oracleInfo *types.OracleInfo) {
 		time.Sleep(100 * time.Millisecond)
 
 		count++
-		if count > 300 { // 600 * 0.1s = 60s = every minute
+		if count > 600 { // 600 * 0.1s = 60s = every minute
 			count = 0
 		}
 	}

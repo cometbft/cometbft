@@ -5,18 +5,15 @@ import (
 
 	"github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/redis"
-	"google.golang.org/grpc"
 )
 
 // UnresponsiveHandler struct for unresponsive handler
 type UnresponsiveHandler struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewUnresponsiveHandler(grpcClient *grpc.ClientConn, redisService *redis.Service) *UnresponsiveHandler {
+func NewUnresponsiveHandler(redisService *redis.Service) *UnresponsiveHandler {
 	return &UnresponsiveHandler{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

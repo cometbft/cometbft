@@ -6,12 +6,10 @@ import (
 
 	"github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/redis"
-	"google.golang.org/grpc"
 )
 
 // MedianFilter struct for median filter
 type MedianFilter struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
@@ -20,9 +18,8 @@ func (filter *MedianFilter) Id() string {
 	return "median_filter"
 }
 
-func NewMedianFilter(grpcClient *grpc.ClientConn, redisService *redis.Service) *MedianFilter {
+func NewMedianFilter(redisService *redis.Service) *MedianFilter {
 	return &MedianFilter{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

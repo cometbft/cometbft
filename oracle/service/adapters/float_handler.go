@@ -6,18 +6,15 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/redis"
-	"google.golang.org/grpc"
 )
 
 // FloatHandler struct for float handler
 type FloatHandler struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewFloatHandler(grpcClient *grpc.ClientConn, redisService *redis.Service) *FloatHandler {
+func NewFloatHandler(redisService *redis.Service) *FloatHandler {
 	return &FloatHandler{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

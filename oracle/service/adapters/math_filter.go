@@ -7,18 +7,15 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/cometbft/cometbft/oracle/service/types"
-	"google.golang.org/grpc"
 )
 
 // MathFilter struct for float handler
 type MathFilter struct {
-	grpcClient   *grpc.ClientConn
 	redisService *redis.Service
 }
 
-func NewMathFilter(grpcClient *grpc.ClientConn, redisService *redis.Service) *MathFilter {
+func NewMathFilter(redisService *redis.Service) *MathFilter {
 	return &MathFilter{
-		grpcClient:   grpcClient,
 		redisService: redisService,
 	}
 }

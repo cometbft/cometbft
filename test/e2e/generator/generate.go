@@ -65,6 +65,7 @@ var (
 	voteExtensionEnabled      = weightedChoice{true: 3, false: 1}
 	voteExtensionHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
 	voteExtensionSize         = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
+	constantValConsChanges    = uniformChoice{true, false}
 )
 
 type generateConfig struct {
@@ -161,6 +162,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	}
 
 	manifest.VoteExtensionSize = voteExtensionSize.Choose(r).(uint)
+	manifest.ConstantValConsensusChanges = constantValConsChanges.Choose(r).(bool)
 
 	var numSeeds, numValidators, numFulls, numLightClients int
 	switch opt["topology"].(string) {

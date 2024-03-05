@@ -70,10 +70,6 @@ func TestValidator_Propose(t *testing.T) {
 		if node.Mode != e2e.ModeValidator {
 			return
 		}
-		if node.ClockSkew != 0 && node.Testnet.PbtsEnableHeight != 0 {
-			// Clock skew may render all proposals from this validator untimely
-			return
-		}
 		address := node.PrivvalKey.PubKey().Address()
 		valSchedule := newValidatorSchedule(*node.Testnet)
 
@@ -89,11 +85,18 @@ func TestValidator_Propose(t *testing.T) {
 			valSchedule.Increment(1)
 		}
 
-		require.False(t, proposeCount == 0 && expectCount > 0,
-			"node did not propose any blocks (expected %v)", expectCount)
-		if expectCount > 5 {
-			require.GreaterOrEqual(t, proposeCount, 3, "validator didn't propose even 3 blocks")
+		if expectCount == 0 {
+			return
 		}
+
+		if node.ClockSkew != 0 && node.Testnet.PbtsEnableHeight != 0 {
+			t.Logf("node with skewed clock (by %v), proposed %v, expected %v",
+				node.ClockSkew, proposeCount, expectCount)
+			return
+		}
+		require.Greater(t, proposeCount, 0,
+			"node did not propose any blocks (expected %v)", expectCount)
+		require.False(t, expectCount > 5 && proposeCount < 3, "node only proposed  %v blocks, expected %v", proposeCount, expectCount)
 	})
 }
 

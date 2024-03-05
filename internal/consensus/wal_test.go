@@ -143,7 +143,7 @@ func TestWALEncoderDecoderMultiVersion(t *testing.T) {
 	now := time.Time{}.AddDate(100, 10, 20)
 	v038Data, _ := hex.DecodeString("a570586b000000c50a0b0880e2c3b1a4feffffff0112b50112b2010aa7011aa4010aa1010820102a180d200c2a480a2001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa6612240805122001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa66320b0880e2c3b1a4feffffff013a404942b2803552651e1c7e7b72557cdade0a4c5a638dcda9822ec402d42c5f75c767f62c0f3fb0d58aef7842a4e18964faaff3d17559989cf1f11dd006e31a9d0f12064e6f626f6479")
 
-	ss, privVals := makeStateNilParams(1, "execution_chain")
+	ss, privVals := makeState(1, "execution_chain")
 	var pVal cmttypes.PrivValidator
 	for mk := range privVals {
 		pVal = privVals[mk]
@@ -204,7 +204,7 @@ func TestWALEncoderDecoderMultiVersion(t *testing.T) {
 func TestWALEncoder(t *testing.T) {
 	now := time.Time{}.AddDate(100, 10, 20)
 
-	ss, privVals := makeStateNilParams(1, "execution_chain")
+	ss, privVals := makeState(1, "execution_chain")
 	var pVal cmttypes.PrivValidator
 	for mk := range privVals {
 		pVal = privVals[mk]

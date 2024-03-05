@@ -1056,7 +1056,7 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 		bytes.Equal(v1.Extension, v2.Extension)
 }
 
-func makeStateNilParams(nVals int, chainID string) (sm.State, map[string]types.PrivValidator) {
+func makeState(nVals int, chainID string) (sm.State, map[string]types.PrivValidator) {
 	vals, privVals := test.GenesisValidatorSet(nVals)
 
 	s, _ := sm.MakeGenesisState(&types.GenesisDoc{

@@ -67,7 +67,7 @@ func TestMsgToProto(t *testing.T) {
 		0,
 		types.PrecommitType,
 		bi,
-		time.Now(),
+		cmttime.Now(),
 	)
 	pbVote := vote.ToProto()
 

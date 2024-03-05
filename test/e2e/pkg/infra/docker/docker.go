@@ -118,6 +118,10 @@ services:
 {{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
+{{- if .ClockSkew }}
+    environment:
+        - CLOCK_SKEW={{ .ClockSkew }}
+{{- end }}
     init: true
     ports:
     - 26656
@@ -145,6 +149,10 @@ services:
     image: {{ $.UpgradeVersion }}
 {{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
+{{- end }}
+{{- if .ClockSkew }}
+    environment:
+        - CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
     init: true
     ports:

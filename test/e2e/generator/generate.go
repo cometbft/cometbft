@@ -174,6 +174,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		manifest.PbtsEnableHeight = baseHeight + pbtsHeightOffset.Choose(r).(int64)
 	}
 
+	// TODO: Add skew config
 	var numSeeds, numValidators, numFulls, numLightClients int
 	switch opt["topology"].(string) {
 	case "single":

@@ -186,7 +186,7 @@ func TestValidateBlockCommit(t *testing.T) {
 				0,
 				2,
 				state.LastBlockID,
-				time.Now(),
+				cmttime.Now(),
 			)
 			wrongHeightCommit := &types.Commit{
 				Height:     wrongHeightVote.Height,
@@ -242,7 +242,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			0,
 			types.PrecommitType,
 			blockID,
-			time.Now(),
+			cmttime.Now(),
 		)
 
 		bpvPubKey, err := badPrivVal.GetPubKey()
@@ -330,7 +330,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 			var currentBytes int64
 			// more bytes than the maximum allowed for evidence
 			for currentBytes <= maxBytesEvidence {
-				newEv, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, time.Now(),
+				newEv, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, cmttime.Now(),
 					privVals[proposerAddr.String()], chainID)
 				require.NoError(t, err)
 				evidence = append(evidence, newEv)

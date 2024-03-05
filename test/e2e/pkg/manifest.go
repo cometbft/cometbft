@@ -218,6 +218,9 @@ type ManifestNode struct {
 
 	// Geographical zone ID for simulating latencies.
 	Zone string `toml:"zone"`
+
+	// Simulated clock skew for this node
+	ClockSkew time.Duration `toml:"clock_skew"`
 }
 
 // Save saves the testnet manifest to a file.

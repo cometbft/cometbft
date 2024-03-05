@@ -15,6 +15,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 type signerTestCase struct {
@@ -117,7 +118,7 @@ func TestSignerGetPubKey(t *testing.T) {
 
 func TestSignerProposal(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		have := &types.Proposal{
 			Type:      types.ProposalType,
@@ -157,7 +158,7 @@ func TestSignerProposal(t *testing.T) {
 
 func TestSignerVote(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
@@ -201,7 +202,7 @@ func TestSignerVote(t *testing.T) {
 
 func TestSignerVoteResetDeadline(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
@@ -255,7 +256,7 @@ func TestSignerVoteResetDeadline(t *testing.T) {
 
 func TestSignerVoteKeepAlive(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
@@ -324,7 +325,7 @@ func TestSignerSignProposalErrors(t *testing.T) {
 			}
 		})
 
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		proposal := &types.Proposal{
 			Type:      types.ProposalType,
@@ -349,7 +350,7 @@ func TestSignerSignProposalErrors(t *testing.T) {
 
 func TestSignerSignVoteErrors(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		vote := &types.Vote{
@@ -430,7 +431,7 @@ func TestSignerUnexpectedResponse(t *testing.T) {
 			}
 		})
 
-		ts := time.Now()
+		ts := cmttime.Now()
 		want := &types.Vote{Timestamp: ts, Type: types.PrecommitType}
 
 		e := tc.signerClient.SignVote(tc.chainID, want.ToProto())

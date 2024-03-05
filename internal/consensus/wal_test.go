@@ -411,7 +411,7 @@ func benchmarkWalDecode(b *testing.B, n int) {
 	enc := NewWALEncoder(buf)
 
 	data := nBytes(n)
-	if err := enc.Encode(&TimedWALMessage{Msg: data, Time: time.Now().Round(time.Second).UTC()}); err != nil {
+	if err := enc.Encode(&TimedWALMessage{Msg: data, Time: cmttime.Now().Round(time.Second).UTC()}); err != nil {
 		b.Error(err)
 	}
 

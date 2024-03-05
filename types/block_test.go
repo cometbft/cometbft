@@ -554,7 +554,7 @@ func TestVoteSetToExtendedCommit(t *testing.T) {
 					Timestamp:        time.Now(),
 				}
 				v := vote.ToProto()
-				err = vals[i].SignVote(voteSet.ChainID(), v)
+				err = vals[i].SignVote(voteSet.ChainID(), v, true)
 				require.NoError(t, err)
 				vote.Signature = v.Signature
 				if testCase.includeExtension {

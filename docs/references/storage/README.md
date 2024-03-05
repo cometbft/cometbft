@@ -39,6 +39,8 @@ We validated our results in a number of different settings:
  We have also experimented with a third option, from which we initially expected the most: The new layout combined with insights into the access pattern of Comet to order together keys frequently accessed. In all
  our experiments Comet running this layout was less efficient than the other two and we therefore dismissed it. (TODO link PR). 
 
+ We reduced the `timeout_commit` in this setup to 300ms to speed up execution
+
  Each experiment was repeated 3 times to make sure the results are deterministic. 
 
  2. **e2e-6 node**: CometBFT's e2e application run on a Digital Ocean cluster of 6 nodes. Each node had a different combination of changes we tested:
@@ -117,6 +119,8 @@ These results clearly show that pruning is not impacting the nodes performance a
 Namely when running experiments in the **1-node-local** setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (meaured by num of txs processed within 1h), decreased with pruning (with and without compaction) usng the current layout - 500txs/s vs 700 txs/s with the new layout. The duration of the compaction operation itself was also much lower than with the old key layout. The block processing time difference is between 100 and 200ms which for some chains can be significant. 
 The same was true for additional parameters such as RAM usage (200-300MB). 
 
+We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB for with the new layout. 
+
 When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results. However, this is not what they observed on mainnet.
 
 (TODO add table showcasing this)
@@ -141,3 +145,4 @@ In the graph below, we see the old layout without any compaction and the new lay
 
 
 ![pebble](img/pebble.png "Pebble")
+

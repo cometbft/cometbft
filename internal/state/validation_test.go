@@ -30,7 +30,11 @@ func TestValidateBlockHeader(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := makeState(3, 1, chainID)
+	cp := test.ConsensusParams()
+	pbtsEnableHeight := validationTestsStopHeight / 2
+	cp.Feature.PbtsEnableHeight = pbtsEnableHeight
+
+	state, stateDB, privVals := makeStateWithParams(3, 1, cp, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -75,7 +79,14 @@ func TestValidateBlockHeader(t *testing.T) {
 		{"Version wrong2", func(block *types.Block) { block.Version = wrongVersion2 }},
 		{"ChainID wrong", func(block *types.Block) { block.ChainID = "not-the-real-one" }},
 		{"Height wrong", func(block *types.Block) { block.Height += 10 }},
-		{"Time wrong", func(block *types.Block) { block.Time = block.Time.Add(-time.Second * 1) }},
+		{"Time non-monotonic", func(block *types.Block) { block.Time = block.Time.Add(-2 * time.Second) }},
+		{"Time wrong", func(block *types.Block) {
+			if block.Height > 1 && block.Height < pbtsEnableHeight {
+				block.Time = block.Time.Add(time.Millisecond) // BFT Time
+			} else {
+				block.Time = time.Now() // not canonical
+			}
+		}},
 
 		{"LastBlockID wrong", func(block *types.Block) { block.LastBlockID.PartSetHeader.Total += 10 }},
 		{"LastCommitHash wrong", func(block *types.Block) { block.LastCommitHash = wrongHash }},

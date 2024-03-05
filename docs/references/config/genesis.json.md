@@ -54,6 +54,9 @@ to be deleted. (Run `cometbft unsafe-reset-all --help` for more information.)
 }
 ```
 
+For a production example, you can see [here](https://github.com/cosmos/mainnet/tree/master/genesis)
+the history of genesis files for the Cosmos Hub network.
+
 ## genesis_time
 Timestamp of the genesis file creation.
 
@@ -73,6 +76,9 @@ The chain ID of the blockchain network.
 Cannot be empty.
 
 Can be maximum 50 UTF-8-encoded character.
+
+The `number` part is typically a revision number of the blockchain, starting at `1` and incrementing each time the network
+undergoes a significant upgrade.
 
 ## initial_height
 Initial height at genesis.

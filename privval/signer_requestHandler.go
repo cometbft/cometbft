@@ -62,7 +62,7 @@ func DefaultValidationRequestHandler(
 
 		vote := r.SignVoteRequest.Vote
 
-		err = privVal.SignVote(chainID, vote)
+		err = privVal.SignVote(chainID, vote, r.SignVoteRequest.SignExtension)
 		if err != nil {
 			res = mustWrapMsg(&pvproto.SignedVoteResponse{
 				Vote: cmtproto.Vote{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},

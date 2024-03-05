@@ -109,7 +109,7 @@ func (vs *validatorStub) signVote(
 		Extension:        voteExtension,
 	}
 	v := vote.ToProto()
-	if err = vs.PrivValidator.SignVote(test.DefaultTestChainID, v); err != nil {
+	if err = vs.PrivValidator.SignVote(test.DefaultTestChainID, v, true); err != nil {
 		return nil, fmt.Errorf("sign vote failed: %w", err)
 	}
 

@@ -251,9 +251,9 @@ func (pool *BlockPool) RemovePeerAndRedoAllPeerRequests(height int64) p2p.ID {
 	return peerID
 }
 
-// RedoRequest retries the request at the given height. It does not remove the
+// RedoRequestFrom retries the request at the given height. It does not remove the
 // peer.
-func (pool *BlockPool) RedoRequest(height int64, peerID p2p.ID) {
+func (pool *BlockPool) RedoRequestFrom(height int64, peerID p2p.ID) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
@@ -262,6 +262,11 @@ func (pool *BlockPool) RedoRequest(height int64, peerID p2p.ID) {
 			requester.redo(peerID)
 		}
 	}
+}
+
+// Deprecated: use RemovePeerAndRedoAllPeerRequests instead.
+func (pool *BlockPool) RedoRequest(height int64) p2p.ID {
+	return pool.RemovePeerAndRedoAllPeerRequests(height)
 }
 
 // AddBlock validates that the block comes from the peer it was expected from

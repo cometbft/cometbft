@@ -39,6 +39,8 @@ We validated our results in a number of different settings:
  We have also experimented with a third option, from which we initially expected the most: The new layout combined with insights into the access pattern of Comet to order together keys frequently accessed. In all
  our experiments Comet running this layout was less efficient than the other two and we therefore dismissed it. (TODO link PR). 
 
+ Each experiment was repeated 3 times to make sure the results are deterministic. 
+
  2. **e2e-6 node**: CometBFT's e2e application run on a Digital Ocean cluster of 6 nodes. Each node had a different combination of changes we tested:
   - Pruning with and without compaction on the current database key layout vs. a new, better ordered key lauyout. 
   - No pruning using the current database key layout vs. a new key layout. 
@@ -108,5 +110,34 @@ We report the time to execute Commit along with the time to process blocks:
 ![injective-bpt](img/injective_block_processing_time.png "Injective - average block processing time")
 
 
+#### *Database key layout and pruning*
+
+These results clearly show that pruning is not impacting the nodes performance anymore and could be turned on. However, while running the same set of experiments locally, we obtained contradicting results on the impact of the key layout on these numbers. 
+
+Namely when running experiments in the **1-node-local** setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (meaured by num of txs processed within 1h), decreased with pruning (with and without compaction) usng the current layout - 500txs/s vs 700 txs/s with the new layout. The duration of the compaction operation itself was also much lower than with the old key layout. The block processing time difference is between 100 and 200ms which for some chains can be significant. 
+The same was true for additional parameters such as RAM usage (200-300MB). 
+
+When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results. However, this is not what they observed on mainnet.
+
+(TODO add table showcasing this)
 
 
+(TODO add results from e2e if they add anything here)
+
+We have therefore decided to release v1.x with the support for both key layouts. They are not interchange-able, thus once one is used, a node cannot switch to the other. The version to be used is set in the `config.toml` and defaults to `v1` - the current layout. We will also release a migration script that offline converts the old layout to the new layout. The main reasons we have not addressed DB migration in more detail are:
+- For nodes that do not do pruning, the new layout did not show great benefits
+- When nodes prune, their DBs to migrate are presumably smaller. They could also statesync using `v2` as their desired key layout. 
+
+The support for both layouts will allow users to benchmark their applications. If they determine that the new layout is boosting their performance, we can think of smarter DB migration scripts that will prevent nodes from being offline. 
+
+
+## Pebble
+
+`PebbleDB` was recently added to `cometbft-db` by Notional and based on their benchmarks it was superior to goleveldDB. 
+
+We repeated our tests done in **1-node-local** using PebbleDB as the underlying database. While the difference in performance it self was slightly better, the most impressive difference is that PebbleDB seemed to handle compaction itself very well. 
+
+In the graph below, we see the old layout without any compaction and the new layout with and without compaction on the same workload that generated 20GB of data when no pruning is active. 
+
+
+![pebble](img/pebble.png "Pebble")

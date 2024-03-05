@@ -28,7 +28,7 @@ message PubKeyResponse {
 message SignVoteRequest {
   cometbft.types.v1.Vote vote           = 1;
   string                 chain_id       = 2;
-  bool                   sign_extension = 3;
+  bool                   skip_sign_extension = 3; // if true, the signer may skip signing the extension bytes.
 }
 
 // SignedVoteResponse is a response containing a signed vote or an error

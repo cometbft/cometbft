@@ -7,7 +7,7 @@ parent:
 ---
 
 ## The `node_key.json` file
-The node ID, the IP address of the host and the P2P port together identify a node: `nodeID@IP:port`.
+The node ID, the IP address of the host and the P2P port together identify a node in a CometBFT network: `nodeID@IP:port`.
 
 The easiest way to get the node ID is running the `cometbft show-node-id` command.
 
@@ -102,5 +102,3 @@ sr25519:
   }
 }
 ```
-
-

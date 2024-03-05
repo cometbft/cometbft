@@ -26,8 +26,9 @@ message PubKeyResponse {
 
 // SignVoteRequest is a request to sign a vote
 message SignVoteRequest {
-  cometbft.types.v1.Vote vote     = 1;
-  string                 chain_id = 2;
+  cometbft.types.v1.Vote vote           = 1;
+  string                 chain_id       = 2;
+  bool                   sign_extension = 3;
 }
 
 // SignedVoteResponse is a response containing a signed vote or an error

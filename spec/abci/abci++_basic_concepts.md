@@ -116,7 +116,7 @@ call sequences of these methods.
   should be implemented with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
   accept it in `VerifyVoteExtensionResponse` and ignore it in its own logic. CometBFT calls it when
-  a process receives a precommit message with a (possibly empty) vote extension, for the current height. It is not called for precommit votes received after the height is concluded but while waiting to accumulate more votes.
+  a process receives a precommit message with a (possibly empty) vote extension, for the current height. It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
   The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the

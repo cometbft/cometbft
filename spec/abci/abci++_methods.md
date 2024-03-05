@@ -601,7 +601,7 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
 
 When a node _p_ is in consensus round _0_, height _h_, and _p_ receives a Precommit
 message for CommitRound _r_, height _h-1_ from validator _q_ (_q_ &ne; _p_), _p_
-may add the Precommit message and associated extension to [ExtendedCommitInfo](#extendedcommitinfo)
+MAY add the Precommit message and associated extension to [ExtendedCommitInfo](#extendedcommitinfo)
 without calling `VerifyVoteExtension` to verify it.
 
 

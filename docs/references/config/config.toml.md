@@ -1069,8 +1069,9 @@ Public nodes, such as sentry nodes, should have the PEX reactor enabled,
 as this allows them to discover and connect to public peers in the network.
 
 ### p2p.seed_mode
-In seed mode, the node crawls the network and looks for peers. Any incoming connections will provide the gathered
-addresses and then it disconnects without providing any other information.
+
+In seed mode, the node crawls the network and looks for peers.
+
 ```toml
 seed_mode = false
 ```
@@ -1080,11 +1081,16 @@ seed_mode = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-In seed mode, the node becomes an online address book. Any incoming connections can receive the gathered addresses but
-no other information (for example blocks or consensus data) is provided. The node simply disconnects after sending the
-addresses.
+In seed mode, the node becomes an online address book. Any incoming connections
+can receive a sample of the gathered addresses but no other information (for
+example blocks or consensus data) is provided. The node simply disconnects
+from the peer after sending the addresses.
+
+Nodes operating in seed mode should configured as [seeds](#p2pseeds) for other
+nodes in the network.
 
 The [`p2p.pex`](#p2ppex) option has to be set to `true` for the seed mode to work.
+
 
 ### p2p.private_peer_ids
 Comma separated list of peer IDs to keep private (will not be gossiped to other peers)

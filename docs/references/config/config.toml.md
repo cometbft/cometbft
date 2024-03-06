@@ -1681,7 +1681,9 @@ meaning that there are no liveness implications if it is set to `0s`.
 But it does have implications in the way the application rewards validators.
 
 ### consensus.double_sign_check_height
+
 How many blocks to look back to check existence of the node's consensus votes before joining consensus.
+
 ```toml
 double_sign_check_height = 0
 ```
@@ -1690,9 +1692,11 @@ double_sign_check_height = 0
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-When non-zero, the node will panic upon restart if the same consensus key was used to sign {double_sign_check_height}
-last blocks. So, validators should stop the state machine, wait for some blocks, and then restart the state machine to
-avoid panic.
+When non-zero, the validator will panic upon restart if the validator's current
+consensus key was used to sign any precommit message for the last
+`double_sign_check_height` blocks.
+If this happens, the validators should stop the state machine, wait for some
+blocks, and then restart the state machine again.
 
 ### consensus.skip_timeout_commit
 

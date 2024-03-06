@@ -572,6 +572,8 @@ timeout_broadcast_tx_commit = "10s"
 Using a value larger than `"10s"` will result in increasing the global HTTP write timeout, which applies to all connections
 and endpoints. There is an old developer discussion about this [here](https://github.com/tendermint/tendermint/issues/3435).
 
+> Note: It is generally recommended *not* to use the `broadcast_tx_commit` method in production, and instead prefer `/broadcast_tx_sync`.
+
 ### rpc.max_body_bytes
 Maximum size of request body, in bytes.
 ```toml
@@ -1746,4 +1748,3 @@ namespace = "cometbft"
 | Value type          | string                    |
 |:--------------------|:--------------------------|
 | **Possible values** | Prometheus namespace name |
-

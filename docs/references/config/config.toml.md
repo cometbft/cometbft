@@ -59,7 +59,7 @@ In the future, the code might make restrictions on what version of the file is c
 binary. There is no such check in place right now. Configuration and binary versions are interchangeable.
 
 ### proxy_app
-The TCP or UNIX socket of the ABCI application or the name of the ABCI application compiled in with the CometBFT
+The TCP or UNIX socket of the ABCI application or the name of an example ABCI application compiled in with the CometBFT
 library.
 ```toml
 proxy_app = "tcp://127.0.0.1:26658"

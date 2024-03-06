@@ -793,7 +793,9 @@ Example with a node on a non-routable network:
 - Set `p2p.external_address` to `1.2.3.4:26656`.
 
 ### p2p.seeds
-Comma-separated list of seed nodes that the node will try to connect.
+
+Comma-separated list of addresses of seed nodes in the network.
+
 ```toml
 seeds = ""
 ```
@@ -803,8 +805,11 @@ seeds = ""
 | **Possible values within commas** | nodeID@IP:port (`"abcd@1.2.3.4:26656"`) |
 |                                   | `""`                                    |
 
-Seed nodes will transmit a P2P address book for the node and then disconnect. No blocks or consensus communication takes
-place.
+The node will try to connect to any of the configured seed nodes when it needs
+addresses of potential peers to connect.
+Connections to seed nodes are short-term: seed nodes will transmit to the node
+a list of addresses of potential peers and then disconnect.
+No blocks or consensus communication should take place.
 
 Example:
 ```toml

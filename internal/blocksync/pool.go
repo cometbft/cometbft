@@ -43,9 +43,6 @@ const (
 	// minimum rate could be as high as 500 KB/s. However, we're setting it to
 	// 128 KB/s for now to be conservative.
 	minRecvRate = 128 * 1024 // 128 KB/s
-
-	// Maximum difference between current and new block's height.
-	maxDiffBetweenCurrentAndReceivedBlockHeight = maxTotalRequesters * maxPendingRequestsPerPeer
 )
 
 var peerTimeout = 7 * time.Second // not const so we can override with tests
@@ -297,13 +294,8 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 			pool.height,
 			"blockHeight",
 			block.Height)
-		diff := pool.height - block.Height
-		if diff < 0 {
-			diff *= -1
-		}
-		if diff > maxDiffBetweenCurrentAndReceivedBlockHeight {
-			pool.sendError(errors.New("peer sent us a block we didn't expect with a height too far ahead/behind"), peerID)
-		}
+		// Because we're issuing 2nd requests for closer blocks, it's possible to
+		// receive a block from a second peer. Hence, we can't punish the peer.
 		return fmt.Errorf("peer sent us a block we didn't expect (peer: %s, current height: %d, block height: %d)", peerID, pool.height, block.Height)
 	}
 

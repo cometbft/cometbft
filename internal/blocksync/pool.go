@@ -32,7 +32,7 @@ const (
 	requestIntervalMS         = 2
 	maxTotalRequesters        = 600
 	maxPendingRequests        = maxTotalRequesters
-	maxPendingRequestsPerPeer = 20
+	maxPendingRequestsPerPeer = 10
 	requestRetrySeconds       = 30
 
 	// peerConnWait is the time that must have elapsed since the pool routine
@@ -586,7 +586,7 @@ func (peer *bpPeer) onTimeout() {
 
 //-------------------------------------
 
-const minBlocksForSingleRequest = 30
+const minBlocksForSingleRequest = 50
 
 // bpRequester requests a block from a peer.
 //

@@ -43,7 +43,7 @@ packages. The correspondence between package suffixes and releases is as follows
 | `libs/bits`     | `v1`      | `v1`      | `v1`      | `v1` |
 | `mempool`       | `v1`      | `v1`      | `v1`      | `v1` |
 | `p2p`           | `v1`      | `v1`      | `v1`      | `v1` |
-| `privval`       | `v1beta1` | `v1beta1` | `v1`      | `v1` |
+| `privval`       | `v1beta1` | `v1beta1` | `v1beta2` | `v1` |
 | `rpc/grpc`[^1]  | `v1beta1` | `v1beta2` | `v1beta3` |      |
 | `state`         | `v1beta1` | `v1beta2` | `v1beta3` | `v1` |
 | `statesync`     | `v1`      | `v1`      | `v1`      | `v1` |

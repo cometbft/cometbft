@@ -83,6 +83,8 @@ And then use it to calculate a transaction's hash.
 
 ### Negative
 
+- Potentially adds complexity for developers.
+
 ### Neutral
 
 - App developers need to take performance into account when choosing custom

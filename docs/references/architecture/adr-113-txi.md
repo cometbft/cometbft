@@ -11,7 +11,7 @@ TBD
 ## Context
 
 Transaction hashing in CometBFT is currently implemented using `crypto/tmhash`
-package, which itself relies on `[sha256](https://pkg.go.dev/crypto/sha256)` to calculate a transaction's hash.
+package, which itself relies on [`sha256`](https://pkg.go.dev/crypto/sha256) to calculate a transaction's hash.
 
 The hash is then used by the built-in indexer (to index this
 transaction) and by the RPC `tx` and `tx_search` endpoints, which allow users

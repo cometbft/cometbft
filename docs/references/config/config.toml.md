@@ -794,7 +794,7 @@ Example with a node on a non-routable network:
 
 ### p2p.seeds
 
-Comma-separated list of addresses of seed nodes in the network.
+Comma-separated list of seed nodes.
 
 ```toml
 seeds = ""
@@ -817,7 +817,9 @@ seeds = "abcd@1.2.3.4:26656,deadbeef@5.6.7.8:10000"
 ```
 
 ### p2p.persistent_peers
+
 Comma-separated list of nodes to keep persistent connections to.
+
 ```toml
 persistent_peers = ""
 ```
@@ -827,8 +829,17 @@ persistent_peers = ""
 | **Possible values within commas** | nodeID@IP:port (`"abcd@1.2.3.4:26656"`) |
 |                                   | `""`                                    |
 
-Persistent peers do not count toward [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers) or
-[`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers).
+The node will attempt to establish connections to all configured persistent peers.
+This in particular means that persistent peers do not count towards
+the configured [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers)
+(refer to [issue 1304](https://github.com/cometbft/cometbft/issues/1304) for more details).
+Moreover, if a connection to a persistent peers is lost, the node will attempt
+reconnecting to that peer.
+
+Once connected to a persistent peer, the node will request addresses of
+potential peers.
+This means that when persistent peers are configured the node may not need to
+rely on potential peers provided by [seed nodes](#p2pseeds).
 
 Example:
 ```toml

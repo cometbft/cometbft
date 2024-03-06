@@ -1091,9 +1091,10 @@ nodes in the network.
 
 The [`p2p.pex`](#p2ppex) option has to be set to `true` for the seed mode to work.
 
-
 ### p2p.private_peer_ids
-Comma separated list of peer IDs to keep private (will not be gossiped to other peers)
+
+Comma separated list of peer IDs to keep private, they will not be gossiped to other peers.
+
 ```toml
 private_peer_ids = ""
 ```
@@ -1103,7 +1104,7 @@ private_peer_ids = ""
 | **Possible values within commas** | nodeID (`"abcdef0123456789abcd"`) |
 |                                   | `""`                              |
 
-The addresses with the listed node IDs will not be sent to other peers, when the peer exchange reactor
+The addresses with the listed node IDs will not be sent to other peers, when the PEX reactor
 ([`p2p.pex`](#p2ppex)) is enabled. This allows a more granular setting instead of completely disabling the peer exchange
 reactor.
 
@@ -1113,7 +1114,9 @@ use this setting to make sure they do not gossip the node ID of the validator no
 addresses from the Internet.
 
 ### p2p.allow_duplicate_ip
-Toggle to disable guard against peers connecting from the same ip.
+
+Toggle to disable guard against peers connecting from the same IP.
+
 ```toml
 allow_duplicate_ip = false
 ```
@@ -1123,11 +1126,13 @@ allow_duplicate_ip = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-When this setting is set to `true`, multiple connections are allowed from the same IP address (for example on different
+When this setting is set to `true`, multiple connections are allowed from the same IP address (for example, on different
 ports).
 
 ### p2p.handshake_timeout
+
 Timeout duration for protocol handshake (or secret connection negotiation).
+
 ```toml
 handshake_timeout = "20s"
 ```
@@ -1136,13 +1141,16 @@ handshake_timeout = "20s"
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0s"`      |
 
-This high-level timeout value is applied when the TCP connection has been made and the peers are negotiating an upgrade
-to secret connection.
+This high-level timeout value is applied when the TCP connection has been
+established with a peer, and the node and peer are negotiating its upgrade into
+a secret authenticated connection.
 
 The value `"0s"` is undefined, and it can lead to unexpected behaviour.
 
 ### p2p.dial_timeout
+
 Timeout duration for the low-level dialer that connects to the remote address on the TCP network.
+
 ```toml
 dial_timeout = "3s"
 ```
@@ -1155,7 +1163,7 @@ This parameter is the timeout value for dialing on TCP networks. If a hostname i
 hostname resolves to multiple IP addresses, the timeout is spread over each consecutive dial, such that each is given an
 appropriate fraction of the time to connect.
 
-Setting the value to `"0s"` disables timeout.
+Setting the value to `"0s"` disables the timeout.
 
 ## Mempool
 Mempool allows gathering and broadcasting uncommitted transactions among nodes.

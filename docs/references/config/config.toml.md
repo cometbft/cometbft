@@ -1658,8 +1658,9 @@ Timeouts increase linearly over rounds, so that the `timeout_precommit` adopted
 in round `r` is `timeout_precommit + r * timeout_precommit_delta`.
 
 ### consensus.timeout_commit
-How long we wait after committing a block, before starting on the new height.
-This gives us a chance to receive some more precommits, even though we already have +2/3.
+
+How long a node waits after committing a block, before starting on the next height.
+
 ```toml
 timeout_commit = "1s"
 ```
@@ -1667,6 +1668,17 @@ timeout_commit = "1s"
 | Value type          | string (duration) |
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0s"`      |
+
+The `timeout_commit` represents the minimum interval between the commit of a
+block until the start of the next height of consensus.
+It gives the node a chance to gather additional precommits for the committed
+block, more than the mandatory +2/3 precommits required to commit a block.
+The more precommits are gathered for a block, the greater are the safety
+guarantees and the easier is to detect misbehaving validators.
+
+The `timeout_commit` is not a required component of the consensus algorithm,
+meaning that there are no liveness implications if it is set to `0s`.
+But it does have implications in the way the application rewards validators.
 
 ### consensus.double_sign_check_height
 How many blocks to look back to check existence of the node's consensus votes before joining consensus.
@@ -1683,7 +1695,9 @@ last blocks. So, validators should stop the state machine, wait for some blocks,
 avoid panic.
 
 ### consensus.skip_timeout_commit
-Make progress as soon as we have all the precommits.
+
+Start the next height as soon as the node gathers all the mandatory +2/3 precommits for a block.
+
 ```toml
 skip_timeout_commit = false
 ```
@@ -1693,7 +1707,7 @@ skip_timeout_commit = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-This is similar to setting [`consensus.timeout_commit`](#consensustimeout_commit) to `"0s"`.
+Setting `skip_timeout_commit` to `true` has the similar effect as setting [`timeout_commit`](#consensustimeout_commit) to `"0s"`.
 
 ### consensus.create_empty_blocks
 If there are no transactions in the mempool, empty blocks are proposed to indicate that the chain is still running.

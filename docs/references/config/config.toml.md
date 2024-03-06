@@ -1502,9 +1502,13 @@ version = "v0"
 All other versions are deprecated.
 
 ## Consensus
+
 Consensus parameters define how the consensus protocol should behave.
 
 ### consensus.wal_file
+
+Location of the consensus Write-Ahead Log (WAL) file.
+
 ```toml
 wal_file = "data/cs.wal/wal"
 ```
@@ -1516,6 +1520,13 @@ wal_file = "data/cs.wal/wal"
 
 The default relative path translates to `$CMTHOME/data/cs.wal/wal`. In case `$CMTHOME` is unset, it defaults to
 `$HOME/.cometbft/data/cs.wal/wal`.
+
+The consensus WAL stores all consensus messages received and broadcast by a
+node, as well as some important consensus events (e.g., new height and new round step).
+The goal of this log is to enable a node that crashes and late recovers
+to re-join consensus with the same state it has before crashing.
+Recovering nodes that "forget" the actions taken before crashing are faulty
+nodes that are likely to present Byzantine behavior (e.g., double signing).
 
 ### consensus.timeout_propose
 How long we wait for a proposal block before prevoting nil.

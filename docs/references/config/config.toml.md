@@ -1714,7 +1714,9 @@ skip_timeout_commit = false
 Setting `skip_timeout_commit` to `true` has the similar effect as setting [`timeout_commit`](#consensustimeout_commit) to `"0s"`.
 
 ### consensus.create_empty_blocks
-If there are no transactions in the mempool, empty blocks are proposed to indicate that the chain is still running.
+
+Propose empty blocks if the validator's mempool does not have any transaction.
+
 ```toml
 create_empty_blocks = true
 ```
@@ -1724,11 +1726,20 @@ create_empty_blocks = true
 | **Possible values** | `true`  |
 |                     | `false` |
 
-This is more relevant to networks with a low number of transactions.
+When set to `true`, empty blocks are produced and proposed to indicate that the
+chain is still operative.
+When set to `false`, blocks are not produced or proposed while there not
+transactions in the validator's mempool.
+
+Notice that empty blocks are still proposed whenever the application hash
+(`app_hash`) has been updated.
+
+This is more relevant for networks with a low volume number of transactions.
 
 ### consensus.create_empty_blocks_interval
-If there are no transactions in the mempool, empty blocks are proposed to indicate that the chain is still running at
-this interval.
+
+How long a validator should wait before proposing an empty block.
+
 ```toml
 create_empty_blocks_interval = "0s"
 ```
@@ -1736,6 +1747,18 @@ create_empty_blocks_interval = "0s"
 | Value type          | string (duration) |
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0s"`      |
+
+If there are no transactions in the validator's mempool, the validator
+waits for `create_empty_blocks_interval` before producing and proposing an
+empty block (with no transactions).
+
+If [`create_empty_blocks`](#createemptyblocks) is set to `false` and
+`create_empty_blocks_interval` is set to `0s`, the validator will wait
+indefinitely until a transaction is available in its mempool,
+to then produce and propose a block.
+
+Notice that empty blocks are still proposed whenever the application hash
+(`app_hash`) has been updated.
 
 ### consensus.peer_gossip_sleep_duration
 Consensus reactor internal sleep duration when waiting for the next piece of calculation.

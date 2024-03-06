@@ -1761,7 +1761,9 @@ Notice that empty blocks are still proposed whenever the application hash
 (`app_hash`) has been updated.
 
 ### consensus.peer_gossip_sleep_duration
-Consensus reactor internal sleep duration when waiting for the next piece of calculation.
+
+Consensus reactor internal sleep duration when there is no message to send to a peer.
+
 ```toml
 peer_gossip_sleep_duration = "100ms"
 ```
@@ -1770,11 +1772,19 @@ peer_gossip_sleep_duration = "100ms"
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0ms"`     |
 
-This is a generic sleep duration for the consensus reactor that allows other threads to run when the reactor has no work
-to do.
+The consensus reactor gossips consensus messages, by sending or forwarding them
+to peers.
+When there are no messages to be sent to a peer, each reactor routine waits for
+`peer_gossip_sleep_duration` time before checking if there are new messages to
+be sent to that peer, or if the peer state has been meanwhile updated.
+
+This generic sleep duration allows other reactor routines to run when a reactor
+routine has no work to do.
 
 ### consensus.peer_gossip_intraloop_sleep_duration
+
 Consensus reactor upper bound for a random sleep duration.
+
 ```toml
 peer_gossip_intraloop_sleep_duration = "0s"
 ```
@@ -1783,12 +1793,20 @@ peer_gossip_intraloop_sleep_duration = "0s"
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0s"`     |
 
-Random sleeps are inserted in the consensus reactor when it is waiting for HasProposalBlockPart messages and HasVote
-messages, so it can reduce the amount of these messages sent. This parameter sets an upper bound for the random value
-that is used for these sleep commands.
+The consensus reactor gossips consensus messages, by sending or forwarding them
+to peers.
+
+If `peer_gossip_intraloop_sleep_duration` is set to a non-zero value, random
+sleeps are inserted in the reactor routines when the node is waiting
+for `HasProposalBlockPart` messages or `HasVote` messages.
+The goal is to reduce the amount of `BlockPart` and `Vote` messages sent.
+The value of this parameter is the upper bound for the random duration that is
+used by the sleep commands inserted in each loop of the reactor routines.
 
 ### consensus.peer_query_maj23_sleep_duration
-Consensus reactor `queryMaj23Routine` function sleep time.
+
+Consensus reactor interval between querying peers for +2/3 vote majorities.
+
 ```toml
 peer_query_maj23_sleep_duration = "2s"
 ```
@@ -1797,7 +1815,16 @@ peer_query_maj23_sleep_duration = "2s"
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0s"`      |
 
-Sleep time for the `queryMaj23Routine` function.
+The consensus reactor gossips consensus messages, by sending or forwarding them
+to peers.
+
+The `VoteSetMaj23` message is used by the consensus reactor to query peers
+regarding vote messages (prevotes or precommits) they have for a specific
+block.
+These queries are only triggered when +2/3 votes are observed.
+
+The value of `peer_query_maj23_sleep_duration` is the interval between sending
+those queries to a peer.
 
 ## Storage
 Storage parameters are important in production settings as it can make the difference between a 2GB data folder and a

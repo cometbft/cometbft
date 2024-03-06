@@ -216,9 +216,7 @@ func (pool *BlockPool) PeekTwoBlocks() (first, second *types.Block, firstExtComm
 	return
 }
 
-// PopRequest pops the first block at pool.height.
-// It must have been validated by the second Commit from PeekTwoBlocks.
-// TODO(thane): (?) and its corresponding ExtendedCommit.
+// PopRequest removes the requester at pool.height and increments pool.height.
 func (pool *BlockPool) PopRequest() {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
@@ -250,10 +248,8 @@ func (pool *BlockPool) RemovePeerAndRedoAllPeerRequests(height int64) p2p.ID {
 
 	request := pool.requesters[height]
 	peerID := request.gotBlockFromPeerID()
-	if peerID != "" {
-		// RemovePeer will redo all requesters associated with this peer.
-		pool.removePeer(peerID)
-	}
+	// RemovePeer will redo all requesters associated with this peer.
+	pool.removePeer(peerID)
 	return peerID
 }
 
@@ -753,6 +749,7 @@ PICK_PEER_LOOP:
 func (bpr *bpRequester) pickSecondPeerAndSendRequest() {
 	bpr.mtx.Lock()
 	if bpr.secondPeerID != "" {
+		bpr.mtx.Unlock()
 		return
 	}
 	peerID := bpr.peerID

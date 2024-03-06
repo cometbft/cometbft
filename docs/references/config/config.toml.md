@@ -762,7 +762,7 @@ laddr = "tcp://0.0.0.0:26656"
 
 TCP address that peers should use in order to connect to the node.
 This is the address that the node advertises to peers.
-If not set, the [listen address](#p2p.laddr) is advertised.
+If not set, the [listen address](#p2pladdr) is advertised.
 
 Useful when the node is running on a non-routable address or when the
 node does not have the capabilities to figure out its IP private address.
@@ -783,10 +783,14 @@ external_address = ""
 The port has to point to the node's P2P port.
 
 Example with a node on a non-routable network:
-- Node has local IP address `10.10.10.10` and uses port `10000` for P2P communication, set in [`p2p.laddr`](#p2pladdr).
-- The network gateway has the public IP `1.2.3.4` and we want to use publicly open port `26656` on the IP address.
-- A redirection has to be set up from `1.2.3.4:26656` to `10.10.10.10:1000`
-- The `external_address` has to be set to `1.2.3.4:26656`.
+- Node has local or private IP address `10.10.10.10` and uses port `10000` for
+  P2P communication: set this addresses as the [listen address](#p2pladdr) (`p2p.laddr`).
+- The network gateway has the public IP `1.2.3.4` and we want to use publicly
+  open port `26656` on the IP address. In this case, a redirection has to be
+  set up from `1.2.3.4:26656` to `10.10.10.10:1000`;
+- Or the node has an associated public or external IP `1.2.3.4`
+  that is mapped to its local or private IP.
+- Set `p2p.external_address` to `1.2.3.4:26656`.
 
 ### p2p.seeds
 Comma-separated list of seed nodes that the node will try to connect.

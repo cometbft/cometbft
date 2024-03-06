@@ -969,7 +969,9 @@ configured [`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers) limit.
 Contrary to other settings, only the node ID has to be defined here, not the IP:port of the remote node.
 
 ### p2p.persistent_peers_max_dial_period
-Maximum pause when redialing a persistent peer.
+
+Maximum pause between successive attempts when dialing a persistent peer.
+
 ```toml
 persistent_peers_max_dial_period = "0s"
 ```
@@ -978,12 +980,12 @@ persistent_peers_max_dial_period = "0s"
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0s"`      |
 
-If `"0s"` is set, then exponential backoff is applied to re-dial the remote node over and over.
-
-<!--- Todo: add if there are any limitations to the exponential back-off. --->
+When set to `"0s"`, an exponential backoff is applied when re-dialing the persistent peer over and over.
 
 ### p2p.flush_throttle_timeout
-Time to wait before flushing messages out on the connection.
+
+Time to wait before flushing messages out on a connection.
+
 ```toml
 flush_throttle_timeout = "100ms"
 ```
@@ -992,15 +994,17 @@ flush_throttle_timeout = "100ms"
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0ms"`     |
 
-Write (flush) any buffered data to the connection. The flush is throttled, so if multiple triggers come in within the
-duration, only one flush is executed.
+The flush operation writes any buffered data to the connection. The flush is throttled, so if multiple triggers come in within the
+configured timeout, only one flush is executed.
 
-Setting the value to `0ms` is possible, but the behaviour is undefined.
-
-<!--- Todo: trace the code and update what happens if this is set to 0. --->
+Setting the value to `0ms` makes flushing messages out on a connection immediate.
+While this might reduce latency, it may degrade throughput as batching
+outstanding messages is essentially disabled.
 
 ### p2p.max_packet_msg_payload_size
-Maximum size of a message packet payload, in bytes.
+
+Maximum size of a packet payload, in bytes.
+
 ```toml
 max_packet_msg_payload_size = 1024
 ```
@@ -1009,10 +1013,15 @@ max_packet_msg_payload_size = 1024
 |:--------------------|:--------|
 | **Possible values** | &gt; 0  |
 
-The value represents the maximum size of a message payload (or message data) in bytes.
+Messages exchanged via P2P connections are split into packets.
+Packets contain some metadata and message data (payload).
+The value configures the maximum size in bytes of the payload
+included in a packet.
 
 ### p2p.send_rate
+
 Rate at which packets can be sent, in bytes/second.
+
 ```toml
 send_rate = 5120000
 ```
@@ -1021,10 +1030,13 @@ send_rate = 5120000
 |:--------------------|:--------|
 | **Possible values** | &gt; 0  |
 
-The value represents the amount of packet bytes that can be sent per second.
+The value represents the amount of packet bytes that can be sent per second
+by each P2P connection.
 
 ### p2p.recv_rate
+
 Rate at which packets can be received, in bytes/second.
+
 ```toml
 recv_rate = 5120000
 ```
@@ -1033,7 +1045,8 @@ recv_rate = 5120000
 |:--------------------|:--------|
 | **Possible values** | &gt; 0  |
 
-The value represents the amount of packet bytes that can be received per second.
+The value represents the amount of packet bytes that can be received per second
+by each P2P connection.
 
 ### p2p.pex
 Enable peer exchange reactor.

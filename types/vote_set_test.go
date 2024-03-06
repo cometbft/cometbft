@@ -533,7 +533,7 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 				BlockID:          BlockID{blockHash, blockPartSetHeader},
 			}
 			v := vote.ToProto()
-			err = val0.SignVote(voteSet.ChainID(), v)
+			err = val0.SignVote(voteSet.ChainID(), v, true)
 			require.NoError(t, err)
 			vote.Signature = v.Signature
 

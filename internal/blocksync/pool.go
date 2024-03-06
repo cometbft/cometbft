@@ -61,7 +61,8 @@ var peerTimeout = 7 * time.Second // not const so we can override with tests
 // BlockPool keeps track of the block sync peers, block requests and block responses.
 type BlockPool struct {
 	service.BaseService
-	startTime time.Time
+	startTime   time.Time
+	startHeight int64
 
 	mtx cmtsync.Mutex
 	// block requests
@@ -85,9 +86,10 @@ func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- p
 	bp := &BlockPool{
 		peers: make(map[p2p.ID]*bpPeer),
 
-		requesters: make(map[int64]*bpRequester),
-		height:     start,
-		numPending: 0,
+		requesters:  make(map[int64]*bpRequester),
+		height:      start,
+		startHeight: start,
+		numPending:  0,
 
 		requestsCh: requestsCh,
 		errorsCh:   errorsCh,
@@ -281,7 +283,7 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 	defer pool.mtx.Unlock()
 
 	if extCommit != nil && block.Height != extCommit.Height {
-		err := fmt.Errorf("heights don't match, not adding block (block height: %d, commit height: %d)", block.Height, extCommit.Height)
+		err := fmt.Errorf("block height %d != extCommit height %d", block.Height, extCommit.Height)
 		// Peer sent us an invalid block => remove it.
 		pool.sendError(err, peerID)
 		return err
@@ -289,17 +291,18 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 
 	requester := pool.requesters[block.Height]
 	if requester == nil {
-		pool.Logger.Info(
-			"peer sent us a block we didn't expect",
-			"peer",
-			peerID,
-			"curHeight",
-			pool.height,
-			"blockHeight",
-			block.Height)
 		// Because we're issuing 2nd requests for closer blocks, it's possible to
-		// receive a block from a second peer. Hence, we can't punish the peer.
-		return fmt.Errorf("peer sent us a block we didn't expect (peer: %s, current height: %d, block height: %d)", peerID, pool.height, block.Height)
+		// receive a block we've already processed from a second peer. Hence, we
+		// can't punish it. But if the peer sent us a block we clearly didn't
+		// request, we disconnect.
+		if block.Height > pool.height || block.Height < pool.startHeight {
+			err := fmt.Errorf("peer sent us block #%d we didn't expect (current height: %d, start height: %d)",
+				block.Height, pool.height, pool.startHeight)
+			pool.sendError(err, peerID)
+			return err
+		}
+
+		return fmt.Errorf("got an already committed block #%d (possibly from the slow peer %s)", block.Height, peerID)
 	}
 
 	if !requester.setBlock(block, extCommit, peerID) {

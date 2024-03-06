@@ -273,7 +273,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "err", err)
+			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
 		}
 	case *bcproto.StatusRequest:
 		// Send peer our state.

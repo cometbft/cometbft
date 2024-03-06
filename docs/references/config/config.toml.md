@@ -847,18 +847,25 @@ persistent_peers = "fedcba@11.22.33.44:26656,beefdead@55.66.77.88:20000"
 ```
 
 ### p2p.addr_book_file
+
 Path to the address book file.
+
 ```toml
 addr_book_file = "config/addrbook.json"
 ```
 
-| Value type          | string                                                      |
-|:--------------------|:------------------------------------------------------------|
+| Value type          | string                                          |
+|:--------------------|:------------------------------------------------|
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
 The default relative path translates to `$CMTHOME/config/addrbook.json`. In case `$CMTHOME` is unset, it defaults to
 `$HOME/.cometbft/config/addrbook.json`.
+
+The node periodically persists the content of its address book (addresses of
+potential peers and information regarding connected peers) to the address book file.
+If the node is started with a non-empty address book file, it may not need to
+rely on potential peers provided by [seed nodes](#p2pseeds).
 
 ### p2p.addr_book_strict
 Strict address routability rules disallow non-routable IP addresses in the address book. When `false`, private network

@@ -120,7 +120,7 @@ services:
 {{- end }}
 {{- if .ClockSkew }}
     environment:
-        - CLOCK_SKEW={{ .ClockSkew }}
+        - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
     init: true
     ports:
@@ -152,7 +152,7 @@ services:
 {{- end }}
 {{- if .ClockSkew }}
     environment:
-        - CLOCK_SKEW={{ .ClockSkew }}
+        - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
     init: true
     ports:

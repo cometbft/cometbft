@@ -831,7 +831,7 @@ persistent_peers = ""
 
 The node will attempt to establish connections to all configured persistent peers.
 This in particular means that persistent peers do not count towards
-the configured [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers)
+the configured [`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers)
 (refer to [issue 1304](https://github.com/cometbft/cometbft/issues/1304) for more details).
 Moreover, if a connection to a persistent peers is lost, the node will attempt
 reconnecting to that peer.
@@ -868,8 +868,10 @@ If the node is started with a non-empty address book file, it may not need to
 rely on potential peers provided by [seed nodes](#p2pseeds).
 
 ### p2p.addr_book_strict
+
 Strict address routability rules disallow non-routable IP addresses in the address book. When `false`, private network
-IP addresses are enabled to be stored in the address book.
+IP addresses are enabled to be stored in the address book and dialed.
+
 ```toml
 addr_book_strict = true
 ```
@@ -882,7 +884,10 @@ addr_book_strict = true
 Set it to `false` for testing on private network. Most production nodes can keep it at `true`.
 
 ### p2p.max_num_inbound_peers
-Maximum number of inbound peers.
+
+Maximum number of inbound peers,
+that is, peers from which the node accept connections.
+
 ```toml
 max_num_inbound_peers = 40
 ```
@@ -892,18 +897,23 @@ max_num_inbound_peers = 40
 | **Possible values** | &gt;= 0 |
 
 The [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers) and
-[`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers) values together define how many P2P connections the node will
-maintain at maximum capacity, not including list of nodes in the [`p2p.persistent_peers`](#p2ppersistent_peers) setting.
+[`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers) values
+work together to define how many P2P connections the node will
+maintain at maximum capacity.
 
-The connections are bidirectional, so any connection can send or receive blocks and other data. The separation into
+The connections are bidirectional, so any connection can send or receive messages, blocks, and other data. The separation into
 inbound and outbound setting only distinguishes the initial setup of the connection: outbound connections are initiated
 by the node while inbound connections are initiated by a remote party.
 
 Nodes on non-routable networks have to set their gateway to port-forward the P2P port for inbound connections to reach
-the node. Outbound connections can be initiated as long as the node has generic Internet access. (Using NAT or methods.)
+the node. Inbound connections can be accepted as long as the node has an address accessible from the Internet (using NAT or other methods).
+Refer to the [p2p.external_address](#p2pexternal_address) configuration for details.
 
 ### p2p.max_num_outbound_peers
-Maximum number of outbound peers.
+
+Maximum number of outbound peers,
+that is, peers to which the node dials and established connections.
+
 ```toml
 max_num_outbound_peers = 10
 ```
@@ -913,15 +923,27 @@ max_num_outbound_peers = 10
 | **Possible values** | &gt;= 0 |
 
 The [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers) and
-[`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers) values together define how many P2P connections the node will
-maintain at maximum capacity, not including list of nodes in the [`p2p.persistent_peers`](#p2ppersistent_peers) setting.
+[`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers) values
+work together to define how many P2P connections the node will
+maintain at maximum capacity.
 
-The connections are bidirectional, so any connection can send or receive blocks and other data. The separation into
+The `p2p.max_num_outbound_peers` configuration should be seen as the target
+number of outbound connections that a node is expected to establish.
+While the maximum configured number of outbound connections is not reached,
+the node will attempt to establish connections to potential peers.
+
+This configuration only has effect if the [PEX reactor](#p2ppex) is enabled.
+Nodes configured as [persistent peers](#p2ppersistent_peers) do not count towards the
+`p2p.max_num_outbound_peers` limit
+(refer to [issue 1304](https://github.com/cometbft/cometbft/issues/1304) for more details).
+
+The connections are bidirectional, so any connection can send or receive messages, blocks, and other data. The separation into
 inbound and outbound setting only distinguishes the initial setup of the connection: outbound connections are initiated
 by the node while inbound connections are initiated by a remote party.
 
 Nodes on non-routable networks have to set their gateway to port-forward the P2P port for inbound connections to reach
-the node. Outbound connections can be initiated as long as the node has generic Internet access. (Using NAT or methods.)
+the node. Outbound connections can only be initiated to peers that have addresses accessible from the Internet (using NAT or other methods).
+Refer to the [p2p.external_address](#p2pexternal_address) configuration for details.
 
 ### p2p.unconditional_peer_ids
 List of node IDs, that are allowed to connect to the node even when connection limits are exceeded.

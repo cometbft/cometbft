@@ -243,7 +243,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Version:                 v,
 			Testnet:                 testnet,
 			PrivvalKey:              keyGen.Generate(manifest.KeyType),
-			NodeKey:                 keyGen.Generate("ed25519"),
+			NodeKey:                 keyGen.Generate("secp256k1"),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
 			RPCProxyPort:            ind.RPCPort,
@@ -686,7 +686,7 @@ func (n Node) ZoneIsSet() bool {
 	return len(n.Zone) > 0
 }
 
-// keyGenerator generates pseudorandom Ed25519 keys based on a seed.
+// keyGenerator generates pseudorandom Secp256k1 keys based on a seed.
 type keyGenerator struct {
 	random *rand.Rand
 }
@@ -705,9 +705,9 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		panic(err) // this shouldn't happen
 	}
 	switch keyType {
-	case "secp256k1":
+	case "", "secp256k1":
 		return secp256k1.GenPrivKeySecp256k1(seed)
-	case "", "ed25519":
+	case "ed25519":
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:
 		panic("KeyType not supported") // should not make it this far

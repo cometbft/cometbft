@@ -743,10 +743,12 @@ retain height is honored by the node. See the [storage.pruning](#storagepruningi
 If [`grpc.laddr`](#grpcladdr) is empty, this setting is ignored and the service is not enabled.
 
 ## Peer-to-peer
+
 These configuration options change the behaviour of the peer-to-peer protocol.
 
 ### p2p.laddr
-TCP socket address for the P2P service to listen on.
+
+TCP socket address for the P2P service to listen on and accept connections.
 ```toml
 laddr = "tcp://0.0.0.0:26656"
 ```
@@ -756,9 +758,18 @@ laddr = "tcp://0.0.0.0:26656"
 | **Possible values** | TCP Stream socket (`"tcp://127.0.0.1:26657"`)     |
 
 ### p2p.external_address
-TCP address to use as identification with peers. Useful when the node is running on a non-routable address or when the
-node does not have the capabilities to figure out its IP address. For example, this is useful when running from a cloud service (eg AWS). The public/external IP of the node should be set in `external_address`, while the private/internal address should be used in `laddr`.
 
+
+TCP address that peers should use in order to connect to the node.
+This is the address that the node advertises to peers.
+If not set, the [listen address](#p2p.laddr) is advertised.
+
+Useful when the node is running on a non-routable address or when the
+node does not have the capabilities to figure out its IP private address.
+For example, this is useful when running from a cloud service (e.g, AWS, Digital Ocean).
+In these scenarios, the public or external address of the node should be set to
+`p2p.external_address`, while the private or internal address should be used as
+the listen address ([`p2p.laddr`](#p2pladdr)).
 
 ```toml
 external_address = ""

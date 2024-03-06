@@ -901,6 +901,9 @@ The [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers) and
 work together to define how many P2P connections the node will
 maintain at maximum capacity.
 
+Nodes configured as [unconditional peers](#p2punconditional_peer_ids) do not count towards the
+configured `p2p.max_num_inbound_peers` limit.
+
 The connections are bidirectional, so any connection can send or receive messages, blocks, and other data. The separation into
 inbound and outbound setting only distinguishes the initial setup of the connection: outbound connections are initiated
 by the node while inbound connections are initiated by a remote party.
@@ -934,7 +937,7 @@ the node will attempt to establish connections to potential peers.
 
 This configuration only has effect if the [PEX reactor](#p2ppex) is enabled.
 Nodes configured as [persistent peers](#p2ppersistent_peers) do not count towards the
-`p2p.max_num_outbound_peers` limit
+configured `p2p.max_num_outbound_peers` limit
 (refer to [issue 1304](https://github.com/cometbft/cometbft/issues/1304) for more details).
 
 The connections are bidirectional, so any connection can send or receive messages, blocks, and other data. The separation into
@@ -946,7 +949,9 @@ the node. Outbound connections can only be initiated to peers that have addresse
 Refer to the [p2p.external_address](#p2pexternal_address) configuration for details.
 
 ### p2p.unconditional_peer_ids
-List of node IDs, that are allowed to connect to the node even when connection limits are exceeded.
+
+List of node IDs that are allowed to connect to the node even when connection limits are exceeded.
+
 ```toml
 unconditional_peer_ids = ""
 ```
@@ -956,9 +961,10 @@ unconditional_peer_ids = ""
 | **Possible values** | comma-separated list of node IDs |
 |                     | `""`                             |
 
-If a peer listed in this property requests a connection, it will be accepted, even if the
-[`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers) or the
-[`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers) are reached.
+If a peer listed in this property establishes a connection to the node, it will be accepted even if the
+configured [`p2p.max_num_inbound_peers`](#p2pmax_num_inbound_peers) limit was reached.
+Peers on this list also do not count towards the
+configured [`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers) limit.
 
 Contrary to other settings, only the node ID has to be defined here, not the IP:port of the remote node.
 

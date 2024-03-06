@@ -757,7 +757,9 @@ laddr = "tcp://0.0.0.0:26656"
 
 ### p2p.external_address
 TCP address to use as identification with peers. Useful when the node is running on a non-routable address or when the
-node does not have the capabilities to figure out its IP address.
+node does not have the capabilities to figure out its IP address. For example, this is useful when running from a cloud service (eg AWS). The public/external IP of the node should be set in `external_address`, while the private/internal address should be used in `laddr`.
+
+
 ```toml
 external_address = ""
 ```

@@ -106,11 +106,11 @@ The new grammar is below and can be found in `test/e2e/pkg/grammar/abci_grammar.
 Start : CleanStart | Recovery;
 
 CleanStart : InitChain ConsensusExec | StateSync ConsensusExec ;
-StateSync : StateSyncAttempts SuccessSync |  SuccessSync ; 
+StateSync : StateSyncAttempts SuccessSync |  SuccessSync ;
 StateSyncAttempts : StateSyncAttempt | StateSyncAttempt StateSyncAttempts ;
 StateSyncAttempt : OfferSnapshot ApplyChunks | OfferSnapshot ;
-SuccessSync : OfferSnapshot ApplyChunks ; 
-ApplyChunks : ApplyChunk | ApplyChunk ApplyChunks ;  
+SuccessSync : OfferSnapshot ApplyChunks ;
+ApplyChunks : ApplyChunk | ApplyChunk ApplyChunks ;
 
 Recovery :  InitChain ConsensusExec | ConsensusExec ;
 
@@ -118,20 +118,20 @@ ConsensusExec : ConsensusHeights ;
 ConsensusHeights : ConsensusHeight | ConsensusHeight ConsensusHeights ;
 ConsensusHeight : ConsensusRounds FinalizeBlock Commit | FinalizeBlock Commit ;
 ConsensusRounds : ConsensusRound | ConsensusRound ConsensusRounds ;
-ConsensusRound : Proposer | NonProposer ; 
+ConsensusRound : Proposer | NonProposer ;
 
-Proposer : GotVotes | ProposerSimple | Extend | GotVotes ProposerSimple | GotVotes Extend | ProposerSimple Extend | GotVotes ProposerSimple Extend ; 
+Proposer : GotVotes | ProposerSimple | Extend | GotVotes ProposerSimple | GotVotes Extend | ProposerSimple Extend | GotVotes ProposerSimple Extend ;
 ProposerSimple : PrepareProposal | PrepareProposal ProcessProposal ;
-NonProposer: GotVotes | ProcessProposal | Extend | GotVotes ProcessProposal | GotVotes Extend | ProcessProposal Extend | GotVotes ProcessProposal Extend ; 
+NonProposer: GotVotes | ProcessProposal | Extend | GotVotes ProcessProposal | GotVotes Extend | ProcessProposal Extend | GotVotes ProcessProposal Extend ;
 Extend : ExtendVote | GotVotes ExtendVote | ExtendVote GotVotes | GotVotes ExtendVote GotVotes ;
-GotVotes : GotVote | GotVote GotVotes ; 
+GotVotes : GotVote | GotVote GotVotes ;
 
 InitChain : "init_chain" ;
-FinalizeBlock : "finalize_block" ; 
+FinalizeBlock : "finalize_block" ;
 Commit : "commit" ;
 OfferSnapshot : "offer_snapshot" ;
-ApplyChunk : "apply_snapshot_chunk" ; 
-PrepareProposal : "prepare_proposal" ; 
+ApplyChunk : "apply_snapshot_chunk" ;
+PrepareProposal : "prepare_proposal" ;
 ProcessProposal : "process_proposal" ;
 ExtendVote : "extend_vote" ;
 GotVote : "verify_vote_extension" ;

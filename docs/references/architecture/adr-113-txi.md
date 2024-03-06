@@ -41,7 +41,7 @@ Give app developers a way to provide their own transaction hash function.
 Add `hashFn HashFn` option to `NewNode` in `node.go`.
 
 ```go
-// HashFn defines an interface for the hashing function.
+// HashFn defines an interface for the transaction hashing function.
 type HashFn interface {
     // New returns a new hash.Hash calculating the given hash function.
     New() hash.Hash
@@ -61,7 +61,7 @@ func DefaultHashFn() HashFn {
     return TMHash{}
 }
 
-// TMHash uses tmhash.
+// TMHash uses tmhash package to implement transaction hashing.
 type TMHash struct {}
 func (TMHash) New() hash.Hash {
     return tmhash.New()

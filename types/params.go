@@ -8,6 +8,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 )
 
@@ -21,13 +22,15 @@ const (
 	// MaxBlockPartsCount is the maximum number of block parts.
 	MaxBlockPartsCount = (MaxBlockSizeBytes / BlockPartSizeBytes) + 1
 
-	ABCIPubKeyTypeEd25519   = ed25519.KeyType
-	ABCIPubKeyTypeSecp256k1 = secp256k1.KeyType
+	ABCIPubKeyTypeEd25519      = ed25519.KeyType
+	ABCIPubKeyTypeSecp256k1    = secp256k1.KeyType
+	ABCIPubKeyTypeSecp256k1Eth = secp256k1_eth.KeyType
 )
 
 var ABCIPubKeyTypesToNames = map[string]string{
-	ABCIPubKeyTypeEd25519:   ed25519.PubKeyName,
-	ABCIPubKeyTypeSecp256k1: secp256k1.PubKeyName,
+	ABCIPubKeyTypeEd25519:      ed25519.PubKeyName,
+	ABCIPubKeyTypeSecp256k1:    secp256k1.PubKeyName,
+	ABCIPubKeyTypeSecp256k1Eth: secp256k1_eth.PubKeyName,
 }
 
 // ConsensusParams contains consensus critical parameters that determine the
@@ -115,7 +118,7 @@ func DefaultEvidenceParams() EvidenceParams {
 // TODO: Revert this when solution complete.
 func DefaultValidatorParams() ValidatorParams {
 	return ValidatorParams{
-		PubKeyTypes: []string{ABCIPubKeyTypeSecp256k1},
+		PubKeyTypes: []string{ABCIPubKeyTypeSecp256k1Eth},
 	}
 }
 

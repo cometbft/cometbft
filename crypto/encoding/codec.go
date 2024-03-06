@@ -7,6 +7,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
 	"github.com/cometbft/cometbft/libs/json"
 )
 
@@ -35,7 +36,7 @@ func init() {
 	json.RegisterType((*pc.PublicKey)(nil), "tendermint.crypto.PublicKey")
 	json.RegisterType((*pc.PublicKey_Ed25519)(nil), "tendermint.crypto.PublicKey_Ed25519")
 	json.RegisterType((*pc.PublicKey_Secp256K1)(nil), "tendermint.crypto.PublicKey_Secp256K1")
-	json.RegisterType((*pc.PublicKey_Secp256K1Uncompressed)(nil), "tendermint.crypto.PublicKey_Secp256K1Uncompressed")
+	json.RegisterType((*pc.PublicKey_Secp256K1Eth)(nil), "cometbft.crypto.v1.PublicKey_Secp256K1Eth")
 }
 
 // PubKeyToProto takes crypto.PubKey and transforms it to a protobuf Pubkey.
@@ -50,14 +51,14 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 		}
 	case secp256k1.PubKey:
 		kp = pc.PublicKey{
-			Sum: &pc.PublicKey_Secp256K1Uncompressed{
-				Secp256K1Uncompressed: k,
+			Sum: &pc.PublicKey_Secp256K1{
+				Secp256K1: k,
 			},
 		}
-	case secp256k1.PubKeyOld:
+	case secp256k1_eth.PubKey:
 		kp = pc.PublicKey{
-			Sum: &pc.PublicKey_Secp256K1Uncompressed{
-				Secp256K1Uncompressed: k,
+			Sum: &pc.PublicKey_Secp256K1Eth{
+				Secp256K1Eth: k,
 			},
 		}
 	default:
@@ -80,16 +81,27 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		pk := make(ed25519.PubKey, ed25519.PubKeySize)
 		copy(pk, k.Ed25519)
 		return pk, nil
-	case *pc.PublicKey_Secp256K1Uncompressed:
-		if len(k.Secp256K1Uncompressed) != secp256k1.PubKeySize {
+	case *pc.PublicKey_Secp256K1:
+		if len(k.Secp256K1) != secp256k1.PubKeySize {
 			return nil, ErrInvalidKeyLen{
 				Key:  k,
-				Got:  len(k.Secp256K1Uncompressed),
+				Got:  len(k.Secp256K1),
 				Want: secp256k1.PubKeySize,
 			}
 		}
 		pk := make(secp256k1.PubKey, secp256k1.PubKeySize)
-		copy(pk, k.Secp256K1Uncompressed)
+		copy(pk, k.Secp256K1)
+		return pk, nil
+	case *pc.PublicKey_Secp256K1Eth:
+		if len(k.Secp256K1Eth) != secp256k1_eth.PubKeySize {
+			return nil, ErrInvalidKeyLen{
+				Key:  k,
+				Got:  len(k.Secp256K1Eth),
+				Want: secp256k1_eth.PubKeySize,
+			}
+		}
+		pk := make(secp256k1_eth.PubKey, secp256k1_eth.PubKeySize)
+		copy(pk, k.Secp256K1Eth)
 		return pk, nil
 	default:
 		return nil, ErrUnsupportedKey{Key: k}

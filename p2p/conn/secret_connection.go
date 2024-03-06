@@ -26,6 +26,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
 	"github.com/cometbft/cometbft/internal/async"
 	"github.com/cometbft/cometbft/internal/protoio"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
@@ -164,9 +165,9 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 
 	remPubKey, remSignature := authSigMsg.Key, authSigMsg.Sig
 	switch remPubKey.(type) {
-	case secp256k1.PubKey, ed25519.PubKey:
+	case ed25519.PubKey, secp256k1.PubKey, secp256k1_eth.PubKey:
 	default:
-		return nil, fmt.Errorf("expected secp256k1/ed25519 pubkey, got %T", remPubKey)
+		return nil, fmt.Errorf("expected ed25519/secp256k1/secp256k1_eth pubkey, got %T", remPubKey)
 	}
 	if !remPubKey.VerifySignature(challenge[:], remSignature) {
 		return nil, errors.New("challenge verification failed")

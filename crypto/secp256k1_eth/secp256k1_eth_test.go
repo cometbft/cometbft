@@ -1,4 +1,4 @@
-package secp256k1_test
+package secp256k1_eth_test
 
 import (
 	"encoding/hex"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
 )
 
 type keyData struct {
@@ -23,32 +23,32 @@ type keyData struct {
 var secpDataTable = []keyData{
 	{
 		priv: "a96e62ed3955e65be32703f12d87b6b5cf26039ecfa948dc5107a495418e5330",
-		pub:  "02950e1cdfcb133d6024109fd489f734eeb4502418e538c28481f22bce276f248c",
-		addr: "1CKZ9Nx4zgds8tU7nJHotKSDr4a9bYJCa3",
+		pub:  "04950e1cdfcb133d6024109fd489f734eeb4502418e538c28481f22bce276f248ca0ca66092c9fe8adfbb8424bd92f26e170234c42df756075278ead79a8f5c4ae",
+		addr: "1PrkgVnuHLGZu4EUQGmXkGVuhTfn7t8DJK",
 	},
 }
 
-func TestPubKeySecp256k1Address(t *testing.T) {
+func TestPubKeySecp256k1EthAddress(t *testing.T) {
 	for _, d := range secpDataTable {
 		privB, _ := hex.DecodeString(d.priv)
 		pubB, _ := hex.DecodeString(d.pub)
 		addrBbz, _, _ := base58.CheckDecode(d.addr)
 		addrB := crypto.Address(addrBbz)
 
-		priv := secp256k1.PrivKey(privB)
+		priv := secp256k1_eth.PrivKey(privB)
 
 		pubKey := priv.PubKey()
-		pubT, _ := pubKey.(secp256k1.PubKey)
+		pubT, _ := pubKey.(secp256k1_eth.PubKey)
 		pub := pubT
 		addr := pubKey.Address()
 
-		assert.Equal(t, pub, secp256k1.PubKey(pubB), "Expected pub keys to match")
+		assert.Equal(t, pub, secp256k1_eth.PubKey(pubB), "Expected pub keys to match")
 		assert.Equal(t, addr, addrB, "Expected addresses to match")
 	}
 }
 
-func TestSignAndValidateSecp256k1(t *testing.T) {
-	privKey := secp256k1.GenPrivKey()
+func TestSignAndValidateSecp256k1Eth(t *testing.T) {
+	privKey := secp256k1_eth.GenPrivKey()
 	pubKey := privKey.PubKey()
 
 	msg := crypto.CRandBytes(128)
@@ -74,6 +74,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 
 		// This function creates a private and public key in the underlying libraries format.
 		// The private key is basically calling new(big.Int).SetBytes(pk), which removes leading zero bytes
+		// TODO Deal with this
 		priv, _ := underlyingSecp256k1.PrivKeyFromBytes(privKeyBytes[:])
 		// this takes the bytes returned by `(big int).Bytes()`, and if the length is less than 32 bytes,
 		// pads the bytes from the left with zero bytes. Therefore these two functions composed
@@ -84,7 +85,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 	}
 }
 
-func TestGenPrivKeySecp256k1(t *testing.T) {
+func TestGenPrivKeySecp256k1Eth(t *testing.T) {
 	// curve order N
 	N := underlyingSecp256k1.S256().N
 	tests := []struct {
@@ -104,7 +105,8 @@ func TestGenPrivKeySecp256k1(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			gotPrivKey := secp256k1.GenPrivKeySecp256k1(tt.secret)
+			// TODO Deal with this
+			gotPrivKey := secp256k1_eth.GenPrivKeySecp256k1(tt.secret)
 			require.NotNil(t, gotPrivKey)
 			// interpret as a big.Int and make sure it is a valid field element:
 			fe := new(big.Int).SetBytes(gotPrivKey[:])

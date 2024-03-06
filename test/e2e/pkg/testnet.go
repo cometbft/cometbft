@@ -22,6 +22,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
@@ -243,7 +244,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Version:                 v,
 			Testnet:                 testnet,
 			PrivvalKey:              keyGen.Generate(manifest.KeyType),
-			NodeKey:                 keyGen.Generate("secp256k1"),
+			NodeKey:                 keyGen.Generate("secp256k1_eth"),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
 			RPCProxyPort:            ind.RPCPort,
@@ -686,7 +687,7 @@ func (n Node) ZoneIsSet() bool {
 	return len(n.Zone) > 0
 }
 
-// keyGenerator generates pseudorandom Secp256k1 keys based on a seed.
+// keyGenerator generates pseudorandom Secp256k1_eth keys based on a seed.
 type keyGenerator struct {
 	random *rand.Rand
 }
@@ -705,9 +706,11 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		panic(err) // this shouldn't happen
 	}
 	switch keyType {
-	case "", "secp256k1":
+	case "", secp256k1_eth.KeyType: // TODO Deal with this
+		return secp256k1_eth.GenPrivKeySecp256k1(seed)
+	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
-	case "ed25519":
+	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:
 		panic("KeyType not supported") // should not make it this far

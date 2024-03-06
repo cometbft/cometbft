@@ -18,7 +18,7 @@ import (
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/mocks"
@@ -444,14 +444,14 @@ func TestProcessProposal(t *testing.T) {
 }
 
 func TestValidateValidatorUpdates(t *testing.T) {
-	pubkey1 := secp256k1.GenPrivKey().PubKey()
-	pubkey2 := secp256k1.GenPrivKey().PubKey()
+	pubkey1 := secp256k1_eth.GenPrivKey().PubKey()
+	pubkey2 := secp256k1_eth.GenPrivKey().PubKey()
 	pk1, err := cryptoenc.PubKeyToProto(pubkey1)
 	require.NoError(t, err)
 	pk2, err := cryptoenc.PubKeyToProto(pubkey2)
 	require.NoError(t, err)
 
-	defaultValidatorParams := types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeSecp256k1}}
+	defaultValidatorParams := types.ValidatorParams{PubKeyTypes: []string{types.ABCIPubKeyTypeSecp256k1Eth}}
 
 	testCases := []struct {
 		name string
@@ -501,9 +501,9 @@ func TestValidateValidatorUpdates(t *testing.T) {
 }
 
 func TestUpdateValidators(t *testing.T) {
-	pubkey1 := secp256k1.GenPrivKey().PubKey()
+	pubkey1 := secp256k1_eth.GenPrivKey().PubKey()
 	val1 := types.NewValidator(pubkey1, 10)
-	pubkey2 := secp256k1.GenPrivKey().PubKey()
+	pubkey2 := secp256k1_eth.GenPrivKey().PubKey()
 	val2 := types.NewValidator(pubkey2, 20)
 
 	pk, err := cryptoenc.PubKeyToProto(pubkey1)
@@ -628,7 +628,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	pubkey := secp256k1.GenPrivKey().PubKey()
+	pubkey := secp256k1_eth.GenPrivKey().PubKey()
 	pk, err := cryptoenc.PubKeyToProto(pubkey)
 	require.NoError(t, err)
 	app.ValidatorUpdates = []abci.ValidatorUpdate{

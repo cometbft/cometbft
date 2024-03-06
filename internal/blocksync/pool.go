@@ -281,7 +281,10 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 	defer pool.mtx.Unlock()
 
 	if extCommit != nil && block.Height != extCommit.Height {
-		return fmt.Errorf("heights don't match, not adding block (block height: %d, commit height: %d)", block.Height, extCommit.Height)
+		err := fmt.Errorf("heights don't match, not adding block (block height: %d, commit height: %d)", block.Height, extCommit.Height)
+		// Peer sent us an invalid block => remove it.
+		pool.sendError(err, peerID)
+		return err
 	}
 
 	requester := pool.requesters[block.Height]
@@ -300,9 +303,9 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 	}
 
 	if !requester.setBlock(block, extCommit, peerID) {
-		err := errors.New("requester is different or block already exists")
+		err := fmt.Errorf("requested block #%d from %v, not %s", block.Height, requester.requestedFrom(), peerID)
 		pool.sendError(err, peerID)
-		return fmt.Errorf("%w (peer: %s, requested from: %v, block height: %d)", err, peerID, requester.requestedFrom(), block.Height)
+		return err
 	}
 
 	atomic.AddInt32(&pool.numPending, -1)

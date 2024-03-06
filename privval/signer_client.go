@@ -93,7 +93,7 @@ func (sc *SignerClient) GetPubKey() (crypto.PubKey, error) {
 
 // SignVote requests a remote signer to sign a vote.
 func (sc *SignerClient) SignVote(chainID string, vote *cmtproto.Vote, signExtension bool) error {
-	response, err := sc.endpoint.SendRequest(mustWrapMsg(&pvproto.SignVoteRequest{Vote: vote, ChainId: chainID, SkipSignExtension: !signExtension}))
+	response, err := sc.endpoint.SendRequest(mustWrapMsg(&pvproto.SignVoteRequest{Vote: vote, ChainId: chainID, SkipExtensionSigning: !signExtension}))
 	if err != nil {
 		return err
 	}

@@ -1049,16 +1049,24 @@ The value represents the amount of packet bytes that can be received per second
 by each P2P connection.
 
 ### p2p.pex
-Enable peer exchange reactor.
+
+Enable peer exchange (PEX) reactor.
 
 | Value type          | boolean |
 |:--------------------|:--------|
 | **Possible values** | `true`  |
 |                     | `false` |
 
-The peer exchange reactor is responsible for exchanging peer addresses among different nodes. If this is disabled, the
-node can only connect to addresses preconfigured in [`p2p.seeds`](#p2pseeds) or
-[`p2p.persistent_peers`](#p2ppersistent_peers).
+The peer exchange reactor is responsible for exchanging addresses of potential
+peers among nodes.
+If the PEX reactor is disabled, the node can only connect to
+addresses configured as [persistent peers](#p2ppersistent_peers).
+
+In the [Sentry Node Architecture](https://forum.cosmos.network/t/sentry-node-architecture-overview/454) on the Cosmos Hub,
+validator nodes should have the PEX reactor disabled,
+as their connections are manually configured via [persistent peers](#p2ppersistent_peers).
+Public nodes, such as sentry nodes, should have the PEX reactor enabled,
+as this allows them to discover and connect to public peers in the network.
 
 ### p2p.seed_mode
 In seed mode, the node crawls the network and looks for peers. Any incoming connections will provide the gathered

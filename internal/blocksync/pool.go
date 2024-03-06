@@ -35,6 +35,11 @@ const (
 	maxPendingRequestsPerPeer = 20
 	requestRetrySeconds       = 30
 
+	// peerConnWait is the time that must have elapsed since the pool routine
+	// was created before we start making requests. This is to give the peer
+	// routine time to connect to peers.
+	peerConnWait = 3 * time.Second
+
 	// Minimum recv rate to ensure we're receiving blocks from a peer fast
 	// enough. If a peer is not sending us data at least that rate, we consider
 	// them to have timed out, and we disconnect.
@@ -111,6 +116,14 @@ func (pool *BlockPool) makeRequestersRoutine() {
 	for {
 		if !pool.IsRunning() {
 			break
+		}
+
+		// Check if we are within peerConnWait seconds of start time
+		// This gives us some time to connect to peers before starting a wave of requests
+		if time.Since(pool.startTime) < peerConnWait {
+			// Calculate the duration to sleep until peerConnWait seconds have passed since pool.startTime
+			sleepDuration := peerConnWait - time.Since(pool.startTime)
+			time.Sleep(sleepDuration)
 		}
 
 		_, numPending, lenRequesters := pool.GetStatus()

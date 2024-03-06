@@ -32,7 +32,7 @@ const (
 	requestIntervalMS         = 2
 	maxTotalRequesters        = 600
 	maxPendingRequests        = maxTotalRequesters
-	maxPendingRequestsPerPeer = 10
+	maxPendingRequestsPerPeer = 20
 	requestRetrySeconds       = 30
 
 	// peerConnWait is the time that must have elapsed since the pool routine

@@ -59,14 +59,9 @@ func (tm2pb) PartSetHeader(header PartSetHeader) cmtproto.PartSetHeader {
 	}
 }
 
-// XXX: panics on unknown pubkey type.
 func (tm2pb) ValidatorUpdate(val *Validator) abci.ValidatorUpdate {
-	pk, err := cryptoenc.PubKeyToProto(val.PubKey)
-	if err != nil {
-		panic(err)
-	}
 	return abci.ValidatorUpdate{
-		PubKey: pk,
+		PubKey: val.PubKey.Address(),
 		Power:  val.VotingPower,
 	}
 }
@@ -82,12 +77,9 @@ func (tm2pb) ValidatorUpdates(vals *ValidatorSet) []abci.ValidatorUpdate {
 
 // XXX: panics on nil or unknown pubkey type.
 func (tm2pb) NewValidatorUpdate(pubkey crypto.PubKey, power int64) abci.ValidatorUpdate {
-	pubkeyABCI, err := cryptoenc.PubKeyToProto(pubkey)
-	if err != nil {
-		panic(err)
-	}
+
 	return abci.ValidatorUpdate{
-		PubKey: pubkeyABCI,
+		PubKey: pubkey.Address(),
 		Power:  power,
 	}
 }

@@ -435,7 +435,7 @@ message Validator {
 }
 
 message ValidatorUpdate {
-  tendermint.crypto.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
+bytes pub_key = 1 ;
   int64                       power   = 2;
 }
 

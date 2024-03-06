@@ -39,15 +39,16 @@ const (
 	// enough. If a peer is not sending us data at least that rate, we consider
 	// them to have timed out, and we disconnect.
 	//
-	// Assuming a DSL connection (not a good choice) 128 Kbps (upload) ~ 15 KB/s,
-	// sending data across atlantic ~ 7.5 KB/s.
-	minRecvRate = 7680
+	// Based on the experiments with [Osmosis](https://osmosis.zone/), the
+	// minimum rate could be as high as 500 KB/s. However, we're setting it to
+	// 128 KB/s for now to be conservative.
+	minRecvRate = 128 * 1024 // 128 KB/s
 
 	// Maximum difference between current and new block's height.
-	maxDiffBetweenCurrentAndReceivedBlockHeight = 100
+	maxDiffBetweenCurrentAndReceivedBlockHeight = maxTotalRequesters * maxPendingRequestsPerPeer
 )
 
-var peerTimeout = 15 * time.Second // not const so we can override with tests
+var peerTimeout = 7 * time.Second // not const so we can override with tests
 
 /*
 	Peers self report their heights when we join the block pool.
@@ -572,7 +573,7 @@ func (peer *bpPeer) onTimeout() {
 
 //-------------------------------------
 
-const minBlocksForSingleRequest = 25
+const minBlocksForSingleRequest = 30
 
 // bpRequester requests a block from a peer.
 //

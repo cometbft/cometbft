@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/sirupsen/logrus"
 
 	// cfg "github.com/cometbft/cometbft/config"
@@ -161,18 +162,32 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
 		// verify sig of incoming gossip vote, throw if verification fails
-		_, val := oracleR.OracleInfo.ValidatorSet.GetByAddress(msg.Validator)
-		logrus.Infof("THIS IS MY VALIDATOR SET: %v", oracleR.OracleInfo.ValidatorSet.Validators)
-		if val == nil {
-			pubkey := ed25519.PubKey(msg.PublicKey)
-			logrus.Infof("NOT A VALIDATOR: %s", pubkey.String())
-			return
-		}
-		pubKey := val.PubKey
-		// need to use pubkey of signer
-		if !pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature) {
-			oracleR.Logger.Info("failed signature verification", msg)
-			logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
+		// _, val := oracleR.OracleInfo.ValidatorSet.GetByAddress(msg.Validator)
+		// if val == nil {
+		// 	pubkey := ed25519.PubKey(msg.PublicKey)
+		// 	logrus.Infof("NOT A VALIDATOR: %s", pubkey.String())
+		// 	return
+		// }
+		signType := msg.SignType
+		var pubKey crypto.PubKey
+
+		switch signType {
+		case "ed25519":
+			pubKey = ed25519.PubKey(msg.PublicKey)
+			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
+				oracleR.Logger.Info("failed signature verification", msg)
+				logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
+				return
+			}
+		case "sr25519":
+			pubKey = sr25519.PubKey(msg.PublicKey)
+			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
+				oracleR.Logger.Info("failed signature verification", msg)
+				logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
+				return
+			}
+		default:
+			logrus.Error("SIGNATURE NOT SUPPORTED NOOOOOOOOO")
 			return
 		}
 

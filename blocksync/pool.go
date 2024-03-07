@@ -29,7 +29,7 @@ eg, L = latency = 0.1s
 
 const (
 	requestIntervalMS         = 2
-	maxPendingRequestsPerPeer = 10
+	maxPendingRequestsPerPeer = 20
 	requestRetrySeconds       = 30
 
 	// Minimum recv rate to ensure we're receiving blocks from a peer fast

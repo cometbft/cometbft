@@ -1,11 +1,17 @@
-//go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && !blst
+//go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && blst
 
 package bls
 
 import (
+	"bytes"
+
+	sha256 "github.com/minio/sha256-simd"
+
 	"github.com/cometbft/cometbft/crypto"
 	cmcrypto "github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/bls/blst"
 
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
@@ -42,15 +48,19 @@ func init() {
 // Compile-time type assertion.
 var _ cmcrypto.PrivKey = &PrivKey{}
 
-// PrivKey represents a BLS private key noop when blst is not set as a build flag and cgo is disabled.
 type PrivKey []byte
 
 func NewPrivateKeyFromBytes(bz []byte) (PrivKey, error) {
-	panic("bls12_381 is disabled")
+	secretKey, err := blst.SecretKeyFromBytes(bz)
+	if err != nil {
+		return nil, err
+	}
+	return secretKey.Marshal(), nil
 }
 
 func GenPrivKey() (PrivKey, error) {
-	panic("bls12_381 is disabled")
+	secretKey, err := blst.RandKey()
+	return PrivKey(secretKey.Marshal()), err
 }
 
 // Bytes returns the byte representation of the ECDSA Private Key.
@@ -61,12 +71,14 @@ func (privKey PrivKey) Bytes() []byte {
 // PubKey returns the ECDSA private key's public key. If the privkey is not valid
 // it returns a nil value.
 func (privKey PrivKey) PubKey() cmcrypto.PubKey {
-	panic("bls12_381 is disabled")
+	secretKey, _ := blst.SecretKeyFromBytes(privKey)
+
+	return PubKey(secretKey.PublicKey().Marshal())
 }
 
 // Equals returns true if two ECDSA private keys are equal and false otherwise.
 func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	panic("bls12_381 is disabled")
+	return privKey.Type() == other.Type() && bytes.Equal(privKey.Bytes(), other.Bytes())
 }
 
 // Type returns eth_bls12_381.
@@ -75,7 +87,19 @@ func (privKey PrivKey) Type() string {
 }
 
 func (privKey PrivKey) Sign(digestBz []byte) ([]byte, error) {
-	panic("bls12_381 is disabled")
+	secretKey, err := blst.SecretKeyFromBytes(privKey)
+	if err != nil {
+		return nil, err
+	}
+
+	bz := digestBz
+	if len(bz) > 32 {
+		hash := sha256.Sum256(bz)
+		bz = hash[:]
+	}
+
+	sig := secretKey.Sign(bz)
+	return sig.Marshal(), nil
 }
 
 // ===============================================================================================
@@ -89,22 +113,40 @@ func (privKey PrivKey) Sign(digestBz []byte) ([]byte, error) {
 // Compile-time type assertion.
 var _ cmcrypto.PubKey = &PubKey{}
 
-// PubKey represents a BLS private key noop when blst is not set as a build flag and cgo is disabled.
 type PubKey []byte
 
 // Address returns the address of the ECDSA public key.
 // The function will return an empty address if the public key is invalid.
 func (pubKey PubKey) Address() cmcrypto.Address {
-	panic("bls12_381 is disabled")
+	pk, _ := blst.PublicKeyFromBytes(pubKey)
+	if len(pk.Marshal()) != PubKeySize {
+		panic("pubkey is incorrect size")
+	}
+	// TODO: do we want to keep this address format?
+	return crypto.Address(tmhash.SumTruncated(pubKey))
 }
 
 func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
-	panic("bls12_381 is disabled")
+	if len(sig) != SignatureLength {
+		return false
+	}
+	bz := msg
+	if len(msg) > 32 {
+		hash := sha256.Sum256(msg)
+		bz = hash[:]
+	}
+
+	pubK, _ := blst.PublicKeyFromBytes(pubKey)
+	ok, err := blst.VerifySignature(sig, [32]byte(bz[:32]), pubK)
+	if err != nil {
+		return false
+	}
+	return ok
 }
 
 // Bytes returns the pubkey byte format.
 func (pubKey PubKey) Bytes() []byte {
-	panic("bls12_381 is disabled")
+	return pubKey
 }
 
 // Type returns eth_bls12_381.
@@ -114,5 +156,5 @@ func (pubKey PubKey) Type() string {
 
 // Equals returns true if the pubkey type is the same and their bytes are deeply equal.
 func (pubKey PubKey) Equals(other cmcrypto.PubKey) bool {
-	panic("bls12_381 is disabled")
+	return pubKey.Type() == other.Type() && bytes.Equal(pubKey.Bytes(), other.Bytes())
 }

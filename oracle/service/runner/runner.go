@@ -222,7 +222,8 @@ func RunOracle(oracleInfo *types.OracleInfo, oracle types.Oracle, currentTime ui
 	for _, job := range jobs {
 		adapter, ok := oracleInfo.AdapterMap[job.Adapter]
 		if !ok {
-			panic("adapter should exist: " + job.Adapter)
+			// panic("adapter should exist: " + job.Adapter)
+			return fmt.Errorf("invalid adapter: %s, skipping oracle :%s", job.Adapter, oracle.Id)
 		}
 		input.LastStoreData, input.LastStoreDataExists, err = GetLastStoreData(red, adapter, job)
 		if err != nil {

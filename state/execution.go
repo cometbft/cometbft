@@ -141,7 +141,9 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 			votes = append(votes, vote)
 		}
 		resp, err := blockExec.proxyApp.SignGossipVote(ctx, &abci.RequestSignGossipVote{
-			GossipVotes: votes,
+			ProposerAddress: proposerAddr,
+			GossipVotes:     votes,
+			Height:          height,
 		})
 		if err != nil {
 			blockExec.logger.Error("error in proxyAppConn.SignGossipVote", "err", err)

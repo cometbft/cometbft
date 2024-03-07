@@ -197,12 +197,10 @@ message RequestFinalizeBlock {
 }
 
 message RequestSignGossipVote {
-  repeated tendermint.oracle.GossipVote gossip_votes = 1;
-  string grpc_address = 2;
-  string subaccount_label = 3;
-  string password = 4;
+  bytes    proposer_address                          = 1;
+  repeated tendermint.oracle.GossipVote gossip_votes = 2;
+  int64                                 height       = 3;
 }
-
 
 //----------------------------------------
 // Response types

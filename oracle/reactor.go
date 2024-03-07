@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/sirupsen/logrus"
 
 	// cfg "github.com/cometbft/cometbft/config"
@@ -162,8 +163,8 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		// verify sig of incoming gossip vote, throw if verification fails
 		_, val := oracleR.OracleInfo.ValidatorSet.GetByAddress(msg.Validator)
 		if val == nil {
-			oracleR.Logger.Info("failed signature verification", msg)
-			logrus.Info("NOT A VALIDATOR!!!!!!!!!!!!!!")
+			pubkey := ed25519.PubKey(msg.PublicKey)
+			logrus.Infof("NOT A VALIDATOR: %s", pubkey.String())
 			return
 		}
 		pubKey := val.PubKey

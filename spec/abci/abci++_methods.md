@@ -330,8 +330,9 @@ title: Methods
     * `RequestPrepareProposal`'s parameters `txs`, `misbehavior`, `height`, `time`,
       `next_validators_hash`, and `proposer_address` are the same as in `RequestProcessProposal`
       and `RequestFinalizeBlock`.
-    * `RequestPrepareProposal.local_last_commit` is a set of the precommit votes that allowed the
-      decision of the previous block, together with their corresponding vote extensions.
+    * `RequestPrepareProposal.local_last_commit` is a set of the precommit votes for the previous
+      height, including the ones that led to the decision of the previous block,
+      together with their corresponding vote extensions.
     * The `height`, `time`, and `proposer_address` values match the values from the header of the
       proposed block.
     * `RequestPrepareProposal` contains a preliminary set of transactions `txs` that CometBFT
@@ -378,7 +379,7 @@ title: Methods
        -->
     * If CometBFT fails to validate the `ResponsePrepareProposal`, CometBFT will assume the
       Application is faulty and crash.
-    * The implementation of `PrepareProposal` can be non-deterministic.
+    * The implementation of `PrepareProposal` MAY be non-deterministic.
 
 
 #### When does CometBFT call "PrepareProposal" ?
@@ -404,6 +405,9 @@ and _p_'s _validValue_ is `nil`:
         * modify transactions (e.g. aggregate them). As explained above, this compromises client traceability, unless
           it is implemented at the Application level.
         * reorder transactions - the Application reorders transactions in the list
+    * the Application MAY use the vote extensions in the commit info to modify the proposal, in which case it is suggested
+     that extensions be validated in the same maner as done in `VerifyVoteExtension`, since extensions of votes included
+     in the commit info after the minimum of +2/3 had been reached are not verified.
 4. The Application includes the transaction list (whether modified or not) in the return parameters
    (see the rules in section _Usage_), and returns from the call.
 5. _p_ uses the (possibly) modified block as _p_'s proposal in round _r_, height _h_.
@@ -449,7 +453,7 @@ the consensus algorithm will use it as proposal and will not call `RequestPrepar
     * The height and time values match the values from the header of the proposed block.
     * If `ResponseProcessProposal.status` is `REJECT`, consensus assumes the proposal received
       is not valid.
-    * The Application MAY fully execute the block &mdash; immediate execution
+    * The Application MAY fully execute the block (immediate execution)
     * The implementation of `ProcessProposal` MUST be deterministic. Moreover, the value of
       `ResponseProcessProposal.status` MUST **exclusively** depend on the parameters passed in
       the call to `RequestProcessProposal`, and the last committed Application state
@@ -595,6 +599,12 @@ message for round _r_, height _h_ from validator _q_ (_q_ &ne; _p_):
      vote extension in its internal data structures. It will be used to populate the [ExtendedCommitInfo](#extendedcommitinfo)
      structure in calls to `RequestPrepareProposal`, in rounds of height _h + 1_ where _p_ is the proposer.
    * `REJECT`, _p_ will deem the Precommit message invalid and discard it.
+
+When a node _p_ is in consensus round _0_, height _h_, and _p_ receives a Precommit
+message for CommitRound _r_, height _h-1_ from validator _q_ (_q_ &ne; _p_), _p_
+MAY add the Precommit message and associated extension to [ExtendedCommitInfo](#extendedcommitinfo)
+without calling `RequestVerifyVoteExtension` to verify it.
+
 
 ### FinalizeBlock
 

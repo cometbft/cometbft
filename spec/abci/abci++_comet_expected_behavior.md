@@ -260,15 +260,17 @@ historical commits and potential optimizations, are discussed in detail in [RFC-
 ## Handling upgrades to ABCI 2.0
 
 If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its operation.
-CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( *h<sub>e</sub>*,),
+CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( _h<sub>e</sub>_,),
 the height at which vote extensions are required for consensus to proceed, and uses it to determine the data it stores and data it sends to a peer that is catching up.
 
-Namely, upon saving the block for a given height *h* in the block store at decision time
-* if *h ≥ h<sub>e</sub>*, the corresponding extended commit that was used to decide locally is saved as well
-* if *h < h<sub>e</sub>*, there are no changes to the data saved
+Namely, upon saving the block for a given height _h_ in the block store at decision time
 
-In the catch-up mechanism, when a node *f* realizes that another peer is at height *h<sub>p</sub>*, which is more than 2 heights behind,
-* if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
+* if _h ≥ h<sub>e</sub>_, the corresponding extended commit that was used to decide locally is saved as well
+* if _h < h<sub>e</sub>_, there are no changes to the data saved
+
+In the catch-up mechanism, when a node _f_ realizes that another peer is at height _h<sub>p</sub>_, which is more than 2 heights behind height _h<sub>f</sub>_,
+
+* if _h<sub>p</sub> ≥ h<sub>e</sub>_, _f_ uses the extended commit to
       reconstruct the precommit votes with their corresponding extensions
-* if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,
+* if _h<sub>p</sub> < h<sub>e</sub>_, _f_ uses the canonical commit to reconstruct the precommit votes,
       as done for ABCI 1.0 and earlier.

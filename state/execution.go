@@ -153,13 +153,14 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
-	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
-	txSlice := block.Txs.ToSliceOfBytes()
 
 	if len(signGossipVoteTxBz) > 0 {
-		txSlice = append([][]byte{signGossipVoteTxBz}, txSlice...)
+		signGossipVoteTx := types.Tx(signGossipVoteTxBz)
+		txs = append([]types.Tx{signGossipVoteTx}, txs...)
 	}
 
+	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
+	txSlice := block.Txs.ToSliceOfBytes()
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{

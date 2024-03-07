@@ -162,6 +162,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	case *oracleproto.GossipVote:
 		// verify sig of incoming gossip vote, throw if verification fails
 		_, val := oracleR.OracleInfo.ValidatorSet.GetByAddress(msg.Validator)
+		logrus.Infof("THIS IS MY VALIDATOR SET: %v", oracleR.OracleInfo.ValidatorSet.Validators)
 		if val == nil {
 			pubkey := ed25519.PubKey(msg.PublicKey)
 			logrus.Infof("NOT A VALIDATOR: %s", pubkey.String())

@@ -43,9 +43,19 @@ const (
 	// minimum rate could be as high as 500 KB/s. However, we're setting it to
 	// 128 KB/s for now to be conservative.
 	minRecvRate = 128 * 1024 // 128 KB/s
+
+	// peerConnWait is the time that must have elapsed since the pool routine
+	// was created before we start making requests. This is to give the peer
+	// routine time to connect to peers.
+	peerConnWait = 3 * time.Second
+
+	// If we're within minBlocksForSingleRequest blocks of the pool's height, we
+	// send 2 parallel requests to 2 peers for the same block. If we're further
+	// away, we send a single request.
+	minBlocksForSingleRequest = 50
 )
 
-var peerTimeout = 7 * time.Second // not const so we can override with tests
+var peerTimeout = 14 * time.Second // not const so we can override with tests
 
 /*
 	Peers self report their heights when we join the block pool.
@@ -101,8 +111,8 @@ func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- p
 // OnStart implements service.Service by spawning requesters routine and recording
 // pool's start time.
 func (pool *BlockPool) OnStart() error {
-	go pool.makeRequestersRoutine()
 	pool.startTime = time.Now()
+	go pool.makeRequestersRoutine()
 	return nil
 }
 
@@ -111,6 +121,14 @@ func (pool *BlockPool) makeRequestersRoutine() {
 	for {
 		if !pool.IsRunning() {
 			break
+		}
+
+		// Check if we are within peerConnWait seconds of start time
+		// This gives us some time to connect to peers before starting a wave of requests
+		if time.Since(pool.startTime) < peerConnWait {
+			// Calculate the duration to sleep until peerConnWait seconds have passed since pool.startTime
+			sleepDuration := peerConnWait - time.Since(pool.startTime)
+			time.Sleep(sleepDuration)
 		}
 
 		_, numPending, lenRequesters := pool.GetStatus()
@@ -572,8 +590,6 @@ func (peer *bpPeer) onTimeout() {
 }
 
 //-------------------------------------
-
-const minBlocksForSingleRequest = 30
 
 // bpRequester requests a block from a peer.
 //

@@ -50,8 +50,8 @@ ifeq (pebbledb,$(findstring pebbledb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += pebbledb
 endif
 
-# handle bls
-ifeq (bls,$(findstring bls,$(COMETBFT_BUILD_OPTIONS)))
-  BUILD_TAGS += blst
+# handle bls12381
+ifeq (bls12381,$(findstring bls12381,$(COMETBFT_BUILD_OPTIONS)))
+  BUILD_TAGS += bls12381
   CGO_ENABLED=1
 endif

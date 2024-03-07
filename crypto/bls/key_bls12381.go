@@ -1,4 +1,4 @@
-//go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && blst
+//go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && bls12381
 
 package bls
 
@@ -9,7 +9,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	cmcrypto "github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/bls/blst"
+	blst "github.com/cometbft/cometbft/crypto/bls/bls12381"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"

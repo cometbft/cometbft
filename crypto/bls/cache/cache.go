@@ -5,10 +5,10 @@ import (
 	"sync"
 )
 
-// EvictCallback is used to get a callback when a cache entry is evicted
+// EvictCallback is used to get a callback when a cache entry is evicted.
 type EvictCallback[K comparable, V any] func(key K, value V)
 
-// LRU implements a non-thread safe fixed size LRU cache
+// LRU implements a non-thread safe fixed size LRU cache.
 type LRU[K comparable, V any] struct {
 	itemsLock     sync.RWMutex
 	evictListLock sync.RWMutex
@@ -19,7 +19,7 @@ type LRU[K comparable, V any] struct {
 	getChan       chan *entry[K, V]
 }
 
-// NewLRU constructs an LRU of the given size
+// NewLRU constructs an LRU of the given size.
 func NewLRU[K comparable, V any](size int, onEvict EvictCallback[K, V]) (*LRU[K, V], error) {
 	if size <= 0 {
 		return nil, errors.New("must provide a positive size")
@@ -120,7 +120,7 @@ func (c *LRU[K, V]) removeOldest() {
 	c.evictListLock.RUnlock()
 }
 
-// removeElement is used to remove a given list element from the cache
+// removeElement is used to remove a given list element from the cache.
 func (c *LRU[K, V]) removeElement(e *entry[K, V]) {
 	c.evictListLock.Lock()
 	c.evictList.remove(e)

@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE_list file.
 package cache
 
-// entry is an LRU entry
+// entry is an LRU entry.
 type entry[K comparable, V any] struct {
 	// Next and previous pointers in the doubly-linked list of elements.
 	// To simplify the implementation, internally a list l is implemented
@@ -75,7 +75,7 @@ func (l *lruList[K, V]) insertValue(k K, v V, at *entry[K, V]) *entry[K, V] {
 	return l.insert(&entry[K, V]{value: v, key: k}, at)
 }
 
-// remove removes e from its list, decrements l.len
+// remove removes e from its list, decrements l.len.
 func (l *lruList[K, V]) remove(e *entry[K, V]) V {
 	// If already removed, do nothing.
 	if e.prev == nil && e.next == nil {

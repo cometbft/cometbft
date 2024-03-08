@@ -5,7 +5,6 @@ package bls
 import (
 	"github.com/cometbft/cometbft/crypto"
 	cmcrypto "github.com/cometbft/cometbft/crypto"
-
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 

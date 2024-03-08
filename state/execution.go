@@ -129,8 +129,39 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		maxReapBytes = -1
 	}
 
-	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
+	// check if oracle's gossipVoteMap has any results
+	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
+	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
+	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
+
+	var signGossipVoteTxBz []byte
+	if len(oracleVotesBuffer) > 0 {
+		votes := []*oracleproto.GossipVote{}
+		for _, vote := range oracleVotesBuffer {
+			votes = append(votes, vote)
+		}
+		resp, err := blockExec.proxyApp.SignGossipVote(ctx, &abci.RequestSignGossipVote{
+			ProposerAddress: proposerAddr,
+			GossipVotes:     votes,
+			Height:          height,
+		})
+		if err != nil {
+			blockExec.logger.Error("error in proxyAppConn.SignGossipVote", "err", err)
+		}
+		signGossipVoteTxBz = resp.EncodedTx
+	}
+
+	var txs types.Txs
 	commit := lastExtCommit.ToCommit()
+
+	if len(signGossipVoteTxBz) > 0 {
+		maxReapBytes -= int64(len(signGossipVoteTxBz))
+		maxDataBytes -= int64(len(signGossipVoteTxBz))
+		txs = blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
+		signGossipVoteTx := types.Tx(signGossipVoteTxBz)
+		txs = append([]types.Tx{signGossipVoteTx}, txs...)
+	}
+
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	txSlice := block.Txs.ToSliceOfBytes()
 	rpp, err := blockExec.proxyApp.PrepareProposal(
@@ -156,32 +187,6 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		// this block, repair what caused the error and try again. Hence, we return an
 		// error for now (the production code calling this function is expected to panic).
 		return nil, err
-	}
-
-	// check if oracle's gossipVoteMap has any results
-	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
-	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
-	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
-
-	var signGossipVoteTxBz []byte
-	if len(oracleVotesBuffer) > 0 {
-		votes := []*oracleproto.GossipVote{}
-		for _, vote := range oracleVotesBuffer {
-			votes = append(votes, vote)
-		}
-		resp, err := blockExec.proxyApp.SignGossipVote(ctx, &abci.RequestSignGossipVote{
-			ProposerAddress: proposerAddr,
-			GossipVotes:     votes,
-			Height:          height,
-		})
-		if err != nil {
-			blockExec.logger.Error("error in proxyAppConn.SignGossipVote", "err", err)
-		}
-		signGossipVoteTxBz = resp.EncodedTx
-	}
-
-	if len(signGossipVoteTxBz) > 0 {
-		rpp.Txs = append([][]byte{signGossipVoteTxBz}, rpp.Txs...)
 	}
 
 	txl := types.ToTxs(rpp.Txs)

@@ -42,7 +42,12 @@ func main() {
 		dialer = privval.DialUnixFn(address)
 	case "tcp":
 		connTimeout := 3 * time.Second // TODO
-		dialer = privval.DialTCPFn(address, connTimeout, ed25519.GenPrivKey())
+		key, err := ed25519.GenPrivKey()
+		if err != nil {
+			logger.Error("Failed to generate priv val key", "err", err)
+			os.Exit(1)
+		}
+		dialer = privval.DialTCPFn(address, connTimeout, key)
 	default:
 		logger.Error("Unknown protocol", "protocol", protocol)
 		os.Exit(1)

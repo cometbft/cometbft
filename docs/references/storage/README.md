@@ -1,4 +1,4 @@
-## Overview
+# Overview
 
 
 As of Q3 2023, the CometBFT team has dedicated significant resources addressing a number of storage related concerns:
@@ -21,7 +21,7 @@ More details on the API itself and how it can be used can be found in the corres
 
 This report covers that changes and their impacts related to fixing and improving the pruning related points (1 and 3) as well as the last point. The results are obtained using `goleveldb` as the default backend unless stated otherwise. 
 
-### Testing setup
+# Testing setup
 
 We validated our results in a number of different settings:
  1. We can call this setup **Local-1node**:  Local runs on one node using a light kvstore application with almost no app state. This setup increases the changes that storage is the bottleneck and enabled us to evaluate the changes independent 
@@ -54,7 +54,7 @@ We validated our results in a number of different settings:
 3. **production-testing**: The validator team at Informal staking was kind enough to spend a lot of time with us trying to evaluate our changes on full nodes running on mainnet Injective. As their time was limited and we had reports that pruning, in addition to not working, slows down Injective nodes, we were interested to understand the impact our changes made on their network.  
 
 
-#### **Metrics collected**
+## **Metrics collected**
 
 In addition to the storage footprint we collected information about the following system parameters:
 - *RAM usage* 
@@ -66,11 +66,11 @@ During this work we extended CometBFT with two additional storage related metric
 - *Block store access time* by each method accessing the block store
 - *State store access time* by each method accessing the state store
 
-### Pruning
+## Pruning
 
 Pruning the blockstore and statestore is a long supported feature by CometBFT. An application can set a retain height - the number of blocks which must be kept, and instruct CometBFT to prune the remaining blocks (taking into account some other constraints). 
 
-#### **Storage footprint is not reduced**
+## Storage footprint is not reduced
 Unfortunately, many users have noticed that, despite this feature being enabled, the growth of both the state and block store does not stop. This leads operators to copy the database, enforce compaction of the delete items manually and copy it back. We have talked to operators and some have to do this weekly or every two weeks. 
 
 After some reasearch, we found that some of the database backends can be forced to compact the data. We experimented on it and confirmed those findings.
@@ -78,27 +78,41 @@ After some reasearch, we found that some of the database backends can be forced 
 That is why we extended `cometbft-db`, adding an API to instruct the database to compact the files (TODO link PR). Then we made sure that Comet calls this function after blocks are pruned (TODO link PR). 
 
 To evaluate whether this was really benefitial, we ran a couple of experiments to validate our findings:
-- Local 1 node run of a dummy app that grows the DB to 20GB:
+
+### Local 1 node run of a dummy app that grows the DB to 20GB:
 
 ![local-run-compaction](img/impact_compaction_local.png)
 
 
-- Running CometBFT's e2e application in a mixed network of 4 nodes. 
-(TODO)
+### Running CometBFT's e2e application in a mixed network of 4 nodes. 
+![e2e_storage_usage](img/e2e_storage_usage.png "Storage usage e2e")
+ 
+ The nodes doing pruning and compaction have a constant footprint compared to the other nodes. 
+ *validator03* and *validator05* prune without compaction. They have a smaller footprint than the 
+ nodes without pruning. The fact that the footprint of *validator05* has a lower footprint than 
+ *validator03* stems from the compaction logic of goleveldb. As the keys on *validator03* are sorted
+ by height, new data is simply appended without the need to reshuffle very old levels with old heights. 
+ On *validator05*, keys are sorted lexicographically leading to goleveldb touching more levels on insertions. By default, the conditions for triggering compaction are evaluated only when a file is touched. This is the reason why random key order leads to more frequent compaction. (This was also confirmed by findings done by our intern in Q3/Q4 2023 on goleveldb without Comet on top). 
 
-- Injective mainnet
+ *RAM Usage*
+ The difference in RAM used between the nodes was not very big. Nodes that prune efficiently (with compaction), used 20-40MB more RAM than nodes that did no pruning. But 
+
+ *validator04* and *validator00*  without pruning are using 278MB of RAM used by *validator00*  running with the old layout. *validator02* uses 330MB of RAM and *validator01* uses 298MB. This is in line with the local runs where pruning on the new layout uses less RAM. 
+
+### Production - Injective mainnet
 
 ![injective-no-compaction](img/injective_no_compaction.png "Injective -  pruning without compaction")
 
 ![injective-compaction](img/injective_compaction.png "Injective - pruning with compaciton")
 
-#### *Pruning is slowing nodes down*
+## Pruning is slowing nodes down
 
 While the previous results confirm the storage footprint can be reduced, it is important that this is not impacting the performance of the entire system. 
 
 The most impactful change we have made with regards to that is moving block and state pruning into a background process. Up until v1.x, pruning was done before a node moves on to the next height, blocking 
 consensus from proceeding. In Q3 2023, we changed this by launching a pruning service that checks in fixed intervals, whether there are blocks to be pruned. This interval is configurable and is 10s by default. 
 
+### Production - Injective mainnet
 The impact of this changes is best demonstrated by reporting from Informal staking comparing 4 Injective nodes with the following setup:
 
 1. *injective-sentry0* comet="v0.37" , pruning="default", keylayout=old
@@ -121,11 +135,13 @@ The graph below plots the block processing time for the 4 nodes.
 The new changes lead to faster block processing time compared even to the node that has no pruning active. However, the new layout seems to be slightly slower. We will discuss this in more details below. 
 
 
-#### *Database key layout and pruning*
+## Database key layout and pruning
 
-These results clearly show that pruning is not impacting the nodes performance anymore and could be turned on. However, while running the same set of experiments locally, we obtained contradicting results on the impact of the key layout on these numbers. 
+The results above clearly show that pruning is not impacting the nodes performance anymore and could be turned on. The next step was determining whether we should remove the current database key representation from CometBFT and use the new ordering by height, which should be more optimal. (Pure golevelDB benchmarks showed orders of magnitute improvement when keys were written in order vs randomly: 8s vs 160ms). 
+However, while running the same set of experiments locally, we obtained contradicting results on the impact of the key layout on these numbers. 
 
-Namely when running experiments in the **1-node-local** setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (meaured by num of txs processed within 1h), decreased with pruning (with and without compaction) usng the current layout - 500txs/s vs 700 txs/s with the new layout. The duration of the compaction operation itself was also much lower than with the old key layout. The block processing time difference is between 100 and 200ms which for some chains can be significant. 
+### **Local-1node** 
+When running experiments in this setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (meaured by num of txs processed within 1h), decreased with pruning (with and without compaction) usng the current layout - 500txs/s vs 700 txs/s with the new layout. The duration of the compaction operation itself was also much lower than with the old key layout. The block processing time difference is between 100 and 200ms which for some chains can be significant. 
 The same was true for additional parameters such as RAM usage (200-300MB). 
 
 We show the findings in the table below. `v1` is the current DB key layout and `v2` is the new key representation leveraging ordercode. 
@@ -139,14 +155,12 @@ We show the findings in the table below. `v1` is the current DB key layout and `
 | RAM (MB)    |  550   | 470 | 650 | 510 | 660 | 510|
 | Block processing time |  1.9   | 2.1 | 2.2 | 2.1 | 2.0 | 1.9 |
 
-(TODO)  - ADD numbers from new metrics. The access times are very low but its weird not to show data obtained by new metrics. 
- 
-
 We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB with the new layout. 
 
-When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results. However, this is not what they observed on mainnet. In the graphs above, we see that the new layout, while still improving performance compared to CometBFT v0.37.x, introduced a ~10ms latency in this particular case. According to the operators, this was a big difference for some chains. 
 
-**e2e - 6 nodes**
+When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results locally. However, this is not what they observed on mainnet. In the graphs above, we see that the new layout, while still improving performance compared to CometBFT v0.37.x, introduced a ~10ms latency in this particular case. According to the operators, this was a big difference for some chains. 
+
+### **e2e - 6 nodes**
 
 In this experiment, we started a network of 6 validator nodes and 1 seed node. Each node had an initial state with 11GB in its blockstore. The configuration of the nodes is the same one as in the local runs:
 
@@ -157,22 +171,7 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
  - **validator03**: New layout - pruning, no forced compaction
  - **validator01**: New layout - pruning and forced compaction 
 
- Once the nodes synced up to the height in the blockstore, we let ran a load of transactions against the network for ~6h. As the run was long, we alternated the nodes to which the load was sent to avoid handling of incoming transactions interferes with the overall conclusion. 
-
- *Storge usage*
- ![e2e_storage_usage](img/e2e_storage_usage.png "Storage usage e2e")
-
- The nodes doing pruning and compaction have a constant footprint compared to the other nodes. 
- *validator03* and *validator05* prune without compaction. They have a smaller footprint than the 
- nodes without pruning. The fact that the footprint of *validator05* has a lower footprint than 
- *validator03* stems from the compaction logic of goleveldb. As the keys on *validator03* are sorted
- by height, new data is simply appended without the need to reshuffle very old levels with old heights. 
- On *validator05*, keys are sorted lexicographically leading to goleveldb touching more levels on insertions. By default, the conditions for triggering compaction are evaluated only when a file is touched. This is the reason why random key order leads to more frequent compaction. (This was also confirmed by findings done by our intern in Q3/Q4 2023 on goleveldb without Comet on top). 
-
- *RAM Usage*
- The difference in RAM used between the nodes was not very big. Nodes that prune efficiently (with compaction), used 20-40MB more RAM than nodes that did no pruning. But 
-
- *validator04* and *validator00*  without pruning are using 278MB of RAM used by *validator00*  running with the old layout. *validator02* uses 330MB of RAM and *validator01* uses 298MB. This is in line with the local runs where pruning on the new layout uses less RAM. 
+ Once the nodes synced up to the height in the blockstore, we ran a load of transactions against the network for ~6h. As the run was long, we alternated the nodes to which the load was sent to avoid handling of incoming transactions interferes with the overall conclusion. 
 
  *Block processing time*
 

@@ -10,28 +10,28 @@ Accepted | Rejected | Deprecated | Superseded by
 
 ## Context
 
-This ADR proposes an architecture of an ***RPC Companion*** solution, an instance of the proposed [ADR-101 Data Companion Pull API](https://github.com/cometbft/cometbft/pull/82).
-
-This solution can run as a sidecar which is a separate process that runs concurrently with the full node, but the RPC Companion is optional meaning that the full node will still provide RPC services that can be queried directly if operators don't want to run
-an RPC Companion service.
+This solution can run as a sidecar, a separate process that runs concurrently with the full node. However, the RPC
+Companion is optional, meaning that the full node will still provide RPC services that can be queried if operators
+don't want to run an RPC Companion service.
 
 This ADR provides a reference implementation of a system that can be used to offload queryable data from a CometBFT
-full node to a database and offer a service exposing the same JSONRPC methods on a endpoint as the regular JSONRPC methods of a CometBFT node endpoint,
-which makes it easier for integrators of RPC clients such as client libraries and applications to switch to this
-***RPC Companion*** with as minimum effort as possible.
+full node to a database and offer a service exposing the same JSON-RPC methods on an endpoint as the regular JSON-RPC
+methods of a CometBFT node endpoint. This makes it easier for integrators of RPC clients, such as client libraries and
+applications, to switch to this RPC Companion with as little effort as possible.
 
 This architecture also makes it possible to scale horizontally the querying capacity of a full node by running multiple
-copies of the ***RPC Companion*** server instances that can be behind a scalable load-balancer (e.g. Cloudflare) which
-makes it possible to serve the data in a more scalable way.
+copies of the RPC Companion server instances that can be behind a scalable load-balancer (e.g., Cloudflare), which makes
+it possible to serve the data in a more scalable way.
+
+One of the benefits of utilizing an RPC Companion is that it enables data indexing on external storage, leading to
+improved performance compared to the internal indexer of CometBFT. The internal indexer of CometBFT has certain
+limitations and might not be suitable for specific application use cases.
 
 ## Alternative Approaches
 
-The Data Companion Pull API concept (ADR-101) is a new concept. It's expected that as this architecture becomes
-well understood and well established, users will create their own implementation to cater to their
-own use cases. The RPC Companion API is the first implementation of a Data Companion Pull API that can also serve as an example for
-other implementations.
-
-This ADR provides a reference implementation that can be used and adapted for individual use-cases.
+The Data Companion Pull API concept, identified as [[ADR-101]](adr-101-data-companion-pull-api.md), is a novel idea. As it gains popularity and acceptance,
+users are expected to develop their own versions of it to meet their specific requirements. The RPC Companion is the
+initial implementation of a Data Companion that can serve as a model for others to follow.
 
 ## Decision
 
@@ -53,28 +53,22 @@ its own storage (database)
 2. Provide a storage ([Database](#database)) that can persist the data using a [database schema](#database-schema) that
 can store information that was fetched from the full node in a structured and normalized manner.
 3. Not force breaking changes to the existing RPC.
-4. Ensure the responses returned by the [RPC Companion v1 endpoint](#rpc-endpoint) is wire compatible with the existing CometBFT JSONRPC endpoint.
+4. Ensure the responses returned by the [RPC Companion v1 endpoint](#rpc-endpoint) is wire compatible with the existing CometBFT
+JSON-RPC endpoint.
 5. Implement tests to verify backwards compatibility.
-6. Be able to handle multiple concurrent requests and return idempotent responses.
-7. Use a database that is optimized for an access pattern of faster read throughput than write throughput for storing data.
-8. Provide metrics to allow operators to properly monitor the services and infrastructure.
-
-It is ***NOT*** in the scope of the **RPC Companion**:
-
-1. Provide an authentication mechanism for the RPC Companion endpoint.
 
 ### [RPC Endpoint](#rpc-endpoint)
 
-The RPC Companion endpoint will be the same as the CometBFT JSONRPC endpoint but with a `/v1` appended to it. The RPC Companion endpoint
+The RPC Companion endpoint will be the same as the CometBFT JSON-RPC endpoint but with a `/v1` appended to it. The RPC Companion endpoint
 might also use a different port than the default CometBFT RPC port (e.g. `26657`).
 
 For example, suppose these are the URLs for each RPC endpoint:
 
-CometRPC -> `http://cosmos.host:26657`
+CometBFT RPC -> `http://cosmos.host:26657`
 
 RPC Companion -> `http://rpc-companion.host:8080/v1`
 
-To make a request for a `block` at height `5` using the CometBFT JSONRPC endpoint:
+To make a request for a `block` at height `5` using the CometBFT JSON-RPC endpoint:
 
 `curl --header "Content-Type: application/json" --request POST --data '{"method": "block", "params": ["5"], "id": 1}' http://cosmos.host:26657`
 
@@ -84,24 +78,25 @@ To make the same request to the RPC Companion endpoint:
 
 > Note that only the URL changes between these two `curl` commands
 
-The RPC Companion will accept JSONRPC requests, the same way as the CometBFT JSONRPC endpoint does.
+The RPC Companion will accept JSON-RPC requests, the same way as the CometBFT JSON-RPC endpoint does.
 
-The methods for the RPC Companion endpoint on the following table are the ones that can be implemented first since it seems it will be straightforward and less complex
+The RPC Companion endpoint methods listed in the following table should be implemented first as they are straightforward
+and less complex.
 
-| **JSONRPC method**   | **JSONRPC Parameters**                 | **Description**                                 | **Notes**                                                                                                                                                                                                                                                                             |
-|----------------------|----------------------------------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `abci_info`          |                                        | Get information about the application           | This method will return the same response structure as the equivalent CometBFT method. It will return the latest information stored in its database that was retrieved from the full node.                                                                                            |
-| `block`              | * height                               | Get block at a specified height                 | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database for a particular block will have to be properly serialized into the `block` struct in order to be returned as a response.                       |
-| `block_by_hash`      | * hash                                 | Get block by its hash                           | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
-| `block_results`      | * height                               | Get block results at a specified height         | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database for a particular block result will have to be properly serialized into the `ResultsBlockResults` struct in order to be returned as a response.  |
-| `blockchain`         | * minHeight <br/> * maxHeight          | Get blocks in a specified height range          | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database will include one or more blocks.                                                                                                                |
-| `commit`             | * height                               | Get commit results at a specified height        | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
-| `consensus_params`   | * height                               | Get consensus parameters at a specified height  | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
-| `header`             | * height                               | Get header at a specified height                | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
-| `header_by_hash`     | * hash                                 | Get header by its hash                          | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
-| `health`             |                                        | Get node health                                 | This method basically only returns an empty response. This can be used to test if the server RPC is up.  While this on CometBFT is used to return a response if the full node is up, when using the companion service this will return an `OK` status if the companion service is up. |
-| `tx`                 | * hash <br/> * prove                   | Get a transaction by its hash                   | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
-| `validators`         | * height <br/> * page <br/> * per_page | Get validator set at a specified height         | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| **JSON-RPC method** | **JSON-RPC Parameters**                | **Description**                                 | **Notes**                                                                                                                                                                                                                                                                             |
+|---------------------|----------------------------------------|-------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `abci_info`         |                                        | Get information about the application           | This method will return the same response structure as the equivalent CometBFT method. It will return the latest information stored in its database that was retrieved from the full node.                                                                                            |
+| `block`             | * height                               | Get block at a specified height                 | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database for a particular block will have to be properly serialized into the `block` struct in order to be returned as a response.                       |
+| `block_by_hash`     | * hash                                 | Get block by its hash                           | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `block_results`     | * height                               | Get block results at a specified height         | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database for a particular block result will have to be properly serialized into the `ResultsBlockResults` struct in order to be returned as a response.  |
+| `blockchain`        | * minHeight <br/> * maxHeight          | Get blocks in a specified height range          | This method will return the same response structure as the equivalent CometBFT method. The data retrieved from the companion database will include one or more blocks.                                                                                                                |
+| `commit`            | * height                               | Get commit results at a specified height        | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `consensus_params`  | * height                               | Get consensus parameters at a specified height  | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `header`            | * height                               | Get header at a specified height                | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `header_by_hash`    | * hash                                 | Get header by its hash                          | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `health`            |                                        | Get node health                                 | This method basically only returns an empty response. This can be used to test if the server RPC is up.  While this on CometBFT is used to return a response if the full node is up, when using the companion service this will return an `OK` status if the companion service is up. |
+| `tx`                | * hash <br/> * prove                   | Get a transaction by its hash                   | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
+| `validators`        | * height <br/> * page <br/> * per_page | Get validator set at a specified height         | This method will return the same response structure as the equivalent CometBFT method.                                                                                                                                                                                                |
 
 The following methods can also be implemented, but might require some additional effort and complexity to be implemented.
 These are mostly the ones that provide `search` and `query` functionalities. These methods will proxy the request to the

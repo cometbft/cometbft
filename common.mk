@@ -52,6 +52,6 @@ endif
 
 # handle bls12381
 ifeq (bls12381,$(findstring bls12381,$(COMETBFT_BUILD_OPTIONS)))
-  BUILD_TAGS += bls12381
   CGO_ENABLED=1
+  BUILD_TAGS += bls12381
 endif

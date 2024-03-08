@@ -85,7 +85,7 @@ build:
 
 #? install: Install CometBFT to GOBIN
 install:
-	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/cometbft
+	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' ./cmd/cometbft
 .PHONY: install
 
 ###############################################################################

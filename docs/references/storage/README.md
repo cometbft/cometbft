@@ -47,7 +47,7 @@ We validated our results in a number of different settings:
   - Pruning with and without compaction on the current database key layout vs. a new, better ordered key lauyout. 
   - No pruning using the current database key layout vs. a new key layout. 
 
-  The nodes ran on top of a 10GB database to analize the effects of pruning but also potentially capture additional impact on performance depending on the key layout. 
+  The nodes ran on top of a 11GB database to analize the effects of pruning but also potentially capture additional impact on performance depending on the key layout. 
 
 3. **e2e - 200node**: This experiment runs the standard benchmark used by CometBFT to do QA. The only difference is that the nodes in the network have a mixed setup of nodes doing pruning with and without compaction on different database key layouts. The idea is to a) confirm having such a setup is not downgrading performance; and b) capture the same metrics as in the previous setups on a big network. 
 
@@ -142,15 +142,72 @@ We show the findings in the table below. `v1` is the current DB key layout and `
 (TODO)  - ADD numbers from new metrics. The access times are very low but its weird not to show data obtained by new metrics. 
  
 
-We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB for with the new layout. 
+We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB with the new layout. 
 
 When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results. However, this is not what they observed on mainnet. In the graphs above, we see that the new layout, while still improving performance compared to CometBFT v0.37.x, introduced a ~10ms latency in this particular case. According to the operators, this was a big difference for some chains. 
 
+**e2e - 6 nodes**
 
-(TODO add results from e2e if they add anything here)
+In this experiment, we started a network of 6 validator nodes and 1 seed node. Each node had an initial state with 11GB in its blockstore. The configuration of the nodes is the same one as in the local runs:
 
-We have therefore decided to release v1.x with the support for both key layouts. They are not interchange-able, thus once one is used, a node cannot switch to the other. The version to be used is set in the `config.toml` and defaults to `v1` - the current layout. We will also release a migration script that offline converts the old layout to the new layout. The main reasons we have not addressed DB migration in more detail are:
-- For nodes that do not do pruning, the new layout did not show great benefits
+ - **validator00**: Current layout - no pruning 
+ - **validator05**: Current layout - pruning, no forced compaction
+ - **validator02**: Current layout - pruning and forced compaction
+ - **validator04**: New layout - no pruning
+ - **validator03**: New layout - pruning, no forced compaction
+ - **validator01**: New layout - pruning and forced compaction 
+
+ Once the nodes synced up to the height in the blockstore, we let ran a load of transactions against the network for ~6h. As the run was long, we alternated the nodes to which the load was sent to avoid handling of incoming transactions interferes with the overall conclusion. 
+
+ *Storge usage*
+ ![e2e_storage_usage](img/e2e_storage_usage.png "Storage usage e2e")
+
+ The nodes doing pruning and compaction have a constant footprint compared to the other nodes. 
+ *validator03* and *validator05* prune without compaction. They have a smaller footprint than the 
+ nodes without pruning. The fact that the footprint of *validator05* has a lower footprint than 
+ *validator03* stems from the compaction logic of goleveldb. As the keys on *validator03* are sorted
+ by height, new data is simply appended without the need to reshuffle very old levels with old heights. 
+ On *validator05*, keys are sorted lexicographically leading to goleveldb touching more levels on insertions. By default, the conditions for triggering compaction are evaluated only when a file is touched. This is the reason why random key order leads to more frequent compaction. (This was also confirmed by findings done by our intern in Q3/Q4 2023 on goleveldb without Comet on top). 
+
+ *RAM Usage*
+ The difference in RAM used between the nodes was not very big. Nodes that prune efficiently (with compaction), used 20-40MB more RAM than nodes that did no pruning. But 
+
+ *validator04* and *validator00*  without pruning are using 278MB of RAM used by *validator00*  running with the old layout. *validator02* uses 330MB of RAM and *validator01* uses 298MB. This is in line with the local runs where pruning on the new layout uses less RAM. 
+
+ *Block processing time*
+
+ ![e2e_block_processing](img/e2e_block_processing_time.png "Block Processing time e2e")
+
+ When using the new key representation and no pruning (*validator04*) the block processing time drops from 6.8s (*validator00*) to 6.4s (*validator04*).
+
+ Pruning and compaction on the new layout increases the block processing time by ~200ms but it is still 200ms faster than pruning on the old layout. 
+
+ *Block Store Access time* 
+
+ In general, store access times are very low, without pruning they are up to 40ms.  The storage device on the Digital Ocean nodes are SSDs but many of our operators use state of the art NVMe devices, thus they could be even lower in production. 
+ Without pruning, the current layout is slightly faster than the new one. However, when pruning is turned on and deletions are performed the access times grow and using the new layout leads to lower access times. The gap grows slightly as the database size grows (second graph). 
+
+ ![e2e_block_store_access_time](img/e2e_block_store_access_time.png "Block store access time e2e")
+
+
+ *State Store Access time*
+
+ The conclusions for the state store access times are very similar to those for the blockstore. Note though that in our e2e app the state store does not grow to more than 1GB as we disabled ABCI results pruning and the validator set is not updated - which typically leads to increase in state. 
+
+
+ ![e2e_state_store_access_time](img/e2e_state_store_access_time.png "State store access time e2e")
+
+
+### **Conclusion**
+
+Based on the results form the previous tests, we decided to release `v1.x` with the support for both key layouts. Namely, there was no clear winner in all scenarios. Based on our tests, when pruning is enabled, we would recommend users to use the new key layout. But this conclusion was not backed up by the data obtained by Informal Staking on Injective chains.
+
+Without pruning, for a bigger database and block processing times around 6s (on runs with our e2e), the new layour lowered the overall block processing time. When the block times are very low (in our local setup or on Injective), we did not observe the same benefits. 
+ 
+Thus, the final decision should be left to the application after testing and understanding their behaviour. 
+
+The two layouts are not interchange-able, thus once one is used, a node cannot switch to the other. The version to be used is set in the `config.toml` and defaults to `v1` - the current layout. We will also release a migration script that offline converts the old layout to the new layout. The main reasons we have not addressed DB migration in more detail for the time being are:
+- Migrating nodes that do not prune should not be done in one shot, leading to downtime. But as the benefits for chains to use the layout when not pruning are not clear, we decided to de-prioritize the migration this quarter and pick it up if the need arises from our users. 
 - When nodes prune, their DBs to migrate are presumably smaller. They could also statesync using `v2` as their desired key layout. 
 
 The support for both layouts will allow users to benchmark their applications. If they determine that the new layout is boosting their performance, we can think of smarter DB migration scripts that will prevent nodes from being offline. 

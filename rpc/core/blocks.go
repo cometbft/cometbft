@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"sort"
 
+	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
+	blockidxnull "github.com/cometbft/cometbft/internal/state/indexer/block/null"
 	"github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -59,7 +59,7 @@ func (env *Environment) BlockchainInfo(
 func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	// filter negatives
 	if min < 0 || max < 0 {
-		return min, max, fmt.Errorf("heights must be non-negative")
+		return min, max, errors.New("heights must be non-negative")
 	}
 
 	// adjust for default values
@@ -127,8 +127,7 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 		return nil, err
 	}
 
-	block := env.BlockStore.LoadBlock(height)
-	blockMeta := env.BlockStore.LoadBlockMeta(height)
+	block, blockMeta := env.BlockStore.LoadBlock(height)
 	if blockMeta == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: block}, nil
 	}
@@ -138,12 +137,10 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 // BlockByHash gets block by hash.
 // More: https://docs.cometbft.com/main/rpc/#/Info/block_by_hash
 func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
-	block := env.BlockStore.LoadBlockByHash(hash)
-	if block == nil {
+	block, blockMeta := env.BlockStore.LoadBlockByHash(hash)
+	if blockMeta == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: nil}, nil
 	}
-	// If block is not nil, then blockMeta can't be nil.
-	blockMeta := env.BlockStore.LoadBlockMeta(block.Height)
 	return &ctypes.ResultBlock{BlockID: blockMeta.BlockID, Block: block}, nil
 }
 
@@ -194,7 +191,7 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 
 	return &ctypes.ResultBlockResults{
 		Height:                height,
-		TxsResults:            results.TxResults,
+		TxResults:             results.TxResults,
 		FinalizeBlockEvents:   results.Events,
 		ValidatorUpdates:      results.ValidatorUpdates,
 		ConsensusParamUpdates: results.ConsensusParamUpdates,
@@ -250,15 +247,12 @@ func (env *Environment) BlockSearch(
 
 	apiResults := make([]*ctypes.ResultBlock, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {
-		block := env.BlockStore.LoadBlock(results[i])
-		if block != nil {
-			blockMeta := env.BlockStore.LoadBlockMeta(block.Height)
-			if blockMeta != nil {
-				apiResults = append(apiResults, &ctypes.ResultBlock{
-					Block:   block,
-					BlockID: blockMeta.BlockID,
-				})
-			}
+		block, blockMeta := env.BlockStore.LoadBlock(results[i])
+		if blockMeta != nil {
+			apiResults = append(apiResults, &ctypes.ResultBlock{
+				Block:   block,
+				BlockID: blockMeta.BlockID,
+			})
 		}
 	}
 

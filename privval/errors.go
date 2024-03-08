@@ -15,11 +15,10 @@ func (e EndpointTimeoutError) Temporary() bool { return true }
 
 // Socket errors.
 var (
-	ErrConnectionTimeout  = EndpointTimeoutError{}
-	ErrNoConnection       = errors.New("endpoint is not connected")
-	ErrReadTimeout        = errors.New("endpoint read timed out")
-	ErrUnexpectedResponse = errors.New("empty response")
-	ErrWriteTimeout       = errors.New("endpoint write timed out")
+	ErrConnectionTimeout = EndpointTimeoutError{}
+	ErrNoConnection      = errors.New("endpoint is not connected")
+	ErrReadTimeout       = errors.New("endpoint read timed out")
+	ErrWriteTimeout      = errors.New("endpoint write timed out")
 )
 
 // RemoteSignerError allows (remote) validators to include meaningful error

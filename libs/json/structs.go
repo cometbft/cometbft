@@ -6,13 +6,11 @@ import (
 	"strings"
 	"unicode"
 
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
-var (
-	// cache caches struct info.
-	cache = newStructInfoCache()
-)
+// cache caches struct info.
+var cache = newStructInfoCache()
 
 // structCache is a cache of struct info.
 type structInfoCache struct {

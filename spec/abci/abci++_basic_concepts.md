@@ -6,25 +6,25 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-  - [ABCI++ vs. ABCI](#abci-vs-abci)
-  - [Method overview](#method-overview)
-    - [Consensus/block execution methods](#consensusblock-execution-methods)
-    - [Mempool methods](#mempool-methods)
-    - [Info methods](#info-methods)
-    - [State-sync methods](#state-sync-methods)
-    - [Other methods](#other-methods)
-  - [Proposal timeout](#proposal-timeout)
-  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-  - [Events](#events)
-  - [Evidence](#evidence)
-  - [Errors](#errors)
-    - [`CheckTx`](#checktx)
-    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
-    - [`Query`](#query)
+    - [ABCI++ vs. ABCI](#abci-vs-abci)
+    - [Method overview](#method-overview)
+        - [Consensus/block execution methods](#consensusblock-execution-methods)
+        - [Mempool methods](#mempool-methods)
+        - [Info methods](#info-methods)
+        - [State-sync methods](#state-sync-methods)
+        - [Other methods](#other-methods)
+    - [Proposal timeout](#proposal-timeout)
+    - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+    - [Events](#events)
+    - [Evidence](#evidence)
+    - [Errors](#errors)
+        - [`CheckTx`](#checktx)
+        - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+        - [`Query`](#query)
 
 # Overview and basic concepts
 
-## ABCI++ vs. ABCI
+## ABCI 2.0 vs. ABCI
 
 [&#8593; Back to Outline](#outline)
 
@@ -40,18 +40,18 @@ as the Application cannot require validators to do more than executing the trans
 finalized blocks. This includes features such as threshold cryptography, and guaranteed IBC
 connection attempts.
 
-ABCI++ addresses these limitations by allowing the application to intervene at three key places of
+ABCI 2.0 addresses these limitations by allowing the application to intervene at three key places of
 consensus execution: (a) at the moment a new proposal is to be created, (b) at the moment a
-proposal is to be validated, and (c) at the moment a (precommit) vote is sent/received. 
+proposal is to be validated, and (c) at the moment a (precommit) vote is sent/received.
 The new interface allows block proposers to perform application-dependent
 work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
-and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators 
-to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c). 
+and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators
+to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c).
 
 Furthermore, ABCI 2.0 coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
 simplified, efficient way to deliver a decided block to the Application.
 
-## Method overview
+## Methods overview
 
 
 [&#8593; Back to Outline](#outline)
@@ -60,7 +60,7 @@ Methods can be classified into four categories: *consensus*, *mempool*, *info*, 
 
 ### Consensus/block execution methods
 
-The first time a new blockchain is started, CometBFT calls `InitChain`. From then on, method 
+The first time a new blockchain is started, CometBFT calls `InitChain`. From then on, method
 `FinalizeBlock` is executed upon the decision of each block, resulting in an updated Application
 state. During the execution of an instance of consensus, which decides the block for a given
 height, and before method `FinalizeBlock` is called, methods `PrepareProposal`, `ProcessProposal`,
@@ -75,29 +75,29 @@ call sequences of these methods.
   proposer to perform application-dependent work in a block before proposing it.
   This enables, for instance, batch optimizations to a block, which has been empirically
   demonstrated to be a key component for improved performance. Method `PrepareProposal` is called
-  every time CometBFT is about to broadcast a Proposal message and _validValue_ is `nil`.
+  every time CometBFT is about to broadcast a Proposal message and *validValue* is `nil`.
   CometBFT gathers outstanding transactions from the
   mempool, generates a block header, and uses them to create a block to propose. Then, it calls
-  `RequestPrepareProposal` with the newly created proposal, called *raw proposal*. The Application
-  can make changes to the raw proposal, such as modifying the set of transactions or the order
-  in which they appear, and returns the
-  (potentially) modified proposal, called *prepared proposal* in the `ResponsePrepareProposal`
-  call. The logic modifying the raw proposal can be non-deterministic.
+  `PrepareProposal` with the newly created proposal, called *raw proposal*. The Application
+  can make changes to the raw proposal, such as reordering, adding and removing transactions, before returning the
+  (potentially) modified proposal, called *prepared proposal* in the `PrepareProposalResponse`.
+  The logic modifying the raw proposal MAY be non-deterministic.
 
 - [**ProcessProposal:**](./abci++_methods.md#processproposal) It allows a validator to
   perform application-dependent work in a proposed block. This enables features such as immediate
   block execution, and allows the Application to reject invalid blocks.
 
-  CometBFT calls it when it receives a proposal and _validValue_ is `nil`.
-  The Application cannot modify the proposal at this point but can reject it if it is
+  CometBFT calls it when it receives a proposal and *validValue* is `nil`.
+  The Application cannot modify the proposal at this point but can reject it if
   invalid. If that is the case, the consensus algorithm will prevote `nil` on the proposal, which has
   strong liveness implications for CometBFT. As a general rule, the Application
   SHOULD accept a prepared proposal passed via `ProcessProposal`, even if a part of
   the proposal is invalid (e.g., an invalid transaction); the Application can
   ignore the invalid part of the prepared proposal at block execution time.
+  The logic in `ProcessProposal` MUST be deterministic.
 
-- [**ExtendVote:**](./abci++_methods.md#extendvote) It allows applications to force their
-  validators to do more than just validate within consensus. `ExtendVote` allows applications to
+- [**ExtendVote:**](./abci++_methods.md#extendvote) It allows applications to let their
+  validators do more than just validate within consensus. `ExtendVote` allows applications to
   include non-deterministic data, opaque to the consensus algorithm, to precommit messages (the final round of
   voting). The data, called *vote extension*, will be broadcast and received together with the
   vote it is extending, and will be made available to the Application in the next height,
@@ -105,6 +105,7 @@ call sequences of these methods.
   CometBFT calls `ExtendVote` when the consensus algorithm is about to send a non-`nil` precommit message.
   If the Application does not have vote extension information to provide at that time, it returns
   a 0-length byte array as its vote extension.
+  The logic in `ExtendVote` MAY be non-deterministic.
 
 - [**VerifyVoteExtension:**](./abci++_methods.md#verifyvoteextension) It allows
   validators to validate the vote extension data attached to a precommit message. If the validation
@@ -112,21 +113,22 @@ call sequences of these methods.
   This has a negative impact on liveness, i.e., if vote extensions repeatedly cannot be
   verified by correct validators, the consensus algorithm may not be able to finalize a block even if sufficiently
   many (+2/3) validators send precommit votes for that block. Thus, `VerifyVoteExtension`
-  should be used with special care.
+  should be implemented with special care.
   As a general rule, an Application that detects an invalid vote extension SHOULD
-  accept it in `ResponseVerifyVoteExtension` and ignore it in its own logic. CometBFT calls it when
-  a process receives a precommit message with a (possibly empty) vote extension.
+  accept it in `VerifyVoteExtensionResponse` and ignore it in its own logic. CometBFT calls it when
+  a process receives a precommit message with a (possibly empty) vote extension, for the current height. It is not called for precommit votes received after the height is concluded but while waiting to accumulate more precommit votes.
+  The logic in `VerifyVoteExtension` MUST be deterministic.
 
 - [**FinalizeBlock:**](./abci++_methods.md#finalizeblock) It delivers a decided block to the
   Application. The Application must execute the transactions in the block deterministically and
   update its state accordingly. Cryptographic commitments to the block and transaction results,
-  returned via the corresponding parameters in `ResponseFinalizeBlock`, are included in the header
+  returned via the corresponding parameters in `FinalizeBlockResponse`, are included in the header
   of the next block. CometBFT calls it when a new block is decided.
 
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
   synchronization between CometBFT and the Application upon recovery. CometBFT calls it just after
-  having persisted the data returned by calls to `ResponseFinalizeBlock`. The Application can now discard
+  having persisted the data returned by calls to `FinalizeBlockResponse`. The Application can now discard
   any state or data except the one resulting from executing the transactions in the decided block.
 
 ### Mempool methods
@@ -202,23 +204,26 @@ More details on managing state across connections can be found in the section on
 
 ## Proposal timeout
 
-Immediate execution requires the Application to fully execute the prepared block
-before returning from `PrepareProposal`, this means that CometBFT cannot make progress
-during the block execution.
-This stands on the consensus algorithm critical path: if the Application takes a long time
-executing the block, the default value of *TimeoutPropose* might not be sufficient
-to accommodate the long block execution time and non-proposer nodes might time
-out and prevote `nil`. The proposal, in this case, will probably be rejected and a new round will be necessary.
+`PrepareProposal` stands on the consensus algorithm critical path,
+i.e., CometBFT cannot make progress while this method is being executed.
+Hence, if the Application takes a long time preparing a proposal,
+the default value of *TimeoutPropose* might not be sufficient
+to accommodate the method's execution and validator nodes might time out and prevote `nil`.
+The proposal, in this case, will probably be rejected and a new round will be necessary.
 
-
-Operators will need to adjust the default value of *TimeoutPropose* in CometBFT's configuration file,
+Timeouts are automatically increased for each new round of a height and, if the execution of `PrepareProposal` is bound, eventually *TimeoutPropose*  will be long enough to accommodate the execution of `PrepareProposal`.
+However, relying on this self adaptation could lead to performance degradation and, therefore,
+operators are suggested to adjust the initial value of *TimeoutPropose* in CometBFT's configuration file,
 in order to suit the needs of the particular application being deployed.
+
+This is particularly important if applications implement *immediate execution*.
+To implement this technique, proposers need to execute the block being proposed within `PrepareProposal`, which could take longer than *TimeoutPropose*.
 
 ## Deterministic State-Machine Replication
 
 [&#8593; Back to Outline](#outline)
 
-ABCI++ applications must implement deterministic finite-state machines to be
+ABCI applications must implement deterministic finite-state machines to be
 securely replicated by the CometBFT consensus engine. This means block execution
 must be strictly deterministic: given the same
 ordered set of transactions, all nodes will compute identical responses, for all
@@ -233,15 +238,20 @@ from block execution (`FinalizeBlock` calls), and not through
 any other kind of request. This is the only way to ensure all nodes see the same
 transactions and compute the same results.
 
-Some Applications may choose to implement immediate execution, which entails executing the blocks
-that are about to be proposed (via `PrepareProposal`), and those that the Application is asked to
-validate (via `ProcessProposal`). However, the state changes caused by processing those
+Applications that implement immediate execution (execute the blocks
+that are about to be proposed, in `PrepareProposal`, or that require validation, in `ProcessProposal`) produce a new candidate state before a block is decided.
+The state changes caused by processing those
 proposed blocks must never replace the previous state until `FinalizeBlock` confirms
-the block decided.
+that the proposed block was decided and `Commit` is invoked for it.
+
+The same is true to Applications that quickly accept blocks and execute the
+blocks optimistically in parallel with the remaining consensus steps to save
+time during `FinalizeBlock`; they must only apply state changes in `Commit`.
 
 Additionally, vote extensions or the validation thereof (via `ExtendVote` or
 `VerifyVoteExtension`) must *never* have side effects on the current state.
-They can only be used when their data is provided in a `RequestPrepareProposal` call.
+Their data can only be used when provided in a `PrepareProposal` call but, again,
+without side effects to the app state.
 
 If there is some non-determinism in the state machine, consensus will eventually
 fail as nodes disagree over the correct values for the block header. The
@@ -266,19 +276,20 @@ Sources of non-determinism in applications may include:
 
 See [#56](https://github.com/tendermint/abci/issues/56) for the original discussion.
 
-Note that some methods (`Query`, `FinalizeBlock`) return non-deterministic data in the form
-of `Info` and `Log` fields. The `Log` is intended for the literal output from the Application's
-logger, while the `Info` is any additional info that should be returned. These are the only fields
-that are not included in block header computations, so we don't need agreement
-on them. All other fields in the `Response*` must be strictly deterministic.
+Note that some methods (e.g., `Query` and `FinalizeBlock`) may return
+non-deterministic data in the form of `Info`, `Log` and/or `Events` fields. The
+`Log` is intended for the literal output from the Application's logger, while
+the `Info` is any additional info that should be returned. These fields are not
+included in block header computations, so we don't need agreement on them. See
+each field's description on whether it must be deterministic or not.
 
 ## Events
 
 [&#8593; Back to Outline](#outline)
 
 Method `FinalizeBlock` includes an `events` field at the top level in its
-`Response*`, and one `events` field per transaction included in the block.
-Applications may respond to this ABCI++ method with an event list for each executed
+`FinalizeBlockResponse`, and one `events` field per transaction included in the block.
+Applications may respond to this ABCI 2.0 method with an event list for each executed
 transaction, and a general event list for the block itself.
 Events allow applications to associate metadata with transactions and blocks.
 Events returned via `FinalizeBlock` do not impact the consensus algorithm in any way
@@ -290,7 +301,8 @@ execution. `Event` values can be used to index transactions and blocks according
 happened during their execution.
 
 Each event has a `type` which is meant to categorize the event for a particular
-`Response*` or `Tx`. A `Response*` or `Tx` may contain multiple events with duplicate
+`FinalizeBlockResponse` or `Tx`. A `FinalizeBlockResponse` or `Tx` may contain
+multiple events with duplicate
 `type` values, where each distinct entry is meant to categorize attributes for a
 particular event. Every key and value in an event's attributes must be UTF-8
 encoded strings along with the event type itself.
@@ -302,9 +314,11 @@ message Event {
 }
 ```
 
-The attributes of an `Event` consist of a `key`, a `value`, and an `index` flag. The
-index flag notifies the CometBFT indexer to index the attribute. The value of
-the `index` flag is non-deterministic and may vary across different nodes in the network.
+The attributes of an `Event` consist of a `key`, a `value`, and an `index`
+flag. The index flag notifies the CometBFT indexer to index the attribute.
+
+The `type` and `attributes` fields are non-deterministic and may vary across
+different nodes in the network.
 
 ```protobuf
 message EventAttribute {
@@ -317,7 +331,7 @@ message EventAttribute {
 Example:
 
 ```go
- abci.ResponseFinalizeBlock{
+ abci.FinalizeBlockResponse{
   // ...
  Events: []abci.Event{
   {
@@ -379,7 +393,7 @@ enum EvidenceType {
 
 [&#8593; Back to Outline](#outline)
 
-The `Query` and `CheckTx` methods include a `Code` field in their `Response*`.
+The `Query` and `CheckTx` methods include a `Code` field in their `*Response`.
 Field `Code` is meant to contain an application-specific response code.
 A response code of `0` indicates no error.  Any other response code
 indicates to CometBFT that an error occurred.
@@ -405,18 +419,18 @@ The handling of non-zero response codes by CometBFT is described below.
 
 ### `CheckTx`
 
-When CometBFT receives a `ResponseCheckTx` with a non-zero `Code`, the associated
+When CometBFT receives a `CheckTxResponse` with a non-zero `Code`, the associated
 transaction will not be added to CometBFT's mempool or it will be removed if
 it is already included.
 
 ### `ExecTxResult` (as part of `FinalizeBlock`)
 
 The `ExecTxResult` type delivers transaction results from the Application to CometBFT. When
-CometBFT receives a `ResponseFinalizeBlock` containing an `ExecTxResult` with a non-zero `Code`,
+CometBFT receives a `FinalizeBlockResponse` containing an `ExecTxResult` with a non-zero `Code`,
 the response code is logged. Past `Code` values can be queried by clients. As the transaction was
 part of a decided block, the `Code` does not influence consensus.
 
 ### `Query`
 
-When CometBFT receives a `ResponseQuery` with a non-zero `Code`, this code is
+When CometBFT receives a `QueryResponse` with a non-zero `Code`, this code is
 returned directly to the client that initiated the query.

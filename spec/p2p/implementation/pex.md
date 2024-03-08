@@ -106,6 +106,6 @@ A node receives two type of messages as part of the PEX protocol:
 
 - `PexRequest`: a request for addresses received from a peer, handled as
   described [here](./pex-protocol.md#providing-addresses)
-- `PexAddrs`: a list of addresses received from a peer, as a reponse to a PEX
+- `PexAddrs`: a list of addresses received from a peer, as a response to a PEX
   request sent by the node, as described [here](./pex-protocol.md#responses)
 

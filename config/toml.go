@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/template"
 
-	cmtos "github.com/cometbft/cometbft/libs/os"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 )
 
 // DefaultDirPerm is the default permissions used when creating directories.
@@ -48,7 +48,7 @@ func EnsureRoot(rootDir string) {
 }
 
 // XXX: this func should probably be called by cmd/cometbft/commands/init.go
-// alongside the writing of the genesis.json and priv_validator.json
+// alongside the writing of the genesis.json and priv_validator.json.
 func writeDefaultConfigFile(configFilePath string) {
 	WriteConfigFile(configFilePath, DefaultConfig())
 }
@@ -65,7 +65,7 @@ func WriteConfigFile(configFilePath string, config *Config) {
 }
 
 // Note: any changes to the comments/variables/mapstructure
-// must be reflected in the appropriate struct in config/config.go
+// must be reflected in the appropriate struct in config/config.go.
 const defaultConfigTemplate = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
@@ -89,25 +89,31 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
-# * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
-#   - pure go
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
+# * goleveldb (github.com/syndtr/goleveldb)
+#   - UNMAINTAINED
 #   - stable
+#   - pure go
 # * cleveldb (uses levigo wrapper)
-#   - fast
 #   - requires gcc
 #   - use cleveldb build tag (go build -tags cleveldb)
 # * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
 #   - EXPERIMENTAL
-#   - may be faster is some use-cases (random reads - indexer)
+#   - stable
 #   - use boltdb build tag (go build -tags boltdb)
-# * rocksdb (uses github.com/tecbot/gorocksdb)
+# * rocksdb (uses github.com/linxGnu/grocksdb)
 #   - EXPERIMENTAL
 #   - requires gcc
 #   - use rocksdb build tag (go build -tags rocksdb)
 # * badgerdb (uses github.com/dgraph-io/badger)
 #   - EXPERIMENTAL
+#   - stable
 #   - use badgerdb build tag (go build -tags badgerdb)
+# * pebbledb (uses github.com/cockroachdb/pebble)
+#   - EXPERIMENTAL
+#   - stable
+#   - pure go
+#   - use pebbledb build tag (go build -tags pebbledb)
 db_backend = "{{ .BaseConfig.DBBackend }}"
 
 # Database directory
@@ -247,6 +253,66 @@ tls_key_file = "{{ .RPC.TLSKeyFile }}"
 pprof_laddr = "{{ .RPC.PprofListenAddress }}"
 
 #######################################################
+###       gRPC Server Configuration Options         ###
+#######################################################
+
+#
+# Note that the gRPC server is exposed unauthenticated. It is critical that
+# this server not be exposed directly to the public internet. If this service
+# must be accessed via the public internet, please ensure that appropriate
+# precautions are taken (e.g. fronting with a reverse proxy like nginx with TLS
+# termination and authentication, using DDoS protection services like
+# CloudFlare, etc.).
+#
+
+[grpc]
+
+# TCP or UNIX socket address for the RPC server to listen on. If not specified,
+# the gRPC server will be disabled.
+laddr = "{{ .GRPC.ListenAddress }}"
+
+#
+# Each gRPC service can be turned on/off, and in some cases configured,
+# individually. If the gRPC server is not enabled, all individual services'
+# configurations are ignored.
+#
+
+# The gRPC version service provides version information about the node and the
+# protocols it uses.
+[grpc.version_service]
+enabled = {{ .GRPC.VersionService.Enabled }}
+
+# The gRPC block service returns block information
+[grpc.block_service]
+enabled = {{ .GRPC.BlockService.Enabled }}
+
+# The gRPC block results service returns block results for a given height. If no height
+# is given, it will return the block results from the latest height.
+[grpc.block_results_service]
+enabled = {{ .GRPC.BlockResultsService.Enabled }}
+
+#
+# Configuration for privileged gRPC endpoints, which should **never** be exposed
+# to the public internet.
+#
+[grpc.privileged]
+# The host/port on which to expose privileged gRPC endpoints.
+laddr = "{{ .GRPC.Privileged.ListenAddress }}"
+
+#
+# Configuration specifically for the gRPC pruning service, which is considered a
+# privileged service.
+#
+[grpc.privileged.pruning_service]
+
+# Only controls whether the pruning service is accessible via the gRPC API - not
+# whether a previously set pruning service retain height is honored by the
+# node. See the [storage.pruning] section for control over pruning.
+#
+# Disabled by default.
+enabled = {{ .GRPC.Privileged.PruningService.Enabled }}
+
+#######################################################
 ###           P2P Configuration Options             ###
 #######################################################
 [p2p]
@@ -254,26 +320,16 @@ pprof_laddr = "{{ .RPC.PprofListenAddress }}"
 # Address to listen for incoming connections
 laddr = "{{ .P2P.ListenAddress }}"
 
-# Address to advertise to peers for them to dial
-# If empty, will use the same port as the laddr,
-# and will introspect on the listener or use UPnP
-# to figure out the address. ip and port are required
-# example: 159.89.10.97:26656
+# Address to advertise to peers for them to dial. If empty, will use the same
+# port as the laddr, and will introspect on the listener to figure out the
+# address. IP and port are required. Example: 159.89.10.97:26656
 external_address = "{{ .P2P.ExternalAddress }}"
 
 # Comma separated list of seed nodes to connect to
 seeds = "{{ .P2P.Seeds }}"
 
-# Comma separated list of peers to be added to the peer store
-# on startup. Either bootstrap_peers or persistent_peers is
-# needed for peer discovery
-bootstrap_peers = "{{ .P2P.BootstrapPeers }}"
-
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = "{{ .P2P.PersistentPeers }}"
-
-# UPNP port forwarding
-upnp = {{ .P2P.UPNP }}
 
 # Path to address book
 addr_book_file = "{{ js .P2P.AddrBook }}"
@@ -330,6 +386,16 @@ dial_timeout = "{{ .P2P.DialTimeout }}"
 #######################################################
 [mempool]
 
+# The type of mempool for this node to use.
+#
+#  Possible types:
+#  - "flood" : concurrent linked list mempool with flooding gossip protocol
+#  (default)
+#  - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+#  for storing, disseminating and proposing txs). "create_empty_blocks=false" is
+#  not supported.
+type = "flood"
+
 # recheck (default: true) defines whether CometBFT should recheck the
 # validity for all remaining transaction in the mempool after a block.
 # Since a block affects the application state, some transactions in the
@@ -370,10 +436,20 @@ keep-invalid-txs-in-cache = {{ .Mempool.KeepInvalidTxsInCache }}
 # NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
 max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 
-# Maximum size of a batch of transactions to send to a peer
-# Including space needed by encoding (one varint per transaction).
-# XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
-max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
+# Experimental parameters to limit gossiping txs to up to the specified number of peers.
+# We use two independent upper values for persistent and non-persistent peers.
+# Unconditional peers are not affected by this feature.
+# If we are connected to more than the specified number of persistent peers, only send txs to
+# ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+# persistent peers disconnects, activate another persistent peer.
+# Similarly for non-persistent peers, with an upper limit of
+# ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+# If set to 0, the feature is disabled for the corresponding group of peers, that is, the
+# number of active connections to that group of peers is not bounded.
+# For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
+# performance results using the default P2P configuration.
+experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
+experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
 
 #######################################################
 ###         State Sync Configuration Options        ###
@@ -476,6 +552,54 @@ peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 # persisted. ABCI responses are required for /block_results RPC queries, and to
 # reindex events in the command-line tool.
 discard_abci_responses = {{ .Storage.DiscardABCIResponses}}
+
+# If set to true, CometBFT will force compaction to happen for databases that support this feature.
+# and save on storage space. Setting this to true is most benefits when used in combination
+# with pruning as it will phyisically delete the entries marked for deletion.
+# false by default (forcing compaction is disabled).
+compact = {{ .Storage.Compact }}
+
+# To avoid forcing compaction every time, this parameter instructs CometBFT to wait 
+# the given amount of blocks to be pruned before triggering compaction.
+# It should be tuned depending on the number of items. If your retain height is 1 block,
+# it is too much of an overhead to try compaction every block. But it should also not be a very
+# large multiple of your retain height as it might occur bigger overheads.
+compaction_interval = "{{ .Storage.CompactionInterval }}"
+
+[storage.pruning]
+
+# The time period between automated background pruning operations.
+interval = "{{ .Storage.Pruning.Interval }}"
+
+#
+# Storage pruning configuration relating only to the data companion.
+#
+[storage.pruning.data_companion]
+
+# Whether automatic pruning respects values set by the data companion. Disabled
+# by default. All other parameters in this section are ignored when this is
+# disabled.
+#
+# If disabled, only the application retain height will influence block pruning
+# (but not block results pruning). Only enabling this at a later stage will
+# potentially mean that blocks below the application-set retain height at the
+# time will not be available to the data companion.
+enabled = {{ .Storage.Pruning.DataCompanion.Enabled }}
+
+# The initial value for the data companion block retain height if the data
+# companion has not yet explicitly set one. If the data companion has already
+# set a block retain height, this is ignored.
+initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockRetainHeight }}
+
+# The initial value for the data companion block results retain height if the
+# data companion has not yet explicitly set one. If the data companion has
+# already set a block results retain height, this is ignored.
+initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
+
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
+# the node is not able to boot.
+genesis_hash = "{{ .Storage.GenesisHash }}"
 
 #######################################################
 ###   Transaction Indexer Configuration Options     ###

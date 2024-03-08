@@ -1,14 +1,14 @@
 package privval
 
 import (
-	"fmt"
+	"errors"
 	"net"
 	"time"
 
+	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
+	"github.com/cometbft/cometbft/internal/service"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 )
 
 // SignerListenerEndpointOption sets an optional parameter on the SignerListenerEndpoint.
@@ -17,7 +17,7 @@ type SignerListenerEndpointOption func(*SignerListenerEndpoint)
 // SignerListenerEndpointTimeoutReadWrite sets the read and write timeout for
 // connections from external signing processes.
 //
-// Default: 5s
+// Default: 5s.
 func SignerListenerEndpointTimeoutReadWrite(timeout time.Duration) SignerListenerEndpointOption {
 	return func(sl *SignerListenerEndpoint) { sl.signerEndpoint.timeoutReadWrite = timeout }
 }
@@ -64,10 +64,10 @@ func NewSignerListenerEndpoint(
 
 // OnStart implements service.Service.
 func (sl *SignerListenerEndpoint) OnStart() error {
-	sl.connectRequestCh = make(chan struct{})
+	sl.connectRequestCh = make(chan struct{}, 1) // Buffer of 1 to allow `serviceLoop` to re-trigger itself.
 	sl.connectionAvailableCh = make(chan net.Conn)
 
-	// NOTE: ping timeout must be less than read/write timeout
+	// NOTE: ping timeout must be less than read/write timeout.
 	sl.pingInterval = time.Duration(sl.signerEndpoint.timeoutReadWrite.Milliseconds()*2/3) * time.Millisecond
 	sl.pingTimer = time.NewTicker(sl.pingInterval)
 
@@ -79,7 +79,7 @@ func (sl *SignerListenerEndpoint) OnStart() error {
 	return nil
 }
 
-// OnStop implements service.Service
+// OnStop implements service.Service.
 func (sl *SignerListenerEndpoint) OnStop() {
 	sl.instanceMtx.Lock()
 	defer sl.instanceMtx.Unlock()
@@ -96,14 +96,14 @@ func (sl *SignerListenerEndpoint) OnStop() {
 	sl.pingTimer.Stop()
 }
 
-// WaitForConnection waits maxWait for a connection or returns a timeout error
+// WaitForConnection waits maxWait for a connection or returns a timeout error.
 func (sl *SignerListenerEndpoint) WaitForConnection(maxWait time.Duration) error {
 	sl.instanceMtx.Lock()
 	defer sl.instanceMtx.Unlock()
 	return sl.ensureConnection(maxWait)
 }
 
-// SendRequest ensures there is a connection, sends a request and waits for a response
+// SendRequest ensures there is a connection, sends a request and waits for a response.
 func (sl *SignerListenerEndpoint) SendRequest(request privvalproto.Message) (*privvalproto.Message, error) {
 	sl.instanceMtx.Lock()
 	defer sl.instanceMtx.Unlock()
@@ -152,7 +152,7 @@ func (sl *SignerListenerEndpoint) ensureConnection(maxWait time.Duration) error 
 
 func (sl *SignerListenerEndpoint) acceptNewConnection() (net.Conn, error) {
 	if !sl.IsRunning() || sl.listener == nil {
-		return nil, fmt.Errorf("endpoint is closing")
+		return nil, errors.New("endpoint is closing")
 	}
 
 	// wait for a new conn
@@ -181,23 +181,19 @@ func (sl *SignerListenerEndpoint) serviceLoop() {
 	for {
 		select {
 		case <-sl.connectRequestCh:
-			{
-				conn, err := sl.acceptNewConnection()
-				if err == nil {
-					sl.Logger.Info("SignerListener: Connected")
+			conn, err := sl.acceptNewConnection()
+			if err != nil {
+				sl.Logger.Error("SignerListener: Error accepting connection", "err", err)
+				sl.triggerConnect()
+				continue
+			}
 
-					// We have a good connection, wait for someone that needs one otherwise cancellation
-					select {
-					case sl.connectionAvailableCh <- conn:
-					case <-sl.Quit():
-						return
-					}
-				}
-
-				select {
-				case sl.connectRequestCh <- struct{}{}:
-				default:
-				}
+			// We have a good connection, wait for someone that needs one otherwise cancellation
+			sl.Logger.Info("SignerListener: Connected")
+			select {
+			case sl.connectionAvailableCh <- conn:
+			case <-sl.Quit():
+				return
 			}
 		case <-sl.Quit():
 			return

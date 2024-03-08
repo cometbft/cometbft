@@ -621,7 +621,7 @@ func AttackDetector(root LightBlock, primary_trace []LightBlock)
     for each secondary in Secondaries {
         // we replay the primary trace with the secondary, in
         // order to generate evidence that we can submit to the
-        // secodary. We return the evidence + the trace the
+        // secondary. We return the evidence + the trace the
         // secondary told us that spans the evidence at its local store
 
         EvidenceForSecondary, newroot, secondary_trace, result :=
@@ -678,7 +678,7 @@ func CreateEvidenceForPeer(peer PeerID, root LightBlock, trace LightStore)
         auxLS, result := VerifyToTarget(peer, common, trace[i].Header.Height)
   
         if result != ResultSuccess {
-            // something went wrong; peer did not provide a verifyable block
+            // something went wrong; peer did not provide a verifiable block
             return (nil, nil, nil, FaultyPeer)
         }
         else {

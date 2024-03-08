@@ -8,7 +8,6 @@ This document contains configurable parameters a node operator can use to tune t
 |   ExternalAddress             |  ""                 |  Address to advertise to peers for them to dial |
 |   [Seeds](./pex-protocol.md#seed-nodes) | empty               | Comma separated list of seed nodes to connect to (ID@host:port )|
 |   [Persistent peers](./peer_manager.md#persistent-peers)            | empty               | Comma separated list of nodes to keep persistent connections to (ID@host:port )  |
-|	UPNP                        | false               | UPNP port forwarding enabled |
 |	[AddrBook](./addressbook.md)                    | defaultAddrBookPath | Path do address book |
 |	AddrBookStrict              | true                | Set true for strict address routability rules and false for private or local networks |
 |	[MaxNumInboundPeers](./switch.md#accepting-peers)          |  40 | Maximum number of inbound peers |
@@ -29,18 +28,17 @@ This document contains configurable parameters a node operator can use to tune t
 
 These parameters can be set using the `$CMTHOME/config/config.toml` file. A subset of them can also be changed via command line using the following command line flags:
 
-| Parameter | Flag| Example|
-| --- | --- | ---|
+| Parameter | Flag | Example |
+| --- | --- | --- |
 | Listen address|  `p2p.laddr` |  "tcp://0.0.0.0:26656" |
 | Seed nodes | `p2p.seeds` | `--p2p.seeds “id100000000000000000000000000000000@1.2.3.4:26656,id200000000000000000000000000000000@2.3.4.5:4444”` |
 | Persistent peers | `p2p.persistent_peers` | `--p2p.persistent_peers “id100000000000000000000000000000000@1.2.3.4:26656,id200000000000000000000000000000000@2.3.4.5:26656”` |
 | Unconditional peers | `p2p.unconditional_peer_ids` | `--p2p.unconditional_peer_ids “id100000000000000000000000000000000,id200000000000000000000000000000000”` |
- | UPNP  | `p2p.upnp` | `--p2p.upnp` |
- | PexReactor | `p2p.pex` | `--p2p.pex` |
- | Seed mode | `p2p.seed_mode` | `--p2p.seed_mode` |
- | Private peer ids | `p2p.private_peer_ids` | `--p2p.private_peer_ids “id100000000000000000000000000000000,id200000000000000000000000000000000”` |
+| PexReactor | `p2p.pex` | `--p2p.pex` |
+| Seed mode | `p2p.seed_mode` | `--p2p.seed_mode` |
+| Private peer ids | `p2p.private_peer_ids` | `--p2p.private_peer_ids “id100000000000000000000000000000000,id200000000000000000000000000000000”` |
 
- **Note on persistent peers**  
+ **Note on persistent peers**
 
  If `persistent_peers_max_dial_period` is set greater than zero, the
 pause between each dial to each persistent peer will not exceed `persistent_peers_max_dial_period`

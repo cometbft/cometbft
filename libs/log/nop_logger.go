@@ -2,7 +2,7 @@ package log
 
 type nopLogger struct{}
 
-// Interface assertions
+// Interface assertions.
 var _ Logger = (*nopLogger)(nil)
 
 // NewNopLogger returns a logger that doesn't do anything.

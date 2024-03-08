@@ -26,12 +26,17 @@ func (p *Provider) Setup() error {
 	if err != nil {
 		return err
 	}
-	//nolint: gosec
-	// G306: Expect WriteFile permissions to be 0600 or less
+	//nolint: gosec // G306: Expect WriteFile permissions to be 0600 or less
 	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), compose, 0o644)
 	if err != nil {
 		return err
 	}
+
+	err = infra.GenerateIPZonesTable(p.Testnet.Nodes, p.IPZonesFilePath(), true)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -42,12 +47,15 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	}
 	return ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, nodeNames...)...)
 }
+
 func (p Provider) StopTestnet(ctx context.Context) error {
 	return ExecCompose(ctx, p.Testnet.Dir, "down")
 }
+
 func (p Provider) Disconnect(ctx context.Context, name string, _ string) error {
 	return Exec(ctx, "network", "disconnect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
+
 func (p Provider) Reconnect(ctx context.Context, name string, _ string) error {
 	return Exec(ctx, "network", "connect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
@@ -61,10 +69,25 @@ func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bo
 	name := node.Name
 	upgraded := false
 	if len(out) == 0 {
-		name = name + "_u"
+		name += "_u"
 		upgraded = true
 	}
 	return name, upgraded, nil
+}
+
+func (p Provider) SetLatency(ctx context.Context, node *e2e.Node) error {
+	containerDir := "/scripts/"
+
+	// Copy zone file used by the script that sets latency.
+	if err := Exec(ctx, "cp", p.IPZonesFilePath(), node.Name+":"+containerDir); err != nil {
+		return err
+	}
+
+	// Execute the latency setter script in the container.
+	return ExecVerbose(ctx, "exec", "--privileged", node.Name,
+		filepath.Join(containerDir, "latency-setter.py"), "set",
+		filepath.Join(containerDir, filepath.Base(p.IPZonesFilePath())),
+		filepath.Join(containerDir, "aws-latencies.csv"), "eth0")
 }
 
 // dockerComposeBytes generates a Docker Compose config file for a testnet and returns the
@@ -92,13 +115,19 @@ services:
       e2e: true
     container_name: {{ .Name }}
     image: {{ .Version }}
-{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
+{{- end }}
+{{- if .ClockSkew }}
+    environment:
+        - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
     init: true
     ports:
     - 26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - {{ if .RPCProxyPort }}{{ .RPCProxyPort }}:{{ end }}26657
+    - {{ if .GRPCProxyPort }}{{ .GRPCProxyPort }}:{{ end }}26670
+    - {{ if .GRPCPrivilegedProxyPort }}{{ .GRPCPrivilegedProxyPort }}:{{ end }}26671
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
@@ -118,13 +147,19 @@ services:
       e2e: true
     container_name: {{ .Name }}_u
     image: {{ $.UpgradeVersion }}
-{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_unsync") }}
+{{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
+{{- end }}
+{{- if .ClockSkew }}
+    environment:
+        - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
     init: true
     ports:
     - 26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - {{ if .RPCProxyPort }}{{ .RPCProxyPort }}:{{ end }}26657
+    - {{ if .GRPCProxyPort }}{{ .GRPCProxyPort }}:{{ end }}26670
+    - {{ if .GRPCPrivilegedProxyPort }}{{ .GRPCPrivilegedProxyPort }}:{{ end }}26671
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660
 {{- end }}
@@ -175,4 +210,9 @@ func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
 // Exec runs a Docker command.
 func Exec(ctx context.Context, args ...string) error {
 	return exec.Command(ctx, append([]string{"docker"}, args...)...)
+}
+
+// Exec runs a Docker command while displaying its output.
+func ExecVerbose(ctx context.Context, args ...string) error {
+	return exec.CommandVerbose(ctx, append([]string{"docker"}, args...)...)
 }

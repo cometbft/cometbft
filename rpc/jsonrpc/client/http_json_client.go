@@ -9,9 +9,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
@@ -24,16 +25,18 @@ const (
 	protoUNIX  = "unix"
 )
 
+var endsWithPortPattern = regexp.MustCompile(`:[0-9]+$`)
+
 //-------------------------------------------------------------
 
-// Parsed URL structure
+// Parsed URL structure.
 type parsedURL struct {
 	url.URL
 
 	isUnixSocket bool
 }
 
-// Parse URL and set defaults
+// Parse URL and set defaults.
 func newParsedURL(remoteAddr string) (*parsedURL, error) {
 	u, err := url.Parse(remoteAddr)
 	if err != nil {
@@ -57,7 +60,7 @@ func newParsedURL(remoteAddr string) (*parsedURL, error) {
 	return pu, nil
 }
 
-// Change protocol to HTTP for unknown protocols and TCP protocol - useful for RPC connections
+// Change protocol to HTTP for unknown protocols and TCP protocol - useful for RPC connections.
 func (u *parsedURL) SetDefaultSchemeHTTP() {
 	// protocol to use for http operations, to support both http and https
 	switch u.Scheme {
@@ -69,13 +72,13 @@ func (u *parsedURL) SetDefaultSchemeHTTP() {
 	}
 }
 
-// Get full address without the protocol - useful for Dialer connections
+// Get full address without the protocol - useful for Dialer connections.
 func (u parsedURL) GetHostWithPath() string {
 	// Remove protocol, userinfo and # fragment, assume opaque is empty
 	return u.Host + u.EscapedPath()
 }
 
-// Get a trimmed address - useful for WS connections
+// Get a trimmed address - useful for WS connections.
 func (u parsedURL) GetTrimmedHostWithPath() string {
 	// if it's not an unix socket we return the normal URL
 	if !u.isUnixSocket {
@@ -87,17 +90,28 @@ func (u parsedURL) GetTrimmedHostWithPath() string {
 	return strings.ReplaceAll(u.GetHostWithPath(), "/", ".")
 }
 
-// GetDialAddress returns the endpoint to dial for the parsed URL
+// GetDialAddress returns the endpoint to dial for the parsed URL.
 func (u parsedURL) GetDialAddress() string {
-	// if it's not a unix socket we return the host, example: localhost:443
+	// if it's not a unix socket we return the host with port, example: localhost:443
 	if !u.isUnixSocket {
+		hasPort := endsWithPortPattern.MatchString(u.Host)
+		if !hasPort {
+			// http and ws default to port 80, https and wss default to port 443
+			// https://www.rfc-editor.org/rfc/rfc9110#section-4.2
+			// https://www.rfc-editor.org/rfc/rfc6455.html#section-3
+			if u.Scheme == protoHTTP || u.Scheme == protoWS {
+				return u.Host + `:80`
+			} else if u.Scheme == protoHTTPS || u.Scheme == protoWSS {
+				return u.Host + `:443`
+			}
+		}
 		return u.Host
 	}
 	// otherwise we return the path of the unix socket, ex /tmp/socket
 	return u.GetHostWithPath()
 }
 
-// Get a trimmed address with protocol - useful as address in RPC connections
+// Get a trimmed address with protocol - useful as address in RPC connections.
 func (u parsedURL) GetTrimmedURL() string {
 	return u.Scheme + "://" + u.GetTrimmedHostWithPath()
 }
@@ -136,8 +150,10 @@ var _ HTTPClient = (*Client)(nil)
 
 // Both Client and RequestBatch can facilitate calls to the JSON
 // RPC endpoint.
-var _ Caller = (*Client)(nil)
-var _ Caller = (*RequestBatch)(nil)
+var (
+	_ Caller = (*Client)(nil)
+	_ Caller = (*RequestBatch)(nil)
+)
 
 var _ fmt.Stringer = (*Client)(nil)
 
@@ -376,7 +392,8 @@ func (b *RequestBatch) Call(
 
 //-------------------------------------------------------------
 
-func makeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {
+// MakeHTTPDialer creates an HTTP client dialer based on the given URL.
+func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {
 	u, err := newParsedURL(remoteAddr)
 	if err != nil {
 		return nil, err
@@ -402,7 +419,7 @@ func makeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), 
 // remoteAddr should be fully featured (eg. with tcp:// or unix://).
 // An error will be returned in case of invalid remoteAddr.
 func DefaultHTTPClient(remoteAddr string) (*http.Client, error) {
-	dialFn, err := makeHTTPDialer(remoteAddr)
+	dialFn, err := MakeHTTPDialer(remoteAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -412,6 +429,7 @@ func DefaultHTTPClient(remoteAddr string) (*http.Client, error) {
 			// Set to true to prevent GZIP-bomb DoS attacks
 			DisableCompression: true,
 			Dial:               dialFn,
+			Proxy:              http.ProxyFromEnvironment,
 		},
 	}
 

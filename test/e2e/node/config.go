@@ -1,13 +1,13 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	"github.com/BurntSushi/toml"
 
 	"github.com/cometbft/cometbft/test/e2e/app"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 // Config is the application configuration.
@@ -32,24 +32,36 @@ type Config struct {
 	FinalizeBlockDelay   time.Duration `toml:"finalize_block_delay"`
 	VoteExtensionDelay   time.Duration `toml:"vote_extension_delay"`
 
-	VoteExtensionSize uint `toml:"vote_extension_size"`
+	VoteExtensionSize          uint  `toml:"vote_extension_size"`
+	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
+	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
+
+	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
+
+	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
+	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 }
 
-// App extracts out the application specific configuration parameters
+// App extracts out the application specific configuration parameters.
 func (cfg *Config) App() *app.Config {
 	return &app.Config{
-		Dir:                  cfg.Dir,
-		SnapshotInterval:     cfg.SnapshotInterval,
-		RetainBlocks:         cfg.RetainBlocks,
-		KeyType:              cfg.KeyType,
-		ValidatorUpdates:     cfg.ValidatorUpdates,
-		PersistInterval:      cfg.PersistInterval,
-		PrepareProposalDelay: cfg.PrepareProposalDelay,
-		ProcessProposalDelay: cfg.ProcessProposalDelay,
-		CheckTxDelay:         cfg.CheckTxDelay,
-		FinalizeBlockDelay:   cfg.FinalizeBlockDelay,
-		VoteExtensionDelay:   cfg.VoteExtensionDelay,
-		VoteExtensionSize:    cfg.VoteExtensionSize,
+		Dir:                        cfg.Dir,
+		SnapshotInterval:           cfg.SnapshotInterval,
+		RetainBlocks:               cfg.RetainBlocks,
+		KeyType:                    cfg.KeyType,
+		ValidatorUpdates:           cfg.ValidatorUpdates,
+		PersistInterval:            cfg.PersistInterval,
+		PrepareProposalDelay:       cfg.PrepareProposalDelay,
+		ProcessProposalDelay:       cfg.ProcessProposalDelay,
+		CheckTxDelay:               cfg.CheckTxDelay,
+		FinalizeBlockDelay:         cfg.FinalizeBlockDelay,
+		VoteExtensionDelay:         cfg.VoteExtensionDelay,
+		VoteExtensionSize:          cfg.VoteExtensionSize,
+		VoteExtensionsEnableHeight: cfg.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight: cfg.VoteExtensionsUpdateHeight,
+		ABCIRequestsLoggingEnabled: cfg.ABCIRequestsLoggingEnabled,
+		PbtsEnableHeight:           cfg.PbtsEnableHeight,
+		PbtsUpdateHeight:           cfg.PbtsUpdateHeight,
 	}
 }
 
@@ -74,9 +86,9 @@ func LoadConfig(file string) (*Config, error) {
 func (cfg Config) Validate() error {
 	switch {
 	case cfg.ChainID == "":
-		return errors.New("chain_id parameter is required")
-	case cfg.Listen == "" && cfg.Protocol != "builtin" && cfg.Protocol != "builtin_unsync":
-		return errors.New("listen parameter is required")
+		return cmterrors.ErrRequiredField{Field: "chain_id"}
+	case cfg.Listen == "" && cfg.Protocol != "builtin" && cfg.Protocol != "builtin_connsync":
+		return cmterrors.ErrRequiredField{Field: "listen"}
 	default:
 		return nil
 	}

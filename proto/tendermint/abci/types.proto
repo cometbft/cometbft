@@ -1,8 +1,6 @@
 syntax = "proto3";
 package tendermint.abci;
 
-option go_package = "github.com/cometbft/cometbft/abci/types";
-
 // For more information on gogo.proto, see:
 // https://github.com/cosmos/gogoproto/blob/master/extensions.md
 import "tendermint/crypto/proof.proto";
@@ -156,16 +154,24 @@ message RequestProcessProposal {
 
 // Extends a vote with application-injected data
 message RequestExtendVote {
-  // the hash of the block  that this vote may be referring to
-  bytes hash   = 1;
+  // the hash of the block that this vote may be referring to
+  bytes hash = 1;
   // the height of the extended vote
   int64 height = 2;
+  // info of the block that this vote may be referring to
+  google.protobuf.Timestamp time                 = 3 [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+  repeated bytes            txs                  = 4;
+  CommitInfo                proposed_last_commit = 5 [(gogoproto.nullable) = false];
+  repeated Misbehavior      misbehavior          = 6 [(gogoproto.nullable) = false];
+  bytes                     next_validators_hash = 7;
+  // address of the public key of the original proposer of the block.
+  bytes proposer_address = 8;
 }
 
 // Verify the vote extension
 message RequestVerifyVoteExtension {
   // the hash of the block that this received vote corresponds to
-  bytes hash              = 1;
+  bytes hash = 1;
   // the validator that signed the vote extension
   bytes validator_address = 2;
   int64 height            = 3;
@@ -337,16 +343,16 @@ message ResponseVerifyVoteExtension {
     // Incorrectly implementing this thus has liveness implications as it may affect
     // CometBFT's ability to receive 2/3+ valid votes to finalize the block.
     // Honest nodes should never be rejected.
-    REJECT  = 2;
+    REJECT = 2;
   }
 }
 
 message ResponseFinalizeBlock {
-  // set of block events emmitted as part of executing the block
+  // set of block events emitted as part of executing the block
   repeated Event events = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   // the result of executing each transaction including the events
-  // the particular transction emitted. This should match the order
+  // the particular transaction emitted. This should match the order
   // of the transactions delivered in the block itself
   repeated ExecTxResult tx_results = 2;
   // a list of updates to the validator set. These will reflect the validator set at current height + 2.
@@ -434,10 +440,10 @@ message ValidatorUpdate {
 }
 
 message VoteInfo {
-  Validator validator         = 1 [(gogoproto.nullable) = false];
+  Validator                    validator     = 1 [(gogoproto.nullable) = false];
   tendermint.types.BlockIDFlag block_id_flag = 3;
 
-  reserved 2; // signed_last_block
+  reserved 2;  // signed_last_block
 }
 
 message ExtendedVoteInfo {
@@ -450,7 +456,7 @@ message ExtendedVoteInfo {
   // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
   tendermint.types.BlockIDFlag block_id_flag = 5;
 
-  reserved 2; // signed_last_block
+  reserved 2;  // signed_last_block
 }
 
 enum MisbehaviorType {

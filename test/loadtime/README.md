@@ -22,8 +22,8 @@ make build
 The `load` binary is built when `make build` is invoked. The `load` tool generates
 transactions and broadcasts them to CometBFT.
 
-`load` leverages the [tm-load-test](https://github.com/informalsystems/tm-load-test)
-framework. As a result, all flags and options specified on the `tm-load-test` apply to
+`load` leverages the [cometbft-load-test](https://github.com/cometbft/cometbft-load-test)
+framework. As a result, all flags and options specified on the `cometbft-load-test` apply to
 `load`.
 
 Below is a basic invocation for generating load against a CometBFT websocket running
@@ -33,7 +33,7 @@ on `localhost:25567`
 ./build/load \
     -c 1 -T 10 -r 1000 -s 1024 \
     --broadcast-tx-method sync \
-    --endpoints ws://localhost:26657/websocket
+    --endpoints ws://localhost:26657/v1/websocket
 ```
 
 ## `report`

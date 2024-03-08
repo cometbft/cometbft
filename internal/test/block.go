@@ -16,9 +16,7 @@ const (
 	DefaultTestChainID = "test-chain"
 )
 
-var (
-	DefaultTestTime = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-)
+var DefaultTestTime = time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
 func RandomAddress() []byte {
 	return crypto.CRandBytes(crypto.AddressSize)
@@ -43,7 +41,7 @@ func MakeBlockIDWithHash(hash []byte) types.BlockID {
 }
 
 // MakeHeader fills the rest of the contents of the header such that it passes
-// validate basic
+// validate basic.
 func MakeHeader(t *testing.T, h *types.Header) *types.Header {
 	t.Helper()
 	if h.Version.Block == 0 {
@@ -52,7 +50,7 @@ func MakeHeader(t *testing.T, h *types.Header) *types.Header {
 	if h.Height == 0 {
 		h.Height = 1
 	}
-	if h.LastBlockID.IsZero() {
+	if h.LastBlockID.IsNil() {
 		h.LastBlockID = MakeBlockID()
 	}
 	if h.ChainID == "" {

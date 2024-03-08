@@ -1,1 +1,0 @@
-- `[mempool/clist_mempool]` \#890 Prevent a transaction to appear twice in the mempool  (@otrack)

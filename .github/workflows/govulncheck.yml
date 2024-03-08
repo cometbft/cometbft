@@ -6,6 +6,7 @@ name: Check for Go vulnerabilities
 # Run `make vulncheck` from the root of the repo to run this workflow locally.
 on:
   pull_request:
+  merge_group:
   push:
     branches:
       - main
@@ -15,11 +16,11 @@ jobs:
   govulncheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
           check-latest: true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: technote-space/get-diff-action@v6
         with:
           PATTERNS: |

@@ -7,11 +7,11 @@ import (
 	"strconv"
 
 	dbm "github.com/cometbft/cometbft-db"
-
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/light/store"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 var sizeKey = []byte("size")
@@ -46,7 +46,7 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 
 	lbpb, err := lb.ToProto()
 	if err != nil {
-		return fmt.Errorf("unable to convert light block to protobuf: %w", err)
+		return cmterrors.ErrMsgToProto{MessageName: "LightBlock", Err: err}
 	}
 
 	lbBz, err := lbpb.Marshal()
@@ -146,7 +146,7 @@ func (s *dbs) LastLightBlockHeight() (int64, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		_, height, ok := parseLbKey(key)
+		height, ok := parseLbKey(key)
 		if ok {
 			return height, nil
 		}
@@ -171,7 +171,7 @@ func (s *dbs) FirstLightBlockHeight() (int64, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		_, height, ok := parseLbKey(key)
+		height, ok := parseLbKey(key)
 		if ok {
 			return height, nil
 		}
@@ -201,7 +201,7 @@ func (s *dbs) LightBlockBefore(height int64) (*types.LightBlock, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		_, existingHeight, ok := parseLbKey(key)
+		existingHeight, ok := parseLbKey(key)
 		if ok {
 			return s.LightBlock(existingHeight)
 		}
@@ -245,7 +245,7 @@ func (s *dbs) Prune(size uint16) error {
 	pruned := 0
 	for itr.Valid() && numToPrune > 0 {
 		key := itr.Key()
-		_, height, ok := parseLbKey(key)
+		height, ok := parseLbKey(key)
 		if ok {
 			if err = b.Delete(s.lbKey(height)); err != nil {
 				return err
@@ -307,11 +307,11 @@ func parseKey(key []byte) (part string, prefix string, height int64, ok bool) {
 	return
 }
 
-func parseLbKey(key []byte) (prefix string, height int64, ok bool) {
+func parseLbKey(key []byte) (height int64, ok bool) {
 	var part string
-	part, prefix, height, ok = parseKey(key)
+	part, _, height, ok = parseKey(key)
 	if part != "lb" {
-		return "", 0, false
+		return 0, false
 	}
 	return
 }

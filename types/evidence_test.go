@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -28,6 +28,7 @@ func TestEvidenceList(t *testing.T) {
 }
 
 func randomDuplicateVoteEvidence(t *testing.T) *DuplicateVoteEvidence {
+	t.Helper()
 	val := NewMockPV()
 	blockID := makeBlockID([]byte("blockhash"), 1000, []byte("partshash"))
 	blockID2 := makeBlockID([]byte("blockhash2"), 1000, []byte("partshash"))
@@ -43,11 +44,11 @@ func randomDuplicateVoteEvidence(t *testing.T) *DuplicateVoteEvidence {
 
 func TestDuplicateVoteEvidence(t *testing.T) {
 	const height = int64(13)
-	ev, err := NewMockDuplicateVoteEvidence(height, time.Now(), "mock-chain-id")
+	ev, err := NewMockDuplicateVoteEvidence(height, cmttime.Now(), "mock-chain-id")
 	require.NoError(t, err)
 	assert.Equal(t, ev.Hash(), tmhash.Sum(ev.Bytes()))
 	assert.NotNil(t, ev.String())
-	assert.Equal(t, ev.Height(), height)
+	assert.Equal(t, height, ev.Height())
 }
 
 func TestDuplicateVoteEvidenceValidation(t *testing.T) {
@@ -95,7 +96,7 @@ func TestLightClientAttackEvidenceBasic(t *testing.T) {
 	height := int64(5)
 	commonHeight := height - 1
 	nValidators := 10
-	voteSet, valSet, privVals := randVoteSet(height, 1, cmtproto.PrecommitType, nValidators, 1, false)
+	voteSet, valSet, privVals := randVoteSet(height, 1, PrecommitType, nValidators, 1, false)
 	header := makeHeaderRandom()
 	header.Height = height
 	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
@@ -156,12 +157,12 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 	height := int64(5)
 	commonHeight := height - 1
 	nValidators := 10
-	voteSet, valSet, privVals := randVoteSet(height, 1, cmtproto.PrecommitType, nValidators, 1, false)
+	voteSet, valSet, privVals := randVoteSet(height, 1, PrecommitType, nValidators, 1, false)
 	header := makeHeaderRandom()
 	header.Height = height
 	header.ValidatorsHash = valSet.Hash()
 	blockID := makeBlockID(header.Hash(), math.MaxInt32, tmhash.Sum([]byte("partshash")))
-	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, time.Now(), false)
+	extCommit, err := MakeExtCommit(blockID, height, 1, voteSet, privVals, cmttime.Now(), false)
 	require.NoError(t, err)
 	commit := extCommit.ToCommit()
 
@@ -178,7 +179,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 		Timestamp:           header.Time,
 		ByzantineValidators: valSet.Validators[:nValidators/2],
 	}
-	assert.NoError(t, lcae.ValidateBasic())
+	require.NoError(t, lcae.ValidateBasic())
 
 	testCases := []struct {
 		testName         string
@@ -220,19 +221,18 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 			}
 			tc.malleateEvidence(lcae)
 			if tc.expectErr {
-				assert.Error(t, lcae.ValidateBasic(), tc.testName)
+				require.Error(t, lcae.ValidateBasic(), tc.testName)
 			} else {
-				assert.NoError(t, lcae.ValidateBasic(), tc.testName)
+				require.NoError(t, lcae.ValidateBasic(), tc.testName)
 			}
 		})
 	}
-
 }
 
 func TestMockEvidenceValidateBasic(t *testing.T) {
-	goodEvidence, err := NewMockDuplicateVoteEvidence(int64(1), time.Now(), "mock-chain-id")
+	goodEvidence, err := NewMockDuplicateVoteEvidence(int64(1), cmttime.Now(), "mock-chain-id")
 	require.NoError(t, err)
-	assert.Nil(t, goodEvidence.ValidateBasic())
+	require.NoError(t, goodEvidence.ValidateBasic())
 }
 
 func makeHeaderRandom() *Header {
@@ -240,7 +240,7 @@ func makeHeaderRandom() *Header {
 		Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 1},
 		ChainID:            cmtrand.Str(12),
 		Height:             int64(cmtrand.Uint16()) + 1,
-		Time:               time.Now(),
+		Time:               cmttime.Now(),
 		LastBlockID:        makeBlockIDRandom(),
 		LastCommitHash:     crypto.CRandBytes(tmhash.Size),
 		DataHash:           crypto.CRandBytes(tmhash.Size),
@@ -296,14 +296,14 @@ func TestEvidenceProto(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			pb, err := EvidenceToProto(tt.evidence)
 			if tt.toProtoErr {
-				assert.Error(t, err, tt.testName)
+				require.Error(t, err, tt.testName)
 				return
 			}
-			assert.NoError(t, err, tt.testName)
+			require.NoError(t, err, tt.testName)
 
 			evi, err := EvidenceFromProto(pb)
 			if tt.fromProtoErr {
-				assert.Error(t, err, tt.testName)
+				require.Error(t, err, tt.testName)
 				return
 			}
 			require.Equal(t, tt.evidence, evi, tt.testName)

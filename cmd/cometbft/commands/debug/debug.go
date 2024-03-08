@@ -32,8 +32,8 @@ func init() {
 	DebugCmd.PersistentFlags().StringVar(
 		&nodeRPCAddr,
 		flagNodeRPCAddr,
-		"tcp://localhost:26657",
-		"the CometBFT node's RPC address (<host>:<port>)",
+		"tcp://localhost:26657/v1",
+		"the CometBFT node's RPC address (<host>:<port>) and version",
 	)
 
 	DebugCmd.AddCommand(killCmd)

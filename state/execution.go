@@ -156,6 +156,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	if len(signGossipVoteTxBz) > 0 {
 		maxReapBytes -= int64(len(signGossipVoteTxBz))
+		maxDataBytes -= int64(len(signGossipVoteTxBz))
 		txs = blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 		signGossipVoteTx := types.Tx(signGossipVoteTxBz)
 		txs = append([]types.Tx{signGossipVoteTx}, txs...)

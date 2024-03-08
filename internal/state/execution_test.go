@@ -46,7 +46,7 @@ func TestApplyBlock(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, _ := makeState(1, 1)
+	state, stateDB, _ := makeState(1, 1, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -84,14 +84,14 @@ func TestApplyBlock(t *testing.T) {
 // block.
 func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 	app := &testApp{}
-	baseTime := time.Now()
+	baseTime := cmttime.Now()
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := makeState(7, 1)
+	state, stateDB, privVals := makeState(7, 1, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -166,7 +166,7 @@ func TestFinalizeBlockValidators(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // no need to check error again
 
-	state, stateDB, _ := makeState(2, 2)
+	state, stateDB, _ := makeState(2, 2, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -253,7 +253,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := makeState(1, 1)
+	state, stateDB, privVals := makeState(1, 1, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -374,7 +374,7 @@ func TestProcessProposal(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := makeState(1, height)
+	state, stateDB, privVals := makeState(1, height, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -402,7 +402,7 @@ func TestProcessProposal(t *testing.T) {
 		pk, err := privVal.GetPubKey()
 		require.NoError(t, err)
 		idx, _ := state.Validators.GetByAddress(pk.Address())
-		vote := types.MakeVoteNoError(t, privVal, block0.Header.ChainID, idx, height-1, 0, 2, blockID, time.Now())
+		vote := types.MakeVoteNoError(t, privVal, block0.Header.ChainID, idx, height-1, 0, 2, blockID, cmttime.Now())
 		addr := pk.Address()
 		voteInfos = append(voteInfos,
 			abci.VoteInfo{
@@ -582,7 +582,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, _ := makeState(1, 1)
+	state, stateDB, _ := makeState(1, 1, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -671,7 +671,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, _ := makeState(1, 1)
+	state, stateDB, _ := makeState(1, 1, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -714,7 +714,7 @@ func TestEmptyPrepareProposal(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := makeState(1, height)
+	state, stateDB, privVals := makeState(1, height, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -754,7 +754,7 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	state, stateDB, privVals := makeState(1, height)
+	state, stateDB, privVals := makeState(1, height, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -805,7 +805,7 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	state, stateDB, privVals := makeState(1, height)
+	state, stateDB, privVals := makeState(1, height, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -859,7 +859,7 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	state, stateDB, privVals := makeState(1, height)
+	state, stateDB, privVals := makeState(1, height, chainID)
 	// limit max block size
 	state.ConsensusParams.Block.MaxBytes = 60 * 1024
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -914,7 +914,7 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	state, stateDB, privVals := makeState(1, height)
+	state, stateDB, privVals := makeState(1, height, chainID)
 	// limit max block size
 	var bytesPerTx int64 = 4
 	const nValidators = 1
@@ -970,7 +970,7 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	state, stateDB, privVals := makeState(1, height)
+	state, stateDB, privVals := makeState(1, height, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -1069,11 +1069,11 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 			err := proxyApp.Start()
 			require.NoError(t, err)
 
-			state, stateDB, privVals := makeState(1, int(testCase.height-1))
+			state, stateDB, privVals := makeState(1, int(testCase.height-1), chainID)
 			stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 				DiscardABCIResponses: false,
 			})
-			state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testCase.extensionEnableHeight
+			state.ConsensusParams.Feature.VoteExtensionsEnableHeight = testCase.extensionEnableHeight
 			mp := &mpmocks.Mempool{}
 			mp.On("Lock").Return()
 			mp.On("Unlock").Return()

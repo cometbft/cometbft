@@ -759,11 +759,13 @@ Most of the data structures used in ABCI are shared [common data structures](../
 * **Fields**:
 
     | Name      | Type                                                          | Description                                                                  | Field Number | Deterministic |
-    |-----------|---------------------------------------------------------------|------------------------------------------------------------------------------|--------------|---------------|
+    | --------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------ | ------------- |
     | block     | [BlockParams](../core/data_structures.md#blockparams)         | Parameters limiting the size of a block and time between consecutive blocks. | 1            | Yes           |
     | evidence  | [EvidenceParams](../core/data_structures.md#evidenceparams)   | Parameters limiting the validity of evidence of byzantine behaviour.         | 2            | Yes           |
     | validator | [ValidatorParams](../core/data_structures.md#validatorparams) | Parameters limiting the types of public keys validators can use.             | 3            | Yes           |
     | version   | [VersionsParams](../core/data_structures.md#versionparams)    | The ABCI application version.                                                | 4            | Yes           |
+    | abci      | [ABCIParams](../core/data_structures.md#abciparams)           | ABCI-related parameters.                                                     | 5            | Yes           |
+    | synchrony | [SynchronyParams](../core/data_structures.md#synchronyparams) | Parameters determining the validity bounds of a proposal timestamp.          | 6            | Yes           |
 
 ### ProofOps
 

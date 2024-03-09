@@ -9,7 +9,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	cmcrypto "github.com/cometbft/cometbft/crypto"
-	blst "github.com/cometbft/cometbft/crypto/bls/bls12381"
+	bls12381 "github.com/cosmos/crypto/curves/bls12381"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -51,7 +51,7 @@ var _ cmcrypto.PrivKey = &PrivKey{}
 type PrivKey []byte
 
 func NewPrivateKeyFromBytes(bz []byte) (PrivKey, error) {
-	secretKey, err := blst.SecretKeyFromBytes(bz)
+	secretKey, err := bls12381.SecretKeyFromBytes(bz)
 	if err != nil {
 		return nil, err
 	}
@@ -59,11 +59,11 @@ func NewPrivateKeyFromBytes(bz []byte) (PrivKey, error) {
 }
 
 func GenPrivKey() (PrivKey, error) {
-	secretKey, err := blst.RandKey()
+	secretKey, err := bls12381.RandKey()
 	return PrivKey(secretKey.Marshal()), err
 }
 
-// Bytes returns the byte representation of the ECDSA Private Key.
+// Bytes returns the byte representation of the Private Key.
 func (privKey PrivKey) Bytes() []byte {
 	return privKey
 }
@@ -71,7 +71,7 @@ func (privKey PrivKey) Bytes() []byte {
 // PubKey returns the ECDSA private key's public key. If the privkey is not valid
 // it returns a nil value.
 func (privKey PrivKey) PubKey() cmcrypto.PubKey {
-	secretKey, _ := blst.SecretKeyFromBytes(privKey)
+	secretKey, _ := bls12381.SecretKeyFromBytes(privKey)
 
 	return PubKey(secretKey.PublicKey().Marshal())
 }
@@ -87,7 +87,7 @@ func (privKey PrivKey) Type() string {
 }
 
 func (privKey PrivKey) Sign(digestBz []byte) ([]byte, error) {
-	secretKey, err := blst.SecretKeyFromBytes(privKey)
+	secretKey, err := bls12381.SecretKeyFromBytes(privKey)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ type PubKey []byte
 // Address returns the address of the ECDSA public key.
 // The function will return an empty address if the public key is invalid.
 func (pubKey PubKey) Address() cmcrypto.Address {
-	pk, _ := blst.PublicKeyFromBytes(pubKey)
+	pk, _ := bls12381.PublicKeyFromBytes(pubKey)
 	if len(pk.Marshal()) != PubKeySize {
 		panic("pubkey is incorrect size")
 	}
@@ -136,8 +136,8 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 		bz = hash[:]
 	}
 
-	pubK, _ := blst.PublicKeyFromBytes(pubKey)
-	ok, err := blst.VerifySignature(sig, [32]byte(bz[:32]), pubK)
+	pubK, _ := bls12381.PublicKeyFromBytes(pubKey)
+	ok, err := bls12381.VerifySignature(sig, [32]byte(bz[:32]), pubK)
 	if err != nil {
 		return false
 	}

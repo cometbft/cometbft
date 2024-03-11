@@ -59,7 +59,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithDBKeyLayout(config.Storage.DBKeyLayoutVersion))
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 	defer blockStore.Close()
 
 	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})

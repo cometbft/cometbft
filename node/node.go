@@ -165,7 +165,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.DBKeyLayoutVersion))
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	defer func() {
@@ -187,7 +187,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 		Logger:               logger,
-		DBKeyLayout:          config.Storage.DBKeyLayoutVersion,
+		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
 	})
 
 	defer func() {
@@ -220,7 +220,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 			Height: config.StateSync.TrustHeight,
 			Hash:   config.StateSync.TrustHashBytes(),
 		}, logger.With("module", "light"),
-		config.Storage.DBKeyLayoutVersion)
+		config.Storage.ExperimentalKeyLayout)
 	if err != nil {
 		return fmt.Errorf("failed to set up light client state provider: %w", err)
 	}
@@ -298,10 +298,10 @@ func NewNode(ctx context.Context,
 		Compact:              config.Storage.Compact,
 		CompactionInterval:   config.Storage.CompactionInterval,
 		Logger:               logger,
-		DBKeyLayout:          config.Storage.DBKeyLayoutVersion,
+		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
 	})
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.DBKeyLayoutVersion), store.WithDBKeyLayout(config.Storage.DBKeyLayoutVersion))
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	// The key will be deleted if it existed.
@@ -594,7 +594,7 @@ func (n *Node) OnStart() error {
 			return errors.New("this blocksync reactor does not support switching from state sync")
 		}
 		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
-			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis, n.config.Storage.DBKeyLayoutVersion)
+			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}

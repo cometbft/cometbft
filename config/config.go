@@ -1302,19 +1302,19 @@ type StorageConfig struct {
 	// The layouts cannot be used interchange-ably. It is either one or the other.
 	// If the database was initially created with v1, it is necessary to migrate the DB
 	// before switching to v2. The migration is not done automatically.
-	DBKeyLayoutVersion string `mapstructure:"db_key_layout_version"`
+	ExperimentalKeyLayout string `mapstructure:"experimental_db_key_layout"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
 // CometBFT storage optimization.
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
-		DiscardABCIResponses: false,
-		Pruning:              DefaultPruningConfig(),
-		Compact:              false,
-		CompactionInterval:   1000,
-		GenesisHash:          "",
-		DBKeyLayoutVersion:   "v1",
+		DiscardABCIResponses:  false,
+		Pruning:               DefaultPruningConfig(),
+		Compact:               false,
+		CompactionInterval:    1000,
+		GenesisHash:           "",
+		ExperimentalKeyLayout: "v1",
 	}
 }
 

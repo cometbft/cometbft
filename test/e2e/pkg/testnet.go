@@ -139,7 +139,7 @@ type Node struct {
 	Prometheus              bool
 	PrometheusProxyPort     uint32
 	Zone                    ZoneID
-	DBKeyLayoutVersion      string
+	ExperimentalKeyLayout   string
 	Compact                 bool
 	CompactionInterval      int64
 	DiscardABCIResponses    bool
@@ -274,7 +274,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
 			Zone:                    ZoneID(nodeManifest.Zone),
-			DBKeyLayoutVersion:      nodeManifest.DBKeyLayoutVersion,
+			ExperimentalKeyLayout:   nodeManifest.ExperimentalKeyLayout,
 			Compact:                 nodeManifest.Compact,
 			CompactionInterval:      nodeManifest.CompactionInterval,
 			DiscardABCIResponses:    nodeManifest.DiscardABCIResponses,

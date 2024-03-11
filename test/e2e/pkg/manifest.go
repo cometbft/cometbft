@@ -219,8 +219,8 @@ type ManifestNode struct {
 	// Geographical zone ID for simulating latencies.
 	Zone string `toml:"zone"`
 
-	// DBKeyLayoutVersion sets the key representation in the DB
-	DBKeyLayoutVersion string `toml:"db_key_layout_version"`
+	// ExperimentalKeyLayout sets the key representation in the DB
+	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`
 
 	// Compact triggers compaction on the DB after pruning
 	Compact bool `toml:"compact"`

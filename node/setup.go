@@ -288,7 +288,7 @@ func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
 		return nil, nil, err
 	}
 	evidenceLogger := logger.With("module", "evidence")
-	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore, evidence.WithDBKeyLayout(config.Storage.DBKeyLayoutVersion))
+	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore, evidence.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -614,7 +614,7 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 
 	dbKeyLayoutVersion := ""
 	if config != nil {
-		dbKeyLayoutVersion = config.Storage.DBKeyLayoutVersion
+		dbKeyLayoutVersion = config.Storage.ExperimentalKeyLayout
 	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,

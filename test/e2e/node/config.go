@@ -38,7 +38,7 @@ type Config struct {
 
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 
-	DBKeyLayoutVersion string `toml:"db_key_layout_version"`
+	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`
 
 	Compact bool `toml:"compact"`
 

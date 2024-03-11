@@ -133,8 +133,8 @@ func startNode(cfg *Config) error {
 		nodeLogger.Info("Using default (synchronized) local client creator")
 	}
 
-	if cfg.DBKeyLayoutVersion != "" {
-		cmtcfg.Storage.DBKeyLayoutVersion = cfg.DBKeyLayoutVersion
+	if cfg.ExperimentalKeyLayout != "" {
+		cmtcfg.Storage.ExperimentalKeyLayout = cfg.ExperimentalKeyLayout
 	}
 
 	n, err := node.NewNode(context.Background(), cmtcfg,
@@ -176,7 +176,7 @@ func startLightClient(cfg *Config) error {
 		},
 		providers[0],
 		providers[1:],
-		dbs.NewWithDBVersion(lightDB, "light", cfg.DBKeyLayoutVersion),
+		dbs.NewWithDBVersion(lightDB, "light", cfg.ExperimentalKeyLayout),
 		light.Logger(nodeLogger),
 	)
 	if err != nil {

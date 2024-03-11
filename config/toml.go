@@ -560,7 +560,7 @@ discard_abci_responses = {{ .Storage.DiscardABCIResponses}}
 # The layouts cannot be used interchange-ably. It is either one or the other.
 # If the database was initially created with v1, it is necessary to migrate the DB
 # before switching to v2. The migration is not done automatically.
-db_key_layout_version = "{{ .Storage.DBKeyLayoutVersion }}"
+experimental_db_key_layout = "{{ .Storage.ExperimentalKeyLayout }}"
 
 # If set to true, CometBFT will force compaction to happen for databases that support this feature.
 # and save on storage space. Setting this to true is most benefits when used in combination

@@ -79,12 +79,14 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 
 		// precommit a random block
 		blockHash := bytes.HexBytes(cmtrand.Bytes(32))
+		timestamp := cs.voteTime(cs.Height)
+
 		precommit := &types.Vote{
 			ValidatorAddress: addr,
 			ValidatorIndex:   valIndex,
 			Height:           cs.Height,
 			Round:            cs.Round,
-			Timestamp:        cs.voteTime(),
+			Timestamp:        timestamp,
 			Type:             types.PrecommitType,
 			BlockID: types.BlockID{
 				Hash:          blockHash,

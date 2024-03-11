@@ -216,7 +216,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 		return false
 	}
 	var extCommit *types.ExtendedCommit
-	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(msg.Height) {
+	if state.ConsensusParams.Feature.VoteExtensionsEnabled(msg.Height) {
 		extCommit = bcR.store.LoadBlockExtendedCommit(msg.Height)
 		if extCommit == nil {
 			bcR.Logger.Error("found block in store with no extended commit", "block", block)
@@ -384,7 +384,7 @@ FOR_LOOP:
 			//
 			missingExtension := true
 			if state.LastBlockHeight == 0 ||
-				!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
+				!state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight) ||
 				blocksSynced > 0 ||
 				initialCommitHasExtensions {
 				missingExtension = false
@@ -450,7 +450,7 @@ FOR_LOOP:
 				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
 			}
-			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+			if extCommit == nil && state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
 				// See https://github.com/tendermint/tendermint/pull/8433#discussion_r866790631
 				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
 			}
@@ -488,7 +488,7 @@ FOR_LOOP:
 			}
 			if err == nil {
 				// if vote extensions were required at this height, ensure they exist.
-				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+				if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
 					err = extCommit.EnsureExtensions(true)
 				} else if extCommit != nil {
 					err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
@@ -516,7 +516,7 @@ FOR_LOOP:
 			bcR.pool.PopRequest()
 
 			// TODO: batch saves so we dont persist to disk every block
-			if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+			if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
 				bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
 			} else {
 				// We use LastCommit here instead of extCommit. extCommit is not

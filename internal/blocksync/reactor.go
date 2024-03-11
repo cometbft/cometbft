@@ -384,7 +384,7 @@ FOR_LOOP:
 			// if we did not blocksync any block.
 			//
 			missingExtension := true
-			voteExtensionsDisabled := state.LastBlockHeight > 0 && !state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight)
+			voteExtensionsDisabled := state.LastBlockHeight > 0 && !state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight)
 			if state.LastBlockHeight == 0 || voteExtensionsDisabled || blocksSynced > 0 || initialCommitHasExtensions {
 				missingExtension = false
 			}

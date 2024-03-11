@@ -4,11 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
-<<<<<<< HEAD:blocksync/pool.go
-	"sync/atomic"
-=======
 	"sort"
->>>>>>> f8366fc42 (feat(blocksync): sort peers by download rate & multiple requests for closer blocks (#2475)):internal/blocksync/pool.go
+	"sync/atomic"
 	"time"
 
 	flow "github.com/cometbft/cometbft/libs/flowrate"
@@ -97,15 +94,10 @@ func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- p
 	bp := &BlockPool{
 		peers: make(map[p2p.ID]*bpPeer),
 
-<<<<<<< HEAD:blocksync/pool.go
-		requesters: make(map[int64]*bpRequester),
-		height:     start,
-		numPending: 0,
-=======
 		requesters:  make(map[int64]*bpRequester),
 		height:      start,
 		startHeight: start,
->>>>>>> f8366fc42 (feat(blocksync): sort peers by download rate & multiple requests for closer blocks (#2475)):internal/blocksync/pool.go
+		numPending:  0,
 
 		requestsCh: requestsCh,
 		errorsCh:   errorsCh,
@@ -156,7 +148,7 @@ func (pool *BlockPool) makeRequestersRoutine() {
 			// request for more blocks.
 			pool.makeNextRequester(nextHeight)
 			// Sleep for a bit to make the requests more ordered.
-			time.Sleep(requestInterval)
+			time.Sleep(requestIntervalMS * time.Millisecond)
 		}
 	}
 }
@@ -248,22 +240,10 @@ func (pool *BlockPool) PopRequest() {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
-	if r := pool.requesters[pool.height]; r != nil {
-		/*  The block can disappear at any time, due to removePeer().
-		if r := pool.requesters[pool.height]; r == nil || r.block == nil {
-			PanicSanity("PopRequest() requires a valid block")
-		}
-		*/
-		if err := r.Stop(); err != nil {
-			pool.Logger.Error("Error stopping requester", "err", err)
-		}
-		delete(pool.requesters, pool.height)
-		pool.height++
-	} else {
+	r := pool.requesters[pool.height]
+	if r == nil {
 		panic(fmt.Sprintf("Expected requester to pop, got nothing at height %v", pool.height))
 	}
-<<<<<<< HEAD:blocksync/pool.go
-=======
 
 	if err := r.Stop(); err != nil {
 		pool.Logger.Error("Error stopping requester", "err", err)
@@ -276,7 +256,6 @@ func (pool *BlockPool) PopRequest() {
 	for i := int64(0); i < minBlocksForSingleRequest && i < int64(len(pool.requesters)); i++ {
 		pool.requesters[pool.height+i].newHeight(pool.height)
 	}
->>>>>>> f8366fc42 (feat(blocksync): sort peers by download rate & multiple requests for closer blocks (#2475)):internal/blocksync/pool.go
 }
 
 // RemovePeerAndRedoAllPeerRequests retries the request at the given height and
@@ -347,21 +326,16 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 		return fmt.Errorf("got an already committed block #%d (possibly from the slow peer %s)", block.Height, peerID)
 	}
 
-<<<<<<< HEAD:blocksync/pool.go
-	if requester.setBlock(block, extCommit, peerID) {
-		atomic.AddInt32(&pool.numPending, -1)
-		peer := pool.peers[peerID]
-		if peer != nil {
-			peer.decrPending(blockSize)
-		}
-	} else {
-		err := errors.New("requester is different or block already exists")
-=======
 	if !requester.setBlock(block, extCommit, peerID) {
 		err := fmt.Errorf("requested block #%d from %v, not %s", block.Height, requester.requestedFrom(), peerID)
->>>>>>> f8366fc42 (feat(blocksync): sort peers by download rate & multiple requests for closer blocks (#2475)):internal/blocksync/pool.go
 		pool.sendError(err, peerID)
 		return err
+	}
+
+	atomic.AddInt32(&pool.numPending, -1)
+	peer := pool.peers[peerID]
+	if peer != nil {
+		peer.decrPending(blockSize)
 	}
 
 	return nil
@@ -730,21 +704,13 @@ func (bpr *bpRequester) reset(peerID p2p.ID) (removedBlock bool) {
 	bpr.mtx.Lock()
 	defer bpr.mtx.Unlock()
 
-<<<<<<< HEAD:blocksync/pool.go
-	if bpr.block != nil {
-		atomic.AddInt32(&bpr.pool.numPending, 1)
-	}
-
-	bpr.peerID = ""
-	bpr.block = nil
-	bpr.extCommit = nil
-=======
 	// Only remove the block if we got it from that peer.
 	if bpr.gotBlockFrom == peerID {
 		bpr.block = nil
 		bpr.extCommit = nil
 		bpr.gotBlockFrom = ""
 		removedBlock = true
+		atomic.AddInt32(&bpr.pool.numPending, 1)
 	}
 
 	if bpr.peerID == peerID {
@@ -754,7 +720,6 @@ func (bpr *bpRequester) reset(peerID p2p.ID) (removedBlock bool) {
 	}
 
 	return removedBlock
->>>>>>> f8366fc42 (feat(blocksync): sort peers by download rate & multiple requests for closer blocks (#2475)):internal/blocksync/pool.go
 }
 
 // Tells bpRequester to pick another peer and try again.
@@ -781,7 +746,7 @@ PICK_PEER_LOOP:
 		peer = bpr.pool.pickIncrAvailablePeer(bpr.height, secondPeerID)
 		if peer == nil {
 			bpr.Logger.Debug("No peers currently available; will retry shortly", "height", bpr.height)
-			time.Sleep(requestInterval)
+			time.Sleep(requestIntervalMS * time.Millisecond)
 			continue PICK_PEER_LOOP
 		}
 		break PICK_PEER_LOOP
@@ -829,33 +794,12 @@ func (bpr *bpRequester) requestRoutine() {
 
 OUTER_LOOP:
 	for {
-<<<<<<< HEAD:blocksync/pool.go
-		// Pick a peer to send request to.
-		var peer *bpPeer
-	PICK_PEER_LOOP:
-		for {
-			if !bpr.IsRunning() || !bpr.pool.IsRunning() {
-				return
-			}
-			peer = bpr.pool.pickIncrAvailablePeer(bpr.height)
-			if peer == nil {
-				bpr.Logger.Debug("No peers currently available; will retry shortly", "height", bpr.height)
-				time.Sleep(requestIntervalMS * time.Millisecond)
-				continue PICK_PEER_LOOP
-			}
-			break PICK_PEER_LOOP
-		}
-		bpr.mtx.Lock()
-		bpr.peerID = peer.id
-		bpr.mtx.Unlock()
-=======
 		bpr.pickPeerAndSendRequest()
 
 		poolHeight := bpr.pool.Height()
 		if bpr.height-poolHeight < minBlocksForSingleRequest {
 			bpr.pickSecondPeerAndSendRequest()
 		}
->>>>>>> f8366fc42 (feat(blocksync): sort peers by download rate & multiple requests for closer blocks (#2475)):internal/blocksync/pool.go
 
 		for {
 			select {

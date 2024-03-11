@@ -6,7 +6,7 @@
    - [Synchronized clocks](#synchronized-clocks)
    - [Message delays](#message-delays)
  - [Problem Statement](#problem-statement)
- - [Protocol Analysis - Timely Proposals](#protocol-analysis---timely-proposals)
+ - [Timely Predicate](#timely-predicate)
     - [Timely Proof-of-Locks](#timely-proof-of-locks)
     - [Derived Proof-of-Locks](#derived-proof-of-locks)
  - [Temporal Analysis](#temporal-analysis)
@@ -50,41 +50,13 @@ for any two processes `p` and `q`, with local clocks `C_p` and `C_q`:
 `PRECISION` thus bounds the difference on the times simultaneously read by processes
 from their local clocks, so that their clocks can be considered synchronized.
 
-#### Accuracy
-
-A second relevant clock parameter is accuracy, which binds the values read by
-processes from their clocks to real time.
-
-##### **[PBTS-CLOCK-ACCURACY.0]**
-
-For the sake of completeness, we define a parameter `ACCURACY` such that:
-
-- At real time `t` there is at least one correct process `p` which clock marks
-  `C_p(t)` with `|C_p(t) - t| <= ACCURACY`.
-
-As a consequence, applying the definition of `PRECISION`, we have:
-
-- At real time `t` the synchronized clock of any correct process `p` marks
-  `C_p(t)` with `|C_p(t) - t| <= ACCURACY + PRECISION`.
-
-The reason for not adopting `ACCURACY` as a system parameter is the assumption
-that `PRECISION >> ACCURACY`.
-This allows us to consider, for practical purposes, that the `PRECISION` system
-parameter embodies the `ACCURACY` model parameter.
-
 ### Message Delays
-
-The assumption that processes have access to synchronized clocks ensures that proposal times
-assigned by *correct processes* have a bounded relation with the real time.
-It is not enough, however, to identify (and reject) proposal times proposed by Byzantine processes.
 
 To properly evaluate whether the time assigned to a proposal is consistent with the real time,
 we need some information regarding the time it takes for a message carrying a proposal
 to reach all its (correct) destinations.
 More precisely, the *maximum delay* for delivering a proposal to its destinations allows
 defining a lower bound, a *minimum time* that a correct process assigns to proposal.
-While *minimum delay* for delivering a proposal to a destination allows defining
-an upper bound, the *maximum time* assigned to a proposal.
 
 #### **[PBTS-MSG-DELAY.0]**
 
@@ -99,24 +71,55 @@ proposal message broadcast by correct processes: it is a *worst-case* parameter.
 As message delays depends on the message size, the above requirement implicitly
 indicates that the size of proposal messages is either fixed or upper bounded.
 
+#### **[PBTS-MSG-DELAY-ADAPTIVE.0]**
+
+This specification is written assuming that there exists an end-to-end maximum
+delay `maxMsgDelay` observed in the network, possibly unknown, and
+that the chosen value for `MSGDELAY` is such that `MSGDELAY >= maxMsgDelay`.
+Under this assumption, all properties described in this specification are satisfied.
+
+However, it is possible that in some networks the `MSGDELAY` parameters
+selected by operators is too small, i.e., `MSGDELAY < maxMsgDelay`.
+In order to tolerate this possibility, we propose the adoption of adaptive
+end-to-end delays, namely a relaxation of [PBTS-MSG-DELAY.0] where the
+`MSGDELAY` value increases each time consensus requires a new round.
+In this way, after a number of rounds, the adopted `MSGDELAY` should match the
+actual, but possibly unknown, end-to-end `maxMsgDelay`. 
+This is a typical approach in partial synchronous models.
+
+The adaptive system parameter `MSGDELAY(r)` is defined as follows.
+Lets `p` and `q` be any correct processes:
+
+- If `p` sends a proposal message `m` from round `r` at real time `t` and `q` receives `m` at
+  real time `t'`, then `t < t' <= t + MSGDELAY(r)`.
+
+The adaptiveness is represented by the assumption that the value of the
+parameter increases over rounds, i.e., `MSGDELAY(r+1) > MSGDELAY(r)`.
+The initial value `MSGDELAY(0)` is equal to `MSGDELAY` as in [PBTS-MSG-DELAY.0].
+
+For the sake of correctness and formal verification, if `MSGDELAY` is
+chosen sufficiently large, then the fact that it increments in later rounds
+(i) in practice will never be experienced,
+and (ii) also has no theoretical implications.
+The adaptation (increment) of `MSGDELAY` is only introduced here to handle
+potential misconfiguration.
+
 ## Problem Statement
 
-In this section we define the properties of Tendermint consensus
+This section defines the properties of Tendermint consensus algorithm
 (cf. the [arXiv paper][arXiv]) in this system model.
 
-### **[PBTS-PROPOSE.0]**
+#### **[PBTS-PROPOSE.0]**
 
 A proposer proposes a consensus value `v` that includes a proposal time
 `v.time`.
 
-> We then restrict the allowed decisions along the following lines:
-
 #### **[PBTS-INV-AGREEMENT.0]**
 
-- [Agreement] No two correct processes decide on different values `v`.
+- [Agreement] No two correct processes decide different values.
 
-This implies that no two correct processes decide on different proposal times
-`v.time`.
+This implies that no two correct processes decide, in particular, different
+proposal times.
 
 #### **[PBTS-INV-VALID.0]**
 
@@ -124,16 +127,16 @@ This implies that no two correct processes decide on different proposal times
   predefined `valid` predicate.
 
 With respect to PBTS, the `valid` predicate requires proposal times to be
-[monotonic](./pbts-algorithm_002_draft.md#time-monotonicity) over heights of
-consensus:
+[monotonic][time-monotonicity] over heights of
+consensus.
 
-##### **[PBTS-INV-MONOTONICITY.0]**
+#### **[PBTS-INV-MONOTONICITY.0]**
 
 - If a correct process decides on value `v` at the height `h` of consensus,
   thus setting `decision[h] = v`, then `v.time > decision[h'].time` for all
   previous heights `h' < h`.
 
-The monotonicity of proposal times, and external validity in general,
+The monotonicity of proposal times
 implicitly assumes that heights of consensus are executed in order.
 
 #### **[PBTS-INV-TIMELY.0]**
@@ -141,14 +144,11 @@ implicitly assumes that heights of consensus are executed in order.
 - [Time-Validity] If a correct process decides on value `v`, then the proposal
   time `v.time` was considered `timely` by at least one correct process.
 
-PBTS introduces a `timely` predicate that restricts the allowed decisions based
+The following section defines the `timely` predicate
+that restricts the allowed decisions based
 on the proposal time `v.time` associated with a proposed value `v`.
-As a synchronous predicate, the time at which it is evaluated impacts on
-whether a process accepts or reject a proposal time.
-For this reason, the Time-Validity property refers to the previous evaluation
-of the `timely` predicate, detailed in the following section.
 
-## Protocol Analysis - Timely proposals
+## Timely Predicate
 
 For PBTS, a `proposal` is a tuple `(v, v.time, v.round)`, where:
 
@@ -157,16 +157,14 @@ For PBTS, a `proposal` is a tuple `(v, v.time, v.round)`, where:
 - `v.round` is the round at which `v` was first proposed.
 
 We include the proposal round `v.round` in the proposal definition because a
-value `v` and its associated proposal time `v.time` can be proposed in multiple
-rounds, but the evaluation of the `timely` predicate is only relevant at round
-`v.round`.
+value `v` can be proposed in multiple rounds of consensus,
+but the evaluation of the `timely` predicate is only relevant at round `v.round`.
 
 > Considering the algorithm in the [arXiv paper][arXiv], a new proposal is
-> produced by the `getValue()` method, invoked by the proposer `p` of round
-> `round_p` when starting its proposing round with a nil `validValue_p`.
-> The first round at which a value `v` is proposed is then the round at which
-> the proposal for `v` was produced, and broadcast in a `PROPOSAL` message with
-> `vr = -1`.
+> produced by the `getValue()` method (line 18), invoked by the proposer `p` of round
+> `round_p` when starting the round with `validValue_p = nil`.
+> In this case, the proposed value is broadcast in a `PROPOSAL` message with
+> `vr = validRound_p = -1`.
 
 #### **[PBTS-PROPOSAL-RECEPTION.0]**
 
@@ -174,23 +172,23 @@ The `timely` predicate is evaluated when a process receives a proposal.
 More precisely, let `p` be a correct process:
 
 - `proposalReceptionTime(p,r)` is the time `p` reads from its local clock when
-  `p` is at round `r` and receives the proposal of round `r`.
+  it receives the proposal of round `r`.
 
 #### **[PBTS-TIMELY.0]**
 
-The proposal `(v, v.time, v.round)` is considered `timely` by a correct process
+Lets `(v, v.time, v.round)` be a proposal, then `v.time` is considered `timely` by a correct process
 `p` if:
 
 1. `proposalReceptionTime(p,v.round)` is set, and
 1. `proposalReceptionTime(p,v.round) >= v.time - PRECISION`, and
-1. `proposalReceptionTime(p,v.round) <= v.time + MSGDELAY + PRECISION`.
+1. `proposalReceptionTime(p,v.round) <= v.time + MSGDELAY(v.round) + PRECISION`.
 
-A correct process at round `v.round` only sends a `PREVOTE` for `v` if the
+A correct process only sends a `PREVOTE` for `v` at round `v.round` if the
 associated proposal time `v.time` is considered `timely`.
 
 > Considering the algorithm in the [arXiv paper][arXiv], the `timely` predicate
 > is evaluated by a process `p` when it receives a valid `PROPOSAL` message
-> from the proposer of the current round `round_p` with `vr = -1`.
+> from the proposer of the current round `round_p` with `vr = -1` (line 22).
 
 ### Timely Proof-of-Locks
 
@@ -261,7 +259,7 @@ observed a `POL(v,vr)`.
 > Considering the algorithm in the [arXiv paper][arXiv], `v` was proposed by
 > the proposer `p` of round `round_p` because its `validValue_p` variable was
 > set to `v`.
-> The `PROPOSAL` message broadcast by the proposer, in this case, had `vr > -1`,
+> The `PROPOSAL` message broadcast by the proposer, in this case, had `vr = validRound_p > -1`,
 > and it could only be accepted by processes that also observed a `POL(v,vr)`.
 
 Thus, if there is a `POL(v,r)` with `r > v.round`, then there is a valid
@@ -284,7 +282,7 @@ when it starts round `r` of consensus.
 
 The safety of PBTS requires that if a value `v` is decided, then at least one
 correct process `p` considered the associated proposal time `v.time` timely.
-Following the definition of [timely proposals](#pbts-timely0) and
+Following the definition of [timely proposal times](#pbts-timely0) and
 proof-of-locks, we require this condition to be asserted at a specific round of
 consensus, defined as `v.round`:
 
@@ -298,7 +296,8 @@ If
 then there is a correct process `p` (not necessarily the same above considered) such that:
 
 - `beginRound(p,v.round) <= proposalReceptionTime(p,v.round) <= beginRound(p,v.round+1)` and
-- `proposalReceptionTime (p,v.round) - MSGDELAY - PRECISION <= v.time <= proposalReceptionTime(p,v.round) + PRECISION`
+- `v.time <= proposalReceptionTime(p,v.round) + PRECISION` and
+- `v.time >= proposalReceptionTime(p,v.round) - MSGDELAY(v.round) - PRECISION` 
 
 That is, a correct process `p` started round `v.round` and, while still at
 round `v.round`, received a `PROPOSAL` message from round `v.round` proposing
@@ -326,7 +325,7 @@ If
 then the proposal `(v, v.time, r)` is accepted by every correct process provided that:
 
 - `min{p is correct : beginRound(p,r)} <= v.time <= max{p is correct : beginRound(p,r)}` and
-- `max{p is correct : beginRound(p,r)} <= v.time + MSGDELAY + PRECISION <= min{p is correct : beginRound(p,r+1)}`
+- `max{p is correct : beginRound(p,r)} <= v.time + MSGDELAY(r) + PRECISION <= min{p is correct : beginRound(p,r+1)}`
 
 The first condition establishes a range of safe proposal times `v.time` for round `r`.
 This condition is trivially observed if a correct proposer `p` sets `v.time` to the time it
@@ -342,16 +341,17 @@ In addition, it requires correct processes to stay long enough in round
 `v.round` so that they can receive the `PROPOSAL` message of round `v.round`.
 It assumed here that the proposer of `v` broadcasts a `PROPOSAL` message at
 time `v.time`, according to its local clock, so that every correct process
-should receive this message by time `v.time + MSGDELAY + PRECISION`, according
+should receive this message by time `v.time + MSGDELAY(v.round) + PRECISION`, according
 to their local clocks.
 
 Back to [main document][main].
 
 [main]: ./README.md
 
-[algorithm]: ./pbts-algorithm_002_draft.md
+[algorithm]: ./pbts-algorithm.md
+[time-monotonicity]: ./pbts-algorithm.md#time-monotonicity
 
-[sysmodel]: ./pbts-sysmodel_002_draft.md
+[sysmodel]: ./pbts-sysmodel.md
 [sysmodel_v1]: ./v1/pbts-sysmodel_001_draft.md
 
 [arXiv]: https://arxiv.org/pdf/1807.04938.pdf

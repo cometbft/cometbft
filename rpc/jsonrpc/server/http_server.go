@@ -18,6 +18,7 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 type ErrInvalidRemoteAddress struct {
@@ -171,7 +172,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Wrap the ResponseWriter to remember the status
 		rww := &responseWriterWrapper{-1, w}
-		begin := time.Now()
+		begin := cmttime.Now()
 
 		rww.Header().Set("X-Server-Time", strconv.FormatInt(begin.Unix(), 10))
 
@@ -222,7 +223,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 			}
 
 			// Finally, log.
-			durationMS := time.Since(begin).Nanoseconds() / 1000000
+			durationMS := cmttime.Since(begin).Nanoseconds() / 1000000
 			if rww.Status == -1 {
 				rww.Status = 200
 			}

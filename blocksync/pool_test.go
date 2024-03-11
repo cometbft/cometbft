@@ -78,10 +78,12 @@ func makePeers(numPeers int, minHeight, maxHeight int64) testPeers {
 }
 
 func TestBlockPoolBasic(t *testing.T) {
-	start := int64(42)
-	peers := makePeers(10, start+1, 1000)
-	errorsCh := make(chan peerError, 1000)
-	requestsCh := make(chan BlockRequest, 1000)
+	var (
+		start      = int64(42)
+		peers      = makePeers(10, start, 1000)
+		errorsCh   = make(chan peerError)
+		requestsCh = make(chan BlockRequest)
+	)
 	pool := NewBlockPool(start, requestsCh, errorsCh)
 	pool.SetLogger(log.TestingLogger())
 
@@ -138,10 +140,13 @@ func TestBlockPoolBasic(t *testing.T) {
 }
 
 func TestBlockPoolTimeout(t *testing.T) {
-	start := int64(42)
-	peers := makePeers(10, start+1, 1000)
-	errorsCh := make(chan peerError, 1000)
-	requestsCh := make(chan BlockRequest, 1000)
+	var (
+		start      = int64(42)
+		peers      = makePeers(10, start, 1000)
+		errorsCh   = make(chan peerError)
+		requestsCh = make(chan BlockRequest)
+	)
+
 	pool := NewBlockPool(start, requestsCh, errorsCh)
 	pool.SetLogger(log.TestingLogger())
 	err := pool.Start()

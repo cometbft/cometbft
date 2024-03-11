@@ -231,14 +231,14 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return nil, err
 	}
 
-	// key, _, err := parseTx(req.Tx)
-	// if err != nil || key == prefixReservedKey {
-	// 	//nolint:nilerr
-	// 	return &abci.CheckTxResponse{
-	// 		Code: kvstore.CodeTypeEncodingError,
-	// 		Log:  err.Error(),
-	// 	}, nil
-	// }
+	key, _, err := parseTx(req.Tx)
+	if err != nil || key == prefixReservedKey {
+		//nolint:nilerr
+		return &abci.CheckTxResponse{
+			Code: kvstore.CodeTypeEncodingError,
+			Log:  err.Error(),
+		}, nil
+	}
 
 	if app.cfg.CheckTxDelay != 0 {
 		time.Sleep(app.cfg.CheckTxDelay)
@@ -257,15 +257,15 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 
 	txs := make([]*abci.ExecTxResult, len(req.Txs))
 
-	for i, _ := range req.Txs {
-		// key, value, err := parseTx(tx)
-		// if err != nil {
-		// 	panic(err) // shouldn't happen since we verified it in CheckTx and ProcessProposal
-		// }
-		// if key == prefixReservedKey {
-		// 	panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", prefixReservedKey))
-		// }
-		// app.state.Set(key, value)
+	for i, tx := range req.Txs {
+		key, value, err := parseTx(tx)
+		if err != nil {
+			panic(err) // shouldn't happen since we verified it in CheckTx and ProcessProposal
+		}
+		if key == prefixReservedKey {
+			panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", prefixReservedKey))
+		}
+		app.state.Set(key, value)
 
 		txs[i] = &abci.ExecTxResult{Code: kvstore.CodeTypeOK}
 	}

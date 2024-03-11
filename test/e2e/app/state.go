@@ -81,7 +81,6 @@ func (s *State) load() error {
 // save saves the state to disk. It does not take out a lock since it is called
 // internally by Commit which does lock.
 func (s *State) save() error {
-	return nil
 	bz, err := json.Marshal(s)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)

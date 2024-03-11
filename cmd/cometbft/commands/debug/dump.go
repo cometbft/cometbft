@@ -13,6 +13,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/cli"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var dumpCmd = &cobra.Command{
@@ -79,7 +80,7 @@ func dumpCmdHandler(_ *cobra.Command, args []string) error {
 }
 
 func dumpDebugData(outDir string, conf *cfg.Config, rpc *rpchttp.HTTP) {
-	start := time.Now().UTC()
+	start := cmttime.Now()
 
 	tmpDir, err := os.MkdirTemp(outDir, "cometbft_debug_tmp")
 	if err != nil {

@@ -89,7 +89,10 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
 			storeHeight))
 	}
-	requestsCh := make(chan BlockRequest, maxTotalRequesters)
+
+	// It's okay to block since sendRequest is called from a separate goroutine
+	// (bpRequester#requestRoutine; 1 per each peer).
+	requestsCh := make(chan BlockRequest)
 
 	const capacity = 1000                      // must be bigger than peers count
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
@@ -216,7 +219,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 		return false
 	}
 	var extCommit *types.ExtendedCommit
-	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(msg.Height) {
+	if state.ConsensusParams.Feature.VoteExtensionsEnabled(msg.Height) {
 		extCommit = bcR.store.LoadBlockExtendedCommit(msg.Height)
 		if extCommit == nil {
 			bcR.Logger.Error("found block in store with no extended commit", "block", block)
@@ -361,10 +364,8 @@ FOR_LOOP:
 	for {
 		select {
 		case <-switchToConsensusTicker.C:
-			height, numPending, lenRequesters := bcR.pool.GetStatus()
 			outbound, inbound, _ := bcR.Switch.NumPeers()
-			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
-				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+			bcR.Logger.Debug("Consensus ticker", "outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
 			// The "if" statement below is a bit confusing, so here is a breakdown
 			// of its logic and purpose:
@@ -384,10 +385,8 @@ FOR_LOOP:
 			// if we did not blocksync any block.
 			//
 			missingExtension := true
-			if state.LastBlockHeight == 0 ||
-				!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
-				blocksSynced > 0 ||
-				initialCommitHasExtensions {
+			voteExtensionsDisabled := state.LastBlockHeight > 0 && !state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight)
+			if state.LastBlockHeight == 0 || voteExtensionsDisabled || blocksSynced > 0 || initialCommitHasExtensions {
 				missingExtension = false
 			}
 
@@ -395,14 +394,15 @@ FOR_LOOP:
 			if missingExtension {
 				bcR.Logger.Info(
 					"no extended commit yet",
-					"height", height,
 					"last_block_height", state.LastBlockHeight,
-					"initial_height", state.InitialHeight,
-					"max_peer_height", bcR.pool.MaxPeerHeight(),
+					"vote_extensions_disabled", voteExtensionsDisabled,
+					"blocks_synced", blocksSynced,
+					"initial_commit_has_extensions", initialCommitHasExtensions,
 				)
 				continue FOR_LOOP
 			}
-			if bcR.pool.IsCaughtUp() {
+
+			if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp {
 				bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 				if err := bcR.pool.Stop(); err != nil {
 					bcR.Logger.Error("Error stopping pool", "err", err)
@@ -451,7 +451,7 @@ FOR_LOOP:
 				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
 			}
-			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+			if extCommit == nil && state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
 				// See https://github.com/tendermint/tendermint/pull/8433#discussion_r866790631
 				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
 			}
@@ -489,7 +489,7 @@ FOR_LOOP:
 			}
 			if err == nil {
 				// if vote extensions were required at this height, ensure they exist.
-				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+				if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
 					err = extCommit.EnsureExtensions(true)
 				} else if extCommit != nil {
 					err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
@@ -517,7 +517,7 @@ FOR_LOOP:
 			bcR.pool.PopRequest()
 
 			// TODO: batch saves so we dont persist to disk every block
-			if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+			if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
 				bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
 			} else {
 				// We use LastCommit here instead of extCommit. extCommit is not
@@ -538,9 +538,9 @@ FOR_LOOP:
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
+				_, height, maxPeerHeight := bcR.pool.IsCaughtUp()
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
-				bcR.Logger.Info("Block Sync Rate", "height", bcR.pool.height,
-					"max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
+				bcR.Logger.Info("Block Sync Rate", "height", height, "max_peer_height", maxPeerHeight, "blocks/s", lastRate)
 				lastHundred = time.Now()
 			}
 

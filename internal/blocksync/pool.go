@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"sync/atomic"
 	"time"
 
 	flow "github.com/cometbft/cometbft/internal/flowrate"
@@ -29,9 +28,6 @@ eg, L = latency = 0.1s
 */
 
 const (
-	requestIntervalMS         = 2
-	maxTotalRequesters        = 600
-	maxPendingRequests        = maxTotalRequesters
 	maxPendingRequestsPerPeer = 20
 	requestRetrySeconds       = 30
 
@@ -55,7 +51,10 @@ const (
 	minBlocksForSingleRequest = 50
 )
 
-var peerTimeout = 14 * time.Second // not const so we can override with tests
+var (
+	requestInterval = 10 * time.Millisecond // timeout between requests
+	peerTimeout     = 15 * time.Second      // not const so we can override with tests
+)
 
 /*
 	Peers self report their heights when we join the block pool.
@@ -65,7 +64,7 @@ var peerTimeout = 14 * time.Second // not const so we can override with tests
 
 	Requests are continuously made for blocks of higher heights until
 	the limit is reached. If most of the requests have no available peers, and we
-	are not at peer limits, we can probably switch to consensus reactor
+	are not at peer limits, we can probably switch to consensus reactor.
 */
 
 // BlockPool keeps track of the block sync peers, block requests and block responses.
@@ -83,9 +82,6 @@ type BlockPool struct {
 	sortedPeers   []*bpPeer // sorted by curRate, highest first
 	maxPeerHeight int64     // the biggest reported height
 
-	// atomic
-	numPending int32 // number of requests pending assignment or block response
-
 	requestsCh chan<- BlockRequest
 	errorsCh   chan<- peerError
 }
@@ -99,7 +95,6 @@ func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- p
 		requesters:  make(map[int64]*bpRequester),
 		height:      start,
 		startHeight: start,
-		numPending:  0,
 
 		requestsCh: requestsCh,
 		errorsCh:   errorsCh,
@@ -116,11 +111,10 @@ func (pool *BlockPool) OnStart() error {
 	return nil
 }
 
-// spawns requesters as needed.
 func (pool *BlockPool) makeRequestersRoutine() {
 	for {
 		if !pool.IsRunning() {
-			break
+			return
 		}
 
 		// Check if we are within peerConnWait seconds of start time
@@ -131,23 +125,25 @@ func (pool *BlockPool) makeRequestersRoutine() {
 			time.Sleep(sleepDuration)
 		}
 
-		_, numPending, lenRequesters := pool.GetStatus()
+		pool.mtx.Lock()
+		var (
+			maxRequestersCreated = len(pool.requesters) >= len(pool.peers)*maxPendingRequestsPerPeer
+
+			nextHeight           = pool.height + int64(len(pool.requesters))
+			maxPeerHeightReached = nextHeight > pool.maxPeerHeight
+		)
+		pool.mtx.Unlock()
+
 		switch {
-		case numPending >= maxPendingRequests:
-			// sleep for a bit.
-			time.Sleep(requestIntervalMS * time.Millisecond)
-			// check for timed out peers
+		case maxRequestersCreated: // If we have enough requesters, wait for them to finish.
+			time.Sleep(requestInterval)
 			pool.removeTimedoutPeers()
-		case lenRequesters >= maxTotalRequesters:
-			// sleep for a bit.
-			time.Sleep(requestIntervalMS * time.Millisecond)
-			// check for timed out peers
-			pool.removeTimedoutPeers()
+		case maxPeerHeightReached: // If we're caught up, wait for a bit so reactor could finish or a higher height is reported.
+			time.Sleep(requestInterval)
 		default:
-			// request for more blocks.
-			pool.makeNextRequester()
+			pool.makeNextRequester(nextHeight)
 			// Sleep for a bit to make the requests more ordered.
-			time.Sleep(requestIntervalMS * time.Millisecond)
+			time.Sleep(requestInterval)
 		}
 	}
 }
@@ -181,25 +177,16 @@ func (pool *BlockPool) removeTimedoutPeers() {
 	pool.sortPeers()
 }
 
-// GetStatus returns pool's height, numPending requests and the number of
-// requesters.
-func (pool *BlockPool) GetStatus() (height int64, numPending int32, lenRequesters int) {
-	pool.mtx.Lock()
-	defer pool.mtx.Unlock()
-
-	return pool.height, atomic.LoadInt32(&pool.numPending), len(pool.requesters)
-}
-
 // IsCaughtUp returns true if this node is caught up, false - otherwise.
 // TODO: relax conditions, prevent abuse.
-func (pool *BlockPool) IsCaughtUp() bool {
+func (pool *BlockPool) IsCaughtUp() (isCaughtUp bool, height, maxPeerHeight int64) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
 	// Need at least 1 peer to be considered caught up.
 	if len(pool.peers) == 0 {
 		pool.Logger.Debug("Blockpool has no peers")
-		return false
+		return false, pool.height, pool.maxPeerHeight
 	}
 
 	// Some conditions to determine if we're caught up.
@@ -209,8 +196,8 @@ func (pool *BlockPool) IsCaughtUp() bool {
 	// to verify the LastCommit.
 	receivedBlockOrTimedOut := pool.height > 0 || time.Since(pool.startTime) > 5*time.Second
 	ourChainIsLongestAmongPeers := pool.maxPeerHeight == 0 || pool.height >= (pool.maxPeerHeight-1)
-	isCaughtUp := receivedBlockOrTimedOut && ourChainIsLongestAmongPeers
-	return isCaughtUp
+	isCaughtUp = receivedBlockOrTimedOut && ourChainIsLongestAmongPeers
+	return isCaughtUp, pool.height, pool.maxPeerHeight
 }
 
 // PeekTwoBlocks returns blocks at pool.height and pool.height+1. We need to
@@ -331,13 +318,19 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 		return err
 	}
 
-	atomic.AddInt32(&pool.numPending, -1)
 	peer := pool.peers[peerID]
 	if peer != nil {
 		peer.decrPending(blockSize)
 	}
 
 	return nil
+}
+
+// Height returns the pool's height.
+func (pool *BlockPool) Height() int64 {
+	pool.mtx.Lock()
+	defer pool.mtx.Unlock()
+	return pool.height
 }
 
 // MaxPeerHeight returns the highest reported height.
@@ -455,28 +448,15 @@ func (pool *BlockPool) sortPeers() {
 	})
 }
 
-func (pool *BlockPool) makeNextRequester() {
+func (pool *BlockPool) makeNextRequester(nextHeight int64) {
 	pool.mtx.Lock()
-	defer pool.mtx.Unlock()
-
-	nextHeight := pool.height + pool.requestersLen()
-	if nextHeight > pool.maxPeerHeight {
-		return
-	}
-
 	request := newBPRequester(pool, nextHeight)
-
 	pool.requesters[nextHeight] = request
-	atomic.AddInt32(&pool.numPending, 1)
+	pool.mtx.Unlock()
 
-	err := request.Start()
-	if err != nil {
+	if err := request.Start(); err != nil {
 		request.Logger.Error("Error starting request", "err", err)
 	}
-}
-
-func (pool *BlockPool) requestersLen() int64 {
-	return int64(len(pool.requesters))
 }
 
 func (pool *BlockPool) sendRequest(height int64, peerID p2p.ID) {
@@ -501,7 +481,7 @@ func (pool *BlockPool) debug() string {
 	defer pool.mtx.Unlock()
 
 	str := ""
-	nextHeight := pool.height + pool.requestersLen()
+	nextHeight := pool.height + int64(len(pool.requesters))
 	for h := pool.height; h < nextHeight; h++ {
 		if pool.requesters[h] == nil {
 			str += fmt.Sprintf("H(%v):X ", h)
@@ -708,7 +688,6 @@ func (bpr *bpRequester) reset(peerID p2p.ID) (removedBlock bool) {
 
 	// Only remove the block if we got it from that peer.
 	if bpr.gotBlockFrom == peerID {
-		atomic.AddInt32(&bpr.pool.numPending, 1)
 		bpr.block = nil
 		bpr.extCommit = nil
 		bpr.gotBlockFrom = ""
@@ -748,7 +727,7 @@ PICK_PEER_LOOP:
 		peer = bpr.pool.pickIncrAvailablePeer(bpr.height, secondPeerID)
 		if peer == nil {
 			bpr.Logger.Debug("No peers currently available; will retry shortly", "height", bpr.height)
-			time.Sleep(requestIntervalMS * time.Millisecond)
+			time.Sleep(requestInterval)
 			continue PICK_PEER_LOOP
 		}
 		break PICK_PEER_LOOP
@@ -798,7 +777,7 @@ OUTER_LOOP:
 	for {
 		bpr.pickPeerAndSendRequest()
 
-		poolHeight, _, _ := bpr.pool.GetStatus()
+		poolHeight := bpr.pool.Height()
 		if bpr.height-poolHeight < minBlocksForSingleRequest {
 			bpr.pickSecondPeerAndSendRequest()
 		}

@@ -23,6 +23,12 @@ type Provider struct {
 
 // Noop currently. Setup is performed externally to the e2e test tool.
 func (p *Provider) Setup() error {
+	for _, n := range p.Testnet.Nodes {
+		if n.ClockSkew != 0 {
+			return fmt.Errorf("node %q contains clock skew configuration (not supported on DO)", n.Name)
+		}
+	}
+
 	return nil
 }
 

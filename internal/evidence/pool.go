@@ -148,6 +148,7 @@ func (evpool *Pool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64) {
 	evidence, size, err := evpool.listEvidence(evpool.dbKeyLayout.PrefixToBytesPending(), maxBytes)
 	if err != nil {
 		evpool.logger.Error("Unable to retrieve pending evidence", "err", err)
+		return []types.Evidence{}, 0
 	}
 	return evidence, size
 }

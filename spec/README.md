@@ -30,7 +30,7 @@ please submit them to our [bug bounty](https://cometbft.com/security)!
 
 - [Consensus Algorithm](./consensus/consensus.md)
 - [Creating a proposal](./consensus/creating-proposal.md)
-- [Time](./consensus/bft-time.md)
+- [Time](./consensus/time.md)
 - [Light-Client](./consensus/light-client/README.md)
 
 ### P2P and Network Protocols

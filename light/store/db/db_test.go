@@ -3,7 +3,6 @@ package db
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -250,7 +250,7 @@ func randLightBlock(height int64) *types.LightBlock {
 				Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
 				ChainID:            cmtrand.Str(12),
 				Height:             height,
-				Time:               time.Now(),
+				Time:               cmttime.Now(),
 				LastBlockID:        types.BlockID{},
 				LastCommitHash:     crypto.CRandBytes(tmhash.Size),
 				DataHash:           crypto.CRandBytes(tmhash.Size),

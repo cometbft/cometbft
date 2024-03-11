@@ -47,6 +47,9 @@ type Config struct {
 	DiscardABCIResponses bool `toml:"discard_abci_responses"`
 
 	Indexer string `toml:"indexer"`
+
+	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
+	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 }
 
 // App extracts out the application specific configuration parameters.
@@ -67,6 +70,8 @@ func (cfg *Config) App() *app.Config {
 		VoteExtensionsEnableHeight: cfg.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: cfg.VoteExtensionsUpdateHeight,
 		ABCIRequestsLoggingEnabled: cfg.ABCIRequestsLoggingEnabled,
+		PbtsEnableHeight:           cfg.PbtsEnableHeight,
+		PbtsUpdateHeight:           cfg.PbtsUpdateHeight,
 	}
 }
 

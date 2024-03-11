@@ -63,7 +63,7 @@ func (g *Checker) isSupportedByGrammar(req *abci.Request) bool {
 	switch req.Value.(type) {
 	case *abci.Request_InitChain, *abci.Request_FinalizeBlock, *abci.Request_Commit,
 		*abci.Request_OfferSnapshot, *abci.Request_ApplySnapshotChunk, *abci.Request_PrepareProposal,
-		*abci.Request_ProcessProposal:
+		*abci.Request_ProcessProposal, *abci.Request_ExtendVote, *abci.Request_VerifyVoteExtension:
 		return true
 	default:
 		return false
@@ -91,7 +91,7 @@ func (g *Checker) filterLastHeight(reqs []*abci.Request) ([]*abci.Request, int) 
 	pos := len(reqs) - 1
 	cnt := 0
 	// Find the last commit.
-	for pos > 0 && g.getRequestTerminal(reqs[pos]) != Commit {
+	for pos >= 0 && g.getRequestTerminal(reqs[pos]) != Commit {
 		pos--
 		cnt++
 	}
@@ -129,6 +129,7 @@ func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) 
 	if len(reqs) == 0 {
 		return false, errors.New("execution with no ABCI calls")
 	}
+	fullExecution := g.getExecutionString(reqs)
 	r := g.filterRequests(reqs)
 	// Check if the execution is incomplete.
 	if len(r) == 0 {
@@ -139,7 +140,7 @@ func (g *Checker) Verify(reqs []*abci.Request, isCleanStart bool) (bool, error) 
 	if errors == nil {
 		return true, nil
 	}
-	return false, fmt.Errorf("%v\nFull execution:\n%v", g.combineErrors(errors, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(execution))
+	return false, fmt.Errorf("%v\nFull execution:\n%v", g.combineErrors(errors, g.cfg.NumberOfErrorsToShow), g.addHeightNumbersToTheExecution(fullExecution))
 }
 
 // verifyCleanStart verifies if a specific execution is a valid execution.

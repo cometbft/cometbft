@@ -206,7 +206,7 @@ func TestNoBlockResponse(t *testing.T) {
 	}
 
 	for {
-		if reactorPairs[1].reactor.pool.IsCaughtUp() {
+		if isCaughtUp, _, _ := reactorPairs[1].reactor.pool.IsCaughtUp(); isCaughtUp {
 			break
 		}
 
@@ -274,7 +274,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 		time.Sleep(1 * time.Second)
 		caughtUp := true
 		for _, r := range reactorPairs {
-			if !r.reactor.pool.IsCaughtUp() {
+			if isCaughtUp, _, _ := r.reactor.pool.IsCaughtUp(); !isCaughtUp {
 				caughtUp = false
 			}
 		}
@@ -303,7 +303,8 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	}
 
 	for {
-		if lastReactorPair.reactor.pool.IsCaughtUp() || lastReactorPair.reactor.Switch.Peers().Size() == 0 {
+		isCaughtUp, _, _ := lastReactorPair.reactor.pool.IsCaughtUp()
+		if isCaughtUp || lastReactorPair.reactor.Switch.Peers().Size() == 0 {
 			break
 		}
 
@@ -352,7 +353,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		caughtUp := true
 		for _, r := range reactorPairs {
-			if !r.reactor.pool.IsCaughtUp() {
+			if isCaughtUp, _, _ := r.reactor.pool.IsCaughtUp(); !isCaughtUp {
 				caughtUp = false
 				break
 			}
@@ -363,9 +364,8 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 		if time.Since(startTime) > 90*time.Second {
 			msg := "timeout: reactors didn't catch up;"
 			for i, r := range reactorPairs {
-				h, p, lr := r.reactor.pool.GetStatus()
-				c := r.reactor.pool.IsCaughtUp()
-				msg += fmt.Sprintf(" reactor#%d (h %d, p %d, lr %d, c %t);", i, h, p, lr, c)
+				c, h, maxH := r.reactor.pool.IsCaughtUp()
+				msg += fmt.Sprintf(" reactor#%d (h %d, maxH %d, c %t);", i, h, maxH, c)
 			}
 			require.Fail(t, msg)
 		}

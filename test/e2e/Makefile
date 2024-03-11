@@ -1,4 +1,4 @@
-COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb,rocksdb,pebbledb
+COMETBFT_BUILD_OPTIONS += badgerdb,boltdb,cleveldb,rocksdb,pebbledb,clock_skew
 IMAGE_TAG=cometbft/e2e-node:local-version
 
 include ../../common.mk

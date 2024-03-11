@@ -384,10 +384,8 @@ FOR_LOOP:
 			// if we did not blocksync any block.
 			//
 			missingExtension := true
-			if state.LastBlockHeight == 0 ||
-				!state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight) ||
-				blocksSynced > 0 ||
-				initialCommitHasExtensions {
+			voteExtensionsDisabled := !state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight)
+			if state.LastBlockHeight == 0 || voteExtensionsDisabled || blocksSynced > 0 || initialCommitHasExtensions {
 				missingExtension = false
 			}
 
@@ -396,7 +394,9 @@ FOR_LOOP:
 				bcR.Logger.Info(
 					"no extended commit yet",
 					"last_block_height", state.LastBlockHeight,
-					"initial_height", state.InitialHeight,
+					"vote_extensions_disabled", voteExtensionsDisabled,
+					"blocks_synced", blocksSynced,
+					"initial_commit_has_extensions", initialCommitHasExtensions,
 				)
 				continue FOR_LOOP
 			}

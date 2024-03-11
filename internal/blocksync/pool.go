@@ -373,10 +373,9 @@ func (pool *BlockPool) pickIncrAvailablePeer(height int64) *bpPeer {
 
 func (pool *BlockPool) makeNextRequester(nextHeight int64) {
 	pool.mtx.Lock()
-	defer pool.mtx.Unlock()
-
 	request := newBPRequester(pool, nextHeight)
 	pool.requesters[nextHeight] = request
+	pool.mtx.Unlock()
 
 	if err := request.Start(); err != nil {
 		request.Logger.Error("Error starting request", "err", err)

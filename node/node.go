@@ -378,9 +378,17 @@ func NewNode(ctx context.Context,
 	waitSync := stateSync || blockSync
 
 	if config.TestnetSkipSync {
-		logger.Info("testnet_skip_sync is set; skipping block sync")
-		blockSync = false
-		waitSync = false
+		// Can't skip block sync if vote extensions are enabled. Doing so may crash
+		// the node when we switch to consensus, as we wouldn't have the needed vote
+		// extensions (they are not available in the blockchain itself, they need to
+		// be retrieved via consensus or block sync messages).
+		if state.LastBlockHeight == 0 || !state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight) {
+			logger.Info("testnet_skip_sync is set; skipping block sync")
+			blockSync = false
+			waitSync = false
+		} else {
+			logger.Info("testnet_skip_sync is set; NOT skipping block sync because vote extensions are enabled")
+		}
 	}
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)

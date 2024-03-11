@@ -43,7 +43,7 @@ func randGenesisDoc() (*types.GenesisDoc, []types.PrivValidator) {
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
 	consPar := types.DefaultConsensusParams()
-	consPar.ABCI.VoteExtensionsEnableHeight = 1
+	consPar.Feature.VoteExtensionsEnableHeight = 1
 	return &types.GenesisDoc{
 		GenesisTime:     cmttime.Now(),
 		ChainID:         test.DefaultTestChainID,
@@ -143,7 +143,7 @@ func newReactor(
 			0,
 			types.PrecommitType,
 			blockID,
-			time.Now(),
+			cmttime.Now(),
 		)
 		if err != nil {
 			panic(err)

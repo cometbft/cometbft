@@ -30,7 +30,11 @@ func TestValidateBlockHeader(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := makeState(3, 1)
+	cp := test.ConsensusParams()
+	pbtsEnableHeight := validationTestsStopHeight / 2
+	cp.Feature.PbtsEnableHeight = pbtsEnableHeight
+
+	state, stateDB, privVals := makeStateWithParams(3, 1, cp, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -75,7 +79,14 @@ func TestValidateBlockHeader(t *testing.T) {
 		{"Version wrong2", func(block *types.Block) { block.Version = wrongVersion2 }},
 		{"ChainID wrong", func(block *types.Block) { block.ChainID = "not-the-real-one" }},
 		{"Height wrong", func(block *types.Block) { block.Height += 10 }},
-		{"Time wrong", func(block *types.Block) { block.Time = block.Time.Add(-time.Second * 1) }},
+		{"Time non-monotonic", func(block *types.Block) { block.Time = block.Time.Add(-2 * time.Second) }},
+		{"Time wrong", func(block *types.Block) {
+			if block.Height > 1 && block.Height < pbtsEnableHeight {
+				block.Time = block.Time.Add(time.Millisecond) // BFT Time
+			} else {
+				block.Time = time.Now() // not canonical
+			}
+		}},
 
 		{"LastBlockID wrong", func(block *types.Block) { block.LastBlockID.PartSetHeader.Total += 10 }},
 		{"LastCommitHash wrong", func(block *types.Block) { block.LastCommitHash = wrongHash }},
@@ -127,7 +138,7 @@ func TestValidateBlockCommit(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := makeState(1, 1)
+	state, stateDB, privVals := makeState(1, 1, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -175,7 +186,7 @@ func TestValidateBlockCommit(t *testing.T) {
 				0,
 				2,
 				state.LastBlockID,
-				time.Now(),
+				cmttime.Now(),
 			)
 			wrongHeightCommit := &types.Commit{
 				Height:     wrongHeightVote.Height,
@@ -231,7 +242,7 @@ func TestValidateBlockCommit(t *testing.T) {
 			0,
 			types.PrecommitType,
 			blockID,
-			time.Now(),
+			cmttime.Now(),
 		)
 
 		bpvPubKey, err := badPrivVal.GetPubKey()
@@ -271,7 +282,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 	require.NoError(t, proxyApp.Start())
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
-	state, stateDB, privVals := makeState(4, 1)
+	state, stateDB, privVals := makeState(4, 1, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
@@ -319,7 +330,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 			var currentBytes int64
 			// more bytes than the maximum allowed for evidence
 			for currentBytes <= maxBytesEvidence {
-				newEv, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, time.Now(),
+				newEv, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, cmttime.Now(),
 					privVals[proposerAddr.String()], chainID)
 				require.NoError(t, err)
 				evidence = append(evidence, newEv)

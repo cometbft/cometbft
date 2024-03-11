@@ -3,6 +3,7 @@ package state
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/sirupsen/logrus"
 
 	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
@@ -156,7 +158,6 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	if len(signGossipVoteTxBz) > 0 {
 		maxReapBytes -= int64(len(signGossipVoteTxBz))
-		maxDataBytes -= int64(len(signGossipVoteTxBz))
 		txs = blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 		signGossipVoteTx := types.Tx(signGossipVoteTxBz)
 		txs = append([]types.Tx{signGossipVoteTx}, txs...)
@@ -164,6 +165,11 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	txSlice := block.Txs.ToSliceOfBytes()
+
+	logrus.Info("BEFORE REQUEST PROPOSAL:")
+	logrus.Infof("STATE APP HASH: %s", hex.EncodeToString(state.AppHash))
+	logrus.Infof("BLOCK APP HASH: %s", block.AppHash.String())
+
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{

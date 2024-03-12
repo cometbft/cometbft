@@ -303,10 +303,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	didProcessCh, trySyncTicker, statusUpdateTicker, switchToConsensusTicker, blocksSynced, chainID, state, lastHundred, lastRate, initialCommitHasExtensions := bcR.setupPoolRoutine()
 
-	defer bcR.metrics.Syncing.Set(0)
-	defer trySyncTicker.Stop()
-	defer statusUpdateTicker.Stop()
-	defer switchToConsensusTicker.Stop()
+	defer bcR.setupDeferred(trySyncTicker, statusUpdateTicker, switchToConsensusTicker)
 
 	go func() {
 		for {
@@ -444,6 +441,15 @@ FOR_LOOP:
 	}
 }
 
+// setupDeferred sets up deferred calls for poolRoutine
+func (bcR *Reactor) setupDeferred(trySyncTicker, statusUpdateTicker, switchToConsensusTicker *time.Ticker) {
+	bcR.metrics.Syncing.Set(0)
+	trySyncTicker.Stop()
+	statusUpdateTicker.Stop()
+	switchToConsensusTicker.Stop()
+}
+
+// setupPoolRoutine initializes the variables used in the poolRoutine.
 func (bcR *Reactor) setupPoolRoutine() (chan struct{}, *time.Ticker, *time.Ticker, *time.Ticker, uint64, string, sm.State, time.Time, float64, bool) {
 	bcR.metrics.Syncing.Set(1)
 

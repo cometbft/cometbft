@@ -87,8 +87,8 @@ github.com/cometbft/cometbft-db v0.11.0 h1:M3Lscmpogx5NTbb1EGyGDaFRdsoLWrUWimFEy
 github.com/cometbft/cometbft-db v0.11.0/go.mod h1:GDPJAC/iFHNjmZZPN8V8C1yr/eyityhi2W1hz2MGKSc=
 github.com/cometbft/cometbft-load-test v0.1.0 h1:Axw5oVXlQqZLVUHVxmULSfEtpEuaUMmoeM560hvBAmw=
 github.com/cometbft/cometbft-load-test v0.1.0/go.mod h1:QEXKZ2L5SH1gEw6DRSKYpd3nDCWrzIejaHxwYdgKtkc=
-github.com/cometbft/cometbft/api v1.0.0-alpha.1 h1:/Ey3EyNgY7aO3fl8TvNOpipfRWQCIIC3iN1M5+jJIZI=
-github.com/cometbft/cometbft/api v1.0.0-alpha.1/go.mod h1:5vJTKMdvGufLjyQ0fqSfZ1Dbr7xENK170gUunyT7UL8=
+github.com/cometbft/cometbft/api v0.0.0-20240311183503-2f0dc67ee8d5 h1:8Vtxw4cY5taKaTPfV/t4iDpWmxxXGpjrx0/ajKCEBAM=
+github.com/cometbft/cometbft/api v0.0.0-20240311183503-2f0dc67ee8d5/go.mod h1:H52lgJKkSPeVpTcKr9a4nrSpyr6s1B352SWa6ajNHv0=
 github.com/containerd/continuity v0.3.0 h1:nisirsYROK15TAMVukJOUyGJjz4BNQJBVsNvAXZJ/eg=
 github.com/containerd/continuity v0.3.0/go.mod h1:wJEAIwKOm/pBZuBd0JmeTvnLquTB1Ag8espWhkykbPM=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=

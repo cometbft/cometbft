@@ -1,0 +1,2 @@
+- [abci/types] Allow applications to avoid implementing `PubKey` interface. ([\#2399](https://github.com/cometbft/cometbft/pull/2399))
+- [types] Limit Pubkeys in consensus params to a length of 1. ([\#2399](https://github.com/cometbft/cometbft/pull/2399))

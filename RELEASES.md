@@ -167,7 +167,7 @@ backport branch (see above). Otherwise:
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
      changes or other upgrading flows.
 4. Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-   directory. If it does not point to an official api version, edit it
+   file. If it does not point to an official api version, edit it
    so that it points to one. You may need to tag a new version of the api
    if the last version is too old (i.e., it does not contain the latest
    changes to the protos).
@@ -200,7 +200,7 @@ Before performing these steps, be sure the
 2. Run integration tests (`make test_integrations`) and the E2E nightlies.
 3. Prepare the release:
    * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-     directory. If it does not point to an official api version, edit it
+     file. If it does not point to an official api version, edit it
      so that it points to one. You may need to tag a new version of the api
      if the last version is too old (i.e., it does not contain the latest
      changes to the protos).
@@ -237,7 +237,7 @@ To create a patch release:
 2. Run integration tests (`make test_integrations`) and the nightlies.
 3. Check out a new branch and prepare the release:
    * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-     directory. If it does not point to an official api version, edit it
+     file. If it does not point to an official api version, edit it
      so that it points to one. You may need to tag a new version of the api
      if the last version is too old (i.e., it does not contain the latest
      changes to the protos).

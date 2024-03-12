@@ -27,7 +27,7 @@ type ErrNewValSetCantBeTrusted struct {
 }
 
 func (e ErrNewValSetCantBeTrusted) Error() string {
-	return fmt.Sprintf("cant trust new val set: %v", e.Reason)
+	return fmt.Sprintf("can't trust new val set: %v", e.Reason)
 }
 
 // ErrInvalidHeader means the header either failed the basic validation or

@@ -21,16 +21,16 @@ import (
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/nacl/box"
 
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/libs/async"
-	"github.com/cometbft/cometbft/libs/protoio"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
+	"github.com/cometbft/cometbft/internal/async"
+	"github.com/cometbft/cometbft/internal/protoio"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
-// 4 + 1024 == 1028 total frame size
+// 4 + 1024 == 1028 total frame size.
 const (
 	dataLenSize      = 4
 	dataMaxSize      = 1024
@@ -61,7 +61,6 @@ var (
 // Otherwise they are vulnerable to MITM.
 // (TODO(ismail): see also https://github.com/tendermint/tendermint/issues/3010)
 type SecretConnection struct {
-
 	// immutable
 	recvAead cipher.AEAD
 	sendAead cipher.AEAD
@@ -90,9 +89,7 @@ type SecretConnection struct {
 // Caller should call conn.Close()
 // See docs/sts-final.pdf for more information.
 func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*SecretConnection, error) {
-	var (
-		locPubKey = locPrivKey.PubKey()
-	)
+	locPubKey := locPrivKey.PubKey()
 
 	// Generate ephemeral keys for perfect forward secrecy.
 	locEphPub, locEphPriv := genEphKeys()
@@ -177,7 +174,7 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	return sc, nil
 }
 
-// RemotePubKey returns authenticated remote pubkey
+// RemotePubKey returns authenticated remote pubkey.
 func (sc *SecretConnection) RemotePubKey() crypto.PubKey {
 	return sc.remPubKey
 }
@@ -190,8 +187,8 @@ func (sc *SecretConnection) Write(data []byte) (n int, err error) {
 
 	for 0 < len(data) {
 		if err := func() error {
-			var sealedFrame = pool.Get(aeadSizeOverhead + totalFrameSize)
-			var frame = pool.Get(totalFrameSize)
+			sealedFrame := pool.Get(aeadSizeOverhead + totalFrameSize)
+			frame := pool.Get(totalFrameSize)
 			defer func() {
 				pool.Put(sealedFrame)
 				pool.Put(frame)
@@ -235,20 +232,20 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	if 0 < len(sc.recvBuffer) {
 		n = copy(data, sc.recvBuffer)
 		sc.recvBuffer = sc.recvBuffer[n:]
-		return
+		return n, err
 	}
 
 	// read off the conn
-	var sealedFrame = pool.Get(aeadSizeOverhead + totalFrameSize)
+	sealedFrame := pool.Get(aeadSizeOverhead + totalFrameSize)
 	defer pool.Put(sealedFrame)
 	_, err = io.ReadFull(sc.conn, sealedFrame)
 	if err != nil {
-		return
+		return n, err
 	}
 
 	// decrypt the frame.
 	// reads and updates the sc.recvNonce
-	var frame = pool.Get(totalFrameSize)
+	frame := pool.Get(totalFrameSize)
 	defer pool.Put(frame)
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
@@ -259,11 +256,11 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 
 	// copy checkLength worth into data,
 	// set recvBuffer to the rest.
-	var chunkLength = binary.LittleEndian.Uint32(frame) // read the first four bytes
+	chunkLength := binary.LittleEndian.Uint32(frame) // read the first four bytes
 	if chunkLength > dataMaxSize {
 		return 0, errors.New("chunkLength is greater than dataMaxSize")
 	}
-	var chunk = frame[dataLenSize : dataLenSize+chunkLength]
+	chunk := frame[dataLenSize : dataLenSize+chunkLength]
 	n = copy(data, chunk)
 	if n < len(chunk) {
 		sc.recvBuffer = make([]byte, len(chunk)-n)
@@ -272,7 +269,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	return n, err
 }
 
-// Implements net.Conn
+// Implements net.Conn.
 func (sc *SecretConnection) Close() error                  { return sc.conn.Close() }
 func (sc *SecretConnection) LocalAddr() net.Addr           { return sc.conn.(net.Conn).LocalAddr() }
 func (sc *SecretConnection) RemoteAddr() net.Addr          { return sc.conn.(net.Conn).RemoteAddr() }
@@ -280,6 +277,7 @@ func (sc *SecretConnection) SetDeadline(t time.Time) error { return sc.conn.(net
 func (sc *SecretConnection) SetReadDeadline(t time.Time) error {
 	return sc.conn.(net.Conn).SetReadDeadline(t)
 }
+
 func (sc *SecretConnection) SetWriteDeadline(t time.Time) error {
 	return sc.conn.(net.Conn).SetWriteDeadline(t)
 }
@@ -297,9 +295,8 @@ func genEphKeys() (ephPub, ephPriv *[32]byte) {
 }
 
 func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byte, err error) {
-
 	// Send our pubkey and receive theirs in tandem.
-	var trs, _ = async.Parallel(
+	trs, _ := async.Parallel(
 		func(_ int) (val interface{}, abort bool, err error) {
 			lc := *locEphPub
 			_, err = protoio.NewDelimitedWriter(conn).WriteMsg(&gogotypes.BytesValue{Value: lc[:]})
@@ -324,11 +321,11 @@ func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byt
 	// If error:
 	if trs.FirstError() != nil {
 		err = trs.FirstError()
-		return
+		return remEphPub, err
 	}
 
 	// Otherwise:
-	var _remEphPub = trs.FirstValue().([32]byte)
+	_remEphPub := trs.FirstValue().([32]byte)
 	return &_remEphPub, nil
 }
 
@@ -400,9 +397,8 @@ type authSigMessage struct {
 }
 
 func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte) (recvMsg authSigMessage, err error) {
-
 	// Send our info and receive theirs in tandem.
-	var trs, _ = async.Parallel(
+	trs, _ := async.Parallel(
 		func(_ int) (val interface{}, abort bool, err error) {
 			pbpk, err := cryptoenc.PubKeyToProto(pubKey)
 			if err != nil {
@@ -437,10 +433,10 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 	// If error:
 	if trs.FirstError() != nil {
 		err = trs.FirstError()
-		return
+		return recvMsg, err
 	}
 
-	var _recvMsg = trs.FirstValue().(authSigMessage)
+	_recvMsg := trs.FirstValue().(authSigMessage)
 	return _recvMsg, nil
 }
 

@@ -13,37 +13,22 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cfg "github.com/cometbft/cometbft/config"
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/cli"
-	cmtos "github.com/cometbft/cometbft/libs/os"
 )
 
-var defaultRoot = os.ExpandEnv("$HOME/.some/test/dir")
-
 // clearConfig clears env vars, the given root dir, and resets viper.
-func clearConfig(dir string) {
-	if err := os.Unsetenv("CMTHOME"); err != nil {
-		panic(err)
-	}
-	if err := os.Unsetenv("CMT_HOME"); err != nil {
-		panic(err)
-	}
-	if err := os.Unsetenv("TMHOME"); err != nil {
-		// XXX: Deprecated.
-		panic(err)
-	}
-	if err := os.Unsetenv("TM_HOME"); err != nil {
-		// XXX: Deprecated.
-		panic(err)
-	}
+func clearConfig(t *testing.T, dir string) {
+	t.Helper()
+	os.Clearenv()
+	err := os.RemoveAll(dir)
+	require.NoError(t, err)
 
-	if err := os.RemoveAll(dir); err != nil {
-		panic(err)
-	}
 	viper.Reset()
 	config = cfg.DefaultConfig()
 }
 
-// prepare new rootCmd
+// prepare new rootCmd.
 func testRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:               RootCmd.Use,
@@ -56,11 +41,12 @@ func testRootCmd() *cobra.Command {
 	return rootCmd
 }
 
-func testSetup(args []string, env map[string]string) error {
-	clearConfig(defaultRoot)
+func testSetup(t *testing.T, root string, args []string, env map[string]string) error {
+	t.Helper()
+	clearConfig(t, root)
 
 	rootCmd := testRootCmd()
-	cmd := cli.PrepareBaseCmd(rootCmd, "CMT", defaultRoot)
+	cmd := cli.PrepareBaseCmd(rootCmd, "CMT", root)
 
 	// run with the args and env
 	args = append([]string{rootCmd.Use}, args...)
@@ -68,23 +54,28 @@ func testSetup(args []string, env map[string]string) error {
 }
 
 func TestRootHome(t *testing.T) {
-	newRoot := filepath.Join(defaultRoot, "something-else")
+	tmpDir := os.TempDir()
+	root := filepath.Join(tmpDir, "adir")
+	newRoot := filepath.Join(tmpDir, "something-else")
+	defer clearConfig(t, root)
+	defer clearConfig(t, newRoot)
+
 	cases := []struct {
 		args []string
 		env  map[string]string
 		root string
 	}{
-		{nil, nil, defaultRoot},
+		{nil, nil, root},
 		{[]string{"--home", newRoot}, nil, newRoot},
 		{nil, map[string]string{"TMHOME": newRoot}, newRoot}, // XXX: Deprecated.
 		{nil, map[string]string{"CMTHOME": newRoot}, newRoot},
 	}
 
 	for i, tc := range cases {
-		idxString := strconv.Itoa(i)
+		idxString := "idx: " + strconv.Itoa(i)
 
-		err := testSetup(tc.args, tc.env)
-		require.Nil(t, err, idxString)
+		err := testSetup(t, root, tc.args, tc.env)
+		require.NoError(t, err, idxString)
 
 		assert.Equal(t, tc.root, config.RootDir, idxString)
 		assert.Equal(t, tc.root, config.P2P.RootDir, idxString)
@@ -115,9 +106,11 @@ func TestRootFlagsEnv(t *testing.T) {
 
 	for i, tc := range cases {
 		idxString := strconv.Itoa(i)
-
-		err := testSetup(tc.args, tc.env)
-		require.Nil(t, err, idxString)
+		root := filepath.Join(os.TempDir(), "adir2_"+idxString)
+		idxString = "idx: " + idxString
+		defer clearConfig(t, root)
+		err := testSetup(t, root, tc.args, tc.env)
+		require.NoError(t, err, idxString)
 
 		assert.Equal(t, tc.logLevel, config.LogLevel, idxString)
 	}
@@ -144,25 +137,26 @@ func TestRootConfig(t *testing.T) {
 
 	for i, tc := range cases {
 		idxString := strconv.Itoa(i)
-		clearConfig(defaultRoot)
-
+		root := filepath.Join(os.TempDir(), "adir3_"+idxString)
+		idxString = "idx: " + idxString
+		defer clearConfig(t, root)
 		// XXX: path must match cfg.defaultConfigPath
-		configFilePath := filepath.Join(defaultRoot, "config")
+		configFilePath := filepath.Join(root, "config")
 		err := cmtos.EnsureDir(configFilePath, 0o700)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// write the non-defaults to a different path
 		// TODO: support writing sub configs so we can test that too
 		err = WriteConfigVals(configFilePath, cvals)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		rootCmd := testRootCmd()
-		cmd := cli.PrepareBaseCmd(rootCmd, "CMT", defaultRoot)
+		cmd := cli.PrepareBaseCmd(rootCmd, "CMT", root)
 
 		// run with the args and env
 		tc.args = append([]string{rootCmd.Use}, tc.args...)
 		err = cli.RunWithArgs(cmd, tc.args, tc.env)
-		require.Nil(t, err, idxString)
+		require.NoError(t, err, idxString)
 
 		assert.Equal(t, tc.logLvl, config.LogLevel, idxString)
 	}

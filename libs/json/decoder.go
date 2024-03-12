@@ -115,7 +115,6 @@ func decodeReflectList(bz []byte, rv reflect.Value) error {
 				return fmt.Errorf("got %v bytes, expected %v", len(buf), rv.Len())
 			}
 			reflect.Copy(rv, reflect.ValueOf(buf))
-
 		} else if err := decodeStdlib(bz, rv); err != nil {
 			return err
 		}

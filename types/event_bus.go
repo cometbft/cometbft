@@ -3,11 +3,12 @@ package types
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/cometbft/cometbft/abci/types"
+	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
-	"github.com/cometbft/cometbft/libs/service"
 )
 
 const defaultCapacity = 0
@@ -81,8 +82,8 @@ func (b *EventBus) Subscribe(
 	return b.pubsub.Subscribe(ctx, subscriber, query, outCapacity...)
 }
 
-// This method can be used for a local consensus explorer and synchronous
-// testing. Do not use for for public facing / untrusted subscriptions!
+// SubscribeUnbuffered can be used for a local consensus explorer and synchronous
+// testing. Do not use for public facing / untrusted subscriptions!
 func (b *EventBus) SubscribeUnbuffered(
 	ctx context.Context,
 	subscriber string,
@@ -183,7 +184,7 @@ func (b *EventBus) PublishEventTx(data EventDataTx) error {
 	// add predefined compositeKeys
 	events[EventTypeKey] = append(events[EventTypeKey], EventTx)
 	events[TxHashKey] = append(events[TxHashKey], fmt.Sprintf("%X", Tx(data.Tx).Hash()))
-	events[TxHeightKey] = append(events[TxHeightKey], fmt.Sprintf("%d", data.Height))
+	events[TxHeightKey] = append(events[TxHeightKey], strconv.FormatInt(data.Height, 10))
 
 	return b.pubsub.PublishWithEvents(ctx, data, events)
 }
@@ -212,10 +213,6 @@ func (b *EventBus) PublishEventPolka(data EventDataRoundState) error {
 	return b.Publish(EventPolka, data)
 }
 
-func (b *EventBus) PublishEventUnlock(data EventDataRoundState) error {
-	return b.Publish(EventUnlock, data)
-}
-
 func (b *EventBus) PublishEventRelock(data EventDataRoundState) error {
 	return b.Publish(EventRelock, data)
 }
@@ -228,7 +225,7 @@ func (b *EventBus) PublishEventValidatorSetUpdates(data EventDataValidatorSetUpd
 	return b.Publish(EventValidatorSetUpdates, data)
 }
 
-// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------.
 type NopEventBus struct{}
 
 func (NopEventBus) Subscribe(
@@ -293,10 +290,6 @@ func (NopEventBus) PublishEventCompleteProposal(EventDataRoundState) error {
 }
 
 func (NopEventBus) PublishEventPolka(EventDataRoundState) error {
-	return nil
-}
-
-func (NopEventBus) PublishEventUnlock(EventDataRoundState) error {
 	return nil
 }
 

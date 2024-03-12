@@ -12,8 +12,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/require"
 
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
@@ -56,7 +56,10 @@ func (h *myHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.mtx.RUnlock()
 
 		res := json.RawMessage(`{}`)
-		emptyRespBytes, _ := json.Marshal(types.RPCResponse{Result: res, ID: req.ID})
+		emptyRespBytes, err := json.Marshal(types.RPCResponse{Result: res, ID: req.ID})
+		if err != nil {
+			panic(err)
+		}
 		if err := conn.WriteMessage(messageType, emptyRespBytes); err != nil {
 			return
 		}
@@ -202,20 +205,23 @@ func TestNotBlockingOnStop(t *testing.T) {
 }
 
 func startClient(t *testing.T, addr string) *WSClient {
+	t.Helper()
 	c, err := NewWS(addr, "/websocket")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = c.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	c.SetLogger(log.TestingLogger())
 	return c
 }
 
 func call(t *testing.T, method string, c *WSClient) {
+	t.Helper()
 	err := c.Call(context.Background(), method, make(map[string]interface{}))
 	require.NoError(t, err)
 }
 
 func callWgDoneOnResult(t *testing.T, c *WSClient, wg *sync.WaitGroup) {
+	t.Helper()
 	for {
 		select {
 		case resp := <-c.ResponsesCh:

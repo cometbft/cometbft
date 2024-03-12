@@ -1,44 +1,137 @@
+run:
+  tests: true
+  timeout: 10m
+
 linters:
-  enable:
-    - asciicheck
-    - bodyclose
-    - depguard
-    - dogsled
-    - dupl
-    - errcheck
-    - exportloopref
-    - goconst
-    - gofmt
-    - goimports
+  enable-all: true
+  disable:
+    - containedctx
+    - contextcheck
+    - cyclop
+    - deadcode
+    - dupword
+    - errname
+    - errorlint
+    - exhaustive
+    - exhaustivestruct
+    - exhaustruct
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - gocyclo
+    - godox
+    - goerr113
+    - golint
+    - gomnd
+    - ifshort
+    - interfacebloat
+    - interfacer
+    - ireturn
+    - lll
+    - maintidx
+    - maligned
+    - nestif
+    - nilnil
+    - nlreturn
+    - nonamedreturns
+    - nosnakecase
+    - predeclared
     - revive
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
-    - nakedret
-    - nolintlint
-    - prealloc
-    - staticcheck
-    # - structcheck // to be fixed by golangci-lint
-    - stylecheck
-    - typecheck
-    - unconvert
-    - unused
+    - scopelint
+    - structcheck
+    - tagliatelle
+    - testifylint
+    - varcheck
+    - varnamelen
+    - wrapcheck
+    - wsl
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
+        - gocritic
+        - gofmt
+        - goimport
         - gosec
-  max-same-issues: 50
-
+        - noctx
+        - paralleltest
+        - testpackage
+        - tparallel
+    - path: \.pb\.go
+      linters:
+        - gofmt
+        - goimports
+        - govet
+        - stylecheck
+  max-same-issues: 10000
+  max-issues-per-linter: 10000
 linters-settings:
   dogsled:
     max-blank-identifiers: 3
-  golint:
-    min-confidence: 0
-  maligned:
-    suggest-new: true
+  goconst:
+    ignore-tests: true
   misspell:
     locale: US
+  gci:
+    sections:
+      - standard # Standard section: captures all standard packages.
+      - default # Default section: contains all imports that could not be matched to another section type.
+      - blank # blank imports
+      - dot # dot imports
+      - prefix(github.com/cometbft/cometbft, github.com/cometbft/cometbft-db, github.com/cometbft/cometbft-load-test)
+    custom-order: true
+  depguard:
+    rules:
+      main:
+        files:
+          - $all
+          - "!$test"
+        allow:
+          - $gostd
+          - github.com/cometbft
+          - github.com/cosmos
+          - github.com/btcsuite/btcd/btcec/v2
+          - github.com/BurntSushi/toml
+          - github.com/go-git/go-git/v5
+          - github.com/go-kit
+          - github.com/go-logfmt/logfmt
+          - github.com/gofrs/uuid
+          - github.com/google
+          - github.com/gorilla/websocket
+          - github.com/lib/pq
+          - github.com/libp2p/go-buffer-pool
+          - github.com/Masterminds/semver/v3
+          - github.com/minio/highwayhash
+          - github.com/oasisprotocol/curve25519-voi
+          - github.com/pkg/errors
+          - github.com/prometheus
+          - github.com/rcrowley/go-metrics
+          - github.com/rs/cors
+          - github.com/snikch/goodman
+          - github.com/spf13
+          - github.com/stretchr/testify/require
+          - github.com/syndtr/goleveldb
+      test:
+        files:
+          - "$test"
+        allow:
+          - $gostd
+          - github.com/cosmos
+          - github.com/cometbft
+          - github.com/adlio/schema
+          - github.com/btcsuite/btcd
+          - github.com/fortytw2/leaktest
+          - github.com/go-kit
+          - github.com/google/uuid
+          - github.com/gorilla/websocket
+          - github.com/lib/pq
+          - github.com/oasisprotocol/curve25519-voi/primitives/merlin
+          - github.com/ory/dockertest
+          - github.com/pkg/errors
+          - github.com/prometheus/client_golang/prometheus/promhttp
+          - github.com/spf13
+          - github.com/stretchr/testify

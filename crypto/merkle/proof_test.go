@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 const ProofOpDomino = "test:domino"
@@ -81,58 +81,58 @@ func TestProofOperators(t *testing.T) {
 	// Good
 	popz := ProofOperators([]ProofOperator{op1, op2, op3, op4})
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = popz.VerifyValue(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", bz("INPUT1"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// BAD INPUT
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1_WRONG")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	err = popz.VerifyValue(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", bz("INPUT1_WRONG"))
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 1
 	err = popz.Verify(bz("OUTPUT4"), "/KEY3/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 2
 	err = popz.Verify(bz("OUTPUT4"), "KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 3
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1/", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 4
 	err = popz.Verify(bz("OUTPUT4"), "//KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD KEY 5
 	err = popz.Verify(bz("OUTPUT4"), "/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD OUTPUT 1
 	err = popz.Verify(bz("OUTPUT4_WRONG"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD OUTPUT 2
 	err = popz.Verify(bz(""), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD POPZ 1
 	popz = []ProofOperator{op1, op2, op4}
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD POPZ 2
 	popz = []ProofOperator{op4, op3, op2, op1}
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 
 	// BAD POPZ 3
 	popz = []ProofOperator{}
 	err = popz.Verify(bz("OUTPUT4"), "/KEY4/KEY2/KEY1", [][]byte{bz("INPUT1")})
-	assert.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func bz(s string) []byte {
@@ -146,14 +146,20 @@ func TestProofValidateBasic(t *testing.T) {
 		errStr        string
 	}{
 		{"Good", func(sp *Proof) {}, ""},
-		{"Negative Total", func(sp *Proof) { sp.Total = -1 }, "negative Total"},
-		{"Negative Index", func(sp *Proof) { sp.Index = -1 }, "negative Index"},
-		{"Invalid LeafHash", func(sp *Proof) { sp.LeafHash = make([]byte, 10) },
-			"expected LeafHash size to be 32, got 10"},
-		{"Too many Aunts", func(sp *Proof) { sp.Aunts = make([][]byte, MaxAunts+1) },
-			"expected no more than 100 aunts, got 101"},
-		{"Invalid Aunt", func(sp *Proof) { sp.Aunts[0] = make([]byte, 10) },
-			"expected Aunts#0 size to be 32, got 10"},
+		{"Negative Total", func(sp *Proof) { sp.Total = -1 }, "negative proof total"},
+		{"Negative Index", func(sp *Proof) { sp.Index = -1 }, "negative proof index"},
+		{
+			"Invalid LeafHash", func(sp *Proof) { sp.LeafHash = make([]byte, 10) },
+			"leaf length 10, want 32",
+		},
+		{
+			"Too many Aunts", func(sp *Proof) { sp.Aunts = make([][]byte, MaxAunts+1) },
+			"maximum aunts length, 100, exceeded",
+		},
+		{
+			"Invalid Aunt", func(sp *Proof) { sp.Aunts[0] = make([]byte, 10) },
+			"aunt#0 hash length 10, want 32",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -172,6 +178,7 @@ func TestProofValidateBasic(t *testing.T) {
 		})
 	}
 }
+
 func TestVoteProtobuf(t *testing.T) {
 	_, proofs := ProofsFromByteSlices([][]byte{
 		[]byte("apple"),
@@ -221,5 +228,5 @@ func TestVsa2022_100(t *testing.T) {
 	// the nil root
 	var root []byte
 
-	assert.NotNil(t, ProofOperators{op}.Verify(root, "/"+string(key), [][]byte{value}))
+	require.Error(t, ProofOperators{op}.Verify(root, "/"+string(key), [][]byte{value}))
 }

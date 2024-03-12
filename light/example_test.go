@@ -9,7 +9,6 @@ import (
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
@@ -17,6 +16,7 @@ import (
 	httpp "github.com/cometbft/cometbft/light/provider/http"
 	dbs "github.com/cometbft/cometbft/light/store/db"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // Automatically getting new headers and verifying them.
@@ -71,7 +71,7 @@ func ExampleClient_Update() {
 
 	time.Sleep(2 * time.Second)
 
-	h, err := c.Update(context.Background(), time.Now())
+	h, err := c.Update(context.Background(), cmttime.Now())
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 		}
 	}()
 
-	_, err = c.VerifyLightBlockAtHeight(context.Background(), 3, time.Now())
+	_, err = c.VerifyLightBlockAtHeight(context.Background(), 3, cmttime.Now())
 	if err != nil {
 		stdlog.Fatal(err)
 	}
@@ -151,11 +151,11 @@ func ExampleClient_VerifyLightBlockAtHeight() {
 func TestMain(m *testing.M) {
 	// start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewInMemoryApplication()
-	node := rpctest.StartTendermint(app, rpctest.SuppressStdout)
+	node := rpctest.StartCometBFT(app, rpctest.SuppressStdout)
 
 	code := m.Run()
 
 	// and shut down proper at the end
-	rpctest.StopTendermint(node)
+	rpctest.StopCometBFT(node)
 	os.Exit(code)
 }

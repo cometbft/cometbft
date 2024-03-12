@@ -17,7 +17,7 @@ import (
 
 var reInt = regexp.MustCompile(`^-?[0-9]+$`)
 
-// convert from a function name to the http handler
+// convert from a function name to the http handler.
 func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWriter, *http.Request) {
 	// Always return -1 as there's no ID here.
 	dummyID := types.JSONRPCIntID(-1) // URIClientRequestID
@@ -27,7 +27,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 		return func(w http.ResponseWriter, r *http.Request) {
 			res := types.RPCMethodNotFoundError(dummyID)
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusNotFound, res); wErr != nil {
-				logger.Error("failed to write response", "res", res, "err", wErr)
+				logger.Error("failed to write response", "err", wErr)
 			}
 		}
 	}
@@ -45,7 +45,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 				fmt.Errorf("error converting http params to arguments: %w", err),
 			)
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
-				logger.Error("failed to write response", "res", res, "err", wErr)
+				logger.Error("failed to write response", "err", wErr)
 			}
 			return
 		}
@@ -58,7 +58,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 		if err != nil {
 			if err := WriteRPCResponseHTTPError(w, http.StatusInternalServerError,
 				types.RPCInternalError(dummyID, err)); err != nil {
-				logger.Error("failed to write response", "res", result, "err", err)
+				logger.Error("failed to write response", "err", err)
 				return
 			}
 			return
@@ -71,13 +71,13 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 			err = WriteRPCResponseHTTP(w, resp)
 		}
 		if err != nil {
-			logger.Error("failed to write response", "res", result, "err", err)
+			logger.Error("failed to write response", "err", err)
 			return
 		}
 	}
 }
 
-// Covert an http query to a list of properly typed values.
+// Convert an http query to a list of properly typed values.
 // To be properly decoded the arg must be a concrete type from CometBFT (if its an interface).
 func httpParamsToArgs(rpcFunc *RPCFunc, r *http.Request) ([]reflect.Value, error) {
 	// skip types.Context
@@ -128,24 +128,19 @@ func jsonStringToArg(rt reflect.Type, arg string) (reflect.Value, error) {
 func nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, error) {
 	if rt.Kind() == reflect.Ptr {
 		rv1, ok, err := nonJSONStringToArg(rt.Elem(), arg)
-		switch {
-		case err != nil:
-			return reflect.Value{}, false, err
-		case ok:
-			rv := reflect.New(rt.Elem())
-			rv.Elem().Set(rv1)
-			return rv, true, nil
-		default:
-			return reflect.Value{}, false, nil
+		if err != nil || !ok {
+			return reflect.Value{}, ok, err
 		}
-	} else {
-		return _nonJSONStringToArg(rt, arg)
+		rv := reflect.New(rt.Elem())
+		rv.Elem().Set(rv1)
+		return rv, true, nil
 	}
+	return _nonJSONStringToArg(rt, arg)
 }
 
 // NOTE: rt.Kind() isn't a pointer.
 func _nonJSONStringToArg(rt reflect.Type, arg string) (reflect.Value, bool, error) {
-	isIntString := reInt.Match([]byte(arg))
+	isIntString := reInt.MatchString(arg)
 	isQuotedString := strings.HasPrefix(arg, `"`) && strings.HasSuffix(arg, `"`)
 	isHexString := strings.HasPrefix(strings.ToLower(arg), "0x")
 

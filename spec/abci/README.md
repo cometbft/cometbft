@@ -17,10 +17,10 @@ message type.
 
 The methods are always initiated by CometBFT. The Application implements its logic
 for handling all ABCI++ methods.
-Thus, CometBFT always sends the `Request*` messages and receives the `Response*` messages
+Thus, CometBFT always sends the `*Request` messages and receives the `*Response` messages
 in return.
 
-All ABCI++ messages and methods are defined in [protocol buffers](https://github.com/cometbft/cometbft/blob/main/proto/tendermint/abci/types.proto).
+All ABCI++ messages and methods are defined in [protocol buffers](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/abci/v1/types.proto).
 This allows CometBFT to run with applications written in many programming languages.
 
 This specification is split as follows:

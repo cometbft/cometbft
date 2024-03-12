@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"sort"
+	"strings"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
@@ -16,7 +17,7 @@ import (
 
 // HTTP + JSON handler
 
-// jsonrpc calls grab the given method's function info and runs reflect.Call
+// jsonrpc calls grab the given method's function info and runs reflect.Call.
 func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
@@ -25,7 +26,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				fmt.Errorf("error reading request body: %w", err),
 			)
 			if wErr := WriteRPCResponseHTTPError(w, http.StatusBadRequest, res); wErr != nil {
-				logger.Error("failed to write response", "res", res, "err", wErr)
+				logger.Error("failed to write response", "err", wErr)
 			}
 			return
 		}
@@ -48,7 +49,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			if err := json.Unmarshal(b, &request); err != nil {
 				res := types.RPCParseError(fmt.Errorf("error unmarshaling request: %w", err))
 				if wErr := WriteRPCResponseHTTPError(w, http.StatusInternalServerError, res); wErr != nil {
-					logger.Error("failed to write response", "res", res, "err", wErr)
+					logger.Error("failed to write response", "err", wErr)
 				}
 				return
 			}
@@ -72,7 +73,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				)
 				continue
 			}
-			if len(r.URL.Path) > 1 {
+			trimmedPath := strings.Trim(r.URL.Path, "/")
+			if trimmedPath != "" && trimmedPath != "v1" {
 				responses = append(
 					responses,
 					types.RPCInvalidRequestError(request.ID, fmt.Errorf("path %s is invalid", r.URL.Path)),
@@ -122,7 +124,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 				wErr = WriteRPCResponseHTTP(w, responses...)
 			}
 			if wErr != nil {
-				logger.Error("failed to write responses", "res", responses, "err", wErr)
+				logger.Error("failed to write responses", "err", wErr)
 			}
 		}
 	}
@@ -130,9 +132,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 
 func handleInvalidJSONRPCPaths(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Since the pattern "/" matches all paths not matched by other registered patterns,
-		//  we check whether the path is indeed "/", otherwise return a 404 error
-		if r.URL.Path != "/" {
+		trimmedPath := strings.Trim(r.URL.Path, "/")
+		if trimmedPath != "" && trimmedPath != "v1" {
 			http.NotFound(w, r)
 			return
 		}
@@ -217,7 +218,7 @@ func jsonParamsToArgs(rpcFunc *RPCFunc, raw []byte) ([]reflect.Value, error) {
 	return nil, fmt.Errorf("unknown type for JSON params: %v. Expected map or array", err)
 }
 
-// writes a list of available rpc endpoints as an html page
+// writes a list of available rpc endpoints as an html page.
 func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[string]*RPCFunc) {
 	noArgNames := []string{}
 	argNames := []string{}
@@ -235,8 +236,9 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	buf.WriteString("<br>Available endpoints:<br>")
 
 	for _, name := range noArgNames {
+		// FIXME: The link should have the version as well. Where can we get it from the request?
 		link := fmt.Sprintf("//%s/%s", r.Host, name)
-		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a></br>", link, link))
+		buf.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a><br>", link, name))
 	}
 
 	buf.WriteString("<br>Endpoints that require arguments:<br>")
@@ -253,6 +255,6 @@ func writeListOfEndpoints(w http.ResponseWriter, r *http.Request, funcMap map[st
 	}
 	buf.WriteString("</body></html>")
 	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write(buf.Bytes()) //nolint: errcheck
 }

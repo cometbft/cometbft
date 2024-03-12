@@ -13,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/digitalocean"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
@@ -79,15 +80,34 @@ func NewCLI() *CLI {
 				return fmt.Errorf("unknown infrastructure type '%s'", inft)
 			}
 
-			testnet, err := e2e.LoadTestnet(file, ifd)
+			testnetDir, err := cmd.Flags().GetString("testnet-dir")
+			if err != nil {
+				return err
+			}
+
+			testnet, err := e2e.LoadTestnet(file, ifd, testnetDir)
 			if err != nil {
 				return fmt.Errorf("loading testnet: %s", err)
 			}
 
 			cli.testnet = testnet
-			cli.infp = &infra.NoopProvider{}
-			if inft == "docker" {
-				cli.infp = &docker.Provider{Testnet: testnet}
+			switch inft {
+			case "docker":
+				cli.infp = &docker.Provider{
+					ProviderData: infra.ProviderData{
+						Testnet:            testnet,
+						InfrastructureData: ifd,
+					},
+				}
+			case "digital-ocean":
+				cli.infp = &digitalocean.Provider{
+					ProviderData: infra.ProviderData{
+						Testnet:            testnet,
+						InfrastructureData: ifd,
+					},
+				}
+			default:
+				return fmt.Errorf("bad infrastructure type: %s", inft)
 			}
 			return nil
 		},
@@ -112,7 +132,7 @@ func NewCLI() *CLI {
 				chLoadResult <- err
 			}()
 
-			if err := Start(cmd.Context(), cli.testnet); err != nil {
+			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
 				return err
 			}
 
@@ -121,7 +141,7 @@ func NewCLI() *CLI {
 			}
 
 			if cli.testnet.HasPerturbations() {
-				if err := Perturb(cmd.Context(), cli.testnet); err != nil {
+				if err := Perturb(cmd.Context(), cli.testnet, cli.infp); err != nil {
 					return err
 				}
 				if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // allow some txs to go through
@@ -145,7 +165,7 @@ func NewCLI() *CLI {
 			if err := Wait(cmd.Context(), cli.testnet, 5); err != nil { // wait for network to settle before tests
 				return err
 			}
-			if err := Test(cli.testnet); err != nil {
+			if err := Test(cli.testnet, cli.infp.GetInfrastructureData()); err != nil {
 				return err
 			}
 			if !cli.preserve {
@@ -159,6 +179,8 @@ func NewCLI() *CLI {
 
 	cli.root.PersistentFlags().StringP("file", "f", "", "Testnet TOML manifest")
 	_ = cli.root.MarkPersistentFlagRequired("file")
+
+	cli.root.PersistentFlags().StringP("testnet-dir", "d", "", "Set the directory for the testnet files generated during setup")
 
 	cli.root.PersistentFlags().StringP("infrastructure-type", "", "docker", "Backing infrastructure used to run the testnet. Either 'digital-ocean' or 'docker'")
 
@@ -177,7 +199,7 @@ func NewCLI() *CLI {
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "start",
-		Short: "Starts the Docker testnet, waiting for nodes to become available",
+		Short: "Starts the testnet, waiting for nodes to become available",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := os.Stat(cli.testnet.Dir)
 			if os.IsNotExist(err) {
@@ -186,15 +208,15 @@ func NewCLI() *CLI {
 			if err != nil {
 				return err
 			}
-			return Start(cmd.Context(), cli.testnet)
+			return Start(cmd.Context(), cli.testnet, cli.infp)
 		},
 	})
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "perturb",
-		Short: "Perturbs the Docker testnet, e.g. by restarting or disconnecting nodes",
+		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Perturb(cmd.Context(), cli.testnet)
+			return Perturb(cmd.Context(), cli.testnet, cli.infp)
 		},
 	})
 
@@ -208,10 +230,10 @@ func NewCLI() *CLI {
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "stop",
-		Short: "Stops the Docker testnet",
+		Short: "Stops the testnet",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Info("Stopping testnet")
-			return execCompose(cli.testnet.Dir, "down")
+			return cli.infp.StopTestnet(context.Background())
 		},
 	})
 
@@ -250,7 +272,7 @@ func NewCLI() *CLI {
 		Use:   "test",
 		Short: "Runs test cases against a running testnet",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return Test(cli.testnet)
+			return Test(cli.testnet, cli.infp.GetInfrastructureData())
 		},
 	})
 
@@ -266,7 +288,7 @@ func NewCLI() *CLI {
 		Use:   "logs",
 		Short: "Shows the testnet logs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return execComposeVerbose(cli.testnet.Dir, "logs")
+			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs")
 		},
 	})
 
@@ -274,7 +296,7 @@ func NewCLI() *CLI {
 		Use:   "tail",
 		Short: "Tails the testnet logs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return execComposeVerbose(cli.testnet.Dir, "logs", "--follow")
+			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs", "--follow")
 		},
 	})
 
@@ -309,7 +331,7 @@ Does not run any perturbations.
 				chLoadResult <- err
 			}()
 
-			if err := Start(cmd.Context(), cli.testnet); err != nil {
+			if err := Start(cmd.Context(), cli.testnet, cli.infp); err != nil {
 				return err
 			}
 

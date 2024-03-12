@@ -14,6 +14,7 @@ func TestNet_Peers(t *testing.T) {
 	t.SkipNow()
 
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		// Seed nodes shouldn't necessarily mesh with the entire network.
 		if node.Mode == e2e.ModeSeed {
 			return
@@ -34,7 +35,7 @@ func TestNet_Peers(t *testing.T) {
 		for _, peerInfo := range netInfo.Peers {
 			peer := node.Testnet.LookupNode(peerInfo.NodeInfo.Moniker)
 			require.NotNil(t, peer, "unknown node %v", peerInfo.NodeInfo.Moniker)
-			require.Equal(t, peer.IP.String(), peerInfo.RemoteIP,
+			require.Equal(t, peer.InternalIP.String(), peerInfo.RemoteIP,
 				"unexpected IP address for peer %v", peer.Name)
 			seen[peerInfo.NodeInfo.Moniker] = true
 		}

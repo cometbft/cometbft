@@ -328,8 +328,9 @@ FOR_LOOP:
 	for {
 		select {
 		case <-switchToConsensusTicker.C:
-			bcR.switchToConsensus(state, initialCommitHasExtensions, blocksSynced, stateSynced)
-
+			if bcR.switchToConsensus(state, initialCommitHasExtensions, blocksSynced, stateSynced) {
+				break FOR_LOOP
+			}
 		case <-trySyncTicker.C: // chan time
 			select {
 			case didProcessCh <- struct{}{}:
@@ -536,7 +537,7 @@ func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet,
 
 // switchToConsensus checks if the node is caught up with the rest of the network
 // and switches to consensus reactor if it is. It also logs syncing statistics.
-func (bcR *Reactor) switchToConsensus(state sm.State, initialCommitHasExtensions bool, blocksSynced uint64, stateSynced bool) {
+func (bcR *Reactor) switchToConsensus(state sm.State, initialCommitHasExtensions bool, blocksSynced uint64, stateSynced bool) bool {
 	outbound, inbound, _ := bcR.Switch.NumPeers()
 	bcR.Logger.Debug("Consensus ticker", "outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
@@ -585,10 +586,12 @@ func (bcR *Reactor) switchToConsensus(state sm.State, initialCommitHasExtensions
 		if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
 			conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
 		}
+		return true
 		// else {
 		// should only happen during testing
 		// }
 	}
+	return false
 }
 
 // BroadcastStatusRequest broadcasts `BlockStore` base and height.

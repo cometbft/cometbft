@@ -4,10 +4,18 @@
 
 This specification is divided into multiple documents and should be read in the following order:
 
-- [layers.md](layers.md): describes the architecture used in CometBFT and where this specification is focused;
-- [crdt.md](crdt.md): explains the rationale of using a CRDT in the gossiping and defines the CRDT used, SSE;
+- [architecture.md](architecture.md): describes the architecture used in CometBFT and where this specification is focused;
+- [crdt.md](crdt.md): explains the rationale for using a CRDT in the gossiping and defines the CRDT used, SSE;
 - [sse.qnt](sse.qnt): Quint spec with example instantiations of the proposed CRDT;
+- [gossip.md](gossip.md):
+- [crdt.qnt](crdt.qnt): Quint spec with an instantiation for use in Tendermint.
 
+
+The following files may be read if needed
+
+- [globals.qnt](globals.qnt): Global definitions used on other specs.
+- [spells.qnt](spells.qnt): Helper functions.
+- [option.qnt](option.qnt): Definitions of Option types.
 
 ## Conventions
 
@@ -24,3 +32,5 @@ This specification is divided into multiple documents and should be read in the 
 ## Status
 
 - V1 - Consolidation of work done on PR #74 as a "mergeable" PR.
+- V2 - Refined type CRDT and example instantiations
+- V3 - CRDT for Gossip

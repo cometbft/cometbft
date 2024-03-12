@@ -48,7 +48,7 @@ There are essentially two ways of making converging the local views of nodes.
 
 - **Approach One**: nodes broadcast all the updates they want to perform to all nodes, including themselves.
 If using Reliable Broadcast/the Gossip Communication property, the tuple space will eventually converge to include all broadcast messages.
-- **Approach Two**: nodes periodically compare their approximations with each other, 1-to-1, to identify and correct differences by adding missing entries, using some gossip/anti-entropy protocol.
+- **Approach Two**: nodes periodically compare their approximations with each other, 1-to-1, to identify and correct differences by adding missing entries, using some anti-entropy protocol.
 
 These approaches work to reach convergence because the updates are commutative regarding the tuple space; each update simply adds an entry to a set.
 From the Tendermint algorithm's point of view, convergence guarantees progress but is not a requirement for correctness.
@@ -66,7 +66,7 @@ However, if the second approach described [above](#nodes-state-as-a-tuple-space)
 Although stale entries do not affect the algorithm, or they would not be considered stale, not adding the entries back is important for performance and resource utilization sake.
 
 One way to prevent re-adding entries is keeping _tombstones_ for the removed entries.
-A tombstone is nothing but an that supersedes a specific other entry.
+A tombstone is nothing but an entry that supersedes a specific other entry.
 Let $\bar{e}$ be the tombstone for an entry $e$; if, during synchronization, a node is informed of $e$ but it already has $\bar{e}$, then it does not add $e$ to its local view.
 
 However small tombstones may be (for example, they could contain just the hash of the entry it supersedes), with time they will accrue and need to be garbage collected, in which case the corresponding entry may be added again; again, this will not break correctness and as long as tombstones are kept for long enough, the risk of re-adding becomes minimal.
@@ -98,15 +98,15 @@ For example, suppose a node's local view of the tuple space has the following en
 | 1      | 1     | PreCommit | v2        | cp1            |
 | 2      | 0     | Proposal  | v1        | pp2            |
 | 2      | 2     | PreVote   | v2        | vp2            |
-| 2      | 3     | PreCommit | v2        | cp2   [^todo2] |
-| 2      | 3     | PreCommit | v2        | cp2'  [^todo2] |
+| 2      | 3     | PreCommit | v2        | cp2   [^equiv] |
+| 2      | 3     | PreCommit | v2        | cp2'  [^equiv] |
 
 - Query $\lang 0, 0, Proposal, v1, * \rang$ returns $\{ \lang 0, 0, Proposal, v1, pp1 \rang \}$
 - Query $\lang 0, 0, *, v1, * \rang$ returns $\{ \lang 0, 0, Proposal, v1, pp1 \rang,  \lang 0, 0, PreVote, v1, vp1 \rang \}$.
 
 If needed for disambiguation, queries are subscripted with the node being queried.
 
-[^todo2]: These tuples are evidence of an equivocation attack. It is not clear yet if we should keep both entries in the local view.
+[^equiv]: These tuples are evidence of an equivocation attack.
 
 #### State Validity
 
@@ -129,7 +129,7 @@ Consider the following definition for **Eventual Convergence**.
 
 |Eventual Convergence|
 |-----|
-| If there exists a correct process $p \in P$ such that $e \in t_p$, then, eventually, for every correct process $q \in P$, either $e \in t_q$ or $e$ is stale in $t_q$.
+| If there exists a correct process $p \in P$ such that $e$ is the local view of $p$, then, eventually, for every correct process $q \in P$, either $e$ belongs to or is stale in the local view of $q$.
 
 In order to ensure convergence even in the presence of failures, the network must be connected in such a way to allow communication around any malicious nodes, that is, to provide paths connecting correct nodes.
 Even if paths connecting correct nodes exist, effectively using them requires timeouts to not expire precociously and abort communication attempts.
@@ -138,7 +138,7 @@ Formally, if there is a GST then following holds true:
 
 | Eventual $\Delta$-Timely Convergence |
 |---|
-| If $e\in t_p$, for some correct process $p \in P$, at instant $t$, then by $\text{max}(t,\text{GST}) + \Delta$, for every correct process $q \in P$, either $e \in t_q$ or $e$ is stale in $t_p$.
+| If there exists a correct process $p \in P$ such that $e$ is the local view of $p$ at instant $t$, then by $\text{max}(t,\text{GST}) + \Delta$, for every correct process $q \in P$, either $e$ is in the local view of $q$ or is stale in the local view of $p$.
 
 Although GST may be too strong an expectation, in practice timely communication frequently happens within small stable periods, also leading to convergence.
 
@@ -187,15 +187,15 @@ For example, in the G-Set case, the merge operator is simply the union of the se
 
 The two approaches for converging the message sets in the Tendermint algorithm described [earlier](#nodes-state-as-a-tuple-space), without the deletion of entries, correspond to the operation- and state-based [Grow-only Set](https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type#G-Set_(Grow-only_Set)) CRDT;
 if removals must be handled, then using a 2P-Set is an option.
-To the best of our knowledge, no existing CRDT supports superseding of elements, until now.
+Next we introduce a CRDT in which some removals happen internally to the CRDT, based on the fact that the information in some entries becomes stale or has been superseded by the information in other entries present.
 
 ### About supersession
 
-We call an entry of the tuple space an **Entry**[^tuple] and call **View** a set of Entry.
+We call an entry of the tuple space an **Entry**[^tuple] and call **View** a set of entries.
 
 [^tuple]: We use Entry instead of Tuple not to conflict with the use of tuple in Quint.
 
-Let $v_1, v_2, v_3$ be **View**.
+Let $v_1, v_2, v_3$ be views.
 We say that $v_1$ is superseded by $v_2$ if all elements of $v_1$ are rendered stale by some subset of $v_2$ and note this relation as $v_1 < v_2$.
 For all $e \in v_1$, if $v_1 < v_2$ then we abuse the notation and terminology and simply say that $e$ is superseded by $v_2$ and note it as $e < v_2$
 
@@ -246,7 +246,7 @@ The merge operator $\sqcup: \mathcal{V} x \mathcal{V} \rightarrow \mathcal{V}$ i
 The SSE is generically defined in terms of
 
 - `Entry`
-    - a tuple of values;
+    - a tuple/record of values;
     - application specific;
 - `View`
     - a set of `Entry`;
@@ -257,6 +257,10 @@ The SSE is generically defined in terms of
     - returns true iff all elements of `v1` are superseded by `v2`;
     - implements the $<$ relation;
 
+- `matches(e:Entry, oe:OEntry):bool`
+    - `OEntry` is a tuple/record such that, for each field of `Entry`, `OEntry` has a `Option` field with the same base type.
+    - Returns true if each field of `e` equals the corresponding field of `oe` or the corresponding field of `oe` is `none`.
+
 With these we can define the following operators:
 
 - `removeStale(view: View): (View, View)`
@@ -265,10 +269,12 @@ With these we can define the following operators:
     - returns the result of `removeStale` applied to the union of `lhs` and `rhs`;
     - implements the $\sqcup$ relation;
 
-And the following helpers:
+The following helpers:
 
 - `addEntry(v:View, e: Entry): View = merge(v, Set(e))`
     - returns the result of `removeStale` applied to the union of `view` and `{e}`;
+- `query(v:view, oe:OEntry)`
+    - Returns a view with the entries in `v` that match `oe`.
 - `hasEntry(v: View, e:Entry):bool = removeStale(v).contains(e)`
 
 And optionally:
@@ -285,11 +291,13 @@ And optionally:
 
 The `Lexy1` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are tuples of three integer numbers.
 
-An entry `(a,b,c)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f)` such that 
+An entry `(a,b,c)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f)` such that
 
 - either `a < d`
 - or `a == d, b == e, c <= f`
 - or `(d,e,f)` is superseded in `v`.
+
+The tuple could be interpreted as instance, node and round of some distributed protocol such that tuples from previous instances are obsoleted by tuples from new instances, and tuples from previous rounds are obsoleted by tuples for new rounds of the same node.
 
 #### Example 2
 
@@ -303,4 +311,9 @@ In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` co
 - or `a == d, b == e, c == f, u == true`,
 - or `(d,e,f,u)` is superseded in `v`.
 
-As specified, the boolean in the entry acts as a tombstone marker.
+As in previous example, the tuple could be interpreted as instance, node and round of some distributed protocol such that tuples from previous instances are obsoleted by tuples from new instances, and tuples from previous rounds are obsoleted by tuples for new rounds of the same node.
+As an extra condition, the boolean acts as a tombstone marker for a tuple.
+
+#### An SSE for Tendermint
+
+> :warning: TODO

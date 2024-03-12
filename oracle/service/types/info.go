@@ -1,14 +1,12 @@
 package types
 
 import (
-	"time"
-
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/redis"
 	"github.com/cometbft/cometbft/types"
-	"google.golang.org/grpc"
 )
 
 // App struct for app
@@ -16,14 +14,13 @@ type OracleInfo struct {
 	Oracles            []Oracle
 	AdapterMap         map[string]Adapter
 	Redis              redis.Service
-	Config             Config
-	GrpcClient         *grpc.ClientConn
+	Config             *config.OracleConfig
+	CustomNodeConfig   CustomNodeConfig
 	UnsignedVoteBuffer *UnsignedVoteBuffer
 	GossipVoteBuffer   *GossipVoteBuffer
 	SignVotesChan      chan *oracleproto.CompressedVote
 	PubKey             crypto.PubKey
 	PrivValidator      types.PrivValidator
-	MsgFlushInterval   time.Duration
 	StopChannel        chan int
 	ValidatorSet       *types.ValidatorSet
 }

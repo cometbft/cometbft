@@ -42,7 +42,7 @@ func (fetcherMultiple *FetcherMultiple) Validate(job types.OracleJob) error {
 	return nil
 }
 
-func GetUrl(job types.OracleJob, config types.Config) (string, error) {
+func GetUrl(job types.OracleJob, config types.CustomNodeConfig) (string, error) {
 	nodeHost := job.ConfigValue("default_node_host").String()
 	nodePath := job.ConfigValue("default_node_path").String()
 	nodeKey := job.ConfigValue("custom_node_url_key").String()

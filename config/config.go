@@ -72,6 +72,7 @@ type Config struct {
 	RPC             *RPCConfig             `mapstructure:"rpc"`
 	P2P             *P2PConfig             `mapstructure:"p2p"`
 	Mempool         *MempoolConfig         `mapstructure:"mempool"`
+	Oracle          *OracleConfig          `mapstructure:"oracle"`
 	StateSync       *StateSyncConfig       `mapstructure:"statesync"`
 	BlockSync       *BlockSyncConfig       `mapstructure:"blocksync"`
 	Consensus       *ConsensusConfig       `mapstructure:"consensus"`
@@ -87,6 +88,7 @@ func DefaultConfig() *Config {
 		RPC:             DefaultRPCConfig(),
 		P2P:             DefaultP2PConfig(),
 		Mempool:         DefaultMempoolConfig(),
+		Oracle:          DefaultOracleConfig(),
 		StateSync:       DefaultStateSyncConfig(),
 		BlockSync:       DefaultBlockSyncConfig(),
 		Consensus:       DefaultConsensusConfig(),
@@ -103,6 +105,7 @@ func TestConfig() *Config {
 		RPC:             TestRPCConfig(),
 		P2P:             TestP2PConfig(),
 		Mempool:         TestMempoolConfig(),
+		Oracle:          TestOracleConfig(),
 		StateSync:       TestStateSyncConfig(),
 		BlockSync:       TestBlockSyncConfig(),
 		Consensus:       TestConsensusConfig(),
@@ -136,6 +139,9 @@ func (cfg *Config) ValidateBasic() error {
 	}
 	if err := cfg.Mempool.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [mempool] section: %w", err)
+	}
+	if err := cfg.Oracle.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [oracle] section: %w", err)
 	}
 	if err := cfg.StateSync.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [statesync] section: %w", err)
@@ -782,6 +788,63 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	}
 	if cfg.MaxTxBytes < 0 {
 		return errors.New("max_tx_bytes can't be negative")
+	}
+	return nil
+}
+
+//-----------------------------------------------------------------------------
+// OracleConfig
+
+// OracleConfig defines the configuration for the CometBFT oracle service
+type OracleConfig struct {
+	// Path to custom oracle spec should validators decide to use a different spec from the default
+	CustomNodePath string `mapstructure:"custom_node_path"`
+	// Url used to query chain for syncing of oracles and fetching cached oracle results
+	RestUrl string `mapstructure:"rest_url"`
+	// Interval determines how long we should keep our gossiped votes before pruning
+	PruneInterval time.Duration `mapstructure:"prune_interval"`
+	// Interval determines how long we should wait before batch signing votes
+	SignInterval time.Duration `mapstructure:"sign_interval"`
+	// Interval determines how long we should wait before re-syncing oracles from the chain
+	SyncInterval time.Duration `mapstructure:"sync_interval"`
+	// Max allowable size for votes that can be gossiped from peer to peer
+	MaxGossipMsgSize int `mapstructure:"max_gossip_msg_size"`
+}
+
+// DefaultOracleConfig returns a default configuration for the CometBFT oracle service
+func DefaultOracleConfig() *OracleConfig {
+	return &OracleConfig{
+		RestUrl:          "127.0.0.1",            // localhost
+		PruneInterval:    5 * time.Second,        // 5s
+		SignInterval:     500 * time.Millisecond, // 0.5s
+		SyncInterval:     60 * time.Second,       // 60s
+		MaxGossipMsgSize: 65536,
+	}
+}
+
+// TestOracleConfig returns a configuration for testing the CometBFT mempool
+func TestOracleConfig() *OracleConfig {
+	cfg := DefaultOracleConfig()
+	cfg.MaxGossipMsgSize = 1000
+	return cfg
+}
+
+// ValidateBasic performs basic validation and returns an error if any check fails.
+func (cfg *OracleConfig) ValidateBasic() error {
+	if cfg.RestUrl == "" {
+		return errors.New("rest_url can't be empty")
+	}
+	if cfg.PruneInterval < 0 {
+		return errors.New("prune_interval can't be negative")
+	}
+	if cfg.SignInterval < 0 {
+		return errors.New("sign_interval can't be negative")
+	}
+	if cfg.SyncInterval < 0 {
+		return errors.New("sync_interval can't be negative")
+	}
+	if cfg.MaxGossipMsgSize < 0 {
+		return errors.New("max_gossip_msg_size can't be negative")
 	}
 	return nil
 }

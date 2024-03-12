@@ -18,11 +18,13 @@ const STALE_ALLOWANCE = "stale_allowance"
 // OracleResultFetcher struct for float handler
 type OracleResultFetcher struct {
 	redisService *redis.Service
+	restUrl      string
 }
 
-func NewOracleResultFetcher(redisService *redis.Service) *OracleResultFetcher {
+func NewOracleResultFetcher(redisService *redis.Service, restUrl string) *OracleResultFetcher {
 	return &OracleResultFetcher{
 		redisService: redisService,
+		restUrl:      restUrl,
 	}
 }
 
@@ -54,7 +56,7 @@ func (oracleResultFetcher *OracleResultFetcher) Perform(job types.OracleJob, res
 	if cacheErr != nil {
 		logrus.Error(cacheErr)
 		var apiErr error
-		price, apiErr = getOracleResultFromAPI(oracleID)
+		price, apiErr = getOracleResultFromAPI(oracleID, oracleResultFetcher.restUrl)
 		if apiErr != nil {
 			return result, apiErr
 		}
@@ -97,12 +99,15 @@ func getOracleResultFromCache(oracleId string, staleAllowance string, redisServi
 	return oracleCache.Price, nil
 }
 
-func getOracleResultFromAPI(oracleID string) (string, error) {
-	oracleResultsURL := "https://api.carbon.network/carbon/oracle/v1/results/" + oracleID
-	response := HTTPRequest(oracleResultsURL, 10)
+func getOracleResultFromAPI(oracleID, restUrl string) (string, error) {
+	if restUrl == "" {
+		restUrl = "https://test-api.carbon.network"
+	}
+	restUrl = restUrl + "/carbon/oracle/v1/results/" + oracleID
+	response := HTTPRequest(restUrl, 10)
 
 	if len(response) == 0 {
-		return "", fmt.Errorf("empty response from %s", oracleResultsURL)
+		return "", fmt.Errorf("empty response from %s", restUrl)
 	}
 
 	type Response struct {

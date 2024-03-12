@@ -7,14 +7,14 @@ import (
 )
 
 // GetAdapterMap returns a map of all adapters
-func GetAdapterMap(redisService *redis.Service) map[string]types.Adapter {
+func GetAdapterMap(redisService *redis.Service, restUrl string) map[string]types.Adapter {
 	adapterMap := make(map[string]types.Adapter)
 	adaptersList := []types.Adapter{
 		NewFetcher(redisService), NewFetcherMultiple(redisService),
 		NewUnresponsiveHandler(redisService), NewUnchangedHandler(redisService),
 		NewMedianFilter(redisService), NewWeightedAverage(redisService),
 		NewFloatHandler(redisService), NewDecimalHandler(redisService),
-		NewMathFilter(redisService), NewOracleResultFetcher(redisService),
+		NewMathFilter(redisService), NewOracleResultFetcher(redisService, restUrl),
 		NewEVMValueParser(redisService), NewEVMStructParser(redisService), NewEVMFetcher(redisService),
 		NewStaticHandler(redisService),
 	}

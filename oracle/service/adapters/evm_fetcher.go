@@ -51,7 +51,7 @@ func (evmFetcher *EVMFetcher) Validate(job types.OracleJob) error {
 }
 
 // GetRpcUrl attempts to get the rpc url from config file, if not it populates the config file with the default rpc url
-func GetRpcUrl(job types.OracleJob, config types.Config) (string, error) {
+func GetRpcUrl(job types.OracleJob, config types.CustomNodeConfig) (string, error) {
 	rpcUrl := job.ConfigValue("default_node_rpc").String()
 	nodeKey := job.ConfigValue("custom_node_url_key").String()
 

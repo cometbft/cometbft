@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/sirupsen/logrus"
@@ -50,9 +51,10 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(configPath string, pubKey crypto.PubKey, privValidator types.PrivValidator, validatorSet *types.ValidatorSet) *Reactor {
+func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator types.PrivValidator, validatorSet *types.ValidatorSet) *Reactor {
 	// load oracle.json config if present
-	jsonFile, openErr := os.Open(configPath)
+	customNodeConfigPath := config.CustomNodePath
+	jsonFile, openErr := os.Open(customNodeConfigPath)
 	if openErr != nil {
 		logrus.Warnf("[oracle] error opening oracle.json config file: %v", openErr)
 	}
@@ -62,8 +64,8 @@ func NewReactor(configPath string, pubKey crypto.PubKey, privValidator types.Pri
 		logrus.Warnf("[oracle] error reading oracle.json config file: %v", err)
 	}
 
-	var config oracletypes.Config
-	err = json.Unmarshal(bytes, &config)
+	var customNodeConfig oracletypes.CustomNodeConfig
+	err = json.Unmarshal(bytes, &customNodeConfig)
 	if err != nil {
 		logrus.Warnf("[oracle] error parsing oracle.json config file: %v", err)
 	}
@@ -79,6 +81,7 @@ func NewReactor(configPath string, pubKey crypto.PubKey, privValidator types.Pri
 	oracleInfo := &oracletypes.OracleInfo{
 		Oracles:            nil,
 		Config:             config,
+		CustomNodeConfig:   customNodeConfig,
 		GossipVoteBuffer:   gossipVoteBuffer,
 		UnsignedVoteBuffer: unsignedVoteBuffer,
 		SignVotesChan:      make(chan *oracleproto.CompressedVote),
@@ -113,7 +116,7 @@ func (oracleR *Reactor) SetLogger(l log.Logger) {
 // OnStart implements p2p.BaseReactor.
 func (oracleR *Reactor) OnStart() error {
 	oracleR.OracleInfo.Redis = redis.NewService(0)
-	oracleR.OracleInfo.AdapterMap = adapters.GetAdapterMap(&oracleR.OracleInfo.Redis)
+	oracleR.OracleInfo.AdapterMap = adapters.GetAdapterMap(&oracleR.OracleInfo.Redis, oracleR.OracleInfo.Config.RestUrl)
 	logrus.Info("[oracle] running oracle service...")
 	go func() {
 		runner.Run(oracleR.OracleInfo)
@@ -126,11 +129,16 @@ func (oracleR *Reactor) OnStart() error {
 func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	// largestTx := make([]byte, oracleR.config.MaxTxBytes)
 	// TODO, confirm these params
+	messageCap := oracleR.OracleInfo.Config.MaxGossipMsgSize
+	if messageCap == 0 {
+		logrus.Warn("MAX GOSSIP MSG SIZE NOT SET!!!!")
+		messageCap = 65536
+	}
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  OracleChannel,
 			Priority:            5,
-			RecvMessageCapacity: 65536,
+			RecvMessageCapacity: messageCap,
 			MessageType:         &oracleproto.GossipVote{},
 		},
 	}

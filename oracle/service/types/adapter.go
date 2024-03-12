@@ -34,7 +34,7 @@ type AdapterRunTimeInput struct {
 	LastStoreData       map[string]GenericValue
 	LastStoreDataExists bool
 	BeginTime           uint64
-	Config              Config
+	Config              CustomNodeConfig
 }
 
 // GetLastStoreData gets data for the given key

@@ -382,7 +382,7 @@ func NewNodeWithContext(ctx context.Context,
 
 	// Make OracleReactor
 
-	oracleReactor := oracle.NewReactor("", pubKey, privValidator, state.Validators)
+	oracleReactor := oracle.NewReactor(config.Oracle, pubKey, privValidator, state.Validators)
 	oracleInfo := oracleReactor.OracleInfo
 
 	// make block executor for consensus and blocksync reactors to execute blocks

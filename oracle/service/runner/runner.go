@@ -14,7 +14,6 @@ import (
 	"github.com/cometbft/cometbft/oracle/service/types"
 
 	"github.com/cometbft/cometbft/oracle/service/utils"
-	"github.com/cometbft/cometbft/proto/tendermint/oracle"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/redis"
 )
@@ -125,7 +124,12 @@ func overwriteData(oracleId string, data string) string {
 
 // SyncOracles sync oracles with active on-chain oracles
 func SyncOracles(oracleInfo *types.OracleInfo) (oracles []types.Oracle, err error) {
-	oraclesURL := "https://test-api.carbon.network/carbon/oracle/v1/oracles"
+	oraclesURL := oracleInfo.Config.RestUrl
+	if oraclesURL == "" {
+		oraclesURL = "https://test-api.carbon.network"
+	}
+	oraclesURL += "/carbon/oracle/v1/oracles"
+
 	response := adapters.HTTPRequest(oraclesURL, 10)
 
 	if len(response) == 0 {
@@ -133,7 +137,7 @@ func SyncOracles(oracleInfo *types.OracleInfo) (oracles []types.Oracle, err erro
 	}
 
 	type Response struct {
-		Oracles []oracle.Oracle `json:"oracles"`
+		Oracles []oracleproto.Oracle `json:"oracles"`
 	}
 
 	var parsedResponse Response
@@ -217,7 +221,7 @@ func RunOracle(oracleInfo *types.OracleInfo, oracle types.Oracle, currentTime ui
 
 	input := types.AdapterRunTimeInput{
 		BeginTime: currentTime,
-		Config:    oracleInfo.Config,
+		Config:    oracleInfo.CustomNodeConfig,
 	}
 
 	for _, job := range jobs {
@@ -290,9 +294,9 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 			case <-oracleInfo.StopChannel:
 				return
 			default:
-				interval := oracleInfo.MsgFlushInterval
+				interval := oracleInfo.Config.SignInterval
 				if interval == 0 {
-					interval = 500 * time.Millisecond
+					interval = 100 * time.Millisecond
 				}
 				time.Sleep(interval)
 				ProcessSignVoteQueue(oracleInfo)
@@ -360,7 +364,11 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 
 func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo) {
 	go func(oracleInfo *types.OracleInfo) {
-		ticker := time.Tick(3 * time.Second)
+		interval := oracleInfo.Config.PruneInterval
+		if interval == 0 {
+			interval = 1 * time.Second
+		}
+		ticker := time.Tick(interval)
 		for range ticker {
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
 			// prune everything older than 3 secs
@@ -371,7 +379,7 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo) {
 			for _, unsignedVotes := range unsignedVoteBuffer {
 				// unsigned votes are arranged from least recent to most recent
 				timestamp := unsignedVotes.Timestamp
-				if timestamp <= currTime-uint64(3*time.Second) {
+				if timestamp <= currTime-uint64(interval) {
 					numberOfVotesToPrune++
 					count += len(unsignedVotes.Votes)
 				} else {

@@ -380,6 +380,29 @@ max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 max_batch_bytes = {{ .Mempool.MaxBatchBytes }}
 
 #######################################################
+###          Oracle Configuration Option          ###
+#######################################################
+[oracle]
+
+# Path to custom oracle spec should validators decide to use a different spec from the default
+custom_node_path = "{{ .Oracle.CustomNodePath }}"
+
+# Url used to query chain for syncing of oracles and fetching cached oracle results
+rest_url = "{{ .Oracle.RestUrl }}"
+
+# Interval determines how long we should keep our gossiped votes before pruning
+prune_interval = "{{ .Oracle.PruneInterval }}" 
+
+# Interval determines how long we should wait before batch signing votes
+sign_interval = "{{ .Oracle.SignInterval }}"
+
+# Interval determines how long we should wait before re-syncing oracles from the chain
+sync_interval = "{{ .Oracle.SyncInterval }}"
+
+# Max allowable size for votes that can be gossiped from peer to peer
+max_gossip_msg_size = {{ .Oracle.MaxGossipMsgSize }}
+
+#######################################################
 ###         State Sync Configuration Options        ###
 #######################################################
 [statesync]

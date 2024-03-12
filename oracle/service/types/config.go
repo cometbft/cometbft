@@ -1,7 +1,7 @@
 package types
 
 // Config struct for app
-type Config map[string]CustomNode
+type CustomNodeConfig map[string]CustomNode
 
 type CustomNode struct {
 	Host string `json:"host"`

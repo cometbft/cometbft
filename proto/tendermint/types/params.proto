@@ -56,7 +56,7 @@ message ValidatorParams {
   option (gogoproto.populate) = true;
   option (gogoproto.equal)    = true;
 
-  string pub_key_type = 1;
+  repeated string pub_key_types = 1;
 }
 
 // VersionParams contains the ABCI application version.

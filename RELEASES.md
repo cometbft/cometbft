@@ -166,21 +166,26 @@ backport branch (see above). Otherwise:
      release.
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
      changes or other upgrading flows.
-4. Prepare the versioning:
+4. Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
+   directory. If it does not point to an official api version, edit it
+   so that it points to one. You may need to tag a new version of the api
+   if the last version is too old (i.e., it does not contain the latest
+   changes to the protos).
+5. Prepare the versioning:
    * Bump CometBFT version in  `version.go`
    * Bump P2P and block protocol versions in  `version.go`, if necessary.
      Check the changelog for breaking changes in these components.
    * Bump ABCI protocol version in `version.go`, if necessary
-5. Open a PR with these changes against the backport branch.
-6. Once these changes have landed on the backport branch, be sure to pull them
+6. Open a PR with these changes against the backport branch.
+7. Once these changes have landed on the backport branch, be sure to pull them
    back down locally.
-7. Once you have the changes locally, create the new tag, specifying a name and
+8. Once you have the changes locally, create the new tag, specifying a name and
    a tag "message":
    `git tag -a v2.0.0-rc1 -s -m "Release Candidate v2.0.0-rc1`
-8. Push the tag back up to origin:
+9.  Push the tag back up to origin:
    `git push origin v2.0.0-rc1`
    Now the tag should be available on the repo's releases page.
-9. Future pre-releases will continue to be built off of this branch.
+10. Future pre-releases will continue to be built off of this branch.
 
 ## Major release
 
@@ -194,6 +199,11 @@ Before performing these steps, be sure the
 1. Start on the backport branch (e.g. `v2.x`)
 2. Run integration tests (`make test_integrations`) and the E2E nightlies.
 3. Prepare the release:
+   * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
+     directory. If it does not point to an official api version, edit it
+     so that it points to one. You may need to tag a new version of the api
+     if the last version is too old (i.e., it does not contain the latest
+     changes to the protos).
    * Do a [release][unclog-release] with [unclog] for the desired version,
      ensuring that you write up a good summary of the major highlights of the
      release that users would be interested in.
@@ -226,6 +236,11 @@ To create a patch release:
 1. Checkout the long-lived backport branch: `git checkout v2.x`
 2. Run integration tests (`make test_integrations`) and the nightlies.
 3. Check out a new branch and prepare the release:
+   * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
+     directory. If it does not point to an official api version, edit it
+     so that it points to one. You may need to tag a new version of the api
+     if the last version is too old (i.e., it does not contain the latest
+     changes to the protos).
    * Do a [release][unclog-release] with [unclog] for the desired version,
      ensuring that you write up a good summary of the major highlights of the
      release that users would be interested in.

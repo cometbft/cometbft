@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/cosmos/gogoproto/proto"
 
@@ -269,11 +270,20 @@ func WALToProto(msg WALMessage) (*cmtcons.WALMessage, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		var rtp *time.Time
+		if !msg.ReceiveTime.IsZero() {
+			// Only record the `ReceiveTime` if explicitly set.
+			rt := msg.ReceiveTime
+			rtp = &rt
+		}
+
 		pb = cmtcons.WALMessage{
 			Sum: &cmtcons.WALMessage_MsgInfo{
 				MsgInfo: &cmtcons.MsgInfo{
-					Msg:    cm,
-					PeerID: string(msg.PeerID),
+					Msg:         cm,
+					PeerID:      string(msg.PeerID),
+					ReceiveTime: rtp,
 				},
 			},
 		}
@@ -326,10 +336,15 @@ func WALFromProto(msg *cmtcons.WALMessage) (WALMessage, error) {
 		if err != nil {
 			return nil, cmterrors.ErrMsgFromProto{MessageName: "MsgInfo", Err: err}
 		}
-		pb = msgInfo{
+		msgInfo := msgInfo{
 			Msg:    walMsg,
 			PeerID: p2p.ID(msg.MsgInfo.PeerID),
 		}
+
+		if msg.MsgInfo.ReceiveTime != nil {
+			msgInfo.ReceiveTime = *msg.MsgInfo.ReceiveTime
+		}
+		pb = msgInfo
 
 	case *cmtcons.WALMessage_TimeoutInfo:
 		tis, err := cmtmath.SafeConvertUint8(int64(msg.TimeoutInfo.Step))

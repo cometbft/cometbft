@@ -633,7 +633,7 @@ func (voteSet *VoteSet) sumTotalFrac() (int64, int64, float64) {
 //
 // Panics if the vote type is not PrecommitType or if there's no +2/3 votes for
 // a single block.
-func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
+func (voteSet *VoteSet) MakeExtendedCommit(fp FeatureParams) *ExtendedCommit {
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
 
@@ -664,7 +664,7 @@ func (voteSet *VoteSet) MakeExtendedCommit(ap ABCIParams) *ExtendedCommit {
 		BlockID:            *voteSet.maj23,
 		ExtendedSignatures: sigs,
 	}
-	if err := ec.EnsureExtensions(ap.VoteExtensionsEnabled(ec.Height)); err != nil {
+	if err := ec.EnsureExtensions(fp.VoteExtensionsEnabled(ec.Height)); err != nil {
 		panic(fmt.Errorf("problem with vote extension data when making extended commit of height %d; %w",
 			ec.Height, err))
 	}

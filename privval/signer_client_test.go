@@ -15,6 +15,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 type signerTestCase struct {
@@ -117,7 +118,7 @@ func TestSignerGetPubKey(t *testing.T) {
 
 func TestSignerProposal(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		have := &types.Proposal{
 			Type:      types.ProposalType,
@@ -157,7 +158,7 @@ func TestSignerProposal(t *testing.T) {
 
 func TestSignerVote(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
@@ -192,16 +193,18 @@ func TestSignerVote(t *testing.T) {
 			}
 		})
 
-		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto()))
-		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto()))
+		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto(), false))
+		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto(), false))
 
 		assert.Equal(t, want.Signature, have.Signature)
+		assert.Nil(t, have.Signature)
+		assert.Equal(t, want.ExtensionSignature, have.ExtensionSignature)
 	}
 }
 
 func TestSignerVoteResetDeadline(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
@@ -238,24 +241,28 @@ func TestSignerVoteResetDeadline(t *testing.T) {
 
 		time.Sleep(testTimeoutReadWrite2o3)
 
-		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto()))
-		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto()))
+		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto(), false))
+		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto(), false))
 		assert.Equal(t, want.Signature, have.Signature)
+		assert.Nil(t, have.Signature)
+		assert.Equal(t, want.ExtensionSignature, have.ExtensionSignature)
 
 		// TODO(jleni): Clarify what is actually being tested
 
 		// This would exceed the deadline if it was not extended by the previous message
 		time.Sleep(testTimeoutReadWrite2o3)
 
-		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto()))
-		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto()))
+		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto(), false))
+		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto(), false))
 		assert.Equal(t, want.Signature, have.Signature)
+		assert.Nil(t, have.Signature)
+		assert.Equal(t, want.ExtensionSignature, have.ExtensionSignature)
 	}
 }
 
 func TestSignerVoteKeepAlive(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		want := &types.Vote{
@@ -299,10 +306,12 @@ func TestSignerVoteKeepAlive(t *testing.T) {
 		time.Sleep(testTimeoutReadWrite * 3)
 		tc.signerServer.Logger.Debug("TEST: Forced Wait DONE---------------------------------------------")
 
-		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto()))
-		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto()))
+		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto(), false))
+		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto(), false))
 
 		assert.Equal(t, want.Signature, have.Signature)
+		assert.Nil(t, have.Signature)
+		assert.Equal(t, want.ExtensionSignature, have.ExtensionSignature)
 	}
 }
 
@@ -324,7 +333,7 @@ func TestSignerSignProposalErrors(t *testing.T) {
 			}
 		})
 
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		proposal := &types.Proposal{
 			Type:      types.ProposalType,
@@ -349,7 +358,7 @@ func TestSignerSignProposalErrors(t *testing.T) {
 
 func TestSignerSignVoteErrors(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		ts := time.Now()
+		ts := cmttime.Now()
 		hash := cmtrand.Bytes(tmhash.Size)
 		valAddr := cmtrand.Bytes(crypto.AddressSize)
 		vote := &types.Vote{
@@ -379,13 +388,13 @@ func TestSignerSignVoteErrors(t *testing.T) {
 			}
 		})
 
-		err := tc.signerClient.SignVote(tc.chainID, vote.ToProto())
+		err := tc.signerClient.SignVote(tc.chainID, vote.ToProto(), false)
 		require.Equal(t, err.(*RemoteSignerError).Description, types.ErroringMockPVErr.Error())
 
-		err = tc.mockPV.SignVote(tc.chainID, vote.ToProto())
+		err = tc.mockPV.SignVote(tc.chainID, vote.ToProto(), false)
 		require.Error(t, err)
 
-		err = tc.signerClient.SignVote(tc.chainID, vote.ToProto())
+		err = tc.signerClient.SignVote(tc.chainID, vote.ToProto(), false)
 		require.Error(t, err)
 	}
 }
@@ -430,10 +439,57 @@ func TestSignerUnexpectedResponse(t *testing.T) {
 			}
 		})
 
-		ts := time.Now()
+		ts := cmttime.Now()
 		want := &types.Vote{Timestamp: ts, Type: types.PrecommitType}
 
-		e := tc.signerClient.SignVote(tc.chainID, want.ToProto())
+		e := tc.signerClient.SignVote(tc.chainID, want.ToProto(), false)
 		require.ErrorIs(t, e, cmterrors.ErrRequiredField{Field: "response"})
+	}
+}
+
+func TestSignerVoteExtension(t *testing.T) {
+	for _, tc := range getSignerTestCases(t) {
+		ts := cmttime.Now()
+		hash := cmtrand.Bytes(tmhash.Size)
+		valAddr := cmtrand.Bytes(crypto.AddressSize)
+		want := &types.Vote{
+			Type:             types.PrecommitType,
+			Height:           1,
+			Round:            2,
+			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
+			Timestamp:        ts,
+			ValidatorAddress: valAddr,
+			ValidatorIndex:   1,
+			Extension:        []byte("hello"),
+		}
+
+		have := &types.Vote{
+			Type:             types.PrecommitType,
+			Height:           1,
+			Round:            2,
+			BlockID:          types.BlockID{Hash: hash, PartSetHeader: types.PartSetHeader{Hash: hash, Total: 2}},
+			Timestamp:        ts,
+			ValidatorAddress: valAddr,
+			ValidatorIndex:   1,
+			Extension:        []byte("world"),
+		}
+
+		tc := tc
+		t.Cleanup(func() {
+			if err := tc.signerServer.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(func() {
+			if err := tc.signerClient.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		require.NoError(t, tc.mockPV.SignVote(tc.chainID, want.ToProto(), true))
+		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto(), true))
+
+		assert.Equal(t, want.Signature, have.Signature)
+		assert.Equal(t, want.ExtensionSignature, have.ExtensionSignature)
 	}
 }

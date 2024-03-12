@@ -132,10 +132,6 @@ func DefaultABCIParams() ABCIParams {
 }
 
 func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
-	// disallow more than one pubkey type
-	if len(params.PubKeyTypes) > 1 {
-		return false
-	}
 	for i := 0; i < len(params.PubKeyTypes); i++ {
 		if params.PubKeyTypes[i] == pubkeyType {
 			return true

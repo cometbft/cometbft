@@ -130,9 +130,7 @@ func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 		{
 			ID:                  OracleChannel,
 			Priority:            5,
-			RecvMessageCapacity: 4096,
-			RecvBufferCapacity:  50 * 4096,
-			SendQueueCapacity:   1000,
+			RecvMessageCapacity: 65536,
 			MessageType:         &oracleproto.GossipVote{},
 		},
 	}

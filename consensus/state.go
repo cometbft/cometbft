@@ -3,7 +3,6 @@ package consensus
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -13,7 +12,6 @@ import (
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
-	"github.com/sirupsen/logrus"
 
 	cfg "github.com/cometbft/cometbft/config"
 	cstypes "github.com/cometbft/cometbft/consensus/types"
@@ -984,9 +982,6 @@ func (cs *State) handleTimeout(ti timeoutInfo, rs cstypes.RoundState) {
 		cs.enterNewRound(ti.Height, 0)
 
 	case cstypes.RoundStepNewRound:
-		logrus.Info("CREATE PROPOSAL BLOCK: ENTERING PROPOSE from handleTimeout:")
-		logrus.Infof("STATE APP HASH: %s", hex.EncodeToString(cs.state.AppHash))
-		logrus.Infof("BLOCK APP HASH: %s", cs.ProposalBlock.AppHash.String())
 		cs.enterPropose(ti.Height, ti.Round)
 
 	case cstypes.RoundStepPropose:
@@ -994,9 +989,6 @@ func (cs *State) handleTimeout(ti timeoutInfo, rs cstypes.RoundState) {
 			cs.Logger.Error("failed publishing timeout propose", "err", err)
 		}
 
-		logrus.Info("PROPOSAL COMPLETE: ENTERING PREVOTE from handleTimeout:")
-		logrus.Infof("STATE APP HASH: %s", hex.EncodeToString(cs.state.AppHash))
-		logrus.Infof("BLOCK APP HASH: %s", cs.ProposalBlock.AppHash.String())
 		cs.enterPrevote(ti.Height, ti.Round)
 
 	case cstypes.RoundStepPrevoteWait:
@@ -1040,9 +1032,6 @@ func (cs *State) handleTxsAvailable() {
 		cs.scheduleTimeout(timeoutCommit, cs.Height, 0, cstypes.RoundStepNewRound)
 
 	case cstypes.RoundStepNewRound: // after timeoutCommit
-		logrus.Info("CREATE PROPOSAL BLOCK: ENTERING PROPOSE from handleTimeout:")
-		logrus.Infof("STATE APP HASH: %s", hex.EncodeToString(cs.state.AppHash))
-		logrus.Infof("BLOCK APP HASH: %s", cs.ProposalBlock.AppHash.String())
 		cs.enterPropose(cs.Height, 0)
 	}
 }
@@ -1119,9 +1108,6 @@ func (cs *State) enterNewRound(height int64, round int32) {
 				cstypes.RoundStepNewRound)
 		}
 	} else {
-		logrus.Info("CREATE PROPOSAL BLOCK: ENTERING PROPOSE from handleTimeout:")
-		logrus.Infof("STATE APP HASH: %s", hex.EncodeToString(cs.state.AppHash))
-		logrus.Infof("BLOCK APP HASH: %s", cs.ProposalBlock.AppHash.String())
 		cs.enterPropose(height, round)
 	}
 }
@@ -1171,9 +1157,6 @@ func (cs *State) enterPropose(height int64, round int32) {
 		// else, we'll enterPrevote when the rest of the proposal is received (in AddProposalBlockPart),
 		// or else after timeoutPropose
 		if cs.isProposalComplete() {
-			logrus.Info("PROPOSAL COMPLETE: ENTERING PREVOTE from enterPropose:")
-			logrus.Infof("STATE APP HASH: %s", hex.EncodeToString(cs.state.AppHash))
-			logrus.Infof("BLOCK APP HASH: %s", cs.ProposalBlock.AppHash.String())
 			cs.enterPrevote(height, cs.Round)
 		}
 	}()
@@ -2057,9 +2040,6 @@ func (cs *State) handleCompleteProposal(blockHeight int64) {
 
 	if cs.Step <= cstypes.RoundStepPropose && cs.isProposalComplete() {
 		// Move onto the next step
-		logrus.Info("PROPOSAL COMPLETE: ENTERING PREVOTE from handleCompleteProposal:")
-		logrus.Infof("STATE APP HASH: %s", hex.EncodeToString(cs.state.AppHash))
-		logrus.Infof("BLOCK APP HASH: %s", cs.ProposalBlock.AppHash.String())
 		cs.enterPrevote(blockHeight, cs.Round)
 		if hasTwoThirds { // this is optimisation as this will be triggered when prevote is added
 			cs.enterPrecommit(blockHeight, cs.Round)
@@ -2320,9 +2300,6 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		case cs.Proposal != nil && 0 <= cs.Proposal.POLRound && cs.Proposal.POLRound == vote.Round:
 			// If the proposal is now complete, enter prevote of cs.Round.
 			if cs.isProposalComplete() {
-				logrus.Info("PROPOSAL COMPLETE: ENTERING PREVOTE from addVote:")
-				logrus.Infof("STATE APP HASH: %s", hex.EncodeToString(cs.state.AppHash))
-				logrus.Infof("BLOCK APP HASH: %s", cs.ProposalBlock.AppHash.String())
 				cs.enterPrevote(height, cs.Round)
 			}
 		}

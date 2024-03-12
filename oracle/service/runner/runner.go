@@ -9,10 +9,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	// "github.com/Switcheo/carbon/constants"
 	"github.com/cometbft/cometbft/oracle/service/adapters"
 	"github.com/cometbft/cometbft/oracle/service/parser"
 	"github.com/cometbft/cometbft/oracle/service/types"
+
+	"github.com/cometbft/cometbft/oracle/service/utils"
 	"github.com/cometbft/cometbft/proto/tendermint/oracle"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/redis"
@@ -261,11 +262,21 @@ func RunOracle(oracleInfo *types.OracleInfo, oracle types.Oracle, currentTime ui
 		return errors.New("skipping submission for " + oracle.Id + " as result is empty")
 	}
 
-	vote := oracleproto.Vote{
+	compressedId, err := utils.CompressString(oracle.Id)
+	if err != nil {
+		return errors.New("error compressing oracleId, skipping submission for " + oracle.Id)
+	}
+
+	compressedData, err := utils.CompressString(resultData)
+	if err != nil {
+		return errors.New("error compressing resultData, skipping submission for " + oracle.Id)
+	}
+
+	vote := oracleproto.CompressedVote{
 		Validator: oracleInfo.PubKey.Address(),
-		OracleId:  oracle.Id,
+		OracleId:  compressedId,
 		Timestamp: normalizedTime,
-		Data:      resultData,
+		Data:      compressedData,
 	}
 
 	oracleInfo.SignVotesChan <- &vote
@@ -291,7 +302,7 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 }
 
 func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
-	votes := []*oracleproto.Vote{}
+	votes := []*oracleproto.CompressedVote{}
 	for {
 		select {
 		case vote := <-oracleInfo.SignVotesChan:
@@ -318,7 +329,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
 	// loop through unsignedVoteBuffer and combine all votes
-	var batchVotes = []*oracleproto.Vote{}
+	var batchVotes = []*oracleproto.CompressedVote{}
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
 	for _, unsignedVotes := range oracleInfo.UnsignedVoteBuffer.Buffer {
 		batchVotes = append(batchVotes, unsignedVotes.Votes...)

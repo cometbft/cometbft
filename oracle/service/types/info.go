@@ -20,7 +20,7 @@ type OracleInfo struct {
 	GrpcClient         *grpc.ClientConn
 	UnsignedVoteBuffer *UnsignedVoteBuffer
 	GossipVoteBuffer   *GossipVoteBuffer
-	SignVotesChan      chan *oracleproto.Vote
+	SignVotesChan      chan *oracleproto.CompressedVote
 	PubKey             crypto.PubKey
 	PrivValidator      types.PrivValidator
 	MsgFlushInterval   time.Duration
@@ -30,7 +30,7 @@ type OracleInfo struct {
 
 type UnsignedVotes struct {
 	Timestamp uint64
-	Votes     []*oracleproto.Vote
+	Votes     []*oracleproto.CompressedVote
 }
 
 type GossipVoteBuffer struct {

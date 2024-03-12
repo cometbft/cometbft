@@ -12,11 +12,18 @@ message Vote {
   string data = 4;
 }
 
+message CompressedVote {
+  bytes validator = 1;
+  bytes oracle_id = 2;
+  uint64 timestamp = 3;
+  bytes data = 4;
+}
+
 message GossipVote {
   bytes validator = 1;
   bytes public_key = 2;
   string sign_type = 3;
-  repeated Vote votes = 4;
+  repeated CompressedVote votes = 4;
   uint64 signed_timestamp = 5;
   bytes signature = 6;
 }
@@ -25,7 +32,7 @@ message CanonicalGossipVote {
   bytes validator = 1;
   bytes public_key = 2;
   string sign_type = 3;
-  repeated Vote votes = 4;
+  repeated CompressedVote votes = 4;
 }
 
 message Oracle {

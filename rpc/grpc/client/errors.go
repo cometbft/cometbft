@@ -16,7 +16,7 @@ type ErrStreamSetup struct {
 }
 
 func (e ErrStreamSetup) Error() string {
-	return fmt.Sprintf("error getting a stream for the latest height: %s", e.Err.Error())
+	return "error getting a stream for the latest height: " + e.Err.Error()
 }
 
 func (e ErrStreamSetup) Unwrap() error {
@@ -28,7 +28,7 @@ type ErrStreamReceive struct {
 }
 
 func (e ErrStreamReceive) Error() string {
-	return fmt.Sprintf("error receiving the latest height from a stream: %s", e.Err.Error())
+	return "error receiving the latest height from a stream: " + e.Err.Error()
 }
 
 func (e ErrStreamReceive) Unwrap() error {

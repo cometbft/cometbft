@@ -1,8 +1,11 @@
 package client
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
-var ErrEventTimeout = fmt.Errorf("event timeout")
+var ErrEventTimeout = errors.New("event timeout")
 
 type ErrWaitThreshold struct {
 	Got      int64

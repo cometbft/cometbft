@@ -554,12 +554,14 @@ peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 discard_abci_responses = {{ .Storage.DiscardABCIResponses}}
 
 # The representation of keys in the database.
-# v1 - the legacy layout existing in Comet prior to v1.
-# v2 - Order preserving representation ordering entries by height.
-# v2 is more performant especially in cases pruning of data is required.
-# The layouts cannot be used interchange-ably. It is either one or the other.
+# The current representation of keys in Comet's stores is considered to be v1
+# Users can experiment with a different layout by setting this field to v2.
+# Not that this is an experimental feature and switching back from v2 to v1
+# is not supported by CometBFT.
 # If the database was initially created with v1, it is necessary to migrate the DB
 # before switching to v2. The migration is not done automatically.
+# v1 - the legacy layout existing in Comet prior to v1.
+# v2 - Order preserving representation ordering entries by height.
 experimental_db_key_layout = "{{ .Storage.ExperimentalKeyLayout }}"
 
 # If set to true, CometBFT will force compaction to happen for databases that support this feature.

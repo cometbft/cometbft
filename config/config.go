@@ -1296,12 +1296,10 @@ type StorageConfig struct {
 	GenesisHash string `mapstructure:"genesis_hash"`
 
 	// The representation of keys in the database.
-	// v1 - the legacy layout existing in Comet prior to v1.
-	// v2 - Order preserving representation ordering entries by height.
-	// v2 is more performant especially in cases pruning of data is required.
-	// The layouts cannot be used interchange-ably. It is either one or the other.
-	// If the database was initially created with v1, it is necessary to migrate the DB
-	// before switching to v2. The migration is not done automatically.
+	// The current representation of keys in Comet's stores is considered to be v1
+	// Users can experiment with a different layout by setting this field to v2.
+	// Not that this is an experimental feature and switching back from v2 to v1
+	// is not supported by CometBFT.
 	ExperimentalKeyLayout string `mapstructure:"experimental_db_key_layout"`
 }
 
@@ -1331,6 +1329,9 @@ func TestStorageConfig() *StorageConfig {
 func (cfg *StorageConfig) ValidateBasic() error {
 	if err := cfg.Pruning.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [pruning] section: %w", err)
+	}
+	if cfg.ExperimentalKeyLayout != "v1" && cfg.ExperimentalKeyLayout != "v2" {
+		return fmt.Errorf("unsupported version of DB Key layout, expected v1 or v2, got %s", cfg.ExperimentalKeyLayout)
 	}
 	return nil
 }

@@ -760,11 +760,11 @@ PICK_PEER_LOOP:
 
 // Picks a second peer and sends a request to it. If the second peer is already
 // set, does nothing.
-func (bpr *bpRequester) pickSecondPeerAndSendRequest() {
+func (bpr *bpRequester) pickSecondPeerAndSendRequest() (picked bool) {
 	bpr.mtx.Lock()
 	if bpr.secondPeerID != "" {
 		bpr.mtx.Unlock()
-		return
+		return false
 	}
 	peerID := bpr.peerID
 	bpr.mtx.Unlock()
@@ -776,7 +776,10 @@ func (bpr *bpRequester) pickSecondPeerAndSendRequest() {
 		bpr.mtx.Unlock()
 
 		bpr.pool.sendRequest(bpr.height, secondPeer.id)
+		return true
 	}
+
+	return false
 }
 
 // Informs the requester of a new pool's height.
@@ -801,6 +804,9 @@ OUTER_LOOP:
 			bpr.pickSecondPeerAndSendRequest()
 		}
 
+		retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
+		defer retryTimer.Stop()
+
 		for {
 			select {
 			case <-bpr.pool.Quit():
@@ -810,7 +816,7 @@ OUTER_LOOP:
 				return
 			case <-bpr.Quit():
 				return
-			case <-time.After(requestRetrySeconds * time.Second):
+			case <-retryTimer.C:
 				if !gotBlock {
 					bpr.Logger.Debug("Retrying block request(s) after timeout", "height", bpr.height, "peer", bpr.peerID, "secondPeerID", bpr.secondPeerID)
 					bpr.reset(bpr.peerID)
@@ -827,12 +833,21 @@ OUTER_LOOP:
 				// If both peers returned NoBlockResponse or bad block, reschedule both
 				// requests. If not, wait for the other peer.
 				if len(bpr.requestedFrom()) == 0 {
+					retryTimer.Stop()
 					continue OUTER_LOOP
 				}
 			case newHeight := <-bpr.newHeightCh:
 				if !gotBlock && bpr.height-newHeight < minBlocksForSingleRequest {
 					// The operation is a noop if the second peer is already set. The cost is checking a mutex.
-					bpr.pickSecondPeerAndSendRequest()
+					//
+					// If the second peer was just set, reset the retryTimer to give the
+					// second peer a chance to respond.
+					if picked := bpr.pickSecondPeerAndSendRequest(); picked {
+						if !retryTimer.Stop() {
+							<-retryTimer.C
+						}
+						retryTimer.Reset(requestRetrySeconds * time.Second)
+					}
 				}
 			case <-bpr.gotBlockCh:
 				gotBlock = true

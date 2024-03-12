@@ -272,7 +272,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "err", err)
+			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
 		}
 	case *bcproto.StatusRequest:
 		// Send peer our state.
@@ -288,6 +288,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
 	case *bcproto.NoBlockResponse:
 		bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
+		bcR.pool.RedoRequestFrom(msg.Height, e.Src.ID())
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
@@ -496,14 +497,14 @@ FOR_LOOP:
 			}
 			if err != nil {
 				bcR.Logger.Error("Error in validation", "err", err)
-				peerID := bcR.pool.RedoRequest(first.Height)
+				peerID := bcR.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
 				peer := bcR.Switch.Peers().Get(peerID)
 				if peer != nil {
 					// NOTE: we've already removed the peer's request, but we
 					// still need to clean up the rest.
 					bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
 				}
-				peerID2 := bcR.pool.RedoRequest(second.Height)
+				peerID2 := bcR.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 				peer2 := bcR.Switch.Peers().Get(peerID2)
 				if peer2 != nil && peer2 != peer {
 					// NOTE: we've already removed the peer's request, but we

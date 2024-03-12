@@ -69,7 +69,7 @@ func makeParams(
 			MaxBytes:        maxEvidenceBytes,
 		},
 		Validator: ValidatorParams{
-			PubKeyType: pubkeyType,
+			PubKeyTypes: []string{pubkeyType},
 		},
 		ABCI: ABCIParams{
 			VoteExtensionsEnableHeight: abciExtensionHeight,
@@ -130,7 +130,7 @@ func TestConsensusParamsUpdate(t *testing.T) {
 					MaxBytes:        50,
 				},
 				Validator: &cmtproto.ValidatorParams{
-					PubKeyType: valSecp256k1,
+					PubKeyTypes: []string{valSecp256k1},
 				},
 			},
 			makeParams(100, 200, 300, 50, valSecp256k1, 0),

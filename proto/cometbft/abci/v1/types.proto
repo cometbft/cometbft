@@ -516,11 +516,10 @@ message Validator {
 
 // ValidatorUpdate is a singular update to a validator set.
 message ValidatorUpdate {
+  cometbft.crypto.v1.PublicKey pub_key = 1 [(gogoproto.nullable) = false, deprecated = true];
   int64  power   = 2;
-  bytes pub_key = 3;
-  string key_type = 4;
-
-  reserved 1;  // pub_key is unused in ABCI
+  bytes pub_key_bytes = 3;
+  string pub_key_type = 4;
 }
 
 // VoteInfo contains the information about the vote.

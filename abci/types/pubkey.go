@@ -18,8 +18,10 @@ func Ed25519ValidatorUpdate(pk []byte, power int64) ValidatorUpdate {
 
 	return ValidatorUpdate{
 		// Address:
-		PubKey: pk,
-		Power:  power,
+		PubKey:      pkp,
+		Power:       power,
+		PubKeyBytes: pk,
+		PubKeyType:  ed25519.KeyType,
 	}
 }
 
@@ -35,8 +37,10 @@ func UpdateValidator(pk []byte, power int64, keyType string) ValidatorUpdate {
 		}
 		return ValidatorUpdate{
 			// Address:
-			PubKey: pk,
-			Power:  power,
+			PubKey:      pkp,
+			Power:       power,
+			PubKeyBytes: pk,
+			PubKeyType:  pke.Type(),
 		}
 	default:
 		panic(fmt.Sprintf("key type %s not supported", keyType))

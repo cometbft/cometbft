@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## v0.37.5
+
+*March 12, 2024*
+
+This release fixes a security bug in the light client. It also introduces many
+improvements to the block sync in collaboration with the
+[Osmosis](https://osmosis.zone/) team.
+
+### BUG FIXES
+
+- `[mempool]` The calculation method of tx size returned by calling proxyapp should be consistent with that of mempool
+  ([\#1687](https://github.com/cometbft/cometbft/pull/1687))
+- `[evidence]` When `VerifyCommitLight` & `VerifyCommitLightTrusting` are called as part
+  of evidence verification, all signatures present in the evidence must be verified
+  ([\#1749](https://github.com/cometbft/cometbft/pull/1749))
+
+### IMPROVEMENTS
+
+- `[types]` Validate `Validator#Address` in `ValidateBasic` ([\#1715](https://github.com/cometbft/cometbft/pull/1715))
+- `[abci]` Increase ABCI socket message size limit to 2GB ([\#1730](https://github.com/cometbft/cometbft/pull/1730): @troykessler)
+- `[blocksync]` make the max number of downloaded blocks dynamic.
+  Previously it was a const 600. Now it's `peersCount * maxPendingRequestsPerPeer (20)`
+  [\#2467](https://github.com/cometbft/cometbft/pull/2467)
+- `[blocksync]` Request a block from peer B if we are approaching pool's height
+  (less than 50 blocks) and the current peer A is slow in sending us the
+  block [\#2475](https://github.com/cometbft/cometbft/pull/2475)
+- `[blocksync]` Request the block N from peer B immediately after getting
+  `NoBlockResponse` from peer A
+  [\#2475](https://github.com/cometbft/cometbft/pull/2475)
+- `[blocksync]` Sort peers by download rate (the fastest peer is picked first)
+  [\#2475](https://github.com/cometbft/cometbft/pull/2475)
+
 ## v0.37.4
 
 *November 27, 2023*
@@ -87,14 +119,14 @@ security issues.
 
 ### BUG FIXES
 
-- `[pubsub]` Pubsub queries are now able to parse big integers (larger than
-  int64). Very big floats are also properly parsed into very big integers
-  instead of being truncated to int64.
-  ([\#771](https://github.com/cometbft/cometbft/pull/771))
 - `[state/kvindex]` Querying event attributes that are bigger than int64 is now
   enabled. We are not supporting reading floats from the db into the indexer
   nor parsing them into BigFloats to not introduce breaking changes in minor
   releases. ([\#771](https://github.com/cometbft/cometbft/pull/771))
+- `[pubsub]` Pubsub queries are now able to parse big integers (larger than
+  int64). Very big floats are also properly parsed into very big integers
+  instead of being truncated to int64.
+  ([\#771](https://github.com/cometbft/cometbft/pull/771))
 
 ### IMPROVEMENTS
 

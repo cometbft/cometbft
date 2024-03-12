@@ -36,6 +36,9 @@ func TestStoreLoadValidators(t *testing.T) {
 	// 1) LoadValidators loads validators using a height where they were last changed
 	err := sm.SaveValidatorsInfo(stateDB, 1, 1, vals, "v2")
 	require.NoError(t, err)
+
+	// The store was initialized with v2 so we cannot find a validator using the representation
+	// used by v1
 	err = sm.SaveValidatorsInfo(stateDB, 2, 1, vals, "v1")
 	require.NoError(t, err)
 	_, err = stateStore.LoadValidators(2)

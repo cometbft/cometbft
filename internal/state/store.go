@@ -195,6 +195,37 @@ func IsEmpty(store dbStore) (bool, error) {
 	return state.IsEmpty(), nil
 }
 
+func setDBKeyLayout(store *dbStore, dbKeyLayoutVersion string) string {
+	empty, _ := IsEmpty(*store)
+	if !empty {
+		version, err := store.db.Get([]byte("version"))
+		if err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
+			panic(err)
+		}
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
+	}
+
+	switch dbKeyLayoutVersion {
+	case "v1", "":
+		store.DBKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "v1"
+	case "v2":
+		store.DBKeyLayout = &v2Layout{}
+		dbKeyLayoutVersion = "v2"
+	default:
+		panic("Unknown version. Expected v1 or v2, given " + dbKeyLayoutVersion)
+	}
+
+	if err := store.db.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
+		panic(err)
+	}
+	return dbKeyLayoutVersion
+}
+
 // NewStore creates the dbStore of the state pkg.
 func NewStore(db dbm.DB, options StoreOptions) Store {
 	if options.Metrics == nil {
@@ -206,38 +237,10 @@ func NewStore(db dbm.DB, options StoreOptions) Store {
 		StoreOptions: options,
 	}
 
-	dbKeyLayoutVersion := options.DBKeyLayout
-	empty, _ := IsEmpty(store)
-
-	if !empty {
-		version, err := db.Get([]byte("version"))
-		if err != nil {
-			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
-			// If this behavior changes we need to account for that.
-			panic(err)
-		}
-
-		if len(version) != 0 {
-			dbKeyLayoutVersion = string(version)
-		}
-	}
-	switch dbKeyLayoutVersion {
-	case "v1":
-		store.DBKeyLayout = &v1LegacyLayout{}
-	case "v2":
-		store.DBKeyLayout = v2Layout{}
-	case "":
-		store.DBKeyLayout = &v1LegacyLayout{}
-		dbKeyLayoutVersion = "v1"
-	default:
-		panic("Unknown version. Expected v1 or v2, given " + dbKeyLayoutVersion)
-	}
+	dbKeyLayoutVersion := setDBKeyLayout(&store, options.DBKeyLayout)
 
 	if options.Logger != nil {
-		options.Logger.Info("State store version ", "version", "v"+dbKeyLayoutVersion)
-	}
-	if err := store.db.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
-		panic(err)
+		options.Logger.Info("State store key layout version ", "version", "v"+dbKeyLayoutVersion)
 	}
 
 	return store

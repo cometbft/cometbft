@@ -75,13 +75,11 @@ func setDBLayout(pool *Pool, dbKeyLayoutVersion string) {
 	}
 
 	switch dbKeyLayoutVersion {
-	case "v1":
-		pool.dbKeyLayout = &v1LegacyLayout{}
-	case "v2":
-		pool.dbKeyLayout = &v2Layout{}
-	case "":
+	case "v1", "":
 		pool.dbKeyLayout = &v1LegacyLayout{}
 		dbKeyLayoutVersion = "v1"
+	case "v2":
+		pool.dbKeyLayout = &v2Layout{}
 	default:
 		panic("unknown key layout version")
 	}

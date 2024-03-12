@@ -183,7 +183,7 @@ func DefaultFeatureParams() FeatureParams {
 }
 
 func DefaultSynchronyParams() SynchronyParams {
-	// TODO(@wbanfield): Determine experimental values for these defaults
+	// Default values determined based on experimental results and on
 	// https://github.com/tendermint/tendermint/issues/7202
 	return SynchronyParams{
 		Precision:    500 * time.Millisecond,

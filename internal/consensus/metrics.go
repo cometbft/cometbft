@@ -139,7 +139,7 @@ type Metrics struct {
 	// metric thus should drive the definition of values for the consensus
 	// parameter SynchronyParams.MessageDelay, used by the PBTS algorithm.
 	// metrics:Difference in seconds between the local time when a proposal message is received and the timestamp in the proposal message.
-	ProposalTimestampDifference metrics.Histogram `metrics_bucketsizes:"-1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 6.0, 8.0, 10.0" metrics_labels:"is_timely"`
+	ProposalTimestampDifference metrics.Histogram `metrics_bucketsizes:"-1.5, -1.0, -0.5, -0.2, 0, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 4.0, 8.0" metrics_labels:"is_timely"`
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {

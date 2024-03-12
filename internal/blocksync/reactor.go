@@ -441,7 +441,7 @@ FOR_LOOP:
 	}
 }
 
-// setupDeferred sets up deferred calls for poolRoutine
+// setupDeferred sets up deferred calls for poolRoutine.
 func (bcR *Reactor) setupDeferred(trySyncTicker, statusUpdateTicker, switchToConsensusTicker *time.Ticker) {
 	bcR.metrics.Syncing.Set(0)
 	trySyncTicker.Stop()

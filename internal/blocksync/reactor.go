@@ -432,7 +432,6 @@ FOR_LOOP:
 			state, err = bcR.processBlocks(first, firstParts, extCommit, second, firstID, state, &blocksSynced, &lastRate, &lastHundred)
 			if err != nil {
 				break FOR_LOOP
-
 			}
 
 			continue FOR_LOOP
@@ -496,26 +495,7 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 	}
 }
 
-// processBlock processes a block, saves it to the store, and updates the state.
-// It takes a block, its parts, an extended commit, the second block and the current state as parameters.
-// It returns the updated state and an error if there is one.
-func (bcR *Reactor) processBlock(first *types.Block, firstParts *types.PartSet, extCommit *types.ExtendedCommit, second *types.Block, firstID types.BlockID, state sm.State) (sm.State, error) {
-	// TODO: batch saves so we dont persist to disk every block
-	if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
-		bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
-	} else {
-		// We use LastCommit here instead of extCommit. extCommit is not
-		// guaranteed to be populated by the peer if extensions are not enabled.
-		// Currently, the peer should provide an extCommit even if the vote extension data are absent
-		// but this may change so using second.LastCommit is safer.
-		bcR.store.SaveBlock(first, firstParts, second.LastCommit)
-	}
-
-	// TODO: same thing for app - but we would need a way to
-	// get the hash without persisting the state
-	return bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
-}
-
+// processBlocks processes two blocks and their extended commit.
 func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet, extCommit *types.ExtendedCommit, second *types.Block, firstID types.BlockID, state sm.State, blocksSynced *uint64, lastRate *float64, lastHundred *time.Time) (sm.State, error) {
 	// TODO: batch saves so we dont persist to disk every block
 	if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
@@ -546,7 +526,6 @@ func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet,
 	}
 
 	return state, err
-
 }
 
 // switchToConsensus checks if the node is caught up with the rest of the network
@@ -603,7 +582,6 @@ func (bcR *Reactor) switchToConsensus(state sm.State, initialCommitHasExtensions
 		// else {
 		// should only happen during testing
 		// }
-
 	}
 }
 

@@ -193,12 +193,8 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("ABCI.VoteExtensionsEnableHeight cannot be negative. Got: %d", params.ABCI.VoteExtensionsEnableHeight)
 	}
 
-	if len(params.Validator.PubKeyTypes) == 0 {
-		return errors.New("len(Validator.PubKeyTypes) must be greater than 0")
-	}
-
-	if len(params.Validator.PubKeyTypes) > 1 {
-		return errors.New("len(Validator.PubKeyTypes) cannot be greater than 1")
+	if len(params.Validator.PubKeyTypes) =! 1{
+		return errors.New("len(Validator.PubKeyTypes) must be 1")
 	}
 
 	// Check if keyType is a known ABCIPubKeyType

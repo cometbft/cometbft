@@ -17,6 +17,7 @@ import (
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // KeyPathFunc builds a merkle path out of the given path and key.
@@ -556,9 +557,9 @@ func (c *Client) updateLightClientIfNeededTo(ctx context.Context, height *int64)
 		err error
 	)
 	if height == nil {
-		l, err = c.lc.Update(ctx, time.Now())
+		l, err = c.lc.Update(ctx, cmttime.Now())
 	} else {
-		l, err = c.lc.VerifyLightBlockAtHeight(ctx, *height, time.Now())
+		l, err = c.lc.VerifyLightBlockAtHeight(ctx, *height, cmttime.Now())
 	}
 	if err != nil {
 		return nil, ErrUpdateClient{Height: *height, Err: err}

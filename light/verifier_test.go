@@ -11,6 +11,7 @@ import (
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/light"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
@@ -303,7 +304,7 @@ func TestVerifyReturnsErrorIfTrustLevelIsInvalid(t *testing.T) {
 			hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys))
 	)
 
-	err := light.Verify(header, vals, header, vals, 2*time.Hour, time.Now(), maxClockDrift,
+	err := light.Verify(header, vals, header, vals, 2*time.Hour, cmttime.Now(), maxClockDrift,
 		cmtmath.Fraction{Numerator: 2, Denominator: 1})
 	require.Error(t, err)
 }

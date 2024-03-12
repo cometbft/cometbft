@@ -1025,6 +1025,8 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 	params[0] = state.ConsensusParams
 	for i := 1; i < n+1; i++ {
 		params[i] = *types.DefaultConsensusParams()
+		// FIXME: shouldn't PBTS be enabled by default?
+		params[i].Feature.PbtsEnableHeight = 1
 		params[i].Block.MaxBytes += int64(i)
 	}
 

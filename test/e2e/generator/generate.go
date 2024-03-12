@@ -61,10 +61,13 @@ var (
 	lightNodePerturbations = probSetChoice{
 		"upgrade": 0.3,
 	}
-	voteExtensionUpdateHeight = uniformChoice{int64(-1), int64(0), int64(1)} // -1: genesis, 0: InitChain, 1: (use offset)
-	voteExtensionEnabled      = weightedChoice{true: 3, false: 1}
-	voteExtensionHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
-	voteExtensionSize         = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
+	voteExtensionsUpdateHeight = uniformChoice{int64(-1), int64(0), int64(1)} // -1: genesis, 0: InitChain, 1: (use offset)
+	voteExtensionEnabled       = weightedChoice{true: 3, false: 1}
+	voteExtensionsHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
+	voteExtensionSize          = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
+	pbtsUpdateHeight           = uniformChoice{int64(-1), int64(0), int64(1)}                // -1: genesis, 0: InitChain, 1: (use offset)
+	pbtsEnabled                = weightedChoice{true: 3, false: 1}
+	pbtsHeightOffset           = uniformChoice{int64(0), int64(10), int64(100)}
 )
 
 type generateConfig struct {
@@ -151,17 +154,27 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		manifest.VoteExtensionDelay = 100 * time.Millisecond
 		manifest.FinalizeBlockDelay = 500 * time.Millisecond
 	}
-	manifest.VoteExtensionsUpdateHeight = voteExtensionUpdateHeight.Choose(r).(int64)
+	manifest.VoteExtensionsUpdateHeight = voteExtensionsUpdateHeight.Choose(r).(int64)
 	if manifest.VoteExtensionsUpdateHeight == 1 {
-		manifest.VoteExtensionsUpdateHeight = manifest.InitialHeight + voteExtensionHeightOffset.Choose(r).(int64)
+		manifest.VoteExtensionsUpdateHeight = manifest.InitialHeight + voteExtensionsHeightOffset.Choose(r).(int64)
 	}
 	if voteExtensionEnabled.Choose(r).(bool) {
 		baseHeight := max(manifest.VoteExtensionsUpdateHeight+1, manifest.InitialHeight)
-		manifest.VoteExtensionsEnableHeight = baseHeight + voteExtensionHeightOffset.Choose(r).(int64)
+		manifest.VoteExtensionsEnableHeight = baseHeight + voteExtensionsHeightOffset.Choose(r).(int64)
 	}
 
 	manifest.VoteExtensionSize = voteExtensionSize.Choose(r).(uint)
 
+	manifest.PbtsUpdateHeight = pbtsUpdateHeight.Choose(r).(int64)
+	if manifest.PbtsUpdateHeight == 1 {
+		manifest.PbtsUpdateHeight = manifest.InitialHeight + pbtsHeightOffset.Choose(r).(int64)
+	}
+	if pbtsEnabled.Choose(r).(bool) {
+		baseHeight := max(manifest.PbtsUpdateHeight+1, manifest.InitialHeight)
+		manifest.PbtsEnableHeight = baseHeight + pbtsHeightOffset.Choose(r).(int64)
+	}
+
+	// TODO: Add skew config
 	var numSeeds, numValidators, numFulls, numLightClients int
 	switch opt["topology"].(string) {
 	case "single":
@@ -181,7 +194,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	// First we generate seed nodes, starting at the initial height.
 	for i := 1; i <= numSeeds; i++ {
 		manifest.Nodes[fmt.Sprintf("seed%02d", i)] = generateNode(
-			r, e2e.ModeSeed, 0, false)
+			r, e2e.ModeSeed, 0, false, 0)
 	}
 
 	// Next, we generate validators. We make sure a BFT quorum of validators start
@@ -191,13 +204,16 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	quorum := numValidators*2/3 + 1
 	for i := 1; i <= numValidators; i++ {
 		startAt := int64(0)
+		var clockSkew time.Duration
 		if i > quorum {
 			startAt = nextStartAt
 			nextStartAt += 5
+			// Interval: [-500ms, 59s500ms)
+			clockSkew = time.Duration(int64(r.Float64()*float64(time.Minute))) - 500*time.Millisecond
 		}
 		name := fmt.Sprintf("validator%02d", i)
 		manifest.Nodes[name] = generateNode(
-			r, e2e.ModeValidator, startAt, i <= 2)
+			r, e2e.ModeValidator, startAt, i <= 2, clockSkew)
 
 		if startAt == 0 {
 			(*manifest.Validators)[name] = int64(30 + r.Intn(71))
@@ -226,7 +242,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 			nextStartAt += 5
 		}
 		manifest.Nodes[fmt.Sprintf("full%02d", i)] = generateNode(
-			r, e2e.ModeFull, startAt, false)
+			r, e2e.ModeFull, startAt, false, 0)
 	}
 
 	// We now set up peer discovery for nodes. Seed nodes are fully meshed with
@@ -289,7 +305,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 // here, since we need to know the overall network topology and startup
 // sequencing.
 func generateNode(
-	r *rand.Rand, mode e2e.Mode, startAt int64, forceArchive bool,
+	r *rand.Rand, mode e2e.Mode, startAt int64, forceArchive bool, clockSkew time.Duration,
 ) *e2e.ManifestNode {
 	node := e2e.ManifestNode{
 		Version:                nodeVersions.Choose(r).(string),
@@ -304,6 +320,7 @@ func generateNode(
 		RetainBlocks:           uint64(nodeRetainBlocks.Choose(r).(int)),
 		EnableCompanionPruning: false,
 		Perturb:                nodePerturbations.Choose(r),
+		ClockSkew:              clockSkew,
 	}
 
 	// If this node is forced to be an archive node, retain all blocks and

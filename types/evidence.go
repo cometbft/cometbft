@@ -602,14 +602,14 @@ func NewMockDuplicateVoteEvidenceWithValidator(height int64, time time.Time,
 	val := NewValidator(pubKey, 10)
 	voteA := makeMockVote(height, 0, 0, pubKey.Address(), randBlockID(), time)
 	vA := voteA.ToProto()
-	err = pv.SignVote(chainID, vA)
+	err = pv.SignVote(chainID, vA, false)
 	if err != nil {
 		return nil, err
 	}
 	voteA.Signature = vA.Signature
 	voteB := makeMockVote(height, 0, 0, pubKey.Address(), randBlockID(), time)
 	vB := voteB.ToProto()
-	err = pv.SignVote(chainID, vB)
+	err = pv.SignVote(chainID, vB, false)
 	if err != nil {
 		return nil, err
 	}

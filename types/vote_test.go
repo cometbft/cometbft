@@ -185,7 +185,7 @@ func TestVoteVerifySignature(t *testing.T) {
 	signBytes := VoteSignBytes("test_chain_id", v)
 
 	// sign it
-	err = privVal.SignVote("test_chain_id", v)
+	err = privVal.SignVote("test_chain_id", v, false)
 	require.NoError(t, err)
 
 	// verify the same vote
@@ -256,7 +256,7 @@ func TestVoteExtension(t *testing.T) {
 			}
 
 			v := vote.ToProto()
-			err = privVal.SignVote("test_chain_id", v)
+			err = privVal.SignVote("test_chain_id", v, true)
 			require.NoError(t, err)
 			vote.Signature = v.Signature
 			if tc.includeSignature {
@@ -331,7 +331,7 @@ func signVote(t *testing.T, pv PrivValidator, vote *Vote) {
 	chainID := "test_chain_id"
 
 	v := vote.ToProto()
-	require.NoError(t, pv.SignVote(chainID, v))
+	require.NoError(t, pv.SignVote(chainID, v, true))
 	vote.Signature = v.Signature
 	vote.ExtensionSignature = v.ExtensionSignature
 }
@@ -460,7 +460,7 @@ func TestVoteProtobuf(t *testing.T) {
 	privVal := NewMockPV()
 	vote := examplePrecommit()
 	v := vote.ToProto()
-	err := privVal.SignVote("test_chain_id", v)
+	err := privVal.SignVote("test_chain_id", v, false)
 	vote.Signature = v.Signature
 	require.NoError(t, err)
 
@@ -532,7 +532,7 @@ func TestSignAndCheckVote(t *testing.T) {
 				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}}
 				return v
 			}(),
-			expectError: true,
+			expectError: false,
 		},
 		{
 			name:              "precommit without extension",
@@ -584,7 +584,7 @@ func TestSignAndCheckVote(t *testing.T) {
 				v.Extension = []byte("extension")
 				return v
 			}(),
-			expectError: true,
+			expectError: false,
 		},
 	}
 

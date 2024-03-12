@@ -26,6 +26,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // ----------------------------------------------
@@ -43,7 +44,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	tickerFunc := newMockTickerFunc(true)
 	appFunc := newKVStore
 
-	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, nil, cmttime.Now())
 	css := make([]*State, nValidators)
 
 	for i := 0; i < nValidators; i++ {
@@ -142,7 +143,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		// allow first height to happen normally so that byzantine validator is no longer proposer
 		if height == prevoteHeight {
 			bcs.Logger.Info("Sending two votes")
-			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), nil)
+			prevote1, err := bcs.signVote(types.PrevoteType, bcs.ProposalBlock.Hash(), bcs.ProposalBlockParts.Header(), bcs.ProposalBlock)
 			require.NoError(t, err)
 			prevote2, err := bcs.signVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 			require.NoError(t, err)
@@ -189,7 +190,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			extCommit = &types.ExtendedCommit{}
 		case lazyProposer.LastCommit.HasTwoThirdsMajority():
 			// Make the commit from LastCommit
-			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: height}
+			// Vote extensions are enabled by default for test units
+			veHeightParam := lazyProposer.state.ConsensusParams.Feature
 			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
 		default: // This shouldn't happen.
 			lazyProposer.Logger.Error("enterPropose: Cannot propose anything: No commit for the previous block")
@@ -221,16 +223,16 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 
 		// Make proposal
 		propBlockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
-		proposal := types.NewProposal(height, round, lazyProposer.ValidRound, propBlockID)
+		proposal := types.NewProposal(height, round, lazyProposer.ValidRound, propBlockID, block.Header.Time)
 		p := proposal.ToProto()
 		if err := lazyProposer.privValidator.SignProposal(lazyProposer.state.ChainID, p); err == nil {
 			proposal.Signature = p.Signature
 
 			// send proposal and block parts on internal msg queue
-			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})
+			lazyProposer.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()})
 			for i := 0; i < int(blockParts.Total()); i++ {
 				part := blockParts.GetPart(i)
-				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, ""})
+				lazyProposer.sendInternalMessage(msgInfo{&BlockPartMessage{lazyProposer.Height, lazyProposer.Round, part}, "", time.Time{}})
 			}
 			lazyProposer.Logger.Info("Signed proposal", "height", height, "round", round, "proposal", proposal)
 			lazyProposer.Logger.Debug(fmt.Sprintf("Signed proposal block: %v", block))
@@ -452,18 +454,15 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 // -------------------------------
 // byzantine consensus functions
 
-func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64, round int32, cs *State, sw *p2p.Switch) {
+func byzantineDecideProposalFunc(_ context.Context, t *testing.T, height int64, round int32, cs *State, sw *p2p.Switch) {
 	t.Helper()
 	// byzantine user should create two proposals and try to split the vote.
 	// Avoid sending on internalMsgQueue and running consensus state.
 
 	// Create a new proposal block from state/txs from the mempool.
-	block1, err := cs.createProposalBlock(ctx)
-	require.NoError(t, err)
-	blockParts1, err := block1.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	polRound, propBlockID := cs.ValidRound, types.BlockID{Hash: block1.Hash(), PartSetHeader: blockParts1.Header()}
-	proposal1 := types.NewProposal(height, round, polRound, propBlockID)
+	block1, blockParts1, propBlockID := createProposalBlock(t, cs)
+	polRound := cs.ValidRound
+	proposal1 := types.NewProposal(height, round, polRound, propBlockID, block1.Time)
 	p1 := proposal1.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p1); err != nil {
 		t.Error(err)
@@ -475,12 +474,9 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 	deliverTxsRange(t, cs, 1)
 
 	// Create a new proposal block from state/txs from the mempool.
-	block2, err := cs.createProposalBlock(ctx)
-	require.NoError(t, err)
-	blockParts2, err := block2.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
-	polRound, propBlockID = cs.ValidRound, types.BlockID{Hash: block2.Hash(), PartSetHeader: blockParts2.Header()}
-	proposal2 := types.NewProposal(height, round, polRound, propBlockID)
+	block2, blockParts2, propBlockID := createProposalBlock(t, cs)
+	polRound = cs.ValidRound
+	proposal2 := types.NewProposal(height, round, polRound, propBlockID, block2.Time)
 	p2 := proposal2.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p2); err != nil {
 		t.Error(err)
@@ -490,15 +486,16 @@ func byzantineDecideProposalFunc(ctx context.Context, t *testing.T, height int64
 
 	block1Hash := block1.Hash()
 	block2Hash := block2.Hash()
+	require.NotEqual(t, block1Hash, block2Hash)
 
 	// broadcast conflicting proposals/block parts to peers
 	peers := sw.Peers().Copy()
 	t.Logf("Byzantine: broadcasting conflicting proposals to %d peers", len(peers))
 	for i, peer := range peers {
 		if i < len(peers)/2 {
-			go sendProposalAndParts(height, round, cs, peer, proposal1, block1Hash, blockParts1)
+			go sendProposalAndParts(height, round, cs, peer, proposal1, block1, block1Hash, blockParts1)
 		} else {
-			go sendProposalAndParts(height, round, cs, peer, proposal2, block2Hash, blockParts2)
+			go sendProposalAndParts(height, round, cs, peer, proposal2, block2, block2Hash, blockParts2)
 		}
 	}
 }
@@ -509,6 +506,7 @@ func sendProposalAndParts(
 	cs *State,
 	peer p2p.Peer,
 	proposal *types.Proposal,
+	block *types.Block,
 	blockHash []byte,
 	parts *types.PartSet,
 ) {
@@ -538,7 +536,7 @@ func sendProposalAndParts(
 	// votes
 	cs.mtx.Lock()
 	prevote, _ := cs.signVote(types.PrevoteType, blockHash, parts.Header(), nil)
-	precommit, _ := cs.signVote(types.PrecommitType, blockHash, parts.Header(), nil)
+	precommit, _ := cs.signVote(types.PrecommitType, blockHash, parts.Header(), block)
 	cs.mtx.Unlock()
 	peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,

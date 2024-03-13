@@ -35,6 +35,15 @@ func (e ErrMaxPerClientSubscription) Error() string {
 	return fmt.Sprintf("maximum number of subscriptions per client reached: %d", e.Max)
 }
 
+type ErrHeightMinGTMax struct {
+	Min int64
+	Max int64
+}
+
+func (e ErrHeightMinGTMax) Error() string {
+	return fmt.Sprintf("min height %d can't be greater than max height %d", e.Min, e.Max)
+}
+
 type ErrQueryLength struct {
 	length    int
 	maxLength int

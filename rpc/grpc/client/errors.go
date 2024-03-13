@@ -35,7 +35,7 @@ func (e ErrStreamReceive) Unwrap() error {
 	return e.Err
 }
 
-type ErrDail struct {
+type ErrDial struct {
 	Addr   string
 	Source error
 }

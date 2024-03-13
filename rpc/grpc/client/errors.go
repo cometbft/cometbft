@@ -4,7 +4,7 @@ import "fmt"
 
 type ErrBlockResults struct {
 	Height int64
-	Err    error
+	Source    error
 }
 
 func (e ErrBlockResults) Error() string {

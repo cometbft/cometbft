@@ -24,7 +24,7 @@ func (e ErrStreamSetup) Unwrap() error {
 }
 
 type ErrStreamReceive struct {
-	Err error
+	Source error
 }
 
 func (e ErrStreamReceive) Error() string {

@@ -93,7 +93,7 @@ func (c *blockServiceClient) GetLatestHeight(ctx context.Context, opts ...GetLat
 
 	latestHeightClient, err := c.client.GetLatestHeight(ctx, &req)
 	if err != nil {
-		return nil, ErrStreamSetup{Err: err}
+		return nil, ErrStreamSetup{Source: err}
 	}
 
 	cfg := &getLatestHeightConfig{}

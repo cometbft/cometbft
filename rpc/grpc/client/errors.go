@@ -40,7 +40,7 @@ type ErrDail struct {
 	Source error
 }
 
-func (e ErrDail) Error() string {
+func (e ErrDial) Error() string {
 	return fmt.Sprintf("failed to dial: address %s: %v", e.Addr, e.Source)
 }
 

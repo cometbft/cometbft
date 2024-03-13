@@ -41,7 +41,7 @@ type ErrDail struct {
 }
 
 func (e ErrDail) Error() string {
-	return fmt.Sprintf("failed to dail: address %s: %v", e.Addr, e.Source)
+	return fmt.Sprintf("failed to dial: address %s: %v", e.Addr, e.Source)
 }
 
 func (e ErrDail) Unwrap() error {

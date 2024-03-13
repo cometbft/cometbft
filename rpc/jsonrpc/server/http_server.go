@@ -17,17 +17,10 @@ import (
 	"golang.org/x/net/netutil"
 
 	"github.com/cometbft/cometbft/libs/log"
+	jsonRPCErrors "github.com/cometbft/cometbft/rpc/jsonrpc/errors"
 	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
-
-type ErrInvalidRemoteAddress struct {
-	Addr string
-}
-
-func (e ErrInvalidRemoteAddress) Error() string {
-	return fmt.Sprintf("invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)", e.Addr)
-}
 
 // Config is a RPC server configuration.
 type Config struct {
@@ -271,7 +264,7 @@ func (h maxBytesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func Listen(addr string, maxOpenConnections int) (listener net.Listener, err error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		return nil, ErrInvalidRemoteAddress{Addr: addr}
+		return nil, jsonRPCErrors.ErrInvalidRemoteAddress{Addr: addr}
 	}
 	proto, addr := parts[0], parts[1]
 	listener, err = net.Listen(proto, addr)

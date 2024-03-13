@@ -12,7 +12,7 @@ func (e ErrBlockResults) Error() string {
 }
 
 type ErrStreamSetup struct {
-	Err error
+	Source error
 }
 
 func (e ErrStreamSetup) Error() string {

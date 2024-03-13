@@ -51,7 +51,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	})
 	select {
 	case <-ctx.Context().Done():
-		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), Reason: ErrConfirmationNotReceived.Error()}
+		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
 	case res := <-resCh:
 		return &ctypes.ResultBroadcastTx{
 			Code:      res.Code,
@@ -99,7 +99,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	reqRes, err := env.Mempool.CheckTx(tx)
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
-		return nil, ErrTxBroadcast{Source: err, Reason: ""}
+		return nil, ErrTxBroadcast{Source: err, ErrReason: ErrCheckTxFailed}
 	}
 	reqRes.SetCallback(func(res *abci.Response) {
 		select {
@@ -109,7 +109,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	})
 	select {
 	case <-ctx.Context().Done():
-		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), Reason: ErrConfirmationNotReceived.Error()}
+		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
 	case checkTxRes := <-checkTxResCh:
 		if checkTxRes.Code != abci.CodeTypeOK {
 			return &ctypes.ResultBroadcastTxCommit{

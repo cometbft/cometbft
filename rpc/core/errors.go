@@ -13,6 +13,7 @@ var (
 	ErrSlowClient              = errors.New("slow client")
 	ErrCometBFTExited          = errors.New("cometBFT exited")
 	ErrConfirmationNotReceived = errors.New("broadcast confirmation not received")
+	ErrCheckTxFailed           = errors.New("transaction failed to pass CheckTx")
 	ErrTimedOutWaitingForTx    = errors.New("timed out waiting for tx to be included in a block")
 	ErrGenesisRespSize         = errors.New("genesis response is too large, please use the genesis_chunked API instead")
 	ErrChunkNotInitialized     = errors.New("genesis chunks are not initialized")
@@ -97,20 +98,20 @@ func (e ErrSubFailed) Unwrap() error {
 }
 
 type ErrTxBroadcast struct {
-	Source error
-	Reason string
+	Source    error
+	ErrReason error
 }
 
 func (e ErrTxBroadcast) Error() string {
-	if e.Reason == "" {
-		return fmt.Sprintf("failed to broadcast tx: %v", e.Source)
-	}
-
-	return fmt.Sprintf("failed to broadcast tx: %s: %v", e.Reason, e.Source)
+	return fmt.Sprintf("failed to broadcast tx: %v: %v", e.ErrReason, e.Source)
 }
 
 func (e ErrTxBroadcast) Unwrap() error {
 	return e.Source
+}
+
+func (e ErrTxBroadcast) Reason() error {
+	return e.ErrReason
 }
 
 type ErrServiceConfig struct {

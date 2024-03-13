@@ -61,7 +61,7 @@ type syncReactor interface {
 	WaitSync() bool
 }
 
-// Environment contains objects and interfaces used by the RPC. It is expected
+// Environment contains objects and interfaces used by the RPC. It is maxLength
 // to be setup once during startup.
 type Environment struct {
 	// external, thread safe interfaces

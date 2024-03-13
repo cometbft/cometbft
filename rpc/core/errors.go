@@ -36,12 +36,12 @@ func (e ErrMaxPerClientSubscription) Error() string {
 }
 
 type ErrQueryLength struct {
-	requested int
-	expected  int
+	length    int
+	maxLength int
 }
 
 func (e ErrQueryLength) Error() string {
-	return fmt.Sprintf("maximum query length exceeded: requested %d, expected %d", e.requested, e.expected)
+	return fmt.Sprintf("maximum query length exceeded: length %d, max_length %d", e.length, e.maxLength)
 }
 
 type ErrValidation struct {
@@ -120,7 +120,7 @@ type ErrInvalidChunkID struct {
 }
 
 func (e ErrInvalidChunkID) Error() string {
-	return fmt.Sprintf("invalid chunk ID: requested %d but maximum available is %d", e.RequestedID, e.MaxID)
+	return fmt.Sprintf("invalid chunk ID: length %d but maximum available is %d", e.RequestedID, e.MaxID)
 }
 
 type ErrTxNotFound struct {
@@ -136,7 +136,7 @@ type ErrInvalidOrderBy struct {
 }
 
 func (e ErrInvalidOrderBy) Error() string {
-	return "invalid order_by: expected either `asc` or `desc` or an empty value but got " + e.OrderBy
+	return "invalid order_by: maxLength either `asc` or `desc` or an empty value but got " + e.OrderBy
 }
 
 type ErrInvalidNodeType struct {
@@ -146,5 +146,5 @@ type ErrInvalidNodeType struct {
 }
 
 func (e ErrInvalidNodeType) Error() string {
-	return fmt.Sprintf("peer %s has an invalid node type: expected %s but got %s", e.PeerID, e.Expected, e.Actual)
+	return fmt.Sprintf("peer %s has an invalid node type: maxLength %s but got %s", e.PeerID, e.Expected, e.Actual)
 }

@@ -73,7 +73,7 @@ The experiments were ran in a number of different settings:
 - **Storage footprint** 
 - **RAM usage**
 - **Block processing time** (*cometbft_state_block_processing_time*) This time here indicates the time to execute `FinalizeBlock` while reconstructing the last commit from the database and sending it to the application for processing. 
-- **Block time**: Computed based on the number of blocks processed in a fixed timeframe (1h or 6h).
+- **Block time**: Computed based on the number of blocks processed in a fixed timeframe. Represents the time of blocks processed per second.
 - **Duration of individual consensus steps** (*cometbft_consensus_step_duration_seconds* aggregated by step)
 - **consensus_total_txs**
 
@@ -165,7 +165,7 @@ We show the findings in the table below. `v1` is the current DB key layout and `
 | Chain height   |   4936   | 5095 | 4277 | 4855 | 4398 | 5104 |
 | RAM (MB)    |  550   | 470 | 650 | 510 | 660 | 510|
 | Block processing time(s) |  1.9   | 2.1 | 2.2 | 2.1 | 2.0 | 1.9 |
-| Block time | 0.73| 0.71 | 0.84 | 0.74| 0.82| 0.71|
+| Block time (blocks/s) | 0.73| 0.71 | 0.84 | 0.74| 0.82| 0.71|
 
 We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB with the new layout. 
 
@@ -255,7 +255,7 @@ The table below shows the performance metrics for Pebble:
 | Chain height   |   5743   | 5666 | 5553| 5739 | 5551 | 5752 |
 | RAM (MB)    |  494   | 445 | 456 | 445 | 490 | 461 |
 | Block processing time(s) |  2   | 3.9 | 2.1 | 2.1 | 2.1 | 2.1 |
-| Block time | 0.63 | 0.64 | 0.65 | 0.63 | 0.65 | 0.63 |
+| Block time (blocks/s) | 0.63 | 0.64 | 0.65 | 0.63 | 0.65 | 0.63 |
 
 The block processing time when using the new layout and no pruning seems to significantly increase compared to the other cases. However, while taking longer it seems that the number of transactions processed in the same timeframe is higher and achieved with fewer heights. The metrics for block size bytes and the number of transactions included in a block show that in both scenarios the block size was the same and each block had the same number of transactions. 
 This indicates that with the new layout, CometBFT was able to drain the mempool faster

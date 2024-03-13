@@ -97,7 +97,7 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	}
 	conn, err := ggrpc.DialContext(ctx, addr, builder.grpcOpts...)
 	if err != nil {
-		return nil, grpcclient.ErrDail{Addr: addr, Source: err}
+		return nil, grpcclient.ErrDial{Addr: addr, Source: err}
 	}
 
 	pruningServiceClient := newDisabledPruningServiceClient()

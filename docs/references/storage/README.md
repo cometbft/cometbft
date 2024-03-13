@@ -22,7 +22,7 @@ For comparison, until then, CometBFT would only prune the block and state store 
 
 More details on the API itself and how it can be used can be found in the corresponding [ADR](https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-101-data-companion-pull-api.md) and [documentation](https://github.com/cometbft/cometbft/tree/main/docs/explanation/data-companion).
 
-This report covers that changes and their impact related to fixing and improving the pruning related points (1 and 3) as well as the last point. The results are obtained using `goleveldb` as the default backend unless stated otherwise. 
+The rest of this report covers the changes and their impact related to fixing and improving the pruning related points (1 and 3) as well as supporting a new data key layout. The results are obtained using `goleveldb` as the default backend unless stated otherwise. 
 
 ## Q1 goals
 The expected result for Q1 was fixing the problem of storage growth despite pruning and improving database access times with a more optimal key layout. 
@@ -31,17 +31,17 @@ While we did indeed fix the problem of pruning/compaction not working, based on 
 
 Without a real world application, when running our test applications, our hypothesis on the impact of ordering was demonstrated by performance improvements and faster compaction times with the new layout.
 
-The one experiment with a real application did not back up this theory though. 
+The one experiment with a real application did not back up this theory though. Even though the overall performance was better than the software version used by the application at the moment. 
 
-Our application's block times were in the range of 2-6s compared to 100s of ms for the real world application. Furthermore, the application might have different access patterns. 
+The block processing time reported by our application were in the range of 2-6s compared to 100s of ms for the real world application. Furthermore, the application might have different access patterns. Our tests can be seen as testing only CometBFT's interaction with storage, without much interference from the application.  
 
-That is why, in Q1, we introduce as an interface the key representation of the two stores, where the new layout is marked as purely experimental. Our hope is that chains will be incentivized to experiment with it and provide us with more real world numbers. This will also facilitate switching the data layout without breaking changes between releases. 
+That is why, in Q1, we introduce an interface with two implementations: the current key layout and a new representation, sorting the keys by height using ordercode. The new layout is marked as purely experimental. Our hope is that chains will be incentivized to experiment with it and provide us with more real world data. This will also facilitate switching the data layout without breaking changes between releases if we decide to officially support a new data layout. 
 
 # Testing setup
 
 The experiments were ran in a number of different settings:
- 1. We can call this setup **Local-1node**:  Local runs on one node using a light kvstore application with almost no app state. This setup increases the chances that storage is the bottleneck and enabled us to evaluate the changes independent 
- of the demands of specific applications. Furthermore, we were able to create a larger footprint quicker
+ 1. We call this setup **Local-1node**:  Local runs on one node using a light kvstore application with almost no app state. This setup increases the chances that storage is the bottleneck and enables us to evaluate the changes independent 
+ of the demands of specific applications. Furthermore, we were able to create a larger storage footprint quicker
  thus speeding up the experimentation process. 
 
  To evaluate the impact of forced compaction and the different key layouts on both compaction/pruning and performance, we ran the following set of experiments on this setup:
@@ -52,14 +52,14 @@ The experiments were ran in a number of different settings:
  - New layout - pruning, no forced compaction
  - New layout - pruning and forced compaction
 
- We have also experimented with a [third option](https://github.com/cometbft/cometbft/pull/1814), from which we initially expected the most: The new layout combined with insights into the access pattern of Comet to order together keys frequently accessed. In all
+ We have also experimented with a [third option](https://github.com/cometbft/cometbft/pull/1814), from which we initially expected the most: The new layout combined with insights into the access pattern of CometBFT to order together keys frequently accessed. In all
  our experiments, when running CometBFT using this layout was less efficient than the other two and we therefore dismissed it.
 
- We reduced the `timeout_commit` in this setup to 300ms to speed up execution. The load was generated using `test/loadtime` with the following parameters: `-c 1 -T 3600 -r 1000 -s 8096`. Sending 8KB transactions at a rate of 1000txs/s for 1h. 
+ We reduced the `timeout_commit` in this setup to 300ms to speed up execution. The load was generated using `test/loadtime` with the following parameters: `-c 1 -T 3600 -r 1000 -s 8096`, sending 8KB transactions at a rate of 1000txs/s for 1h. 
 
  Each experiment was repeated 3 times to make sure the results are deterministic. 
 
- 2. **e2e-6 node**: CometBFT's e2e application run on a Digital Ocean cluster of 6 nodes. Each node had a different combination of changes we tested:
+ 2. **e2e-6 node**: CometBFT's e2e application run on a Digital Ocean cluster of 6 nodes. Each node had a different combination of changes:
   - Pruning with and without compaction on the current database key layout vs. a the same but using the new key layout that uses `ordercode` to sort keys by height. 
   - No pruning using the current database key layout vs. the new key layout. 
 
@@ -86,11 +86,11 @@ During this work we extended CometBFT with two additional storage related metric
 Pruning the blockstore and statestore is a long supported feature by CometBFT. An application can set a retain height - the number of blocks which must be kept - and instruct CometBFT to prune the remaining blocks (taking into account some other constraints). 
 
 ## Storage footprint is not reduced
-Unfortunately, many users have noticed that, despite this feature being enabled, the growth of both the state and block store does not stop. This lejuh-07fr///'ads operators to copy the database, enforce compaction of the deleted items manually and copy it back. We have talked to operators and some have to do this weekly or every two weeks. 
+Unfortunately, many users have noticed that, despite this feature being enabled, the growth of both the state and block store does not stop. To free up storage, operators copy the database, enforce compaction of the deleted items manually and copy it back. We have talked to operators and some have to do this weekly or every two weeks. 
 
 After some research, we found that some of the database backends can be forced to compact the data. We experimented on it and confirmed those findings.
 
-æ∞/jmn 5That is why we extended `cometbft-db`, [adding an API](https://github.com/cometbft/cometbft-db/pull/111) to instruct the database to compact the files. Then we made sure that CometBFT [calls](https://github.com/cometbft/cometbft/pull/1972) this function after blocks are pruned. 
+That is why we extended `cometbft-db`, [with an API](https://github.com/cometbft/cometbft-db/pull/111) to instruct the database to compact the files. Then we made sure that CometBFT [calls](https://github.com/cometbft/cometbft/pull/1972) this function after blocks are pruned. 
 
 To evaluate whether this was really beneficial, we ran a couple of experiments and recorded the storage used:
 
@@ -121,7 +121,7 @@ To evaluate whether this was really beneficial, we ran a couple of experiments a
 While the previous results confirm the storage footprint can be reduced, it is important that this is not impacting the performance of the entire system. 
 
 The most impactful change we have made with regards to that is moving block and state pruning into a background process. Up until v1.x, pruning was done before a node moves on to the next height, blocking 
-consensus from proceeding. In Q3 2023, we changed this by launching a pruning service that checks in fixed intervals, whether there are blocks to be pruned. This interval is configurable and is 10s by default. 
+consensus from proceeding. In Q3 2023, we changed this by launching a pruning service that checks in fixed intervals, whether there are blocks to be pruned. This interval is configurable and is `10s` by default. 
 
 ### Production - Injective mainnet
 The impact of this changes is best demonstrated with the runs by Informal staking comparing 4 Injective nodes with the following setup:
@@ -170,7 +170,7 @@ We show the findings in the table below. `v1` is the current DB key layout and `
 We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB with the new layout. 
 
 
-When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results when ran locally on the kvstore app. However, this is not what they observed on mainnet. In the graphs above, we see that the new layout, while still improving performance compared to CometBFT v0.37.x, introduced a ~10ms latency in this particular case. According to the operators, this was a big difference for chains like Injective. 
+When backporting these changes to the 0.37.x based branch we gave to Informal staking, we obtained similar results when ran locally on the kvstore app. However, this is not what they observed on mainnet. In the graphs above, we see that the new layout, while still improving performance compared to CometBFT v0.37.x, introduced a ~10ms latency in this particular case. According to the operators, this is a big difference for chains like Injective. 
 
 ### **e2e - 6 nodes**
 
@@ -196,50 +196,50 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
  *Block Store Access time* 
 
  In general, store access times are very low, without pruning they are up to 40ms.  The storage device on the Digital Ocean nodes are SSDs but many of our operators use state of the art NVMe devices, thus they could be even lower in production. 
- Without pruning, the current layout is slightly faster than the new one. However, when pruning is turned on and deletions are performed the access times grow and using the new layout leads to lower access times. The gap grows slightly as the database size grows (second graph). 
+ Without pruning, the current layout is slightly faster than the new one. However, when pruning is turned on and deletions are performed, the access times grow (to 100s of ms) and using the new layout leads to lower access times. The gap grows slightly as the database size grows (second graph). 
 
  ![e2e_block_store_access_time](img/e2e_block_store_access_time.png "Block store access time e2e")
 
 
  *State Store Access time*
 
- The conclusions for the state store access times are very similar to those for the blockstore. Note though that in our e2e app the state store does not grow to more than 1GB as we disabled ABCI results pruning and the validator set is not updated - which typically leads to increase in state. 
+ The conclusions for the state store access times are very similar to those for the blockstore. Note though that in our e2e app the state store does not grow to more than 1GB as we disabled ABCI results saving and the validator set is not updated - which typically leads to increase in state. 
 
 
  ![e2e_state_store_access_time](img/e2e_state_store_access_time.png "State store access time e2e")
 
  *RAM Usage*
- The difference in RAM used between the nodes was not very big. Nodes that prune efficiently (with compaction), used 20-40MB more RAM than nodes that did no pruning. But 
-
- *validator04* and *validator00*  (no pruning) are using 278MB of RAM . *validator02* (pruning on old layout) uses 330MB of RAM and *validator01*(pruning on new layout) uses 298MB. This is in line with the local runs where pruning on the new layout uses less RAM. 
+ The difference in RAM used between the nodes was not very big. Nodes that prune efficiently (with compaction), used 20-40MB more RAM than nodes that did no pruning. 
+ 
+ But *validator04* and *validator00*  (no pruning) are using 278MB of RAM . *validator02* (pruning on old layout) uses 330MB of RAM and *validator01*(pruning on new layout) uses 298MB. This is in line with the local runs where pruning on the new layout uses less RAM. 
 
  *Missed blocks*
 ![e2e_val_missed_blocks](img/e2e_val_missed_blocks.png "Blocks missed by a validator")
 
 The graph above shows the number of missed blocks per validator. *validator02* is doing pruning and compaction using the old layout and keeps missing blocks. The other two validators all use the new layout with *validator03* doing pruning without compaction compared to *validator01* who missed only 1 block while doing pruning and compaction. 
 
+This is something we could not verify in production because the nodes ran by Informal staking were not validator nodes. 
+
 
 ### Conclusion on key layout
 As demonstrated by the above results, and mentioned at the beginning, `v1.x` will be released with support for the new key layout as a purely experimental feature.
 
-Without pruning, for a bigger database and block processing times around 6s (on runs with our e2e), the new layour lowered the overall block processing time. When the block times are very low (in our local setup or on Injective), we did not observe the same benefits. 
+Without pruning, for a bigger database and block processing times around 6s (on runs with our e2e), the new layout lowered the overall block processing time even without pruning. When the block times are very low (in our local setup or on Injective), we did not observe the same benefits. 
  
 Thus, the final decision should be left to the application after testing and understanding their behaviour. 
 
 As the feature is experimental, we do not provide a way to convert the database back into the current format if it is initialized with the new layout. 
 
-The two layouts are not interchange-able, thus once one is used, a node cannot switch to the other. The version to be used is set in the `config.toml` and defaults to `v1` - the current layout. Once the layout is set, it is written back to the database with `version` as the key. When a node boots up and loads the database initially, if this flag is set, it takes precedense over any configuration file. 
+The two layouts are not interchange-able, once one is used, a node cannot switch to the other. The version to be used is set in the `config.toml` and defaults to `v1` - the current layout. Once the layout is set, it is written back to the database with `version` as the key. When a node boots up and loads the database initially, if this flag is set, it takes precedense over any configuration file. 
 
 The support for both layouts will allow users to benchmark their applications. If at any point we get clear indications that one layout is better than the other, we will gladly drop support for one of them and provide users with a way to migrate their databases gracefully. 
-
-
 
 
 ## Pebble
 
 `PebbleDB` was recently added to `cometbft-db` by Notional labs and based on their benchmarks it was superior to goleveldDB. 
 
-We repeated our tests done in **1-node-local** using PebbleDB as the underlying database. While the difference in performance it self was slightly better, the most impressive difference is that PebbleDB seemed to handle compaction itself very well. 
+We repeated our tests done in **1-node-local** using PebbleDB as the underlying database. While the difference in performance itself was slightly better, the most impressive difference is that PebbleDB seemed to handle compaction very well without a need to enforce it. 
 
 In the graph below, we see the old layout without any compaction and the new layout with and without compaction on the same workload that generated 20GB of data when no pruning is active. 
 

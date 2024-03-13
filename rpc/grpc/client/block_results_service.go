@@ -31,7 +31,7 @@ type blockResultServiceClient struct {
 func (b blockResultServiceClient) GetBlockResults(ctx context.Context, height int64) (*BlockResults, error) {
 	res, err := b.client.GetBlockResults(ctx, &brs.GetBlockResultsRequest{Height: height})
 	if err != nil {
-		return nil, ErrBlockResults{Height: height, Err: err}
+		return nil, ErrBlockResults{Height: height, Source: err}
 	}
 
 	return &BlockResults{

@@ -4,11 +4,11 @@ import "fmt"
 
 type ErrBlockResults struct {
 	Height int64
-	Source    error
+	Source error
 }
 
 func (e ErrBlockResults) Error() string {
-	return fmt.Sprintf("error fetching BlockResults for height %d: %s", e.Height, e.Err.Error())
+	return fmt.Sprintf("error fetching BlockResults for height %d: %s", e.Height, e.Source.Error())
 }
 
 type ErrStreamSetup struct {
@@ -16,11 +16,11 @@ type ErrStreamSetup struct {
 }
 
 func (e ErrStreamSetup) Error() string {
-	return "error getting a stream for the latest height: " + e.Err.Error()
+	return "error getting a stream for the latest height: " + e.Source.Error()
 }
 
 func (e ErrStreamSetup) Unwrap() error {
-	return e.Err
+	return e.Source
 }
 
 type ErrStreamReceive struct {
@@ -28,11 +28,11 @@ type ErrStreamReceive struct {
 }
 
 func (e ErrStreamReceive) Error() string {
-	return "error receiving the latest height from a stream: " + e.Err.Error()
+	return "error receiving the latest height from a stream: " + e.Source.Error()
 }
 
 func (e ErrStreamReceive) Unwrap() error {
-	return e.Err
+	return e.Source
 }
 
 type ErrDial struct {

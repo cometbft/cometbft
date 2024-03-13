@@ -110,6 +110,8 @@ func (e ErrServiceConfig) Error() string {
 	return fmt.Sprintf("service configuration error: %s", e.Source)
 }
 
+func (e ErrServiceConfig) Unwrap() error { return e.Source }
+
 type ErrInvalidChunkID struct {
 	RequestedID int
 	MaxID       int

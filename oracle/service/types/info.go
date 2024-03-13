@@ -18,7 +18,7 @@ type OracleInfo struct {
 	CustomNodeConfig   CustomNodeConfig
 	UnsignedVoteBuffer *UnsignedVoteBuffer
 	GossipVoteBuffer   *GossipVoteBuffer
-	SignVotesChan      chan *oracleproto.CompressedVote
+	SignVotesChan      chan *oracleproto.Vote
 	PubKey             crypto.PubKey
 	PrivValidator      types.PrivValidator
 	StopChannel        chan int
@@ -27,7 +27,7 @@ type OracleInfo struct {
 
 type UnsignedVotes struct {
 	Timestamp uint64
-	Votes     []*oracleproto.CompressedVote
+	Votes     []*oracleproto.Vote
 }
 
 type GossipVoteBuffer struct {

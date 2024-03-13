@@ -814,10 +814,10 @@ type OracleConfig struct {
 // DefaultOracleConfig returns a default configuration for the CometBFT oracle service
 func DefaultOracleConfig() *OracleConfig {
 	return &OracleConfig{
-		RestUrl:          "127.0.0.1",            // localhost
-		PruneInterval:    5 * time.Second,        // 5s
-		SignInterval:     500 * time.Millisecond, // 0.5s
-		SyncInterval:     60 * time.Second,       // 60s
+		RestUrl:          "http://localhost:1317", // localhost
+		PruneInterval:    4 * time.Second,         // 4s
+		SignInterval:     500 * time.Millisecond,  // 0.5s
+		SyncInterval:     60 * time.Second,        // 60s
 		MaxGossipMsgSize: 65536,
 	}
 }

@@ -24,10 +24,9 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Vote struct {
-	Validator []byte `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
-	OracleId  string `protobuf:"bytes,2,opt,name=oracle_id,json=oracleId,proto3" json:"oracle_id,omitempty"`
-	Timestamp uint64 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Data      string `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
+	OracleId  string `protobuf:"bytes,1,opt,name=oracle_id,json=oracleId,proto3" json:"oracle_id,omitempty"`
+	Timestamp uint64 `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Data      string `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
 }
 
 func (m *Vote) Reset()         { *m = Vote{} }
@@ -63,13 +62,6 @@ func (m *Vote) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Vote proto.InternalMessageInfo
 
-func (m *Vote) GetValidator() []byte {
-	if m != nil {
-		return m.Validator
-	}
-	return nil
-}
-
 func (m *Vote) GetOracleId() string {
 	if m != nil {
 		return m.OracleId
@@ -91,88 +83,19 @@ func (m *Vote) GetData() string {
 	return ""
 }
 
-type CompressedVote struct {
-	Validator []byte `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
-	OracleId  []byte `protobuf:"bytes,2,opt,name=oracle_id,json=oracleId,proto3" json:"oracle_id,omitempty"`
-	Timestamp uint64 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Data      []byte `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
-}
-
-func (m *CompressedVote) Reset()         { *m = CompressedVote{} }
-func (m *CompressedVote) String() string { return proto.CompactTextString(m) }
-func (*CompressedVote) ProtoMessage()    {}
-func (*CompressedVote) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ed9227d272ed5d90, []int{1}
-}
-func (m *CompressedVote) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *CompressedVote) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_CompressedVote.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *CompressedVote) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CompressedVote.Merge(m, src)
-}
-func (m *CompressedVote) XXX_Size() int {
-	return m.Size()
-}
-func (m *CompressedVote) XXX_DiscardUnknown() {
-	xxx_messageInfo_CompressedVote.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CompressedVote proto.InternalMessageInfo
-
-func (m *CompressedVote) GetValidator() []byte {
-	if m != nil {
-		return m.Validator
-	}
-	return nil
-}
-
-func (m *CompressedVote) GetOracleId() []byte {
-	if m != nil {
-		return m.OracleId
-	}
-	return nil
-}
-
-func (m *CompressedVote) GetTimestamp() uint64 {
-	if m != nil {
-		return m.Timestamp
-	}
-	return 0
-}
-
-func (m *CompressedVote) GetData() []byte {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
 type GossipVote struct {
-	Validator       []byte            `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
-	PublicKey       []byte            `protobuf:"bytes,2,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
-	SignType        string            `protobuf:"bytes,3,opt,name=sign_type,json=signType,proto3" json:"sign_type,omitempty"`
-	Votes           []*CompressedVote `protobuf:"bytes,4,rep,name=votes,proto3" json:"votes,omitempty"`
-	SignedTimestamp uint64            `protobuf:"varint,5,opt,name=signed_timestamp,json=signedTimestamp,proto3" json:"signed_timestamp,omitempty"`
-	Signature       []byte            `protobuf:"bytes,6,opt,name=signature,proto3" json:"signature,omitempty"`
+	PublicKey       []byte  `protobuf:"bytes,1,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	SignType        string  `protobuf:"bytes,2,opt,name=sign_type,json=signType,proto3" json:"sign_type,omitempty"`
+	Votes           []*Vote `protobuf:"bytes,3,rep,name=votes,proto3" json:"votes,omitempty"`
+	SignedTimestamp uint64  `protobuf:"varint,4,opt,name=signed_timestamp,json=signedTimestamp,proto3" json:"signed_timestamp,omitempty"`
+	Signature       []byte  `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
 }
 
 func (m *GossipVote) Reset()         { *m = GossipVote{} }
 func (m *GossipVote) String() string { return proto.CompactTextString(m) }
 func (*GossipVote) ProtoMessage()    {}
 func (*GossipVote) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ed9227d272ed5d90, []int{2}
+	return fileDescriptor_ed9227d272ed5d90, []int{1}
 }
 func (m *GossipVote) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -201,13 +124,6 @@ func (m *GossipVote) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GossipVote proto.InternalMessageInfo
 
-func (m *GossipVote) GetValidator() []byte {
-	if m != nil {
-		return m.Validator
-	}
-	return nil
-}
-
 func (m *GossipVote) GetPublicKey() []byte {
 	if m != nil {
 		return m.PublicKey
@@ -222,7 +138,7 @@ func (m *GossipVote) GetSignType() string {
 	return ""
 }
 
-func (m *GossipVote) GetVotes() []*CompressedVote {
+func (m *GossipVote) GetVotes() []*Vote {
 	if m != nil {
 		return m.Votes
 	}
@@ -244,17 +160,16 @@ func (m *GossipVote) GetSignature() []byte {
 }
 
 type CanonicalGossipVote struct {
-	Validator []byte            `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
-	PublicKey []byte            `protobuf:"bytes,2,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
-	SignType  string            `protobuf:"bytes,3,opt,name=sign_type,json=signType,proto3" json:"sign_type,omitempty"`
-	Votes     []*CompressedVote `protobuf:"bytes,4,rep,name=votes,proto3" json:"votes,omitempty"`
+	PublicKey []byte  `protobuf:"bytes,1,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
+	SignType  string  `protobuf:"bytes,2,opt,name=sign_type,json=signType,proto3" json:"sign_type,omitempty"`
+	Votes     []*Vote `protobuf:"bytes,3,rep,name=votes,proto3" json:"votes,omitempty"`
 }
 
 func (m *CanonicalGossipVote) Reset()         { *m = CanonicalGossipVote{} }
 func (m *CanonicalGossipVote) String() string { return proto.CompactTextString(m) }
 func (*CanonicalGossipVote) ProtoMessage()    {}
 func (*CanonicalGossipVote) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ed9227d272ed5d90, []int{3}
+	return fileDescriptor_ed9227d272ed5d90, []int{2}
 }
 func (m *CanonicalGossipVote) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -283,13 +198,6 @@ func (m *CanonicalGossipVote) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CanonicalGossipVote proto.InternalMessageInfo
 
-func (m *CanonicalGossipVote) GetValidator() []byte {
-	if m != nil {
-		return m.Validator
-	}
-	return nil
-}
-
 func (m *CanonicalGossipVote) GetPublicKey() []byte {
 	if m != nil {
 		return m.PublicKey
@@ -304,7 +212,7 @@ func (m *CanonicalGossipVote) GetSignType() string {
 	return ""
 }
 
-func (m *CanonicalGossipVote) GetVotes() []*CompressedVote {
+func (m *CanonicalGossipVote) GetVotes() []*Vote {
 	if m != nil {
 		return m.Votes
 	}
@@ -328,7 +236,7 @@ func (m *Oracle) Reset()         { *m = Oracle{} }
 func (m *Oracle) String() string { return proto.CompactTextString(m) }
 func (*Oracle) ProtoMessage()    {}
 func (*Oracle) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ed9227d272ed5d90, []int{4}
+	return fileDescriptor_ed9227d272ed5d90, []int{3}
 }
 func (m *Oracle) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -437,7 +345,7 @@ func (m *Result) Reset()         { *m = Result{} }
 func (m *Result) String() string { return proto.CompactTextString(m) }
 func (*Result) ProtoMessage()    {}
 func (*Result) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ed9227d272ed5d90, []int{5}
+	return fileDescriptor_ed9227d272ed5d90, []int{4}
 }
 func (m *Result) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -489,7 +397,6 @@ func (m *Result) GetData() string {
 
 func init() {
 	proto.RegisterType((*Vote)(nil), "tendermint.oracle.Vote")
-	proto.RegisterType((*CompressedVote)(nil), "tendermint.oracle.CompressedVote")
 	proto.RegisterType((*GossipVote)(nil), "tendermint.oracle.GossipVote")
 	proto.RegisterType((*CanonicalGossipVote)(nil), "tendermint.oracle.CanonicalGossipVote")
 	proto.RegisterType((*Oracle)(nil), "tendermint.oracle.Oracle")
@@ -499,45 +406,42 @@ func init() {
 func init() { proto.RegisterFile("tendermint/oracle/types.proto", fileDescriptor_ed9227d272ed5d90) }
 
 var fileDescriptor_ed9227d272ed5d90 = []byte{
-	// 594 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x54, 0xbd, 0x6e, 0xd4, 0x4c,
-	0x14, 0x8d, 0x37, 0x9b, 0x4d, 0x7c, 0xb3, 0xd9, 0x7c, 0xdf, 0x10, 0x45, 0x16, 0x24, 0xce, 0xc6,
-	0x20, 0xb1, 0x34, 0xbb, 0x08, 0x22, 0x21, 0xd1, 0x91, 0x14, 0x08, 0x21, 0x01, 0x32, 0x11, 0x05,
-	0x8d, 0x35, 0x6b, 0x5f, 0xcc, 0x88, 0xb5, 0xc7, 0x9a, 0xb9, 0x8e, 0xb2, 0x05, 0xaf, 0x80, 0x78,
-	0x0c, 0x1e, 0x05, 0x51, 0xa5, 0xa4, 0x8a, 0x50, 0xd2, 0x50, 0xe7, 0x09, 0x90, 0x67, 0x1c, 0xef,
-	0x42, 0x1a, 0x94, 0x8a, 0xee, 0xfa, 0x9c, 0x33, 0x73, 0x7f, 0x7c, 0xcf, 0xc0, 0x36, 0x61, 0x9e,
-	0xa0, 0xca, 0x44, 0x4e, 0x23, 0xa9, 0x78, 0x3c, 0xc1, 0x11, 0x4d, 0x0b, 0xd4, 0xc3, 0x42, 0x49,
-	0x92, 0xec, 0xff, 0x19, 0x3d, 0xb4, 0xf4, 0xcd, 0x8d, 0x54, 0xa6, 0xd2, 0xb0, 0xa3, 0x2a, 0xb2,
-	0xc2, 0x40, 0x43, 0xfb, 0x8d, 0x24, 0x64, 0x5b, 0xe0, 0x1e, 0xf1, 0x89, 0x48, 0x38, 0x49, 0xe5,
-	0x39, 0x7d, 0x67, 0xd0, 0x0d, 0x67, 0x00, 0xbb, 0x05, 0xae, 0xbd, 0x25, 0x12, 0x89, 0xd7, 0xea,
-	0x3b, 0x03, 0x37, 0x5c, 0xb1, 0xc0, 0xb3, 0xa4, 0x3a, 0x4a, 0x22, 0x43, 0x4d, 0x3c, 0x2b, 0xbc,
-	0xc5, 0xbe, 0x33, 0x68, 0x87, 0x33, 0x80, 0x31, 0x68, 0x27, 0x9c, 0xb8, 0xd7, 0x36, 0xa7, 0x4c,
-	0x1c, 0x7c, 0x84, 0xde, 0x81, 0xcc, 0x0a, 0x85, 0x5a, 0x63, 0x72, 0x9d, 0xf4, 0xdd, 0x6b, 0xa5,
-	0xef, 0xd6, 0xe9, 0x7f, 0x3a, 0x00, 0x4f, 0xa5, 0xd6, 0xa2, 0xf8, 0x8b, 0xdc, 0xdb, 0x00, 0x45,
-	0x39, 0x9e, 0x88, 0x38, 0xfa, 0x80, 0xd3, 0x3a, 0xb9, 0x6b, 0x91, 0xe7, 0x38, 0xad, 0x4a, 0xd3,
-	0x22, 0xcd, 0xa3, 0x6a, 0xf8, 0x26, 0xbb, 0x1b, 0xae, 0x54, 0xc0, 0xe1, 0xb4, 0x40, 0xf6, 0x08,
-	0x96, 0x8e, 0x24, 0xa1, 0xf6, 0xda, 0xfd, 0xc5, 0xc1, 0xea, 0x83, 0xdd, 0xe1, 0x95, 0xbf, 0x32,
-	0xfc, 0x7d, 0x0e, 0xa1, 0xd5, 0xb3, 0x7b, 0xf0, 0x5f, 0x75, 0x09, 0x26, 0xd1, 0xac, 0xb5, 0x25,
-	0xd3, 0xda, 0xba, 0xc5, 0x0f, 0x9b, 0x06, 0xb7, 0x6c, 0x01, 0x9c, 0x4a, 0x85, 0x5e, 0xc7, 0x96,
-	0xd7, 0x00, 0xc1, 0x17, 0x07, 0x6e, 0x1c, 0xf0, 0x5c, 0xe6, 0x22, 0xe6, 0x93, 0x7f, 0xba, 0xe7,
-	0xe0, 0x5b, 0x0b, 0x3a, 0x2f, 0x8d, 0x80, 0x79, 0xb0, 0x1c, 0x2b, 0x6c, 0x6a, 0x73, 0xc3, 0xcb,
-	0x4f, 0xd6, 0x83, 0x56, 0xb3, 0x81, 0x2d, 0x91, 0xb0, 0x3e, 0xac, 0x26, 0xa8, 0x63, 0x25, 0x0a,
-	0x12, 0x32, 0xaf, 0x8b, 0x99, 0x87, 0xd8, 0x26, 0x74, 0x34, 0x71, 0x2a, 0x75, 0xbd, 0x81, 0xf5,
-	0x17, 0xdb, 0x83, 0xcd, 0x4c, 0xe4, 0x11, 0x95, 0x2a, 0x97, 0x25, 0x45, 0x05, 0xaa, 0x18, 0x73,
-	0xe2, 0x29, 0x9a, 0x41, 0xbb, 0xe1, 0x46, 0x26, 0xf2, 0x43, 0x4b, 0xbe, 0x6a, 0x38, 0x76, 0x07,
-	0x7a, 0x19, 0x3f, 0x8e, 0x14, 0xea, 0x72, 0x42, 0x51, 0xa5, 0xee, 0x18, 0x75, 0x37, 0xe3, 0xc7,
-	0xa1, 0x01, 0x9f, 0xa4, 0xc8, 0x6e, 0xc3, 0x9a, 0xc6, 0xb8, 0x54, 0x82, 0xa6, 0x76, 0x48, 0xcb,
-	0x56, 0x74, 0x09, 0x9a, 0x41, 0xdd, 0x85, 0xf5, 0xfa, 0x1a, 0x4d, 0x8a, 0x13, 0xa6, 0x53, 0x6f,
-	0xc5, 0xc8, 0x7a, 0x16, 0x7e, 0x5d, 0xa3, 0xcc, 0x07, 0x50, 0xa8, 0xe5, 0xa4, 0x34, 0x2d, 0xba,
-	0x46, 0x33, 0x87, 0x54, 0x2b, 0xae, 0x0b, 0x8c, 0x3d, 0xb0, 0x0e, 0xab, 0xe2, 0xe0, 0x93, 0x03,
-	0x1d, 0x5b, 0x0f, 0x1b, 0xcd, 0x9b, 0xc7, 0x8c, 0x73, 0x9f, 0x5d, 0x9c, 0xee, 0xf4, 0x92, 0xf1,
-	0xe3, 0xa0, 0x21, 0x82, 0x39, 0x43, 0xdd, 0xff, 0xd3, 0x50, 0x8b, 0xb3, 0x03, 0x0d, 0x11, 0xcc,
-	0x9b, 0x6c, 0x77, 0xde, 0xe3, 0xfb, 0x6b, 0x17, 0xa7, 0x3b, 0x6e, 0x25, 0x36, 0x66, 0xb3, 0x9e,
-	0xdb, 0x7f, 0xf1, 0xf5, 0xcc, 0x77, 0x4e, 0xce, 0x7c, 0xe7, 0xc7, 0x99, 0xef, 0x7c, 0x3e, 0xf7,
-	0x17, 0x4e, 0xce, 0xfd, 0x85, 0xef, 0xe7, 0xfe, 0xc2, 0xdb, 0xbd, 0x54, 0xd0, 0xfb, 0x72, 0x3c,
-	0x8c, 0x65, 0x36, 0x8a, 0x65, 0x86, 0x34, 0x7e, 0x47, 0xb3, 0xc0, 0x3e, 0x58, 0x57, 0x1e, 0xbb,
-	0x71, 0xc7, 0x10, 0x0f, 0x7f, 0x05, 0x00, 0x00, 0xff, 0xff, 0x91, 0x24, 0x69, 0x96, 0x08, 0x05,
-	0x00, 0x00,
+	// 557 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x53, 0x4d, 0x6e, 0xd3, 0x40,
+	0x14, 0xae, 0x93, 0x34, 0xad, 0x5f, 0xdb, 0x14, 0x86, 0xaa, 0x58, 0xd0, 0xba, 0xc1, 0x20, 0x51,
+	0x16, 0x24, 0x08, 0xba, 0x62, 0x47, 0x59, 0x20, 0x84, 0x04, 0xc8, 0x04, 0x16, 0x6c, 0xac, 0x89,
+	0xfd, 0x30, 0x23, 0x62, 0x8f, 0x35, 0xf3, 0x8c, 0xea, 0x1d, 0x27, 0x40, 0x1c, 0x89, 0x25, 0x62,
+	0xd5, 0x25, 0xab, 0x0a, 0x25, 0x37, 0xe8, 0x09, 0x90, 0x67, 0xdc, 0x24, 0x52, 0x0e, 0xc0, 0xee,
+	0xcd, 0xf7, 0x7d, 0xf3, 0xfe, 0x66, 0x3e, 0x38, 0x24, 0xcc, 0x13, 0x54, 0x99, 0xc8, 0x69, 0x28,
+	0x15, 0x8f, 0x27, 0x38, 0xa4, 0xaa, 0x40, 0x3d, 0x28, 0x94, 0x24, 0xc9, 0xae, 0x2f, 0xe8, 0x81,
+	0xa5, 0x6f, 0xed, 0xa5, 0x32, 0x95, 0x86, 0x1d, 0xd6, 0x91, 0x15, 0x06, 0xef, 0xa1, 0xf3, 0x41,
+	0x12, 0xb2, 0xdb, 0xe0, 0x5a, 0x5d, 0x24, 0x12, 0xcf, 0xe9, 0x3b, 0xc7, 0x6e, 0xb8, 0x69, 0x81,
+	0x97, 0x09, 0x3b, 0x00, 0x97, 0x44, 0x86, 0x9a, 0x78, 0x56, 0x78, 0xad, 0xbe, 0x73, 0xdc, 0x09,
+	0x17, 0x00, 0x63, 0xd0, 0x49, 0x38, 0x71, 0xaf, 0x6d, 0x6e, 0x99, 0x38, 0xf8, 0xe9, 0x00, 0xbc,
+	0x90, 0x5a, 0x8b, 0xc2, 0x64, 0x3f, 0x04, 0x28, 0xca, 0xf1, 0x44, 0xc4, 0xd1, 0x17, 0xac, 0x4c,
+	0xfa, 0xed, 0xd0, 0xb5, 0xc8, 0x2b, 0xac, 0xea, 0xe2, 0x5a, 0xa4, 0x79, 0x54, 0x4f, 0x60, 0xf2,
+	0xbb, 0xe1, 0x66, 0x0d, 0x8c, 0xaa, 0x02, 0xd9, 0x43, 0x58, 0xff, 0x2a, 0x09, 0xb5, 0xd7, 0xee,
+	0xb7, 0x8f, 0xb7, 0x1e, 0xdf, 0x1c, 0xac, 0x8c, 0x36, 0xa8, 0x6b, 0x84, 0x56, 0xc5, 0x1e, 0xc0,
+	0xb5, 0xfa, 0x2a, 0x26, 0xd1, 0xa2, 0xe5, 0x8e, 0x69, 0x79, 0xd7, 0xe2, 0xa3, 0x79, 0xe3, 0x07,
+	0xb6, 0x2c, 0xa7, 0x52, 0xa1, 0xb7, 0x6e, 0x9b, 0x9a, 0x03, 0xc1, 0x37, 0x07, 0x6e, 0x3c, 0xe7,
+	0xb9, 0xcc, 0x45, 0xcc, 0x27, 0xff, 0x65, 0x96, 0xe0, 0x77, 0x0b, 0xba, 0x6f, 0x0c, 0xcc, 0x3c,
+	0xd8, 0x88, 0x15, 0x72, 0x92, 0xaa, 0x79, 0x9d, 0xab, 0x23, 0xeb, 0x41, 0x4b, 0x24, 0x4d, 0xa5,
+	0x96, 0x48, 0x58, 0x1f, 0xb6, 0x12, 0xd4, 0xb1, 0x12, 0x05, 0x09, 0x99, 0x37, 0xaf, 0xb2, 0x0c,
+	0xb1, 0x7d, 0xe8, 0x6a, 0xe2, 0x54, 0x6a, 0xb3, 0x18, 0x37, 0x6c, 0x4e, 0xec, 0x04, 0xf6, 0x33,
+	0x91, 0x47, 0x54, 0xaa, 0x5c, 0x96, 0x14, 0x15, 0xa8, 0x62, 0xcc, 0x89, 0xa7, 0x76, 0x39, 0x6e,
+	0xb8, 0x97, 0x89, 0x7c, 0x64, 0xc9, 0xb7, 0x73, 0x8e, 0xdd, 0x83, 0x5e, 0xc6, 0xcf, 0x22, 0x85,
+	0xba, 0x9c, 0x50, 0x54, 0xab, 0xbb, 0x46, 0xbd, 0x9d, 0xf1, 0xb3, 0xd0, 0x80, 0xcf, 0x52, 0x64,
+	0x77, 0x61, 0x47, 0x63, 0x5c, 0x2a, 0x41, 0x95, 0x5d, 0xcd, 0x86, 0x15, 0x5d, 0x81, 0x66, 0x3d,
+	0xf7, 0x61, 0xb7, 0x49, 0xa3, 0x49, 0x71, 0xc2, 0xb4, 0xf2, 0x36, 0x8d, 0xac, 0x67, 0xe1, 0x77,
+	0x0d, 0xca, 0x7c, 0x00, 0x85, 0x5a, 0x4e, 0x4a, 0x33, 0xa2, 0x6b, 0x34, 0x4b, 0x48, 0xfd, 0x25,
+	0x75, 0x81, 0xb1, 0x07, 0xf6, 0x4b, 0xd6, 0x71, 0xf0, 0xdd, 0x81, 0xae, 0xed, 0x87, 0x0d, 0x57,
+	0x3e, 0xfb, 0x29, 0xbb, 0xbc, 0x38, 0xea, 0x25, 0xe3, 0xa7, 0xc1, 0x9c, 0x08, 0x96, 0x0c, 0xf0,
+	0x68, 0xd9, 0x00, 0xf5, 0x46, 0xdb, 0x8b, 0x0b, 0x73, 0x22, 0x58, 0x36, 0xc5, 0x9d, 0xc6, 0x14,
+	0x66, 0xc3, 0xa7, 0x3b, 0x97, 0x17, 0x47, 0x6e, 0x2d, 0x36, 0xe6, 0xb0, 0x1e, 0x39, 0x7d, 0xfd,
+	0x6b, 0xea, 0x3b, 0xe7, 0x53, 0xdf, 0xf9, 0x3b, 0xf5, 0x9d, 0x1f, 0x33, 0x7f, 0xed, 0x7c, 0xe6,
+	0xaf, 0xfd, 0x99, 0xf9, 0x6b, 0x1f, 0x4f, 0x52, 0x41, 0x9f, 0xcb, 0xf1, 0x20, 0x96, 0xd9, 0x30,
+	0x96, 0x19, 0xd2, 0xf8, 0x13, 0x2d, 0x02, 0xeb, 0xe1, 0x15, 0xff, 0x8f, 0xbb, 0x86, 0x78, 0xf2,
+	0x2f, 0x00, 0x00, 0xff, 0xff, 0xe2, 0x68, 0x5f, 0xa4, 0x1b, 0x04, 0x00, 0x00,
 }
 
 func (m *Vote) Marshal() (dAtA []byte, err error) {
@@ -565,73 +469,17 @@ func (m *Vote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], m.Data)
 		i = encodeVarintTypes(dAtA, i, uint64(len(m.Data)))
 		i--
-		dAtA[i] = 0x22
+		dAtA[i] = 0x1a
 	}
 	if m.Timestamp != 0 {
 		i = encodeVarintTypes(dAtA, i, uint64(m.Timestamp))
 		i--
-		dAtA[i] = 0x18
+		dAtA[i] = 0x10
 	}
 	if len(m.OracleId) > 0 {
 		i -= len(m.OracleId)
 		copy(dAtA[i:], m.OracleId)
 		i = encodeVarintTypes(dAtA, i, uint64(len(m.OracleId)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Validator) > 0 {
-		i -= len(m.Validator)
-		copy(dAtA[i:], m.Validator)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.Validator)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *CompressedVote) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CompressedVote) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *CompressedVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.Data)))
-		i--
-		dAtA[i] = 0x22
-	}
-	if m.Timestamp != 0 {
-		i = encodeVarintTypes(dAtA, i, uint64(m.Timestamp))
-		i--
-		dAtA[i] = 0x18
-	}
-	if len(m.OracleId) > 0 {
-		i -= len(m.OracleId)
-		copy(dAtA[i:], m.OracleId)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.OracleId)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Validator) > 0 {
-		i -= len(m.Validator)
-		copy(dAtA[i:], m.Validator)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.Validator)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -663,12 +511,12 @@ func (m *GossipVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], m.Signature)
 		i = encodeVarintTypes(dAtA, i, uint64(len(m.Signature)))
 		i--
-		dAtA[i] = 0x32
+		dAtA[i] = 0x2a
 	}
 	if m.SignedTimestamp != 0 {
 		i = encodeVarintTypes(dAtA, i, uint64(m.SignedTimestamp))
 		i--
-		dAtA[i] = 0x28
+		dAtA[i] = 0x20
 	}
 	if len(m.Votes) > 0 {
 		for iNdEx := len(m.Votes) - 1; iNdEx >= 0; iNdEx-- {
@@ -681,7 +529,7 @@ func (m *GossipVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintTypes(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x22
+			dAtA[i] = 0x1a
 		}
 	}
 	if len(m.SignType) > 0 {
@@ -689,19 +537,12 @@ func (m *GossipVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], m.SignType)
 		i = encodeVarintTypes(dAtA, i, uint64(len(m.SignType)))
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x12
 	}
 	if len(m.PublicKey) > 0 {
 		i -= len(m.PublicKey)
 		copy(dAtA[i:], m.PublicKey)
 		i = encodeVarintTypes(dAtA, i, uint64(len(m.PublicKey)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Validator) > 0 {
-		i -= len(m.Validator)
-		copy(dAtA[i:], m.Validator)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.Validator)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -739,7 +580,7 @@ func (m *CanonicalGossipVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintTypes(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x22
+			dAtA[i] = 0x1a
 		}
 	}
 	if len(m.SignType) > 0 {
@@ -747,19 +588,12 @@ func (m *CanonicalGossipVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		copy(dAtA[i:], m.SignType)
 		i = encodeVarintTypes(dAtA, i, uint64(len(m.SignType)))
 		i--
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x12
 	}
 	if len(m.PublicKey) > 0 {
 		i -= len(m.PublicKey)
 		copy(dAtA[i:], m.PublicKey)
 		i = encodeVarintTypes(dAtA, i, uint64(len(m.PublicKey)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Validator) > 0 {
-		i -= len(m.Validator)
-		copy(dAtA[i:], m.Validator)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.Validator)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -918,34 +752,6 @@ func (m *Vote) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Validator)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
-	l = len(m.OracleId)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
-	if m.Timestamp != 0 {
-		n += 1 + sovTypes(uint64(m.Timestamp))
-	}
-	l = len(m.Data)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
-	return n
-}
-
-func (m *CompressedVote) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Validator)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
 	l = len(m.OracleId)
 	if l > 0 {
 		n += 1 + l + sovTypes(uint64(l))
@@ -966,10 +772,6 @@ func (m *GossipVote) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Validator)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
 	l = len(m.PublicKey)
 	if l > 0 {
 		n += 1 + l + sovTypes(uint64(l))
@@ -1000,10 +802,6 @@ func (m *CanonicalGossipVote) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Validator)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
 	l = len(m.PublicKey)
 	if l > 0 {
 		n += 1 + l + sovTypes(uint64(l))
@@ -1127,40 +925,6 @@ func (m *Vote) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Validator = append(m.Validator[:0], dAtA[iNdEx:postIndex]...)
-			if m.Validator == nil {
-				m.Validator = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field OracleId", wireType)
 			}
 			var stringLen uint64
@@ -1191,7 +955,7 @@ func (m *Vote) Unmarshal(dAtA []byte) error {
 			}
 			m.OracleId = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 3:
+		case 2:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
 			}
@@ -1210,7 +974,7 @@ func (m *Vote) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 4:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
 			}
@@ -1241,177 +1005,6 @@ func (m *Vote) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Data = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTypes(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CompressedVote) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTypes
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CompressedVote: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CompressedVote: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Validator = append(m.Validator[:0], dAtA[iNdEx:postIndex]...)
-			if m.Validator == nil {
-				m.Validator = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OracleId", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.OracleId = append(m.OracleId[:0], dAtA[iNdEx:postIndex]...)
-			if m.OracleId == nil {
-				m.OracleId = []byte{}
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
-			}
-			m.Timestamp = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Timestamp |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
-			if m.Data == nil {
-				m.Data = []byte{}
-			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1465,40 +1058,6 @@ func (m *GossipVote) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Validator = append(m.Validator[:0], dAtA[iNdEx:postIndex]...)
-			if m.Validator == nil {
-				m.Validator = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PublicKey", wireType)
 			}
 			var byteLen int
@@ -1531,7 +1090,7 @@ func (m *GossipVote) Unmarshal(dAtA []byte) error {
 				m.PublicKey = []byte{}
 			}
 			iNdEx = postIndex
-		case 3:
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SignType", wireType)
 			}
@@ -1563,7 +1122,7 @@ func (m *GossipVote) Unmarshal(dAtA []byte) error {
 			}
 			m.SignType = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 4:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Votes", wireType)
 			}
@@ -1592,12 +1151,12 @@ func (m *GossipVote) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Votes = append(m.Votes, &CompressedVote{})
+			m.Votes = append(m.Votes, &Vote{})
 			if err := m.Votes[len(m.Votes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SignedTimestamp", wireType)
 			}
@@ -1616,7 +1175,7 @@ func (m *GossipVote) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 6:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Signature", wireType)
 			}
@@ -1702,40 +1261,6 @@ func (m *CanonicalGossipVote) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Validator = append(m.Validator[:0], dAtA[iNdEx:postIndex]...)
-			if m.Validator == nil {
-				m.Validator = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PublicKey", wireType)
 			}
 			var byteLen int
@@ -1768,7 +1293,7 @@ func (m *CanonicalGossipVote) Unmarshal(dAtA []byte) error {
 				m.PublicKey = []byte{}
 			}
 			iNdEx = postIndex
-		case 3:
+		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SignType", wireType)
 			}
@@ -1800,7 +1325,7 @@ func (m *CanonicalGossipVote) Unmarshal(dAtA []byte) error {
 			}
 			m.SignType = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		case 4:
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Votes", wireType)
 			}
@@ -1829,7 +1354,7 @@ func (m *CanonicalGossipVote) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Votes = append(m.Votes, &CompressedVote{})
+			m.Votes = append(m.Votes, &Vote{})
 			if err := m.Votes[len(m.Votes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

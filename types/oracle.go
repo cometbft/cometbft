@@ -17,7 +17,6 @@ func OracleVoteSignBytes(vote *oracleproto.GossipVote) []byte {
 
 func CanonicalizeOracleVote(vote *oracleproto.GossipVote) oracleproto.CanonicalGossipVote {
 	return oracleproto.CanonicalGossipVote{
-		Validator: vote.Validator,
 		PublicKey: vote.PublicKey,
 		SignType:  vote.SignType,
 		Votes:     vote.Votes,

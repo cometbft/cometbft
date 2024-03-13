@@ -6,33 +6,23 @@ option go_package = "github.com/cometbft/cometbft/proto/tendermint/oracle";
 import "gogoproto/gogo.proto";
 
 message Vote {
-  bytes validator = 1;
-  string oracle_id = 2;
-  uint64 timestamp = 3;
-  string data = 4;
-}
-
-message CompressedVote {
-  bytes validator = 1;
-  bytes oracle_id = 2;
-  uint64 timestamp = 3;
-  bytes data = 4;
+  string oracle_id = 1;
+  uint64 timestamp = 2;
+  string data = 3;
 }
 
 message GossipVote {
-  bytes validator = 1;
-  bytes public_key = 2;
-  string sign_type = 3;
-  repeated CompressedVote votes = 4;
-  uint64 signed_timestamp = 5;
-  bytes signature = 6;
+  bytes public_key = 1;
+  string sign_type = 2;
+  repeated Vote votes = 3;
+  uint64 signed_timestamp = 4;
+  bytes signature = 5;
 }
 
 message CanonicalGossipVote {
-  bytes validator = 1;
-  bytes public_key = 2;
-  string sign_type = 3;
-  repeated CompressedVote votes = 4;
+  bytes public_key = 1;
+  string sign_type = 2;
+  repeated Vote votes = 3;
 }
 
 message Oracle {

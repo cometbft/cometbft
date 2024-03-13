@@ -13,7 +13,6 @@ import (
 	"github.com/cometbft/cometbft/oracle/service/parser"
 	"github.com/cometbft/cometbft/oracle/service/types"
 
-	"github.com/cometbft/cometbft/oracle/service/utils"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/redis"
 )
@@ -266,21 +265,10 @@ func RunOracle(oracleInfo *types.OracleInfo, oracle types.Oracle, currentTime ui
 		return errors.New("skipping submission for " + oracle.Id + " as result is empty")
 	}
 
-	compressedId, err := utils.CompressString(oracle.Id)
-	if err != nil {
-		return errors.New("error compressing oracleId, skipping submission for " + oracle.Id)
-	}
-
-	compressedData, err := utils.CompressString(resultData)
-	if err != nil {
-		return errors.New("error compressing resultData, skipping submission for " + oracle.Id)
-	}
-
-	vote := oracleproto.CompressedVote{
-		Validator: oracleInfo.PubKey.Address(),
-		OracleId:  compressedId,
+	vote := oracleproto.Vote{
+		OracleId:  oracle.Id,
 		Timestamp: normalizedTime,
-		Data:      compressedData,
+		Data:      resultData,
 	}
 
 	oracleInfo.SignVotesChan <- &vote
@@ -306,7 +294,7 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 }
 
 func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
-	votes := []*oracleproto.CompressedVote{}
+	votes := []*oracleproto.Vote{}
 	for {
 		select {
 		case vote := <-oracleInfo.SignVotesChan:
@@ -333,7 +321,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
 	// loop through unsignedVoteBuffer and combine all votes
-	var batchVotes = []*oracleproto.CompressedVote{}
+	var batchVotes = []*oracleproto.Vote{}
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
 	for _, unsignedVotes := range oracleInfo.UnsignedVoteBuffer.Buffer {
 		batchVotes = append(batchVotes, unsignedVotes.Votes...)
@@ -342,7 +330,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
 	newGossipVote := &oracleproto.GossipVote{
-		Validator: oracleInfo.PubKey.Address(),
 		PublicKey: oracleInfo.PubKey.Bytes(),
 		SignType:  oracleInfo.PubKey.Type(),
 		Votes:     batchVotes,

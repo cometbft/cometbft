@@ -84,7 +84,7 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		CustomNodeConfig:   customNodeConfig,
 		GossipVoteBuffer:   gossipVoteBuffer,
 		UnsignedVoteBuffer: unsignedVoteBuffer,
-		SignVotesChan:      make(chan *oracleproto.CompressedVote),
+		SignVotesChan:      make(chan *oracleproto.Vote),
 		PubKey:             pubKey,
 		PrivValidator:      privValidator,
 		ValidatorSet:       validatorSet,
@@ -131,7 +131,6 @@ func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	// TODO, confirm these params
 	messageCap := oracleR.OracleInfo.Config.MaxGossipMsgSize
 	if messageCap == 0 {
-		logrus.Warn("MAX GOSSIP MSG SIZE NOT SET!!!!")
 		messageCap = 65536
 	}
 	return []*p2p.ChannelDescriptor{
@@ -168,12 +167,6 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
 		// verify sig of incoming gossip vote, throw if verification fails
-		// _, val := oracleR.OracleInfo.ValidatorSet.GetByAddress(msg.Validator)
-		// if val == nil {
-		// 	pubkey := ed25519.PubKey(msg.PublicKey)
-		// 	logrus.Infof("NOT A VALIDATOR: %s", pubkey.String())
-		// 	return
-		// }
 		signType := msg.SignType
 		var pubKey crypto.PubKey
 

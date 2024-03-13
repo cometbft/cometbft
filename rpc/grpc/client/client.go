@@ -118,7 +118,7 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	}
 	conn, err := ggrpc.DialContext(ctx, addr, builder.grpcOpts...)
 	if err != nil {
-		return nil, ErrDail{addr, err}
+		return nil, ErrDial{addr, err}
 	}
 
 	versionServiceClient := newDisabledVersionServiceClient()

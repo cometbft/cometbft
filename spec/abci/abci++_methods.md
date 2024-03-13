@@ -161,9 +161,6 @@ title: Methods
 
 * **Request**:
 
-    | Name   | Type  | Description                        | Field Number |
-    |--------|-------|------------------------------------|--------------|
-
     Commit signals the application to persist application state. It takes no parameters.
 
 * **Response**:
@@ -184,9 +181,6 @@ title: Methods
 ### ListSnapshots
 
 * **Request**:
-
-    | Name | Type | Description | Field Number |
-    |------|------|-------------|--------------|
 
     Empty request asking the application for a list of snapshots.
 

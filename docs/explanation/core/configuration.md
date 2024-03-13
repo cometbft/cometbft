@@ -466,7 +466,7 @@ peer_query_maj23_sleep_duration = "2s"
 # before switching to v2. The migration is not done automatically.
 # v1 - the legacy layout existing in Comet prior to v1.
 # v2 - Order preserving representation ordering entries by height.
-experimental_db_key_layout = "{{ .Storage.ExperimentalKeyLayout }}"
+experimental_db_key_layout = "v1"
 
 # Set to true to discard ABCI responses from the state store, which can save a
 # considerable amount of disk space. Set to false to ensure ABCI responses are

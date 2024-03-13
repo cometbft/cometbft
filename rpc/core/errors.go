@@ -124,7 +124,7 @@ func (e ErrInvalidChunkID) Error() string {
 }
 
 type ErrTxNotFound struct {
-	Hash any
+	Hash []byte
 }
 
 func (e ErrTxNotFound) Error() string {

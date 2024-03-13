@@ -1282,9 +1282,6 @@ through the process of validating the incoming transaction.
 ### mempool.keep-invalid-txs-in-cache
 Invalid transactions might become valid in the future, hence they are regularly removed from the mempool cache of
 invalid transactions. Turning this setting on will keep them in the list of invalid transactions forever.
-# Do not remove invalid transactions from the cache (default: false)
-# Set to true if it's not possible for any invalid transaction to become valid
-# again in the future.
 ```toml
 keep-invalid-txs-in-cache = false
 ```

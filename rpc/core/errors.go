@@ -132,7 +132,7 @@ type ErrInvalidOrderBy struct {
 }
 
 func (e ErrInvalidOrderBy) Error() string {
-	return "invalid order_by: expected either `asc` or `desc` or empty but got " + e.OrderBy
+	return "invalid order_by: expected either `asc` or `desc` or an empty value but got " + e.OrderBy
 }
 
 type ErrInvalidNodeType struct {

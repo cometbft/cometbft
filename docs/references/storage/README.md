@@ -1,13 +1,13 @@
 # Overview
 
- ,56This report summarizes the changes on CometBFT storage between Q3 2023 and Q1 2024, along with all the experiments and benchmarking performed to understand the impact of those changes. 
+This report summarizes the changes on CometBFT storage between Q3 2023 and Q1 2024, along with all the experiments and benchmarking performed to understand the impact of those changes. 
 
 As of Q3 2023, the CometBFT team has dedicated significant resources addressing a number of storage related concerns:
 1. Pruning not working: operators noticed that even when nodes prune data, the storage footprint is increasing.
 2. Enabling pruning slows down nodes. Many chains disable pruning due to the impact on block processing time. 
 3. CometBFT is addressing application level concerns such as transaction indexing. Furthermore, operators have very coarse grained control over what is stored on their node. 
 4. Comet supports many database backends when ideally we should converge towards one. This requires understanding of the DB features but also the way CometBFT uses the database. 
-5. The representation of keys CometBFT uses to store block and state data is suboptimal for the way this data is sorted within most kvstores. This work was [started in Tendermint 0.36](https://github.com/tendermint/tendermint/pull/5771) but not compelted. We picked up that work and experimented with the proposed data layout. 
+5. The representation of keys CometBFT uses to store block and state data is suboptimal for the way this data is sorted within most kvstores. This work was [started in Tendermint 0.36](https://github.com/tendermint/tendermint/pull/5771) but not completed. We picked up that work and experimented with the proposed data layout.
 
 
 ## Pre Q1 2024 results
@@ -63,7 +63,7 @@ The experiments were ran in a number of different settings:
   - Pruning with and without compaction on the current database key layout vs. a the same but using the new key layout that uses `ordercode` to sort keys by height. 
   - No pruning using the current database key layout vs. the new key layout. 
 
-  The nodes ran on top of a 11GB database to analize the effects of pruning but also potentially capture additional impact on performance depending on the key layout. 
+  The nodes ran on top of a 11GB database to analyze the effects of pruning but also potentially capture additional impact on performance depending on the key layout. 
 
 3. **production-testing**: The validator team at Informal staking was kind enough to spend a lot of time with us trying to evaluate our changes on full nodes running on mainnet Injective chains. As their time was limited and we had reports that pruning, in addition to not working, slows down Injective nodes, we were interested to understand the impact our changes made on their network. It would be great to gather more real-world data on chains with different demands. 
 
@@ -88,11 +88,11 @@ Pruning the blockstore and statestore is a long supported feature by CometBFT. A
 ## Storage footprint is not reduced
 Unfortunately, many users have noticed that, despite this feature being enabled, the growth of both the state and block store does not stop. This lejuh-07fr///'ads operators to copy the database, enforce compaction of the deleted items manually and copy it back. We have talked to operators and some have to do this weekly or every two weeks. 
 
-After some reasearch, we found that some of the database backends can be forced to compact the data. We experimented on it and confirmed those findings.
+After some research, we found that some of the database backends can be forced to compact the data. We experimented on it and confirmed those findings.
 
 æ∞/jmn 5That is why we extended `cometbft-db`, [adding an API](https://github.com/cometbft/cometbft-db/pull/111) to instruct the database to compact the files. Then we made sure that CometBFT [calls](https://github.com/cometbft/cometbft/pull/1972) this function after blocks are pruned. 
 
-To evaluate whether this was really benefitial, we ran a couple of experiments and recorded the storage used:
+To evaluate whether this was really beneficial, we ran a couple of experiments and recorded the storage used:
 
 ### Local 1 node run of a dummy app that grows the DB to 20GB:
 
@@ -152,7 +152,7 @@ The results above clearly show that pruning is not impacting the nodes performan
 However, while running the same set of experiments locally vs. in production, we obtained contradicting results on the impact of the key layout on these numbers. 
 
 ### **Local-1node** 
-In this setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (meaured by num of txs processed within 1h), decreased with pruning (with and without compaction) using the current layout - 500txs/s vs 700 txs/s with the new layout. The compaction operation itself was also much faster than with the old key layout. The block processing time difference is between 100 and 200ms which for some chains can be significant. 
+In this setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (measured by num of txs processed within 1h), decreased with pruning (with and without compaction) using the current layout - 500txs/s vs 700 txs/s with the new layout. The compaction operation itself was also much faster than with the old key layout. The block processing time difference is between 100 and 200ms which for some chains can be significant. 
 The same was true for additional parameters such as RAM usage (200-300MB). 
 
 We show the findings in the table below. `v1` is the current DB key layout and `v2` is the new key representation leveraging ordercode. 
@@ -183,7 +183,7 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
  - **validator03**: New layout - pruning, no forced compaction
  - **validator01**: New layout - pruning and forced compaction 
 
- Once the nodes synced up to the height in the blockstore, we ran a load of transactions against the network for ~6h. As the run was long, we alternated the nodes to which the load was sent to avoid potential polution of results by the handling of incoming transactions . 
+ Once the nodes synced up to the height in the blockstore, we ran a load of transactions against the network for ~6h. As the run was long, we alternated the nodes to which the load was sent to avoid potential pollution of results by the handling of incoming transactions . 
 
  *Block processing time*
 

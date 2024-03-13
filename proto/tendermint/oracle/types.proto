@@ -6,9 +6,10 @@ option go_package = "github.com/cometbft/cometbft/proto/tendermint/oracle";
 import "gogoproto/gogo.proto";
 
 message Vote {
-  string oracle_id = 1;
-  uint64 timestamp = 2;
-  string data = 3;
+  bytes validator = 1;
+  string oracle_id = 2;
+  uint64 timestamp = 3;
+  string data = 4;
 }
 
 message GossipVote {

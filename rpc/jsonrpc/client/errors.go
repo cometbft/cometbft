@@ -70,7 +70,7 @@ type ErrReadResponse struct {
 
 func (e ErrReadResponse) Error() string {
 	if e.Description == "" {
-		return fmt.Sprintf("failed to read response: %v", e.Source)
+		return fmt.Sprintf("failed to read response: %s : %v", e.Source.Error(), e.Source)
 	}
 
 	return fmt.Sprintf("failed to read response: %s : %v", e.Description, e.Source)
@@ -87,7 +87,7 @@ type ErrUnmarshalResponse struct {
 
 func (e ErrUnmarshalResponse) Error() string {
 	if e.Description == "" {
-		return fmt.Sprintf("failed to unmarshal response: %v", e.Source)
+		return fmt.Sprintf("failed to unmarshal response: %s : %v", e.Source.Error(), e.Source)
 	}
 
 	return fmt.Sprintf("failed to unmarshal response: %s : %v", e.Description, e.Source)

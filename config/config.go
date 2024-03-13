@@ -817,7 +817,7 @@ type OracleConfig struct {
 func DefaultOracleConfig() *OracleConfig {
 	return &OracleConfig{
 		RestApiAddress:   "http://localhost:1317", // localhost
-		GrpcAddress:      "http://localhost:9090", // localhost
+		GrpcAddress:      "127.0.0.1:9090",        // localhost
 		PruneInterval:    4 * time.Second,         // 4s
 		SignInterval:     500 * time.Millisecond,  // 0.5s
 		SyncInterval:     60 * time.Second,        // 60s

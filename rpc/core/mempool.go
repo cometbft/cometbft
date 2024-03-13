@@ -51,7 +51,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	})
 	select {
 	case <-ctx.Context().Done():
-		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), Reason: errConfirmationNotReceived.Error()}
+		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), Reason: ErrConfirmationNotReceived.Error()}
 	case res := <-resCh:
 		return &ctypes.ResultBroadcastTx{
 			Code:      res.Code,
@@ -109,7 +109,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	})
 	select {
 	case <-ctx.Context().Done():
-		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), Reason: errConfirmationNotReceived.Error()}
+		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), Reason: ErrConfirmationNotReceived.Error()}
 	case checkTxRes := <-checkTxResCh:
 		if checkTxRes.Code != abci.CodeTypeOK {
 			return &ctypes.ResultBroadcastTxCommit{
@@ -132,7 +132,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		case <-txSub.Canceled():
 			var reason string
 			if txSub.Err() == nil {
-				reason = errCometBFTExited.Error()
+				reason = ErrCometBFTExited.Error()
 			} else {
 				reason = txSub.Err().Error()
 			}

@@ -6,17 +6,17 @@ import (
 )
 
 var (
-	errNegativeHeight          = errors.New("negative height")
+	ErrNegativeHeight          = errors.New("negative height")
 	ErrBlockIndexing           = errors.New("block indexing is disabled")
 	ErrTxIndexingDisabled      = errors.New("transaction indexing is disabled")
 	ErrNoEvidence              = errors.New("no evidence was provided")
-	errSlowClient              = errors.New("slow client")
-	errCometBFTExited          = errors.New("cometBFT exited")
-	errConfirmationNotReceived = errors.New("confirmation not received")
+	ErrSlowClient              = errors.New("slow client")
+	ErrCometBFTExited          = errors.New("cometBFT exited")
+	ErrConfirmationNotReceived = errors.New("broadcast confirmation not received")
 	ErrTimedOutWaitingForTx    = errors.New("timed out waiting for tx to be included in a block")
 	ErrGenesisRespSize         = errors.New("genesis response is too large, please use the genesis_chunked API instead")
-	errChunkNotInitialized     = errors.New("genesis chunks are not initialized")
-	errNoChunks                = errors.New("no chunks")
+	ErrChunkNotInitialized     = errors.New("genesis chunks are not initialized")
+	ErrNoChunks                = errors.New("no chunks")
 )
 
 type ErrMaxSubscription struct {

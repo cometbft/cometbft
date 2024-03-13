@@ -114,11 +114,11 @@ func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error
 
 func (env *Environment) GenesisChunked(_ *rpctypes.Context, chunk uint) (*ctypes.ResultGenesisChunk, error) {
 	if env.genChunks == nil {
-		return nil, ErrServiceConfig{errChunkNotInitialized}
+		return nil, ErrServiceConfig{ErrChunkNotInitialized}
 	}
 
 	if len(env.genChunks) == 0 {
-		return nil, ErrServiceConfig{errNoChunks}
+		return nil, ErrServiceConfig{ErrNoChunks}
 	}
 
 	id := int(chunk)

@@ -79,7 +79,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 
 					if closeIfSlow {
 						var (
-							err  = ErrSubCanceled{errSlowClient.Error()}
+							err  = ErrSubCanceled{ErrSlowClient.Error()}
 							resp = rpctypes.RPCServerError(subscriptionID, err)
 						)
 						if !ctx.WSConn.TryWriteRPCResponse(resp) {
@@ -93,7 +93,7 @@ func (env *Environment) Subscribe(ctx *rpctypes.Context, query string) (*ctypes.
 				if !errors.Is(sub.Err(), cmtpubsub.ErrUnsubscribed) {
 					var reason string
 					if sub.Err() == nil {
-						reason = errCometBFTExited.Error()
+						reason = ErrCometBFTExited.Error()
 					} else {
 						reason = sub.Err().Error()
 					}

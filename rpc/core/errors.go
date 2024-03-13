@@ -46,12 +46,14 @@ func (e ErrQueryLength) Error() string {
 
 type ErrValidation struct {
 	Source  error
-	ValType any
+	ValType string
 }
 
 func (e ErrValidation) Error() string {
-	return fmt.Sprintf("%t validation failed: %s", e.ValType, e.Source)
+	return fmt.Sprintf("%s validation failed: %s", e.ValType, e.Source)
 }
+
+func (e ErrValidation) Unwrap() error { return e.Source }
 
 type ErrAddEvidence struct {
 	Source error

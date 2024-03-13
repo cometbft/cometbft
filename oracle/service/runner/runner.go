@@ -400,6 +400,7 @@ func RunOracles(oracleInfo *types.OracleInfo, t uint64) {
 // Run run oracles
 func Run(oracleInfo *types.OracleInfo) {
 	log.Info("[oracle] Service started.")
+	waitForRestAPI(oracleInfo.Config.RestUrl)
 	count := 0
 	RunProcessSignVoteQueue(oracleInfo)
 	PruneUnsignedVoteBuffer(oracleInfo)
@@ -426,5 +427,27 @@ func Run(oracleInfo *types.OracleInfo) {
 		if count > 600 { // 600 * 0.1s = 60s = every minute
 			count = 0
 		}
+	}
+}
+
+func waitForRestAPI(url string) {
+	restMaxRetryCount := 12
+	retryCount := 0
+	sleepTime := time.Second
+	for {
+		log.Infof("[oracle] checking if rest endpoint is up %s : %d", url, retryCount)
+		if retryCount == restMaxRetryCount {
+			panic("failed to connect to grpc:grpcClient after 12 tries")
+		}
+		time.Sleep(sleepTime)
+
+		res := adapters.HTTPRequest(url, 10)
+		if len(res) != 0 {
+			break
+		}
+
+		time.Sleep(time.Duration(retryCount*int(time.Second) + 1))
+		retryCount++
+		sleepTime *= 2
 	}
 }

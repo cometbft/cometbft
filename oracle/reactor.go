@@ -70,27 +70,6 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		logrus.Warnf("[oracle] error parsing oracle.json config file: %v", err)
 	}
 
-	restMaxRetryCount := 12
-	retryCount := 0
-	sleepTime := time.Second
-
-	for {
-		logrus.Infof("[oracle] checking if rest endpoint is up %s : %d", config.RestUrl, retryCount)
-		if retryCount == restMaxRetryCount {
-			panic("failed to connect to grpc:grpcClient after 12 tries")
-		}
-		time.Sleep(sleepTime)
-
-		res := adapters.HTTPRequest(config.RestUrl, 10)
-		if len(res) != 0 {
-			break
-		}
-
-		time.Sleep(time.Duration(retryCount*int(time.Second) + 1))
-		retryCount++
-		sleepTime *= 2
-	}
-
 	gossipVoteBuffer := &oracletypes.GossipVoteBuffer{
 		Buffer: make(map[string]*oracleproto.GossipVote),
 	}

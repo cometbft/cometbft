@@ -13,17 +13,19 @@ message Vote {
 }
 
 message GossipVote {
-  bytes public_key = 1;
-  string sign_type = 2;
-  repeated Vote votes = 3;
-  uint64 signed_timestamp = 4;
-  bytes signature = 5;
+  bytes validator = 1;
+  bytes public_key = 2;
+  string sign_type = 3;
+  repeated Vote votes = 4;
+  uint64 signed_timestamp = 5;
+  bytes signature = 6;
 }
 
 message CanonicalGossipVote {
-  bytes public_key = 1;
-  string sign_type = 2;
-  repeated Vote votes = 3;
+  bytes validator = 1;
+  bytes public_key = 2;
+  string sign_type = 3;
+  repeated Vote votes = 4;
 }
 
 message Oracle {

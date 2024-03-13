@@ -44,6 +44,6 @@ func (e ErrDail) Error() string {
 	return fmt.Sprintf("failed to dial: address %s: %v", e.Addr, e.Source)
 }
 
-func (e ErrDail) Unwrap() error {
+func (e ErrDial) Unwrap() error {
 	return e.Source
 }

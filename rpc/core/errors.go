@@ -85,15 +85,16 @@ func (e ErrSubCanceled) Error() string {
 	return fmt.Sprintf("subscription canceled: (reason: %s)", e.Reason)
 }
 
-type ErrSubFailed struct {
+type ErrTxSubFailed struct {
 	Source error
+	TxHash []byte
 }
 
-func (e ErrSubFailed) Error() string {
-	return fmt.Sprintf("failed to subscribe: %s", e.Source)
+func (e ErrTxSubFailed) Error() string {
+	return fmt.Sprintf("failed to subscribe to tx %X: %s", e.TxHash, e.Source)
 }
 
-func (e ErrSubFailed) Unwrap() error {
+func (e ErrTxSubFailed) Unwrap() error {
 	return e.Source
 }
 

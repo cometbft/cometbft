@@ -8,6 +8,9 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/cometbft/cometbft/oracle/service/adapters"
 	"github.com/cometbft/cometbft/oracle/service/parser"
@@ -123,7 +126,7 @@ func overwriteData(oracleId string, data string) string {
 
 // SyncOracles sync oracles with active on-chain oracles
 func SyncOracles(oracleInfo *types.OracleInfo) (oracles []types.Oracle, err error) {
-	oraclesURL := oracleInfo.Config.RestUrl
+	oraclesURL := oracleInfo.Config.RestApiAddress
 	if oraclesURL == "" {
 		oraclesURL = "https://test-api.carbon.network"
 	}
@@ -400,7 +403,8 @@ func RunOracles(oracleInfo *types.OracleInfo, t uint64) {
 // Run run oracles
 func Run(oracleInfo *types.OracleInfo) {
 	log.Info("[oracle] Service started.")
-	waitForRestAPI(oracleInfo.Config.RestUrl)
+	waitForGrpc(oracleInfo.Config.GrpcAddress)
+	waitForRestAPI(oracleInfo.Config.RestApiAddress)
 	count := 0
 	RunProcessSignVoteQueue(oracleInfo)
 	PruneUnsignedVoteBuffer(oracleInfo)
@@ -430,23 +434,57 @@ func Run(oracleInfo *types.OracleInfo) {
 	}
 }
 
-func waitForRestAPI(url string) {
+func waitForRestAPI(address string) {
 	restMaxRetryCount := 12
 	retryCount := 0
 	sleepTime := time.Second
 	for {
-		log.Infof("[oracle] checking if rest endpoint is up %s : %d", url, retryCount)
+		log.Infof("[oracle] checking if rest endpoint is up %s : %d", address, retryCount)
 		if retryCount == restMaxRetryCount {
 			panic("failed to connect to grpc:grpcClient after 12 tries")
 		}
 		time.Sleep(sleepTime)
 
-		res := adapters.HTTPRequest(url, 10)
+		res := adapters.HTTPRequest(address, 10)
 		if len(res) != 0 {
 			break
 		}
 
 		time.Sleep(time.Duration(retryCount*int(time.Second) + 1))
+		retryCount++
+		sleepTime *= 2
+	}
+}
+
+func waitForGrpc(address string) {
+	grpcMaxRetryCount := 12
+	retryCount := 0
+	sleepTime := time.Second
+	var client *grpc.ClientConn
+
+	for {
+		log.Infof("[oracle] trying to connect to grpc with address %s : %d", address, retryCount)
+		if retryCount == grpcMaxRetryCount {
+			panic("failed to connect to grpc:grpcClient after 12 tries")
+		}
+		time.Sleep(sleepTime)
+
+		// reinit otherwise connection will be idle, in idle we can't tell if it's really ready
+		var err error
+		client, err = grpc.Dial(
+			address,
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			panic(err)
+		}
+		// give it some time to connect after dailing, but not too long as connection can become idle
+		time.Sleep(time.Duration(retryCount*int(time.Second) + 1))
+
+		if client.GetState() == connectivity.Ready {
+			break
+		}
+		client.Close()
 		retryCount++
 		sleepTime *= 2
 	}

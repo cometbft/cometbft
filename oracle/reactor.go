@@ -116,7 +116,7 @@ func (oracleR *Reactor) SetLogger(l log.Logger) {
 // OnStart implements p2p.BaseReactor.
 func (oracleR *Reactor) OnStart() error {
 	oracleR.OracleInfo.Redis = redis.NewService(0)
-	oracleR.OracleInfo.AdapterMap = adapters.GetAdapterMap(&oracleR.OracleInfo.Redis, oracleR.OracleInfo.Config.RestUrl)
+	oracleR.OracleInfo.AdapterMap = adapters.GetAdapterMap(&oracleR.OracleInfo.Redis, oracleR.OracleInfo.Config.RestApiAddress)
 	logrus.Info("[oracle] running oracle service...")
 	go func() {
 		runner.Run(oracleR.OracleInfo)

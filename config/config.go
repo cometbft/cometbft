@@ -799,8 +799,10 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 type OracleConfig struct {
 	// Path to custom oracle spec should validators decide to use a different spec from the default
 	CustomNodePath string `mapstructure:"custom_node_path"`
-	// Url used to query chain for syncing of oracles and fetching cached oracle results
-	RestUrl string `mapstructure:"rest_url"`
+	// REST API address used to query chain for syncing of oracles and fetching cached oracle results
+	RestApiAddress string `mapstructure:"rest_api_address"`
+	// GRPC address used to query chain for syncing of oracles and fetching cached oracle results
+	GrpcAddress string `mapstructure:"grpc_address"`
 	// Interval determines how long we should keep our gossiped votes before pruning
 	PruneInterval time.Duration `mapstructure:"prune_interval"`
 	// Interval determines how long we should wait before batch signing votes
@@ -814,7 +816,8 @@ type OracleConfig struct {
 // DefaultOracleConfig returns a default configuration for the CometBFT oracle service
 func DefaultOracleConfig() *OracleConfig {
 	return &OracleConfig{
-		RestUrl:          "http://localhost:1317", // localhost
+		RestApiAddress:   "http://localhost:1317", // localhost
+		GrpcAddress:      "http://localhost:9090", // localhost
 		PruneInterval:    4 * time.Second,         // 4s
 		SignInterval:     500 * time.Millisecond,  // 0.5s
 		SyncInterval:     60 * time.Second,        // 60s
@@ -831,8 +834,11 @@ func TestOracleConfig() *OracleConfig {
 
 // ValidateBasic performs basic validation and returns an error if any check fails.
 func (cfg *OracleConfig) ValidateBasic() error {
-	if cfg.RestUrl == "" {
-		return errors.New("rest_url can't be empty")
+	if cfg.RestApiAddress == "" {
+		return errors.New("rest_api_address can't be empty")
+	}
+	if cfg.GrpcAddress == "" {
+		return errors.New("grpc_address can't be empty")
 	}
 	if cfg.PruneInterval < 0 {
 		return errors.New("prune_interval can't be negative")

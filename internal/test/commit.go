@@ -26,7 +26,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 
 		v := vote.ToProto()
 
-		if err := validators[i].SignVote(voteSet.ChainID(), v); err != nil {
+		if err := validators[i].SignVote(voteSet.ChainID(), v, false); err != nil {
 			return nil, err
 		}
 		vote.Signature = v.Signature
@@ -35,7 +35,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 		}
 	}
 
-	return voteSet.MakeExtendedCommit(types.ABCIParams{VoteExtensionsEnableHeight: 0}).ToCommit(), nil
+	return voteSet.MakeExtendedCommit(types.DefaultFeatureParams()).ToCommit(), nil
 }
 
 func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.ValidatorSet, privVals []types.PrivValidator, chainID string, now time.Time) (*types.Commit, error) {
@@ -68,7 +68,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 
 		v := vote.ToProto()
 
-		if err := privVal.SignVote(chainID, v); err != nil {
+		if err := privVal.SignVote(chainID, v, false); err != nil {
 			return nil, err
 		}
 

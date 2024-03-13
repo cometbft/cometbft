@@ -105,6 +105,8 @@ type Testnet struct {
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 	ABCITestsEnabled                                     bool
 	DefaultZone                                          string
+	PbtsEnableHeight                                     int64
+	PbtsUpdateHeight                                     int64
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -137,24 +139,29 @@ type Node struct {
 	Prometheus              bool
 	PrometheusProxyPort     uint32
 	Zone                    ZoneID
+	ClockSkew               time.Duration
 }
 
-// LoadTestnet loads a testnet from a manifest file, using the filename to
-// determine the testnet name and directory (from the basename of the file).
+// LoadTestnet loads a testnet from a manifest file. The testnet files are
+// generated in the given directory, which is also use to determine the testnet
+// name (the directory's basename).
 // The testnet generation must be deterministic, since it is generated
 // separately by the runner and the test cases. For this reason, testnets use a
 // random seed to generate e.g. keys.
-func LoadTestnet(file string, ifd InfrastructureData) (*Testnet, error) {
+func LoadTestnet(file string, ifd InfrastructureData, dir string) (*Testnet, error) {
 	manifest, err := LoadManifest(file)
 	if err != nil {
 		return nil, err
 	}
-	return NewTestnetFromManifest(manifest, file, ifd)
+	return NewTestnetFromManifest(manifest, file, ifd, dir)
 }
 
 // NewTestnetFromManifest creates and validates a testnet from a manifest.
-func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData) (*Testnet, error) {
-	dir := strings.TrimSuffix(file, filepath.Ext(file))
+func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureData, dir string) (*Testnet, error) {
+	if dir == "" {
+		// Set default testnet directory.
+		dir = strings.TrimSuffix(file, filepath.Ext(file))
+	}
 
 	keyGen := newKeyGenerator(randomSeed)
 	prometheusProxyPortGen := newPortGenerator(prometheusProxyPortFirst)
@@ -196,6 +203,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 		ABCITestsEnabled: manifest.ABCITestsEnabled,
 		DefaultZone:      manifest.DefaultZone,
+		PbtsEnableHeight: manifest.PbtsEnableHeight,
+		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -260,6 +269,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
 			Zone:                    ZoneID(nodeManifest.Zone),
+			ClockSkew:               nodeManifest.ClockSkew,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -394,7 +404,7 @@ func (t Testnet) Validate() error {
 	}
 	if t.VoteExtensionsUpdateHeight > 0 && t.VoteExtensionsUpdateHeight < t.InitialHeight {
 		return fmt.Errorf("a value of VoteExtensionsUpdateHeight greater than 0 "+
-			"must not be less than InitialHeight; "+
+			"must not be less than InitialHeight; "+ //nolint: goconst
 			"update height %d, initial height %d",
 			t.VoteExtensionsUpdateHeight, t.InitialHeight,
 		)
@@ -412,6 +422,33 @@ func (t Testnet) Validate() error {
 				"must be greater than VoteExtensionsUpdateHeight; "+
 				"update height %d, enable height %d",
 				t.VoteExtensionsUpdateHeight, t.VoteExtensionsEnableHeight,
+			)
+		}
+	}
+	if t.PbtsEnableHeight < 0 {
+		return fmt.Errorf("value of PbtsEnableHeight must be positive, or 0 (disable); "+
+			"enable height %d", t.PbtsEnableHeight)
+	}
+	if t.PbtsUpdateHeight > 0 && t.PbtsUpdateHeight < t.InitialHeight {
+		return fmt.Errorf("a value of PbtsUpdateHeight greater than 0 "+
+			"must not be less than InitialHeight; "+
+			"update height %d, initial height %d",
+			t.PbtsUpdateHeight, t.InitialHeight,
+		)
+	}
+	if t.PbtsEnableHeight > 0 {
+		if t.PbtsEnableHeight < t.InitialHeight {
+			return fmt.Errorf("a value of PbtsEnableHeight greater than 0 "+
+				"must not be less than InitialHeight; "+
+				"enable height %d, initial height %d",
+				t.PbtsEnableHeight, t.InitialHeight,
+			)
+		}
+		if t.PbtsEnableHeight <= t.PbtsUpdateHeight {
+			return fmt.Errorf("a value of PbtsEnableHeight greater than 0 "+
+				"must be greater than PbtsUpdateHeight; "+
+				"update height %d, enable height %d",
+				t.PbtsUpdateHeight, t.PbtsEnableHeight,
 			)
 		}
 	}
@@ -503,6 +540,9 @@ func (n Node) Validate(testnet Testnet) error {
 	}
 	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinConnSync {
 		return errors.New("light client must use builtin protocol")
+	}
+	if n.Mode != ModeFull && n.Mode != ModeValidator && n.ClockSkew != 0 {
+		return errors.New("clock skew configuration only supported on full nodes")
 	}
 	switch n.PrivvalProtocol {
 	case ProtocolFile, ProtocolUNIX, ProtocolTCP:

@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/internal/state/mocks"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -259,11 +260,11 @@ func setupStateStore(t *testing.T, height int64) state.Store {
 		AppHash:                          tmhash.Sum([]byte("app_hash")),
 		LastResultsHash:                  tmhash.Sum([]byte("last_results_hash")),
 		LastBlockHeight:                  height,
-		LastBlockTime:                    time.Now(),
+		LastBlockTime:                    cmttime.Now(),
 		LastValidators:                   valSet,
 		Validators:                       valSet.CopyIncrementProposerPriority(1),
 		NextValidators:                   valSet.CopyIncrementProposerPriority(2),
-		LastHeightValidatorsChanged:      height + 1,
+		LastHeightValidatorsChanged:      height + 1 + 1,
 		ConsensusParams:                  *params,
 		LastHeightConsensusParamsChanged: height + 1,
 	}

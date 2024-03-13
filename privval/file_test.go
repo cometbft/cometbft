@@ -44,7 +44,7 @@ func TestResetValidator(t *testing.T) {
 	randBytes := cmtrand.Bytes(tmhash.Size)
 	blockID := types.BlockID{Hash: randBytes, PartSetHeader: types.PartSetHeader{}}
 	vote := newVote(privVal.Key.Address, height, round, voteType, blockID)
-	err := privVal.SignVote("mychainid", vote.ToProto())
+	err := privVal.SignVote("mychainid", vote.ToProto(), false)
 	require.NoError(t, err, "expected no error signing vote")
 
 	// priv val after signing is not same as empty
@@ -165,11 +165,11 @@ func TestSignVote(t *testing.T) {
 	// sign a vote for first time
 	vote := newVote(privVal.Key.Address, height, round, voteType, block1)
 	v := vote.ToProto()
-	err := privVal.SignVote("mychainid", v)
+	err := privVal.SignVote("mychainid", v, false)
 	require.NoError(t, err, "expected no error signing vote")
 
 	// try to sign the same vote again; should be fine
-	err = privVal.SignVote("mychainid", v)
+	err = privVal.SignVote("mychainid", v, false)
 	require.NoError(t, err, "expected no error on signing same vote")
 
 	// now try some bad votes
@@ -182,14 +182,14 @@ func TestSignVote(t *testing.T) {
 
 	for _, c := range cases {
 		cpb := c.ToProto()
-		err = privVal.SignVote("mychainid", cpb)
+		err = privVal.SignVote("mychainid", cpb, false)
 		require.Error(t, err, "expected error on signing conflicting vote")
 	}
 
 	// try signing a vote with a different time stamp
 	sig := vote.Signature
 	vote.Timestamp = vote.Timestamp.Add(time.Duration(1000))
-	err = privVal.SignVote("mychainid", v)
+	err = privVal.SignVote("mychainid", v, false)
 	require.NoError(t, err)
 	assert.Equal(sig, vote.Signature)
 }
@@ -284,7 +284,7 @@ func TestDifferByTimestamp(t *testing.T) {
 		blockID := types.BlockID{Hash: randbytes, PartSetHeader: types.PartSetHeader{}}
 		vote := newVote(privVal.Key.Address, height, round, voteType, blockID)
 		v := vote.ToProto()
-		err := privVal.SignVote("mychainid", v)
+		err := privVal.SignVote("mychainid", v, false)
 		require.NoError(t, err, "expected no error signing vote")
 
 		signBytes := types.VoteSignBytes(chainID, v)
@@ -297,7 +297,7 @@ func TestDifferByTimestamp(t *testing.T) {
 		var emptySig []byte
 		v.Signature = emptySig
 		v.ExtensionSignature = emptySig
-		err = privVal.SignVote("mychainid", v)
+		err = privVal.SignVote("mychainid", v, false)
 		require.NoError(t, err, "expected no error on signing same vote")
 
 		assert.Equal(t, timeStamp, v.Timestamp)
@@ -307,7 +307,7 @@ func TestDifferByTimestamp(t *testing.T) {
 	}
 }
 
-func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
+func TestVoteExtensionsAreSignedIfSignExtensionIsTrue(t *testing.T) {
 	privVal, _, _ := newTestFilePV(t)
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(t, err)
@@ -324,7 +324,7 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	vote1 := newVote(privVal.Key.Address, height, round, voteType, block)
 	vpb1 := vote1.ToProto()
 
-	err = privVal.SignVote("mychainid", vpb1)
+	err = privVal.SignVote("mychainid", vpb1, true)
 	require.NoError(t, err, "expected no error signing vote")
 	assert.NotNil(t, vpb1.ExtensionSignature)
 
@@ -337,7 +337,7 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	vote2.Extension = []byte("new extension")
 	vpb2 := vote2.ToProto()
 
-	err = privVal.SignVote("mychainid", vpb2)
+	err = privVal.SignVote("mychainid", vpb2, true)
 	require.NoError(t, err, "expected no error signing same vote with manipulated vote extension")
 
 	// We need to ensure that a valid new extension signature has been created
@@ -356,13 +356,33 @@ func TestVoteExtensionsAreAlwaysSigned(t *testing.T) {
 	vpb2.Signature = nil
 	vpb2.ExtensionSignature = nil
 
-	err = privVal.SignVote("mychainid", vpb2)
+	err = privVal.SignVote("mychainid", vpb2, true)
 	require.NoError(t, err, "expected no error signing same vote with manipulated timestamp and vote extension")
 	assert.Equal(t, expectedTimestamp, vpb2.Timestamp)
 
 	vesb3 := types.VoteExtensionSignBytes("mychainid", vpb2)
 	assert.True(t, pubKey.VerifySignature(vesb3, vpb2.ExtensionSignature))
 	assert.False(t, pubKey.VerifySignature(vesb1, vpb2.ExtensionSignature))
+}
+
+func TestVoteExtensionsAreNotSignedIfSignExtensionIsFalse(t *testing.T) {
+	privVal, _, _ := newTestFilePV(t)
+
+	block := types.BlockID{
+		Hash:          cmtrand.Bytes(tmhash.Size),
+		PartSetHeader: types.PartSetHeader{Total: 5, Hash: cmtrand.Bytes(tmhash.Size)},
+	}
+
+	height, round := int64(10), int32(1)
+	voteType := types.PrecommitType
+
+	// We initially sign this vote without an extension
+	vote1 := newVote(privVal.Key.Address, height, round, voteType, block)
+	vpb1 := vote1.ToProto()
+
+	err := privVal.SignVote("mychainid", vpb1, false)
+	require.NoError(t, err, "expected no error signing vote")
+	assert.Nil(t, vpb1.ExtensionSignature)
 }
 
 func newVote(addr types.Address, height int64, round int32,

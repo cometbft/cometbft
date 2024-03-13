@@ -370,11 +370,11 @@ func TestVerifyDuplicateVoteEvidence(t *testing.T) {
 	vote1 := types.MakeVoteNoError(t, val, chainID, 0, 10, 2, 1, blockID, defaultEvidenceTime)
 
 	v1 := vote1.ToProto()
-	err := val.SignVote(chainID, v1)
+	err := val.SignVote(chainID, v1, false)
 	require.NoError(t, err)
 	badVote := types.MakeVoteNoError(t, val, chainID, 0, 10, 2, 1, blockID, defaultEvidenceTime)
 	bv := badVote.ToProto()
-	err = val2.SignVote(chainID, bv)
+	err = val2.SignVote(chainID, bv, false)
 	require.NoError(t, err)
 
 	vote1.Signature = v1.Signature

@@ -107,7 +107,7 @@ func (c *blockServiceClient) GetLatestHeight(ctx context.Context, opts ...GetLat
 		for {
 			response, err := client.Recv()
 			if err != nil {
-				res := LatestHeightResult{Error: ErrStreamReceive{Err: err}}
+				res := LatestHeightResult{Error: ErrStreamReceive{Source: err}}
 				select {
 				case <-ctx.Done():
 				case resultCh <- res:

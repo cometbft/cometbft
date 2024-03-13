@@ -20,7 +20,7 @@ By the end of Q3 we have addressed and documented the second problem by introduc
 
 For comparison, until then, CometBFT would only prune the block and state store (not including ABCI results), based on instructions from the application.
 
-More details on the API itself and how it can be used can be found in the corresponding [ADR](https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-101-data-companion-pull-api.md) and [documentation](https://github.com/cometbft/cometbft/tree/main/docs/data-companion) (TODO LINK Not working, check).
+More details on the API itself and how it can be used can be found in the corresponding [ADR](https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-101-data-companion-pull-api.md) and [documentation](https://github.com/cometbft/cometbft/tree/main/docs/explanation/data-companion).
 
 This report covers that changes and their impact related to fixing and improving the pruning related points (1 and 3) as well as the last point. The results are obtained using `goleveldb` as the default backend unless stated otherwise. 
 
@@ -72,7 +72,8 @@ The experiments were ran in a number of different settings:
 
 - **Storage footprint** 
 - **RAM usage**
-- **Block processing time** (*cometbft_state_block_processing_time*)
+- **Block processing time** (*cometbft_state_block_processing_time*) This time here indicates the time to execute `FinalizeBlock` while reconstructing the last commit from the database and sending it to the application for processing. 
+- **Block time**: Computed based on the number of blocks processed in a fixed timeframe (1h or 6h).
 - **Duration of individual consensus steps** (*cometbft_consensus_step_duration_seconds* aggregated by step)
 - **consensus_total_txs**
 
@@ -163,7 +164,8 @@ We show the findings in the table below. `v1` is the current DB key layout and `
 | Tx/s           |   705.21   | 722.74 | 573.30 | 692.31 | 572.80 | 700.33 |
 | Chain height   |   4936   | 5095 | 4277 | 4855 | 4398 | 5104 |
 | RAM (MB)    |  550   | 470 | 650 | 510 | 660 | 510|
-| Block processing time |  1.9   | 2.1 | 2.2 | 2.1 | 2.0 | 1.9 |
+| Block processing time(s) |  1.9   | 2.1 | 2.2 | 2.1 | 2.0 | 1.9 |
+| Block time | 0.73| 0.71 | 0.84 | 0.74| 0.82| 0.71|
 
 We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB with the new layout. 
 
@@ -211,6 +213,12 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
 
  *validator04* and *validator00*  (no pruning) are using 278MB of RAM . *validator02* (pruning on old layout) uses 330MB of RAM and *validator01*(pruning on new layout) uses 298MB. This is in line with the local runs where pruning on the new layout uses less RAM. 
 
+ *Missed blocks*
+![e2e_val_missed_blocks](img/e2e_val_missed_blocks.png "Blocks missed by a validator")
+
+The graph above shows the number of missed blocks per validator. *validator02* is doing pruning and compaction using the old layout and keeps missing blocks. The other two validators all use the new layout with *validator03* doing pruning without compaction compared to *validator01* who missed only 1 block while doing pruning and compaction. 
+
+
 ### Conclusion on key layout
 As demonstrated by the above results, and mentioned at the beginning, `v1.x` will be released with support for the new key layout as a purely experimental feature.
 
@@ -242,8 +250,12 @@ The table below shows the performance metrics for Pebble:
 
 | Metric              | No pruning v1 | No pruning v2 | Pruning v1 | Pruning v2 | Pruning + compaction v1 | Pruning + compaction v2
 | :---------------- | :------: | ----: | ------: | ----: | ------: | ----: |
-| Total tx       |   -   | 2906186 | 2851298 | 2873765 | - | 2881003 |
-| Tx/s           |   -   | 807.27 | 792.03 | 798.27 | - | 800.28 |
-| Chain height   |   -   | 5666 | 5553| 5739 | - | 5752 |
-| RAM (MB)    |  -   | 445 | 456 | 445 | - | 461 |
-| Block processing time |  -   | 5.9(Double check) | 2.1 | 2.1 | - | 2.1 |
+| Total tx       |   2827232   | 2906186 | 2851298 | 2873765 | 2826235 | 2881003 |
+| Tx/s           |   785.34   | 807.27 | 792.03 | 798.27 | 785.08 | 800.28 |
+| Chain height   |   5743   | 5666 | 5553| 5739 | 5551 | 5752 |
+| RAM (MB)    |  494   | 445 | 456 | 445 | 490 | 461 |
+| Block processing time(s) |  2   | 3.9 | 2.1 | 2.1 | 2.1 | 2.1 |
+| Block time | 0.63 | 0.64 | 0.65 | 0.63 | 0.65 | 0.63 |
+
+The block processing time when using the new layout and no pruning seems to significantly increase compared to the other cases. However, while taking longer it seems that the number of transactions processed in the same timeframe is higher and achieved with fewer heights. The metrics for block size bytes and the number of transactions included in a block show that in both scenarios the block size was the same and each block had the same number of transactions. 
+This indicates that with the new layout, CometBFT was able to drain the mempool faster

@@ -462,7 +462,7 @@
             "uid": "$datasource"
           },
           "editorMode": "code",
-          "expr": "sum by (job) (cometbft_state_block_processing_time_sum / cometbft_state_block_processing_time_count) * 1000",
+          "expr": "sum by (job) (cometbft_state_block_processing_time_sum / cometbft_state_block_processing_time_count)",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,

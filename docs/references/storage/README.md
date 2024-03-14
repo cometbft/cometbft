@@ -213,6 +213,23 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
 
  Pruning and compaction on the new layout increases the block processing time by ~200ms compared to no pruning, but it is still 200ms faster than pruning on the old layout.  -->
 
+*Block time*
+
+As all nodes were validator nodes who were able to most of the time keep up, their block times were very similar (~3ms of difference). We thus looked whether validators were missing blocks and observed the following: 
+
+Time to execute Commit:
+
+![e2e_commitTime](img/e2e_commit_time.png "Commit time e2e")
+
+and the missed blocks: 
+
+*Missed blocks*
+![e2e_val_missed_blocks](img/e2e_val_missed_blocks.png "Blocks missed by a validator")
+
+The graph above shows the number of missed blocks per validator. *validator02* is doing pruning and compaction using the old layout and keeps missing blocks. The other two validators all use the new layout with *validator03* doing pruning without compaction compared to *validator01* who missed only 1 block while doing pruning and compaction. 
+
+This is something we could not verify in production because the nodes ran by Informal Staking were not validator nodes. 
+
  *Block Store Access time* 
 
  In general, store access times are very low, without pruning they are up to 40ms.  The storage device on the Digital Ocean nodes are SSDs but many of our operators use state of the art NVMe devices, thus they could be even lower in production. 
@@ -232,13 +249,6 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
  The difference in RAM used between the nodes was not very big. Nodes that prune efficiently (with compaction), used 20-40MB more RAM than nodes that did no pruning. 
  
  But *validator04* and *validator00*  (no pruning) are using 278MB of RAM . *validator02* (pruning on old layout) uses 330MB of RAM and *validator01*(pruning on new layout) uses 298MB. This is in line with the local runs where pruning on the new layout uses less RAM. 
-
- *Missed blocks*
-![e2e_val_missed_blocks](img/e2e_val_missed_blocks.png "Blocks missed by a validator")
-
-The graph above shows the number of missed blocks per validator. *validator02* is doing pruning and compaction using the old layout and keeps missing blocks. The other two validators all use the new layout with *validator03* doing pruning without compaction compared to *validator01* who missed only 1 block while doing pruning and compaction. 
-
-This is something we could not verify in production because the nodes ran by Informal staking were not validator nodes. 
 
 
 ### Conclusion on key layout

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -254,7 +253,7 @@ func (wsc *wsConnection) GetRemoteAddr() string {
 func (wsc *wsConnection) WriteRPCResponse(ctx context.Context, resp types.RPCResponse) error {
 	select {
 	case <-wsc.Quit():
-		return errors.New("connection was stopped")
+		return ErrConnectionStopped
 	case <-ctx.Done():
 		return ctx.Err()
 	case wsc.writeChan <- resp:

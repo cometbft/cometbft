@@ -2,13 +2,13 @@ package privileged
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	ggrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	cmtnet "github.com/cometbft/cometbft/internal/net"
+	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 )
 
 type Option func(*clientBuilder)
@@ -97,8 +97,9 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	}
 	conn, err := ggrpc.DialContext(ctx, addr, builder.grpcOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to dial %s: %w", addr, err)
+		return nil, grpcclient.ErrDial{Addr: addr, Source: err}
 	}
+
 	pruningServiceClient := newDisabledPruningServiceClient()
 	if builder.pruningServiceEnabled {
 		pruningServiceClient = newPruningServiceClient(conn)

@@ -260,7 +260,7 @@ The table below shows the performance metrics for Pebble:
 | Tx/s           |   785.34   | 807.27 | 792.03 | 798.27 | 785.08 | 800.28 |
 | Chain height   |   5743   | 5666 | 5553| 5739 | 5551 | 5752 |
 | RAM (MB)    |  494   | 445 | 456 | 445 | 490 | 461 |
-| Block processing time(s) |  2   | 3.9 | 2.1 | 2.1 | 2.1 | 2.1 |
+| Block processing time(s) |  0.21   | 0.39 | 0.21 | 0.21 | 0.21 | 0.21 |
 | Block time (s) | 0.63 | 0.64 | 0.65 | 0.63 | 0.65 | 0.63 |
 
 The block processing time when using the new layout and no pruning seems to significantly increase compared to the other cases. However, while taking longer it seems that the number of transactions processed in the same timeframe is higher and achieved with fewer heights. The metrics for block size bytes and the number of transactions included in a block show that in both scenarios the block size was the same and each block had the same number of transactions. 

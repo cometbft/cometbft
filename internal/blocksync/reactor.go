@@ -503,7 +503,6 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 
 // processBlocks processes two blocks and their extended commit.
 func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet, extCommit *types.ExtendedCommit, second *types.Block, firstID types.BlockID, state sm.State, blocksSynced *uint64, lastRate *float64, lastHundred *time.Time) (sm.State, error) {
-	// TODO: batch saves so we dont persist to disk every block
 	if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
 		bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
 	} else {

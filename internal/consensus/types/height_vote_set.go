@@ -134,7 +134,7 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bo
 		panic(fmt.Errorf("extensions enabled general param does not match the one in HeightVoteSet %t!=%t", hvs.extensionsEnabled, extEnabled))
 	}
 	if !types.IsVoteTypeValid(vote.Type) {
-		return false, fmt.Errorf("invalid vote type %X", vote.Type)
+		return false, fmt.Errorf("invalid vote type %T", vote.Type)
 	}
 	voteSet := hvs.getVoteSet(vote.Round, vote.Type)
 	if voteSet == nil {

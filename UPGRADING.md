@@ -40,7 +40,7 @@ This flexible mechanism allows chains disentagle the upgrade to `v1.0` from the 
 in the algorithm used for block times.
 For further information, please check the [PBTS specification][pbts-spec].
 
-#### ABCI Mutex
+### ABCI Mutex
 
 CometBFT's existing ABCI local client is prevented from making
 concurrent calls to ABCI implementations by virtue of a mutex taken

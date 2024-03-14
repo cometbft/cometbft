@@ -479,7 +479,6 @@ func (bcR *Reactor) setupPoolRoutine() (chan struct{}, *time.Ticker, *time.Ticke
 
 // handlePeerError processes an error received from a peer.
 // If the peer that caused the error is still connected, it stops the peer and logs the error.
-// This function is used in the poolRoutine of the Reactor to handle errors received from peers.
 func (bcR *Reactor) handlePeerError(err peerError) {
 	peer := bcR.Switch.Peers().Get(err.peerID)
 	if peer != nil {

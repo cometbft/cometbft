@@ -60,6 +60,18 @@ func New(node *nm.Node) *Local {
 
 var _ rpcclient.Client = (*Local)(nil)
 
+type ErrParseQuery struct {
+	Source error
+}
+
+func (e ErrParseQuery) Error() string {
+	return fmt.Sprintf("failed to parse query: %v", e.Source)
+}
+
+func (e ErrParseQuery) Unwrap() error {
+	return e.Source
+}
+
 // SetLogger allows to set a logger on the client.
 func (c *Local) SetLogger(l log.Logger) {
 	c.Logger = l
@@ -220,7 +232,7 @@ func (c *Local) Subscribe(
 ) (out <-chan ctypes.ResultEvent, err error) {
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse query: %w", err)
+		return nil, ErrParseQuery{Source: err}
 	}
 
 	outCap := 1
@@ -235,7 +247,7 @@ func (c *Local) Subscribe(
 		sub, err = c.EventBus.SubscribeUnbuffered(ctx, subscriber, q)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe: %w", err)
+		return nil, rpcclient.ErrSubscribe{Source: err}
 	}
 
 	outc := make(chan ctypes.ResultEvent, outCap)
@@ -300,7 +312,7 @@ func (c *Local) resubscribe(subscriber string, q cmtpubsub.Query) types.Subscrip
 func (c *Local) Unsubscribe(ctx context.Context, subscriber, query string) error {
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return fmt.Errorf("failed to parse query: %w", err)
+		return ErrParseQuery{Source: err}
 	}
 	return c.EventBus.Unsubscribe(ctx, subscriber, q)
 }

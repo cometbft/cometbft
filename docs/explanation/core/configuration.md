@@ -463,6 +463,19 @@ peer_query_maj23_sleep_duration = "2s"
 # reindex events in the command-line tool.
 discard_abci_responses = false
 
+# If set to true, CometBFT will force compaction to happen for databases that support this feature.
+# and save on storage space. Setting this to true is most benefits when used in combination
+# with pruning as it will phyisically delete the entries marked for deletion.
+# false by default (forcing compaction is disabled).
+compact = false
+
+# To avoid forcing compaction every time, this parameter instructs CometBFT to wait 
+# the given amount of blocks to be pruned before triggering compaction.
+# It should be tuned depending on the number of items. If your retain height is 1 block,
+# it is too much of an overhead to try compaction every block. But it should also not be a very
+# large multiple of your retain height as it might occur bigger overheads.
+compaction_interval = "1000"
+
 [storage.pruning]
 
 # The time period between automated background pruning operations.

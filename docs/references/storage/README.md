@@ -62,6 +62,9 @@ That is why, in Q1, we introduce an interface with two implementations: the curr
   - it is inconclusive if the new key layout "v2" is beneficial, so we will introduce this as an experimental feature
   - we expect to continue working with operator teams to gather data from production, ideally Injective and Osmosis
 - pebbleDB: handles compaction without the need for Comet to force it, generally shows better performance with the new layout
+
+Application developers who use `cometbft-db` as a database backend for their application store should use the new API forcing compaction in order to reduce the storage used by their application in case of pruning. 
+
 # Testing setup
 
 The experiments were ran in a number of different settings:

@@ -168,11 +168,11 @@ The new changes lead to faster block processing time compared even to the node t
 
 ## Database key layout and pruning
 
-The results above clearly show that pruning is not impacting the nodes performance anymore and could be turned on. The next step was determining whether we should remove the current database key representation from CometBFT and use the new ordering by height, which should be more optimal. (Pure golevelDB benchmarks showed orders of magnitute improvement when keys were written in order vs randomly: 8s vs 160ms). 
+The results above clearly show that pruning is not impacting the nodes performance anymore and could be turned on. The next step was determining whether we should remove the current database key representation from CometBFT and use the new ordering by height, which should be more optimal. (Pure golevelDB benchmarks showed orders of magnitute improvement when keys were written in order vs randomly: 8s vs 16ms).  (TODO Add Link to Anton;s PDF)
 However, while running the same set of experiments locally vs. in production, we obtained contradicting results on the impact of the key layout on these numbers. 
 
 ### **Local-1node** 
-In this setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (measured by num of txs processed within 1h), decreased with pruning (with and without compaction) using the current layout - 500txs/s vs 700 txs/s with the new layout. The compaction operation itself was also much faster than with the old key layout. The block processing time difference is between 100 and 200ms which for some chains can be significant. 
+In this setup, we came to the conclusion that, if pruning is turned on, only the version of CometBFT using the new database key layout was not impacted by it. The throughput of CometBFT (measured by num of txs processed within 1h), decreased with pruning (with and without compaction) using the current layout - 500txs/s vs 700 txs/s with the new layout. The compaction operation itself was also much faster than with the old key layout. The block time difference is between 100 and 200ms which for some chains can be significant. 
 The same was true for additional parameters such as RAM usage (200-300MB). 
 
 We show the findings in the table below. `v1` is the current DB key layout and `v2` is the new key representation leveraging ordercode. 
@@ -184,7 +184,7 @@ We show the findings in the table below. `v1` is the current DB key layout and `
 | Tx/s           |   705.21   | 722.74 | 573.30 | 692.31 | 572.80 | 700.33 |
 | Chain height   |   4936   | 5095 | 4277 | 4855 | 4398 | 5104 |
 | RAM (MB)    |  550   | 470 | 650 | 510 | 660 | 510|
-| Block processing time(s) |  1.9   | 2.1 | 2.2 | 2.1 | 2.0 | 1.9 |
+| Block processing time(ms) |  1.9   | 2.1 | 2.2 | 2.1 | 2.0 | 1.9 |
 | Block time (s) | 0.73| 0.71 | 0.84 | 0.74| 0.82| 0.71|
 
 We collected locally periodic heap usage samples via `pprof` and noticed that compaction for the old layout would take ~80MB of RAM vs ~30MB with the new layout. 
@@ -205,7 +205,7 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
 
  Once the nodes synced up to the height in the blockstore, we ran a load of transactions against the network for ~6h. As the run was long, we alternated the nodes to which the load was sent to avoid potential pollution of results by the handling of incoming transactions . 
 
- *Block processing time*
+ *Block processing time (TODO Plot BLOCK TIME INSTEAD)*
 
  ![e2e_block_processing](img/e2e_block_processing_time.png "Block Processing time e2e")
 
@@ -274,7 +274,7 @@ The table below shows the performance metrics for Pebble:
 | Tx/s           |   785.34   | 807.27 | 792.03 | 798.27 | 785.08 | 800.28 |
 | Chain height   |   5743   | 5666 | 5553| 5739 | 5551 | 5752 |
 | RAM (MB)    |  494   | 445 | 456 | 445 | 490 | 461 |
-| Block processing time(s) |  0.21   | 0.39 | 0.21 | 0.21 | 0.21 | 0.21 |
+| Block processing time(ms) |  2.1   | 3.9 | 2.1 | 2.1 | 2.1 | 2.1 |
 | Block time (s) | 0.63 | 0.64 | 0.65 | 0.63 | 0.65 | 0.63 |
 
 The block processing time when using the new layout and no pruning seems to significantly increase compared to the other cases. However, while taking longer it seems that the number of transactions processed in the same timeframe is higher and achieved with fewer heights. The metrics for block size bytes and the number of transactions included in a block show that in both scenarios the block size was the same and each block had the same number of transactions. 

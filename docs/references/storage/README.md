@@ -13,6 +13,12 @@ All the experiments were performed on `main` after `v1-alpha.1` was released. Th
 - [Injective testing "v1"](https://github.com/cometbft/cometbft/tree/storage/tmp/injective/v0.37.x-testing-validator)
 - [Injective testing "v2"](https://github.com/cometbft/cometbft/tree/storage/tmp/injective/v0.37.x-testing-newlayout-validator)
 
+### Releases containing the changes
+
+- *v1* : Data companion, background pruning, compaction and support for different key layouts
+- *v0.38.x-experimental*: Data companion, background pruning (production ready)
+- *Validator testing branches based of 0.37.x* - background pruning, compaction, key layout (not production ready)
+
 ## Pre Q1 2024 results
 By the end of Q3 we have addressed and documented the second problem by introducing a data companion API. The API allows node operators to extract data out of full nodes or validators, index them in whichever way they find suitable and instruct CometBFT to prune data at a much finer granularity:
 - Blocks
@@ -39,6 +45,8 @@ The one experiment with a real application (injective) did not back up this theo
 The block processing time reported by our application were in the range of 2-6s compared to 100s of ms for the real world application. Furthermore, the application might have different access patterns. Our tests can be seen as testing only CometBFT's interaction with storage, without much interference from the application.  
 
 That is why, in Q1, we introduce an interface with two implementations: the current key layout (a "v1") and a new representation ("v2") sorting the keys by height using ordercode. The new layout is marked as purely experimental. Our hope is that chains will be incentivized to experiment with it and provide us with more real world data. This will also facilitate switching the data layout without breaking changes between releases if we decide to officially support a new data layout. 
+
+
 
 **Summary of Q1 results:**
 
@@ -124,7 +132,7 @@ To evaluate whether this was really beneficial, we ran a couple of experiments a
  nodes without pruning. The fact that the footprint of *validator05* has a lower footprint than 
  *validator03* stems from the compaction logic of `goleveldb`. As the keys on *validator03* are sorted
  by height, new data is simply appended without the need to reshuffle very old levels with old heights. 
- On *validator05*, keys are sorted lexicographically leading to `goleveldb` *touching* more levels on insertions. By default, the conditions for triggering compaction are evaluated only when a file is touched. This is the reason why random key order leads to more frequent compaction. (This was also confirmed by findings done by our intern in Q3/Q4 2023 on goleveldb without Comet on top). 
+ On *validator05*, keys are sorted lexicographically leading to `goleveldb` *touching* more levels on insertions. By default, the conditions for triggering compaction are evaluated only when a file is touched. This is the reason why random key order leads to more frequent compaction. (This was also confirmed by [findings](https://github.com/cometbft/cometbft/files/12914649/DB.experiments.pdf) done by our intern in Q3/Q4 2023 on goleveldb without Comet on top, part of the [issue](https://github.com/cometbft/cometbft/issues/64) to understand the database backends and decide which one to optimize and choose.). 
 
 
 ### Production - Injective mainnet

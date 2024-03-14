@@ -216,14 +216,6 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
 
  Once the nodes synced up to the height in the blockstore, we ran a load of transactions against the network for ~6h. As the run was long, we alternated the nodes to which the load was sent to avoid potential pollution of results by the handling of incoming transactions . 
 
- <!-- *Block processing time (TODO Plot BLOCK TIME INSTEAD)*
-
- ![e2e_block_processing](img/e2e_block_processing_time.png "Block Processing time e2e")
-
- When using the new key representation and no pruning (*validator04*) the block processing time drops from 6.8s (*validator00*) to 6.4s (*validator04*).
-
- Pruning and compaction on the new layout increases the block processing time by ~200ms compared to no pruning, but it is still 200ms faster than pruning on the old layout.  -->
-
 *Block time*
 
 As all nodes were validator nodes who were able to most of the time keep up, their block times were very similar (~3ms of difference). We thus looked whether validators were missing blocks and observed the following: 

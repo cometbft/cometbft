@@ -359,13 +359,15 @@ func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo) {
 		for range ticker {
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 			currTime := uint64(time.Now().Unix())
+			buffer := oracleInfo.GossipVoteBuffer.Buffer
 
 			// prune gossip vote that have signed timestamps older than 60 secs
 			for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
 				if gossipVote.SignedTimestamp < currTime-uint64(interval) {
-					delete(oracleInfo.GossipVoteBuffer.Buffer, valAddr)
+					delete(buffer, valAddr)
 				}
 			}
+			oracleInfo.GossipVoteBuffer.Buffer = buffer
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
 	}(oracleInfo)

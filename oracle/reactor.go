@@ -199,6 +199,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		// check if peer is a validator
 		if !oracleR.OracleInfo.ValidatorSet.HasAddress(valAddress) {
 			logrus.Error("NOT VALIDATOR NOOOOOOOOOOOOOOO")
+			logrus.Infof("VALIDATOR SET: %v", oracleR.OracleInfo.ValidatorSet)
 			oracleR.Logger.Error("invalid validator trying to gossip oracle votes", msg)
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("invalid validator trying to gossip oracle votes: %T", e.Message))
 		}

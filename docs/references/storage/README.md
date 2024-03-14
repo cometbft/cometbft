@@ -22,20 +22,20 @@ For comparison, until then, CometBFT would only prune the block and state store 
 
 More details on the API itself and how it can be used can be found in the corresponding [ADR](https://github.com/cometbft/cometbft/blob/main/docs/references/architecture/adr-101-data-companion-pull-api.md) and [documentation](https://github.com/cometbft/cometbft/tree/main/docs/explanation/data-companion).
 
-The rest of this report covers the changes and their impact related to fixing and improving the pruning related points (1 and 3) as well as supporting a new data key layout. The results are obtained using `goleveldb` as the default backend unless stated otherwise. 
+The rest of this report covers the changes and their impact related to fixing and improving the pruning related points (1 and 3) as well as supporting a new data key layout (point 5). The results are obtained using `goleveldb` as the default backend unless stated otherwise. 
 
-## Q1 goals
+## Q1 goals & summary of results
 The expected result for Q1 was fixing the problem of storage growth despite pruning and improving database access times with a more optimal key layout. 
 
 While we did indeed fix the problem of pruning/compaction not working, based on the results we obtained we could not demonstrate a certain benefit of changing the database key representation. 
 
 Without a real world application, when running our test applications, our hypothesis on the impact of ordering was demonstrated by performance improvements and faster compaction times with the new layout.
 
-The one experiment with a real application did not back up this theory though. Even though the overall performance was better than the software version used by the application at the moment. 
+The one experiment with a real application (injective) did not back up this theory though. Even though the overall performance was better than the software version used by the application at the moment. 
 
 The block processing time reported by our application were in the range of 2-6s compared to 100s of ms for the real world application. Furthermore, the application might have different access patterns. Our tests can be seen as testing only CometBFT's interaction with storage, without much interference from the application.  
 
-That is why, in Q1, we introduce an interface with two implementations: the current key layout and a new representation, sorting the keys by height using ordercode. The new layout is marked as purely experimental. Our hope is that chains will be incentivized to experiment with it and provide us with more real world data. This will also facilitate switching the data layout without breaking changes between releases if we decide to officially support a new data layout. 
+That is why, in Q1, we introduce an interface with two implementations: the current key layout (a "v1") and a new representation ("v2") sorting the keys by height using ordercode. The new layout is marked as purely experimental. Our hope is that chains will be incentivized to experiment with it and provide us with more real world data. This will also facilitate switching the data layout without breaking changes between releases if we decide to officially support a new data layout. 
 
 # Testing setup
 
@@ -52,7 +52,7 @@ The experiments were ran in a number of different settings:
  - New layout - pruning, no forced compaction
  - New layout - pruning and forced compaction
 
- We have also experimented with a [third option](https://github.com/cometbft/cometbft/pull/1814), from which we initially expected the most: The new layout combined with insights into the access pattern of CometBFT to order together keys frequently accessed. In all
+ We have also experimented with a [third key layout option](https://github.com/cometbft/cometbft/pull/1814), from which we initially expected the most: The new layout combined with insights into the access pattern of CometBFT to order together keys frequently accessed. In all
  our experiments, when running CometBFT using this layout was less efficient than the other two and we therefore dismissed it.
 
  We reduced the `timeout_commit` in this setup to 300ms to speed up execution. The load was generated using `test/loadtime` with the following parameters: `-c 1 -T 3600 -r 1000 -s 8096`, sending 8KB transactions at a rate of 1000txs/s for 1h. 
@@ -60,12 +60,12 @@ The experiments were ran in a number of different settings:
  Each experiment was repeated 3 times to make sure the results are deterministic. 
 
  2. **e2e-6 node**: CometBFT's e2e application run on a Digital Ocean cluster of 6 nodes. Each node had a different combination of changes:
-  - Pruning with and without compaction on the current database key layout vs. a the same but using the new key layout that uses `ordercode` to sort keys by height. 
+  - Pruning with and without compaction on the current database key layout vs. the same but using the new key layout that uses `ordercode` to sort keys by height. 
   - No pruning using the current database key layout vs. the new key layout. 
 
   The nodes ran on top of a 11GB database to analyze the effects of pruning but also potentially capture additional impact on performance depending on the key layout. 
 
-3. **production-testing**: The validator team at Informal staking was kind enough to spend a lot of time with us trying to evaluate our changes on full nodes running on mainnet Injective chains. As their time was limited and we had reports that pruning, in addition to not working, slows down Injective nodes, we were interested to understand the impact our changes made on their network. It would be great to gather more real-world data on chains with different demands. 
+3. **production-testing**: The validator team at Informal Staking was kind enough to spend a lot of time with us trying to evaluate our changes on full nodes running on mainnet Injective chains. As their time was limited and they had found initially that pruning, in addition to not working, slows down Injective nodes, we were interested to understand the impact our changes made on their network. Future investigation on mainnet nodes would be required to gather more real-world data on chains with different demands and see if pruning is indeed ineffective and the slow down is reproducible. 
 
 
 ## **Metrics collected**
@@ -83,10 +83,10 @@ During this work we extended CometBFT with two additional storage related metric
 
 ## Pruning
 
-Pruning the blockstore and statestore is a long supported feature by CometBFT. An application can set a retain height - the number of blocks which must be kept - and instruct CometBFT to prune the remaining blocks (taking into account some other constraints). 
+Pruning the blockstore and statestore is a long supported feature by CometBFT. An application can set a `retain_height` - the number of blocks which must be kept - and instruct CometBFT to prune the remaining blocks (taking into account some other constraints). 
 
-## Storage footprint is not reduced
-Unfortunately, many users have noticed that, despite this feature being enabled, the growth of both the state and block store does not stop. To free up storage, operators copy the database, enforce compaction of the deleted items manually and copy it back. We have talked to operators and some have to do this weekly or every two weeks. 
+## The pruning feature on its own is ineffective in reducing storage footprint
+Unfortunately, many users have noticed that, despite the pruning feature based on `retain_height` being enabled, the growth of both the state and block store does not stop. To free up storage, operators copy the database, enforce compaction of the deleted items manually and copy it back. We have talked to operators and some have to do this weekly or every two weeks. 
 
 After some research, we found that some of the database backends can be forced to compact the data. We experimented on it and confirmed those findings.
 
@@ -112,9 +112,12 @@ To evaluate whether this was really beneficial, we ran a couple of experiments a
 
 ### Production - Injective mainnet
 
-![injective-no-compaction](img/injective_no_compaction.png "Injective -  pruning without compaction")
+#### Pruning without compaction
 
-![injective-compaction](img/injective_compaction.png "Injective - pruning with compaciton")
+![injective-no-compaction](img/injective_no_compaction.png "Injective -  pruning without compaction")
+#### Pruning with compaction
+
+![injective-compaction](img/injective_compaction.png "Injective - pruning with compaction")
 
 ## Pruning is slowing nodes down
 
@@ -239,7 +242,7 @@ The support for both layouts will allow users to benchmark their applications. I
 
 `PebbleDB` was recently added to `cometbft-db` by Notional labs and based on their benchmarks it was superior to goleveldDB. 
 
-We repeated our tests done in **1-node-local** using PebbleDB as the underlying database. While the difference in performance itself was slightly better, the most impressive difference is that PebbleDB seemed to handle compaction very well without a need to enforce it. 
+We repeated our tests done in **1-node-local** using PebbleDB as the underlying database. While PebbleDB is slightly better in performance (tx/s), the most impressive difference is that PebbleDB seemed to handle compaction very well without a need to enforce it. 
 
 In the graph below, we see the old layout without any compaction and the new layout with and without compaction on the same workload that generated 20GB of data when no pruning is active. 
 

@@ -2,18 +2,16 @@
 # Details: https://pre-commit.com/#new-hooks
 
 repos:
+  # golangci-lint
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.56.1
+    hooks:
+      - id: golangci-lint-full
+        args: [--timeout, 10m] # for CI
 
- # golangci-lint
- - repo: https://github.com/golangci/golangci-lint
-   rev: v1.56.1
-   hooks:
-    - id: golangci-lint-full
-      args: [--timeout, 10m] # for CI
-
-
- # codespell
- - repo: https://github.com/codespell-project/codespell
-   rev: v2.2.6
-   hooks:
-    - id: codespell
-      args: [-w]
+  # codespell
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        args: [-w]

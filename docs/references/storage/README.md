@@ -9,15 +9,22 @@ As of Q3 2023, the CometBFT team has dedicated significant resources addressing 
 4. Comet supports many database backends when ideally we should converge towards one. This requires understanding of the DB features but also the way CometBFT uses the database. 
 5. The representation of keys CometBFT uses to store block and state data is suboptimal for the way this data is sorted within most kvstores. This work was [started in Tendermint 0.36](https://github.com/tendermint/tendermint/pull/5771) but not completed. We picked up that work and experimented with the proposed data layout.
 
-All the experiments were performed on `main` after `v1-alpha.1` was released. The experiments on Injective were done using on custom branches porting the changes to `0.37.x` with the changes Injective has on their fork of 0.37:
+All the experiments were performed on `main` after `v1-alpha.1` was released. The experiments on Injective were done on custom branches porting the changes to `0.37.x` with the changes Injective has on their fork of 0.37:
 - [Injective testing "v1"](https://github.com/cometbft/cometbft/tree/storage/tmp/injective/v0.37.x-testing-validator)
 - [Injective testing "v2"](https://github.com/cometbft/cometbft/tree/storage/tmp/injective/v0.37.x-testing-newlayout-validator)
+
+We also have non Injective specific backports to 0.37.x based code in the following branches:
+
+- [Old keylayout](https://github.com/cometbft/cometbft/tree/storage/tmp/v0.37.x-testing-validator)
+- [New key layout](https://github.com/cometbft/cometbft/tree/storage/tmp/v0.37.x-testing-validator)
+
+These branches are however used only for testing and developemt purposes and are not meant nor designed to be used in production. 
 
 ### Releases containing the changes
 
 - *v1* : Data companion, background pruning, compaction and support for different key layouts
 - *v0.38.x-experimental*: Data companion, background pruning (production ready)
-- *Validator testing branches based of 0.37.x* - background pruning, compaction, key layout (not production ready)
+- *Validator testing branches based of 0.37.x* - background pruning, compaction, key layout (not production ready).
 
 ## Pre Q1 2024 results
 By the end of Q3 we have addressed and documented the second problem by introducing a data companion API. The API allows node operators to extract data out of full nodes or validators, index them in whichever way they find suitable and instruct CometBFT to prune data at a much finer granularity:

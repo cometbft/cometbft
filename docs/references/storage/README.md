@@ -205,13 +205,13 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
 
  Once the nodes synced up to the height in the blockstore, we ran a load of transactions against the network for ~6h. As the run was long, we alternated the nodes to which the load was sent to avoid potential pollution of results by the handling of incoming transactions . 
 
- *Block processing time (TODO Plot BLOCK TIME INSTEAD)*
+ <!-- *Block processing time (TODO Plot BLOCK TIME INSTEAD)*
 
  ![e2e_block_processing](img/e2e_block_processing_time.png "Block Processing time e2e")
 
  When using the new key representation and no pruning (*validator04*) the block processing time drops from 6.8s (*validator00*) to 6.4s (*validator04*).
 
- Pruning and compaction on the new layout increases the block processing time by ~200ms compared to no pruning, but it is still 200ms faster than pruning on the old layout. 
+ Pruning and compaction on the new layout increases the block processing time by ~200ms compared to no pruning, but it is still 200ms faster than pruning on the old layout.  -->
 
  *Block Store Access time* 
 
@@ -244,7 +244,7 @@ This is something we could not verify in production because the nodes ran by Inf
 ### Conclusion on key layout
 As demonstrated by the above results, and mentioned at the beginning, `v1.x` will be released with support for the new key layout as a purely experimental feature.
 
-Without pruning, for a bigger database and block processing times around 6s (on runs with our e2e), the new layout lowered the overall block processing time even without pruning. When the block times are very low (in our local setup or on Injective), we did not observe the same benefits. 
+Without pruning, for a bigger database and block processing times (on runs with our e2e), the new layout lowered the overall block processing time even without pruning. When the block times are very low (in our local setup or on Injective), we did not observe the same benefits. 
  
 Thus, the final decision should be left to the application after testing and understanding their behaviour. 
 
@@ -276,6 +276,3 @@ The table below shows the performance metrics for Pebble:
 | RAM (MB)    |  494   | 445 | 456 | 445 | 490 | 461 |
 | Block processing time(ms) |  2.1   | 3.9 | 2.1 | 2.1 | 2.1 | 2.1 |
 | Block time (s) | 0.63 | 0.64 | 0.65 | 0.63 | 0.65 | 0.63 |
-
-The block processing time when using the new layout and no pruning seems to significantly increase compared to the other cases. However, while taking longer it seems that the number of transactions processed in the same timeframe is higher and achieved with fewer heights. The metrics for block size bytes and the number of transactions included in a block show that in both scenarios the block size was the same and each block had the same number of transactions. 
-This indicates that with the new layout, CometBFT was able to drain the mempool faster

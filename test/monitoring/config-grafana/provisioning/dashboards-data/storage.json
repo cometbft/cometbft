@@ -469,7 +469,7 @@
           "refId": "A"
         }
       ],
-      "title": "Block processing time average [s]",
+      "title": "Block processing time average [ms]",
       "type": "timeseries"
     },
     {

@@ -42,6 +42,9 @@ func WaitForHeight(c StatusClient, h int64, waiter Waiter) error {
 		if err != nil {
 			return err
 		}
+		// delta might be negative (if h is less than LatestBlockHeight
+		// but this should not cause an error when calling the waiter with
+		// a negative value
 		delta = h - s.SyncInfo.LatestBlockHeight
 		// wait for the time, or abort early
 		if err := waiter(delta); err != nil {

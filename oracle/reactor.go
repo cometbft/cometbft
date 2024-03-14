@@ -202,6 +202,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			logrus.Infof("VALIDATOR SET: %v", oracleR.OracleInfo.ValidatorSet)
 			oracleR.Logger.Error("invalid validator trying to gossip oracle votes", msg)
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("invalid validator trying to gossip oracle votes: %T", e.Message))
+			return
 		}
 
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()

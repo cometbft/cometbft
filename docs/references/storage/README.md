@@ -40,6 +40,20 @@ The block processing time reported by our application were in the range of 2-6s 
 
 That is why, in Q1, we introduce an interface with two implementations: the current key layout (a "v1") and a new representation ("v2") sorting the keys by height using ordercode. The new layout is marked as purely experimental. Our hope is that chains will be incentivized to experiment with it and provide us with more real world data. This will also facilitate switching the data layout without breaking changes between releases if we decide to officially support a new data layout. 
 
+**Summary of Q1 results:**
+
+- pruning on its own is inefficient to control storage growth
+- we have complemented pruning with a (forced) compaction feature, and this proved effective to control storage growth
+- we confirmed that moving pruning + compaction to background mitigates potential performance impact of this feature, by running tests with it on Injective mainnet
+  - this works as expected, therefore pruning + compaction does not show to impact node performance and we recommend using it
+- regarding key layouts:
+  - our hypothesis was that the new "v2" layout should improve read/write performance on block & state store access
+  - we obtained contradicting results on this hypothesis locally vs. production settings, concretely:
+  - in local setting, enabling pruning with the old "v1" key layout _had_ a performance impact; enabling pruning with new layout _had no_ impact
+  - in mainnet setting the observation was in reverse: using the new layout _introduced a ~10ms latency_
+  - it is inconclusive if the new key layout "v2" is beneficial, so we will introduce this as an experimental feature
+  - we expect to continue working with operator teams to gather data from production, ideally Injective and Osmosis
+- pebbleDB: handles compaction without the need for Comet to force it, generally shows better performance with the new layout
 # Testing setup
 
 The experiments were ran in a number of different settings:

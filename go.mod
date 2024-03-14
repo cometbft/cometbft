@@ -43,6 +43,7 @@ require (
 	github.com/cometbft/cometbft-load-test v0.1.0
 	github.com/cometbft/cometbft/api v0.0.0-20240311183503-2f0dc67ee8d5
 	github.com/cosmos/gogoproto v1.4.11
+	github.com/ethereum/go-ethereum v1.13.4
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/gofrs/uuid v4.4.0+incompatible
@@ -91,11 +92,12 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/snappy v0.0.4 // indirect
+	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect

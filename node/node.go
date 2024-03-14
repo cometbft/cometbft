@@ -381,8 +381,7 @@ func NewNodeWithContext(ctx context.Context,
 	}
 
 	// Make OracleReactor
-
-	oracleReactor := oracle.NewReactor(config.Oracle, pubKey, privValidator, state.Validators)
+	oracleReactor := oracle.NewReactor(config.Oracle, pubKey, privValidator)
 	oracleInfo := oracleReactor.OracleInfo
 
 	// make block executor for consensus and blocksync reactors to execute blocks
@@ -415,6 +414,8 @@ func NewNodeWithContext(ctx context.Context,
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
+
+	oracleReactor.OracleInfo.ValidatorSet = consensusState.Validators
 
 	err = stateStore.SetOfflineStateSyncHeight(0)
 	if err != nil {

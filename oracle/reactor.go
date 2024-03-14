@@ -51,7 +51,7 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator types.PrivValidator, validatorSet *types.ValidatorSet) *Reactor {
+func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator types.PrivValidator) *Reactor {
 	// load oracle.json config if present
 	customNodeConfigPath := config.CustomNodePath
 	jsonFile, openErr := os.Open(customNodeConfigPath)
@@ -87,7 +87,6 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		SignVotesChan:      make(chan *oracleproto.Vote),
 		PubKey:             pubKey,
 		PrivValidator:      privValidator,
-		ValidatorSet:       validatorSet,
 	}
 
 	jsonFile.Close()
@@ -169,25 +168,39 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		// verify sig of incoming gossip vote, throw if verification fails
 		signType := msg.SignType
 		var pubKey crypto.PubKey
+		var valAddress []byte
 
 		switch signType {
 		case "ed25519":
 			pubKey = ed25519.PubKey(msg.PublicKey)
 			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-				oracleR.Logger.Info("failed signature verification", msg)
+				oracleR.Logger.Error("failed signature verification", msg)
 				logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
+				oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed ed25519 signature verification: %T", e.Message))
 				return
 			}
+			valAddress = pubKey.Address()
 		case "sr25519":
 			pubKey = sr25519.PubKey(msg.PublicKey)
 			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-				oracleR.Logger.Info("failed signature verification", msg)
+				oracleR.Logger.Error("failed signature verification", msg)
 				logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
+				oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed sr25519 signature verification: %T", e.Message))
 				return
 			}
+			valAddress = pubKey.Address()
 		default:
 			logrus.Error("SIGNATURE NOT SUPPORTED NOOOOOOOOO")
+			oracleR.Logger.Error("signature type not supported", msg)
+			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle does not support the following signature type: %T", e.Message))
 			return
+		}
+
+		// check if peer is a validator
+		if !oracleR.OracleInfo.ValidatorSet.HasAddress(valAddress) {
+			logrus.Error("NOT VALIDATOR NOOOOOOOOOOOOOOO")
+			oracleR.Logger.Error("invalid validator trying to gossip oracle votes", msg)
+			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("invalid validator trying to gossip oracle votes: %T", e.Message))
 		}
 
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()

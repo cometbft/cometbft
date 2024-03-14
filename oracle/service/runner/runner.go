@@ -352,6 +352,25 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 }
 
+func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo) {
+	go func(oracleInfo *types.OracleInfo) {
+		interval := 60 * time.Second
+		ticker := time.Tick(interval)
+		for range ticker {
+			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+			currTime := uint64(time.Now().Unix())
+
+			// prune gossip vote that have signed timestamps older than 60 secs
+			for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
+				if gossipVote.SignedTimestamp < currTime-uint64(interval) {
+					delete(oracleInfo.GossipVoteBuffer.Buffer, valAddr)
+				}
+			}
+			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+		}
+	}(oracleInfo)
+}
+
 func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo) {
 	go func(oracleInfo *types.OracleInfo) {
 		interval := oracleInfo.Config.PruneInterval
@@ -408,6 +427,7 @@ func Run(oracleInfo *types.OracleInfo) {
 	count := 0
 	RunProcessSignVoteQueue(oracleInfo)
 	PruneUnsignedVoteBuffer(oracleInfo)
+	PruneGossipVoteBuffer(oracleInfo)
 	for {
 		if count == 0 { // on init, and every minute
 			oracles, err := SyncOracles(oracleInfo)

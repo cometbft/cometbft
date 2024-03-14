@@ -775,74 +775,68 @@ func (bpr *bpRequester) newHeight(height int64) {
 // Returns only when a block is found (e.g. AddBlock() is called).
 func (bpr *bpRequester) requestRoutine() {
 	gotBlock := false
+
+OUTER_LOOP:
 	for {
-		bpr.iteration(&gotBlock)
-	}
-}
+		bpr.pickPeerAndSendRequest()
 
-func (bpr *bpRequester) iteration(gotBlock *bool) {
-	bpr.pickPeerAndSendRequest()
-	poolHeight := bpr.pool.Height()
-	if bpr.height-poolHeight < minBlocksForSingleRequest {
-		bpr.pickSecondPeerAndSendRequest()
-	}
-	retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
-	defer retryTimer.Stop()
+		poolHeight := bpr.pool.Height()
+		if bpr.height-poolHeight < minBlocksForSingleRequest {
+			bpr.pickSecondPeerAndSendRequest()
+		}
 
-	*gotBlock = bpr.handleRequests(retryTimer, *gotBlock)
-}
+		retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
+		defer retryTimer.Stop()
 
-func (bpr *bpRequester) handleRequests(retryTimer *time.Timer, gotBlock bool) bool {
-	for {
-		select {
-		case <-bpr.pool.Quit():
-			if err := bpr.Stop(); err != nil {
-				bpr.Logger.Error("Error stopped requester", "err", err)
+		for {
+			select {
+			case <-bpr.pool.Quit():
+				if err := bpr.Stop(); err != nil {
+					bpr.Logger.Error("Error stopped requester", "err", err)
+				}
+				return
+			case <-bpr.Quit():
+				return
+			case <-retryTimer.C:
+				if !gotBlock {
+					bpr.Logger.Debug("Retrying block request(s) after timeout", "height", bpr.height, "peer", bpr.peerID, "secondPeerID", bpr.secondPeerID)
+					bpr.reset(bpr.peerID)
+					bpr.reset(bpr.secondPeerID)
+					continue OUTER_LOOP
+				}
+			case peerID := <-bpr.redoCh:
+				if bpr.didRequestFrom(peerID) {
+					removedBlock := bpr.reset(peerID)
+					if removedBlock {
+						gotBlock = false
+					}
+				}
+				// If both peers returned NoBlockResponse or bad block, reschedule both
+				// requests. If not, wait for the other peer.
+				if len(bpr.requestedFrom()) == 0 {
+					retryTimer.Stop()
+					continue OUTER_LOOP
+				}
+			case newHeight := <-bpr.newHeightCh:
+				if !gotBlock && bpr.height-newHeight < minBlocksForSingleRequest {
+					// The operation is a noop if the second peer is already set. The cost is checking a mutex.
+					//
+					// If the second peer was just set, reset the retryTimer to give the
+					// second peer a chance to respond.
+					if picked := bpr.pickSecondPeerAndSendRequest(); picked {
+						if !retryTimer.Stop() {
+							<-retryTimer.C
+						}
+						retryTimer.Reset(requestRetrySeconds * time.Second)
+					}
+				}
+			case <-bpr.gotBlockCh:
+				gotBlock = true
+				// We got a block!
+				// Continue the for-loop and wait til Quit.
 			}
-			return gotBlock
-		case <-bpr.Quit():
-			return gotBlock
-		case <-retryTimer.C:
-			if !gotBlock {
-				bpr.Logger.Debug("Retrying block request(s) after timeout", "height", bpr.height, "peer", bpr.peerID, "secondPeerID", bpr.secondPeerID)
-				bpr.reset(bpr.peerID)
-				bpr.reset(bpr.secondPeerID)
-				return gotBlock
-			}
-		case peerID := <-bpr.redoCh:
-			gotBlock = bpr.handleRedoCh(peerID, gotBlock)
-			if len(bpr.requestedFrom()) == 0 {
-				retryTimer.Stop()
-				return gotBlock
-			}
-		case newHeight := <-bpr.newHeightCh:
-			gotBlock = bpr.handleNewHeightCh(newHeight, gotBlock, retryTimer)
-		case <-bpr.gotBlockCh:
-			gotBlock = true
 		}
 	}
-}
-
-func (bpr *bpRequester) handleRedoCh(peerID p2p.ID, gotBlock bool) bool {
-	if bpr.didRequestFrom(peerID) {
-		removedBlock := bpr.reset(peerID)
-		if removedBlock {
-			gotBlock = false
-		}
-	}
-	return gotBlock
-}
-
-func (bpr *bpRequester) handleNewHeightCh(newHeight int64, gotBlock bool, retryTimer *time.Timer) bool {
-	if !gotBlock && bpr.height-newHeight < minBlocksForSingleRequest {
-		if picked := bpr.pickSecondPeerAndSendRequest(); picked {
-			if !retryTimer.Stop() {
-				<-retryTimer.C
-			}
-			retryTimer.Reset(requestRetrySeconds * time.Second)
-		}
-	}
-	return gotBlock
 }
 
 // BlockRequest stores a block request identified by the block Height and the PeerID responsible for

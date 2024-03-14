@@ -18,7 +18,6 @@ linters:
     - forbidigo
     - forcetypeassert
     - funlen
-    - gomoddirectives
     - gochecknoglobals
     - gochecknoinits
     - gocognit
@@ -44,7 +43,6 @@ linters:
     - structcheck
     - tagliatelle
     - testifylint
-    - typecheck
     - varcheck
     - varnamelen
     - wrapcheck
@@ -177,6 +175,6 @@ linters-settings:
       - name: unhandled-error
         disabled: true
         arguments:
-          - 'fmt.Printf'
-          - 'fmt.Print'
-          - 'fmt.Println'
+          - "fmt.Printf"
+          - "fmt.Print"
+          - "fmt.Println"

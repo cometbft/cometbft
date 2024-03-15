@@ -18,7 +18,7 @@ We also have non Injective specific backports to 0.37.x based code in the follow
 - [Old keylayout](https://github.com/cometbft/cometbft/tree/storage/tmp/v0.37.x-testing-validator)
 - [New key layout](https://github.com/cometbft/cometbft/tree/storage/tmp/v0.37.x-testing-validator)
 
-These branches are however used only for testing and developemt purposes and are not meant nor designed to be used in production. 
+These branches are however used only for testing and development purposes and are not meant nor designed to be used in production. 
 
 ### Releases containing the changes
 
@@ -49,7 +49,7 @@ Without a real world application, when running our test applications, our hypoth
 
 The one experiment with a real application (injective) did not back up this theory though. Even though the overall performance was better than the software version used by the application at the moment. 
 
-The block processing time reported by our application were in the range of 2-6s compared to 100s of ms for the real world application. Furthermore, the application might have different access patterns. Our tests can be seen as testing only CometBFT's interaction with storage, without much interference from the application.  
+The block processing time reported by our application were in the range of 600-850ms compared to 100s of ms for the real world application. Furthermore, the application might have different access patterns. Our tests can be seen as testing only CometBFT's interaction with storage, without much interference from the application.  
 
 That is why, in Q1, we introduce an interface with two implementations: the current key layout (a "v1") and a new representation ("v2") sorting the keys by height using ordercode. The new layout is marked as purely experimental. Our hope is that chains will be incentivized to experiment with it and provide us with more real world data. This will also facilitate switching the data layout without breaking changes between releases if we decide to officially support a new data layout. 
 
@@ -70,7 +70,7 @@ That is why, in Q1, we introduce an interface with two implementations: the curr
   - we expect to continue working with operator teams to gather data from production, ideally Injective and Osmosis
 - pebbleDB: handles compaction without the need for Comet to force it, generally shows better performance with the new layout
 
-Application developers who use `cometbft-db` as a database backend for their application store should use the new API forcing compaction in order to reduce the storage used by their application in case of pruning. 
+Application developers who use `cometbft-db` as a database backend for their application store should use the new API forcing compaction. This will reduce the storage used by their application in case of pruning. 
 
 # Testing setup
 
@@ -108,7 +108,7 @@ The experiments were ran in a number of different settings:
 - **Storage footprint** 
 - **RAM usage**
 - **Block processing time** (*cometbft_state_block_processing_time*) This time here indicates the time to execute `FinalizeBlock` while reconstructing the last commit from the database and sending it to the application for processing. 
-- **Block time**: Computes the time taken for 1 block based on the number of blocks procssed in 1h.
+- **Block time**: Computes the time taken for 1 block based on the number of blocks procssed in 1h. Note that for small networks the validators usually keep up and thus their average block times end up being similar.
 - **Duration of individual consensus steps** (*cometbft_consensus_step_duration_seconds* aggregated by step)
 - **consensus_total_txs**
 
@@ -186,7 +186,7 @@ The new changes lead to faster block processing time compared even to the node t
 
 ## Database key layout and pruning
 
-The results above clearly show that pruning is not impacting the nodes performance anymore and could be turned on. The next step was determining whether we should remove the current database key representation from CometBFT and use the new ordering by height, which should be more optimal. (Pure golevelDB benchmarks showed orders of magnitute improvement when keys were written in order vs randomly: 8s vs 16ms).  (TODO Add Link to Anton;s PDF)
+The results above clearly show that pruning is not impacting the nodes performance anymore and could be turned on. The next step was determining whether we should remove the current database key representation from CometBFT and use the new ordering by height, which should be more optimal. (Pure golevelDB benchmarks showed orders of magnitute improvement when keys were written in order vs randomly: 8s vs 16ms - this can be seen in the PDF report on `goleveldb` experiments linked above).
 However, while running the same set of experiments locally vs. in production, we obtained contradicting results on the impact of the key layout on these numbers. 
 
 ### **Local-1node** 
@@ -225,13 +225,12 @@ In this experiment, we started a network of 6 validator nodes and 1 seed node. E
 
 *Block time*
 
-As all nodes were validator nodes who were able to most of the time keep up, their block times were very similar (~3ms of difference). We thus looked whether validators were missing blocks and observed the following: 
+As all nodes were validator nodes who were able to most of the time keep up, their block times were very similar (~3ms of difference). We thus looked whether validators were missing blocks and the Commit time to give us an indication of the impact the layout and pruning have.
 
-Time to execute Commit:
+*Time to execute Commit*
 
 ![e2e_commitTime](img/e2e_commit_time.png "Commit time e2e")
 
-and the missed blocks: 
 
 *Missed blocks*
 ![e2e_val_missed_blocks](img/e2e_val_missed_blocks.png "Blocks missed by a validator")

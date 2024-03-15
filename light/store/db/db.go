@@ -2,7 +2,6 @@ package db
 
 import (
 	"encoding/binary"
-	"fmt"
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -99,7 +98,7 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 
 	lbBz, err := lbpb.Marshal()
 	if err != nil {
-		return fmt.Errorf("marshaling LightBlock: %w", err)
+		return store.ErrMarshalBlock{Err: err}
 	}
 
 	s.mtx.Lock()
@@ -108,13 +107,13 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 	b := s.db.NewBatch()
 	defer b.Close()
 	if err = b.Set(s.lbKey(lb.Height), lbBz); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	if err = b.Set(s.dbKeyLayout.SizeKey(s.prefix), marshalSize(s.size+1)); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	if err = b.WriteSync(); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	s.size++
 
@@ -136,13 +135,13 @@ func (s *dbs) DeleteLightBlock(height int64) error {
 	b := s.db.NewBatch()
 	defer b.Close()
 	if err := b.Delete(s.lbKey(height)); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	if err := b.Set(s.dbKeyLayout.SizeKey(s.prefix), marshalSize(s.size-1)); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	if err := b.WriteSync(); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	s.size--
 
@@ -168,12 +167,12 @@ func (s *dbs) LightBlock(height int64) (*types.LightBlock, error) {
 	var lbpb cmtproto.LightBlock
 	err = lbpb.Unmarshal(bz)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal error: %w", err)
+		return nil, store.ErrUnmarshal{Err: err}
 	}
 
 	lightBlock, err := types.LightBlockFromProto(&lbpb)
 	if err != nil {
-		return nil, fmt.Errorf("proto conversion error: %w", err)
+		return nil, store.ErrProtoConversion{Err: err}
 	}
 
 	return lightBlock, err
@@ -262,7 +261,7 @@ func (s *dbs) LightBlockBefore(height int64) (*types.LightBlock, error) {
 		itr.Next()
 	}
 	if err = itr.Error(); err != nil {
-		return nil, err
+		return nil, store.ErrStore{Err: err}
 	}
 
 	return nil, store.ErrLightBlockNotFound
@@ -289,7 +288,7 @@ func (s *dbs) Prune(size uint16) error {
 		append(s.lbKey(1<<63-1), byte(0x00)),
 	)
 	if err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	defer itr.Close()
 
@@ -302,7 +301,7 @@ func (s *dbs) Prune(size uint16) error {
 		height, err := s.dbKeyLayout.ParseLBKey(key, s.prefix)
 		if err == nil {
 			if err = b.Delete(s.lbKey(height)); err != nil {
-				return err
+				return store.ErrStore{Err: err}
 			}
 		}
 		itr.Next()
@@ -310,12 +309,12 @@ func (s *dbs) Prune(size uint16) error {
 		pruned++
 	}
 	if err = itr.Error(); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 
 	err = b.WriteSync()
 	if err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 
 	// 3) Update size.
@@ -325,7 +324,7 @@ func (s *dbs) Prune(size uint16) error {
 	s.size -= uint16(pruned)
 
 	if wErr := s.db.SetSync(s.dbKeyLayout.SizeKey(s.prefix), marshalSize(s.size)); wErr != nil {
-		return fmt.Errorf("failed to persist size: %w", wErr)
+		return store.ErrStore{Err: wErr}
 	}
 
 	return nil

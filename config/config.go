@@ -1294,17 +1294,25 @@ type StorageConfig struct {
 	// Note that if the provided has does not match the hash of the genesis file
 	// the node will report an error and not boot.
 	GenesisHash string `mapstructure:"genesis_hash"`
+
+	// The representation of keys in the database.
+	// The current representation of keys in Comet's stores is considered to be v1
+	// Users can experiment with a different layout by setting this field to v2.
+	// Not that this is an experimental feature and switching back from v2 to v1
+	// is not supported by CometBFT.
+	ExperimentalKeyLayout string `mapstructure:"experimental_db_key_layout"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
 // CometBFT storage optimization.
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
-		DiscardABCIResponses: false,
-		Pruning:              DefaultPruningConfig(),
-		Compact:              false,
-		CompactionInterval:   1000,
-		GenesisHash:          "",
+		DiscardABCIResponses:  false,
+		Pruning:               DefaultPruningConfig(),
+		Compact:               false,
+		CompactionInterval:    1000,
+		GenesisHash:           "",
+		ExperimentalKeyLayout: "v1",
 	}
 }
 
@@ -1321,6 +1329,9 @@ func TestStorageConfig() *StorageConfig {
 func (cfg *StorageConfig) ValidateBasic() error {
 	if err := cfg.Pruning.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [pruning] section: %w", err)
+	}
+	if cfg.ExperimentalKeyLayout != "v1" && cfg.ExperimentalKeyLayout != "v2" {
+		return fmt.Errorf("unsupported version of DB Key layout, expected v1 or v2, got %s", cfg.ExperimentalKeyLayout)
 	}
 	return nil
 }

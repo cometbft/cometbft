@@ -399,8 +399,8 @@ prune_interval = "{{ .Oracle.PruneInterval }}"
 # Interval determines how long we should wait before batch signing votes
 sign_interval = "{{ .Oracle.SignInterval }}"
 
-# Interval determines how long we should wait before re-syncing oracles from the chain
-sync_interval = "{{ .Oracle.SyncInterval }}"
+# Interval determines how long we should wait between gossiping of votes
+gossip_interval = "{{ .Oracle.GossipInterval }}"
 
 # Max allowable size for votes that can be gossiped from peer to peer
 max_gossip_msg_size = {{ .Oracle.MaxGossipMsgSize }}

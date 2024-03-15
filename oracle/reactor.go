@@ -168,7 +168,6 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		// verify sig of incoming gossip vote, throw if verification fails
 		signType := msg.SignType
 		var pubKey crypto.PubKey
-		var valAddress []byte
 
 		switch signType {
 		case "ed25519":
@@ -179,7 +178,6 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 				oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed ed25519 signature verification: %T", e.Message))
 				return
 			}
-			valAddress = pubKey.Address()
 		case "sr25519":
 			pubKey = sr25519.PubKey(msg.PublicKey)
 			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
@@ -188,20 +186,10 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 				oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed sr25519 signature verification: %T", e.Message))
 				return
 			}
-			valAddress = pubKey.Address()
 		default:
 			logrus.Error("SIGNATURE NOT SUPPORTED NOOOOOOOOO")
 			oracleR.Logger.Error("signature type not supported", msg)
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle does not support the following signature type: %T", e.Message))
-			return
-		}
-
-		// check if peer is a validator
-		if !oracleR.OracleInfo.ValidatorSet.HasAddress(valAddress) {
-			logrus.Error("NOT VALIDATOR NOOOOOOOOOOOOOOO")
-			logrus.Infof("VALIDATOR SET: %v", oracleR.OracleInfo.ValidatorSet)
-			oracleR.Logger.Error("invalid validator trying to gossip oracle votes", msg)
-			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("invalid validator trying to gossip oracle votes: %T", e.Message))
 			return
 		}
 
@@ -241,21 +229,12 @@ type PeerState interface {
 
 // // Send new oracle votes to peer.
 func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
-	// peerID := oracleR.ids.GetForPeer(peer)
-
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !oracleR.IsRunning() || !peer.IsRunning() {
 			return
 		}
-		// This happens because the CElement we were looking at got garbage
-		// collected (removed). That is, .NextWait() returned nil. Go ahead and
-		// start from the beginning.
 		select {
-		// case <-oracleR.mempool.TxsWaitChan(): // Wait until a tx is available
-		// 	if next = oracleR.mempool.TxsFront(); next == nil {
-		// 		continue
-		// 	}
 		case <-peer.Quit():
 			return
 		case <-oracleR.Quit():
@@ -264,28 +243,17 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		}
 
 		// Make sure the peer is up to date.
-		// peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
-		// if !ok {
-		// 	// Peer does not have a state yet. We set it in the consensus reactor, but
-		// 	// when we add peer in Switch, the order we call reactors#AddPeer is
-		// 	// different every time due to us using a map. Sometimes other reactors
-		// 	// will be initialized before the consensus reactor. We should wait a few
-		// 	// milliseconds and retry.
-		// 	time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-		// 	continue
-		// }
+		_, ok := peer.Get(types.PeerStateKey).(PeerState)
+		if !ok {
+			// Peer does not have a state yet. We set it in the consensus reactor, but
+			// when we add peer in Switch, the order we call reactors#AddPeer is
+			// different every time due to us using a map. Sometimes other reactors
+			// will be initialized before the consensus reactor. We should wait a few
+			// milliseconds and retry.
+			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+			continue
+		}
 
-		// // Allow for a lag of 1 block.
-		// memTx := next.Value.(*mempoolTx)
-		// if peerState.GetHeight() < memTx.Height()-1 {
-		// 	time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-		// 	continue
-		// }
-
-		// NOTE: Transaction batching was disabled due to
-		// https://github.com/tendermint/tendermint/issues/5796
-
-		// if !memTx.isSender(peerID) {
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
 			success := peer.Send(p2p.Envelope{
@@ -299,18 +267,12 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 			}
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
-		time.Sleep(200 * time.Millisecond)
-		// }
 
-		// select {
-		// case <-next.NextWaitChan():
-		// 	// see the start of the for loop for nil check
-		// 	next = next.Next()
-		// case <-peer.Quit():
-		// 	return
-		// case <-oracleR.Quit():
-		// 	return
-		// }
+		interval := oracleR.OracleInfo.Config.GossipInterval
+		if interval == 0 {
+			interval = 100 * time.Millisecond
+		}
+		time.Sleep(interval)
 	}
 }
 

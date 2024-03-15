@@ -807,8 +807,8 @@ type OracleConfig struct {
 	PruneInterval time.Duration `mapstructure:"prune_interval"`
 	// Interval determines how long we should wait before batch signing votes
 	SignInterval time.Duration `mapstructure:"sign_interval"`
-	// Interval determines how long we should wait before re-syncing oracles from the chain
-	SyncInterval time.Duration `mapstructure:"sync_interval"`
+	// Interval determines how long we should wait between gossiping of votes
+	GossipInterval time.Duration `mapstructure:"gossip_interval"`
 	// Max allowable size for votes that can be gossiped from peer to peer
 	MaxGossipMsgSize int `mapstructure:"max_gossip_msg_size"`
 }
@@ -820,7 +820,7 @@ func DefaultOracleConfig() *OracleConfig {
 		GrpcAddress:      "127.0.0.1:9090",        // localhost
 		PruneInterval:    4 * time.Second,         // 4s
 		SignInterval:     500 * time.Millisecond,  // 0.5s
-		SyncInterval:     60 * time.Second,        // 60s
+		GossipInterval:   100 * time.Millisecond,  // 0.1s
 		MaxGossipMsgSize: 65536,
 	}
 }
@@ -846,7 +846,7 @@ func (cfg *OracleConfig) ValidateBasic() error {
 	if cfg.SignInterval < 0 {
 		return errors.New("sign_interval can't be negative")
 	}
-	if cfg.SyncInterval < 0 {
+	if cfg.GossipInterval < 0 {
 		return errors.New("sync_interval can't be negative")
 	}
 	if cfg.MaxGossipMsgSize < 0 {

@@ -70,7 +70,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	addrWithoutProtocol := removeProtocolIfDefined(addr)
 	spl := strings.Split(addrWithoutProtocol, "@")
 	if len(spl) != 2 {
-		return nil, ErrNetAddressNoID{addr}
+		return nil, ErrNetAddressInvalid{Addr: addr, Err: ErrNetAddressNoID{addr}}
 	}
 
 	// get ID

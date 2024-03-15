@@ -302,11 +302,14 @@ func TestVerifyReturnsErrorIfTrustLevelIsInvalid(t *testing.T) {
 		bTime, _ = time.Parse(time.RFC3339, "2006-01-02T15:04:05Z")
 		header   = keys.GenSignedHeader(chainID, lastHeight, bTime, nil, vals, vals,
 			hash("app_hash"), hash("cons_hash"), hash("results_hash"), 0, len(keys))
+		trustingPeriod = 2 * time.Hour
+		now            = cmttime.Now()
 	)
 
-	err := light.Verify(header, vals, header, vals, 2*time.Hour, cmttime.Now(), maxClockDrift,
+	err := light.Verify(header, vals, header, vals, trustingPeriod, now, maxClockDrift,
 		cmtmath.Fraction{Numerator: 2, Denominator: 1})
-	require.Error(t, err)
+	expectedErr := light.ErrOldHeaderExpired{At: bTime.Add(trustingPeriod), Now: now}
+	require.EqualError(t, err, expectedErr.Error())
 }
 
 func TestValidateTrustLevel(t *testing.T) {
@@ -331,7 +334,7 @@ func TestValidateTrustLevel(t *testing.T) {
 	for _, tc := range testCases {
 		err := light.ValidateTrustLevel(tc.lvl)
 		if !tc.valid {
-			require.Error(t, err)
+			require.EqualError(t, err, light.ErrInvalidTrustLevel{Level: tc.lvl}.Error())
 		} else {
 			require.NoError(t, err)
 		}

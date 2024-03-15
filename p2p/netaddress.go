@@ -88,7 +88,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	if len(host) == 0 {
 		return nil, ErrNetAddressInvalid{
 			addrWithoutProtocol,
-			errEmptyHost,
+			ErrEmptyHost,
 		}
 	}
 
@@ -140,7 +140,7 @@ func NewNetAddressIPPort(ip net.IP, port uint16) *NetAddress {
 func NetAddressFromProto(pb tmp2p.NetAddress) (*NetAddress, error) {
 	ip := net.ParseIP(pb.IP)
 	if ip == nil {
-		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: errInvalidIP}
+		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: ErrInvalidIP}
 	}
 
 	if pb.Port >= 1<<16 {
@@ -271,7 +271,7 @@ func (na *NetAddress) Valid() error {
 		return ErrNoIP
 	}
 	if na.IP.IsUnspecified() || na.RFC3849() || na.IP.Equal(net.IPv4bcast) {
-		return ErrNetAddressInvalid{na.IP.String(), errInvalidIP}
+		return ErrNetAddressInvalid{na.IP.String(), ErrInvalidIP}
 	}
 	return nil
 }

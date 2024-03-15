@@ -7,10 +7,10 @@ import (
 )
 
 var (
-	errEmptyHost  = errors.New("host is empty")
+	ErrEmptyHost  = errors.New("host is empty")
 	ErrNoIP       = errors.New("no IP address found")
 	ErrNoNodeInfo = errors.New("no node info found")
-	errInvalidIP  = errors.New("invalid IP address")
+	ErrInvalidIP  = errors.New("invalid IP address")
 )
 
 // ErrFilterTimeout indicates that a filter operation timed out.

@@ -255,7 +255,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	defer pool.Put(frame)
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
-		return n, ErrDecryptFrame{source: err}
+		return n, ErrDecryptFrame{Source: err}
 	}
 
 	incrNonce(sc.recvNonce)

@@ -13,15 +13,15 @@ var (
 
 // ErrPacketWrite Packet error when writing.
 type ErrPacketWrite struct {
-	source error
+	Source error
 }
 
 func (e ErrPacketWrite) Error() string {
-	return fmt.Sprintf("failed to write packet: %v", e.source)
+	return fmt.Sprintf("failed to write packet: %v", e.Source)
 }
 
 func (e ErrPacketWrite) Unwrap() error {
-	return e.source
+	return e.Source
 }
 
 type ErrUnexpectedPubKeyType struct {
@@ -34,15 +34,15 @@ func (e ErrUnexpectedPubKeyType) Error() string {
 }
 
 type ErrDecryptFrame struct {
-	source error
+	Source error
 }
 
 func (e ErrDecryptFrame) Error() string {
-	return fmt.Sprintf("SecretConnection: failed to decrypt the frame: %v", e.source)
+	return fmt.Sprintf("SecretConnection: failed to decrypt the frame: %v", e.Source)
 }
 
 func (e ErrDecryptFrame) Unwrap() error {
-	return e.source
+	return e.Source
 }
 
 type ErrPacketTooBig struct {

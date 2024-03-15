@@ -457,6 +457,22 @@ peer_query_maj23_sleep_duration = "2s"
 #######################################################
 [storage]
 
+# The representation of keys in the database.
+# The current representation of keys in Comet's stores is considered to be v1
+# Users can experiment with a different layout by setting this field to v2.
+# Not that this is an experimental feature and switching back from v2 to v1
+# is not supported by CometBFT.
+# If the database was initially created with v1, it is necessary to migrate the DB
+# before switching to v2. The migration is not done automatically.
+# v1 - the legacy layout existing in Comet prior to v1.
+# v2 - Order preserving representation ordering entries by height.
+# We used a command to migrate from v1 to v2 in our tests. The command is used
+# purely for experimental purposes but can be used as a starting point for experimentation
+#  https://github.com/cometbft/cometbft/blob/migrate_db/cmd/cometbft/commands/migrate_db.go 
+# compiling Comet at this branch and running migrate-db --home PATH_TO_CMT_HOME will transform the
+# db. 
+experimental_db_key_layout = "v1"
+
 # Set to true to discard ABCI responses from the state store, which can save a
 # considerable amount of disk space. Set to false to ensure ABCI responses are
 # persisted. ABCI responses are required for /block_results RPC queries, and to

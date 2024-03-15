@@ -133,6 +133,10 @@ func startNode(cfg *Config) error {
 		nodeLogger.Info("Using default (synchronized) local client creator")
 	}
 
+	if cfg.ExperimentalKeyLayout != "" {
+		cmtcfg.Storage.ExperimentalKeyLayout = cfg.ExperimentalKeyLayout
+	}
+
 	n, err := node.NewNode(context.Background(), cmtcfg,
 		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile()),
 		nodeKey,
@@ -172,7 +176,7 @@ func startLightClient(cfg *Config) error {
 		},
 		providers[0],
 		providers[1:],
-		dbs.New(lightDB, "light"),
+		dbs.NewWithDBVersion(lightDB, "light", cfg.ExperimentalKeyLayout),
 		light.Logger(nodeLogger),
 	)
 	if err != nil {

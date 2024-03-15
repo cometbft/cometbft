@@ -32,7 +32,6 @@ const (
 	genesisChunkSize = 16 * 1024 * 1024 // 16
 )
 
-//----------------------------------------------
 // These interfaces are used by RPC and must be thread safe
 
 type Consensus interface {
@@ -62,7 +61,6 @@ type syncReactor interface {
 	WaitSync() bool
 }
 
-// ----------------------------------------------
 // Environment contains objects and interfaces used by the RPC. It is expected
 // to be setup once during startup.
 type Environment struct {
@@ -95,8 +93,6 @@ type Environment struct {
 	// cache of chunked genesis data.
 	genChunks []string
 }
-
-//----------------------------------------------
 
 func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	if perPage < 1 {

@@ -3,19 +3,93 @@ package db
 import (
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
+
+func TestDBKeyLayoutVersioning(t *testing.T) {
+	prefix := "TestDBKeyLayoutVersioning"
+	db := dbm.NewMemDB()
+	dbStore := New(db, prefix)
+
+	// Empty store
+	height, err := dbStore.LastLightBlockHeight()
+	require.NoError(t, err)
+	assert.EqualValues(t, -1, height)
+
+	lb := randLightBlock(int64(1))
+	// 1 key
+	err = dbStore.SaveLightBlock(lb)
+	require.NoError(t, err)
+
+	lbKey := v1LegacyLayout{}.LBKey(int64(1), prefix)
+
+	lbRetrieved, err := db.Get(lbKey)
+	require.NoError(t, err)
+
+	var lbpb cmtproto.LightBlock
+	err = lbpb.Unmarshal(lbRetrieved)
+	require.NoError(t, err)
+
+	lightBlock, err := types.LightBlockFromProto(&lbpb)
+	require.NoError(t, err)
+
+	require.Equal(t, lightBlock.AppHash, lb.AppHash)
+	require.Equal(t, lightBlock.ConsensusHash, lb.ConsensusHash)
+
+	lbKeyV2 := v2Layout{}.LBKey(1, prefix)
+
+	lbv2, err := db.Get(lbKeyV2)
+	require.NoError(t, err)
+	require.Equal(t, len(lbv2), 0)
+
+	// test on v2
+
+	prefix = "TestDBKeyLayoutVersioningV2"
+	db2 := dbm.NewMemDB()
+	dbStore2 := NewWithDBVersion(db2, prefix, "v2")
+
+	// Empty store
+	height, err = dbStore2.LastLightBlockHeight()
+	require.NoError(t, err)
+	assert.EqualValues(t, -1, height)
+
+	// 1 key
+	err = dbStore2.SaveLightBlock(lb)
+	require.NoError(t, err)
+
+	lbKey = v1LegacyLayout{}.LBKey(int64(1), prefix)
+	// No block is found if we look for a key parsed with v1
+	lbRetrieved, err = db2.Get(lbKey)
+	require.NoError(t, err)
+	require.Equal(t, len(lbRetrieved), 0)
+
+	// Key parsed with v2 should find the light block
+	lbKeyV2 = v2Layout{}.LBKey(1, prefix)
+	lbv2, err = db2.Get(lbKeyV2)
+	require.NoError(t, err)
+
+	// Unmarshall the light block bytes
+	err = lbpb.Unmarshal(lbv2)
+	require.NoError(t, err)
+
+	lightBlock, err = types.LightBlockFromProto(&lbpb)
+	require.NoError(t, err)
+
+	require.Equal(t, lightBlock.AppHash, lb.AppHash)
+	require.Equal(t, lightBlock.ConsensusHash, lb.ConsensusHash)
+}
 
 func TestLast_FirstLightBlockHeight(t *testing.T) {
 	dbStore := New(dbm.NewMemDB(), "TestLast_FirstLightBlockHeight")
@@ -42,8 +116,8 @@ func TestLast_FirstLightBlockHeight(t *testing.T) {
 	assert.EqualValues(t, 1, height)
 }
 
-func Test_SaveLightBlock(t *testing.T) {
-	dbStore := New(dbm.NewMemDB(), "Test_SaveLightBlockAndValidatorSet")
+func Test_SaveLightBlockCustomConfig(t *testing.T) {
+	dbStore := NewWithDBVersion(dbm.NewMemDB(), "Test_SaveLightBlockAndValidatorSet", "v2")
 
 	// Empty store
 	h, err := dbStore.LightBlock(1)
@@ -176,7 +250,7 @@ func randLightBlock(height int64) *types.LightBlock {
 				Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
 				ChainID:            cmtrand.Str(12),
 				Height:             height,
-				Time:               time.Now(),
+				Time:               cmttime.Now(),
 				LastBlockID:        types.BlockID{},
 				LastCommitHash:     crypto.CRandBytes(tmhash.Size),
 				DataHash:           crypto.CRandBytes(tmhash.Size),

@@ -27,6 +27,12 @@ func (p *Provider) Setup() error {
 		return err
 	}
 
+	for _, n := range p.Testnet.Nodes {
+		if n.ClockSkew != 0 {
+			return fmt.Errorf("node %q contains clock skew configuration (not supported on DO)", n.Name)
+		}
+	}
+
 	return nil
 }
 

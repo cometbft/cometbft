@@ -144,7 +144,7 @@ func NetAddressFromProto(pb tmp2p.NetAddress) (*NetAddress, error) {
 	}
 
 	if pb.Port >= 1<<16 {
-		return nil, ErrInvalidPort{pb.Port}
+		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: ErrInvalidPort{pb.Port}}
 	}
 	return &NetAddress{
 		ID:   ID(pb.ID),

@@ -27,7 +27,7 @@ const (
 
 var endsWithPortPattern = regexp.MustCompile(`:[0-9]+$`)
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // Parsed URL structure.
 type parsedURL struct {
@@ -116,7 +116,7 @@ func (u parsedURL) GetTrimmedURL() string {
 	return u.Scheme + "://" + u.GetTrimmedHostWithPath()
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // HTTPClient is a common interface for JSON-RPC HTTP clients.
 type HTTPClient interface {
@@ -129,7 +129,7 @@ type Caller interface {
 	Call(ctx context.Context, method string, params map[string]interface{}, result interface{}) (interface{}, error)
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // Client is a JSON-RPC client, which sends POST HTTP requests to the
 // remote server.
@@ -177,7 +177,7 @@ func NewWithHTTPClient(remote string, client *http.Client) (*Client, error) {
 
 	parsedURL, err := newParsedURL(remote)
 	if err != nil {
-		return nil, fmt.Errorf("invalid remote %s: %s", remote, err)
+		return nil, ErrInvalidAddress{Addr: remote, Source: err}
 	}
 
 	parsedURL.SetDefaultSchemeHTTP()
@@ -208,18 +208,18 @@ func (c *Client) Call(
 
 	request, err := types.MapToRequest(id, method, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode params: %w", err)
+		return nil, ErrEncodingParams{Source: err}
 	}
 
 	requestBytes, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, ErrMarshalRequest{Source: err}
 	}
 
 	requestBuf := bytes.NewBuffer(requestBytes)
 	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, c.address, requestBuf)
 	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
+		return nil, ErrCreateRequest{Source: err}
 	}
 
 	httpRequest.Header.Set("Content-Type", "application/json")
@@ -230,18 +230,18 @@ func (c *Client) Call(
 
 	httpResponse, err := c.client.Do(httpRequest)
 	if err != nil {
-		return nil, fmt.Errorf("post failed: %w", err)
+		return nil, ErrFailedRequest{Source: err}
 	}
 	defer httpResponse.Body.Close()
 
 	responseBytes, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%s. Failed to read response body: %w", getHTTPRespErrPrefix(httpResponse), err)
+		return nil, ErrReadResponse{Source: err, Description: getHTTPRespErrPrefix(httpResponse)}
 	}
 
 	res, err := unmarshalResponseBytes(responseBytes, id, result)
 	if err != nil {
-		return nil, fmt.Errorf("%s. %w", getHTTPRespErrPrefix(httpResponse), err)
+		return nil, ErrUnmarshalResponse{Source: err, Description: getHTTPRespErrPrefix(httpResponse)}
 	}
 	return res, nil
 }
@@ -316,7 +316,7 @@ func (c *Client) nextRequestID() types.JSONRPCIntID {
 	return types.JSONRPCIntID(id)
 }
 
-//------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------
 
 // jsonRPCBufferedRequest encapsulates a single buffered request, as well as its
 // anticipated response structure.
@@ -390,7 +390,7 @@ func (b *RequestBatch) Call(
 	return result, nil
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // MakeHTTPDialer creates an HTTP client dialer based on the given URL.
 func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {

@@ -35,7 +35,7 @@ func main() {
 	counter := 0
 	for i := 0; ; i++ {
 		bufWriter := bufio.NewWriter(conn)
-		req := types.ToRequestEcho("foobar")
+		req := types.ToEchoRequest("foobar")
 
 		err := types.WriteMessage(req, bufWriter)
 		if err != nil {

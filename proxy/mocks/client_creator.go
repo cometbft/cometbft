@@ -16,6 +16,10 @@ type ClientCreator struct {
 func (_m *ClientCreator) NewABCIConsensusClient() (abcicli.Client, error) {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for NewABCIConsensusClient")
+	}
+
 	var r0 abcicli.Client
 	var r1 error
 	if rf, ok := ret.Get(0).(func() (abcicli.Client, error)); ok {
@@ -41,6 +45,10 @@ func (_m *ClientCreator) NewABCIConsensusClient() (abcicli.Client, error) {
 // NewABCIMempoolClient provides a mock function with given fields:
 func (_m *ClientCreator) NewABCIMempoolClient() (abcicli.Client, error) {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for NewABCIMempoolClient")
+	}
 
 	var r0 abcicli.Client
 	var r1 error
@@ -68,6 +76,10 @@ func (_m *ClientCreator) NewABCIMempoolClient() (abcicli.Client, error) {
 func (_m *ClientCreator) NewABCIQueryClient() (abcicli.Client, error) {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for NewABCIQueryClient")
+	}
+
 	var r0 abcicli.Client
 	var r1 error
 	if rf, ok := ret.Get(0).(func() (abcicli.Client, error)); ok {
@@ -93,6 +105,10 @@ func (_m *ClientCreator) NewABCIQueryClient() (abcicli.Client, error) {
 // NewABCISnapshotClient provides a mock function with given fields:
 func (_m *ClientCreator) NewABCISnapshotClient() (abcicli.Client, error) {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for NewABCISnapshotClient")
+	}
 
 	var r0 abcicli.Client
 	var r1 error

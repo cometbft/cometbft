@@ -11,8 +11,10 @@ import (
 
 // Tests that block headers are identical across nodes where present.
 func TestBlock_Header(t *testing.T) {
+	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
 			return
 		}
@@ -25,7 +27,13 @@ func TestBlock_Header(t *testing.T) {
 		first := status.SyncInfo.EarliestBlockHeight
 		last := status.SyncInfo.LatestBlockHeight
 		if node.RetainBlocks > 0 {
-			first++ // avoid race conditions with block pruning
+			// This was done in case pruning is activated.
+			// As it happens in the background this lowers the chances
+			// that the block at height=first will be pruned by the time we test
+			// this. If this test starts to fail often, it is worth revisiting this logic.
+			// To reproduce this failure locally, it is advised to set the storage.pruning.interval
+			// to 1s instead of 10s.
+			first += int64(node.RetainBlocks) // avoid race conditions with block pruning
 		}
 
 		for _, block := range blocks {
@@ -49,7 +57,9 @@ func TestBlock_Header(t *testing.T) {
 
 // Tests that the node contains the expected block range.
 func TestBlock_Range(t *testing.T) {
+	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		// We do not run this test on seed nodes or nodes with data
 		// companion-related pruning enabled.
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
@@ -99,4 +109,25 @@ func TestBlock_Range(t *testing.T) {
 			require.Error(t, err)
 		}
 	})
+}
+
+// Tests that time is monotonically increasing,
+// and that blocks produced according to BFT Time follow MedianTime calculation.
+func TestBlock_Time(t *testing.T) {
+	t.Helper()
+	blocks := fetchBlockChain(t)
+	testnet := loadTestnet(t)
+
+	lastBlock := blocks[0]
+	valSchedule := newValidatorSchedule(testnet)
+	for _, block := range blocks[1:] {
+		require.Less(t, lastBlock.Time, block.Time)
+		lastBlock = block
+
+		valSchedule.Increment(1)
+		if testnet.PbtsEnableHeight == 0 || block.Height < testnet.PbtsEnableHeight {
+			expTime := block.LastCommit.MedianTime(valSchedule.Set)
+			require.Equal(t, expTime, block.Time, "height=%d", block.Height)
+		}
+	}
 }

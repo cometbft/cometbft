@@ -11,38 +11,37 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/libs/log"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/abci/server"
 	servertest "github.com/cometbft/cometbft/abci/tests/server"
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/version"
-	"github.com/cometbft/cometbft/proto/tendermint/crypto"
+	crypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	cmtos "github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
-// client is a global variable so it can be reused by the console
+// client is a global variable so it can be reused by the console.
 var (
 	client abcicli.Client
 	logger log.Logger
 )
 
-// flags
+// flags.
 var (
-	// global
+	// global.
 	flagAddress  string
 	flagAbci     string
 	flagVerbose  bool   // for the println output
 	flagLogLevel string // for the logger
 
-	// query
+	// query.
 	flagPath   string
 	flagHeight int
 	flagProve  bool
 
-	// kvstore
+	// kvstore.
 	flagPersist string
 )
 
@@ -279,7 +278,7 @@ var testCmd = &cobra.Command{
 	RunE:  cmdTest,
 }
 
-// Generates new Args array based off of previous call args to maintain flag persistence
+// Generates new Args array based off of previous call args to maintain flag persistence.
 func persistentArgs(line []byte) []string {
 	// generate the arguments to run from original os.Args
 	// to maintain flag arguments
@@ -355,7 +354,7 @@ func cmdTest(cmd *cobra.Command, _ []string) error {
 			func() error {
 				return servertest.ProcessProposal(ctx, client, [][]byte{
 					{0x01},
-				}, types.ResponseProcessProposal_ACCEPT)
+				}, types.PROCESS_PROPOSAL_STATUS_ACCEPT)
 			},
 		})
 }
@@ -364,7 +363,6 @@ func cmdBatch(cmd *cobra.Command, _ []string) error {
 	bufReader := bufio.NewReader(os.Stdin)
 LOOP:
 	for {
-
 		line, more, err := bufReader.ReadLine()
 		switch {
 		case more:
@@ -492,7 +490,7 @@ func cmdUnimplemented(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Have the application echo a message
+// Have the application echo a message.
 func cmdEcho(cmd *cobra.Command, args []string) error {
 	msg := ""
 	if len(args) > 0 {
@@ -510,13 +508,13 @@ func cmdEcho(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Get some info from the application
+// Get some info from the application.
 func cmdInfo(cmd *cobra.Command, args []string) error {
 	var version string
 	if len(args) == 1 {
 		version = args[0]
 	}
-	res, err := client.Info(cmd.Context(), &types.RequestInfo{Version: version})
+	res, err := client.Info(cmd.Context(), &types.InfoRequest{Version: version})
 	if err != nil {
 		return err
 	}
@@ -528,7 +526,7 @@ func cmdInfo(cmd *cobra.Command, args []string) error {
 
 const codeBad uint32 = 10
 
-// Append new txs to application
+// Append new txs to application.
 func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -545,7 +543,7 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 		}
 		txs[i] = txBytes
 	}
-	res, err := client.FinalizeBlock(cmd.Context(), &types.RequestFinalizeBlock{Txs: txs})
+	res, err := client.FinalizeBlock(cmd.Context(), &types.FinalizeBlockRequest{Txs: txs})
 	if err != nil {
 		return err
 	}
@@ -565,7 +563,7 @@ func cmdFinalizeBlock(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Validate a tx
+// Validate a tx.
 func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -578,7 +576,10 @@ func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	res, err := client.CheckTx(cmd.Context(), &types.RequestCheckTx{Tx: txBytes})
+	res, err := client.CheckTx(cmd.Context(), &types.CheckTxRequest{
+		Tx:   txBytes,
+		Type: types.CHECK_TX_TYPE_CHECK,
+	})
 	if err != nil {
 		return err
 	}
@@ -591,9 +592,9 @@ func cmdCheckTx(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Get application Merkle root hash
+// Get application Merkle root hash.
 func cmdCommit(cmd *cobra.Command, args []string) error {
-	_, err := client.Commit(cmd.Context(), &types.RequestCommit{})
+	_, err := client.Commit(cmd.Context(), &types.CommitRequest{})
 	if err != nil {
 		return err
 	}
@@ -601,7 +602,7 @@ func cmdCommit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// Query application state
+// Query application state.
 func cmdQuery(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		printResponse(cmd, args, response{
@@ -616,7 +617,7 @@ func cmdQuery(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	resQuery, err := client.Query(cmd.Context(), &types.RequestQuery{
+	resQuery, err := client.Query(cmd.Context(), &types.QueryRequest{
 		Data:   queryBytes,
 		Path:   flagPath,
 		Height: int64(flagHeight),
@@ -650,7 +651,7 @@ func cmdPrepareProposal(cmd *cobra.Command, args []string) error {
 		txsBytesArray[i] = txBytes
 	}
 
-	res, err := client.PrepareProposal(cmd.Context(), &types.RequestPrepareProposal{
+	res, err := client.PrepareProposal(cmd.Context(), &types.PrepareProposalRequest{
 		Txs: txsBytesArray,
 		// kvstore has to have this parameter in order not to reject a tx as the default value is 0
 		MaxTxBytes: 65536,
@@ -681,7 +682,7 @@ func cmdProcessProposal(cmd *cobra.Command, args []string) error {
 		txsBytesArray[i] = txBytes
 	}
 
-	res, err := client.ProcessProposal(cmd.Context(), &types.RequestProcessProposal{
+	res, err := client.ProcessProposal(cmd.Context(), &types.ProcessProposalRequest{
 		Txs: txsBytesArray,
 	})
 	if err != nil {
@@ -757,7 +758,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 			fmt.Printf("-> log: %s\n", rsp.Log)
 		}
 		if cmd.Use == "process_proposal" {
-			fmt.Printf("-> status: %s\n", types.ResponseProcessProposal_ProposalStatus_name[rsp.Status])
+			fmt.Printf("-> status: %s\n", types.ProcessProposalStatus(rsp.Status).String())
 		}
 
 		if rsp.Query != nil {
@@ -777,7 +778,7 @@ func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 	}
 }
 
-// NOTE: s is interpreted as a string unless prefixed with 0x
+// NOTE: s is interpreted as a string unless prefixed with 0x.
 func stringOrHexToBytes(s string) ([]byte, error) {
 	if len(s) > 2 && strings.ToLower(s[:2]) == "0x" {
 		b, err := hex.DecodeString(s[2:])

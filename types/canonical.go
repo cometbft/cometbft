@@ -3,13 +3,13 @@ package types
 import (
 	"time"
 
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // Canonical* wraps the structs in types for amino encoding them for use in SignBytes / the Signable interface.
 
-// TimeFormat is used for generating the sigs
+// TimeFormat is used for generating the sigs.
 const TimeFormat = time.RFC3339Nano
 
 //-----------------------------------
@@ -41,10 +41,10 @@ func CanonicalizePartSetHeader(psh cmtproto.PartSetHeader) cmtproto.CanonicalPar
 // CanonicalizeProposal transforms the given Proposal to a CanonicalProposal.
 func CanonicalizeProposal(chainID string, proposal *cmtproto.Proposal) cmtproto.CanonicalProposal {
 	return cmtproto.CanonicalProposal{
-		Type:      cmtproto.ProposalType,
-		Height:    proposal.Height,       // encoded as sfixed64
-		Round:     int64(proposal.Round), // encoded as sfixed64
-		POLRound:  int64(proposal.PolRound),
+		Type:      ProposalType,
+		Height:    proposal.Height,          // encoded as sfixed64
+		Round:     int64(proposal.Round),    // encoded as sfixed64
+		POLRound:  int64(proposal.PolRound), // FIXME: not matching
 		BlockID:   CanonicalizeBlockID(proposal.BlockID),
 		Timestamp: proposal.Timestamp,
 		ChainID:   chainID,

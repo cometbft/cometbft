@@ -12,19 +12,18 @@ import (
 	"time"
 
 	cmterrors "github.com/cometbft/cometbft/types/errors"
-
 	"github.com/cometbft/cometbft/version"
 )
 
 const (
-	// FuzzModeDrop is a mode in which we randomly drop reads/writes, connections or sleep
+	// FuzzModeDrop is a mode in which we randomly drop reads/writes, connections or sleep.
 	FuzzModeDrop = iota
-	// FuzzModeDelay is a mode in which we randomly sleep
+	// FuzzModeDelay is a mode in which we randomly sleep.
 	FuzzModeDelay
 
-	// LogFormatPlain is a format for colored text
+	// LogFormatPlain is a format for colored text.
 	LogFormatPlain = "plain"
-	// LogFormatJSON is a format for json output
+	// LogFormatJSON is a format for json output.
 	LogFormatJSON = "json"
 
 	// DefaultLogLevel defines a default log level as INFO.
@@ -48,6 +47,9 @@ const (
 	v0 = "v0"
 	v1 = "v1"
 	v2 = "v2"
+
+	MempoolTypeFlood = "flood"
+	MempoolTypeNop   = "nop"
 )
 
 // NOTE: Most of the structs & relevant comments + the
@@ -72,7 +74,7 @@ var (
 	semverRegexp = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
 )
 
-// Config defines the top level configuration for a CometBFT node
+// Config defines the top level configuration for a CometBFT node.
 type Config struct {
 	// Top level options use an anonymous struct
 	BaseConfig `mapstructure:",squash"`
@@ -90,7 +92,7 @@ type Config struct {
 	Instrumentation *InstrumentationConfig `mapstructure:"instrumentation"`
 }
 
-// DefaultConfig returns a default configuration for a CometBFT node
+// DefaultConfig returns a default configuration for a CometBFT node.
 func DefaultConfig() *Config {
 	return &Config{
 		BaseConfig:      DefaultBaseConfig(),
@@ -107,7 +109,7 @@ func DefaultConfig() *Config {
 	}
 }
 
-// TestConfig returns a configuration that can be used for testing
+// TestConfig returns a configuration that can be used for testing.
 func TestConfig() *Config {
 	return &Config{
 		BaseConfig:      TestBaseConfig(),
@@ -124,7 +126,7 @@ func TestConfig() *Config {
 	}
 }
 
-// SetRoot sets the RootDir for all Config structs
+// SetRoot sets the RootDir for all Config structs.
 func (cfg *Config) SetRoot(root string) *Config {
 	cfg.BaseConfig.RootDir = root
 	cfg.RPC.RootDir = root
@@ -167,10 +169,13 @@ func (cfg *Config) ValidateBasic() error {
 	if err := cfg.Instrumentation.ValidateBasic(); err != nil {
 		return ErrInSection{Section: "instrumentation", Err: err}
 	}
+	if !cfg.Consensus.CreateEmptyBlocks && cfg.Mempool.Type == MempoolTypeNop {
+		return errors.New("`nop` mempool does not support create_empty_blocks = false")
+	}
 	return nil
 }
 
-// CheckDeprecated returns any deprecation warnings. These are printed to the operator on startup
+// CheckDeprecated returns any deprecation warnings. These are printed to the operator on startup.
 func (cfg *Config) CheckDeprecated() []string {
 	var warnings []string
 	return warnings
@@ -179,9 +184,8 @@ func (cfg *Config) CheckDeprecated() []string {
 //-----------------------------------------------------------------------------
 // BaseConfig
 
-// BaseConfig defines the base configuration for a CometBFT node
-type BaseConfig struct { //nolint: maligned
-
+// BaseConfig defines the base configuration for a CometBFT node.
+type BaseConfig struct {
 	// The version of the CometBFT binary that created
 	// or last modified the config file
 	Version string `mapstructure:"version"`
@@ -197,25 +201,31 @@ type BaseConfig struct { //nolint: maligned
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | cleveldb | boltdb | rocksdb
-	// * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
-	//   - pure go
+	// Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
+	// * goleveldb (github.com/syndtr/goleveldb)
+	//   - UNMAINTAINED
 	//   - stable
+	//   - pure go
 	// * cleveldb (uses levigo wrapper)
-	//   - fast
 	//   - requires gcc
 	//   - use cleveldb build tag (go build -tags cleveldb)
 	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
 	//   - EXPERIMENTAL
-	//   - may be faster is some use-cases (random reads - indexer)
+	//   - stable
 	//   - use boltdb build tag (go build -tags boltdb)
-	// * rocksdb (uses github.com/tecbot/gorocksdb)
+	// * rocksdb (uses github.com/linxGnu/grocksdb)
 	//   - EXPERIMENTAL
 	//   - requires gcc
 	//   - use rocksdb build tag (go build -tags rocksdb)
 	// * badgerdb (uses github.com/dgraph-io/badger)
 	//   - EXPERIMENTAL
+	//   - stable
 	//   - use badgerdb build tag (go build -tags badgerdb)
+	// * pebbledb (uses github.com/cockroachdb/pebble)
+	//   - EXPERIMENTAL
+	//   - stable
+	//   - pure go
+	//   - use pebbledb build tag (go build -tags pebbledb)
 	DBBackend string `mapstructure:"db_backend"`
 
 	// Database directory
@@ -251,10 +261,10 @@ type BaseConfig struct { //nolint: maligned
 	FilterPeers bool `mapstructure:"filter_peers"` // false
 }
 
-// DefaultBaseConfig returns a default base configuration for a CometBFT node
+// DefaultBaseConfig returns a default base configuration for a CometBFT node.
 func DefaultBaseConfig() BaseConfig {
 	return BaseConfig{
-		Version:            version.TMCoreSemVer,
+		Version:            version.CMTSemVer,
 		Genesis:            defaultGenesisJSONPath,
 		PrivValidatorKey:   defaultPrivValKeyPath,
 		PrivValidatorState: defaultPrivValStatePath,
@@ -270,7 +280,7 @@ func DefaultBaseConfig() BaseConfig {
 	}
 }
 
-// TestBaseConfig returns a base configuration for testing a CometBFT node
+// TestBaseConfig returns a base configuration for testing a CometBFT node.
 func TestBaseConfig() BaseConfig {
 	cfg := DefaultBaseConfig()
 	cfg.ProxyApp = "kvstore"
@@ -278,27 +288,27 @@ func TestBaseConfig() BaseConfig {
 	return cfg
 }
 
-// GenesisFile returns the full path to the genesis.json file
+// GenesisFile returns the full path to the genesis.json file.
 func (cfg BaseConfig) GenesisFile() string {
 	return rootify(cfg.Genesis, cfg.RootDir)
 }
 
-// PrivValidatorKeyFile returns the full path to the priv_validator_key.json file
+// PrivValidatorKeyFile returns the full path to the priv_validator_key.json file.
 func (cfg BaseConfig) PrivValidatorKeyFile() string {
 	return rootify(cfg.PrivValidatorKey, cfg.RootDir)
 }
 
-// PrivValidatorFile returns the full path to the priv_validator_state.json file
+// PrivValidatorFile returns the full path to the priv_validator_state.json file.
 func (cfg BaseConfig) PrivValidatorStateFile() string {
 	return rootify(cfg.PrivValidatorState, cfg.RootDir)
 }
 
-// NodeKeyFile returns the full path to the node_key.json file
+// NodeKeyFile returns the full path to the node_key.json file.
 func (cfg BaseConfig) NodeKeyFile() string {
 	return rootify(cfg.NodeKey, cfg.RootDir)
 }
 
-// DBDir returns the full path to the database directory
+// DBDir returns the full path to the database directory.
 func (cfg BaseConfig) DBDir() string {
 	return rootify(cfg.DBPath, cfg.RootDir)
 }
@@ -323,7 +333,7 @@ func (cfg BaseConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // RPCConfig
 
-// RPCConfig defines the configuration options for the CometBFT RPC server
+// RPCConfig defines the configuration options for the CometBFT RPC server.
 type RPCConfig struct {
 	RootDir string `mapstructure:"home"`
 
@@ -421,7 +431,7 @@ type RPCConfig struct {
 	PprofListenAddress string `mapstructure:"pprof_laddr"`
 }
 
-// DefaultRPCConfig returns a default configuration for the RPC server
+// DefaultRPCConfig returns a default configuration for the RPC server.
 func DefaultRPCConfig() *RPCConfig {
 	return &RPCConfig{
 		ListenAddress:      "tcp://127.0.0.1:26657",
@@ -446,7 +456,7 @@ func DefaultRPCConfig() *RPCConfig {
 	}
 }
 
-// TestRPCConfig returns a configuration for testing the RPC server
+// TestRPCConfig returns a configuration for testing the RPC server.
 func TestRPCConfig() *RPCConfig {
 	cfg := DefaultRPCConfig()
 	cfg.ListenAddress = "tcp://127.0.0.1:36657"
@@ -664,7 +674,7 @@ func TestGRPCPruningServiceConfig() *GRPCPruningServiceConfig {
 //-----------------------------------------------------------------------------
 // P2PConfig
 
-// P2PConfig defines the configuration options for the CometBFT peer-to-peer networking layer
+// P2PConfig defines the configuration options for the CometBFT peer-to-peer networking layer.
 type P2PConfig struct { //nolint: maligned
 	RootDir string `mapstructure:"home"`
 
@@ -740,7 +750,7 @@ type P2PConfig struct { //nolint: maligned
 	TestFuzzConfig *FuzzConnConfig `mapstructure:"test_fuzz_config"`
 }
 
-// DefaultP2PConfig returns a default configuration for the peer-to-peer layer
+// DefaultP2PConfig returns a default configuration for the peer-to-peer layer.
 func DefaultP2PConfig() *P2PConfig {
 	return &P2PConfig{
 		ListenAddress:                "tcp://0.0.0.0:26656",
@@ -765,7 +775,7 @@ func DefaultP2PConfig() *P2PConfig {
 	}
 }
 
-// TestP2PConfig returns a configuration for testing the peer-to-peer layer
+// TestP2PConfig returns a configuration for testing the peer-to-peer layer.
 func TestP2PConfig() *P2PConfig {
 	cfg := DefaultP2PConfig()
 	cfg.ListenAddress = "tcp://127.0.0.1:36656"
@@ -774,7 +784,7 @@ func TestP2PConfig() *P2PConfig {
 	return cfg
 }
 
-// AddrBookFile returns the full path to the address book
+// AddrBookFile returns the full path to the address book.
 func (cfg *P2PConfig) AddrBookFile() string {
 	return rootify(cfg.AddrBook, cfg.RootDir)
 }
@@ -836,6 +846,15 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 // implementation (previously called v0), and a prioritized mempool (v1), which
 // was removed (see https://github.com/cometbft/cometbft/issues/260).
 type MempoolConfig struct {
+	// The type of mempool for this node to use.
+	//
+	//  Possible types:
+	//  - "flood" : concurrent linked list mempool with flooding gossip protocol
+	//  (default)
+	//  - "nop"   : nop-mempool (short for no operation; the ABCI app is
+	//  responsible for storing, disseminating and proposing txs).
+	//  "create_empty_blocks=false" is not supported.
+	Type string `mapstructure:"type"`
 	// RootDir is the root directory for all data. This should be configured via
 	// the $CMTHOME env variable or --home cmd flag rather than overriding this
 	// struct field.
@@ -872,17 +891,14 @@ type MempoolConfig struct {
 	// Maximum size of a single transaction
 	// NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
 	MaxTxBytes int `mapstructure:"max_tx_bytes"`
-	// Maximum size of a batch of transactions to send to a peer
-	// Including space needed by encoding (one varint per transaction).
-	// XXX: Unused due to https://github.com/tendermint/tendermint/issues/5796
-	MaxBatchBytes int `mapstructure:"max_batch_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
-	// We use two independent upper values for persistent peers and for non-persistent peers.
+	// We use two independent upper values for persistent and non-persistent peers.
 	// Unconditional peers are not affected by this feature.
 	// If we are connected to more than the specified number of persistent peers, only send txs to
-	// the first ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
-	// persistent peers disconnects, activate another persistent peer. Similarly for non-persistent
-	// peers, with an upper limit of ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+	// ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+	// persistent peers disconnects, activate another persistent peer.
+	// Similarly for non-persistent peers, with an upper limit of
+	// ExperimentalMaxGossipConnectionsToNonPersistentPeers.
 	// If set to 0, the feature is disabled for the corresponding group of peers, that is, the
 	// number of active connections to that group of peers is not bounded.
 	// For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
@@ -891,9 +907,10 @@ type MempoolConfig struct {
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers int `mapstructure:"experimental_max_gossip_connections_to_non_persistent_peers"`
 }
 
-// DefaultMempoolConfig returns a default configuration for the CometBFT mempool
+// DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
+		Type:      MempoolTypeFlood,
 		Recheck:   true,
 		Broadcast: true,
 		WalPath:   "",
@@ -908,14 +925,14 @@ func DefaultMempoolConfig() *MempoolConfig {
 	}
 }
 
-// TestMempoolConfig returns a configuration for testing the CometBFT mempool
+// TestMempoolConfig returns a configuration for testing the CometBFT mempool.
 func TestMempoolConfig() *MempoolConfig {
 	cfg := DefaultMempoolConfig()
 	cfg.CacheSize = 1000
 	return cfg
 }
 
-// WalDir returns the full path to the mempool's write-ahead log
+// WalDir returns the full path to the mempool's write-ahead log.
 func (cfg *MempoolConfig) WalDir() string {
 	return rootify(cfg.WalPath, cfg.RootDir)
 }
@@ -928,6 +945,12 @@ func (cfg *MempoolConfig) WalEnabled() bool {
 // ValidateBasic performs basic validation (checking param bounds, etc.) and
 // returns an error if any check fails.
 func (cfg *MempoolConfig) ValidateBasic() error {
+	switch cfg.Type {
+	case MempoolTypeFlood, MempoolTypeNop:
+	case "": // allow empty string to be backwards compatible
+	default:
+		return fmt.Errorf("unknown mempool type: %q", cfg.Type)
+	}
 	if cfg.Size < 0 {
 		return cmterrors.ErrNegativeField{Field: "size"}
 	}
@@ -952,7 +975,7 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // StateSyncConfig
 
-// StateSyncConfig defines the configuration for the CometBFT state sync service
+// StateSyncConfig defines the configuration for the CometBFT state sync service.
 type StateSyncConfig struct {
 	Enable              bool          `mapstructure:"enable"`
 	TempDir             string        `mapstructure:"temp_dir"`
@@ -974,7 +997,7 @@ func (cfg *StateSyncConfig) TrustHashBytes() []byte {
 	return bytes
 }
 
-// DefaultStateSyncConfig returns a default configuration for the state sync service
+// DefaultStateSyncConfig returns a default configuration for the state sync service.
 func DefaultStateSyncConfig() *StateSyncConfig {
 	return &StateSyncConfig{
 		TrustPeriod:         168 * time.Hour,
@@ -984,7 +1007,7 @@ func DefaultStateSyncConfig() *StateSyncConfig {
 	}
 }
 
-// TestStateSyncConfig returns a default configuration for the state sync service
+// TestStateSyncConfig returns a default configuration for the state sync service.
 func TestStateSyncConfig() *StateSyncConfig {
 	return DefaultStateSyncConfig()
 }
@@ -1042,12 +1065,12 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 //-----------------------------------------------------------------------------
 // BlockSyncConfig
 
-// BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service
+// BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service.
 type BlockSyncConfig struct {
 	Version string `mapstructure:"version"`
 }
 
-// DefaultBlockSyncConfig returns a default configuration for the block sync service
+// DefaultBlockSyncConfig returns a default configuration for the block sync service.
 func DefaultBlockSyncConfig() *BlockSyncConfig {
 	return &BlockSyncConfig{
 		Version: "v0",
@@ -1114,7 +1137,7 @@ type ConsensusConfig struct {
 	DoubleSignCheckHeight int64 `mapstructure:"double_sign_check_height"`
 }
 
-// DefaultConsensusConfig returns a default configuration for the consensus service
+// DefaultConsensusConfig returns a default configuration for the consensus service.
 func DefaultConsensusConfig() *ConsensusConfig {
 	return &ConsensusConfig{
 		WalPath:                          filepath.Join(DefaultDataDir, "cs.wal", "wal"),
@@ -1135,7 +1158,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 	}
 }
 
-// TestConsensusConfig returns a configuration for testing the consensus service
+// TestConsensusConfig returns a configuration for testing the consensus service.
 func TestConsensusConfig() *ConsensusConfig {
 	cfg := DefaultConsensusConfig()
 	cfg.TimeoutPropose = 40 * time.Millisecond
@@ -1153,26 +1176,26 @@ func TestConsensusConfig() *ConsensusConfig {
 	return cfg
 }
 
-// WaitForTxs returns true if the consensus should wait for transactions before entering the propose step
+// WaitForTxs returns true if the consensus should wait for transactions before entering the propose step.
 func (cfg *ConsensusConfig) WaitForTxs() bool {
 	return !cfg.CreateEmptyBlocks || cfg.CreateEmptyBlocksInterval > 0
 }
 
-// Propose returns the amount of time to wait for a proposal
+// Propose returns the amount of time to wait for a proposal.
 func (cfg *ConsensusConfig) Propose(round int32) time.Duration {
 	return time.Duration(
 		cfg.TimeoutPropose.Nanoseconds()+cfg.TimeoutProposeDelta.Nanoseconds()*int64(round),
 	) * time.Nanosecond
 }
 
-// Prevote returns the amount of time to wait for straggler votes after receiving any +2/3 prevotes
+// Prevote returns the amount of time to wait for straggler votes after receiving any +2/3 prevotes.
 func (cfg *ConsensusConfig) Prevote(round int32) time.Duration {
 	return time.Duration(
 		cfg.TimeoutPrevote.Nanoseconds()+cfg.TimeoutPrevoteDelta.Nanoseconds()*int64(round),
 	) * time.Nanosecond
 }
 
-// Precommit returns the amount of time to wait for straggler votes after receiving any +2/3 precommits
+// Precommit returns the amount of time to wait for straggler votes after receiving any +2/3 precommits.
 func (cfg *ConsensusConfig) Precommit(round int32) time.Duration {
 	return time.Duration(
 		cfg.TimeoutPrecommit.Nanoseconds()+cfg.TimeoutPrecommitDelta.Nanoseconds()*int64(round),
@@ -1185,7 +1208,7 @@ func (cfg *ConsensusConfig) Commit(t time.Time) time.Time {
 	return t.Add(cfg.TimeoutCommit)
 }
 
-// WalFile returns the full path to the write-ahead log file
+// WalFile returns the full path to the write-ahead log file.
 func (cfg *ConsensusConfig) WalFile() string {
 	if cfg.walFile != "" {
 		return cfg.walFile
@@ -1193,7 +1216,7 @@ func (cfg *ConsensusConfig) WalFile() string {
 	return rootify(cfg.WalPath, cfg.RootDir)
 }
 
-// SetWalFile sets the path to the write-ahead log file
+// SetWalFile sets the path to the write-ahead log file.
 func (cfg *ConsensusConfig) SetWalFile(walFile string) {
 	cfg.walFile = walFile
 }
@@ -1249,7 +1272,21 @@ type StorageConfig struct {
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
 	// Configuration related to storage pruning.
 	Pruning *PruningConfig `mapstructure:"pruning"`
-
+	// Compaction on pruning - enable or disable in-process compaction.
+	// If the DB backend supports it, this will force the DB to compact
+	// the database levels and save on storage space. Setting this to true
+	// is most beneficial when used in combination with pruning as it will
+	// phyisically delete the entries marked for deletion.
+	// false by default (forcing compaction is disabled).
+	Compact bool `mapstructure:"compact"`
+	// Compaction interval - number of blocks to try explicit compaction on.
+	// This parameter should be tuned depending on the number of items
+	// you expect to delete between two calls to forced compaction.
+	// If your retain height is 1 block, it is too much of an overhead
+	// to try compaction every block. But it should also not be a very
+	// large multiple of your retain height as it might occur bigger overheads.
+	// 1000 by default.
+	CompactionInterval int64 `mapstructure:"compaction_interval"`
 	// Hex representation of the hash of the genesis file.
 	// This is an optional parameter set when an operator provides
 	// a hash via the command line.
@@ -1257,15 +1294,25 @@ type StorageConfig struct {
 	// Note that if the provided has does not match the hash of the genesis file
 	// the node will report an error and not boot.
 	GenesisHash string `mapstructure:"genesis_hash"`
+
+	// The representation of keys in the database.
+	// The current representation of keys in Comet's stores is considered to be v1
+	// Users can experiment with a different layout by setting this field to v2.
+	// Not that this is an experimental feature and switching back from v2 to v1
+	// is not supported by CometBFT.
+	ExperimentalKeyLayout string `mapstructure:"experimental_db_key_layout"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
 // CometBFT storage optimization.
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
-		DiscardABCIResponses: false,
-		Pruning:              DefaultPruningConfig(),
-		GenesisHash:          "",
+		DiscardABCIResponses:  false,
+		Pruning:               DefaultPruningConfig(),
+		Compact:               false,
+		CompactionInterval:    1000,
+		GenesisHash:           "",
+		ExperimentalKeyLayout: "v1",
 	}
 }
 
@@ -1282,6 +1329,9 @@ func TestStorageConfig() *StorageConfig {
 func (cfg *StorageConfig) ValidateBasic() error {
 	if err := cfg.Pruning.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [pruning] section: %w", err)
+	}
+	if cfg.ExperimentalKeyLayout != "v1" && cfg.ExperimentalKeyLayout != "v2" {
+		return fmt.Errorf("unsupported version of DB Key layout, expected v1 or v2, got %s", cfg.ExperimentalKeyLayout)
 	}
 	return nil
 }
@@ -1382,7 +1432,7 @@ func (cfg *InstrumentationConfig) IsPrometheusEnabled() bool {
 //-----------------------------------------------------------------------------
 // Utils
 
-// helper function to make config creation independent of root dir
+// helper function to make config creation independent of root dir.
 func rootify(path, root string) string {
 	if filepath.IsAbs(path) {
 		return path

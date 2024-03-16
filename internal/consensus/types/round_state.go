@@ -12,10 +12,10 @@ import (
 //-----------------------------------------------------------------------------
 // RoundStepType enum type
 
-// RoundStepType enumerates the state of the consensus state machine
+// RoundStepType enumerates the state of the consensus state machine.
 type RoundStepType uint8 // These must be numeric, ordered.
 
-// RoundStepType
+// RoundStepType.
 const (
 	RoundStepNewHeight     = RoundStepType(0x01) // Wait til CommitTime + timeoutCommit
 	RoundStepNewRound      = RoundStepType(0x02) // Setup new round and go to RoundStepPropose
@@ -35,7 +35,7 @@ func (rs RoundStepType) IsValid() bool {
 	return uint8(rs) >= 0x01 && uint8(rs) <= 0x08
 }
 
-// String returns a string
+// String returns a string.
 func (rs RoundStepType) String() string {
 	switch rs {
 	case RoundStepNewHeight:
@@ -63,7 +63,7 @@ func (rs RoundStepType) String() string {
 
 // RoundState defines the internal consensus state.
 // NOTE: Not thread safe. Should only be manipulated by functions downstream
-// of the cs.receiveRoutine
+// of the cs.receiveRoutine.
 type RoundState struct {
 	Height    int64         `json:"height"` // Height we are working on
 	Round     int32         `json:"round"`
@@ -71,14 +71,15 @@ type RoundState struct {
 	StartTime time.Time     `json:"start_time"`
 
 	// Subjective time when +2/3 precommits for Block at Round were found
-	CommitTime         time.Time           `json:"commit_time"`
-	Validators         *types.ValidatorSet `json:"validators"`
-	Proposal           *types.Proposal     `json:"proposal"`
-	ProposalBlock      *types.Block        `json:"proposal_block"`
-	ProposalBlockParts *types.PartSet      `json:"proposal_block_parts"`
-	LockedRound        int32               `json:"locked_round"`
-	LockedBlock        *types.Block        `json:"locked_block"`
-	LockedBlockParts   *types.PartSet      `json:"locked_block_parts"`
+	CommitTime          time.Time           `json:"commit_time"`
+	Validators          *types.ValidatorSet `json:"validators"`
+	Proposal            *types.Proposal     `json:"proposal"`
+	ProposalReceiveTime time.Time           `json:"proposal_receive_time"`
+	ProposalBlock       *types.Block        `json:"proposal_block"`
+	ProposalBlockParts  *types.PartSet      `json:"proposal_block_parts"`
+	LockedRound         int32               `json:"locked_round"`
+	LockedBlock         *types.Block        `json:"locked_block"`
+	LockedBlockParts    *types.PartSet      `json:"locked_block_parts"`
 
 	// The variables below starting with "Valid..." derive their name from
 	// the algorithm presented in this paper:
@@ -102,7 +103,7 @@ type RoundState struct {
 	TriggeredTimeoutPrecommit bool                `json:"triggered_timeout_precommit"`
 }
 
-// Compressed version of the RoundState for use in RPC
+// Compressed version of the RoundState for use in RPC.
 type RoundStateSimple struct {
 	HeightRoundStep   string              `json:"height/round/step"`
 	StartTime         time.Time           `json:"start_time"`
@@ -113,7 +114,7 @@ type RoundStateSimple struct {
 	Proposer          types.ValidatorInfo `json:"proposer"`
 }
 
-// Compress the RoundState to RoundStateSimple
+// Compress the RoundState to RoundStateSimple.
 func (rs *RoundState) RoundStateSimple() RoundStateSimple {
 	votesJSON, err := rs.Votes.MarshalJSON()
 	if err != nil {
@@ -179,12 +180,12 @@ func (rs *RoundState) RoundStateEvent() types.EventDataRoundState {
 	}
 }
 
-// String returns a string
+// String returns a string.
 func (rs *RoundState) String() string {
 	return rs.StringIndented("")
 }
 
-// StringIndented returns a string
+// StringIndented returns a string.
 func (rs *RoundState) StringIndented(indent string) string {
 	return fmt.Sprintf(`RoundState{
 %s  H:%v R:%v S:%v
@@ -217,7 +218,7 @@ func (rs *RoundState) StringIndented(indent string) string {
 		indent)
 }
 
-// StringShort returns a string
+// StringShort returns a string.
 func (rs *RoundState) StringShort() string {
 	return fmt.Sprintf(`RoundState{H:%v R:%v S:%v ST:%v}`,
 		rs.Height, rs.Round, rs.Step, rs.StartTime)

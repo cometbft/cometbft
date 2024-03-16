@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -24,7 +24,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -55,7 +54,7 @@ func TestReactorBroadcastEvidence(t *testing.T) {
 
 	// set the peer height on each reactor
 	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
+		for _, peer := range r.Switch.Peers().Copy() {
 			ps := peerState{height}
 			peer.Set(types.PeerStateKey, ps)
 		}
@@ -86,14 +85,14 @@ func TestReactorSelectiveBroadcast(t *testing.T) {
 
 	// set the peer height on each reactor
 	for _, r := range reactors {
-		for _, peer := range r.Switch.Peers().List() {
+		for _, peer := range r.Switch.Peers().Copy() {
 			ps := peerState{height1}
 			peer.Set(types.PeerStateKey, ps)
 		}
 	}
 
 	// update the first reactor peer's height to be very small
-	peer := reactors[0].Switch.Peers().List()[0]
+	peer := reactors[0].Switch.Peers().Copy()[0]
 	ps := peerState{height2}
 	peer.Set(types.PeerStateKey, ps)
 
@@ -104,15 +103,15 @@ func TestReactorSelectiveBroadcast(t *testing.T) {
 	waitForEvidence(t, evList[:numEvidence/2-1], []*evidence.Pool{pools[1]})
 
 	// peers should still be connected
-	peers := reactors[1].Switch.Peers().List()
-	assert.Equal(t, 1, len(peers))
+	peers := reactors[1].Switch.Peers().Copy()
+	assert.Len(t, peers, 1)
 }
 
 // This tests aims to ensure that reactors don't send evidence that they have committed or that ar
 // not ready for the peer through three scenarios.
 // First, committed evidence to a newly connected peer
 // Second, evidence to a peer that is behind
-// Third, evidence that was pending and became committed just before the peer caught up
+// Third, evidence that was pending and became committed just before the peer caught up.
 func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 	config := cfg.TestConfig()
 
@@ -135,11 +134,11 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	peer := reactors[0].Switch.Peers().List()[0]
+	peer := reactors[0].Switch.Peers().Copy()[0]
 	ps := peerState{height - 2}
 	peer.Set(types.PeerStateKey, ps)
 
-	peer = reactors[1].Switch.Peers().List()[0]
+	peer = reactors[1].Switch.Peers().Copy()[0]
 	ps = peerState{height}
 	peer.Set(types.PeerStateKey, ps)
 
@@ -177,7 +176,7 @@ func TestReactorsGossipNoCommittedEvidence(t *testing.T) {
 
 	// now update the state of the second reactor
 	pools[1].Update(state, types.EvidenceList{})
-	peer = reactors[0].Switch.Peers().List()[0]
+	peer = reactors[0].Switch.Peers().Copy()[0]
 	ps = peerState{height}
 	peer.Set(types.PeerStateKey, ps)
 
@@ -239,7 +238,7 @@ func evidenceLogger() log.Logger {
 	})
 }
 
-// connect N evidence reactors through N switches
+// connect N evidence reactors through N switches.
 func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor,
 	[]*evidence.Pool,
 ) {
@@ -273,8 +272,9 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 	return reactors, pools
 }
 
-// wait for all evidence on all reactors
+// wait for all evidence on all reactors.
 func waitForEvidence(t *testing.T, evs types.EvidenceList, pools []*evidence.Pool) {
+	t.Helper()
 	// wait for the evidence in all evpools
 	wg := new(sync.WaitGroup)
 	for i := 0; i < len(pools); i++ {
@@ -296,7 +296,7 @@ func waitForEvidence(t *testing.T, evs types.EvidenceList, pools []*evidence.Poo
 	}
 }
 
-// wait for all evidence on a single evpool
+// wait for all evidence on a single evpool.
 func _waitForEvidence(
 	t *testing.T,
 	wg *sync.WaitGroup,
@@ -304,6 +304,7 @@ func _waitForEvidence(
 	poolIdx int,
 	pools []*evidence.Pool,
 ) {
+	t.Helper()
 	evpool := pools[poolIdx]
 	var evList []types.Evidence
 	currentPoolSize := 0
@@ -329,6 +330,7 @@ func _waitForEvidence(
 }
 
 func sendEvidence(t *testing.T, evpool *evidence.Pool, val types.PrivValidator, n int) types.EvidenceList {
+	t.Helper()
 	evList := make([]types.Evidence, n)
 	for i := 0; i < n; i++ {
 		ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(int64(i+1),
@@ -356,7 +358,7 @@ func exampleVote(t byte) *types.Vote {
 	}
 
 	return &types.Vote{
-		Type:      cmtproto.SignedMsgType(t),
+		Type:      types.SignedMsgType(t),
 		Height:    3,
 		Round:     2,
 		Timestamp: stamp,
@@ -415,6 +417,5 @@ func TestEvidenceVectors(t *testing.T) {
 		require.NoError(t, err, tc.testName)
 
 		require.Equal(t, tc.expBytes, hex.EncodeToString(bz), tc.testName)
-
 	}
 }

@@ -1,8 +1,6 @@
 package proxy
 
 import (
-	"fmt"
-
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/service"
@@ -40,7 +38,7 @@ func NewAppConns(clientCreator ClientCreator, metrics *Metrics) AppConns {
 //
 // A multiAppConn is made of a few appConns and manages their underlying abci
 // clients.
-// TODO: on app restart, clients must reboot together
+// TODO: on app restart, clients must reboot together.
 type multiAppConn struct {
 	service.BaseService
 
@@ -110,7 +108,7 @@ func (app *multiAppConn) OnStart() error {
 func (app *multiAppConn) startQueryClient() error {
 	c, err := app.clientCreator.NewABCIQueryClient()
 	if err != nil {
-		return fmt.Errorf("error creating ABCI client (query client): %w", err)
+		return ErrABCIClientCreate{ClientName: "query", Err: err}
 	}
 	app.queryConnClient = c
 	app.queryConn = NewAppConnQuery(c, app.metrics)
@@ -120,7 +118,7 @@ func (app *multiAppConn) startQueryClient() error {
 func (app *multiAppConn) startSnapshotClient() error {
 	c, err := app.clientCreator.NewABCISnapshotClient()
 	if err != nil {
-		return fmt.Errorf("error creating ABCI client (snapshot client): %w", err)
+		return ErrABCIClientCreate{ClientName: "snapshot", Err: err}
 	}
 	app.snapshotConnClient = c
 	app.snapshotConn = NewAppConnSnapshot(c, app.metrics)
@@ -130,7 +128,7 @@ func (app *multiAppConn) startSnapshotClient() error {
 func (app *multiAppConn) startMempoolClient() error {
 	c, err := app.clientCreator.NewABCIMempoolClient()
 	if err != nil {
-		return fmt.Errorf("error creating ABCI client (mempool client): %w", err)
+		return ErrABCIClientCreate{ClientName: "mempool", Err: err}
 	}
 	app.mempoolConnClient = c
 	app.mempoolConn = NewAppConnMempool(c, app.metrics)
@@ -141,7 +139,7 @@ func (app *multiAppConn) startConsensusClient() error {
 	c, err := app.clientCreator.NewABCIConsensusClient()
 	if err != nil {
 		app.stopAllClients()
-		return fmt.Errorf("error creating ABCI client (consensus client): %w", err)
+		return ErrABCIClientCreate{ClientName: "consensus", Err: err}
 	}
 	app.consensusConnClient = c
 	app.consensusConn = NewAppConnConsensus(c, app.metrics)
@@ -151,7 +149,7 @@ func (app *multiAppConn) startConsensusClient() error {
 func (app *multiAppConn) startClient(c abcicli.Client, conn string) error {
 	c.SetLogger(app.Logger.With("module", "abci-client", "connection", conn))
 	if err := c.Start(); err != nil {
-		return fmt.Errorf("error starting ABCI client (%s client): %w", conn, err)
+		return ErrABCIClientStart{CliType: conn, Err: err}
 	}
 	return nil
 }
@@ -163,7 +161,7 @@ func (app *multiAppConn) OnStop() {
 func (app *multiAppConn) killTMOnClientError() {
 	killFn := func(conn string, err error, logger cmtlog.Logger) {
 		logger.Error(
-			fmt.Sprintf("%s connection terminated. Did the application crash? Please restart CometBFT", conn),
+			conn+" connection terminated. Did the application crash? Please restart CometBFT",
 			"err", err)
 		killErr := cmtos.Kill()
 		if killErr != nil {

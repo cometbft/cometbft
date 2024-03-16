@@ -18,13 +18,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	_ "github.com/lib/pq"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	tmlog "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
-
-	// Register the Postgres database driver.
-	_ "github.com/lib/pq"
 )
 
 var (
@@ -46,6 +45,8 @@ const (
 
 	viewBlockEvents = "block_events"
 	viewTxEvents    = "tx_events"
+
+	eventTypeFinalizeBlock = "finalize_block"
 )
 
 func TestMain(m *testing.M) {
@@ -269,7 +270,7 @@ func newTestBlockEvents() types.EventDataNewBlockEvents {
 	}
 }
 
-// readSchema loads the indexing database schema file
+// readSchema loads the indexing database schema file.
 func readSchema() ([]*schema.Migration, error) {
 	const filename = "schema.sql"
 	contents, err := os.ReadFile(filename)
@@ -338,6 +339,7 @@ SELECT DISTINCT %[1]s.created_at
 }
 
 func verifyBlock(t *testing.T, height int64) {
+	t.Helper()
 	// Check that the blocks table contains an entry for this height.
 	if err := testDB().QueryRow(`
 SELECT height FROM `+tableBlocks+` WHERE height = $1;
@@ -368,7 +370,7 @@ func verifyNotImplemented(t *testing.T, label string, f func() (bool, error)) {
 	want := label + " is not supported via the postgres event sink"
 	ok, err := f()
 	assert.False(t, ok)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	assert.Equal(t, want, err.Error())
 }
 

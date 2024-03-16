@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParallel(t *testing.T) {
-
 	// Create tasks.
-	var counter = new(int32)
-	var tasks = make([]Task, 100*1000)
+	counter := new(int32)
+	tasks := make([]Task, 100*1000)
 	for i := 0; i < len(tasks); i++ {
 		tasks[i] = func(i int) (res interface{}, abort bool, err error) {
 			atomic.AddInt32(counter, 1)
@@ -23,11 +23,11 @@ func TestParallel(t *testing.T) {
 	}
 
 	// Run in parallel.
-	var trs, ok = Parallel(tasks...)
+	trs, ok := Parallel(tasks...)
 	assert.True(t, ok)
 
 	// Verify.
-	assert.Equal(t, int(*counter), len(tasks), "Each task should have incremented the counter already")
+	assert.Len(t, tasks, int(*counter), "Each task should have incremented the counter already")
 	var failedTasks int
 	for i := 0; i < len(tasks); i++ {
 		taskResult, ok := trs.LatestResult(i)
@@ -46,44 +46,43 @@ func TestParallel(t *testing.T) {
 		// Good!
 		// }
 	}
-	assert.Equal(t, failedTasks, 0, "No task should have failed")
-	assert.Nil(t, trs.FirstError(), "There should be no errors")
+	assert.Equal(t, 0, failedTasks, "No task should have failed")
+	require.NoError(t, trs.FirstError(), "There should be no errors")
 	assert.Equal(t, 0, trs.FirstValue(), "First value should be 0")
 }
 
 func TestParallelAbort(t *testing.T) {
-
-	var flow1 = make(chan struct{}, 1)
-	var flow2 = make(chan struct{}, 1)
-	var flow3 = make(chan struct{}, 1) // Cap must be > 0 to prevent blocking.
-	var flow4 = make(chan struct{}, 1)
+	flow1 := make(chan struct{}, 1)
+	flow2 := make(chan struct{}, 1)
+	flow3 := make(chan struct{}, 1) // Cap must be > 0 to prevent blocking.
+	flow4 := make(chan struct{}, 1)
 
 	// Create tasks.
-	var tasks = []Task{
+	tasks := []Task{
 		func(i int) (res interface{}, abort bool, err error) {
-			assert.Equal(t, i, 0)
+			assert.Equal(t, 0, i)
 			flow1 <- struct{}{}
 			return 0, false, nil
 		},
 		func(i int) (res interface{}, abort bool, err error) {
-			assert.Equal(t, i, 1)
+			assert.Equal(t, 1, i)
 			flow2 <- <-flow1
 			return 1, false, errors.New("some error")
 		},
 		func(i int) (res interface{}, abort bool, err error) {
-			assert.Equal(t, i, 2)
+			assert.Equal(t, 2, i)
 			flow3 <- <-flow2
 			return 2, true, nil
 		},
 		func(i int) (res interface{}, abort bool, err error) {
-			assert.Equal(t, i, 3)
+			assert.Equal(t, 3, i)
 			<-flow4
 			return 3, false, nil
 		},
 	}
 
 	// Run in parallel.
-	var taskResultSet, ok = Parallel(tasks...)
+	taskResultSet, ok := Parallel(tasks...)
 	assert.False(t, ok, "ok should be false since we aborted task #2.")
 
 	// Verify task #3.
@@ -104,9 +103,8 @@ func TestParallelAbort(t *testing.T) {
 }
 
 func TestParallelRecover(t *testing.T) {
-
 	// Create tasks.
-	var tasks = []Task{
+	tasks := []Task{
 		func(i int) (res interface{}, abort bool, err error) {
 			return 0, false, nil
 		},
@@ -119,7 +117,7 @@ func TestParallelRecover(t *testing.T) {
 	}
 
 	// Run in parallel.
-	var taskResultSet, ok = Parallel(tasks...)
+	taskResultSet, ok := Parallel(tasks...)
 	assert.False(t, ok, "ok should be false since we panic'd in task #2.")
 
 	// Verify task #0, #1, #2.
@@ -128,9 +126,11 @@ func TestParallelRecover(t *testing.T) {
 	checkResult(t, taskResultSet, 2, nil, nil, fmt.Errorf("panic in task %v", 2).Error())
 }
 
-// Wait for result
+// Wait for result.
 func checkResult(t *testing.T, taskResultSet *TaskResultSet, index int,
-	val interface{}, err error, pnk interface{}) {
+	val interface{}, err error, pnk interface{},
+) {
+	t.Helper()
 	taskResult, ok := taskResultSet.LatestResult(index)
 	taskName := fmt.Sprintf("Task #%v", index)
 	assert.True(t, ok, "TaskResultCh unexpectedly closed for %v", taskName)
@@ -141,12 +141,13 @@ func checkResult(t *testing.T, taskResultSet *TaskResultSet, index int,
 	case pnk != nil:
 		assert.Contains(t, taskResult.Error.Error(), pnk, taskName)
 	default:
-		assert.Nil(t, taskResult.Error, taskName)
+		require.NoError(t, taskResult.Error, taskName)
 	}
 }
 
-// Wait for timeout (no result)
+// Wait for timeout (no result).
 func waitTimeout(t *testing.T, taskResultCh TaskResultCh, taskName string) {
+	t.Helper()
 	select {
 	case _, ok := <-taskResultCh:
 		if !ok {

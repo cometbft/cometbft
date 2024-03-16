@@ -89,7 +89,7 @@ func TestBlock(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	resultBlock, err := cli.Block(context.Background(), &testHeight)
@@ -141,7 +141,7 @@ func TestTxSearch(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
@@ -189,7 +189,7 @@ func TestTx(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
@@ -238,7 +238,7 @@ func TestConsensusParams(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	params, err := cli.ConsensusParams(context.Background(), &testHeight)
@@ -257,8 +257,8 @@ func TestBlockResults(t *testing.T) {
 	testGasUsed := int64(100)
 	stateStoreMock := &statemocks.Store{}
 	stateStoreMock.On("Close").Return(nil)
-	//	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	stateStoreMock.On("LoadFinalizeBlockResponse", testHeight).Return(&abcitypes.ResponseFinalizeBlock{
+	//	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	stateStoreMock.On("LoadFinalizeBlockResponse", testHeight).Return(&abcitypes.FinalizeBlockResponse{
 		TxResults: []*abcitypes.ExecTxResult{
 			{
 				GasUsed: testGasUsed,
@@ -288,12 +288,12 @@ func TestBlockResults(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockResults(context.Background(), &testHeight)
 	require.NoError(t, err)
-	require.Equal(t, res.TxsResults[0].GasUsed, testGasUsed)
+	require.Equal(t, res.TxResults[0].GasUsed, testGasUsed)
 
 	cancel()
 	wg.Wait()
@@ -335,7 +335,7 @@ func TestCommit(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.Commit(context.Background(), &testHeight)
@@ -387,7 +387,7 @@ func TestBlockByHash(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockByHash(context.Background(), testHash)
@@ -439,7 +439,7 @@ func TestBlockchain(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 	res, err := cli.BlockchainInfo(context.Background(), 0, 100)
@@ -491,7 +491,7 @@ func TestValidators(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
@@ -550,7 +550,7 @@ func TestBlockSearch(t *testing.T) {
 	// FIXME: used to induce context switch.
 	// Determine more deterministic method for prompting a context switch
 	startedWG.Wait()
-	requireConnect(t, rpcConfig.ListenAddress, 20)
+	requireConnect(t, rpcConfig.ListenAddress)
 	cli, err := httpclient.New(rpcConfig.ListenAddress + "/v1")
 	require.NoError(t, err)
 
@@ -569,10 +569,12 @@ func TestBlockSearch(t *testing.T) {
 	stateStoreMock.AssertExpectations(t)
 }
 
-func requireConnect(t testing.TB, addr string, retries int) {
+func requireConnect(tb testing.TB, addr string) {
+	tb.Helper()
+	retries := 20
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		t.Fatalf("malformed address to dial: %s", addr)
+		tb.Fatalf("malformed address to dial: %s", addr)
 	}
 	var err error
 	for i := 0; i < retries; i++ {
@@ -585,5 +587,5 @@ func requireConnect(t testing.TB, addr string, retries int) {
 		// FIXME attempt to yield and let the other goroutine continue execution.
 		time.Sleep(time.Microsecond * 100)
 	}
-	t.Fatalf("unable to connect to server %s after %d tries: %s", addr, retries, err)
+	tb.Fatalf("unable to connect to server %s after %d tries: %s", addr, retries, err)
 }

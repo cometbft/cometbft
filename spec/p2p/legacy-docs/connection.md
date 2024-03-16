@@ -103,7 +103,7 @@ switch := NewSwitch([]Reactor{MyReactor{}})
 ...
 
 // Send a random message to all outbound connections
-for _, peer := range switch.Peers().List() {
+for _, peer := range switch.Peers().Copy() {
     if peer.IsOutbound() {
         peer.Send(MyChannelID, "Here's a random message")
     }

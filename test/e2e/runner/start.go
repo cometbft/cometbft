@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sort"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 
 func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	if len(testnet.Nodes) == 0 {
-		return fmt.Errorf("no nodes in testnet")
+		return errors.New("no nodes in testnet")
 	}
 
 	// Nodes are already sorted by name. Sort them by name then startAt,
@@ -37,7 +37,7 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 	})
 
 	if nodeQueue[0].StartAt > 0 {
-		return fmt.Errorf("no initial nodes in testnet")
+		return errors.New("no initial nodes in testnet")
 	}
 
 	// Start initial nodes (StartAt: 0)
@@ -58,19 +58,17 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		if node.PrometheusProxyPort > 0 {
 			logger.Info("start", "msg",
 				log.NewLazySprintf("Node %v up on http://%s:%v; with Prometheus on http://%s:%v/metrics",
-					node.Name,
-					node.ExternalIP,
-					node.RPCProxyPort,
-					node.ExternalIP,
-					node.PrometheusProxyPort,
-				),
+					node.Name, node.ExternalIP, node.RPCProxyPort, node.ExternalIP, node.PrometheusProxyPort),
 			)
 		} else {
 			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v",
-				node.Name,
-				node.ExternalIP,
-				node.RPCProxyPort,
-			))
+				node.Name, node.ExternalIP, node.RPCProxyPort))
+		}
+		if node.ZoneIsSet() {
+			logger.Info("setting latency", "zone", node.Zone)
+			if err := p.SetLatency(ctx, node); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -127,8 +125,19 @@ func Start(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) error {
 		if err != nil {
 			return err
 		}
-		logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
-			node.Name, node.ExternalIP, node.RPCProxyPort, status.SyncInfo.LatestBlockHeight))
+		if node.PrometheusProxyPort > 0 {
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v; with Prometheus on http://%s:%v/metrics",
+				node.Name, node.ExternalIP, node.RPCProxyPort, status.SyncInfo.LatestBlockHeight, node.ExternalIP, node.PrometheusProxyPort))
+		} else {
+			logger.Info("start", "msg", log.NewLazySprintf("Node %v up on http://%s:%v at height %v",
+				node.Name, node.ExternalIP, node.RPCProxyPort, status.SyncInfo.LatestBlockHeight))
+		}
+		if node.ZoneIsSet() {
+			logger.Info("setting latency", "zone", node.Zone)
+			if err := p.SetLatency(ctx, node); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

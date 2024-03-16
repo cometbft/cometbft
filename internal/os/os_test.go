@@ -2,7 +2,6 @@ package os
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,7 +20,7 @@ func TestCopyFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	copyfile := fmt.Sprintf("%s.copy", tmpfile.Name())
+	copyfile := tmpfile.Name() + ".copy"
 	if err := CopyFile(tmpfile.Name(), copyfile); err != nil {
 		t.Fatal(err)
 	}
@@ -44,30 +43,30 @@ func TestEnsureDir(t *testing.T) {
 	defer os.RemoveAll(tmp)
 
 	// Should be possible to create a new directory.
-	err = EnsureDir(filepath.Join(tmp, "dir"), 0755)
+	err = EnsureDir(filepath.Join(tmp, "dir"), 0o755)
 	require.NoError(t, err)
 	require.DirExists(t, filepath.Join(tmp, "dir"))
 
 	// Should succeed on existing directory.
-	err = EnsureDir(filepath.Join(tmp, "dir"), 0755)
+	err = EnsureDir(filepath.Join(tmp, "dir"), 0o755)
 	require.NoError(t, err)
 
 	// Should fail on file.
-	err = os.WriteFile(filepath.Join(tmp, "file"), []byte{}, 0644)
+	err = os.WriteFile(filepath.Join(tmp, "file"), []byte{}, 0o644)
 	require.NoError(t, err)
-	err = EnsureDir(filepath.Join(tmp, "file"), 0755)
+	err = EnsureDir(filepath.Join(tmp, "file"), 0o755)
 	require.Error(t, err)
 
 	// Should allow symlink to dir.
 	err = os.Symlink(filepath.Join(tmp, "dir"), filepath.Join(tmp, "linkdir"))
 	require.NoError(t, err)
-	err = EnsureDir(filepath.Join(tmp, "linkdir"), 0755)
+	err = EnsureDir(filepath.Join(tmp, "linkdir"), 0o755)
 	require.NoError(t, err)
 
 	// Should error on symlink to file.
 	err = os.Symlink(filepath.Join(tmp, "file"), filepath.Join(tmp, "linkfile"))
 	require.NoError(t, err)
-	err = EnsureDir(filepath.Join(tmp, "linkfile"), 0755)
+	err = EnsureDir(filepath.Join(tmp, "linkfile"), 0o755)
 	require.Error(t, err)
 }
 
@@ -83,7 +82,7 @@ func TestTrickedTruncation(t *testing.T) {
 
 	originalWALPath := filepath.Join(tmpDir, "wal")
 	originalWALContent := []byte("I AM BECOME DEATH, DESTROYER OF ALL WORLDS!")
-	if err := os.WriteFile(originalWALPath, originalWALContent, 0755); err != nil {
+	if err := os.WriteFile(originalWALPath, originalWALContent, 0o755); err != nil {
 		t.Fatal(err)
 	}
 

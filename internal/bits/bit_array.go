@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
+	cmtprotobits "github.com/cometbft/cometbft/api/cometbft/libs/bits/v1"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtprotobits "github.com/cometbft/cometbft/proto/tendermint/libs/bits"
 )
 
 // BitArray is a thread-safe implementation of a bit array.
@@ -31,7 +31,7 @@ func NewBitArray(bits int) *BitArray {
 	}
 }
 
-// Size returns the number of bits in the bitarray
+// Size returns the number of bits in the bitarray.
 func (bA *BitArray) Size() int {
 	if bA == nil {
 		return 0
@@ -40,7 +40,7 @@ func (bA *BitArray) Size() int {
 }
 
 // GetIndex returns the bit at index i within the bit array.
-// The behavior is undefined if i >= bA.Bits
+// The behavior is undefined if i >= bA.Bits.
 func (bA *BitArray) GetIndex(i int) bool {
 	if bA == nil {
 		return false
@@ -58,7 +58,7 @@ func (bA *BitArray) getIndex(i int) bool {
 }
 
 // SetIndex sets the bit at index i within the bit array.
-// The behavior is undefined if i >= bA.Bits
+// The behavior is undefined if i >= bA.Bits.
 func (bA *BitArray) SetIndex(i int, v bool) bool {
 	if bA == nil {
 		return false
@@ -178,7 +178,7 @@ func (bA *BitArray) not() *BitArray {
 // Sub subtracts the two bit-arrays bitwise, without carrying the bits.
 // Note that carryless subtraction of a - b is (a and not b).
 // The output is the same as bA, regardless of o's size.
-// If bA is longer than o, o is right padded with zeroes
+// If bA is longer than o, o is right padded with zeroes.
 func (bA *BitArray) Sub(o *BitArray) *BitArray {
 	if bA == nil || o == nil {
 		// TODO: Decide if we should do 1's complement here?
@@ -202,7 +202,7 @@ func (bA *BitArray) Sub(o *BitArray) *BitArray {
 	return c
 }
 
-// IsEmpty returns true iff all bits in the bit array are 0
+// IsEmpty returns true iff all bits in the bit array are 0.
 func (bA *BitArray) IsEmpty() bool {
 	if bA == nil {
 		return true // should this be opposite?
@@ -417,11 +417,15 @@ func (bA *BitArray) UnmarshalJSON(bz []byte) error {
 			bA2.SetIndex(i, true)
 		}
 	}
-	*bA = *bA2 //nolint:govet
+
+	// Instead of *bA = *bA2
+	bA.Bits = bA2.Bits
+	bA.Elems = make([]uint64, len(bA2.Elems))
+	copy(bA.Elems, bA2.Elems)
 	return nil
 }
 
-// ToProto converts BitArray to protobuf
+// ToProto converts BitArray to protobuf.
 func (bA *BitArray) ToProto() *cmtprotobits.BitArray {
 	if bA == nil || len(bA.Elems) == 0 {
 		return nil
@@ -436,6 +440,7 @@ func (bA *BitArray) ToProto() *cmtprotobits.BitArray {
 // FromProto sets a protobuf BitArray to the given pointer.
 func (bA *BitArray) FromProto(protoBitArray *cmtprotobits.BitArray) {
 	if protoBitArray == nil {
+		//nolint:wastedassign
 		bA = nil
 		return
 	}

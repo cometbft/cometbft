@@ -20,7 +20,7 @@ import (
 type BlockStore interface {
 	Height() int64
 	Base() int64
-	LoadBlock(int64) (*types.Block, *types.BlockMeta)
+	LoadBlock(height int64) (*types.Block, *types.BlockMeta)
 }
 
 // DataPoint contains the set of data collected for each transaction.
@@ -166,16 +166,16 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 					continue
 				}
 
-				l := b.bt.Sub(p.Time.AsTime())
-				idb := (*[16]byte)(p.Id)
+				l := b.bt.Sub(p.GetTime().AsTime())
+				idb := (*[16]byte)(p.GetId())
 				pdc <- payloadData{
 					l:           l,
 					bt:          b.bt,
 					hash:        b.tx.Hash(),
 					id:          uuid.UUID(*idb),
-					connections: p.Connections,
-					rate:        p.Rate,
-					size:        p.Size,
+					connections: p.GetConnections(),
+					rate:        p.GetRate(),
+					size:        p.GetSize(),
 				}
 			}
 		}()

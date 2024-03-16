@@ -3,17 +3,15 @@ package state_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"time"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/test"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -46,7 +44,7 @@ func makeAndCommitGoodBlock(
 	}
 
 	// Simulate a lastCommit for this block from all validators for the next height
-	commit, _, err := makeValidCommit(height, blockID, state.Validators, privVals)
+	commit, err := makeValidCommit(height, blockID, state.Validators, privVals)
 	if err != nil {
 		return state, types.BlockID{}, nil, err
 	}
@@ -91,7 +89,7 @@ func makeValidCommit(
 	blockID types.BlockID,
 	vals *types.ValidatorSet,
 	privVals map[string]types.PrivValidator,
-) (*types.ExtendedCommit, []*types.Vote, error) {
+) (*types.ExtendedCommit, error) {
 	sigs := make([]types.ExtendedCommitSig, vals.Size())
 	votes := make([]*types.Vote, vals.Size())
 	for i := 0; i < vals.Size(); i++ {
@@ -102,12 +100,12 @@ func makeValidCommit(
 			int32(i),
 			height,
 			0,
-			cmtproto.PrecommitType,
+			types.PrecommitType,
 			blockID,
-			time.Now(),
+			cmttime.Now(),
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		sigs[i] = vote.ExtendedCommitSig()
 		votes[i] = vote
@@ -116,47 +114,7 @@ func makeValidCommit(
 		Height:             height,
 		BlockID:            blockID,
 		ExtendedSignatures: sigs,
-	}, votes, nil
-}
-
-func makeState(nVals, height int) (sm.State, dbm.DB, map[string]types.PrivValidator) {
-	vals := make([]types.GenesisValidator, nVals)
-	privVals := make(map[string]types.PrivValidator, nVals)
-	for i := 0; i < nVals; i++ {
-		secret := []byte(fmt.Sprintf("test%d", i))
-		pk := ed25519.GenPrivKeyFromSecret(secret)
-		valAddr := pk.PubKey().Address()
-		vals[i] = types.GenesisValidator{
-			Address: valAddr,
-			PubKey:  pk.PubKey(),
-			Power:   1000,
-			Name:    fmt.Sprintf("test%d", i),
-		}
-		privVals[valAddr.String()] = types.NewMockPVWithParams(pk, false, false)
-	}
-	s, _ := sm.MakeGenesisState(&types.GenesisDoc{
-		ChainID:    chainID,
-		Validators: vals,
-		AppHash:    nil,
-	})
-
-	stateDB := dbm.NewMemDB()
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: false,
-	})
-	if err := stateStore.Save(s); err != nil {
-		panic(err)
-	}
-
-	for i := 1; i < height; i++ {
-		s.LastBlockHeight++
-		s.LastValidators = s.Validators.Copy()
-		if err := stateStore.Save(s); err != nil {
-			panic(err)
-		}
-	}
-
-	return s, stateDB, privVals
+	}, nil
 }
 
 func genValSet(size int) *types.ValidatorSet {
@@ -170,9 +128,9 @@ func genValSet(size int) *types.ValidatorSet {
 func makeHeaderPartsResponsesValPubKeyChange(
 	state sm.State,
 	pubkey crypto.PubKey,
-) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
+) (types.Header, types.BlockID, *abci.FinalizeBlockResponse) {
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &abci.ResponseFinalizeBlock{}
+	abciResponses := &abci.FinalizeBlockResponse{}
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
 	if !bytes.Equal(pubkey.Bytes(), val.PubKey.Bytes()) {
@@ -188,9 +146,9 @@ func makeHeaderPartsResponsesValPubKeyChange(
 func makeHeaderPartsResponsesValPowerChange(
 	state sm.State,
 	power int64,
-) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
+) (types.Header, types.BlockID, *abci.FinalizeBlockResponse) {
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &abci.ResponseFinalizeBlock{}
+	abciResponses := &abci.FinalizeBlockResponse{}
 
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
@@ -206,9 +164,9 @@ func makeHeaderPartsResponsesValPowerChange(
 func makeHeaderPartsResponsesParams(
 	state sm.State,
 	params cmtproto.ConsensusParams,
-) (types.Header, types.BlockID, *abci.ResponseFinalizeBlock) {
+) (types.Header, types.BlockID, *abci.FinalizeBlockResponse) {
 	block := makeBlock(state, state.LastBlockHeight+1, new(types.Commit))
-	abciResponses := &abci.ResponseFinalizeBlock{
+	abciResponses := &abci.FinalizeBlockResponse{
 		ConsensusParamUpdates: &params,
 	}
 	return block.Header, types.BlockID{Hash: block.Hash(), PartSetHeader: types.PartSetHeader{}}, abciResponses
@@ -245,7 +203,7 @@ type testApp struct {
 
 var _ abci.Application = (*testApp)(nil)
 
-func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (app *testApp) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockRequest) (*abci.FinalizeBlockResponse, error) {
 	app.CommitVotes = req.DecidedLastCommit.Votes
 	app.Misbehavior = req.Misbehavior
 	app.LastTime = req.Time
@@ -256,7 +214,7 @@ func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBl
 		}
 	}
 
-	return &abci.ResponseFinalizeBlock{
+	return &abci.FinalizeBlockResponse{
 		ValidatorUpdates: app.ValidatorUpdates,
 		ConsensusParamUpdates: &cmtproto.ConsensusParams{
 			Version: &cmtproto.VersionParams{
@@ -268,14 +226,14 @@ func (app *testApp) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeBl
 	}, nil
 }
 
-func (app *testApp) Commit(_ context.Context, _ *abci.RequestCommit) (*abci.ResponseCommit, error) {
-	return &abci.ResponseCommit{RetainHeight: 1}, nil
+func (app *testApp) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.CommitResponse, error) {
+	return &abci.CommitResponse{RetainHeight: 1}, nil
 }
 
 func (app *testApp) PrepareProposal(
 	_ context.Context,
-	req *abci.RequestPrepareProposal,
-) (*abci.ResponsePrepareProposal, error) {
+	req *abci.PrepareProposalRequest,
+) (*abci.PrepareProposalResponse, error) {
 	txs := make([][]byte, 0, len(req.Txs))
 	var totalBytes int64
 	for _, tx := range req.Txs {
@@ -288,17 +246,50 @@ func (app *testApp) PrepareProposal(
 		}
 		txs = append(txs, tx)
 	}
-	return &abci.ResponsePrepareProposal{Txs: txs}, nil
+	return &abci.PrepareProposalResponse{Txs: txs}, nil
 }
 
 func (app *testApp) ProcessProposal(
 	_ context.Context,
-	req *abci.RequestProcessProposal,
-) (*abci.ResponseProcessProposal, error) {
+	req *abci.ProcessProposalRequest,
+) (*abci.ProcessProposalResponse, error) {
 	for _, tx := range req.Txs {
 		if len(tx) == 0 {
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 	}
-	return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
+	return &abci.ProcessProposalResponse{Status: abci.PROCESS_PROPOSAL_STATUS_ACCEPT}, nil
+}
+
+func makeStateWithParams(nVals, height int, params *types.ConsensusParams, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+	vals, privVals := test.GenesisValidatorSet(nVals)
+
+	s, _ := sm.MakeGenesisState(&types.GenesisDoc{
+		ChainID:         chainID,
+		Validators:      vals,
+		AppHash:         nil,
+		ConsensusParams: params,
+	})
+
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	if err := stateStore.Save(s); err != nil {
+		panic(err)
+	}
+
+	for i := 1; i < height; i++ {
+		s.LastBlockHeight++
+		s.LastValidators = s.Validators.Copy()
+		if err := stateStore.Save(s); err != nil {
+			panic(err)
+		}
+	}
+
+	return s, stateDB, privVals
+}
+
+func makeState(nVals, height int, chainID string) (sm.State, dbm.DB, map[string]types.PrivValidator) {
+	return makeStateWithParams(nVals, height, test.ConsensusParams(), chainID)
 }

@@ -23,6 +23,9 @@ func CreateBatchVerifier(pk crypto.PubKey) (crypto.BatchVerifier, bool) {
 // SupportsBatchVerifier checks if a key type implements the batch verifier
 // interface.
 func SupportsBatchVerifier(pk crypto.PubKey) bool {
+	if pk == nil {
+		return false
+	}
 	switch pk.Type() {
 	case ed25519.KeyType, sr25519.KeyType:
 		return true

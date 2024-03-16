@@ -9,13 +9,12 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 func TestVoteSet_AddVote_Good(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
+	voteSet, _, privValidators := randVoteSet(height, round, PrevoteType, 10, 1, false)
 	val0 := privValidators[0]
 
 	val0p, err := val0.GetPubKey()
@@ -32,7 +31,7 @@ func TestVoteSet_AddVote_Good(t *testing.T) {
 		ValidatorIndex:   0, // since privValidators are in order
 		Height:           height,
 		Round:            round,
-		Type:             cmtproto.PrevoteType,
+		Type:             PrevoteType,
 		Timestamp:        cmttime.Now(),
 		BlockID:          BlockID{nil, PartSetHeader{}},
 	}
@@ -47,7 +46,7 @@ func TestVoteSet_AddVote_Good(t *testing.T) {
 
 func TestVoteSet_AddVote_Bad(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
+	voteSet, _, privValidators := randVoteSet(height, round, PrevoteType, 10, 1, false)
 
 	voteProto := &Vote{
 		ValidatorAddress: nil,
@@ -55,7 +54,7 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 		Height:           height,
 		Round:            round,
 		Timestamp:        cmttime.Now(),
-		Type:             cmtproto.PrevoteType,
+		Type:             PrevoteType,
 		BlockID:          BlockID{nil, PartSetHeader{}},
 	}
 
@@ -113,24 +112,23 @@ func TestVoteSet_AddVote_Bad(t *testing.T) {
 		require.NoError(t, err)
 		addr := pubKey.Address()
 		vote := withValidator(voteProto, addr, 3)
-		added, err := signAddVote(privValidators[3], withType(vote, byte(cmtproto.PrecommitType)), voteSet)
+		added, err := signAddVote(privValidators[3], withType(vote, byte(PrecommitType)), voteSet)
 		if added || err == nil {
 			t.Errorf("expected VoteSet.Add to fail, wrong type")
 		}
 	}
-
 }
 
 func TestVoteSet_2_3Majority(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 10, 1, false)
+	voteSet, _, privValidators := randVoteSet(height, round, PrevoteType, 10, 1, false)
 
 	voteProto := &Vote{
 		ValidatorAddress: nil, // NOTE: must fill in
 		ValidatorIndex:   -1,  // NOTE: must fill in
 		Height:           height,
 		Round:            round,
-		Type:             cmtproto.PrevoteType,
+		Type:             PrevoteType,
 		Timestamp:        cmttime.Now(),
 		BlockID:          BlockID{nil, PartSetHeader{}},
 	}
@@ -173,7 +171,7 @@ func TestVoteSet_2_3Majority(t *testing.T) {
 
 func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 100, 1, false)
+	voteSet, _, privValidators := randVoteSet(height, round, PrevoteType, 100, 1, false)
 
 	blockHash := crypto.CRandBytes(32)
 	blockPartsTotal := uint32(123)
@@ -185,7 +183,7 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 		Height:           height,
 		Round:            round,
 		Timestamp:        cmttime.Now(),
-		Type:             cmtproto.PrevoteType,
+		Type:             PrevoteType,
 		BlockID:          BlockID{blockHash, blockPartSetHeader},
 	}
 
@@ -272,7 +270,7 @@ func TestVoteSet_2_3MajorityRedux(t *testing.T) {
 
 func TestVoteSet_Conflicts(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrevoteType, 4, 1, false)
+	voteSet, _, privValidators := randVoteSet(height, round, PrevoteType, 4, 1, false)
 	blockHash1 := cmtrand.Bytes(32)
 	blockHash2 := cmtrand.Bytes(32)
 
@@ -282,7 +280,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 		Height:           height,
 		Round:            round,
 		Timestamp:        cmttime.Now(),
-		Type:             cmtproto.PrevoteType,
+		Type:             PrevoteType,
 		BlockID:          BlockID{nil, PartSetHeader{}},
 	}
 
@@ -304,7 +302,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 		vote := withValidator(voteProto, val0Addr, 0)
 		added, err := signAddVote(privValidators[0], withBlockHash(vote, blockHash1), voteSet)
 		assert.False(t, added, "conflicting vote")
-		assert.Error(t, err, "conflicting vote")
+		require.Error(t, err, "conflicting vote")
 	}
 
 	// start tracking blockHash1
@@ -316,7 +314,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 		vote := withValidator(voteProto, val0Addr, 0)
 		added, err := signAddVote(privValidators[0], withBlockHash(vote, blockHash1), voteSet)
 		assert.True(t, added, "called SetPeerMaj23()")
-		assert.Error(t, err, "conflicting vote")
+		require.Error(t, err, "conflicting vote")
 	}
 
 	// attempt tracking blockHash2, should fail because already set for peerA.
@@ -328,13 +326,13 @@ func TestVoteSet_Conflicts(t *testing.T) {
 		vote := withValidator(voteProto, val0Addr, 0)
 		added, err := signAddVote(privValidators[0], withBlockHash(vote, blockHash2), voteSet)
 		assert.False(t, added, "duplicate SetPeerMaj23() from peerA")
-		assert.Error(t, err, "conflicting vote")
+		require.Error(t, err, "conflicting vote")
 	}
 
 	// val1 votes for blockHash1.
 	{
 		pv, err := privValidators[1].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 1)
 		added, err := signAddVote(privValidators[1], withBlockHash(vote, blockHash1), voteSet)
@@ -354,7 +352,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	// val2 votes for blockHash2.
 	{
 		pv, err := privValidators[2].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 2)
 		added, err := signAddVote(privValidators[2], withBlockHash(vote, blockHash2), voteSet)
@@ -378,12 +376,12 @@ func TestVoteSet_Conflicts(t *testing.T) {
 	// val2 votes for blockHash1.
 	{
 		pv, err := privValidators[2].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 2)
 		added, err := signAddVote(privValidators[2], withBlockHash(vote, blockHash1), voteSet)
 		assert.True(t, added)
-		assert.Error(t, err, "conflicting vote")
+		require.Error(t, err, "conflicting vote")
 	}
 
 	// check
@@ -397,7 +395,7 @@ func TestVoteSet_Conflicts(t *testing.T) {
 
 func TestVoteSet_MakeCommit(t *testing.T) {
 	height, round := int64(1), int32(0)
-	voteSet, _, privValidators := randVoteSet(height, round, cmtproto.PrecommitType, 10, 1, true)
+	voteSet, _, privValidators := randVoteSet(height, round, PrecommitType, 10, 1, true)
 	blockHash, blockPartSetHeader := crypto.CRandBytes(32), PartSetHeader{123, crypto.CRandBytes(32)}
 
 	voteProto := &Vote{
@@ -406,14 +404,14 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 		Height:           height,
 		Round:            round,
 		Timestamp:        cmttime.Now(),
-		Type:             cmtproto.PrecommitType,
+		Type:             PrecommitType,
 		BlockID:          BlockID{blockHash, blockPartSetHeader},
 	}
 
 	// 6 out of 10 voted for some block.
 	for i := int32(0); i < 6; i++ {
 		pv, err := privValidators[i].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, i)
 		_, err = signAddVote(privValidators[i], vote, voteSet)
@@ -423,13 +421,14 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	}
 
 	// MakeCommit should fail.
-	veHeightParam := ABCIParams{VoteExtensionsEnableHeight: height}
+	veHeightParam := DefaultFeatureParams()
+	veHeightParam.VoteExtensionsEnableHeight = height
 	assert.Panics(t, func() { voteSet.MakeExtendedCommit(veHeightParam) }, "Doesn't have +2/3 majority")
 
 	// 7th voted for some other block.
 	{
 		pv, err := privValidators[6].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 6)
 		vote = withBlockHash(vote, cmtrand.Bytes(32))
@@ -442,7 +441,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	// The 8th voted like everyone else.
 	{
 		pv, err := privValidators[7].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 7)
 		_, err = signAddVote(privValidators[7], vote, voteSet)
@@ -452,7 +451,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	// The 9th voted for nil.
 	{
 		pv, err := privValidators[8].GetPubKey()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		addr := pv.Address()
 		vote := withValidator(voteProto, addr, 8)
 		vote.BlockID = BlockID{}
@@ -464,7 +463,7 @@ func TestVoteSet_MakeCommit(t *testing.T) {
 	extCommit := voteSet.MakeExtendedCommit(veHeightParam)
 
 	// Commit should have 10 elements
-	assert.Equal(t, 10, len(extCommit.ExtendedSignatures))
+	assert.Len(t, extCommit.ExtendedSignatures, 10)
 
 	// Ensure that Commit is good.
 	if err := extCommit.ValidateBasic(); err != nil {
@@ -511,9 +510,9 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 			valSet, privValidators := RandValidatorSet(5, 10)
 			var voteSet *VoteSet
 			if tc.requireExtensions {
-				voteSet = NewExtendedVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet)
+				voteSet = NewExtendedVoteSet("test_chain_id", height, round, PrecommitType, valSet)
 			} else {
-				voteSet = NewVoteSet("test_chain_id", height, round, cmtproto.PrecommitType, valSet)
+				voteSet = NewVoteSet("test_chain_id", height, round, PrecommitType, valSet)
 			}
 
 			val0 := privValidators[0]
@@ -530,12 +529,12 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 				ValidatorIndex:   0,
 				Height:           height,
 				Round:            round,
-				Type:             cmtproto.PrecommitType,
+				Type:             PrecommitType,
 				Timestamp:        cmttime.Now(),
 				BlockID:          BlockID{blockHash, blockPartSetHeader},
 			}
 			v := vote.ToProto()
-			err = val0.SignVote(voteSet.ChainID(), v)
+			err = val0.SignVote(voteSet.ChainID(), v, true)
 			require.NoError(t, err)
 			vote.Signature = v.Signature
 
@@ -555,18 +554,18 @@ func TestVoteSet_VoteExtensionsEnabled(t *testing.T) {
 	}
 }
 
-// NOTE: privValidators are in order
+// NOTE: privValidators are in order.
 func randVoteSet(
 	height int64,
 	round int32,
-	signedMsgType cmtproto.SignedMsgType,
+	signedMsgType SignedMsgType,
 	numValidators int,
 	votingPower int64,
 	extEnabled bool,
 ) (*VoteSet, *ValidatorSet, []PrivValidator) {
 	valSet, privValidators := RandValidatorSet(numValidators, votingPower)
 	if extEnabled {
-		if signedMsgType != cmtproto.PrecommitType {
+		if signedMsgType != PrecommitType {
 			return nil, nil, nil
 		}
 		return NewExtendedVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
@@ -574,7 +573,7 @@ func randVoteSet(
 	return NewVoteSet("test_chain_id", height, round, signedMsgType, valSet), valSet, privValidators
 }
 
-// Convenience: Return new vote with different validator address/index
+// Convenience: Return new vote with different validator address/index.
 func withValidator(vote *Vote, addr []byte, idx int32) *Vote {
 	vote = vote.Copy()
 	vote.ValidatorAddress = addr
@@ -582,35 +581,35 @@ func withValidator(vote *Vote, addr []byte, idx int32) *Vote {
 	return vote
 }
 
-// Convenience: Return new vote with different height
+// Convenience: Return new vote with different height.
 func withHeight(vote *Vote, height int64) *Vote {
 	vote = vote.Copy()
 	vote.Height = height
 	return vote
 }
 
-// Convenience: Return new vote with different round
+// Convenience: Return new vote with different round.
 func withRound(vote *Vote, round int32) *Vote {
 	vote = vote.Copy()
 	vote.Round = round
 	return vote
 }
 
-// Convenience: Return new vote with different type
+// Convenience: Return new vote with different type.
 func withType(vote *Vote, signedMsgType byte) *Vote {
 	vote = vote.Copy()
-	vote.Type = cmtproto.SignedMsgType(signedMsgType)
+	vote.Type = SignedMsgType(signedMsgType)
 	return vote
 }
 
-// Convenience: Return new vote with different blockHash
+// Convenience: Return new vote with different blockHash.
 func withBlockHash(vote *Vote, blockHash []byte) *Vote {
 	vote = vote.Copy()
 	vote.BlockID.Hash = blockHash
 	return vote
 }
 
-// Convenience: Return new vote with different blockParts
+// Convenience: Return new vote with different blockParts.
 func withBlockPartSetHeader(vote *Vote, blockPartsHeader PartSetHeader) *Vote {
 	vote = vote.Copy()
 	vote.BlockID.PartSetHeader = blockPartsHeader

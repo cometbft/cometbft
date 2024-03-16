@@ -37,7 +37,7 @@ import (
 )
 
 type Writer interface {
-	WriteMsg(proto.Message) (int, error)
+	WriteMsg(msg proto.Message) (int, error)
 }
 
 type WriteCloser interface {

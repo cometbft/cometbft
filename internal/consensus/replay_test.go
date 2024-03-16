@@ -18,10 +18,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/abci/types/mocks"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -31,7 +31,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/privval"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -54,7 +53,7 @@ func TestMain(m *testing.M) {
 // These tests ensure we can always recover from failure at any part of the consensus process.
 // There are two general failure scenarios: failure during consensus, and failure while applying the block.
 // Only the latter interacts with the app and store,
-// but the former has to deal with restrictions on re-use of priv_validator keys.
+// but the former has to deal with restrictions on reuse of priv_validator keys.
 // The `WAL Tests` are for failures during the consensus;
 // the `Handshake Tests` are for failures in applying the block.
 // With the help of the WAL, we can recover from it all!
@@ -72,6 +71,7 @@ func startNewStateAndWaitForBlock(
 	blockDB dbm.DB,
 	stateStore sm.Store,
 ) {
+	t.Helper()
 	logger := log.TestingLogger()
 	state, _ := stateStore.LoadFromDBOrGenesisFile(consensusReplayConfig.GenesisFile())
 	privValidator := loadPrivValidator(consensusReplayConfig)
@@ -163,6 +163,7 @@ func TestWALCrash(t *testing.T) {
 func crashWALandCheckLiveness(t *testing.T, consensusReplayConfig *cfg.Config,
 	initFn func(dbm.DB, *State, context.Context), heightToStop int64,
 ) {
+	t.Helper()
 	walPanicked := make(chan error)
 	crashingWal := &crashingWAL{panicCh: walPanicked, heightToStop: heightToStop}
 
@@ -319,13 +320,12 @@ const numBlocks = 6
 // 0 - all synced up
 // 1 - saved block but app and state are behind by one height
 // 2 - save block and committed (i.e. app got `Commit`) but state is behind
-// 3 - same as 2 but with a truncated block store
+// 3 - same as 2 but with a truncated block store.
 var modes = []uint{0, 1, 2, 3}
 
-// This is actually not a test, it's for storing validator change tx data for testHandshakeReplay
+// This is actually not a test, it's for storing validator change tx data for testHandshakeReplay.
 func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*cfg.Config, []*types.Block, []*types.ExtendedCommit, sm.State) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	t.Helper()
 
 	nPeers := 7
 	nVals := 4
@@ -338,11 +338,10 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		func(_ string) abci.Application {
 			return newKVStore()
 		})
+	chainID := genDoc.ChainID
 	genesisState, err := sm.MakeGenesisState(genDoc)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
-
-	partSize := types.BlockPartSizeBytes
 
 	newRoundCh := subscribe(css[0].eventBus, types.EventQueryNewRound)
 	proposalCh := subscribe(css[0].eventBus, types.EventQueryCompleteProposal)
@@ -359,7 +358,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	ensureNewRound(newRoundCh, height, 0)
 	ensureNewProposal(proposalCh, height, round)
 	rs := css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, chainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 2
@@ -371,19 +370,11 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	newValidatorTx1 := kvstore.MakeValSetChangeTx(valPubKey1ABCI, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx1)
-	assert.NoError(t, err)
-	propBlock, err := css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
 	require.NoError(t, err)
-	propBlockParts, err := propBlock.MakePartSet(partSize)
-	require.NoError(t, err)
-	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
-	proposal := types.NewProposal(vss[1].Height, round, -1, blockID)
-	p := proposal.ToProto()
-	if err := vss[1].SignProposal(test.DefaultTestChainID, p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
-	}
-	proposal.Signature = p.Signature
+	propBlock, propBlockParts, blockID := createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
+	proposal := types.NewProposal(vss[1].Height, round, -1, blockID, propBlock.Header.Time)
+	signProposal(t, proposal, chainID, vss[1])
 
 	// set the proposal block
 	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
@@ -391,7 +382,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 	rs = css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, chainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 3
@@ -403,19 +394,11 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	updateValidatorTx1 := kvstore.MakeValSetChangeTx(updatePubKey1ABCI, 25)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(updateValidatorTx1)
-	assert.NoError(t, err)
-	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
 	require.NoError(t, err)
-	propBlockParts, err = propBlock.MakePartSet(partSize)
-	require.NoError(t, err)
-	blockID = types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
-	proposal = types.NewProposal(vss[2].Height, round, -1, blockID)
-	p = proposal.ToProto()
-	if err := vss[2].SignProposal(test.DefaultTestChainID, p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
-	}
-	proposal.Signature = p.Signature
+	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
+	proposal = types.NewProposal(vss[2].Height, round, -1, blockID, propBlock.Header.Time)
+	signProposal(t, proposal, chainID, vss[2])
 
 	// set the proposal block
 	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
@@ -423,7 +406,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 	rs = css[0].GetRoundState()
-	signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, vss[1:nVals]...)
+	signAddVotes(css[0], types.PrecommitType, chainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, vss[1:nVals]...)
 	ensureNewRound(newRoundCh, height+1, 0)
 
 	// HEIGHT 4
@@ -442,12 +425,10 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	require.NoError(t, err)
 	newValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx3)
-	assert.NoError(t, err)
-	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
 	require.NoError(t, err)
-	propBlockParts, err = propBlock.MakePartSet(partSize)
-	require.NoError(t, err)
-	blockID = types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
+
+	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
+
 	newVss := make([]*validatorStub, nVals+1)
 	copy(newVss, vss[:nVals+1])
 	sort.Sort(ValidatorStubsByPower(newVss))
@@ -469,12 +450,8 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 
 	selfIndex := valIndexFn(0)
 
-	proposal = types.NewProposal(vss[3].Height, round, -1, blockID)
-	p = proposal.ToProto()
-	if err := vss[3].SignProposal(test.DefaultTestChainID, p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
-	}
-	proposal.Signature = p.Signature
+	proposal = types.NewProposal(vss[3].Height, round, -1, blockID, propBlock.Header.Time)
+	signProposal(t, proposal, chainID, vss[3])
 
 	// set the proposal block
 	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
@@ -484,14 +461,15 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 
 	removeValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, 0)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rs = css[0].GetRoundState()
 	for i := 0; i < nVals+1; i++ {
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, chainID,
+			types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, newVss[i])
 	}
 
 	ensureNewRound(newRoundCh, height+1, 0)
@@ -510,7 +488,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, chainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -519,23 +497,17 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	incrementHeight(vss...)
 	removeValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, 0)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx3)
-	assert.NoError(t, err)
-	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
 	require.NoError(t, err)
-	propBlockParts, err = propBlock.MakePartSet(partSize)
-	require.NoError(t, err)
-	blockID = types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
+
+	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
+
 	newVss = make([]*validatorStub, nVals+3)
 	copy(newVss, vss[:nVals+3])
 	sort.Sort(ValidatorStubsByPower(newVss))
 
 	selfIndex = valIndexFn(0)
-	proposal = types.NewProposal(vss[1].Height, round, -1, blockID)
-	p = proposal.ToProto()
-	if err := vss[1].SignProposal(test.DefaultTestChainID, p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
-	}
-	proposal.Signature = p.Signature
+	proposal = types.NewProposal(vss[1].Height, round, -1, blockID, propBlock.Header.Time)
+	signProposal(t, proposal, chainID, vss[1])
 
 	// set the proposal block
 	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
@@ -547,7 +519,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 		if i == selfIndex {
 			continue
 		}
-		signAddVotes(css[0], cmtproto.PrecommitType, rs.ProposalBlock.Hash(), rs.ProposalBlockParts.Header(), true, newVss[i])
+		signAddVotes(css[0], types.PrecommitType, chainID, types.BlockID{Hash: rs.ProposalBlock.Hash(), PartSetHeader: rs.ProposalBlockParts.Header()}, true, newVss[i])
 	}
 	ensureNewRound(newRoundCh, height+1, 0)
 
@@ -561,7 +533,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	return config, chain, extCommits, genesisState
 }
 
-// Sync from scratch
+// Sync from scratch.
 func TestHandshakeReplayAll(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -573,7 +545,7 @@ func TestHandshakeReplayAll(t *testing.T) {
 	}
 }
 
-// Sync many, not from scratch
+// Sync many, not from scratch.
 func TestHandshakeReplaySome(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -585,7 +557,7 @@ func TestHandshakeReplaySome(t *testing.T) {
 	}
 }
 
-// Sync from lagging by one
+// Sync from lagging by one.
 func TestHandshakeReplayOne(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -597,7 +569,7 @@ func TestHandshakeReplayOne(t *testing.T) {
 	}
 }
 
-// Sync from caught up
+// Sync from caught up.
 func TestHandshakeReplayNone(t *testing.T) {
 	for _, m := range modes {
 		t.Run(fmt.Sprintf("mode_%d_single", m), func(t *testing.T) {
@@ -625,8 +597,9 @@ func tempWALWithData(data []byte) string {
 }
 
 // Make some blocks. Start a fresh app and apply nBlocks blocks.
-// Then restart the app and sync it up with the remaining blocks
+// Then restart the app and sync it up with the remaining blocks.
 func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uint, testValidatorsChange bool) {
+	t.Helper()
 	var (
 		testConfig   *cfg.Config
 		chain        []*types.Block
@@ -735,7 +708,7 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	require.NoError(t, err)
 
 	// get the latest app hash from the app
-	res, err := proxyApp.Query().Info(context.Background(), proxy.RequestInfo)
+	res, err := proxyApp.Query().Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
 
 	// block store and app height should be in sync
@@ -768,6 +741,7 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 }
 
 func applyBlock(t *testing.T, stateStore sm.Store, mempool mempool.Mempool, evpool sm.EvidencePool, st sm.State, blk *types.Block, proxyApp proxy.AppConns, bs sm.BlockStore) sm.State {
+	t.Helper()
 	testPartSize := types.BlockPartSizeBytes
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, evpool, bs)
 
@@ -782,6 +756,7 @@ func applyBlock(t *testing.T, stateStore sm.Store, mempool mempool.Mempool, evpo
 func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm.Store, mempool mempool.Mempool, evpool sm.EvidencePool,
 	state sm.State, chain []*types.Block, nBlocks int, mode uint, bs sm.BlockStore,
 ) {
+	t.Helper()
 	// start a new app without handshake, play nBlocks blocks
 	if err := proxyApp.Start(); err != nil {
 		panic(err)
@@ -790,7 +765,7 @@ func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm
 
 	state.Version.Consensus.App = kvstore.AppVersion // simulate handshake, receive app version
 	validators := types.TM2PB.ValidatorUpdates(state.Validators)
-	if _, err := proxyApp.Consensus().InitChain(context.Background(), &abci.RequestInitChain{
+	if _, err := proxyApp.Consensus().InitChain(context.Background(), &abci.InitChainRequest{
 		Validators: validators,
 	}); err != nil {
 		panic(err)
@@ -816,7 +791,7 @@ func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm
 			// update the kvstore height and apphash
 			// as if we ran commit but not
 			// here we expect a dummy state store to be used
-			state = applyBlock(t, stateStore, mempool, evpool, state, chain[nBlocks-1], proxyApp, bs)
+			_ = applyBlock(t, stateStore, mempool, evpool, state, chain[nBlocks-1], proxyApp, bs)
 		}
 	default:
 		panic(fmt.Sprintf("unknown mode %v", mode))
@@ -835,6 +810,7 @@ func buildTMStateFromChain(
 	mode uint,
 	bs sm.BlockStore,
 ) (sm.State, []byte) {
+	t.Helper()
 	// run the whole chain against this client to build up the CometBFT state
 	clientCreator := proxy.NewLocalClientCreator(
 		kvstore.NewPersistentApplication(
@@ -847,7 +823,7 @@ func buildTMStateFromChain(
 
 	state.Version.Consensus.App = kvstore.AppVersion // simulate handshake, receive app version
 	validators := types.TM2PB.ValidatorUpdates(state.Validators)
-	if _, err := proxyApp.Consensus().InitChain(context.Background(), &abci.RequestInitChain{
+	if _, err := proxyApp.Consensus().InitChain(context.Background(), &abci.InitChainRequest{
 		Validators: validators,
 	}); err != nil {
 		panic(err)
@@ -876,7 +852,7 @@ func buildTMStateFromChain(
 		vals, _ := stateStore.LoadValidators(penultimateHeight)
 		dummyStateStore.On("LoadValidators", penultimateHeight).Return(vals, nil)
 		dummyStateStore.On("Save", mock.Anything).Return(nil)
-		dummyStateStore.On("SaveFinalizeBlockResponse", lastHeight, mock.MatchedBy(func(response *abci.ResponseFinalizeBlock) bool {
+		dummyStateStore.On("SaveFinalizeBlockResponse", lastHeight, mock.MatchedBy(func(response *abci.FinalizeBlockResponse) bool {
 			require.NoError(t, stateStore.SaveFinalizeBlockResponse(lastHeight, response))
 			return true
 		})).Return(nil)
@@ -932,7 +908,8 @@ func TestHandshakePanicsIfAppReturnsWrongAppHash(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
-	genDoc, _ := sm.MakeGenesisDocFromFile(config.GenesisFile())
+	genDoc, err := sm.MakeGenesisDocFromFile(config.GenesisFile())
+	require.NoError(t, err)
 	state.LastValidators = state.Validators.Copy()
 	// mode = 0 for committing all the blocks
 	blocks, err := makeBlocks(3, state, []types.PrivValidator{privVal})
@@ -997,15 +974,15 @@ type badApp struct {
 	onlyLastHashIsWrong bool
 }
 
-func (app *badApp) FinalizeBlock(context.Context, *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+func (app *badApp) FinalizeBlock(context.Context, *abci.FinalizeBlockRequest) (*abci.FinalizeBlockResponse, error) {
 	app.height++
 	if app.onlyLastHashIsWrong {
 		if app.height == app.numBlocks {
-			return &abci.ResponseFinalizeBlock{AppHash: cmtrand.Bytes(8)}, nil
+			return &abci.FinalizeBlockResponse{AppHash: cmtrand.Bytes(8)}, nil
 		}
-		return &abci.ResponseFinalizeBlock{AppHash: []byte{app.height}}, nil
+		return &abci.FinalizeBlockResponse{AppHash: []byte{app.height}}, nil
 	} else if app.allHashesAreWrong {
-		return &abci.ResponseFinalizeBlock{AppHash: cmtrand.Bytes(8)}, nil
+		return &abci.FinalizeBlockResponse{AppHash: cmtrand.Bytes(8)}, nil
 	}
 
 	panic("either allHashesAreWrong or onlyLastHashIsWrong must be set")
@@ -1073,7 +1050,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 				}
 				commitHeight := thisBlockExtCommit.Height
 				if commitHeight != height+1 {
-					panic(fmt.Sprintf("commit doesnt match. got height %d, expected %d", commitHeight, height+1))
+					panic(fmt.Sprintf("commit doesn't match. got height %d, expected %d", commitHeight, height+1))
 				}
 				blocks = append(blocks, block)
 				extCommits = append(extCommits, thisBlockExtCommit)
@@ -1087,7 +1064,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 				return nil, nil, err
 			}
 		case *types.Vote:
-			if p.Type == cmtproto.PrecommitType {
+			if p.Type == types.PrecommitType {
 				thisBlockExtCommit = &types.ExtendedCommit{
 					Height:             p.Height,
 					Round:              p.Round,
@@ -1116,7 +1093,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 	}
 	commitHeight := thisBlockExtCommit.Height
 	if commitHeight != height+1 {
-		panic(fmt.Sprintf("commit doesnt match. got height %d, expected %d", commitHeight, height+1))
+		panic(fmt.Sprintf("commit doesn't match. got height %d, expected %d", commitHeight, height+1))
 	}
 	blocks = append(blocks, block)
 	extCommits = append(extCommits, thisBlockExtCommit)
@@ -1142,12 +1119,13 @@ func readPieceFromWAL(msg *TimedWALMessage) interface{} {
 	return nil
 }
 
-// fresh state and mock store
+// fresh state and mock store.
 func stateAndStore(
 	t *testing.T,
 	config *cfg.Config,
 	appVersion uint64,
 ) (dbm.DB, sm.State, *mockBlockStore) {
+	t.Helper()
 	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -1177,6 +1155,7 @@ var _ sm.BlockStore = &mockBlockStore{}
 
 // TODO: NewBlockStore(db.NewMemDB) ...
 func newMockBlockStore(t *testing.T, config *cfg.Config, params types.ConsensusParams) *mockBlockStore {
+	t.Helper()
 	return &mockBlockStore{
 		config: config,
 		params: params,
@@ -1247,10 +1226,10 @@ func TestHandshakeUpdatesValidators(t *testing.T) {
 	val, _ := types.RandValidator(true, 10)
 	vals := types.NewValidatorSet([]*types.Validator{val})
 	app := &mocks.Application{}
-	app.On("Info", mock.Anything, mock.Anything).Return(&abci.ResponseInfo{
+	app.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{
 		LastBlockHeight: 0,
 	}, nil)
-	app.On("InitChain", mock.Anything, mock.Anything).Return(&abci.ResponseInitChain{
+	app.On("InitChain", mock.Anything, mock.Anything).Return(&abci.InitChainResponse{
 		Validators: types.TM2PB.ValidatorUpdates(vals),
 	}, nil)
 	clientCreator := proxy.NewLocalClientCreator(app)

@@ -6,11 +6,10 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	clist "github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -24,7 +23,7 @@ const (
 	// Most evidence should be committed in the very next block that is why we wait
 	// just over the block production rate before sending evidence again.
 	broadcastEvidenceIntervalS = 10
-	// If a message fails wait this much before sending it again
+	// If a message fails wait this much before sending it again.
 	peerRetryMessageIntervalMS = 100
 )
 
@@ -191,7 +190,6 @@ func (evR Reactor) prepareEvidenceMessage(
 	if peerHeight <= evHeight { // peer is behind. sleep while he catches up
 		return nil
 	} else if ageNumBlocks > params.MaxAgeNumBlocks { // evidence is too old relative to the peer, skip
-
 		// NOTE: if evidence is too old for an honest peer, then we're behind and
 		// either it already got committed or it never will!
 		evR.Logger.Info("Not sending peer old evidence",
@@ -216,7 +214,7 @@ type PeerState interface {
 }
 
 // encodemsg takes a array of evidence
-// returns the byte encoding of the List Message
+// returns the byte encoding of the List Message.
 func evidenceListToProto(evis []types.Evidence) (*cmtproto.EvidenceList, error) {
 	evi := make([]cmtproto.Evidence, len(evis))
 	for i := 0; i < len(evis); i++ {

@@ -5,17 +5,24 @@ import (
 	"errors"
 	"fmt"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 // PrivValidator defines the functionality of a local CometBFT validator
 // that signs votes and proposals, and never double signs.
 type PrivValidator interface {
+	// GetPubKey returns the public key of the validator.
 	GetPubKey() (crypto.PubKey, error)
 
-	SignVote(chainID string, vote *cmtproto.Vote) error
+	// FIXME: should use the domain types defined in this package, not the proto types
+
+	// SignVote signs a canonical representation of the vote. If signExtension is
+	// true, it also signs the vote extension.
+	SignVote(chainID string, vote *cmtproto.Vote, signExtension bool) error
+
+	// SignProposal signs a canonical representation of the proposal.
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
 }
 
@@ -70,7 +77,7 @@ func (pv MockPV) GetPubKey() (crypto.PubKey, error) {
 }
 
 // SignVote implements PrivValidator.
-func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
+func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote, signExtension bool) error {
 	useChainID := chainID
 	if pv.breakVoteSigning {
 		useChainID = "incorrect-chain-id"
@@ -83,18 +90,20 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	}
 	vote.Signature = sig
 
-	var extSig []byte
-	// We only sign vote extensions for non-nil precommits
-	if vote.Type == cmtproto.PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
-		extSignBytes := VoteExtensionSignBytes(useChainID, vote)
-		extSig, err = pv.PrivKey.Sign(extSignBytes)
-		if err != nil {
-			return err
+	if signExtension {
+		var extSig []byte
+		// We only sign vote extensions for non-nil precommits
+		if vote.Type == PrecommitType && !ProtoBlockIDIsNil(&vote.BlockID) {
+			extSignBytes := VoteExtensionSignBytes(useChainID, vote)
+			extSig, err = pv.PrivKey.Sign(extSignBytes)
+			if err != nil {
+				return err
+			}
+		} else if len(vote.Extension) > 0 {
+			return errors.New("unexpected vote extension - vote extensions are only allowed in non-nil precommits")
 		}
-	} else if len(vote.Extension) > 0 {
-		return errors.New("unexpected vote extension - vote extensions are only allowed in non-nil precommits")
+		vote.ExtensionSignature = extSig
 	}
-	vote.ExtensionSignature = extSig
 	return nil
 }
 
@@ -142,7 +151,7 @@ type ErroringMockPV struct {
 var ErroringMockPVErr = errors.New("erroringMockPV always returns an error")
 
 // SignVote implements PrivValidator.
-func (pv *ErroringMockPV) SignVote(string, *cmtproto.Vote) error {
+func (pv *ErroringMockPV) SignVote(string, *cmtproto.Vote, bool) error {
 	return ErroringMockPVErr
 }
 

@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/cobra"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/state"
@@ -78,7 +77,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	if err != nil {
 		return nil, nil, err
 	}
-	blockStore := store.NewBlockStore(blockStoreDB)
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 
 	if !os.FileExists(filepath.Join(config.DBDir(), "state.db")) {
 		return nil, nil, fmt.Errorf("no statestore found in %v", config.DBDir())

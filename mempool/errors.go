@@ -5,10 +5,10 @@ import (
 	"fmt"
 )
 
-// ErrTxNotFound is returned to the client if tx is not found in mempool
+// ErrTxNotFound is returned to the client if tx is not found in mempool.
 var ErrTxNotFound = errors.New("transaction not found in mempool")
 
-// ErrTxInCache is returned to the client if we saw tx earlier
+// ErrTxInCache is returned to the client if we saw tx earlier.
 var ErrTxInCache = errors.New("tx already exists in cache")
 
 // ErrTxTooLarge defines an error when a transaction is too big to be sent in a

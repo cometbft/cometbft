@@ -13,7 +13,9 @@ import (
 // Tests that validator sets are available and correct according to
 // scheduled validator updates.
 func TestValidator_Sets(t *testing.T) {
+	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
 			return
 		}
@@ -28,7 +30,13 @@ func TestValidator_Sets(t *testing.T) {
 
 		// skip first block if node is pruning blocks, to avoid race conditions
 		if node.RetainBlocks > 0 {
-			first++
+			// This was done in case pruning is activated.
+			// As it happens in the background this lowers the chances
+			// that the block at height=first will be pruned by the time we test
+			// this. If this test starts to fail often, it is worth revisiting this logic.
+			// To reproduce this failure locally, it is advised to set the storage.pruning.interval
+			// to 1s instead of 10s.
+			first += int64(node.RetainBlocks)
 		}
 
 		valSchedule := newValidatorSchedule(*node.Testnet)
@@ -55,8 +63,10 @@ func TestValidator_Sets(t *testing.T) {
 // Tests that a validator proposes blocks when it's supposed to. It tolerates some
 // missed blocks, e.g. due to testnet perturbations.
 func TestValidator_Propose(t *testing.T) {
+	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode != e2e.ModeValidator {
 			return
 		}
@@ -75,19 +85,28 @@ func TestValidator_Propose(t *testing.T) {
 			valSchedule.Increment(1)
 		}
 
-		require.False(t, proposeCount == 0 && expectCount > 0,
-			"node did not propose any blocks (expected %v)", expectCount)
-		if expectCount > 5 {
-			require.GreaterOrEqual(t, proposeCount, 3, "validator didn't propose even 3 blocks")
+		if expectCount == 0 {
+			return
 		}
+
+		if node.ClockSkew != 0 && node.Testnet.PbtsEnableHeight != 0 {
+			t.Logf("node with skewed clock (by %v), proposed %v, expected %v",
+				node.ClockSkew, proposeCount, expectCount)
+			return
+		}
+		require.Greater(t, proposeCount, 0,
+			"node did not propose any blocks (expected %v)", expectCount)
+		require.False(t, expectCount > 5 && proposeCount < 3, "node only proposed  %v blocks, expected %v", proposeCount, expectCount)
 	})
 }
 
 // Tests that a validator signs blocks when it's supposed to. It tolerates some
 // missed blocks, e.g. due to testnet perturbations.
 func TestValidator_Sign(t *testing.T) {
+	t.Helper()
 	blocks := fetchBlockChain(t)
 	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
 		if node.Mode != e2e.ModeValidator {
 			return
 		}

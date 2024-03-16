@@ -1,8 +1,6 @@
 syntax = "proto3";
 package tendermint.version;
 
-option go_package = "github.com/cometbft/cometbft/proto/tendermint/version";
-
 import "gogoproto/gogo.proto";
 
 // App includes the protocol and software version for the application.

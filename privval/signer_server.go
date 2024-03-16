@@ -3,13 +3,13 @@ package privval
 import (
 	"io"
 
+	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/internal/service"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
-	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 	"github.com/cometbft/cometbft/types"
 )
 
-// ValidationRequestHandlerFunc handles different remoteSigner requests
+// ValidationRequestHandlerFunc handles different remoteSigner requests.
 type ValidationRequestHandlerFunc func(
 	privVal types.PrivValidator,
 	requestMessage privvalproto.Message,
@@ -51,7 +51,7 @@ func (ss *SignerServer) OnStop() {
 	_ = ss.endpoint.Close()
 }
 
-// SetRequestHandler override the default function that is used to service requests
+// SetRequestHandler override the default function that is used to service requests.
 func (ss *SignerServer) SetRequestHandler(validationRequestHandler ValidationRequestHandlerFunc) {
 	ss.handlerMtx.Lock()
 	defer ss.handlerMtx.Unlock()

@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
-// TxKeySize is the size of the transaction key index
+// TxKeySize is the size of the transaction key index.
 const TxKeySize = sha256.Size
 
 type (
@@ -49,7 +49,7 @@ func (txs Txs) Hash() []byte {
 	return merkle.HashFromByteSlices(hl)
 }
 
-// Index returns the index of this transaction in the list, or -1 if not found
+// Index returns the index of this transaction in the list, or -1 if not found.
 func (txs Txs) Index(tx Tx) int {
 	for i := range txs {
 		if bytes.Equal(txs[i], tx) {
@@ -59,7 +59,7 @@ func (txs Txs) Index(tx Tx) int {
 	return -1
 }
 
-// IndexByHash returns the index of this transaction hash in the list, or -1 if not found
+// IndexByHash returns the index of this transaction hash in the list, or -1 if not found.
 func (txs Txs) IndexByHash(hash []byte) int {
 	for i := range txs {
 		if bytes.Equal(txs[i].Hash(), hash) {
@@ -108,7 +108,7 @@ func ToTxs(txl [][]byte) Txs {
 func (txs Txs) Validate(maxSizeBytes int64) error {
 	var size int64
 	for _, tx := range txs {
-		size += int64(len(tx))
+		size += ComputeProtoSizeForTxs([]Tx{tx})
 		if size > maxSizeBytes {
 			return fmt.Errorf("transaction data size exceeds maximum %d", maxSizeBytes)
 		}
@@ -157,7 +157,6 @@ func (tp TxProof) Validate(dataHash []byte) error {
 }
 
 func (tp TxProof) ToProto() cmtproto.TxProof {
-
 	pbProof := tp.Proof.ToProto()
 
 	pbtp := cmtproto.TxProof{
@@ -168,8 +167,8 @@ func (tp TxProof) ToProto() cmtproto.TxProof {
 
 	return pbtp
 }
-func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 
+func TxProofFromProto(pb cmtproto.TxProof) (TxProof, error) {
 	pbProof, err := merkle.ProofFromProto(pb.Proof)
 	if err != nil {
 		return TxProof{}, err

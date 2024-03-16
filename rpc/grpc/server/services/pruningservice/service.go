@@ -8,10 +8,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
 	"github.com/cometbft/cometbft/internal/rpctrace"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1"
 )
 
 type pruningServiceServer struct {
@@ -20,14 +20,14 @@ type pruningServiceServer struct {
 }
 
 // New creates a new CometBFT pruning service server.
-func New(pruner *sm.Pruner, logger log.Logger) v1.PruningServiceServer {
+func New(pruner *sm.Pruner, logger log.Logger) pbsvc.PruningServiceServer {
 	return &pruningServiceServer{
 		pruner: pruner,
 		logger: logger.With("service", "PruningService"),
 	}
 }
 
-func (s *pruningServiceServer) SetBlockIndexerRetainHeight(_ context.Context, request *v1.SetBlockIndexerRetainHeightRequest) (*v1.SetBlockIndexerRetainHeightResponse, error) {
+func (s *pruningServiceServer) SetBlockIndexerRetainHeight(_ context.Context, request *pbsvc.SetBlockIndexerRetainHeightRequest) (*pbsvc.SetBlockIndexerRetainHeightResponse, error) {
 	height := request.Height
 	// Because we can't agree on a single type to represent tx indexer height.
 	if height > uint64(math.MaxInt64) {
@@ -43,10 +43,10 @@ func (s *pruningServiceServer) SetBlockIndexerRetainHeight(_ context.Context, re
 		logger.Error("Cannot set block indexer retain height", "err", err, "traceID", traceID)
 		return nil, status.Errorf(codes.Internal, "Failed to set block indexer retain height (see logs for trace ID: %s)", traceID)
 	}
-	return &v1.SetBlockIndexerRetainHeightResponse{}, nil
+	return &pbsvc.SetBlockIndexerRetainHeightResponse{}, nil
 }
 
-func (s *pruningServiceServer) GetBlockIndexerRetainHeight(_ context.Context, _ *v1.GetBlockIndexerRetainHeightRequest) (*v1.GetBlockIndexerRetainHeightResponse, error) {
+func (s *pruningServiceServer) GetBlockIndexerRetainHeight(_ context.Context, _ *pbsvc.GetBlockIndexerRetainHeightRequest) (*pbsvc.GetBlockIndexerRetainHeightResponse, error) {
 	logger := s.logger.With("endpoint", "GetBLockIndexerRetainHeight")
 	traceID, err := rpctrace.New()
 	if err != nil {
@@ -58,10 +58,10 @@ func (s *pruningServiceServer) GetBlockIndexerRetainHeight(_ context.Context, _ 
 		logger.Error("Cannot get block indexer retain height", "err", err, "traceID", traceID)
 		return nil, status.Errorf(codes.Internal, "Failed to get block indexer retain height (see logs for trace ID: %s)", traceID)
 	}
-	return &v1.GetBlockIndexerRetainHeightResponse{Height: uint64(height)}, nil
+	return &pbsvc.GetBlockIndexerRetainHeightResponse{Height: uint64(height)}, nil
 }
 
-func (s *pruningServiceServer) SetTxIndexerRetainHeight(_ context.Context, request *v1.SetTxIndexerRetainHeightRequest) (*v1.SetTxIndexerRetainHeightResponse, error) {
+func (s *pruningServiceServer) SetTxIndexerRetainHeight(_ context.Context, request *pbsvc.SetTxIndexerRetainHeightRequest) (*pbsvc.SetTxIndexerRetainHeightResponse, error) {
 	height := request.Height
 	// Because we can't agree on a single type to represent tx indexer height.
 	if height > uint64(math.MaxInt64) {
@@ -77,10 +77,10 @@ func (s *pruningServiceServer) SetTxIndexerRetainHeight(_ context.Context, reque
 		logger.Error("Cannot set tx indexer retain height", "err", err, "traceID", traceID)
 		return nil, status.Errorf(codes.Internal, "Failed to set tx indexer retain height (see logs for trace ID: %s)", traceID)
 	}
-	return &v1.SetTxIndexerRetainHeightResponse{}, nil
+	return &pbsvc.SetTxIndexerRetainHeightResponse{}, nil
 }
 
-func (s *pruningServiceServer) GetTxIndexerRetainHeight(_ context.Context, _ *v1.GetTxIndexerRetainHeightRequest) (*v1.GetTxIndexerRetainHeightResponse, error) {
+func (s *pruningServiceServer) GetTxIndexerRetainHeight(_ context.Context, _ *pbsvc.GetTxIndexerRetainHeightRequest) (*pbsvc.GetTxIndexerRetainHeightResponse, error) {
 	logger := s.logger.With("endpoint", "GetTxIndexerRetainHeight")
 	traceID, err := rpctrace.New()
 	if err != nil {
@@ -92,11 +92,11 @@ func (s *pruningServiceServer) GetTxIndexerRetainHeight(_ context.Context, _ *v1
 		logger.Error("Cannot get tx indexer retain height", "err", err, "traceID", traceID)
 		return nil, status.Errorf(codes.Internal, "Failed to get tx indexer retain height (see logs for trace ID: %s)", traceID)
 	}
-	return &v1.GetTxIndexerRetainHeightResponse{Height: uint64(height)}, nil
+	return &pbsvc.GetTxIndexerRetainHeightResponse{Height: uint64(height)}, nil
 }
 
 // SetBlockRetainHeight implements v1.PruningServiceServer.
-func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *v1.SetBlockRetainHeightRequest) (*v1.SetBlockRetainHeightResponse, error) {
+func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *pbsvc.SetBlockRetainHeightRequest) (*pbsvc.SetBlockRetainHeightResponse, error) {
 	height := req.Height
 	// Because we can't agree on a single type to represent block height.
 	if height > uint64(math.MaxInt64) {
@@ -112,11 +112,11 @@ func (s *pruningServiceServer) SetBlockRetainHeight(_ context.Context, req *v1.S
 		logger.Error("Cannot set block retain height", "err", err, "traceID", traceID)
 		return nil, status.Errorf(codes.Internal, "Failed to set block retain height (see logs for trace ID: %s)", traceID)
 	}
-	return &v1.SetBlockRetainHeightResponse{}, nil
+	return &pbsvc.SetBlockRetainHeightResponse{}, nil
 }
 
 // GetBlockRetainHeight implements v1.PruningServiceServer.
-func (s *pruningServiceServer) GetBlockRetainHeight(_ context.Context, _ *v1.GetBlockRetainHeightRequest) (*v1.GetBlockRetainHeightResponse, error) {
+func (s *pruningServiceServer) GetBlockRetainHeight(_ context.Context, _ *pbsvc.GetBlockRetainHeightRequest) (*pbsvc.GetBlockRetainHeightResponse, error) {
 	logger := s.logger.With("endpoint", "GetBlockRetainHeight")
 	traceID, err := rpctrace.New()
 	if err != nil {
@@ -133,14 +133,14 @@ func (s *pruningServiceServer) GetBlockRetainHeight(_ context.Context, _ *v1.Get
 		logger.Error("Cannot get block retain height specified by application", "err", err, "traceID", traceID)
 		return nil, status.Errorf(codes.Internal, "Failed to get app block retain height (see logs for trace ID: %s)", traceID)
 	}
-	return &v1.GetBlockRetainHeightResponse{
+	return &pbsvc.GetBlockRetainHeightResponse{
 		PruningServiceRetainHeight: uint64(svcHeight),
 		AppRetainHeight:            uint64(appHeight),
 	}, nil
 }
 
 // SetBlockResultsRetainHeight implements v1.PruningServiceServer.
-func (s *pruningServiceServer) SetBlockResultsRetainHeight(_ context.Context, req *v1.SetBlockResultsRetainHeightRequest) (*v1.SetBlockResultsRetainHeightResponse, error) {
+func (s *pruningServiceServer) SetBlockResultsRetainHeight(_ context.Context, req *pbsvc.SetBlockResultsRetainHeightRequest) (*pbsvc.SetBlockResultsRetainHeightResponse, error) {
 	height := req.Height
 	// Because we can't agree on a single type to represent block height.
 	if height > uint64(math.MaxInt64) {
@@ -156,11 +156,11 @@ func (s *pruningServiceServer) SetBlockResultsRetainHeight(_ context.Context, re
 		logger.Error("Cannot set block results retain height", "err", err, "traceID", traceID)
 		return nil, status.Errorf(codes.Internal, "Failed to set block results retain height (see logs for trace ID: %s)", traceID)
 	}
-	return &v1.SetBlockResultsRetainHeightResponse{}, nil
+	return &pbsvc.SetBlockResultsRetainHeightResponse{}, nil
 }
 
 // GetBlockResultsRetainHeight implements v1.PruningServiceServer.
-func (s *pruningServiceServer) GetBlockResultsRetainHeight(_ context.Context, _ *v1.GetBlockResultsRetainHeightRequest) (*v1.GetBlockResultsRetainHeightResponse, error) {
+func (s *pruningServiceServer) GetBlockResultsRetainHeight(_ context.Context, _ *pbsvc.GetBlockResultsRetainHeightRequest) (*pbsvc.GetBlockResultsRetainHeightResponse, error) {
 	logger := s.logger.With("endpoint", "GetBlockResultsRetainHeight")
 	traceID, err := rpctrace.New()
 	if err != nil {
@@ -172,5 +172,5 @@ func (s *pruningServiceServer) GetBlockResultsRetainHeight(_ context.Context, _ 
 		logger.Error("Cannot get block results retain height", "err", err, "traceID", traceID)
 		return nil, status.Errorf(codes.Internal, "Failed to get block results retain height (see logs for trace ID: %s)", traceID)
 	}
-	return &v1.GetBlockResultsRetainHeightResponse{PruningServiceRetainHeight: uint64(height)}, nil
+	return &pbsvc.GetBlockResultsRetainHeightResponse{PruningServiceRetainHeight: uint64(height)}, nil
 }

@@ -163,14 +163,14 @@ func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 		return TemplateData{}, fmt.Errorf("multiple packages found in %s", dir)
 	}
 	if len(d) == 0 {
-		return TemplateData{}, fmt.Errorf("no go pacakges found in %s", dir)
+		return TemplateData{}, fmt.Errorf("no go packages found in %s", dir)
 	}
 
 	// Grab the package name.
 	var pkgName string
 	var pkg *ast.Package
 	// TODO(thane): Figure out a more readable way of implementing this.
-	//nolint:revive
+
 	for pkgName, pkg = range d {
 	}
 	td := TemplateData{
@@ -273,7 +273,7 @@ func extractHelpMessage(cg *ast.CommentGroup) string {
 	}
 	var help []string //nolint: prealloc
 	for _, c := range cg.List {
-		mt := strings.TrimPrefix(c.Text, "//metrics:")
+		mt := strings.TrimPrefix(c.Text, "// metrics:")
 		if mt != c.Text {
 			return strings.TrimSpace(mt)
 		}
@@ -283,7 +283,7 @@ func extractHelpMessage(cg *ast.CommentGroup) string {
 }
 
 func isMetric(e ast.Expr, mPkgName string) bool {
-	return strings.Contains(types.ExprString(e), fmt.Sprintf("%s.", mPkgName))
+	return strings.Contains(types.ExprString(e), mPkgName+".")
 }
 
 func extractLabels(bl *ast.BasicLit) string {

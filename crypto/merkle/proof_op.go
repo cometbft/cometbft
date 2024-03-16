@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 )
 
 var ErrKeyPathNotConsumed = errors.New("merkle: keypath not consumed")
@@ -21,7 +21,7 @@ var ErrKeyPathNotConsumed = errors.New("merkle: keypath not consumed")
 // ProofOp() encodes the ProofOperator in a generic way so it can later be
 // decoded with OpDecoder.
 type ProofOperator interface {
-	Run([][]byte) ([][]byte, error)
+	Run(leaves [][]byte) ([][]byte, error)
 	GetKey() []byte
 	ProofOp() cmtcrypto.ProofOp
 }
@@ -31,7 +31,7 @@ type ProofOperator interface {
 
 // ProofOperators is a slice of ProofOperator(s).
 // Each operator will be applied to the input value sequentially
-// and the last Merkle root will be verified with already known data
+// and the last Merkle root will be verified with already known data.
 type ProofOperators []ProofOperator
 
 func (poz ProofOperators) VerifyValue(root []byte, keypath string, value []byte) (err error) {
@@ -127,7 +127,7 @@ func (prt *ProofRuntime) VerifyValue(proof *cmtcrypto.ProofOps, root []byte, key
 	return prt.Verify(proof, root, keypath, [][]byte{value})
 }
 
-// TODO In the long run we'll need a method of classifcation of ops,
+// TODO In the long run we'll need a method of classification of ops,
 // whether existence or absence or perhaps a third?
 func (prt *ProofRuntime) VerifyAbsence(proof *cmtcrypto.ProofOps, root []byte, keypath string) (err error) {
 	return prt.Verify(proof, root, keypath, nil)

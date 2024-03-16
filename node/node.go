@@ -14,12 +14,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
+	_ "net/http/pprof" //nolint: gosec
+
 	cfg "github.com/cometbft/cometbft/config"
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	"github.com/cometbft/cometbft/light"
-
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/service"
 	sm "github.com/cometbft/cometbft/internal/state"
@@ -29,6 +29,7 @@ import (
 	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/pex"
@@ -40,8 +41,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
-
-	_ "net/http/pprof" //nolint: gosec
 )
 
 // Node is the highest level interface to a full CometBFT node.
@@ -67,8 +66,8 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
-	bcReactor         p2p.Reactor    // for block-syncing
-	mempoolReactor    *mempl.Reactor // for gossipping transactions
+	bcReactor         p2p.Reactor        // for block-syncing
+	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -85,6 +84,12 @@ type Node struct {
 	indexerService    *txindex.IndexerService
 	prometheusSrv     *http.Server
 	pprofSrv          *http.Server
+}
+
+type waitSyncP2PReactor interface {
+	p2p.Reactor
+	// required by RPC service
+	WaitSync() bool
 }
 
 // Option sets a parameter for the node.
@@ -158,7 +163,10 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	if dbProvider == nil {
 		dbProvider = cfg.DefaultDBProvider
 	}
-	blockStore, stateDB, err := initDBs(config, dbProvider)
+	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
+
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -173,11 +181,13 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if !blockStore.IsEmpty() {
-		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")
+		return errors.New("blockstore not empty, trying to initialize non empty state")
 	}
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+		Logger:               logger,
+		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
 	})
 
 	defer func() {
@@ -193,22 +203,24 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if !state.IsEmpty() {
-		return fmt.Errorf("state not empty, trying to initialize non empty state")
+		return errors.New("state not empty, trying to initialize non empty state")
 	}
 
+	// The state store will use the DBKeyLayout set in config or already existing in the DB.
 	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config), config.Storage.GenesisHash)
 	if err != nil {
 		return err
 	}
 
-	stateProvider, err := statesync.NewLightClientStateProvider(
+	stateProvider, err := statesync.NewLightClientStateProviderWithDBKeyVersion(
 		ctx,
 		genState.ChainID, genState.Version, genState.InitialHeight,
 		config.StateSync.RPCServers, light.TrustOptions{
 			Period: config.StateSync.TrustPeriod,
 			Height: config.StateSync.TrustHeight,
 			Hash:   config.StateSync.TrustHashBytes(),
-		}, logger.With("module", "light"))
+		}, logger.With("module", "light"),
+		config.Storage.ExperimentalKeyLayout)
 	if err != nil {
 		return fmt.Errorf("failed to set up light client state provider: %w", err)
 	}
@@ -219,16 +231,14 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	if appHash == nil {
 		logger.Info("warning: cannot verify appHash. Verification will happen when node boots up!")
-	} else {
-		if !bytes.Equal(appHash, state.AppHash) {
-			if err := blockStore.Close(); err != nil {
-				logger.Error("failed to close blockstore: %w", err)
-			}
-			if err := stateStore.Close(); err != nil {
-				logger.Error("failed to close statestore: %w", err)
-			}
-			return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+	} else if !bytes.Equal(appHash, state.AppHash) {
+		if err := blockStore.Close(); err != nil {
+			logger.Error("failed to close blockstore: %w", err)
 		}
+		if err := stateStore.Close(); err != nil {
+			logger.Error("failed to close statestore: %w", err)
+		}
+		return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
 	}
 
 	commit, err := stateProvider.Commit(ctx, height)
@@ -271,19 +281,28 @@ func NewNode(ctx context.Context,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
-	blockStore, stateDB, err := initDBs(config, dbProvider)
+	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
 	}
-
-	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
-	})
 
 	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, config.Storage.GenesisHash)
 	if err != nil {
 		return nil, err
 	}
+
+	csMetrics, p2pMetrics, memplMetrics, smMetrics, bstMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+		Metrics:              smMetrics,
+		Compact:              config.Storage.Compact,
+		CompactionInterval:   config.Storage.CompactionInterval,
+		Logger:               logger,
+		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
+	})
+
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	// The key will be deleted if it existed.
 	// Not checking whether the key is there in case the genesis file was larger than
@@ -295,8 +314,6 @@ func NewNode(ctx context.Context,
 	if err != nil {
 		logger.Error("Failed to delete genesis doc from DB ", err)
 	}
-
-	csMetrics, p2pMetrics, memplMetrics, smMetrics, abciMetrics, bsMetrics, ssMetrics := metricsProvider(genDoc.ChainID)
 
 	// Create the proxyApp and establish connections to the ABCI app (consensus, mempool, query).
 	proxyApp, err := createAndStartProxyAppConns(clientCreator, logger, abciMetrics)
@@ -365,10 +382,8 @@ func NewNode(ctx context.Context,
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	// Make MempoolReactor
 	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
 
-	// Make Evidence Reactor
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
 		return nil, err
@@ -406,13 +421,12 @@ func NewNode(ctx context.Context,
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
-	// Make BlocksyncReactor. Don't start block sync if we're doing a state sync first.
+	// Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
 
-	// Make ConsensusReactor
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
@@ -439,10 +453,8 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	// Setup Transport.
 	transport, peerFilters := createTransport(config, nodeInfo, nodeKey, proxyApp)
 
-	// Setup Switch.
 	p2pLogger := logger.With("module", "p2p")
 	sw := createSwitch(
 		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
@@ -579,10 +591,10 @@ func (n *Node) OnStart() error {
 	if n.stateSync {
 		bcR, ok := n.bcReactor.(blockSyncReactor)
 		if !ok {
-			return fmt.Errorf("this blocksync reactor does not support switching from state sync")
+			return errors.New("this blocksync reactor does not support switching from state sync")
 		}
 		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
-			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
+			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}
@@ -730,8 +742,8 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 	}
 
 	// we may expose the rpc over both a unix and tcp socket
-	listeners := make([]net.Listener, len(listenAddrs))
-	for i, listenAddr := range listenAddrs {
+	listeners := make([]net.Listener, 0, len(listenAddrs))
+	for _, listenAddr := range listenAddrs {
 		mux := http.NewServeMux()
 		rpcLogger := n.Logger.With("module", "rpc-server")
 		wmLogger := rpcLogger.With("protocol", "websocket")
@@ -792,7 +804,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 			}()
 		}
 
-		listeners[i] = listener
+		listeners = append(listeners, listener)
 	}
 
 	if n.config.GRPC.ListenAddress != "" {
@@ -864,7 +876,7 @@ func (n *Node) startPrometheusServer() *http.Server {
 	return srv
 }
 
-// starts a ppro
+// starts a ppro.
 func (n *Node) startPprofServer() *http.Server {
 	srv := &http.Server{
 		Addr:              n.config.RPC.PprofListenAddress,
@@ -978,7 +990,7 @@ func makeNodeInfo(
 		),
 		DefaultNodeID: nodeKey.ID(),
 		Network:       genDoc.ChainID,
-		Version:       version.TMCoreSemVer,
+		Version:       version.CMTSemVer,
 		Channels: []byte{
 			bc.BlocksyncChannel,
 			cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,

@@ -1,14 +1,23 @@
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
-FROM golang:1.21-bullseye
+FROM cometbft/cometbft-db-testing:v0.10.0
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
-RUN apt-get -qq install -y libleveldb-dev librocksdb-dev >/dev/null
+
+# For the latency-setter script
+RUN apt-get -qq install -y iputils-ping iproute2 python3-netifaces >/dev/null
+RUN mkdir -p /scripts
+COPY test/e2e/pkg/latency/aws-latencies.csv /scripts/
+COPY test/e2e/pkg/latency/latency-setter.py /scripts/
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
+ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb,pebbledb,clock_skew
 WORKDIR /src/cometbft
+
+# Fetch dependencies separately (for layer caching)
+COPY go.mod go.sum api/go.mod api/go.sum ./
+RUN go mod download
 
 # Build CometBFT and install into /usr/bin/cometbft
 COPY . .

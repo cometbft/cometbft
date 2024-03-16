@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
 	"github.com/cometbft/cometbft/internal/blocksync"
-	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -56,7 +56,7 @@ func TestBcNoBlockResponseMessageValidateBasic(t *testing.T) {
 
 func TestBcStatusRequestMessageValidateBasic(t *testing.T) {
 	request := bcproto.StatusRequest{}
-	assert.NoError(t, blocksync.ValidateMsg(&request))
+	require.NoError(t, blocksync.ValidateMsg(&request))
 }
 
 func TestBcStatusResponseMessageValidateBasic(t *testing.T) {

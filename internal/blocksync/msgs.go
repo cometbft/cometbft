@@ -5,12 +5,12 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 
-	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
+	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
 	"github.com/cometbft/cometbft/types"
 )
 
 const (
-	// NOTE: keep up to date with bcproto.BlockResponse
+	// NOTE: keep up to date with bcproto.BlockResponse.
 	BlockResponseMessagePrefixSize   = 4
 	BlockResponseMessageFieldKeySize = 1
 	MaxMsgSize                       = types.MaxBlockSizeBytes +
@@ -30,10 +30,9 @@ func ValidateMsg(pb proto.Message) error {
 			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}
 		}
 	case *bcproto.BlockResponse:
-		_, err := types.BlockFromProto(msg.Block)
-		if err != nil {
-			return err
-		}
+		// Avoid double-calling `types.BlockFromProto` for performance reasons.
+		// See https://github.com/cometbft/cometbft/issues/1964
+		return nil
 	case *bcproto.NoBlockResponse:
 		if msg.Height < 0 {
 			return ErrInvalidHeight{Height: msg.Height, Reason: "negative height"}

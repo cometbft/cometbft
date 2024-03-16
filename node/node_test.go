@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -112,7 +111,7 @@ func TestCompanionInitialHeightSetup(t *testing.T) {
 
 	companionRetainHeight, err := n.stateStore.GetCompanionBlockRetainHeight()
 	require.NoError(t, err)
-	require.Equal(t, companionRetainHeight, int64(1))
+	require.Equal(t, int64(1), companionRetainHeight)
 }
 
 func TestNodeDelayedStart(t *testing.T) {
@@ -130,7 +129,7 @@ func TestNodeDelayedStart(t *testing.T) {
 	defer n.Stop() //nolint:errcheck // ignore for tests
 
 	startTime := cmttime.Now()
-	assert.Equal(t, true, startTime.After(n.GenesisDoc().GenesisTime))
+	assert.True(t, true, startTime.After(n.GenesisDoc().GenesisTime))
 }
 
 func TestNodeSetAppVersion(t *testing.T) {
@@ -160,18 +159,18 @@ func TestPprofServer(t *testing.T) {
 
 	// should not work yet
 	_, err := http.Get("http://" + config.RPC.PprofListenAddress) //nolint: bodyclose
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	n, err := DefaultNewNode(config, log.TestingLogger())
-	assert.NoError(t, err)
-	assert.NoError(t, n.Start())
+	require.NoError(t, err)
+	require.NoError(t, n.Start())
 	defer func() {
 		require.NoError(t, n.Stop())
 	}()
 	assert.NotNil(t, n.pprofSrv)
 
 	resp, err := http.Get("http://" + config.RPC.PprofListenAddress + "/debug/pprof")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer resp.Body.Close()
 	assert.Equal(t, 200, resp.StatusCode)
 }
@@ -209,7 +208,7 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
 
-// address without a protocol must result in error
+// address without a protocol must result in error.
 func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	addrNoPrefix := testFreeAddr(t)
 
@@ -218,7 +217,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
 	_, err := DefaultNewNode(config, log.TestingLogger())
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestNodeSetPrivValIPC(t *testing.T) {
@@ -255,6 +254,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 
 // testFreeAddr claims a free port so we don't block on listener being ready.
 func testFreeAddr(t *testing.T) string {
+	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	defer ln.Close()
@@ -273,7 +273,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	logger := log.TestingLogger()
@@ -312,7 +312,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	// than can fit in a block
 	var currentBytes int64
 	for currentBytes <= maxEvidenceBytes {
-		ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, time.Now(), privVals[0], "test-chain")
+		ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, cmttime.Now(), privVals[0], "test-chain")
 		require.NoError(t, err)
 		currentBytes += int64(len(ev.Bytes()))
 		evidencePool.ReportConflictingVotes(ev.VoteA, ev.VoteB)
@@ -329,7 +329,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	for i := 0; i <= int(maxBytes)/txLength; i++ {
 		tx := cmtrand.Bytes(txLength)
 		_, err := mempool.CheckTx(tx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}
 
 	blockExec := sm.NewBlockExecutor(
@@ -365,7 +365,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	assert.EqualValues(t, partSetFromHeader.ByteSize(), partSet.ByteSize())
 
 	err = blockExec.ValidateBlock(state, block)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestMaxProposalBlockSize(t *testing.T) {
@@ -377,7 +377,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	logger := log.TestingLogger()
@@ -407,7 +407,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))
 	tx := cmtrand.Bytes(txLength - 4) // to account for the varint
 	_, err = mempool.CheckTx(tx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
@@ -485,7 +485,7 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 }
 
 // Simple test to confirm that an existing genesis file will be deleted from the DB
-// TODO Confirm that the deletion of a very big file does not crash the machine
+// TODO Confirm that the deletion of a very big file does not crash the machine.
 func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
 	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
 	defer os.RemoveAll(config.RootDir)

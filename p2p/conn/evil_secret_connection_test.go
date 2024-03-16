@@ -9,13 +9,14 @@ import (
 	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/chacha20poly1305"
 
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/internal/protoio"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 )
 
 type buffer struct {
@@ -260,11 +261,11 @@ func TestMakeSecretConnection(t *testing.T) {
 			privKey := ed25519.GenPrivKey()
 			_, err := MakeSecretConnection(tc.conn, privKey)
 			if tc.errMsg != "" {
-				if assert.Error(t, err) {
+				if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 					assert.Contains(t, err.Error(), tc.errMsg)
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/cometbft/cometbft/light/provider"
@@ -27,7 +26,7 @@ import (
 // trusted and saves it to the trusted store.
 func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.LightBlock, now time.Time) error {
 	if primaryTrace == nil || len(primaryTrace) < 2 {
-		return errors.New("nil or single block primary trace")
+		return ErrNilOrSinglePrimaryTrace
 	}
 	var (
 		headerMatched      bool
@@ -114,8 +113,8 @@ func (c *Client) detectDivergence(ctx context.Context, primaryTrace []*types.Lig
 //
 // 3: nil -> the hashes of the two headers match
 func (c *Client) compareNewHeaderWithWitness(ctx context.Context, errc chan error, h *types.SignedHeader,
-	witness provider.Provider, witnessIndex int) {
-
+	witness provider.Provider, witnessIndex int,
+) {
 	lightBlock, err := witness.LightBlock(ctx, h.Height)
 	switch err {
 	// no error means we move on to checking the hash of the two headers
@@ -213,7 +212,7 @@ func (c *Client) sendEvidence(ctx context.Context, ev *types.LightClientAttackEv
 }
 
 // handleConflictingHeaders handles the primary style of attack, which is where a primary and witness have
-// two headers of the same height but with different hashes
+// two headers of the same height but with different hashes.
 func (c *Client) handleConflictingHeaders(
 	ctx context.Context,
 	primaryTrace []*types.LightBlock,
@@ -238,7 +237,7 @@ func (c *Client) handleConflictingHeaders(
 	// and generate evidence against the primary that we can send to the witness
 	commonBlock, trustedBlock := witnessTrace[0], witnessTrace[len(witnessTrace)-1]
 	evidenceAgainstPrimary := newLightClientAttackEvidence(primaryBlock, trustedBlock, commonBlock)
-	c.logger.Error("ATTEMPTED ATTACK DETECTED. Sending evidence againt primary by witness", "ev", evidenceAgainstPrimary,
+	c.logger.Error("ATTEMPTED ATTACK DETECTED. Sending evidence against primary by witness", "ev", evidenceAgainstPrimary,
 		"primary", c.primary, "witness", supportingWitness)
 	c.sendEvidence(ctx, evidenceAgainstPrimary, supportingWitness)
 
@@ -274,7 +273,7 @@ func (c *Client) handleConflictingHeaders(
 }
 
 // examineConflictingHeaderAgainstTrace takes a trace from one provider and a divergent header that
-// it has received from another and preforms verifySkipping at the heights of each of the intermediate
+// it has received from another and performs verifySkipping at the heights of each of the intermediate
 // headers in the trace until it reaches the divergentHeader. 1 of 2 things can happen.
 //
 //  1. The light client verifies a header that is different to the intermediate header in the trace. This
@@ -293,7 +292,6 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	targetBlock *types.LightBlock,
 	source provider.Provider, now time.Time,
 ) ([]*types.LightBlock, *types.LightBlock, error) {
-
 	var (
 		previouslyVerifiedBlock, sourceBlock *types.LightBlock
 		sourceTrace                          []*types.LightBlock
@@ -301,8 +299,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	)
 
 	if targetBlock.Height < trace[0].Height {
-		return nil, nil, fmt.Errorf("target block has a height lower than the trusted height (%d < %d)",
-			targetBlock.Height, trace[0].Height)
+		return nil, nil, ErrTargetBlockHeightLessThanTrusted{Target: targetBlock.Height, Trusted: trace[0].Height}
 	}
 
 	for idx, traceBlock := range trace {
@@ -314,8 +311,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 			// the end of the trace has a lesser time than the target block then all blocks in the trace should have a
 			// lesser time
 			if traceBlock.Time.After(targetBlock.Time) {
-				return nil, nil,
-					errors.New("sanity check failed: expected traceblock to have a lesser time than the target block")
+				return nil, nil, ErrInvalidBlockTime
 			}
 
 			// before sending back the divergent block and trace we need to ensure we have verified
@@ -323,7 +319,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 			if previouslyVerifiedBlock.Height != targetBlock.Height {
 				sourceTrace, err = c.verifySkipping(ctx, source, previouslyVerifiedBlock, targetBlock, now)
 				if err != nil {
-					return nil, nil, fmt.Errorf("verifySkipping of conflicting header failed: %w", err)
+					return nil, nil, ErrVerifySkipping{Err: err}
 				}
 			}
 			return sourceTrace, traceBlock, nil
@@ -335,7 +331,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 		} else {
 			sourceBlock, err = source.LightBlock(ctx, traceBlock.Height)
 			if err != nil {
-				return nil, nil, fmt.Errorf("failed to examine trace: %w", err)
+				return nil, nil, ErrExamineTrace{Err: err}
 			}
 		}
 
@@ -343,8 +339,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 		// else we cannot continue with verification.
 		if idx == 0 {
 			if shash, thash := sourceBlock.Hash(), traceBlock.Hash(); !bytes.Equal(shash, thash) {
-				return nil, nil, fmt.Errorf("trusted block is different to the source's first block (%X = %X)",
-					thash, shash)
+				return nil, nil, ErrBlockHashMismatch{TraceBlockHash: thash, SourceBlockHash: shash}
 			}
 			previouslyVerifiedBlock = sourceBlock
 			continue
@@ -354,7 +349,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 		// intermediate height
 		sourceTrace, err = c.verifySkipping(ctx, source, previouslyVerifiedBlock, sourceBlock, now)
 		if err != nil {
-			return nil, nil, fmt.Errorf("verifySkipping of conflicting header failed: %w", err)
+			return nil, nil, ErrVerifySkipping{Err: err}
 		}
 		// check if the headers verified by the source has diverged from the trace
 		if shash, thash := sourceBlock.Hash(), traceBlock.Hash(); !bytes.Equal(shash, thash) {
@@ -370,7 +365,6 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 	// prerequisites to this function were not met. Namely that either trace[len(trace)-1].Height < targetBlock.Height
 	// or that trace[i].Hash() != targetBlock.Hash()
 	return nil, nil, errNoDivergence
-
 }
 
 // getTargetBlockOrLatest gets the latest height, if it is greater than the target height then it queries

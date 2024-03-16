@@ -3,19 +3,26 @@ package consensus
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-
-	// "sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cometbft/cometbft-db"
+	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -67,14 +74,14 @@ func TestWALTruncate(t *testing.T) {
 
 	h := int64(50)
 	gr, found, err := wal.SearchForEndHeight(h, &WALSearchOptions{})
-	assert.NoError(t, err, "expected not to err on height %d", h)
+	require.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
 	assert.NotNil(t, gr)
 	defer gr.Close()
 
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
-	assert.NoError(t, err, "expected to decode a message")
+	require.NoError(t, err, "expected to decode a message")
 	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
@@ -82,10 +89,37 @@ func TestWALTruncate(t *testing.T) {
 
 func TestWALEncoderDecoder(t *testing.T) {
 	now := cmttime.Now()
+
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	cs1, vss := randState(1)
+
+	block1 := cmttypes.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: cmttypes.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+
+	p := cmttypes.Proposal{
+		Type:      cmttypes.ProposalType,
+		Height:    42,
+		Round:     13,
+		BlockID:   block1,
+		POLRound:  12,
+		Timestamp: cmttime.Canonical(now),
+	}
+
+	pp := p.ToProto()
+	err := vss[0].SignProposal(cs1.state.ChainID, pp)
+	require.NoError(t, err)
+
+	p.Signature = pp.Signature
+
 	msgs := []TimedWALMessage{
 		{Time: now, Msg: EndHeightMessage{0}},
 		{Time: now, Msg: timeoutInfo{Duration: time.Second, Height: 1, Round: 1, Step: types.RoundStepPropose}},
 		{Time: now, Msg: cmttypes.EventDataRoundState{Height: 1, Round: 1, Step: ""}},
+		{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: now}},
+		{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: time.Time{}}},
+		{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody"}},
 	}
 
 	b := new(bytes.Buffer)
@@ -105,6 +139,117 @@ func TestWALEncoderDecoder(t *testing.T) {
 		assert.Equal(t, msg.Time.UTC(), decoded.Time)
 		assert.Equal(t, msg.Msg, decoded.Msg)
 	}
+}
+
+func TestWALEncoderDecoderMultiVersion(t *testing.T) {
+	now := time.Time{}.AddDate(100, 10, 20)
+	v038Data, _ := hex.DecodeString("a570586b000000c50a0b0880e2c3b1a4feffffff0112b50112b2010aa7011aa4010aa1010820102a180d200c2a480a2001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa6612240805122001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa66320b0880e2c3b1a4feffffff013a404942b2803552651e1c7e7b72557cdade0a4c5a638dcda9822ec402d42c5f75c767f62c0f3fb0d58aef7842a4e18964faaff3d17559989cf1f11dd006e31a9d0f12064e6f626f6479")
+
+	ss, privVals := makeState(1, "execution_chain")
+	var pVal cmttypes.PrivValidator
+	for mk := range privVals {
+		pVal = privVals[mk]
+	}
+	vs := newValidatorStub(pVal, 1)
+
+	cmtrand.Seed(0)
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	block1 := cmttypes.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: cmttypes.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+
+	p := cmttypes.Proposal{
+		Type:      cmttypes.ProposalType,
+		Height:    42,
+		Round:     13,
+		BlockID:   block1,
+		POLRound:  12,
+		Timestamp: cmttime.Canonical(now),
+	}
+
+	pp := p.ToProto()
+	err := vs.SignProposal(ss.ChainID, pp)
+	require.NoError(t, err)
+	p.Signature = pp.Signature
+
+	cases := []struct {
+		twm           TimedWALMessage
+		expectFailure bool
+	}{
+		{twm: TimedWALMessage{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: now}}, expectFailure: true},
+		{twm: TimedWALMessage{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody", ReceiveTime: time.Time{}}}, expectFailure: false},
+		{twm: TimedWALMessage{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody"}}, expectFailure: false},
+	}
+
+	b := new(bytes.Buffer)
+	b.Reset()
+
+	_, err = b.Write(v038Data)
+	require.NoError(t, err)
+
+	dec := NewWALDecoder(b)
+	v038decoded, err := dec.Decode()
+	require.NoError(t, err)
+	twmV038 := v038decoded.Msg
+	msgInfoV038 := twmV038.(msgInfo)
+
+	for _, tc := range cases {
+		if tc.expectFailure {
+			assert.NotEqual(t, tc.twm.Msg, msgInfoV038)
+		} else {
+			assert.Equal(t, tc.twm.Msg, msgInfoV038)
+		}
+	}
+}
+
+func TestWALEncoder(t *testing.T) {
+	now := time.Time{}.AddDate(100, 10, 20)
+
+	ss, privVals := makeState(1, "execution_chain")
+	var pVal cmttypes.PrivValidator
+	for mk := range privVals {
+		pVal = privVals[mk]
+	}
+	vs := newValidatorStub(pVal, 1)
+
+	cmtrand.Seed(0)
+	randbytes := cmtrand.Bytes(tmhash.Size)
+	block1 := cmttypes.BlockID{
+		Hash:          randbytes,
+		PartSetHeader: cmttypes.PartSetHeader{Total: 5, Hash: randbytes},
+	}
+
+	p := cmttypes.Proposal{
+		Type:      cmttypes.ProposalType,
+		Height:    42,
+		Round:     13,
+		BlockID:   block1,
+		POLRound:  12,
+		Timestamp: cmttime.Canonical(now),
+	}
+
+	pp := p.ToProto()
+	err := vs.SignProposal(ss.ChainID, pp)
+	require.NoError(t, err)
+	p.Signature = pp.Signature
+
+	b := new(bytes.Buffer)
+	enc := NewWALEncoder(b)
+	twm := TimedWALMessage{Time: now, Msg: msgInfo{Msg: &ProposalMessage{Proposal: &p}, PeerID: "Nobody"}}
+	err = enc.Encode(&twm)
+	require.NoError(t, err)
+
+	var b1 bytes.Buffer
+	tee := io.TeeReader(b, &b1)
+	b2, err := io.ReadAll(tee)
+	require.NoError(t, err)
+	fmt.Printf("%s\n", hex.EncodeToString(b1.Bytes()))
+
+	// Encoded string generated with v0.38 (before PBTS)
+	data, err := hex.DecodeString("a570586b000000c50a0b0880e2c3b1a4feffffff0112b50112b2010aa7011aa4010aa1010820102a180d200c2a480a2001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa6612240805122001c073624aaf3978514ef8443bb2a859c75fc3cc6af26d5aaa20926f046baa66320b0880e2c3b1a4feffffff013a404942b2803552651e1c7e7b72557cdade0a4c5a638dcda9822ec402d42c5f75c767f62c0f3fb0d58aef7842a4e18964faaff3d17559989cf1f11dd006e31a9d0f12064e6f626f6479")
+	require.NoError(t, err)
+	require.Equal(t, data, b2)
 }
 
 func TestWALWrite(t *testing.T) {
@@ -144,7 +289,7 @@ func TestWALWrite(t *testing.T) {
 	err = wal.Write(msgInfo{
 		Msg: msg,
 	})
-	if assert.Error(t, err) {
+	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
 		assert.Contains(t, err.Error(), "msg is too big")
 	}
 }
@@ -162,14 +307,14 @@ func TestWALSearchForEndHeight(t *testing.T) {
 
 	h := int64(3)
 	gr, found, err := wal.SearchForEndHeight(h, &WALSearchOptions{})
-	assert.NoError(t, err, "expected not to err on height %d", h)
+	require.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
 	assert.NotNil(t, gr)
 	defer gr.Close()
 
 	dec := NewWALDecoder(gr)
 	msg, err := dec.Decode()
-	assert.NoError(t, err, "expected to decode a message")
+	require.NoError(t, err, "expected to decode a message")
 	rs, ok := msg.Msg.(cmttypes.EventDataRoundState)
 	assert.True(t, ok, "expected message of type EventDataRoundState")
 	assert.Equal(t, rs.Height, h+1, "wrong height")
@@ -209,12 +354,34 @@ func TestWALPeriodicSync(t *testing.T) {
 
 	h := int64(4)
 	gr, found, err := wal.SearchForEndHeight(h, &WALSearchOptions{})
-	assert.NoError(t, err, "expected not to err on height %d", h)
+	require.NoError(t, err, "expected not to err on height %d", h)
 	assert.True(t, found, "expected to find end height for %d", h)
 	assert.NotNil(t, gr)
 	if gr != nil {
 		gr.Close()
 	}
+}
+
+// FIXME: this helper is very similar to the one in internal/state/helpers_test.go.
+func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivValidator) {
+	vals, privVals := test.GenesisValidatorSet(nVals)
+
+	s, _ := sm.MakeGenesisState(&cmttypes.GenesisDoc{
+		ChainID:         chainID,
+		Validators:      vals,
+		AppHash:         nil,
+		ConsensusParams: test.ConsensusParams(),
+	})
+
+	stateDB := dbm.NewMemDB()
+	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	if err := stateStore.Save(s); err != nil {
+		panic(err)
+	}
+
+	return s, privVals
 }
 
 /*
@@ -237,13 +404,14 @@ func nBytes(n int) []byte {
 }
 
 func benchmarkWalDecode(b *testing.B, n int) {
+	b.Helper()
 	// registerInterfacesOnce()
 
 	buf := new(bytes.Buffer)
 	enc := NewWALEncoder(buf)
 
 	data := nBytes(n)
-	if err := enc.Encode(&TimedWALMessage{Msg: data, Time: time.Now().Round(time.Second).UTC()}); err != nil {
+	if err := enc.Encode(&TimedWALMessage{Msg: data, Time: cmttime.Now().Round(time.Second).UTC()}); err != nil {
 		b.Error(err)
 	}
 
@@ -287,4 +455,16 @@ func BenchmarkWalDecode100MB(b *testing.B) {
 
 func BenchmarkWalDecode1GB(b *testing.B) {
 	benchmarkWalDecode(b, 1024*1024*1024)
+}
+
+// getConfig returns a config for test cases.
+func getConfig(t *testing.T) *cfg.Config {
+	t.Helper()
+	c := test.ResetTestRoot(t.Name())
+
+	// and we use random ports to run in parallel
+	cmt, rpc := makeAddrs()
+	c.P2P.ListenAddress = cmt
+	c.RPC.ListenAddress = rpc
+	return c
 }

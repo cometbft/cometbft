@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -132,6 +133,10 @@ func startNode(cfg *Config) error {
 		nodeLogger.Info("Using default (synchronized) local client creator")
 	}
 
+	if cfg.ExperimentalKeyLayout != "" {
+		cmtcfg.Storage.ExperimentalKeyLayout = cfg.ExperimentalKeyLayout
+	}
+
 	n, err := node.NewNode(context.Background(), cmtcfg,
 		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile()),
 		nodeKey,
@@ -171,7 +176,7 @@ func startLightClient(cfg *Config) error {
 		},
 		providers[0],
 		providers[1:],
-		dbs.New(lightDB, "light"),
+		dbs.NewWithDBVersion(lightDB, "light", cfg.ExperimentalKeyLayout),
 		light.Logger(nodeLogger),
 	)
 	if err != nil {
@@ -277,7 +282,7 @@ func setupNode() (*config.Config, log.Logger, *p2p.NodeKey, error) {
 }
 
 // rpcEndpoints takes a list of persistent peers and splits them into a list of rpc endpoints
-// using 26657 as the port number
+// using 26657 as the port number.
 func rpcEndpoints(peers string) []string {
 	arr := strings.Split(peers, ",")
 	endpoints := make([]string, len(arr))
@@ -286,7 +291,7 @@ func rpcEndpoints(peers string) []string {
 		hostName := strings.Split(urlString, ":26656")[0]
 		// use RPC port instead
 		port := 26657
-		rpcEndpoint := "http://" + hostName + ":" + fmt.Sprint(port)
+		rpcEndpoint := "http://" + hostName + ":" + strconv.Itoa(port)
 		endpoints[i] = rpcEndpoint
 	}
 	return endpoints

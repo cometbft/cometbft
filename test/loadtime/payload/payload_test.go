@@ -43,16 +43,16 @@ func TestRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reading payload %s", err)
 	}
-	if p.Size != payloadSizeTarget {
-		t.Fatalf("payload size value %d does not match expected %d", p.Size, payloadSizeTarget)
+	if p.GetSize() != payloadSizeTarget {
+		t.Fatalf("payload size value %d does not match expected %d", p.GetSize(), payloadSizeTarget)
 	}
-	if p.Connections != testConns {
-		t.Fatalf("payload connections value %d does not match expected %d", p.Connections, testConns)
+	if p.GetConnections() != testConns {
+		t.Fatalf("payload connections value %d does not match expected %d", p.GetConnections(), testConns)
 	}
-	if p.Rate != testRate {
-		t.Fatalf("payload rate value %d does not match expected %d", p.Rate, testRate)
+	if p.GetRate() != testRate {
+		t.Fatalf("payload rate value %d does not match expected %d", p.GetRate(), testRate)
 	}
-	if !bytes.Equal(p.Id, testID[:]) {
-		t.Fatalf("payload ID value %d does not match expected %d", p.Id, testID)
+	if !bytes.Equal(p.GetId(), testID[:]) {
+		t.Fatalf("payload ID value %d does not match expected %d", p.GetId(), testID)
 	}
 }

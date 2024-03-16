@@ -131,7 +131,7 @@ func TestVarintNoClose(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// issue 32
+// issue 32.
 func TestVarintMaxSize(t *testing.T) {
 	buf := newBuffer()
 	writer := protoio.NewDelimitedWriter(buf)

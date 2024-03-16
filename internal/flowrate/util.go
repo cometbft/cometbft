@@ -29,6 +29,7 @@ func clockToTime(c time.Duration) time.Time {
 
 // clockRound returns d rounded to the nearest clockRate increment.
 func clockRound(d time.Duration) time.Duration {
+	//nolint:durationcheck
 	return (d + clockRate>>1) / clockRate * clockRate
 }
 

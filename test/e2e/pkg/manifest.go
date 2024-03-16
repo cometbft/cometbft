@@ -59,11 +59,6 @@ type Manifest struct {
 	// testnet via the RPC endpoint of a random node. Default is 0
 	Evidence int `toml:"evidence"`
 
-	// VoteExtensionsEnableHeight configures the first height during which
-	// the chain will use and require vote extension data to be present
-	// in precommit messages.
-	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
-
 	// ABCIProtocol specifies the protocol used to communicate with the ABCI
 	// application: "unix", "tcp", "grpc", "builtin" or "builtin_connsync".
 	//
@@ -91,24 +86,55 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+	LoadMaxTxs        int `toml:"load_max_txs"`
 
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
 
+	// BlockMaxBytes specifies the maximum size in bytes of a block. This
+	// value will be written to the genesis file of all nodes.
+	BlockMaxBytes int64 `toml:"block_max_bytes"`
+
 	// Defines a minimum size for the vote extensions.
 	VoteExtensionSize uint `toml:"vote_extension_size"`
+
+	// VoteExtensionsEnableHeight configures the first height during which
+	// the chain will use and require vote extension data to be present
+	// in precommit messages.
+	VoteExtensionsEnableHeight int64 `toml:"vote_extensions_enable_height"`
+
+	// VoteExtensionsUpdateHeight configures the height at which consensus
+	// param VoteExtensionsEnableHeight will be set.
+	// -1 denotes it is set at genesis.
+	// 0 denotes it is set at InitChain.
+	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
 
 	// Upper bound of sleep duration then gossipping votes and block parts
 	PeerGossipIntraloopSleepDuration time.Duration `toml:"peer_gossip_intraloop_sleep_duration"`
 
-	// Maximum number of peers to which the node gossip transactions
+	// Maximum number of peers to which the node gossips transactions
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint `toml:"experimental_max_gossip_connections_to_persistent_peers"`
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint `toml:"experimental_max_gossip_connections_to_non_persistent_peers"`
 
 	// Enable or disable e2e tests for CometBFT's expected behavior with respect
 	// to ABCI.
 	ABCITestsEnabled bool `toml:"abci_tests_enabled"`
+
+	// Default geographical zone ID for simulating latencies, assigned to nodes that don't have a
+	// specific zone assigned.
+	DefaultZone string `toml:"default_zone"`
+
+	// PbtsEnableHeight configures the first height during which
+	// the chain will start using Proposer-Based Timestamps (PBTS)
+	// to create and validate new blocks.
+	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
+
+	// PbtsUpdateHeight configures the height at which consensus
+	// param PbtsEnableHeight will be set.
+	// -1 denotes it is set at genesis.
+	// 0 denotes it is set at InitChain.
+	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 }
 
 // ManifestNode represents a node in a testnet manifest.
@@ -135,7 +161,7 @@ type ManifestNode struct {
 	PersistentPeers []string `toml:"persistent_peers"`
 
 	// Database specifies the database backend: "goleveldb", "cleveldb",
-	// "rocksdb", "boltdb", or "badgerdb". Defaults to goleveldb.
+	// "rocksdb", "boltdb", "pebbledb" or "badgerdb". Defaults to goleveldb.
 	Database string `toml:"database"`
 
 	// PrivvalProtocol specifies the protocol used to sign consensus messages:
@@ -189,6 +215,27 @@ type ManifestNode struct {
 	// It defaults to false so unless the configured, the node will
 	// receive load.
 	SendNoLoad bool `toml:"send_no_load"`
+
+	// Geographical zone ID for simulating latencies.
+	Zone string `toml:"zone"`
+
+	// ExperimentalKeyLayout sets the key representation in the DB
+	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`
+
+	// Compact triggers compaction on the DB after pruning
+	Compact bool `toml:"compact"`
+
+	// CompactionInterval sets the number of blocks at which we trigger compaction
+	CompactionInterval int64 `toml:"compaction_interval"`
+
+	// DiscardABCIResponses disables abci rsponses
+	DiscardABCIResponses bool `toml:"discard_abci_responses"`
+
+	// Indexer sets the indexer, default kv
+	Indexer string `toml:"indexer"`
+
+	// Simulated clock skew for this node
+	ClockSkew time.Duration `toml:"clock_skew"`
 }
 
 // Save saves the testnet manifest to a file.

@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	blockmocks "github.com/cometbft/cometbft/internal/state/indexer/mocks"
@@ -139,7 +138,7 @@ func TestReIndexEvent(t *testing.T) {
 		On("LoadBlock", base).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{}).
 		On("LoadBlock", height).Return(&types.Block{Data: types.Data{Txs: types.Txs{make(types.Tx, 1)}}}, &types.BlockMeta{})
 
-	abciResp := &abcitypes.ResponseFinalizeBlock{
+	abciResp := &abcitypes.FinalizeBlockResponse{
 		TxResults: []*abcitypes.ExecTxResult{
 			{Code: 1},
 		},

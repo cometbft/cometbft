@@ -4,13 +4,12 @@ import (
 	"testing"
 	"time"
 
+	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	cmtcons "github.com/cometbft/cometbft/proto/tendermint/consensus"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -18,7 +17,7 @@ import (
 // byzantine failures
 
 // one byz val sends a precommit for a random block at each height
-// Ensure a testnet makes blocks
+// Ensure a testnet makes blocks.
 func TestReactorInvalidPrecommit(t *testing.T) {
 	N := 4
 	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
@@ -33,7 +32,6 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 		ticker := NewTimeoutTicker()
 		ticker.SetLogger(css[i].Logger)
 		css[i].SetTimeoutTicker(ticker)
-
 	}
 
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
@@ -63,6 +61,7 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 }
 
 func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.PrivValidator) {
+	t.Helper()
 	// routine to:
 	// - precommit for a random block
 	// - send precommit to all peers
@@ -80,20 +79,22 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 
 		// precommit a random block
 		blockHash := bytes.HexBytes(cmtrand.Bytes(32))
+		timestamp := cs.voteTime(cs.Height)
+
 		precommit := &types.Vote{
 			ValidatorAddress: addr,
 			ValidatorIndex:   valIndex,
 			Height:           cs.Height,
 			Round:            cs.Round,
-			Timestamp:        cs.voteTime(),
-			Type:             cmtproto.PrecommitType,
+			Timestamp:        timestamp,
+			Type:             types.PrecommitType,
 			BlockID: types.BlockID{
 				Hash:          blockHash,
 				PartSetHeader: types.PartSetHeader{Total: 1, Hash: cmtrand.Bytes(32)},
 			},
 		}
 		p := precommit.ToProto()
-		err = cs.privValidator.SignVote(cs.state.ChainID, p)
+		err = cs.privValidator.SignVote(cs.state.ChainID, p, true)
 		if err != nil {
 			t.Error(err)
 		}
@@ -101,7 +102,7 @@ func invalidDoPrevoteFunc(t *testing.T, cs *State, sw *p2p.Switch, pv types.Priv
 		precommit.ExtensionSignature = p.ExtensionSignature
 		cs.privValidator = nil // disable priv val so we don't do normal votes
 
-		peers := sw.Peers().List()
+		peers := sw.Peers().Copy()
 		for _, peer := range peers {
 			cs.Logger.Info("Sending bad vote", "block", blockHash, "peer", peer)
 			peer.Send(p2p.Envelope{

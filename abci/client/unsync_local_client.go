@@ -43,14 +43,14 @@ func (app *unsyncLocalClient) SetResponseCallback(cb Callback) {
 	app.mtx.Unlock()
 }
 
-func (app *unsyncLocalClient) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*ReqRes, error) {
+func (app *unsyncLocalClient) CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error) {
 	res, err := app.Application.CheckTx(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 	return app.callback(
-		types.ToRequestCheckTx(req),
-		types.ToResponseCheckTx(res),
+		types.ToCheckTxRequest(req),
+		types.ToCheckTxResponse(res),
 	), nil
 }
 
@@ -71,66 +71,66 @@ func (app *unsyncLocalClient) Flush(context.Context) error {
 	return nil
 }
 
-func (app *unsyncLocalClient) Echo(_ context.Context, msg string) (*types.ResponseEcho, error) {
-	return &types.ResponseEcho{Message: msg}, nil
+func (app *unsyncLocalClient) Echo(_ context.Context, msg string) (*types.EchoResponse, error) {
+	return &types.EchoResponse{Message: msg}, nil
 }
 
-func (app *unsyncLocalClient) Info(ctx context.Context, req *types.RequestInfo) (*types.ResponseInfo, error) {
+func (app *unsyncLocalClient) Info(ctx context.Context, req *types.InfoRequest) (*types.InfoResponse, error) {
 	return app.Application.Info(ctx, req)
 }
 
-func (app *unsyncLocalClient) CheckTx(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+func (app *unsyncLocalClient) CheckTx(ctx context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	return app.Application.CheckTx(ctx, req)
 }
 
-func (app *unsyncLocalClient) Query(ctx context.Context, req *types.RequestQuery) (*types.ResponseQuery, error) {
+func (app *unsyncLocalClient) Query(ctx context.Context, req *types.QueryRequest) (*types.QueryResponse, error) {
 	return app.Application.Query(ctx, req)
 }
 
-func (app *unsyncLocalClient) Commit(ctx context.Context, req *types.RequestCommit) (*types.ResponseCommit, error) {
+func (app *unsyncLocalClient) Commit(ctx context.Context, req *types.CommitRequest) (*types.CommitResponse, error) {
 	return app.Application.Commit(ctx, req)
 }
 
-func (app *unsyncLocalClient) InitChain(ctx context.Context, req *types.RequestInitChain) (*types.ResponseInitChain, error) {
+func (app *unsyncLocalClient) InitChain(ctx context.Context, req *types.InitChainRequest) (*types.InitChainResponse, error) {
 	return app.Application.InitChain(ctx, req)
 }
 
-func (app *unsyncLocalClient) ListSnapshots(ctx context.Context, req *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
+func (app *unsyncLocalClient) ListSnapshots(ctx context.Context, req *types.ListSnapshotsRequest) (*types.ListSnapshotsResponse, error) {
 	return app.Application.ListSnapshots(ctx, req)
 }
 
-func (app *unsyncLocalClient) OfferSnapshot(ctx context.Context, req *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
+func (app *unsyncLocalClient) OfferSnapshot(ctx context.Context, req *types.OfferSnapshotRequest) (*types.OfferSnapshotResponse, error) {
 	return app.Application.OfferSnapshot(ctx, req)
 }
 
 func (app *unsyncLocalClient) LoadSnapshotChunk(ctx context.Context,
-	req *types.RequestLoadSnapshotChunk,
-) (*types.ResponseLoadSnapshotChunk, error) {
+	req *types.LoadSnapshotChunkRequest,
+) (*types.LoadSnapshotChunkResponse, error) {
 	return app.Application.LoadSnapshotChunk(ctx, req)
 }
 
 func (app *unsyncLocalClient) ApplySnapshotChunk(ctx context.Context,
-	req *types.RequestApplySnapshotChunk,
-) (*types.ResponseApplySnapshotChunk, error) {
+	req *types.ApplySnapshotChunkRequest,
+) (*types.ApplySnapshotChunkResponse, error) {
 	return app.Application.ApplySnapshotChunk(ctx, req)
 }
 
-func (app *unsyncLocalClient) PrepareProposal(ctx context.Context, req *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
+func (app *unsyncLocalClient) PrepareProposal(ctx context.Context, req *types.PrepareProposalRequest) (*types.PrepareProposalResponse, error) {
 	return app.Application.PrepareProposal(ctx, req)
 }
 
-func (app *unsyncLocalClient) ProcessProposal(ctx context.Context, req *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
+func (app *unsyncLocalClient) ProcessProposal(ctx context.Context, req *types.ProcessProposalRequest) (*types.ProcessProposalResponse, error) {
 	return app.Application.ProcessProposal(ctx, req)
 }
 
-func (app *unsyncLocalClient) ExtendVote(ctx context.Context, req *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
+func (app *unsyncLocalClient) ExtendVote(ctx context.Context, req *types.ExtendVoteRequest) (*types.ExtendVoteResponse, error) {
 	return app.Application.ExtendVote(ctx, req)
 }
 
-func (app *unsyncLocalClient) VerifyVoteExtension(ctx context.Context, req *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
+func (app *unsyncLocalClient) VerifyVoteExtension(ctx context.Context, req *types.VerifyVoteExtensionRequest) (*types.VerifyVoteExtensionResponse, error) {
 	return app.Application.VerifyVoteExtension(ctx, req)
 }
 
-func (app *unsyncLocalClient) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
+func (app *unsyncLocalClient) FinalizeBlock(ctx context.Context, req *types.FinalizeBlockRequest) (*types.FinalizeBlockResponse, error) {
 	return app.Application.FinalizeBlock(ctx, req)
 }

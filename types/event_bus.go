@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/cometbft/cometbft/abci/types"
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
@@ -82,7 +83,7 @@ func (b *EventBus) Subscribe(
 }
 
 // SubscribeUnbuffered can be used for a local consensus explorer and synchronous
-// testing. Do not use for for public facing / untrusted subscriptions!
+// testing. Do not use for public facing / untrusted subscriptions!
 func (b *EventBus) SubscribeUnbuffered(
 	ctx context.Context,
 	subscriber string,
@@ -183,7 +184,7 @@ func (b *EventBus) PublishEventTx(data EventDataTx) error {
 	// add predefined compositeKeys
 	events[EventTypeKey] = append(events[EventTypeKey], EventTx)
 	events[TxHashKey] = append(events[TxHashKey], fmt.Sprintf("%X", Tx(data.Tx).Hash()))
-	events[TxHeightKey] = append(events[TxHeightKey], fmt.Sprintf("%d", data.Height))
+	events[TxHeightKey] = append(events[TxHeightKey], strconv.FormatInt(data.Height, 10))
 
 	return b.pubsub.PublishWithEvents(ctx, data, events)
 }
@@ -224,7 +225,7 @@ func (b *EventBus) PublishEventValidatorSetUpdates(data EventDataValidatorSetUpd
 	return b.Publish(EventValidatorSetUpdates, data)
 }
 
-// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------.
 type NopEventBus struct{}
 
 func (NopEventBus) Subscribe(

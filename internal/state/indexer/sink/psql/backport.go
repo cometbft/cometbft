@@ -17,16 +17,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/cometbft/cometbft/libs/log"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/state/txindex"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
-)
-
-const (
-	eventTypeFinalizeBlock = "finalize_block"
 )
 
 // TxIndexer returns a bridge from es to the CometBFT v0.34 transaction indexer.

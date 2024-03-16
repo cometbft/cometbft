@@ -285,6 +285,25 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.Instrumentation.Prometheus = true
 	}
 
+	if node.ExperimentalKeyLayout != "" {
+		cfg.Storage.ExperimentalKeyLayout = node.ExperimentalKeyLayout
+	}
+
+	if node.Compact {
+		cfg.Storage.Compact = node.Compact
+	}
+
+	if node.DiscardABCIResponses {
+		cfg.Storage.DiscardABCIResponses = node.DiscardABCIResponses
+	}
+
+	if node.Indexer != "" {
+		cfg.TxIndex.Indexer = node.Indexer
+	}
+
+	if node.CompactionInterval != 0 && node.Compact {
+		cfg.Storage.CompactionInterval = node.CompactionInterval
+	}
 	return cfg, nil
 }
 

@@ -277,7 +277,10 @@ func (bA *BitArray) getTrueIndices() []int {
 	}
 	// handle last element
 	lastElem := bA.Elems[numElems-1]
-	numFinalBits := bA.Bits - curBit
+	numFinalBits := bA.Bits % 64
+	if numFinalBits == 0 && bA.Bits > 0 {
+		numFinalBits = 64
+	}
 	for i := 0; i < numFinalBits; i++ {
 		if (lastElem & (uint64(1) << uint64(i))) > 0 {
 			trueIndices = append(trueIndices, curBit)

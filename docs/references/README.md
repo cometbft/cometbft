@@ -58,6 +58,20 @@ and feedback, ensuring that decisions are well-informed and aligned with CometBF
 Engage with RFCs to participate in shaping the direction of CometBFT, share your insights,
 and contribute to its continuous evolution.
 
+## Storage
+
+[Storage](./storage/README.md) references comprise findings from storage sub-systems
+(eg block store, state store) improvements in CometBFT.
+
+### What You'll Find in Storage:
+
+- Prior improvements efforts and reports that documents those efforts
+- The testing methodology used to improve storage footprint and performance in Comet
+- Conclusions and potential future work
+
+Explore the Storage references to get a deeper understanding of prior work and future plans in these
+sub-systems of CometBFT.
+
 ## Explore CometBFT References
 
 The CometBFT Reference Documentation empowers you with knowledge and information that enhances

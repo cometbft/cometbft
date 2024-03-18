@@ -158,7 +158,7 @@ backport branch (see above). Otherwise:
 2. Run the E2E nightlies (which can be triggered from the GitHub UI; e.g.,
    <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Prepare the pre-release documentation:
-   * Build the changelog with [unclog] _without_ doing an unclog release, and
+   * Build the changelog with [unclog] _without_ doing an unclog release (`unclog build -a > CHANGELOG.md`), and
      commit the built changelog. This ensures that all changelog entries appear
      under an "Unreleased" heading in the pre-release's changelog. The changes
      are only considered officially "released" once we cut a regular (final)

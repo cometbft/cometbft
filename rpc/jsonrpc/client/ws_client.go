@@ -317,9 +317,7 @@ func (c *WSClient) reconnect() error {
 		time.Sleep(backoffDuration)
 
 		err := c.dial()
-		if err != nil {
-			c.Logger.Error("failed to redial", "err", err)
-		} else {
+		if err == nil {
 			c.Logger.Info("reconnected")
 			if c.onReconnect != nil {
 				go c.onReconnect()
@@ -327,6 +325,7 @@ func (c *WSClient) reconnect() error {
 			return nil
 		}
 
+		c.Logger.Error("failed to redial", "err", err)
 		attempt++
 
 		if attempt > c.maxReconnectAttempts {

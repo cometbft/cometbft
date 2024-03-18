@@ -203,16 +203,17 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 		if ev.Type == types.MISBEHAVIOR_TYPE_DUPLICATE_VOTE {
 			addr := string(ev.Validator.Address)
 
-			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
-				app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{
-					PubKey: pubKey,
-					Power:  ev.Validator.Power - 1,
-				})
-				app.logger.Info("Decreased val power by 1 because of the equivocation",
-					"val", addr)
-			} else {
+			pubKey, ok := app.valAddrToPubKeyMap[addr]
+			if !ok {
 				panic(fmt.Errorf("wanted to punish val %q but can't find it", addr))
 			}
+
+			app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{
+				PubKey: pubKey,
+				Power:  ev.Validator.Power - 1,
+			})
+			app.logger.Info("Decreased val power by 1 because of the equivocation",
+				"val", addr)
 		}
 	}
 

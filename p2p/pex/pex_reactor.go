@@ -374,7 +374,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 				err := r.dialPeer(addr)
 				if err != nil {
 					switch err.(type) {
-					case errMaxAttemptsToDial, errTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
+					case ErrMaxAttemptsToDial, ErrTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
 						r.Logger.Debug(err.Error(), "addr", addr)
 					default:
 						r.Logger.Debug(err.Error(), "addr", addr)
@@ -494,7 +494,7 @@ func (r *Reactor) ensurePeers() {
 			err := r.dialPeer(addr)
 			if err != nil {
 				switch err.(type) {
-				case errMaxAttemptsToDial, errTooEarlyToDial:
+				case ErrMaxAttemptsToDial, ErrTooEarlyToDial:
 					r.Logger.Debug(err.Error(), "addr", addr)
 				default:
 					r.Logger.Debug(err.Error(), "addr", addr)
@@ -539,7 +539,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 	attempts, lastDialed := r.dialAttemptsInfo(addr)
 	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
 		r.book.MarkBad(addr, defaultBanTime)
-		return errMaxAttemptsToDial{}
+		return ErrMaxAttemptsToDial{}
 	}
 
 	// exponential backoff if it's not our first attempt to dial given address
@@ -549,7 +549,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 		backoffDuration = r.maxBackoffDurationForPeer(addr, backoffDuration)
 		sinceLastDialed := time.Since(lastDialed)
 		if sinceLastDialed < backoffDuration {
-			return errTooEarlyToDial{backoffDuration, lastDialed}
+			return ErrTooEarlyToDial{backoffDuration, lastDialed}
 		}
 	}
 
@@ -567,7 +567,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 		default:
 			r.attemptsToDial.Store(addr.DialString(), _attemptsToDial{attempts + 1, time.Now()})
 		}
-		return errFailedToDial{attempts + 1, err}
+		return ErrFailedToDial{attempts + 1, err}
 	}
 
 	// cleanup any history
@@ -602,7 +602,7 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*p2p.NetAddress, err e
 		case p2p.ErrNetAddressLookup:
 			r.Logger.Error("Connecting to seed failed", "err", e)
 		default:
-			return 0, nil, errSeedNodeConfig{err: err}
+			return 0, nil, ErrSeedNodeConfig{Err: err}
 		}
 	}
 	return numOnline, netAddrs, nil
@@ -708,7 +708,7 @@ func (r *Reactor) crawlPeers(addrs []*p2p.NetAddress) {
 		err := r.dialPeer(addr)
 		if err != nil {
 			switch err.(type) {
-			case errMaxAttemptsToDial, errTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
+			case ErrMaxAttemptsToDial, ErrTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
 				r.Logger.Debug(err.Error(), "addr", addr)
 			default:
 				r.Logger.Debug(err.Error(), "addr", addr)

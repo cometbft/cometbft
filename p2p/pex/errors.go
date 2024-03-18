@@ -22,12 +22,12 @@ func (err ErrAddrBookNonRoutable) Error() string {
 	return fmt.Sprintf("Cannot add non-routable address %v", err.Addr)
 }
 
-type errAddrBookOldAddressNewBucket struct {
+type ErrAddrBookOldAddressNewBucket struct {
 	Addr     *p2p.NetAddress
 	BucketID int
 }
 
-func (err errAddrBookOldAddressNewBucket) Error() string {
+func (err ErrAddrBookOldAddressNewBucket) Error() string {
 	return fmt.Sprintf("failed consistency check!"+
 		" Cannot add pre-existing address %v into new bucket %v",
 		err.Addr, err.BucketID)
@@ -105,36 +105,40 @@ func (err ErrReceivedPEXRequestTooSoon) Error() string {
 		err.Peer, err.LastReceived, err.Now, err.MinInterval)
 }
 
-type errMaxAttemptsToDial struct{}
+type ErrMaxAttemptsToDial struct{}
 
-func (e errMaxAttemptsToDial) Error() string {
+func (e ErrMaxAttemptsToDial) Error() string {
 	return fmt.Sprintf("reached max attempts %d to dial", maxAttemptsToDial)
 }
 
-type errTooEarlyToDial struct {
-	backoffDuration time.Duration
-	lastDialed      time.Time
+type ErrTooEarlyToDial struct {
+	BackoffDuration time.Duration
+	LastDialed      time.Time
 }
 
-func (e errTooEarlyToDial) Error() string {
+func (e ErrTooEarlyToDial) Error() string {
 	return fmt.Sprintf(
 		"too early to dial (backoff duration: %d, last dialed: %v, time since: %v)",
-		e.backoffDuration, e.lastDialed, time.Since(e.lastDialed))
+		e.BackoffDuration, e.LastDialed, time.Since(e.LastDialed))
 }
 
-type errFailedToDial struct {
-	totalAttempts int
-	err           error
+type ErrFailedToDial struct {
+	TotalAttempts int
+	Err           error
 }
 
-func (e errFailedToDial) Error() string {
-	return fmt.Sprintf("failed to dial after %d attempts: %v", e.totalAttempts, e.err)
+func (e ErrFailedToDial) Error() string {
+	return fmt.Sprintf("failed to dial after %d attempts: %v", e.TotalAttempts, e.Err)
 }
 
-type errSeedNodeConfig struct {
-	err any
+func (e ErrFailedToDial) Unwrap() error { return e.Err }
+
+type ErrSeedNodeConfig struct {
+	Err error
 }
 
-func (e errSeedNodeConfig) Error() string {
-	return fmt.Sprintf("failed to parse seed node config: %v", e.err)
+func (e ErrSeedNodeConfig) Error() string {
+	return fmt.Sprintf("failed to parse seed node config: %v", e.Err)
 }
+
+func (e ErrSeedNodeConfig) Unwrap() error { return e.Err }

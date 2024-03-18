@@ -518,7 +518,7 @@ func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAd
 func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 	// Consistency check to ensure we don't add an already known address
 	if ka.isOld() {
-		return errAddrBookOldAddressNewBucket{ka.Addr, bucketIdx}
+		return ErrAddrBookOldAddressNewBucket{ka.Addr, bucketIdx}
 	}
 
 	addrStr := ka.Addr.String()

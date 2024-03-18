@@ -17,7 +17,7 @@ type ErrPacketWrite struct {
 }
 
 func (e ErrPacketWrite) Error() string {
-	return fmt.Sprintf("failed to write packet: %v", e.Source)
+	return fmt.Sprintf("failed to write packet message: %v", e.Source)
 }
 
 func (e ErrPacketWrite) Unwrap() error {

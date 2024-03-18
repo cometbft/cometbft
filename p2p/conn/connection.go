@@ -857,7 +857,7 @@ func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 	packet := ch.nextPacketMsg()
 	n, err = protoio.NewDelimitedWriter(w).WriteMsg(mustWrapPacket(&packet))
 	if err != nil {
-		return n, ErrPacketWrite{Source: err}
+		err = ErrPacketWrite{Source: err}
 	}
 
 	atomic.AddInt64(&ch.recentlySent, int64(n))

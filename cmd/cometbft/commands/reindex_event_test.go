@@ -27,7 +27,7 @@ const (
 func setupReIndexEventCmd() *cobra.Command {
 	reIndexEventCmd := &cobra.Command{
 		Use: ReIndexEventCmd.Use,
-		Run: func(cmd *cobra.Command, args []string) {},
+		Run: func(_ *cobra.Command, _ []string) {},
 	}
 
 	_ = reIndexEventCmd.ExecuteContext(context.Background())

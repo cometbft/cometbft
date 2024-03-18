@@ -16,7 +16,7 @@ func (r ResponseProcessProposal) IsStatusUnknown() bool {
 	return r.Status == ResponseProcessProposal_UNKNOWN
 }
 
-//---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 // override JSON marshaling so we emit defaults (ie. disable omitempty)
 
 var (

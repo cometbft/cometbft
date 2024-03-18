@@ -37,7 +37,7 @@ func (sc *RetrySignerClient) WaitForConnection(maxWait time.Duration) error {
 	return sc.next.WaitForConnection(maxWait)
 }
 
-//--------------------------------------------------------
+// --------------------------------------------------------
 // Implement PrivValidator
 
 func (sc *RetrySignerClient) Ping() error {

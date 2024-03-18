@@ -54,7 +54,7 @@ const (
 
 type errMaxAttemptsToDial struct{}
 
-func (e errMaxAttemptsToDial) Error() string {
+func (errMaxAttemptsToDial) Error() string {
 	return fmt.Sprintf("reached max attempts %d to dial", maxAttemptsToDial)
 }
 
@@ -181,7 +181,7 @@ func (r *Reactor) Stop() error {
 }
 
 // GetChannels implements Reactor.
-func (r *Reactor) GetChannels() []*conn.ChannelDescriptor {
+func (*Reactor) GetChannels() []*conn.ChannelDescriptor {
 	return []*conn.ChannelDescriptor{
 		{
 			ID:                  PexChannel,
@@ -222,7 +222,7 @@ func (r *Reactor) AddPeer(p Peer) {
 }
 
 // RemovePeer implements Reactor by resetting peer's requests info.
-func (r *Reactor) RemovePeer(p Peer, _ interface{}) {
+func (r *Reactor) RemovePeer(p Peer, _ any) {
 	id := string(p.ID())
 	r.requestsSent.Delete(id)
 	r.lastReceivedRequests.Delete(id)
@@ -406,7 +406,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 }
 
 // SendAddrs sends addrs to the peer.
-func (r *Reactor) SendAddrs(p Peer, netAddrs []*p2p.NetAddress) {
+func (*Reactor) SendAddrs(p Peer, netAddrs []*p2p.NetAddress) {
 	e := p2p.Envelope{
 		ChannelID: PexChannel,
 		Message:   &tmp2p.PexAddrs{Addrs: p2p.NetAddressesToProto(netAddrs)},
@@ -547,7 +547,7 @@ func (r *Reactor) ensurePeers() {
 func (r *Reactor) dialAttemptsInfo(addr *p2p.NetAddress) (attempts int, lastDialed time.Time) {
 	_attempts, ok := r.attemptsToDial.Load(addr.DialString())
 	if !ok {
-		return
+		return 0, time.Time{}
 	}
 	atd := _attempts.(_attemptsToDial)
 	return atd.number, atd.lastDialed
@@ -657,7 +657,7 @@ func (r *Reactor) AttemptsToDial(addr *p2p.NetAddress) int {
 	return 0
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // Explores the network searching for more peers. (continuous)
 // Seed/Crawler Mode causes this node to quickly disconnect

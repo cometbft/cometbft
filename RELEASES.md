@@ -155,11 +155,10 @@ If this is the first pre-release for a major release, you'll have to make a new
 backport branch (see above). Otherwise:
 
 1. Start from the backport branch (e.g. `v2.x`).
-2. Run the integration tests and the E2E nightlies (which can be triggered from
-   the GitHub UI; e.g.,
+2. Run the E2E nightlies (which can be triggered from the GitHub UI; e.g.,
    <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Prepare the pre-release documentation:
-   * Build the changelog with [unclog] _without_ doing an unclog release, and
+   * Build the changelog with [unclog] _without_ doing an unclog release (`unclog build -a > CHANGELOG.md`), and
      commit the built changelog. This ensures that all changelog entries appear
      under an "Unreleased" heading in the pre-release's changelog. The changes
      are only considered officially "released" once we cut a regular (final)
@@ -167,10 +166,13 @@ backport branch (see above). Otherwise:
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
      changes or other upgrading flows.
 4. Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-   file. If it does not point to an official api version, edit it
+   file. If it does not point to an official api version, run `go get`
    so that it points to one. You may need to tag a new version of the api
    if the last version is too old (i.e., it does not contain the latest
-   changes to the protos).
+   changes to the protos). If that is the case:
+   * `git tag -a api/v2.0.0-rc1 -s -m "Release api module v2.0.0-rc1" origin/v2.x`
+   * `git push origin api/v2.0.0-rc1`
+   * Notice the prefix `api/`, which denotes that the version refers to the `api` module.
 5. Prepare the versioning:
    * Bump CometBFT version in  `version.go`
    * Bump P2P and block protocol versions in  `version.go`, if necessary.
@@ -197,13 +199,17 @@ Before performing these steps, be sure the
 [Major Release Checklist](#major-release-checklist) has been completed.
 
 1. Start on the backport branch (e.g. `v2.x`)
-2. Run integration tests (`make test_integrations`) and the E2E nightlies.
+2. Run the E2E nightlies (which can be triggered from the GitHub UI; e.g.,
+   <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Prepare the release:
    * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-     file. If it does not point to an official api version, edit it
+     file. If it does not point to an official api version, run `go get`
      so that it points to one. You may need to tag a new version of the api
-     if the last version is too old (i.e., it does not contain the latest
-     changes to the protos).
+     if the last released version is too old (i.e., it does not contain the latest
+     changes to the protos). If that is the case:
+     * `git tag -a api/v2.0.0 -s -m "Release api module v2.0.0" origin/v2.x`
+     * `git push origin api/v2.0.0`
+     * Notice the prefix `api/`, which denotes that the version refers to the `api` module.
    * Do a [release][unclog-release] with [unclog] for the desired version,
      ensuring that you write up a good summary of the major highlights of the
      release that users would be interested in.
@@ -234,13 +240,17 @@ changes may merit a release candidate.
 To create a patch release:
 
 1. Checkout the long-lived backport branch: `git checkout v2.x`
-2. Run integration tests (`make test_integrations`) and the nightlies.
+2. Run the E2E nightlies (which can be triggered from the GitHub UI; e.g.,
+   <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Check out a new branch and prepare the release:
    * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-     file. If it does not point to an official api version, edit it
+     file. If it does not point to an official api version, run `go get`
      so that it points to one. You may need to tag a new version of the api
-     if the last version is too old (i.e., it does not contain the latest
-     changes to the protos).
+     if the last released version is too old (i.e., it does not contain the latest
+     changes to the protos). If that is the case:
+     * `git tag -a api/v2.0.1 -s -m "Release api module v2.0.1" origin/v2.x`
+     * `git push origin api/v2.0.1`
+     * Notice the prefix `api/`, which denotes that the version refers to the `api` module.
    * Do a [release][unclog-release] with [unclog] for the desired version,
      ensuring that you write up a good summary of the major highlights of the
      release that users would be interested in.

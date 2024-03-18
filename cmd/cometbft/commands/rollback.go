@@ -31,7 +31,7 @@ no blocks will be removed so upon restarting CometBFT the transactions in block 
 re-executed against the application. Using --hard will also remove block n. This can
 be done multiple times.
 `,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		height, hash, err := RollbackState(config, removeBlock)
 		if err != nil {
 			return fmt.Errorf("failed to rollback state: %w", err)

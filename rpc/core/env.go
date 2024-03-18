@@ -32,7 +32,7 @@ const (
 	genesisChunkSize = 16 * 1024 * 1024 // 16
 )
 
-//----------------------------------------------
+// ----------------------------------------------
 // These interfaces are used by RPC and must be thread safe
 
 type Consensus interface {
@@ -96,7 +96,7 @@ type Environment struct {
 	genChunks []string
 }
 
-//----------------------------------------------
+// ----------------------------------------------
 
 func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	if perPage < 1 {
@@ -119,7 +119,7 @@ func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	return page, nil
 }
 
-func (env *Environment) validatePerPage(perPagePtr *int) int {
+func (*Environment) validatePerPage(perPagePtr *int) int {
 	if perPagePtr == nil { // no per_page parameter
 		return defaultPerPage
 	}

@@ -182,7 +182,7 @@ func BenchmarkValidatorSetCopy(b *testing.B) {
 	}
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestProposerSelection1(t *testing.T) {
 	vset := NewValidatorSet([]*Validator{
@@ -261,39 +261,39 @@ func TestProposerSelection2(t *testing.T) {
 	valList = []*Validator{val0, val1, val2}
 	propCount := make([]int, 3)
 	vals = NewValidatorSet(valList)
-	N := 1
-	for i := 0; i < 120*N; i++ {
+	n := 1
+	for i := 0; i < 120*n; i++ {
 		prop := vals.GetProposer()
 		ii := prop.Address[19]
 		propCount[ii]++
 		vals.IncrementProposerPriority(1)
 	}
 
-	if propCount[0] != 40*N {
+	if propCount[0] != 40*n {
 		t.Fatalf(
 			"Expected prop count for validator with 4/12 of voting power to be %d/%d. Got %d/%d",
-			40*N,
-			120*N,
+			40*n,
+			120*n,
 			propCount[0],
-			120*N,
+			120*n,
 		)
 	}
-	if propCount[1] != 50*N {
+	if propCount[1] != 50*n {
 		t.Fatalf(
 			"Expected prop count for validator with 5/12 of voting power to be %d/%d. Got %d/%d",
-			50*N,
-			120*N,
+			50*n,
+			120*n,
 			propCount[1],
-			120*N,
+			120*n,
 		)
 	}
-	if propCount[2] != 30*N {
+	if propCount[2] != 30*n {
 		t.Fatalf(
 			"Expected prop count for validator with 3/12 of voting power to be %d/%d. Got %d/%d",
-			30*N,
-			120*N,
+			30*n,
+			120*n,
 			propCount[2],
-			120*N,
+			120*n,
 		)
 	}
 }
@@ -407,7 +407,7 @@ func (vals *ValidatorSet) toBytes() []byte {
 	return bz
 }
 
-func (vals *ValidatorSet) fromBytes(b []byte) *ValidatorSet {
+func (*ValidatorSet) fromBytes(b []byte) *ValidatorSet {
 	pbvs := new(cmtproto.ValidatorSet)
 	err := pbvs.Unmarshal(b)
 	if err != nil {
@@ -423,7 +423,7 @@ func (vals *ValidatorSet) fromBytes(b []byte) *ValidatorSet {
 	return vs
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestValidatorSetTotalVotingPowerPanicsOnOverflow(t *testing.T) {
 	// NewValidatorSet calls IncrementProposerPriority which calls TotalVotingPower()
@@ -699,7 +699,7 @@ func TestSafeSubClip(t *testing.T) {
 	assert.EqualValues(t, math.MaxInt64, safeSubClip(math.MaxInt64, -10))
 }
 
-//-------------------------------------------------------------------
+// -------------------------------------------------------------------
 
 func TestEmptySet(t *testing.T) {
 	var valList []*Validator
@@ -1532,7 +1532,7 @@ func (valz validatorsByPriority) Swap(i, j int) {
 	valz[i], valz[j] = valz[j], valz[i]
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type testValsByVotingPower []testVal
 

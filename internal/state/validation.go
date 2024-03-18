@@ -11,7 +11,7 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-//-----------------------------------------------------
+// -----------------------------------------------------
 // Validate block
 
 func validateBlock(state State, block *types.Block) error {

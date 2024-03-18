@@ -14,7 +14,7 @@ import (
 
 var ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is catching up")
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // NOTE: tx should be signed, but this is only checked at the app level (not by CometBFT!)
 
 // BroadcastTxAsync returns right away, with no response. Does not wait for
@@ -44,7 +44,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	if err != nil {
 		return nil, err
 	}
-	reqRes.SetCallback(func(res *abci.Response) {
+	reqRes.SetCallback(func(_ *abci.Response) {
 		select {
 		case <-ctx.Context().Done():
 		case resCh <- reqRes.Response.GetCheckTx():
@@ -102,7 +102,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
 		return nil, fmt.Errorf("error on broadcastTxCommit: %v", err)
 	}
-	reqRes.SetCallback(func(res *abci.Response) {
+	reqRes.SetCallback(func(_ *abci.Response) {
 		select {
 		case <-ctx.Context().Done():
 		case checkTxResCh <- reqRes.Response.GetCheckTx():

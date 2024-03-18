@@ -484,8 +484,7 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 	}
 	// return first non-ErrNetAddressLookup error
 	for _, err := range errs {
-		var errNetAddressLookup ErrNetAddressLookup
-		if errors.As(err, &errNetAddressLookup) {
+		if errors.As(err, &ErrNetAddressLookup{}) {
 			continue
 		}
 		return err
@@ -588,8 +587,7 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 	}
 	// return first non-ErrNetAddressLookup error
 	for _, err := range errs {
-		var errNetAddressLookup ErrNetAddressLookup
-		if errors.As(err, &errNetAddressLookup) {
+		if errors.As(err, &ErrNetAddressLookup{}) {
 			continue
 		}
 		return err

@@ -42,7 +42,7 @@ const (
 // ENCODING / DECODING
 
 // TMEventData implements events.EventData.
-type TMEventData interface {
+type TMEventData interface { //nolint:revive // this empty interface angers the linter
 	// empty interface
 }
 

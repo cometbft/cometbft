@@ -24,7 +24,7 @@ type Tree interface {
 	IterateRange(start []byte, end []byte, ascending bool, fx func(key []byte, value []byte) (stop bool)) (stopped bool)
 }
 
-//-----------------------------------------------------------------------
+// -----------------------------------------------------------------------
 
 // Uvarint length prefixed byteslice.
 func encodeByteSlice(w io.Writer, bz []byte) (err error) {
@@ -32,8 +32,8 @@ func encodeByteSlice(w io.Writer, bz []byte) (err error) {
 	n := binary.PutUvarint(buf[:], uint64(len(bz)))
 	_, err = w.Write(buf[0:n])
 	if err != nil {
-		return
+		return err
 	}
 	_, err = w.Write(bz)
-	return
+	return err
 }

@@ -92,7 +92,7 @@ func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 
 	err = se.conn.SetReadDeadline(deadline)
 	if err != nil {
-		return
+		return msg, err
 	}
 	const maxRemoteSignerMsgSize = 1024 * 10
 	protoReader := protoio.NewDelimitedReader(se.conn, maxRemoteSignerMsgSize)
@@ -108,7 +108,7 @@ func (se *signerEndpoint) ReadMessage() (msg privvalproto.Message, err error) {
 		se.dropConnection()
 	}
 
-	return
+	return msg, err
 }
 
 // WriteMessage writes a message from the endpoint.
@@ -126,7 +126,7 @@ func (se *signerEndpoint) WriteMessage(msg privvalproto.Message) (err error) {
 	deadline := time.Now().Add(se.timeoutReadWrite)
 	err = se.conn.SetWriteDeadline(deadline)
 	if err != nil {
-		return
+		return err
 	}
 
 	_, err = protoWriter.WriteMsg(&msg)
@@ -139,7 +139,7 @@ func (se *signerEndpoint) WriteMessage(msg privvalproto.Message) (err error) {
 		se.dropConnection()
 	}
 
-	return
+	return err
 }
 
 func (se *signerEndpoint) isConnected() bool {

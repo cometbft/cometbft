@@ -90,48 +90,45 @@ Additionally:
 This section explains how the tests were carried out for reproducibility purposes.
 
 1. [If you haven't done it before]
-   Follow steps 1-5 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
-2. Change the variable `MANIFEST` in `experiment.mk` to point to the file `testnets/testnet200.toml` (do NOT commit this change)
-3. Set the variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
-   * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),
-     then make sure makefile variable `VERSION2_WEIGHT` is set to 0
-   * If you are running a mixed network, set the variable `VERSION2_TAG` to the other version you want deployed
-     in the network.
-     Then adjust the weight variables `VERSION_WEIGHT` and `VERSION2_WEIGHT` to configure the
-     desired proportion of nodes running each of the two configured versions.
-4. Follow steps 5-10 of the `README.md` to configure and start the 200 node testnet
+   Follow steps 1-5 of the `README.md` at the top of the testnet repository to configure Terraform and the DigitalOcean CLI (`doctl`).
+2. In the `experiment.mk` file, set the following variables (do NOT commit these changes):
+   1. Set `MANIFEST` to point to the file `testnets/200-nodes-with-zones.toml`.
+   2. Set `VERSION_TAG` to the git hash that is to be tested.
+      * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),
+        then make sure makefile variable `VERSION2_WEIGHT` is set to 0
+      * If you are running a mixed network, set the variable `VERSION2_TAG` to the other version you want deployed
+        in the network.
+        Then adjust the weight variables `VERSION_WEIGHT` and `VERSION2_WEIGHT` to configure the
+        desired proportion of nodes running each of the two configured versions.
+3. Follow steps 5-11 of the `README.md` to configure and start the 200 node testnet.
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests (see step 9)
-5. As a sanity check, connect to the Prometheus node's web interface (port 9090)
+4. As a sanity check, connect to the Prometheus node's web interface (port 9090)
     and check the graph for the `cometbft_consensus_height` metric. All nodes
     should be increasing their heights.
 
-    * You can find the Prometheus node's IP address in `ansible/hosts` under section `[prometheus]`.
+    * Run `ansible --list-hosts prometheus` to obtain the Prometheus node's IP address.
     * The following URL will display the metrics `cometbft_consensus_height` and `cometbft_mempool_size`:
 
       ```
       http://<PROMETHEUS-NODE-IP>:9090/classic/graph?g0.range_input=1h&g0.expr=cometbft_consensus_height&g0.tab=0&g1.range_input=1h&g1.expr=cometbft_mempool_size&g1.tab=0
       ```
 
-6. You now need to start the load runner that will produce transaction load.
-    * If you don't know the saturation load of the version you are testing, you need to discover it.
-        * Run `make loadrunners-init`. This will copy the loader scripts to the
-          `testnet-load-runner` node and install the load tool.
-        * Find the IP address of the `testnet-load-runner` node in
-          `ansible/hosts` under section `[loadrunners]`.
-        * `ssh` into `testnet-load-runner`.
-          * Run `/root/200-node-loadscript.sh <INTERNAL_IP>` from the load runner node, where
-            `<INTERNAL_IP>` is the internal IP address of a full node (for example, `validator000`).
-            This node will receive all transactions from the load runner node.
-            * This script will take about 40 mins to run, so it is suggested to
-              first run `tmux` in case the ssh session breaks.
-                * `tmux` quick cheat sheet: `ctrl-b %` to split the current pane vertically; `ctrl-b ;` to toggle to last active pane.
-            * It is running 90-seconds-long experiments in a loop with different
-              loads.
-    * If you already know the saturation load, you can simply run the test (several times) for 90 seconds with a load somewhat
-      below saturation:
-        * set makefile variables `LOAD_CONNECTIONS`, `LOAD_TX_RATE`, to values that will produce the desired transaction load.
-        * set `LOAD_TOTAL_TIME` to 90 (seconds).
-        * run "make runload" and wait for it to complete. You may want to run this several times so the data from different runs can be compared.
+5. Discover the saturation point of the network. If you already know it, skip this step.
+  * Run `make loadrunners-init`, in case the load runner is not yet initialised. This will copy the
+    loader scripts to the `testnet-load-runner` node and install the load tool.
+  * Run `ansible --list-hosts loadrunners` to find the IP address of the `testnet-load-runner` node.
+  * `ssh` into `testnet-load-runner`.
+    * We will run a script that takes about 40 mins to complete, so it is suggested to first run `tmux` in case the ssh session breaks.
+        * `tmux` quick cheat sheet: `ctrl-b a` to attach to an existing session; `ctrl-b %` to split the current pane vertically; `ctrl-b ;` to toggle to last active pane.
+    * Find the *internal* IP address of a full node (for example, `validator000`). This node will receive all transactions from the load runner node.
+    * Run `/root/200-node-loadscript.sh <INTERNAL_IP>` from the load runner node, where `<INTERNAL_IP>` is the internal IP address of a full node.
+      * The script runs 90-seconds-long experiments in a loop with different load values.
+    * Follow the steps of the [Result Extraction](#result-extraction) section below to obtain the file `report_tabbed.txt`.
+
+6. Run several transaction load instances, each of 90 seconds, using a load somewhat below the saturation point.
+  * Set the Makefile variables `LOAD_CONNECTIONS`, `LOAD_TX_RATE`, to values that will produce the desired transaction load.
+  * Set `LOAD_TOTAL_TIME` to 90 (seconds).
+  * Run "make runload" and wait for it to complete. You may want to run this several times so the data from different runs can be compared.
 7. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
     * Alternatively, you may want to run `make retrieve-prometheus-data` and `make retrieve-blockstore` separately.
       The end result will be the same.
@@ -144,7 +141,7 @@ This section explains how the tests were carried out for reproducibility purpose
     * at least one blockstore DB for a CometBFT validator
     * the Prometheus database from the Prometheus node
     * for extra care, you can run `zip -T` on the `prometheus.zip` file and (one of) the `blockstore.db.zip` file(s)
-9. **Run `make terraform-destroy`**
+9.  **Run `make terraform-destroy`**
     * Don't forget to type `yes`! Otherwise you're in trouble.
 
 ### Result Extraction

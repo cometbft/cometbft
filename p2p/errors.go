@@ -214,15 +214,15 @@ func (e ErrInvalidPort) Error() string {
 
 type ErrInvalidPeerID struct {
 	ID     ID
-	source error
+	Source error
 }
 
 func (e ErrInvalidPeerID) Error() string {
-	return fmt.Sprintf("invalid peer ID (%v): %v", e.ID, e.source)
+	return fmt.Sprintf("invalid peer ID (%v): %v", e.ID, e.Source)
 }
 
 func (e ErrInvalidPeerID) Unwrap() error {
-	return e.source
+	return e.Source
 }
 
 type ErrInvalidNodeVersion struct {
@@ -322,4 +322,13 @@ func (e ErrStart) Error() string {
 
 func (e ErrStart) Unwrap() error {
 	return e.Err
+}
+
+type ErrInvalidPeerIDLength struct {
+	Got      int
+	Expected int
+}
+
+func (e ErrInvalidPeerIDLength) Error() string {
+	return fmt.Sprintf("invalid peer ID length, got %d, expected %d", e.Expected, e.Got)
 }

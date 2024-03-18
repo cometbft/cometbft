@@ -603,7 +603,7 @@ func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 	for _, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return ErrInvalidPeerID{ID: ID(id), source: err}
+			return ErrInvalidPeerID{ID: ID(id), Source: err}
 		}
 
 		sw.unconditionalPeerIDs[ID(id)] = struct{}{}
@@ -616,7 +616,7 @@ func (sw *Switch) AddPrivatePeerIDs(ids []string) error {
 	for _, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return ErrInvalidPeerID{ID: ID(id), source: err}
+			return ErrInvalidPeerID{ID: ID(id), Source: err}
 		}
 
 		validIDs = append(validIDs, id)

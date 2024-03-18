@@ -415,7 +415,7 @@ func validateID(id ID) error {
 		return err
 	}
 	if len(idBytes) != IDByteLength {
-		return fmt.Errorf("invalid peer ID length expected %d, got %d", IDByteLength, len(idBytes))
+		return ErrInvalidPeerIDLength{Got: len(idBytes), Expected: IDByteLength}
 	}
 	return nil
 }

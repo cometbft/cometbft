@@ -33,7 +33,7 @@ func testRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:               RootCmd.Use,
 		PersistentPreRunE: RootCmd.PersistentPreRunE,
-		Run:               func(cmd *cobra.Command, args []string) {},
+		Run:               func(_ *cobra.Command, _ []string) {},
 	}
 	registerFlagsRootCmd(rootCmd)
 	var l string

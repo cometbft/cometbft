@@ -86,7 +86,7 @@ func (is *IndexerService) OnStart() error {
 						)
 
 						if is.terminateOnError {
-							if err := is.Stop(); err != nil {
+							if err := is.Stop(); err != nil { //nolint:revive // suppress max-control-nesting linter
 								is.Logger.Error("failed to stop", "err", err)
 							}
 							return

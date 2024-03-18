@@ -111,7 +111,7 @@ func LightBlockFromProto(pb *cmtproto.LightBlock) (*LightBlock, error) {
 	return lb, nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // SignedHeader is a header along with the commits that prove it.
 type SignedHeader struct {

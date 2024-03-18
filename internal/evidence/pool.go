@@ -13,7 +13,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	clist "github.com/cometbft/cometbft/internal/clist"
+	"github.com/cometbft/cometbft/internal/clist"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
@@ -44,7 +44,7 @@ type Pool struct {
 	pruningHeight int64
 	pruningTime   time.Time
 
-	dbKeyLayout EvidenceKeyLayout
+	dbKeyLayout KeyLayout
 }
 
 func isEmpty(evidenceDB dbm.DB) bool {
@@ -88,10 +88,10 @@ func setDBLayout(pool *Pool, dbKeyLayoutVersion string) {
 	}
 }
 
-type EvidencePoolOptions func(*Pool)
+type PoolOptions func(*Pool)
 
 // WithCompaction sets the compaciton parameters.
-func WithDBKeyLayout(dbKeyLayoutV string) EvidencePoolOptions {
+func WithDBKeyLayout(dbKeyLayoutV string) PoolOptions {
 	return func(pool *Pool) {
 		setDBLayout(pool, dbKeyLayoutV)
 	}
@@ -99,7 +99,7 @@ func WithDBKeyLayout(dbKeyLayoutV string) EvidencePoolOptions {
 
 // NewPool creates an evidence pool. If using an existing evidence store,
 // it will add all pending evidence to the concurrent list.
-func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options ...EvidencePoolOptions) (*Pool, error) {
+func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options ...PoolOptions) (*Pool, error) {
 	state, err := stateDB.Load()
 	if err != nil {
 		return nil, sm.ErrCannotLoadState{Err: err}
@@ -611,7 +611,7 @@ func evMapKey(ev types.Evidence) string {
 
 // -------------- DB Key layout representation ---------------
 
-type EvidenceKeyLayout interface {
+type KeyLayout interface {
 	CalcKeyCommitted(evidence types.Evidence) []byte
 
 	CalcKeyPending(evidence types.Evidence) []byte
@@ -634,7 +634,7 @@ func (v1LegacyLayout) PrefixToBytesPending() []byte {
 }
 
 // CalcKeyCommitted implements EvidenceKeyLayout.
-func (v1l v1LegacyLayout) CalcKeyCommitted(evidence types.Evidence) []byte {
+func (v1LegacyLayout) CalcKeyCommitted(evidence types.Evidence) []byte {
 	return append([]byte{baseKeyCommitted}, keySuffix(evidence)...)
 }
 
@@ -643,7 +643,7 @@ func (v1LegacyLayout) CalcKeyPending(evidence types.Evidence) []byte {
 	return append([]byte{baseKeyPending}, keySuffix(evidence)...)
 }
 
-var _ EvidenceKeyLayout = (*v1LegacyLayout)(nil)
+var _ KeyLayout = (*v1LegacyLayout)(nil)
 
 type v2Layout struct{}
 
@@ -683,7 +683,7 @@ func (v2Layout) CalcKeyPending(evidence types.Evidence) []byte {
 	return key
 }
 
-var _ EvidenceKeyLayout = (*v2Layout)(nil)
+var _ KeyLayout = (*v2Layout)(nil)
 
 // -------- Util ---------
 // big endian padded hex.

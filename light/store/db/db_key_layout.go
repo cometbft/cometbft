@@ -23,17 +23,17 @@ func (v1LegacyLayout) LBKey(height int64, prefix string) []byte {
 }
 
 // ParseLBKey implements LightStoreKeyLayout.
-func (v1LegacyLayout) ParseLBKey(key []byte, storePrefix string) (height int64, err error) {
+func (v1LegacyLayout) ParseLBKey(key []byte, _ string) (height int64, err error) {
 	var part string
 	part, _, height, err = parseKey(key)
 	if part != "lb" {
 		return 0, err
 	}
-	return
+	return height, nil
 }
 
 // SizeKey implements LightStoreKeyLayout.
-func (v1LegacyLayout) SizeKey(prefix string) []byte {
+func (v1LegacyLayout) SizeKey(_ string) []byte {
 	return []byte("size")
 }
 
@@ -52,7 +52,7 @@ func parseKey(key []byte) (part string, prefix string, height int64, err error) 
 	if err != nil {
 		return "", "", 0, err
 	}
-	return
+	return part, prefix, height, nil
 }
 
 const (
@@ -91,7 +91,7 @@ func (v2Layout) ParseLBKey(key []byte, storePrefix string) (height int64, err er
 	if dbPrefix != storePrefix {
 		err = fmt.Errorf("parsed key has a different prefix. Expected: %s, got: %s", storePrefix, dbPrefix)
 	}
-	return
+	return height, err
 }
 
 // SizeKey implements LightStoreKeyLayout.

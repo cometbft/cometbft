@@ -61,7 +61,7 @@ func NewReactor(
 }
 
 // GetChannels implements p2p.Reactor.
-func (r *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  SnapshotChannel,
@@ -81,7 +81,7 @@ func (r *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 }
 
 // OnStart implements p2p.Reactor.
-func (r *Reactor) OnStart() error {
+func (*Reactor) OnStart() error {
 	return nil
 }
 
@@ -95,7 +95,7 @@ func (r *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements p2p.Reactor.
-func (r *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
+func (r *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	r.mtx.RLock()
 	defer r.mtx.RUnlock()
 	if r.syncer != nil {

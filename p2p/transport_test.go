@@ -665,8 +665,8 @@ func testSetupMultiplexTransport(t *testing.T) *MultiplexTransport {
 
 type testTransportAddr struct{}
 
-func (a *testTransportAddr) Network() string { return "tcp" }
-func (a *testTransportAddr) String() string  { return "test.local:1234" }
+func (*testTransportAddr) Network() string { return "tcp" }
+func (*testTransportAddr) String() string  { return "test.local:1234" }
 
 type testTransportConn struct{}
 
@@ -674,11 +674,11 @@ func (*testTransportConn) Close() error {
 	return errors.New("close() not implemented")
 }
 
-func (c *testTransportConn) LocalAddr() net.Addr {
+func (*testTransportConn) LocalAddr() net.Addr {
 	return &testTransportAddr{}
 }
 
-func (c *testTransportConn) RemoteAddr() net.Addr {
+func (*testTransportConn) RemoteAddr() net.Addr {
 	return &testTransportAddr{}
 }
 

@@ -223,7 +223,7 @@ func OfflineStateSyncHeight(height int64) StateOption {
 }
 
 // String returns a string.
-func (cs *State) String() string {
+func (*State) String() string {
 	// better not to access shared variables
 	return "ConsensusState"
 }
@@ -460,7 +460,7 @@ func (cs *State) OpenWAL(walFile string) (WAL, error) {
 	return wal, nil
 }
 
-//------------------------------------------------------------
+// ------------------------------------------------------------
 // Public interface for passing messages into the consensus state, possibly causing a state transition.
 // If peerID == "", the msg is considered internal.
 // Messages are added to the appropriate queue (peer or internal).
@@ -506,7 +506,6 @@ func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Par
 // SetProposalAndBlock inputs the proposal and all block parts.
 func (cs *State) SetProposalAndBlock(
 	proposal *types.Proposal,
-	block *types.Block,
 	parts *types.PartSet,
 	peerID p2p.ID,
 ) error {
@@ -525,7 +524,7 @@ func (cs *State) SetProposalAndBlock(
 	return nil
 }
 
-//------------------------------------------------------------
+// ------------------------------------------------------------
 // internal functions for managing the state
 
 func (cs *State) updateHeight(height int64) {
@@ -768,7 +767,7 @@ func (cs *State) newStep() {
 	}
 }
 
-//-----------------------------------------
+// -----------------------------------------
 // the main go routines
 
 // receiveRoutine handles messages which may cause state transitions.
@@ -1032,7 +1031,7 @@ func (cs *State) handleTxsAvailable() {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // State functions
 // Used internally by handleTimeout and handleMsg to make state transitions
 
@@ -2023,7 +2022,7 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 	cs.metrics.CommittedHeight.Set(float64(block.Height))
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time) error {
 	// Already have one
@@ -2647,7 +2646,7 @@ func (cs *State) calculatePrevoteMessageDelayMetrics() {
 	}
 }
 
-//---------------------------------------------------------
+// ---------------------------------------------------------
 
 func CompareHRS(h1 int64, r1 int32, s1 cstypes.RoundStepType, h2 int64, r2 int32, s2 cstypes.RoundStepType) int {
 	if h1 < h2 {

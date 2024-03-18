@@ -1,7 +1,7 @@
 package pruningservice
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"math"
 

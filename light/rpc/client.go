@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
-	service "github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/internal/state"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"

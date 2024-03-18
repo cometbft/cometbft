@@ -29,7 +29,7 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-//----------------------------------------------
+// ----------------------------------------------
 // byzantine failures
 
 // Byzantine node sends two different prevotes (nil and blockID) to the same validator.
@@ -297,14 +297,14 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 // B sees a commit, A doesn't.
 // Heal partition and ensure A sees the commit.
 func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
-	N := 4
+	n := 4
 	logger := consensusLogger().With("test", "byzantine")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	app := newKVStore
-	css, cleanup := randConsensusNet(t, N, "consensus_byzantine_test", newMockTickerFunc(false), app)
+	css, cleanup := randConsensusNet(t, n, "consensus_byzantine_test", newMockTickerFunc(false), app)
 	defer cleanup()
 
 	// give the byzantine validator a normal ticker
@@ -312,21 +312,21 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	ticker.SetLogger(css[0].Logger)
 	css[0].SetTimeoutTicker(ticker)
 
-	switches := make([]*p2p.Switch, N)
+	switches := make([]*p2p.Switch, n)
 	p2pLogger := logger.With("module", "p2p")
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		switches[i] = p2p.MakeSwitch(
 			config.P2P,
 			i,
-			func(i int, sw *p2p.Switch) *p2p.Switch {
+			func(_ int, sw *p2p.Switch) *p2p.Switch {
 				return sw
 			})
 		switches[i].SetLogger(p2pLogger.With("validator", i))
 	}
 
-	blocksSubs := make([]types.Subscription, N)
-	reactors := make([]p2p.Reactor, N)
-	for i := 0; i < N; i++ {
+	blocksSubs := make([]types.Subscription, n)
+	reactors := make([]p2p.Reactor, n)
+	for i := 0; i < n; i++ {
 		// enable txs so we can create different proposals
 		assertMempool(css[i].txNotifier).EnableTxsAvailable()
 		// make first val byzantine
@@ -340,7 +340,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 			}
 			// We are setting the prevote function to do nothing because the prevoting
 			// and precommitting are done alongside the proposal.
-			css[i].doPrevote = func(height int64, round int32) {}
+			css[i].doPrevote = func(_ int64, _ int32) {}
 		}
 
 		eventBus := css[i].eventBus
@@ -378,7 +378,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 		}
 	}()
 
-	p2p.MakeConnectedSwitches(config.P2P, N, func(i int, s *p2p.Switch) *p2p.Switch {
+	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, _ *p2p.Switch) *p2p.Switch {
 		// ignore new switch s, we already made ours
 		switches[i].AddReactor("CONSENSUS", reactors[i])
 		return switches[i]
@@ -392,7 +392,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 
 	// start the non-byz state machines.
 	// note these must be started before the byz
-	for i := 1; i < N; i++ {
+	for i := 1; i < n; i++ {
 		cr := reactors[i].(*Reactor)
 		cr.SwitchToConsensus(cr.conS.GetState(), false)
 	}
@@ -425,7 +425,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	// wait till everyone makes the first new block
 	// (one of them already has)
 	wg := new(sync.WaitGroup)
-	for i := 1; i < N-1; i++ {
+	for i := 1; i < n-1; i++ {
 		wg.Add(1)
 		go func(j int) {
 			<-blocksSubs[j].Out()
@@ -451,7 +451,7 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 	}
 }
 
-//-------------------------------
+// -------------------------------
 // byzantine consensus functions
 
 func byzantineDecideProposalFunc(_ context.Context, t *testing.T, height int64, round int32, cs *State, sw *p2p.Switch) {
@@ -548,7 +548,7 @@ func sendProposalAndParts(
 	})
 }
 
-//----------------------------------------
+// ----------------------------------------
 // byzantine consensus reactor
 
 type ByzantineReactor struct {
@@ -581,11 +581,13 @@ func (br *ByzantineReactor) AddPeer(peer p2p.Peer) {
 	}
 }
 
-func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason interface{}) {
+func (br *ByzantineReactor) RemovePeer(peer p2p.Peer, reason any) {
 	br.reactor.RemovePeer(peer, reason)
 }
 
+// Receive forwards all messages to the underlying reactor.
 func (br *ByzantineReactor) Receive(e p2p.Envelope) {
 	br.reactor.Receive(e)
 }
-func (br *ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }
+
+func (*ByzantineReactor) InitPeer(peer p2p.Peer) p2p.Peer { return peer }

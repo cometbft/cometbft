@@ -108,7 +108,7 @@ func (cli *socketClient) Error() error {
 	return cli.err
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // SetResponseCallback sets a callback, which will be executed for each
 // non-error & non-empty response from the server.
@@ -124,7 +124,7 @@ func (cli *socketClient) CheckTxAsync(ctx context.Context, req *types.CheckTxReq
 	return cli.queueRequest(ctx, types.ToCheckTxRequest(req))
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 	w := bufio.NewWriter(conn)
@@ -236,7 +236,7 @@ func (cli *socketClient) didRecvResponse(res *types.Response) error {
 	return nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func (cli *socketClient) Flush(ctx context.Context) error {
 	reqRes, err := cli.queueRequest(ctx, types.ToFlushRequest())
@@ -457,7 +457,7 @@ LOOP:
 	}
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 	switch req.Value.(type) {

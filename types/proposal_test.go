@@ -141,7 +141,7 @@ func TestProposalValidateBasic(t *testing.T) {
 		malleateProposal func(*Proposal)
 		expectErr        bool
 	}{
-		{"Good Proposal", func(p *Proposal) {}, false},
+		{"Good Proposal", func(*Proposal) {}, false},
 		{"Test Proposal", func(p *Proposal) {
 			p.Type = testProposal.Type
 			p.Height = testProposal.Height

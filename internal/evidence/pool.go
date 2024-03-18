@@ -12,7 +12,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	clist "github.com/cometbft/cometbft/internal/clist"
+	"github.com/cometbft/cometbft/internal/clist"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"
@@ -47,11 +47,70 @@ type Pool struct {
 
 	pruningHeight int64
 	pruningTime   time.Time
+<<<<<<< HEAD
+=======
+
+	dbKeyLayout KeyLayout
+}
+
+func isEmpty(evidenceDB dbm.DB) bool {
+	iter, err := evidenceDB.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		return false
+	}
+	return true
+}
+
+func setDBLayout(pool *Pool, dbKeyLayoutVersion string) {
+	if !isEmpty(pool.evidenceStore) {
+		var version []byte
+		var err error
+		if version, err = pool.evidenceStore.Get([]byte("version")); err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
+			panic(err)
+		}
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
+	}
+
+	switch dbKeyLayoutVersion {
+	case "v1", "":
+		pool.dbKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "v1"
+	case "v2":
+		pool.dbKeyLayout = &v2Layout{}
+	default:
+		panic("unknown key layout version")
+	}
+	if err := pool.evidenceStore.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
+		panic(err)
+	}
+}
+
+type PoolOptions func(*Pool)
+
+// WithCompaction sets the compaciton parameters.
+func WithDBKeyLayout(dbKeyLayoutV string) PoolOptions {
+	return func(pool *Pool) {
+		setDBLayout(pool, dbKeyLayoutV)
+	}
+>>>>>>> 9f457fc48 (feat: enable revive linter (#2232))
 }
 
 // NewPool creates an evidence pool. If using an existing evidence store,
 // it will add all pending evidence to the concurrent list.
+<<<<<<< HEAD
 func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore) (*Pool, error) {
+=======
+func NewPool(evidenceDB dbm.DB, stateDB sm.Store, blockStore BlockStore, options ...PoolOptions) (*Pool, error) {
+>>>>>>> 9f457fc48 (feat: enable revive linter (#2232))
 	state, err := stateDB.Load()
 	if err != nil {
 		return nil, sm.ErrCannotLoadState{Err: err}
@@ -553,6 +612,86 @@ func evMapKey(ev types.Evidence) string {
 	return string(ev.Hash())
 }
 
+<<<<<<< HEAD
+=======
+// -------------- DB Key layout representation ---------------
+
+type KeyLayout interface {
+	CalcKeyCommitted(evidence types.Evidence) []byte
+
+	CalcKeyPending(evidence types.Evidence) []byte
+
+	PrefixToBytesPending() []byte
+
+	PrefixToBytesCommitted() []byte
+}
+
+type v1LegacyLayout struct{}
+
+// PrefixToBytesCommitted implements EvidenceKeyLayout.
+func (v1LegacyLayout) PrefixToBytesCommitted() []byte {
+	return []byte{baseKeyCommitted}
+}
+
+// PrefixToBytesPending implements EvidenceKeyLayout.
+func (v1LegacyLayout) PrefixToBytesPending() []byte {
+	return []byte{baseKeyPending}
+}
+
+// CalcKeyCommitted implements EvidenceKeyLayout.
+func (v1LegacyLayout) CalcKeyCommitted(evidence types.Evidence) []byte {
+	return append([]byte{baseKeyCommitted}, keySuffix(evidence)...)
+}
+
+// CalcKeyPending implements EvidenceKeyLayout.
+func (v1LegacyLayout) CalcKeyPending(evidence types.Evidence) []byte {
+	return append([]byte{baseKeyPending}, keySuffix(evidence)...)
+}
+
+var _ KeyLayout = (*v1LegacyLayout)(nil)
+
+type v2Layout struct{}
+
+// PrefixToBytesCommitted implements EvidenceKeyLayout.
+func (v2Layout) PrefixToBytesCommitted() []byte {
+	key, err := orderedcode.Append(nil, prefixCommitted)
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+// PrefixToBytesPending implements EvidenceKeyLayout.
+func (v2Layout) PrefixToBytesPending() []byte {
+	key, err := orderedcode.Append(nil, prefixPending)
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+// CalcKeyCommitted implements EvidenceKeyLayout.
+func (v2Layout) CalcKeyCommitted(evidence types.Evidence) []byte {
+	key, err := orderedcode.Append(nil, prefixCommitted, evidence.Height(), string(evidence.Hash()))
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+// CalcKeyPending implements EvidenceKeyLayout.
+func (v2Layout) CalcKeyPending(evidence types.Evidence) []byte {
+	key, err := orderedcode.Append(nil, prefixPending, evidence.Height(), string(evidence.Hash()))
+	if err != nil {
+		panic(err)
+	}
+	return key
+}
+
+var _ KeyLayout = (*v2Layout)(nil)
+
+// -------- Util ---------
+>>>>>>> 9f457fc48 (feat: enable revive linter (#2232))
 // big endian padded hex.
 func bE(h int64) string {
 	return fmt.Sprintf("%0.16X", h)

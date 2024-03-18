@@ -159,7 +159,7 @@ func (cli *grpcClient) SetResponseCallback(resCb Callback) {
 	cli.mtx.Unlock()
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func (cli *grpcClient) CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error) {
 	res, err := cli.client.CheckTx(ctx, req, grpc.WaitForReady(true))
@@ -179,7 +179,7 @@ func (cli *grpcClient) finishAsyncCall(req *types.Request, res *types.Response) 
 	return reqres
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 func (cli *grpcClient) Flush(ctx context.Context) error {
 	_, err := cli.client.Flush(ctx, types.ToFlushRequest().GetFlush(), grpc.WaitForReady(true))

@@ -28,7 +28,7 @@ type ClientCreator interface {
 	NewABCISnapshotClient() (abcicli.Client, error)
 }
 
-//----------------------------------------------------
+// ----------------------------------------------------
 // local proxy uses a mutex on an in-proc app
 
 type localClientCreator struct {
@@ -71,7 +71,7 @@ func (l *localClientCreator) newABCIClient() (abcicli.Client, error) {
 	return abcicli.NewLocalClient(l.mtx, l.app), nil
 }
 
-//-------------------------------------------------------------------------
+// -------------------------------------------------------------------------
 // connection-synchronized local client uses a mutex per "connection" on an
 // in-process app
 
@@ -116,7 +116,7 @@ func (c *connSyncLocalClientCreator) newABCIClient() (abcicli.Client, error) {
 	return abcicli.NewLocalClient(nil, c.app), nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // advanced local client creator with a more complex concurrency model than the
 // other local client creators
 
@@ -166,7 +166,7 @@ func (c *consensusSyncLocalClientCreator) NewABCISnapshotClient() (abcicli.Clien
 	return abcicli.NewUnsyncLocalClient(c.app), nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // most advanced local client creator with a more complex concurrency model
 // than the other local client creators - all concurrency is assumed to be
 // handled by the application
@@ -206,7 +206,7 @@ func (c *unsyncLocalClientCreator) NewABCISnapshotClient() (abcicli.Client, erro
 	return abcicli.NewUnsyncLocalClient(c.app), nil
 }
 
-//---------------------------------------------------------------
+// ---------------------------------------------------------------
 // remote proxy opens new connections to an external app process
 
 type remoteClientCreator struct {

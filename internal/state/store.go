@@ -31,12 +31,19 @@ var (
 	ErrInvalidHeightValue = errors.New("invalid height value")
 )
 
+<<<<<<< HEAD
 //------------------------------------------------------------------------
+=======
+// ------------------------------------------------------------------------.
+type KeyLayout interface {
+	CalcValidatorsKey(height int64) []byte
+>>>>>>> 9f457fc48 (feat: enable revive linter (#2232))
 
 func calcValidatorsKey(height int64) []byte {
 	return []byte(fmt.Sprintf("validatorsKey:%v", height))
 }
 
+<<<<<<< HEAD
 func calcConsensusParamsKey(height int64) []byte {
 	return []byte(fmt.Sprintf("consensusParamsKey:%v", height))
 }
@@ -44,8 +51,11 @@ func calcConsensusParamsKey(height int64) []byte {
 func calcABCIResponsesKey(height int64) []byte {
 	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
 }
+=======
+var _ KeyLayout = (*v1LegacyLayout)(nil)
+>>>>>>> 9f457fc48 (feat: enable revive linter (#2232))
 
-//----------------------
+// ----------------------
 
 var (
 	lastABCIResponseKey              = []byte("lastABCIResponseKey") // DEPRECATED
@@ -53,6 +63,43 @@ var (
 	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
 )
 
+<<<<<<< HEAD
+=======
+var (
+	// prefixes must be unique across all db's.
+	prefixValidators      = int64(6)
+	prefixConsensusParams = int64(7)
+	prefixABCIResponses   = int64(8)
+)
+
+type v2Layout struct{}
+
+func (v2Layout) encodeKey(prefix, height int64) []byte {
+	res, err := orderedcode.Append(nil, prefix, height)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+// CalcABCIResponsesKey implements StateKeyLayout.
+func (v2l v2Layout) CalcABCIResponsesKey(height int64) []byte {
+	return v2l.encodeKey(prefixABCIResponses, height)
+}
+
+// CalcConsensusParamsKey implements StateKeyLayout.
+func (v2l v2Layout) CalcConsensusParamsKey(height int64) []byte {
+	return v2l.encodeKey(prefixConsensusParams, height)
+}
+
+// CalcValidatorsKey implements StateKeyLayout.
+func (v2l v2Layout) CalcValidatorsKey(height int64) []byte {
+	return v2l.encodeKey(prefixValidators, height)
+}
+
+var _ KeyLayout = (*v2Layout)(nil)
+
+>>>>>>> 9f457fc48 (feat: enable revive linter (#2232))
 //go:generate ../../scripts/mockery_generate.sh Store
 
 // Store defines the state store interface
@@ -110,6 +157,11 @@ type Store interface {
 type dbStore struct {
 	db dbm.DB
 
+<<<<<<< HEAD
+=======
+	DBKeyLayout KeyLayout
+
+>>>>>>> 9f457fc48 (feat: enable revive linter (#2232))
 	StoreOptions
 }
 
@@ -472,7 +524,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // PruneABCIResponses attempts to prune all ABCI responses up to, but not
 // including, the given height. On success, returns the number of heights
 // pruned and the new retain height.
-func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (int64, int64, error) {
+func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (pruned int64, newRetainHeight int64, err error) {
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}
@@ -488,7 +540,6 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact b
 	batch := store.db.NewBatch()
 	defer batch.Close()
 
-	pruned := int64(0)
 	batchPruned := int64(0)
 
 	for h := lastRetainHeight; h < targetRetainHeight; h++ {
@@ -525,7 +576,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact b
 	return pruned + batchPruned, targetRetainHeight, err
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 // TxResultsHash returns the root hash of a Merkle tree of
 // ExecTxResulst responses (see ABCIResults.Hash)
@@ -748,7 +799,7 @@ func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 	return store.db.SetSync(lastABCIResponsesRetainHeightKey, int64ToBytes(height))
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
@@ -861,7 +912,7 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // ConsensusParamsInfo represents the latest consensus params, or the last height it changed
 

@@ -100,7 +100,7 @@ var (
 
 func bulkInsertEvents(blockID, txID int64, events []abci.Event) (eventInserts, attrInserts [][]any) {
 	// Populate the transaction ID field iff one is defined (> 0).
-	var txIDArg interface{}
+	var txIDArg any
 	if txID > 0 {
 		txIDArg = txID
 	}
@@ -252,22 +252,22 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 }
 
 // SearchBlockEvents is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) SearchBlockEvents(_ context.Context, _ *query.Query) ([]int64, error) {
+func (*EventSink) SearchBlockEvents(_ context.Context, _ *query.Query) ([]int64, error) {
 	return nil, errors.New("block search is not supported via the postgres event sink")
 }
 
 // SearchTxEvents is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) SearchTxEvents(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
+func (*EventSink) SearchTxEvents(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
 	return nil, errors.New("tx search is not supported via the postgres event sink")
 }
 
 // GetTxByHash is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) GetTxByHash(_ []byte) (*abci.TxResult, error) {
+func (*EventSink) GetTxByHash(_ []byte) (*abci.TxResult, error) {
 	return nil, errors.New("getTxByHash is not supported via the postgres event sink")
 }
 
 // HasBlock is not implemented by this sink, and reports an error for all queries.
-func (es *EventSink) HasBlock(_ int64) (bool, error) {
+func (*EventSink) HasBlock(_ int64) (bool, error) {
 	return false, errors.New("hasBlock is not supported via the postgres event sink")
 }
 

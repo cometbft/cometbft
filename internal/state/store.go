@@ -583,7 +583,6 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact b
 	batch := store.db.NewBatch()
 	defer batch.Close()
 
-	pruned := int64(0)
 	batchPruned := int64(0)
 
 	for h := lastRetainHeight; h < targetRetainHeight; h++ {

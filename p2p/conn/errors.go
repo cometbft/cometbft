@@ -7,7 +7,7 @@ import (
 
 var (
 	ErrInvalidSecretConnKeySend = errors.New("send invalid secret connection key")
-	ErrInvalidSecretConnKeyRecv = errors.New("received invalid secret connection key")
+	ErrInvalidSecretConnKeyRecv = errors.New("invalid receive SecretConnection Key")
 	ErrChallengeVerification    = errors.New("challenge verification failed")
 )
 
@@ -51,8 +51,7 @@ type ErrPacketTooBig struct {
 }
 
 func (e ErrPacketTooBig) Error() string {
-	// return fmt.Sprintf("received message exceeds maximum capacity: %v < %v", e.Max, e.Received)
-	return fmt.Sprintf("packet is too big (max: %d, got: %d)", e.Max, e.Received)
+	return fmt.Sprintf("received message exceeds available capacity (max: %d, got: %d)", e.Max, e.Received)
 }
 
 type ErrChunkTooBig struct {

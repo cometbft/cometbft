@@ -13,7 +13,7 @@ import (
 
 	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // WebSocket handler
@@ -45,7 +45,7 @@ func NewWebsocketManager(
 	return &WebsocketManager{
 		funcMap: funcMap,
 		Upgrader: websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool {
+			CheckOrigin: func(_ *http.Request) bool {
 				// TODO ???
 				//
 				// The default behavior would be relevant to browser-based clients,
@@ -304,7 +304,7 @@ func (wsc *wsConnection) readRoutine() {
 		}
 	}()
 
-	wsc.baseConn.SetPongHandler(func(m string) error {
+	wsc.baseConn.SetPongHandler(func(_ string) error {
 		return wsc.baseConn.SetReadDeadline(time.Now().Add(wsc.readWait))
 	})
 

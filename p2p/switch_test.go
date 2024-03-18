@@ -65,9 +65,9 @@ func (tr *TestReactor) GetChannels() []*conn.ChannelDescriptor {
 	return tr.channels
 }
 
-func (tr *TestReactor) AddPeer(Peer) {}
+func (*TestReactor) AddPeer(Peer) {}
 
-func (tr *TestReactor) RemovePeer(Peer, interface{}) {}
+func (*TestReactor) RemovePeer(Peer, any) {}
 
 func (tr *TestReactor) Receive(e Envelope) {
 	if tr.logMessages {
@@ -85,7 +85,7 @@ func (tr *TestReactor) getMsgs(chID byte) []PeerMessage {
 	return tr.msgsReceived[chID]
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // convenience method for creating two switches connected to each other.
 // XXX: note this uses net.Pipe and not a proper TCP conn.
@@ -695,7 +695,7 @@ type errorTransport struct {
 	acceptErr error
 }
 
-func (et errorTransport) NetAddress() NetAddress {
+func (errorTransport) NetAddress() NetAddress {
 	panic("not implemented")
 }
 
@@ -748,7 +748,7 @@ type mockReactor struct {
 	initCalledBeforeRemoveFinished uint32
 }
 
-func (r *mockReactor) RemovePeer(Peer, interface{}) {
+func (r *mockReactor) RemovePeer(Peer, any) {
 	atomic.StoreUint32(&r.removePeerInProgress, 1)
 	defer atomic.StoreUint32(&r.removePeerInProgress, 0)
 	time.Sleep(100 * time.Millisecond)
@@ -773,7 +773,7 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	reactor.BaseReactor = NewBaseReactor("mockReactor", reactor)
 
 	// make switch
-	sw := MakeSwitch(cfg, 1, func(i int, sw *Switch) *Switch {
+	sw := MakeSwitch(cfg, 1, func(_ int, sw *Switch) *Switch {
 		sw.AddReactor("mock", reactor)
 		return sw
 	})
@@ -812,7 +812,7 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 }
 
 func BenchmarkSwitchBroadcast(b *testing.B) {
-	s1, s2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
+	s1, s2 := MakeSwitchPair(func(_ int, sw *Switch) *Switch {
 		// Make bar reactors of bar channels each
 		sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
 			{ID: byte(0x00), Priority: 10},

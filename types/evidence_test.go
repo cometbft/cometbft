@@ -62,7 +62,7 @@ func TestDuplicateVoteEvidenceValidation(t *testing.T) {
 		malleateEvidence func(*DuplicateVoteEvidence)
 		expectErr        bool
 	}{
-		{"Good DuplicateVoteEvidence", func(ev *DuplicateVoteEvidence) {}, false},
+		{"Good DuplicateVoteEvidence", func(_ *DuplicateVoteEvidence) {}, false},
 		{"Nil vote A", func(ev *DuplicateVoteEvidence) { ev.VoteA = nil }, true},
 		{"Nil vote B", func(ev *DuplicateVoteEvidence) { ev.VoteB = nil }, true},
 		{"Nil votes", func(ev *DuplicateVoteEvidence) {
@@ -186,7 +186,7 @@ func TestLightClientAttackEvidenceValidation(t *testing.T) {
 		malleateEvidence func(*LightClientAttackEvidence)
 		expectErr        bool
 	}{
-		{"Good LightClientAttackEvidence", func(ev *LightClientAttackEvidence) {}, false},
+		{"Good LightClientAttackEvidence", func(_ *LightClientAttackEvidence) {}, false},
 		{"Negative height", func(ev *LightClientAttackEvidence) { ev.CommonHeight = -10 }, true},
 		{"Height is greater than divergent block", func(ev *LightClientAttackEvidence) {
 			ev.CommonHeight = height + 1

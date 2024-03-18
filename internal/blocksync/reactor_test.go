@@ -293,7 +293,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	lastReactorPair := newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
 	reactorPairs = append(reactorPairs, lastReactorPair) //nolint:makezero // when initializing with 0, the test breaks.
 
-	switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
+	switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(_ int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("BLOCKSYNC", reactorPairs[len(reactorPairs)-1].reactor)
 		return s
 	}, p2p.Connect2Switches)...)
@@ -337,7 +337,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 
 	var switches []*p2p.Switch
 	for _, r := range reactorPairs {
-		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
+		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(_ int, s *p2p.Switch) *p2p.Switch {
 			s.AddReactor("BLOCKSYNC", r.reactor)
 			return s
 		}, p2p.Connect2Switches)...)

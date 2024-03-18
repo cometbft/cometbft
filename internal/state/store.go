@@ -567,7 +567,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 // PruneABCIResponses attempts to prune all ABCI responses up to, but not
 // including, the given height. On success, returns the number of heights
 // pruned and the new retain height.
-func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (int64, int64, error) { //nolint:revive // these results aren't confusing and the function is easier to understand if the results aren't named.
+func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (pruned int64, newRetainHeight int64, err error) {
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}

@@ -65,7 +65,7 @@ func ResetConfig(name string) *cfg.Config {
 	return test.ResetTestRoot(name)
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // validator stub (a kvstore consensus peer we control)
 
 type validatorStub struct {
@@ -227,7 +227,7 @@ func (vss ValidatorStubsByPower) Swap(i, j int) {
 	vss[j].Index = int32(j)
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // Functions for transitioning the consensus state
 
 func startTestRound(cs *State, height int64, round int32) {
@@ -428,7 +428,7 @@ func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
 	return ch
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // consensus states
 
 func newState(state sm.State, pv types.PrivValidator, app abci.Application) *State {
@@ -561,14 +561,13 @@ func randStateWithAppImplGenesisTime(
 	return cs, vss
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 func ensureNoNewEvent(ch <-chan cmtpubsub.Message, timeout time.Duration,
 	errorMessage string,
 ) {
 	select {
 	case <-time.After(timeout):
-		break
 	case <-ch:
 		panic(errorMessage)
 	}
@@ -797,13 +796,13 @@ func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 	}
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // consensus nets
 
 // consensusLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func consensusLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...interface{}) term.FgBgColor {
+	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
@@ -923,7 +922,7 @@ func getSwitchIndex(switches []*p2p.Switch, peer p2p.Peer) int {
 	panic("didn't find peer in switches")
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // genesis
 
 func randGenesisDoc(numValidators int,
@@ -978,7 +977,7 @@ func randGenesisStateWithTime(
 	return s0, privValidators
 }
 
-//------------------------------------
+// ------------------------------------
 // mock ticker
 
 func newMockTickerFunc(onlyOnce bool) func() TimeoutTicker {
@@ -1000,11 +999,11 @@ type mockTicker struct {
 	fired    bool
 }
 
-func (m *mockTicker) Start() error {
+func (*mockTicker) Start() error {
 	return nil
 }
 
-func (m *mockTicker) Stop() error {
+func (*mockTicker) Stop() error {
 	return nil
 }
 

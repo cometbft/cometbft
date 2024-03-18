@@ -18,7 +18,7 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
@@ -136,7 +136,7 @@ type httpHeader struct {
 }
 
 func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...types.RPCResponse) error {
-	var v interface{}
+	var v any
 	if len(res) == 1 {
 		v = res[0]
 	} else {

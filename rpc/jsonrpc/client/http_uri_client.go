@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 const (
@@ -51,8 +51,8 @@ func NewURI(remote string) (*URIClient, error) {
 
 // Call issues a POST form HTTP request.
 func (c *URIClient) Call(ctx context.Context, method string,
-	params map[string]interface{}, result interface{},
-) (interface{}, error) {
+	params map[string]any, result any,
+) (any, error) {
 	values, err := argsToURLValues(params)
 	if err != nil {
 		return nil, ErrEncodingParams{Source: err}

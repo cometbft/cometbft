@@ -49,7 +49,7 @@ func (pvs PrivValidatorsByAddress) Swap(i, j int) {
 	pvs[i], pvs[j] = pvs[j], pvs[i]
 }
 
-//----------------------------------------
+// ----------------------------------------
 // MockPV
 
 // MockPV implements PrivValidator without any safety or persistence.
@@ -139,7 +139,7 @@ func (pv MockPV) String() string {
 }
 
 // XXX: Implement.
-func (pv MockPV) DisableChecks() {
+func (MockPV) DisableChecks() {
 	// Currently this does nothing,
 	// as MockPV has no safety checks at all.
 }
@@ -151,12 +151,12 @@ type ErroringMockPV struct {
 var ErroringMockPVErr = errors.New("erroringMockPV always returns an error")
 
 // SignVote implements PrivValidator.
-func (pv *ErroringMockPV) SignVote(string, *cmtproto.Vote, bool) error {
+func (*ErroringMockPV) SignVote(string, *cmtproto.Vote, bool) error {
 	return ErroringMockPVErr
 }
 
 // SignProposal implements PrivValidator.
-func (pv *ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
+func (*ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
 	return ErroringMockPVErr
 }
 

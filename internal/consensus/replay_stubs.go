@@ -11,7 +11,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 type emptyMempool struct{}
 
@@ -25,7 +25,7 @@ func (emptyMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
 	return nil, nil
 }
 
-func (txmp emptyMempool) RemoveTxByKey(types.TxKey) error {
+func (emptyMempool) RemoveTxByKey(types.TxKey) error {
 	return nil
 }
 
@@ -54,7 +54,7 @@ func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }
 func (emptyMempool) InitWAL() error { return nil }
 func (emptyMempool) CloseWAL()      {}
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // mockProxyApp uses ABCIResponses to give the right results.
 //
 // Useful because we don't want to call Commit() twice for the same block on

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+
+	"github.com/cometbft/cometbft/libs/bytes"
 )
 
 var (
@@ -179,6 +181,8 @@ func (e ErrNetAddressInvalid) Error() string {
 	return fmt.Sprintf("invalid address (%s): %v", e.Addr, e.Err)
 }
 
+func (e ErrNetAddressInvalid) Unwrap() error { return e.Err }
+
 type ErrNetAddressLookup struct {
 	Addr string
 	Err  error
@@ -187,6 +191,8 @@ type ErrNetAddressLookup struct {
 func (e ErrNetAddressLookup) Error() string {
 	return fmt.Sprintf("error looking up host (%s): %v", e.Addr, e.Err)
 }
+
+func (e ErrNetAddressLookup) Unwrap() error { return e.Err }
 
 // ErrCurrentlyDialingOrExistingAddress indicates that we're currently
 // dialing this address or it belongs to an existing peer.
@@ -297,8 +303,8 @@ func (e ErrDifferentNetwork) Error() string {
 }
 
 type ErrNoCommonChannels struct {
-	OtherChannels []byte
-	OurChannels   []byte
+	OtherChannels bytes.HexBytes
+	OurChannels   bytes.HexBytes
 }
 
 func (e ErrNoCommonChannels) Error() string {

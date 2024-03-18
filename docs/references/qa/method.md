@@ -162,17 +162,17 @@ The CometBFT team should improve it at every iteration to increase the amount of
          ```
    2. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate.
       You will need to separate data per experiment.
-
-        * Create files `report01.txt`, `report02.txt`, `report04.txt` and, for each experiment in file `report.txt`,
-          copy its related lines to the filename that matches the number of connections, for example
-
+        * Run in your terminal:
           ```bash
           for cnum in 1 2 4; do echo "$cnum"; grep "Connections: $cnum" results/report.txt -B 2 -A 10 > results/report$cnum.txt;  done
           ```
+          This will split `report.txt` into new files `report01.txt`, `report02.txt`,
+          `report04.txt`. Each new file will only contain the experiment results with the
+          corresponding to the number of connections.
 
         * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
         * Otherwise just keep `report.txt`, and skip to the next step.
-    4. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
+    3. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
         * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
         * Combine the column files into a single table file:
            * Replace tabs by spaces in all column files. For example,

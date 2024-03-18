@@ -219,6 +219,21 @@ type ManifestNode struct {
 	// Geographical zone ID for simulating latencies.
 	Zone string `toml:"zone"`
 
+	// ExperimentalKeyLayout sets the key representation in the DB
+	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`
+
+	// Compact triggers compaction on the DB after pruning
+	Compact bool `toml:"compact"`
+
+	// CompactionInterval sets the number of blocks at which we trigger compaction
+	CompactionInterval int64 `toml:"compaction_interval"`
+
+	// DiscardABCIResponses disables abci rsponses
+	DiscardABCIResponses bool `toml:"discard_abci_responses"`
+
+	// Indexer sets the indexer, default kv
+	Indexer string `toml:"indexer"`
+
 	// Simulated clock skew for this node
 	ClockSkew time.Duration `toml:"clock_skew"`
 }

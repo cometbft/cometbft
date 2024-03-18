@@ -60,17 +60,17 @@ func (s *GRPCServer) OnStop() {
 	s.server.Stop()
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
 // gRPCApplication is a gRPC shim for Application.
 type gRPCApplication struct {
 	types.Application
 }
 
-func (app *gRPCApplication) Echo(_ context.Context, req *types.EchoRequest) (*types.EchoResponse, error) {
+func (*gRPCApplication) Echo(_ context.Context, req *types.EchoRequest) (*types.EchoResponse, error) {
 	return &types.EchoResponse{Message: req.Message}, nil
 }
 
-func (app *gRPCApplication) Flush(context.Context, *types.FlushRequest) (*types.FlushResponse, error) {
+func (*gRPCApplication) Flush(context.Context, *types.FlushRequest) (*types.FlushResponse, error) {
 	return &types.FlushResponse{}, nil
 }

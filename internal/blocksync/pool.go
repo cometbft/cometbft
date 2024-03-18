@@ -218,7 +218,7 @@ func (pool *BlockPool) PeekTwoBlocks() (first, second *types.Block, firstExtComm
 	if r := pool.requesters[pool.height+1]; r != nil {
 		second = r.getBlock()
 	}
-	return
+	return first, second, firstExtCommit
 }
 
 // PopRequest removes the requester at pool.height and increments pool.height.
@@ -494,7 +494,7 @@ func (pool *BlockPool) debug() string {
 	return str
 }
 
-//-------------------------------------
+// -------------------------------------
 
 type bpPeer struct {
 	didTimeout  bool
@@ -569,7 +569,7 @@ func (peer *bpPeer) onTimeout() {
 	peer.didTimeout = true
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // bpRequester requests a block from a peer.
 //
@@ -824,7 +824,7 @@ OUTER_LOOP:
 					// If the second peer was just set, reset the retryTimer to give the
 					// second peer a chance to respond.
 					if picked := bpr.pickSecondPeerAndSendRequest(); picked {
-						if !retryTimer.Stop() {
+						if !retryTimer.Stop() { //nolint:revive // suppress max-control-nesting linter
 							<-retryTimer.C
 						}
 						retryTimer.Reset(requestRetrySeconds * time.Second)

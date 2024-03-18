@@ -189,8 +189,8 @@ func TestMempoolFilters(t *testing.T) {
 	defer cleanup()
 	emptyTxArr := []types.Tx{[]byte{}}
 
-	nopPreFilter := func(tx types.Tx) error { return nil }
-	nopPostFilter := func(tx types.Tx, res *abci.CheckTxResponse) error { return nil }
+	nopPreFilter := func(_ types.Tx) error { return nil }
+	nopPostFilter := func(_ types.Tx, _ *abci.CheckTxResponse) error { return nil }
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.
 	// each tx has 20 bytes
@@ -485,7 +485,7 @@ func TestSerialReap(t *testing.T) {
 		}
 	}
 
-	//----------------------------------------
+	// ----------------------------------------
 
 	// Deliver some txs.
 	deliverTxsRange(0, 100)
@@ -726,8 +726,8 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	txs := NewRandomTxs(nTxs, txLen)
 
 	// simulate a group of peers sending them over and over
-	N := cfg.Mempool.Size
-	for i := 0; i < N; i++ {
+	n := cfg.Mempool.Size
+	for i := 0; i < n; i++ {
 		txNum := mrand.Intn(nTxs)
 		tx := txs[txNum]
 

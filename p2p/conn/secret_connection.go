@@ -301,13 +301,13 @@ func genEphKeys() (ephPub, ephPriv *[32]byte) {
 	if err != nil {
 		panic("failed to generate ephemeral key-pair")
 	}
-	return
+	return ephPub, ephPriv
 }
 
 func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byte, err error) {
 	// Send our pubkey and receive theirs in tandem.
 	trs, _ := async.Parallel(
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			lc := *locEphPub
 			_, err = protoio.NewDelimitedWriter(conn).WriteMsg(&gogotypes.BytesValue{Value: lc[:]})
 			if err != nil {
@@ -315,7 +315,7 @@ func shareEphPubKey(conn io.ReadWriter, locEphPub *[32]byte) (remEphPub *[32]byt
 			}
 			return nil, false, nil
 		},
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			var bytes gogotypes.BytesValue
 			_, err = protoio.NewDelimitedReader(conn, 1024*1024).ReadMsg(&bytes)
 			if err != nil {
@@ -367,7 +367,7 @@ func deriveSecrets(
 		copy(recvSecret[:], res[aeadKeySize:aeadKeySize*2])
 	}
 
-	return
+	return recvSecret, sendSecret
 }
 
 // computeDHSecret computes a Diffie-Hellman shared secret key
@@ -390,7 +390,7 @@ func sort32(foo, bar *[32]byte) (lo, hi *[32]byte) {
 		lo = bar
 		hi = foo
 	}
-	return
+	return lo, hi
 }
 
 func signChallenge(challenge *[32]byte, locPrivKey crypto.PrivKey) ([]byte, error) {
@@ -409,7 +409,7 @@ type authSigMessage struct {
 func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte) (recvMsg authSigMessage, err error) {
 	// Send our info and receive theirs in tandem.
 	trs, _ := async.Parallel(
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			pbpk, err := cryptoenc.PubKeyToProto(pubKey)
 			if err != nil {
 				return nil, true, err
@@ -420,7 +420,7 @@ func shareAuthSignature(sc io.ReadWriter, pubKey crypto.PubKey, signature []byte
 			}
 			return nil, false, nil
 		},
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			var pba tmp2p.AuthSigMessage
 			_, err = protoio.NewDelimitedReader(sc, 1024*1024).ReadMsg(&pba)
 			if err != nil {

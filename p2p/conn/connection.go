@@ -50,7 +50,7 @@ const (
 
 type (
 	receiveCbFunc func(chID byte, msgBytes []byte)
-	errorCbFunc   func(interface{})
+	errorCbFunc   func(any)
 )
 
 /*
@@ -343,7 +343,7 @@ func (c *MConnection) _recover() {
 	}
 }
 
-func (c *MConnection) stopForError(r interface{}) {
+func (c *MConnection) stopForError(r any) {
 	if err := c.Stop(); err != nil {
 		c.Logger.Error("Error stopping connection", "err", err)
 	}
@@ -664,10 +664,6 @@ FOR_LOOP:
 
 	// Cleanup
 	close(c.pong)
-
-	for range c.pong {
-		// Drain
-	}
 }
 
 // not goroutine-safe.
@@ -747,7 +743,7 @@ func (chDesc ChannelDescriptor) FillDefaults() (filled ChannelDescriptor) {
 		chDesc.RecvMessageCapacity = defaultRecvMessageCapacity
 	}
 	filled = chDesc
-	return
+	return filled
 }
 
 // TODO: lowercase.
@@ -861,7 +857,7 @@ func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 	}
 
 	atomic.AddInt64(&ch.recentlySent, int64(n))
-	return
+	return n, err
 }
 
 // Handles incoming PacketMsgs. It returns a message bytes if message is

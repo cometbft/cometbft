@@ -40,7 +40,7 @@ func ValidateValidatorUpdates(abciUpdates []abci.ValidatorUpdate, params types.V
 // SaveValidatorsInfo is an alias for the private saveValidatorsInfo method in
 // store.go, exported exclusively and explicitly for testing.
 func SaveValidatorsInfo(db dbm.DB, height, lastHeightChanged int64, valSet *types.ValidatorSet, keyLayoutVersion string) error {
-	var keyLayout StateKeyLayout
+	var keyLayout KeyLayout
 	switch keyLayoutVersion {
 	case "v1", "":
 		keyLayout = v1LegacyLayout{}

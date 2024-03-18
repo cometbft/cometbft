@@ -25,8 +25,8 @@ func (e ErrPacketWrite) Unwrap() error {
 }
 
 type ErrUnexpectedPubKeyType struct {
-	Expected any
-	Got      any
+	Expected string
+	Got      string
 }
 
 func (e ErrUnexpectedPubKeyType) Error() string {

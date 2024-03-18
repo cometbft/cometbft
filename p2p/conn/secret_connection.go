@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"net"
@@ -166,7 +165,7 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	if _, ok := remPubKey.(ed25519.PubKey); !ok {
 		return nil, ErrUnexpectedPubKeyType{
 			Expected: ed25519.KeyType,
-			Got:      fmt.Sprintf("%T", remPubKey),
+			Got:      remPubKey.Type(),
 		}
 	}
 

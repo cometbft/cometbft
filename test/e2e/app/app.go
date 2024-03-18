@@ -771,7 +771,7 @@ func (app *Application) logABCIRequest(req *abci.Request) error {
 }
 
 // parseTx parses a tx in 'key=value' format into a key and value.
-func parseTx(tx []byte) (string, string, error) {
+func parseTx(tx []byte) (key, value string, err error) {
 	parts := bytes.Split(tx, []byte("="))
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid tx format: %q", string(tx))

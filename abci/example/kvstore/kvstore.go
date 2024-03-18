@@ -126,7 +126,7 @@ func (app *Application) InitChain(_ context.Context, req *types.InitChainRequest
 // - Contains one and only one `=`
 // - `=` is not the first or last byte.
 // - if key is `val` that the validator update transaction is also valid.
-func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
+func (*Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
 		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
@@ -203,16 +203,17 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 		if ev.Type == types.MISBEHAVIOR_TYPE_DUPLICATE_VOTE {
 			addr := string(ev.Validator.Address)
 
-			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
-				app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{
-					PubKey: pubKey,
-					Power:  ev.Validator.Power - 1,
-				})
-				app.logger.Info("Decreased val power by 1 because of the equivocation",
-					"val", addr)
-			} else {
+			pubKey, ok := app.valAddrToPubKeyMap[addr]
+			if !ok {
 				panic(fmt.Errorf("wanted to punish val %q but can't find it", addr))
 			}
+
+			app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{
+				PubKey: pubKey,
+				Power:  ev.Validator.Power - 1,
+			})
+			app.logger.Info("Decreased val power by 1 because of the equivocation",
+				"val", addr)
 		}
 	}
 
@@ -497,7 +498,7 @@ func (app *Application) getValidators() (validators []types.ValidatorUpdate) {
 	if err = itr.Error(); err != nil {
 		panic(err)
 	}
-	return
+	return validators
 }
 
 // -----------------------------

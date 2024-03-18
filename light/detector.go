@@ -120,7 +120,6 @@ func (c *Client) compareNewHeaderWithWitness(ctx context.Context, errc chan erro
 	switch err {
 	// no error means we move on to checking the hash of the two headers
 	case nil:
-		break
 
 	// the witness hasn't been helpful in comparing headers, we mark the response and continue
 	// comparing with the rest of the witnesses
@@ -374,7 +373,7 @@ func (c *Client) examineConflictingHeaderAgainstTrace(
 // getTargetBlockOrLatest gets the latest height, if it is greater than the target height then it queries
 // the target height else it returns the latest. returns true if it successfully managed to acquire the target
 // height.
-func (c *Client) getTargetBlockOrLatest(
+func (*Client) getTargetBlockOrLatest(
 	ctx context.Context,
 	height int64,
 	witness provider.Provider,

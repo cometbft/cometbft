@@ -266,11 +266,11 @@ func TestOneValidatorChangesSaveLoad(t *testing.T) {
 
 	// Change vals at these heights.
 	changeHeights := []int64{1, 2, 4, 5, 10, 15, 16, 17, 20}
-	N := len(changeHeights)
+	n := len(changeHeights)
 
 	// Build the validator history by running updateState
 	// with the right validator set for each height.
-	highestHeight := changeHeights[N-1] + 5
+	highestHeight := changeHeights[n-1] + 5
 	changeIndex := 0
 	_, val := state.Validators.GetByIndex(0)
 	power := val.VotingPower
@@ -368,10 +368,10 @@ func TestProposerFrequency(t *testing.T) {
 	maxPower := 1000
 	nTestCases := 5
 	for i := 0; i < nTestCases; i++ {
-		N := cmtrand.Int()%maxVals + 1
-		vals := make([]*types.Validator, N)
+		n := cmtrand.Int()%maxVals + 1
+		vals := make([]*types.Validator, n)
 		totalVotePower := int64(0)
-		for j := 0; j < N; j++ {
+		for j := 0; j < n; j++ {
 			// make sure votePower > 0
 			votePower := int64(cmtrand.Int()%maxPower) + 1
 			totalVotePower += votePower
@@ -407,13 +407,13 @@ func genValSetWithPowers(powers []int64) *types.ValidatorSet {
 // test a proposer appears as frequently as expected.
 func testProposerFreq(t *testing.T, caseNum int, valSet *types.ValidatorSet) {
 	t.Helper()
-	N := valSet.Size()
+	n := valSet.Size()
 	totalPower := valSet.TotalVotingPower()
 
 	// run the proposer selection and track frequencies
 	runMult := 1
 	runs := int(totalPower) * runMult
-	freqs := make([]int, N)
+	freqs := make([]int, n)
 	for i := 0; i < runs; i++ {
 		prop := valSet.GetProposer()
 		idx, _ := valSet.GetByAddress(prop.Address)
@@ -432,11 +432,11 @@ func testProposerFreq(t *testing.T, caseNum int, valSet *types.ValidatorSet) {
 		// to be 1 for the 2 validator case in
 		// https://github.com/cwgoes/tm-proposer-idris
 		// and inferred to generalize to N-1
-		bound := N - 1
+		bound := n - 1
 		require.LessOrEqual(
 			t,
 			abs, bound,
-			fmt.Sprintf("Case %d val %d (%d): got %d, expected %d", caseNum, i, N, gotFreq, expectFreq),
+			fmt.Sprintf("Case %d val %d (%d): got %d, expected %d", caseNum, i, n, gotFreq, expectFreq),
 		)
 	}
 }
@@ -1017,13 +1017,13 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 
 	// Change vals at these heights.
 	changeHeights := []int64{1, 2, 4, 5, 10, 15, 16, 17, 20}
-	N := len(changeHeights)
+	n := len(changeHeights)
 
 	// Each valset is just one validator.
 	// create list of them.
-	params := make([]types.ConsensusParams, N+1)
+	params := make([]types.ConsensusParams, n+1)
 	params[0] = state.ConsensusParams
-	for i := 1; i < N+1; i++ {
+	for i := 1; i < n+1; i++ {
 		params[i] = *types.DefaultConsensusParams()
 		// FIXME: shouldn't PBTS be enabled by default?
 		params[i].Feature.PbtsEnableHeight = 1
@@ -1032,7 +1032,7 @@ func TestConsensusParamsChangesSaveLoad(t *testing.T) {
 
 	// Build the params history by running updateState
 	// with the right params set for each height.
-	highestHeight := changeHeights[N-1] + 5
+	highestHeight := changeHeights[n-1] + 5
 	changeIndex := 0
 	cp := params[changeIndex]
 	var err error

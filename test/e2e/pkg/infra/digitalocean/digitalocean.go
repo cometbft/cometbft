@@ -55,7 +55,7 @@ func (p Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 }
 
 // Currently unsupported.
-func (p Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
+func (Provider) SetLatency(_ context.Context, _ *e2e.Node) error {
 	return errors.New("SetLatency() currently unsupported for Digital Ocean")
 }
 
@@ -91,7 +91,7 @@ func (p Provider) Reconnect(ctx context.Context, _ string, ip string) error {
 	return execAnsible(ctx, p.Testnet.Dir, playbookFile, []string{ip})
 }
 
-func (p Provider) CheckUpgraded(_ context.Context, node *e2e.Node) (string, bool, error) {
+func (Provider) CheckUpgraded(_ context.Context, node *e2e.Node) (string, bool, error) {
 	// Upgrade not supported yet by DO provider
 	return node.Name, false, nil
 }

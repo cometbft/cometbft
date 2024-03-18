@@ -234,7 +234,7 @@ func (p *pbtsTestHarness) nextHeight(
 
 	time.Sleep(cmttime.Until(deliverTime))
 	prop.Signature = tp.Signature
-	err = p.observedState.SetProposalAndBlock(prop, b, ps, "peerID")
+	err = p.observedState.SetProposalAndBlock(prop, ps, "peerID")
 	require.NoError(t, err)
 	ensureProposal(p.ensureProposalCh, p.currentHeight, 0, bid)
 
@@ -321,7 +321,7 @@ func collectHeightResults(t *testing.T, eventCh <-chan timestampedEvent, height 
 			return res
 		}
 	}
-	t.Fatalf("complete height result never seen for height %d", height)
+	t.Fatalf("complete height result never seen for height %d", height) //nolint:revive // this is part of an unreachable code test
 
 	panic("unreachable")
 }
@@ -607,7 +607,7 @@ func TestPBTSEnableHeight(t *testing.T) {
 				proposal.Timestamp = cmttime.Now()
 			}
 			signProposal(t, proposal, chainID, vss[proposer])
-			err := cs.SetProposalAndBlock(proposal, block, blockParts, "p")
+			err := cs.SetProposalAndBlock(proposal, blockParts, "p")
 			require.NoError(t, err)
 			ensureProposal(proposalCh, height, round, blockID)
 		}
@@ -725,7 +725,7 @@ func TestPbtsAdaptiveMessageDelay(t *testing.T) {
 			proposal := types.NewProposal(height, round, -1, blockID, block.Header.Time)
 			signProposal(t, proposal, chainID, vss[proposer])
 
-			require.NoError(t, cs.SetProposalAndBlock(proposal, block, blockParts, "p"))
+			require.NoError(t, cs.SetProposalAndBlock(proposal, blockParts, "p"))
 			maxReceiveTime := cmttime.Now()
 
 			ensureProposal(proposalCh, height, round, blockID)
@@ -757,15 +757,14 @@ func TestPbtsAdaptiveMessageDelay(t *testing.T) {
 			ensurePrecommit(voteCh, height, round)
 		}
 
-		if vote.IsNil() {
-			// No decision, new round required
-			incrementRound(vss[1:]...)
-		} else {
+		if !vote.IsNil() {
 			// Decide, so we are good!
 			ensureNewRound(newRoundCh, height+1, 0)
 			t.Log("Decided at round", round)
 			return
 		}
+		// No decision, new round required
+		incrementRound(vss[1:]...)
 	}
 	t.Error("Did not decide after round", round)
 }

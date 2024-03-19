@@ -784,9 +784,16 @@ OUTER_LOOP:
 		// Special catchup logic.
 		// If peer is lagging by height 1, send LastCommit.
 		if prs.Height != 0 && rs.Height == prs.Height+1 {
-			if ps.PickSendVote(rs.LastCommit) {
+			if vote, ok := ps.PickVoteToSend(rs.LastCommit); ok {
 				logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
-				continue OUTER_LOOP
+				if ps.SendVoteSetHasVote(vote) {
+					continue OUTER_LOOP
+				}
+				logger.Debug("Failed to send vote to peer (height lagging by 1)",
+					"peer", peer,
+					"height", prs.Height,
+					"vote", vote,
+				)
 			}
 		}
 
@@ -815,8 +822,16 @@ OUTER_LOOP:
 			if ec == nil {
 				continue
 			}
-			if ps.PickSendVote(ec) {
+			if vote, ok := ps.PickVoteToSend(ec); ok {
 				logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+				if ps.SendVoteSetHasVote(vote) {
+					continue OUTER_LOOP
+				}
+				logger.Debug("Failed to send vote to peer (height lagging by >1)",
+					"peer", peer,
+					"height", prs.Height,
+					"vote", vote,
+				)
 				continue OUTER_LOOP
 			}
 		}
@@ -1199,8 +1214,8 @@ func (ps *PeerState) setHasProposalBlockPart(height int64, round int32, index in
 	ps.PRS.ProposalBlockParts.SetIndex(index, true)
 }
 
-// PickSendVote picks a vote and sends it to the peer.
-// Returns true if vote was sent.
+// SendVoteSetHasVote sends the vote to the peer.
+// Returns true and marks the peer as having the vote if the vote was sent.
 func (ps *PeerState) SendVoteSetHasVote(vote *types.Vote) bool {
 	ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
 	if ps.peer.Send(p2p.Envelope{
@@ -1211,25 +1226,6 @@ func (ps *PeerState) SendVoteSetHasVote(vote *types.Vote) bool {
 	}) {
 		ps.SetHasVote(vote)
 		return true
-	}
-	return false
-}
-
-// PickSendVote picks a vote and sends it to the peer.
-// Returns true if vote was sent.
-func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
-	if vote, ok := ps.PickVoteToSend(votes); ok {
-		ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
-		if ps.peer.Send(p2p.Envelope{
-			ChannelID: VoteChannel,
-			Message: &cmtcons.Vote{
-				Vote: vote.ToProto(),
-			},
-		}) {
-			ps.SetHasVote(vote)
-			return true
-		}
-		return false
 	}
 	return false
 }

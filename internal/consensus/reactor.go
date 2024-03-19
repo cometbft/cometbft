@@ -626,8 +626,11 @@ OUTER_LOOP:
 				// continue the loop since prs is a copy and not effected by this initialization
 				continue OUTER_LOOP
 			}
-			conR.gossipDataForCatchup(heightLogger, rs, prs, ps, peer)
-			continue OUTER_LOOP
+			if part := pickDataForCatchup(heightLogger, rs, prs, conR.conS.blockStore); part != nil {
+				if ps.SendPartSetHasPart(part, prs) {
+					continue OUTER_LOOP
+				}
+			}
 		}
 
 		// If height and round don't match, sleep.
@@ -680,56 +683,60 @@ OUTER_LOOP:
 	}
 }
 
-func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundState,
-	prs *cstypes.PeerRoundState, ps *PeerState, peer p2p.Peer,
-) {
-	if index, ok := prs.ProposalBlockParts.Not().PickRandom(); ok {
-		// Ensure that the peer's PartSetHeader is correct
-		blockMeta := conR.conS.blockStore.LoadBlockMeta(prs.Height)
-		if blockMeta == nil {
-			logger.Error("Failed to load block meta", "ourHeight", rs.Height,
-				"blockstoreBase", conR.conS.blockStore.Base(), "blockstoreHeight", conR.conS.blockStore.Height())
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-			return
-		} else if !blockMeta.BlockID.PartSetHeader.Equals(prs.ProposalBlockPartSetHeader) {
-			logger.Info("Peer ProposalBlockPartSetHeader mismatch, sleeping",
-				"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-			return
-		}
-		// Load the part
-		part := conR.conS.blockStore.LoadBlockPart(prs.Height, index)
-		if part == nil {
-			logger.Error("Could not load part", "index", index,
-				"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-			return
-		}
-		// Send the part
-		logger.Debug("Sending block part for catchup", "round", prs.Round, "index", index)
-		pp, err := part.ToProto()
-		if err != nil {
-			logger.Error("Could not convert part to proto", "index", index, "error", err)
-			return
-		}
-		if peer.Send(p2p.Envelope{
-			ChannelID: DataChannel,
-			Message: &cmtcons.BlockPart{
-				Height: prs.Height, // Not our height, so it doesn't matter.
-				Round:  prs.Round,  // Not our height, so it doesn't matter.
-				Part:   *pp,
-			},
-		}) {
-			ps.SetHasProposalBlockPart(prs.Height, prs.Round, index)
-		} else {
-			logger.Debug("Sending block part for catchup failed")
-			// sleep to avoid retrying too fast
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-		}
-		return
+func pickDataForCatchup(
+	logger log.Logger,
+	rs *cstypes.RoundState,
+	prs *cstypes.PeerRoundState,
+	blockStore sm.BlockStore,
+) *types.Part {
+
+	index, ok := prs.ProposalBlockParts.Not().PickRandom()
+	if !ok {
+		return nil
 	}
-	//  logger.Info("No parts to send in catch-up, sleeping")
-	time.Sleep(conR.conS.config.PeerGossipSleepDuration)
+	// Ensure that the peer's PartSetHeader is correct
+	blockMeta := blockStore.LoadBlockMeta(prs.Height)
+	if blockMeta == nil {
+		logger.Error("Failed to load block meta", "ourHeight", rs.Height,
+			"blockstoreBase", blockStore.Base(), "blockstoreHeight", blockStore.Height())
+		return nil
+	} else if !blockMeta.BlockID.PartSetHeader.Equals(prs.ProposalBlockPartSetHeader) {
+		logger.Info("Peer ProposalBlockPartSetHeader mismatch, sleeping",
+			"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
+		return nil
+	}
+	// Load the part
+	part := blockStore.LoadBlockPart(prs.Height, index)
+	if part == nil {
+		logger.Error("Could not load part", "index", index,
+			"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
+		return nil
+	}
+	return part
+}
+
+func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRoundState) bool {
+	// Send the part
+	ps.logger.Debug("Sending block part", "round", prs.Round, "index", part.Index)
+	pp, err := part.ToProto()
+	// NOTE: only returns error if part is nil
+	if err != nil {
+		ps.logger.Error("Could not convert part to proto", "index", part.Index, "error", err)
+		return false
+	}
+	if ps.peer.Send(p2p.Envelope{
+		ChannelID: DataChannel,
+		Message: &cmtcons.BlockPart{
+			Height: prs.Height, // Not our height, so it doesn't matter.
+			Round:  prs.Round,  // Not our height, so it doesn't matter.
+			Part:   *pp,
+		},
+	}) {
+		ps.SetHasProposalBlockPart(prs.Height, prs.Round, int(part.Index))
+		return true
+	}
+	ps.logger.Debug("Sending block part failed")
+	return false
 }
 
 func pickVoteToSend(

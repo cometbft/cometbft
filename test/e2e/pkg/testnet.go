@@ -139,6 +139,11 @@ type Node struct {
 	Prometheus              bool
 	PrometheusProxyPort     uint32
 	Zone                    ZoneID
+	ExperimentalKeyLayout   string
+	Compact                 bool
+	CompactionInterval      int64
+	DiscardABCIResponses    bool
+	Indexer                 string
 	ClockSkew               time.Duration
 }
 
@@ -269,6 +274,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
 			Zone:                    ZoneID(nodeManifest.Zone),
+			ExperimentalKeyLayout:   nodeManifest.ExperimentalKeyLayout,
+			Compact:                 nodeManifest.Compact,
+			CompactionInterval:      nodeManifest.CompactionInterval,
+			DiscardABCIResponses:    nodeManifest.DiscardABCIResponses,
+			Indexer:                 nodeManifest.Indexer,
 			ClockSkew:               nodeManifest.ClockSkew,
 		}
 		if node.StartAt == testnet.InitialHeight {
@@ -460,7 +470,7 @@ func (t Testnet) Validate() error {
 	return nil
 }
 
-func (t Testnet) validateZones(nodes []*Node) error {
+func (Testnet) validateZones(nodes []*Node) error {
 	zoneMatrix, err := loadZoneLatenciesMatrix()
 	if err != nil {
 		return err

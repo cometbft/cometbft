@@ -121,7 +121,7 @@ func getKeys(indexer BlockerIndexer) [][]byte {
 	return keys
 }
 
-func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
+func (idx *BlockerIndexer) Prune(retainHeight int64) (numPruned int64, newRetainHeight int64, err error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned or 0 in case of error. E.x. if heights {1, 3, 7} were pruned and there was no error, numPruned == 3
 	// newRetainHeight: new retain height after pruning or lastRetainHeight in case of error
@@ -221,7 +221,7 @@ func (idx *BlockerIndexer) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (idx *BlockerIndexer) setLastRetainHeight(height int64, batch dbm.Batch) error {
+func (*BlockerIndexer) setLastRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastBlockIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -390,7 +390,6 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 
 		select {
 		case <-ctx.Done():
-			break
 
 		default:
 		}
@@ -491,7 +490,6 @@ LOOP:
 
 		select {
 		case <-ctx.Done():
-			break
 
 		default:
 		}
@@ -524,7 +522,6 @@ LOOP:
 
 			select {
 			case <-ctx.Done():
-				break
 
 			default:
 			}
@@ -534,7 +531,7 @@ LOOP:
 	return filteredHeights, nil
 }
 
-func (idx *BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
+func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
 	// If we return attributes that occur within the same events, then store the event sequence in the
 	// result map as well
 	eventSeq, _ := parseEventSeqFromEventKey(it.Key())
@@ -709,7 +706,6 @@ func (idx *BlockerIndexer) match(
 
 			select {
 			case <-ctx.Done():
-				break
 
 			default:
 			}

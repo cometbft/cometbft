@@ -19,7 +19,7 @@ type ID string
 // TODO: support other length addresses ?
 const IDByteLength = crypto.AddressSize
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 // Persistent peer ID
 // TODO: encrypt on disk
 
@@ -95,7 +95,7 @@ func (nodeKey *NodeKey) SaveAs(filePath string) error {
 	return nil
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 // MakePoWTarget returns the big-endian encoding of 2^(targetBits - difficulty) - 1.
 // It can be used as a Proof of Work target.

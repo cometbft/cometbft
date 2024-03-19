@@ -20,7 +20,7 @@ import (
 var (
 	// testnetCombinations defines global testnet options, where we generate a
 	// separate testnet for each combination (Cartesian product) of options.
-	testnetCombinations = map[string][]interface{}{
+	testnetCombinations = map[string][]any{
 		"topology":      {"single", "quad", "large"},
 		"initialHeight": {0, 1000},
 		"initialState": {
@@ -126,7 +126,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
@@ -194,7 +194,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	// First we generate seed nodes, starting at the initial height.
 	for i := 1; i <= numSeeds; i++ {
 		manifest.Nodes[fmt.Sprintf("seed%02d", i)] = generateNode(
-			r, e2e.ModeSeed, 0, false, 0)
+			r, e2e.ModeSeed, 0, false)
 	}
 
 	// Next, we generate validators. We make sure a BFT quorum of validators start
@@ -202,26 +202,42 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	// the initial validator set, and validator set updates for delayed nodes.
 	nextStartAt := manifest.InitialHeight + 5
 	quorum := numValidators*2/3 + 1
+	var totalWeight int64
 	for i := 1; i <= numValidators; i++ {
 		startAt := int64(0)
-		var clockSkew time.Duration
 		if i > quorum {
 			startAt = nextStartAt
 			nextStartAt += 5
-			// Interval: [-500ms, 59s500ms)
-			clockSkew = time.Duration(int64(r.Float64()*float64(time.Minute))) - 500*time.Millisecond
 		}
 		name := fmt.Sprintf("validator%02d", i)
-		manifest.Nodes[name] = generateNode(
-			r, e2e.ModeValidator, startAt, i <= 2, clockSkew)
+		manifest.Nodes[name] = generateNode(r, e2e.ModeValidator, startAt, i <= 2)
 
+		weight := int64(30 + r.Intn(71))
 		if startAt == 0 {
-			(*manifest.Validators)[name] = int64(30 + r.Intn(71))
+			(*manifest.Validators)[name] = weight
 		} else {
-			manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)] = map[string]int64{
-				name: int64(30 + r.Intn(71)),
-			}
+			manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)] = map[string]int64{name: weight}
 		}
+		totalWeight += weight
+	}
+
+	// Add clock skew only to processes that accumulate less than 1/3 of voting power.
+	var accWeight int64
+	for i := 1; i <= numValidators; i++ {
+		name := fmt.Sprintf("validator%02d", i)
+		startAt := manifest.Nodes[name].StartAt
+		var weight int64
+		if startAt == 0 {
+			weight = (*manifest.Validators)[name]
+		} else {
+			weight = manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)][name]
+		}
+
+		if accWeight > totalWeight*2/3 {
+			// Interval: [-500ms, 59s500ms)
+			manifest.Nodes[name].ClockSkew = time.Duration(int64(r.Float64()*float64(time.Minute))) - 500*time.Millisecond
+		}
+		accWeight += weight
 	}
 
 	// Move validators to InitChain if specified.
@@ -242,7 +258,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 			nextStartAt += 5
 		}
 		manifest.Nodes[fmt.Sprintf("full%02d", i)] = generateNode(
-			r, e2e.ModeFull, startAt, false, 0)
+			r, e2e.ModeFull, startAt, false)
 	}
 
 	// We now set up peer discovery for nodes. Seed nodes are fully meshed with
@@ -305,7 +321,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 // here, since we need to know the overall network topology and startup
 // sequencing.
 func generateNode(
-	r *rand.Rand, mode e2e.Mode, startAt int64, forceArchive bool, clockSkew time.Duration,
+	r *rand.Rand, mode e2e.Mode, startAt int64, forceArchive bool,
 ) *e2e.ManifestNode {
 	node := e2e.ManifestNode{
 		Version:                nodeVersions.Choose(r).(string),
@@ -320,7 +336,6 @@ func generateNode(
 		RetainBlocks:           uint64(nodeRetainBlocks.Choose(r).(int)),
 		EnableCompanionPruning: false,
 		Perturb:                nodePerturbations.Choose(r),
-		ClockSkew:              clockSkew,
 	}
 
 	// If this node is forced to be an archive node, retain all blocks and

@@ -59,7 +59,7 @@ func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
 	}
 }
 
-func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
+func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight int64, err error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned. E.x. if heights {1, 3, 7} were pruned, numPruned == 3
 	// newRetainHeight: new retain height after pruning
@@ -178,7 +178,7 @@ func (txi *TxIndex) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (txi *TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
+func (*TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastTxIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -542,10 +542,10 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 			return decoded, true, err
 		}
 	}
-	return
+	return nil, false, nil
 }
 
-func (txi *TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
+func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
 	eventSeq := extractEventSeqFromKey(it.Key())
 	tmpHeights[string(it.Value())+eventSeq] = it.Value()
 }
@@ -916,7 +916,7 @@ func startKeyForCondition(c syntax.Condition, height int64) []byte {
 	return startKey(c.Tag, c.Arg.Value())
 }
 
-func startKey(fields ...interface{}) []byte {
+func startKey(fields ...any) []byte {
 	var b bytes.Buffer
 	for _, f := range fields {
 		b.WriteString(fmt.Sprintf("%v", f) + tagKeySeparator)

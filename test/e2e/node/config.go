@@ -38,6 +38,16 @@ type Config struct {
 
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
 
+	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`
+
+	Compact bool `toml:"compact"`
+
+	CompactionInterval bool `toml:"compaction_interval"`
+
+	DiscardABCIResponses bool `toml:"discard_abci_responses"`
+
+	Indexer string `toml:"indexer"`
+
 	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 }

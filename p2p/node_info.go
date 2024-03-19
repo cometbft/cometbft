@@ -2,7 +2,6 @@ package p2p
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -22,7 +21,7 @@ func MaxNodeInfoSize() int {
 	return maxNodeInfoSize
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // NodeInfo exposes basic info of a node
 // and determines if we're compatible.
@@ -43,7 +42,7 @@ type nodeInfoTransport interface {
 	CompatibleWith(other NodeInfo) error
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // ProtocolVersion contains the protocol versions for the software.
 type ProtocolVersion struct {
@@ -69,7 +68,7 @@ func NewProtocolVersion(p2p, block, app uint64) ProtocolVersion {
 	}
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // Assert DefaultNodeInfo satisfies NodeInfo.
 var _ NodeInfo = DefaultNodeInfo{}
@@ -133,25 +132,26 @@ func (info DefaultNodeInfo) Validate() error {
 	// Validate Version
 	if len(info.Version) > 0 &&
 		(!cmtstrings.IsASCIIText(info.Version) || cmtstrings.ASCIITrim(info.Version) == "") {
-		return fmt.Errorf("info.Version must be valid ASCII text without tabs, but got %v", info.Version)
+		return ErrInvalidNodeVersion{Version: info.Version}
 	}
 
 	// Validate Channels - ensure max and check for duplicates.
 	if len(info.Channels) > maxNumChannels {
-		return fmt.Errorf("info.Channels is too long (%v). Max is %v", len(info.Channels), maxNumChannels)
+		return ErrChannelsTooLong{Length: len(info.Channels), Max: maxNumChannels}
 	}
+
 	channels := make(map[byte]struct{})
 	for _, ch := range info.Channels {
 		_, ok := channels[ch]
 		if ok {
-			return fmt.Errorf("info.Channels contains duplicate channel id %v", ch)
+			return ErrDuplicateChannelID{ID: ch}
 		}
 		channels[ch] = struct{}{}
 	}
 
 	// Validate Moniker.
 	if !cmtstrings.IsASCIIText(info.Moniker) || cmtstrings.ASCIITrim(info.Moniker) == "" {
-		return fmt.Errorf("info.Moniker must be valid non-empty ASCII text without tabs, but got %v", info.Moniker)
+		return ErrInvalidMoniker{Moniker: info.Moniker}
 	}
 
 	// Validate Other.
@@ -160,12 +160,12 @@ func (info DefaultNodeInfo) Validate() error {
 	switch txIndex {
 	case "", "on", "off":
 	default:
-		return fmt.Errorf("info.Other.TxIndex should be either 'on', 'off', or empty string, got '%v'", txIndex)
+		return ErrInvalidTxIndex{TxIndex: txIndex}
 	}
 	// XXX: Should we be more strict about address formats?
 	rpcAddr := other.RPCAddress
 	if len(rpcAddr) > 0 && (!cmtstrings.IsASCIIText(rpcAddr) || cmtstrings.ASCIITrim(rpcAddr) == "") {
-		return fmt.Errorf("info.Other.RPCAddress=%v must be valid ASCII text without tabs", rpcAddr)
+		return ErrInvalidRPCAddress{RPCAddress: rpcAddr}
 	}
 
 	return nil
@@ -177,17 +177,25 @@ func (info DefaultNodeInfo) Validate() error {
 func (info DefaultNodeInfo) CompatibleWith(otherInfo NodeInfo) error {
 	other, ok := otherInfo.(DefaultNodeInfo)
 	if !ok {
-		return fmt.Errorf("wrong NodeInfo type. Expected DefaultNodeInfo, got %v", reflect.TypeOf(otherInfo))
+		return ErrInvalidNodeInfoType{
+			Type:     reflect.TypeOf(otherInfo).String(),
+			Expected: fmt.Sprintf("%T", DefaultNodeInfo{}),
+		}
 	}
 
 	if info.ProtocolVersion.Block != other.ProtocolVersion.Block {
-		return fmt.Errorf("peer is on a different Block version. Got %v, expected %v",
-			other.ProtocolVersion.Block, info.ProtocolVersion.Block)
+		return ErrDifferentBlockVersion{
+			Other: other.ProtocolVersion.Block,
+			Our:   info.ProtocolVersion.Block,
+		}
 	}
 
 	// nodes must be on the same network
 	if info.Network != other.Network {
-		return fmt.Errorf("peer is on a different network. Got %v, expected %v", other.Network, info.Network)
+		return ErrDifferentNetwork{
+			Other: other.Network,
+			Our:   info.Network,
+		}
 	}
 
 	// if we have no channels, we're just testing
@@ -207,7 +215,10 @@ OUTER_LOOP:
 		}
 	}
 	if !found {
-		return fmt.Errorf("peer has no common channels. Our channels: %v ; Peer channels: %v", info.Channels, other.Channels)
+		return ErrNoCommonChannels{
+			OtherChannels: other.Channels,
+			OurChannels:   info.Channels,
+		}
 	}
 	return nil
 }
@@ -249,8 +260,9 @@ func (info DefaultNodeInfo) ToProto() *tmp2p.DefaultNodeInfo {
 
 func DefaultNodeInfoFromToProto(pb *tmp2p.DefaultNodeInfo) (DefaultNodeInfo, error) {
 	if pb == nil {
-		return DefaultNodeInfo{}, errors.New("nil node info")
+		return DefaultNodeInfo{}, ErrNoNodeInfo
 	}
+
 	dni := DefaultNodeInfo{
 		ProtocolVersion: ProtocolVersion{
 			P2P:   pb.ProtocolVersion.P2P,

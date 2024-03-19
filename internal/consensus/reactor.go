@@ -564,6 +564,55 @@ func (conR *Reactor) getRoundState() *cstypes.RoundState {
 	return conR.rs
 }
 
+// pick a block part to send if the peer has the same part set header as us or if they're catching up and we have the block.
+// returns the part and a bool that signals whether to continue to the loop (true) or to sleep.
+// NOTE there is one case where we don't return a part but continue the loop (ie. we return (nil, true)).
+func pickPartToSend(
+	logger log.Logger,
+	blockStore sm.BlockStore,
+	rs *cstypes.RoundState,
+	ps *PeerState,
+	prs *cstypes.PeerRoundState,
+) (*types.Part, bool) {
+
+	// If peer has same part set header as us, send block parts
+	if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
+		if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(); ok {
+			part := rs.ProposalBlockParts.GetPart(index)
+			return part, true
+		}
+	}
+
+	// If the peer is on a previous height that we have, help catch up.
+	blockStoreBase := blockStore.Base()
+	if blockStoreBase > 0 &&
+		0 < prs.Height && prs.Height < rs.Height &&
+		prs.Height >= blockStoreBase {
+
+		heightLogger := logger.With("height", prs.Height)
+
+		// if we never received the commit message from the peer, the block parts won't be initialized
+		if prs.ProposalBlockParts == nil {
+			blockMeta := blockStore.LoadBlockMeta(prs.Height)
+			if blockMeta == nil {
+				heightLogger.Error("Failed to load block meta",
+					"blockstoreBase", blockStoreBase, "blockstoreHeight", blockStore.Height())
+				return nil, false
+			} else {
+				ps.InitProposalBlockParts(blockMeta.BlockID.PartSetHeader)
+			}
+			// continue the loop since prs is a copy and not effected by this initialization
+			return nil, true // continue OUTER_LOOP
+		}
+		part := pickPartForCatchup(heightLogger, rs, prs, blockStore)
+		if part != nil {
+			return part, true
+		}
+	}
+
+	return nil, false
+}
+
 func (conR *Reactor) gossipDataRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
 
@@ -585,52 +634,13 @@ OUTER_LOOP:
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 
-		// Send proposal Block parts?
-		if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
-			if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(); ok {
-				part := rs.ProposalBlockParts.GetPart(index)
-				parts, err := part.ToProto()
-				if err != nil {
-					panic(err)
-				}
-				logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round)
-				if peer.Send(p2p.Envelope{
-					ChannelID: DataChannel,
-					Message: &cmtcons.BlockPart{
-						Height: rs.Height, // This tells peer that this part applies to us.
-						Round:  rs.Round,  // This tells peer that this part applies to us.
-						Part:   *parts,
-					},
-				}) {
-					ps.SetHasProposalBlockPart(prs.Height, prs.Round, index)
-				}
+		if part, continueLoop := pickPartToSend(logger, conR.conS.blockStore, rs, ps, prs); part != nil {
+			if ps.SendPartSetHasPart(part, prs) {
 				continue OUTER_LOOP
 			}
-		}
-
-		// If the peer is on a previous height that we have, help catch up.
-		blockStoreBase := conR.conS.blockStore.Base()
-		if blockStoreBase > 0 && 0 < prs.Height && prs.Height < rs.Height && prs.Height >= blockStoreBase {
-			heightLogger := logger.With("height", prs.Height)
-
-			// if we never received the commit message from the peer, the block parts won't be initialized
-			if prs.ProposalBlockParts == nil {
-				blockMeta := conR.conS.blockStore.LoadBlockMeta(prs.Height)
-				if blockMeta == nil {
-					heightLogger.Error("Failed to load block meta",
-						"blockstoreBase", blockStoreBase, "blockstoreHeight", conR.conS.blockStore.Height())
-					time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-				} else {
-					ps.InitProposalBlockParts(blockMeta.BlockID.PartSetHeader)
-				}
-				// continue the loop since prs is a copy and not effected by this initialization
-				continue OUTER_LOOP
-			}
-			if part := pickDataForCatchup(heightLogger, rs, prs, conR.conS.blockStore); part != nil {
-				if ps.SendPartSetHasPart(part, prs) {
-					continue OUTER_LOOP
-				}
-			}
+		} else if continueLoop {
+			// part is nil but we want to skip the sleep
+			continue OUTER_LOOP
 		}
 
 		// If height and round don't match, sleep.
@@ -683,7 +693,7 @@ OUTER_LOOP:
 	}
 }
 
-func pickDataForCatchup(
+func pickPartForCatchup(
 	logger log.Logger,
 	rs *cstypes.RoundState,
 	prs *cstypes.PeerRoundState,
@@ -717,10 +727,10 @@ func pickDataForCatchup(
 
 func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRoundState) bool {
 	// Send the part
-	ps.logger.Debug("Sending block part", "round", prs.Round, "index", part.Index)
+	ps.logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round, "index", part.Index)
 	pp, err := part.ToProto()
-	// NOTE: only returns error if part is nil
 	if err != nil {
+		// NOTE: only returns error if part is nil, which it should never be by here
 		ps.logger.Error("Could not convert part to proto", "index", part.Index, "error", err)
 		return false
 	}

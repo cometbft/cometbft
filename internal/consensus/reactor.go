@@ -769,8 +769,15 @@ OUTER_LOOP:
 		// If height matches, then send LastCommit, Prevotes, Precommits.
 		if rs.Height == prs.Height {
 			heightLogger := logger.With("height", prs.Height)
-			if conR.gossipVotesForHeight(heightLogger, rs, prs, ps) {
-				continue OUTER_LOOP
+			if vote := conR.gossipVotesForHeight(heightLogger, rs, prs, ps); vote != nil {
+				if ps.SendVoteSetHasVote(vote) {
+					continue OUTER_LOOP
+				}
+				logger.Debug("Failed to send vote to peer (matching height)",
+					"peer", peer,
+					"height", prs.Height,
+					"vote", vote,
+				)
 			}
 		}
 
@@ -835,12 +842,12 @@ func (*Reactor) gossipVotesForHeight(
 	rs *cstypes.RoundState,
 	prs *cstypes.PeerRoundState,
 	ps *PeerState,
-) bool {
+) *types.Vote {
 	// If there are lastCommits to send...
 	if prs.Step == cstypes.RoundStepNewHeight {
 		if vote, ok := ps.PickVoteToSend(rs.LastCommit); ok {
 			logger.Debug("Picked rs.LastCommit to send")
-			return true
+			return vote
 		}
 	}
 	// If there are POL prevotes to send...
@@ -849,7 +856,7 @@ func (*Reactor) gossipVotesForHeight(
 			if vote, ok := ps.PickVoteToSend(polPrevotes); ok {
 				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
 					"round", prs.ProposalPOLRound)
-				return true
+				return vote
 			}
 		}
 	}
@@ -857,21 +864,21 @@ func (*Reactor) gossipVotesForHeight(
 	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
 		if vote, ok := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); ok {
 			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
-			return true
+			return vote
 		}
 	}
 	// If there are precommits to send...
 	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
 		if vote, ok := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); ok {
 			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
-			return true
+			return vote
 		}
 	}
 	// If there are prevotes to send...Needed because of validBlock mechanism
 	if prs.Round != -1 && prs.Round <= rs.Round {
 		if vote, ok := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); ok {
 			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
-			return true
+			return vote
 		}
 	}
 	// If there are POLPrevotes to send...
@@ -880,12 +887,12 @@ func (*Reactor) gossipVotesForHeight(
 			if vote, ok := ps.PickVoteToSend(polPrevotes); ok {
 				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
 					"round", prs.ProposalPOLRound)
-				return true
+				return vote
 			}
 		}
 	}
 
-	return false
+	return nil
 }
 
 // NOTE: `queryMaj23Routine` has a simple crude design since it only comes

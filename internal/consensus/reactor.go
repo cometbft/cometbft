@@ -732,6 +732,62 @@ func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundSt
 	time.Sleep(conR.conS.config.PeerGossipSleepDuration)
 }
 
+func pickVoteToSend(
+	logger log.Logger,
+	conS *State,
+	rs *cstypes.RoundState,
+	ps *PeerState,
+	prs *cstypes.PeerRoundState,
+) *types.Vote {
+	// If height matches, then send LastCommit, Prevotes, Precommits.
+	if rs.Height == prs.Height {
+		heightLogger := logger.With("height", prs.Height)
+		return pickVotesForHeight(heightLogger, rs, prs, ps)
+	}
+
+	// Special catchup logic.
+	// If peer is lagging by height 1, send LastCommit.
+	if prs.Height != 0 && rs.Height == prs.Height+1 {
+		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
+			logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
+			return vote
+		}
+	}
+
+	// Catchup logic
+	// If peer is lagging by more than 1, send Commit.
+	blockStoreBase := conS.blockStore.Base()
+	if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
+		// Load the block's extended commit for prs.Height,
+		// which contains precommit signatures for prs.Height.
+		var ec *types.ExtendedCommit
+		var veEnabled bool
+		func() {
+			conS.mtx.RLock()
+			defer conS.mtx.RUnlock()
+			veEnabled = conS.state.ConsensusParams.Feature.VoteExtensionsEnabled(prs.Height)
+		}()
+		if veEnabled {
+			ec = conS.blockStore.LoadBlockExtendedCommit(prs.Height)
+		} else {
+			c := conS.blockStore.LoadBlockCommit(prs.Height)
+			if c == nil {
+				return nil
+			}
+			ec = c.WrappedExtendedCommit()
+		}
+		if ec == nil {
+			return nil
+
+		}
+		if vote := ps.PickVoteToSend(ec); vote != nil {
+			logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+			return vote
+		}
+	}
+	return nil
+}
+
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
 
@@ -766,74 +822,14 @@ OUTER_LOOP:
 		// logger.Debug("gossipVotesRoutine", "rsHeight", rs.Height, "rsRound", rs.Round,
 		// "prsHeight", prs.Height, "prsRound", prs.Round, "prsStep", prs.Step)
 
-		// If height matches, then send LastCommit, Prevotes, Precommits.
-		if rs.Height == prs.Height {
-			heightLogger := logger.With("height", prs.Height)
-			if vote := conR.gossipVotesForHeight(heightLogger, rs, prs, ps); vote != nil {
-				if ps.SendVoteSetHasVote(vote) {
-					continue OUTER_LOOP
-				}
-				logger.Debug("Failed to send vote to peer (matching height)",
-					"peer", peer,
-					"height", prs.Height,
-					"vote", vote,
-				)
-			}
-		}
-
-		// Special catchup logic.
-		// If peer is lagging by height 1, send LastCommit.
-		if prs.Height != 0 && rs.Height == prs.Height+1 {
-			if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
-				logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
-				if ps.SendVoteSetHasVote(vote) {
-					continue OUTER_LOOP
-				}
-				logger.Debug("Failed to send vote to peer (height lagging by 1)",
-					"peer", peer,
-					"height", prs.Height,
-					"vote", vote,
-				)
-			}
-		}
-
-		// Catchup logic
-		// If peer is lagging by more than 1, send Commit.
-		blockStoreBase := conR.conS.blockStore.Base()
-		if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
-			// Load the block's extended commit for prs.Height,
-			// which contains precommit signatures for prs.Height.
-			var ec *types.ExtendedCommit
-			var veEnabled bool
-			func() {
-				conR.conS.mtx.RLock()
-				defer conR.conS.mtx.RUnlock()
-				veEnabled = conR.conS.state.ConsensusParams.Feature.VoteExtensionsEnabled(prs.Height)
-			}()
-			if veEnabled {
-				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
-			} else {
-				c := conR.conS.blockStore.LoadBlockCommit(prs.Height)
-				if c == nil {
-					continue
-				}
-				ec = c.WrappedExtendedCommit()
-			}
-			if ec == nil {
-				continue
-			}
-			if vote := ps.PickVoteToSend(ec); vote != nil {
-				logger.Debug("Picked Catchup commit to send", "height", prs.Height)
-				if ps.SendVoteSetHasVote(vote) {
-					continue OUTER_LOOP
-				}
-				logger.Debug("Failed to send vote to peer (height lagging by >1)",
-					"peer", peer,
-					"height", prs.Height,
-					"vote", vote,
-				)
+		if vote := pickVoteToSend(logger, conR.conS, rs, ps, prs); vote != nil {
+			if ps.SendVoteSetHasVote(vote) {
 				continue OUTER_LOOP
 			}
+			logger.Debug("Failed to send vote to peer",
+				"height", prs.Height,
+				"vote", vote,
+			)
 		}
 
 		if sleeping == 0 {
@@ -848,11 +844,10 @@ OUTER_LOOP:
 		}
 
 		time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-		continue OUTER_LOOP
 	}
 }
 
-func (*Reactor) gossipVotesForHeight(
+func pickVotesForHeight(
 	logger log.Logger,
 	rs *cstypes.RoundState,
 	prs *cstypes.PeerRoundState,

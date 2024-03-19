@@ -634,62 +634,67 @@ OUTER_LOOP:
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 
+		//--------------------
+		// Send block part?
+		// (Note these can match on hash so round doesn't matter)
+		//--------------------
+
 		if part, continueLoop := pickPartToSend(logger, conR.conS.blockStore, rs, ps, prs); part != nil {
 			if ps.SendPartSetHasPart(part, prs) {
 				continue OUTER_LOOP
 			}
 		} else if continueLoop {
-			// part is nil but we want to skip the sleep
+			// part is nil but we dont want to sleep
 			continue OUTER_LOOP
 		}
 
-		// If height and round don't match, sleep.
-		if (rs.Height != prs.Height) || (rs.Round != prs.Round) {
-			// logger.Info("Peer Height|Round mismatch, sleeping",
-			// "peerHeight", prs.Height, "peerRound", prs.Round, "peer", peer)
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-			continue OUTER_LOOP
-		}
+		//--------------------
+		// Send proposal?
+		// (If height and round match, and we have a proposal and they don't)
+		//--------------------
 
-		// By here, height and round match.
-		// Proposal block parts were already matched and sent if any were wanted.
-		// (These can match on hash so the round doesn't matter)
-		// Now consider sending other things, like the Proposal itself.
+		heightRoundMatch := (rs.Height == prs.Height) && (rs.Round == prs.Round)
+		proposalToSend := rs.Proposal != nil && !prs.Proposal
 
-		// Send Proposal && ProposalPOL BitArray?
-		if rs.Proposal != nil && !prs.Proposal {
-			// Proposal: share the proposal metadata with peer.
-			{
-				logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
-				if peer.Send(p2p.Envelope{
-					ChannelID: DataChannel,
-					Message:   &cmtcons.Proposal{Proposal: *rs.Proposal.ToProto()},
-				}) {
-					// NOTE[ZM]: A peer might have received different proposal msg so this Proposal msg will be rejected!
-					ps.SetHasProposal(rs.Proposal)
-				}
-			}
-			// ProposalPOL: lets peer know which POL votes we have so far.
-			// Peer must receive ProposalMessage first.
-			// rs.Proposal was validated, so rs.Proposal.POLRound <= rs.Round,
-			// so we definitely have rs.Votes.Prevotes(rs.Proposal.POLRound).
-			if 0 <= rs.Proposal.POLRound {
-				logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
-				peer.Send(p2p.Envelope{
-					ChannelID: DataChannel,
-					Message: &cmtcons.ProposalPOL{
-						Height:           rs.Height,
-						ProposalPolRound: rs.Proposal.POLRound,
-						ProposalPol:      *rs.Votes.Prevotes(rs.Proposal.POLRound).BitArray().ToProto(),
-					},
-				})
-			}
+		if heightRoundMatch && proposalToSend {
+			ps.SendProposalSetHasProposal(logger, rs, prs)
 			continue OUTER_LOOP
 		}
 
 		// Nothing to do. Sleep.
 		time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-		continue OUTER_LOOP
+	}
+}
+
+func (ps *PeerState) SendProposalSetHasProposal(
+	logger log.Logger,
+	rs *cstypes.RoundState,
+	prs *cstypes.PeerRoundState,
+) {
+	// Proposal: share the proposal metadata with peer.
+	logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
+	if ps.peer.Send(p2p.Envelope{
+		ChannelID: DataChannel,
+		Message:   &cmtcons.Proposal{Proposal: *rs.Proposal.ToProto()},
+	}) {
+		// NOTE[ZM]: A peer might have received different proposal msg so this Proposal msg will be rejected!
+		ps.SetHasProposal(rs.Proposal)
+	}
+
+	// ProposalPOL: lets peer know which POL votes we have so far.
+	// Peer must receive ProposalMessage first.
+	// rs.Proposal was validated, so rs.Proposal.POLRound <= rs.Round,
+	// so we definitely have rs.Votes.Prevotes(rs.Proposal.POLRound).
+	if 0 <= rs.Proposal.POLRound {
+		logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
+		ps.peer.Send(p2p.Envelope{
+			ChannelID: DataChannel,
+			Message: &cmtcons.ProposalPOL{
+				Height:           rs.Height,
+				ProposalPolRound: rs.Proposal.POLRound,
+				ProposalPol:      *rs.Votes.Prevotes(rs.Proposal.POLRound).BitArray().ToProto(),
+			},
+		})
 	}
 }
 

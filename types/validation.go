@@ -158,11 +158,20 @@ func verifyCommitLightTrustingInternal(
 	if vals == nil {
 		return errors.New("nil validator set")
 	}
+	proposer := vals.GetProposer()
+	if proposer == nil || proposer.PubKey == nil {
+		return errors.New("nil proposer.PubKey in validatorSet")
+	}
 	if trustLevel.Denominator == 0 {
 		return errors.New("trustLevel has zero Denominator")
 	}
 	if commit == nil {
 		return errors.New("nil commit")
+	}
+	// Validate that the BlockID is valid before doing any work.
+        // See https://github.com/cometbft/cometbft/issues/2627
+	if err := commit.BlockID.ValidateBasic(); err != nil {
+		return err
 	}
 
 	// safely calculate voting power needed.

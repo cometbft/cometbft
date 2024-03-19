@@ -307,3 +307,20 @@ func TestValidatorSet_VerifyCommitLightTrustingErrorsOnOverflow(t *testing.T) {
 		assert.Contains(t, err.Error(), "int64 overflow")
 	}
 }
+
+// Verifies that we return an error and don't panic on a nil Proposer in the
+// validator set. Please see issue https://github.com/cometbft/cometbft/issues/2626
+func TestVerifyLightTrustingCrashingNilProposerInValSet(t *testing.T) {
+	vs := &ValidatorSet{
+		Validators: []*Validator{{}},
+	}
+	chainID := "chain_id"
+	commit := &Commit{
+		Signatures: []CommitSig{{}, {}},
+	}
+	frac := cmtmath.Fraction{Denominator: 1}
+
+	err := vs.VerifyCommitLightTrusting(chainID, commit, frac)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "nil proposer.PubKey in validatorSet")
+}

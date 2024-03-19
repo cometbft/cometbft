@@ -838,7 +838,7 @@ func (*Reactor) gossipVotesForHeight(
 ) bool {
 	// If there are lastCommits to send...
 	if prs.Step == cstypes.RoundStepNewHeight {
-		if ps.PickSendVote(rs.LastCommit) {
+		if vote, ok := ps.PickVoteToSend(rs.LastCommit); ok {
 			logger.Debug("Picked rs.LastCommit to send")
 			return true
 		}
@@ -846,7 +846,7 @@ func (*Reactor) gossipVotesForHeight(
 	// If there are POL prevotes to send...
 	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
 		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if ps.PickSendVote(polPrevotes) {
+			if vote, ok := ps.PickVoteToSend(polPrevotes); ok {
 				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
 					"round", prs.ProposalPOLRound)
 				return true
@@ -855,21 +855,21 @@ func (*Reactor) gossipVotesForHeight(
 	}
 	// If there are prevotes to send...
 	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if ps.PickSendVote(rs.Votes.Prevotes(prs.Round)) {
+		if vote, ok := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); ok {
 			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
 			return true
 		}
 	}
 	// If there are precommits to send...
 	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if ps.PickSendVote(rs.Votes.Precommits(prs.Round)) {
+		if vote, ok := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); ok {
 			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
 			return true
 		}
 	}
 	// If there are prevotes to send...Needed because of validBlock mechanism
 	if prs.Round != -1 && prs.Round <= rs.Round {
-		if ps.PickSendVote(rs.Votes.Prevotes(prs.Round)) {
+		if vote, ok := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); ok {
 			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
 			return true
 		}
@@ -877,7 +877,7 @@ func (*Reactor) gossipVotesForHeight(
 	// If there are POLPrevotes to send...
 	if prs.ProposalPOLRound != -1 {
 		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if ps.PickSendVote(polPrevotes) {
+			if vote, ok := ps.PickVoteToSend(polPrevotes); ok {
 				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
 					"round", prs.ProposalPOLRound)
 				return true
@@ -1190,6 +1190,22 @@ func (ps *PeerState) setHasProposalBlockPart(height int64, round int32, index in
 	}
 
 	ps.PRS.ProposalBlockParts.SetIndex(index, true)
+}
+
+// PickSendVote picks a vote and sends it to the peer.
+// Returns true if vote was sent.
+func (ps *PeerState) SendVoteSetHasVote(vote *types.Vote) bool {
+	ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
+	if ps.peer.Send(p2p.Envelope{
+		ChannelID: VoteChannel,
+		Message: &cmtcons.Vote{
+			Vote: vote.ToProto(),
+		},
+	}) {
+		ps.SetHasVote(vote)
+		return true
+	}
+	return false
 }
 
 // PickSendVote picks a vote and sends it to the peer.

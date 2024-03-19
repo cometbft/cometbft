@@ -518,7 +518,7 @@ func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAd
 func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 	// Consistency check to ensure we don't add an already known address
 	if ka.isOld() {
-		return errAddrBookOldAddressNewBucket{ka.Addr, bucketIdx}
+		return ErrAddrBookOldAddressNewBucket{ka.Addr, bucketIdx}
 	}
 
 	addrStr := ka.Addr.String()
@@ -694,7 +694,7 @@ func (a *addrBook) randomPickAddresses(bucketType byte, num int) []*p2p.NetAddre
 	case bucketTypeOld:
 		buckets = a.bucketsOld
 	default:
-		panic("unexpected bucketType")
+		panic("unexpected bucket type")
 	}
 	total := 0
 	for _, bucket := range buckets {

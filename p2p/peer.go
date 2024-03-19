@@ -53,7 +53,7 @@ type Peer interface {
 type peerConn struct {
 	outbound   bool
 	persistent bool
-	conn       net.Conn // source connection
+	conn       net.Conn // Source connection
 
 	socketAddr *NetAddress
 

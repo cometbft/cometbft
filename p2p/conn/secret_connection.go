@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"net"
@@ -46,8 +45,7 @@ const (
 )
 
 var (
-	ErrSmallOrderRemotePubKey = errors.New("detected low order point from remote peer")
-
+	ErrSmallOrderRemotePubKey    = errors.New("detected low order point from remote peer")
 	secretConnKeyAndChallengeGen = []byte("TENDERMINT_SECRET_CONNECTION_KEY_AND_CHALLENGE_GEN")
 )
 
@@ -133,11 +131,12 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 
 	sendAead, err := chacha20poly1305.New(sendSecret[:])
 	if err != nil {
-		return nil, errors.New("invalid send SecretConnection Key")
+		return nil, ErrInvalidSecretConnKeySend
 	}
+
 	recvAead, err := chacha20poly1305.New(recvSecret[:])
 	if err != nil {
-		return nil, errors.New("invalid receive SecretConnection Key")
+		return nil, ErrInvalidSecretConnKeyRecv
 	}
 
 	sc := &SecretConnection{
@@ -162,11 +161,16 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	}
 
 	remPubKey, remSignature := authSigMsg.Key, authSigMsg.Sig
+	// Usage in your function
 	if _, ok := remPubKey.(ed25519.PubKey); !ok {
-		return nil, fmt.Errorf("expected ed25519 pubkey, got %T", remPubKey)
+		return nil, ErrUnexpectedPubKeyType{
+			Expected: ed25519.KeyType,
+			Got:      remPubKey.Type(),
+		}
 	}
+
 	if !remPubKey.VerifySignature(challenge[:], remSignature) {
-		return nil, errors.New("challenge verification failed")
+		return nil, ErrChallengeVerification
 	}
 
 	// We've authorized.
@@ -214,6 +218,7 @@ func (sc *SecretConnection) Write(data []byte) (n int, err error) {
 			if err != nil {
 				return err
 			}
+
 			n += len(chunk)
 			return nil
 		}(); err != nil {
@@ -249,8 +254,9 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	defer pool.Put(frame)
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
-		return n, fmt.Errorf("failed to decrypt SecretConnection: %w", err)
+		return n, ErrDecryptFrame{Source: err}
 	}
+
 	incrNonce(sc.recvNonce)
 	// end decryption
 
@@ -258,8 +264,12 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	// set recvBuffer to the rest.
 	chunkLength := binary.LittleEndian.Uint32(frame) // read the first four bytes
 	if chunkLength > dataMaxSize {
-		return 0, errors.New("chunkLength is greater than dataMaxSize")
+		return 0, ErrChunkTooBig{
+			Received: int(chunkLength),
+			Max:      dataMaxSize,
+		}
 	}
+
 	chunk := frame[dataLenSize : dataLenSize+chunkLength]
 	n = copy(data, chunk)
 	if n < len(chunk) {
@@ -289,7 +299,7 @@ func genEphKeys() (ephPub, ephPriv *[32]byte) {
 	// see: https://github.com/dalek-cryptography/x25519-dalek/blob/34676d336049df2bba763cc076a75e47ae1f170f/src/x25519.rs#L56-L74
 	ephPub, ephPriv, err = box.GenerateKey(crand.Reader)
 	if err != nil {
-		panic("Could not generate ephemeral key-pair")
+		panic("failed to generate ephemeral key-pair")
 	}
 	return ephPub, ephPriv
 }

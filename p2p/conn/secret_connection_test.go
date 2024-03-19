@@ -3,6 +3,7 @@ package conn
 import (
 	"bufio"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -155,7 +156,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 					readBuffer := make([]byte, dataMaxSize)
 					for {
 						n, err := nodeSecretConn.Read(readBuffer)
-						if err == io.EOF {
+						if errors.Is(err, io.EOF) {
 							if err := nodeConn.PipeReader.Close(); err != nil {
 								t.Error(err)
 								return nil, true, err

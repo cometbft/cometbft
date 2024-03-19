@@ -236,7 +236,7 @@ func (sw *Switch) OnStart() error {
 	for _, reactor := range sw.reactors {
 		err := reactor.Start()
 		if err != nil {
-			return fmt.Errorf("failed to start %v: %w", reactor, err)
+			return ErrStart{reactor, err}
 		}
 	}
 
@@ -484,7 +484,7 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 	}
 	// return first non-ErrNetAddressLookup error
 	for _, err := range errs {
-		if _, ok := err.(ErrNetAddressLookup); ok {
+		if errors.As(err, &ErrNetAddressLookup{}) {
 			continue
 		}
 		return err
@@ -587,7 +587,7 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 	}
 	// return first non-ErrNetAddressLookup error
 	for _, err := range errs {
-		if _, ok := err.(ErrNetAddressLookup); ok {
+		if errors.As(err, &ErrNetAddressLookup{}) {
 			continue
 		}
 		return err
@@ -598,11 +598,12 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 
 func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 	sw.Logger.Info("Adding unconditional peer ids", "ids", ids)
-	for i, id := range ids {
+	for _, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return fmt.Errorf("wrong ID #%d: %w", i, err)
+			return ErrInvalidPeerID{ID: ID(id), Source: err}
 		}
+
 		sw.unconditionalPeerIDs[ID(id)] = struct{}{}
 	}
 	return nil
@@ -610,11 +611,12 @@ func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 
 func (sw *Switch) AddPrivatePeerIDs(ids []string) error {
 	validIDs := make([]string, 0, len(ids))
-	for i, id := range ids {
+	for _, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return fmt.Errorf("wrong ID #%d: %w", i, err)
+			return ErrInvalidPeerID{ID: ID(id), Source: err}
 		}
+
 		validIDs = append(validIDs, id)
 	}
 

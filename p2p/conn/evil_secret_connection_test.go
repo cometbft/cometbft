@@ -244,15 +244,15 @@ func (c *evilConn) signChallenge() []byte {
 // MakeSecretConnection errors at different stages.
 func TestMakeSecretConnection(t *testing.T) {
 	testCases := []struct {
-		name   string
-		conn   *evilConn
-		errMsg string
+		name       string
+		conn       *evilConn
+		checkError func(error) bool // Function to check if the error matches the expectation
 	}{
-		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), "EOF"},
-		{"share bad ethimeral key", newEvilConn(true, true, false, false), "wrong wireType"},
-		{"refuse to share auth signature", newEvilConn(true, false, false, false), "EOF"},
-		{"share bad auth signature", newEvilConn(true, false, true, true), "failed to decrypt SecretConnection"},
-		{"all good", newEvilConn(true, false, true, false), ""},
+		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), func(err error) bool { return err == io.EOF }},
+		{"share bad ethimeral key", newEvilConn(true, true, false, false), func(err error) bool { return assert.Contains(t, err.Error(), "wrong wireType") }},
+		{"refuse to share auth signature", newEvilConn(true, false, false, false), func(err error) bool { return err == io.EOF }},
+		{"share bad auth signature", newEvilConn(true, false, true, true), func(err error) bool { return errors.As(err, &ErrDecryptFrame{}) }},
+		{"all good", newEvilConn(true, false, true, false), func(err error) bool { return err == nil }},
 	}
 
 	for _, tc := range testCases {
@@ -260,10 +260,8 @@ func TestMakeSecretConnection(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			privKey := ed25519.GenPrivKey()
 			_, err := MakeSecretConnection(tc.conn, privKey)
-			if tc.errMsg != "" {
-				if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
-					assert.Contains(t, err.Error(), tc.errMsg)
-				}
+			if tc.checkError != nil {
+				assert.True(t, tc.checkError(err))
 			} else {
 				require.NoError(t, err)
 			}

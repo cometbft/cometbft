@@ -784,7 +784,7 @@ OUTER_LOOP:
 		// Special catchup logic.
 		// If peer is lagging by height 1, send LastCommit.
 		if prs.Height != 0 && rs.Height == prs.Height+1 {
-			if vote, ok := ps.PickVoteToSend(rs.LastCommit); ok {
+			if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
 				logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
 				if ps.SendVoteSetHasVote(vote) {
 					continue OUTER_LOOP
@@ -822,7 +822,7 @@ OUTER_LOOP:
 			if ec == nil {
 				continue
 			}
-			if vote, ok := ps.PickVoteToSend(ec); ok {
+			if vote := ps.PickVoteToSend(ec); vote != nil {
 				logger.Debug("Picked Catchup commit to send", "height", prs.Height)
 				if ps.SendVoteSetHasVote(vote) {
 					continue OUTER_LOOP
@@ -860,7 +860,7 @@ func (*Reactor) gossipVotesForHeight(
 ) *types.Vote {
 	// If there are lastCommits to send...
 	if prs.Step == cstypes.RoundStepNewHeight {
-		if vote, ok := ps.PickVoteToSend(rs.LastCommit); ok {
+		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
 			logger.Debug("Picked rs.LastCommit to send")
 			return vote
 		}
@@ -868,7 +868,7 @@ func (*Reactor) gossipVotesForHeight(
 	// If there are POL prevotes to send...
 	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
 		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if vote, ok := ps.PickVoteToSend(polPrevotes); ok {
+			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
 				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
 					"round", prs.ProposalPOLRound)
 				return vote
@@ -877,21 +877,21 @@ func (*Reactor) gossipVotesForHeight(
 	}
 	// If there are prevotes to send...
 	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if vote, ok := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); ok {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
 			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
 			return vote
 		}
 	}
 	// If there are precommits to send...
 	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if vote, ok := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); ok {
+		if vote := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); vote != nil {
 			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
 			return vote
 		}
 	}
 	// If there are prevotes to send...Needed because of validBlock mechanism
 	if prs.Round != -1 && prs.Round <= rs.Round {
-		if vote, ok := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); ok {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
 			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
 			return vote
 		}
@@ -899,7 +899,7 @@ func (*Reactor) gossipVotesForHeight(
 	// If there are POLPrevotes to send...
 	if prs.ProposalPOLRound != -1 {
 		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if vote, ok := ps.PickVoteToSend(polPrevotes); ok {
+			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
 				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
 					"round", prs.ProposalPOLRound)
 				return vote
@@ -1233,12 +1233,12 @@ func (ps *PeerState) SendVoteSetHasVote(vote *types.Vote) bool {
 // PickVoteToSend picks a vote to send to the peer.
 // Returns true if a vote was picked.
 // NOTE: `votes` must be the correct Size() for the Height().
-func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote, ok bool) {
+func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) *types.Vote {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
 	if votes.Size() == 0 {
-		return nil, false
+		return nil
 	}
 
 	height, round, votesType, size := votes.GetHeight(), votes.GetRound(), types.SignedMsgType(votes.Type()), votes.Size()
@@ -1251,12 +1251,16 @@ func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote
 
 	psVotes := ps.getVoteBitArray(height, round, votesType)
 	if psVotes == nil {
-		return nil, false // Not something worth sending
+		return nil // Not something worth sending
 	}
 	if index, ok := votes.BitArray().Sub(psVotes).PickRandom(); ok {
-		return votes.GetByIndex(int32(index)), true
+		vote := votes.GetByIndex(int32(index))
+		if vote == nil {
+			ps.logger.Error("votes.GetByIndex returned nil", "votes", votes, "index", index)
+		}
+		return vote
 	}
-	return nil, false
+	return nil
 }
 
 func (ps *PeerState) getVoteBitArray(height int64, round int32, votesType types.SignedMsgType) *bits.BitArray {

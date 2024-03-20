@@ -655,7 +655,7 @@ OUTER_LOOP:
 		// "prsHeight", prs.Height, "prsRound", prs.Round, "prsStep", prs.Step)
 
 		if vote := pickVoteToSend(logger, conR.conS, rs, ps, prs); vote != nil {
-			if ps.SendVoteSetHasVote(vote) {
+			if ps.sendVoteSetHasVote(vote) {
 				continue OUTER_LOOP
 			}
 			logger.Debug("Failed to send vote to peer",
@@ -679,7 +679,7 @@ OUTER_LOOP:
 	}
 }
 
-func pickVotesForHeight(
+func pickVoteCurrentHeight(
 	logger log.Logger,
 	rs *cstypes.RoundState,
 	prs *cstypes.PeerRoundState,
@@ -927,7 +927,7 @@ func pickVoteToSend(
 	// If height matches, then send LastCommit, Prevotes, Precommits.
 	if rs.Height == prs.Height {
 		heightLogger := logger.With("height", prs.Height)
-		return pickVotesForHeight(heightLogger, rs, prs, ps)
+		return pickVoteCurrentHeight(heightLogger, rs, prs, ps)
 	}
 
 	// Special catchup logic.
@@ -1240,9 +1240,9 @@ func (ps *PeerState) SendProposalSetHasProposal(
 	}
 }
 
-// SendVoteSetHasVote sends the vote to the peer.
+// sendVoteSetHasVote sends the vote to the peer.
 // Returns true and marks the peer as having the vote if the vote was sent.
-func (ps *PeerState) SendVoteSetHasVote(vote *types.Vote) bool {
+func (ps *PeerState) sendVoteSetHasVote(vote *types.Vote) bool {
 	ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
 	if ps.peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,

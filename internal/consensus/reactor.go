@@ -679,64 +679,6 @@ OUTER_LOOP:
 	}
 }
 
-func pickVoteCurrentHeight(
-	logger log.Logger,
-	rs *cstypes.RoundState,
-	prs *cstypes.PeerRoundState,
-	ps *PeerState,
-) *types.Vote {
-	// If there are lastCommits to send...
-	if prs.Step == cstypes.RoundStepNewHeight {
-		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
-			logger.Debug("Picked rs.LastCommit to send")
-			return vote
-		}
-	}
-	// If there are POL prevotes to send...
-	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
-		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
-				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
-					"round", prs.ProposalPOLRound)
-				return vote
-			}
-		}
-	}
-	// If there are prevotes to send...
-	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
-			return vote
-		}
-	}
-	// If there are precommits to send...
-	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if vote := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
-			return vote
-		}
-	}
-	// If there are prevotes to send...Needed because of validBlock mechanism
-	if prs.Round != -1 && prs.Round <= rs.Round {
-		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
-			return vote
-		}
-	}
-	// If there are POLPrevotes to send...
-	if prs.ProposalPOLRound != -1 {
-		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
-				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
-					"round", prs.ProposalPOLRound)
-				return vote
-			}
-		}
-	}
-
-	return nil
-}
-
 // NOTE: `queryMaj23Routine` has a simple crude design since it only comes
 // into play for liveness when there's a signature DDoS attack happening.
 func (conR *Reactor) queryMaj23Routine(peer p2p.Peer, ps *PeerState) {
@@ -846,7 +788,6 @@ func pickPartToSend(
 	ps *PeerState,
 	prs *cstypes.PeerRoundState,
 ) (*types.Part, bool) {
-
 	// If peer has same part set header as us, send block parts
 	if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
 		if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(); ok {
@@ -860,7 +801,6 @@ func pickPartToSend(
 	if blockStoreBase > 0 &&
 		0 < prs.Height && prs.Height < rs.Height &&
 		prs.Height >= blockStoreBase {
-
 		heightLogger := logger.With("height", prs.Height)
 
 		// if we never received the commit message from the peer, the block parts won't be initialized
@@ -891,7 +831,6 @@ func pickPartForCatchup(
 	prs *cstypes.PeerRoundState,
 	blockStore sm.BlockStore,
 ) *types.Part {
-
 	index, ok := prs.ProposalBlockParts.Not().PickRandom()
 	if !ok {
 		return nil
@@ -963,13 +902,70 @@ func pickVoteToSend(
 		}
 		if ec == nil {
 			return nil
-
 		}
 		if vote := ps.PickVoteToSend(ec); vote != nil {
 			logger.Debug("Picked Catchup commit to send", "height", prs.Height)
 			return vote
 		}
 	}
+	return nil
+}
+
+func pickVoteCurrentHeight(
+	logger log.Logger,
+	rs *cstypes.RoundState,
+	prs *cstypes.PeerRoundState,
+	ps *PeerState,
+) *types.Vote {
+	// If there are lastCommits to send...
+	if prs.Step == cstypes.RoundStepNewHeight {
+		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
+			logger.Debug("Picked rs.LastCommit to send")
+			return vote
+		}
+	}
+	// If there are POL prevotes to send...
+	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
+		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
+			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
+				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
+					"round", prs.ProposalPOLRound)
+				return vote
+			}
+		}
+	}
+	// If there are prevotes to send...
+	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
+			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are precommits to send...
+	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); vote != nil {
+			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are prevotes to send...Needed because of validBlock mechanism
+	if prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
+			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are POLPrevotes to send...
+	if prs.ProposalPOLRound != -1 {
+		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
+			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
+				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
+					"round", prs.ProposalPOLRound)
+				return vote
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -165,7 +165,8 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval))
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -185,6 +186,8 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
+		Logger:               logger,
+		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
 	})
 
 	defer func() {
@@ -203,19 +206,21 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		return errors.New("state not empty, trying to initialize non empty state")
 	}
 
+	// The state store will use the DBKeyLayout set in config or already existing in the DB.
 	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config), config.Storage.GenesisHash)
 	if err != nil {
 		return err
 	}
 
-	stateProvider, err := statesync.NewLightClientStateProvider(
+	stateProvider, err := statesync.NewLightClientStateProviderWithDBKeyVersion(
 		ctx,
 		genState.ChainID, genState.Version, genState.InitialHeight,
 		config.StateSync.RPCServers, light.TrustOptions{
 			Period: config.StateSync.TrustPeriod,
 			Height: config.StateSync.TrustHeight,
 			Hash:   config.StateSync.TrustHashBytes(),
-		}, logger.With("module", "light"))
+		}, logger.With("module", "light"),
+		config.Storage.ExperimentalKeyLayout)
 	if err != nil {
 		return fmt.Errorf("failed to set up light client state provider: %w", err)
 	}
@@ -262,7 +267,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	return err
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 // NewNode returns a new, ready to go, CometBFT Node.
 func NewNode(ctx context.Context,
@@ -292,9 +297,12 @@ func NewNode(ctx context.Context,
 		Metrics:              smMetrics,
 		Compact:              config.Storage.Compact,
 		CompactionInterval:   config.Storage.CompactionInterval,
+		Logger:               logger,
+		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
 	})
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval))
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	// The key will be deleted if it existed.
 	// Not checking whether the key is there in case the genesis file was larger than
@@ -586,7 +594,7 @@ func (n *Node) OnStart() error {
 			return errors.New("this blocksync reactor does not support switching from state sync")
 		}
 		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
-			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis)
+			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
 			return fmt.Errorf("failed to start state sync: %w", err)
 		}
@@ -945,7 +953,7 @@ func (n *Node) Config() *cfg.Config {
 	return n.config
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 func (n *Node) Listeners() []string {
 	return []string{

@@ -40,20 +40,20 @@ type Peer interface {
 	Send(e Envelope) bool
 	TrySend(e Envelope) bool
 
-	Set(key string, value interface{})
-	Get(key string) interface{}
+	Set(key string, value any)
+	Get(key string) any
 
 	SetRemovalFailed()
 	GetRemovalFailed() bool
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // peerConn contains the raw connection and its config.
 type peerConn struct {
 	outbound   bool
 	persistent bool
-	conn       net.Conn // source connection
+	conn       net.Conn // Source connection
 
 	socketAddr *NetAddress
 
@@ -136,7 +136,7 @@ func newPeer(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
-	onPeerError func(Peer, interface{}),
+	onPeerError func(Peer, any),
 	mlc *metricsLabelCache,
 	options ...PeerOption,
 ) *peer {
@@ -175,7 +175,7 @@ func (p *peer) String() string {
 	return fmt.Sprintf("Peer{%v %v in}", p.mconn, p.ID())
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // Implements service.Service
 
 // SetLogger implements BaseService.
@@ -213,7 +213,7 @@ func (p *peer) OnStop() {
 	}
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // Implements Peer
 
 // ID returns the peer's ID - the hex encoded hash of its pubkey.
@@ -295,14 +295,14 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 // Get the data for a given key.
 //
 // thread safe.
-func (p *peer) Get(key string) interface{} {
+func (p *peer) Get(key string) any {
 	return p.Data.Get(key)
 }
 
 // Set sets the data for the given key.
 //
 // thread safe.
-func (p *peer) Set(key string, data interface{}) {
+func (p *peer) Set(key string, data any) {
 	p.Data.Set(key, data)
 }
 
@@ -339,7 +339,7 @@ func (p *peer) GetRemovalFailed() bool {
 	return p.removalAttemptFailed
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // methods only used for testing
 // TODO: can we remove these?
 
@@ -361,7 +361,7 @@ func (p *peer) CanSend(chID byte) bool {
 	return p.mconn.CanSend(chID)
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 
 func PeerMetrics(metrics *Metrics) PeerOption {
 	return func(p *peer) {
@@ -389,7 +389,7 @@ func (p *peer) metricsReporter() {
 	}
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // helper funcs
 
 func createMConnection(
@@ -398,7 +398,7 @@ func createMConnection(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
-	onPeerError func(Peer, interface{}),
+	onPeerError func(Peer, any),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
 	onReceive := func(chID byte, msgBytes []byte) {
@@ -433,7 +433,7 @@ func createMConnection(
 		})
 	}
 
-	onError := func(r interface{}) {
+	onError := func(r any) {
 		onPeerError(p, r)
 	}
 

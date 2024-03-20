@@ -3,7 +3,7 @@ package abcicli
 import (
 	"context"
 
-	types "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/service"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
@@ -73,17 +73,17 @@ func newLocalReqRes(req *types.Request, res *types.Response) *ReqRes {
 	return reqRes
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
-func (app *localClient) Error() error {
+func (*localClient) Error() error {
 	return nil
 }
 
-func (app *localClient) Flush(context.Context) error {
+func (*localClient) Flush(context.Context) error {
 	return nil
 }
 
-func (app *localClient) Echo(_ context.Context, msg string) (*types.EchoResponse, error) {
+func (*localClient) Echo(_ context.Context, msg string) (*types.EchoResponse, error) {
 	return &types.EchoResponse{Message: msg}, nil
 }
 

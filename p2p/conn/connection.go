@@ -50,7 +50,7 @@ const (
 
 type (
 	receiveCbFunc func(chID byte, msgBytes []byte)
-	errorCbFunc   func(interface{})
+	errorCbFunc   func(any)
 )
 
 /*
@@ -343,7 +343,7 @@ func (c *MConnection) _recover() {
 	}
 }
 
-func (c *MConnection) stopForError(r interface{}) {
+func (c *MConnection) stopForError(r any) {
 	if err := c.Stop(); err != nil {
 		c.Logger.Error("Error stopping connection", "err", err)
 	}
@@ -664,10 +664,6 @@ FOR_LOOP:
 
 	// Cleanup
 	close(c.pong)
-
-	for range c.pong {
-		// Drain
-	}
 }
 
 // not goroutine-safe.
@@ -725,7 +721,7 @@ func (c *MConnection) Status() ConnectionStatus {
 	return status
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 type ChannelDescriptor struct {
 	ID                  byte
@@ -747,7 +743,7 @@ func (chDesc ChannelDescriptor) FillDefaults() (filled ChannelDescriptor) {
 		chDesc.RecvMessageCapacity = defaultRecvMessageCapacity
 	}
 	filled = chDesc
-	return
+	return filled
 }
 
 // TODO: lowercase.
@@ -856,8 +852,12 @@ func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 	packet := ch.nextPacketMsg()
 	n, err = protoio.NewDelimitedWriter(w).WriteMsg(mustWrapPacket(&packet))
+	if err != nil {
+		err = ErrPacketWrite{Source: err}
+	}
+
 	atomic.AddInt64(&ch.recentlySent, int64(n))
-	return
+	return n, err
 }
 
 // Handles incoming PacketMsgs. It returns a message bytes if message is
@@ -867,8 +867,9 @@ func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 	ch.Logger.Debug("Read PacketMsg", "conn", ch.conn, "packet", packet)
 	recvCap, recvReceived := ch.desc.RecvMessageCapacity, len(ch.recving)+len(packet.Data)
 	if recvCap < recvReceived {
-		return nil, fmt.Errorf("received message exceeds available capacity: %v < %v", recvCap, recvReceived)
+		return nil, ErrPacketTooBig{Max: recvCap, Received: recvReceived}
 	}
+
 	ch.recving = append(ch.recving, packet.Data...)
 	if packet.EOF {
 		msgBytes := ch.recving
@@ -891,7 +892,7 @@ func (ch *Channel) updateStats() {
 	atomic.StoreInt64(&ch.recentlySent, int64(float64(atomic.LoadInt64(&ch.recentlySent))*0.8))
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Packet
 
 // mustWrapPacket takes a packet kind (oneof) and wraps it in a tmp2p.Packet message.

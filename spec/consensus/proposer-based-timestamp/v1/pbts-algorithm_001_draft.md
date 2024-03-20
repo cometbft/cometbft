@@ -156,7 +156,7 @@ Back to [main document][main_v1].
 
 [main_v1]: ./pbts_001_draft.md
 
-[algorithm]: ../pbts-algorithm_002_draft.md
+[algorithm]: ../pbts-algorithm.md
 [algorithm_v1]: ./pbts-algorithm_001_draft.md
 
 [arXiv]: https://arxiv.org/abs/1807.04938

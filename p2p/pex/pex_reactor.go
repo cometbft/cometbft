@@ -52,23 +52,6 @@ const (
 	defaultBanTime = 24 * time.Hour
 )
 
-type errMaxAttemptsToDial struct{}
-
-func (e errMaxAttemptsToDial) Error() string {
-	return fmt.Sprintf("reached max attempts %d to dial", maxAttemptsToDial)
-}
-
-type errTooEarlyToDial struct {
-	backoffDuration time.Duration
-	lastDialed      time.Time
-}
-
-func (e errTooEarlyToDial) Error() string {
-	return fmt.Sprintf(
-		"too early to dial (backoff duration: %d, last dialed: %v, time since: %v)",
-		e.backoffDuration, e.lastDialed, time.Since(e.lastDialed))
-}
-
 // Reactor handles PEX (peer exchange) and ensures that an
 // adequate number of peers are connected to the switch.
 //
@@ -144,7 +127,7 @@ func NewReactor(b AddrBook, config *ReactorConfig) *Reactor {
 // OnStart implements BaseService.
 func (r *Reactor) OnStart() error {
 	err := r.book.Start()
-	if err != nil && err != service.ErrAlreadyStarted {
+	if err != nil && !errors.Is(err, service.ErrAlreadyStarted) {
 		return err
 	}
 
@@ -152,7 +135,7 @@ func (r *Reactor) OnStart() error {
 	if err != nil {
 		return err
 	} else if numOnline == 0 && r.book.Empty() {
-		return errors.New("address book is empty and couldn't resolve any seed nodes")
+		return ErrEmptyAddressBook
 	}
 
 	r.seedAddrs = seedAddrs
@@ -181,7 +164,7 @@ func (r *Reactor) Stop() error {
 }
 
 // GetChannels implements Reactor.
-func (r *Reactor) GetChannels() []*conn.ChannelDescriptor {
+func (*Reactor) GetChannels() []*conn.ChannelDescriptor {
 	return []*conn.ChannelDescriptor{
 		{
 			ID:                  PexChannel,
@@ -222,7 +205,7 @@ func (r *Reactor) AddPeer(p Peer) {
 }
 
 // RemovePeer implements Reactor by resetting peer's requests info.
-func (r *Reactor) RemovePeer(p Peer, _ interface{}) {
+func (r *Reactor) RemovePeer(p Peer, _ any) {
 	id := string(p.ID())
 	r.requestsSent.Delete(id)
 	r.lastReceivedRequests.Delete(id)
@@ -325,13 +308,12 @@ func (r *Reactor) receiveRequest(src Peer) error {
 	now := time.Now()
 	minInterval := r.minReceiveRequestInterval()
 	if now.Sub(lastReceived) < minInterval {
-		return fmt.Errorf(
-			"peer (%v) sent next PEX request too soon. lastReceived: %v, now: %v, minInterval: %v. Disconnecting",
-			src.ID(),
-			lastReceived,
-			now,
-			minInterval,
-		)
+		return ErrReceivedPEXRequestTooSoon{
+			Peer:         src.ID(),
+			LastReceived: lastReceived,
+			Now:          now,
+			MinInterval:  minInterval,
+		}
 	}
 	r.lastReceivedRequests.Set(id, now)
 	return nil
@@ -392,7 +374,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 				err := r.dialPeer(addr)
 				if err != nil {
 					switch err.(type) {
-					case errMaxAttemptsToDial, errTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
+					case ErrMaxAttemptsToDial, ErrTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
 						r.Logger.Debug(err.Error(), "addr", addr)
 					default:
 						r.Logger.Debug(err.Error(), "addr", addr)
@@ -406,7 +388,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 }
 
 // SendAddrs sends addrs to the peer.
-func (r *Reactor) SendAddrs(p Peer, netAddrs []*p2p.NetAddress) {
+func (*Reactor) SendAddrs(p Peer, netAddrs []*p2p.NetAddress) {
 	e := p2p.Envelope{
 		ChannelID: PexChannel,
 		Message:   &tmp2p.PexAddrs{Addrs: p2p.NetAddressesToProto(netAddrs)},
@@ -512,7 +494,7 @@ func (r *Reactor) ensurePeers() {
 			err := r.dialPeer(addr)
 			if err != nil {
 				switch err.(type) {
-				case errMaxAttemptsToDial, errTooEarlyToDial:
+				case ErrMaxAttemptsToDial, ErrTooEarlyToDial:
 					r.Logger.Debug(err.Error(), "addr", addr)
 				default:
 					r.Logger.Debug(err.Error(), "addr", addr)
@@ -547,7 +529,7 @@ func (r *Reactor) ensurePeers() {
 func (r *Reactor) dialAttemptsInfo(addr *p2p.NetAddress) (attempts int, lastDialed time.Time) {
 	_attempts, ok := r.attemptsToDial.Load(addr.DialString())
 	if !ok {
-		return
+		return 0, time.Time{}
 	}
 	atd := _attempts.(_attemptsToDial)
 	return atd.number, atd.lastDialed
@@ -557,7 +539,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 	attempts, lastDialed := r.dialAttemptsInfo(addr)
 	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
 		r.book.MarkBad(addr, defaultBanTime)
-		return errMaxAttemptsToDial{}
+		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}
 	}
 
 	// exponential backoff if it's not our first attempt to dial given address
@@ -567,7 +549,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 		backoffDuration = r.maxBackoffDurationForPeer(addr, backoffDuration)
 		sinceLastDialed := time.Since(lastDialed)
 		if sinceLastDialed < backoffDuration {
-			return errTooEarlyToDial{backoffDuration, lastDialed}
+			return ErrTooEarlyToDial{backoffDuration, lastDialed}
 		}
 	}
 
@@ -585,7 +567,7 @@ func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 		default:
 			r.attemptsToDial.Store(addr.DialString(), _attemptsToDial{attempts + 1, time.Now()})
 		}
-		return fmt.Errorf("dialing failed (attempts: %d): %w", attempts+1, err)
+		return ErrFailedToDial{attempts + 1, err}
 	}
 
 	// cleanup any history
@@ -620,7 +602,7 @@ func (r *Reactor) checkSeeds() (numOnline int, netAddrs []*p2p.NetAddress, err e
 		case p2p.ErrNetAddressLookup:
 			r.Logger.Error("Connecting to seed failed", "err", e)
 		default:
-			return 0, nil, fmt.Errorf("seed node configuration has error: %w", e)
+			return 0, nil, ErrSeedNodeConfig{Err: err}
 		}
 	}
 	return numOnline, netAddrs, nil
@@ -657,7 +639,7 @@ func (r *Reactor) AttemptsToDial(addr *p2p.NetAddress) int {
 	return 0
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // Explores the network searching for more peers. (continuous)
 // Seed/Crawler Mode causes this node to quickly disconnect
@@ -726,7 +708,7 @@ func (r *Reactor) crawlPeers(addrs []*p2p.NetAddress) {
 		err := r.dialPeer(addr)
 		if err != nil {
 			switch err.(type) {
-			case errMaxAttemptsToDial, errTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
+			case ErrMaxAttemptsToDial, ErrTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
 				r.Logger.Debug(err.Error(), "addr", addr)
 			default:
 				r.Logger.Debug(err.Error(), "addr", addr)

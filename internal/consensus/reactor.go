@@ -34,7 +34,7 @@ const (
 	votesToContributeToBecomeGoodPeer  = 10000
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // Reactor defines a reactor for the consensus service.
 type Reactor struct {
@@ -149,7 +149,7 @@ conR:
 }
 
 // GetChannels implements Reactor.
-func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	// TODO optimize
 	return []*p2p.ChannelDescriptor{
 		{
@@ -218,7 +218,7 @@ func (conR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer is a noop.
-func (conR *Reactor) RemovePeer(p2p.Peer, interface{}) {
+func (conR *Reactor) RemovePeer(p2p.Peer, any) {
 	if !conR.IsRunning() {
 		return
 	}
@@ -331,13 +331,13 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		switch msg := msg.(type) {
 		case *ProposalMessage:
 			ps.SetHasProposal(msg.Proposal)
-			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID()}
+			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID(), cmttime.Now()}
 		case *ProposalPOLMessage:
 			ps.ApplyProposalPOLMessage(msg)
 		case *BlockPartMessage:
 			ps.SetHasProposalBlockPart(msg.Height, msg.Round, int(msg.Part.Index))
 			conR.Metrics.BlockParts.With("peer_id", string(e.Src.ID())).Add(1)
-			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID()}
+			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID(), time.Time{}}
 		default:
 			conR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 		}
@@ -357,7 +357,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			ps.EnsureVoteBitArrays(height-1, lastCommitSize)
 			ps.SetHasVote(msg.Vote)
 
-			cs.peerMsgQueue <- msgInfo{msg, e.Src.ID()}
+			cs.peerMsgQueue <- msgInfo{msg, e.Src.ID(), time.Time{}}
 
 		default:
 			// don't punish (leave room for soft upgrades)
@@ -411,7 +411,7 @@ func (conR *Reactor) WaitSync() bool {
 	return conR.waitSync.Load()
 }
 
-//--------------------------------------
+// --------------------------------------
 
 // subscribeToBroadcastEvents subscribes for new round steps and votes
 // using internal pubsub defined on state to broadcast
@@ -529,10 +529,10 @@ func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep)
 		Height:                rs.Height,
 		Round:                 rs.Round,
 		Step:                  uint32(rs.Step),
-		SecondsSinceStartTime: int64(time.Since(rs.StartTime).Seconds()),
+		SecondsSinceStartTime: int64(cmttime.Since(rs.StartTime).Seconds()),
 		LastCommitRound:       rs.LastCommit.GetRound(),
 	}
-	return
+	return nrsMsg
 }
 
 func (conR *Reactor) sendNewRoundStepMessage(peer p2p.Peer) {
@@ -794,7 +794,7 @@ OUTER_LOOP:
 			func() {
 				conR.conS.mtx.RLock()
 				defer conR.conS.mtx.RUnlock()
-				veEnabled = conR.conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
+				veEnabled = conR.conS.state.ConsensusParams.Feature.VoteExtensionsEnabled(prs.Height)
 			}()
 			if veEnabled {
 				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
@@ -830,7 +830,7 @@ OUTER_LOOP:
 	}
 }
 
-func (conR *Reactor) gossipVotesForHeight(
+func (*Reactor) gossipVotesForHeight(
 	logger log.Logger,
 	rs *cstypes.RoundState,
 	prs *cstypes.PeerRoundState,
@@ -1030,7 +1030,7 @@ func (conR *Reactor) peerStatsRoutine() {
 // String returns a string representation of the Reactor.
 // NOTE: For now, it is just a hard-coded string to avoid accessing unprotected shared variables.
 // TODO: improve!
-func (conR *Reactor) String() string {
+func (*Reactor) String() string {
 	// better not to access shared variables
 	return "ConsensusReactor" // conR.StringIndented("")
 }
@@ -1055,7 +1055,7 @@ func ReactorMetrics(metrics *Metrics) ReactorOption {
 	return func(conR *Reactor) { conR.Metrics = metrics }
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // PeerState contains the known state of a peer, including its connection and
 // threadsafe access to its PeerRoundState.
@@ -1560,7 +1560,7 @@ func (ps *PeerState) StringIndented(indent string) string {
 		indent)
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Messages
 
 // Message is a message that can be sent and received on the Reactor.
@@ -1581,7 +1581,7 @@ func init() {
 	cmtjson.RegisterType(&VoteSetBitsMessage{}, "tendermint/VoteSetBits")
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // NewRoundStepMessage is sent for every step taken in the ConsensusState.
 // For every height/round/step transition.
@@ -1648,7 +1648,7 @@ func (m *NewRoundStepMessage) String() string {
 		m.Height, m.Round, m.Step, m.LastCommitRound)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // NewValidBlockMessage is sent when a validator observes a valid block B in some round r,
 // i.e., there is a Proposal for block B and 2/3+ prevotes for the block B in the round r.
@@ -1692,7 +1692,7 @@ func (m *NewValidBlockMessage) String() string {
 		m.Height, m.Round, m.BlockPartSetHeader, m.BlockParts, m.IsCommit)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // ProposalMessage is sent when a new block is proposed.
 type ProposalMessage struct {
@@ -1709,7 +1709,7 @@ func (m *ProposalMessage) String() string {
 	return fmt.Sprintf("[Proposal %v]", m.Proposal)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // ProposalPOLMessage is sent when a previous proposal is re-proposed.
 type ProposalPOLMessage struct {
@@ -1740,7 +1740,7 @@ func (m *ProposalPOLMessage) String() string {
 	return fmt.Sprintf("[ProposalPOL H:%v POLR:%v POL:%v]", m.Height, m.ProposalPOLRound, m.ProposalPOL)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // BlockPartMessage is sent when gossipping a piece of the proposed block.
 type BlockPartMessage struct {
@@ -1768,7 +1768,7 @@ func (m *BlockPartMessage) String() string {
 	return fmt.Sprintf("[BlockPart H:%v R:%v P:%v]", m.Height, m.Round, m.Part)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // VoteMessage is sent when voting for a proposal (or lack thereof).
 type VoteMessage struct {
@@ -1785,7 +1785,7 @@ func (m *VoteMessage) String() string {
 	return fmt.Sprintf("[Vote %v]", m.Vote)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // HasVoteMessage is sent to indicate that a particular vote has been received.
 type HasVoteMessage struct {
@@ -1817,7 +1817,7 @@ func (m *HasVoteMessage) String() string {
 	return fmt.Sprintf("[HasVote VI:%v V:{%v/%02d/%v}]", m.Index, m.Height, m.Round, m.Type)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // VoteSetMaj23Message is sent to indicate that a given BlockID has seen +2/3 votes.
 type VoteSetMaj23Message struct {
@@ -1849,7 +1849,7 @@ func (m *VoteSetMaj23Message) String() string {
 	return fmt.Sprintf("[VSM23 %v/%02d/%v %v]", m.Height, m.Round, m.Type, m.BlockID)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // VoteSetBitsMessage is sent to communicate the bit-array of votes seen for the BlockID.
 type VoteSetBitsMessage struct {
@@ -1883,7 +1883,7 @@ func (m *VoteSetBitsMessage) String() string {
 	return fmt.Sprintf("[VSB %v/%02d/%v %v %v]", m.Height, m.Round, m.Type, m.BlockID, m.Votes)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // HasProposalBlockPartMessage is sent to indicate that a particular block part has been received.
 type HasProposalBlockPartMessage struct {

@@ -101,7 +101,7 @@ func verifyCommitLightInternal(
 	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
 
 	// count all the remaining signatures
-	count := func(c CommitSig) bool { return true }
+	count := func(_ CommitSig) bool { return true }
 
 	// attempt to batch verify
 	if shouldBatchVerify(vals, commit) {
@@ -176,7 +176,7 @@ func verifyCommitLightTrustingInternal(
 	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
 
 	// count all the remaining signatures
-	count := func(c CommitSig) bool { return true }
+	count := func(_ CommitSig) bool { return true }
 
 	// attempt to batch verify commit. As the validator set doesn't necessarily
 	// correspond with the validator set that signed the block we need to look

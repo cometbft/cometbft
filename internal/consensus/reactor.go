@@ -588,10 +588,10 @@ OUTER_LOOP:
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 
-		//--------------------
+		// --------------------
 		// Send block part?
 		// (Note these can match on hash so round doesn't matter)
-		//--------------------
+		// --------------------
 
 		if part, continueLoop := pickPartToSend(logger, conR.conS.blockStore, rs, ps, prs); part != nil {
 			if ps.SendPartSetHasPart(part, prs) {
@@ -602,10 +602,10 @@ OUTER_LOOP:
 			continue OUTER_LOOP
 		}
 
-		//--------------------
+		// --------------------
 		// Send proposal?
 		// (If height and round match, and we have a proposal and they don't)
-		//--------------------
+		// --------------------
 
 		heightRoundMatch := (rs.Height == prs.Height) && (rs.Round == prs.Round)
 		proposalToSend := rs.Proposal != nil && !prs.Proposal
@@ -810,9 +810,8 @@ func pickPartToSend(
 				heightLogger.Error("Failed to load block meta",
 					"blockstoreBase", blockStoreBase, "blockstoreHeight", blockStore.Height())
 				return nil, false
-			} else {
-				ps.InitProposalBlockParts(blockMeta.BlockID.PartSetHeader)
 			}
+			ps.InitProposalBlockParts(blockMeta.BlockID.PartSetHeader)
 			// continue the loop since prs is a copy and not effected by this initialization
 			return nil, true // continue OUTER_LOOP
 		}

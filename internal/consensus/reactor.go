@@ -778,7 +778,6 @@ func pickVoteToSend(
 		}
 		if ec == nil {
 			return nil
-
 		}
 		if vote := ps.PickVoteToSend(ec); vote != nil {
 			logger.Debug("Picked Catchup commit to send", "height", prs.Height)

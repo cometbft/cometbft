@@ -3,6 +3,7 @@ package commands
 import (
 	"errors"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/spf13/cobra"
@@ -13,30 +14,45 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 )
 
-var CompactGoLevelDBCmd = &cobra.Command{
-	Use:     "experimental-compact-goleveldb",
-	Aliases: []string{"experimental_compact_goleveldb"},
-	Short:   "force compacts the CometBFT storage engine (only GoLevelDB supported)",
-	Long: `
-This is a temporary utility command that performs a force compaction on the state 
-and blockstores to reduce disk space for a pruning node. This should only be run 
+const (
+	flagDbNames = "db-names"
+)
+
+func CompactGoLevelDBCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "experimental-compact-goleveldb",
+		Short: "force compacts the CometBFT storage engine (only GoLevelDB supported)",
+		Long: `
+This is a temporary utility command that performs a force compaction on the state
+and blockstores to reduce disk space for a pruning node. This should only be run
 once the node has stopped. This command will likely be omitted in the future after
 the planned refactor to the storage engine.
 
 Currently, only GoLevelDB is supported.
 	`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if config.DBBackend != "goleveldb" {
-			return errors.New("compaction is currently only supported with goleveldb")
-		}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if config.DBBackend != "goleveldb" {
+				return errors.New("compaction is currently only supported with goleveldb")
+			}
 
-		compactGoLevelDBs(config.RootDir, logger)
-		return nil
-	},
+			dbNames, err := cmd.Flags().GetString(flagDbNames)
+			if err != nil {
+				return err
+			}
+			if dbNames == "" {
+				return errors.New("--db-names cannot be empty")
+			}
+
+			compactGoLevelDBs(config.RootDir, strings.Split(dbNames, ","), logger)
+			return nil
+		},
+	}
+
+	cmd.Flags().String(flagDbNames, "state,blockstore", "the golevel db names in /data to compact, e.g. state,blockstore,application")
+	return cmd
 }
 
-func compactGoLevelDBs(rootDir string, logger log.Logger) {
-	dbNames := []string{"state", "blockstore"}
+func compactGoLevelDBs(rootDir string, dbNames []string, logger log.Logger) {
 	o := &opt.Options{
 		DisableSeeksCompaction: true,
 	}

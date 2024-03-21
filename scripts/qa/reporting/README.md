@@ -75,23 +75,16 @@ python3 latency_plotter.py /path/to/csv/files/raw.csv
 
 ## Prometheus metrics
 
-1. Ensure that Prometheus is running locally and listening on port 9090. 
-2. Tweak the script to your needs
-   1. Adjust the time window
-   2. Select the right fork 
-   3. Select the right test case
-   4. Tweak/add/remove metrics
-3. Run the script as follows
-   ```bash
-   # Do the following while ensuring that the virtual environment is activated (see
-   # the Setup steps).
-   #
-   # This will generate a series of plots in the folder `imgs` of the current folder.
+The `prometheus_plotter.py` script generates a series of plots in the folder `imgs` of the current folder.
 
-   mkdir imgs
-   python3 prometheus_plotter.py
-   ```
-4. Plots are saved in the `imgs` folder.
+Before running the script, check that a Prometheus server in `localhost:9090`. This is the default URL hardcoded in the script.
+
+Run the script from the virtual environment as follows:
+```bash
+python3 prometheus_plotter.py <release_name> <start_time> <window_size> <test_case>
+```
+
+For details and examples of how to run the script, just run `python3 prometheus_plotter.py` 
 
 [matplotlib]: https://matplotlib.org/
 [pandas]: https://pandas.pydata.org

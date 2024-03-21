@@ -1,4 +1,4 @@
-# pip install numpy pandas matplotlib requests 
+# pip install requests matplotlib numpy pandas prometheus-pandas
 import os
 import requests 
 import sys

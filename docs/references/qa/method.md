@@ -125,10 +125,11 @@ This section explains how the tests were carried out for reproducibility purpose
       * The script runs 90-seconds-long experiments in a loop with different load values.
     * Follow the steps of the [Result Extraction](#result-extraction) section below to obtain the file `report_tabbed.txt`.
 
-6. Run several transaction load instances, each of 90 seconds, using a load somewhat below the saturation point.
+6. Run several transaction load instances (typically 5), each of 90 seconds, using a load somewhat below the saturation point.
   * Set the Makefile variables `LOAD_CONNECTIONS`, `LOAD_TX_RATE`, to values that will produce the desired transaction load.
-  * Set `LOAD_TOTAL_TIME` to 90 (seconds).
-  * Run "make runload" and wait for it to complete. You may want to run this several times so the data from different runs can be compared.
+  * Set `LOAD_TOTAL_TIME` to 91 (seconds). The extra second is because the last transaction batch
+    coincides with the end of the experiment and is thus not sent.
+  * Run `make runload` and wait for it to complete. You may want to run this several times so the data from different runs can be compared.
 7. Run `make retrieve-data` to gather all relevant data from the testnet into the orchestrating machine
     * Alternatively, you may want to run `make retrieve-prometheus-data` and `make retrieve-blockstore` separately.
       The end result will be the same.

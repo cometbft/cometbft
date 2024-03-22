@@ -6,6 +6,7 @@ import (
 	"fmt"
 	mrand "math/rand"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -93,6 +94,21 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	case <-ch:
 	case <-timer.C:
 		t.Fatal("Expected to fire")
+	}
+}
+
+func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
+	txInfo := TxInfo{SenderID: 0}
+	for i, tx := range txs {
+		if err := mp.CheckTx(tx, nil, txInfo); err != nil {
+			// Skip invalid txs.
+			// TestMempoolFilters will fail otherwise. It asserts a number of txs
+			// returned.
+			if IsPreCheckError(err) {
+				continue
+			}
+			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
+		}
 	}
 }
 
@@ -646,7 +662,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	defer cleanup()
 
 	// add tx0
-	var tx0 = kvstore.NewTxFromID(0)
+	tx0 := kvstore.NewTxFromID(0)
 	err := mp.CheckTx(tx0, nil, TxInfo{})
 	require.NoError(t, err)
 	err = mp.FlushAppConn()
@@ -717,6 +733,73 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	}
 
 	require.NoError(t, mp.FlushAppConn())
+}
+
+func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	for h := 1; h <= 100; h++ {
+		// Two concurrent threads for each height. One updates the mempool with one valid tx,
+		// writing the pool's height; the other, receives a CheckTx response, reading the height.
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		go func(h int) {
+			defer wg.Done()
+
+			err := mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+			require.NoError(t, err)
+			require.Equal(t, int64(h), mp.height.Load(), "height mismatch")
+		}(h)
+
+		go func(h int) {
+			defer wg.Done()
+
+			tx := kvstore.NewTxFromID(h)
+			mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
+			require.Equal(t, h, mp.Size(), "pool size mismatch")
+		}(h)
+
+		wg.Wait()
+	}
+}
+
+func TestMempoolNotifyTxsAvailable(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	mp.EnableTxsAvailable()
+	assert.NotNil(t, mp.txsAvailable)
+	require.False(t, mp.notifiedTxsAvailable.Load())
+
+	// Adding a new valid tx to the pool will notify a tx is available
+	tx := kvstore.NewTxFromID(1)
+	mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
+	require.Equal(t, 1, mp.Size(), "pool size mismatch")
+	require.True(t, mp.notifiedTxsAvailable.Load())
+	require.Len(t, mp.TxsAvailable(), 1)
+	<-mp.TxsAvailable()
+
+	// Receiving CheckTx response for a tx already in the pool should not notify of available txs
+	mp.resCbFirstTime(tx, TxInfo{}, abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK}))
+	require.Equal(t, 1, mp.Size())
+	require.True(t, mp.notifiedTxsAvailable.Load())
+	require.Empty(t, mp.TxsAvailable())
+
+	// Updating the pool will remove the tx and set the variable to false
+	err := mp.Update(1, []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+	require.NoError(t, err)
+	require.Zero(t, mp.Size())
+	require.False(t, mp.notifiedTxsAvailable.Load())
 }
 
 // caller must close server

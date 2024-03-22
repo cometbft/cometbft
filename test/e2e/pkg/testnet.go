@@ -65,29 +65,32 @@ const (
 
 // Testnet represents a single testnet.
 type Testnet struct {
-	Name                       string
-	File                       string
-	Dir                        string
-	IP                         *net.IPNet
-	InitialHeight              int64
-	InitialState               map[string]string
-	Validators                 map[*Node]int64
-	ValidatorUpdates           map[int64]map[*Node]int64
-	Nodes                      []*Node
-	KeyType                    string
-	Evidence                   int
-	LoadTxSizeBytes            int
-	LoadTxBatchSize            int
-	LoadTxConnections          int
-	ABCIProtocol               string
-	PrepareProposalDelay       time.Duration
-	ProcessProposalDelay       time.Duration
-	CheckTxDelay               time.Duration
-	VoteExtensionDelay         time.Duration
-	FinalizeBlockDelay         time.Duration
-	UpgradeVersion             string
-	Prometheus                 bool
-	VoteExtensionsEnableHeight int64
+	Name                                                 string
+	File                                                 string
+	Dir                                                  string
+	IP                                                   *net.IPNet
+	InitialHeight                                        int64
+	InitialState                                         map[string]string
+	Validators                                           map[*Node]int64
+	ValidatorUpdates                                     map[int64]map[*Node]int64
+	Nodes                                                []*Node
+	KeyType                                              string
+	Evidence                                             int
+	LoadTxSizeBytes                                      int
+	LoadTxBatchSize                                      int
+	LoadTxConnections                                    int
+	ABCIProtocol                                         string
+	PrepareProposalDelay                                 time.Duration
+	ProcessProposalDelay                                 time.Duration
+	CheckTxDelay                                         time.Duration
+	VoteExtensionDelay                                   time.Duration
+	FinalizeBlockDelay                                   time.Duration
+	UpgradeVersion                                       string
+	Prometheus                                           bool
+	VoteExtensionsEnableHeight                           int64
+	VoteExtensionsUpdateHeight                           int64
+	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
+	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -165,6 +168,9 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		UpgradeVersion:             manifest.UpgradeVersion,
 		Prometheus:                 manifest.Prometheus,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
+		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
+		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -336,6 +342,37 @@ func (t Testnet) Validate() error {
 	}
 	if len(t.Nodes) == 0 {
 		return errors.New("network has no nodes")
+	}
+	if t.VoteExtensionsUpdateHeight < -1 {
+		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
+			"or -1 (Genesis); update height %d", t.VoteExtensionsUpdateHeight)
+	}
+	if t.VoteExtensionsEnableHeight < 0 {
+		return fmt.Errorf("value of VoteExtensionsEnableHeight must be positive, or 0 (disable); "+
+			"enable height %d", t.VoteExtensionsEnableHeight)
+	}
+	if t.VoteExtensionsUpdateHeight > 0 && t.VoteExtensionsUpdateHeight < t.InitialHeight {
+		return fmt.Errorf("a value of VoteExtensionsUpdateHeight greater than 0 "+
+			"must not be less than InitialHeight; "+
+			"update height %d, initial height %d",
+			t.VoteExtensionsUpdateHeight, t.InitialHeight,
+		)
+	}
+	if t.VoteExtensionsEnableHeight > 0 {
+		if t.VoteExtensionsEnableHeight < t.InitialHeight {
+			return fmt.Errorf("a value of VoteExtensionsEnableHeight greater than 0 "+
+				"must not be less than InitialHeight; "+
+				"enable height %d, initial height %d",
+				t.VoteExtensionsEnableHeight, t.InitialHeight,
+			)
+		}
+		if t.VoteExtensionsEnableHeight <= t.VoteExtensionsUpdateHeight {
+			return fmt.Errorf("a value of VoteExtensionsEnableHeight greater than 0 "+
+				"must be greater than VoteExtensionsUpdateHeight; "+
+				"update height %d, enable height %d",
+				t.VoteExtensionsUpdateHeight, t.VoteExtensionsEnableHeight,
+			)
+		}
 	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {

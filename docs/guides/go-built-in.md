@@ -40,14 +40,13 @@ guarantees as two processes would be communicating via established binary protoc
 CometBFT will not have access to application's state.
 If that is the way you wish to proceed, use the [Creating an application in Go](./go.md) guide instead of this one.
 
-
 ## 1.1 Installing Go
 
 Verify that you have the latest version of Go installed (refer to the [official guide for installing Go](https://golang.org/doc/install)):
 
 ```bash
 $ go version
-go version go1.20.1 darwin/amd64
+go version go1.21.1 darwin/amd64
 ```
 
 ## 1.2 Creating a new Go project
@@ -93,19 +92,27 @@ After running the above commands you will see two generated files, `go.mod` and 
 The go.mod file should look similar to:
 
 ```go
-module github.com/me/example
+module kvstore
 
-go 1.20
+go 1.21.1
 
 require (
-    github.com/cometbft/cometbft v0.38.0
+github.com/cometbft/cometbft v0.38.0
 )
+```
+
+XXX: CometBFT `v0.38.0` uses a slightly outdated `gogoproto` library, which
+may fail to compile with newer Go versions. To avoid any compilation errors,
+upgrade `gogoproto` manually:
+
+```bash
+go get github.com/cosmos/gogoproto@v1.4.11
 ```
 
 As you write the kvstore application, you can rebuild the binary by
 pulling any new dependencies and recompiling it.
 
-```sh
+```bash
 go get
 go build
 ```
@@ -115,7 +122,7 @@ go build
 CometBFT communicates with the application through the Application
 BlockChain Interface (ABCI). The messages exchanged through the interface are
 defined in the ABCI [protobuf
-file](https://github.com/cometbft/cometbft/blob/v0.37.x/proto/tendermint/abci/types.proto).
+file](https://github.com/cometbft/cometbft/blob/v0.38.x/proto/tendermint/abci/types.proto).
 
 We begin by creating the basic scaffolding for an ABCI application by
 creating a new type, `KVStoreApplication`, which implements the
@@ -128,6 +135,7 @@ package main
 
 import (
     abcitypes "github.com/cometbft/cometbft/abci/types"
+    "context"
 )
 
 type KVStoreApplication struct{}
@@ -143,7 +151,7 @@ func (app *KVStoreApplication) Info(_ context.Context, info *abcitypes.RequestIn
 }
 
 func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.RequestQuery) (*abcitypes.ResponseQuery, error) {
-    return &abcitypes.ResponseQuery{}
+    return &abcitypes.ResponseQuery{}, nil
 }
 
 func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.RequestCheckTx) (*abcitypes.ResponseCheckTx, error) {
@@ -373,13 +381,12 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.R
 
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
-This can happen if the application state is used to determine transaction validity. 
+This can happen if the application state is used to determine transaction validity.
 The application state may have changed between the initial execution of `CheckTx` and the transaction delivery in `FinalizeBlock` in a way that rendered the transaction no longer valid.
 
 **Note** that `FinalizeBlock` cannot yet commit the Badger transaction we were building during the block execution.
 
 Other methods, such as `Query`, rely on a consistent view of the application's state, the application should only update its state by committing the Badger transactions when the full block has been delivered and the Commit method is invoked.
-
 
 The `Commit` method tells the application to make permanent the effects of
 the application transactions.
@@ -459,6 +466,7 @@ The application is free to modify the group before returning from the call, as l
 does not use more bytes than `RequestPrepareProposal.max_tx_bytes`
 For example, the application may reorder, add, or even remove transactions from the group to improve the
 execution of the block once accepted.
+
 In the following code, the application simply returns the unmodified group of transactions:
 
 ```go
@@ -472,6 +480,7 @@ its blessing before voting to accept the proposal.
 
 This mechanism may be used for different reasons, for example to deal with blocks manipulated
 by malicious nodes, in which case the block should not be considered valid.
+
 The following code simply accepts all proposals:
 
 ```go
@@ -482,7 +491,8 @@ func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abci
 
 ## 1.4 Starting an application and a CometBFT instance in the same process
 
-Now that we have the basic functionality of our application in place, let's put it all together inside of our main.go file.
+Now that we have the basic functionality of our application in place, let's put
+it all together inside of our `main.go` file.
 
 Change the contents of your `main.go` file to the following.
 
@@ -524,7 +534,7 @@ func main() {
     config := cfg.DefaultConfig()
     config.SetRoot(homeDir)
     viper.SetConfigFile(fmt.Sprintf("%s/%s", homeDir, "config/config.toml"))
-    
+
     if err := viper.ReadInConfig(); err != nil {
         log.Fatalf("Reading config: %v", err)
     }
@@ -536,7 +546,7 @@ func main() {
     }
     dbPath := filepath.Join(homeDir, "badger")
     db, err := badger.Open(badger.DefaultOptions(dbPath))
-    
+
     if err != nil {
         log.Fatalf("Opening database: %v", err)
     }
@@ -564,7 +574,7 @@ func main() {
     if err != nil {
         log.Fatalf("failed to parse log level: %v", err)
     }
-    
+
     node, err := nm.NewNode(
         config,
         pv,
@@ -573,13 +583,13 @@ func main() {
         nm.DefaultGenesisDocProviderFunc(config),
         nm.DefaultDBProvider,
         nm.DefaultMetricsProvider(config.Instrumentation),
-        logger
+        logger,
     )
 
     if err != nil {
         log.Fatalf("Creating node: %v", err)
     }
-    
+
     node.Start()
     defer func() {
         node.Stop()
@@ -663,7 +673,7 @@ node, err := nm.NewNode(
     nm.DefaultGenesisDocProviderFunc(config),
     nm.DefaultDBProvider,
     nm.DefaultMetricsProvider(config.Instrumentation),
-logger)
+    logger)
 
 if err != nil {
     log.Fatalf("Creating node: %v", err)
@@ -692,7 +702,7 @@ signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 Our application is almost ready to run, but first we'll need to populate the CometBFT configuration files.
 The following command will create a `cometbft-home` directory in your project and add a basic set of configuration files in `cometbft-home/config/`.
-For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.37.x/docs/core/configuration.md).
+For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/core/configuration.md).
 
 From the root of your project, run:
 
@@ -749,7 +759,6 @@ The blocks, as you can see from the `num_valid_txs=0` part, are empty, but let's
 Let's try submitting a transaction to our new application.
 Open another terminal window and run the following curl command:
 
-
 ```bash
 curl -s 'localhost:26657/broadcast_tx_commit?tx="cometbft=rocks"'
 ```
@@ -781,11 +790,9 @@ The response contains a `base64` encoded representation of the data we submitted
 To get the original value out of this data, we can use the `base64` command line utility:
 
 ```bash
-echo cm9ja3M=" | base64 -d
+echo "cm9ja3M=" | base64 -d
 ```
 
 ## Outro
 
-I hope everything went smoothly and your first, but hopefully not the last,
-CometBFT application is up and running. If not, please [open an issue on
-Github](https://github.com/cometbft/cometbft/issues/new/choose).
+Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/cosmosnetwork) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.

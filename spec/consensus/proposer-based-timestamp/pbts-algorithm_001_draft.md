@@ -77,10 +77,10 @@ function StartRound(round) {
 ```go
 upon timely(⟨PROPOSAL, h_p, round_p, (v,t), −1⟩) from proposer(h_p, round_p) while step_p = propose do {
   if valid(v) ∧ (lockedRound_p = −1 ∨ lockedValue_p = v) {
-    broadcast ⟨PREVOTE, h_p, round_p, id(v,t)⟩ 
+    broadcast ⟨PREVOTE, h_p, round_p, id(v,t)⟩
   }
   else {
-    broadcast ⟨PREVOTE, h_p, round_p, nil⟩ 
+    broadcast ⟨PREVOTE, h_p, round_p, nil⟩
   }
   step_p ← prevote
 }
@@ -96,7 +96,7 @@ This gives the following rule:
 #### **[PBTS-ALG-OLD-PREVOTE.0]**
 
 ```go
-upon timely(⟨PROPOSAL, h_p, round_p, (v, tprop), vr⟩) from proposer(h_p, round_p) AND 2f + 1 ⟨PREVOTE, h_p, vr, id((v, tvote)⟩ 
+upon timely(⟨PROPOSAL, h_p, round_p, (v, tprop), vr⟩) from proposer(h_p, round_p) AND 2f + 1 ⟨PREVOTE, h_p, vr, id((v, tvote)⟩
 while step_p = propose ∧ (vr ≥ 0 ∧ vr < round_p) do {
   if valid(v) ∧ (lockedRound_p ≤ vr ∨ lockedValue_p = v) {
     broadcast ⟨PREVOTE, h_p, roundp, id(v, tprop)⟩
@@ -120,10 +120,10 @@ upon timely(⟨PROPOSAL, h_p, round_p, (v,t), ∗⟩) from proposer(h_p, round_p
   if step_p = prevote {
     lockedValue_p ← v
     lockedRound_p ← round_p
-    broadcast ⟨PRECOMMIT, h_p, round_p, id(v,t))⟩ 
+    broadcast ⟨PRECOMMIT, h_p, round_p, id(v,t))⟩
     step_p ← precommit
   }
-  validValue_p ← v 
+  validValue_p ← v
   validRound_p ← round_p
 }
 ```
@@ -142,7 +142,7 @@ upon ⟨PROPOSAL, h_p, r, (v,t), ∗⟩ from proposer(h_p, r) AND 2f + 1 ⟨PREC
   if valid(v) {
     decision_p [h_p] = (v,t) // decide on time too
     h_p ← h_p + 1
-    reset lockedRound_p , lockedValue_p, validRound_p and validValue_p to initial values and empty message log 
+    reset lockedRound_p , lockedValue_p, validRound_p and validValue_p to initial values and empty message log
     StartRound(0)
   }
 }

@@ -5,32 +5,53 @@ title: Requirements for the Application
 
 # Requirements for the Application
 
-- [Formal Requirements](#formal-requirements)
-  - [Consensus Connection Requirements](#consensus-connection-requirements)
-  - [Mempool Connection Requirements](#mempool-connection-requirements)
-- [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
-  - [Connection State](#connection-state)
-    - [Concurrency](#concurrency)
-    - [Finalize Block](#finalizeblock)
-    - [Commit](#commit)
-    - [Candidate States](#candidate-states)
-  - [States and ABCI++ Connections](#states-and-abci%2B%2B-connections) 
-    - [Consensus Connection](#consensus-connection)
-    - [Mempool Connection](#mempool-connection)
-    - [Info/Query Connection](#infoquery-connection)
-    - [Snapshot Connection](#snapshot-connection)
-  - [Transaction Results](#transaction-results)
-  - [Updating the Validator Set](#updating-the-validator-set)
-  - [Consensus Parameters](#consensus-parameters)
-    - [List of Parameters](#list-of-parameters)
-    - [Updating Consensus Parameters](#updating-consensus-parameters)
-  - [Query](#query)
-    - [Query Proofs](#query-proofs)
-    - [Peer Filtering](#peer-filtering)
-    - [Paths](#paths)
-  - [Crash Recovery](#crash-recovery)
-  - [State Sync](#state-sync)
-- [Application configuration required to switch to ABCI2.0](#application-configuration-required-to-switch-to-abci-20)
+- [Requirements for the Application](#requirements-for-the-application)
+  - [Formal Requirements](#formal-requirements)
+    - [Consensus Connection Requirements](#consensus-connection-requirements)
+    - [Mempool Connection Requirements](#mempool-connection-requirements)
+  - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
+    - [Connection State](#connection-state)
+      - [Concurrency](#concurrency)
+      - [FinalizeBlock](#finalizeblock)
+      - [Commit](#commit)
+      - [Candidate States](#candidate-states)
+    - [States and ABCI++ Connections](#states-and-abci-connections)
+      - [Consensus Connection](#consensus-connection)
+      - [Mempool Connection](#mempool-connection)
+        - [Replay Protection](#replay-protection)
+      - [Info/Query Connection](#infoquery-connection)
+      - [Snapshot Connection](#snapshot-connection)
+    - [Transaction Results](#transaction-results)
+      - [Gas](#gas)
+      - [Specifics of `ResponseCheckTx`](#specifics-of-responsechecktx)
+      - [Specifics of `ExecTxResult`](#specifics-of-exectxresult)
+    - [Updating the Validator Set](#updating-the-validator-set)
+    - [Consensus Parameters](#consensus-parameters)
+      - [List of Parameters](#list-of-parameters)
+        - [BlockParams.MaxBytes](#blockparamsmaxbytes)
+        - [BlockParams.MaxGas](#blockparamsmaxgas)
+        - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
+        - [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
+        - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
+        - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
+        - [VersionParams.App](#versionparamsapp)
+        - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
+      - [Updating Consensus Parameters](#updating-consensus-parameters)
+        - [`InitChain`](#initchain)
+        - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
+    - [`Query`](#query)
+      - [Query Proofs](#query-proofs)
+      - [Peer Filtering](#peer-filtering)
+      - [Paths](#paths)
+    - [Crash Recovery](#crash-recovery)
+    - [State Sync](#state-sync)
+      - [Taking Snapshots](#taking-snapshots)
+      - [Bootstrapping a Node](#bootstrapping-a-node)
+        - [Snapshot Discovery](#snapshot-discovery)
+        - [Snapshot Restoration](#snapshot-restoration)
+        - [Snapshot Verification](#snapshot-verification)
+        - [Transition to Consensus](#transition-to-consensus)
+  - [Application configuration required to switch to ABCI 2.0](#application-configuration-required-to-switch-to-abci-20)
 
 
 ## Formal Requirements
@@ -344,7 +365,7 @@ to bound memory usage. As a general rule, the Application should be ready to dis
 before `FinalizeBlock`, even if one of them might end up corresponding to the
 decided block and thus have to be reexecuted upon `FinalizeBlock`.
 
-### States and ABCI++ Connections
+### [States and ABCI++ Connections](#states-and-abci-connections)
 
 #### Consensus Connection
 
@@ -590,7 +611,7 @@ These are the current consensus parameters (as of v0.37.x):
 10. [TimeoutParams.Vote](#timeoutparamsvote)
 11. [TimeoutParams.VoteDelta](#timeoutparamsvotedelta)
 12. [TimeoutParams.Commit](#timeoutparamscommit)
-13. [TimeoutParams.BypassCommitTimeout](#timeoutparamsbypasscommittimeout) 
+13. [TimeoutParams.BypassCommitTimeout](#timeoutparamsbypasscommittimeout)
 -->
 
 ##### BlockParams.MaxBytes
@@ -598,8 +619,15 @@ These are the current consensus parameters (as of v0.37.x):
 The maximum size of a complete Protobuf encoded block.
 This is enforced by the consensus algorithm.
 
-This implies a maximum transaction size that is this `MaxBytes`, less the expected size of
+This implies a maximum transaction size that is `MaxBytes`, less the expected size of
 the header, the validator set, and any included evidence in the block.
+
+The Application should be aware that honest validators _may_ produce and
+broadcast blocks with up to the configured `MaxBytes` size.
+As a result, the consensus
+[timeout parameters](../../docs/core/configuration.md#consensus-timeouts-explained)
+adopted by nodes should be configured so as to account for the worst-case
+latency for the delivery of a full block with `MaxBytes` size to all validators.
 
 If the Application wants full control over the size of blocks,
 it can do so by enforcing a byte limit set up at the Application level.
@@ -614,6 +642,13 @@ If the Application sets value -1, consensus will:
 - will provide *all* transactions in the mempool in calls to `PrepareProposal`
 
 Must have `MaxBytes == -1` OR `0 < MaxBytes <= 100 MB`.
+
+> Bear in mind that the default value for the `BlockParams.MaxBytes` consensus
+> parameter accepts as valid blocks with size up to 21 MB.
+> If the Application's use case does not need blocks of that size,
+> or if the impact (specially on bandwidth consumption and block latency)
+> of propagating blocks of that size was not evaluated,
+> it is strongly recommended to wind down this default value.
 
 ##### BlockParams.MaxGas
 
@@ -760,8 +795,8 @@ include the vote extensions from height `H`. For all heights after `H`
   attached. Nevertheless, the application MAY provide 0-length
   extensions.
 
-Must always be set to a future height. Once set to a value different from
-0, its value must not be changed.
+Must always be set to a future height, 0, or the same height that was previously set.
+Once the chain's height reaches the value set, it cannot be changed to a different value.
 
 #### Updating Consensus Parameters
 
@@ -885,33 +920,33 @@ implementation of
 
 ### Crash Recovery
 
-CometBFT and the application are expected to crash together and there should not 
+CometBFT and the application are expected to crash together and there should not
 exist a scenario where the application has persisted state of a height greater than the
 latest height persisted by CometBFT.
 
-In practice, persisting the state of a height consists of three steps, the last of which 
+In practice, persisting the state of a height consists of three steps, the last of which
 is the call to the application's `Commit` method, the only place where the application is expected to
 persist/commit its state.
 On startup (upon recovery), CometBFT calls the `Info` method on the Info Connection to get the latest
 committed state of the app. The app MUST return information consistent with the
-last block for which it successfully completed `Commit`. 
+last block for which it successfully completed `Commit`.
 
-The three steps performed before the state of a height is considered persisted are: 
+The three steps performed before the state of a height is considered persisted are:
 - The block is stored by CometBFT in the blockstore
 - CometBFT has stored the state returned by the application through `FinalizeBlockResponse`
-- The application has committed its state within `Commit`. 
-  
+- The application has committed its state within `Commit`.
+
 The following diagram depicts the order in which these events happen, and the corresponding
 ABCI functions that are called and executed by CometBFT and the application:
 
 
-``` 
+```
 APP:                                              Execute block                         Persist application state
                                                  /     return ResultFinalizeBlock            /
-                                                /                                           /  
+                                                /                                           /
 Event: ------------- block_stored ------------ / ------------ state_stored --------------- / ----- app_persisted_state
                           |                   /                   |                       /        |
-CometBFT: Decide --- Persist block -- Call FinalizeBlock - Persist results ---------- Call Commit -- 
+CometBFT: Decide --- Persist block -- Call FinalizeBlock - Persist results ---------- Call Commit --
             on        in the                                (txResults, validator
            Block      block store                              updates...)
 
@@ -919,26 +954,26 @@ CometBFT: Decide --- Persist block -- Call FinalizeBlock - Persist results -----
 
 As these three steps are not atomic, we observe different cases based on which steps have been executed
 before the crash occurred
-(we assume that at least `block_stored` has been executed, otherwise, there is no state persisted, 
+(we assume that at least `block_stored` has been executed, otherwise, there is no state persisted,
 and the operations for this height are repeated entirely):
 
 - `block_stored`: we replay `FinalizeBlock` and the steps afterwards.
 - `block_stored` and `state_stored`: As the app did not persist its state within `Commit`, we need to re-execute
-  `FinalizeBlock` to retrieve the results and compare them to the state stored by CometBFT within `state_stored`. 
+  `FinalizeBlock` to retrieve the results and compare them to the state stored by CometBFT within `state_stored`.
   The expected case is that the states will match, otherwise CometBFT panics.
-- `block_stored`, `state_stored`, `app_persisted_state`: we move on to the next height. 
+- `block_stored`, `state_stored`, `app_persisted_state`: we move on to the next height.
 
 Based on the sequence of these events, CometBFT will panic if any of the steps in the sequence happen out of order,
-that is if: 
+that is if:
 - The application has persisted a block at a height higher than the blocked saved during `state_stored`.
 - The `block_stored` step persisted a block at a height smaller than the `state_stored`
-- And the difference between the heights of the blocks persisted by `state_stored` and `block_stored` is more 
+- And the difference between the heights of the blocks persisted by `state_stored` and `block_stored` is more
 than 1 (this corresponds to a scenario where we stored two blocks in the block store but never persisted the state of the first
 block, which should never happen).
 
-A special case is when a crash happens before the first block is committed - that is, after calling 
+A special case is when a crash happens before the first block is committed - that is, after calling
 `InitChain`. In that case, the application's state should still be at height 0 and thus `InitChain`
-will be called again. 
+will be called again.
 
 
 ### State Sync
@@ -1086,11 +1121,11 @@ from the genesis file and light client RPC servers. It also calls `Info` to veri
   current height's block header
 
 Once the state machine has been restored and CometBFT has gathered this additional
-information, it transitions to consensus. As of ABCI 2.0, CometBFT ensures the neccessary conditions
-to switch are met [RFC-100](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history).
-From the application's point of view, these operations are transparent, unless the application has just upgraded to ABCI 2.0. 
+information, it transitions to consensus. As of ABCI 2.0, CometBFT ensures the necessary conditions
+to switch are met [RFC-100](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/rfc/rfc-100-abci-vote-extension-propag.md#base-implementation-persist-and-propagate-extended-commit-history).
+From the application's point of view, these operations are transparent, unless the application has just upgraded to ABCI 2.0.
 In that case, the application needs to be properly configured and aware of certain constraints in terms of when
-to provide vote extensions. More details can be found in the section below. 
+to provide vote extensions. More details can be found in the section below.
 
 Once a node switches to consensus, it operates like any other node, apart from having a truncated block history at the height of the restored snapshot.
 
@@ -1098,12 +1133,12 @@ Once a node switches to consensus, it operates like any other node, apart from h
 
 Introducing vote extensions requires changes to the configuration of the application.
 
-First of all, switching to a version of CometBFT with vote extensions, requires a coordinated upgrade. 
-For a detailed description on the upgrade path, please refer to the corresponding 
-[section](./../../docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
+First of all, switching to a version of CometBFT with vote extensions, requires a coordinated upgrade.
+For a detailed description on the upgrade path, please refer to the corresponding
+[section](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/rfc/rfc-100-abci-vote-extension-propag.md#upgrade-path) in RFC-100.
 
-There is a newly introduced [**consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`. 
-This parameter represents the height at which vote extensions are 
+There is a newly introduced [**consensus parameter**](./abci%2B%2B_app_requirements.md#abciparamsvoteextensionsenableheight): `VoteExtensionsEnableHeight`.
+This parameter represents the height at which vote extensions are
 required for consensus to proceed, with 0 being the default value (no vote extensions).
 A chain can enable vote extensions either:
 * at genesis by setting `VoteExtensionsEnableHeight` to be equal, e.g., to the `InitialHeight`
@@ -1112,7 +1147,7 @@ A chain can enable vote extensions either:
 
 Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,
 the value of `VoteExtensionsEnableHeight` MAY be set to some height, *h<sub>e</sub>*,
-which MUST be higher than the current height of the chain. Thus the earliest value for 
+which MUST be higher than the current height of the chain. Thus the earliest value for
  *h<sub>e</sub>* is  *h<sub>u</sub>* + 1.
 
 Once a node reaches the configured height,
@@ -1124,7 +1159,7 @@ Likewise, for all heights *h < h<sub>e</sub>*, any precommit messages that *do* 
 will also be rejected as malformed.
 Height *h<sub>e</sub>* is somewhat special, as calls to `PrepareProposal` MUST NOT
 have vote extension data, but all precommit votes in that height MUST carry a vote extension,
-even if the extension is `nil`. 
+even if the extension is `nil`.
 Height *h<sub>e</sub> + 1* is the first height for which `PrepareProposal` MUST have vote
 extension data and all precommit votes in that height MUST have a vote extension.
 

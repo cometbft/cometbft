@@ -1,3 +1,7 @@
+---
+order: 1
+---
+
 # P2P Config
 
 Here we describe configuration options around the Peer Exchange.

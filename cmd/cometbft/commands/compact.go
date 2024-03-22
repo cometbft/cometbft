@@ -49,7 +49,6 @@ Currently, only GoLevelDB is supported.
 	}
 
 	cmd.Flags().String(flagDbNames, "state,blockstore", "the golevel db names in /data to compact, e.g. state,blockstore,application")
-
 	return cmd
 }
 

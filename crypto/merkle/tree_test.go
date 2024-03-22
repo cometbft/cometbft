@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
-	. "github.com/cometbft/cometbft/libs/test"
+	"github.com/cometbft/cometbft/libs/test"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
 )
@@ -92,11 +92,11 @@ func TestProof(t *testing.T) {
 		proof.Aunts = origAunts
 
 		// Mutating the itemHash should make it fail.
-		err = proof.Verify(rootHash, MutateByteSlice(item))
+		err = proof.Verify(rootHash, test.MutateByteSlice(item))
 		require.Error(t, err, "Expected verification to fail for mutated leaf hash")
 
 		// Mutating the rootHash should make it fail.
-		err = proof.Verify(MutateByteSlice(rootHash), item)
+		err = proof.Verify(test.MutateByteSlice(rootHash), item)
 		require.Error(t, err, "Expected verification to fail for mutated root hash")
 	}
 }

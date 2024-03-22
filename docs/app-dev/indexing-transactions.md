@@ -1,5 +1,5 @@
 ---
-order: 6
+order: 5
 ---
 
 # Indexing Transactions
@@ -14,11 +14,7 @@ the block itself is never stored.
 
 Each event contains a type and a list of attributes, which are key-value pairs
 denoting something about what happened during the method's execution. For more
-details on `Events`, see the
-
-[ABCI](https://github.com/cometbft/cometbft/blob/v0.38.x/spec/abci/abci++_basic_concepts.md#events)
-
-documentation.
+details on `Events`, see the [ABCI][abci-events] documentation.
 
 An `Event` has a composite key associated with it. A `compositeKey` is
 constructed by its type and key separated by a dot.
@@ -36,7 +32,7 @@ would be equal to the composite key of `jack.account.number`.
 By default, CometBFT will index all transactions by their respective hashes
 and height and blocks by their height.
 
-CometBFT allows for different events within the same height to have 
+CometBFT allows for different events within the same height to have
 equal attributes.
 
 ## Configuration
@@ -74,8 +70,9 @@ entirely in the future.
 
 **Implementation and data layout**
 
-The kv indexer stores each attribute of an event individually, by creating a composite key 
+The kv indexer stores each attribute of an event individually, by creating a composite key
 with
+
 - event type,
 - attribute key,
 - attribute value,
@@ -83,7 +80,7 @@ with
 - the height, and
 - event counter.
  For example the following events:
- 
+
 ```
 Type: "transfer",
   Attributes: []abci.EventAttribute{
@@ -92,9 +89,9 @@ Type: "transfer",
    {Key: "balance", Value: "100", Index: true},
    {Key: "note", Value: "nothing", Index: true},
    },
- 
+
 ```
- 
+
 ```
 Type: "transfer",
   Attributes: []abci.EventAttribute{
@@ -105,7 +102,7 @@ Type: "transfer",
    },
 ```
 
-will be represented as follows in the store, assuming these events result from the `FinalizeBlock` call for height 1: 
+will be represented as follows in the store, assuming these events result from the `FinalizeBlock` call for height 1:
 
 ```
 Key                                 value
@@ -119,12 +116,13 @@ transferSenderTomFinalizeBlock12           1
 transferRecepientAliceFinalizeBlock12      1
 transferBalance200FinalizeBlock12          1
 transferNodeNothingFinalizeBlock12         1
- 
+
 ```
-The event number is a local variable kept by the indexer and incremented when a new event is processed. 
-It is an `int64` variable and has no other semantics besides being used to associate attributes belonging to the same events within a height. 
+
+The event number is a local variable kept by the indexer and incremented when a new event is processed.
+It is an `int64` variable and has no other semantics besides being used to associate attributes belonging to the same events within a height.
 This variable is not atomically incremented as event indexing is deterministic. **Should this ever change**, the event id generation
-will be broken. 
+will be broken.
 
 #### PostgreSQL
 
@@ -236,7 +234,7 @@ You can query for a paginated set of transaction by their events by calling the
 curl "localhost:26657/tx_search?query=\"message.sender='cosmos1...'\"&prove=true"
 ```
 
-Check out [API docs](https://docs.cometbft.com/v0.38.x/rpc/#/Info/tx_search)
+Check out [API docs](https://docs.cometbft.com/v0.38/rpc/#/Info/tx_search)
 for more information on query syntax and other options.
 
 ## Subscribing to Transactions
@@ -255,7 +253,7 @@ a query to `/subscribe` RPC endpoint.
 }
 ```
 
-Check out [API docs](https://docs.cometbft.com/v0.38.x/rpc/#subscribe) for more information
+Check out [API docs](https://docs.cometbft.com/v0.38/rpc/#subscribe) for more information
 on query syntax and other options.
 
 ## Querying Block Events
@@ -268,10 +266,10 @@ curl "localhost:26657/block_search?query=\"block.height > 10 AND val_set.num_cha
 ```
 
 
-Storing the event sequence was introduced in CometBFT 0.34.26. Before that, up until Tendermint Core 0.34.26, 
-the event sequence was not stored in the kvstore and events were stored only by height. That means that queries 
-returned blocks and transactions whose event attributes match within the height but can match across different 
-events on that height. 
+Storing the event sequence was introduced in CometBFT 0.34.26. Before that, up until Tendermint Core 0.34.26,
+the event sequence was not stored in the kvstore and events were stored only by height. That means that queries
+returned blocks and transactions whose event attributes match within the height but can match across different
+events on that height.
 This behavior was fixed with CometBFT 0.34.26+. However, if the data was indexed with earlier versions of
 Tendermint Core and not re-indexed, that data will be queried as if all the attributes within a height
 occurred within the same event.
@@ -281,7 +279,9 @@ occurred within the same event.
 Users can use anything as an event value. However, if the event attribute value is a number, the following needs to be taken into account:
 
 - Negative numbers will not be properly retrieved when querying the indexer.
-- Event values are converted to big floats (from the `big/math` package). The precision of the floating point number is set to the bit length 
-of the integer it is supposed to represent, so that there is no loss of information due to insufficient precision. This was not present before CometBFT v0.38.x and all float values were ignored. 
+- Event values are converted to big floats (from the `big/math` package). The precision of the floating point number is set to the bit length
+of the integer it is supposed to represent, so that there is no loss of information due to insufficient precision. This was not present before CometBFT v0.38.x and all float values were ignored.
 - As of CometBFT v0.38.x, queries can contain floating point numbers as well.
-- Note that comparing to floats can be imprecise with a high number of decimals. 
+- Note that comparing to floats can be imprecise with a high number of decimals.
+
+[abci-events]: ../spec/abci/abci++_basic_concepts.md#events

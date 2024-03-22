@@ -14,7 +14,7 @@ and how they are communicated over the network.
 
 If you find discrepancies between the spec and the code that
 do not have an associated issue or pull request on github,
-please submit them to our [bug bounty](https://cometbft.com/security)!
+please submit them to our [bug bounty](https://github.com/cometbft/cometbft#security)!
 
 ## Contents
 

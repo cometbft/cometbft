@@ -10,7 +10,7 @@ By default, CometBFT uses the `syndtr/goleveldb` package for its in-process
 key-value database. If you want maximal performance, it may be best to install
 the real C-implementation of LevelDB and compile CometBFT to use that using
 `make build COMETBFT_BUILD_OPTIONS=cleveldb`. See the [install
-instructions](../introduction/install.md) for details.
+instructions](../guides/install.md) for details.
 
 CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 
@@ -123,7 +123,7 @@ ever be exposed publicly.**
 #### Endpoints Returning Multiple Entries
 
 Endpoints returning multiple entries are limited by default to return 30
-elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/v0.38.x/rpc/)
+elements (100 max). See the [RPC Documentation](https://docs.cometbft.com/v0.38/rpc/)
 for more information.
 
 ## Debugging CometBFT

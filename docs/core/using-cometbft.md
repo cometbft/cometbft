@@ -59,7 +59,7 @@ definition](https://github.com/cometbft/cometbft/blob/v0.38.x/types/genesis.go))
         - `max_age_duration`: Max age of evidence, in time. It should correspond
       with an app's "unbonding period" or other similar mechanism for handling
       [Nothing-At-Stake
-      attacks](https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
+      attacks](https://vitalik.ca/general/2017/12/31/pos_faq.html#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed).
         - `max_bytes`: This sets the maximum size in bytes of evidence that can be committed
       in a single block and should fall comfortably under the max block bytes.
     - `validator`
@@ -130,7 +130,7 @@ cometbft node
 ```
 
 By default, CometBFT will try to connect to an ABCI application on
-`127.0.0.1:26658`. If you have the `kvstore` ABCI app installed, run it in
+`tcp://127.0.0.1:26658`. If you have the `kvstore` ABCI app installed, run it in
 another window. If you don't, kill CometBFT and run an in-process version of
 the `kvstore` app:
 
@@ -139,8 +139,8 @@ cometbft node --proxy_app=kvstore
 ```
 
 After a few seconds, you should see blocks start streaming in. Note that blocks
-are produced regularly, even if there are no transactions. See _No Empty
-Blocks_, below, to modify this setting.
+are produced regularly, even if there are no transactions. See [No Empty
+Blocks](#no-empty-blocks), below, to modify this setting.
 
 CometBFT supports in-process versions of the `counter`, `kvstore`, and `noop`
 apps that ship as examples with `abci-cli`. It's easy to compile your app
@@ -180,7 +180,7 @@ endpoints. Some take no arguments (like `/status`), while others specify
 the argument name and use `_` as a placeholder.
 
 
-> TIP: Find the RPC Documentation [here](https://docs.cometbft.com/v0.38.x/rpc/)
+> TIP: Find the RPC Documentation [here](https://docs.cometbft.com/v0.38/rpc/)
 
 ### Formatting
 

@@ -1,5 +1,5 @@
 ---
-order: 1
+order: 2
 ---
 
 # Getting Started
@@ -10,9 +10,9 @@ As a general purpose blockchain engine, CometBFT is agnostic to the
 application you want to run. So, to run a complete blockchain that does
 something useful, you must start two programs: one is CometBFT,
 the other is your application, which can be written in any programming
-language. Recall from [the intro to
-ABCI](../introduction/what-is-cometbft.md#abci-overview) that CometBFT
-handles all the p2p and consensus stuff, and just forwards transactions to the
+language.
+
+CometBFT handles all the p2p and consensus logic, and just forwards transactions to the
 application when they need to be validated, or when they're ready to be
 executed and committed.
 
@@ -92,7 +92,7 @@ abci-cli kvstore
 
 In another terminal, we can start CometBFT. You should already have the
 CometBFT binary installed. If not, follow the steps from
-[here](../introduction/install.md). If you have never run CometBFT
+[here](../guides/install.md). If you have never run CometBFT
 before, use:
 
 ```sh

@@ -37,7 +37,7 @@ load on which the system begins to show a degraded performance. Then we run the
 experiments with the system subjected to a load slightly under the saturation
 point. The method to identify the saturation point is explained
 [here](CometBFT-QA-34.md#saturation-point) and its application to the baseline
-is described [here](TMCore-QA-37.md#finding-the-saturation-point). 
+is described [here](TMCore-QA-37.md#finding-the-saturation-point).
 
 The following table summarizes the results for the different experiments
 (extracted from
@@ -56,7 +56,7 @@ second.
 We can observe in the table that the system is saturated beyond the diagonal
 defined by the entries `c=1,r=400` and `c=2,r=200`. Entries in the diagonal have
 the same amount of transaction load, so we can consider them equivalent. For the
-chosen diagonal, the expected number of processed transactions is `1 * 400 tx/s * 89 s = 35600`. 
+chosen diagonal, the expected number of processed transactions is `1 * 400 tx/s * 89 s = 35600`.
 (Note that we use 89 out of 90 seconds of the experiment because the last transaction batch
 coincides with the end of the experiment and is thus not sent.) The experiments in the diagonal
 below expect double that number, that is, `1 * 800 tx/s * 89 s = 71200`, but the
@@ -91,7 +91,7 @@ configuration `c=1,r=400`.
 ![latency-1-400](img38/200nodes/e_de676ecf-038e-443f-a26a-27915f29e312.png).
 
 For reference, the following figure shows the latencies of one of the
-experiments for `c=2,r=200` in the baseline. 
+experiments for `c=2,r=200` in the baseline.
 
 ![latency-2-200-37](img37/200nodes_cmt037/e_75cb89a8-f876-4698-82f3-8aaab0b361af.png)
 
@@ -255,7 +255,7 @@ We use `c=1,r=400` as load, which can be considered a safe workload, as it was c
 the saturation point in the 200 node testnet. This testnet has less nodes (10 validators and 25 full nodes).
 
 Importantly, the baseline considered in this section is `v0.37.0-alpha.2` (Tendermint Core),
-which is **different** from the one used in the [previous section](#200-node-testbed).
+which is **different** from the one used in the [previous section](method.md#200-node-testnet).
 The reason is that this testnet was not re-tested for `v0.37.0-alpha.3` (CometBFT),
 since it was not deemed necessary.
 

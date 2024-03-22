@@ -32,7 +32,7 @@ During this iteration of the QA process, the following issues were found:
 ### Finding the Saturation Point
 
 The first goal is to identify the saturation point and compare it with the baseline (v0.34.x).
-For further details, see [this paragraph](CometBFT-QA-34.md#finding-the-saturation-point)
+For further details, see [this paragraph](TMCore-QA-34.md#finding-the-saturation-point)
 in the baseline version.
 
 The following table summarizes the results for v0.37.x, for the different experiments
@@ -63,7 +63,7 @@ The saturation point is beyond the diagonal:
 * `r=100,c=4`
 
 which is at the same place as the baseline. For more details on the saturation point, see
-[this paragraph](CometBFT-QA-34.md#finding-the-saturation-point) in the baseline version.
+[this paragraph](TMCore-QA-34.md#finding-the-saturation-point) in the baseline version.
 
 The experiment chosen to examine Prometheus metrics is the same as in the baseline:
 **`r=200,c=2`**.
@@ -211,7 +211,7 @@ Version: 1cf9d8e276afe8595cba960b51cd056514965fd1
 We use the same load as in the baseline: `c=4,r=800`.
 
 Just as in the baseline tests, the version of CometBFT used for these tests is affected by #9539.
-See this paragraph in the [baseline report](CometBFT-QA-34.md#rotating-node-testnet) for further details.
+See this paragraph in the [baseline report](method.md#rotating-node-testnet) for further details.
 Finally, note that this setup allows for a fairer comparison between this version and the baseline.
 
 ### Latencies

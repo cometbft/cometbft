@@ -299,18 +299,22 @@ func TestProposerSelection2(t *testing.T) {
 }
 
 func TestProposerSelection3(t *testing.T) {
-	vset := NewValidatorSet([]*Validator{
+	vals := []*Validator{
 		newValidator([]byte("avalidator_address12"), 1),
 		newValidator([]byte("bvalidator_address12"), 1),
 		newValidator([]byte("cvalidator_address12"), 1),
 		newValidator([]byte("dvalidator_address12"), 1),
-	})
+	}
 
+	for i := 0; i < 4; i++ {
+		pk := ed25519.GenPrivKey().PubKey()
+		vals[i].PubKey = pk
+		vals[i].Address = pk.Address()
+	}
+	sort.Sort(ValidatorsByAddress(vals))
+	vset := NewValidatorSet(vals)
 	proposerOrder := make([]*Validator, 4)
 	for i := 0; i < 4; i++ {
-		// need to give all validators to have keys
-		pk := ed25519.GenPrivKey().PubKey()
-		vset.Validators[i].PubKey = pk
 		proposerOrder[i] = vset.GetProposer()
 		vset.IncrementProposerPriority(1)
 	}
@@ -1572,4 +1576,39 @@ func BenchmarkUpdates(b *testing.B) {
 		valSetCopy := valSet.Copy()
 		assert.NoError(b, valSetCopy.UpdateWithChangeSet(newValList))
 	}
+}
+
+func TestVerifyCommitWithInvalidProposerKey(t *testing.T) {
+	vs := &ValidatorSet{
+		Validators: []*Validator{{}, {}},
+	}
+	commit := &Commit{
+		Height:     100,
+		Signatures: []CommitSig{{}, {}},
+	}
+	var bid BlockID
+	cid := ""
+	err := vs.VerifyCommit(cid, bid, 100, commit)
+	assert.Error(t, err)
+}
+
+func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
+	vs := &ValidatorSet{
+		Validators: []*Validator{{}, {}},
+	}
+	commit := &Commit{
+		Height:     100,
+		Signatures: []CommitSig{{}, {}},
+	}
+	cid := ""
+	votingPowerNeeded := vs.TotalVotingPower() * 2 / 3
+
+	// ignore all absent signatures
+	ignore := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagAbsent }
+
+	// only count the signatures that are for the block
+	count := func(c CommitSig) bool { return c.BlockIDFlag == BlockIDFlagCommit }
+
+	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true)
+	assert.Error(t, err)
 }

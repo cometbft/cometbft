@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
@@ -23,6 +24,8 @@ const (
 	protoTCP   = "tcp"
 	protoUNIX  = "unix"
 )
+
+var endsWithPortPattern = regexp.MustCompile(`:[0-9]+$`)
 
 //-------------------------------------------------------------
 
@@ -89,8 +92,19 @@ func (u parsedURL) GetTrimmedHostWithPath() string {
 
 // GetDialAddress returns the endpoint to dial for the parsed URL
 func (u parsedURL) GetDialAddress() string {
-	// if it's not a unix socket we return the host, example: localhost:443
+	// if it's not a unix socket we return the host with port, example: localhost:443
 	if !u.isUnixSocket {
+		hasPort := endsWithPortPattern.MatchString(u.Host)
+		if !hasPort {
+			// http and ws default to port 80, https and wss default to port 443
+			// https://www.rfc-editor.org/rfc/rfc9110#section-4.2
+			// https://www.rfc-editor.org/rfc/rfc6455.html#section-3
+			if u.Scheme == protoHTTP || u.Scheme == protoWS {
+				return u.Host + `:80`
+			} else if u.Scheme == protoHTTPS || u.Scheme == protoWSS {
+				return u.Host + `:443`
+			}
+		}
 		return u.Host
 	}
 	// otherwise we return the path of the unix socket, ex /tmp/socket
@@ -412,6 +426,7 @@ func DefaultHTTPClient(remoteAddr string) (*http.Client, error) {
 			// Set to true to prevent GZIP-bomb DoS attacks
 			DisableCompression: true,
 			Dial:               dialFn,
+			Proxy:              http.ProxyFromEnvironment,
 		},
 	}
 

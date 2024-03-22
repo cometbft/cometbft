@@ -1,3 +1,7 @@
+---
+order: 1
+---
+
 # Peer Discovery
 
 A CometBFT P2P network has different kinds of nodes with different requirements for connectivity to one another.

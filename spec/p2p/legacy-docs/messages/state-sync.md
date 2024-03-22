@@ -28,7 +28,7 @@ available snapshots:
 ### SnapShotResponse
 
 The receiver will query the local ABCI application via `ListSnapshots`, and send a message
-containing snapshot metadata (limited to 4 MB) for each of the 10 most recent snapshots: and stored at the application layer. When a peer is starting it will request snapshots.  
+containing snapshot metadata (limited to 4 MB) for each of the 10 most recent snapshots: and stored at the application layer. When a peer is starting it will request snapshots.
 
 | Name     | Type   | Description                                               | Field Number |
 |----------|--------|-----------------------------------------------------------|--------------|
@@ -113,7 +113,7 @@ A reciever to the request will use the state store to fetch the consensus params
 | Name     | Type   | Description                     | Field Number |
 |----------|--------|---------------------------------|--------------|
 | height   | uint64 | Height of the consensus params  | 1            |
-| consensus_params | [ConsensusParams](../../../core/data_structures.md#ConsensusParams) | Consensus params at the height requested | 2 |
+| consensus_params | [ConsensusParams](../../../core/data_structures.md#consensusparams) | Consensus params at the height requested | 2 |
 
 
 ### Message

@@ -518,7 +518,7 @@ func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet,
 	state, err := bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
 	if err != nil {
 		// TODO This is bad, are we zombie?
-		return state, fmt.Errorf("failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err)
+		panic(fmt.Errorf("failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
 	}
 	bcR.metrics.recordBlockMetrics(first)
 	*blocksSynced++

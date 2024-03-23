@@ -427,7 +427,7 @@ FOR_LOOP:
 
 			bcR.pool.PopRequest()
 
-			state, err = bcR.processBlocks(first, firstParts, extCommit, second, firstID, state, &blocksSynced, &lastRate, &lastHundred)
+			state = bcR.processBlocks(first, firstParts, extCommit, second, firstID, state, &blocksSynced, &lastRate, &lastHundred)
 			if err != nil {
 				break FOR_LOOP
 			}
@@ -502,7 +502,7 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 }
 
 // processBlocks processes two blocks and their extended commit.
-func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet, extCommit *types.ExtendedCommit, second *types.Block, firstID types.BlockID, state sm.State, blocksSynced *uint64, lastRate *float64, lastHundred *time.Time) (sm.State, error) {
+func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet, extCommit *types.ExtendedCommit, second *types.Block, firstID types.BlockID, state sm.State, blocksSynced *uint64, lastRate *float64, lastHundred *time.Time) sm.State {
 	if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
 		bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
 	} else {
@@ -530,7 +530,7 @@ func (bcR *Reactor) processBlocks(first *types.Block, firstParts *types.PartSet,
 		*lastHundred = time.Now()
 	}
 
-	return state, err
+	return state
 }
 
 // switchToConsensus checks if the node is caught up with the rest of the network

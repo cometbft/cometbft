@@ -852,6 +852,10 @@ func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 	packet := ch.nextPacketMsg()
 	n, err = protoio.NewDelimitedWriter(w).WriteMsg(mustWrapPacket(&packet))
+	if err != nil {
+		err = ErrPacketWrite{Source: err}
+	}
+
 	atomic.AddInt64(&ch.recentlySent, int64(n))
 	return n, err
 }
@@ -863,8 +867,9 @@ func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 	ch.Logger.Debug("Read PacketMsg", "conn", ch.conn, "packet", packet)
 	recvCap, recvReceived := ch.desc.RecvMessageCapacity, len(ch.recving)+len(packet.Data)
 	if recvCap < recvReceived {
-		return nil, fmt.Errorf("received message exceeds available capacity: %v < %v", recvCap, recvReceived)
+		return nil, ErrPacketTooBig{Max: recvCap, Received: recvReceived}
 	}
+
 	ch.recving = append(ch.recving, packet.Data...)
 	if packet.EOF {
 		msgBytes := ch.recving

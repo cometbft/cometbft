@@ -68,7 +68,7 @@ func (privKey PrivKey) Bytes() []byte {
 	return privKey
 }
 
-// PubKey returns the ECDSA private key's public key. If the privkey is not valid
+// PubKey returns the private key's public key. If the privkey is not valid
 // it returns a nil value.
 func (privKey PrivKey) PubKey() cmcrypto.PubKey {
 	secretKey, _ := bls12381.SecretKeyFromBytes(privKey)
@@ -76,7 +76,7 @@ func (privKey PrivKey) PubKey() cmcrypto.PubKey {
 	return PubKey(secretKey.PublicKey().Marshal())
 }
 
-// Equals returns true if two ECDSA private keys are equal and false otherwise.
+// Equals returns true if two private keys are equal and false otherwise.
 func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
 	return privKey.Type() == other.Type() && bytes.Equal(privKey.Bytes(), other.Bytes())
 }
@@ -115,8 +115,8 @@ var _ cmcrypto.PubKey = &PubKey{}
 
 type PubKey []byte
 
-// Address returns the address of the ECDSA public key.
-// The function will return an empty address if the public key is invalid.
+// Address returns the address of the public key.
+// The function will panic if the public key is invalid.
 func (pubKey PubKey) Address() cmcrypto.Address {
 	pk, _ := bls12381.PublicKeyFromBytes(pubKey)
 	if len(pk.Marshal()) != PubKeySize {

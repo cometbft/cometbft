@@ -14,27 +14,27 @@ branch `v1.x` from the CometBFT repository. The previous QA tests were performed
 changes with respect to the baseline, including `TO COMPLETE`. For the full list of changes, check
 out the [CHANGELOG](https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/CHANGELOG.md).
 
-As in other iterations of our QA process, we have used a network of 200 nodes as testbed, plus one
-node to load transactions and another to collect metrics. The main steps of the QA process are the
-following:
-- [Saturation point](#saturation-point): Find the saturation point of the network, that is,
-  the transaction load on which the system begins to show a degraded performance. 
+The main goal of the QA process is to validate that there are no meaningful, substantial regressions
+from the previous version. We consider that there is a regression if we find a difference bigger
+than 10% in the results. After having performed the experiments, we conclude that there are no
+significant differences with respect to the baseline. Therefore CometBFT `v1.0.0-alpha.2` has passed
+the QA tests. 
+
+In the rest of this document we present and analyse the obtained results. The main steps of the QA
+process are the following:
+- [Saturation point](#saturation-point): On a 200-nodes network, find its saturation point, that is,
+  the transaction load on which the system begins to show a degraded performance. On the rest of the
+  QA experiments we will use subject the system to a load slightly under the saturation point.
 - [200-nodes test](#200-nodes-test): During a fixed amount of time, inject on the 200-nodes network
-  a constant load with a value slightly below the saturation point. Then collect metrics and block
-  data to compute latencies, and compare them against the results of the baseline.
+  a constant load of transactions. Then collect metrics and block data to compute latencies, and
+  compare them against the results of the baseline.
 - [Rotating-nodes test](#rotating-nodes-test): Run initially 10 validators and 3 seed nodes. Then
-  start a full node, wait until it is block-synced, and stop it. Repeat this step 25 times while
+  start a full node, wait until it is block-synced, and stop it. Repeat these steps 25 times while
   checking the nodes are able to catch up to the latest height of the network.
 
 Additionally, for this version, we perform the following experiments.
 - `TO COMPLETE`
 - ...
-
-The main goal of the QA process is to validate that there are no meaningful, substantial regressions
-from the previous version. We consider that there is a regression if we find a difference bigger
-than 10% in the results. After performing these tests, we have concluded that there are no
-significant differences with respect to the baseline, therefore version `v1.0.0-alpha.2` has passed
-the QA validation.
 
 ## Table of Contents
 - [Saturation point](#saturation-point)
@@ -46,15 +46,16 @@ the QA validation.
 
 ## Saturation point
 
-The first step of our QA process is to find the saturation point on a network of 200 nodes. Then we
-run the experiments with the system subjected to a load slightly under the saturation point. The
-method to identify the saturation point is explained [here](CometBFT-QA-34.md#saturation-point) and
-its application to the baseline is described [here](TMCore-QA-37.md#finding-the-saturation-point).
+The first step of our QA process is to find the saturation point of the testnet. As in other
+iterations of our QA process, we have used a network of 200 nodes as testbed, plus one node to load
+transactions and another to collect metrics. One of the validator nodes is the target that receives
+all the transaction load. The method to identify the saturation point is explained
+[here](CometBFT-QA-34.md#saturation-point) and its application to the baseline is described
+[here](TMCore-QA-37.md#finding-the-saturation-point).
 
-The following table summarizes the results for the different experiments (extracted from
-[`v1_report_tabbed.txt`](imgs/v1/200nodes/metrics/v1_report_tabbed.txt)). The X axis (`c`) is the
-number of connections created by the load runner process to the target node. The Y axis (`r`) is the
-rate or number of transactions issued per second. Each connection sends `r` transactions per second.
+The results of the experiments for finding the saturation point are in the file
+[`v1_report_tabbed.txt`](imgs/v1/200nodes/metrics/v1_report_tabbed.txt), and the following table
+summarizes them.
 
 |        | c=1       | c=2       | c=4   |
 | ------ | --------: | --------: | ----: |
@@ -63,16 +64,21 @@ rate or number of transactions issued per second. Each connection sends `r` tran
 | r=800  | 51146     | 51917     | 41376 |
 | r=1600 | 50889     | 47732     | 45530 |
 
+The X axis (`c`) is the number of connections from the load runner process to the
+target node. The Y axis (`r`) is the rate or number of transactions issued per second. Each
+connection sends `r` transactions per second.
+
 We observe in the table that the system is saturated beyond the diagonal defined by the entries
 `c=1,r=400` and `c=2,r=200`. Entries in the diagonal have the same amount of transaction load, so we
-can consider them equivalent. For the chosen diagonal, the expected number of processed transactions
-is `1 * 400 tx/s * 89 s = 35600`. (Note that we use 89 out of 90 seconds of the experiment because
-the last transaction batch coincides with the end of the experiment and is thus not sent.) For the
+consider them equivalent. For the chosen diagonal, the expected number of processed transactions is
+`1 * 400 tx/s * 89 s = 35600`. (Note that we use 89 out of 90 seconds of the experiment because the
+last transaction batch coincides with the end of the experiment and is thus not sent.) For the
 experiments just below the diagonal we would expected double that number, that is, `1 * 800 tx/s *
 89 s = 71200`, but the system is not able to process such load, so some transactions are dropped.
 
 For comparison, this is the table obtained on the baseline version, where the saturation point is
 also beyond the diagonal defined by `c=1,r=400` and `c=2,r=200`.
+
 |        | c=1       | c=2       | c=4   |
 | ------ | --------: | --------: | ----: |
 | r=200  | 17800     | **33259** | 33259 |
@@ -190,8 +196,8 @@ v0.38 | v1 | v1 with LE
 
 ### Test Results
 
-We have shown that there is no regressions when comparing CometBFT v1.0.0-alpha.2 against the
-results obtained for v0.38. The observed results are equal or sometimes slightly better than the
+We have shown that there is no regressions when comparing CometBFT `v1.0.0-alpha.2` against the
+results obtained for `v0.38`. The observed results are equal or sometimes slightly better than the
 baseline. We therefore conclude that this version of CometBFT has passed the test.
 
 | Scenario  | Date       | Version                                                   | Result |

@@ -2,12 +2,15 @@
 
 ## Changelog
 
-- 2024-03-19: Update ADR (@andynog)
 - 2022-03-27: First draft (@andynog)
+- 2024-03-19: Update ADR information (@andynog)
+- 2024-03-25: Final updates before publishing (@andynog)
 
 ## Status
 
-Accepted | Rejected | Deprecated | Superseded by
+Accepted
+
+[Tracking issue](https://github.com/cometbft/cometbft/issues/707)
 
 ## Context
 

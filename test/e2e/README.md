@@ -9,6 +9,11 @@ make
 
 This creates and runs a testnet named `ci` under `networks/ci/`.
 
+To generate the testnet files in a different directory, run:
+```sh
+./build/runner -f networks/ci.toml -d networks/foo/bar/
+```
+
 ### Fast compiling
 
 If you need to run experiments on a testnet, you will probably want to compile the code multiple
@@ -141,6 +146,8 @@ To run tests manually, set the `E2E_MANIFEST` environment variable to the path o
 E2E_MANIFEST=networks/ci.toml go test -v ./tests/...
 ```
 
+If the testnet files are located in a custom directory, you need to set it in the `E2E_TESTNET_DIR` environment variable.
+
 Optionally, `E2E_NODE` specifies the name of a single testnet node to test.
 
 These environment variables can also be specified in `tests/e2e_test.go` to run tests from an editor or IDE:
@@ -150,6 +157,7 @@ func init() {
 	// This can be used to manually specify a testnet manifest and/or node to
 	// run tests against. The testnet must have been started by the runner first.
 	os.Setenv("E2E_MANIFEST", "networks/ci.toml")
+	os.Setenv("E2E_TESTNET_DIR", "networks/foo")
 	os.Setenv("E2E_NODE", "validator01")
 }
 ```

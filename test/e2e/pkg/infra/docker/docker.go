@@ -60,7 +60,7 @@ func (p Provider) Reconnect(ctx context.Context, name string, _ string) error {
 	return Exec(ctx, "network", "connect", p.Testnet.Name+"_"+p.Testnet.Name, name)
 }
 
-func (p Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error) {
+func (Provider) CheckUpgraded(ctx context.Context, node *e2e.Node) (string, bool, error) {
 	testnet := node.Testnet
 	out, err := ExecComposeOutput(ctx, testnet.Dir, "ps", "-q", node.Name)
 	if err != nil {
@@ -118,6 +118,10 @@ services:
 {{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
 {{- end }}
+{{- if .ClockSkew }}
+    environment:
+        - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
+{{- end }}
     init: true
     ports:
     - 26656
@@ -145,6 +149,10 @@ services:
     image: {{ $.UpgradeVersion }}
 {{- if or (eq .ABCIProtocol "builtin") (eq .ABCIProtocol "builtin_connsync") }}
     entrypoint: /usr/bin/entrypoint-builtin
+{{- end }}
+{{- if .ClockSkew }}
+    environment:
+        - COMETBFT_CLOCK_SKEW={{ .ClockSkew }}
 {{- end }}
     init: true
     ports:

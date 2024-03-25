@@ -23,6 +23,12 @@ ifeq (race,$(findstring race,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_FLAGS += -race
 endif
 
+# handle clock_skew
+ifeq (clock_skew,$(findstring clock_skew,$(COMETBFT_BUILD_OPTIONS)))
+  CGO_ENABLED=1
+  BUILD_TAGS += clock_skew
+endif
+
 # handle cleveldb
 ifeq (cleveldb,$(findstring cleveldb,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1

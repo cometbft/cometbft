@@ -28,22 +28,32 @@ func TestStoreLoadValidators(t *testing.T) {
 	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
+		DBKeyLayout:          "v2",
 	})
 	val, _ := types.RandValidator(true, 10)
 	vals := types.NewValidatorSet([]*types.Validator{val})
 
 	// 1) LoadValidators loads validators using a height where they were last changed
-	err := sm.SaveValidatorsInfo(stateDB, 1, 1, vals)
+	err := sm.SaveValidatorsInfo(stateDB, 1, 1, vals, "v2")
 	require.NoError(t, err)
-	err = sm.SaveValidatorsInfo(stateDB, 2, 1, vals)
+
+	// The store was initialized with v2 so we cannot find a validator using the representation
+	// used by v1
+	err = sm.SaveValidatorsInfo(stateDB, 2, 1, vals, "v1")
+	require.NoError(t, err)
+	_, err = stateStore.LoadValidators(2)
+	require.Error(t, err)
+
+	err = sm.SaveValidatorsInfo(stateDB, 2, 1, vals, "v2")
 	require.NoError(t, err)
 	loadedVals, err := stateStore.LoadValidators(2)
 	require.NoError(t, err)
+
 	assert.NotZero(t, loadedVals.Size())
 
 	// 2) LoadValidators loads validators using a checkpoint height
 
-	err = sm.SaveValidatorsInfo(stateDB, sm.ValSetCheckpointInterval, 1, vals)
+	err = sm.SaveValidatorsInfo(stateDB, sm.ValSetCheckpointInterval, 1, vals, "v2")
 	require.NoError(t, err)
 
 	loadedVals, err = stateStore.LoadValidators(sm.ValSetCheckpointInterval)
@@ -75,7 +85,7 @@ func BenchmarkLoadValidators(b *testing.B) {
 	for i := 10; i < 10000000000; i *= 10 { // 10, 100, 1000, ...
 		i := i
 		if err := sm.SaveValidatorsInfo(stateDB,
-			int64(i), state.LastHeightValidatorsChanged, state.NextValidators); err != nil {
+			int64(i), state.LastHeightValidatorsChanged, state.NextValidators, "v2"); err != nil {
 			b.Fatal(err)
 		}
 
@@ -504,63 +514,69 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 }
 
 func TestLastFinalizeBlockResponses(t *testing.T) {
-	// create an empty state store.
-	t.Run("Not persisting responses", func(t *testing.T) {
+	t.Run("persisting responses", func(t *testing.T) {
 		stateDB := dbm.NewMemDB()
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: false,
 		})
+
 		responses, err := stateStore.LoadFinalizeBlockResponse(1)
 		require.Error(t, err)
 		require.Nil(t, responses)
-		// stub the abciresponses.
+
 		response1 := &abci.FinalizeBlockResponse{
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
 		}
-		// create new db and state store and set discard abciresponses to false.
+
 		stateDB = dbm.NewMemDB()
 		stateStore = sm.NewStore(stateDB, sm.StoreOptions{DiscardABCIResponses: false})
 		height := int64(10)
+
 		// save the last abci response.
 		err = stateStore.SaveFinalizeBlockResponse(height, response1)
 		require.NoError(t, err)
+
 		// search for the last finalize block response and check if it has saved.
 		lastResponse, err := stateStore.LoadLastFinalizeBlockResponse(height)
 		require.NoError(t, err)
-		// check to see if the saved response height is the same as the loaded height.
+
 		assert.Equal(t, lastResponse, response1)
+
 		// use an incorrect height to make sure the state store errors.
 		_, err = stateStore.LoadLastFinalizeBlockResponse(height + 1)
 		require.Error(t, err)
+
 		// check if the abci response didn't save in the abciresponses.
 		responses, err = stateStore.LoadFinalizeBlockResponse(height)
 		require.NoError(t, err, responses)
 		require.Equal(t, response1, responses)
 	})
 
-	t.Run("persisting responses", func(t *testing.T) {
+	t.Run("not persisting responses", func(t *testing.T) {
 		stateDB := dbm.NewMemDB()
 		height := int64(10)
-		// stub the second abciresponse.
+
 		response2 := &abci.FinalizeBlockResponse{
 			TxResults: []*abci.ExecTxResult{
 				{Code: 44, Data: []byte("Hello again"), Log: "????"},
 			},
 		}
-		// create a new statestore with the responses on.
+
 		stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 			DiscardABCIResponses: true,
 		})
-		// save an additional response.
+
 		err := stateStore.SaveFinalizeBlockResponse(height+1, response2)
 		require.NoError(t, err)
+
 		// check to see if the response saved by calling the last response.
 		lastResponse2, err := stateStore.LoadLastFinalizeBlockResponse(height + 1)
 		require.NoError(t, err)
-		// check to see if the saved response height is the same as the loaded height.
+
 		assert.Equal(t, response2, lastResponse2)
+
 		// should error as we are no longer saving the response.
 		_, err = stateStore.LoadFinalizeBlockResponse(height + 1)
 		assert.Equal(t, sm.ErrFinalizeBlockResponsesNotPersisted, err)

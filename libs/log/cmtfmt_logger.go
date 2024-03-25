@@ -7,11 +7,12 @@ import (
 	"io"
 	"strings"
 	"sync"
-	"time"
 
 	kitlog "github.com/go-kit/log"
 	kitlevel "github.com/go-kit/log/level"
 	"github.com/go-logfmt/logfmt"
+
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 type tmfmtEncoder struct {
@@ -25,7 +26,7 @@ func (l *tmfmtEncoder) Reset() {
 }
 
 var tmfmtEncoderPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		var enc tmfmtEncoder
 		enc.Encoder = logfmt.NewEncoder(&enc.buf)
 		return &enc
@@ -47,7 +48,7 @@ func NewTMFmtLogger(w io.Writer) kitlog.Logger {
 	return &tmfmtLogger{w}
 }
 
-func (l tmfmtLogger) Log(keyvals ...interface{}) error {
+func (l tmfmtLogger) Log(keyvals ...any) error {
 	enc := tmfmtEncoderPool.Get().(*tmfmtEncoder)
 	enc.Reset()
 	defer tmfmtEncoderPool.Put(enc)
@@ -103,7 +104,7 @@ func (l tmfmtLogger) Log(keyvals ...interface{}) error {
 	//     D										- first character of the level, uppercase (ASCII only)
 	//     [2016-05-02|11:06:44.322]    - our time format (see https://golang.org/src/time/format.go)
 	//     Stopping ...					- message
-	enc.buf.WriteString(fmt.Sprintf("%c[%s] %-44s ", lvl[0]-32, time.Now().Format("2006-01-02|15:04:05.000"), msg))
+	enc.buf.WriteString(fmt.Sprintf("%c[%s] %-44s ", lvl[0]-32, cmttime.Now().Format("2006-01-02|15:04:05.000"), msg))
 
 	if module != unknown {
 		enc.buf.WriteString("module=" + module + " ")

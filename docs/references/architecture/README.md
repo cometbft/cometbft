@@ -44,6 +44,7 @@ numbering our ADRs from 100 onwards.
 
 - [ADR-103: Protobuf definition versioning](adr-103-proto-versioning.md)
 - [ADR-105: Refactor list of senders in mempool](adr-105-refactor-mempool-senders.md)
+- [ADR-113: Modular transaction hashing](adr-113-txi.md)
 
 ### Accepted
 

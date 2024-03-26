@@ -100,7 +100,7 @@ The following figures show the latencies of the experiment carried out with the 
 
 v0.38 | v1 | v1 with LE
 :--------------:|:--------------:|:--------------:
-![latency-1-400-v38](img38/200nodes/e_de676ecf-038e-443f-a26a-27915f29e312.png) | ![latency-1-400](imgs/v1/200nodes/latencies/c1r400_blue.png) 
+![latency-1-400-v38](img38/200nodes/e_de676ecf-038e-443f-a26a-27915f29e312.png) | ![latency-1-400](imgs/v1/200nodes/latencies/e_8e4e1e81-c171-4879-b86f-bce96ee2e861.png) 
 
 As can be seen, in most cases the latencies are very similar, and in some cases,
 the baseline has slightly higher latencies than the version under test. Thus,

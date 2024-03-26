@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+# Requirements:
 # pip install requests matplotlib numpy pandas prometheus-pandas
 import os
 import requests 

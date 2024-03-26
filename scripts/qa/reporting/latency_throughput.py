@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 A simple script to parse the CSV output from the loadtime reporting tool (see
 https://github.com/cometbft/cometbft/tree/main/test/loadtime/cmd/report).

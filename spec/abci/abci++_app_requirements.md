@@ -591,6 +591,25 @@ These are the current consensus parameters (as of v0.38.x):
 7. [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
 8. [VersionParams.App](#versionparamsapp)
 
+##### ABCIParams.VoteExtensionsEnableHeight
+
+This parameter is either 0 or a positive height at which vote extensions
+become mandatory. If the value is zero (which is the default), vote
+extensions are not required. Otherwise, at all heights greater than the
+configured height `H` vote extensions must be present (even if empty).
+When the configured height `H` is reached, `PrepareProposal` will not
+include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
+be called. Then, when reaching height `H+1`, `PrepareProposal` will
+include the vote extensions from height `H`. For all heights after `H`
+
+- vote extensions cannot be disabled,
+- they are mandatory: all precommit messages sent MUST have an extension
+  attached. Nevertheless, the application MAY provide 0-length
+  extensions.
+
+Must always be set to a future height, 0, or the same height that was previously set.
+Once the chain's height reaches the value set, it cannot be changed to a different value.
+
 ##### BlockParams.MaxBytes
 
 The maximum size of a complete Protobuf encoded block.
@@ -677,25 +696,6 @@ The parameter restricts the type of keys validators can use. The parameter uses 
 ##### VersionParams.App
 
 This is the version of the ABCI application.
-
-##### ABCIParams.VoteExtensionsEnableHeight
-
-This parameter is either 0 or a positive height at which vote extensions
-become mandatory. If the value is zero (which is the default), vote
-extensions are not required. Otherwise, at all heights greater than the
-configured height `H` vote extensions must be present (even if empty).
-When the configured height `H` is reached, `PrepareProposal` will not
-include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
-be called. Then, when reaching height `H+1`, `PrepareProposal` will
-include the vote extensions from height `H`. For all heights after `H`
-
-- vote extensions cannot be disabled,
-- they are mandatory: all precommit messages sent MUST have an extension
-  attached. Nevertheless, the application MAY provide 0-length
-  extensions.
-
-Must always be set to a future height, 0, or the same height that was previously set.
-Once the chain's height reaches the value set, it cannot be changed to a different value.
 
 #### Updating Consensus Parameters
 

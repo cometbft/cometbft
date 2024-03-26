@@ -46,10 +46,10 @@ def plot_all_experiments(release, csv):
             subGroup = paramGroups.get_group(subKey)
             startTime = subGroup.block_time.min()
             endTime = subGroup.block_time.max()
+            subGroup.block_time = subGroup.block_time.apply(lambda x: x - startTime )
+            mean = subGroup.duration_ns.mean()
             localStartTime = tz.localize(datetime.fromtimestamp(startTime)).astimezone(pytz.utc)
             localEndTime  = tz.localize(datetime.fromtimestamp(endTime)).astimezone(pytz.utc)
-            subGroup.block_time.apply(lambda x: x - startTime )
-            mean = subGroup.duration_ns.mean()
             print('exp', key ,'start', localEndTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'end', localStartTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'duration', endTime - startTime, "mean", mean)
 
             (con,rate) = subKey

@@ -43,7 +43,7 @@ func main() {
 	})
 }
 
-func (f *ClientFactory) ValidateConfig(cfg loadtest.Config) error {
+func (*ClientFactory) ValidateConfig(cfg loadtest.Config) error {
 	psb, err := payload.MaxUnpaddedSize()
 	if err != nil {
 		return err

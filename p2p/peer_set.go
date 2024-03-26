@@ -25,7 +25,7 @@ type IPeerSet interface {
 	Random() Peer
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // PeerSet is a special thread-safe structure for keeping a table of peers.
 type PeerSet struct {

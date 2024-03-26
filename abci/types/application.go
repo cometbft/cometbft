@@ -34,7 +34,7 @@ type Application interface {
 	ApplySnapshotChunk(ctx context.Context, req *ApplySnapshotChunkRequest) (*ApplySnapshotChunkResponse, error) // Apply a snapshot chunk
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 // BaseApplication is a base form of Application
 
 var _ Application = (*BaseApplication)(nil)

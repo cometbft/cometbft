@@ -134,7 +134,7 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bo
 		panic(fmt.Errorf("extensions enabled general param does not match the one in HeightVoteSet %t!=%t", hvs.extensionsEnabled, extEnabled))
 	}
 	if !types.IsVoteTypeValid(vote.Type) {
-		return
+		return false, fmt.Errorf("invalid vote type %T", vote.Type)
 	}
 	voteSet := hvs.getVoteSet(vote.Round, vote.Type)
 	if voteSet == nil {
@@ -142,14 +142,14 @@ func (hvs *HeightVoteSet) AddVote(vote *types.Vote, peerID p2p.ID, extEnabled bo
 		if len(rndz) >= 2 {
 			// punish peer
 			err = ErrGotVoteFromUnwantedRound
-			return
+			return false, err
 		}
 		hvs.addRound(vote.Round)
 		voteSet = hvs.getVoteSet(vote.Round, vote.Type)
 		hvs.peerCatchupRounds[peerID] = append(rndz, vote.Round)
 	}
 	added, err = voteSet.AddVote(vote)
-	return
+	return added, err
 }
 
 func (hvs *HeightVoteSet) Prevotes(round int32) *types.VoteSet {
@@ -216,7 +216,7 @@ func (hvs *HeightVoteSet) SetPeerMaj23(
 	return voteSet.SetPeerMaj23(types.P2PID(peerID), blockID)
 }
 
-//---------------------------------------------------------
+// ---------------------------------------------------------
 // string and json
 
 func (hvs *HeightVoteSet) String() string {

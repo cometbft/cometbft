@@ -36,6 +36,28 @@ Additionally, for this version, we perform the following experiments.
 - `TO COMPLETE`
 - ...
 
+## Latency emulation (LE)
+
+For the first time in the QA process we can additionally run the experiments using latency emulation
+(LE). We typically deploy all the nodes of the testnet in the same region of a DigitalOcean
+data center. This keeps the costs of running the tests low, but it makes the communication between
+nodes unrealistic, as there is almost no latency. While still deploying the testnet in one region,
+we now can emulate latency by adding random delays to outgoing messages. 
+
+This is how we emulate latency:
+- [This table][aws-latencies] has real data collected from AWS and containing the average latencies
+  between different AWS data centers in the world.
+- When we define the testnet, we randomly assign a "zone" to each node, that is, one of the regions
+  in the latency table.
+- Before starting CometBFT in each node, we run [this script][latency-emulator-script] to set the
+  added delays between the current node and each of the other zones, as defined in the table. The
+  script calls the `tc` utility for controlling the network traffic at the kernel level.
+
+Until now all of our QA results were obtained without latency emulation. In order to analyze the
+obtained results under similar configurations, we will make the analysis in a two-step comparison.
+First, we will compare the QA results of `v0.38` (the baseline) to those of `v1` without latency
+emulation. Then, we will compare results of `v1` with and without latency emulation.
+
 ## Table of Contents
 - [Saturation point](#saturation-point)
 - [200-nodes test](#200-nodes-test)
@@ -57,12 +79,12 @@ The results of the experiments for finding the saturation point are in the file
 [`v1_report_tabbed.txt`](imgs/v1/200nodes/metrics/v1_report_tabbed.txt), and the following table
 summarizes them.
 
-|        | c=1       | c=2       | c=4   |
-| ------ | --------: | --------: | ----: |
-| r=200  | 17800     | **34600** | 50464 |
-| r=400  | **31200** | 54706     | 49463 |
-| r=800  | 51146     | 51917     | 41376 |
-| r=1600 | 50889     | 47732     | 45530 |
+| r    | c=1       | c=2       | c=4   |
+| ---: | --------: | --------: | ----: |
+| 200  | 17800     | **34600** | 50464 |
+| 400  | **31200** | 54706     | 49463 |
+| 800  | 51146     | 51917     | 41376 |
+| 1600 | 50889     | 47732     | 45530 |
 
 The X axis (`c`) is the number of connections from the load runner process to the
 target node. The Y axis (`r`) is the rate or number of transactions issued per second. Each
@@ -79,27 +101,47 @@ experiments just below the diagonal we would expected double that number, that i
 For comparison, this is the table obtained on the baseline version, where the saturation point is
 also beyond the diagonal defined by `c=1,r=400` and `c=2,r=200`.
 
-|        | c=1       | c=2       | c=4   |
-| ------ | --------: | --------: | ----: |
-| r=200  | 17800     | **33259** | 33259 |
-| r=400  | **35600** | 41565     | 41384 |
-| r=800  | 36831     | 38686     | 40816 |
-| r=1600 | 40600     | 45034     | 39830 |
+| r    | c=1       | c=2       | c=4   |
+| ---: | --------: | --------: | ----: |
+| 200  | 17800     | **33259** | 33259 |
+| 400  | **35600** | 41565     | 41384 |
+| 800  | 36831     | 38686     | 40816 |
+| 1600 | 40600     | 45034     | 39830 |
 
 In conclusion, we chose `c=1,r=400` as the transaction load that we will use in the rest of QA
 process. This is the same value used in the previous QA tests.
 
+### With latency emulation
+
+For these set of experiments we changed the parameters of the transaction load: we use only one
+connection and the rate in the range from 100 to 1000 in intervals of 100 txs/second.
+
+| r    | txs   | 
+| ---: | ----: |
+| 100  | 8900  |
+| 200  | 17800 |
+| 300  | 26700 | 
+| 400  | 35600 |
+| 500  | 34504 |
+| 600  | 42169 |
+| 700  | 38916 |
+| 800  | 38004 |
+| 900  | 34332 |
+| 1000 | 36948 |
+
 ## 200-nodes test
 
-We run experiments with the system subjected to a load slightly under the saturation point.
+This experiment consist in running 200 nodes, injecting a load of 400 txs/s during 90 seconds, and
+collect the metrics. The network is composed of 175 validator nodes, 20 full nodes, and 5 seed
+nodes. Another node sends the load to only one of the validators.
 
 ### Latencies
 
 The following figures show the latencies of the experiment carried out with the configuration
 `c=1,r=400`.
 
-v0.38 | v1 | v1 with LE
-:--------------:|:--------------:|:--------------:
+v0.38 | v1 (without LE / with LE) 
+:--------------:|:--------------:|
 ![latency-1-400-v38](img38/200nodes/e_de676ecf-038e-443f-a26a-27915f29e312.png) | ![latency-1-400](imgs/v1/200nodes/latencies/e_8e4e1e81-c171-4879-b86f-bce96ee2e861.png) 
 
 As can be seen, in most cases the latencies are very similar, and in some cases,
@@ -116,18 +158,25 @@ We further examine key metrics extracted from Prometheus data on the experiment 
 #### Mempool size
 
 The mempool size, a count of the number of transactions in the mempool, was shown to be stable and
-homogeneous at all full nodes. It did not exhibit any unconstrained growth. The figures below show
-- in the first row, the evolution over time of the cumulative number of transactions inside all full
-nodes' mempools at a given time.
-- in the second row, the evolution of the average mempool size over all full nodes, which mostly
-stays below 1000 outstanding transactions except for a peak above 2000, coinciding with the moment
-the system reached round number 1 (see below); this is better than the baseline, which oscilates
-between 1000 and 2500.
+homogeneous at all full nodes. It did not exhibit any unconstrained growth. 
 
-v0.38 | v1 | v1 with LE
-:--------------:|:--------------:|:--------------:
-![mempool-cumulative-baseline](img38/200nodes/mempool_size.png) | ![mempoool-cumulative](imgs/v1/200nodes/metrics/mempool_size.png)
-![mempool-avg-baseline](img38/200nodes/avg_mempool_size.png) | ![mempool-avg](imgs/v1/200nodes/metrics/avg_mempool_size.png)
+The following figures show the evolution over time of the cumulative number of transactions inside
+all full nodes' mempools at a given time.
+
+| v0.38 | v1 (without LE / with LE)
+| :--------------:|:--------------:|
+| ![mempool-cumulative-baseline](img38/200nodes/mempool_size.png) | ![mempoool-cumulative](imgs/v1/200nodes/metrics/mempool_size.png)
+| | ![mempoool-cumulative-le](imgs/v1/200nodes_with_latency_emulation/metrics/mempool_size.png)
+
+The following figures show the evolution of the average mempool size over all full nodes, which mostly stays
+below 1000 outstanding transactions except for a peak above 2000, coinciding with the moment the
+system reached round number 1 (see below); this is better than the baseline, which oscilates between
+1000 and 2500.
+
+| v0.38 | v1 (without LE / with LE) 
+| :--------------:|:--------------:|
+| ![mempool-avg-baseline](img38/200nodes/avg_mempool_size.png) | ![mempool-avg](imgs/v1/200nodes/metrics/avg_mempool_size.png)
+| | ![mempool-avg-le](imgs/v1/200nodes_with_latency_emulation/metrics/avg_mempool_size.png)
 
 #### Peers
 
@@ -135,9 +184,10 @@ The number of peers was stable at all nodes. As expected, the seed nodes have mo
 125) than the rest (between 20 and 70 for most nodes). The red dashed line denotes the average
 value.
 
-v0.38 | v1 | v1 with LE
-:--------------:|:--------------:|:--------------:
-![peers](img38/200nodes/peers.png) | ![peers](imgs/v1/200nodes/metrics/peers.png)
+| v0.38 | v1 (without LE / with LE) 
+|:--------------:|:--------------:|
+| ![peers](img38/200nodes/peers.png) | ![peers](imgs/v1/200nodes/metrics/peers.png)
+| | ![peers](imgs/v1/200nodes_with_latency_emulation/metrics/peers.png)
 
 Just as in the baseline, the fact that non-seed nodes reach more than 50 peers is due to [\#9548].
 
@@ -147,24 +197,29 @@ Most blocks took just one round to reach consensus, except for a few cases when 
 second round. For these specific runs, the baseline required an extra round more times.
 
 
-v0.38 | v1 | v1 with LE
-:--------------:|:--------------:|:--------------:
-![rounds](img38/200nodes/rounds.png) | ![rounds](imgs/v1/200nodes/metrics/rounds.png)
-
+| v0.38 | v1 (without LE / with LE) 
+|:--------------:|:--------------:|
+| ![rounds](img38/200nodes/rounds.png) | ![rounds](imgs/v1/200nodes/metrics/rounds.png)
+| | ![rounds](imgs/v1/200nodes_with_latency_emulation/metrics/rounds.png)
 
 #### Blocks produced per minute and transactions processed per minute
 
-The first line of plots show the rate in which blocks were created, from the point of view of each
+These figures show the rate in which blocks were created, from the point of view of each
 node. That is, they shows when each node learned that a new block had been agreed upon. For most of
 the time when load was being applied to the system, most of the nodes stayed around 20
 blocks/minute. The spike to more than 100 blocks/minute is due to a slow node catching up. The
 baseline experienced a similar behavior.
 
 
-v0.38 | v1 | v1 with LE
-:--------------:|:--------------:|:--------------:
-![heights-baseline](img38/200nodes/block_rate.png) | ![heights](imgs/v1/200nodes/metrics/block_rate.png)
-![total-txs-baseline](img38/200nodes/total_txs_rate.png) | ![total-txs](imgs/v1/200nodes/metrics/total_txs_rate.png)
+| v0.38 | v1 (without LE / with LE)
+|:--------------:|:--------------:|
+| ![heights-baseline](img38/200nodes/block_rate.png) | ![heights](imgs/v1/200nodes/metrics/block_rate.png)
+| | ![heights](imgs/v1/200nodes_with_latency_emulation/metrics/block_rate.png)
+
+| v0.38 | v1 (without LE / with LE)
+|:--------------:|:--------------:|
+| ![total-txs-baseline](img38/200nodes/total_txs_rate.png) | ![total-txs](imgs/v1/200nodes/metrics/total_txs_rate.png)
+| | ![total-txs](imgs/v1/200nodes_with_latency_emulation/metrics/total_txs_rate.png)
 
 The collective spike on the right of the graph marks the end of the load
 injection, when blocks become smaller (empty) and impose less strain on the
@@ -178,10 +233,10 @@ The following graphs show the Resident Set Size of all monitored processes. Most
 the baseline. On all processes, the memory usage went down as the load was being removed, showing no
 signs of unconstrained growth.
 
-v0.38 | v1 | v1 with LE
-:--------------:|:--------------:|:--------------:
-![rss](img38/200nodes/memory.png) | ![rss](imgs/v1/200nodes/metrics/memory.png) |
-
+| v0.38 | v1 (without LE / with LE) 
+|:--------------:|:--------------:|
+|![rss](img38/200nodes/memory.png) | ![rss](imgs/v1/200nodes/metrics/memory.png)
+| | ![rss](imgs/v1/200nodes_with_latency_emulation/metrics/memory.png)
 
 #### CPU utilization
 
@@ -190,9 +245,10 @@ appears in the [output of
 `top`](https://www.digitalocean.com/community/tutorials/load-average-in-linux). In this case, the
 load is contained below 4 on most nodes, with the baseline showing a similar behavior.
 
-v0.38 | v1 | v1 with LE
-:--------------:|:--------------:|:--------------:
-![load1-baseline](img38/200nodes/cpu.png) | ![load1](imgs/v1/200nodes/metrics/cpu.png)
+| v0.38 | v1 (without LE / with LE) 
+|:--------------:|:--------------:|
+| ![load1-baseline](img38/200nodes/cpu.png) | ![load1](imgs/v1/200nodes/metrics/cpu.png)
+| | ![load1](imgs/v1/200nodes_with_latency_emulation/metrics/cpu.png)
 
 ### Test Results
 
@@ -202,7 +258,7 @@ baseline. We therefore conclude that this version of CometBFT has passed the tes
 
 | Scenario  | Date       | Version                                                   | Result |
 | --------- | ---------- | --------------------------------------------------------- | ------ |
-| 200-nodes | 2024-03-21 | v1.0.0-alpha.2 (4ced46d3d742bdc6093050bd67d9bbde830b6df2) | Pass   |
+| 200-nodes | 2024-03-21 | v1 (without LE / with LE).0.0-alpha.2 (4ced46d3d742bdc6093050bd67d9bbde830b6df2) | Pass   |
 
 
 ## Rotating-nodes test
@@ -210,5 +266,7 @@ baseline. We therefore conclude that this version of CometBFT has passed the tes
 `... TO COMPLETE ...`
 
 
+[aws-latencies]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/aws-latencies.csv
+[latency-emulator-script]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/latency-setter.py 
 [\#9548]: https://github.com/tendermint/tendermint/issues/9548
 [end-to-end]: https://github.com/cometbft/cometbft/tree/main/test/e2e

@@ -592,26 +592,19 @@ all full nodes have the same value at a given height.
 
 #### List of Parameters
 
-These are the current consensus parameters (as of v0.37.x):
+These are the current consensus parameters (as of v1.0.x):
 
-1. [BlockParams.MaxBytes](#blockparamsmaxbytes)
-2. [BlockParams.MaxGas](#blockparamsmaxgas)
-3. [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
-4. [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
-5. [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-6. [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
-7. [VersionParams.App](#versionparamsapp)
-8. [SynchronyParams.Precision](#synchronyparamsprecision)
-9. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
-
-<!--
-8. [TimeoutParams.Propose](#timeoutparamspropose)
-9. [TimeoutParams.ProposeDelta](#timeoutparamsproposedelta)
-10. [TimeoutParams.Vote](#timeoutparamsvote)
-11. [TimeoutParams.VoteDelta](#timeoutparamsvotedelta)
-12. [TimeoutParams.Commit](#timeoutparamscommit)
-13. [TimeoutParams.BypassCommitTimeout](#timeoutparamsbypasscommittimeout)
--->
+1.  [BlockParams.MaxBytes](#blockparamsmaxbytes)
+2.  [BlockParams.MaxGas](#blockparamsmaxgas)
+3.  [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
+4.  [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
+5.  [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
+6.  [FeatureParams.PbtsEnableHeight](#featureparamspbtsenableheight)
+7.  [FeatureParams.VoteExtensionsEnableHeight](#featureparamsvoteextensionsenableheight)
+8.  [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
+9.  [VersionParams.App](#versionparamsapp)
+10. [SynchronyParams.Precision](#synchronyparamsprecision)
+11. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
 
 ##### BlockParams.MaxBytes
 
@@ -692,6 +685,40 @@ a block minus its overhead ( ~ `BlockParams.MaxBytes`).
 
 Must have `MaxBytes > 0`.
 
+##### FeatureParams.PbtsEnableHeight
+
+Height at which Proposer-Based Timestamps (PBTS) will be enabled.
+
+From the specified height, and for all subsequent heights, the PBTS
+algorithm will be used to produce and validate block timestamps. Prior to
+this height, or when this height is set to 0, the legacy BFT Time
+algorithm is used to produce and validate timestamps.
+
+PBTS cannot be disabled once it's enabled.
+
+Cannot be set to heights lower or equal to the current blockchain height.
+
+Must have `PbtsEnableHeight > [Current height]`
+
+##### FeatureParams.VoteExtensionsEnableHeight
+
+This parameter is either 0 or a positive height at which vote extensions
+become mandatory. If the value is zero (which is the default), vote
+extensions are not required. Otherwise, at all heights greater than the
+configured height `H` vote extensions must be present (even if empty).
+When the configured height `H` is reached, `PrepareProposal` will not
+include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
+be called. Then, when reaching height `H+1`, `PrepareProposal` will
+include the vote extensions from height `H`. For all heights after `H`
+
+- vote extensions cannot be disabled,
+- they are mandatory: all precommit messages sent MUST have an extension
+  attached. Nevertheless, the application MAY provide 0-length
+  extensions.
+
+Must always be set to a future height, 0, or the same height that was previously set.
+Once the chain's height reaches the value set, it cannot be changed to a different value.
+
 ##### ValidatorParams.PubKeyTypes
 
 The parameter restricts the type of keys validators can use. The parameter uses ABCI pubkey naming, not Amino names.
@@ -717,85 +744,6 @@ validators on a network and still be considered valid.
 This parameter is used by the
 [Proposer-Based Timestamps (PBTS)](../consensus/proposer-based-timestamp/README.md)
 algorithm.
-
-<!--
-
-##### TimeoutParams.Propose
-
-Timeout in ms of the propose step of the consensus algorithm.
-This value is the initial timeout at every height (round 0).
-
-The value in subsequent rounds is modified by parameter `ProposeDelta`.
-When a new height is started, the `Propose` timeout value is reset to this
-parameter.
-
-If a node waiting for a proposal message does not receive one matching its
-current height and round before this timeout, the node will issue a
-`nil` prevote for the round and advance to the next step.
-
-##### TimeoutParams.ProposeDelta
-
-Increment in ms to be added to the `Propose` timeout every time the
-consensus algorithm advances one round in a given height.
-
-When a new height is started, the `Propose` timeout value is reset.
-
-##### TimeoutParams.Vote
-
-Timeout in ms of the prevote and precommit steps of the consensus
-algorithm.
-This value is the initial timeout at every height (round 0).
-
-The value in subsequent rounds is modified by parameter `VoteDelta`.
-When a new height is started, the `Vote` timeout value is reset to this
-parameter.
-
-The `Vote` timeout does not begin until a quorum of votes has been received.
-Once a quorum of votes has been seen and this timeout elapses, Tendermint will
-proceed to the next step of the consensus algorithm. If Tendermint receives
-all of the remaining votes before the end of the timeout, it will proceed
-to the next step immediately.
-
-##### TimeoutParams.VoteDelta
-
-Increment in ms to be added to the `Vote` timeout every time the
-consensus algorithm advances one round in a given height.
-
-When a new height is started, the `Vote` timeout value is reset.
-
-##### TimeoutParams.Commit
-
-This configures how long the consensus algorithm will wait after receiving a quorum of
-precommits before beginning consensus for the next height. This can be
-used to allow slow precommits to arrive for inclusion in the next height
-before progressing.
-
-##### TimeoutParams.BypassCommitTimeout
-
-This configures the node to proceed immediately to the next height once the
-node has received all precommits for a block, forgoing the remaining commit timeout.
-Setting this parameter to `false` (the default) causes Tendermint to wait
-for the full commit timeout configured in `TimeoutParams.Commit`.
--->
-
-##### ABCIParams.VoteExtensionsEnableHeight
-
-This parameter is either 0 or a positive height at which vote extensions
-become mandatory. If the value is zero (which is the default), vote
-extensions are not required. Otherwise, at all heights greater than the
-configured height `H` vote extensions must be present (even if empty).
-When the configured height `H` is reached, `PrepareProposal` will not
-include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
-be called. Then, when reaching height `H+1`, `PrepareProposal` will
-include the vote extensions from height `H`. For all heights after `H`
-
-- vote extensions cannot be disabled,
-- they are mandatory: all precommit messages sent MUST have an extension
-  attached. Nevertheless, the application MAY provide 0-length
-  extensions.
-
-Must always be set to a future height, 0, or the same height that was previously set.
-Once the chain's height reaches the value set, it cannot be changed to a different value.
 
 #### Updating Consensus Parameters
 

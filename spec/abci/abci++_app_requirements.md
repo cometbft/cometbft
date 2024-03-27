@@ -28,6 +28,7 @@ title: Requirements for the Application
         - [Updating the Validator Set](#updating-the-validator-set)
         - [Consensus Parameters](#consensus-parameters)
             - [List of Parameters](#list-of-parameters)
+                - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
                 - [BlockParams.MaxBytes](#blockparamsmaxbytes)
                 - [BlockParams.MaxGas](#blockparamsmaxgas)
                 - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
@@ -35,7 +36,6 @@ title: Requirements for the Application
                 - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
                 - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
                 - [VersionParams.App](#versionparamsapp)
-                - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
             - [Updating Consensus Parameters](#updating-consensus-parameters)
                 - [`InitChain`](#initchain)
                 - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
@@ -275,20 +275,6 @@ ABCI messages from all connections are received in sequence, one at a
 time.
 
 The existence of this global mutex means Go application developers can get thread safety for application state by routing all reads and writes through the ABCI system. Thus it may be unsafe to expose application state directly to an RPC interface, and unless explicit measures are taken, all queries should be routed through the ABCI Query method.
-
-<!--
-This is no longer the case starting from v0.36.0: the global locks have been removed and it is
-up to the Application to synchronize access to its state when handling
-ABCI++ methods on all connections.
- -->
-
-<!--
- TODO CHeck with Sergio whether this is still the case
- -->
-<!--
-Nevertheless, as all ABCI calls are now synchronous, ABCI messages using the same connection are
-still received in sequence.
- -->
 
 #### FinalizeBlock
 
@@ -594,25 +580,35 @@ all full nodes have the same value at a given height.
 
 #### List of Parameters
 
-These are the current consensus parameters (as of v0.37.x):
+These are the current consensus parameters (as of v0.38.x):
 
-1. [BlockParams.MaxBytes](#blockparamsmaxbytes)
-2. [BlockParams.MaxGas](#blockparamsmaxgas)
-3. [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
-4. [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
-5. [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-6. [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
-7. [VersionParams.App](#versionparamsapp)
-<!--
- 6. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
-7. [SynchronyParams.Precision](#synchronyparamsprecision)
-8. [TimeoutParams.Propose](#timeoutparamspropose)
-9. [TimeoutParams.ProposeDelta](#timeoutparamsproposedelta)
-10. [TimeoutParams.Vote](#timeoutparamsvote)
-11. [TimeoutParams.VoteDelta](#timeoutparamsvotedelta)
-12. [TimeoutParams.Commit](#timeoutparamscommit)
-13. [TimeoutParams.BypassCommitTimeout](#timeoutparamsbypasscommittimeout)
--->
+1. [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
+2. [BlockParams.MaxBytes](#blockparamsmaxbytes)
+3. [BlockParams.MaxGas](#blockparamsmaxgas)
+4. [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
+5. [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
+6. [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
+7. [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
+8. [VersionParams.App](#versionparamsapp)
+
+##### ABCIParams.VoteExtensionsEnableHeight
+
+This parameter is either 0 or a positive height at which vote extensions
+become mandatory. If the value is zero (which is the default), vote
+extensions are not expected. Otherwise, at all heights greater than the
+configured height `H` vote extensions must be present (even if empty).
+When the configured height `H` is reached, `PrepareProposal` will not
+include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
+be called. Then, when reaching height `H+1`, `PrepareProposal` will
+include the vote extensions from height `H`. For all heights after `H`
+
+- vote extensions cannot be disabled,
+- they are mandatory: all precommit messages sent MUST have an extension
+  attached. Nevertheless, the application MAY provide 0-length
+  extensions.
+
+Must always be set to a future height, 0, or the same height that was previously set.
+Once the chain's height reaches the value set, it cannot be changed to a different value.
 
 ##### BlockParams.MaxBytes
 
@@ -700,103 +696,6 @@ The parameter restricts the type of keys validators can use. The parameter uses 
 ##### VersionParams.App
 
 This is the version of the ABCI application.
-<!--
-##### SynchronyParams.MessageDelay
-
-This sets a bound on how long a proposal message may take to reach all
-validators on a network and still be considered valid.
-
-This parameter is part of the
-[proposer-based timestamps](../consensus/proposer-based-timestamp)
-(PBTS) algorithm.
-
-
-##### SynchronyParams.Precision
-
-This sets a bound on how skewed a proposer's clock may be from any validator
-on the network while still producing valid proposals.
-
-This parameter is part of the
-[proposer-based timestamps](../consensus/proposer-based-timestamp)
-(PBTS) algorithm.
-
-
-##### TimeoutParams.Propose
-
-Timeout in ms of the propose step of the consensus algorithm.
-This value is the initial timeout at every height (round 0).
-
-The value in subsequent rounds is modified by parameter `ProposeDelta`.
-When a new height is started, the `Propose` timeout value is reset to this
-parameter.
-
-If a node waiting for a proposal message does not receive one matching its
-current height and round before this timeout, the node will issue a
-`nil` prevote for the round and advance to the next step.
-
-##### TimeoutParams.ProposeDelta
-
-Increment in ms to be added to the `Propose` timeout every time the
-consensus algorithm advances one round in a given height.
-
-When a new height is started, the `Propose` timeout value is reset.
-
-##### TimeoutParams.Vote
-
-Timeout in ms of the prevote and precommit steps of the consensus
-algorithm.
-This value is the initial timeout at every height (round 0).
-
-The value in subsequent rounds is modified by parameter `VoteDelta`.
-When a new height is started, the `Vote` timeout value is reset to this
-parameter.
-
-The `Vote` timeout does not begin until a quorum of votes has been received.
-Once a quorum of votes has been seen and this timeout elapses, Tendermint will
-proceed to the next step of the consensus algorithm. If Tendermint receives
-all of the remaining votes before the end of the timeout, it will proceed
-to the next step immediately.
-
-##### TimeoutParams.VoteDelta
-
-Increment in ms to be added to the `Vote` timeout every time the
-consensus algorithm advances one round in a given height.
-
-When a new height is started, the `Vote` timeout value is reset.
-
-##### TimeoutParams.Commit
-
-This configures how long the consensus algorithm will wait after receiving a quorum of
-precommits before beginning consensus for the next height. This can be
-used to allow slow precommits to arrive for inclusion in the next height
-before progressing.
-
-##### TimeoutParams.BypassCommitTimeout
-
-This configures the node to proceed immediately to the next height once the
-node has received all precommits for a block, forgoing the remaining commit timeout.
-Setting this parameter to `false` (the default) causes Tendermint to wait
-for the full commit timeout configured in `TimeoutParams.Commit`.
--->
-
-##### ABCIParams.VoteExtensionsEnableHeight
-
-This parameter is either 0 or a positive height at which vote extensions
-become mandatory. If the value is zero (which is the default), vote
-extensions are not required. Otherwise, at all heights greater than the
-configured height `H` vote extensions must be present (even if empty).
-When the configured height `H` is reached, `PrepareProposal` will not
-include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
-be called. Then, when reaching height `H+1`, `PrepareProposal` will
-include the vote extensions from height `H`. For all heights after `H`
-
-- vote extensions cannot be disabled,
-- they are mandatory: all precommit messages sent MUST have an extension
-  attached. Nevertheless, the application MAY provide 0-length
-  extensions.
-
-Must always be set to a future height, 0, or the same height that was previously set.
-Once the chain's height reaches the value set, it cannot be changed to a different value.
 
 #### Updating Consensus Parameters
 

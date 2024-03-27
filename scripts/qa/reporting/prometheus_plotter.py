@@ -142,7 +142,7 @@ def main(release, start_time, window_size, test_case):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4 or not (sys.argv[1] and sys.argv[2] and sys.argv[3] and sys.argv[4]):
+    if len(sys.argv) < 5 or not (sys.argv[1] and sys.argv[2] and sys.argv[3] and sys.argv[4]):
         usage()
 
     release = sys.argv[1]

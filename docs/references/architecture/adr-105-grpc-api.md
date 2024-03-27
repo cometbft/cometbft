@@ -107,11 +107,10 @@ be worked out in the implementation.
 Every service will be versioned, for example:
 
 - `VersionService` will have its Protobuf definition under
-  `tendermint.services.version.v1` (or `cometbft.services.version.v1` after
-  [\#94] has been implemented)
-- `NodeService` will have its definitions under `tendermint.services.node.v1`
-- `TransactionService` will have its definitions under
-  `tendermint.services.transaction.v1`
+  `cometbft.services.version.v1`
+- `NodeService` will have its Protobuf definition under `cometbft.services.node.v1`
+- `TransactionService` will have its Protobuf definition under
+  `cometbft.services.transaction.v1`
 - etc.
 
 The general approach to versioning our Protobuf definitions is captured in [ADR

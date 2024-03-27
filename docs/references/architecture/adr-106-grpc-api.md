@@ -1,7 +1,8 @@
-# ADR 105: gRPC API
+# ADR 106: gRPC API
 
 ## Changelog
 
+- 2024-03-27: Minor updates based on user feedback and ADR 101 implementation (@andynog)
 - 2023-07-04: Expand available endpoints based on user feedback (@thanethomson)
 - 2023-05-16: First draft (@thanethomson)
 

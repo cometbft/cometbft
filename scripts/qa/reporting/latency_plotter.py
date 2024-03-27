@@ -50,7 +50,7 @@ def plot_all_experiments(release, csv):
             mean = subGroup.duration_ns.mean()
             localStartTime = tz.localize(datetime.fromtimestamp(startTime)).astimezone(pytz.utc)
             localEndTime  = tz.localize(datetime.fromtimestamp(endTime)).astimezone(pytz.utc)
-            print('exp', key ,'start', localEndTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'end', localStartTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'duration', endTime - startTime, "mean", mean)
+            print('experiment', key ,'start', localStartTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'end', localEndTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'duration', endTime - startTime, "mean", mean)
 
             (con,rate) = subKey
             label = 'c='+str(con) + ' r='+ str(rate)

@@ -694,7 +694,7 @@ algorithm will be used to produce and validate block timestamps. Prior to
 this height, or when this height is set to 0, the legacy BFT Time
 algorithm is used to produce and validate timestamps.
 
-PBTS cannot be disabled once it's enabled.
+PBTS cannot be disabled once it is enabled.
 
 Cannot be set to heights lower or equal to the current blockchain height.
 

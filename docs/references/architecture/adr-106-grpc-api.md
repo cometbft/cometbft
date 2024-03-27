@@ -25,9 +25,12 @@ After discussion with users, and in considering the implementation of [ADR
 101][adr-101] (the data companion pull API), a decision has been taken to
 implement a gRPC API _in addition to_ the JSON-RPC API.
 
-The current plan is to implement this gRPC API after v0.38 after deprecating and
-subsequently removing the existing gRPC API (which only provides a
-`BroadcastService` with a single method). It is also envisaged that, once it is
+Some services for this gRPC API have already been implemented as part of the [Data Companion Pull API implementation][adr-101-poc],
+such as `Block`, `BlockResults` and `Version` services. Also the existing gRPC API (which only provides a
+`BroadcastService` with a single method) was removed. These services will be available starting with the CometBFT`v1` release
+(there was also a backport to an experimental `v0.38` release)
+
+It is also envisaged that once it is
 feasible to provide the RPC service independently of the node itself (see [ADR
 102][adr-102]), the JSON-RPC API on the node itself could eventually be
 deprecated and removed.
@@ -95,7 +98,7 @@ be worked out in the implementation.
     particular height.
   - `Search` - Search for blocks by way of block events.
 - `BlockResultsService` - Provides information about block execution results.
-  - `GetByHeight` - Fetch the block results associated with a particular height.
+  - `GetBlockResults` - Fetch the block results associated with a particular height.
 - `ConsensusService` - Provides information about consensus.
   - `GetParams` - Fetch the consensus parameters for a particular height.
 - `NetworkService` - Provides information about the blockchain network.
@@ -128,6 +131,8 @@ forked CometBFT.
 ```go
 package server
 
+// Option is any function that allows for configuration of the gRPC server
+// during its creation.
 type Option func(*serverBuilder)
 
 // WithVersionService enables the version service on the CometBFT gRPC server.
@@ -162,7 +167,7 @@ package client
 type Option func(*clientBuilder)
 
 // Client defines the full client interface for interacting with a CometBFT node
-// via its gRPC interface.
+// via its gRPC.
 type Client interface {
     ApplicationServiceClient
     BlockResultsServiceClient
@@ -170,6 +175,9 @@ type Client interface {
     NodeServiceClient
     TransactionServiceClient
     VersionServiceClient
+
+	// Close the connection to the server. Any subsequent requests will fail.
+	Close() error
 }
 
 // WithInsecure disables transport security for the underlying client
@@ -215,22 +223,18 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 - Only programming languages with reasonable gRPC support will be able to
   integrate with the gRPC API (although most major languages do have such
   support).
-- Increases node complexity in the short-term (until such time that the JSON-RPC
-  API is definitively extracted and moved outside of the node).
+- Increases complexity maintaining multiple APIs (gRPC and JSON-RPC) in the short-term (until the JSON-RPC API is definitively extracted and moved outside the node).
 
-<!--
-TODO: Replace ADR 101/102-related PR links with direct links to the ADRs once
-      merged.
--->
 [\#81]: https://github.com/cometbft/cometbft/issues/81
 [\#94]: https://github.com/cometbft/cometbft/issues/94
 [adr-057]: ./tendermint-core/adr-057-RPC.md
 [tendermint/tendermint\#7121]: https://github.com/tendermint/tendermint/pull/7121
 [tendermint/tendermint\#9683]: https://github.com/tendermint/tendermint/pull/9683
 [adr-101]: https://github.com/cometbft/cometbft/pull/82
-[adr-102]: https://github.com/cometbft/cometbft/pull/658
+[adr-101-poc]: https://github.com/cometbft/cometbft/issues/816
+[adr-102]: adr-102-rpc-companion.md
 [adr-103]: ./adr-103-proto-versioning.md
 [adr-075]: ./tendermint-core/adr-075-rpc-subscription.md
 [rpc-docs]: https://docs.cometbft.com/v0.37/rpc/
-[penumbra-proxy-svc]: https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.client.v1alpha1#penumbra.client.v1alpha1.TendermintProxyService
+[penumbra-proxy-svc]: https://buf.build/penumbra-zone/penumbra/docs/main:penumbra.util.tendermint_proxy.v1
 [bsr]: https://buf.build/explore

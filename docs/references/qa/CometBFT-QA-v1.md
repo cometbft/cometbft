@@ -32,10 +32,6 @@ process are the following:
   start a full node, wait until it is block-synced, and stop it. Repeat these steps 25 times while
   checking the nodes are able to catch up to the latest height of the network.
 
-Additionally, for this version, we perform the following experiments.
-- `TO COMPLETE`
-- ...
-
 ## Latency emulation (LE)
 
 For the first time in the QA process we can additionally run the experiments using latency emulation
@@ -170,23 +166,23 @@ seconds of the experiments without latency emulation.
 
 #### Mempool size
 
-The mempool size, a count of the number of transactions in the mempool, was shown to be stable and
-homogeneous at all full nodes. It did not exhibit any unconstrained growth. 
+<!-- The mempool size, a count of the number of transactions in the mempool, was shown to be stable and
+homogeneous at all full nodes. It did not exhibit any unconstrained growth.  -->
 
-The following figures show the evolution over time of the cumulative number of transactions inside
-all full nodes' mempools at a given time.
+<!-- The following figures show the evolution over time of the cumulative number of transactions inside
+all full nodes' mempools at a given time. -->
 
-| v0.38 | v1 (without LE / with LE)
+<!-- | v0.38 | v1 (without LE / with LE)
 | :--------------:|:--------------:|
 | ![mempool-cumulative-baseline](img38/200nodes/mempool_size.png) | ![mempoool-cumulative](imgs/v1/200nodes/metrics/mempool_size.png)
 | | ![mempoool-cumulative-le](imgs/v1/200nodes_with_latency_emulation/metrics/mempool_size.png)
 
-`TODO`: fix scale in y axis on LE image.
+`TODO`: fix scale in y axis on LE image. -->
 
-The following figures show the evolution of the average mempool size over all full nodes, which mostly stays
-below 1000 outstanding transactions except for a peak above 2000, coinciding with the moment the
-system reached round number 1 (see below); this is better than the baseline, which oscilates between
-1000 and 2500.
+The following figures show the evolution of the average and maximum mempool size over all full
+nodes. On v1, the average mostly stays below 1000 outstanding transactions except for a peak above
+2000, coinciding with the moment the system reached round number 1 (see below); this is better than
+the baseline, which oscilates between 1000 and 2500.
 
 | v0.38 | v1 (without LE / with LE) 
 | :--------------:|:--------------:|
@@ -195,6 +191,17 @@ system reached round number 1 (see below); this is better than the baseline, whi
 
 With latency emulation, the average mempool size stays mostly above 2000 outstanding transactions
 with peaks almost reaching the maximum mempool size of 5000 transactions.
+
+The maximum mempool size show us when one or more nodes reached the maximem mempool capacity in
+terms of number of transactions. On v0.38, we see that most of the time there is at least one node
+that is dropping incoming transactions, while on v1 this happens less often, particularly after
+reaching round 1 (see below). On v1 with latency emulation, there always a node that has its mempool
+saturated.
+
+| v0.38 | v1 (without LE / with LE)
+| :--------------:|:--------------:|
+| ![mempool-cumulative-baseline](img38/200nodes/mempool_size_max.png) | ![mempoool-cumulative](imgs/v1/200nodes/metrics/mempool_size_max.png)
+| | ![mempoool-cumulative-le](imgs/v1/200nodes_with_latency_emulation/metrics/mempool_size_max.png)
 
 #### Peers
 

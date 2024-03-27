@@ -33,13 +33,13 @@ d2 = [33259,41565,38686,45034]
 d4 = [33259,41384,40816,39830]
 
 fig, ax = plt.subplots(figsize=(12, 5))
-ax.plot(rates0, expected, linestyle='dotted', marker=',', color='black', label='expected')
-ax.plot(rates1, c1, linestyle='solid', marker='s', color='r', label='v1 c=1')
-ax.plot(rates2, c2, linestyle='solid', marker='s', color='g', label='v1 c=2')
-ax.plot(rates4, c4, linestyle='solid', marker='s', color='b', label='v1 c=4')
-ax.plot(rates1, d1, linestyle='dashed', marker='o', color='r', label='v0.38 c=1')
-ax.plot(rates2, d2, linestyle='dashed', marker='o', color='g', label='v0.38 c=2')
-ax.plot(rates4, d4, linestyle='dashed', marker='o', color='b', label='v0.38 c=4')
+ax.plot(rates0, expected, linestyle='dotted', marker=',', color='g', label='expected')
+ax.plot(rates1, c1, linestyle='solid', marker='s', color='red', label='v1 c=1')
+ax.plot(rates2, c2, linestyle='solid', marker='s', color='salmon', label='v1 c=2')
+ax.plot(rates4, c4, linestyle='solid', marker='s', color='orange', label='v1 c=4')
+ax.plot(rates1, d1, linestyle='dashed', marker='o', color='blue', label='v0.38 c=1')
+ax.plot(rates2, d2, linestyle='dashed', marker='o', color='violet', label='v0.38 c=2')
+ax.plot(rates4, d4, linestyle='dashed', marker='o', color='purple', label='v0.38 c=4')
 
 plt.title('finding the saturation point')
 plt.xlabel("total rate over all connections (txs/s)")

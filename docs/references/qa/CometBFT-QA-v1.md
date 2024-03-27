@@ -69,18 +69,14 @@ emulation. Then, we will compare results of `v1` with and without latency emulat
 ## Saturation point
 
 The first step of our QA process is to find the saturation point of the testnet. As in other
-iterations of our QA process, we have used a network of 200 nodes as testbed, plus one node to load
-transactions and another to collect metrics. One of the validator nodes is the target that receives
-all the transaction load. 
-
-The experiment consists in running several iterations with different load
-configurations during 90 seconds. A load configurations is defined by:
+iterations of our QA process, we have used a network of 200 nodes as testbed, plus one node to send
+the transaction load and another to collect metrics. The experiment consists of several iterations,
+each of 90 seconds, with different load configurations. A configuration is defined by:
 - `c`, the number of connections from the load runner process to the target node, and
 - `r`, the rate or number of transactions issued per second. Each connection sends `r` transactions
   per second. 
-The method to identify the saturation point is explained
-[here](CometBFT-QA-34.md#saturation-point) and its application to the baseline is described
-[here](TMCore-QA-37.md#finding-the-saturation-point).
+
+For more details on the methodology to identify the saturation point, see [here](CometBFT-QA-34.md#saturation-point).
 
 The following figure shows the obtained values for v1 and v0.38 (the baseline). Note that
 configurations that have the same amount of transaction load, for example `c=1,r=400` and

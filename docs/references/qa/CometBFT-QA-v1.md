@@ -40,6 +40,10 @@ data center. This keeps the costs of running the tests low, but it makes the com
 nodes unrealistic, as there is almost no latency. While still deploying the testnet in one region,
 we now can emulate latency by adding random delays to outgoing messages. 
 
+Note that in this report we are not using the results with latency emulation to assess whether
+`v1.0.0-alpha.2` passes or not the QA tests. The goal is to have a baseline for comparison for the
+next QA tests to be performed for a future release.
+
 This is how we emulate latency:
 - [This table][aws-latencies] has real data collected from AWS and containing the average latencies
   between different AWS data centers in the world.

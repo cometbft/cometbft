@@ -8,8 +8,8 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/abci/server"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 
 var SOCKET = "socket"
@@ -31,7 +31,7 @@ func TestEcho(t *testing.T) {
 	})
 
 	// Start client
-	cli, err := clientCreator.NewABCIClient()
+	cli, err := clientCreator.NewABCIMempoolClient()
 	if err != nil {
 		t.Fatalf("Error creating ABCI client: %v", err.Error())
 	}
@@ -44,7 +44,10 @@ func TestEcho(t *testing.T) {
 	t.Log("Connected")
 
 	for i := 0; i < 1000; i++ {
-		_, err = proxy.CheckTx(context.Background(), &abci.RequestCheckTx{Tx: []byte(fmt.Sprintf("echo-%v", i))})
+		_, err = proxy.CheckTx(context.Background(), &abci.CheckTxRequest{
+			Tx:   []byte(fmt.Sprintf("echo-%v", i)),
+			Type: abci.CHECK_TX_TYPE_CHECK,
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -72,7 +75,7 @@ func BenchmarkEcho(b *testing.B) {
 	})
 
 	// Start client
-	cli, err := clientCreator.NewABCIClient()
+	cli, err := clientCreator.NewABCIMempoolClient()
 	if err != nil {
 		b.Fatalf("Error creating ABCI client: %v", err.Error())
 	}
@@ -86,7 +89,10 @@ func BenchmarkEcho(b *testing.B) {
 	b.StartTimer() // Start benchmarking tests
 
 	for i := 0; i < b.N; i++ {
-		_, err = proxy.CheckTx(context.Background(), &abci.RequestCheckTx{Tx: []byte("hello")})
+		_, err = proxy.CheckTx(context.Background(), &abci.CheckTxRequest{
+			Tx:   []byte("hello"),
+			Type: abci.CHECK_TX_TYPE_CHECK,
+		})
 		if err != nil {
 			b.Error(err)
 		}

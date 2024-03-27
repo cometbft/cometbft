@@ -1,7 +1,9 @@
 package node
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -14,22 +16,24 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/evidence"
+	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cometbft/cometbft/internal/evidence"
+	cmtos "github.com/cometbft/cometbft/internal/os"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/p2p/conn"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -96,6 +100,20 @@ func TestSplitAndTrimEmpty(t *testing.T) {
 	}
 }
 
+func TestCompanionInitialHeightSetup(t *testing.T) {
+	config := test.ResetTestRoot("companion_initial_height")
+	defer os.RemoveAll(config.RootDir)
+	config.Storage.Pruning.DataCompanion.Enabled = true
+	config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight = 1
+	// create & start node
+	n, err := DefaultNewNode(config, log.TestingLogger())
+	require.NoError(t, err)
+
+	companionRetainHeight, err := n.stateStore.GetCompanionBlockRetainHeight()
+	require.NoError(t, err)
+	require.Equal(t, int64(1), companionRetainHeight)
+}
+
 func TestNodeDelayedStart(t *testing.T) {
 	config := test.ResetTestRoot("node_delayed_start_test")
 	defer os.RemoveAll(config.RootDir)
@@ -111,7 +129,7 @@ func TestNodeDelayedStart(t *testing.T) {
 	defer n.Stop() //nolint:errcheck // ignore for tests
 
 	startTime := cmttime.Now()
-	assert.Equal(t, true, startTime.After(n.GenesisDoc().GenesisTime))
+	assert.True(t, true, startTime.After(n.GenesisDoc().GenesisTime))
 }
 
 func TestNodeSetAppVersion(t *testing.T) {
@@ -141,18 +159,18 @@ func TestPprofServer(t *testing.T) {
 
 	// should not work yet
 	_, err := http.Get("http://" + config.RPC.PprofListenAddress) //nolint: bodyclose
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	n, err := DefaultNewNode(config, log.TestingLogger())
-	assert.NoError(t, err)
-	assert.NoError(t, n.Start())
+	require.NoError(t, err)
+	require.NoError(t, n.Start())
 	defer func() {
 		require.NoError(t, n.Stop())
 	}()
 	assert.NotNil(t, n.pprofSrv)
 
 	resp, err := http.Get("http://" + config.RPC.PprofListenAddress + "/debug/pprof")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer resp.Body.Close()
 	assert.Equal(t, 200, resp.StatusCode)
 }
@@ -190,7 +208,7 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
 
-// address without a protocol must result in error
+// address without a protocol must result in error.
 func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	addrNoPrefix := testFreeAddr(t)
 
@@ -199,7 +217,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
 	_, err := DefaultNewNode(config, log.TestingLogger())
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestNodeSetPrivValIPC(t *testing.T) {
@@ -236,6 +254,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 
 // testFreeAddr claims a free port so we don't block on listener being ready.
 func testFreeAddr(t *testing.T) string {
+	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	defer ln.Close()
@@ -254,7 +273,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	logger := log.TestingLogger()
@@ -293,7 +312,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	// than can fit in a block
 	var currentBytes int64
 	for currentBytes <= maxEvidenceBytes {
-		ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, time.Now(), privVals[0], "test-chain")
+		ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height, cmttime.Now(), privVals[0], "test-chain")
 		require.NoError(t, err)
 		currentBytes += int64(len(ev.Bytes()))
 		evidencePool.ReportConflictingVotes(ev.VoteA, ev.VoteB)
@@ -309,8 +328,8 @@ func TestCreateProposalBlock(t *testing.T) {
 	txLength := 100
 	for i := 0; i <= int(maxBytes)/txLength; i++ {
 		tx := cmtrand.Bytes(txLength)
-		err := mempool.CheckTx(tx, nil, mempl.TxInfo{})
-		assert.NoError(t, err)
+		_, err := mempool.CheckTx(tx)
+		require.NoError(t, err)
 	}
 
 	blockExec := sm.NewBlockExecutor(
@@ -346,7 +365,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	assert.EqualValues(t, partSetFromHeader.ByteSize(), partSet.ByteSize())
 
 	err = blockExec.ValidateBlock(state, block)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestMaxProposalBlockSize(t *testing.T) {
@@ -358,7 +377,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	cc := proxy.NewLocalClientCreator(kvstore.NewInMemoryApplication())
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
 	logger := log.TestingLogger()
@@ -387,8 +406,8 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	// fill the mempool with one txs just below the maximum size
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))
 	tx := cmtrand.Bytes(txLength - 4) // to account for the varint
-	err = mempool.CheckTx(tx, nil, mempl.TxInfo{})
-	assert.NoError(t, err)
+	_, err = mempool.CheckTx(tx)
+	require.NoError(t, err)
 
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
@@ -463,6 +482,197 @@ func TestNodeNewNodeCustomReactors(t *testing.T) {
 	channels := n.NodeInfo().(p2p.DefaultNodeInfo).Channels
 	assert.Contains(t, channels, mempl.MempoolChannel)
 	assert.Contains(t, channels, cr.Channels[0].ID)
+}
+
+// Simple test to confirm that an existing genesis file will be deleted from the DB
+// TODO Confirm that the deletion of a very big file does not crash the machine.
+func TestNodeNewNodeDeleteGenesisFileFromDB(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_delete_genesis_from_db")
+	defer os.RemoveAll(config.RootDir)
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+	// Ensure the genesis doc hash is saved to db
+	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	require.NoError(t, err)
+
+	err = stateDB.SetSync(genesisDocKey, []byte("genFile"))
+	require.NoError(t, err)
+
+	genDocFromDB, err := stateDB.Get(genesisDocKey)
+	require.NoError(t, err)
+	require.Equal(t, genDocFromDB, []byte("genFile"))
+
+	stateDB.Close()
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+
+	n, err := NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.NoError(t, err)
+
+	_, err = stateDB.Get(genesisDocKey)
+	require.Error(t, err)
+
+	// Start and stop to close the db for later reading
+	err = n.Start()
+	require.NoError(t, err)
+
+	err = n.Stop()
+	require.NoError(t, err)
+
+	stateDB, err = cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	require.NoError(t, err)
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
+	require.NoError(t, err)
+	require.NotNil(t, genDocHash, "genesis doc hash should be saved in db")
+	require.Len(t, genDocHash, tmhash.Size)
+
+	err = stateDB.Close()
+	require.NoError(t, err)
+}
+
+func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash")
+	defer os.RemoveAll(config.RootDir)
+
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+
+	n, err := NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.NoError(t, err)
+
+	// Start and stop to close the db for later reading
+	err = n.Start()
+	require.NoError(t, err)
+
+	err = n.Stop()
+	require.NoError(t, err)
+
+	// Ensure the genesis doc hash is saved to db
+	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})
+	require.NoError(t, err)
+
+	genDocHash, err := stateDB.Get(genesisDocHashKey)
+	require.NoError(t, err)
+	require.NotNil(t, genDocHash, "genesis doc hash should be saved in db")
+	require.Len(t, genDocHash, tmhash.Size)
+
+	err = stateDB.Close()
+	require.NoError(t, err)
+
+	// Modify the genesis file chain ID to get a different hash
+	genBytes := cmtos.MustReadFile(config.GenesisFile())
+	var genesisDoc types.GenesisDoc
+	err = cmtjson.Unmarshal(genBytes, &genesisDoc)
+	require.NoError(t, err)
+
+	genesisDoc.ChainID = "different-chain-id"
+	err = genesisDoc.SaveAs(config.GenesisFile())
+	require.NoError(t, err)
+
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.Error(t, err, "NewNode should error when genesisDoc is changed")
+	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
+}
+
+func TestNodeGenesisHashFlagMatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_match")
+	defer os.RemoveAll(config.RootDir)
+
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+	// Get correct hash of correct genesis file
+	jsonBlob, err := os.ReadFile(config.GenesisFile())
+	require.NoError(t, err)
+
+	incomingChecksum := tmhash.Sum(jsonBlob)
+	// Set genesis flag value to incorrect hash
+	config.Storage.GenesisHash = hex.EncodeToString(incomingChecksum)
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.NoError(t, err)
+}
+
+func TestNodeGenesisHashFlagMismatch(t *testing.T) {
+	config := test.ResetTestRoot("node_new_node_genesis_hash_flag_mismatch")
+	defer os.RemoveAll(config.RootDir)
+
+	// Use goleveldb so we can reuse the same db for the second NewNode()
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+
+	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
+	require.NoError(t, err)
+
+	// Generate hash of wrong file
+	f, err := os.ReadFile(config.PrivValidatorKeyFile())
+	require.NoError(t, err)
+	flagHash := tmhash.Sum(f)
+
+	// Set genesis flag value to incorrect hash
+	config.Storage.GenesisHash = hex.EncodeToString(flagHash)
+
+	_, err = NewNode(
+		context.Background(),
+		config,
+		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		nodeKey,
+		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
+		DefaultGenesisDocProviderFunc(config),
+		cfg.DefaultDBProvider,
+		DefaultMetricsProvider(config.Instrumentation),
+		log.TestingLogger(),
+	)
+	require.Error(t, err)
+
+	f, err = os.ReadFile(config.GenesisFile())
+	require.NoError(t, err)
+
+	genHash := tmhash.Sum(f)
+
+	genHashMismatch := bytes.Equal(genHash, flagHash)
+	require.False(t, genHashMismatch)
 }
 
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {

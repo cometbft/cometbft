@@ -5,16 +5,42 @@ import (
 	"errors"
 	"fmt"
 
+	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 const (
 	// MaxAunts is the maximum number of aunts that can be included in a Proof.
 	// This corresponds to a tree of size 2^100, which should be sufficient for all conceivable purposes.
-	// This maximum helps prevent Denial-of-Service attacks by limitting the size of the proofs.
+	// This maximum helps prevent Denial-of-Service attacks by limiting the size of the proofs.
 	MaxAunts = 100
 )
+
+var ErrMaxAuntsLenExceeded = fmt.Errorf("merkle: maximum aunts length, %d, exceeded", MaxAunts)
+
+type ErrInvalidHash struct {
+	Err error
+}
+
+func (e ErrInvalidHash) Error() string {
+	return fmt.Sprintf("merkle: invalid hash: %s", e.Err)
+}
+
+func (e ErrInvalidHash) Unwrap() error {
+	return e.Err
+}
+
+type ErrInvalidProof struct {
+	Err error
+}
+
+func (e ErrInvalidProof) Error() string {
+	return fmt.Sprintf("merkle: invalid proof: %s", e.Err)
+}
+
+func (e ErrInvalidProof) Unwrap() error {
+	return e.Err
+}
 
 // Proof represents a Merkle proof.
 // NOTE: The convention for proofs is to include leaf hashes but to
@@ -24,10 +50,10 @@ const (
 // everything.  This also affects the generalized proof system as
 // well.
 type Proof struct {
-	Total    int64    `json:"total"`     // Total number of items.
-	Index    int64    `json:"index"`     // Index of item to prove.
-	LeafHash []byte   `json:"leaf_hash"` // Hash of item value.
-	Aunts    [][]byte `json:"aunts"`     // Hashes from leaf's sibling to a root's child.
+	Total    int64    `json:"total"`           // Total number of items.
+	Index    int64    `json:"index"`           // Index of item to prove.
+	LeafHash []byte   `json:"leaf_hash"`       // Hash of item value.
+	Aunts    [][]byte `json:"aunts,omitempty"` // Hashes from leaf's sibling to a root's child.
 }
 
 // ProofsFromByteSlices computes inclusion proof for given items.
@@ -44,31 +70,43 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 			Aunts:    trail.FlattenAunts(),
 		}
 	}
-	return
+	return rootHash, proofs
 }
 
 // Verify that the Proof proves the root hash.
-// Check sp.Index/sp.Total manually if needed
+// Check sp.Index/sp.Total manually if needed.
 func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 	if rootHash == nil {
-		return fmt.Errorf("invalid root hash: cannot be nil")
+		return ErrInvalidHash{
+			Err: errors.New("nil root"),
+		}
 	}
 	if sp.Total < 0 {
-		return errors.New("proof total must be positive")
+		return ErrInvalidProof{
+			Err: errors.New("negative proof total"),
+		}
 	}
 	if sp.Index < 0 {
-		return errors.New("proof index cannot be negative")
+		return ErrInvalidProof{
+			Err: errors.New("negative proof index"),
+		}
 	}
 	leafHash := leafHash(leaf)
 	if !bytes.Equal(sp.LeafHash, leafHash) {
-		return fmt.Errorf("invalid leaf hash: wanted %X got %X", leafHash, sp.LeafHash)
+		return ErrInvalidHash{
+			Err: fmt.Errorf("leaf %x, want %x", sp.LeafHash, leafHash),
+		}
 	}
 	computedHash, err := sp.computeRootHash()
 	if err != nil {
-		return fmt.Errorf("compute root hash: %w", err)
+		return ErrInvalidHash{
+			Err: fmt.Errorf("compute root hash: %w", err),
+		}
 	}
 	if !bytes.Equal(computedHash, rootHash) {
-		return fmt.Errorf("invalid root hash: wanted %X got %X", rootHash, computedHash)
+		return ErrInvalidHash{
+			Err: fmt.Errorf("root %x, want %x", computedHash, rootHash),
+		}
 	}
 	return nil
 }
@@ -103,20 +141,28 @@ func (sp *Proof) StringIndented(indent string) string {
 // and it expects at most MaxAunts elements in Aunts.
 func (sp *Proof) ValidateBasic() error {
 	if sp.Total < 0 {
-		return errors.New("negative Total")
+		return ErrInvalidProof{
+			Err: errors.New("negative proof total"),
+		}
 	}
 	if sp.Index < 0 {
-		return errors.New("negative Index")
+		return ErrInvalidProof{
+			Err: errors.New("negative proof index"),
+		}
 	}
 	if len(sp.LeafHash) != tmhash.Size {
-		return fmt.Errorf("expected LeafHash size to be %d, got %d", tmhash.Size, len(sp.LeafHash))
+		return ErrInvalidHash{
+			Err: fmt.Errorf("leaf length %d, want %d", len(sp.LeafHash), tmhash.Size),
+		}
 	}
 	if len(sp.Aunts) > MaxAunts {
-		return fmt.Errorf("expected no more than %d aunts, got %d", MaxAunts, len(sp.Aunts))
+		return ErrMaxAuntsLenExceeded
 	}
 	for i, auntHash := range sp.Aunts {
 		if len(auntHash) != tmhash.Size {
-			return fmt.Errorf("expected Aunts#%d size to be %d, got %d", i, tmhash.Size, len(auntHash))
+			return ErrInvalidHash{
+				Err: fmt.Errorf("aunt#%d hash length %d, want %d", i, len(auntHash), tmhash.Size),
+			}
 		}
 	}
 	return nil
@@ -138,7 +184,7 @@ func (sp *Proof) ToProto() *cmtcrypto.Proof {
 
 func ProofFromProto(pb *cmtcrypto.Proof) (*Proof, error) {
 	if pb == nil {
-		return nil, errors.New("nil proof")
+		return nil, ErrInvalidProof{Err: errors.New("nil proof")}
 	}
 
 	sp := new(Proof)
@@ -163,12 +209,12 @@ func computeHashFromAunts(index, total int64, leafHash []byte, innerHashes [][]b
 		panic("Cannot call computeHashFromAunts() with 0 total")
 	case 1:
 		if len(innerHashes) != 0 {
-			return nil, fmt.Errorf("unexpected inner hashes")
+			return nil, errors.New("unexpected inner hashes")
 		}
 		return leafHash, nil
 	default:
 		if len(innerHashes) == 0 {
-			return nil, fmt.Errorf("expected at least one inner hash")
+			return nil, errors.New("expected at least one inner hash")
 		}
 		numLeft := getSplitPoint(total)
 		if index < numLeft {
@@ -211,7 +257,6 @@ func (spn *ProofNode) FlattenAunts() [][]byte {
 		case spn.Right != nil:
 			innerHashes = append(innerHashes, spn.Right.Hash)
 		default:
-			break
 		}
 		spn = spn.Parent
 	}

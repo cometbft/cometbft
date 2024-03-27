@@ -6,15 +6,14 @@ import (
 	"fmt"
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func unmarshalResponseBytes(
 	responseBytes []byte,
 	expectedID types.JSONRPCIntID,
-	result interface{},
-) (interface{}, error) {
-
+	result any,
+) (any, error) {
 	// Read response.  If rpc/core/types is imported, the result will unmarshal
 	// into the correct type.
 	response := &types.RPCResponse{}
@@ -41,12 +40,9 @@ func unmarshalResponseBytes(
 func unmarshalResponseBytesArray(
 	responseBytes []byte,
 	expectedIDs []types.JSONRPCIntID,
-	results []interface{},
-) ([]interface{}, error) {
-
-	var (
-		responses []types.RPCResponse
-	)
+	results []any,
+) ([]any, error) {
+	var responses []types.RPCResponse
 
 	if err := json.Unmarshal(responseBytes, &responses); err != nil {
 		return nil, fmt.Errorf("error unmarshalling: %w", err)
@@ -92,11 +88,10 @@ func validateResponseIDs(ids, expectedIDs []types.JSONRPCIntID) error {
 	}
 
 	for i, id := range ids {
-		if m[id] {
-			delete(m, id)
-		} else {
+		if !m[id] {
 			return fmt.Errorf("unsolicited ID #%d: %v", i, id)
 		}
+		delete(m, id)
 	}
 
 	return nil
@@ -114,7 +109,7 @@ func validateAndVerifyID(res *types.RPCResponse, expectedID types.JSONRPCIntID) 
 	return nil
 }
 
-func validateResponseID(id interface{}) error {
+func validateResponseID(id any) error {
 	if id == nil {
 		return errors.New("no ID")
 	}

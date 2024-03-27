@@ -9,13 +9,14 @@ import (
 	gogotypes "github.com/cosmos/gogoproto/types"
 	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/chacha20poly1305"
 
+	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/libs/protoio"
-	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
+	"github.com/cometbft/cometbft/internal/protoio"
 )
 
 type buffer struct {
@@ -34,7 +35,7 @@ func (b *buffer) Bytes() []byte {
 	return b.next.Bytes()
 }
 
-func (b *buffer) Close() error {
+func (*buffer) Close() error {
 	return nil
 }
 
@@ -176,7 +177,7 @@ func (c *evilConn) Write(data []byte) (n int, err error) {
 	}
 }
 
-func (c *evilConn) Close() error {
+func (*evilConn) Close() error {
 	return nil
 }
 
@@ -243,15 +244,15 @@ func (c *evilConn) signChallenge() []byte {
 // MakeSecretConnection errors at different stages.
 func TestMakeSecretConnection(t *testing.T) {
 	testCases := []struct {
-		name   string
-		conn   *evilConn
-		errMsg string
+		name       string
+		conn       *evilConn
+		checkError func(error) bool // Function to check if the error matches the expectation
 	}{
-		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), "EOF"},
-		{"share bad ethimeral key", newEvilConn(true, true, false, false), "wrong wireType"},
-		{"refuse to share auth signature", newEvilConn(true, false, false, false), "EOF"},
-		{"share bad auth signature", newEvilConn(true, false, true, true), "failed to decrypt SecretConnection"},
-		{"all good", newEvilConn(true, false, true, false), ""},
+		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), func(err error) bool { return err == io.EOF }},
+		{"share bad ethimeral key", newEvilConn(true, true, false, false), func(err error) bool { return assert.Contains(t, err.Error(), "wrong wireType") }},
+		{"refuse to share auth signature", newEvilConn(true, false, false, false), func(err error) bool { return err == io.EOF }},
+		{"share bad auth signature", newEvilConn(true, false, true, true), func(err error) bool { return errors.As(err, &ErrDecryptFrame{}) }},
+		{"all good", newEvilConn(true, false, true, false), func(err error) bool { return err == nil }},
 	}
 
 	for _, tc := range testCases {
@@ -259,12 +260,10 @@ func TestMakeSecretConnection(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			privKey := ed25519.GenPrivKey()
 			_, err := MakeSecretConnection(tc.conn, privKey)
-			if tc.errMsg != "" {
-				if assert.Error(t, err) {
-					assert.Contains(t, err.Error(), tc.errMsg)
-				}
+			if tc.checkError != nil {
+				assert.True(t, tc.checkError(err))
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

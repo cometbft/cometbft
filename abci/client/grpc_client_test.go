@@ -9,16 +9,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"google.golang.org/grpc"
-
 	"golang.org/x/net/context"
-
-	"github.com/cometbft/cometbft/libs/log"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func TestGRPC(t *testing.T) {
@@ -41,8 +39,7 @@ func TestGRPC(t *testing.T) {
 	})
 
 	// Connect to the socket
-	//nolint:staticcheck // SA1019 Existing use of deprecated but supported dial option.
-	conn, err := grpc.Dial(socket, grpc.WithInsecure(), grpc.WithContextDialer(dialerFunc))
+	conn, err := grpc.Dial(socket, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(dialerFunc))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -56,7 +53,12 @@ func TestGRPC(t *testing.T) {
 	// Write requests
 	for counter := 0; counter < numCheckTxs; counter++ {
 		// Send request
-		response, err := client.CheckTx(context.Background(), &types.RequestCheckTx{Tx: []byte("test")})
+		response, err := client.CheckTx(
+			context.Background(),
+			&types.CheckTxRequest{
+				Tx:   []byte("test"),
+				Type: types.CHECK_TX_TYPE_CHECK,
+			})
 		require.NoError(t, err)
 		counter++
 		if response.Code != 0 {
@@ -71,7 +73,6 @@ func TestGRPC(t *testing.T) {
 				time.Sleep(time.Second * 1) // Wait for a bit to allow counter overflow
 			}()
 		}
-
 	}
 }
 

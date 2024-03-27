@@ -8,8 +8,8 @@ import (
 	abciclient "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/config"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
-	mempool "github.com/cometbft/cometbft/mempool"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/mempool"
 )
 
 func FuzzMempool(f *testing.F) {
@@ -26,7 +26,7 @@ func FuzzMempool(f *testing.F) {
 
 	mp := mempool.NewCListMempool(cfg, conn, 0)
 
-	f.Fuzz(func(t *testing.T, data []byte) {
-		_ = mp.CheckTx(data, nil, mempool.TxInfo{})
+	f.Fuzz(func(_ *testing.T, data []byte) {
+		_, _ = mp.CheckTx(data)
 	})
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,9 +16,9 @@ import (
 	"github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
 	cmtflags "github.com/cometbft/cometbft/libs/cli/flags"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
 	"github.com/cometbft/cometbft/light"
 	lproxy "github.com/cometbft/cometbft/light/proxy"
 	lrpc "github.com/cometbft/cometbft/light/rpc"
@@ -62,7 +63,7 @@ func run(configFile string) error {
 		if err = startSigner(cfg); err != nil {
 			return err
 		}
-		if cfg.Protocol == "builtin" || cfg.Protocol == "builtin_unsync" {
+		if cfg.Protocol == "builtin" || cfg.Protocol == "builtin_connsync" {
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -71,7 +72,7 @@ func run(configFile string) error {
 	switch cfg.Protocol {
 	case "socket", "grpc":
 		err = startApp(cfg)
-	case "builtin", "builtin_unsync":
+	case "builtin", "builtin_connsync":
 		if cfg.Mode == string(e2e.ModeLight) {
 			err = startLightClient(cfg)
 		} else {
@@ -124,12 +125,16 @@ func startNode(cfg *Config) error {
 	}
 
 	var clientCreator proxy.ClientCreator
-	if cfg.Protocol == string(e2e.ProtocolBuiltinUnsync) {
-		clientCreator = proxy.NewUnsyncLocalClientCreator(app)
-		nodeLogger.Info("Using unsynchronized local client creator")
+	if cfg.Protocol == string(e2e.ProtocolBuiltinConnSync) {
+		clientCreator = proxy.NewConnSyncLocalClientCreator(app)
+		nodeLogger.Info("Using connection-synchronized local client creator")
 	} else {
 		clientCreator = proxy.NewLocalClientCreator(app)
 		nodeLogger.Info("Using default (synchronized) local client creator")
+	}
+
+	if cfg.ExperimentalKeyLayout != "" {
+		cmtcfg.Storage.ExperimentalKeyLayout = cfg.ExperimentalKeyLayout
 	}
 
 	n, err := node.NewNode(context.Background(), cmtcfg,
@@ -171,7 +176,7 @@ func startLightClient(cfg *Config) error {
 		},
 		providers[0],
 		providers[1:],
-		dbs.New(lightDB, "light"),
+		dbs.NewWithDBVersion(lightDB, "light", cfg.ExperimentalKeyLayout),
 		light.Logger(nodeLogger),
 	)
 	if err != nil {
@@ -277,7 +282,7 @@ func setupNode() (*config.Config, log.Logger, *p2p.NodeKey, error) {
 }
 
 // rpcEndpoints takes a list of persistent peers and splits them into a list of rpc endpoints
-// using 26657 as the port number
+// using 26657 as the port number.
 func rpcEndpoints(peers string) []string {
 	arr := strings.Split(peers, ",")
 	endpoints := make([]string, len(arr))
@@ -286,7 +291,7 @@ func rpcEndpoints(peers string) []string {
 		hostName := strings.Split(urlString, ":26656")[0]
 		// use RPC port instead
 		port := 26657
-		rpcEndpoint := "http://" + hostName + ":" + fmt.Sprint(port)
+		rpcEndpoint := "http://" + hostName + ":" + strconv.Itoa(port)
 		endpoints[i] = rpcEndpoint
 	}
 	return endpoints

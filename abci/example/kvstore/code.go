@@ -1,6 +1,6 @@
 package kvstore
 
-// Return codes for the examples
+// Return codes for the examples.
 const (
 	CodeTypeOK              uint32 = 0
 	CodeTypeEncodingError   uint32 = 1

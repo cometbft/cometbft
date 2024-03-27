@@ -15,12 +15,10 @@ const (
 	MetricsSubsystem = "p2p"
 )
 
-var (
-	// valueToLabelRegexp is used to find the golang package name and type name
-	// so that the name can be turned into a prometheus label where the characters
-	// in the label do not include prometheus special characters such as '*' and '.'.
-	valueToLabelRegexp = regexp.MustCompile(`\*?(\w+)\.(.*)`)
-)
+// valueToLabelRegexp is used to find the golang package name and type name
+// so that the name can be turned into a prometheus label where the characters
+// in the label do not include prometheus special characters such as '*' and '.'.
+var valueToLabelRegexp = regexp.MustCompile(`\*?(\w+)\.(.*)`)
 
 //go:generate go run ../scripts/metricsgen -struct=Metrics
 
@@ -51,7 +49,7 @@ type metricsLabelCache struct {
 // type that is passed in.
 // This method uses a map on the Metrics struct so that each label name only needs
 // to be produced once to prevent expensive string operations.
-func (m *metricsLabelCache) ValueToMetricLabel(i interface{}) string {
+func (m *metricsLabelCache) ValueToMetricLabel(i any) string {
 	t := reflect.TypeOf(i)
 	m.mtx.RLock()
 

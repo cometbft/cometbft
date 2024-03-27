@@ -7,32 +7,31 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	sm "github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/internal/state/indexer"
+	"github.com/cometbft/cometbft/internal/state/txindex"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/state/indexer"
-	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
 )
 
 const (
-	// see README
+	// see README.
 	defaultPerPage = 30
 	maxPerPage     = 100
 
 	// SubscribeTimeout is the maximum time we wait to subscribe for an event.
-	// must be less than the server's write timeout (see rpcserver.DefaultConfig)
+	// must be less than the server's write timeout (see rpcserver.DefaultConfig).
 	SubscribeTimeout = 5 * time.Second
 
 	// genesisChunkSize is the maximum size, in bytes, of each
-	// chunk in the genesis structure for the chunked API
+	// chunk in the genesis structure for the chunked API.
 	genesisChunkSize = 16 * 1024 * 1024 // 16
 )
 
-//----------------------------------------------
 // These interfaces are used by RPC and must be thread safe
 
 type Consensus interface {
@@ -50,18 +49,18 @@ type transport interface {
 }
 
 type peers interface {
-	AddPersistentPeers([]string) error
-	AddUnconditionalPeerIDs([]string) error
-	AddPrivatePeerIDs([]string) error
-	DialPeersAsync([]string) error
+	AddPersistentPeers(peers []string) error
+	AddUnconditionalPeerIDs(peerIDs []string) error
+	AddPrivatePeerIDs(peerIDs []string) error
+	DialPeersAsync(peers []string) error
 	Peers() p2p.IPeerSet
 }
 
-type consensusReactor interface {
+// A reactor that transitions from block sync or state sync to consensus mode.
+type syncReactor interface {
 	WaitSync() bool
 }
 
-// ----------------------------------------------
 // Environment contains objects and interfaces used by the RPC. It is expected
 // to be setup once during startup.
 type Environment struct {
@@ -74,7 +73,8 @@ type Environment struct {
 	BlockStore       sm.BlockStore
 	EvidencePool     sm.EvidencePool
 	ConsensusState   Consensus
-	ConsensusReactor consensusReactor
+	ConsensusReactor syncReactor
+	MempoolReactor   syncReactor
 	P2PPeers         peers
 	P2PTransport     transport
 
@@ -93,8 +93,6 @@ type Environment struct {
 	// cache of chunked genesis data.
 	genChunks []string
 }
-
-//----------------------------------------------
 
 func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	if perPage < 1 {
@@ -117,7 +115,7 @@ func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	return page, nil
 }
 
-func (env *Environment) validatePerPage(perPagePtr *int) int {
+func (*Environment) validatePerPage(perPagePtr *int) int {
 	if perPagePtr == nil { // no per_page parameter
 		return defaultPerPage
 	}

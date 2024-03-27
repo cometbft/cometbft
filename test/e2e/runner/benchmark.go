@@ -20,7 +20,7 @@ import (
 // 4. Min block interval (fastest block)
 //
 // Metrics are based of the `benchmarkLength`, the amount of consecutive blocks
-// sampled from in the testnet
+// sampled from in the testnet.
 func Benchmark(ctx context.Context, testnet *e2e.Testnet, benchmarkLength int64) error {
 	block, _, err := waitForHeight(ctx, testnet, 0)
 	if err != nil {
@@ -84,7 +84,7 @@ type testnetStats struct {
 }
 
 func (t *testnetStats) OutputJSON(net *e2e.Testnet) string {
-	jsn, err := json.Marshal(map[string]interface{}{
+	jsn, err := json.Marshal(map[string]any{
 		"case":         filepath.Base(net.File),
 		"start_height": t.startHeight,
 		"end_height":   t.endHeight,
@@ -97,7 +97,6 @@ func (t *testnetStats) OutputJSON(net *e2e.Testnet) string {
 		"txns":         t.numtxns,
 		"dur":          t.totalTime.Seconds(),
 	})
-
 	if err != nil {
 		return ""
 	}

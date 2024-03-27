@@ -14,7 +14,7 @@ import (
 
 func TestUnsafeDialSeeds(t *testing.T) {
 	sw := p2p.MakeSwitch(cfg.DefaultP2PConfig(), 1,
-		func(n int, sw *p2p.Switch) *p2p.Switch { return sw })
+		func(_ int, sw *p2p.Switch) *p2p.Switch { return sw })
 	err := sw.Start()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -39,9 +39,9 @@ func TestUnsafeDialSeeds(t *testing.T) {
 	for _, tc := range testCases {
 		res, err := env.UnsafeDialSeeds(&rpctypes.Context{}, tc.seeds)
 		if tc.isErr {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, res)
 		}
 	}
@@ -49,7 +49,7 @@ func TestUnsafeDialSeeds(t *testing.T) {
 
 func TestUnsafeDialPeers(t *testing.T) {
 	sw := p2p.MakeSwitch(cfg.DefaultP2PConfig(), 1,
-		func(n int, sw *p2p.Switch) *p2p.Switch { return sw })
+		func(_ int, sw *p2p.Switch) *p2p.Switch { return sw })
 	sw.SetAddrBook(&p2p.AddrBookMock{
 		Addrs:        make(map[string]struct{}),
 		OurAddrs:     make(map[string]struct{}),
@@ -80,9 +80,9 @@ func TestUnsafeDialPeers(t *testing.T) {
 	for _, tc := range testCases {
 		res, err := env.UnsafeDialPeers(&rpctypes.Context{}, tc.peers, tc.persistence, tc.unconditional, tc.private)
 		if tc.isErr {
-			assert.Error(t, err)
+			require.Error(t, err)
 		} else {
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, res)
 		}
 	}

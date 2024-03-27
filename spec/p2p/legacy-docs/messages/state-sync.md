@@ -108,7 +108,7 @@ In order to build the state, the state provider will request the params at the h
 
 ### ParamsResponse
 
-A reciever to the request will use the state store to fetch the consensus params at that height and return it to the sender.
+A receiver to the request will use the state store to fetch the consensus params at that height and return it to the sender.
 
 | Name     | Type   | Description                     | Field Number |
 |----------|--------|---------------------------------|--------------|

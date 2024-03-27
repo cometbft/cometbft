@@ -3,36 +3,37 @@
 # Note that we run these checks regardless whether the input files have
 # changed, because generated code can change in response to toolchain updates
 # even if no files in the repository are modified.
+
 name: Check generated code
 on:
   pull_request:
-    branches:
-      - main
+  merge_group:
 
 permissions:
   contents: read
 
 jobs:
-  check-mocks:
+  check-mocks-metrics:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: "Check generated mocks"
+      - name: "Check generated mocks and metrics"
         run: |
           set -euo pipefail
 
-          make mockery
+          make mockery metrics
 
-          if ! git diff --stat --exit-code ; then
+          git add .
+          if ! git diff HEAD --stat --exit-code ; then
             echo ">> ERROR:"
             echo ">>"
-            echo ">> Generated mocks require update (either Mockery or source files may have changed)."
-            echo ">> Ensure your tools are up-to-date, re-run 'make mockery' and update this PR."
+            echo ">> Generated mocks and/or metrics require update (either Mockery or source files may have changed)."
+            echo ">> Ensure your tools are up-to-date, re-run 'make mockery metrics' and update this PR."
             echo ">>"
             git diff
             exit 1
@@ -41,13 +42,13 @@ jobs:
   check-proto:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.20"
+          go-version: "1.21"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 1 # we need a .git directory to run git diff
+          fetch-depth: 1  # we need a .git directory to run git diff
 
       - name: "Check protobuf generated code"
         run: |
@@ -55,7 +56,8 @@ jobs:
 
           make proto-gen
 
-          if ! git diff --stat --exit-code ; then
+          git add .
+          if ! git diff HEAD --stat --exit-code ; then
             echo ">> ERROR:"
             echo ">>"
             echo ">> Protobuf generated code requires update (either tools or .proto files may have changed)."

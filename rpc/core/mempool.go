@@ -3,24 +3,27 @@ package core
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	mempl "github.com/cometbft/cometbft/mempool"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/types"
 )
 
-//-----------------------------------------------------------------------------
+var ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is catching up")
+
+// -----------------------------------------------------------------------------
 // NOTE: tx should be signed, but this is only checked at the app level (not by CometBFT!)
 
 // BroadcastTxAsync returns right away, with no response. Does not wait for
 // CheckTx nor transaction results.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_async
 func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
-	err := env.Mempool.CheckTx(tx, nil, mempl.TxInfo{})
+	if env.MempoolReactor.WaitSync() {
+		return nil, ErrEndpointClosedCatchingUp
+	}
+	_, err := env.Mempool.CheckTx(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -31,20 +34,24 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 // the transaction result.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_sync
 func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
-	resCh := make(chan *abci.ResponseCheckTx, 1)
-	err := env.Mempool.CheckTx(tx, func(res *abci.ResponseCheckTx) {
-		select {
-		case <-ctx.Context().Done():
-		case resCh <- res:
-		}
-	}, mempl.TxInfo{})
+	if env.MempoolReactor.WaitSync() {
+		return nil, ErrEndpointClosedCatchingUp
+	}
+
+	resCh := make(chan *abci.CheckTxResponse, 1)
+	reqRes, err := env.Mempool.CheckTx(tx)
 	if err != nil {
 		return nil, err
 	}
-
+	reqRes.SetCallback(func(_ *abci.Response) {
+		select {
+		case <-ctx.Context().Done():
+		case resCh <- reqRes.Response.GetCheckTx():
+		}
+	})
 	select {
 	case <-ctx.Context().Done():
-		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
+		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
 	case res := <-resCh:
 		return &ctypes.ResultBroadcastTx{
 			Code:      res.Code,
@@ -59,12 +66,16 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 // BroadcastTxCommit returns with the responses from CheckTx and ExecTxResult.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/broadcast_tx_commit
 func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*ctypes.ResultBroadcastTxCommit, error) {
+	if env.MempoolReactor.WaitSync() {
+		return nil, ErrEndpointClosedCatchingUp
+	}
+
 	subscriber := ctx.RemoteAddr()
 
 	if env.EventBus.NumClients() >= env.Config.MaxSubscriptionClients {
-		return nil, fmt.Errorf("max_subscription_clients %d reached", env.Config.MaxSubscriptionClients)
+		return nil, ErrMaxSubscription{env.Config.MaxSubscriptionClients}
 	} else if env.EventBus.NumClientSubscriptions(subscriber) >= env.Config.MaxSubscriptionsPerClient {
-		return nil, fmt.Errorf("max_subscriptions_per_client %d reached", env.Config.MaxSubscriptionsPerClient)
+		return nil, ErrMaxPerClientSubscription{env.Config.MaxSubscriptionsPerClient}
 	}
 
 	// Subscribe to tx being committed in block.
@@ -73,7 +84,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	q := types.EventQueryTxFor(tx)
 	txSub, err := env.EventBus.Subscribe(subCtx, subscriber, q)
 	if err != nil {
-		err = fmt.Errorf("failed to subscribe to tx: %w", err)
+		err = ErrTxSubFailed{Source: err, TxHash: tx.Hash()}
 		env.Logger.Error("Error on broadcast_tx_commit", "err", err)
 		return nil, err
 	}
@@ -84,20 +95,21 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	}()
 
 	// Broadcast tx and wait for CheckTx result
-	checkTxResCh := make(chan *abci.ResponseCheckTx, 1)
-	err = env.Mempool.CheckTx(tx, func(res *abci.ResponseCheckTx) {
-		select {
-		case <-ctx.Context().Done():
-		case checkTxResCh <- res:
-		}
-	}, mempl.TxInfo{})
+	checkTxResCh := make(chan *abci.CheckTxResponse, 1)
+	reqRes, err := env.Mempool.CheckTx(tx)
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
-		return nil, fmt.Errorf("error on broadcastTxCommit: %v", err)
+		return nil, ErrTxBroadcast{Source: err, ErrReason: ErrCheckTxFailed}
 	}
+	reqRes.SetCallback(func(_ *abci.Response) {
+		select {
+		case <-ctx.Context().Done():
+		case checkTxResCh <- reqRes.Response.GetCheckTx():
+		}
+	})
 	select {
 	case <-ctx.Context().Done():
-		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
+		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
 	case checkTxRes := <-checkTxResCh:
 		if checkTxRes.Code != abci.CodeTypeOK {
 			return &ctypes.ResultBroadcastTxCommit{
@@ -120,11 +132,11 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		case <-txSub.Canceled():
 			var reason string
 			if txSub.Err() == nil {
-				reason = "CometBFT exited"
+				reason = ErrCometBFTExited.Error()
 			} else {
 				reason = txSub.Err().Error()
 			}
-			err = fmt.Errorf("txSub was canceled (reason: %s)", reason)
+			err = ErrSubCanceled{reason}
 			env.Logger.Error("Error on broadcastTxCommit", "err", err)
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
@@ -132,7 +144,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 				Hash:     tx.Hash(),
 			}, err
 		case <-time.After(env.Config.TimeoutBroadcastTxCommit):
-			err = errors.New("timed out waiting for tx to be included in a block")
+			err = ErrTimedOutWaitingForTx
 			env.Logger.Error("Error on broadcastTxCommit", "err", err)
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
@@ -173,9 +185,9 @@ func (env *Environment) NumUnconfirmedTxs(*rpctypes.Context) (*ctypes.ResultUnco
 // be added to the mempool either.
 // More: https://docs.cometbft.com/main/rpc/#/Tx/check_tx
 func (env *Environment) CheckTx(_ *rpctypes.Context, tx types.Tx) (*ctypes.ResultCheckTx, error) {
-	res, err := env.ProxyAppMempool.CheckTx(context.TODO(), &abci.RequestCheckTx{Tx: tx})
+	res, err := env.ProxyAppMempool.CheckTx(context.TODO(), &abci.CheckTxRequest{Tx: tx, Type: abci.CHECK_TX_TYPE_CHECK})
 	if err != nil {
 		return nil, err
 	}
-	return &ctypes.ResultCheckTx{ResponseCheckTx: *res}, nil
+	return &ctypes.ResultCheckTx{CheckTxResponse: *res}, nil
 }

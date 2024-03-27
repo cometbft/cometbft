@@ -15,7 +15,20 @@ import (
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
 
-//-------------------------------------
+var (
+	ErrNotEd25519Key    = errors.New("ed25519: pubkey is not Ed25519")
+	ErrInvalidSignature = errors.New("ed25519: invalid signature")
+)
+
+// ErrInvalidKeyLen describes an error resulting from an passing in a
+// key with an invalid key in the call to [BatchVerifier.Add].
+type ErrInvalidKeyLen struct {
+	Got, Want int
+}
+
+func (e ErrInvalidKeyLen) Error() string {
+	return fmt.Sprintf("ed25519: invalid key length: got %d, want %d", e.Got, e.Want)
+}
 
 var (
 	_ crypto.PrivKey       = PrivKey{}
@@ -34,7 +47,7 @@ var (
 const (
 	PrivKeyName = "tendermint/PrivKeyEd25519"
 	PubKeyName  = "tendermint/PubKeyEd25519"
-	// PubKeySize is is the size, in bytes, of public keys as used in this package.
+	// PubKeySize is the size, in bytes, of public keys as used in this package.
 	PubKeySize = 32
 	// PrivateKeySize is the size, in bytes, of private keys as used in this package.
 	PrivateKeySize = 64
@@ -114,7 +127,7 @@ func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
 	return false
 }
 
-func (privKey PrivKey) Type() string {
+func (PrivKey) Type() string {
 	return KeyType
 }
 
@@ -145,7 +158,7 @@ func GenPrivKeyFromSecret(secret []byte) PrivKey {
 	return PrivKey(ed25519.NewKeyFromSeed(seed))
 }
 
-//-------------------------------------
+// -------------------------------------
 
 var _ crypto.PubKey = PubKey{}
 
@@ -178,7 +191,7 @@ func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeyEd25519{%X}", []byte(pubKey))
 }
 
-func (pubKey PubKey) Type() string {
+func (PubKey) Type() string {
 	return KeyType
 }
 
@@ -190,7 +203,7 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return false
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // BatchVerifier implements batch verification for ed25519.
 type BatchVerifier struct {
@@ -204,18 +217,18 @@ func NewBatchVerifier() crypto.BatchVerifier {
 func (b *BatchVerifier) Add(key crypto.PubKey, msg, signature []byte) error {
 	pkEd, ok := key.(PubKey)
 	if !ok {
-		return fmt.Errorf("pubkey is not Ed25519")
+		return ErrNotEd25519Key
 	}
 
 	pkBytes := pkEd.Bytes()
 
 	if l := len(pkBytes); l != PubKeySize {
-		return fmt.Errorf("pubkey size is incorrect; expected: %d, got %d", PubKeySize, l)
+		return ErrInvalidKeyLen{Got: l, Want: PubKeySize}
 	}
 
 	// check that the signature is the correct length
 	if len(signature) != SignatureSize {
-		return errors.New("invalid signature")
+		return ErrInvalidSignature
 	}
 
 	cachingVerifier.AddWithOptions(b.BatchVerifier, ed25519.PublicKey(pkBytes), msg, signature, verifyOptions)

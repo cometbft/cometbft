@@ -21,12 +21,12 @@ func TestMain(m *testing.M) {
 	app := kvstore.NewPersistentApplication(dir)
 	// If testing block event generation
 	// app.SetGenBlockEvents() // needs to be called here (see TestBlockSearch in rpc_test.go)
-	node = rpctest.StartTendermint(app)
+	node = rpctest.StartCometBFT(app)
 
 	code := m.Run()
 
 	// and shut down proper at the end
-	rpctest.StopTendermint(node)
+	rpctest.StopCometBFT(node)
 	_ = os.RemoveAll(dir)
 	os.Exit(code)
 }

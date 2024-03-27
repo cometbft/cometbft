@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	ctest "github.com/cometbft/cometbft/libs/test"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 func makeTxs(cnt, size int) Txs {
@@ -71,8 +71,8 @@ func TestValidTxProof(t *testing.T) {
 			assert.EqualValues(t, root, proof.RootHash, "%d: %d", h, i)
 			assert.EqualValues(t, tx, proof.Data, "%d: %d", h, i)
 			assert.EqualValues(t, txs[i].Hash(), proof.Leaf(), "%d: %d", h, i)
-			assert.Nil(t, proof.Validate(root), "%d: %d", h, i)
-			assert.NotNil(t, proof.Validate([]byte("foobar")), "%d: %d", h, i)
+			require.NoError(t, proof.Validate(root), "%d: %d", h, i)
+			require.Error(t, proof.Validate([]byte("foobar")), "%d: %d", h, i)
 
 			// read-write must also work
 			var (
@@ -87,8 +87,8 @@ func TestValidTxProof(t *testing.T) {
 			require.NoError(t, err)
 
 			p2, err = TxProofFromProto(pb2)
-			if assert.Nil(t, err, "%d: %d: %+v", h, i, err) {
-				assert.Nil(t, p2.Validate(root), "%d: %d", h, i)
+			if assert.NoError(t, err, "%d: %d: %+v", h, i, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
+				require.NoError(t, p2.Validate(root), "%d: %d", h, i)
 			}
 		}
 	}
@@ -102,6 +102,7 @@ func TestTxProofUnchangable(t *testing.T) {
 }
 
 func testTxProofUnchangable(t *testing.T) {
+	t.Helper()
 	// make some proof
 	txs := makeTxs(randInt(2, 100), randInt(16, 128))
 	root := txs.Hash()
@@ -109,7 +110,7 @@ func testTxProofUnchangable(t *testing.T) {
 	proof := txs.Proof(i)
 
 	// make sure it is valid to start with
-	assert.Nil(t, proof.Validate(root))
+	require.NoError(t, proof.Validate(root))
 	pbProof := proof.ToProto()
 	bin, err := pbProof.Marshal()
 	require.NoError(t, err)
@@ -123,9 +124,9 @@ func testTxProofUnchangable(t *testing.T) {
 	}
 }
 
-// This makes sure that the proof doesn't deserialize into something valid.
+// assertBadProof makes sure that the proof doesn't deserialize into something valid.
 func assertBadProof(t *testing.T, root []byte, bad []byte, good TxProof) {
-
+	t.Helper()
 	var (
 		proof   TxProof
 		pbProof cmtproto.TxProof

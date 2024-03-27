@@ -116,7 +116,7 @@ Interface `IPeerSet` offers methods to access a table of [`Peer`](#peergo) insta
 Type `PeerSet` implements a thread-safe table of [`Peer`](#peergo) instances,
 used by the [switch](#switchgo).
 
-The switch provides limited access to this table by returing a `IPeerSet`
+The switch provides limited access to this table by returning a `IPeerSet`
 instance, used by the [PEX reactor](#pex_reactorgo).
 
 ### `switch.go`
@@ -231,9 +231,3 @@ Go documentation of `Metric` type:
 > // See cometbft/docs/architecture/adr-006-trust-metric.md for details
 
 Not imported by any other CometBFT source file.
-
-## Package `p2p.upnp`
-
-This package implementation was taken from "taipei-torrent".
-
-It is used by the `probe-upnp` command of the CometBFT binary.

@@ -704,7 +704,7 @@ Must have `PbtsEnableHeight > [Current height]`
 
 This parameter is either 0 or a positive height at which vote extensions
 become mandatory. If the value is zero (which is the default), vote
-extensions are not required. Otherwise, at all heights greater than the
+extensions are not expected. Otherwise, at all heights greater than the
 configured height `H` vote extensions must be present (even if empty).
 When the configured height `H` is reached, `PrepareProposal` will not
 include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will

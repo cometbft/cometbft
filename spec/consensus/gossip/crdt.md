@@ -1,6 +1,6 @@
 # Tendermint Message sets as a CRDT
 
-Here argue that the exchange of messages of the Tendermint algorithm can and should be seen as an eventually convergent Tuple implemented as a tuple space.
+Here we argue that the exchange of messages of the Tendermint algorithm can and should be seen as an eventually convergent Tuple implemented as a tuple space CRDT.
 
 > :warning:
 > We assume that you understand the Tendermint algorithm and therefore we will not review it here.
@@ -14,20 +14,20 @@ Hence, processes execute in rounds in which they wait for conditions to be met f
 
 ## On the need for the Gossip Communication property
 
-Progress and termination are only guaranteed in if there exists a **Global Stabilization Time (GST)** after which communication is reliable and timely (Eventual $\Delta$-Timely Communication).
+Progress and termination are only guaranteed if there exists a **Global Stabilization Time (GST)** after which communication is reliable and timely (Eventual $\Delta$-Timely Communication).
 
 | Eventual $\Delta$-Timely Communication|
 |-----|
 |There is a bound $\Delta$ and an instant GST (Global Stabilization Time) such that if a correct process $p$ sends a message $m$ at a time $t \geq \text{GST}$ to a correct process $q$, then $q$ will receive $m$ before $t + \Delta$.
 
-Eventual $\Delta$-Timely Communication is used to provide the **Gossip Communication property**, which ensures that all messages sent by correct processes will be eventually delivered to all correct processes.
+The idea is that Eventual $\Delta$-Timely Communication be used to provide the **Gossip Communication property**, which ensures that all messages sent by correct processes will be eventually delivered to all correct processes.
+This will, in turn, lead all correct processes to eventually be able to execute a round in which the conditions to decide are met, even if only after the GST is reached.
 
 |Gossip Communication property|
 |-----|
 | (i) If a correct process $p$ sends some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max} (t,\text{GST}) + \Delta$.
 | (ii) If a correct process $p$ receives some message $m$ at time $t$, all correct processes will receive $m$ before $\text{max}(t,\text{GST}) + \Delta$.
 
-This will, in turn, lead all correct processes to eventually be able to execute a round in which the conditions to decide are met, even if only after the GST is reached.
 
 Even if Eventual $\Delta$-Timely Communication is assumed, implementing the Gossip Communication property would be unfeasible.
 Given that all messages, even messages sent before the GST, need to be buffered to be reliably delivered between correct processes and that GST may take indefinitely long to arrive, implementing this primitive would require unbounded memory.
@@ -48,11 +48,11 @@ There are essentially two ways of making converging the local views of nodes.
 
 - **Approach One**: nodes broadcast all the updates they want to perform to all nodes, including themselves.
 If using Reliable Broadcast/the Gossip Communication property, the tuple space will eventually converge to include all broadcast messages.
-- **Approach Two**: nodes periodically compare their approximations with each other, 1-to-1, to identify and correct differences by adding missing entries, using some anti-entropy protocol.
+- **Approach Two**: nodes periodically compare their local views with each other, 1-to-1, to identify and correct differences by adding missing entries, using some anti-entropy protocol.
 
 These approaches work to reach convergence because the updates are commutative regarding the tuple space; each update simply adds an entry to a set.
 From the Tendermint algorithm's point of view, convergence guarantees progress but is not a requirement for correctness.
-In other words, nodes observing different approximations of the tuple space may decide at different points in time but cannot violate any correctness guarantees and the eventual convergence of tuple space implies the eventual termination of the algorithm.
+In other words, nodes observing different local views of the tuple space may decide at different points in time but cannot violate any correctness guarantees and the eventual convergence of tuple space implies the eventual termination of the algorithm.
 
 
 ### Tuple Removal and Garbage Collection
@@ -91,33 +91,33 @@ The tuple space is consulted through queries, which have the same form as the en
 Queries return all entries in their local views whose values match those in the query; `*` matches all values.
 For example, suppose a node's local view of the tuple space has the following entries, here organized as rows of a table for easier visualization:
 
-| Height | Round | Step      | Validator | Payload        |
-| ------ | ----- | --------- | --------- | -------------- |
-| 1      | 0     | Proposal  | v1        | pp1            |
-| 1      | 0     | PreVote   | v1        | vp1            |
-| 1      | 1     | PreCommit | v2        | cp1            |
-| 2      | 0     | Proposal  | v1        | pp2            |
-| 2      | 2     | PreVote   | v2        | vp2            |
-| 2      | 3     | PreCommit | v2        | cp2   [^equiv] |
-| 2      | 3     | PreCommit | v2        | cp2'  [^equiv] |
+| | Height | Round | Step      | Validator | Payload        | |
+|---| ------ | ----- | --------- | --------- | -------------- |---|
+$\lang$ | 1      | 0     | Proposal  | v1        | pp1            |$\rang$|
+$\lang$ | 1      | 0     | PreVote   | v1        | vp1            |$\rang$|
+$\lang$ | 1      | 1     | PreCommit | v2        | cp1            |$\rang$|
+$\lang$ | 2      | 0     | Proposal  | v1        | pp2            |$\rang$|
+$\lang$ | 2      | 2     | PreVote   | v2        | vp2            |$\rang$|
+$\lang$ | 2      | 3     | PreCommit | v2        | cp2   [^equiv] |$\rang$|
+$\lang$ | 2      | 3     | PreCommit | v2        | cp2'  [^equiv] |$\rang$|
 
 - Query $\lang 0, 0, Proposal, v1, * \rang$ returns $\{ \lang 0, 0, Proposal, v1, pp1 \rang \}$
 - Query $\lang 0, 0, *, v1, * \rang$ returns $\{ \lang 0, 0, Proposal, v1, pp1 \rang,  \lang 0, 0, PreVote, v1, vp1 \rang \}$.
 
-If needed for disambiguation, queries are subscripted with the node being queried.
+If needed for disambiguation, queries are tagged with the node being queried, as in $\lang 0, 0, *, v1, * \rang @p$
 
 [^equiv]: These tuples are evidence of an equivocation attack.
 
 #### State Validity
 
-Let $V_h \subseteq P$ be the set of validators of height $h$ and $\pi^h_r \in V_h$ be the proposer of round $r$ of height $h$.
+Let $V^h \subseteq P$ be the set of validators of height $h$ and $\pi^h_r \in V^h$ be the proposer of round $r$ of height $h$.
 When the context eliminates any ambiguity on the height number, we might write these values simply as $V$ and $\pi_r$.
 
 Given that each validator can execute each step only once per round, a query that specifies height, round, step and validator SHOULD either return empty or a single tuple.
 
-- $\forall h \in \N, \forall r \in \N, \forall s \in \{\text{Proposal, PreVote, PreCommit}\}, \forall v \in V_h$,  $\cup_{p \in P} \lang h, r, s, v, * \rang_p$ contains at most one element.
+- $\forall h \in \N, \forall r \in \N, \forall s \in \{\text{Proposal, PreVote, PreCommit}\}, \forall v \in V^h$,  $\cup_{p \in P} \lang h, r, s, v, * \rang_p$ contains at most one element.
 
-In the specific case of the Proposal step, only the proposer of the round can have a matching entry.
+In the specific case of the Proposal step, only the proposer of the round CAN have a matching entry.
 
 - $\forall h \in \N, \forall r \in \N$, $\cup_{p \in P} \lang h, r, \text{Proposal}, *, * \rang_p$ contains at most one element and it also matches $\cup_{p\in P} \lang h, r, \text{Proposal}, \pi^h_r, * \rang_p$
 
@@ -129,16 +129,16 @@ Consider the following definition for **Eventual Convergence**.
 
 |Eventual Convergence|
 |-----|
-| If there exists a correct process $p \in P$ such that $e$ is the local view of $p$, then, eventually, for every correct process $q \in P$, either $e$ belongs to or is stale in the local view of $q$.
+| If there exists a correct process $p \in P$ such that $e$ belongs to the local view of $p$, then, eventually, for every correct process $q \in P$, either $e$ belongs to or is stale in the local view of $q$.
 
 In order to ensure convergence even in the presence of failures, the network must be connected in such a way to allow communication around any malicious nodes, that is, to provide paths connecting correct nodes.
 Even if paths connecting correct nodes exist, effectively using them requires timeouts to not expire precociously and abort communication attempts.
 Timeout values can be guaranteed to eventually be enough for communication after a GST is reached, which implies that all communication between correct processes will eventually happen timely, which implies that the tuple space will converge and keep converging.
-Formally, if there is a GST then following holds true:
+Formally, if there is a GST then the following holds true:
 
 | Eventual $\Delta$-Timely Convergence |
 |---|
-| If there exists a correct process $p \in P$ such that $e$ is the local view of $p$ at instant $t$, then by $\text{max}(t,\text{GST}) + \Delta$, for every correct process $q \in P$, either $e$ is in the local view of $q$ or is stale in the local view of $p$.
+| If there exists a correct process $p \in P$ such that $e$ is the local view of $p$ at instant $t$, then by $\text{max}(t,\text{GST}) + \Delta$, for every correct process $q \in P$, either $e$ is in the local view of $q$ or is stale in the local view of $p$.|
 
 Although GST may be too strong an expectation, in practice timely communication frequently happens within small stable periods, also leading to convergence.
 
@@ -157,10 +157,10 @@ It should also be clear that if no entries are ever removed from the tuple space
 - to broadcast a message, add it to the local view;
 - once an entry is added to the local view, deliver it.
 
-However, if entries can be removed, then the Tuple Space is actually weaker, since some entries may never be seen by some nodes, and should be easier to implement.
+However, if entries can be removed, then the Tuple Space is actually weaker, since some entries may never be seen by some nodes, and should be easier/cheaper to implement.
 We argue later that it can be implemented using Anti-Entropy or Epidemic protocols/Gossiping (not equal to the Gossip Communication property).
 We pointed out [previously](#on-the-need-for-the-gossip-communication-property) that the Gossip Communication property is overkill for Tendermint because it requires even stale messages to be delivered.
-We remove entries corresponding to stale messages and never deliver them them.
+We remove entries corresponding to stale messages and never deliver them.
 
 [^proof]:  TODO: do we need to extend here?
 
@@ -204,11 +204,12 @@ The supersession $<$ relation must respect the following properties:[^not_contai
 [^not_contains]: $v_1 \subset v_2 \implies v_1 < v_2$ but $v_1 < v_2 \not\implies v_1 \subset v_2$
 
 1. Transitivity: if $v_1 < v_2$ and $v_2 < v_3$, then $v_1 < v_3$;
-1. Reflexiveness: $v < v$;
+1. Reflexiveness: $v < v$; [^reflex]
 1. Anti-symmetry: if $v_1 < v_2$ and $v_3 < v_2$ then $v_1 = v_2$;
 1. Tombstone validity: if $v_1 < v_2$, then $v_1$ is superseded by any sets obtained by replacing entries in $v_2$ by their corresponding tombstones;[^tomb_ss]
 
-[^tomb_ss]: In other words, $e < \{\bar{e}\}$
+[^reflex]: TODO: do we really need this property?
+[^tomb_ss]: In other words, $\{e\} < \{\bar{e}\}$
 
 ### Superseding Views CRDT
 
@@ -217,17 +218,17 @@ Since superseded elements are irrelevant from the point of view of CRDT users, t
 
 [^name]: settle on a name.
 
-We define SSE is as a state-based CRDT. 
+We define SSE is as a state-based CRDT.
 While an equivalent operations-based definition must exist, it is out of the scope of this document.
 
 
 #### The merge operator - $\sqcup$
 
-State based CRDT use a merge operation to combine two replica states.
+State based CRDT use a merge operation to combine two replica states (their views).
 In our CRDT we embed the removal of superseded messages, as defined in the previous section, in the merge operation.
 
 Let $\mathcal{V}$ be the power set of entries, or the set of all views of a system.
-The merge operator $\sqcup: \mathcal{V} x \mathcal{V} \rightarrow \mathcal{V}$ is defined as the union of the input views, without the entries superseded by the other elements in the union, that is: $v_1 \sqcup v_2 = [e: e \in (v_1 \cup v_2) \land e < (v_1 \cup v_2 \setminus \{e\})]$
+The merge operator $\sqcup: \mathcal{V} x \mathcal{V} \rightarrow \mathcal{V}$ is defined as the union of the input views, without the entries superseded by the other elements in the union, that is: $v_1 \sqcup v_2 = \{e: e \in (v_1 \cup v_2) \land e \not< (v_1 \cup v_2 \setminus \{e\})\}$
 
 > :warning: TODO
 >
@@ -294,8 +295,12 @@ The `Lexy1` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are t
 An entry `(a,b,c)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f)` such that
 
 - either `a < d`
-- or `a == d, b == e, c <= f`
-- or `(d,e,f)` is superseded in `v`.
+- or `a == d, b == e, c <= f` [^todoreflex]
+- or `(d,e,f)` is superseded in `v`. [^todotrans]
+
+[^todoreflex]: TODO, if reflex is dropped, this becomes `<`
+
+[^todotrans]: TODO probably not needed, since whatever supersedes (d,e,f) will also supersede (a,b,c) directly.
 
 The tuple could be interpreted as instance, node and round of some distributed protocol such that tuples from previous instances are obsoleted by tuples from new instances, and tuples from previous rounds are obsoleted by tuples for new rounds of the same node.
 
@@ -303,13 +308,15 @@ The tuple could be interpreted as instance, node and round of some distributed p
 
 The `Lexy2` module in [sse.qnt](sse.qnt) specifies an SSE in which entries are tuples of three integer numbers and a boolean.
 
-In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f,u)` such that 
+In `Lexy2` an entry `(a,b,c,t)` is superseded by a view `v` if an only if `v` contains an entry  `(d,e,f,u)` such that
 
 - either `a < d`
 - or `a == d, b == e, c < f`
-- or `a == d, b == e, c == f, t == u`,
+- or `a == d, b == e, c == f, t == u`,  [^todoreflex2]
 - or `a == d, b == e, c == f, u == true`,
-- or `(d,e,f,u)` is superseded in `v`.
+- or `(d,e,f,u)` is superseded in `v`. [^todotrans]
+
+ [^todoreflex2]: TODO, if reflex is dropped, this is dropped.
 
 As in previous example, the tuple could be interpreted as instance, node and round of some distributed protocol such that tuples from previous instances are obsoleted by tuples from new instances, and tuples from previous rounds are obsoleted by tuples for new rounds of the same node.
 As an extra condition, the boolean acts as a tombstone marker for a tuple.

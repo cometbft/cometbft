@@ -7,8 +7,8 @@ This specification is divided into multiple documents and should be read in the 
 - [architecture.md](architecture.md): describes the architecture used in CometBFT and where this specification is focused;
 - [crdt.md](crdt.md): explains the rationale for using a CRDT in the gossiping and defines the CRDT used, SSE;
 - [sse.qnt](sse.qnt): Quint spec with example instantiations of the proposed CRDT;
-- [gossip.md](gossip.md):
 - [crdt.qnt](crdt.qnt): Quint spec with an instantiation for use in Tendermint.
+- [gossip.md](gossip.md): Comes from a an earlier iteration. Documents what must be provided and what is required on of the gossip interface. Is outdated.
 
 
 The following files may be read if needed

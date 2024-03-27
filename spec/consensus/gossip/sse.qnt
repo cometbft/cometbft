@@ -26,6 +26,7 @@ module Lexy1 {
             )
         )
 
+    //User provided
     pure def matches(e: Entry, oe:EntryO):bool = all {
         OInt::nsoe(oe._1,e._1),
         OInt::nsoe(oe._2,e._2),
@@ -119,9 +120,6 @@ module Lexy2 {
     //User provided
     type Entry = (int, int, int, bool)
     type EntryO = (OInt::OType,OInt::OType,OInt::OType,OBool::OType)
-
-    //User provided
-    type Entry = (int, int, int, bool)
 
     //User provided
     pure def toTombstone(e: Entry): Entry = (e._1, e._1, e._3, true)

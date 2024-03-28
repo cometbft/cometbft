@@ -15,7 +15,8 @@ proposed block, depending on the configuration of the validator's local clock.
 
 This document provides a set of actionable steps for application developers and
 node operators to diagnose and fix issues related to clock synchronization and
-configuration of the [`SynchronyParams`](../../explanation/core/proposer-based-timestamps.md#consensus-parameters) consensus parameters.
+configuration of the [`SynchronyParams`](../../explanation/core/proposer-based-timestamps.md#consensus-parameters)
+consensus parameters.
 
 Use this runbook if you observe that validators are frequently voting `nil` for a block that the rest
 of the network votes for, or if validators are frequently producing block proposals
@@ -139,7 +140,7 @@ much larger for some proposers, then the issue is likely related to synchronizat
 nodes with NTP. Contact those proposers and ensure that their nodes are properly connected
 to NTP using the steps for [Debugging a Single Node](#debugging-a-single-node).
 
-If the values are relatively similar for all proposers you should next compare,
+If the values are relatively similar for all proposers,
 you'll need to compare this value to the `SynchronyParams` for the network. Continue
 to the [Checking Sychrony](#checking-synchronyparams) steps.
 
@@ -248,13 +249,14 @@ updated in order to be aligned with actual message delays in the network.
 
 ### Updating SynchronyParams
 
-The `SynchronyParams` are Consensus Parameters, which means they are the same for all nodes in the network and are set and updated
+The `SynchronyParams` are Consensus Parameters, which means they are the same
+for all nodes in the network and are set and updated
 by the application running alongside CometBFT. Updates to these parameters must
 be passed to the application during the `FinalizeBlock` ABCI method call.
 
 If the application was built using the CosmosSDK, then these parameters can be updated
 programmatically using a governance proposal. For more information, see the
-[CosmosSDK documentation](https://docs.cosmos.network/v0.45/ibc/proposals.html).
+[CosmosSDK documentation](https://docs.cosmos.network/v0.50/build/modules/gov#proposal-submission).
 
 If the application does not implement a way to update the consensus parameters
 programmatically, then the application itself must be updated to do so. More information on updating

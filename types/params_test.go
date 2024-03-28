@@ -24,7 +24,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 		params ConsensusParams
 		valid  bool
 	}{
-		// test block params
+		// valid params
 		{
 			name: "normal values",
 			params: makeParams(makeParamsArgs{
@@ -35,6 +35,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: true,
 		},
+		// block params
 		{
 			name: "blockBytes se to 0",
 			params: makeParams(makeParamsArgs{
@@ -105,17 +106,28 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: false,
 		},
+		// blockBytes can be -1
 		{
-			name: "blockBytes invalid, evidenceAge invalid",
+			name: "blockBytes -1",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   1024 * 1024 * 1024,
-				evidenceAge:  -1,
+				blockBytes:   -1,
+				evidenceAge:  2,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
+			}),
+			valid: true,
+		},
+		{
+			name: "blockBytes -2",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   -2,
+				evidenceAge:  2,
 				precision:    time.Nanosecond,
 				messageDelay: time.Nanosecond,
 			}),
 			valid: false,
 		},
-		// test evidence params
+		// evidence params
 		{
 			name: "evidenceAge 0",
 			params: makeParams(makeParamsArgs{
@@ -193,27 +205,6 @@ func TestConsensusParamsValidation(t *testing.T) {
 			}),
 			valid: false,
 		},
-		// blockBytes can be -1
-		{
-			name: "blockBytes -1",
-			params: makeParams(makeParamsArgs{
-				blockBytes:   -1,
-				evidenceAge:  2,
-				precision:    time.Nanosecond,
-				messageDelay: time.Nanosecond,
-			}),
-			valid: true,
-		},
-		{
-			name: "blockBytes -2",
-			params: makeParams(makeParamsArgs{
-				blockBytes:   -2,
-				evidenceAge:  2,
-				precision:    time.Nanosecond,
-				messageDelay: time.Nanosecond,
-			}),
-			valid: false,
-		},
 		// invalid synchrony params
 		{
 			name: "messageDelay 0",
@@ -269,7 +260,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: false,
 		},
 		{
-			name: "pbts height 0",
+			name: "pbts disabled",
 			params: makeParams(
 				makeParamsArgs{
 					blockBytes:   1,
@@ -281,23 +272,25 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
-			name: "pbts valid height",
+			name: "pbts enabled",
 			params: makeParams(
 				makeParamsArgs{
 					blockBytes:   1,
 					evidenceAge:  2,
 					precision:    time.Nanosecond,
 					messageDelay: time.Nanosecond,
-					pbtsHeight:   100,
+					pbtsHeight:   1,
 				}),
 			valid: true,
 		},
 	}
-	for i, tc := range testCases {
+	for _, tc := range testCases {
 		if tc.valid {
-			require.NoErrorf(t, tc.params.ValidateBasic(), "expected no error for valid params (#%d)", i)
+			require.NoErrorf(t, tc.params.ValidateBasic(),
+				"expected no error for valid params, test: '%s'", tc.name)
 		} else {
-			require.Errorf(t, tc.params.ValidateBasic(), "expected error for non valid params (#%d)", i)
+			require.Errorf(t, tc.params.ValidateBasic(),
+				"expected error for non valid params, test: '%s'", tc.name)
 		}
 	}
 }

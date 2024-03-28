@@ -38,8 +38,8 @@ related to clock synchronization, use the following steps to debug and correct t
 
 ### Check Timely Metric
 
-CometBFT exposes a histogram metric for the difference between the timestamp in the proposal
-the and the time read from the node's local clock when the proposal is received.
+CometBFT exposes a histogram metric with the difference between the timestamp in the proposal
+and the time read from the node's local clock when the proposal is received.
 
 The histogram exposes multiple metrics on the Prometheus `/metrics` endpoint called
 

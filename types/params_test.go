@@ -34,6 +34,16 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "minimal setup 2",
+			params: makeParams(makeParamsArgs{
+				blockBytes:  1,
+				evidenceAge: 2,
+				precision:   0 * time.Nanosecond,
+ 				messageDelay: 0 * time.Nanosecond,
+			}),
+			valid: true,
+		},
+
 			name: "minimal setup, pbts enabled",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,

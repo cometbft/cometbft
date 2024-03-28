@@ -34,16 +34,6 @@ func TestConsensusParamsValidation(t *testing.T) {
 			valid: true,
 		},
 		{
-			name: "minimal setup 2",
-			params: makeParams(makeParamsArgs{
-				blockBytes:  1,
-				evidenceAge: 2,
-				precision:   0 * time.Nanosecond,
- 				messageDelay: 0 * time.Nanosecond,
-			}),
-			valid: true,
-		},
-
 			name: "minimal setup, pbts enabled",
 			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
@@ -51,6 +41,18 @@ func TestConsensusParamsValidation(t *testing.T) {
 				precision:    time.Nanosecond,
 				messageDelay: time.Nanosecond,
 				pbtsHeight:   1,
+			}),
+			valid: true,
+		},
+		{
+			name: "minimal setup, pbts disabled",
+			params: makeParams(makeParamsArgs{
+				blockBytes:  1,
+				evidenceAge: 2,
+				// Invalid Synchrony params, but this is ok
+				// since PBTS is disabled.
+				precision:    0,
+				messageDelay: 0,
 			}),
 			valid: true,
 		},

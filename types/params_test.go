@@ -218,6 +218,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 		{
 			name: "messageDelay 0",
 			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
 				evidenceAge:  2,
 				precision:    time.Nanosecond,
 				messageDelay: 0,
@@ -227,6 +228,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 		{
 			name: "messageDelay negative",
 			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
 				evidenceAge:  2,
 				precision:    time.Nanosecond,
 				messageDelay: -1,
@@ -236,6 +238,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 		{
 			name: "precision 0",
 			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
 				evidenceAge:  2,
 				precision:    0,
 				messageDelay: time.Nanosecond,
@@ -245,6 +248,7 @@ func TestConsensusParamsValidation(t *testing.T) {
 		{
 			name: "precision negative",
 			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
 				evidenceAge:  2,
 				precision:    -1,
 				messageDelay: time.Nanosecond,

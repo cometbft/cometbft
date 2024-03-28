@@ -8,7 +8,7 @@ From version `v1.0`, CometBFT has new constraints for the timestamps included
 in produced blocks.
 
 The new constraints mean that validators may fail to produce valid blocks,
-which causes other validators to issue `nil` prevotes, this rejecting the
+which causes other validators to issue `nil` prevotes, thus rejecting the
 proposed block, depending on the configuration of the validator's local clock.
 
 ## What is this document for?

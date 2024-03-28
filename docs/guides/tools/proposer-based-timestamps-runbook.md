@@ -4,16 +4,19 @@ order: 3
 
 # Proposer-Based Timestamps Runbook
 
-Version v1.0 of CometBFT added new constraints for the timestamps included in
-each block created by CometBFT. The new constraints mean that validators may
-fail to produce valid blocks or may issue `nil` prevotes for proposed blocks
-depending on the configuration of the validator's local clock.
+From version `v1.0`, CometBFT has new constraints for the timestamps included
+in produced blocks.
+
+The new constraints mean that validators may fail to produce valid blocks,
+which causes other validators to issue `nil` prevotes, thus rejecting the
+proposed block, depending on the configuration of the validator's local clock.
 
 ## What is this document for?
 
 This document provides a set of actionable steps for application developers and
 node operators to diagnose and fix issues related to clock synchronization and
-configuration of the [`SynchronyParams`](https://github.com/cometbft/cometbft/blob/main/spec/core/data_structures.md#synchronyparams) consensus parameters.
+configuration of the [`SynchronyParams`](../../explanation/core/proposer-based-timestamps.md#consensus-parameters)
+consensus parameters.
 
 Use this runbook if you observe that validators are frequently voting `nil` for a block that the rest
 of the network votes for, or if validators are frequently producing block proposals
@@ -21,8 +24,8 @@ that are rejected by the rest of the network.
 
 ## Requirements
 
-To use this runbook, you must be running a node that has the [Prometheus metrics endpoint enabled](../core/metrics.md)
-and the [RPC endpoint](../core/rpc.md) enabled and accessible.
+To use this runbook, you must be running a node that has the [Prometheus metrics endpoint enabled](../../explanation/core/metrics.md)
+and the [RPC endpoint](../../explanation/core/rpc.md) enabled and accessible.
 
 It is strongly recommended to also run a Prometheus metrics collector to gather and
 analyze metrics from the CometBFT node.
@@ -35,8 +38,8 @@ related to clock synchronization, use the following steps to debug and correct t
 
 ### Check Timely Metric
 
-CometBFT exposes a histogram metric for the difference between the timestamp in the proposal
-the and the time read from the node's local clock when the proposal is received.
+CometBFT exposes a histogram metric with the difference between the timestamp in the proposal
+and the time read from the node's local clock when the proposal is received.
 
 The histogram exposes multiple metrics on the Prometheus `/metrics` endpoint called
 
@@ -81,76 +84,6 @@ If you observe that `is_timely="false"` is growing, it means that your node is c
 seeing proposals that are far from its local clock. If this is the case, you should check
 to make sure your local clock is properly synchronized to NTP.
 
-### Checking Clock Sync
-
-NTP configuration and tooling is very specific to the operating system and distribution
-that your validator node is running. This guide assumes you have `timedatectl` installed with
-[`systemd-timesyncd`](https://www.freedesktop.org/software/systemd/man/latest/systemd-timesyncd.service.html),
-a simple NTP client or the more complete
-[chrony](https://chrony.tuxfamily.org/), a popular tool for interacting with time
-synchronization on Linux distributions. If you are using an operating system or
-distribution with a different time synchronization mechanism, please consult the
-documentation for your operating system to check the status and re-synchronize the daemon.
-
-#### Check if NTP is Enabled
-
-```shell
-timedatectl
-```
-
-From the output, ensure that `NTP service` is `active`. If `NTP service` is `inactive`, run:
-
-```shell
-timedatectl set-ntp true
-```
-
-Re-run the `timedatectl` command and verify that the change has taken effect.
-
-#### Check if Your NTP Daemon is Synchronized
-
-We provide two examples here, for `chrony` and `timesync`, but these steps
-should be adapted if you are using a different daemon.
-
-If you find that the NTP is not synchronizing, remember to allow NTP traffic
-(123/UDP) to your NTP servers.
-
-##### `chrony`
-
-Check the status of your `chrony` daemon by running the following command:
-
-```shell
-chronyc tracking
-```
-
-If the `chrony` daemon is running, you will see output that indicates its current status.
-If the `chrony` daemon is not running, restart it and re-run `chronyc tracking`.
-
-The `System time` field of the response should show a value that is much smaller than 100
-milliseconds.
-
-If the value is very large, restart the `chronyd` daemon.
-
-##### `timesync`
-
-If you are using `systemd-timesyncd`, then execute the following command:
-
-```shell
-timedatectl timesync-status --monitor
-```
-
-If the output indicates an error, restart the service by running
-
-```shell
-timedatectl set-ntp false
-timedatectl set-ntp true
-```
-
-Once running, the output should include a `Packet count`, indicating how many times the protocol
-has been executed, and a small `Precision` value.
-Observe that this daemon increases the polling interval over time, up to a limit.
-You may want to decrease the maximum value of the polling interval by tweaking
-the `/etc/systemd/timesyncd.conf` file.
-
 ## Debugging a Network
 
 If you observe that a network is frequently failing to produce blocks and suspect
@@ -193,8 +126,8 @@ synchronization of their nodes. Contact those proposers and ensure that their no
 are properly connected to NTP using the steps for [Debugging a Single Node](#debugging-a-single-node).
 
 If the value is relatively similar for all proposers you should next compare this
-value to the `SynchronyParams` values for the network. Continue to the [Checking
-Sychrony](#checking-synchrony) steps.
+value to the `SynchronyParams` values for the network. Continue to the
+[Checking Sychrony](#checking-synchronyparams) steps.
 
 #### From the `/metrics` url
 
@@ -207,11 +140,81 @@ much larger for some proposers, then the issue is likely related to synchronizat
 nodes with NTP. Contact those proposers and ensure that their nodes are properly connected
 to NTP using the steps for [Debugging a Single Node](#debugging-a-single-node).
 
-If the values are relatively similar for all proposers you should next compare,
+If the values are relatively similar for all proposers,
 you'll need to compare this value to the `SynchronyParams` for the network. Continue
-to the [Checking Sychrony](#checking-synchrony) steps.
+to the [Checking Sychrony](#checking-synchronyparams) steps.
 
-### Checking Synchrony
+## Checking Clock Sync
+
+NTP configuration and tooling is very specific to the operating system and distribution
+that your validator node is running. This guide assumes you have `timedatectl` installed with
+[`systemd-timesyncd`](https://www.freedesktop.org/software/systemd/man/latest/systemd-timesyncd.service.html),
+which provides a simple NTP client, or the more complete
+[chrony](https://chrony.tuxfamily.org/), a popular tool for interacting with time
+synchronization on Linux distributions. If you are using an operating system or
+distribution with a different time synchronization mechanism, please consult the
+documentation for your operating system to check the status and re-synchronize the daemon.
+
+### Check if NTP is Enabled
+
+```shell
+timedatectl
+```
+
+From the output, ensure that `NTP service` is `active`. If `NTP service` is `inactive`, run:
+
+```shell
+timedatectl set-ntp true
+```
+
+Re-run the `timedatectl` command and verify that the change has taken effect.
+
+### Check if Your NTP Daemon is Synchronized
+
+We provide two examples here, for `chrony` and `timesync`, but these steps
+should be adapted if you are using a different daemon.
+
+If you find that the NTP is not synchronizing, remember to allow NTP traffic
+(123/UDP) to your NTP servers.
+
+#### `chrony`
+
+Check the status of your `chrony` daemon by running the following command:
+
+```shell
+chronyc tracking
+```
+
+If the `chrony` daemon is running, you will see output that indicates its current status.
+If the `chrony` daemon is not running, restart it and re-run `chronyc tracking`.
+
+The `System time` field of the response should show a value that is much smaller than 100
+milliseconds.
+
+If the value is very large, restart the `chronyd` daemon.
+
+#### `timesync`
+
+If you are using `systemd-timesyncd`, then execute the following command:
+
+```shell
+timedatectl timesync-status --monitor
+```
+
+If the output indicates an error, restart the service by running
+
+```shell
+timedatectl set-ntp false
+timedatectl set-ntp true
+```
+
+Once running, the output should include a `Packet count`, indicating how many times the protocol
+has been executed, and a small `Precision` value.
+Observe that this daemon increases the polling interval over time, up to a limit.
+You may want to decrease the maximum value of the polling interval by tweaking
+the `/etc/systemd/timesyncd.conf` file.
+
+## Checking SynchronyParams
 
 To determine the currently configured `SynchronyParams` for your network, issue a
 request to your node's RPC endpoint. For a node running locally with the RPC server
@@ -237,15 +240,23 @@ If the `consensus_quorum_prevote_delay` value approaches the sum of `precision` 
 then the value selected for these parameters is too small. Your application will
 need to be modified to update the `SynchronyParams` to have larger values.
 
+Note that the `message_delay` adopted by CometBFT 
+[increases over rounds](../../explanation/core/proposer-based-timestamps.md#adaptive-messagedelay),
+so that the chain does not block forever when it is set to an improper value.
+However, if the standard `message_delay`, used in round 0, is too small, there
+is an important performance impact, and the value of this parameter should be
+updated in order to be aligned with actual message delays in the network.
+
 ### Updating SynchronyParams
 
-The `SynchronyParams` are `ConsensusParameters` which means they are set and updated
+The `SynchronyParams` are Consensus Parameters, which means they are the same
+for all nodes in the network and are set and updated
 by the application running alongside CometBFT. Updates to these parameters must
 be passed to the application during the `FinalizeBlock` ABCI method call.
 
 If the application was built using the CosmosSDK, then these parameters can be updated
-programmatically using a governance proposal. For more information, see the [CosmosSDK
-documentation](https://hub.cosmos.network/main/governance/submitting.html#sending-the-transaction-that-submits-your-governance-proposal).
+programmatically using a governance proposal. For more information, see the
+[CosmosSDK documentation](https://docs.cosmos.network/v0.50/build/modules/gov#proposal-submission).
 
 If the application does not implement a way to update the consensus parameters
 programmatically, then the application itself must be updated to do so. More information on updating

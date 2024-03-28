@@ -252,13 +252,16 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", params.Feature.PbtsEnableHeight)
 	}
 
-	if params.Synchrony.MessageDelay <= 0 {
-		return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
-			params.Synchrony.MessageDelay)
-	}
-	if params.Synchrony.Precision <= 0 {
-		return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
-			params.Synchrony.Precision)
+	// Synchrony params are only relevant when PBTS is enabled
+	if params.Feature.PbtsEnableHeight > 0 {
+		if params.Synchrony.MessageDelay <= 0 {
+			return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
+				params.Synchrony.MessageDelay)
+		}
+		if params.Synchrony.Precision <= 0 {
+			return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
+				params.Synchrony.Precision)
+		}
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {

@@ -793,6 +793,14 @@ $ echo "cm9ja3M=" | base64 -d
 rocks
 ```
 
+If you want to search for txs, you can leverage `CometBFT` kv indexer by using the `/tx_search` RPC endpoint:
+
+```bash
+curl "localhost:26657/tx_search?query=\"app.key='cometbft'\""
+```
+
+The events (`abcitypes.Event`) added in `FinalizeBlock` are indexed by CometBFT (assuming the `kv` indexer is enabled in the CometBFT's configuration).
+
 ## Outro
 
 Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/cosmosnetwork) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.

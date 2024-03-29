@@ -49,6 +49,17 @@ message SignedProposalResponse {
   RemoteSignerError          error    = 2;
 }
 
+// SignBytesRequest is a request to sign arbitrary bytes
+message SignBytesRequest {
+  bytes  value       = 1;
+}
+
+// SignBytesResponse is a response containing a signature or an error
+message SignBytesResponse {
+  bytes             signature = 1;
+  RemoteSignerError         error    = 2;
+}
+
 // PingRequest is a request to confirm that the connection is alive.
 message PingRequest {}
 
@@ -67,5 +78,7 @@ message Message {
     SignedProposalResponse signed_proposal_response = 6;
     PingRequest            ping_request             = 7;
     PingResponse           ping_response            = 8;
+    SignBytesRequest       sign_bytes_request       = 9;
+    SignBytesResponse      sign_bytes_response      = 10;
   }
 }

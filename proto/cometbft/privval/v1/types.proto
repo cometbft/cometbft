@@ -57,7 +57,7 @@ message SignBytesRequest {
 // SignBytesResponse is a response containing a signature or an error
 message SignBytesResponse {
   bytes             signature = 1;
-  RemoteSignerError         error    = 2;
+  RemoteSignerError error     = 2;
 }
 
 // PingRequest is a request to confirm that the connection is alive.

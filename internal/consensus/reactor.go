@@ -812,7 +812,7 @@ func pickPartToSend(
 				return nil, false
 			}
 			ps.InitProposalBlockParts(blockMeta.BlockID.PartSetHeader)
-			// continue the loop since prs is a copy and not effected by this initialization
+			// continue the loop since prs is a copy and not affected by this initialization
 			return nil, true // continue OUTER_LOOP
 		}
 		part := pickPartForCatchup(heightLogger, rs, prs, blockStore)

@@ -6,7 +6,7 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-    - [ABCI++ vs. ABCI](#abci-vs-abci)
+    - [ABCI 2.0 vs. ABCI](#abci-vs-abci)
     - [Method overview](#method-overview)
         - [Consensus/block execution methods](#consensusblock-execution-methods)
         - [Mempool methods](#mempool-methods)
@@ -372,7 +372,7 @@ irrefutable proof of malicious behavior by a network participant. It is the resp
 CometBFT to detect such malicious behavior. When malicious behavior is detected, CometBFT
 will gossip evidences of misbehavior to other nodes and commit the evidences to
 the chain once they are verified by a subset of validators. These evidences will then be
-passed on to the Application through ABCI++. It is the responsibility of the
+passed on to the Application through ABCI. It is the responsibility of the
 Application to handle evidence of misbehavior and exercise punishment.
 
 There are two forms of evidence: Duplicate Vote and Light Client Attack. More

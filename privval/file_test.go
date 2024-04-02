@@ -243,6 +243,20 @@ func TestSignProposal(t *testing.T) {
 	assert.Equal(sig, proposal.Signature)
 }
 
+func TestSignBytes(t *testing.T) {
+	privVal, _, _ := newTestFilePV(t)
+	testBytes := []byte("test bytes for signing")
+
+	// Sign the test bytes
+	sig, err := privVal.SignBytes(testBytes)
+	require.NoError(t, err, "expected no error signing bytes")
+
+	// Verify the signature
+	pubKey, err := privVal.GetPubKey()
+	require.NoError(t, err, "expected no error getting public key")
+	assert.True(t, pubKey.VerifySignature(testBytes, sig), "signature verification failed")
+}
+
 func TestDifferByTimestamp(t *testing.T) {
 	tempKeyFile, err := os.CreateTemp("", "priv_validator_key_")
 	require.NoError(t, err)

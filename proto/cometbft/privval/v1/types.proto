@@ -51,7 +51,7 @@ message SignedProposalResponse {
 
 // SignBytesRequest is a request to sign arbitrary bytes
 message SignBytesRequest {
-  bytes  value       = 1;
+  bytes  value = 1;
 }
 
 // SignBytesResponse is a response containing a signature or an error

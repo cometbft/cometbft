@@ -598,7 +598,7 @@ OUTER_LOOP:
 				continue OUTER_LOOP
 			}
 		} else if continueLoop {
-			// part is nil but we dont want to sleep
+			// part is nil but we don't want to sleep
 			continue OUTER_LOOP
 		}
 

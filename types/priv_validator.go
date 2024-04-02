@@ -25,7 +25,7 @@ type PrivValidator interface {
 	// SignProposal signs a canonical representation of the proposal.
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
 
-	// SignBytes signs the given bytes.
+	// SignBytes signs an arbitrary array of bytes.
 	SignBytes(bytes []byte) ([]byte, error)
 }
 

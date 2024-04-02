@@ -594,11 +594,13 @@ OUTER_LOOP:
 		// --------------------
 
 		if part, continueLoop := pickPartToSend(logger, conR.conS.blockStore, rs, ps, prs); part != nil {
-			if ps.SendPartSetHasPart(part, prs) {
+			// part is not nil: we either succeed in sending it,
+			// or we were instructed not to sleep (busy-waiting)
+			if ps.SendPartSetHasPart(part, prs) || continueLoop {
 				continue OUTER_LOOP
 			}
 		} else if continueLoop {
-			// part is nil but we don't want to sleep
+			// part is nil but we don't want to sleep (busy-waiting)
 			continue OUTER_LOOP
 		}
 
@@ -792,6 +794,7 @@ func pickPartToSend(
 	if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
 		if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(); ok {
 			part := rs.ProposalBlockParts.GetPart(index)
+			// If sending this part fails, restart the OUTER_LOOP (busy-waiting).
 			return part, true
 		}
 	}
@@ -817,7 +820,8 @@ func pickPartToSend(
 		}
 		part := pickPartForCatchup(heightLogger, rs, prs, blockStore)
 		if part != nil {
-			return part, true
+			// If sending this part fails, do not restart the OUTER_LOOP and sleep.
+			return part, false
 		}
 	}
 

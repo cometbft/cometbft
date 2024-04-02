@@ -55,7 +55,7 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 }
 
 func formatProtoToRef[T any](collection []T) []*T {
-	res := []*T{}
+	res := make([]*T, 0, len(collection))
 	for i := range collection {
 		res = append(res, &collection[i])
 	}

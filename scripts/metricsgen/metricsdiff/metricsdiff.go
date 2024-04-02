@@ -139,7 +139,7 @@ func labelsToStringList(ls []*dto.LabelPair) []string {
 	for i, l := range ls {
 		r[i] = l.GetName()
 	}
-	return sort.StringSlice(r)
+	return r
 }
 
 func listDiff(a, b []string) ([]string, []string) {

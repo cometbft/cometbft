@@ -21,7 +21,7 @@ func TestUnmarshal(t *testing.T) {
 
 	testcases := map[string]struct {
 		json  string
-		value interface{}
+		value any
 		err   bool
 	}{
 		"bool true":           {"true", true, false},

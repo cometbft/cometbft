@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var sink any = nil
+var sink any
 
 type innerHashTest struct {
 	left, right string

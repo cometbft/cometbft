@@ -37,6 +37,19 @@ type Config struct {
 	VoteExtensionsUpdateHeight int64 `toml:"vote_extensions_update_height"`
 
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
+
+	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`
+
+	Compact bool `toml:"compact"`
+
+	CompactionInterval bool `toml:"compaction_interval"`
+
+	DiscardABCIResponses bool `toml:"discard_abci_responses"`
+
+	Indexer string `toml:"indexer"`
+
+	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
+	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 }
 
 // App extracts out the application specific configuration parameters.
@@ -57,6 +70,8 @@ func (cfg *Config) App() *app.Config {
 		VoteExtensionsEnableHeight: cfg.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: cfg.VoteExtensionsUpdateHeight,
 		ABCIRequestsLoggingEnabled: cfg.ABCIRequestsLoggingEnabled,
+		PbtsEnableHeight:           cfg.PbtsEnableHeight,
+		PbtsUpdateHeight:           cfg.PbtsUpdateHeight,
 	}
 }
 

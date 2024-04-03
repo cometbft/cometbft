@@ -50,7 +50,11 @@ func TestEvidencePoolBasic(t *testing.T) {
 	stateStore.On("LoadValidators", mock.AnythingOfType("int64")).Return(valSet, nil)
 	stateStore.On("Load").Return(createState(height+1, valSet), nil)
 
-	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
+	require.Panics(t, func() { _, _ = evidence.NewPool(evidenceDB, stateStore, blockStore, evidence.WithDBKeyLayout("2")) }, "failed to create tore")
+
+	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore, evidence.WithDBKeyLayout("v2"))
+	require.NoError(t, err)
+
 	require.NoError(t, err)
 	pool.SetLogger(log.TestingLogger())
 

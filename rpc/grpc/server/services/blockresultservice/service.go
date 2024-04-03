@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
+	sm "github.com/cometbft/cometbft/state"
 )
 
 type blockResultsService struct {

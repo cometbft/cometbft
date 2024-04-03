@@ -10,8 +10,8 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/inspect"
-	"github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/state/indexer/block"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer/block"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )

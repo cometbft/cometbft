@@ -3,7 +3,6 @@ package state_test
 import (
 	"context"
 	"fmt"
-	"github.com/cometbft/cometbft/store"
 	"os"
 	"testing"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/cometbft/cometbft/internal/state/txindex/kv"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

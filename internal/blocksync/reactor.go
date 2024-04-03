@@ -2,7 +2,6 @@ package blocksync
 
 import (
 	"fmt"
-	"github.com/cometbft/cometbft/store"
 	"reflect"
 	"sync"
 	"time"
@@ -11,6 +10,7 @@ import (
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

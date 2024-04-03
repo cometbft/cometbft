@@ -2,7 +2,6 @@ package blocksync
 
 import (
 	"fmt"
-	"github.com/cometbft/cometbft/store"
 	"os"
 	"sort"
 	"testing"
@@ -21,6 +20,7 @@ import (
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )

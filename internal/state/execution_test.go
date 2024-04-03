@@ -3,7 +3,6 @@ package state_test
 import (
 	"context"
 	"errors"
-	"github.com/cometbft/cometbft/store"
 	"testing"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	"github.com/cometbft/cometbft/proxy"
 	pmocks "github.com/cometbft/cometbft/proxy/mocks"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"

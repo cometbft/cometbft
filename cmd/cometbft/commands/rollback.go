@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"github.com/cometbft/cometbft/store"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -11,6 +10,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/state"
+	"github.com/cometbft/cometbft/store"
 )
 
 var removeBlock = false

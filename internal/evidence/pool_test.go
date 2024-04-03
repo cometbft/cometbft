@@ -1,7 +1,6 @@
 package evidence_test
 
 import (
-	"github.com/cometbft/cometbft/store"
 	"os"
 	"testing"
 	"time"
@@ -18,6 +17,7 @@ import (
 	smmocks "github.com/cometbft/cometbft/internal/state/mocks"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )

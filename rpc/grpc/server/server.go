@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"github.com/cometbft/cometbft/store"
 	"net"
 	"strings"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

@@ -2,7 +2,6 @@ package state_test
 
 import (
 	"crypto/rand"
-	"github.com/cometbft/cometbft/store"
 	"testing"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/mocks"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"

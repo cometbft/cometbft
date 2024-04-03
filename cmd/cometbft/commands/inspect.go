@@ -2,7 +2,6 @@ package commands
 
 import (
 	"context"
-	"github.com/cometbft/cometbft/store"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +12,7 @@ import (
 	"github.com/cometbft/cometbft/internal/inspect"
 	"github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/indexer/block"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

@@ -3,7 +3,6 @@ package inspect
 import (
 	"context"
 	"errors"
-	"github.com/cometbft/cometbft/store"
 	"net"
 	"os"
 
@@ -18,6 +17,7 @@ import (
 	cmtstrings "github.com/cometbft/cometbft/internal/strings"
 	"github.com/cometbft/cometbft/libs/log"
 	rpccore "github.com/cometbft/cometbft/rpc/core"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

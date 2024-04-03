@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/cometbft/cometbft/store"
 	"net"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
 	pbversionsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"

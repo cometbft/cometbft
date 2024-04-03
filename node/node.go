@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	store2 "github.com/cometbft/cometbft/store"
 	"net"
 	"net/http"
 	"os"
@@ -27,7 +28,6 @@ import (
 	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/internal/state/txindex/null"
 	"github.com/cometbft/cometbft/internal/statesync"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -64,7 +64,7 @@ type Node struct {
 	// services
 	eventBus          *types.EventBus // pub/sub for services
 	stateStore        sm.Store
-	blockStore        *store.BlockStore // store the blockchain to disk
+	blockStore        *store2.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
 	bcReactor         p2p.Reactor        // for block-syncing
 	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
@@ -165,7 +165,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(store.NopMetrics()), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	blockStore := store2.NewBlockStore(blockStoreDB, store2.WithMetrics(store2.NopMetrics()), store2.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store2.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	defer func() {
@@ -301,7 +301,7 @@ func NewNode(ctx context.Context,
 		DBKeyLayout:          config.Storage.ExperimentalKeyLayout,
 	})
 
-	blockStore := store.NewBlockStore(blockStoreDB, store.WithMetrics(bstMetrics), store.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout), store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
+	blockStore := store2.NewBlockStore(blockStoreDB, store2.WithMetrics(bstMetrics), store2.WithCompaction(config.Storage.Compact, config.Storage.CompactionInterval), store2.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout), store2.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 	logger.Info("Blockstore version", "version", blockStore.GetVersion())
 
 	// The key will be deleted if it existed.
@@ -898,7 +898,7 @@ func (n *Node) Switch() *p2p.Switch {
 }
 
 // BlockStore returns the Node's BlockStore.
-func (n *Node) BlockStore() *store.BlockStore {
+func (n *Node) BlockStore() *store2.BlockStore {
 	return n.blockStore
 }
 
@@ -1026,7 +1026,7 @@ func createPruner(
 	txIndexer txindex.TxIndexer,
 	blockIndexer indexer.BlockIndexer,
 	stateStore sm.Store,
-	blockStore *store.BlockStore,
+	blockStore *store2.BlockStore,
 	metrics *sm.Metrics,
 	logger log.Logger,
 ) (*sm.Pruner, error) {

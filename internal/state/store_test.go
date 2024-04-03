@@ -2,6 +2,7 @@ package state_test
 
 import (
 	"fmt"
+	"github.com/cometbft/cometbft/store"
 	"os"
 	"testing"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/internal/state/indexer"
 	"github.com/cometbft/cometbft/internal/state/indexer/block"
 	"github.com/cometbft/cometbft/internal/state/txindex"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/types"

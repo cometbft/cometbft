@@ -3,6 +3,7 @@ package consensus
 import (
 	"context"
 	"fmt"
+	"github.com/cometbft/cometbft/store"
 	"os"
 	"path"
 	"sync"
@@ -25,7 +26,6 @@ import (
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	sm "github.com/cometbft/cometbft/internal/state"
 	statemocks "github.com/cometbft/cometbft/internal/state/mocks"
-	"github.com/cometbft/cometbft/internal/store"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/json"

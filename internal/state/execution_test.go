@@ -3,6 +3,7 @@ package state_test
 import (
 	"context"
 	"errors"
+	"github.com/cometbft/cometbft/store"
 	"testing"
 	"time"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/state/mocks"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"

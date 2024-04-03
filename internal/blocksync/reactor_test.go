@@ -2,6 +2,7 @@ package blocksync
 
 import (
 	"fmt"
+	"github.com/cometbft/cometbft/store"
 	"os"
 	"sort"
 	"testing"
@@ -15,7 +16,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
 	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"

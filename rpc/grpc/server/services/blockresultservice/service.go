@@ -2,13 +2,13 @@ package blockresultservice
 
 import (
 	"context"
+	"github.com/cometbft/cometbft/store"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
 	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 )
 

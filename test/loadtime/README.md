@@ -26,7 +26,7 @@ transactions and broadcasts them to CometBFT.
 framework. As a result, all flags and options specified on the `cometbft-load-test` apply to
 `load`.
 
-Below is a basic invocation for generating load against a CometBFT websocket running
+Below is a basic invocation for generating load against a CometBFT websocket v1 running
 on `localhost:26657`
 
 ```bash

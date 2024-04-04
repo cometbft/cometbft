@@ -15,7 +15,7 @@ The CometBFT configuration has three distinct parts:
 
 Validator nodes also require a private/public key-pair to sign consensus messages.
 
-If a Hardware Security Module is not available, CometBFT stores an unencrypted key-pair on the file system in the
+If a Hardware Security Module (HSM) is not available, CometBFT stores an unencrypted key-pair on the file system in the
 [priv_validator_key.json](priv_validator_key.json.md) file and the state of the last block signed in
 [priv_validator_state.json](priv_validator_state.json.md).
 

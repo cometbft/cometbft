@@ -617,7 +617,7 @@ compact = false
 # the given amount of blocks to be pruned before triggering compaction.
 # It should be tuned depending on the number of items. If your retain height is 1 block,
 # it is too much of an overhead to try compaction every block. But it should also not be a very
-# large multiple of your retain height as it might occur bigger overheads.
+# large multiple of your retain height as it might incur larger overheads.
 compaction_interval = 1000
 
 # Hash of the Genesis file (as hex string), passed to CometBFT via the command line.

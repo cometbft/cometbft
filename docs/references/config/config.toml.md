@@ -437,7 +437,7 @@ cors_allowed_headers = ["Origin", "Accept", "Content-Type", "X-Requested-With", 
 The list of possible values are from the [Fetch spec](https://fetch.spec.whatwg.org/#cors-safelisted-request-header)
 which defines `Origin` as a forbidden value. Read the
 [Mozilla CORS documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) and do your own tests, if you want
-to use this key.
+to use this parameter.
 
 <!--- Possibly, we should clarify the allowed values better. --->
 
@@ -613,7 +613,7 @@ server certificate, any intermediate certificates, and the Certificate Authority
 
 The [rpc.tls_key_file](#rpctls_key_file) property also has to be set with the matching private key.
 
-If this property is not set, the HTTP server launches.
+If this property is not set, the HTTP protocol will be used by the default server
 
 ### rpc.tls_key_file
 TLS private key file path for HTTPS server use.
@@ -631,7 +631,7 @@ The default relative path translates to `$CMTHOME/config`. In case `$CMTHOME` is
 
 The [rpc.tls_cert_file](#rpctls_cert_file) property also has to be set with the matching server certificate.
 
-If this property is not set, the HTTP server launches.
+If this property is not set, the HTTP protocol will be used by the default server
 
 ### rpc.pprof_laddr
 Profiling data listen address and port. Without protocol prefix.
@@ -1827,8 +1827,9 @@ those queries to a peer.
 Storage parameters are important in production settings as it can make the difference between a 2GB data folder and a
 20GB one.
 
-Storage pruning sets a flag in the CometBFT database for data that has expired. The database only deletes this data from
-the file system, when data compaction is called.
+CometBFT supports storage pruning to delete data indicated as not needed by the application or the data companion. Other than the pruning interval and compaction options, the configuration parameters in this section refer to the data companion. The applications pruning configuration is communicated to CometBFT via ABCI. 
+
+Note that for some databases (GolevelDB), the data often does not get physically removed from storage due to the DB backend not triggering compaction. In these cases it is necessary to enable forced compaction and set the compaction interval accordingly. 
 
 ### storage.discard_abci_responses
 Discard ABCI responses from the state store, which can save a considerable amount of disk space.

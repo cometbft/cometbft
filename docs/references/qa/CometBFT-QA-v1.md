@@ -8,55 +8,57 @@ parent:
 
 # QA results for CometBFT v1.x
 
-We run this iteration of the QA tests on CometBFT `v1.0.0-alpha.2`, the second tag of the backport
-branch `v1.x` from the CometBFT repository. The previous QA tests were performed on
-`v0.38.0-alpha.2` from May 21, 2023, which we use here as a baseline for comparison. There are many
-changes with respect to the baseline, including `TO COMPLETE`. For the full list of changes, check
-out the [CHANGELOG](https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/CHANGELOG.md).
+We run this iteration of the Quality Assurance (QA) process on CometBFT `v1.0.0-alpha.2`, the second
+tag of the backport branch `v1.x` from the CometBFT repository. The previous QA tests were performed
+on `v0.38.0-alpha.2` from May 21, 2023, which we use here as a baseline for comparison. There are
+many changes with respect to the baseline, including proposer-based timestamps (PBTS), `TO
+COMPLETE`, but not many that would affect the performance. For the full list of changes, check out
+the [CHANGELOG](https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/CHANGELOG.md).
 
-The main goal of the QA process is to validate that there are no meaningful, substantial regressions
-from the previous version. We consider that there is a regression if we find a difference bigger
-than 10% in the results. After having performed the experiments, we conclude that there are no
-significant differences with respect to the baseline. Therefore version `v1.0.0-alpha.2` has passed
-the QA tests. 
+The primary objective of the QA process is to ensure that no significant regressions have occurred
+compared to the previous version. We consider that a regression is present if there is a variance
+greater than 10% in the results. After having performed the experiments, we have determined that no
+notable differences exist when compared to the baseline. Consequently, version `v1.0.0-alpha.2` has
+successfully passed the QA tests. 
 
-In the rest of this document we present and analyse the obtained results. The main steps of the QA
-process are the following:
-- [Saturation point](#saturation-point): On a 200-nodes network, find its saturation point, that is,
-  the transaction load on which the system begins to show a degraded performance. On the rest of the
-  QA experiments we will use subject the system to a load slightly under the saturation point.
-- [200-nodes test](#200-nodes-test): During a fixed amount of time, inject on the 200-nodes network
-  a constant load of transactions. Then collect metrics and block data to compute latencies, and
-  compare them against the results of the baseline.
-- [Rotating-nodes test](#rotating-nodes-test): Run initially 10 validators and 3 seed nodes. Then
-  start a full node, wait until it is block-synced, and stop it. Repeat these steps 25 times while
-  checking the nodes are able to catch up to the latest height of the network.
+In the remainder of this document we present and analyse the results obtained. The main steps of the
+QA process are the following:
+- [Saturation point](#saturation-point): On a network of 200 nodes, identify its saturation point,
+  that is, the transaction load where system performance begins to degrade. Subsequent QA
+  experiments will subject the system to a load slightly below this saturation point.
+- [200-nodes test](#200-nodes-test): Apply a consistent transaction load to the 200-nodes network
+  for a fixed duration. Then, gather metrics and block data to calculate latencies and compare them
+  with the baseline results.
+- [Rotating-nodes test](#rotating-nodes-test): Initially, deploy 10 validators and 3 seed nodes.
+  Then, launch a full node, wait until it is caught up to the latest height using Block Sync, and
+  then stop it. Repeat this process 25 times while ensuring that the nodes can catch up to the
+  network's latest height.
 
 ## Latency emulation (LE)
 
-For the first time in the QA process we can additionally run the experiments using latency emulation
-(LE). We typically deploy all the nodes of the testnet in the same region of a DigitalOcean
-data center. This keeps the costs of running the tests low, but it makes the communication between
-nodes unrealistic, as there is almost no latency. While still deploying the testnet in one region,
-we now can emulate latency by adding random delays to outgoing messages. 
+For the first time in the QA process we are introducing latency emulation (LE) into our experiments.
+We typically deploy all the testnet nodes within the same region of a DigitalOcean data center to
+keep the costs low. However, this setup creates unrealistic communication between nodes due to
+minimal latency. To address this, while still deploying the testnet in a single region, we can now
+emulate latency by adding random delays into outgoing messages.
 
-This is how we emulate latency:
-- [This table][aws-latencies] has real data collected from AWS and containing the average latencies
-  between different AWS data centers in the world.
-- When we define the testnet, we randomly assign a "zone" to each node, that is, one of the regions
-  in the latency table.
-- Before starting CometBFT in each node, we run [this script][latency-emulator-script] to set the
-  added delays between the current node and each of the other zones, as defined in the table. The
-  script calls the `tc` utility for controlling the network traffic at the kernel level.
+Here's how we emulate latency:
+- Reference real latency data: We utilize [a table][aws-latencies] containing real data collected
+  from AWS, which includes average latencies between different AWS data centers worldwide.
+- Assign zones: When defining the testnet, each node is randomly assigned a "zone", corresponding
+  to one of the regions listed in the latency table.
+- Set delays: Prior to launching CometBFT on each node, we execute a script to configure added
+  delays between the current node and every other zone, as specified in the latency table. This
+  script utilizes the `tc` utility to control network traffic at the kernel level.
 
-Until now all of our QA results were obtained without latency emulation. In order to analyze the
-obtained results under similar configurations, we will make the analysis in a two-step comparison.
-First, we will compare the QA results of `v0.38` (the baseline) to those of `v1` without latency
-emulation. Then, we will compare results of `v1` with and without latency emulation.
+Up until now, all QA results were obtained without latency emulation. To ensure fair comparisons, we
+will conduct a two-step analysis. First, we will compare the QA results of `v0.38` (the baseline)
+with those of `v1` without latency emulation. Secondly, we will compare the results of `v1` with and
+without latency emulation.
 
-Note that in this report we are not using the results with latency emulation to assess whether
-`v1.0.0-alpha.2` passes or not the QA tests. The goal is to have a baseline for comparison for the
-next QA tests to be performed for a future release.
+It's important to note that the results with latency emulation in this report are not used to assess
+whether `v1.0.0-alpha.2` passes the QA tests. Instead, they serve as a baseline for future QA tests to
+be conducted for upcoming releases.
 
 ## Table of Contents
 - [Saturation point](#saturation-point)
@@ -68,34 +70,37 @@ next QA tests to be performed for a future release.
 
 ## Saturation point
 
-The first step of our QA process is to find the saturation point of the testnet. As in other
-iterations of our QA process, we have used a network of 200 nodes as testbed, plus one node to send
-the transaction load and another to collect metrics. The experiment consists of several iterations,
-each of 90 seconds, with different load configurations. A configuration is defined by:
-- `c`, the number of connections from the load runner process to the target node, and
-- `r`, the rate or number of transactions issued per second. Each connection sends `r` transactions
-  per second. 
+The initial phase of our QA process involves identifying the saturation point within the testnet. As
+in previous iterations, our testbed comprises 200 nodes (175 validator nodes, 20 full nodes, and 5
+seed nodes), along with one node dedicated to sending transaction load, and another for metric
+collection. The experiment entails multiple iterations, each lasting 90 seconds, with varied load
+configurations. A configuration is characterized by:
+- `c`, denoting the number of connections from the load runner process to the target node, and
+- `r`, indicating the rate or frequency of transactions issued per second. Each connection
+  dispatches `r` transactions per second. 
 
-For more details on the methodology to identify the saturation point, see [here](CometBFT-QA-34.md#saturation-point).
+For more details on the methodology to identify the saturation point, see
+[here](CometBFT-QA-34.md#saturation-point).
 
-The following figure shows the obtained values for v1 and v0.38 (the baseline). Note that
-configurations that have the same amount of transaction load, for example `c=1,r=400` and
-`c=2,r=200`, are considered equivalent, and plotted in the same x-axis value corresponding to their
-total rate, that is, to the equivalent configurations with `c=1`.
+The figure below shows the values obtained for v1 and v0.38 (the baseline). It's important to note
+that configurations that have the same amount of total transaction load are regarded as equivalent.
+For example, `c=1,r=400` and `c=2,r=200` are plotted on the same x-axis value corresponding to their
+total rate of 400 tx/s, which corresponds to configuration with `c=1`.
 
 ![saturation-plot](imgs/v1/saturation/saturation_v1_v038.png) 
 
-We observe in the figure that until a rate of 400 txs/s, the obtained values are equal or very close
-to the expected number of processed transactions (35600 txs). After this point, the system is not
-able to process all the transactions that it receives, so some transactions are dropped, and we say
-that the system is saturated. The expected number of processed transactions is `c * r * 89 s = 35600
-txs`. (Note that we use 89 out of 90 seconds of the experiment because the last transaction batch
-coincides with the end of the experiment and is thus not sent.) 
+In the figure, we observe that up to a rate of 400 tx/s, the obtained values closely match or are
+equal to the expected number of processed transactions, which is 35600 txs. However, beyond this
+point, the system becomes overloaded and cannot process all incoming transactions, resulting in
+dropped transactions. This state indicates that the system is saturated. The expected number of
+processed transactions is calculated as `c * r * 89 s = 35600 txs`. It's worth noting that we
+utilize 89 out of 90 seconds of the experiment duration, as the final transaction batch coincides
+with the end of the experiment and is thus not sent.
 
 The complete results from which the figure was generated can be found in the file
 [`v1_report_tabbed.txt`](imgs/v1/200nodes/metrics/v1_report_tabbed.txt). The following table
-summarizes them. (These values are plotted in the figure.) We can see the saturation point in the
-diagonal defined by `c=1,r=400` and `c=2,r=200`.
+summarizes the values plotted in the figure. We can see the saturation point in the diagonal defined
+by `c=1,r=400` and `c=2,r=200`.
 
 | r    | c=1       | c=2       | c=4   |
 | ---: | --------: | --------: | ----: |
@@ -116,15 +121,16 @@ For comparison, this is the table obtained on the baseline version, with the sam
 In conclusion, we chose `c=1,r=400` as the transaction load that we will use in the rest of QA
 process. This is the same value used in the previous QA tests.
 
-#### With latency emulation
+### With latency emulation
 
-For this comparison we run a new set of experiments with different transaction loads: we use only
-one connection, and for the rate we use values in the range [100,1000] in intervals of 100
-txs/second.
+For comparing the performance of `v1` with and without latency emulation, we run a new set of
+experiments with a different configurations of transaction loads: we use only one connection, and a
+transaction rate ranging from 100 to 1000 tx/s, in intervals of 100.
 
 ![v1_saturation](imgs/v1/saturation/saturation_v1_LE.png) 
 
-These are the actual values from which the figure was generated:
+These are the actual values which we use to generate the figure:
+
 | r    | v1 without LE | v1 with LE   | 
 | ---: | ----: | ----: |
 | 100  |  8900 |  8900 |
@@ -140,67 +146,57 @@ These are the actual values from which the figure was generated:
 
 ## 200-nodes test
 
-This experiment consist in running 200 nodes, injecting a load of 400 txs/s during 90 seconds, and
-collect the metrics. The network is composed of 175 validator nodes, 20 full nodes, and 5 seed
-nodes. Another node sends the load to only one of the validators.
+This experiment consist in running the 200-nodes network, injecting a load of 400 tx/s (`c=1,r=400`)
+during 90 seconds, and collecting the metrics. The network composition is the same as used for
+finding the saturation point.
+
+For the experiments with latency emulation have set a duration of 180 seconds instead of the 90.
 
 ### Latencies
 
-The following figures show the latencies of the experiment carried out with the configuration
-`c=1,r=400`. Each dot represents a block: at which time it was created (x axis) and the average
-latency of its transactions (y axis).
+The following figures show the latencies of the experiment. Each dot represents a block: at which
+time it was created (x axis) and the average latency of its transactions (y axis).
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
 | ![latency-1-400-v38](img38/200nodes/e_de676ecf-038e-443f-a26a-27915f29e312.png) | ![latency-1-400-v1](imgs/v1/200nodes/latencies/e_8e4e1e81-c171-4879-b86f-bce96ee2e861.png) 
 | | ![latency-1-400-v1-le](imgs/v1/200nodes_with_latency_emulation/latencies/e_8190e83a-9135-444b-92fb-4efaeaaf2b52.png)
 
-In both cases, most latencies are around or below 4 seconds. On v0.38 there are peaks reaching 10
-seconds, while on v1 (without LE) the only peak reaches 8 seconds. In general, the images are similar; then, from
-this small experiment we infer that the latencies measured on the version under test is not worse
-than those of the baseline. With latency emulation, the latencies are considerably higher, as expected.
+In both cases, most latencies are around or below 4 seconds. On `v0.38` there are peaks reaching 10
+seconds, while on `v1` (without LE) the only peak reaches 8 seconds. In general, the images are
+similar. From this small experiment we infer that the latencies measured on `v1` are not worse than
+those of the baseline. With latency emulation, the latencies are considerably higher, as expected.
 
 ### Metrics
 
-We further examine key metrics extracted from Prometheus data on the experiment with configuration
-`c=1,r=400`.
-
-Note that the experiments with latency emulation have a duration of 180 seconds instead of the 90
-seconds of the experiments without latency emulation.
+In this section we analyse key metrics extracted from Prometheus data on the 200-nodes experiment
+with configuration `c=1,r=400`.
 
 #### Mempool size
 
-<!-- The mempool size, a count of the number of transactions in the mempool, was shown to be stable and
-homogeneous at all full nodes. It did not exhibit any unconstrained growth.  -->
-
-<!-- The following figures show the evolution over time of the cumulative number of transactions inside
-all full nodes' mempools at a given time. -->
-
-<!-- | v0.38 | v1 (without LE / with LE)
-| :--------------:|:--------------:|
-| ![mempool-cumulative-baseline](img38/200nodes/mempool_size.png) | ![mempoool-cumulative](imgs/v1/200nodes/metrics/mempool_size.png)
-| | ![mempoool-cumulative-le](imgs/v1/200nodes_with_latency_emulation/metrics/mempool_size.png)
-
-`TODO`: fix scale in y axis on LE image. -->
-
 The following figures show the evolution of the average and maximum mempool size over all full
-nodes. On v1, the average mostly stays below 1000 outstanding transactions except for a peak above
-2000, coinciding with the moment the system reached round number 1 (see below); this is better than
-the baseline, which oscilates between 1000 and 2500.
+nodes. 
+
+**Average size** On `v1`, the average mempool size mostly stays below 1000 outstanding transactions
+except for a peak above 2000, coinciding with the moment the system reached round number 1 (see
+below). For these particular runs, this result is better than the baseline, which oscilates between
+1000 and 2500.
+
+With latency emulation, the average mempool size stays mostly above 2000 outstanding transactions
+with peaks almost reaching the maximum mempool size of 5000 transactions.
 
 | v0.38 | v1 (without LE / with LE) 
 | :--------------:|:--------------:|
 | ![mempool-avg-baseline](img38/200nodes/avg_mempool_size.png) | ![mempool-avg](imgs/v1/200nodes/metrics/avg_mempool_size.png)
 | | ![mempool-avg-le](imgs/v1/200nodes_with_latency_emulation/metrics/avg_mempool_size.png)
 
-With latency emulation, the average mempool size stays mostly above 2000 outstanding transactions
-with peaks almost reaching the maximum mempool size of 5000 transactions.
+**Maximum size** The maximum mempool size indicates when one or more nodes have reached their
+maximum capacity in terms of the number of transactions they can hold. In version `v0.38`, it's
+apparent that most of the time, at least one node that is dropping incoming transactions.
+Conversely, in `v1`, this happens less often, especially after reaching round 1 (as detailed below).
 
-The maximum mempool size show us when one or more nodes reached the maximem mempool capacity in
-terms of number of transactions. On v0.38, we see that most of the time there is at least one node
-that is dropping incoming transactions, while on v1 this happens less often, particularly after
-reaching round 1 (see below). On v1 with latency emulation, there always a node that has its mempool
-saturated.
+However, when we introduce latency emulation into `v1`, there is consistently at least one node with
+a saturated mempool.
 
 | v0.38 | v1 (without LE / with LE)
 | :--------------:|:--------------:|
@@ -209,24 +205,24 @@ saturated.
 
 #### Peers
 
-The number of peers was stable at all nodes. As expected, the seed nodes have more peers (around
-125) than the rest (between 20 and 70 for most nodes). The red dashed line denotes the average
-value.
+On all expertiments, the number of peers was stable on all nodes. As expected, the seed nodes have
+more peers (around 125) than the rest (between 20 and 70 for most nodes). The red dashed line
+denotes the average value. Just as in the baseline, the fact that non-seed nodes reach more than 50
+peers is due to [\#9548].
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
 | ![peers](img38/200nodes/peers.png) | ![peers](imgs/v1/200nodes/metrics/peers.png)
 | | ![peers](imgs/v1/200nodes_with_latency_emulation/metrics/peers.png)
 
-Just as in the baseline, the fact that non-seed nodes reach more than 50 peers is due to [\#9548].
-
 #### Consensus rounds
 
-Most blocks took just one round to reach consensus, except for a few cases when it was needed a
-second round. For these specific runs, the baseline required an extra round more times.
+On both versions, most blocks took just one round to reach consensus, except for a few cases when it
+was needed a second round. On these two particular runs, we observe that `v0.38` required an extra
+round on more occasions than `v1`.
 
-With latency emulation, the performance is significantly worse; on multiple times needing an extra
-round and even reaching three rounds.
+With latency emulation, the performance is notably worse: the consensus module requires an extra
+round more often, even needing three rounds to finalise a block.
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
@@ -235,12 +231,13 @@ round and even reaching three rounds.
 
 #### Blocks produced per minute and transactions processed per minute
 
-These figures show the rate in which blocks were created, from the point of view of each node. That
-is, they shows when each node learned that a new block had been agreed upon. For most of the time
-when load was being applied to the system, most of the nodes stayed around 20 blocks/minute. The
-spike to more than 100 blocks/minute is due to a slow node catching up. The baseline experienced a
-similar behavior. With latency emulation, the performance is degraded, going from around 30
-blocks/min (without LE) to around 10 blocks/min.
+These figures show the rate in which blocks were created from the point of view of each node,
+indicating when each node learned that a new block had been agreed upon. Throughout much of the load
+application period, the majority of nodes maintained a rate of approximately 20 blocks per minute. A
+spike to more than 100 blocks per minute occurred due to a slower node catching up. This behavior was similar in the baseline scenario.
+
+With latency emulation (LE), there is a noticeable degradation in performance. The block generation
+rate drops from approximately 30 blocks per minute (without LE) to around 10 blocks per minute.
 
 | v0.38 | v1 (without LE / with LE)
 |:--------------:|:--------------:|
@@ -253,15 +250,14 @@ blocks/min (without LE) to around 10 blocks/min.
 | | ![total-txs](imgs/v1/200nodes_with_latency_emulation/metrics/total_txs_rate.png)
 
 The collective spike on the right of the graph marks the end of the load injection, when blocks
-become smaller (empty) and impose less strain on the network. This behavior is reflected in the
-following graph, which shows the number of transactions processed per minute.
+become smaller (empty) and impose less strain on the network.
 
 #### Memory resident set size
 
 The following graphs show the Resident Set Size of all monitored processes. Most nodes use less than
-0.9 GB of memory, and a maximum of 1.3GB. In all cases, the memory usage in this run is less than
-the baseline. On all processes, the memory usage went down as the load was being removed, showing no
-signs of unconstrained growth.
+0.9 GB of memory, and a maximum of 1.3GB. In all cases, the memory usage in `v1` is less than in the
+baseline. On all processes, the memory usage went down as the load was being removed, showing no
+signs of unconstrained growth. With latency emulation, the results are comparable.
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
@@ -270,10 +266,11 @@ signs of unconstrained growth.
 
 #### CPU utilization
 
-The best metric from Prometheus to gauge CPU utilization in a Unix machine is `load1`, as it usually
-appears in the [output of
-`top`](https://www.digitalocean.com/community/tutorials/load-average-in-linux). In this case, the
-load is contained below 4 on most nodes, with the baseline showing a similar behavior.
+The most reliable metric from Prometheus for assessing CPU utilization in a Unix machine is `load1`,
+commonly found in the [output of
+`top`](https://www.digitalocean.com/community/tutorials/load-average-in-linux). In these scenarios,
+the load remains consistently below 4 on the majority of nodes, with the baseline exhibiting a
+similar pattern. With latency emulation, the CPU load reaches 5 on some nodes.
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
@@ -282,14 +279,22 @@ load is contained below 4 on most nodes, with the baseline showing a similar beh
 
 ### Test Results
 
-We have shown that there is no regressions when comparing CometBFT `v1.0.0-alpha.2` against the
-results obtained for `v0.38`. The observed results are equal or sometimes slightly better than the
-baseline. We therefore conclude that this version of CometBFT has passed the test.
+We have demonstrated that there are no regressions when comparing CometBFT `v1.0.0-alpha.2` against
+the results obtained for `v0.38`. In fact, the observed results are equal to, or occasionally even
+slightly better than those of the baseline. We therefore conclude that this version of CometBFT has
+passed the test.
 
 | Scenario  | Date       | Version                                                   | Result |
 | --------- | ---------- | --------------------------------------------------------- | ------ |
 | 200-nodes | 2024-03-21 | v1 (without LE / with LE).0.0-alpha.2 (4ced46d3d742bdc6093050bd67d9bbde830b6df2) | Pass   |
 
+#### Test results with latency emulation
+
+As expected, the introduction of emulated latencies to the network results in a degradation of
+performance for `v1` compared to `v1` without latency emulation, althugh not by an order of
+magnitude. Moving forward with the next QA tests, it may be prudent to consider adjusting the
+saturation point to a slightly lower value. Determining this adjustment will require conducting new
+experiments on the network with latency emulation.
 
 ## Rotating-nodes test
 

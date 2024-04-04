@@ -222,7 +222,7 @@ was needed a second round. On these two particular runs, we observe that `v0.38`
 round on more occasions than `v1`.
 
 With latency emulation, the performance is notably worse: the consensus module requires an extra
-round more often, even needing three rounds to finalise a block.
+round more often, even needing four rounds to finalise a block.
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|

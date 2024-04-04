@@ -269,7 +269,7 @@ Thus, the final decision should be left to the application after testing and und
 
 As the feature is experimental, we do not provide a way to convert the database back into the current format if it is initialized with the new layout. 
 
-The two layouts are not interchange-able, once one is used, a node cannot switch to the other. The version to be used is set in the `config.toml` and defaults to `v1` - the current layout. Once the layout is set, it is written back to the database with `version` as the key. When a node boots up and loads the database initially, if this flag is set, it takes precedense over any configuration file. 
+The two layouts are not interchange-able, once one is used, a node cannot switch to the other. The version to be used is set in the `config.toml` and defaults to `v1` - the current layout. Once the layout is set, it is written back to the database with `version` as the key. When a node boots up and loads the database initially, if this flag is set, it takes precedence over any configuration file. 
 
 The support for both layouts will allow users to benchmark their applications. If at any point we get clear indications that one layout is better than the other, we will gladly drop support for one of them and provide users with a way to migrate their databases gracefully. 
 

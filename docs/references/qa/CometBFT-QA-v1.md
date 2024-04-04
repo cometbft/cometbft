@@ -11,9 +11,10 @@ parent:
 We run this iteration of the Quality Assurance (QA) process on CometBFT `v1.0.0-alpha.2`, the second
 tag of the backport branch `v1.x` from the CometBFT repository. The previous QA tests were performed
 on `v0.38.0-alpha.2` from May 21, 2023, which we use here as a baseline for comparison. There are
-many changes with respect to the baseline, including proposer-based timestamps (PBTS), `TO
-COMPLETE`, but not many that would affect the performance. For the full list of changes, check out
-the [CHANGELOG](https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/CHANGELOG.md).
+many changes with respect to the baseline. In particular, new features that can affect performance
+are some improvements to bandwidth consumption and proposer-based timestamps (PBTS). For the full
+list of changes, check out the
+[CHANGELOG](https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/CHANGELOG.md).
 
 The primary objective of the QA process is to ensure that no significant regressions have occurred
 compared to the previous version. We consider that a regression is present if there is a variance
@@ -66,7 +67,6 @@ be conducted for upcoming releases.
   - [Latencies](#latencies)
   - [Metrics](#metrics)
   - [Results](#results)
-- [Rotating-nodes test](#rotating-nodes-test)
 
 ## Saturation point
 
@@ -295,11 +295,6 @@ performance for `v1` compared to `v1` without latency emulation, althugh not by 
 magnitude. Moving forward with the next QA tests, it may be prudent to consider adjusting the
 saturation point to a slightly lower value. Determining this adjustment will require conducting new
 experiments on the network with latency emulation.
-
-## Rotating-nodes test
-
-`... TO COMPLETE ...`
-
 
 [aws-latencies]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/aws-latencies.csv
 [latency-emulator-script]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/latency-setter.py 

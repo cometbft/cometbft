@@ -14,7 +14,7 @@ import "google/protobuf/timestamp.proto";
 // NOTE: When using custom types, mind the warnings.
 // https://github.com/cosmos/gogoproto/blob/master/custom_types.md#warnings-and-issues
 
-//----------------------------------------
+// ----------------------------------------
 // Request types
 
 // Request represents a request to the ABCI application.
@@ -99,7 +99,7 @@ message RequestProcessProposal {
   bytes proposer_address = 8;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Response types
 
 // Response represents a response from the ABCI application.
@@ -205,7 +205,7 @@ message ResponseProcessProposal {
   }
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Misc.
 
 // CommitInfo contains votes for the particular round.
@@ -245,7 +245,7 @@ message EventAttribute {
   bool   index = 3;  // nondeterministic
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Blockchain Types
 
 // ExtendedVoteInfo extends VoteInfo with the vote extensions (non-deterministic).
@@ -284,7 +284,7 @@ message Misbehavior {
   int64 total_voting_power = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Service Definition
 
 // ABCIApplication is a service for an ABCI application.

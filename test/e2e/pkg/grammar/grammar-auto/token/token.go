@@ -135,11 +135,13 @@ const (
 	EOF               // $
 	T_0               // apply_snapshot_chunk
 	T_1               // commit
-	T_2               // finalize_block
-	T_3               // init_chain
-	T_4               // offer_snapshot
-	T_5               // prepare_proposal
-	T_6               // process_proposal
+	T_2               // extend_vote
+	T_3               // finalize_block
+	T_4               // init_chain
+	T_5               // offer_snapshot
+	T_6               // prepare_proposal
+	T_7               // process_proposal
+	T_8               // verify_vote_extension
 )
 
 var TypeToString = []string{
@@ -152,6 +154,8 @@ var TypeToString = []string{
 	"T_4",
 	"T_5",
 	"T_6",
+	"T_7",
+	"T_8",
 }
 
 var StringToType = map[string]Type{
@@ -164,6 +168,8 @@ var StringToType = map[string]Type{
 	"T_4":   T_4,
 	"T_5":   T_5,
 	"T_6":   T_6,
+	"T_7":   T_7,
+	"T_8":   T_8,
 }
 
 var TypeToID = []string{
@@ -171,26 +177,32 @@ var TypeToID = []string{
 	"$",
 	"apply_snapshot_chunk",
 	"commit",
+	"extend_vote",
 	"finalize_block",
 	"init_chain",
 	"offer_snapshot",
 	"prepare_proposal",
 	"process_proposal",
+	"verify_vote_extension",
 }
 
 var IDToType = map[string]Type{
-	"Error":                0,
-	"$":                    1,
-	"apply_snapshot_chunk": 2,
-	"commit":               3,
-	"finalize_block":       4,
-	"init_chain":           5,
-	"offer_snapshot":       6,
-	"prepare_proposal":     7,
-	"process_proposal":     8,
+	"Error":                 0,
+	"$":                     1,
+	"apply_snapshot_chunk":  2,
+	"commit":                3,
+	"extend_vote":           4,
+	"finalize_block":        5,
+	"init_chain":            6,
+	"offer_snapshot":        7,
+	"prepare_proposal":      8,
+	"process_proposal":      9,
+	"verify_vote_extension": 10,
 }
 
 var Suppress = []bool{
+	false,
+	false,
 	false,
 	false,
 	false,

@@ -65,9 +65,9 @@ func (tr *TestReactor) GetChannels() []*conn.ChannelDescriptor {
 	return tr.channels
 }
 
-func (tr *TestReactor) AddPeer(Peer) {}
+func (*TestReactor) AddPeer(Peer) {}
 
-func (tr *TestReactor) RemovePeer(Peer, interface{}) {}
+func (*TestReactor) RemovePeer(Peer, any) {}
 
 func (tr *TestReactor) Receive(e Envelope) {
 	if tr.logMessages {
@@ -85,7 +85,7 @@ func (tr *TestReactor) getMsgs(chID byte) []PeerMessage {
 	return tr.msgsReceived[chID]
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // convenience method for creating two switches connected to each other.
 // XXX: note this uses net.Pipe and not a proper TCP conn.
@@ -235,7 +235,7 @@ func TestSwitchPeerFilter(t *testing.T) {
 	var (
 		filters = []PeerFilterFunc{
 			func(_ IPeerSet, _ Peer) error { return nil },
-			func(_ IPeerSet, _ Peer) error { return fmt.Errorf("denied") },
+			func(_ IPeerSet, _ Peer) error { return errors.New("denied") },
 			func(_ IPeerSet, _ Peer) error { return nil },
 		}
 		sw = MakeSwitch(
@@ -442,11 +442,11 @@ func TestSwitchStopPeerForError(t *testing.T) {
 		return initSwitchFunc(i, sw)
 	})
 
-	assert.Len(t, sw1.Peers().List(), 1)
+	assert.Len(t, sw1.Peers().Copy(), 1)
 	assert.EqualValues(t, 1, peersMetricValue())
 
 	// send messages to the peer from sw1
-	p := sw1.Peers().List()[0]
+	p := sw1.Peers().Copy()[0]
 	p.Send(Envelope{
 		ChannelID: 0x1,
 		Message:   &p2pproto.Message{},
@@ -461,9 +461,9 @@ func TestSwitchStopPeerForError(t *testing.T) {
 	})
 
 	// now call StopPeerForError explicitly, eg. from a reactor
-	sw1.StopPeerForError(p, fmt.Errorf("some err"))
+	sw1.StopPeerForError(p, errors.New("some err"))
 
-	require.Empty(t, len(sw1.Peers().List()), 0)
+	require.Empty(t, len(sw1.Peers().Copy()), 0)
 	assert.EqualValues(t, 0, peersMetricValue())
 }
 
@@ -489,7 +489,7 @@ func TestSwitchReconnectsToOutboundPersistentPeer(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sw.Peers().Get(rp.ID()))
 
-	p := sw.Peers().List()[0]
+	p := sw.Peers().Copy()[0]
 	err = p.(*peer).CloseConn()
 	require.NoError(t, err)
 
@@ -695,7 +695,7 @@ type errorTransport struct {
 	acceptErr error
 }
 
-func (et errorTransport) NetAddress() NetAddress {
+func (errorTransport) NetAddress() NetAddress {
 	panic("not implemented")
 }
 
@@ -748,7 +748,7 @@ type mockReactor struct {
 	initCalledBeforeRemoveFinished uint32
 }
 
-func (r *mockReactor) RemovePeer(Peer, interface{}) {
+func (r *mockReactor) RemovePeer(Peer, any) {
 	atomic.StoreUint32(&r.removePeerInProgress, 1)
 	defer atomic.StoreUint32(&r.removePeerInProgress, 0)
 	time.Sleep(100 * time.Millisecond)
@@ -773,7 +773,7 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	reactor.BaseReactor = NewBaseReactor("mockReactor", reactor)
 
 	// make switch
-	sw := MakeSwitch(cfg, 1, func(i int, sw *Switch) *Switch {
+	sw := MakeSwitch(cfg, 1, func(_ int, sw *Switch) *Switch {
 		sw.AddReactor("mock", reactor)
 		return sw
 	})
@@ -812,7 +812,7 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 }
 
 func BenchmarkSwitchBroadcast(b *testing.B) {
-	s1, s2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
+	s1, s2 := MakeSwitchPair(func(_ int, sw *Switch) *Switch {
 		// Make bar reactors of bar channels each
 		sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
 			{ID: byte(0x00), Priority: 10},
@@ -864,10 +864,10 @@ func TestSwitchRemovalErr(t *testing.T) {
 	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
 		return initSwitchFunc(i, sw)
 	})
-	require.Len(t, sw1.Peers().List(), 1)
-	p := sw1.Peers().List()[0]
+	require.Len(t, sw1.Peers().Copy(), 1)
+	p := sw1.Peers().Copy()[0]
 
-	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))
+	sw2.StopPeerForError(p, errors.New("peer should error"))
 
 	assert.Equal(t, sw2.peers.Add(p).Error(), ErrPeerRemoval{}.Error())
 }

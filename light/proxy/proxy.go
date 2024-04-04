@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 
@@ -34,7 +33,7 @@ func NewProxy(
 ) (*Proxy, error) {
 	rpcClient, err := rpchttp.NewWithTimeout(providerAddr, uint(config.WriteTimeout.Seconds()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create http client for %s: %w", providerAddr, err)
+		return nil, ErrCreateHTTPClient{Addr: providerAddr, Err: err}
 	}
 
 	return &Proxy{
@@ -109,7 +108,7 @@ func (p *Proxy) listen() (net.Listener, *http.ServeMux, error) {
 	// 3) Start a client.
 	if !p.Client.IsRunning() {
 		if err := p.Client.Start(); err != nil {
-			return nil, mux, fmt.Errorf("can't start client: %w", err)
+			return nil, mux, ErrStartHTTPClient{Err: err}
 		}
 	}
 

@@ -4,14 +4,18 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/cosmos/gogoproto/proto"
+	"github.com/go-kit/kit/metrics"
+	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtos "github.com/cometbft/cometbft/internal/os"
+	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/types"
 )
@@ -29,27 +33,75 @@ var (
 	ErrInvalidHeightValue = errors.New("invalid height value")
 )
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------.
+type KeyLayout interface {
+	CalcValidatorsKey(height int64) []byte
 
-func calcValidatorsKey(height int64) []byte {
-	return []byte(fmt.Sprintf("validatorsKey:%v", height))
+	CalcConsensusParamsKey(height int64) []byte
+
+	CalcABCIResponsesKey(height int64) []byte
 }
 
-func calcConsensusParamsKey(height int64) []byte {
-	return []byte(fmt.Sprintf("consensusParamsKey:%v", height))
-}
+type v1LegacyLayout struct{}
 
-func calcABCIResponsesKey(height int64) []byte {
+// CalcABCIResponsesKey implements StateKeyLayout.
+func (v1LegacyLayout) CalcABCIResponsesKey(height int64) []byte {
 	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
 }
 
-//----------------------
+// store.StoreOptions.DBKeyLayout.calcConsensusParamsKey implements StateKeyLayout.
+func (v1LegacyLayout) CalcConsensusParamsKey(height int64) []byte {
+	return []byte(fmt.Sprintf("consensusParamsKey:%v", height))
+}
+
+// store.StoreOptions.DBKeyLayout.CalcValidatorsKey implements StateKeyLayout.
+func (v1LegacyLayout) CalcValidatorsKey(height int64) []byte {
+	return []byte(fmt.Sprintf("validatorsKey:%v", height))
+}
+
+var _ KeyLayout = (*v1LegacyLayout)(nil)
+
+// ----------------------
 
 var (
-	lastABCIResponseKey              = []byte("lastABCIResponseKey")
+	lastABCIResponseKey              = []byte("lastABCIResponseKey") // DEPRECATED
 	lastABCIResponsesRetainHeightKey = []byte("lastABCIResponsesRetainHeight")
 	offlineStateSyncHeight           = []byte("offlineStateSyncHeightKey")
 )
+
+var (
+	// prefixes must be unique across all db's.
+	prefixValidators      = int64(6)
+	prefixConsensusParams = int64(7)
+	prefixABCIResponses   = int64(8)
+)
+
+type v2Layout struct{}
+
+func (v2Layout) encodeKey(prefix, height int64) []byte {
+	res, err := orderedcode.Append(nil, prefix, height)
+	if err != nil {
+		panic(err)
+	}
+	return res
+}
+
+// CalcABCIResponsesKey implements StateKeyLayout.
+func (v2l v2Layout) CalcABCIResponsesKey(height int64) []byte {
+	return v2l.encodeKey(prefixABCIResponses, height)
+}
+
+// CalcConsensusParamsKey implements StateKeyLayout.
+func (v2l v2Layout) CalcConsensusParamsKey(height int64) []byte {
+	return v2l.encodeKey(prefixConsensusParams, height)
+}
+
+// CalcValidatorsKey implements StateKeyLayout.
+func (v2l v2Layout) CalcValidatorsKey(height int64) []byte {
+	return v2l.encodeKey(prefixValidators, height)
+}
+
+var _ KeyLayout = (*v2Layout)(nil)
 
 //go:generate ../../scripts/mockery_generate.sh Store
 
@@ -81,9 +133,9 @@ type Store interface {
 	// Bootstrap is used for bootstrapping state when not starting from a initial height.
 	Bootstrap(state State) error
 	// PruneStates takes the height from which to start pruning and which height stop at
-	PruneStates(fromHeight, toHeight, evidenceThresholdHeight int64) error
+	PruneStates(fromHeight, toHeight, evidenceThresholdHeight int64, previouslyPrunedStates uint64) (uint64, error)
 	// PruneABCIResponses will prune all ABCI responses below the given height.
-	PruneABCIResponses(targetRetainHeight int64) (int64, int64, error)
+	PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (int64, int64, error)
 	// SaveApplicationRetainHeight persists the application retain height from the application
 	SaveApplicationRetainHeight(height int64) error
 	// GetApplicationRetainHeight returns the retain height set by the application
@@ -108,6 +160,8 @@ type Store interface {
 type dbStore struct {
 	db dbm.DB
 
+	DBKeyLayout KeyLayout
+
 	StoreOptions
 }
 
@@ -117,6 +171,18 @@ type StoreOptions struct {
 	// the store will maintain only the response object from the latest
 	// height.
 	DiscardABCIResponses bool
+
+	Compact bool
+
+	CompactionInterval int64
+
+	// Metrics defines the metrics collector to use for the state store.
+	// if none is specified then a NopMetrics collector is used.
+	Metrics *Metrics
+
+	Logger log.Logger
+
+	DBKeyLayout string
 }
 
 var _ Store = (*dbStore)(nil)
@@ -129,14 +195,61 @@ func IsEmpty(store dbStore) (bool, error) {
 	return state.IsEmpty(), nil
 }
 
+func setDBKeyLayout(store *dbStore, dbKeyLayoutVersion string) string {
+	empty, _ := IsEmpty(*store)
+	if !empty {
+		version, err := store.db.Get([]byte("version"))
+		if err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
+			panic(err)
+		}
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
+	}
+
+	switch dbKeyLayoutVersion {
+	case "v1", "":
+		store.DBKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "v1"
+	case "v2":
+		store.DBKeyLayout = &v2Layout{}
+		dbKeyLayoutVersion = "v2"
+	default:
+		panic("Unknown version. Expected v1 or v2, given " + dbKeyLayoutVersion)
+	}
+
+	if err := store.db.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
+		panic(err)
+	}
+	return dbKeyLayoutVersion
+}
+
 // NewStore creates the dbStore of the state pkg.
 func NewStore(db dbm.DB, options StoreOptions) Store {
-	return dbStore{db, options}
+	if options.Metrics == nil {
+		options.Metrics = NopMetrics()
+	}
+
+	store := dbStore{
+		db:           db,
+		StoreOptions: options,
+	}
+
+	dbKeyLayoutVersion := setDBKeyLayout(&store, options.DBKeyLayout)
+
+	if options.Logger != nil {
+		options.Logger.Info("State store key layout version ", "version", "v"+dbKeyLayoutVersion)
+	}
+
+	return store
 }
 
 // LoadStateFromDBOrGenesisFile loads the most recent state from the database,
 // or creates a new one from the given genesisFilePath.
 func (store dbStore) LoadFromDBOrGenesisFile(genesisFilePath string) (State, error) {
+	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_from_db_or_genesis_file"), time.Now())()
 	state, err := store.Load()
 	if err != nil {
 		return State{}, err
@@ -155,6 +268,7 @@ func (store dbStore) LoadFromDBOrGenesisFile(genesisFilePath string) (State, err
 // LoadStateFromDBOrGenesisDoc loads the most recent state from the database,
 // or creates a new one from the given genesisDoc.
 func (store dbStore) LoadFromDBOrGenesisDoc(genesisDoc *types.GenesisDoc) (State, error) {
+	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_from_db_or_genesis_doc"), time.Now())()
 	state, err := store.Load()
 	if err != nil {
 		return State{}, err
@@ -177,10 +291,14 @@ func (store dbStore) Load() (State, error) {
 }
 
 func (store dbStore) loadState(key []byte) (state State, err error) {
+	start := time.Now()
 	buf, err := store.db.Get(key)
 	if err != nil {
 		return state, err
 	}
+
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load"), start)()
+
 	if len(buf) == 0 {
 		return state, nil
 	}
@@ -208,6 +326,8 @@ func (store dbStore) Save(state State) error {
 }
 
 func (store dbStore) save(state State, key []byte) error {
+	start := time.Now()
+
 	batch := store.db.NewBatch()
 	defer func(batch dbm.Batch) {
 		err := batch.Close()
@@ -234,12 +354,20 @@ func (store dbStore) save(state State, key []byte) error {
 		state.LastHeightConsensusParamsChanged, state.ConsensusParams, batch); err != nil {
 		return err
 	}
-	if err := batch.Set(key, state.Bytes()); err != nil {
+
+	// Counting the amount of time taken to marshall the state.
+	// In case the state is big this can impact the metrics reporting
+	stateMarshallTime := time.Now()
+	stateBytes := state.Bytes()
+	stateMarshallDiff := time.Since(stateMarshallTime).Seconds()
+
+	if err := batch.Set(key, stateBytes); err != nil {
 		return err
 	}
 	if err := batch.WriteSync(); err != nil {
 		panic(err)
 	}
+	store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "save").Observe(time.Since(start).Seconds() - stateMarshallDiff)
 	return nil
 }
 
@@ -253,6 +381,7 @@ func (store dbStore) Bootstrap(state State) error {
 		}
 	}(batch)
 	height := state.LastBlockHeight + 1
+	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "bootstrap"), time.Now())()
 	if height == 1 {
 		height = state.InitialHeight
 	}
@@ -295,21 +424,23 @@ func (store dbStore) Bootstrap(state State) error {
 // encoding not preserving ordering: https://github.com/tendermint/tendermint/issues/4567
 // This will cause some old states to be left behind when doing incremental partial prunes,
 // specifically older checkpoints and LastHeightChanged targets.
-func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight int64) error {
+func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight int64, previosulyPrunedStates uint64) (uint64, error) {
+	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "prune_states"), time.Now())()
 	if from <= 0 || to <= 0 {
-		return fmt.Errorf("from height %v and to height %v must be greater than 0", from, to)
+		return 0, fmt.Errorf("from height %v and to height %v must be greater than 0", from, to)
 	}
 	if from >= to {
-		return fmt.Errorf("from height %v must be lower than to height %v", from, to)
+		return 0, fmt.Errorf("from height %v must be lower than to height %v", from, to)
 	}
 
-	valInfo, err := loadValidatorsInfo(store.db, min(to, evidenceThresholdHeight))
+	valInfo, elapsedTime, err := loadValidatorsInfo(store.db, store.DBKeyLayout.CalcValidatorsKey(min(to, evidenceThresholdHeight)))
 	if err != nil {
-		return fmt.Errorf("validators at height %v not found: %w", to, err)
+		return 0, fmt.Errorf("validators at height %v not found: %w", to, err)
 	}
+
 	paramsInfo, err := store.loadConsensusParamsInfo(to)
 	if err != nil {
-		return fmt.Errorf("consensus params at height %v not found: %w", to, err)
+		return 0, fmt.Errorf("consensus params at height %v not found: %w", to, err)
 	}
 
 	keepVals := make(map[int64]bool)
@@ -333,16 +464,17 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		// params, otherwise they will panic if they're retrieved directly (instead of
 		// indirectly via a LastHeightChanged pointer).
 		if keepVals[h] {
-			v, err := loadValidatorsInfo(store.db, h)
+			v, tmpTime, err := loadValidatorsInfo(store.db, store.DBKeyLayout.CalcValidatorsKey(h))
+			elapsedTime += tmpTime
 			if err != nil || v.ValidatorSet == nil {
 				vip, err := store.LoadValidators(h)
 				if err != nil {
-					return err
+					return pruned, err
 				}
 
 				pvi, err := vip.ToProto()
 				if err != nil {
-					return err
+					return pruned, err
 				}
 
 				v.ValidatorSet = pvi
@@ -350,17 +482,17 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 
 				bz, err := v.Marshal()
 				if err != nil {
-					return err
+					return pruned, err
 				}
-				err = batch.Set(calcValidatorsKey(h), bz)
+				err = batch.Set(store.DBKeyLayout.CalcValidatorsKey(h), bz)
 				if err != nil {
-					return err
+					return pruned, err
 				}
 			}
 		} else if h < evidenceThresholdHeight {
-			err = batch.Delete(calcValidatorsKey(h))
+			err = batch.Delete(store.DBKeyLayout.CalcValidatorsKey(h))
 			if err != nil {
-				return err
+				return pruned, err
 			}
 		}
 		// else we keep the validator set because we might need
@@ -369,37 +501,37 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		if keepParams[h] {
 			p, err := store.loadConsensusParamsInfo(h)
 			if err != nil {
-				return err
+				return pruned, err
 			}
 
 			if p.ConsensusParams.Equal(&cmtproto.ConsensusParams{}) {
 				params, err := store.LoadConsensusParams(h)
 				if err != nil {
-					return err
+					return pruned, err
 				}
 				p.ConsensusParams = params.ToProto()
 
 				p.LastHeightChanged = h
 				bz, err := p.Marshal()
 				if err != nil {
-					return err
+					return pruned, err
 				}
 
-				err = batch.Set(calcConsensusParamsKey(h), bz)
+				err = batch.Set(store.DBKeyLayout.CalcConsensusParamsKey(h), bz)
 				if err != nil {
-					return err
+					return pruned, err
 				}
 			}
 		} else {
-			err = batch.Delete(calcConsensusParamsKey(h))
+			err = batch.Delete(store.DBKeyLayout.CalcConsensusParamsKey(h))
 			if err != nil {
-				return err
+				return pruned, err
 			}
 		}
 
-		err = batch.Delete(calcABCIResponsesKey(h))
+		err = batch.Delete(store.DBKeyLayout.CalcABCIResponsesKey(h))
 		if err != nil {
-			return err
+			return pruned, err
 		}
 		pruned++
 
@@ -407,7 +539,7 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 		if pruned%1000 == 0 && pruned > 0 {
 			err := batch.Write()
 			if err != nil {
-				return err
+				return pruned, err
 			}
 			batch.Close()
 			batch = store.db.NewBatch()
@@ -417,19 +549,29 @@ func (store dbStore) PruneStates(from int64, to int64, evidenceThresholdHeight i
 
 	err = batch.WriteSync()
 	if err != nil {
-		return err
+		return pruned, err
 	}
 
-	return nil
+	// We do not want to panic or interrupt consensus on compaction failure
+	if store.StoreOptions.Compact && previosulyPrunedStates+pruned >= uint64(store.StoreOptions.CompactionInterval) {
+		// When the range is nil,nil, the database will try to compact
+		// ALL levels. Another option is to set a predefined range of
+		// specific keys.
+		err = store.db.Compact(nil, nil)
+	}
+
+	store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "pruning_load_validator_info").Observe(elapsedTime)
+	return pruned, err
 }
 
 // PruneABCIResponses attempts to prune all ABCI responses up to, but not
 // including, the given height. On success, returns the number of heights
 // pruned and the new retain height.
-func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
+func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact bool) (pruned int64, newRetainHeight int64, err error) {
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}
+	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "prune_abci_responses"), time.Now())()
 	lastRetainHeight, err := store.getLastABCIResponsesRetainHeight()
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to look up last ABCI responses retain height: %w", err)
@@ -441,11 +583,10 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 	batch := store.db.NewBatch()
 	defer batch.Close()
 
-	pruned := int64(0)
 	batchPruned := int64(0)
 
 	for h := lastRetainHeight; h < targetRetainHeight; h++ {
-		if err := batch.Delete(calcABCIResponsesKey(h)); err != nil {
+		if err := batch.Delete(store.DBKeyLayout.CalcABCIResponsesKey(h)); err != nil {
 			return pruned, lastRetainHeight + pruned, fmt.Errorf("failed to delete ABCI responses at height %d: %w", h, err)
 		}
 		batchPruned++
@@ -465,10 +606,20 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64) (int64, int64,
 			defer batch.Close()
 		}
 	}
-	return pruned + batchPruned, targetRetainHeight, batch.WriteSync()
+
+	if err = batch.WriteSync(); err != nil {
+		return pruned + batchPruned, targetRetainHeight, err
+	}
+
+	if forceCompact && store.Compact {
+		if pruned+batchPruned >= store.CompactionInterval || targetRetainHeight-lastRetainHeight >= store.CompactionInterval {
+			err = store.db.Compact(nil, nil)
+		}
+	}
+	return pruned + batchPruned, targetRetainHeight, err
 }
 
-//------------------------------------------------------------------------
+// ------------------------------------------------------------------------
 
 // TxResultsHash returns the root hash of a Merkle tree of
 // ExecTxResulst responses (see ABCIResults.Hash)
@@ -479,17 +630,21 @@ func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 }
 
 // LoadFinalizeBlockResponse loads the DiscardABCIResponses for the given height from the
-// database. If the node has D set to true, ErrABCIResponsesNotPersisted
+// database. If the node has D set to true, ErrFinalizeBlockResponsesNotPersisted
 // is persisted. If not found, ErrNoABCIResponsesForHeight is returned.
 func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	if store.DiscardABCIResponses {
 		return nil, ErrFinalizeBlockResponsesNotPersisted
 	}
 
-	buf, err := store.db.Get(calcABCIResponsesKey(height))
+	start := time.Now()
+	buf, err := store.db.Get(store.DBKeyLayout.CalcABCIResponsesKey(height))
 	if err != nil {
 		return nil, err
 	}
+
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_abci_responses"), start)()
+
 	if len(buf) == 0 {
 		return nil, ErrNoABCIResponsesForHeight{height}
 	}
@@ -502,7 +657,6 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 		legacyResp := new(cmtstate.LegacyABCIResponses)
 		rerr := legacyResp.Unmarshal(buf)
 		if rerr != nil {
-			// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
 			cmtos.Exit(fmt.Sprintf(`LoadFinalizeBlockResponse: Data has been corrupted or its spec has
 					changed: %v\n`, err))
 		}
@@ -524,39 +678,45 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 // This method is used for recovering in the case that we called the Commit ABCI
 // method on the application but crashed before persisting the results.
 func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
-	bz, err := store.db.Get(lastABCIResponseKey)
+	start := time.Now()
+	buf, err := store.db.Get(store.DBKeyLayout.CalcABCIResponsesKey(height))
 	if err != nil {
 		return nil, err
 	}
-
-	if len(bz) == 0 {
-		return nil, errors.New("no last ABCI response has been persisted")
-	}
-
-	info := new(cmtstate.ABCIResponsesInfo)
-	err = info.Unmarshal(bz)
-	if err != nil {
-		cmtos.Exit(fmt.Sprintf(`LoadLastFinalizeBlockResponse: Data has been corrupted or its spec has
-			changed: %v\n`, err))
-	}
-
-	// Here we validate the result by comparing its height to the expected height.
-	if height != info.GetHeight() {
-		return nil, fmt.Errorf("expected height %d but last stored abci responses was at height %d", height, info.GetHeight())
-	}
-
-	// It is possible if this is called directly after an upgrade that
-	// FinalizeBlockResponse is nil. In which case we use the legacy
-	// ABCI responses
-	if info.FinalizeBlock == nil {
-		// sanity check
-		if info.LegacyAbciResponses == nil {
-			panic("state store contains last abci response but it is empty")
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_last_abci_response"), start)()
+	if len(buf) == 0 {
+		// DEPRECATED lastABCIResponseKey
+		// It is possible if this is called directly after an upgrade that
+		// `lastABCIResponseKey` contains the last ABCI responses.
+		bz, err := store.db.Get(lastABCIResponseKey)
+		if err == nil && len(bz) > 0 {
+			info := new(cmtstate.ABCIResponsesInfo)
+			err = info.Unmarshal(bz)
+			if err != nil {
+				cmtos.Exit(fmt.Sprintf(`LoadLastFinalizeBlockResponse: Data has been corrupted or its spec has changed: %v\n`, err))
+			}
+			// Here we validate the result by comparing its height to the expected height.
+			if height != info.GetHeight() {
+				return nil, fmt.Errorf("expected height %d but last stored abci responses was at height %d", height, info.GetHeight())
+			}
+			if info.FinalizeBlock == nil {
+				// sanity check
+				if info.LegacyAbciResponses == nil {
+					panic("state store contains last abci response but it is empty")
+				}
+				return responseFinalizeBlockFromLegacy(info.LegacyAbciResponses), nil
+			}
+			return info.FinalizeBlock, nil
 		}
-		return responseFinalizeBlockFromLegacy(info.LegacyAbciResponses), nil
+		// END OF DEPRECATED lastABCIResponseKey
+		return nil, fmt.Errorf("expected last ABCI responses at height %d, but none are found", height)
 	}
-
-	return info.FinalizeBlock, nil
+	resp := new(abci.FinalizeBlockResponse)
+	err = resp.Unmarshal(buf)
+	if err != nil {
+		cmtos.Exit(fmt.Sprintf(`LoadLastFinalizeBlockResponse: Data has been corrupted or its spec has changed: %v\n`, err))
+	}
+	return resp, nil
 }
 
 // SaveFinalizeBlockResponse persists the FinalizeBlockResponse to the database.
@@ -575,30 +735,26 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Finalize
 	}
 	resp.TxResults = dtxs
 
-	// If the flag is false then we save the ABCIResponse. This can be used for the /BlockResults
-	// query or to reindex an event using the command line.
-	if !store.DiscardABCIResponses {
-		bz, err := resp.Marshal()
-		if err != nil {
-			return err
-		}
-		if err := store.db.Set(calcABCIResponsesKey(height), bz); err != nil {
-			return err
-		}
-	}
-
-	// We always save the last ABCI response for crash recovery.
-	// This overwrites the previous saved ABCI Response.
-	response := &cmtstate.ABCIResponsesInfo{
-		FinalizeBlock: resp,
-		Height:        height,
-	}
-	bz, err := response.Marshal()
+	bz, err := resp.Marshal()
 	if err != nil {
 		return err
 	}
 
-	return store.db.SetSync(lastABCIResponseKey, bz)
+	// Save the ABCI response.
+	//
+	// We always save the last ABCI response for crash recovery.
+	// If `store.DiscardABCIResponses` is true, then we delete the previous ABCI response.
+	start := time.Now()
+	if store.DiscardABCIResponses && height > 1 {
+		if err := store.db.Delete(store.DBKeyLayout.CalcABCIResponsesKey(height - 1)); err != nil {
+			return err
+		}
+	}
+	if err := store.db.SetSync(store.DBKeyLayout.CalcABCIResponsesKey(height), bz); err != nil {
+		return err
+	}
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "save_abci_responses"), start)()
+	return nil
 }
 
 func (store dbStore) getValue(key []byte) ([]byte, error) {
@@ -686,18 +842,20 @@ func (store dbStore) setLastABCIResponsesRetainHeight(height int64) error {
 	return store.db.SetSync(lastABCIResponsesRetainHeightKey, int64ToBytes(height))
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // LoadValidators loads the ValidatorSet for a given height.
 // Returns ErrNoValSetForHeight if the validator set can't be found for this height.
 func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
-	valInfo, err := loadValidatorsInfo(store.db, height)
+	valInfo, elapsedTime, err := loadValidatorsInfo(store.db, store.DBKeyLayout.CalcValidatorsKey(height))
 	if err != nil {
 		return nil, ErrNoValSetForHeight{height}
 	}
+	// (WARN) This includes time to unmarshal the validator info
 	if valInfo.ValidatorSet == nil {
 		lastStoredHeight := lastStoredHeightFor(height, valInfo.LastHeightChanged)
-		valInfo2, err := loadValidatorsInfo(store.db, lastStoredHeight)
+		valInfo2, tmpTime, err := loadValidatorsInfo(store.db, store.DBKeyLayout.CalcValidatorsKey(lastStoredHeight))
+		elapsedTime += tmpTime
 		if err != nil || valInfo2.ValidatorSet == nil {
 			return nil,
 				fmt.Errorf("couldn't find validators at height %d (height %d was originally requested): %w",
@@ -726,7 +884,7 @@ func (store dbStore) LoadValidators(height int64) (*types.ValidatorSet, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_validators").Observe(elapsedTime)
 	return vip, nil
 }
 
@@ -736,14 +894,17 @@ func lastStoredHeightFor(height, lastHeightChanged int64) int64 {
 }
 
 // CONTRACT: Returned ValidatorsInfo can be mutated.
-func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, error) {
-	buf, err := db.Get(calcValidatorsKey(height))
+func loadValidatorsInfo(db dbm.DB, valInfoKey []byte) (*cmtstate.ValidatorsInfo, float64, error) {
+	start := time.Now()
+	buf, err := db.Get(valInfoKey)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
+	elapsedTime := time.Since(start).Seconds()
+
 	if len(buf) == 0 {
-		return nil, errors.New("value retrieved from db is empty")
+		return nil, 0, errors.New("value retrieved from db is empty")
 	}
 
 	v := new(cmtstate.ValidatorsInfo)
@@ -755,7 +916,7 @@ func loadValidatorsInfo(db dbm.DB, height int64) (*cmtstate.ValidatorsInfo, erro
 	}
 	// TODO: ensure that buf is completely read.
 
-	return v, nil
+	return v, elapsedTime, nil
 }
 
 // saveValidatorsInfo persists the validator set.
@@ -784,16 +945,17 @@ func (store dbStore) saveValidatorsInfo(height, lastHeightChanged int64, valSet 
 	if err != nil {
 		return err
 	}
-
-	err = batch.Set(calcValidatorsKey(height), bz)
+	start := time.Now()
+	err = batch.Set(store.DBKeyLayout.CalcValidatorsKey(height), bz)
 	if err != nil {
 		return err
 	}
+	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "saveValidatorsInfo"), start)()
 
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // ConsensusParamsInfo represents the latest consensus params, or the last height it changed
 
@@ -826,10 +988,14 @@ func (store dbStore) LoadConsensusParams(height int64) (types.ConsensusParams, e
 }
 
 func (store dbStore) loadConsensusParamsInfo(height int64) (*cmtstate.ConsensusParamsInfo, error) {
-	buf, err := store.db.Get(calcConsensusParamsKey(height))
+	start := time.Now()
+	buf, err := store.db.Get(store.DBKeyLayout.CalcConsensusParamsKey(height))
 	if err != nil {
 		return nil, err
 	}
+
+	addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "load_consensus_params"), start)()
+
 	if len(buf) == 0 {
 		return nil, errors.New("value retrieved from db is empty")
 	}
@@ -862,7 +1028,7 @@ func (store dbStore) saveConsensusParamsInfo(nextHeight, changeHeight int64, par
 		return err
 	}
 
-	err = batch.Set(calcConsensusParamsKey(nextHeight), bz)
+	err = batch.Set(store.DBKeyLayout.CalcConsensusParamsKey(nextHeight), bz)
 	if err != nil {
 		return err
 	}
@@ -930,4 +1096,12 @@ func int64ToBytes(i int64) []byte {
 	buf := make([]byte, binary.MaxVarintLen64)
 	n := binary.PutVarint(buf, i)
 	return buf[:n]
+}
+
+// addTimeSample returns a function that, when called, adds an observation to m.
+// The observation added to m is the number of seconds elapsed since addTimeSample
+// was initially called. addTimeSample is meant to be called in a defer to calculate
+// the amount of time a function takes to complete.
+func addTimeSample(m metrics.Histogram, start time.Time) func() {
+	return func() { m.Observe(time.Since(start).Seconds()) }
 }

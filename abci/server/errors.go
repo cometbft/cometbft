@@ -12,7 +12,7 @@ type ErrUnknownServerType struct {
 }
 
 func (e ErrUnknownServerType) Error() string {
-	return fmt.Sprintf("unknown server type %s", e.ServerType)
+	return "unknown server type " + e.ServerType
 }
 
 // ErrConnectionDoesNotExist is returned when trying to access non-existent network connection.

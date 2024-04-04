@@ -140,7 +140,7 @@ func (mem *CListMempool) removeAllTxs() {
 		e.DetachPrev()
 	}
 
-	mem.txsMap.Range(func(key, _ interface{}) bool {
+	mem.txsMap.Range(func(key, _ any) bool {
 		mem.txsMap.Delete(key)
 		mem.invokeRemoveTxOnReactor(key.(types.TxKey))
 		return true
@@ -393,7 +393,7 @@ func (mem *CListMempool) isFull(txSize int) error {
 		txsBytes = mem.SizeBytes()
 	)
 
-	if memSize >= mem.config.Size || int64(txSize)+txsBytes > mem.config.MaxTxsBytes {
+	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) {
 		return ErrMempoolIsFull{
 			NumTxs:      memSize,
 			MaxTxs:      mem.config.Size,

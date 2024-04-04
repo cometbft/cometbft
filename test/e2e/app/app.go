@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	gogo "github.com/cosmos/gogoproto/types"
+
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
@@ -35,6 +37,7 @@ const (
 	prefixReservedKey   string = "reservedTxKey_"
 	suffixChainID       string = "ChainID"
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
+	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
 )
 
@@ -115,6 +118,17 @@ type Config struct {
 
 	// Flag for enabling and disabling logging of ABCI requests.
 	ABCIRequestsLoggingEnabled bool `toml:"abci_requests_logging_enabled"`
+
+	// PbtsEnableHeight configures the first height during which
+	// the chain will start using Proposer-Based Timestamps (PBTS)
+	// to create and validate new blocks.
+	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
+
+	// PbtsUpdateHeight configures the height at which consensus
+	// param PbtsEnableHeight will be set.
+	// -1 denotes it is set at genesis.
+	// 0 denotes it is set at InitChain.
+	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -163,19 +177,31 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 	}, nil
 }
 
-func (app *Application) updateVoteExtensionEnableHeight(currentHeight int64) *cmtproto.ConsensusParams {
-	var params *cmtproto.ConsensusParams
+func (app *Application) updateFeatureEnableHeights(currentHeight int64) *cmtproto.ConsensusParams {
+	params := &cmtproto.ConsensusParams{
+		Feature: &cmtproto.FeatureParams{},
+	}
+	retNil := true
 	if app.cfg.VoteExtensionsUpdateHeight == currentHeight {
 		app.logger.Info("enabling vote extensions on the fly",
 			"current_height", currentHeight,
 			"enable_height", app.cfg.VoteExtensionsEnableHeight)
-		params = &cmtproto.ConsensusParams{
-			Abci: &cmtproto.ABCIParams{
-				VoteExtensionsEnableHeight: app.cfg.VoteExtensionsEnableHeight,
-			},
-		}
+		params.Feature.VoteExtensionsEnableHeight = &gogo.Int64Value{Value: app.cfg.VoteExtensionsEnableHeight}
+		retNil = false
 		app.logger.Info("updating VoteExtensionsHeight in app_state", "height", app.cfg.VoteExtensionsEnableHeight)
 		app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(app.cfg.VoteExtensionsEnableHeight, 10))
+	}
+	if app.cfg.PbtsUpdateHeight == currentHeight {
+		app.logger.Info("enabling PBTS on the fly",
+			"current_height", currentHeight,
+			"enable_height", app.cfg.PbtsEnableHeight)
+		params.Feature.PbtsEnableHeight = &gogo.Int64Value{Value: app.cfg.PbtsEnableHeight}
+		retNil = false
+		app.logger.Info("updating PBTS Height in app_state", "height", app.cfg.PbtsEnableHeight)
+		app.state.Set(prefixReservedKey+suffixPbtsHeight, strconv.FormatInt(app.cfg.PbtsEnableHeight, 10))
+	}
+	if retNil {
+		return nil
 	}
 	return params
 }
@@ -197,8 +223,10 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	}
 	app.logger.Info("setting ChainID in app_state", "chainId", req.ChainId)
 	app.state.Set(prefixReservedKey+suffixChainID, req.ChainId)
-	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Abci.VoteExtensionsEnableHeight)
-	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Abci.VoteExtensionsEnableHeight, 10))
+	app.logger.Info("setting VoteExtensionsHeight in app_state", "height", req.ConsensusParams.Feature.VoteExtensionsEnableHeight.GetValue())
+	app.state.Set(prefixReservedKey+suffixVoteExtHeight, strconv.FormatInt(req.ConsensusParams.Feature.VoteExtensionsEnableHeight.GetValue(), 10))
+	app.logger.Info("setting PBTS Height in app_state", "height", req.ConsensusParams.Feature.PbtsEnableHeight.GetValue())
+	app.state.Set(prefixReservedKey+suffixPbtsHeight, strconv.FormatInt(req.ConsensusParams.Feature.PbtsEnableHeight.GetValue(), 10))
 	app.logger.Info("setting initial height in app_state", "initial_height", req.InitialHeight)
 	app.state.Set(prefixReservedKey+suffixInitialHeight, strconv.FormatInt(req.InitialHeight, 10))
 	// Get validators from genesis
@@ -211,7 +239,7 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 		}
 	}
 
-	params := app.updateVoteExtensionEnableHeight(0)
+	params := app.updateFeatureEnableHeights(0)
 
 	resp := &abci.InitChainResponse{
 		ConsensusParams: params,
@@ -285,7 +313,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 		panic(err)
 	}
 
-	params := app.updateVoteExtensionEnableHeight(req.Height)
+	params := app.updateFeatureEnableHeights(req.Height)
 
 	if app.cfg.FinalizeBlockDelay != 0 {
 		time.Sleep(app.cfg.FinalizeBlockDelay)
@@ -468,7 +496,7 @@ func (app *Application) PrepareProposal(
 
 	txs := make([][]byte, 0, len(req.Txs)+1)
 	var totalBytes int64
-	extTxPrefix := fmt.Sprintf("%s=", voteExtensionKey)
+	extTxPrefix := voteExtensionKey + "="
 	sum, err := app.verifyAndSum(areExtensionsEnabled, req.Height, &req.LocalLastCommit, "prepare_proposal")
 	if err != nil {
 		panic(fmt.Errorf("failed to sum and verify in PrepareProposal; err %w", err))
@@ -565,6 +593,12 @@ func (app *Application) ProcessProposal(_ context.Context, req *abci.ProcessProp
 // key/value store ("extensionSum") with the sum of all of the numbers collected
 // from the vote extensions.
 func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteRequest) (*abci.ExtendVoteResponse, error) {
+	r := &abci.Request{Value: &abci.Request_ExtendVote{ExtendVote: &abci.ExtendVoteRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	appHeight, areExtensionsEnabled := app.checkHeightAndExtensions(false, req.Height, "ExtendVote")
 	if !areExtensionsEnabled {
 		panic(fmt.Errorf("received call to ExtendVote at height %d, when vote extensions are disabled", appHeight))
@@ -601,6 +635,12 @@ func (app *Application) ExtendVote(_ context.Context, req *abci.ExtendVoteReques
 // without doing anything about them. In this case, it just makes sure that the
 // vote extension is a well-formed integer value.
 func (app *Application) VerifyVoteExtension(_ context.Context, req *abci.VerifyVoteExtensionRequest) (*abci.VerifyVoteExtensionResponse, error) {
+	r := &abci.Request{Value: &abci.Request_VerifyVoteExtension{VerifyVoteExtension: &abci.VerifyVoteExtensionRequest{}}}
+	err := app.logABCIRequest(r)
+	if err != nil {
+		return nil, err
+	}
+
 	appHeight, areExtensionsEnabled := app.checkHeightAndExtensions(false, req.Height, "VerifyVoteExtension")
 	if !areExtensionsEnabled {
 		panic(fmt.Errorf("received call to VerifyVoteExtension at height %d, when vote extensions are disabled", appHeight))
@@ -731,7 +771,7 @@ func (app *Application) logABCIRequest(req *abci.Request) error {
 }
 
 // parseTx parses a tx in 'key=value' format into a key and value.
-func parseTx(tx []byte) (string, string, error) {
+func parseTx(tx []byte) (key, value string, err error) {
 	parts := bytes.Split(tx, []byte("="))
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid tx format: %q", string(tx))
@@ -851,11 +891,11 @@ func (app *Application) verifyAndSum(
 func (app *Application) verifyExtensionTx(height int64, payload string) error {
 	parts := strings.Split(payload, "|")
 	if len(parts) != 2 {
-		return fmt.Errorf("invalid payload format")
+		return errors.New("invalid payload format")
 	}
 	expSumStr := parts[0]
 	if len(expSumStr) == 0 {
-		return fmt.Errorf("sum cannot be empty in vote extension payload")
+		return errors.New("sum cannot be empty in vote extension payload")
 	}
 
 	expSum, err := strconv.Atoi(expSumStr)
@@ -865,17 +905,17 @@ func (app *Application) verifyExtensionTx(height int64, payload string) error {
 
 	extCommitHex := parts[1]
 	if len(extCommitHex) == 0 {
-		return fmt.Errorf("extended commit data cannot be empty in vote extension payload")
+		return errors.New("extended commit data cannot be empty in vote extension payload")
 	}
 
 	extCommitBytes, err := hex.DecodeString(extCommitHex)
 	if err != nil {
-		return fmt.Errorf("could not hex-decode vote extension payload")
+		return errors.New("could not hex-decode vote extension payload")
 	}
 
 	var extCommit abci.ExtendedCommitInfo
 	if extCommit.Unmarshal(extCommitBytes) != nil {
-		return fmt.Errorf("unable to unmarshal extended commit")
+		return errors.New("unable to unmarshal extended commit")
 	}
 
 	sum, err := app.verifyAndSum(true, height, &extCommit, "process_proposal")

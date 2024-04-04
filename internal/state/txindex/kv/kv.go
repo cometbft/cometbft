@@ -43,9 +43,23 @@ type TxIndex struct {
 	eventSeq int64
 
 	log log.Logger
+
+	compact            bool
+	compactionInterval int64
+	lastPruned         int64
 }
 
-func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
+type IndexerOption func(*TxIndex)
+
+// WithCompaction sets the compaciton parameters.
+func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
+	return func(txi *TxIndex) {
+		txi.compact = compact
+		txi.compactionInterval = compactionInterval
+	}
+}
+
+func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight int64, err error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned. E.x. if heights {1, 3, 7} were pruned, numPruned == 3
 	// newRetainHeight: new retain height after pruning
@@ -133,7 +147,14 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 	}
 	numHeightsPersistentlyPruned = numHeightsBatchPruned
 	currentPersistentlyRetainedHeight = currentBatchRetainedHeight
-	return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, nil
+
+	txi.lastPruned += numHeightsBatchPruned
+	if txi.compact && txi.lastPruned >= txi.compactionInterval {
+		err = txi.store.Compact(nil, nil)
+		txi.lastPruned = 0
+	}
+
+	return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, err
 }
 
 func (txi *TxIndex) SetRetainHeight(retainHeight int64) error {
@@ -157,7 +178,7 @@ func (txi *TxIndex) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (txi *TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
+func (*TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastTxIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -174,10 +195,16 @@ func (txi *TxIndex) getIndexerRetainHeight() (int64, error) {
 }
 
 // NewTxIndex creates new KV indexer.
-func NewTxIndex(store dbm.DB) *TxIndex {
-	return &TxIndex{
+func NewTxIndex(store dbm.DB, options ...IndexerOption) *TxIndex {
+	txIndex := &TxIndex{
 		store: store,
 	}
+
+	for _, option := range options {
+		option(txIndex)
+	}
+
+	return txIndex
 }
 
 func (txi *TxIndex) SetLogger(l log.Logger) {
@@ -515,10 +542,10 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 			return decoded, true, err
 		}
 	}
-	return
+	return nil, false, nil
 }
 
-func (txi *TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
+func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
 	eventSeq := extractEventSeqFromKey(it.Key())
 	tmpHeights[string(it.Value())+eventSeq] = it.Value()
 }
@@ -889,7 +916,7 @@ func startKeyForCondition(c syntax.Condition, height int64) []byte {
 	return startKey(c.Tag, c.Arg.Value())
 }
 
-func startKey(fields ...interface{}) []byte {
+func startKey(fields ...any) []byte {
 	var b bytes.Buffer
 	for _, f := range fields {
 		b.WriteString(fmt.Sprintf("%v", f) + tagKeySeparator)

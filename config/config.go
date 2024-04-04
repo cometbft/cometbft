@@ -170,18 +170,18 @@ func (cfg *Config) ValidateBasic() error {
 		return ErrInSection{Section: "instrumentation", Err: err}
 	}
 	if !cfg.Consensus.CreateEmptyBlocks && cfg.Mempool.Type == MempoolTypeNop {
-		return fmt.Errorf("`nop` mempool does not support create_empty_blocks = false")
+		return errors.New("`nop` mempool does not support create_empty_blocks = false")
 	}
 	return nil
 }
 
 // CheckDeprecated returns any deprecation warnings. These are printed to the operator on startup.
-func (cfg *Config) CheckDeprecated() []string {
+func (*Config) CheckDeprecated() []string {
 	var warnings []string
 	return warnings
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BaseConfig
 
 // BaseConfig defines the base configuration for a CometBFT node.
@@ -330,7 +330,7 @@ func (cfg BaseConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // RPCConfig
 
 // RPCConfig defines the configuration options for the CometBFT RPC server.
@@ -526,7 +526,7 @@ func (cfg RPCConfig) IsTLSEnabled() bool {
 	return cfg.TLSCertFile != "" && cfg.TLSKeyFile != ""
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // GRPCConfig
 
 // GRPCConfig defines the configuration for the CometBFT gRPC server.
@@ -626,7 +626,7 @@ func TestGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // GRPCPrivilegedConfig
 
 // GRPCPrivilegedConfig defines the configuration for the CometBFT gRPC server
@@ -671,7 +671,7 @@ func TestGRPCPruningServiceConfig() *GRPCPruningServiceConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // P2PConfig
 
 // P2PConfig defines the configuration options for the CometBFT peer-to-peer networking layer.
@@ -836,7 +836,7 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // MempoolConfig
 
 // MempoolConfig defines the configuration options for the CometBFT mempool
@@ -972,7 +972,7 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // StateSyncConfig
 
 // StateSyncConfig defines the configuration for the CometBFT state sync service.
@@ -1062,7 +1062,7 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BlockSyncConfig
 
 // BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service.
@@ -1094,7 +1094,7 @@ func (cfg *BlockSyncConfig) ValidateBasic() error {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // ConsensusConfig
 
 // ConsensusConfig defines the configuration for the Tendermint consensus algorithm, adopted by CometBFT,
@@ -1260,7 +1260,7 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // StorageConfig
 
 // StorageConfig allows more fine-grained control over certain storage-related
@@ -1272,7 +1272,21 @@ type StorageConfig struct {
 	DiscardABCIResponses bool `mapstructure:"discard_abci_responses"`
 	// Configuration related to storage pruning.
 	Pruning *PruningConfig `mapstructure:"pruning"`
-
+	// Compaction on pruning - enable or disable in-process compaction.
+	// If the DB backend supports it, this will force the DB to compact
+	// the database levels and save on storage space. Setting this to true
+	// is most beneficial when used in combination with pruning as it will
+	// phyisically delete the entries marked for deletion.
+	// false by default (forcing compaction is disabled).
+	Compact bool `mapstructure:"compact"`
+	// Compaction interval - number of blocks to try explicit compaction on.
+	// This parameter should be tuned depending on the number of items
+	// you expect to delete between two calls to forced compaction.
+	// If your retain height is 1 block, it is too much of an overhead
+	// to try compaction every block. But it should also not be a very
+	// large multiple of your retain height as it might occur bigger overheads.
+	// 1000 by default.
+	CompactionInterval int64 `mapstructure:"compaction_interval"`
 	// Hex representation of the hash of the genesis file.
 	// This is an optional parameter set when an operator provides
 	// a hash via the command line.
@@ -1280,15 +1294,25 @@ type StorageConfig struct {
 	// Note that if the provided has does not match the hash of the genesis file
 	// the node will report an error and not boot.
 	GenesisHash string `mapstructure:"genesis_hash"`
+
+	// The representation of keys in the database.
+	// The current representation of keys in Comet's stores is considered to be v1
+	// Users can experiment with a different layout by setting this field to v2.
+	// Not that this is an experimental feature and switching back from v2 to v1
+	// is not supported by CometBFT.
+	ExperimentalKeyLayout string `mapstructure:"experimental_db_key_layout"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
 // CometBFT storage optimization.
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
-		DiscardABCIResponses: false,
-		Pruning:              DefaultPruningConfig(),
-		GenesisHash:          "",
+		DiscardABCIResponses:  false,
+		Pruning:               DefaultPruningConfig(),
+		Compact:               false,
+		CompactionInterval:    1000,
+		GenesisHash:           "",
+		ExperimentalKeyLayout: "v1",
 	}
 }
 
@@ -1305,6 +1329,9 @@ func TestStorageConfig() *StorageConfig {
 func (cfg *StorageConfig) ValidateBasic() error {
 	if err := cfg.Pruning.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [pruning] section: %w", err)
+	}
+	if cfg.ExperimentalKeyLayout != "v1" && cfg.ExperimentalKeyLayout != "v2" {
+		return fmt.Errorf("unsupported version of DB Key layout, expected v1 or v2, got %s", cfg.ExperimentalKeyLayout)
 	}
 	return nil
 }
@@ -1349,7 +1376,7 @@ func TestTxIndexConfig() *TxIndexConfig {
 	return DefaultTxIndexConfig()
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // InstrumentationConfig
 
 // InstrumentationConfig defines the configuration for metrics reporting.
@@ -1402,7 +1429,7 @@ func (cfg *InstrumentationConfig) IsPrometheusEnabled() bool {
 	return cfg.Prometheus && cfg.PrometheusListenAddr != ""
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Utils
 
 // helper function to make config creation independent of root dir.
@@ -1413,7 +1440,7 @@ func rootify(path, root string) string {
 	return filepath.Join(root, path)
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Moniker
 
 var defaultMoniker = getDefaultMoniker()
@@ -1428,7 +1455,7 @@ func getDefaultMoniker() string {
 	return moniker
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // PruningConfig
 
 type PruningConfig struct {
@@ -1462,7 +1489,7 @@ func (cfg *PruningConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // DataCompanionPruningConfig
 
 type DataCompanionPruningConfig struct {

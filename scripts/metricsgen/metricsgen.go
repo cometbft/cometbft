@@ -171,7 +171,7 @@ func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 	var pkg *ast.Package
 	// TODO(thane): Figure out a more readable way of implementing this.
 
-	for pkgName, pkg = range d {
+	for pkgName, pkg = range d { //nolint:revive
 	}
 	td := TemplateData{
 		Package: pkgName,
@@ -283,7 +283,7 @@ func extractHelpMessage(cg *ast.CommentGroup) string {
 }
 
 func isMetric(e ast.Expr, mPkgName string) bool {
-	return strings.Contains(types.ExprString(e), fmt.Sprintf("%s.", mPkgName))
+	return strings.Contains(types.ExprString(e), mPkgName+".")
 }
 
 func extractLabels(bl *ast.BasicLit) string {

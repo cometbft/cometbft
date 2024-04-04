@@ -189,8 +189,8 @@ func TestMempoolFilters(t *testing.T) {
 	defer cleanup()
 	emptyTxArr := []types.Tx{[]byte{}}
 
-	nopPreFilter := func(tx types.Tx) error { return nil }
-	nopPostFilter := func(tx types.Tx, res *abci.CheckTxResponse) error { return nil }
+	nopPreFilter := func(_ types.Tx) error { return nil }
+	nopPostFilter := func(_ types.Tx, _ *abci.CheckTxResponse) error { return nil }
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.
 	// each tx has 20 bytes
@@ -485,7 +485,7 @@ func TestSerialReap(t *testing.T) {
 		}
 	}
 
-	//----------------------------------------
+	// ----------------------------------------
 
 	// Deliver some txs.
 	deliverTxsRange(0, 100)
@@ -706,8 +706,8 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	txs := NewRandomTxs(nTxs, txLen)
 
 	// simulate a group of peers sending them over and over
-	N := mp.config.Size
-	for i := 0; i < N; i++ {
+	n := mp.config.Size
+	for i := 0; i < n; i++ {
 		txNum := mrand.Intn(nTxs)
 		tx := txs[txNum]
 
@@ -816,7 +816,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 
 	// The first tx is valid when rechecking, and the client will call the callback right after the
 	// response from the app and before returning.
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(_ mock.Arguments) {
 		reqRes := newReqRes(txs[0], abci.CodeTypeOK, abci.CHECK_TX_TYPE_RECHECK)
 		callback(reqRes.Request, reqRes.Response)
 	}).Return(nil, nil).Once()
@@ -825,7 +825,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, ErrCheckTxAsync{}).Once()
 
 	// The third tx is invalid, so it will be removed from the mempool.
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(_ mock.Arguments) {
 		reqRes := newReqRes(txs[2], 1, abci.CHECK_TX_TYPE_RECHECK)
 		callback(reqRes.Request, reqRes.Response)
 	}).Return(nil, nil).Once()
@@ -892,7 +892,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 
 	// The first tx is valid, the third is invalid, and the request for the second and fourth tx
 	// were not sent, so the callback is not called.
-	mockClient.On("Flush", mock.Anything).Run(func(args mock.Arguments) {
+	mockClient.On("Flush", mock.Anything).Run(func(_ mock.Arguments) {
 		reqRes1 := newReqRes(txs[0], abci.CodeTypeOK, abci.CHECK_TX_TYPE_RECHECK)
 		callback(reqRes1.Request, reqRes1.Response)
 		reqRes2 := newReqRes(txs[2], 1, abci.CHECK_TX_TYPE_RECHECK)

@@ -101,7 +101,7 @@ func verifyCommitLightInternal(
 	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
 
 	// count all the remaining signatures
-	count := func(c CommitSig) bool { return true }
+	count := func(_ CommitSig) bool { return true }
 
 	// attempt to batch verify
 	if shouldBatchVerify(vals, commit) {
@@ -176,7 +176,7 @@ func verifyCommitLightTrustingInternal(
 	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
 
 	// count all the remaining signatures
-	count := func(c CommitSig) bool { return true }
+	count := func(_ CommitSig) bool { return true }
 
 	// attempt to batch verify commit. As the validator set doesn't necessarily
 	// correspond with the validator set that signed the block we need to look
@@ -233,7 +233,7 @@ func verifyCommitBatch(
 	// re-check if batch verification is supported
 	if !ok || len(commit.Signatures) < batchVerifyThreshold {
 		// This should *NEVER* happen.
-		return fmt.Errorf("unsupported signature algorithm or insufficient signatures for batch verification")
+		return errors.New("unsupported signature algorithm or insufficient signatures for batch verification")
 	}
 
 	for idx, commitSig := range commit.Signatures {
@@ -314,7 +314,7 @@ func verifyCommitBatch(
 	// happened:
 	//  * non-zero tallied voting power, empty batch (impossible?)
 	//  * bv.Verify() returned `false, []bool{true, ..., true}` (BUG)
-	return fmt.Errorf("BUG: batch verification failed with no invalid signatures")
+	return errors.New("BUG: batch verification failed with no invalid signatures")
 }
 
 // Single Verification

@@ -194,12 +194,14 @@ The CometBFT team should improve it at every iteration to increase the amount of
 [`latency_throughput.py`]: ../../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting
 [`latency_plotter.py`]: ../../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting-version-2
 
-#### Extracting Prometheus Metrics
+#### Extract Prometheus Metrics
 
 1. Stop the prometheus server if it is running as a service (e.g. a `systemd` unit).
-2. Unzip the prometheus database retrieved from the testnet, and move it to replace the
-   local prometheus database.
+2. Unzip the prometheus database retrieved from the testnet.
 3. Start the prometheus server and make sure no error logs appear at start up.
+    ```bash
+    prometheus --storage.tsdb.path=path/to/prometheus/data --config.file=path/to/prometheus.yml
+    ```
 4. Identify the time window you want to plot in your graphs.
 5. Execute the [`prometheus_plotter.py`] script for the time window.
 

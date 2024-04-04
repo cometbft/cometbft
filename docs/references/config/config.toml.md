@@ -65,13 +65,13 @@ library.
 proxy_app = "tcp://127.0.0.1:26658"
 ```
 
-| Value type          | string                                             |
-|:--------------------|:---------------------------------------------------|
-| **Possible values** | TCP Stream socket (`"tcp://127.0.0.1:26658"`)      |
-|                     | Unix domain socket (`"unix:///var/run/abci.sock"`) |
-|                     | `"kvstore"`                                        |
-|                     | `"persistent_kvstore"`                             |
-|                     | `"noop"`                                           |
+| Value type          | string                                                  |
+|:--------------------|:--------------------------------------------------------|
+| **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26658"`)      |
+|                     | Unix domain socket (e.g. `"unix:///var/run/abci.sock"`) |
+|                     | `"kvstore"`                                             |
+|                     | `"persistent_kvstore"`                                  |
+|                     | `"noop"`                                                |
 
 When the ABCI application is written in a different language than Golang, (for example the
 [Nomic binary](https://github.com/nomic-io/nomic) is written in Rust) the application can open a TCP port or create a
@@ -82,9 +82,7 @@ The [abci](#abci) parameter is used in conjunction with this parameter to define
 In other cases, (for example in the [Gaia binary](https://github.com/cosmos/gaia)) CometBFT is imported as a library
 and the configuration entry is unused.
 
-For development and testing, the built-in ABCI applications can be used without additional processes running.
-
-<!--- Todo: describe the built-in applications and their use --->
+For development and testing, the [built-in ABCI application](../../guides/app-dev/abci-cli.md) can be used without additional processes running.
 
 ### moniker
 A custom human-readable name for this node.
@@ -299,10 +297,10 @@ TCP or UNIX socket listen address for CometBFT that allows external consensus si
 priv_validator_laddr = ""
 ```
 
-| Value type          | string                                                |
-|:--------------------|:------------------------------------------------------|
-| **Possible values** | TCP Stream socket (`"tcp://127.0.0.1:26658"`)         |
-|                     | Unix domain socket (`"unix:///var/run/privval.sock"`) |
+| Value type          | string                                                     |
+|:--------------------|:-----------------------------------------------------------|
+| **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26665"`)         |
+|                     | Unix domain socket (e.g. `"unix:///var/run/privval.sock"`) |
 
 When consensus signing is outsourced from CometBFT (typically to a Hardware Security Module, like a
 [YubiHSM](https://www.yubico.com/product/yubihsm-2) device), this address is opened by CometBFT for incoming connections
@@ -371,8 +369,8 @@ laddr = "tcp://127.0.0.1:26657"
 
 | Value type          | string                                            |
 |:--------------------|:--------------------------------------------------|
-| **Possible values** | TCP Stream socket (`"tcp://127.0.0.1:26657"`)     |
-|                     | Unix domain socket (`"unix:///var/run/rpc.sock"`) |
+| **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26657"`)     |
+|                     | Unix domain socket (e.g. `"unix:///var/run/rpc.sock"`) |
 
 The RPC server endpoints have OpenAPI specification definitions through [Swagger UI](../../rpc).
 <!---
@@ -664,11 +662,11 @@ TCP or UNIX socket address for the gRPC server to listen on.
 laddr = ""
 ```
 
-| Value type          | string                                             |
-|:--------------------|:---------------------------------------------------|
-| **Possible values** | TCP Stream socket (`"tcp://127.0.0.1:26658"`)      |
-|                     | Unix domain socket (`"unix:///var/run/abci.sock"`) |
-|                     | `""`                                               |
+| Value type          | string                                                  |
+|:--------------------|:--------------------------------------------------------|
+| **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26661"`)      |
+|                     | Unix domain socket (e.g. `"unix:///var/run/abci.sock"`) |
+|                     | `""`                                                    |
 
 If not specified, the gRPC server will be disabled.
 
@@ -718,11 +716,11 @@ Configuration for privileged gRPC endpoints, which should **never** be exposed t
 laddr = ""
 ```
 
-| Value type          | string                                             |
-|:--------------------|:---------------------------------------------------|
-| **Possible values** | TCP Stream socket (`"tcp://127.0.0.1:26658"`)      |
-|                     | Unix domain socket (`"unix:///var/run/abci.sock"`) |
-|                     | `""`                                               |
+| Value type          | string                                                  |
+|:--------------------|:--------------------------------------------------------|
+| **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26662"`)      |
+|                     | Unix domain socket (e.g. `"unix:///var/run/abci.sock"`) |
+|                     | `""`                                                    |
 
 If not specified, the gRPC privileged endpoints will be disabled.
 
@@ -755,7 +753,7 @@ laddr = "tcp://0.0.0.0:26656"
 
 | Value type          | string                                            |
 |:--------------------|:--------------------------------------------------|
-| **Possible values** | TCP Stream socket (`"tcp://127.0.0.1:26657"`)     |
+| **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26657"`)     |
 
 ### p2p.external_address
 
@@ -1827,9 +1825,9 @@ those queries to a peer.
 Storage parameters are important in production settings as it can make the difference between a 2GB data folder and a
 20GB one.
 
-CometBFT supports storage pruning to delete data indicated as not needed by the application or the data companion. Other than the pruning interval and compaction options, the configuration parameters in this section refer to the data companion. The applications pruning configuration is communicated to CometBFT via ABCI. 
+CometBFT supports storage pruning to delete data indicated as not needed by the application or the data companion. Other than the pruning interval and compaction options, the configuration parameters in this section refer to the data companion. The applications pruning configuration is communicated to CometBFT via ABCI.
 
-Note that for some databases (GolevelDB), the data often does not get physically removed from storage due to the DB backend not triggering compaction. In these cases it is necessary to enable forced compaction and set the compaction interval accordingly. 
+Note that for some databases (GolevelDB), the data often does not get physically removed from storage due to the DB backend not triggering compaction. In these cases it is necessary to enable forced compaction and set the compaction interval accordingly.
 
 ### storage.discard_abci_responses
 Discard ABCI responses from the state store, which can save a considerable amount of disk space.

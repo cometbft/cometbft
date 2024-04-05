@@ -179,7 +179,7 @@ with peaks almost reaching the maximum mempool size of 5000 transactions.
 
 | v0.38 | v1 (without LE / with LE) 
 | :--------------:|:--------------:|
-| ![mempool-avg-baseline](img38/200nodes/avg_mempool_size.png) | ![mempool-avg](imgs/v1/200nodes/metrics/avg_mempool_size.png)
+| ![mempool-avg-baseline](img38/200nodes/avg_mempool_size_ylim.png) | ![mempool-avg](imgs/v1/200nodes/metrics/avg_mempool_size.png)
 | | ![mempool-avg-le](imgs/v1/200nodes_with_latency_emulation/metrics/avg_mempool_size.png)
 
 **Maximum size** The maximum mempool size indicates when one or more nodes have reached their
@@ -218,7 +218,7 @@ round more often, even needing four rounds to finalise a block.
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
-| ![rounds](img38/200nodes/rounds.png) | ![rounds](imgs/v1/200nodes/metrics/rounds.png)
+| ![rounds](img38/200nodes/rounds_ylim.png) | ![rounds](imgs/v1/200nodes/metrics/rounds.png)
 | | ![rounds](imgs/v1/200nodes_with_latency_emulation/metrics/rounds.png)
 
 #### Blocks produced per minute and transactions processed per minute
@@ -238,7 +238,7 @@ rate drops from approximately 30 blocks per minute (without LE) to around 10 blo
 
 | v0.38 | v1 (without LE / with LE)
 |:--------------:|:--------------:|
-| ![total-txs-baseline](img38/200nodes/total_txs_rate.png) | ![total-txs](imgs/v1/200nodes/metrics/total_txs_rate.png)
+| ![total-txs-baseline](img38/200nodes/total_txs_rate_ylim.png) | ![total-txs](imgs/v1/200nodes/metrics/total_txs_rate.png)
 | | ![total-txs](imgs/v1/200nodes_with_latency_emulation/metrics/total_txs_rate.png)
 
 The collective spike on the right of the graph marks the end of the load injection, when blocks
@@ -253,7 +253,7 @@ signs of unconstrained growth. With latency emulation, the results are comparabl
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
-|![rss](img38/200nodes/memory.png) | ![rss](imgs/v1/200nodes/metrics/memory.png)
+|![rss](img38/200nodes/memory_ylim.png) | ![rss](imgs/v1/200nodes/metrics/memory.png)
 | | ![rss](imgs/v1/200nodes_with_latency_emulation/metrics/memory.png)
 
 #### CPU utilization
@@ -278,7 +278,7 @@ passed the test.
 
 | Scenario  | Date       | Version                                                   | Result |
 | --------- | ---------- | --------------------------------------------------------- | ------ |
-| 200-nodes | 2024-03-21 | v1 (without LE / with LE).0.0-alpha.2 (4ced46d3d742bdc6093050bd67d9bbde830b6df2) | Pass   |
+| 200-nodes | 2024-03-21 | v1.0.0-alpha.2 (4ced46d3d742bdc6093050bd67d9bbde830b6df2) | Pass   |
 
 #### Test results with latency emulation
 

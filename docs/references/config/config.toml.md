@@ -99,7 +99,7 @@ endpoint will return the node moniker in the `.result.moniker` key.
 
 Monikers do not need to be unique. They are for local administrator use and troubleshooting.
 
-Nodes on the peer-to-peer network are identified by `nodeID@IP:port` as discussed in the
+Nodes on the peer-to-peer network are identified by `nodeID@host:port` as discussed in the
 [node_key.json](node_key.json.md) section.
 
 ### db_backend
@@ -124,8 +124,8 @@ For example: `go build -tags cleveldb,rocksdb`.
 The RocksDB fork has API changes from the upstream RocksDB implementation. All other databases claim a stable API.
 
 The CometBFT team tests rely on the GoLevelDB implementation. All other implementations are considered experimental from
-a CometBFT perspective. However, the GoLevelDB library has not been maintained in the past two years.
-Choose your poison.
+a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
+that CometBFT uses as a common database interface to various databases.
 
 ### db_dir
 The directory path where the database is stored.

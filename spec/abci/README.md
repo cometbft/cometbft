@@ -10,7 +10,7 @@ parent:
 ## Introduction
 
 ABCI 2.0 is a major evolution of ABCI (**A**pplication **B**lock**c**hain **I**nterface).
-Like its predecessor, ABCI is the interface between CometBFT (a state-machine
+ABCI is the interface between CometBFT (a state-machine
 replication engine) and the actual state machine being replicated (i.e., the Application).
 The API consists of a set of _methods_, each with a corresponding `Request` and `Response`
 message type.

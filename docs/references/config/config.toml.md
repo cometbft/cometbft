@@ -524,7 +524,7 @@ experimental_subscription_buffer_size = 200
 Higher values will accommodate higher event throughput rates (and will use more memory).
 
 ### rpc.experimental_websocket_write_buffer_size
-Experimental parameter to specify the maximum number of RPC responses that can be buffered per WebSocket client.
+Experimental parameter to specify the maximum number of events that can be buffered per WebSocket client.
 ```toml
 experimental_websocket_write_buffer_size = 200
 ```
@@ -1949,7 +1949,7 @@ psql-conn = ""
 An extensive amount of Prometheus metrics are built into CometBFT.
 
 ### instrumentation.prometheus
-Enable or disabled presenting the Prometheus metrics at an endpoint.
+Enable or disable presenting the Prometheus metrics at an endpoint.
 ```toml
 prometheus = false
 ```

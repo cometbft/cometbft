@@ -116,7 +116,7 @@ Maximum gas allowed.
 `"-1"` means unlimited gas.
 
 ## consensus_params.evidence.max_age_num_blocks
-Limit evidence of malfeasance based on how old the evidence is. This parameter limits the evidence based on its block
+Limit evidence of misbehaviour based on how old the evidence is. This parameter limits the evidence based on its block
 number.
 
 | Value type          | string     |

@@ -1946,7 +1946,7 @@ psql-conn = ""
 An extensive amount of Prometheus metrics are built into CometBFT.
 
 ### instrumentation.prometheus
-Enable or disabled presenting the Prometheus metrics at an endpoint.
+Enable or disable presenting the Prometheus metrics at an endpoint.
 ```toml
 prometheus = false
 ```

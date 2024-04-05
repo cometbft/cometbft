@@ -48,6 +48,7 @@ def queries_200_nodes(time_window, ext_time_window):
         (( 'avg(process_resident_memory_bytes)',              time_window[0], time_window[1], '1s'), 'avg_memory',                dict(ylabel='Memory (bytes)',    xlabel='time (s)', title='Average Memory usage',           legend=False, figsize=(10,6), grid=True, ylim=(0, 2e9)), False),
         (( 'node_load1',                                      time_window[0], time_window[1], '1s'), 'cpu',                       dict(ylabel='Load',              xlabel='time (s)', title='Node load',                      legend=False, figsize=(10,6), grid=True, ylim=(0, 6)), False), 
         (( 'avg(node_load1)',                                 time_window[0], time_window[1], '1s'), 'avg_cpu',                   dict(ylabel='Load',              xlabel='time (s)', title='Average Node load',              legend=False, figsize=(10,6), grid=True, ylim=(0, 6)), False),
+        (( 'cometbft_consensus_block_size_bytes/1024/1024',   time_window[0], time_window[1], '1s'), 'block_size_bytes',          dict(ylabel='Mb',                xlabel='time (s)', title='Block size (Mb)',                legend=False, figsize=(10,6), grid=True, ylim=(0, 4.1)), False),
         
         # Extended window metrics
         (( 'cometbft_consensus_height',                       ext_time_window[0], ext_time_window[1], '1s'), 'blocks',            dict(ylabel='# Blocks',          xlabel='time (s)', title='Blocks in time',                 legend=False, figsize=(10,6), grid=True), False), 

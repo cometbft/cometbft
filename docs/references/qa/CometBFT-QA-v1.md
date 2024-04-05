@@ -227,10 +227,8 @@ round more often, even needing four rounds to finalise a block.
 These figures show the rate in which blocks were created from the point of view of each node,
 indicating when each node learned that a new block had been agreed upon. Throughout much of the load
 application period, the majority of nodes maintained a rate of approximately 20 blocks per minute. A
-spike to more than 100 blocks per minute occurred due to a slower node catching up. This behavior was similar in the baseline scenario.
-
-With latency emulation (LE), there is a noticeable degradation in performance. The block generation
-rate drops from approximately 30 blocks per minute (without LE) to around 10 blocks per minute.
+spike to more than 100 blocks per minute occurred due to a slower node catching up. This behavior
+was similar in the baseline scenario.
 
 | v0.38 | v1 (without LE / with LE)
 |:--------------:|:--------------:|
@@ -244,6 +242,16 @@ rate drops from approximately 30 blocks per minute (without LE) to around 10 blo
 
 The collective spike on the right of the graph marks the end of the load injection, when blocks
 become smaller (empty) and impose less strain on the network.
+
+With latency emulation (LE), there is a noticeable degradation in throughput. The block generation
+rate drops from approximately 30 blocks per minute (without LE) to around 10 blocks per minute.
+Since the rates of transaction processing are similar, this means that more transactions are
+included in the blocks, as shown in the following images. Note that the maximum block size is 4 Mb.
+
+| v0.38 | v1 (without LE / with LE)
+|:--------------:|:--------------:|
+| ![block-size-v038](img38/200nodes/block_size_bytes.png) | ![block-size-v1](imgs/v1/200nodes/metrics/block_size_bytes.png)
+| | ![block-size-v1-le](imgs/v1/200nodes_with_latency_emulation/metrics/block_size_bytes.png)
 
 #### Memory resident set size
 

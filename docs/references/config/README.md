@@ -11,7 +11,7 @@ parent:
 The CometBFT configuration has three distinct parts:
 1. The network parameters in [genesis.json](genesis.json.md).
 2. The nodeID in [node_key.json](node_key.json.md).
-3. The configuration of the node and the reactors in [config.toml](config.toml.md).
+3. The configuration of the node and its services in [config.toml](config.toml.md).
 
 Validator nodes also require a private/public key-pair to sign consensus messages.
 
@@ -28,7 +28,8 @@ Path to the folder is defined by these steps:
 3. The environment variable is overridden by the `--home` command-line parameter.
 
 By default, all configuration files are stored under the `$CMTHOME/config` directory.
-These can be overridden in the [`config.toml`](config.toml.md#genesis_file) file.
+These can be overridden individually for each file in the `config.toml` file, for example to
+override the `genesis_file` location change it [here](config.toml.md#genesis_file).
 
 By default, all databases are stored under the `$CMTHOME/data` directory.
 This can be overridden at the [`db_dir`](config.toml.md#db_dir) parameter in the [`config.toml`](config.toml.md) file.

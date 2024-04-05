@@ -91,8 +91,7 @@ When a hard fork happens, a new chain can start from a higher initial height by 
 
 Height `"0"` is the same as height `"1"` and it means the first ever block in the chain.
 
-Height, a number, is presented as a string so arbitrary high numbers can be used without the limitation of the integer
-maximum.
+> Note: A height in CometBFT is an `int64` integer therefore its maximum value is `9223372036854775807`
 
 ## consensus_params.block.max_bytes
 Maximum block size in bytes.

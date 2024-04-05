@@ -1166,9 +1166,9 @@ Setting the value to `"0s"` disables the timeout.
 ## Mempool
 Mempool allows gathering and broadcasting uncommitted transactions among nodes.
 
-The **mempool** is a storage for uncommitted transactions; the **mempool cache** is an internal storage within the
-mempool, for invalid transactions. The mempool cache provides a list of known invalid transactions to filter out
-incoming duplicate transactions without running a full validation on them.
+The **mempool** is storage for uncommitted transactions; the **mempool cache** is internal storage within the
+mempool for seen transactions. The mempool cache provides a list of transactions already received to filter out
+incoming duplicate transactions and prevent duplicate full transaction validations.
 
 ### mempool.type
 The type of mempool this node will use.
@@ -1569,7 +1569,7 @@ in round `r` is `timeout_propose + r * timeout_propose_delta`.
 
 ### consensus.timeout_prevote
 
-How long a node waits, after receiving +2/3 conflicting prevotes, before precommitting nil.
+How long a node waits, after receiving +2/3 conflicting prevotes, before pre-committing nil.
 
 ```toml
 timeout_prevote = "1s"

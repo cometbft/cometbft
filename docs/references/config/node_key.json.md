@@ -7,9 +7,9 @@ parent:
 ---
 
 ## The `node_key.json` file
-The node ID, the IP address of the host and the P2P port together identify a node in a CometBFT network: `nodeID@IP:port`.
+The node ID, the host address and the P2P port together identify a node in a CometBFT network: `nodeID@host:port`.
 
-The easiest way to get the node ID is running the `cometbft show-node-id` command.
+The easiest way to get the `nodeID` is running the `cometbft show-node-id` command.
 
 The `node_key.json` file resides at `$CMTHOME/config/node_key.json`. This can be overridden at the
 [node_key_file](config.toml.md#node_key_file) parameter in the [`config.toml`](config.toml.md) file.

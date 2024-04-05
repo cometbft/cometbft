@@ -73,8 +73,9 @@ be conducted for upcoming releases.
 The initial phase of our QA process involves identifying the saturation point within the testnet. As
 in previous iterations, our testbed comprises 200 nodes (175 validator nodes, 20 full nodes, and 5
 seed nodes), along with one node dedicated to sending transaction load, and another for metric
-collection. The experiment entails multiple iterations, each lasting 90 seconds, with varied load
-configurations. A configuration is characterized by:
+collection. All nodes use the same, default configuration. The experiment entails multiple
+iterations, each lasting 90 seconds, with varied load configurations. A configuration is
+characterized by:
 - `c`, denoting the number of connections from the load runner process to the target node, and
 - `r`, indicating the rate or frequency of transactions issued per second. Each connection
   dispatches `r` transactions per second. 

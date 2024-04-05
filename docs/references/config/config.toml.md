@@ -379,7 +379,7 @@ the CometBFT docs build process. See https://github.com/cometbft/cometbft-docs/
 for details.
 --->
 
-You can also read the [RPC specification](../../spec/rpc) for more information.
+Please refer to the [RPC documentation](https://docs.cometbft.com/v1.0/rpc/) for more information.
 
 ### rpc.cors_allowed_origins
 A list of origins a cross-domain request can be executed from.

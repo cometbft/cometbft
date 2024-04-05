@@ -1819,12 +1819,15 @@ The value of `peer_query_maj23_sleep_duration` is the interval between sending
 those queries to a peer.
 
 ## Storage
-Storage parameters are important in production settings as it can make the difference between a 2GB data folder and a
-20GB one.
+In production environments, configuring storage parameters accurately is essential as it can greatly impact the amount
+of disk space utilized.
 
-CometBFT supports storage pruning to delete data indicated as not needed by the application or the data companion. Other than the pruning interval and compaction options, the configuration parameters in this section refer to the data companion. The applications pruning configuration is communicated to CometBFT via ABCI.
+CometBFT supports storage pruning to delete data indicated as not needed by the application or the data companion.
+Other than the pruning interval and compaction options, the configuration parameters in this section refer to the data
+companion. The applications pruning configuration is communicated to CometBFT via ABCI.
 
-Note that for some databases (GolevelDB), the data often does not get physically removed from storage due to the DB backend not triggering compaction. In these cases it is necessary to enable forced compaction and set the compaction interval accordingly.
+Note that for some databases (GolevelDB), the data often does not get physically removed from storage due to the DB backend
+not triggering compaction. In these cases it is necessary to enable forced compaction and set the compaction interval accordingly.
 
 ### storage.discard_abci_responses
 Discard ABCI responses from the state store, which can save a considerable amount of disk space.
@@ -1837,9 +1840,9 @@ discard_abci_responses = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-Set to `false` to ensure ABCI responses are kept.
+If set to `false` ABCI responses are maintained, if set to `true` ABCI responses will be pruned.
 
-ABCI responses are required for the `/block_results` RPC queries, and to reindex events in the command-line tool.
+ABCI responses are required for the `/block_results` RPC queries.
 
 ### storage.pruning.interval
 The time period between automated background pruning operations.

@@ -20,7 +20,8 @@ If a Hardware Security Module (HSM) is not available, CometBFT stores an unencry
 [priv_validator_state.json](priv_validator_state.json.md).
 
 ## The HOME folder
-The CometBFT HOME folder contains all configuration for CometBFT as well as the databases used during execution.
+The CometBFT HOME folder contains all configuration (in the `$HOME/config` folder) for CometBFT as well as all the databases (in the `$HOME/data` folder)
+used during execution.
 
 Path to the folder is defined by these steps:
 1. The home folder for CometBFT is read from the `CMTHOME` environment variable.

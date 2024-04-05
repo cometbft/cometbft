@@ -94,7 +94,7 @@ moniker = "my.host.name"
 |:--------------------|:---------------------------------------------------------|
 | **Possible values** | any human-readable string                                |
 
-The main use of this entry is to keep track of the different nodes in a local environment. For example the `/status` RPC
+The main use of this entry is to keep track of the different nodes in a local environment. For example, the `/status` RPC
 endpoint will return the node moniker in the `.result.moniker` key.
 
 Monikers do not need to be unique. They are for local administrator use and troubleshooting.
@@ -760,7 +760,7 @@ laddr = "tcp://0.0.0.0:26656"
 
 TCP address that peers should use in order to connect to the node.
 This is the address that the node advertises to peers.
-If not set, the [listen address](#p2pladdr) is advertised.
+If not set, the [`p2p.laddr`](#p2pladdr) is advertised.
 
 Useful when the node is running on a non-routable address or when the
 node does not have the capabilities to figure out its IP public address.
@@ -782,7 +782,7 @@ The port has to point to the node's P2P port.
 
 Example with a node on a non-routable network:
 - Node has local or private IP address `10.10.10.10` and uses port `10000` for
-  P2P communication: set this addresses as the [listen address](#p2pladdr) (`p2p.laddr`).
+  P2P communication: set this address as the [listen address](#p2pladdr) (`p2p.laddr`).
 - The network gateway has the public IP `1.2.3.4` and we want to use publicly
   open port `26656` on the IP address. In this case, a redirection has to be
   set up from `1.2.3.4:26656` to `10.10.10.10:1000`;
@@ -828,7 +828,7 @@ The node will attempt to establish connections to all configured persistent peer
 This in particular means that persistent peers do not count towards
 the configured [`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers)
 (refer to [issue 1304](https://github.com/cometbft/cometbft/issues/1304) for more details).
-Moreover, if a connection to a persistent peers is lost, the node will attempt
+Moreover, if a connection to a persistent peer is lost, the node will attempt
 reconnecting to that peer.
 
 Once connected to a persistent peer, the node will request addresses of
@@ -881,7 +881,7 @@ Set it to `false` for testing on private network. Most production nodes can keep
 ### p2p.max_num_inbound_peers
 
 Maximum number of inbound peers,
-that is, peers from which the node accept connections.
+that is, peers from which the node accepts connections.
 
 ```toml
 max_num_inbound_peers = 40
@@ -910,7 +910,7 @@ Refer to the [p2p.external_address](#p2pexternal_address) configuration for deta
 ### p2p.max_num_outbound_peers
 
 Maximum number of outbound peers,
-that is, peers to which the node dials and established connections.
+that is, peers to which the node dials and establishes connections.
 
 ```toml
 max_num_outbound_peers = 10
@@ -1081,7 +1081,7 @@ can receive a sample of the gathered addresses but no other information (for
 example blocks or consensus data) is provided. The node simply disconnects
 from the peer after sending the addresses.
 
-Nodes operating in seed mode should configured as [seeds](#p2pseeds) for other
+Nodes operating in seed mode should be configured as [seeds](#p2pseeds) for other
 nodes in the network.
 
 The [`p2p.pex`](#p2ppex) option has to be set to `true` for the seed mode to work.
@@ -1099,7 +1099,7 @@ private_peer_ids = ""
 | **Possible values within commas** | nodeID (`"abcdef0123456789abcd"`) |
 |                                   | `""`                              |
 
-The addresses with the listed node IDs will not be sent to other peers, when the PEX reactor
+The addresses with the listed node IDs will not be sent to other peers when the PEX reactor
 ([`p2p.pex`](#p2ppex)) is enabled. This allows a more granular setting instead of completely disabling the peer exchange
 reactor.
 
@@ -1181,7 +1181,7 @@ type = "flood"
 `"flood"` is the original mempool implemented for CometBFT. It is a concurrent linked list with flooding gossip
 protocol.
 
-`"nop"` is a "no operation" or disabled mempool, where the ABCI application is responsible storing, disseminating and
+`"nop"` is a "no operation" or disabled mempool, where the ABCI application is responsible for storing, disseminating and
 proposing transactions. Note, that it requires empty blocks to be created:
 [`consensus.create_empty_blocks = true`](#consensuscreate_empty_blocks) has to be set.
 
@@ -1543,7 +1543,7 @@ therefore are unable to vote for, the block proposed in that round.
 
 Setting `timeout_propose` to `0s` means that the validator does not wait at all
 for the proposal block and always prevotes nil.
-This has obvious liveness implications, since this validator will never prevote
+This has obvious liveness implications since this validator will never prevote
 for proposed blocks.
 
 ### consensus.timeout_propose_delta
@@ -1674,7 +1674,7 @@ But it does have implications in the way the application rewards validators.
 
 ### consensus.double_sign_check_height
 
-How many blocks to look back to check existence of the node's consensus votes before joining consensus.
+How many blocks to look back to check the existence of the node's consensus votes before joining consensus.
 
 ```toml
 double_sign_check_height = 0
@@ -1720,7 +1720,7 @@ create_empty_blocks = true
 
 When set to `true`, empty blocks are produced and proposed to indicate that the
 chain is still operative.
-When set to `false`, blocks are not produced or proposed while there not
+When set to `false`, blocks are not produced or proposed while there are no
 transactions in the validator's mempool.
 
 Notice that empty blocks are still proposed whenever the application hash
@@ -1910,7 +1910,7 @@ If this hash mismatches the hash that CometBFT computes on the genesis file, the
 Transaction indexer settings.
 
 The application will set which txs to index.
-In some cases a node operator will be able to decide which txs to index based on configuration set in the application.
+In some cases, a node operator will be able to decide which txs to index based on the configuration set in the application.
 
 ### tx_index.indexer
 What indexer to use for transactions.

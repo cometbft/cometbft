@@ -176,9 +176,9 @@ module name to set a default log level. The default is `*:info`.
 
 Examples:
 
-Set the consensus reactor to `none` log level and the `p2p` reactor to `debug`. Everything else should be set to error:
+Set the consensus reactor to `debug` log level and the `p2p` reactor to `none`. Everything else should be set to `error`:
 ```toml
-log_level = "consensus:none,p2p:debug,*:error"
+log_level = "consensus:debug,p2p:none,*:error"
 ```
 Set RPC server logs to `debug` and leave everything else at `info`:
 ```toml
@@ -249,7 +249,7 @@ log_format = "plain"
 <!--- Todo: Probably we should create separate schemas for the different log levels or modules. --->
 
 ### genesis_file
-Path to the JSON file containing the initial validator set and other meta-data.
+Path to the JSON file containing the initial conditions for a CometBFT blockchain and the initial state of the application (more details [here](./genesis.json.md)).
 ```toml
 genesis_file = "config/genesis.json"
 ```
@@ -263,7 +263,7 @@ The default relative path translates to `$CMTHOME/config/genesis.json`. In case 
 `$HOME/.cometbft/config/genesis.json`.
 
 ### priv_validator_key_file
-Path to the JSON file containing the private key to use as a validator in the consensus protocol.
+Path to the JSON file containing the private key to use as a validator in the consensus protocol (more details [here](./priv_validator_key.json.md)).
 ```toml
 priv_validator_key_file = "config/priv_validator_key.json"
 ```
@@ -278,7 +278,7 @@ defaults to `$HOME/.cometbft/config/priv_validator_key.json`.
 
 
 ### priv_validator_state_file
-Path to the JSON file containing the last sign state of a validator.
+Path to the JSON file containing the last sign state of a validator  (more details [here](./priv_validator_state.json.md)).
 ```toml
 priv_validator_state_file = "data/priv_validator_state.json"
 ```
@@ -312,7 +312,7 @@ More information on a supported signing service can be found in the [TMKMS](http
 documentation.
 
 ### node_key_file
-Path to the JSON file containing the private key to use for node authentication in the p2p protocol.
+Path to the JSON file containing the private key to use for node authentication in the p2p protocol (more details [here](./node_key.json.md)).
 ```toml
 node_key_file = "config/node_key.json"
 ```

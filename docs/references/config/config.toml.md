@@ -35,7 +35,7 @@ The `config.toml` file is a standard [TOML](https://toml.io/en/v1.0.0) file that
 of CometBFT, including the configuration of the reactors.
 
 All relative paths in the configuration are relative to `$CMTHOME`.
-(See [the HOME folder](README.md#the-home-folder) for more details.)
+(See [the HOME folder](./README.md#the-home-folder) for more details.)
 
 ## Base configuration
 The root table defines generic node settings. It is implemented in a struct called `BaseConfig`, hence the name.
@@ -805,9 +805,6 @@ seeds = ""
 
 The node will try to connect to any of the configured seed nodes when it needs
 addresses of potential peers to connect.
-Connections to seed nodes are short-term: seed nodes will transmit to the node
-a list of addresses of potential peers and then disconnect.
-No blocks or consensus communication should take place.
 
 Example:
 ```toml

@@ -1,5 +1,6 @@
 #/usr/bin/env python3
-"""
+"""Plotter for comparing saturation results on v1 and v0.38.
+
 This script generates an image with the number of processed transactions for different load
 configurations (tx rate and number of connections). The purpose is to find the saturation point of
 the network and to compare the results between different CometBFT versions.
@@ -13,14 +14,14 @@ pip install matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Expected values of processed transactions for a given transaction rate.
+rates0 = [0, 3600]
+expected = [r * 89 for r in rates0]
+
 # Transaction rate (x axis)
 rates1 = [200, 400, 800, 1600]
 rates2 = [r*2 for r in rates1]
 rates4 = [r*2 for r in rates2]
-
-# Expected values of processed transactions for a given transaction rate.
-rates0 = [0, 3600]
-expected = [r * 89 for r in rates0]
 
 # v1 (without latency emulation), for number of connections c in [1,2,4]
 c1 = [17800,31200,51146,50889]

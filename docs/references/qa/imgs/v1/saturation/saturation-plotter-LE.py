@@ -1,5 +1,6 @@
 #/usr/bin/env python3
-"""
+"""Plotter for comparing saturation results on v1 with and without Letency Emulation.
+
 This script generates an image with the number of processed transactions for different load
 configurations (tx rate and number of connections). The purpose is to find the saturation point of
 the network and to compare the results between different CometBFT versions.
@@ -32,12 +33,12 @@ le3 = [8900,17800,26700,33200,37665,51771,38631,49290,51526,46902] # experiments
 
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.plot(rates, expected, linestyle='dotted', marker=',', color='g', label='expected')
-ax.plot(rates, d1, linestyle='solid', marker='o', color='b', label='without LE')
-# ax.plot(rates, d2, linestyle='solid', marker='o', color='violet', label='without LE #2')
-# ax.plot(rates, d3, linestyle='solid', marker='o', color='grey', label='without LE #3')
-ax.plot(rates, le1, linestyle='dashed', marker='s', color='r', label='with LE')
-# ax.plot(rates2, le2, linestyle='dashed', marker='s', color='orange', label='with LE #2')
-# ax.plot(rates, le3, linestyle='dashed', marker='s', color='brown', label='with LE #3')
+ax.plot(rates, d1, linestyle='solid', marker='o', color='b', label='without LE #1')
+ax.plot(rates, d2, linestyle='solid', marker='o', color='violet', label='without LE #2')
+ax.plot(rates, d3, linestyle='solid', marker='o', color='grey', label='without LE #3')
+ax.plot(rates, le1, linestyle='dashed', marker='s', color='r', label='with LE #1')
+ax.plot(rates2, le2, linestyle='dashed', marker='s', color='orange', label='with LE #2')
+ax.plot(rates, le3, linestyle='dashed', marker='s', color='brown', label='with LE #3')
 
 plt.title('saturation point for v1.0.0-alpha.2, c=1')
 plt.xlabel("rate (txs/s)")
@@ -49,5 +50,5 @@ ax.grid()
 ax.legend()
 
 fig.tight_layout()
-fig.savefig("saturation_v1_LE_all.png")
+fig.savefig("saturation_v1_LE.png")
 plt.show()

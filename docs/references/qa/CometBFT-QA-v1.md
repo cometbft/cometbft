@@ -8,12 +8,12 @@ parent:
 
 # QA results for CometBFT v1.x
 
-We run this iteration of the Quality Assurance (QA) process on CometBFT `v1.0.0-alpha.2`, the second
-tag of the backport branch `v1.x` from the CometBFT repository. The previous QA tests were performed
-on `v0.38.0-alpha.2` from May 21, 2023, which we use here as a baseline for comparison. There are
-many changes with respect to the baseline. In particular, new features that can affect performance
-are some improvements to bandwidth consumption and proposer-based timestamps (PBTS). For the full
-list of changes, check out the
+We run this iteration of the [Quality Assurance (QA)][qa] process on CometBFT `v1.0.0-alpha.2`, the
+second tag of the backport branch `v1.x` from the CometBFT repository. The previous QA tests were
+performed on `v0.38.0-alpha.2` from May 21, 2023, which we use here as a baseline for comparison.
+There are many changes with respect to the baseline. In particular, new features that can affect
+performance are some improvements to bandwidth consumption and proposer-based timestamps (PBTS). For
+the full list of changes, check out the
 [CHANGELOG](https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/CHANGELOG.md).
 
 The primary objective of the QA process is to ensure that no significant regressions have occurred
@@ -30,7 +30,7 @@ QA process are the following:
 - [200-nodes test](#200-nodes-test): Apply a consistent transaction load to the 200-nodes network
   for a fixed duration. Then, gather metrics and block data to calculate latencies and compare them
   with the baseline results.
-- [Rotating-nodes test](#rotating-nodes-test): Initially, deploy 10 validators and 3 seed nodes.
+- Rotating-nodes test: Initially, deploy 10 validators and 3 seed nodes.
   Then, launch a full node, wait until it is caught up to the latest height using Block Sync, and
   then stop it. Repeat this process 25 times while ensuring that the nodes can catch up to the
   network's latest height.
@@ -123,26 +123,18 @@ process. This is the same value used in the previous QA tests.
 
 ### With latency emulation
 
-For comparing the performance of `v1` with and without latency emulation, we run a new set of
-experiments with a different configurations of transaction loads: we use only one connection, and a
-transaction rate ranging from 100 to 1000 tx/s, in intervals of 100.
+For comparing where the network starts to saturate in `v1` with and without latency emulation, we
+run a new set of experiments with different configurations of transaction loads: we use only one
+connection and a transaction rate ranging from 100 to 1000 tx/s, in intervals of 100. The figure
+depicts in total six instances of these experiments, three with latency emulation and three without. 
 
 ![v1_saturation](imgs/v1/saturation/saturation_v1_LE.png) 
 
-These are the actual values which we use to generate the figure:
-
-| r    | v1 without LE | v1 with LE   | 
-| ---: | ----: | ----: |
-| 100  |  8900 |  8900 |
-| 200  | 17800 | 17800 |
-| 300  | 26053 | 26700 |
-| 400  | 28800 | 35600 |
-| 500  | 32513 | 34504 |
-| 600  | 30455 | 42169 |
-| 700  | 33077 | 38916 |
-| 800  | 32191 | 38004 |
-| 900  | 30688 | 34332 |
-| 1000 | 32395 | 36948 |
+Up to 300 tx/s, the throughput is optimal for both configurations. However, when the load increases
+beyond this threshold, not all transactions are processed. Given the limited number of experiments
+conducted, it's challenging determining conclusively which configuration offers better throughput.
+Nevertheless, we can still say that there are no big discrepancies in the obtained values on both
+scenarios.
 
 ## 200-nodes test
 
@@ -296,6 +288,7 @@ magnitude. Moving forward with the next QA tests, it may be prudent to consider 
 saturation point to a slightly lower value. Determining this adjustment will require conducting new
 experiments on the network with latency emulation.
 
+[qa]: README.md#cometbft-quality-assurance
 [aws-latencies]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/aws-latencies.csv
 [latency-emulator-script]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/latency-setter.py 
 [\#9548]: https://github.com/tendermint/tendermint/issues/9548

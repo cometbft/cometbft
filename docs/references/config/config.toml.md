@@ -763,7 +763,7 @@ This is the address that the node advertises to peers.
 If not set, the [listen address](#p2pladdr) is advertised.
 
 Useful when the node is running on a non-routable address or when the
-node does not have the capabilities to figure out its IP private address.
+node does not have the capabilities to figure out its IP public address.
 For example, this is useful when running from a cloud service (e.g, AWS, Digital Ocean).
 In these scenarios, the public or external address of the node should be set to
 `p2p.external_address`, while the private or internal address should be used as

@@ -1,33 +1,14 @@
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
-FROM golang:1.22 
+FROM ghcr.io/fwcd/archlinux:latest
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
-RUN apt update \
-    && apt install -y \
-    libbz2-dev libgflags-dev libsnappy-dev libzstd-dev zlib1g-dev liblz4-dev \
-    make tar wget build-essential \
-    libleveldb-dev libleveldb1d
-
-ARG ROCKSDB=8.11.3
-
-# Install Rocksdb
-RUN \
-    wget -q https://github.com/facebook/rocksdb/archive/refs/tags/v${ROCKSDB}.tar.gz \
-    && tar -zxf v${ROCKSDB}.tar.gz \
-    && cd rocksdb-${ROCKSDB} \
-    && DEBUG_LEVEL=0 make -j4 shared_lib \
-    && make install-shared \
-    && ldconfig \
-    && cd .. \
-    && rm -rf v${ROCKSDB}.tar.gz rocksdb-${ROCKSDB}
-
-RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
+# install dependencies from precompiled binaries with the power of arch
+RUN pacman -Syyu --noconfirm go git base-devel liblz4 libzstd snappy leveldb rocksdb=8.11.3 wget curl tar iputils-ping iproute2 python3-netifaces
 
 # For the latency-setter script
-RUN apt-get -qq install -y iputils-ping iproute2 python3-netifaces >/dev/null
 RUN mkdir -p /scripts
 COPY test/e2e/pkg/latency/aws-latencies.csv /scripts/
 COPY test/e2e/pkg/latency/latency-setter.py /scripts/

@@ -8,14 +8,16 @@ This specification is divided into multiple documents and should be read in the 
 - [crdt.md](crdt.md): explains the rationale for using a CRDT in the gossiping and defines the CRDT used, SSE;
 - [sse.qnt](sse.qnt): Quint spec with example instantiations of the proposed CRDT;
 - [crdt.qnt](crdt.qnt): Quint spec with an instantiation for use in Tendermint.
-- [gossip.md](gossip.md): Comes from a an earlier iteration. Documents what must be provided and what is required on of the gossip interface. Is outdated.
-
 
 The following files may be read if needed
 
 - [globals.qnt](globals.qnt): Global definitions used on other specs.
 - [spells.qnt](spells.qnt): Helper functions.
 - [option.qnt](option.qnt): Definitions of Option types.
+
+The [gossip.md](gossip.md) file comes from an earlier iteration of this specification.
+It documents what must be provided and what is required on of the gossip interface.
+It is outdated.
 
 ## Conventions
 

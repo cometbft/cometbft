@@ -1,12 +1,14 @@
 # CONS/GOSSIP interactions
 
+***This document is outdated, it belongs to a previous interaction of the specification work***
+
 CONS interacts with GOSSIP to update the gossip state and to evaluate the current state to check for conditions that enable actions.
 To update the state, CONS passes GOSSIP a tuple and to evaluate the conditions CONS queries the tuple space.
 The exact mechanism by which tuples and query results are exchanged is implementation dependent[^options], but here we describe it as function calls.
 
 [^options:] Some implementation options
 >
-> - check on conditions on a loop, starting from the hightest known round of the hightest known height and down the round numbers, sleeping on each iteration for some predefined amount of time;
+> - check on conditions on a loop, starting from the highest known round of the highest known height and down the round numbers, sleeping on each iteration for some predefined amount of time;
 > - set callbacks to inspect conditions on a (height,round) whenever a new message for such height and round is received;
 > - provide GOSSIP with queries and predicates over the query results before hand, so GOSSIP will execute them according to its convenience and optimizing it, and with callbacks to be invoked when the predicates evaluate to true;
 >

@@ -2,8 +2,6 @@ module github.com/cometbft/cometbft
 
 go 1.22.2
 
-toolchain go1.22.2
-
 require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/adlio/schema v1.3.4
@@ -94,7 +92,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.1.2 // indirect
-	github.com/google/flatbuffers v1.12.1 // indirect
+	github.com/google/flatbuffers v2.0.8+incompatible // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect

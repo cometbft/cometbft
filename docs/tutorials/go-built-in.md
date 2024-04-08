@@ -48,7 +48,7 @@ have installed and the computer platform):
 
 ```bash
 $ go version
-go version go1.22.1 darwin/amd64
+go version go1.22.2 darwin/amd64
 
 ```
 

@@ -77,7 +77,7 @@ collection. All nodes use the same, default configuration. The experiment entail
 iterations, each lasting 90 seconds, with varied load configurations. A configuration is
 characterized by:
 - `c`, denoting the number of connections from the load runner process to the target node, and
-- `r`, indicating the rate or frequency of transactions issued per second. Each connection
+- `r`, indicating the rate or frequency of transactions submitted per second. Each connection
   dispatches `r` transactions per second. 
 
 For more details on the methodology to identify the saturation point, see
@@ -99,9 +99,9 @@ utilize 89 out of 90 seconds of the experiment duration, as the final transactio
 with the end of the experiment and is thus not sent.
 
 The complete results from which the figure was generated can be found in the file
-[`v1_report_tabbed.txt`](imgs/v1/200nodes/metrics/v1_report_tabbed.txt). The following table
-summarizes the values plotted in the figure. We can see the saturation point in the diagonal defined
-by `c=1,r=400` and `c=2,r=200`.
+[`v1_report_tabbed.txt`](imgs/v1/200nodes/v1_report_tabbed.txt). The following table
+summarizes the values, i.e., the number of transaction processed, plotted in the figure. We can see the saturation point in the diagonal defined
+by `c=1,r=400` and `c=2,r=200`:
 
 | r    | c=1       | c=2       | c=4   |
 | ---: | --------: | --------: | ----: |
@@ -110,7 +110,7 @@ by `c=1,r=400` and `c=2,r=200`.
 | 800  | 51146     | 51917     | 41376 |
 | 1600 | 50889     | 47732     | 45530 |
 
-For comparison, this is the table obtained on the baseline version, with the same saturation point.
+For comparison, this is the table obtained on the baseline version, with the same saturation point:
 
 | r    | c=1       | c=2       | c=4   |
 | ---: | --------: | --------: | ----: |
@@ -215,7 +215,7 @@ was needed a second round. On these two particular runs, we observe that `v0.38`
 round on more occasions than `v1`.
 
 With latency emulation, the performance is notably worse: the consensus module requires an extra
-round more often, even needing four rounds to finalise a block.
+round more often, even needing four rounds to finalise a block. This indicates that the values of consensus timeouts should be increased, so that to represent the actual delays in the network.
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
@@ -246,7 +246,7 @@ become smaller (empty) and impose less strain on the network.
 With latency emulation (LE), there is a noticeable degradation in throughput. The block generation
 rate drops from approximately 30 blocks per minute (without LE) to around 10 blocks per minute.
 Since the rates of transaction processing are similar, this means that more transactions are
-included in the blocks, as shown in the following images. Note that the maximum block size is 4 Mb.
+included in the blocks, as shown in the following images. The most probable reason is that, once block latency is higher with latency emulation, more transactions are available at the proposer when it is ready to propose a new block. Note that the maximum block size is 4 Mb.
 
 | v0.38 | v1 (without LE / with LE)
 |:--------------:|:--------------:|
@@ -281,7 +281,7 @@ similar pattern. With latency emulation, the CPU load reaches 5 on some nodes.
 ### Test Results
 
 We have demonstrated that there are no regressions when comparing CometBFT `v1.0.0-alpha.2` against
-the results obtained for `v0.38`. In fact, the observed results are equal to, or occasionally even
+the results obtained for `v0.38`. In fact, the observed results are identical to, or occasionally even
 slightly better than those of the baseline. We therefore conclude that this version of CometBFT has
 passed the test.
 

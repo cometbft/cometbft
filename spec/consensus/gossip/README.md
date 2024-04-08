@@ -1,4 +1,10 @@
-# README
+# Consensus Gossip protocol using CRDTs
+
+This document proposes a representation for the messages exchanged by
+Tendermint consensus algorithm using the abstraction of Conflict-Free
+Replicated Data Type (CRDT).
+
+**This is a work in progress**.
 
 ## Organization
 

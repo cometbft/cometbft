@@ -7,7 +7,7 @@ ENV LD_LIBRARY_PATH=/usr/local/lib
 
 # install dependencies from precompiled binaries with the power of arch
 RUN pacman -Syyu --noconfirm go git base-devel lz4 zstd snappy leveldb wget curl tar iputils iproute2 python-netifaces
-RUN pacman -S --noconfirm rocksdb=8.11.3
+RUN pacman -S --noconfirm rocksdb=v8.11.3
 
 # For the latency-setter script
 RUN mkdir -p /scripts

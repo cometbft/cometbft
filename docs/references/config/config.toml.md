@@ -79,7 +79,7 @@ UNIX domain socket to communicate with CometBFT, while CometBFT runs as a separa
 
 The [abci](#abci) parameter is used in conjunction with this parameter to define the protocol used for communication.
 
-In other cases, (for example in the [Gaia binary](https://github.com/cosmos/gaia)) CometBFT is imported as a library
+In other cases (for example in the [Gaia binary](https://github.com/cosmos/gaia)), CometBFT is imported as a library
 and the configuration entry is unused.
 
 For development and testing, the [built-in ABCI application](../../guides/app-dev/abci-cli.md) can be used without additional processes running.

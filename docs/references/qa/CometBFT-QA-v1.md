@@ -81,7 +81,7 @@ characterized by:
   dispatches `r` transactions per second. 
 
 For more details on the methodology to identify the saturation point, see
-[here](CometBFT-QA-34.md#saturation-point).
+[here](method.md#running-the-test).
 
 The figure below shows the values obtained for v1 and v0.38 (the baseline). It's important to note
 that configurations that have the same amount of total transaction load are regarded as equivalent.

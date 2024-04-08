@@ -1844,6 +1844,64 @@ If set to `false` ABCI responses are maintained, if set to `true` ABCI responses
 
 ABCI responses are required for the `/block_results` RPC queries.
 
+### storage.experimental_db_key_layout
+
+The representation of keys in the database. The current representation of keys in Comet's stores is considered to be `v1`.
+
+Users can experiment with a different layout by setting this field to `v2`. Note that this is an experimental feature
+and switching back from `v2` to `v1` is not supported by CometBFT.
+
+If the database was initially created with `v1`, it is necessary to migrate the DB before switching to `v2`. The migration
+is not done automatically.
+
+```toml
+experimental_db_key_layout = 'v1'
+```
+
+| Value type          | string |
+|:--------------------|:-------|
+| **Possible values** | `v1`   |
+|                     | `v2`   |
+
+- `v1` - The legacy layout existing in Comet prior to v1.
+- `v2` - Order preserving representation ordering entries by height.
+
+If not specified, the default value `v1` will be used.
+
+### storage.compact
+
+If set to true, CometBFT will force compaction to happen for databases that support this feature and save on storage space.
+
+Setting this to true is most benefits when used in combination with pruning as it will physically delete the entries marked for deletion.
+
+```toml
+compact = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+`false` is the default value (forcing compaction is disabled).
+
+### storage.compaction_interval
+
+To avoid forcing compaction every time, this parameter instructs CometBFT to wait the given amount of blocks to be
+pruned before triggering compaction.
+
+It should be tuned depending on the number of items. If your retain height is 1 block, it is too much of an overhead
+to try compaction every block. But it should also not be a very large multiple of your retain height as it might occur
+bigger overheads.
+
+| Value type          | string (# blocks) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0"`       |
+
+```toml
+compaction_interval = '1000'
+```
+
 ### storage.pruning.interval
 The time period between automated background pruning operations.
 ```toml

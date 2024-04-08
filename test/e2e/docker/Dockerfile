@@ -6,7 +6,7 @@ FROM ghcr.io/fwcd/archlinux:latest
 ENV LD_LIBRARY_PATH=/usr/local/lib
 
 # install dependencies from precompiled binaries with the power of arch
-RUN pacman -Syyu --noconfirm go git base-devel liblz4 libzstd snappy leveldb rocksdb=8.11.3 wget curl tar iputils-ping iproute2 python3-netifaces
+RUN pacman -Syyu --noconfirm go git base-devel lz4 zstd snappy leveldb rocksdb=8.11.3 wget curl tar iputils iproute2 python-netifaces
 
 # For the latency-setter script
 RUN mkdir -p /scripts

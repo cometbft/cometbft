@@ -272,7 +272,8 @@ The most reliable metric from Prometheus for assessing CPU utilization in a Unix
 commonly found in the [output of
 `top`](https://www.digitalocean.com/community/tutorials/load-average-in-linux). In these scenarios,
 the load remains consistently below 4 on the majority of nodes, with the baseline exhibiting a
-similar pattern. With latency emulation, the CPU load reaches 5 on some nodes.
+similar pattern. With latency emulation, the CPU load reaches 5 on some nodes, probably due to
+having a busier mempool and processing more rounds.
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|

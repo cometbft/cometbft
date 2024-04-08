@@ -226,9 +226,10 @@ round more often, even needing four rounds to finalise a block. This indicates t
 
 These figures show the rate in which blocks were created from the point of view of each node,
 indicating when each node learned that a new block had been agreed upon. Throughout much of the load
-application period, the majority of nodes maintained a rate of approximately 20 blocks per minute. A
-spike to more than 100 blocks per minute occurred due to a slower node catching up. This behavior
-was similar in the baseline scenario.
+application period, the majority of nodes maintained a rate of between 20 and 40 blocks per minute.
+A spike to more than 100 blocks per minute occurred due to a slower node catching up. In the
+baseline scenario, most blocks had a somewhat slower rate of approximately between 10 and 30 blocks
+per minute.
 
 | v0.38 | v1 (without LE / with LE)
 |:--------------:|:--------------:|

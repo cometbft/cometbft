@@ -213,7 +213,7 @@ did not store any state CometBFT calls `InitChain`. After this, CometBFT enters 
 >commit              = %s"<Commit>"
 >```
 
-## Adapting existing Applications that use ABCI
+## Adapting existing Applications that use legacy ABCI
 
 In some cases, an existing Application using the legacy ABCI may need to be adapted to work with new version of ABCI
 with as minimal changes as possible. In this case, of course, new ABCI versions will not provide any advantage with respect

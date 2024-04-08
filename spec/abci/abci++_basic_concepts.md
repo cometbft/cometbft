@@ -6,7 +6,7 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-    - [ABCI 2.0 vs. ABCI](#abci-vs-abci)
+    - [ABCI 2.0 vs. legacy ABCI](#abci-20-vs-legacy-abci)
     - [Method overview](#method-overview)
         - [Consensus/block execution methods](#consensusblock-execution-methods)
         - [Mempool methods](#mempool-methods)
@@ -24,7 +24,7 @@ title: Overview and basic concepts
 
 # Overview and basic concepts
 
-## ABCI 2.0 vs. ABCI
+## ABCI 2.0 vs. legacy ABCI
 
 [&#8593; Back to Outline](#outline)
 

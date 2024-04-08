@@ -687,7 +687,7 @@ then _p_ decides block _v_ and finalizes consensus for height _h_ in the followi
 10. _p_'s CometBFT unlocks the mempool &mdash; newly received transactions can now be checked.
 11. _p_ starts consensus for height _h+1_, round 0
 
-## Data Types existing in ABCI
+## Data Types (exist before ABCI 2.0)
 
 Most of the data structures used in ABCI are shared [common data structures](../core/data_structures.md). In certain cases, ABCI uses different data structures which are documented here:
 

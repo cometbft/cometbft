@@ -390,7 +390,7 @@ Since the transaction cannot be guaranteed to be checked against the exact same 
 will be executed as part of a (potential) decided block, `CheckTx` shouldn't check *everything*
 that affects the transaction's validity, in particular those checks whose validity may depend on
 transaction ordering. `CheckTx` is weak because a Byzantine node need not care about `CheckTx`;
-it can propose a block full of invalid transactions if it wants. The mechanism ABCI has
+it can propose a block full of invalid transactions if it wants. The mechanism ABCI, from version 1.0, has
 in place for dealing with such behavior is `ProcessProposal`.
 
 ##### Replay Protection

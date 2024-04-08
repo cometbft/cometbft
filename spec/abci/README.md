@@ -15,7 +15,7 @@ replication engine) and the actual state machine being replicated (i.e., the App
 The API consists of a set of _methods_, each with a corresponding `Request` and `Response`
 message type.
 
-Note: ABCI 2.0 is colloquially called ABCI++. To be precise in these documents, we will refer to the exact version of ABCI under discussion, currently v2.
+> Note: ABCI 2.0 is colloquially called ABCI++. To be precise in these documents, we will refer to the exact version of ABCI under discussion, currently 2.0.
 
 The methods are always initiated by CometBFT. The Application implements its logic
 for handling all ABCI methods.

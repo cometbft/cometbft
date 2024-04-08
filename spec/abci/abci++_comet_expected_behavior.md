@@ -215,9 +215,9 @@ did not store any state CometBFT calls `InitChain`. After this, CometBFT enters 
 
 ## Adapting existing Applications that use ABCI
 
-In some cases, an existing Application using the legacy ABCI may need to be adapted to work with ABCI
-with as minimal changes as possible. In this case, of course, ABCI will not provide any advantage with respect
-to the existing implementation, but will keep the same guarantees already provided by ABCI.
+In some cases, an existing Application using the legacy ABCI may need to be adapted to work with new version of ABCI
+with as minimal changes as possible. In this case, of course, new ABCI versions will not provide any advantage with respect
+to the legacy ABCI implementation, but will keep the same guarantees.
 Here is how ABCI methods should be implemented.
 
 First of all, all the methods that did not change from ABCI 0.17.0 to ABCI 2.0, namely `Echo`, `Flush`, `Info`, `InitChain`,

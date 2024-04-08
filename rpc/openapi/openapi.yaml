@@ -1539,7 +1539,7 @@ components:
         block:
           $ref: "#/components/schemas/Block"
     BlockResponse:
-      description: Blockc info
+      description: Block info
       allOf:
         - $ref: "#/components/schemas/JSONRPC"
         - type: object

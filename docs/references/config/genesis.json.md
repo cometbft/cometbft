@@ -89,9 +89,12 @@ Initial height at genesis.
 
 When a hard fork happens, a new chain can start from a higher initial height by setting this parameter.
 
-Height `"0"` is the same as height `"1"` and it means the first ever block in the chain.
+> Notes:
 
-> Note: A height in CometBFT is an `int64` integer therefore its maximum value is `9223372036854775807`
+>> If a Height `"0"` is specified in `initial_heigth`, then CometBFT during the genesis file validation, will change the
+> initial height parameter to `"1"`.
+
+>> Note: A height in CometBFT is an `int64` integer therefore its maximum value is `9223372036854775807`
 
 ## consensus_params.block.max_bytes
 Maximum block size in bytes.
@@ -175,6 +178,9 @@ This is used by the ABCI application on the chain. It can also be updated on cha
 
 ## consensus_params.abci.vote_extensions_enable_height
 If you enable vote extensions in the genesis file, you have to decide at which height are the extensions enabled.
+
+> Note: If a value `0` is used, it means the extension will not be enabled. In order for it to be enables, a
+> value greater than `0` needs to be specified.
 
 | Value type                           | string      |
 |:-------------------------------------|:------------|

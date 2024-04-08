@@ -42,10 +42,10 @@ module CRDT {
     Some considerations wrt to supersession.
     - Latest decided hight
         - If h is the last decided height, then anything from h' < h is stale.
-        - Keeping information from a few decided hights might be useful for helping nodes catch up.
+        - Keeping information from a few decided heights might be useful for helping nodes catch up.
         - This is an optimization.
         - How to determine the last decided height (h) and the current height (h+1)
-        - How to prevent bizantine nodes from sending messages from higher hights, in a way compatible with CRDT?
+        - How to prevent bizantine nodes from sending messages from higher heights, in a way compatible with CRDT?
     - Latest round
         - How to determine the current round based on the CRDT?
         - How to prevent bizantine nodes from sending messages from higher rounds, in a way compatible with CRDT?

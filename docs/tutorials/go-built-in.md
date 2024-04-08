@@ -121,7 +121,7 @@ go: to add module requirements and sums:
 	go mod tidy
 ```
 
-go 1.22.1
+go 1.22.2
 Now, lets add `cometbft` as a dependency to our project. Run the `go get` command below:
 
 ```bash

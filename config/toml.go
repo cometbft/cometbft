@@ -89,7 +89,7 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
@@ -577,6 +577,11 @@ compact = {{ .Storage.Compact }}
 # large multiple of your retain height as it might occur bigger overheads.
 compaction_interval = "{{ .Storage.CompactionInterval }}"
 
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
+# the node is not able to boot.
+genesis_hash = "{{ .Storage.GenesisHash }}"
+
 [storage.pruning]
 
 # The time period between automated background pruning operations.
@@ -606,11 +611,6 @@ initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockReta
 # data companion has not yet explicitly set one. If the data companion has
 # already set a block results retain height, this is ignored.
 initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
-
-# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
-# If this hash mismatches the hash that CometBFT computes on the genesis file,
-# the node is not able to boot.
-genesis_hash = "{{ .Storage.GenesisHash }}"
 
 #######################################################
 ###   Transaction Indexer Configuration Options     ###

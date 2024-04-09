@@ -6,6 +6,14 @@ parent:
   order: 5
 ---
 
+## Table of Contents
+- [Latency emulation (LE)](#latency-emulation-le)
+- [Saturation point](#saturation-point)
+- [200-nodes test](#200-nodes-test)
+  - [Latencies](#latencies)
+  - [Metrics](#metrics)
+  - [Test Results](#test-results)
+
 # QA results for CometBFT v1.x
 
 We run this iteration of the [Quality Assurance (QA)][qa] process on CometBFT `v1.0.0-alpha.2`, the
@@ -60,13 +68,6 @@ without latency emulation.
 It's important to note that the results with latency emulation in this report are not used to assess
 whether `v1.0.0-alpha.2` passes the QA tests. Instead, they serve as a baseline for future QA tests to
 be conducted for upcoming releases.
-
-## Table of Contents
-- [Saturation point](#saturation-point)
-- [200-nodes test](#200-nodes-test)
-  - [Latencies](#latencies)
-  - [Metrics](#metrics)
-  - [Results](#results)
 
 ## Saturation point
 

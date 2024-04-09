@@ -40,8 +40,8 @@ QA process are the following:
   with the baseline results.
 - Rotating-nodes test: Initially, deploy 10 validators and 3 seed nodes. Start the same load (saturation point) used for the previous tests.
   Then, launch 25 full nodes, wait until they are caught up to the latest height (minus 100) using Block Sync, and
-  then stop them. Repeat this process until the chain reaches height 3000. Then, stop the load and wait for the full nodes to catch up one more time.
-  network's latest height.
+  then stop them and wipe out their data on disk.
+  Repeat this process until the chain reaches height 3000. Then, stop the load and wait for the full nodes to catch up one more time.
 
 ## Latency emulation (LE)
 

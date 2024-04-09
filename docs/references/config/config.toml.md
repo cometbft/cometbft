@@ -506,6 +506,8 @@ max_subscriptions_per_client = 5
 | **Possible values** | &gt;= 0 |
 
 ### rpc.experimental_subscription_buffer_size
+> EXPERIMENTAL parameter!
+
 Experimental parameter to specify the maximum number of events a node will buffer, per subscription, before returning
 an error and closing the subscription.
 ```toml
@@ -519,6 +521,8 @@ experimental_subscription_buffer_size = 200
 Higher values will accommodate higher event throughput rates (and will use more memory).
 
 ### rpc.experimental_websocket_write_buffer_size
+> EXPERIMENTAL parameter!
+
 Experimental parameter to specify the maximum number of events that can be buffered per WebSocket client.
 ```toml
 experimental_websocket_write_buffer_size = 200
@@ -535,6 +539,8 @@ If set lower than `rpc.experimental_subscription_buffer_size`, connections could
 should ideally be somewhat higher to accommodate non-subscription-related RPC responses.
 
 ### rpc.experimental_close_on_slow_client
+> EXPERIMENTAL parameter!
+
 Close the WebSocket client in case it cannot read events fast enough. Allows greater predictability in subscription
 behaviour.
 ```toml

@@ -1042,6 +1042,8 @@ by each P2P connection.
 
 ```toml
 pex = true
+
+\`\`\`
 Enable peer exchange (PEX) reactor.
 
 | Value type          | boolean |

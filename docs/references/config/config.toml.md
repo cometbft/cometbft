@@ -1238,7 +1238,9 @@ wal_dir = ""
 
 In case `$CMTHOME` is unset, it defaults to `$HOME/.cometbft`.
 
-Configures the location of the Write Ahead Log (WAL) for the mempool. `""`  disables the WAL.
+This value is unused by CometBFT. It was not hooked up to the mempool reactor.
+
+The mempool implementation does not persist any transaction data to disk (unlike evidence).
 
 ### mempool.size
 Maximum number of transactions in the mempool.

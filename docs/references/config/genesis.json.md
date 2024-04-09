@@ -153,7 +153,7 @@ To clarify: if this parameter is `86400` (one day in seconds) and the last block
 accepted. Evidence with earlier timestamps are discarded.
 
 ## consensus_params.evidence.max_bytes
-Limit evidence size.
+Limit on the size in bytes devoted to evidence information in a block.
 
 | Value type          | string                                                                                 |
 |:--------------------|:---------------------------------------------------------------------------------------|

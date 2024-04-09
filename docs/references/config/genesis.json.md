@@ -6,10 +6,10 @@ parent:
   order: 1
 ---
 # genesis.json
-On first start, the network parameters are read from the `genesis.json` file into a freshly created database.
+It is **crucial** that all nodes in a network must have _exactly_ the same contents in their `genesis.json` file.
 
-On subsequent starts, the `genesis.json` file is ignored. If you want to re-read the file, the CometBFT database has
-to be deleted. (Run `cometbft unsafe-reset-all --help` for more information.)
+On first start, the network parameters are read from the `genesis.json` file.
+On subsequent starts (node recovery), the `genesis.json` file is ignored.
 
 ### Example
 ```json

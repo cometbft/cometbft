@@ -35,7 +35,7 @@ to be deleted. (Run `cometbft unsafe-reset-all --help` for more information.)
     "version": {
       "app": "0"
     },
-    "abci": {
+    "feature": {
       "vote_extensions_enable_height": "1"
       "pbts_enable_height": "1"
     }

@@ -1760,7 +1760,8 @@ If [`create_empty_blocks`](#createemptyblocks) is set to `false` and
 indefinitely until a transaction is available in its mempool,
 to then produce and propose a block.
 
-Notice that empty blocks are still proposed whenever the application hash
+Notice that empty blocks are still proposed without waiting for `create_empty_blocks_interval`
+whenever the application hash
 (`app_hash`) has been updated.
 
 ### consensus.peer_gossip_sleep_duration
@@ -2040,6 +2041,8 @@ prometheus_listen_addr = ":26660"
 | Value type          | string                                |
 |:--------------------|:--------------------------------------|
 | **Possible values** | Network address (`"127.0.0.1:26657"`) |
+
+If the IP address is omitted (see e.g. the default value) then the listening socket is bound to INADDR_ANY (`0.0.0.0`).
 
 The metrics endpoint only supports HTTP.
 

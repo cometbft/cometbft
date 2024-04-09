@@ -32,15 +32,15 @@ successfully passed the QA tests.
 
 In the remainder of this document we present and analyse the results obtained. The main steps of the
 QA process are the following:
-- [Saturation point](#saturation-point): On a network of 200 nodes, identify its saturation point,
+- [Saturation point](#saturation-point): On a network with 200 nodes, identify its saturation point,
   that is, the transaction load where system performance begins to degrade. Subsequent QA
   experiments will subject the system to a load slightly below this saturation point.
 - [200-nodes test](#200-nodes-test): Apply a consistent transaction load to the 200-nodes network
   for a fixed duration. Then, gather metrics and block data to calculate latencies and compare them
   with the baseline results.
-- Rotating-nodes test: Initially, deploy 10 validators and 3 seed nodes.
-  Then, launch a full node, wait until it is caught up to the latest height using Block Sync, and
-  then stop it. Repeat this process 25 times while ensuring that the nodes can catch up to the
+- Rotating-nodes test: Initially, deploy 10 validators and 3 seed nodes. Start the same load (saturation point) used for the previous tests.
+  Then, launch 25 full nodes, wait until they are caught up to the latest height (minus 100) using Block Sync, and
+  then stop them. Repeat this process until the chain reaches height 3000. Then, stop the load and wait for the full nodes to catch up one more time.
   network's latest height.
 
 ## Latency emulation (LE)

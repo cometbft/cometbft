@@ -77,6 +77,7 @@ When the ABCI application is written in a different language than Golang, (for e
 [Nomic binary](https://github.com/nomic-io/nomic) is written in Rust) the application can open a TCP port or create a
 UNIX domain socket to communicate with CometBFT, while CometBFT runs as a separate process.
 
+IP addresses other than `localhost` (IPv4: `127.0.0.1`, IPv6: `::1`) are strongly discouraged. It has not been tested, and it has strong performance and security implications.
 The [abci](#abci) parameter is used in conjunction with this parameter to define the protocol used for communication.
 
 In other cases (for example in the [Gaia binary](https://github.com/cosmos/gaia)), CometBFT is imported as a library
@@ -117,7 +118,7 @@ db_backend = "goleveldb"
 |                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
 |                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
 
-During the build process, only the `goleveldb` library is built into the binary.
+During the build process, by default, only the `goleveldb` library is built into the binary.
 To add support for alternative databases, you need to add them in the build tags.
 For example: `go build -tags cleveldb,rocksdb`.
 
@@ -133,8 +134,8 @@ The directory path where the database is stored.
 db_dir = "data"
 ```
 
-| Value type          | string                                                      |
-|:--------------------|:------------------------------------------------------------|
+| Value type          | string                                           |
+|:--------------------|:-------------------------------------------------|
 | **Possible values** | relative directory path, appended to `$CMTHOME` |
 |                     | absolute directory path                         |
 
@@ -278,7 +279,7 @@ defaults to `$HOME/.cometbft/config/priv_validator_key.json`.
 
 
 ### priv_validator_state_file
-Path to the JSON file containing the last sign state of a validator  (more details [here](./priv_validator_state.json.md)).
+Path to the JSON file containing the last sign state of a validator (more details [here](./priv_validator_state.json.md)).
 ```toml
 priv_validator_state_file = "data/priv_validator_state.json"
 ```
@@ -335,6 +336,7 @@ abci = "socket"
 |:--------------------|:-----------|
 | **Possible values** | `"socket"` |
 |                     | `"grpc"`   |
+|                     | `""    `   |
 
 This mechanism is used when connecting to the ABCI application over the [proxy_app](#proxy_app) socket.
 
@@ -349,14 +351,10 @@ filter_peers = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-When this setting is `true`, the ABCI application has to implement a query that returns `true` or `false` depending on
-if the ABCI application wants to keep the connection or drop it.
+When this setting is `true`, the ABCI application has to implement a query that will allow 
+the ABCI application to keep the connection or drop it.
 
-To filter the peers by remote address, the query `/p2p/filter/addr/(peer address)` has to return `true` or `false`.
-Remote addresses have to be fully qualified, for example: `tcp://1.2.3.4:26656`.
-
-To filter the peers by [node ID](node_key.json.md), the query `/p2p/filter/id/(peer ID)` has to return `true` or `false`
-.
+This feature is likely to be deprecated
 
 ## RPC Server
 These configuration options change the behaviour of the built-in RPC server.

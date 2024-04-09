@@ -295,7 +295,7 @@ passed the test.
 #### Test results with latency emulation
 
 As expected, the introduction of emulated latencies to the network results in a degradation of
-performance for `v1` compared to `v1` without latency emulation, althugh not by an order of
+performance for `v1` compared to `v1` without latency emulation, although not by an order of
 magnitude. Moving forward with the next QA tests, it may be prudent to consider adjusting the
 saturation point to a slightly lower value. Determining this adjustment will require conducting new
 experiments on the network with latency emulation.

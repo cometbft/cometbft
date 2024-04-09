@@ -69,7 +69,7 @@ peer-error      = %s"log(Stopping peer for error)"
 The grammar is written in case-sensitive Augmented Backus–Naur form (ABNF,
 specified in [IETF RFC 7405](https://datatracker.ietf.org/doc/html/rfc7405)).
 It is inspired on the grammar produced to specify the interaction of CometBFT
-with an ABCI++ application, available [here](../../abci/abci%2B%2B_comet_expected_behavior.md).
+with an ABCI application, available [here](../../abci/abci%2B%2B_comet_expected_behavior.md).
 
 ## Registration
 

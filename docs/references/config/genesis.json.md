@@ -36,7 +36,8 @@ to be deleted. (Run `cometbft unsafe-reset-all --help` for more information.)
       "app": "0"
     },
     "abci": {
-      "vote_extensions_enable_height": "0"
+      "vote_extensions_enable_height": "1"
+      "pbts_enable_height": "1"
     }
   },
   "validators": [
@@ -78,7 +79,7 @@ Cannot be empty.
 Can be maximum 50 UTF-8-encoded character.
 
 The `number` part is typically a revision number of the blockchain, starting at `1` and incrementing each time the network
-undergoes a significant upgrade.
+undergoes a hard fork.
 
 ## initial_height
 Initial height at genesis.
@@ -105,6 +106,9 @@ Maximum block size in bytes.
 | **Possible values** | `"-1"`     |
 
 `"-1"` means the hard-wired maximum of 104857600 bytes.
+This is typically used by applications that want to control the maximum block size
+in `PrepareProposal` (and validate it in `ProcessProposal`).
+In this scenario, CometBFT will always send all transactions in its mempool in `PrepareProposalRequest`.
 
 This parameter cannot be `0`.
 
@@ -130,7 +134,7 @@ Setting this parameter limits accepting evidence of malfeasance to blocks with h
 height, and the last block height minus this parameter. Older evidence is discarded.
 
 To clarify: if this parameter is `5` and the last block height is `10`, any evidence with block numbers `6,7,8 or 9` are
-accepted.
+accepted. Evidence with earlier block numbers are discarded.
 
 ## consensus_params.evidence.max_age_duration
 Limit evidence of malfeasance based on how old the evidence is. This parameter limits the evidence based on its
@@ -146,7 +150,7 @@ block's timestamp, and the last block's timestamp minus this parameter. Older ev
 
 To clarify: if this parameter is `86400` (one day in seconds) and the last block's timestamp is
 `2024-03-01T00:00:00.000000Z`, any evidence with block timestamp starting with `2024-02-29T...` are
-accepted.
+accepted. Evidence with earlier timestamps are discarded.
 
 ## consensus_params.evidence.max_bytes
 Limit evidence size.
@@ -176,11 +180,11 @@ Consensus parameter set version.
 
 This is used by the ABCI application on the chain. It can also be updated on chain by the ABCI application.
 
-## consensus_params.abci.vote_extensions_enable_height
+## consensus_params.feature_params.vote_extensions_enable_height
 If you enable vote extensions in the genesis file, you have to decide at which height are the extensions enabled.
 
-> Note: If a value `0` is used, it means the extension will not be enabled. In order for it to be enables, a
-> value greater than `0` needs to be specified.
+> Note: If a value `0` is used, it means the extension will not be enabled. In order for it to be enabled, a
+> value greater than `0` needs to be specified. This value can also be set on chain by the ABCI application.
 
 | Value type                           | string      |
 |:-------------------------------------|:------------|
@@ -197,11 +201,11 @@ List of initial validators for consensus.
 | **Mandatory keys of each array object** | address          | See [address](priv_validator_key.json.md#address) in priv_validator_key.json            |
 |                                         | pub_key          | See [pub_key.type](priv_validator_key.json.md#pub_keytype)                              |
 |                                         |                  | and [pub_key.value](priv_validator_key.json.md#pub_keyvalue) in priv_validator_key.json |
-|                                         | power            | &gt;= `"0"`                                                                             |
+|                                         | power            | &gt;  `"0"`                                                                             |
 |                                         | name             | string or `""`                                                                          |
 
 ## app_hash
-The last AppHash received from the ABCI application.
+The initial AppHash, represented by the state embedded in the genesis file.
 
 | Value type          | string             |
 |:--------------------|:-------------------|

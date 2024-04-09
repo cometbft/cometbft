@@ -1185,7 +1185,7 @@ proposing transactions. Note, that it requires empty blocks to be created:
 [`consensus.create_empty_blocks = true`](#consensuscreate_empty_blocks) has to be set.
 
 ### mempool.recheck
-Transaction validity check.
+Validity check of transactions already in the mempool when a block is finalized.
 ```toml
 recheck = true
 ```
@@ -1198,6 +1198,9 @@ recheck = true
 Committing a block affects the application state, hence the remaining transactions in the mempool after a block commit
 might become invalid. Setting `recheck = true` will go through the remaining transactions and remove invalid ones.
 
+If your application may remove transactions passed by CometBFT to your `PrepareProposal` handler,
+you probably want to set this configuration to `true` to avoid possible leaks in your mempool
+(transactions staying in the mempool until the node is next restarted).
 ### mempool.broadcast
 Broadcast the mempool content (uncommitted transactions) to other nodes.
 ```toml
@@ -1211,8 +1214,9 @@ broadcast = true
 
 This ensures that uncommitted transactions have a chance to reach multiple validators and get committed by one of them.
 
-Setting this to `false` will stop the mempool from relaying transactions to other peers until they are included in a
-block. Only the peer you send the tx to will see it until it is included in a block.
+Setting this to `false` will stop the mempool from relaying transactions to other peers.
+Validators behind sentry nodes typically set this to `false`,
+as their sentry nodes take care of disseminating transactions to the rest of the network.
 
 ### mempool.wal_dir
 Mempool write-ahead log folder path.
@@ -1257,10 +1261,10 @@ max_txs_bytes = 1073741824
 This is the raw, total transaction size. Given 1MB transactions and a 5MB maximum transaction size, mempool will only
 accept five transactions.
 
-The default value is 1 Gibibytes (2^30 bytes).
+The default value is 1 Gibibyte (2^30 bytes).
 
 ### mempool.cache_size
-Mempool internal cache size for invalid transactions.
+Mempool internal cache size for already seen transactions.
 ```toml
 cache_size = 10000
 ```
@@ -1269,13 +1273,13 @@ cache_size = 10000
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-The mempool cache is an internal store for invalid transactions. Storing invalid transactions help in filtering incoming
-transactions: we can compare incoming transactions to known invalid transactions and filter them out without going
+The mempool cache is an internal store for transactions that the local node has already seen. Storing these transactions help in filtering incoming duplicate
+transactions: we can compare incoming transactions to already seen transactions and filter them out without going
 through the process of validating the incoming transaction.
 
 ### mempool.keep-invalid-txs-in-cache
-Invalid transactions might become valid in the future, hence they are regularly removed from the mempool cache of
-invalid transactions. Turning this setting on will keep them in the list of invalid transactions forever.
+Invalid transactions might become valid in the future, hence they are not added to the mempool cache by default.
+Turning this setting on will add an incoming transaction to the cache even if it is deemed invalid by the application (via `CheckTx`).
 ```toml
 keep-invalid-txs-in-cache = false
 ```
@@ -1285,17 +1289,13 @@ keep-invalid-txs-in-cache = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-Invalid transactions might become valid at a later time. The mempool cache clears invalid transactions regularly so the
-transactions can be re-validated.
-
-If this setting is set to `true`, the mempool cache will NOT remove the invalid transactions. It is useful in cases when
-invalidated transactions can never become valid again.
+If this setting is set to `true`, the mempool cache will add incoming transactions even if they are invalid. It is useful in cases when
+invalid transactions can never become valid again.
 
 This setting can be used by operators to lower the impact of some spam transactions: when a large number of duplicate
 spam transactions are noted on the network, temporarily turning this setting to `true` will filter out the duplicates
 quicker than validating each transaction one-by-one. It will also filter out transactions that are supposed to become
-valid at a later date, so it is not advised to keep this `true` for a long time on regular networks as it can lead to
-valid transactions failing.
+valid at a later date.
 
 ### mempool.max_tx_bytes
 Maximum size of a single transaction accepted into the mempool.
@@ -1307,7 +1307,7 @@ max_tx_bytes = 1048576
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-This is the maximum size of a transaction allowed to be transmitted over the network.
+This is the maximum size of a transaction allowed to be accepted into the mempool.
 
 ### mempool.experimental_max_gossip_connections_to_persistent_peers
 > EXPERIMENTAL parameter!
@@ -1361,7 +1361,7 @@ default P2P configuration.
 ## State synchronization
 State sync rapidly bootstraps a new node by discovering, fetching, and restoring a state machine snapshot from peers
 instead of fetching and replaying historical blocks. It requires some peers in the network to take and serve state
-machine snapshots. State sync is not attempted if the node has any local state (LastBlockHeight > 0).
+machine snapshots. State sync is not attempted if the starting node has any local state (i.e., it is recovering).
 
 The node will have a truncated block history, starting from the height of the snapshot.
 
@@ -1439,7 +1439,11 @@ Time to spend discovering snapshots before initiating a restore.
 discovery_time = "15s"
 ```
 
-<!--- What happens when this time expires? --->
+If `discovery_time` is &gt; 0 and  &lt; 5 seconds, its value will be overridden to 5 seconds. 
+
+If `discovery_time` is zero, the node will not wait for replies once it has broadcast the "snapshot request" message to its peers. If no snapshot data is received, state sync will fail without retrying.
+
+If `discovery_time` is &gt;= 5 seconds, the node will broadcast the "snapshot request" message to its peers and then wait for `discovery_time`. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for `discovery_time`, and so on.
 
 ### statesync.temp_dir
 Temporary directory for state sync snapshot chunks.
@@ -1490,7 +1494,7 @@ version = "v0"
 |:--------------------|:--------|
 | **Possible values** | `"v0"`  |
 
-All other versions are deprecated.
+All other versions are deprecated. Further versions may be added in future releases.
 
 ## Consensus
 
@@ -1514,7 +1518,7 @@ The default relative path translates to `$CMTHOME/data/cs.wal/wal`. In case `$CM
 
 The consensus WAL stores all consensus messages received and broadcast by a
 node, as well as some important consensus events (e.g., new height and new round step).
-The goal of this log is to enable a node that crashes and late recovers
+The goal of this log is to enable a node that crashes and later recovers
 to re-join consensus with the same state it has before crashing.
 Recovering nodes that "forget" the actions taken before crashing are faulty
 nodes that are likely to present Byzantine behavior (e.g., double signing).
@@ -1669,7 +1673,7 @@ guarantees and the easier is to detect misbehaving validators.
 
 The `timeout_commit` is not a required component of the consensus algorithm,
 meaning that there are no liveness implications if it is set to `0s`.
-But it does have implications in the way the application rewards validators.
+But it may have implications in the way the application rewards validators.
 
 ### consensus.double_sign_check_height
 
@@ -1871,7 +1875,7 @@ If not specified, the default value `v1` will be used.
 
 If set to true, CometBFT will force compaction to happen for databases that support this feature and save on storage space.
 
-Setting this to true is most benefits when used in combination with pruning as it will physically delete the entries marked for deletion.
+Setting this to true is most beneficial when used in combination with pruning as it will physically delete the entries marked for deletion.
 
 ```toml
 compact = false
@@ -1890,7 +1894,7 @@ To avoid forcing compaction every time, this parameter instructs CometBFT to wai
 pruned before triggering compaction.
 
 It should be tuned depending on the number of items. If your retain height is 1 block, it is too much of an overhead
-to try compaction every block. But it should also not be a very large multiple of your retain height as it might occur
+to try compaction every block. But it should also not be a very large multiple of your retain height as it might incur
 bigger overheads.
 
 | Value type          | string (# blocks) |
@@ -1981,7 +1985,7 @@ indexer = "kv"
 |                     | `"null"` |
 |                     | `"psql"` |
 
-`"null"` indexer indexes nothing.
+`"null"` indexer disables indexing.
 
 `"kv"` is the simplest possible indexer, backed by a key-value storage.
 The key-value storage database backend is defined in [`db_backend`](#db_backend).

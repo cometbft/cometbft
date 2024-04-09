@@ -6,9 +6,9 @@ parent:
   order: 5
 ---
 # priv_validator_state.json
-When CometBFT is run as a validator, it uses this file to keep data about the last signed block.
+When CometBFT is run as a validator and a local private validator (`PrivVal`) is adopted, it uses this file to keep data about the last signed consensus messages.
 
-This file is only updated if the internal consensus signing process is used.
+This file is only updated if a local private validator is adopted.
 (When [priv_validator_laddr](config.toml.md#priv_validator_laddr) is not set.)
 
 ### Examples
@@ -47,14 +47,14 @@ Set to the last round that was signed.
 | **Possible values** | &gt;= 0 |
 
 ## step
-Set to the last step that was signed.
+Set to the last round step that was signed.
 
 | Value type          | integer |
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
 ## signature
-The last signature provided. This was provided at the above [height/round/step](#height).
+The last signature produced. This was provided at the above [height/round/step](#height).
 
 | Value type          | string               |
 |:--------------------|:---------------------|
@@ -62,7 +62,7 @@ The last signature provided. This was provided at the above [height/round/step](
 |                     | `""`                 |
 
 ## signbytes
-Proto-encoding of the canonical Vote last signed. Used to compare incoming requests and if possible reuse the
+Proto-encoding of the latest consensus message signed. Used to compare incoming requests and if possible reuse the
 previous signature provided in [signature](#signature).
 
 | Value type          | string            |

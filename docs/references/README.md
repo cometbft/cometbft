@@ -42,6 +42,19 @@ to ensure that CometBFT meets and exceeds industry benchmarks.
 
 Explore the QA documents to understand the testing methods to ensure the quality and performance of CometBFT.
 
+## Configuration Manual
+
+The [Configuration Manual](./config/README.md) is a reference manual describing CometBFT configuration options.
+It details all configuration files deployed and includes examples and best practices to ensure that
+CometBFT is deployed with a proper configuration.
+
+### What You'll Find in the Configuration Manual:
+
+- Documentation of each configuration option.
+- Examples for real-world use-cases.
+
+Explore the Configuration Manual to understand the different options of CometBFT to ensure a high-performing deployment.
+
 ## Request for Comments (RFCs)
 
 [Request for Comments (RFCs)](./rfc/README.md) documents serve as a platform for open and collaborative discussions on proposed

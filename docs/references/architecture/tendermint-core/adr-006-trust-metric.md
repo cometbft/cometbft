@@ -36,7 +36,7 @@ where _R_[*i*] denotes the raw trust value at time interval _i_ (where _i_ == 0 
 
 `H[i] =` ![formula1](img/formula1.png "Weighted Sum Formula")
 
-The weights can be chosen either optimistically or pessimistically. An optimistic weight creates larger weights for newer history data values, while the the pessimistic weight creates larger weights for time intervals with lower scores. The default weights used during the calculation of the history value are optimistic and calculated as _Wk_ = 0.8^_k_, for time interval _k_. With the history value available, we can now finish calculating the integral value:
+The weights can be chosen either optimistically or pessimistically. An optimistic weight creates larger weights for newer history data values, while the pessimistic weight creates larger weights for time intervals with lower scores. The default weights used during the calculation of the history value are optimistic and calculated as _Wk_ = 0.8^_k_, for time interval _k_. With the history value available, we can now finish calculating the integral value:
 
 ```math
 (2) Integral Value = b * H[i]

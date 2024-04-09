@@ -15,7 +15,7 @@ title: Requirements for the Application
             - [FinalizeBlock](#finalizeblock)
             - [Commit](#commit)
             - [Candidate States](#candidate-states)
-        - [States and ABCI++ Connections](#states-and-abci-connections)
+        - [States and ABCI Connections](#states-and-abci-connections)
             - [Consensus Connection](#consensus-connection)
             - [Mempool Connection](#mempool-connection)
                 - [Replay Protection](#replay-protection)
@@ -250,7 +250,7 @@ In contrast, the value of *b* MUST be the same across all processes.
 
 ### Connection State
 
-CometBFT maintains four concurrent ABCI++ connections, namely
+CometBFT maintains four concurrent ABCI connections, namely
 [Consensus Connection](#consensus-connection),
 [Mempool Connection](#mempool-connection),
 [Info/Query Connection](#infoquery-connection), and
@@ -260,7 +260,7 @@ the state for each connection, which are synchronized upon `Commit` calls.
 
 #### Concurrency
 
-In principle, each of the four ABCI++ connections operates concurrently with one
+In principle, each of the four ABCI connections operates concurrently with one
 another. This means applications need to ensure access to state is
 thread safe. Both the
 [default in-process ABCI client](https://github.com/cometbft/cometbft/blob/main/abci/client/local_client.go#L13)
@@ -273,20 +273,6 @@ ABCI messages from all connections are received in sequence, one at a
 time.
 
 The existence of this global mutex means Go application developers can get thread safety for application state by routing all reads and writes through the ABCI system. Thus it may be unsafe to expose application state directly to an RPC interface, and unless explicit measures are taken, all queries should be routed through the ABCI Query method.
-
-<!--
-This is no longer the case starting from v0.36.0: the global locks have been removed and it is
-up to the Application to synchronize access to its state when handling
-ABCI++ methods on all connections.
- -->
-
-<!--
- TODO CHeck with Sergio whether this is still the case
- -->
-<!--
-Nevertheless, as all ABCI calls are now synchronous, ABCI messages using the same connection are
-still received in sequence.
- -->
 
 #### FinalizeBlock
 
@@ -363,7 +349,7 @@ to bound memory usage. As a general rule, the Application should be ready to dis
 before `FinalizeBlock`, even if one of them might end up corresponding to the
 decided block and thus have to be reexecuted upon `FinalizeBlock`.
 
-### States and ABCI++ Connections
+### States and ABCI Connections
 
 #### Consensus Connection
 
@@ -404,7 +390,7 @@ Since the transaction cannot be guaranteed to be checked against the exact same 
 will be executed as part of a (potential) decided block, `CheckTx` shouldn't check *everything*
 that affects the transaction's validity, in particular those checks whose validity may depend on
 transaction ordering. `CheckTx` is weak because a Byzantine node need not care about `CheckTx`;
-it can propose a block full of invalid transactions if it wants. The mechanism ABCI++ has
+it can propose a block full of invalid transactions if it wants. The mechanism ABCI, from version 1.0, has
 in place for dealing with such behavior is `ProcessProposal`.
 
 ##### Replay Protection

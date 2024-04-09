@@ -352,12 +352,15 @@ filter_peers = false
 |                     | `true`  |
 
 When this setting is `true`, the ABCI application has to implement a query that will allow 
-the ABCI application to keep the connection or drop it.
+the connection to be kept of or dropped.
 
-This feature is likely to be deprecated
+This feature will likely be deprecated.
 
 ## RPC Server
 These configuration options change the behaviour of the built-in RPC server.
+
+The RPC server is exposed without any kind of security control or authentication. Do NOT expose this server
+on the public Internet without appropriate precautions. Make sure it is secured, load-balanced, etc.
 
 ### rpc.laddr
 TCP or UNIX socket address for the RPC server to listen on.
@@ -492,9 +495,6 @@ max_subscription_clients = 100
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-If you are using the `/broadcast_tx_commit` RPC endpoint, set this to the estimated maximum number of
-`broadcast_tx_commit` calls per block.
-
 ### rpc.max_subscriptions_per_client
 Maximum number of unique queries a given client can subscribe to at the `/subscribe` RPC endpoint.
 ```toml
@@ -504,9 +504,6 @@ max_subscriptions_per_client = 5
 | Value type          | integer |
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
-
-If you are using the `/broadcast_tx_commit` RPC endpoint, set this to the estimated maximum number of
-`broadcast_tx_commit` calls per block.
 
 ### rpc.experimental_subscription_buffer_size
 Experimental parameter to specify the maximum number of events a node will buffer, per subscription, before returning
@@ -530,7 +527,6 @@ experimental_websocket_write_buffer_size = 200
 | Value type          | integer                                         |
 |:--------------------|:------------------------------------------------|
 | **Possible values** | &gt;= rpc.experimental_subscription_buffer_size |
-
 
 If clients cannot read from the WebSocket endpoint fast enough, they will be disconnected, so increasing this parameter
 may reduce the chances of them being disconnected (but will cause the node to use more memory).
@@ -600,6 +596,7 @@ tls_cert_file = ""
 |:--------------------|:-------------------------------------------------------|
 | **Possible values** | relative directory path, appended to `$CMTHOME/config` |
 |                     | absolute directory path                                |
+|                     |  `""`                                                  |
 
 The default relative path translates to `$CMTHOME/config`. In case `$CMTHOME` is unset, it defaults to
 `$HOME/.cometbft/config`.
@@ -621,6 +618,7 @@ tls_key_file = ""
 |:--------------------|:-------------------------------------------------------|
 | **Possible values** | relative directory path, appended to `$CMTHOME/config` |
 |                     | absolute directory path                                |
+|                     | `""`                                                   |
 
 The default relative path translates to `$CMTHOME/config`. In case `$CMTHOME` is unset, it defaults to
 `$HOME/.cometbft/config`.
@@ -751,10 +749,9 @@ laddr = "tcp://0.0.0.0:26656"
 
 | Value type          | string                                            |
 |:--------------------|:--------------------------------------------------|
-| **Possible values** | TCP Stream socket (e.g. `"tcp://127.0.0.1:26657"`)     |
+| **Possible values** | TCP Stream socket (e.g. `"tcp://0.0.0.0:26657"`)     |
 
 ### p2p.external_address
-
 
 TCP address that peers should use in order to connect to the node.
 This is the address that the node advertises to peers.

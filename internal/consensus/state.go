@@ -1374,12 +1374,6 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	if cs.Proposal == nil {
-		logger.Debug("prevote step: did not receive proposal; prevoting nil")
-		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-		return
-	}
-
 	// Timestamp validation using Proposed-Based TimeStamp (PBTS) algorithm.
 	// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/
 	if cs.isPBTSEnabled(height) {

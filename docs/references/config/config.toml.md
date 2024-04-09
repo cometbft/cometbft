@@ -1271,6 +1271,18 @@ accept five transactions.
 
 The default value is 1 Gibibyte (2^30 bytes).
 
+### mempool.max_tx_bytes
+Maximum size of a single transaction accepted into the mempool.
+```toml
+max_tx_bytes = 1048576
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+This is the maximum size of a transaction allowed to be accepted into the mempool.
+
 ### mempool.cache_size
 Mempool internal cache size for already seen transactions.
 ```toml
@@ -1304,18 +1316,6 @@ This setting can be used by operators to lower the impact of some spam transacti
 spam transactions are noted on the network, temporarily turning this setting to `true` will filter out the duplicates
 quicker than validating each transaction one-by-one. It will also filter out transactions that are supposed to become
 valid at a later date.
-
-### mempool.max_tx_bytes
-Maximum size of a single transaction accepted into the mempool.
-```toml
-max_tx_bytes = 1048576
-```
-
-| Value type          | integer |
-|:--------------------|:--------|
-| **Possible values** | &gt;= 0 |
-
-This is the maximum size of a transaction allowed to be accepted into the mempool.
 
 ### mempool.experimental_max_gossip_connections_to_persistent_peers
 > EXPERIMENTAL parameter!

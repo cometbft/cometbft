@@ -761,7 +761,7 @@ Useful when the node is running on a non-routable address or when the
 node does not have the capabilities to figure out its IP public address.
 For example, this is useful when running from a cloud service (e.g, AWS, Digital Ocean).
 In these scenarios, the public or external address of the node should be set to
-`p2p.external_address`, while the private or internal address should be used as
+`p2p.external_address`, while INADDR_ANY (i.e., `0.0.0.0`) should be used as
 the listen address ([`p2p.laddr`](#p2pladdr)).
 
 ```toml
@@ -775,12 +775,12 @@ external_address = ""
 
 The port has to point to the node's P2P port.
 
-Example with a node on a non-routable network:
+Example with a node on a NATed non-routable network:
 - Node has local or private IP address `10.10.10.10` and uses port `10000` for
   P2P communication: set this address as the [listen address](#p2pladdr) (`p2p.laddr`).
 - The network gateway has the public IP `1.2.3.4` and we want to use publicly
   open port `26656` on the IP address. In this case, a redirection has to be
-  set up from `1.2.3.4:26656` to `10.10.10.10:1000`;
+  set up from `1.2.3.4:26656` to `10.10.10.10:1000` in the gateway implementing NAT;
 - Or the node has an associated public or external IP `1.2.3.4`
   that is mapped to its local or private IP.
 - Set `p2p.external_address` to `1.2.3.4:26656`.
@@ -1040,6 +1040,8 @@ by each P2P connection.
 
 ### p2p.pex
 
+```toml
+pex = true
 Enable peer exchange (PEX) reactor.
 
 | Value type          | boolean |

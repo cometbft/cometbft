@@ -1315,13 +1315,14 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 	return ret, nil
 }
 
-// Enter: `timeoutPropose` after entering Propose.
-// Enter: proposal block and POL is ready.
-// If we received a valid proposal within this round and we are not locked on a block,
-// we will prevote for block.
-// Otherwise, if we receive a valid proposal that matches the block we are
-// locked on or matches a block that received a POL in a round later than our
-// locked round, prevote for the proposal, otherwise vote nil.
+// Enter: isProposalComplete() and Step <= RoundStepPropose.
+// Enter: `timeout_propose` (timeout of RoundStepPropose type) expires.
+//
+// If we received a valid proposal and the associated proposed block within
+// this round and: (i) we are not locked on a block, or we are locked on the
+// proposed block, or (ii) the proposed block received a POL in a round greater
+// or equal than our locked round, we will prevote for the poroposed block ID.
+// Otherwise, we prevote nil.
 func (cs *State) enterPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
@@ -1362,18 +1363,21 @@ func (cs *State) proposalIsTimely() bool {
 	return cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
 }
 
+// Implements doPrevote. Called by enterPrevote(height, round) provided that
+// round == cs.Round, height == cs.Height, and cs.Step <= // RoundStepPropose.
 func (cs *State) defaultDoPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
-	// We did not receive a proposal within this round. (and thus executing this from a timeout)
-	if cs.Proposal == nil || cs.ProposalBlock == nil {
-		logger.Debug("prevote step: Proposal or ProposalBlock is nil; prevoting nil")
+	// We did not receive a valid proposal for this round (and thus executing this from a timeout).
+	if cs.Proposal == nil {
+		logger.Debug("prevote step: did not receive a valid Proposal; prevoting nil")
 		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
-	if cs.Proposal == nil {
-		logger.Debug("prevote step: did not receive proposal; prevoting nil")
+	// We did not (fully) receive the proposed block (and thus executing this from a timeout).
+	if cs.ProposalBlock == nil {
+		logger.Debug("prevote step: did not receive the ProposalBlock; prevoting nil")
 		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}

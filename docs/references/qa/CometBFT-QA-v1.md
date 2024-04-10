@@ -326,7 +326,7 @@ in the [introduction](#qa-results-for-cometbft-v1x) above.
 ### Latencies
 
 The following two plots show latencies for the whole experiment.
-We see the baseline (`v0.38.0-alpha.2`) on th left, and the current version
+We see the baseline (`v0.38.0-alpha.2`) on the left, and the current version
 on the right.
 
 We can appreciate that most latencies are under 4 seconds in both cases,
@@ -371,8 +371,8 @@ This caused the steps reconfiguring ephemeral nodes at the end of each cycle to 
 This can be noticed in the graphs when comparing the width (in x-axis terms) of the gaps without metric
 from the end of a cycle to the beginning of the next one.
 
-If we focus on the _width_ of periods when ephemeral nodes are blocksynching, we see their are slightly narrower
-in `v1.0.0`. This is likely due to the improvements introduced as part of the following issues
+If we focus on the _width_ of periods when ephemeral nodes are blocksynching, we see that they are slightly narrower
+in `v1.0.0`. This is likely due to the improvements introduced as part of the issues
 [#1283](https://github.com/cometbft/cometbft/issues/1283),
 [#2379](https://github.com/cometbft/cometbft/issues/2379), and
 [#2465](https://github.com/cometbft/cometbft/issues/2465).

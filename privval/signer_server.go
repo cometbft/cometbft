@@ -13,7 +13,8 @@ import (
 type ValidationRequestHandlerFunc func(
 	privVal types.PrivValidator,
 	requestMessage privvalproto.Message,
-	chainID string) (privvalproto.Message, error)
+	chainID string,
+) (privvalproto.Message, error)
 
 type SignerServer struct {
 	service.BaseService

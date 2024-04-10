@@ -64,7 +64,7 @@ Please see [SECURITY.md](./SECURITY.md).
 |------------------|-------------|----------------|-------------|
 | main             | Go version  | 1.22 or higher | 1.22        |
 | v1.x             | Go version  | 1.22 or higher | 1.22        |
-| v0.38.x          | Go version  | 1.20 or higher | 1.22        |
+| v0.38.x          | Go version  | 1.21 or higher | 1.22        |
 | v0.37.x          | Go version  | 1.20 or higher | 1.22        |
 | v0.34.x          | Go version  | 1.20 or higher | 1.20        |
 

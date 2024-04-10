@@ -38,10 +38,11 @@ QA process are the following:
 - [200-nodes test](#200-nodes-test): Apply a consistent transaction load to the 200-nodes network
   for a fixed duration. Then, gather metrics and block data to calculate latencies and compare them
   with the baseline results.
-- Rotating-nodes test: Initially, deploy 10 validators and 3 seed nodes. Start the same load (saturation point) used for the previous tests.
-  Then, launch 25 full nodes, wait until they are caught up to the latest height (minus 100) using Block Sync, and
-  then stop them and wipe out their data on disk.
-  Repeat this process until the chain reaches height 3000. Then, stop the load and wait for the full nodes to catch up one more time.
+- Rotating-nodes test: Initially, deploy 10 validators and 3 seed nodes. Start the same load
+  (saturation point) used for the previous tests. Then, launch 25 full nodes, wait until they are
+  caught up to the latest height (minus 100) using Block Sync, and then stop them and wipe out their
+  data on disk. Repeat this process until the chain reaches height 3000. Then, stop the load and
+  wait for the full nodes to catch up one more time.
 
 ## Latency emulation (LE)
 
@@ -101,9 +102,9 @@ utilize 89 out of 90 seconds of the experiment duration, as the final transactio
 with the end of the experiment and is thus not sent.
 
 The complete results from which the figure was generated can be found in the file
-[`v1_report_tabbed.txt`](imgs/v1/200nodes/v1_report_tabbed.txt). The following table
-summarizes the values, i.e., the number of transaction processed, plotted in the figure. We can see the saturation point in the diagonal defined
-by `c=1,r=400` and `c=2,r=200`:
+[`v1_report_tabbed.txt`](imgs/v1/200nodes/v1_report_tabbed.txt). The following table summarizes the
+values plotted in the figure, that is, the number of transaction processed. We can see the
+saturation point in the diagonal defined by `c=1,r=400` and `c=2,r=200`:
 
 | r    | c=1       | c=2       | c=4   |
 | ---: | --------: | --------: | ----: |
@@ -158,9 +159,19 @@ time it was created (x axis) and the average latency of its transactions (y axis
 | | ![latency-1-400-v1-le](imgs/v1/200nodes_with_latency_emulation/latencies/e_8190e83a-9135-444b-92fb-4efaeaaf2b52.png)
 
 In both cases, most latencies are around or below 4 seconds. On `v0.38` there are peaks reaching 10
-seconds, while on `v1` (without LE) the only peak reaches 8 seconds. In general, the images are
-similar. From this small experiment we infer that the latencies measured on `v1` are not worse than
-those of the baseline. With latency emulation, the latencies are considerably higher, as expected.
+seconds, while on `v1` (without LE) the only peak reaches 8 seconds. Even if both images are
+similar, it's crucial to note that `v0.38` implements [BFT time][bft-time], while the experiments on
+`v1` were performed with [PBTS][pbts]. The implication is that PBTS tends to produce slightly
+smaller latencies. The reason is that, in PBTS, the block's timestamp is the proposer's wallclock
+value at the moment the block was created. For reference, with BFT time, the block's timestamp is
+the median of the timestamp of all precommits in the previous height. Each of these timestamps
+reflects the validator's wallclock time when the precommit is sent. Consequently, latencies
+calculated when BFT time is active tend to contain one extra network propagation delay--the one
+whereby precommits are disseminated.
+
+With these considerations in mind, and taking into account that this is a small experiment, we infer
+that the latencies measured on `v1` are not worse than those of the baseline. With latency
+emulation, the latencies are considerably higher, as expected.
 
 ### Metrics
 
@@ -217,7 +228,8 @@ a second round was needed. On these two particular runs, we observe that `v0.38`
 round on more occasions than `v1`.
 
 With latency emulation, the performance is notably worse: the consensus module requires an extra
-round more often, even needing four rounds to finalise a block. This indicates that the values of consensus timeouts should be increased, so that to represent the actual delays in the network.
+round more often, even needing four rounds to finalise a block. This indicates that the values of
+consensus timeouts should be increased, so that to represent the actual delays in the network.
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
@@ -304,5 +316,7 @@ experiments on the network with latency emulation.
 [qa]: README.md#cometbft-quality-assurance
 [aws-latencies]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/aws-latencies.csv
 [latency-emulator-script]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/latency-setter.py 
+[bft-time]: ../../../spec/consensus/bft-time.md
+[pbts]: ../../../spec/consensus/proposer-based-timestamp/README.md
 [\#486]: https://github.com/cometbft/cometbft/issues/486
 [end-to-end]: https://github.com/cometbft/cometbft/tree/main/test/e2e

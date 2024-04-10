@@ -1257,7 +1257,7 @@ If the mempool is full, incoming transactions are dropped.
 The value `0` is undefined.
 
 ### mempool.max_tx_bytes
-Maximum size of a single transaction accepted into the mempool.
+Maximum size in bytes of a single transaction accepted into the mempool.
 ```toml
 max_tx_bytes = 1048576
 ```
@@ -1266,7 +1266,9 @@ max_tx_bytes = 1048576
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-This is the maximum size of a transaction allowed to be accepted into the mempool.
+Transactions bigger than the maximum configured size are rejected by mempool,
+this applies to both transactions submitted by clients via RPC endpoints, and
+transactions receveing from peers on the mempool protocol.
 
 ### mempool.max_txs_bytes
 The maximum size in bytes of all transactions stored in the mempool.

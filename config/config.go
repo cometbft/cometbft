@@ -878,8 +878,7 @@ type MempoolConfig struct {
 	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
-	// Maximum size of a single transaction accepted into the mempool.
-	// NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
+	// Maximum size in bytes of a single transaction accepted into the mempool.
 	MaxTxBytes int `mapstructure:"max_tx_bytes"`
 	// The maximum size in bytes of all transactions stored in the mempool.
 	// This is the raw, total transaction size. For example, given 1MB

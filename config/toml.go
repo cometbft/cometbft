@@ -419,8 +419,7 @@ wal_dir = "{{ js .Mempool.WalPath }}"
 # Maximum number of transactions in the mempool
 size = {{ .Mempool.Size }}
 
-# Maximum size of a single transaction accepted into the mempool.
-# NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
+# Maximum size in bytes of a single transaction accepted into the mempool.
 max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 
 # The maximum size in bytes of all transactions stored in the mempool.

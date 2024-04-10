@@ -44,7 +44,7 @@ func init() {
 
 // PrivKey is a wrapper around the Ethereum bls12_381 private key type. This
 // wrapper conforms to crypto.Pubkey to allow for the use of the Ethereum
-// bls12_381 private key type within the Cosmos SDK.
+// bls12_381 private key type.
 
 var _ crypto.PrivKey = &PrivKey{}
 
@@ -108,7 +108,7 @@ func (privKey PrivKey) Sign(digestBz []byte) ([]byte, error) {
 
 // Pubkey is a wrapper around the Ethereum bls12_381 public key type. This
 // wrapper conforms to crypto.Pubkey to allow for the use of the Ethereum
-// bls12_381 public key type within the Cosmos SDK.
+// bls12_381 public key type.
 
 var _ crypto.PubKey = &PubKey{}
 

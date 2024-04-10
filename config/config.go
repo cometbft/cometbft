@@ -878,6 +878,9 @@ type MempoolConfig struct {
 	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
+	// Maximum size of a single transaction accepted into the mempool.
+	// NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
+	MaxTxBytes int `mapstructure:"max_tx_bytes"`
 	// The maximum size in bytes of all transactions stored in the mempool.
 	// This is the raw, total transaction size. For example, given 1MB
 	// transactions and a 5MB maximum mempool byte size, the mempool will
@@ -889,9 +892,6 @@ type MempoolConfig struct {
 	// Set to true if it's not possible for any invalid transaction to become
 	// valid again in the future.
 	KeepInvalidTxsInCache bool `mapstructure:"keep-invalid-txs-in-cache"`
-	// Maximum size of a single transaction
-	// NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
-	MaxTxBytes int `mapstructure:"max_tx_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
 	// We use two independent upper values for persistent and non-persistent peers.
 	// Unconditional peers are not affected by this feature.
@@ -918,9 +918,9 @@ func DefaultMempoolConfig() *MempoolConfig {
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,
+		MaxTxBytes:  1024 * 1024,        // 1MB
 		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
 		CacheSize:   10000,
-		MaxTxBytes:  1024 * 1024, // 1MB
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
 	}

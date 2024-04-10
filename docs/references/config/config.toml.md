@@ -1256,6 +1256,18 @@ If the mempool is full, incoming transactions are dropped.
 
 The value `0` is undefined.
 
+### mempool.max_tx_bytes
+Maximum size of a single transaction accepted into the mempool.
+```toml
+max_tx_bytes = 1048576
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+This is the maximum size of a transaction allowed to be accepted into the mempool.
+
 ### mempool.max_txs_bytes
 The maximum size in bytes of all transactions stored in the mempool.
 ```toml
@@ -1276,18 +1288,6 @@ The rationale is to consider how many blocks have to be produced in order to
 drain all transactions stored in a full mempool.
 
 The default value is 1 Gibibyte (2^30 bytes).
-
-### mempool.max_tx_bytes
-Maximum size of a single transaction accepted into the mempool.
-```toml
-max_tx_bytes = 1048576
-```
-
-| Value type          | integer |
-|:--------------------|:--------|
-| **Possible values** | &gt;= 0 |
-
-This is the maximum size of a transaction allowed to be accepted into the mempool.
 
 ### mempool.cache_size
 Mempool internal cache size for already seen transactions.

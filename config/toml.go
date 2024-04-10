@@ -419,6 +419,10 @@ wal_dir = "{{ js .Mempool.WalPath }}"
 # Maximum number of transactions in the mempool
 size = {{ .Mempool.Size }}
 
+# Maximum size of a single transaction accepted into the mempool.
+# NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
+max_tx_bytes = {{ .Mempool.MaxTxBytes }}
+
 # The maximum size in bytes of all transactions stored in the mempool.
 # This is the raw, total transaction size. For example, given 1MB
 # transactions and a 5MB maximum mempool byte size, the mempool will
@@ -432,10 +436,6 @@ cache_size = {{ .Mempool.CacheSize }}
 # Set to true if it's not possible for any invalid transaction to become valid
 # again in the future.
 keep-invalid-txs-in-cache = {{ .Mempool.KeepInvalidTxsInCache }}
-
-# Maximum size of a single transaction.
-# NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
-max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 
 # Experimental parameters to limit gossiping txs to up to the specified number of peers.
 # We use two independent upper values for persistent and non-persistent peers.

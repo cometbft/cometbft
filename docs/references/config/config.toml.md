@@ -1257,7 +1257,7 @@ If the mempool is full, incoming transactions are dropped.
 The value `0` is undefined.
 
 ### mempool.max_txs_bytes
-The maximum size of all transactions accepted in the mempool.
+The maximum size in bytes of all transactions stored in the mempool.
 ```toml
 max_txs_bytes = 1073741824
 ```
@@ -1266,8 +1266,9 @@ max_txs_bytes = 1073741824
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-This is the raw, total transaction size. Given 1MB transactions and a 5MB maximum transaction size, mempool will only
-accept five transactions.
+This is the raw, total transaction size. For example, given 1MB
+transactions and a 5MB maximum mempool byte size, the mempool will
+only accept five transactions.
 
 The default value is 1 Gibibyte (2^30 bytes).
 

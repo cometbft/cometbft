@@ -419,9 +419,10 @@ wal_dir = "{{ js .Mempool.WalPath }}"
 # Maximum number of transactions in the mempool
 size = {{ .Mempool.Size }}
 
-# Limit the total size of all txs in the mempool.
-# This only accounts for raw transactions (e.g. given 1MB transactions and
-# max_txs_bytes=5MB, mempool will only accept 5 transactions).
+# The maximum size in bytes of all transactions stored in the mempool.
+# This is the raw, total transaction size. For example, given 1MB
+# transactions and a 5MB maximum mempool byte size, the mempool will
+# only accept five transactions.
 max_txs_bytes = {{ .Mempool.MaxTxsBytes }}
 
 # Size of the cache (used to filter transactions we saw earlier) in transactions

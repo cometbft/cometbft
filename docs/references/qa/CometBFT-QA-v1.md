@@ -7,12 +7,29 @@ parent:
 ---
 
 ## Table of Contents
-- [Latency emulation (LE)](#latency-emulation-le)
-- [Saturation point](#saturation-point)
-- [200-nodes test](#200-nodes-test)
-  - [Latencies](#latencies)
-  - [Metrics](#metrics)
-  - [Test Results](#test-results)
+- [QA results for CometBFT v1.x](#qa-results-for-cometbft-v1x)
+  - [Latency emulation (LE)](#latency-emulation-le)
+  - [Saturation point](#saturation-point)
+    - [With latency emulation](#with-latency-emulation)
+  - [200-nodes test](#200-nodes-test)
+    - [Latencies](#latencies)
+    - [Metrics](#metrics)
+      - [Mempool size](#mempool-size)
+      - [Peers](#peers)
+      - [Consensus rounds](#consensus-rounds)
+      - [Blocks produced per minute and transactions processed per minute](#blocks-produced-per-minute-and-transactions-processed-per-minute)
+      - [Memory resident set size](#memory-resident-set-size)
+      - [CPU utilization](#cpu-utilization)
+    - [Test Results](#test-results)
+      - [Test results with latency emulation](#test-results-with-latency-emulation)
+  - [Rotating Nodes Testnet](#rotating-nodes-testnet)
+    - [Latencies](#latencies-1)
+    - [Prometheus Metrics](#prometheus-metrics)
+      - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute)
+      - [Peers](#peers-1)
+      - [Memory Resident Set Size](#memory-resident-set-size-1)
+      - [CPU utilization](#cpu-utilization-1)
+    - [Test Result](#test-result)
 
 # QA results for CometBFT v1.x
 

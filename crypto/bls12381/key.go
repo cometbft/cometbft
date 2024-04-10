@@ -1,4 +1,4 @@
-//go:build !bls12381
+//go:build !bls12381 || !((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64))
 
 package bls12381
 

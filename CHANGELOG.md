@@ -465,7 +465,6 @@ the stability guarantees we provide for pre-releases.
   The `cometbft.privval.v1beta2` package is added to capture the protocol as it was
   released in CometBFT 0.38.x
   ([\#2529](https://github.com/cometbft/cometbft/pull/2529)).
-<<<<<<< HEAD
 - `[rpc]` Export `MakeHTTPDialer` to allow HTTP client constructors more flexibility.
   ([\#1594](https://github.com/cometbft/cometbft/pull/1594))
 - `[rpc]` Support setting proxy from env to `DefaultHttpClient`.
@@ -486,10 +485,6 @@ the stability guarantees we provide for pre-releases.
 - `[store]` Save block using a single DB batch if block is less than 640kB, otherwise each block part is saved individually
   ([\#1755](https://github.com/cometbft/cometbft/pull/1755))
 - `[types]` Validate `Validator#Address` in `ValidateBasic` ([\#1715](https://github.com/cometbft/cometbft/pull/1715))
-=======
-- `[privval]` Allow Privval to sign arbitrary bytes ([\#2692](https://github.com/cometbft/cometbft/issues/2692))
-
->>>>>>> 3815d411f (feat(privval)!: Allow Privval to sign arbitrary bytes. (#2692))
 
 ### MINIMUM GO VERSION
 
@@ -1225,4 +1220,3 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 ## Previous changes
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
-

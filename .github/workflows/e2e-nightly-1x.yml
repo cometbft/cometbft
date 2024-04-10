@@ -1,9 +1,9 @@
-# Runs randomly generated E2E testnets nightly on the v0.37.x branch.
+# Runs randomly generated E2E testnets nightly on the v1.x branch.
 
 # !! This file should be kept in sync with the e2e-nightly-main.yml file,
 # modulo changes to the version labels.
 
-name: e2e-nightly-37x
+name: e2e-nightly-1x
 on:
   schedule:
     - cron: '0 2 * * *'
@@ -25,7 +25,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: 'v0.37.x'
+          ref: 'v1.x'
 
       - name: Capture git repo info
         id: git-info

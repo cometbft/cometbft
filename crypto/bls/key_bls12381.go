@@ -8,7 +8,6 @@ import (
 	sha256 "github.com/minio/sha256-simd"
 
 	"github.com/cometbft/cometbft/crypto"
-	cmcrypto "github.com/cometbft/cometbft/crypto"
 	bls12381 "github.com/cosmos/crypto/curves/bls12381"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -46,7 +45,7 @@ func init() {
 // Cosmos SDK.
 
 // Compile-time type assertion.
-var _ cmcrypto.PrivKey = &PrivKey{}
+var _ crypto.PrivKey = &PrivKey{}
 
 type PrivKey []byte
 
@@ -70,7 +69,7 @@ func (privKey PrivKey) Bytes() []byte {
 
 // PubKey returns the private key's public key. If the privkey is not valid
 // it returns a nil value.
-func (privKey PrivKey) PubKey() cmcrypto.PubKey {
+func (privKey PrivKey) PubKey() crypto.PubKey {
 	secretKey, _ := bls12381.SecretKeyFromBytes(privKey)
 
 	return PubKey(secretKey.PublicKey().Marshal())
@@ -82,7 +81,7 @@ func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
 }
 
 // Type returns eth_bls12_381.
-func (privKey PrivKey) Type() string {
+func (PrivKey) Type() string {
 	return KeyType
 }
 
@@ -111,13 +110,13 @@ func (privKey PrivKey) Sign(digestBz []byte) ([]byte, error) {
 // Cosmos SDK.
 
 // Compile-time type assertion.
-var _ cmcrypto.PubKey = &PubKey{}
+var _ crypto.PubKey = &PubKey{}
 
 type PubKey []byte
 
 // Address returns the address of the public key.
 // The function will panic if the public key is invalid.
-func (pubKey PubKey) Address() cmcrypto.Address {
+func (pubKey PubKey) Address() crypto.Address {
 	pk, _ := bls12381.PublicKeyFromBytes(pubKey)
 	if len(pk.Marshal()) != PubKeySize {
 		panic("pubkey is incorrect size")
@@ -150,11 +149,11 @@ func (pubKey PubKey) Bytes() []byte {
 }
 
 // Type returns eth_bls12_381.
-func (pubKey PubKey) Type() string {
+func (PubKey) Type() string {
 	return KeyType
 }
 
 // Equals returns true if the pubkey type is the same and their bytes are deeply equal.
-func (pubKey PubKey) Equals(other cmcrypto.PubKey) bool {
+func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return pubKey.Type() == other.Type() && bytes.Equal(pubKey.Bytes(), other.Bytes())
 }

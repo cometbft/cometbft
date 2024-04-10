@@ -1270,6 +1270,11 @@ This is the raw, total transaction size. For example, given 1MB
 transactions and a 5MB maximum mempool byte size, the mempool will
 only accept five transactions.
 
+The maximum mempool byte size should be a factor of the network's maximum block size
+(which is a [consensus parameter](https://docs.cometbft.com/v1.0/spec/abci/abci++_app_requirements#blockparamsmaxbytes)).
+The rationale is to consider how many blocks have to be produced in order to
+drain all transactions stored in a full mempool.
+
 The default value is 1 Gibibyte (2^30 bytes).
 
 ### mempool.max_tx_bytes

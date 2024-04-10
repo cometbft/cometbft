@@ -24,6 +24,9 @@ type PrivValidator interface {
 
 	// SignProposal signs a canonical representation of the proposal.
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
+
+	// SignBytes signs an arbitrary array of bytes.
+	SignBytes(bytes []byte) ([]byte, error)
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -121,6 +124,11 @@ func (pv MockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error
 	}
 	proposal.Signature = sig
 	return nil
+}
+
+// SignBytes implements PrivValidator.
+func (pv MockPV) SignBytes(bytes []byte) ([]byte, error) {
+	return pv.PrivKey.Sign(bytes)
 }
 
 func (pv MockPV) ExtractIntoValidator(votingPower int64) *Validator {

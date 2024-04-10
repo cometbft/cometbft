@@ -1,6 +1,6 @@
-//go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && blst
+//go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && bls12381
 
-package bls_test
+package bls12381_test
 
 import (
 	"testing"
@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto"
-	bls "github.com/cometbft/cometbft/crypto/bls"
+	"github.com/cometbft/cometbft/crypto/bls12381"
 )
 
 func TestSignAndValidateBLS12381(t *testing.T) {
-	privKey, err := bls.GenPrivKey()
+	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
 	pubKey := privKey.PubKey()
 

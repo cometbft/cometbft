@@ -589,7 +589,7 @@ const (
 	MaxCommitOverheadBytes int64 = 94
 	// Commit sig size is made up of 96 bytes for the signature, 20 bytes for the address,
 	// 1 byte for the flag and 14 bytes for the timestamp.
-	MaxCommitSigBytes int64 = 141
+	MaxCommitSigBytes int64 = 131
 
 	// protoEncodingOverhead represents the overhead in bytes when encoding a protocol buffer message.
 	protoEncodingOverhead int64 = 2

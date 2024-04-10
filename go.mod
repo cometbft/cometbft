@@ -1,6 +1,6 @@
 module github.com/cometbft/cometbft
 
-go 1.21.8
+go 1.21.6
 
 toolchain go1.22.2
 

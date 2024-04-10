@@ -1,6 +1,6 @@
 //go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && bls12381
 
-package bls
+package bls12381
 
 import (
 	"bytes"
@@ -19,10 +19,12 @@ const (
 	PrivKeySize = 32
 	// PubKeySize defines the length of the PubKey byte array.
 	PubKeySize = 48
-	// SignatureLength defines the byte length of a BLSSignature.
+	// SignatureLength defines the byte length of a BLS signature.
 	SignatureLength = 96
 	// KeyType is the string constant for the bls12_381 algorithm.
 	KeyType = "bls12_381"
+	// Enabled indicates if this curve is enabled.
+	Enabled = true
 )
 
 // -------------------------------------.
@@ -40,11 +42,10 @@ func init() {
 // Private Key
 // ===============================================================================================
 
-// PrivKey is a wrapper around the Ethereum bls12_381 private key type. This wrapper conforms to
-// crypotypes.Pubkey to allow for the use of the Ethereum bls12_381 private key type within the
-// Cosmos SDK.
+// PrivKey is a wrapper around the Ethereum bls12_381 private key type. This
+// wrapper conforms to crypto.Pubkey to allow for the use of the Ethereum
+// bls12_381 private key type within the Cosmos SDK.
 
-// Compile-time type assertion.
 var _ crypto.PrivKey = &PrivKey{}
 
 type PrivKey []byte
@@ -105,11 +106,10 @@ func (privKey PrivKey) Sign(digestBz []byte) ([]byte, error) {
 // Public Key
 // ===============================================================================================
 
-// Pubkey is a wrapper around the Ethereum bls12_381 public key type. This wrapper conforms to
-// crypotypes.Pubkey to allow for the use of the Ethereum bls12_381 public key type within the
-// Cosmos SDK.
+// Pubkey is a wrapper around the Ethereum bls12_381 public key type. This
+// wrapper conforms to crypto.Pubkey to allow for the use of the Ethereum
+// bls12_381 public key type within the Cosmos SDK.
 
-// Compile-time type assertion.
 var _ crypto.PubKey = &PubKey{}
 
 type PubKey []byte

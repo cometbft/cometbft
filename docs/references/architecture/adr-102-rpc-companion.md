@@ -324,7 +324,7 @@ the `https` support is provided by the load balancer.
 
 ### Positive
 
-- The **RPC Companion** can be more scalable and and consequently provide a higher query throughput.
+- The **RPC Companion** can be more scalable and consequently provide a higher query throughput.
 - Less backpressure on the full node that is running consensus.
 - Possibility for future additional custom endpoints (e.g a `/v2`) with additional methods not available in the `/v1` endpoint.
 - Can act as a basis for users to create better and faster indexers solutions.

@@ -713,7 +713,7 @@ I[2023-04-25|17:01:28.726] Waiting for new connection...
 
 Then we need to start CometBFT service and point it to our application.
 
-Open a new terminal window and cd into the the same folder where the app is running (this is important because when you run the `kvstore` command above
+Open a new terminal window and cd into the same folder where the app is running (this is important because when you run the `kvstore` command above
 a file will be created `example.sock` and you need to run `cometbft` in the same folder so that they can communicate via sockets)
 
 Then execute the following command:

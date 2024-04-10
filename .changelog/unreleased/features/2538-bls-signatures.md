@@ -1,1 +1,1 @@
-- `[crypto]` Add BLS 12381
+- `[crypto]` Add support to BLS 12381 keys

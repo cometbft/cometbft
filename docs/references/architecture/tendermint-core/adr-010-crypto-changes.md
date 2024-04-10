@@ -4,7 +4,7 @@
 
 Tendermint is a cryptographic protocol that uses and composes a variety of cryptographic primitives.
 
-After nearly 4 years of development, Tendermint has recently undergone multiple security reviews to search for vulnerabilities and to assess the the use and composition of cryptographic primitives.
+After nearly 4 years of development, Tendermint has recently undergone multiple security reviews to search for vulnerabilities and to assess the use and composition of cryptographic primitives.
 
 ### Hash Functions
 

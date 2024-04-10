@@ -202,6 +202,7 @@ go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	@go mod verify
 	@go mod tidy
+.PHONY: go.sum
 
 #? draw_deps: Generate deps graph
 draw_deps:
@@ -355,7 +356,7 @@ $(BUILDDIR)/packages.txt:$(GO_TEST_FILES) $(BUILDDIR)
 split-test-packages:$(BUILDDIR)/packages.txt
 	split -d -n l/$(NUM_SPLIT) $< $<.
 test-group-%:split-test-packages
-	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=15m -race -coverprofile=$(BUILDDIR)/$*.profile.out
+	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out
 
 #? help: Get more info on make commands.
 help: Makefile

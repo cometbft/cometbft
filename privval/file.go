@@ -282,6 +282,11 @@ func (pv *FilePV) SignProposal(chainID string, proposal *cmtproto.Proposal) erro
 	return nil
 }
 
+// SignBytes signs the given bytes. Implements PrivValidator.
+func (pv *FilePV) SignBytes(bytes []byte) ([]byte, error) {
+	return pv.Key.PrivKey.Sign(bytes)
+}
+
 // Save persists the FilePV to disk.
 func (pv *FilePV) Save() {
 	pv.Key.Save()

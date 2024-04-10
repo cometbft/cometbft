@@ -493,3 +493,27 @@ func TestSignerVoteExtension(t *testing.T) {
 		assert.Equal(t, want.ExtensionSignature, have.ExtensionSignature)
 	}
 }
+
+func TestSignerSignBytes(t *testing.T) {
+	for _, tc := range getSignerTestCases(t) {
+		tc := tc
+		t.Cleanup(func() {
+			if err := tc.signerServer.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(func() {
+			if err := tc.signerClient.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		bytes := cmtrand.Bytes(32)
+		signature, err := tc.signerClient.SignBytes(bytes)
+		require.NoError(t, err)
+
+		pubKey, err := tc.mockPV.GetPubKey()
+		require.NoError(t, err)
+		require.True(t, pubKey.VerifySignature(bytes, signature))
+	}
+}

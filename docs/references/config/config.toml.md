@@ -1273,7 +1273,7 @@ transactions receveing from peers on the mempool protocol.
 ### mempool.max_txs_bytes
 The maximum size in bytes of all transactions stored in the mempool.
 ```toml
-max_txs_bytes = 1073741824
+max_txs_bytes = 67108864
 ```
 
 | Value type          | integer |
@@ -1289,7 +1289,8 @@ The maximum mempool byte size should be a factor of the network's maximum block 
 The rationale is to consider how many blocks have to be produced in order to
 drain all transactions stored in a full mempool.
 
-The default value is 1 Gibibyte (2^30 bytes).
+The default value is 64 Mibibyte (2^26 bytes).
+This is roughly equivalent to 16 blocks of 4 MiB.
 
 ### mempool.cache_size
 Mempool internal cache size for already seen transactions.

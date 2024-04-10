@@ -917,8 +917,8 @@ func DefaultMempoolConfig() *MempoolConfig {
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,
-		MaxTxBytes:  1024 * 1024,        // 1MB
-		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
+		MaxTxBytes:  1024 * 1024,          // 1MB
+		MaxTxsBytes: 16 * 4 * 1024 * 1024, // 64MB
 		CacheSize:   10000,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,

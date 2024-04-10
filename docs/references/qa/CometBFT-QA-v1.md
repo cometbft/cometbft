@@ -81,6 +81,7 @@ characterized by:
 - `r`, indicating the rate or frequency of transactions submitted per second. Each connection
   dispatches `r` transactions per second. 
 
+All transactions are 1024 bytes long.
 For more details on the methodology to identify the saturation point, see
 [here](method.md#running-the-test).
 
@@ -134,17 +135,17 @@ depicts in total six instances of these experiments, three with latency emulatio
 
 Up to 300 tx/s, the throughput is optimal for both configurations. However, when the load increases
 beyond this threshold, not all transactions are processed. Given the limited number of experiments
-conducted, it's challenging determining conclusively which configuration offers better throughput.
+conducted, it's challenging to conclusively determine which configuration offers better throughput.
 Nevertheless, we can still say that there are no big discrepancies in the obtained values on both
 scenarios.
 
 ## 200-nodes test
 
-This experiment consist in running the 200-nodes network, injecting a load of 400 tx/s (`c=1,r=400`)
+This experiment consists in running the 200-nodes network, injecting a load of 400 tx/s (`c=1,r=400`)
 during 90 seconds, and collecting the metrics. The network composition is the same as used for
 finding the saturation point.
 
-For the experiments with latency emulation have set a duration of 180 seconds instead of the 90.
+For the experiments with latency emulation we have set a duration of 180 seconds instead of 90.
 
 ### Latencies
 
@@ -186,7 +187,7 @@ with peaks almost reaching the maximum mempool size of 5000 transactions.
 
 **Maximum size** The maximum mempool size indicates when one or more nodes have reached their
 maximum capacity in terms of the number of transactions they can hold. In version `v0.38`, it's
-apparent that most of the time, at least one node that is dropping incoming transactions.
+apparent that most of the time, at least one node is dropping incoming transactions.
 Conversely, in `v1`, this happens less often, especially after reaching round 1 (as detailed below).
 
 However, when we introduce latency emulation into `v1`, there is consistently at least one node with
@@ -199,10 +200,10 @@ a saturated mempool.
 
 #### Peers
 
-On all expertiments, the number of peers was stable on all nodes. As expected, the seed nodes have
+On all experiments, the number of peers was stable on all nodes. As expected, the seed nodes have
 more peers (around 125) than the rest (between 20 and 70 for most nodes). The red dashed line
 denotes the average value. Just as in the baseline, the fact that non-seed nodes reach more than 50
-peers is due to [\#9548].
+peers is due to [\#486].
 
 | v0.38 | v1 (without LE / with LE) 
 |:--------------:|:--------------:|
@@ -211,8 +212,8 @@ peers is due to [\#9548].
 
 #### Consensus rounds
 
-On both versions, most blocks took just one round to reach consensus, except for a few cases when it
-was needed a second round. On these two particular runs, we observe that `v0.38` required an extra
+On both versions, most blocks took just one round to reach consensus, except for a few cases when
+a second round was needed. On these two particular runs, we observe that `v0.38` required an extra
 round on more occasions than `v1`.
 
 With latency emulation, the performance is notably worse: the consensus module requires an extra
@@ -303,5 +304,5 @@ experiments on the network with latency emulation.
 [qa]: README.md#cometbft-quality-assurance
 [aws-latencies]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/aws-latencies.csv
 [latency-emulator-script]: https://github.com/cometbft/cometbft/blob/v1.0.0-alpha.2/test/e2e/pkg/latency/latency-setter.py 
-[\#9548]: https://github.com/tendermint/tendermint/issues/9548
+[\#486]: https://github.com/cometbft/cometbft/issues/486
 [end-to-end]: https://github.com/cometbft/cometbft/tree/main/test/e2e

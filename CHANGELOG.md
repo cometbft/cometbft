@@ -448,8 +448,6 @@
   The `cometbft.privval.v1beta2` package is added to capture the protocol as it was
   released in CometBFT 0.38.x
   ([\#2529](https://github.com/cometbft/cometbft/pull/2529)).
-- `[privval]` Allow Privval to sign arbitrary bytes ([\#2692](https://github.com/cometbft/cometbft/issues/2692))
-
 
 ### MINIMUM GO VERSION
 

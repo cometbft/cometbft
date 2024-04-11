@@ -10,6 +10,9 @@
 
 ### FEATURES
 
+- `[crypto]` Add support for BLS12-381 keys. Use `bls12381` build flag to enable
+  it ([\#2765](https://github.com/cometbft/cometbft/pull/2765))
+
 ### BUG-FIXES
 
 - `[store]` Prune extended commits properly

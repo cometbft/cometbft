@@ -22,13 +22,15 @@ RUN set -eux; \
 
 # ---------- Stage 1: build (compile cometbft + e2e node) ----------
 FROM base AS build
+
+# Set up build directory /src/cometbft
 WORKDIR /src/cometbft
 
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
-ENV COMETBFT_BUILD_OPTIONS=badgerdb,boltdb,cleveldb,rocksdb
+ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb,pebbledb,clock_skew,bls12381
 RUN make build
 RUN cd test/e2e && make node
 

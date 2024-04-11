@@ -3,26 +3,8 @@
 # instead of spending time compiling them.
 FROM golang:1.21
 
-ENV LD_LIBRARY_PATH=/usr/local/lib
-
-RUN apt update \
-    && apt install -y \
-       libbz2-dev libgflags-dev libsnappy-dev libzstd-dev zlib1g-dev liblz4-dev \
-       make tar wget build-essential \
-       libleveldb-dev libleveldb1d
-
-ARG ROCKSDB=8.11.3
-
-# Install Rocksdb
-RUN \
-  wget -q https://github.com/facebook/rocksdb/archive/refs/tags/v${ROCKSDB}.tar.gz \
-  && tar -zxf v${ROCKSDB}.tar.gz \
-  && cd rocksdb-${ROCKSDB} \
-  && DEBUG_LEVEL=0 make -j4 shared_lib \
-  && make install-shared \
-  && ldconfig \
-  && cd .. \
-  && rm -rf v${ROCKSDB}.tar.gz rocksdb-${ROCKSDB}
+RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
+RUN apt-get -qq install -y libleveldb-dev librocksdb-dev >/dev/null
 
 # Set up build directory /src/cometbft
 ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb

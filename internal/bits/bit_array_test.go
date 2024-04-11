@@ -298,6 +298,6 @@ func TestUnmarshalJSONDoesntCrashOnZeroBits(t *testing.T) {
 	ic := new(indexCorpus)
 	blob := []byte(`{"BA":""}`)
 	err := json.Unmarshal(blob, ic)
-	require.Nil(t, err, "the returned error must be nil")
+	require.NoError(t, err)
 	require.Equal(t, ic.BitArray, &BitArray{Bits: 0, Elems: nil})
 }

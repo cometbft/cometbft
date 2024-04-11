@@ -209,7 +209,7 @@ update the configured `MaxBytes` consensus parameter, the application MUST also
 set every other parameter of `BlockParams` (e.g., `MaxGas`), even if the
 application does not want to update the value of those parameters.
 
-If the application does not set values for every parameter of a category of
+**Important:** If the application does not set values for every parameter of a category of
 consensus parameters that is set (not empty) in the returned `ConsensusParams`
 instance, the **zero** values for those parameters will be considered.
 This can be very problematic, as some of the zero values for parameters are

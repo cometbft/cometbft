@@ -115,7 +115,7 @@ func verifyCommitLightInternal(
 }
 
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
-// this commit.
+// this commit. "Trusting" means that we trust the validator set to be correct.
 //
 // NOTE the given validators do not necessarily correspond to the validator set
 // for this commit, but there may be some intersection.
@@ -123,7 +123,7 @@ func verifyCommitLightInternal(
 // This method is primarily used by the light client and does NOT check all the
 // signatures.
 //
-// CONTRACT: must run ValidateBasic() on commit before verifying and check vals (if untrusted).
+// CONTRACT: must run ValidateBasic() on commit before verifying.
 func VerifyCommitLightTrusting(
 	chainID string,
 	vals *ValidatorSet,
@@ -134,14 +134,14 @@ func VerifyCommitLightTrusting(
 }
 
 // VerifyCommitLightTrustingAllSignatures verifies that trustLevel of the validator
-// set signed this commit.
+// set signed this commit. "Trusting" means that we trust the validator set to be correct.
 //
 // NOTE the given validators do not necessarily correspond to the validator set
 // for this commit, but there may be some intersection.
 //
 // This method DOES check all the signatures.
 //
-// CONTRACT: must run ValidateBasic() on commit before verifying and check vals (if untrusted).
+// CONTRACT: must run ValidateBasic() on commit before verifying.
 func VerifyCommitLightTrustingAllSignatures(
 	chainID string,
 	vals *ValidatorSet,

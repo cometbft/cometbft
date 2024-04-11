@@ -6,21 +6,21 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-    - [ABCI 2.0 vs. legacy ABCI](#abci-20-vs-legacy-abci)
-    - [Method overview](#method-overview)
-        - [Consensus/block execution methods](#consensusblock-execution-methods)
-        - [Mempool methods](#mempool-methods)
-        - [Info methods](#info-methods)
-        - [State-sync methods](#state-sync-methods)
-        - [Other methods](#other-methods)
-    - [Proposal timeout](#proposal-timeout)
-    - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-    - [Events](#events)
-    - [Evidence](#evidence)
-    - [Errors](#errors)
-        - [`CheckTx`](#checktx)
-        - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
-        - [`Query`](#query)
+  - [ABCI 2.0 vs. legacy ABCI](#abci-20-vs-legacy-abci)
+  - [Method overview](#method-overview)
+    - [Consensus/block execution methods](#consensusblock-execution-methods)
+    - [Mempool methods](#mempool-methods)
+    - [Info methods](#info-methods)
+    - [State-sync methods](#state-sync-methods)
+    - [Other methods](#other-methods)
+  - [Proposal timeout](#proposal-timeout)
+  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+  - [Events](#events)
+  - [Evidence](#evidence)
+  - [Errors](#errors)
+    - [`CheckTx`](#checktx)
+    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+    - [`Query`](#query)
 
 # Overview and basic concepts
 
@@ -46,12 +46,12 @@ proposal is to be validated, and (c) at the moment a (precommit) vote is sent/re
 The new interface allows block proposers to perform application-dependent
 work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
 and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators
-to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c).
+to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtension` methods (c).
 
 Furthermore, ABCI 2.0 coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
 simplified, efficient way to deliver a decided block to the Application.
 
-## Methods overview
+## Method overview
 
 
 [&#8593; Back to Outline](#outline)

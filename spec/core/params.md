@@ -98,7 +98,7 @@ A correct validator cannot propose, accept, or commit a block containing:
 
 - More that max_bytes / `MaxBytes` of evidence payload
 - Expired evidences, produced at a height smaller than
-  max_age_num_blocks / `MaxAgeNumBlocks` from the last block's heigh
+  max_age_num_blocks / `MaxAgeNumBlocks` from the last block's height
   AND at a time earlier than max_age_duration / `MaxAgeDuration` from the last block's time.
 
 #### MaxAgeNumBlocks

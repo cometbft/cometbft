@@ -207,9 +207,11 @@ type BaseConfig struct {
 	//   - stable
 	//   - pure go
 	// * cleveldb (uses levigo wrapper)
+	//   - DEPRECATED
 	//   - requires gcc
 	//   - use cleveldb build tag (go build -tags cleveldb)
 	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
+	//   - DEPRECATED
 	//   - EXPERIMENTAL
 	//   - stable
 	//   - use boltdb build tag (go build -tags boltdb)

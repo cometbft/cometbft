@@ -1258,23 +1258,8 @@ If the mempool is full, incoming transactions are dropped.
 
 The value `0` is undefined.
 
-### mempool.max_txs_bytes
-The maximum size of all transactions accepted in the mempool.
-```toml
-max_txs_bytes = 1073741824
-```
-
-| Value type          | integer |
-|:--------------------|:--------|
-| **Possible values** | &gt;= 0 |
-
-This is the raw, total transaction size. Given 1MB transactions and a 5MB maximum transaction size, mempool will only
-accept five transactions.
-
-The default value is 1 Gibibyte (2^30 bytes).
-
 ### mempool.max_tx_bytes
-Maximum size of a single transaction accepted into the mempool.
+Maximum size in bytes of a single transaction accepted into the mempool.
 ```toml
 max_tx_bytes = 1048576
 ```
@@ -1283,7 +1268,33 @@ max_tx_bytes = 1048576
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-This is the maximum size of a transaction allowed to be accepted into the mempool.
+Transactions bigger than the maximum configured size are rejected by mempool,
+this applies to both transactions submitted by clients via RPC endpoints, and
+transactions receveing from peers on the mempool protocol.
+
+### mempool.max_txs_bytes
+The maximum size in bytes of all transactions stored in the mempool.
+```toml
+max_txs_bytes = 67108864
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+This is the raw, total size in bytes of all transactions in the mempool. For example, given 1MB
+transactions and a 5MB maximum mempool byte size, the mempool will
+only accept five transactions.
+
+The maximum mempool byte size should be a factor of the network's maximum block size
+(which is a [consensus parameter](https://docs.cometbft.com/v1.0/spec/abci/abci++_app_requirements#blockparamsmaxbytes)).
+The rationale is to consider how many blocks have to be produced in order to
+drain all transactions stored in a full mempool.
+
+When the mempool is full, incoming transactions are dropped.
+
+The default value is 64 Mibibyte (2^26 bytes).
+This is roughly equivalent to 16 blocks of 4 MiB.
 
 ### mempool.cache_size
 Mempool internal cache size for already seen transactions.

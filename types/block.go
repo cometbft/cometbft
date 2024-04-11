@@ -1380,7 +1380,7 @@ func DataFromProto(dp *cmtproto.Data) (Data, error) {
 
 // -----------------------------------------------------------------------------
 
-// EvidenceData contains any evidence of malicious wrong-doing by validators.
+// EvidenceData contains any evidence of misbehavior committed by a validator.
 type EvidenceData struct {
 	Evidence EvidenceList `json:"evidence"`
 

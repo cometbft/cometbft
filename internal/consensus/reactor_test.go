@@ -36,9 +36,10 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-//----------------------------------------------
+// ----------------------------------------------
 // in-process testnets
 
 var defaultTestTime = time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -53,8 +54,8 @@ func startConsensusNet(t *testing.T, css []*State, n int) (
 	blocksSubs := make([]types.Subscription, 0)
 	eventBuses := make([]*types.EventBus, n)
 	for i := 0; i < n; i++ {
-		/*logger, err := cmtflags.ParseLogLevel("consensus:info,*:error", logger, "info")
-		if err != nil {	t.Fatal(err)}*/
+		// logger, err := cmtflags.ParseLogLevel("consensus:info,*:error", logger, "info")
+		// if err != nil {	t.Fatal(err)}
 		reactors[i] = NewReactor(css[i], true) // so we dont start the consensus states
 		reactors[i].SetLogger(css[i].Logger)
 
@@ -109,13 +110,13 @@ func stopConsensusNet(logger log.Logger, reactors []*Reactor, eventBuses []*type
 
 // Ensure a testnet makes blocks.
 func TestReactorBasic(t *testing.T) {
-	N := 4
-	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
+	n := 4
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
 	defer cleanup()
-	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, n)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 	// wait till everyone makes the first new block
-	timeoutWaitGroup(N, func(j int) {
+	timeoutWaitGroup(n, func(j int) {
 		<-blocksSubs[j].Out()
 	})
 }
@@ -131,7 +132,7 @@ func TestReactorWithEvidence(t *testing.T) {
 	// to unroll unwieldy abstractions. Here we duplicate the code from:
 	// css := randConsensusNet(N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
 
-	genDoc, privVals := randGenesisDoc(nValidators, 30, nil)
+	genDoc, privVals := randGenesisDoc(nValidators, 30, nil, cmttime.Now())
 	css := make([]*State, nValidators)
 	logger := consensusLogger()
 	for i := 0; i < nValidators; i++ {
@@ -218,17 +219,17 @@ func TestReactorWithEvidence(t *testing.T) {
 	}
 }
 
-//------------------------------------
+// ------------------------------------
 
 // Ensure a testnet makes blocks when there are txs.
 func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
-	N := 4
-	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
+	n := 4
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
 		func(c *cfg.Config) {
 			c.Consensus.CreateEmptyBlocks = false
 		})
 	defer cleanup()
-	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, n)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// send a tx
@@ -239,16 +240,16 @@ func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 
 	// wait till everyone makes the first new block
-	timeoutWaitGroup(N, func(j int) {
+	timeoutWaitGroup(n, func(j int) {
 		<-blocksSubs[j].Out()
 	})
 }
 
 func TestReactorReceiveDoesNotPanicIfAddPeerHasntBeenCalledYet(t *testing.T) {
-	N := 1
-	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
+	n := 1
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
 	defer cleanup()
-	reactors, _, eventBuses := startConsensusNet(t, css, N)
+	reactors, _, eventBuses := startConsensusNet(t, css, n)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	var (
@@ -275,10 +276,10 @@ func TestReactorReceiveDoesNotPanicIfAddPeerHasntBeenCalledYet(t *testing.T) {
 }
 
 func TestReactorReceivePanicsIfInitPeerHasntBeenCalledYet(t *testing.T) {
-	N := 1
-	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
+	n := 1
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
 	defer cleanup()
-	reactors, _, eventBuses := startConsensusNet(t, css, N)
+	reactors, _, eventBuses := startConsensusNet(t, css, n)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	var (
@@ -359,7 +360,7 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 
 			cs.state.LastBlockHeight = testCase.storedHeight
 			cs.state.LastValidators = cs.state.Validators.Copy()
-			cs.state.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testCase.initialRequiredHeight
+			cs.state.ConsensusParams.Feature.VoteExtensionsEnableHeight = testCase.initialRequiredHeight
 
 			propBlock, err := cs.createProposalBlock(ctx)
 			require.NoError(t, err)
@@ -376,7 +377,10 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 			} else {
 				voteSet = types.NewVoteSet(cs.state.ChainID, testCase.storedHeight, 0, types.PrecommitType, cs.state.Validators)
 			}
-			signedVote := signVote(validator, types.PrecommitType, propBlock.Hash(), blockParts.Header(), testCase.includeExtensions)
+			signedVote := signVote(validator, types.PrecommitType, cs.state.ChainID, types.BlockID{
+				Hash:          propBlock.Hash(),
+				PartSetHeader: blockParts.Header(),
+			}, testCase.includeExtensions)
 
 			var veHeight int64
 			if testCase.includeExtensions {
@@ -391,7 +395,8 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 			require.NoError(t, err)
 			require.True(t, added)
 
-			veHeightParam := types.ABCIParams{VoteExtensionsEnableHeight: veHeight}
+			veHeightParam := types.DefaultFeatureParams()
+			veHeightParam.VoteExtensionsEnableHeight = veHeight
 			if testCase.includeExtensions {
 				cs.blockStore.SaveBlockWithExtendedCommit(propBlock, blockParts, voteSet.MakeExtendedCommit(veHeightParam))
 			} else {
@@ -415,14 +420,14 @@ func TestSwitchToConsensusVoteExtensions(t *testing.T) {
 
 // Test we record stats about votes and block parts from other peers.
 func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
-	N := 4
-	css, cleanup := randConsensusNet(t, N, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
+	n := 4
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(true), newKVStore)
 	defer cleanup()
-	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N)
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, n)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// wait till everyone makes the first new block
-	timeoutWaitGroup(N, func(j int) {
+	timeoutWaitGroup(n, func(j int) {
 		<-blocksSubs[j].Out()
 	})
 
@@ -435,7 +440,7 @@ func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 	assert.Greater(t, ps.BlockPartsSent(), 0, "number of votes sent should have increased")
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 // ensure we can make blocks despite cycling a validator set
 
 func TestReactorVotingPowerChange(t *testing.T) {
@@ -465,7 +470,7 @@ func TestReactorVotingPowerChange(t *testing.T) {
 		<-blocksSubs[j].Out()
 	})
 
-	//---------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
 	logger.Debug("---------------------------- Testing changing the voting power of one validator a few times")
 
 	val1PubKey, err := css[0].privValidator.GetPubKey()
@@ -634,19 +639,19 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 
 // Check we can make blocks with skip_timeout_commit=false.
 func TestReactorWithTimeoutCommit(t *testing.T) {
-	N := 4
-	css, cleanup := randConsensusNet(t, N, "consensus_reactor_with_timeout_commit_test", newMockTickerFunc(false), newKVStore)
+	n := 4
+	css, cleanup := randConsensusNet(t, n, "consensus_reactor_with_timeout_commit_test", newMockTickerFunc(false), newKVStore)
 	defer cleanup()
 	// override default SkipTimeoutCommit == true for tests
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		css[i].config.SkipTimeoutCommit = false
 	}
 
-	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, N-1)
+	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, n-1)
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// wait till everyone makes the first new block
-	timeoutWaitGroup(N-1, func(j int) {
+	timeoutWaitGroup(n-1, func(j int) {
 		<-blocksSubs[j].Out()
 	})
 }
@@ -775,7 +780,7 @@ func timeoutWaitGroup(n int, f func(int)) {
 		close(done)
 	}()
 
-	// we're running many nodes in-process, possibly in in a virtual machine,
+	// we're running many nodes in-process, possibly in a virtual machine,
 	// and spewing debug messages - making a block could take a while,
 	timeout := time.Second * 20
 
@@ -786,7 +791,7 @@ func timeoutWaitGroup(n int, f func(int)) {
 	}
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 // Ensure basic validation of structs is functioning
 
 func TestNewRoundStepMessageValidateBasic(t *testing.T) {
@@ -867,7 +872,7 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 		malleateFn func(*NewValidBlockMessage)
 		expErr     string
 	}{
-		{func(msg *NewValidBlockMessage) {}, ""},
+		{func(_ *NewValidBlockMessage) {}, ""},
 		{func(msg *NewValidBlockMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
 		{func(msg *NewValidBlockMessage) { msg.Round = -1 }, cmterrors.ErrNegativeField{Field: "Round"}.Error()},
 		{
@@ -913,7 +918,7 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 		malleateFn func(*ProposalPOLMessage)
 		expErr     string
 	}{
-		{func(msg *ProposalPOLMessage) {}, ""},
+		{func(_ *ProposalPOLMessage) {}, ""},
 		{func(msg *ProposalPOLMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
 		{func(msg *ProposalPOLMessage) { msg.ProposalPOLRound = -1 }, cmterrors.ErrNegativeField{Field: "ProposalPOLRound"}.Error()},
 		{func(msg *ProposalPOLMessage) { msg.ProposalPOL = bits.NewBitArray(0) }, cmterrors.ErrRequiredField{Field: "ProposalPOL"}.Error()},
@@ -1061,7 +1066,7 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 		malleateFn func(*VoteSetBitsMessage)
 		expErr     string
 	}{
-		{func(msg *VoteSetBitsMessage) {}, ""},
+		{func(_ *VoteSetBitsMessage) {}, ""},
 		{func(msg *VoteSetBitsMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
 		{func(msg *VoteSetBitsMessage) { msg.Type = 0x03 }, cmterrors.ErrInvalidField{Field: "Type"}.Error()},
 		{func(msg *VoteSetBitsMessage) {

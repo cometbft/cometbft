@@ -70,7 +70,8 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 		// Log every ~1 second the number of sent transactions.
 		total := success + failed
 		if total%testnet.LoadTxBatchSize == 0 {
-			logger.Debug("load", "success", success, "failed", failed, "success/total", log.NewLazySprintf("%.1f", success/total), "tx/s", rate)
+			successRate := float64(success) / float64(total)
+			logger.Debug("load", "success", success, "failed", failed, "success/total", log.NewLazySprintf("%.2f", successRate), "tx/s", rate)
 		}
 
 		// Check if reached max number of allowed transactions to send.
@@ -137,7 +138,6 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 		select {
 		case genCh <- struct{}{}:
 		case <-ctx.Done():
-			break
 		}
 	}
 	close(genCh)

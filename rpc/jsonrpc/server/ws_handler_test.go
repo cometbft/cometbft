@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func TestWebsocketManagerHandler(t *testing.T) {
@@ -30,7 +30,7 @@ func TestWebsocketManagerHandler(t *testing.T) {
 		req, err := types.MapToRequest(
 			types.JSONRPCStringID("TestWebsocketManager"),
 			"c",
-			map[string]interface{}{"s": "a", "i": 10},
+			map[string]any{"s": "a", "i": 10},
 		)
 		require.NoError(t, err)
 		err = c.WriteJSON(req)
@@ -46,7 +46,7 @@ func TestWebsocketManagerHandler(t *testing.T) {
 
 func newWSServer() *httptest.Server {
 	funcMap := map[string]*RPCFunc{
-		"c": NewWSRPCFunc(func(ctx *types.Context, s string, i int) (string, error) { return "foo", nil }, "s,i"),
+		"c": NewWSRPCFunc(func(_ *types.Context, _ string, _ int) (string, error) { return "foo", nil }, "s,i"),
 	}
 	wm := NewWebsocketManager(funcMap)
 	wm.SetLogger(log.TestingLogger())

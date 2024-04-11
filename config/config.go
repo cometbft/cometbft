@@ -176,12 +176,12 @@ func (cfg *Config) ValidateBasic() error {
 }
 
 // CheckDeprecated returns any deprecation warnings. These are printed to the operator on startup.
-func (cfg *Config) CheckDeprecated() []string {
+func (*Config) CheckDeprecated() []string {
 	var warnings []string
 	return warnings
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BaseConfig
 
 // BaseConfig defines the base configuration for a CometBFT node.
@@ -207,9 +207,11 @@ type BaseConfig struct {
 	//   - stable
 	//   - pure go
 	// * cleveldb (uses levigo wrapper)
+	//   - DEPRECATED
 	//   - requires gcc
 	//   - use cleveldb build tag (go build -tags cleveldb)
 	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
+	//   - DEPRECATED
 	//   - EXPERIMENTAL
 	//   - stable
 	//   - use boltdb build tag (go build -tags boltdb)
@@ -330,7 +332,7 @@ func (cfg BaseConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // RPCConfig
 
 // RPCConfig defines the configuration options for the CometBFT RPC server.
@@ -526,7 +528,7 @@ func (cfg RPCConfig) IsTLSEnabled() bool {
 	return cfg.TLSCertFile != "" && cfg.TLSKeyFile != ""
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // GRPCConfig
 
 // GRPCConfig defines the configuration for the CometBFT gRPC server.
@@ -626,7 +628,7 @@ func TestGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // GRPCPrivilegedConfig
 
 // GRPCPrivilegedConfig defines the configuration for the CometBFT gRPC server
@@ -671,7 +673,7 @@ func TestGRPCPruningServiceConfig() *GRPCPruningServiceConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // P2PConfig
 
 // P2PConfig defines the configuration options for the CometBFT peer-to-peer networking layer.
@@ -836,7 +838,7 @@ func DefaultFuzzConnConfig() *FuzzConnConfig {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // MempoolConfig
 
 // MempoolConfig defines the configuration options for the CometBFT mempool
@@ -878,9 +880,12 @@ type MempoolConfig struct {
 	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
-	// Limit the total size of all txs in the mempool.
-	// This only accounts for raw transactions (e.g. given 1MB transactions and
-	// max_txs_bytes=5MB, mempool will only accept 5 transactions).
+	// Maximum size in bytes of a single transaction accepted into the mempool.
+	MaxTxBytes int `mapstructure:"max_tx_bytes"`
+	// The maximum size in bytes of all transactions stored in the mempool.
+	// This is the raw, total transaction size. For example, given 1MB
+	// transactions and a 5MB maximum mempool byte size, the mempool will
+	// only accept five transactions.
 	MaxTxsBytes int64 `mapstructure:"max_txs_bytes"`
 	// Size of the cache (used to filter transactions we saw earlier) in transactions
 	CacheSize int `mapstructure:"cache_size"`
@@ -888,9 +893,6 @@ type MempoolConfig struct {
 	// Set to true if it's not possible for any invalid transaction to become
 	// valid again in the future.
 	KeepInvalidTxsInCache bool `mapstructure:"keep-invalid-txs-in-cache"`
-	// Maximum size of a single transaction
-	// NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
-	MaxTxBytes int `mapstructure:"max_tx_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
 	// We use two independent upper values for persistent and non-persistent peers.
 	// Unconditional peers are not affected by this feature.
@@ -917,9 +919,9 @@ func DefaultMempoolConfig() *MempoolConfig {
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,
-		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
+		MaxTxBytes:  1024 * 1024,      // 1MiB
+		MaxTxsBytes: 64 * 1024 * 1024, // 64MiB, enough to fill 16 blocks of 4 MiB
 		CacheSize:   10000,
-		MaxTxBytes:  1024 * 1024, // 1MB
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
 	}
@@ -972,7 +974,7 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // StateSyncConfig
 
 // StateSyncConfig defines the configuration for the CometBFT state sync service.
@@ -1062,7 +1064,7 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // BlockSyncConfig
 
 // BlockSyncConfig (formerly known as FastSync) defines the configuration for the CometBFT block sync service.
@@ -1094,7 +1096,7 @@ func (cfg *BlockSyncConfig) ValidateBasic() error {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // ConsensusConfig
 
 // ConsensusConfig defines the configuration for the Tendermint consensus algorithm, adopted by CometBFT,
@@ -1260,7 +1262,7 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // StorageConfig
 
 // StorageConfig allows more fine-grained control over certain storage-related
@@ -1294,17 +1296,25 @@ type StorageConfig struct {
 	// Note that if the provided has does not match the hash of the genesis file
 	// the node will report an error and not boot.
 	GenesisHash string `mapstructure:"genesis_hash"`
+
+	// The representation of keys in the database.
+	// The current representation of keys in Comet's stores is considered to be v1
+	// Users can experiment with a different layout by setting this field to v2.
+	// Not that this is an experimental feature and switching back from v2 to v1
+	// is not supported by CometBFT.
+	ExperimentalKeyLayout string `mapstructure:"experimental_db_key_layout"`
 }
 
 // DefaultStorageConfig returns the default configuration options relating to
 // CometBFT storage optimization.
 func DefaultStorageConfig() *StorageConfig {
 	return &StorageConfig{
-		DiscardABCIResponses: false,
-		Pruning:              DefaultPruningConfig(),
-		Compact:              false,
-		CompactionInterval:   1000,
-		GenesisHash:          "",
+		DiscardABCIResponses:  false,
+		Pruning:               DefaultPruningConfig(),
+		Compact:               false,
+		CompactionInterval:    1000,
+		GenesisHash:           "",
+		ExperimentalKeyLayout: "v1",
 	}
 }
 
@@ -1321,6 +1331,9 @@ func TestStorageConfig() *StorageConfig {
 func (cfg *StorageConfig) ValidateBasic() error {
 	if err := cfg.Pruning.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [pruning] section: %w", err)
+	}
+	if cfg.ExperimentalKeyLayout != "v1" && cfg.ExperimentalKeyLayout != "v2" {
+		return fmt.Errorf("unsupported version of DB Key layout, expected v1 or v2, got %s", cfg.ExperimentalKeyLayout)
 	}
 	return nil
 }
@@ -1365,7 +1378,7 @@ func TestTxIndexConfig() *TxIndexConfig {
 	return DefaultTxIndexConfig()
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // InstrumentationConfig
 
 // InstrumentationConfig defines the configuration for metrics reporting.
@@ -1418,7 +1431,7 @@ func (cfg *InstrumentationConfig) IsPrometheusEnabled() bool {
 	return cfg.Prometheus && cfg.PrometheusListenAddr != ""
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Utils
 
 // helper function to make config creation independent of root dir.
@@ -1429,7 +1442,7 @@ func rootify(path, root string) string {
 	return filepath.Join(root, path)
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Moniker
 
 var defaultMoniker = getDefaultMoniker()
@@ -1444,7 +1457,7 @@ func getDefaultMoniker() string {
 	return moniker
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // PruningConfig
 
 type PruningConfig struct {
@@ -1478,7 +1491,7 @@ func (cfg *PruningConfig) ValidateBasic() error {
 	return nil
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // DataCompanionPruningConfig
 
 type DataCompanionPruningConfig struct {

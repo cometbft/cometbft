@@ -62,7 +62,7 @@ func DefaultValidationRequestHandler(
 
 		vote := r.SignVoteRequest.Vote
 
-		err = privVal.SignVote(chainID, vote)
+		err = privVal.SignVote(chainID, vote, !r.SignVoteRequest.SkipExtensionSigning)
 		if err != nil {
 			res = mustWrapMsg(&pvproto.SignedVoteResponse{
 				Vote: cmtproto.Vote{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},
@@ -92,9 +92,18 @@ func DefaultValidationRequestHandler(
 		} else {
 			res = mustWrapMsg(&pvproto.SignedProposalResponse{Proposal: *proposal, Error: nil})
 		}
+	case *pvproto.Message_SignBytesRequest:
+		var signature []byte
+		signature, err = privVal.SignBytes(r.SignBytesRequest.Value)
+		if err != nil {
+			res = mustWrapMsg(&pvproto.SignBytesResponse{
+				Signature: nil, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},
+			})
+		} else {
+			res = mustWrapMsg(&pvproto.SignBytesResponse{Signature: signature, Error: nil})
+		}
 	case *pvproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&pvproto.PingResponse{})
-
 	default:
 		err = fmt.Errorf("unknown msg: %v", r)
 	}

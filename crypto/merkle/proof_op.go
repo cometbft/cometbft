@@ -10,7 +10,7 @@ import (
 
 var ErrKeyPathNotConsumed = errors.New("merkle: keypath not consumed")
 
-//----------------------------------------
+// ----------------------------------------
 // ProofOp gets converted to an instance of ProofOperator:
 
 // ProofOperator is a layer for calculating intermediate Merkle roots
@@ -26,7 +26,7 @@ type ProofOperator interface {
 	ProofOp() cmtcrypto.ProofOp
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Operations on a list of ProofOperators
 
 // ProofOperators is a slice of ProofOperator(s).
@@ -76,7 +76,7 @@ func (poz ProofOperators) Verify(root []byte, keypath string, args [][]byte) err
 	return nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 // ProofRuntime - main entrypoint
 
 type OpDecoder func(cmtcrypto.ProofOp) (ProofOperator, error)
@@ -149,5 +149,5 @@ func (prt *ProofRuntime) Verify(proof *cmtcrypto.ProofOps, root []byte, keypath 
 func DefaultProofRuntime() (prt *ProofRuntime) {
 	prt = NewProofRuntime()
 	prt.RegisterOpDecoder(ProofOpValue, ValueOpDecoder)
-	return
+	return prt
 }

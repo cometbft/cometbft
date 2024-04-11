@@ -689,6 +689,7 @@ func (vals *ValidatorSet) VerifyCommitLightAllSignatures(chainID string, blockID
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
 // It does NOT count all signatures.
+// CONTRACT: must run ValidateBasic() on commit before verifying.
 func (vals *ValidatorSet) VerifyCommitLightTrusting(
 	chainID string,
 	commit *Commit,
@@ -700,6 +701,7 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
 // It DOES count all signatures.
+// CONTRACT: must run ValidateBasic() on commit before verifying.
 func (vals *ValidatorSet) VerifyCommitLightTrustingAllSignatures(
 	chainID string,
 	commit *Commit,
@@ -726,7 +728,7 @@ func (vals *ValidatorSet) findPreviousProposer() *Validator {
 	return previousProposer
 }
 
-//-----------------
+// -----------------
 
 // IsErrNotEnoughVotingPowerSigned returns true if err is
 // ErrNotEnoughVotingPowerSigned.
@@ -745,7 +747,7 @@ func (e ErrNotEnoughVotingPowerSigned) Error() string {
 	return fmt.Sprintf("invalid commit -- insufficient voting power: got %d, needed more than %d", e.Got, e.Needed)
 }
 
-//----------------
+// ----------------
 
 // String returns a string representation of ValidatorSet.
 //
@@ -762,7 +764,7 @@ func (vals *ValidatorSet) StringIndented(indent string) string {
 		return "nil-ValidatorSet"
 	}
 	var valStrings []string
-	vals.Iterate(func(index int, val *Validator) bool {
+	vals.Iterate(func(_ int, val *Validator) bool {
 		valStrings = append(valStrings, val.String())
 		return false
 	})
@@ -777,7 +779,7 @@ func (vals *ValidatorSet) StringIndented(indent string) string {
 		indent)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // ValidatorsByVotingPower implements sort.Interface for []*Validator based on
 // the VotingPower and Address fields.
@@ -900,7 +902,7 @@ func ValidatorSetFromExistingValidators(valz []*Validator) (*ValidatorSet, error
 	return vals, nil
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // RandValidatorSet returns a randomized validator set (size: +numValidators+),
 // where each validator has a voting power of +votingPower+.

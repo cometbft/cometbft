@@ -1,0 +1,1 @@
+- `[rpc]` Export RPC package errors ([\#2200](https://github.com/cometbft/cometbft/pull/2200)) (contributes to [\#1140](https://github.com/cometbft/cometbft/issues/1140))

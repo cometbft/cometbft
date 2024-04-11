@@ -20,7 +20,7 @@ import (
 var (
 	// testnetCombinations defines global testnet options, where we generate a
 	// separate testnet for each combination (Cartesian product) of options.
-	testnetCombinations = map[string][]interface{}{
+	testnetCombinations = map[string][]any{
 		"topology":      {"single", "quad", "large"},
 		"initialHeight": {0, 1000},
 		"initialState": {
@@ -126,7 +126,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
@@ -174,6 +174,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		manifest.PbtsEnableHeight = baseHeight + pbtsHeightOffset.Choose(r).(int64)
 	}
 
+	// TODO: Add skew config
 	var numSeeds, numValidators, numFulls, numLightClients int
 	switch opt["topology"].(string) {
 	case "single":
@@ -201,6 +202,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	// the initial validator set, and validator set updates for delayed nodes.
 	nextStartAt := manifest.InitialHeight + 5
 	quorum := numValidators*2/3 + 1
+	var totalWeight int64
 	for i := 1; i <= numValidators; i++ {
 		startAt := int64(0)
 		if i > quorum {
@@ -208,16 +210,34 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 			nextStartAt += 5
 		}
 		name := fmt.Sprintf("validator%02d", i)
-		manifest.Nodes[name] = generateNode(
-			r, e2e.ModeValidator, startAt, i <= 2)
+		manifest.Nodes[name] = generateNode(r, e2e.ModeValidator, startAt, i <= 2)
 
+		weight := int64(30 + r.Intn(71))
 		if startAt == 0 {
-			(*manifest.Validators)[name] = int64(30 + r.Intn(71))
+			(*manifest.Validators)[name] = weight
 		} else {
-			manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)] = map[string]int64{
-				name: int64(30 + r.Intn(71)),
-			}
+			manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)] = map[string]int64{name: weight}
 		}
+		totalWeight += weight
+	}
+
+	// Add clock skew only to processes that accumulate less than 1/3 of voting power.
+	var accWeight int64
+	for i := 1; i <= numValidators; i++ {
+		name := fmt.Sprintf("validator%02d", i)
+		startAt := manifest.Nodes[name].StartAt
+		var weight int64
+		if startAt == 0 {
+			weight = (*manifest.Validators)[name]
+		} else {
+			weight = manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)][name]
+		}
+
+		if accWeight > totalWeight*2/3 {
+			// Interval: [-500ms, 59s500ms)
+			manifest.Nodes[name].ClockSkew = time.Duration(int64(r.Float64()*float64(time.Minute))) - 500*time.Millisecond
+		}
+		accWeight += weight
 	}
 
 	// Move validators to InitChain if specified.

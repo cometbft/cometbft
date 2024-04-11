@@ -1,7 +1,7 @@
 package blockservice
 
 import (
-	context "context"
+	"context"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
@@ -44,26 +44,6 @@ func (s *blockServiceServer) GetByHeight(_ context.Context, req *blocksvc.GetByH
 	}
 
 	return &blocksvc.GetByHeightResponse{
-		BlockId: blockID,
-		Block:   block,
-	}, nil
-}
-
-// GetLatest implements v1.BlockServiceServer.
-func (s *blockServiceServer) GetLatest(context.Context, *blocksvc.GetLatestRequest) (*blocksvc.GetLatestResponse, error) {
-	logger := s.logger.With("endpoint", "GetLatest")
-
-	latestHeight := s.store.Height()
-	if latestHeight < 1 {
-		return nil, status.Error(codes.NotFound, "No block data yet")
-	}
-
-	blockID, block, err := s.getBlock(latestHeight, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return &blocksvc.GetLatestResponse{
 		BlockId: blockID,
 		Block:   block,
 	}, nil

@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 // the `Handshake Tests` are for failures in applying the block.
 // With the help of the WAL, we can recover from it all!
 
-//------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 // WAL Tests
 
 // TODO: It would be better to verify explicitly which states we can recover from without the wal
@@ -139,12 +139,12 @@ func TestWALCrash(t *testing.T) {
 	}{
 		{
 			"empty block",
-			func(stateDB dbm.DB, cs *State, ctx context.Context) {},
+			func(_ dbm.DB, _ *State, _ context.Context) {},
 			1,
 		},
 		{
 			"many non-empty blocks",
-			func(stateDB dbm.DB, cs *State, ctx context.Context) {
+			func(_ dbm.DB, cs *State, ctx context.Context) {
 				go sendTxs(ctx, cs)
 			},
 			3,
@@ -314,7 +314,7 @@ func (w *crashingWAL) Wait()        { w.next.Wait() }
 
 const numBlocks = 6
 
-//---------------------------------------
+// ---------------------------------------
 // Test handshake/replay
 
 // 0 - all synced up
@@ -326,8 +326,6 @@ var modes = []uint{0, 1, 2, 3}
 // This is actually not a test, it's for storing validator change tx data for testHandshakeReplay.
 func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*cfg.Config, []*types.Block, []*types.ExtendedCommit, sm.State) {
 	t.Helper()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	nPeers := 7
 	nVals := 4
@@ -344,8 +342,6 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	genesisState, err := sm.MakeGenesisState(genDoc)
 	require.NoError(t, err)
 	t.Cleanup(cleanup)
-
-	partSize := types.BlockPartSizeBytes
 
 	newRoundCh := subscribe(css[0].eventBus, types.EventQueryNewRound)
 	proposalCh := subscribe(css[0].eventBus, types.EventQueryCompleteProposal)
@@ -375,21 +371,13 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	newValidatorTx1 := kvstore.MakeValSetChangeTx(valPubKey1ABCI, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx1)
 	require.NoError(t, err)
-	propBlock, err := css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
-	require.NoError(t, err)
-	propBlockParts, err := propBlock.MakePartSet(partSize)
-	require.NoError(t, err)
-	blockID := types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
+	propBlock, propBlockParts, blockID := createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
 	proposal := types.NewProposal(vss[1].Height, round, -1, blockID, propBlock.Header.Time)
-	p := proposal.ToProto()
-	if err := vss[1].SignProposal(chainID, p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
-	}
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vss[1])
 
 	// set the proposal block
-	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := css[0].SetProposalAndBlock(proposal, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 	ensureNewProposal(proposalCh, height, round)
@@ -407,21 +395,13 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	updateValidatorTx1 := kvstore.MakeValSetChangeTx(updatePubKey1ABCI, 25)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(updateValidatorTx1)
 	require.NoError(t, err)
-	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
-	require.NoError(t, err)
-	propBlockParts, err = propBlock.MakePartSet(partSize)
-	require.NoError(t, err)
-	blockID = types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
 
+	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
 	proposal = types.NewProposal(vss[2].Height, round, -1, blockID, propBlock.Header.Time)
-	p = proposal.ToProto()
-	if err := vss[2].SignProposal(chainID, p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
-	}
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vss[2])
 
 	// set the proposal block
-	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := css[0].SetProposalAndBlock(proposal, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 	ensureNewProposal(proposalCh, height, round)
@@ -446,11 +426,9 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	newValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx3)
 	require.NoError(t, err)
-	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
-	require.NoError(t, err)
-	propBlockParts, err = propBlock.MakePartSet(partSize)
-	require.NoError(t, err)
-	blockID = types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
+
+	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
+
 	newVss := make([]*validatorStub, nVals+1)
 	copy(newVss, vss[:nVals+1])
 	sort.Sort(ValidatorStubsByPower(newVss))
@@ -473,14 +451,10 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	selfIndex := valIndexFn(0)
 
 	proposal = types.NewProposal(vss[3].Height, round, -1, blockID, propBlock.Header.Time)
-	p = proposal.ToProto()
-	if err := vss[3].SignProposal(chainID, p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
-	}
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vss[3])
 
 	// set the proposal block
-	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := css[0].SetProposalAndBlock(proposal, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 	ensureNewProposal(proposalCh, height, round)
@@ -524,25 +498,19 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	removeValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, 0)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx3)
 	require.NoError(t, err)
-	propBlock, err = css[0].createProposalBlock(ctx) // changeProposer(t, cs1, vs2)
-	require.NoError(t, err)
-	propBlockParts, err = propBlock.MakePartSet(partSize)
-	require.NoError(t, err)
-	blockID = types.BlockID{Hash: propBlock.Hash(), PartSetHeader: propBlockParts.Header()}
+
+	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
+
 	newVss = make([]*validatorStub, nVals+3)
 	copy(newVss, vss[:nVals+3])
 	sort.Sort(ValidatorStubsByPower(newVss))
 
 	selfIndex = valIndexFn(0)
 	proposal = types.NewProposal(vss[1].Height, round, -1, blockID, propBlock.Header.Time)
-	p = proposal.ToProto()
-	if err := vss[1].SignProposal(chainID, p); err != nil {
-		t.Fatal("failed to sign bad proposal", err)
-	}
-	proposal.Signature = p.Signature
+	signProposal(t, proposal, chainID, vss[1])
 
 	// set the proposal block
-	if err := css[0].SetProposalAndBlock(proposal, propBlock, propBlockParts, "some peer"); err != nil {
+	if err := css[0].SetProposalAndBlock(proposal, propBlockParts, "some peer"); err != nil {
 		t.Fatal(err)
 	}
 	ensureNewProposal(proposalCh, height, round)
@@ -1020,7 +988,7 @@ func (app *badApp) FinalizeBlock(context.Context, *abci.FinalizeBlockRequest) (*
 	panic("either allHashesAreWrong or onlyLastHashIsWrong must be set")
 }
 
-//--------------------------
+// --------------------------
 // utils for making blocks
 
 func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, error) {
@@ -1132,7 +1100,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 	return blocks, extCommits, nil
 }
 
-func readPieceFromWAL(msg *TimedWALMessage) interface{} {
+func readPieceFromWAL(msg *TimedWALMessage) any {
 	// for logging
 	switch m := msg.Msg.(type) {
 	case msgInfo:
@@ -1171,7 +1139,7 @@ func stateAndStore(
 	return stateDB, state, store
 }
 
-//----------------------------------
+// ----------------------------------
 // mock block store
 
 type mockBlockStore struct {
@@ -1207,7 +1175,7 @@ func (bs *mockBlockStore) LoadBlockByHash([]byte) (*types.Block, *types.BlockMet
 	height := int64(len(bs.chain))
 	return bs.chain[height-1], bs.LoadBlockMeta(height)
 }
-func (bs *mockBlockStore) LoadBlockMetaByHash([]byte) *types.BlockMeta { return nil }
+func (*mockBlockStore) LoadBlockMetaByHash([]byte) *types.BlockMeta { return nil }
 func (bs *mockBlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	block := bs.chain[height-1]
 	bps, err := block.MakePartSet(types.BlockPartSizeBytes)
@@ -1217,11 +1185,11 @@ func (bs *mockBlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 		Header:  block.Header,
 	}
 }
-func (bs *mockBlockStore) LoadBlockPart(int64, int) *types.Part { return nil }
-func (bs *mockBlockStore) SaveBlockWithExtendedCommit(*types.Block, *types.PartSet, *types.ExtendedCommit) {
+func (*mockBlockStore) LoadBlockPart(int64, int) *types.Part { return nil }
+func (*mockBlockStore) SaveBlockWithExtendedCommit(*types.Block, *types.PartSet, *types.ExtendedCommit) {
 }
 
-func (bs *mockBlockStore) SaveBlock(*types.Block, *types.PartSet, *types.Commit) {
+func (*mockBlockStore) SaveBlock(*types.Block, *types.PartSet, *types.Commit) {
 }
 
 func (bs *mockBlockStore) LoadBlockCommit(height int64) *types.Commit {
@@ -1248,10 +1216,10 @@ func (bs *mockBlockStore) PruneBlocks(height int64, _ sm.State) (uint64, int64, 
 	return pruned, evidencePoint, nil
 }
 
-func (bs *mockBlockStore) DeleteLatestBlock() error { return nil }
-func (bs *mockBlockStore) Close() error             { return nil }
+func (*mockBlockStore) DeleteLatestBlock() error { return nil }
+func (*mockBlockStore) Close() error             { return nil }
 
-//---------------------------------------
+// ---------------------------------------
 // Test handshake/init chain
 
 func TestHandshakeUpdatesValidators(t *testing.T) {

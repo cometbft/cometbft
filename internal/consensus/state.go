@@ -223,7 +223,7 @@ func OfflineStateSyncHeight(height int64) StateOption {
 }
 
 // String returns a string.
-func (cs *State) String() string {
+func (*State) String() string {
 	// better not to access shared variables
 	return "ConsensusState"
 }
@@ -355,7 +355,7 @@ func (cs *State) OnStart() error {
 			repairAttempted = true
 
 			// 2) backup original WAL file
-			corruptedFile := fmt.Sprintf("%s.CORRUPTED", cs.config.WalFile())
+			corruptedFile := cs.config.WalFile() + ".CORRUPTED"
 			if err := cmtos.CopyFile(cs.config.WalFile(), corruptedFile); err != nil {
 				return err
 			}
@@ -434,7 +434,7 @@ func (cs *State) OnStop() {
 	// WAL is stopped in receiveRoutine.
 }
 
-// Wait waits for the the main routine to return.
+// Wait waits for the main routine to return.
 // NOTE: be sure to Stop() the event switch and drain
 // any event channels or this may deadlock.
 func (cs *State) Wait() {
@@ -460,7 +460,7 @@ func (cs *State) OpenWAL(walFile string) (WAL, error) {
 	return wal, nil
 }
 
-//------------------------------------------------------------
+// ------------------------------------------------------------
 // Public interface for passing messages into the consensus state, possibly causing a state transition.
 // If peerID == "", the msg is considered internal.
 // Messages are added to the appropriate queue (peer or internal).
@@ -506,7 +506,6 @@ func (cs *State) AddProposalBlockPart(height int64, round int32, part *types.Par
 // SetProposalAndBlock inputs the proposal and all block parts.
 func (cs *State) SetProposalAndBlock(
 	proposal *types.Proposal,
-	block *types.Block,
 	parts *types.PartSet,
 	peerID p2p.ID,
 ) error {
@@ -525,7 +524,7 @@ func (cs *State) SetProposalAndBlock(
 	return nil
 }
 
-//------------------------------------------------------------
+// ------------------------------------------------------------
 // internal functions for managing the state
 
 func (cs *State) updateHeight(height int64) {
@@ -768,7 +767,7 @@ func (cs *State) newStep() {
 	}
 }
 
-//-----------------------------------------
+// -----------------------------------------
 // the main go routines
 
 // receiveRoutine handles messages which may cause state transitions.
@@ -887,7 +886,7 @@ func (cs *State) handleMsg(mi msgInfo) {
 		// if the proposal is complete, we'll enterPrevote or tryFinalizeCommit
 		added, err = cs.addProposalBlockPart(msg, peerID)
 
-		// We unlock here to yield to any routines that need to read the the RoundState.
+		// We unlock here to yield to any routines that need to read the RoundState.
 		// Previously, this code held the lock from the point at which the final block
 		// part was received until the block executed against the application.
 		// This prevented the reactor from being able to retrieve the most updated
@@ -1032,7 +1031,7 @@ func (cs *State) handleTxsAvailable() {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // State functions
 // Used internally by handleTimeout and handleMsg to make state transitions
 
@@ -1318,13 +1317,14 @@ func (cs *State) createProposalBlock(ctx context.Context) (*types.Block, error) 
 	return ret, nil
 }
 
-// Enter: `timeoutPropose` after entering Propose.
-// Enter: proposal block and POL is ready.
-// If we received a valid proposal within this round and we are not locked on a block,
-// we will prevote for block.
-// Otherwise, if we receive a valid proposal that matches the block we are
-// locked on or matches a block that received a POL in a round later than our
-// locked round, prevote for the proposal, otherwise vote nil.
+// Enter: isProposalComplete() and Step <= RoundStepPropose.
+// Enter: `timeout_propose` (timeout of RoundStepPropose type) expires.
+//
+// If we received a valid proposal and the associated proposed block within
+// this round and: (i) we are not locked on a block, or we are locked on the
+// proposed block, or (ii) the proposed block received a POL in a round greater
+// or equal than our locked round, we will prevote for the poroposed block ID.
+// Otherwise, we prevote nil.
 func (cs *State) enterPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
@@ -1351,49 +1351,67 @@ func (cs *State) enterPrevote(height int64, round int32) {
 	// (so we have more time to try and collect +2/3 prevotes for a single block)
 }
 
+func (cs *State) timelyProposalMargins() (time.Duration, time.Duration) {
+	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Round)
+
+	// cs.ProposalReceiveTime - cs.Proposal.Timestamp >= -1 * Precision
+	// cs.ProposalReceiveTime - cs.Proposal.Timestamp <= MessageDelay + Precision
+	return -sp.Precision, sp.MessageDelay + sp.Precision
+}
+
 func (cs *State) proposalIsTimely() bool {
-	sp := types.SynchronyParams{
-		Precision:    cs.state.ConsensusParams.Synchrony.Precision,
-		MessageDelay: cs.state.ConsensusParams.Synchrony.MessageDelay,
-	}
+	sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
 
 	return cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
 }
 
+// Implements doPrevote. Called by enterPrevote(height, round) provided that
+// round == cs.Round, height == cs.Height, and cs.Step <= // RoundStepPropose.
 func (cs *State) defaultDoPrevote(height int64, round int32) {
 	logger := cs.Logger.With("height", height, "round", round)
 
-	// We did not receive a proposal within this round. (and thus executing this from a timeout)
-	if cs.ProposalBlock == nil {
-		logger.Debug("prevote step: ProposalBlock is nil; prevoting nil")
-		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-		return
-	}
-
+	// We did not receive a valid proposal for this round (and thus executing this from a timeout).
 	if cs.Proposal == nil {
-		logger.Debug("prevote step: did not receive proposal; prevoting nil")
+		logger.Debug("prevote step: did not receive a valid Proposal; prevoting nil")
 		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
-	if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
-		logger.Debug("prevote step: proposal timestamp not equal; prevoting nil")
+	// We did not (fully) receive the proposed block (and thus executing this from a timeout).
+	if cs.ProposalBlock == nil {
+		logger.Debug("prevote step: did not receive the ProposalBlock; prevoting nil")
 		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 		return
 	}
 
-	if cs.isPBTSEnabled(height) && cs.Proposal.POLRound == -1 && cs.LockedRound == -1 && !cs.proposalIsTimely() {
-		logger.Debug("prevote step: Proposal is not timely; prevoting nil",
-			"proposed",
-			cmttime.Canonical(cs.Proposal.Timestamp).Format(time.RFC3339Nano),
-			"received",
-			cmttime.Canonical(cs.ProposalReceiveTime).Format(time.RFC3339Nano),
-			"msg_delay",
-			cs.state.ConsensusParams.Synchrony.MessageDelay,
-			"precision",
-			cs.state.ConsensusParams.Synchrony.Precision)
-		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-		return
+	// Timestamp validation using Proposed-Based TimeStamp (PBTS) algorithm.
+	// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/
+	if cs.isPBTSEnabled(height) {
+		if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
+			logger.Debug("prevote step: proposal timestamp not equal; prevoting nil")
+			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+			return
+		}
+
+		if cs.Proposal.POLRound == -1 && !cs.proposalIsTimely() {
+			lowerBound, upperBound := cs.timelyProposalMargins()
+			// TODO: use Warn level once available.
+			logger.Info("prevote step: Proposal is not timely; prevoting nil",
+				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp),
+				"lower_bound", lowerBound,
+				"upper_bound", upperBound)
+			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+			return
+		}
+
+		if cs.Proposal.POLRound == -1 {
+			logger.Debug("prevote step: Proposal is timely",
+				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp))
+		}
 	}
 
 	// Validate proposal block, from consensus' perspective
@@ -2008,7 +2026,7 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 	cs.metrics.CommittedHeight.Set(float64(block.Height))
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time) error {
 	// Already have one
@@ -2105,6 +2123,10 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 	} else {
 		cs.evsw.FireEvent(types.EventProposalBlockPart, msg)
 	}
+
+	count, total := cs.ProposalBlockParts.Count(), cs.ProposalBlockParts.Total()
+	cs.Logger.Debug("receive block part", "height", height, "round", round,
+		"index", part.Index, "count", count, "total", total, "from", peerID)
 
 	maxBytes := cs.state.ConsensusParams.Block.MaxBytes
 	if maxBytes == -1 {
@@ -2491,7 +2513,7 @@ func (cs *State) signVote(
 
 	recoverable, err := types.SignAndCheckVote(vote, cs.privValidator, cs.state.ChainID, extEnabled && (msgType == types.PrecommitType))
 	if err != nil && !recoverable {
-		panic(fmt.Sprintf("non-recoverable error when signing vote (%d/%d)", vote.Height, vote.Round))
+		panic(fmt.Sprintf("non-recoverable error when signing vote %v: %v", vote, err))
 	}
 
 	return vote, err
@@ -2628,7 +2650,7 @@ func (cs *State) calculatePrevoteMessageDelayMetrics() {
 	}
 }
 
-//---------------------------------------------------------
+// ---------------------------------------------------------
 
 func CompareHRS(h1 int64, r1 int32, s1 cstypes.RoundStepType, h2 int64, r2 int32, s2 cstypes.RoundStepType) int {
 	if h1 < h2 {
@@ -2688,13 +2710,11 @@ func repairWalFile(src, dst string) error {
 
 func (cs *State) calculateProposalTimestampDifferenceMetric() {
 	if cs.Proposal != nil && cs.Proposal.POLRound == -1 {
-		tp := types.SynchronyParams{
-			Precision:    cs.state.ConsensusParams.Synchrony.Precision,
-			MessageDelay: cs.state.ConsensusParams.Synchrony.MessageDelay,
-		}
+		sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
 
-		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, tp)
-		cs.metrics.ProposalTimestampDifference.With("is_timely", strconv.FormatBool(isTimely)).
+		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
+		cs.metrics.ProposalTimestampDifference.
+			With("is_timely", strconv.FormatBool(isTimely)).
 			Observe(cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp).Seconds())
 	}
 }

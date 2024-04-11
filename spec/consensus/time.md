@@ -63,7 +63,7 @@ For more details, refer to the specification of [BFT Time][bft-time] and [Propos
 The Proposer-Based Timestamp (PBTS) algorithm is the recommended algorithm for
 producing block times.
 
-As of CometBFT `v1.x`, however, PBTS is not enabled by default, either for new
+As of CometBFT `v1.x`, however, PBTS is not enabled by default, neither for new
 chains using default values for genesis parameters, nor for chains upgrading to
 newer CometBFT versions, for backwards compatibility reasons.
 

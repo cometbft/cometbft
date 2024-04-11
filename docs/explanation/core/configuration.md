@@ -27,7 +27,7 @@ like the file below, however, double check by inspecting the
 
 # The version of the CometBFT binary that created or
 # last modified the config file. Do not modify this.
-version = "0.39.0"
+version = "1.0.0-dev"
 
 #######################################################################
 ###                   Main Base Config Options                      ###
@@ -40,7 +40,7 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "thinkpad"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb 
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
@@ -237,6 +237,32 @@ enabled = true
 [grpc.block_service]
 enabled = true
 
+# The gRPC block results service returns block results for a given height. If no height
+# is given, it will return the block results from the latest height.
+[grpc.block_results_service]
+enabled = true
+
+#
+# Configuration for privileged gRPC endpoints, which should **never** be exposed
+# to the public internet.
+#
+[grpc.privileged]
+# The host/port on which to expose privileged gRPC endpoints.
+laddr = ""
+
+#
+# Configuration specifically for the gRPC pruning service, which is considered a
+# privileged service.
+#
+[grpc.privileged.pruning_service]
+
+# Only controls whether the pruning service is accessible via the gRPC API - not
+# whether a previously set pruning service retain height is honored by the
+# node. See the [storage.pruning] section for control over pruning.
+#
+# Disabled by default.
+enabled = false
+
 #######################################################
 ###           P2P Configuration Options             ###
 #######################################################
@@ -344,10 +370,14 @@ wal_dir = ""
 # Maximum number of transactions in the mempool
 size = 5000
 
-# Limit the total size of all txs in the mempool.
-# This only accounts for raw transactions (e.g. given 1MB transactions and
-# max_txs_bytes=5MB, mempool will only accept 5 transactions).
-max_txs_bytes = 1073741824
+# Maximum size in bytes of a single transaction accepted into the mempool.
+max_tx_bytes = 1048576
+
+# The maximum size in bytes of all transactions stored in the mempool.
+# This is the raw, total transaction size. For example, given 1MB
+# transactions and a 5MB maximum mempool byte size, the mempool will
+# only accept five transactions.
+max_txs_bytes = 67108864
 
 # Size of the cache (used to filter transactions we saw earlier) in transactions
 cache_size = 10000
@@ -357,9 +387,20 @@ cache_size = 10000
 # again in the future.
 keep-invalid-txs-in-cache = false
 
-# Maximum size of a single transaction.
-# NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
-max_tx_bytes = 1048576
+# Experimental parameters to limit gossiping txs to up to the specified number of peers.
+# We use two independent upper values for persistent and non-persistent peers.
+# Unconditional peers are not affected by this feature.
+# If we are connected to more than the specified number of persistent peers, only send txs to
+# ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+# persistent peers disconnects, activate another persistent peer.
+# Similarly for non-persistent peers, with an upper limit of
+# ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+# If set to 0, the feature is disabled for the corresponding group of peers, that is, the
+# number of active connections to that group of peers is not bounded.
+# For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
+# performance results using the default P2P configuration.
+experimental_max_gossip_connections_to_persistent_peers = 0
+experimental_max_gossip_connections_to_non_persistent_peers = 0
 
 #######################################################
 ###         State Sync Configuration Options        ###
@@ -462,6 +503,46 @@ peer_query_maj23_sleep_duration = "2s"
 # persisted. ABCI responses are required for /block_results RPC queries, and to
 # reindex events in the command-line tool.
 discard_abci_responses = false
+
+# The representation of keys in the database.
+# The current representation of keys in Comet's stores is considered to be v1
+# Users can experiment with a different layout by setting this field to v2.
+# Note that this is an experimental feature and switching back from v2 to v1
+# is not supported by CometBFT.
+# If the database was initially created with v1, it is necessary to migrate the DB
+# before switching to v2. The migration is not done automatically.
+# v1 - the legacy layout existing in Comet prior to v1.
+# v2 - Order preserving representation ordering entries by height.
+# We used a command to migrate from v1 to v2 in our tests. The command is used
+# purely for experimental purposes but can be used as a starting point for experimentation
+#  https://github.com/cometbft/cometbft/blob/migrate_db/cmd/cometbft/commands/migrate_db.go 
+# compiling Comet at this branch and running migrate-db --home PATH_TO_CMT_HOME will transform the
+# db. 
+experimental_db_key_layout = "v1"
+
+# Set to true to discard ABCI responses from the state store, which can save a
+# considerable amount of disk space. Set to false to ensure ABCI responses are
+# persisted. ABCI responses are required for /block_results RPC queries, and to
+# reindex events in the command-line tool.
+discard_abci_responses = false
+
+# If set to true, CometBFT will force compaction to happen for databases that support this feature.
+# and save on storage space. Setting this to true is most benefits when used in combination
+# with pruning as it will physically delete the entries marked for deletion.
+# false by default (forcing compaction is disabled).
+compact = false
+
+# To avoid forcing compaction every time, this parameter instructs CometBFT to wait
+# the given amount of blocks to be pruned before triggering compaction.
+# It should be tuned depending on the number of items. If your retain height is 1 block,
+# it is too much of an overhead to try compaction every block. But it should also not be a very
+# large multiple of your retain height as it might occur bigger overheads.
+compaction_interval = "1000"
+
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
+# the node is not able to boot.
+genesis_hash = ""
 
 [storage.pruning]
 
@@ -606,17 +687,16 @@ Here's a brief summary of the timeouts:
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)
 
-### The effect of `timeout_propose` on the proposer selection process
+### The adverse effect of using inconsistent `timeout_propose` in a network
 
-Here's an interesting question. What if the particular validator sets a very
-small `timeout_propose`?
+Here's an interesting question. What happens if a particular validator sets a
+very small `timeout_propose`, as compared to the rest of the network?
 
 Imagine there are only two validators in your network: Alice and Bob. Bob sets
-`timeout_propose` to 1s. Alice uses the default value of 3s. Bob will create
-blocks ~ every second, Alice - every 3 seconds (given `create_empty_blocks` is
-`true`). Let's say they both have an equal voting power. Given the proposer
-selection algorithm is a weighted round-robin, you may expect Alice and Bob to
-take turns proposing blocks, and the result will be:
+`timeout_propose` to 0s. Alice uses the default value of 3s. Let's say they
+both have an equal voting power. Given the proposer selection algorithm is a
+weighted round-robin, you may expect Alice and Bob to take turns proposing
+blocks, and the result like:
 
 ```
 #1 block - Alice
@@ -632,18 +712,21 @@ What happens in reality is, however, a little bit different:
 #1 block - Bob
 #2 block - Bob
 #3 block - Bob
-#4 block - Alice
+#4 block - Bob
 ```
 
-That's because Bob is too fast at proposing blocks. This leaves Alice very
-little chances to propose a block and not always be catching up. Note that every
-block Bob creates needs a vote from Alice to constitute 2/3+.
+That's because Bob doesn't wait for a proposal from Alice (prevotes `nil`).
+This leaves Alice no chances to commit a block. Note that every block Bob
+creates needs a vote from Alice to constitute 2/3+. Bob always gets one because
+Alice has `timeout_propose` set to 3s. Alice never gets one because Bob has it
+set to 0s.
 
 Imagine now there are ten geographically distributed validators. One of them
-(Bob) sets `timeout_propose` to 1s. Others have it set to 3s. Now, Bob won't be
-able to move with the speed of 1s blocks because it won't gather 2/3+ of votes
-for its block proposal in time (1s). I.e., the network moves with the speed of
-time to accumulate 2/3+ of votes, not with the speed of the fastest proposer.
+(Bob) sets `timeout_propose` to 0s. Others have it set to 3s. Now, Bob won't be
+able to move with his own speed because it still needs 2/3 votes of the other
+validators and it takes time to propagate those. I.e., the network moves with
+the speed of time to accumulate 2/3+ of votes (prevotes & precommits), not with
+the speed of the fastest proposer.
 
 > Isn't block production determined by voting power?
 
@@ -656,3 +739,19 @@ being available and must move on if such is not responding.
 
 The impact shown above is negligible in a decentralized network with enough
 decentralization.
+
+### The adverse effect of using inconsistent `timeout_commit` in a network
+
+Let's look at the same scenario as before. There are ten geographically
+distributed validators. One of them (Bob) sets `timeout_commit` to 0s. Others
+have it set to 1s (the default value). Now, Bob will be the fastest producer
+because he doesn't wait for additional precommits after creating a block. If
+waiting for precommits (`timeout_commit`) is not incentivized, Bob will accrue
+more rewards compared to the other 9 validators.
+
+This is because Bob has the advantage of broadcasting its proposal early (1
+second earlier than the others). But it also makes it possible for Bob to miss
+a proposal from another validator and prevote `nil` due to him starting
+`timeout_propose` earlier. I.e., if Bob's `timeout_commit` is too low comparing
+to other validators, then he might miss some proposals and get slashed for
+inactivity.

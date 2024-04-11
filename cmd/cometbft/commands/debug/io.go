@@ -103,7 +103,7 @@ func copyFile(src, dest string) error {
 // writeStateToFile pretty JSON encodes an object and writes it to file composed
 // of dir and filename. It returns an error upon failure to encode or write to
 // file.
-func writeStateJSONToFile(state interface{}, dir, filename string) error {
+func writeStateJSONToFile(state any, dir, filename string) error {
 	stateJSON, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to encode state dump: %w", err)

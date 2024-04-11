@@ -24,7 +24,7 @@ func init() {
 	}
 }
 
-/****** these are for production settings ***********/
+// ****** these are for production settings *********** //
 
 // EnsureRoot creates the root, config, and data directories if they don't exist,
 // and panics if it fails.
@@ -89,25 +89,33 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
-# * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
-#   - pure go
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
+# * goleveldb (github.com/syndtr/goleveldb)
+#   - UNMAINTAINED
 #   - stable
+#   - pure go
 # * cleveldb (uses levigo wrapper)
-#   - fast
+#   - DEPRECATED
 #   - requires gcc
 #   - use cleveldb build tag (go build -tags cleveldb)
 # * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
+#   - DEPRECATED
 #   - EXPERIMENTAL
-#   - may be faster is some use-cases (random reads - indexer)
+#   - stable
 #   - use boltdb build tag (go build -tags boltdb)
-# * rocksdb (uses github.com/tecbot/gorocksdb)
+# * rocksdb (uses github.com/linxGnu/grocksdb)
 #   - EXPERIMENTAL
 #   - requires gcc
 #   - use rocksdb build tag (go build -tags rocksdb)
 # * badgerdb (uses github.com/dgraph-io/badger)
 #   - EXPERIMENTAL
+#   - stable
 #   - use badgerdb build tag (go build -tags badgerdb)
+# * pebbledb (uses github.com/cockroachdb/pebble)
+#   - EXPERIMENTAL
+#   - stable
+#   - pure go
+#   - use pebbledb build tag (go build -tags pebbledb)
 db_backend = "{{ .BaseConfig.DBBackend }}"
 
 # Database directory
@@ -413,9 +421,13 @@ wal_dir = "{{ js .Mempool.WalPath }}"
 # Maximum number of transactions in the mempool
 size = {{ .Mempool.Size }}
 
-# Limit the total size of all txs in the mempool.
-# This only accounts for raw transactions (e.g. given 1MB transactions and
-# max_txs_bytes=5MB, mempool will only accept 5 transactions).
+# Maximum size in bytes of a single transaction accepted into the mempool.
+max_tx_bytes = {{ .Mempool.MaxTxBytes }}
+
+# The maximum size in bytes of all transactions stored in the mempool.
+# This is the raw, total transaction size. For example, given 1MB
+# transactions and a 5MB maximum mempool byte size, the mempool will
+# only accept five transactions.
 max_txs_bytes = {{ .Mempool.MaxTxsBytes }}
 
 # Size of the cache (used to filter transactions we saw earlier) in transactions
@@ -425,10 +437,6 @@ cache_size = {{ .Mempool.CacheSize }}
 # Set to true if it's not possible for any invalid transaction to become valid
 # again in the future.
 keep-invalid-txs-in-cache = {{ .Mempool.KeepInvalidTxsInCache }}
-
-# Maximum size of a single transaction.
-# NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
-max_tx_bytes = {{ .Mempool.MaxTxBytes }}
 
 # Experimental parameters to limit gossiping txs to up to the specified number of peers.
 # We use two independent upper values for persistent and non-persistent peers.
@@ -547,6 +555,35 @@ peer_query_maj23_sleep_duration = "{{ .Consensus.PeerQueryMaj23SleepDuration }}"
 # reindex events in the command-line tool.
 discard_abci_responses = {{ .Storage.DiscardABCIResponses}}
 
+# The representation of keys in the database.
+# The current representation of keys in Comet's stores is considered to be v1
+# Users can experiment with a different layout by setting this field to v2.
+# Note that this is an experimental feature and switching back from v2 to v1
+# is not supported by CometBFT.
+# If the database was initially created with v1, it is necessary to migrate the DB
+# before switching to v2. The migration is not done automatically.
+# v1 - the legacy layout existing in Comet prior to v1.
+# v2 - Order preserving representation ordering entries by height.
+experimental_db_key_layout = "{{ .Storage.ExperimentalKeyLayout }}"
+
+# If set to true, CometBFT will force compaction to happen for databases that support this feature.
+# and save on storage space. Setting this to true is most benefits when used in combination
+# with pruning as it will physically delete the entries marked for deletion.
+# false by default (forcing compaction is disabled).
+compact = {{ .Storage.Compact }}
+
+# To avoid forcing compaction every time, this parameter instructs CometBFT to wait
+# the given amount of blocks to be pruned before triggering compaction.
+# It should be tuned depending on the number of items. If your retain height is 1 block,
+# it is too much of an overhead to try compaction every block. But it should also not be a very
+# large multiple of your retain height as it might occur bigger overheads.
+compaction_interval = "{{ .Storage.CompactionInterval }}"
+
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
+# the node is not able to boot.
+genesis_hash = "{{ .Storage.GenesisHash }}"
+
 [storage.pruning]
 
 # The time period between automated background pruning operations.
@@ -576,12 +613,6 @@ initial_block_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockReta
 # data companion has not yet explicitly set one. If the data companion has
 # already set a block results retain height, this is ignored.
 initial_block_results_retain_height = {{ .Storage.Pruning.DataCompanion.InitialBlockResultsRetainHeight }}
-
-
-# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
-# If this hash mismatches the hash that CometBFT computes on the genesis file,
-# the node is not able to boot.
-genesis_hash = "{{ .Storage.GenesisHash }}"
 
 #######################################################
 ###   Transaction Indexer Configuration Options     ###

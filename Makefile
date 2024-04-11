@@ -85,7 +85,7 @@ build:
 
 #? install: Install CometBFT to GOBIN
 install:
-	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags $(BUILD_TAGS) ./cmd/cometbft
+	CGO_ENABLED=$(CGO_ENABLED) go install $(BUILD_FLAGS) -tags '$(BUILD_TAGS)' ./cmd/cometbft
 .PHONY: install
 
 ###############################################################################
@@ -112,7 +112,6 @@ testdata-metrics:
 #? mockery: Generate test mocks
 mockery:
 	go generate -run="./scripts/mockery_generate.sh" ./...
-	@go run mvdan.cc/gofumpt@latest -l -w .
 .PHONY: mockery
 
 ###############################################################################
@@ -121,8 +120,8 @@ mockery:
 
 #? check-proto-deps: Check protobuf deps
 check-proto-deps:
-ifeq (,$(shell which protoc-gen-gogofaster))
-	@go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
+ifeq (,$(shell which protoc-gen-gocosmos))
+	@go install github.com/cosmos/gogoproto/protoc-gen-gocosmos@latest
 endif
 .PHONY: check-proto-deps
 
@@ -203,6 +202,7 @@ go.sum: go.mod
 	@echo "--> Ensure dependencies have not been modified"
 	@go mod verify
 	@go mod tidy
+.PHONY: go.sum
 
 #? draw_deps: Generate deps graph
 draw_deps:
@@ -356,7 +356,7 @@ $(BUILDDIR)/packages.txt:$(GO_TEST_FILES) $(BUILDDIR)
 split-test-packages:$(BUILDDIR)/packages.txt
 	split -d -n l/$(NUM_SPLIT) $< $<.
 test-group-%:split-test-packages
-	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=15m -race -coverprofile=$(BUILDDIR)/$*.profile.out
+	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out
 
 #? help: Get more info on make commands.
 help: Makefile

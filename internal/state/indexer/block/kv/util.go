@@ -2,6 +2,7 @@ package kv
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -95,7 +96,7 @@ func getHeightFromKey(key []byte) int64 {
 	if len(remaining) == 0 && blockHeightKeyPrefix == types.BlockHeightKey {
 		return possibleHeight
 	}
-	panic(fmt.Errorf("key must be either heightKey or eventKey"))
+	panic(errors.New("key must be either heightKey or eventKey"))
 }
 
 func eventKey(compositeKey, eventValue string, height int64, eventSeq int64) ([]byte, error) {
@@ -174,7 +175,7 @@ func parseEventSeqFromEventKey(key []byte) (int64, error) {
 	// function_type = 'being_block_event' | 'end_block_event'
 
 	if len(remaining) == 0 { // The event was not properly indexed
-		return 0, fmt.Errorf("failed to parse event sequence, invalid event format")
+		return 0, errors.New("failed to parse event sequence, invalid event format")
 	}
 	var typ string
 	remaining2, err := orderedcode.Parse(remaining, &typ) // Check if we have scenarios 2. or 3. (described above).

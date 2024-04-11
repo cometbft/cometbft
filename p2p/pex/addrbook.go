@@ -154,33 +154,30 @@ func (a *addrBook) init() {
 
 // OnStart implements Service.
 func (a *addrBook) OnStart() error {
-	if err := a.BaseService.OnStart(); err != nil {
-		return err
-	}
 	a.loadFromFile(a.filePath)
 
-	// wg.Add to ensure that any invocation of .Wait()
-	// later on will wait for saveRoutine to terminate.
 	a.wg.Add(1)
 	go a.saveRoutine()
 
 	return nil
 }
 
-// OnStop implements Service.
-func (a *addrBook) OnStop() {
-	a.BaseService.OnStop()
-}
-
-func (a *addrBook) Wait() {
+// Stop overrides Service.Stop().
+func (a *addrBook) Stop() error {
+	// Closes the Service.Quit() channel.
+	// This enables a.saveRoutine() to quit.
+	if err := a.BaseService.Stop(); err != nil {
+		return err
+	}
 	a.wg.Wait()
+	return nil
 }
 
 func (a *addrBook) FilePath() string {
 	return a.filePath
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
 // AddOurAddress one of our addresses.
 func (a *addrBook) AddOurAddress(addr *p2p.NetAddress) {
@@ -466,7 +463,7 @@ func (a *addrBook) GetSelectionWithBias(biasTowardsNewAddrs int) []*p2p.NetAddre
 	return selection
 }
 
-//------------------------------------------------
+// ------------------------------------------------
 
 // Size returns the number of addresses in the book.
 func (a *addrBook) Size() int {
@@ -480,7 +477,7 @@ func (a *addrBook) size() int {
 	return a.nNew + a.nOld
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // Save persists the address book to disk.
 func (a *addrBook) Save() {
@@ -491,20 +488,19 @@ func (a *addrBook) saveRoutine() {
 	defer a.wg.Done()
 
 	saveFileTicker := time.NewTicker(dumpAddressInterval)
-out:
+	defer saveFileTicker.Stop()
 	for {
 		select {
 		case <-saveFileTicker.C:
-			a.saveToFile(a.filePath)
+			a.Save()
 		case <-a.Quit():
-			break out
+			a.Save()
+			return
 		}
 	}
-	saveFileTicker.Stop()
-	a.saveToFile(a.filePath)
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAddress {
 	switch bucketType {
@@ -522,7 +518,7 @@ func (a *addrBook) getBucket(bucketType byte, bucketIdx int) map[string]*knownAd
 func (a *addrBook) addToNewBucket(ka *knownAddress, bucketIdx int) error {
 	// Consistency check to ensure we don't add an already known address
 	if ka.isOld() {
-		return errAddrBookOldAddressNewBucket{ka.Addr, bucketIdx}
+		return ErrAddrBookOldAddressNewBucket{ka.Addr, bucketIdx}
 	}
 
 	addrStr := ka.Addr.String()
@@ -619,7 +615,7 @@ func (a *addrBook) removeFromAllBuckets(ka *knownAddress) {
 	delete(a.addrLookup, ka.ID())
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func (a *addrBook) pickOldest(bucketType byte, bucketIdx int) *knownAddress {
 	bucket := a.getBucket(bucketType, bucketIdx)
@@ -698,7 +694,7 @@ func (a *addrBook) randomPickAddresses(bucketType byte, num int) []*p2p.NetAddre
 	case bucketTypeOld:
 		buckets = a.bucketsOld
 	default:
-		panic("unexpected bucketType")
+		panic("unexpected bucket type")
 	}
 	total := 0
 	for _, bucket := range buckets {
@@ -812,7 +808,7 @@ func (a *addrBook) addBadPeer(addr *p2p.NetAddress, banTime time.Duration) bool 
 	return true
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // calculate bucket placements
 
 // hash(key + sourcegroup + int64(hash(key + group + sourcegroup)) % bucket_per_group) % num_new_buckets.

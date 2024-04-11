@@ -123,7 +123,7 @@ func TestNewBlockStore(t *testing.T) {
 	for i, tt := range panicCausers {
 		tt := tt
 		// Expecting a panic here on trying to parse an invalid blockStore
-		_, _, panicErr := doFn(func() (interface{}, error) {
+		_, _, panicErr := doFn(func() (any, error) {
 			err := db.Set(blockStoreKey, tt.data)
 			require.NoError(t, err)
 			_ = NewBlockStore(db)
@@ -291,35 +291,35 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 		tuple := tuple
 		bs, db := newInMemoryBlockStore()
 		// SaveBlock
-		res, err, panicErr := doFn(func() (interface{}, error) {
+		res, err, panicErr := doFn(func() (any, error) {
 			bs.SaveBlockWithExtendedCommit(tuple.block, tuple.parts, tuple.seenCommit)
 			if tuple.block == nil {
 				return nil, nil
 			}
 
 			if tuple.corruptBlockInDB {
-				err := db.Set(calcBlockMetaKey(tuple.block.Height), []byte("block-bogus"))
+				err := db.Set(bs.dbKeyLayout.CalcBlockMetaKey(tuple.block.Height), []byte("block-bogus"))
 				require.NoError(t, err)
 			}
 			bBlock, bBlockMeta := bs.LoadBlock(tuple.block.Height)
 
 			if tuple.eraseSeenCommitInDB {
-				err := db.Delete(calcSeenCommitKey(tuple.block.Height))
+				err := db.Delete(bs.dbKeyLayout.CalcSeenCommitKey(tuple.block.Height))
 				require.NoError(t, err)
 			}
 			if tuple.corruptSeenCommitInDB {
-				err := db.Set(calcSeenCommitKey(tuple.block.Height), []byte("bogus-seen-commit"))
+				err := db.Set(bs.dbKeyLayout.CalcSeenCommitKey(tuple.block.Height), []byte("bogus-seen-commit"))
 				require.NoError(t, err)
 			}
 			bSeenCommit := bs.LoadSeenCommit(tuple.block.Height)
 
 			commitHeight := tuple.block.Height - 1
 			if tuple.eraseCommitInDB {
-				err := db.Delete(calcBlockCommitKey(commitHeight))
+				err := db.Delete(bs.dbKeyLayout.CalcBlockCommitKey(commitHeight))
 				require.NoError(t, err)
 			}
 			if tuple.corruptCommitInDB {
-				err := db.Set(calcBlockCommitKey(commitHeight), []byte("foo-bogus"))
+				err := db.Set(bs.dbKeyLayout.CalcBlockCommitKey(commitHeight), []byte("foo-bogus"))
 				require.NoError(t, err)
 			}
 			bCommit := bs.LoadBlockCommit(commitHeight)
@@ -497,7 +497,7 @@ func TestLoadBlockPart(t *testing.T) {
 
 	bs, db := newInMemoryBlockStore()
 	const height, index = 10, 1
-	loadPart := func() (interface{}, error) {
+	loadPart := func() (any, error) {
 		part := bs.LoadBlockPart(height, index)
 		return part, nil
 	}
@@ -512,7 +512,7 @@ func TestLoadBlockPart(t *testing.T) {
 	require.Nil(t, res, "a non-existent block part should return nil")
 
 	// 2. Next save a corrupted block then try to load it
-	err = db.Set(calcBlockPartKey(height, index), []byte("CometBFT"))
+	err = db.Set(bs.dbKeyLayout.CalcBlockPartKey(height, index), []byte("CometBFT"))
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadPart)
 	require.Error(t, panicErr, "expecting a non-nil panic")
@@ -526,7 +526,7 @@ func TestLoadBlockPart(t *testing.T) {
 
 	pb1, err := part1.ToProto()
 	require.NoError(t, err)
-	err = db.Set(calcBlockPartKey(height, index), mustEncode(pb1))
+	err = db.Set(bs.dbKeyLayout.CalcBlockPartKey(height, index), mustEncode(pb1))
 	require.NoError(t, err)
 	gotPart, _, panicErr := doFn(loadPart)
 	require.NoError(t, panicErr, "an existent and proper block should not panic")
@@ -854,7 +854,7 @@ func TestPruneBlocks(t *testing.T) {
 func TestLoadBlockMeta(t *testing.T) {
 	bs, db := newInMemoryBlockStore()
 	height := int64(10)
-	loadMeta := func() (interface{}, error) {
+	loadMeta := func() (any, error) {
 		meta := bs.LoadBlockMeta(height)
 		return meta, nil
 	}
@@ -866,7 +866,7 @@ func TestLoadBlockMeta(t *testing.T) {
 	require.Nil(t, res, "a non-existent blockMeta should return nil")
 
 	// 2. Next save a corrupted blockMeta then try to load it
-	err := db.Set(calcBlockMetaKey(height), []byte("CometBFT-Meta"))
+	err := db.Set(bs.dbKeyLayout.CalcBlockMetaKey(height), []byte("CometBFT-Meta"))
 	require.NoError(t, err)
 	res, _, panicErr = doFn(loadMeta)
 	require.Error(t, panicErr)
@@ -879,7 +879,7 @@ func TestLoadBlockMeta(t *testing.T) {
 		}, Height: 1, ProposerAddress: cmtrand.Bytes(crypto.AddressSize),
 	}}
 	pbm := meta.ToProto()
-	err = db.Set(calcBlockMetaKey(height), mustEncode(pbm))
+	err = db.Set(bs.dbKeyLayout.CalcBlockMetaKey(height), mustEncode(pbm))
 	require.NoError(t, err)
 	gotMeta, _, panicErr := doFn(loadMeta)
 	require.NoError(t, panicErr, "an existent and proper block should not panic")
@@ -943,7 +943,7 @@ func TestBlockFetchAtHeight(t *testing.T) {
 	require.Nil(t, blockAtHeightPlus2, "expecting an unsuccessful load of Height()+2")
 }
 
-func doFn(fn func() (interface{}, error)) (res interface{}, err error, panicErr error) {
+func doFn(fn func() (any, error)) (res any, err error, panicErr error) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch e := r.(type) {

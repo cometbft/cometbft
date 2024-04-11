@@ -24,116 +24,127 @@ func TestConsensusParamsValidation(t *testing.T) {
 		params ConsensusParams
 		valid  bool
 	}{
-		// test block params
+		// valid params
 		{
-			name: "normal values",
+			name: "minimal setup",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   1,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  1,
+				evidenceAge: 2,
 			}),
 			valid: true,
 		},
 		{
+			name: "minimal setup, pbts enabled",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
+				evidenceAge:  2,
+				precision:    time.Nanosecond,
+				messageDelay: time.Nanosecond,
+				pbtsHeight:   1,
+			}),
+			valid: true,
+		},
+		{
+			name: "minimal setup, pbts disabled",
+			params: makeParams(makeParamsArgs{
+				blockBytes:  1,
+				evidenceAge: 2,
+				// Invalid Synchrony params, but this is ok
+				// since PBTS is disabled.
+				precision:    0,
+				messageDelay: 0,
+			}),
+			valid: true,
+		},
+		// block params
+		{
 			name: "blockBytes se to 0",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   0,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  0,
+				evidenceAge: 2,
 			}),
 			valid: false,
 		},
 		{
 			name: "blockBytes set to a big valid value",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   47 * 1024 * 1024,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  47 * 1024 * 1024,
+				evidenceAge: 2,
 			}),
 			valid: true,
 		},
 		{
 			name: "blockBytes set to a small valid value",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   10,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  10,
+				evidenceAge: 2,
 			}),
 			valid: true,
 		},
 		{
 			name: "blockBytes set to the biggest valid value",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   100 * 1024 * 1024,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  100 * 1024 * 1024,
+				evidenceAge: 2,
 			}),
 			valid: true,
 		},
 		{
 			name: "blockBytes, biggest valid value, off-by-1",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   100*1024*1024 + 1,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  100*1024*1024 + 1,
+				evidenceAge: 2,
 			}),
 			valid: false,
 		},
 		{
 			name: "blockBytes, biggest valid value, off-by-1MB",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   101 * 1024 * 1024,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  101 * 1024 * 1024,
+				evidenceAge: 2,
 			}),
 			valid: false,
 		},
 		{
 			name: "blockBytes, value set to 1GB (too big)",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   1024 * 1024 * 1024,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  1024 * 1024 * 1024,
+				evidenceAge: 2,
 			}),
 			valid: false,
+		},
+		// blockBytes can be -1
+		{
+			name: "blockBytes -1",
+			params: makeParams(makeParamsArgs{
+				blockBytes:  -1,
+				evidenceAge: 2,
+			}),
+			valid: true,
 		},
 		{
-			name: "blockBytes invalid, evidenceAge invalid",
+			name: "blockBytes -2",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   1024 * 1024 * 1024,
-				evidenceAge:  -1,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  -2,
+				evidenceAge: 2,
 			}),
 			valid: false,
 		},
-		// test evidence params
+		// evidence params
 		{
 			name: "evidenceAge 0",
 			params: makeParams(makeParamsArgs{
 				blockBytes:       1,
 				evidenceAge:      0,
 				maxEvidenceBytes: 0,
-				precision:        1,
-				messageDelay:     1,
 			}),
 			valid: false,
 		},
 		{
 			name: "evidenceAge negative",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   1 * 1024 * 1024,
-				evidenceAge:  -1,
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  1 * 1024 * 1024,
+				evidenceAge: -1,
 			}),
 			valid: false,
 		},
@@ -143,8 +154,6 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:       1,
 				evidenceAge:      2,
 				maxEvidenceBytes: 2,
-				precision:        1,
-				messageDelay:     1,
 			}),
 			valid: false,
 		},
@@ -154,8 +163,6 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:       1000,
 				evidenceAge:      2,
 				maxEvidenceBytes: 1,
-				precision:        1,
-				messageDelay:     1,
 			}),
 			valid: true,
 		},
@@ -165,105 +172,130 @@ func TestConsensusParamsValidation(t *testing.T) {
 				blockBytes:       1,
 				evidenceAge:      1,
 				maxEvidenceBytes: 0,
-				precision:        1,
-				messageDelay:     1,
 			}),
 			valid: true,
 		},
-		// test no pubkey type provided
+		// pubkey params
 		{
 			name: "empty pubkeyTypes",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   1,
-				evidenceAge:  2,
-				pubkeyTypes:  []string{},
-				precision:    1,
-				messageDelay: 1,
+				blockBytes:  1,
+				evidenceAge: 2,
+				pubkeyTypes: []string{},
 			}),
 			valid: false,
 		},
-		// test invalid pubkey type provided
 		{
 			name: "bad pubkeyTypes",
 			params: makeParams(makeParamsArgs{
+				blockBytes:  1,
+				evidenceAge: 2,
+				pubkeyTypes: []string{"potatoes make good pubkeys"},
+			}),
+			valid: false,
+		},
+		// pbts enabled, invalid synchrony params
+		{
+			name: "messageDelay 0",
+			params: makeParams(makeParamsArgs{
 				blockBytes:   1,
 				evidenceAge:  2,
-				pubkeyTypes:  []string{"potatoes make good pubkeys"},
-				precision:    1,
-				messageDelay: 1,
+				precision:    time.Nanosecond,
+				messageDelay: 0,
+				pbtsHeight:   1,
 			}),
 			valid: false,
 		},
 		{
-			name: "blockBytes -1",
+			name: "messageDelay negative",
 			params: makeParams(makeParamsArgs{
-				blockBytes:   -1,
+				blockBytes:   1,
 				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
-			}),
-			valid: true,
-		},
-		{
-			name: "blockBytes -2",
-			params: makeParams(makeParamsArgs{
-				blockBytes:   -2,
-				evidenceAge:  2,
-				precision:    1,
-				messageDelay: 1,
-			}),
-			valid: false,
-		},
-		// test invalid pubkey type provided
-		{
-			name: "messageDelay -1",
-			params: makeParams(makeParamsArgs{
-				evidenceAge:  2,
-				precision:    1,
+				precision:    time.Nanosecond,
 				messageDelay: -1,
+				pbtsHeight:   1,
 			}),
 			valid: false,
 		},
 		{
-			name: "precision -1",
+			name: "precision 0",
 			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
+				evidenceAge:  2,
+				precision:    0,
+				messageDelay: time.Nanosecond,
+				pbtsHeight:   1,
+			}),
+			valid: false,
+		},
+		{
+			name: "precision negative",
+			params: makeParams(makeParamsArgs{
+				blockBytes:   1,
 				evidenceAge:  2,
 				precision:    -1,
-				messageDelay: 1,
+				messageDelay: time.Nanosecond,
+				pbtsHeight:   1,
 			}),
 			valid: false,
 		},
-		// test pbts
+		// pbts enable height
 		{
 			name: "pbts height -1",
 			params: makeParams(
 				makeParamsArgs{
 					blockBytes:   1,
 					evidenceAge:  2,
-					precision:    1,
-					messageDelay: 1,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
 					pbtsHeight:   -1,
 				}),
 			valid: false,
 		},
 		{
-			name: "pbts height 0",
+			name: "pbts disabled",
 			params: makeParams(
 				makeParamsArgs{
 					blockBytes:   1,
 					evidenceAge:  2,
-					precision:    1,
-					messageDelay: 1,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
 					pbtsHeight:   0,
 				}),
 			valid: true,
 		},
+		{
+			name: "pbts enabled",
+			params: makeParams(
+				makeParamsArgs{
+					blockBytes:   1,
+					evidenceAge:  2,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
+					pbtsHeight:   1,
+				}),
+			valid: true,
+		},
+		{
+			name: "pbts from height 100",
+			params: makeParams(
+				makeParamsArgs{
+					blockBytes:   1,
+					evidenceAge:  2,
+					precision:    time.Nanosecond,
+					messageDelay: time.Nanosecond,
+					pbtsHeight:   100,
+				}),
+			valid: true,
+		},
 	}
-	for i, tc := range testCases {
+	for _, tc := range testCases {
 		if tc.valid {
-			require.NoErrorf(t, tc.params.ValidateBasic(), "expected no error for valid params (#%d)", i)
+			require.NoErrorf(t, tc.params.ValidateBasic(),
+				"expected no error for valid params, test: '%s'", tc.name)
 		} else {
-			require.Errorf(t, tc.params.ValidateBasic(), "expected error for non valid params (#%d)", i)
+			require.Errorf(t, tc.params.ValidateBasic(),
+				"expected error for non valid params, test: '%s'", tc.name)
 		}
 	}
 }
@@ -284,9 +316,6 @@ func makeParams(args makeParamsArgs) ConsensusParams {
 	if args.pubkeyTypes == nil {
 		args.pubkeyTypes = valEd25519
 	}
-	p := DefaultFeatureParams()
-	p.VoteExtensionsEnableHeight = args.voteExtensionHeight
-	p.PbtsEnableHeight = args.pbtsHeight
 
 	return ConsensusParams{
 		Block: BlockParams{
@@ -582,8 +611,8 @@ func TestConsensusParamsUpdate_EnableHeight(t *testing.T) {
 	}
 }
 
-func TestProto(t *testing.T) {
-	params := []ConsensusParams{
+func consensusParamsForTestProto() []ConsensusParams {
+	return []ConsensusParams{
 		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, pbtsHeight: 1}),
 		makeParams(makeParamsArgs{blockBytes: 4, blockGas: 2, evidenceAge: 3, maxEvidenceBytes: 1, voteExtensionHeight: 1, pbtsHeight: 1}),
@@ -605,6 +634,10 @@ func TestProto(t *testing.T) {
 		makeParams(makeParamsArgs{voteExtensionHeight: 100, pbtsHeight: 42}),
 		makeParams(makeParamsArgs{pbtsHeight: 100}),
 	}
+}
+
+func TestProto(t *testing.T) {
+	params := consensusParamsForTestProto()
 
 	for i := range params {
 		pbParams := params[i].ToProto()
@@ -615,6 +648,52 @@ func TestProto(t *testing.T) {
 	}
 }
 
+func TestProtoUpgrade(t *testing.T) {
+	params := consensusParamsForTestProto()
+
+	for i := range params {
+		pbParams := params[i].ToProto()
+
+		// Downgrade
+		if pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue() > 0 {
+			pbParams.Abci = &cmtproto.ABCIParams{VoteExtensionsEnableHeight: pbParams.GetFeature().GetVoteExtensionsEnableHeight().GetValue()} //nolint: staticcheck
+			pbParams.Feature.VoteExtensionsEnableHeight = nil
+		}
+
+		oriParams := ConsensusParamsFromProto(pbParams)
+
+		assert.Equal(t, params[i], oriParams)
+	}
+}
+
 func durationPtr(t time.Duration) *time.Duration {
 	return &t
+}
+
+func TestParamsAdaptiveSynchronyParams(t *testing.T) {
+	originalSP := DefaultSynchronyParams()
+	assert.Equal(t, originalSP, originalSP.InRound(0),
+		"SynchronyParams(0) must be equal to SynchronyParams")
+
+	lastSP := originalSP
+	for round := int32(1); round <= 10; round++ {
+		adaptedSP := originalSP.InRound(round)
+		assert.NotEqual(t, adaptedSP, lastSP)
+		assert.Equal(t, adaptedSP.Precision, lastSP.Precision,
+			"Precision must not change over rounds")
+		assert.Greater(t, adaptedSP.MessageDelay, lastSP.MessageDelay,
+			"MessageDelay must increase over rounds")
+
+		// It should not increase a lot per round, say more than 25%
+		maxMessageDelay := lastSP.MessageDelay + lastSP.MessageDelay*25/100
+		assert.LessOrEqual(t, adaptedSP.MessageDelay, maxMessageDelay,
+			"MessageDelay should not increase by more than 25% per round")
+
+		lastSP = adaptedSP
+	}
+
+	assert.GreaterOrEqual(t, lastSP.MessageDelay, originalSP.MessageDelay*2,
+		"MessageDelay must at least double after 10 rounds")
+	assert.LessOrEqual(t, lastSP.MessageDelay, originalSP.MessageDelay*10,
+		"MessageDelay must not increase by more than 10 times after 10 rounds")
 }

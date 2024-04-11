@@ -8,6 +8,7 @@ import (
 
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const (
@@ -125,11 +126,20 @@ type Metrics struct {
 	// in.
 	LateVotes metrics.Counter `metrics_labels:"vote_type"`
 
-	// ProposalTimestampDifference is the difference between the timestamp in
-	// the proposal message and the local time of the validator at the time
-	// that the validator received the message.
-	// metrics:Difference between the timestamp in the proposal message and the local time of the validator at the time it received the message.
-	ProposalTimestampDifference metrics.Histogram `metrics_bucketsizes:"-10, -.5, -.025, 0, .1, .5, 1, 1.5, 2, 10" metrics_labels:"is_timely"`
+	// ProposalTimestampDifference is the difference between the local time
+	// of the validator at the time it receives a proposal message, and the
+	// timestamp of the received proposal message.
+	//
+	// The value of this metric is not expected to be negative, as it would
+	// mean that the proposal's timestamp is in the future. This indicates
+	// that the proposer's and this node's clocks are desynchronized.
+	//
+	// A positive value of this metric reflects the message delay from the
+	// proposer to this node, for the delivery of a Proposal message. This
+	// metric thus should drive the definition of values for the consensus
+	// parameter SynchronyParams.MessageDelay, used by the PBTS algorithm.
+	// metrics:Difference in seconds between the local time when a proposal message is received and the timestamp in the proposal message.
+	ProposalTimestampDifference metrics.Histogram `metrics_bucketsizes:"-1.5, -1.0, -0.5, -0.2, 0, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 4.0, 8.0" metrics_labels:"is_timely"`
 }
 
 func (m *Metrics) MarkProposalProcessed(accepted bool) {
@@ -156,7 +166,7 @@ func (m *Metrics) MarkVoteReceived(vt types.SignedMsgType, power, totalPower int
 
 func (m *Metrics) MarkRound(r int32, st time.Time) {
 	m.Rounds.Set(float64(r))
-	roundTime := time.Since(st).Seconds()
+	roundTime := cmttime.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
 	pvt := types.PrevoteType
@@ -175,9 +185,9 @@ func (m *Metrics) MarkLateVote(vt types.SignedMsgType) {
 
 func (m *Metrics) MarkStep(s cstypes.RoundStepType) {
 	if !m.stepStart.IsZero() {
-		stepTime := time.Since(m.stepStart).Seconds()
+		stepTime := cmttime.Since(m.stepStart).Seconds()
 		stepName := strings.TrimPrefix(s.String(), "RoundStep")
 		m.StepDurationSeconds.With("step", stepName).Observe(stepTime)
 	}
-	m.stepStart = time.Now()
+	m.stepStart = cmttime.Now()
 }

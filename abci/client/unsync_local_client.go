@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	types "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/service"
 )
 
@@ -61,17 +61,17 @@ func (app *unsyncLocalClient) callback(req *types.Request, res *types.Response) 
 	return rr
 }
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
-func (app *unsyncLocalClient) Error() error {
+func (*unsyncLocalClient) Error() error {
 	return nil
 }
 
-func (app *unsyncLocalClient) Flush(context.Context) error {
+func (*unsyncLocalClient) Flush(context.Context) error {
 	return nil
 }
 
-func (app *unsyncLocalClient) Echo(_ context.Context, msg string) (*types.EchoResponse, error) {
+func (*unsyncLocalClient) Echo(_ context.Context, msg string) (*types.EchoResponse, error) {
 	return &types.EchoResponse{Message: msg}, nil
 }
 

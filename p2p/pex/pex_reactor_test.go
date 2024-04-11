@@ -67,19 +67,19 @@ func TestPEXReactorAddRemovePeer(t *testing.T) {
 // peers have different IP addresses, they all have the same underlying remote
 // IP: 127.0.0.1.
 func TestPEXReactorRunning(t *testing.T) {
-	N := 3
-	switches := make([]*p2p.Switch, N)
+	n := 3
+	switches := make([]*p2p.Switch, n)
 
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
-	books := make([]AddrBook, N)
+	books := make([]AddrBook, n)
 	logger := log.TestingLogger()
 
 	// create switches
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		switches[i] = p2p.MakeSwitch(cfg, i, func(i int, sw *p2p.Switch) *p2p.Switch {
 			books[i] = NewAddrBook(filepath.Join(dir, fmt.Sprintf("addrbook%d.json", i)), false)
 			books[i].SetLogger(logger.With("pex", i))
@@ -111,7 +111,7 @@ func TestPEXReactorRunning(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	assertPeersWithTimeout(t, switches, 10*time.Second, N-1)
+	assertPeersWithTimeout(t, switches, 10*time.Second, n-1)
 
 	// stop them
 	for _, s := range switches {
@@ -405,19 +405,19 @@ func TestPEXReactorDialsPeerUpToMaxAttemptsInSeedMode(t *testing.T) {
 // with FlushStop. Before a fix, this non-deterministically reproduced
 // https://github.com/tendermint/tendermint/issues/3231.
 func TestPEXReactorSeedModeFlushStop(t *testing.T) {
-	N := 2
-	switches := make([]*p2p.Switch, N)
+	n := 2
+	switches := make([]*p2p.Switch, n)
 
 	// directory to store address books
 	dir, err := os.MkdirTemp("", "pex_reactor")
 	require.NoError(t, err)
 	defer os.RemoveAll(dir)
 
-	books := make([]AddrBook, N)
+	books := make([]AddrBook, n)
 	logger := log.TestingLogger()
 
 	// create switches
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		switches[i] = p2p.MakeSwitch(cfg, i, func(i int, sw *p2p.Switch) *p2p.Switch {
 			books[i] = NewAddrBook(filepath.Join(dir, fmt.Sprintf("addrbook%d.json", i)), false)
 			books[i].SetLogger(logger.With("pex", i))
@@ -463,7 +463,7 @@ func TestPEXReactorSeedModeFlushStop(t *testing.T) {
 
 	// by now the FlushStop should have happened. Try stopping the peer.
 	// it should be safe to do this.
-	peers := switches[0].Peers().List()
+	peers := switches[0].Peers().Copy()
 	for _, peer := range peers {
 		err := peer.Stop()
 		require.NoError(t, err)
@@ -588,7 +588,7 @@ func testCreatePeerWithConfig(dir string, id int, config *ReactorConfig) *p2p.Sw
 	peer := p2p.MakeSwitch(
 		cfg,
 		id,
-		func(i int, sw *p2p.Switch) *p2p.Switch {
+		func(_ int, sw *p2p.Switch) *p2p.Switch {
 			book := NewAddrBook(filepath.Join(dir, fmt.Sprintf("addrbook%d.json", id)), false)
 			book.SetLogger(log.TestingLogger())
 			sw.SetAddrBook(book)
@@ -618,7 +618,7 @@ func testCreateSeed(dir string, id int, knownAddrs, srcAddrs []*p2p.NetAddress) 
 	seed := p2p.MakeSwitch(
 		cfg,
 		id,
-		func(i int, sw *p2p.Switch) *p2p.Switch {
+		func(_ int, sw *p2p.Switch) *p2p.Switch {
 			book := NewAddrBook(filepath.Join(dir, "addrbookSeed.json"), false)
 			book.SetLogger(log.TestingLogger())
 			for j := 0; j < len(knownAddrs); j++ {
@@ -658,7 +658,7 @@ func createReactor(conf *ReactorConfig) (r *Reactor, book AddrBook) {
 
 	r = NewReactor(book, conf)
 	r.SetLogger(log.TestingLogger())
-	return
+	return r, book
 }
 
 func teardownReactor(book AddrBook) {
@@ -670,7 +670,7 @@ func teardownReactor(book AddrBook) {
 }
 
 func createSwitchAndAddReactors(reactors ...p2p.Reactor) *p2p.Switch {
-	sw := p2p.MakeSwitch(cfg, 0, func(i int, sw *p2p.Switch) *p2p.Switch { return sw })
+	sw := p2p.MakeSwitch(cfg, 0, func(_ int, sw *p2p.Switch) *p2p.Switch { return sw })
 	sw.SetLogger(log.TestingLogger())
 	for _, r := range reactors {
 		sw.AddReactor(r.String(), r)

@@ -13,6 +13,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/cli"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var dumpCmd = &cobra.Command{
@@ -79,7 +80,7 @@ func dumpCmdHandler(_ *cobra.Command, args []string) error {
 }
 
 func dumpDebugData(outDir string, conf *cfg.Config, rpc *rpchttp.HTTP) {
-	start := time.Now().UTC()
+	start := cmttime.Now()
 
 	tmpDir, err := os.MkdirTemp(outDir, "cometbft_debug_tmp")
 	if err != nil {
@@ -126,7 +127,7 @@ func dumpDebugData(outDir string, conf *cfg.Config, rpc *rpchttp.HTTP) {
 		}
 	}
 
-	outFile := filepath.Join(outDir, fmt.Sprintf("%s.zip", start.Format(time.RFC3339)))
+	outFile := filepath.Join(outDir, start.Format(time.RFC3339)+".zip")
 	if err := zipDir(tmpDir, outFile); err != nil {
 		logger.Error("failed to create and compress archive", "file", outFile, "error", err)
 	}

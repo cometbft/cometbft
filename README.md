@@ -62,10 +62,10 @@ Please see [SECURITY.md](./SECURITY.md).
 
 | CometBFT version | Requirement | Version        | Tested with |
 |------------------|-------------|----------------|-------------|
-| main             | Go version  | 1.21 or higher | 1.21        |
-| v1.x             | Go version  | 1.21 or higher | 1.21        |
-| v0.38.x          | Go version  | 1.20 or higher | 1.21        |
-| v0.37.x          | Go version  | 1.20 or higher | 1.21        |
+| main             | Go version  | 1.22 or higher | 1.22        |
+| v1.x             | Go version  | 1.22 or higher | 1.22        |
+| v0.38.x          | Go version  | 1.21 or higher | 1.22        |
+| v0.37.x          | Go version  | 1.20 or higher | 1.22        |
 | v0.34.x          | Go version  | 1.20 or higher | 1.20        |
 
 ### Install
@@ -75,7 +75,7 @@ See the [install guide](docs/tutorials/install.md).
 ### Quick Start
 
 - [Single node](docs/tutorials/quick-start.md)
-- [Local cluster using docker-compose](./docs/networks/docker-compose.md)
+- [Local cluster using docker-compose](./docs/guides/networks/docker-compose.md)
 
 ## Contributing
 
@@ -147,7 +147,6 @@ Currently supported versions include:
 ### Applications
 
 - [Cosmos Hub](https://hub.cosmos.network/)
-- [Terra](https://www.terra.money/)
 - [Celestia](https://celestia.org/)
 - [Anoma](https://anoma.network/)
 - [Vocdoni](https://developer.vocdoni.io/)
@@ -155,7 +154,7 @@ Currently supported versions include:
 ### Research
 
 Below are links to the original Tendermint consensus algorithm and relevant
-whitepapers which CometBFT will continue to build on.
+whitepapers, which CometBFT will continue to build on.
 
 - [The latest gossip on BFT consensus](https://arxiv.org/abs/1807.04938)
 - [Master's Thesis on Tendermint](https://atrium.lib.uoguelph.ca/xmlui/handle/10214/9769)

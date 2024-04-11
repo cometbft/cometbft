@@ -89,7 +89,10 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
 			storeHeight))
 	}
-	requestsCh := make(chan BlockRequest, maxTotalRequesters)
+
+	// It's okay to block since sendRequest is called from a separate goroutine
+	// (bpRequester#requestRoutine; 1 per each peer).
+	requestsCh := make(chan BlockRequest)
 
 	const capacity = 1000                      // must be bigger than peers count
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
@@ -165,7 +168,7 @@ func (bcR *Reactor) OnStop() {
 }
 
 // GetChannels implements Reactor.
-func (bcR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  BlocksyncChannel,
@@ -194,7 +197,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.
-func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
+func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	bcR.pool.RemovePeer(peer.ID())
 }
 
@@ -273,7 +276,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "err", err)
+			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
 		}
 	case *bcproto.StatusRequest:
 		// Send peer our state.
@@ -289,6 +292,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
 	case *bcproto.NoBlockResponse:
 		bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
+		bcR.pool.RedoRequestFrom(msg.Height, e.Src.ID())
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
@@ -360,10 +364,8 @@ FOR_LOOP:
 	for {
 		select {
 		case <-switchToConsensusTicker.C:
-			height, numPending, lenRequesters := bcR.pool.GetStatus()
 			outbound, inbound, _ := bcR.Switch.NumPeers()
-			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
-				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+			bcR.Logger.Debug("Consensus ticker", "outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
 			// The "if" statement below is a bit confusing, so here is a breakdown
 			// of its logic and purpose:
@@ -383,10 +385,8 @@ FOR_LOOP:
 			// if we did not blocksync any block.
 			//
 			missingExtension := true
-			if state.LastBlockHeight == 0 ||
-				!state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight) ||
-				blocksSynced > 0 ||
-				initialCommitHasExtensions {
+			voteExtensionsDisabled := state.LastBlockHeight > 0 && !state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight)
+			if state.LastBlockHeight == 0 || voteExtensionsDisabled || blocksSynced > 0 || initialCommitHasExtensions {
 				missingExtension = false
 			}
 
@@ -394,14 +394,15 @@ FOR_LOOP:
 			if missingExtension {
 				bcR.Logger.Info(
 					"no extended commit yet",
-					"height", height,
 					"last_block_height", state.LastBlockHeight,
-					"initial_height", state.InitialHeight,
-					"max_peer_height", bcR.pool.MaxPeerHeight(),
+					"vote_extensions_disabled", voteExtensionsDisabled,
+					"blocks_synced", blocksSynced,
+					"initial_commit_has_extensions", initialCommitHasExtensions,
 				)
 				continue FOR_LOOP
 			}
-			if bcR.pool.IsCaughtUp() {
+
+			if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp {
 				bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 				if err := bcR.pool.Stop(); err != nil {
 					bcR.Logger.Error("Error stopping pool", "err", err)
@@ -496,14 +497,14 @@ FOR_LOOP:
 			}
 			if err != nil {
 				bcR.Logger.Error("Error in validation", "err", err)
-				peerID := bcR.pool.RedoRequest(first.Height)
+				peerID := bcR.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
 				peer := bcR.Switch.Peers().Get(peerID)
 				if peer != nil {
 					// NOTE: we've already removed the peer's request, but we
 					// still need to clean up the rest.
 					bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
 				}
-				peerID2 := bcR.pool.RedoRequest(second.Height)
+				peerID2 := bcR.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 				peer2 := bcR.Switch.Peers().Get(peerID2)
 				if peer2 != nil && peer2 != peer {
 					// NOTE: we've already removed the peer's request, but we
@@ -537,9 +538,9 @@ FOR_LOOP:
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
+				_, height, maxPeerHeight := bcR.pool.IsCaughtUp()
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
-				bcR.Logger.Info("Block Sync Rate", "height", bcR.pool.height,
-					"max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
+				bcR.Logger.Info("Block Sync Rate", "height", height, "max_peer_height", maxPeerHeight, "blocks/s", lastRate)
 				lastHundred = time.Now()
 			}
 

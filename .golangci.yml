@@ -10,8 +10,8 @@ linters:
     - cyclop
     - deadcode
     - dupword
-    - errname
     - errorlint
+    - errname
     - exhaustive
     - exhaustivestruct
     - exhaustruct
@@ -26,7 +26,6 @@ linters:
     - goerr113
     - golint
     - gomnd
-    - gomoddirectives
     - ifshort
     - interfacebloat
     - interfacer
@@ -40,13 +39,10 @@ linters:
     - nonamedreturns
     - nosnakecase
     - predeclared
-    - revive
     - scopelint
     - structcheck
     - tagliatelle
-    - typecheck
-    # Prefer unparam over revive's unused param. It is more thorough in its checking.
-    - unparam
+    - testifylint
     - varcheck
     - varnamelen
     - wrapcheck
@@ -138,3 +134,47 @@ linters-settings:
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
+
+  revive:
+    enable-all-rules: true
+    rules:
+      - name: max-public-structs
+        disabled: true
+      - name: cognitive-complexity
+        disabled: true
+      - name: argument-limit
+        disabled: true
+      - name: cyclomatic
+        disabled: true
+      - name: deep-exit
+        disabled: true
+      - name: file-header
+        disabled: true
+      - name: function-length
+        disabled: true
+      - name: function-result-limit
+        disabled: true
+      - name: line-length-limit
+        disabled: true
+      - name: flag-parameter
+        disabled: true
+      - name: add-constant
+        disabled: true
+      - name: empty-lines
+        disabled: true
+      - name: import-shadowing
+        disabled: true
+      - name: modifies-value-receiver
+        disabled: true
+      - name: confusing-naming
+        disabled: true
+      - name: defer
+        disabled: true
+      - name: unchecked-type-assertion
+        disabled: true
+      - name: unhandled-error
+        disabled: true
+        arguments:
+          - "fmt.Printf"
+          - "fmt.Print"
+          - "fmt.Println"

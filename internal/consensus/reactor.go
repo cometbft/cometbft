@@ -34,7 +34,7 @@ const (
 	votesToContributeToBecomeGoodPeer  = 10000
 )
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // Reactor defines a reactor for the consensus service.
 type Reactor struct {
@@ -149,7 +149,7 @@ conR:
 }
 
 // GetChannels implements Reactor.
-func (conR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	// TODO optimize
 	return []*p2p.ChannelDescriptor{
 		{
@@ -218,7 +218,7 @@ func (conR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer is a noop.
-func (conR *Reactor) RemovePeer(p2p.Peer, interface{}) {
+func (conR *Reactor) RemovePeer(p2p.Peer, any) {
 	if !conR.IsRunning() {
 		return
 	}
@@ -411,7 +411,7 @@ func (conR *Reactor) WaitSync() bool {
 	return conR.waitSync.Load()
 }
 
-//--------------------------------------
+// --------------------------------------
 
 // subscribeToBroadcastEvents subscribes for new round steps and votes
 // using internal pubsub defined on state to broadcast
@@ -489,7 +489,7 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 	})
 	/*
 		// TODO: Make this broadcast more selective.
-		for _, peer := range conR.Switch.Peers().List() {
+		for _, peer := range conR.Switch.Peers().Copy() {
 			ps, ok := peer.Get(PeerStateKey).(*PeerState)
 			if !ok {
 				panic(fmt.Sprintf("Peer %v has no state", peer))
@@ -529,10 +529,10 @@ func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep)
 		Height:                rs.Height,
 		Round:                 rs.Round,
 		Step:                  uint32(rs.Step),
-		SecondsSinceStartTime: int64(time.Since(rs.StartTime).Seconds()),
+		SecondsSinceStartTime: int64(cmttime.Since(rs.StartTime).Seconds()),
 		LastCommitRound:       rs.LastCommit.GetRound(),
 	}
-	return
+	return nrsMsg
 }
 
 func (conR *Reactor) sendNewRoundStepMessage(peer p2p.Peer) {
@@ -732,6 +732,61 @@ func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundSt
 	time.Sleep(conR.conS.config.PeerGossipSleepDuration)
 }
 
+func pickVoteToSend(
+	logger log.Logger,
+	conS *State,
+	rs *cstypes.RoundState,
+	ps *PeerState,
+	prs *cstypes.PeerRoundState,
+) *types.Vote {
+	// If height matches, then send LastCommit, Prevotes, Precommits.
+	if rs.Height == prs.Height {
+		heightLogger := logger.With("height", prs.Height)
+		return pickVoteCurrentHeight(heightLogger, rs, prs, ps)
+	}
+
+	// Special catchup logic.
+	// If peer is lagging by height 1, send LastCommit.
+	if prs.Height != 0 && rs.Height == prs.Height+1 {
+		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
+			logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
+			return vote
+		}
+	}
+
+	// Catchup logic
+	// If peer is lagging by more than 1, send Commit.
+	blockStoreBase := conS.blockStore.Base()
+	if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
+		// Load the block's extended commit for prs.Height,
+		// which contains precommit signatures for prs.Height.
+		var ec *types.ExtendedCommit
+		var veEnabled bool
+		func() {
+			conS.mtx.RLock()
+			defer conS.mtx.RUnlock()
+			veEnabled = conS.state.ConsensusParams.Feature.VoteExtensionsEnabled(prs.Height)
+		}()
+		if veEnabled {
+			ec = conS.blockStore.LoadBlockExtendedCommit(prs.Height)
+		} else {
+			c := conS.blockStore.LoadBlockCommit(prs.Height)
+			if c == nil {
+				return nil
+			}
+			ec = c.WrappedExtendedCommit()
+		}
+		if ec == nil {
+			return nil
+		}
+		if vote := ps.PickVoteToSend(ec); vote != nil {
+			logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+			return vote
+		}
+	}
+	return nil
+}
+
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
 
@@ -766,52 +821,14 @@ OUTER_LOOP:
 		// logger.Debug("gossipVotesRoutine", "rsHeight", rs.Height, "rsRound", rs.Round,
 		// "prsHeight", prs.Height, "prsRound", prs.Round, "prsStep", prs.Step)
 
-		// If height matches, then send LastCommit, Prevotes, Precommits.
-		if rs.Height == prs.Height {
-			heightLogger := logger.With("height", prs.Height)
-			if conR.gossipVotesForHeight(heightLogger, rs, prs, ps) {
+		if vote := pickVoteToSend(logger, conR.conS, rs, ps, prs); vote != nil {
+			if ps.sendVoteSetHasVote(vote) {
 				continue OUTER_LOOP
 			}
-		}
-
-		// Special catchup logic.
-		// If peer is lagging by height 1, send LastCommit.
-		if prs.Height != 0 && rs.Height == prs.Height+1 {
-			if ps.PickSendVote(rs.LastCommit) {
-				logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
-				continue OUTER_LOOP
-			}
-		}
-
-		// Catchup logic
-		// If peer is lagging by more than 1, send Commit.
-		blockStoreBase := conR.conS.blockStore.Base()
-		if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
-			// Load the block's extended commit for prs.Height,
-			// which contains precommit signatures for prs.Height.
-			var ec *types.ExtendedCommit
-			var veEnabled bool
-			func() {
-				conR.conS.mtx.RLock()
-				defer conR.conS.mtx.RUnlock()
-				veEnabled = conR.conS.state.ConsensusParams.Feature.VoteExtensionsEnabled(prs.Height)
-			}()
-			if veEnabled {
-				ec = conR.conS.blockStore.LoadBlockExtendedCommit(prs.Height)
-			} else {
-				c := conR.conS.blockStore.LoadBlockCommit(prs.Height)
-				if c == nil {
-					continue
-				}
-				ec = c.WrappedExtendedCommit()
-			}
-			if ec == nil {
-				continue
-			}
-			if ps.PickSendVote(ec) {
-				logger.Debug("Picked Catchup commit to send", "height", prs.Height)
-				continue OUTER_LOOP
-			}
+			logger.Debug("Failed to send vote to peer",
+				"height", prs.Height,
+				"vote", vote,
+			)
 		}
 
 		if sleeping == 0 {
@@ -826,66 +843,65 @@ OUTER_LOOP:
 		}
 
 		time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-		continue OUTER_LOOP
 	}
 }
 
-func (conR *Reactor) gossipVotesForHeight(
+func pickVoteCurrentHeight(
 	logger log.Logger,
 	rs *cstypes.RoundState,
 	prs *cstypes.PeerRoundState,
 	ps *PeerState,
-) bool {
+) *types.Vote {
 	// If there are lastCommits to send...
 	if prs.Step == cstypes.RoundStepNewHeight {
-		if ps.PickSendVote(rs.LastCommit) {
+		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
 			logger.Debug("Picked rs.LastCommit to send")
-			return true
+			return vote
 		}
 	}
 	// If there are POL prevotes to send...
 	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
 		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if ps.PickSendVote(polPrevotes) {
+			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
 				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
 					"round", prs.ProposalPOLRound)
-				return true
+				return vote
 			}
 		}
 	}
 	// If there are prevotes to send...
 	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if ps.PickSendVote(rs.Votes.Prevotes(prs.Round)) {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
 			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
-			return true
+			return vote
 		}
 	}
 	// If there are precommits to send...
 	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if ps.PickSendVote(rs.Votes.Precommits(prs.Round)) {
+		if vote := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); vote != nil {
 			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
-			return true
+			return vote
 		}
 	}
 	// If there are prevotes to send...Needed because of validBlock mechanism
 	if prs.Round != -1 && prs.Round <= rs.Round {
-		if ps.PickSendVote(rs.Votes.Prevotes(prs.Round)) {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
 			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
-			return true
+			return vote
 		}
 	}
 	// If there are POLPrevotes to send...
 	if prs.ProposalPOLRound != -1 {
 		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if ps.PickSendVote(polPrevotes) {
+			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
 				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
 					"round", prs.ProposalPOLRound)
-				return true
+				return vote
 			}
 		}
 	}
 
-	return false
+	return nil
 }
 
 // NOTE: `queryMaj23Routine` has a simple crude design since it only comes
@@ -1030,7 +1046,7 @@ func (conR *Reactor) peerStatsRoutine() {
 // String returns a string representation of the Reactor.
 // NOTE: For now, it is just a hard-coded string to avoid accessing unprotected shared variables.
 // TODO: improve!
-func (conR *Reactor) String() string {
+func (*Reactor) String() string {
 	// better not to access shared variables
 	return "ConsensusReactor" // conR.StringIndented("")
 }
@@ -1039,13 +1055,13 @@ func (conR *Reactor) String() string {
 func (conR *Reactor) StringIndented(indent string) string {
 	s := "ConsensusReactor{\n"
 	s += indent + "  " + conR.conS.StringIndented(indent+"  ") + "\n"
-	for _, peer := range conR.Switch.Peers().List() {
+	conR.Switch.Peers().ForEach(func(peer p2p.Peer) {
 		ps, ok := peer.Get(types.PeerStateKey).(*PeerState)
 		if !ok {
 			panic(fmt.Sprintf("Peer %v has no state", peer))
 		}
 		s += indent + "  " + ps.StringIndented(indent+"  ") + "\n"
-	}
+	})
 	s += indent + "}"
 	return s
 }
@@ -1055,7 +1071,7 @@ func ReactorMetrics(metrics *Metrics) ReactorOption {
 	return func(conR *Reactor) { conR.Metrics = metrics }
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // PeerState contains the known state of a peer, including its connection and
 // threadsafe access to its PeerRoundState.
@@ -1192,21 +1208,18 @@ func (ps *PeerState) setHasProposalBlockPart(height int64, round int32, index in
 	ps.PRS.ProposalBlockParts.SetIndex(index, true)
 }
 
-// PickSendVote picks a vote and sends it to the peer.
-// Returns true if vote was sent.
-func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
-	if vote, ok := ps.PickVoteToSend(votes); ok {
-		ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
-		if ps.peer.Send(p2p.Envelope{
-			ChannelID: VoteChannel,
-			Message: &cmtcons.Vote{
-				Vote: vote.ToProto(),
-			},
-		}) {
-			ps.SetHasVote(vote)
-			return true
-		}
-		return false
+// sendVoteSetHasVote sends the vote to the peer.
+// Returns true and marks the peer as having the vote if the vote was sent.
+func (ps *PeerState) sendVoteSetHasVote(vote *types.Vote) bool {
+	ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
+	if ps.peer.Send(p2p.Envelope{
+		ChannelID: VoteChannel,
+		Message: &cmtcons.Vote{
+			Vote: vote.ToProto(),
+		},
+	}) {
+		ps.SetHasVote(vote)
+		return true
 	}
 	return false
 }
@@ -1214,12 +1227,12 @@ func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
 // PickVoteToSend picks a vote to send to the peer.
 // Returns true if a vote was picked.
 // NOTE: `votes` must be the correct Size() for the Height().
-func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote, ok bool) {
+func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) *types.Vote {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
 	if votes.Size() == 0 {
-		return nil, false
+		return nil
 	}
 
 	height, round, votesType, size := votes.GetHeight(), votes.GetRound(), types.SignedMsgType(votes.Type()), votes.Size()
@@ -1232,12 +1245,16 @@ func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote
 
 	psVotes := ps.getVoteBitArray(height, round, votesType)
 	if psVotes == nil {
-		return nil, false // Not something worth sending
+		return nil // Not something worth sending
 	}
 	if index, ok := votes.BitArray().Sub(psVotes).PickRandom(); ok {
-		return votes.GetByIndex(int32(index)), true
+		vote := votes.GetByIndex(int32(index))
+		if vote == nil {
+			ps.logger.Error("votes.GetByIndex returned nil", "votes", votes, "index", index)
+		}
+		return vote
 	}
-	return nil, false
+	return nil
 }
 
 func (ps *PeerState) getVoteBitArray(height int64, round int32, votesType types.SignedMsgType) *bits.BitArray {
@@ -1560,7 +1577,7 @@ func (ps *PeerState) StringIndented(indent string) string {
 		indent)
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Messages
 
 // Message is a message that can be sent and received on the Reactor.
@@ -1581,7 +1598,7 @@ func init() {
 	cmtjson.RegisterType(&VoteSetBitsMessage{}, "tendermint/VoteSetBits")
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // NewRoundStepMessage is sent for every step taken in the ConsensusState.
 // For every height/round/step transition.
@@ -1648,7 +1665,7 @@ func (m *NewRoundStepMessage) String() string {
 		m.Height, m.Round, m.Step, m.LastCommitRound)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // NewValidBlockMessage is sent when a validator observes a valid block B in some round r,
 // i.e., there is a Proposal for block B and 2/3+ prevotes for the block B in the round r.
@@ -1692,7 +1709,7 @@ func (m *NewValidBlockMessage) String() string {
 		m.Height, m.Round, m.BlockPartSetHeader, m.BlockParts, m.IsCommit)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // ProposalMessage is sent when a new block is proposed.
 type ProposalMessage struct {
@@ -1709,7 +1726,7 @@ func (m *ProposalMessage) String() string {
 	return fmt.Sprintf("[Proposal %v]", m.Proposal)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // ProposalPOLMessage is sent when a previous proposal is re-proposed.
 type ProposalPOLMessage struct {
@@ -1740,7 +1757,7 @@ func (m *ProposalPOLMessage) String() string {
 	return fmt.Sprintf("[ProposalPOL H:%v POLR:%v POL:%v]", m.Height, m.ProposalPOLRound, m.ProposalPOL)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // BlockPartMessage is sent when gossipping a piece of the proposed block.
 type BlockPartMessage struct {
@@ -1768,7 +1785,7 @@ func (m *BlockPartMessage) String() string {
 	return fmt.Sprintf("[BlockPart H:%v R:%v P:%v]", m.Height, m.Round, m.Part)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // VoteMessage is sent when voting for a proposal (or lack thereof).
 type VoteMessage struct {
@@ -1785,7 +1802,7 @@ func (m *VoteMessage) String() string {
 	return fmt.Sprintf("[Vote %v]", m.Vote)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // HasVoteMessage is sent to indicate that a particular vote has been received.
 type HasVoteMessage struct {
@@ -1817,7 +1834,7 @@ func (m *HasVoteMessage) String() string {
 	return fmt.Sprintf("[HasVote VI:%v V:{%v/%02d/%v}]", m.Index, m.Height, m.Round, m.Type)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // VoteSetMaj23Message is sent to indicate that a given BlockID has seen +2/3 votes.
 type VoteSetMaj23Message struct {
@@ -1849,7 +1866,7 @@ func (m *VoteSetMaj23Message) String() string {
 	return fmt.Sprintf("[VSM23 %v/%02d/%v %v]", m.Height, m.Round, m.Type, m.BlockID)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // VoteSetBitsMessage is sent to communicate the bit-array of votes seen for the BlockID.
 type VoteSetBitsMessage struct {
@@ -1883,7 +1900,7 @@ func (m *VoteSetBitsMessage) String() string {
 	return fmt.Sprintf("[VSB %v/%02d/%v %v %v]", m.Height, m.Round, m.Type, m.BlockID, m.Votes)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 // HasProposalBlockPartMessage is sent to indicate that a particular block part has been received.
 type HasProposalBlockPartMessage struct {

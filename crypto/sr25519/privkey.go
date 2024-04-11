@@ -2,6 +2,7 @@ package sr25519
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -41,7 +42,7 @@ func (privKey PrivKey) Bytes() []byte {
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	if privKey.kp == nil {
 		return nil, ErrInvalidKey{
-			Err: fmt.Errorf("sr25519: uninitialized private key"),
+			Err: errors.New("sr25519: uninitialized private key"),
 		}
 	}
 
@@ -87,7 +88,7 @@ func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
 	return false
 }
 
-func (privKey PrivKey) Type() string {
+func (PrivKey) Type() string {
 	return KeyType
 }
 

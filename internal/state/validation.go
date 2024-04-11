@@ -8,9 +8,10 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-//-----------------------------------------------------
+// -----------------------------------------------------
 // Validate block
 
 func validateBlock(state State, block *types.Block) error {
@@ -112,6 +113,10 @@ func validateBlock(state State, block *types.Block) error {
 	}
 
 	// Validate block Time
+	if block.Time != cmttime.Canonical(block.Time) {
+		return fmt.Errorf("block time %v is not canonical", block.Time)
+	}
+
 	switch {
 	case block.Height > state.InitialHeight:
 		if !block.Time.After(state.LastBlockTime) {
@@ -121,7 +126,7 @@ func validateBlock(state State, block *types.Block) error {
 			)
 		}
 		if !state.ConsensusParams.Feature.PbtsEnabled(block.Height) {
-			medianTime := MedianTime(block.LastCommit, state.LastValidators)
+			medianTime := block.LastCommit.MedianTime(state.LastValidators)
 			if !block.Time.Equal(medianTime) {
 				return fmt.Errorf("invalid block time. Expected %v, got %v",
 					medianTime.Format(time.RFC3339Nano),

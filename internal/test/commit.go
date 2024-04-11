@@ -26,7 +26,7 @@ func MakeCommitFromVoteSet(blockID types.BlockID, voteSet *types.VoteSet, valida
 
 		v := vote.ToProto()
 
-		if err := validators[i].SignVote(voteSet.ChainID(), v); err != nil {
+		if err := validators[i].SignVote(voteSet.ChainID(), v, false); err != nil {
 			return nil, err
 		}
 		vote.Signature = v.Signature
@@ -68,7 +68,7 @@ func MakeCommit(blockID types.BlockID, height int64, round int32, valSet *types.
 
 		v := vote.ToProto()
 
-		if err := privVal.SignVote(chainID, v); err != nil {
+		if err := privVal.SignVote(chainID, v, false); err != nil {
 			return nil, err
 		}
 

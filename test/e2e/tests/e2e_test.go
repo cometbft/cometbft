@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -16,6 +15,7 @@ import (
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/test/e2e/app"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
+	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -23,6 +23,7 @@ func init() {
 	// This can be used to manually specify a testnet manifest and/or node to
 	// run tests against. The testnet must have been started by the runner first.
 	// os.Setenv("E2E_MANIFEST", "networks/ci.toml")
+	// os.Setenv("E2E_TESTNET_DIR", "networks/ci")
 	// os.Setenv("E2E_NODE", "validator01")
 }
 
@@ -70,7 +71,7 @@ func testNode(t *testing.T, testFunc func(*testing.T, e2e.Node)) {
 //
 // If maxNodes is set to 0 or below, all full nodes and validators will be
 // tested.
-func testFullNodesOrValidators(t *testing.T, maxNodes int, testFunc func(*testing.T, e2e.Node)) {
+func testFullNodesOrValidators(t *testing.T, maxNodes int, testFunc func(*testing.T, e2e.Node)) { //nolint:unparam // maxNodes always receives 0 but that could change so we should keep the parameter.
 	t.Helper()
 
 	testnet := loadTestnet(t)
@@ -137,7 +138,12 @@ func loadTestnet(t *testing.T) e2e.Testnet {
 	}
 	require.NoError(t, err)
 
-	testnet, err := e2e.LoadTestnet(manifestFile, ifd)
+	testnetDir := os.Getenv("E2E_TESTNET_DIR")
+	if !filepath.IsAbs(testnetDir) {
+		testnetDir = filepath.Join("..", testnetDir)
+	}
+
+	testnet, err := e2e.LoadTestnet(manifestFile, ifd, testnetDir)
 	require.NoError(t, err)
 	testnetCache[manifestFile] = *testnet
 	return *testnet
@@ -227,6 +233,5 @@ func fetchABCIRequests(t *testing.T, nodeName string) ([][]*abci.Request, error)
 }
 
 func fetchNodeLogs(testnet e2e.Testnet) ([]byte, error) {
-	dir := filepath.Join(testnet.Dir, "docker-compose.yml")
-	return exec.Command("docker-compose", "-f", dir, "logs").Output()
+	return docker.ExecComposeOutput(context.Background(), testnet.Dir, "logs")
 }

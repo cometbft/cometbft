@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -64,7 +65,7 @@ func ResetConfig(name string) *cfg.Config {
 	return test.ResetTestRoot(name)
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // validator stub (a kvstore consensus peer we control)
 
 type validatorStub struct {
@@ -88,12 +89,21 @@ func newValidatorStub(privValidator types.PrivValidator, valIndex int32) *valida
 	}
 }
 
+func signProposal(t *testing.T, proposal *types.Proposal, chainID string, vss *validatorStub) {
+	t.Helper()
+	p := proposal.ToProto()
+	err := vss.SignProposal(chainID, p)
+	require.NoError(t, err)
+	proposal.Signature = p.Signature
+}
+
 func (vs *validatorStub) signVote(
 	voteType types.SignedMsgType,
 	chainID string,
 	blockID types.BlockID,
 	voteExtension []byte,
 	extEnabled bool,
+	timestamp time.Time,
 ) (*types.Vote, error) {
 	pubKey, err := vs.PrivValidator.GetPubKey()
 	if err != nil {
@@ -104,13 +114,13 @@ func (vs *validatorStub) signVote(
 		Height:           vs.Height,
 		Round:            vs.Round,
 		BlockID:          blockID,
-		Timestamp:        vs.clock.Now(),
+		Timestamp:        timestamp,
 		ValidatorAddress: pubKey.Address(),
 		ValidatorIndex:   vs.Index,
 		Extension:        voteExtension,
 	}
 	v := vote.ToProto()
-	if err = vs.PrivValidator.SignVote(chainID, v); err != nil {
+	if err = vs.PrivValidator.SignVote(chainID, v, true); err != nil {
 		return nil, fmt.Errorf("sign vote failed: %w", err)
 	}
 
@@ -133,18 +143,20 @@ func (vs *validatorStub) signVote(
 }
 
 // Sign vote for type/hash/header.
-func signVote(vs *validatorStub, voteType types.SignedMsgType, chainID string, blockID types.BlockID, extEnabled bool) *types.Vote {
+func signVoteWithTimestamp(vs *validatorStub, voteType types.SignedMsgType, chainID string,
+	blockID types.BlockID, extEnabled bool, timestamp time.Time,
+) *types.Vote {
 	var ext []byte
 	// Only non-nil precommits are allowed to carry vote extensions.
 	if extEnabled {
 		if voteType != types.PrecommitType {
-			panic(fmt.Errorf("vote type is not precommit but extensions enabled"))
+			panic(errors.New("vote type is not precommit but extensions enabled"))
 		}
 		if len(blockID.Hash) != 0 || !blockID.PartSetHeader.IsZero() {
 			ext = []byte("extension")
 		}
 	}
-	v, err := vs.signVote(voteType, chainID, blockID, ext, extEnabled)
+	v, err := vs.signVote(voteType, chainID, blockID, ext, extEnabled, timestamp)
 	if err != nil {
 		panic(fmt.Errorf("failed to sign vote: %v", err))
 	}
@@ -152,6 +164,10 @@ func signVote(vs *validatorStub, voteType types.SignedMsgType, chainID string, b
 	vs.lastVote = v
 
 	return v
+}
+
+func signVote(vs *validatorStub, voteType types.SignedMsgType, chainID string, blockID types.BlockID, extEnabled bool) *types.Vote {
+	return signVoteWithTimestamp(vs, voteType, chainID, blockID, extEnabled, vs.clock.Now())
 }
 
 func signVotes(
@@ -171,6 +187,7 @@ func signVotes(
 func incrementHeight(vss ...*validatorStub) {
 	for _, vs := range vss {
 		vs.Height++
+		vs.Round = 0
 	}
 }
 
@@ -210,7 +227,7 @@ func (vss ValidatorStubsByPower) Swap(i, j int) {
 	vss[j].Index = int32(j)
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // Functions for transitioning the consensus state
 
 func startTestRound(cs *State, height int64, round int32) {
@@ -218,9 +235,27 @@ func startTestRound(cs *State, height int64, round int32) {
 	cs.startRoutines(0)
 }
 
+func createProposalBlockWithTime(t *testing.T, cs *State, time time.Time) (*types.Block, *types.PartSet, types.BlockID) {
+	t.Helper()
+	block, err := cs.createProposalBlock(context.Background())
+	if !time.IsZero() {
+		block.Time = cmttime.Canonical(time)
+	}
+	assert.NoError(t, err)
+	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
+	assert.NoError(t, err)
+	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
+	return block, blockParts, blockID
+}
+
+func createProposalBlock(t *testing.T, cs *State) (*types.Block, *types.PartSet, types.BlockID) {
+	t.Helper()
+	return createProposalBlockWithTime(t, cs, time.Time{})
+}
+
 // Create proposal block from cs1 but sign it with vs.
 func decideProposal(
-	ctx context.Context,
+	_ context.Context,
 	t *testing.T,
 	cs1 *State,
 	vs *validatorStub,
@@ -228,11 +263,10 @@ func decideProposal(
 	round int32,
 ) (*types.Proposal, *types.Block) {
 	t.Helper()
+
 	cs1.mtx.Lock()
-	block, err := cs1.createProposalBlock(ctx)
-	require.NoError(t, err)
-	blockParts, err := block.MakePartSet(types.BlockPartSizeBytes)
-	require.NoError(t, err)
+	block, _, propBlockID := createProposalBlock(t, cs1)
+
 	validRound := cs1.ValidRound
 	chainID := cs1.state.ChainID
 	cs1.mtx.Unlock()
@@ -241,8 +275,7 @@ func decideProposal(
 	}
 
 	// Make proposal
-	polRound, propBlockID := validRound, types.BlockID{Hash: block.Hash(), PartSetHeader: blockParts.Header()}
-	proposal := types.NewProposal(height, round, polRound, propBlockID, block.Header.Time)
+	proposal := types.NewProposal(height, round, validRound, propBlockID, block.Header.Time)
 	p := proposal.ToProto()
 	if err := vs.SignProposal(chainID, p); err != nil {
 		panic(err)
@@ -286,7 +319,9 @@ func validatePrevote(t *testing.T, cs *State, round int32, privVal *validatorStu
 			panic(fmt.Sprintf("Expected prevote to be for nil, got %X", vote.BlockID.Hash))
 		}
 	} else {
-		if !bytes.Equal(vote.BlockID.Hash, blockHash) {
+		if vote.BlockID.Hash == nil {
+			panic(fmt.Sprintf("Expected prevote to be for %X, got <nil>", blockHash))
+		} else if !bytes.Equal(vote.BlockID.Hash, blockHash) {
 			panic(fmt.Sprintf("Expected prevote to be for %X, got %X", blockHash, vote.BlockID.Hash))
 		}
 	}
@@ -393,7 +428,7 @@ func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
 	return ch
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // consensus states
 
 func newState(state sm.State, pv types.PrivValidator, app abci.Application) *State {
@@ -491,14 +526,8 @@ func randStateWithAppWithHeight(
 	return randStateWithAppImpl(nValidators, app, c)
 }
 
-func randStateWithAppWithBFTTime(nValidators int) (*State, []*validatorStub) {
-	c := test.ConsensusParams()
-	return randStateWithAppImpl(nValidators, kvstore.NewInMemoryApplication(), c)
-}
-
 func randStateWithApp(nValidators int, app abci.Application) (*State, []*validatorStub) {
 	c := test.ConsensusParams()
-	c.Feature.PbtsEnableHeight = 1
 	return randStateWithAppImpl(nValidators, app, c)
 }
 
@@ -507,8 +536,17 @@ func randStateWithAppImpl(
 	app abci.Application,
 	consensusParams *types.ConsensusParams,
 ) (*State, []*validatorStub) {
+	return randStateWithAppImplGenesisTime(nValidators, app, consensusParams, cmttime.Now())
+}
+
+func randStateWithAppImplGenesisTime(
+	nValidators int,
+	app abci.Application,
+	consensusParams *types.ConsensusParams,
+	genesisTime time.Time,
+) (*State, []*validatorStub) {
 	// Get State
-	state, privVals := randGenesisState(nValidators, consensusParams)
+	state, privVals := randGenesisStateWithTime(nValidators, consensusParams, genesisTime)
 
 	vss := make([]*validatorStub, nValidators)
 
@@ -523,14 +561,13 @@ func randStateWithAppImpl(
 	return cs, vss
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 func ensureNoNewEvent(ch <-chan cmtpubsub.Message, timeout time.Duration,
 	errorMessage string,
 ) {
 	select {
 	case <-time.After(timeout):
-		break
 	case <-ch:
 		panic(errorMessage)
 	}
@@ -603,25 +640,6 @@ func ensureNewTimeout(timeoutCh <-chan cmtpubsub.Message, height int64, round in
 		"Timeout expired while waiting for NewTimeout event")
 }
 
-func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32) {
-	select {
-	case <-time.After(ensureTimeout):
-		panic("Timeout expired while waiting for NewProposal event")
-	case msg := <-proposalCh:
-		proposalEvent, ok := msg.Data().(types.EventDataCompleteProposal)
-		if !ok {
-			panic(fmt.Sprintf("expected a EventDataCompleteProposal, got %T. Wrong subscription channel?",
-				msg.Data()))
-		}
-		if proposalEvent.Height != height {
-			panic(fmt.Sprintf("expected height %v, got %v", height, proposalEvent.Height))
-		}
-		if proposalEvent.Round != round {
-			panic(fmt.Sprintf("expected round %v, got %v", round, proposalEvent.Round))
-		}
-	}
-}
-
 func ensureNewValidBlock(validBlockCh <-chan cmtpubsub.Message, height int64, round int32) {
 	ensureNewEvent(validBlockCh, height, round, ensureTimeout,
 		"Timeout expired while waiting for NewValidBlock event")
@@ -672,10 +690,6 @@ func ensureRelock(relockCh <-chan cmtpubsub.Message, height int64, round int32) 
 		"Timeout expired while waiting for RelockValue event")
 }
 
-func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID types.BlockID) {
-	ensureProposalWithTimeout(proposalCh, height, round, &propID, ensureTimeout)
-}
-
 func ensureProposalWithTimeout(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID *types.BlockID, timeout time.Duration) {
 	select {
 	case <-time.After(timeout):
@@ -698,6 +712,15 @@ func ensureProposalWithTimeout(proposalCh <-chan cmtpubsub.Message, height int64
 			}
 		}
 	}
+}
+
+func ensureProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32, propID types.BlockID) {
+	ensureProposalWithTimeout(proposalCh, height, round, &propID, ensureTimeout)
+}
+
+// For the propose, as we do not know the blockID in advance.
+func ensureNewProposal(proposalCh <-chan cmtpubsub.Message, height int64, round int32) {
+	ensureProposalWithTimeout(proposalCh, height, round, nil, ensureTimeout)
 }
 
 func ensurePrecommit(voteCh <-chan cmtpubsub.Message, height int64, round int32) {
@@ -773,13 +796,13 @@ func ensureNewEventOnChannel(ch <-chan cmtpubsub.Message) {
 	}
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // consensus nets
 
 // consensusLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func consensusLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...interface{}) term.FgBgColor {
+	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
@@ -899,7 +922,7 @@ func getSwitchIndex(switches []*p2p.Switch, peer p2p.Peer) int {
 	panic("didn't find peer in switches")
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // genesis
 
 func randGenesisDoc(numValidators int,
@@ -920,6 +943,10 @@ func randGenesisDoc(numValidators int,
 	}
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
+	if consensusParams == nil {
+		consensusParams = test.ConsensusParams()
+	}
+
 	return &types.GenesisDoc{
 		GenesisTime:     genesisTime,
 		InitialHeight:   1,
@@ -930,9 +957,12 @@ func randGenesisDoc(numValidators int,
 }
 
 func randGenesisState(
-	numValidators int,
-	consensusParams *types.ConsensusParams,
+	numValidators int, //nolint: unparam
+	consensusParams *types.ConsensusParams, //nolint: unparam
 ) (sm.State, []types.PrivValidator) {
+	if consensusParams == nil {
+		consensusParams = test.ConsensusParams()
+	}
 	return randGenesisStateWithTime(numValidators, consensusParams, cmttime.Now())
 }
 
@@ -947,7 +977,7 @@ func randGenesisStateWithTime(
 	return s0, privValidators
 }
 
-//------------------------------------
+// ------------------------------------
 // mock ticker
 
 func newMockTickerFunc(onlyOnce bool) func() TimeoutTicker {
@@ -969,11 +999,11 @@ type mockTicker struct {
 	fired    bool
 }
 
-func (m *mockTicker) Start() error {
+func (*mockTicker) Start() error {
 	return nil
 }
 
-func (m *mockTicker) Stop() error {
+func (*mockTicker) Stop() error {
 	return nil
 }
 

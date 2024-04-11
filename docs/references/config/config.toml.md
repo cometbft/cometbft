@@ -128,6 +128,8 @@ The CometBFT team tests rely on the GoLevelDB implementation. All other implemen
 a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.
 
+`boltdb` and `cleveldb` are deprecated and will be removed in a future release.
+
 ### db_dir
 The directory path where the database is stored.
 ```toml
@@ -351,7 +353,7 @@ filter_peers = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-When this setting is `true`, the ABCI application has to implement a query that will allow 
+When this setting is `true`, the ABCI application has to implement a query that will allow
 the connection to be kept of or dropped.
 
 This feature will likely be deprecated.
@@ -1458,7 +1460,7 @@ Time to spend discovering snapshots before initiating a restore.
 discovery_time = "15s"
 ```
 
-If `discovery_time` is &gt; 0 and  &lt; 5 seconds, its value will be overridden to 5 seconds. 
+If `discovery_time` is &gt; 0 and  &lt; 5 seconds, its value will be overridden to 5 seconds.
 
 If `discovery_time` is zero, the node will not wait for replies once it has broadcast the "snapshot request" message to its peers. If no snapshot data is received, state sync will fail without retrying.
 

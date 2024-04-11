@@ -16,12 +16,12 @@ title: Overview and basic concepts
   - [Proposal timeout](#proposal-timeout)
   - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
   - [Events](#events)
-  - [Evidence](#evidence)
+  - [Evidences of Misbehavior](#evidences-of-misbehavior)
   - [Errors](#errors)
     - [`CheckTx`](#checktx)
     - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
     - [`Query`](#query)
-
+≠
 # Overview and basic concepts
 
 ## ABCI 2.0 vs. legacy ABCI
@@ -363,7 +363,7 @@ Example:
 }
 ```
 
-## Evidence
+## Evidences of Misbehavior
 
 [&#8593; Back to Outline](#outline)
 
@@ -375,17 +375,21 @@ the chain once they are verified by a subset of validators. These evidences will
 passed on to the Application through ABCI. It is the responsibility of the
 Application to handle evidence of misbehavior and exercise punishment.
 
-There are two forms of evidence: Duplicate Vote and Light Client Attack. More
+There are two forms of evidence of misbehavior: Duplicate Vote and Light Client Attack. More
 information can be found in either [data structures](../core/data_structures.md)
 or [accountability](../light-client/accountability/).
 
-EvidenceType has the following protobuf format:
+`MisbehaviorType` has the following protobuf format:
 
 ```protobuf
-enum EvidenceType {
-  UNKNOWN               = 0;
-  DUPLICATE_VOTE        = 1;
-  LIGHT_CLIENT_ATTACK   = 2;
+// The type of misbehavior committed by a validator.
+enum MisbehaviorType {
+  // Unknown
+  MISBEHAVIOR_TYPE_UNKNOWN = 0;
+  // Duplicate vote
+  MISBEHAVIOR_TYPE_DUPLICATE_VOTE = 1;
+  // Light client attack
+  MISBEHAVIOR_TYPE_LIGHT_CLIENT_ATTACK = 2;
 }
 ```
 

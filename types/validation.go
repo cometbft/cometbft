@@ -122,6 +122,8 @@ func verifyCommitLightInternal(
 //
 // This method is primarily used by the light client and does NOT check all the
 // signatures.
+//
+// CONTRACT: must run ValidateBasic() on commit before verifying and check vals (if untrusted).
 func VerifyCommitLightTrusting(
 	chainID string,
 	vals *ValidatorSet,
@@ -138,6 +140,8 @@ func VerifyCommitLightTrusting(
 // for this commit, but there may be some intersection.
 //
 // This method DOES check all the signatures.
+//
+// CONTRACT: must run ValidateBasic() on commit before verifying and check vals (if untrusted).
 func VerifyCommitLightTrustingAllSignatures(
 	chainID string,
 	vals *ValidatorSet,

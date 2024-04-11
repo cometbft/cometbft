@@ -40,18 +40,11 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "thinkpad"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
+# Database backend: goleveldb | rocksdb | badgerdb | pebbledb
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
 #   - pure go
-# * cleveldb (uses levigo wrapper)
-#   - requires gcc
-#   - use cleveldb build tag (go build -tags cleveldb)
-# * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
-#   - EXPERIMENTAL
-#   - stable
-#   - use boltdb build tag (go build -tags boltdb)
 # * rocksdb (uses github.com/linxGnu/grocksdb)
 #   - EXPERIMENTAL
 #   - requires gcc
@@ -59,6 +52,7 @@ moniker = "thinkpad"
 # * badgerdb (uses github.com/dgraph-io/badger)
 #   - EXPERIMENTAL
 #   - stable
+#   - pure go
 #   - use badgerdb build tag (go build -tags badgerdb)
 # * pebbledb (uses github.com/cockroachdb/pebble)
 #   - EXPERIMENTAL
@@ -515,9 +509,9 @@ discard_abci_responses = false
 # v2 - Order preserving representation ordering entries by height.
 # We used a command to migrate from v1 to v2 in our tests. The command is used
 # purely for experimental purposes but can be used as a starting point for experimentation
-#  https://github.com/cometbft/cometbft/blob/migrate_db/cmd/cometbft/commands/migrate_db.go 
+#  https://github.com/cometbft/cometbft/blob/migrate_db/cmd/cometbft/commands/migrate_db.go
 # compiling Comet at this branch and running migrate-db --home PATH_TO_CMT_HOME will transform the
-# db. 
+# db.
 experimental_db_key_layout = "v1"
 
 # Set to true to discard ABCI responses from the state store, which can save a

@@ -150,60 +150,69 @@ This section explains how the tests were carried out for reproducibility purpose
 The method for extracting the results described here is highly manual (and exploratory) at this stage.
 The CometBFT team should improve it at every iteration to increase the amount of automation.
 
-#### Steps
+#### Saturation point
 
-1. Unzip the blockstore into a directory
-2. To identify saturation points
-   1. Extract the latency report for all the experiments.
-       * Run these commands from the directory containing the `blockstore.db` folder.
-       * It is advisable to adjust the hash in the `go run` command to the latest possible.
-       * ```bash
-         mkdir results
-         go run github.com/cometbft/cometbft/test/loadtime/cmd/report@3003ef7 --database-type goleveldb --data-dir ./ > results/report.txt
-         ```
-   2. File `report.txt` contains an unordered list of experiments with varying concurrent connections and transaction rate.
-      You will need to separate data per experiment.
-        * Run in your terminal:
-          ```bash
-          for cnum in 1 2 4; do echo "$cnum"; grep "Connections: $cnum" results/report.txt -B 2 -A 10 > results/report$cnum.txt;  done
-          ```
-          This will split `report.txt` into new files `report01.txt`, `report02.txt`,
-          `report04.txt`. Each new file will only contain the experiment results with the
-          corresponding to the number of connections.
+For identifying the saturation point, run from the `qa-infra` repository:
+```sh
+./script/reports/saturation-gen-table.sh <experiments-blockstore-dir>
+```
+where `<experiments-blockstore-dir>` is the directory where the results of the experiments were downloaded.
+This directory should contain the file `blockstore.db.zip`. The script will automatically:
+1. Unzip `blockstore.db.zip`, if not already.
+2. Run the tool `test/loadtime/cmd/report` to extract data for all instances with different
+   transaction load.
+  - This will generate an intermediate file `report.txt` that contains an unordered list of
+    experiments results with varying concurrent connections and transaction rate.
+3. Generate the files:
+  -  `report_tabbed.txt` with results formatted as a matrix, where rows are a particular tx rate and
+     columns are a particular number of websocket connections.
+  -  `saturation_table.tsv` which just contains columns with the number of processed transactions;
+     this is handy to create a Markdown table for the report.
 
-        * Sort the experiments in `report01.txt` in ascending tx rate order. Likewise for `report02.txt` and `report04.txt`.
-        * Otherwise just keep `report.txt`, and skip to the next step.
-    3. Generate file `report_tabbed.txt` by showing the contents `report01.txt`, `report02.txt`, `report04.txt` side by side
-        * This effectively creates a table where rows are a particular tx rate and columns are a particular number of websocket connections.
-        * Combine the column files into a single table file:
-           * Replace tabs by spaces in all column files. For example,
-             `sed -i.bak 's/\t/    /g' results/report1.txt`.
-        * Merge the new column files into one:
-           `paste results/report1.txt results/report2.txt results/report4.txt | column -s $'\t' -t > report_tabbed.txt`
+#### Latencies
 
-3. To generate a latency vs throughput plot, extract the data as a CSV
-    * ```bash
-       go run github.com/cometbft/cometbft/test/loadtime/cmd/report@3003ef7 --database-type goleveldb --data-dir ./ --csv results/raw.csv
-       ```
-    * Follow the instructions for the [`latency_throughput.py`] script.
-    This plot is useful to visualize the saturation point.
-    * Alternatively,  follow the instructions for the [`latency_plotter.py`] script.
-    This script generates a series of plots per experiment and configuration that may
-    help with visualizing Latency vs Throughput variation.
+For generating images on latency, run from the `qa-infra` repository:
+```sh
+./script/reports/saturation-gen-table.sh <experiments-blockstore-dir>
+```
+As above, `<experiments-blockstore-dir>` should contain the file `blockstore.db.zip`. 
+The script will automatically:
+1. Unzip `blockstore.db.zip`, if not already.
+2. Generate a file with raw results `results/raw.csv` using the tool `test/loadtime/cmd/report`.
+3. Setup a Python virtual environment and install the dependencies required for running the scripts
+   in the steps below.
+4. Generate a latency vs throughput images, using [`latency_throughput.py`]. This plot is useful to
+   visualize the saturation point.
+5. Generate a series of images with the average latency of each block for each experiment instance
+   and configuration, using [`latency_plotter.py`]. This plots may help with visualizing latency vs.
+   throughput variation.
 
 [`latency_throughput.py`]: ../../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting
 [`latency_plotter.py`]: ../../../scripts/qa/reporting/README.md#Latency-vs-Throughput-Plotting-version-2
 
-#### Extract Prometheus Metrics
+#### Prometheus metrics
 
-1. Stop the prometheus server if it is running as a service (e.g. a `systemd` unit).
-2. Unzip the prometheus database retrieved from the testnet.
-3. Start the prometheus server and make sure no error logs appear at start up.
-    ```bash
-    prometheus --storage.tsdb.path=path/to/prometheus/data --config.file=path/to/prometheus.yml
+1. From the `qa-infra` repository, run:
+    ```sh
+    prometheus-start-local.sh <experiments-prometheus-dir>
     ```
-4. Identify the time window you want to plot in your graphs.
-5. Execute the [`prometheus_plotter.py`] script for the time window.
+    where `<experiments-prometheus-dir>` is the directory where the results of the experiments were
+    downloaded. This directory should contain the file `blockstore.db.zip`. This script will:
+    - kill any running Prometheus server,
+    - unzip the Prometheus database retrieved from the testnet, and
+    - start a Prometheus server on the default `localhost:9090`, bootstrapping the downloaded data
+      as database.
+2. Identify the time window you want to plot in your graphs. In particular, search for the start
+   time and duration of the window.
+3. Run:
+    ```sh
+    ./script/reports/prometheus-gen-images.sh <experiments-prometheus-dir> <start-time> <duration> [<test-case>] [<release-name>]
+    ```
+    where `<start-time>` is in the format `'%Y-%m-%dT%H:%M:%SZ'` and `<duration>` is in seconds.
+    This will download, set up a Python virtual environment with required dependencies, and execute
+    the script [`prometheus_plotter.py`]. The optional parameter `<test-case>` is one of `200_nodes`
+    (default), `rotating`, and `vote_extensions`; `<release-name>` is just for putting in the title
+    of the plot.
 
 [`prometheus_plotter.py`]: ../../../scripts/qa/reporting/README.md#prometheus-metrics
 

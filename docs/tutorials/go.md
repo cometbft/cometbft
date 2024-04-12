@@ -46,7 +46,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-go version go1.21.8 darwin/amd64
+go version go1.22.2 darwin/amd64
 ```
 
 ## 1.1 Installing CometBFT
@@ -137,7 +137,8 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-go 1.21.8
+go 1.22.2
+
 
 require github.com/cometbft/cometbft v1.0.0 // indirect
 ```

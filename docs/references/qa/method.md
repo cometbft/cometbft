@@ -173,7 +173,7 @@ This directory should contain the file `blockstore.db.zip`. The script will auto
 
 For generating images on latency, run from the `qa-infra` repository:
 ```sh
-./script/reports/saturation-gen-table.sh <experiments-blockstore-dir>
+./script/reports/latencies-gen-images.sh <experiments-blockstore-dir>
 ```
 As above, `<experiments-blockstore-dir>` should contain the file `blockstore.db.zip`. 
 The script will automatically:
@@ -194,7 +194,7 @@ The script will automatically:
 
 1. From the `qa-infra` repository, run:
     ```sh
-    prometheus-start-local.sh <experiments-prometheus-dir>
+    ./script/reports/prometheus-start-local.sh <experiments-prometheus-dir>
     ```
     where `<experiments-prometheus-dir>` is the directory where the results of the experiments were
     downloaded. This directory should contain the file `blockstore.db.zip`. This script will:

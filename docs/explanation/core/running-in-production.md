@@ -8,8 +8,8 @@ order: 4
 
 By default, CometBFT uses the `syndtr/goleveldb` package for its in-process
 key-value database. If you want maximal performance, it may be best to install
-the real C-implementation of LevelDB and compile CometBFT to use that using
-`make build COMETBFT_BUILD_OPTIONS=cleveldb`. See the [install
+RocksDB and compile CometBFT to use that using
+`make build COMETBFT_BUILD_OPTIONS=rocksdb`. See the [install
 instructions](../introduction/install.md) for details.
 
 CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:

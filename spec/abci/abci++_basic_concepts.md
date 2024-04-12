@@ -21,7 +21,6 @@ title: Overview and basic concepts
     - [`CheckTx`](#checktx)
     - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
     - [`Query`](#query)
-≠
 # Overview and basic concepts
 
 ## ABCI 2.0 vs. legacy ABCI

@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 
 IMAGES_DIR = 'imgs'
-
+#fig_title = 'Vote Extensions Testnet'
+fig_title = 'Rotating Nodes Test'
 
 def usage():
     print(f"Usage: {sys.argv[0]} release_name raw_csv_path")
@@ -61,9 +62,9 @@ def plot_all_experiments(release, csv):
         # Save individual axes
         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
         img_path = os.path.join(IMAGES_DIR, f'e_{key}.png')
-        fig.savefig(img_path, bbox_inches=extent.expanded(1.2, 1.3))
+        fig.savefig(img_path, bbox_inches=extent.expanded(1.4, 1.5))
 
-    fig.suptitle('Vote Extensions Testnet - ' + release)
+    fig.suptitle(fig_title + ' - ' + release)
 
     # Save the figure with subplots
     fig.savefig(os.path.join(IMAGES_DIR, 'all_experiments.png'))
@@ -102,9 +103,9 @@ def plot_all_configs(release, csv):
         #Save individual axes
         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
         img_path = os.path.join(IMAGES_DIR, f'c{con}r{rate}.png')
-        fig.savefig(img_path, bbox_inches=extent.expanded(1.2, 1.3))
+        fig.savefig(img_path, bbox_inches=extent.expanded(1.4, 1.5))
 
-    fig.suptitle('Vote Extensions Testnet - ' + release)
+    fig.suptitle(fig_title + ' - ' + release)
 
     # Save the figure with subplots
     fig.savefig(os.path.join(IMAGES_DIR, 'all_configs.png'))

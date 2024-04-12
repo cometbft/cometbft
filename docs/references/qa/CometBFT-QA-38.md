@@ -18,38 +18,40 @@ described in the
 [CHANGELOG](https://github.com/cometbft/cometbft/blob/v0.38.0-alpha.2/CHANGELOG.md).
 
 ## Table of Contents
-- [Issues discovered](#issues-discovered)
-- [200 Node Testnet](#200-node-testnet)
-  - [Saturation point](#saturation-point)
-  - [Latencies](#latencies)
-  - [Prometheus Metrics on the Chosen Experiment](#prometheus-metrics-on-the-chosen-experiment)
-    - [Mempool Size](#mempool-size)
-    - [Peers](#peers)
-    - [Consensus Rounds per Height](#consensus-rounds-per-height)
-    - [Blocks Produced per Minute, Transactions Processed per Minute](#blocks-produced-per-minute-transactions-processed-per-minute)
-    - [Memory Resident Set Size](#memory-resident-set-size)
-    - [CPU utilization](#cpu-utilization)
-      - [Comparison to baseline](#comparison-to-baseline)
-      - [Impact of vote extension signature verification](#impact-of-vote-extension-signature-verification)
-  - [Test Results](#test-results)
-- [Rotating Node Testnet](#rotating-node-testnet)
-  - [Latencies](#latencies-1)
-  - [Prometheus Metrics](#prometheus-metrics)
-    - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute)
-    - [Peers](#peers-1)
-    - [Memory Resident Set Size](#memory-resident-set-size-1)
-    - [CPU utilization](#cpu-utilization-1)
-  - [Test Result](#test-result)
-- [Vote Extensions Testbed](#vote-extensions-testbed)
-  - [Latency](#latency)
-  - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute-1)
-    - [Overview](#overview)
-    - [First run](#first-run)
-  - [Number of rounds](#number-of-rounds)
-  - [CPU](#cpu)
-  - [Resident Memory](#resident-memory)
-  - [Mempool size](#mempool-size-1)
-  - [Results](#results)
+- [CometBFT QA Results v0.38.x](#cometbft-qa-results-v038x)
+  - [Table of Contents](#table-of-contents)
+  - [Issues discovered](#issues-discovered)
+  - [200 Node Testnet](#200-node-testnet)
+    - [Saturation point](#saturation-point)
+    - [Latencies](#latencies)
+    - [Prometheus Metrics on the Chosen Experiment](#prometheus-metrics-on-the-chosen-experiment)
+      - [Mempool Size](#mempool-size)
+      - [Peers](#peers)
+      - [Consensus Rounds per Height](#consensus-rounds-per-height)
+      - [Blocks Produced per Minute, Transactions Processed per Minute](#blocks-produced-per-minute-transactions-processed-per-minute)
+      - [Memory Resident Set Size](#memory-resident-set-size)
+      - [CPU utilization](#cpu-utilization)
+        - [Comparison to baseline](#comparison-to-baseline)
+        - [Impact of vote extension signature verification](#impact-of-vote-extension-signature-verification)
+    - [Test Results](#test-results)
+  - [Rotating Node Testnet](#rotating-node-testnet)
+    - [Latencies](#latencies-1)
+    - [Prometheus Metrics](#prometheus-metrics)
+      - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute)
+      - [Peers](#peers-1)
+      - [Memory Resident Set Size](#memory-resident-set-size-1)
+      - [CPU utilization](#cpu-utilization-1)
+    - [Test Result](#test-result)
+  - [Vote Extensions Testbed](#vote-extensions-testbed)
+    - [Latency](#latency)
+    - [Blocks and Transactions per minute](#blocks-and-transactions-per-minute-1)
+      - [Overview](#overview)
+      - [First run](#first-run)
+    - [Number of rounds](#number-of-rounds)
+    - [CPU](#cpu)
+    - [Resident Memory](#resident-memory)
+    - [Mempool size](#mempool-size-1)
+    - [Results](#results)
 
 ## Issues discovered
 
@@ -305,7 +307,7 @@ The plot of all latencies can be seen here.
 
 Which is similar to the baseline.
 
-![rotating-all-latencies](img37/200nodes_tm037/v037_rotating_latencies.png)
+![rotating-all-latencies-bl](img37/200nodes_tm037/v037_rotating_latencies.png)
 
 The average increase of about 1 second with respect to the baseline is due to the higher
 transaction load produced (remember the baseline was affected by [\#9539], whereby most transactions
@@ -335,7 +337,7 @@ blocksyncing as that metric was implemented afterwards.
 
 ![rotating-heights-ephe-bl](img37/rotating/rotating_eph_heights.png)
 
-We seen that heights follow a similar pattern in both plots: they grow in length as the experiment advances.
+We see that heights follow a similar pattern in both plots: they grow in length as the experiment advances.
 
 The following plot shows the transactions processed per minute.
 

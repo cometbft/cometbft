@@ -80,46 +80,46 @@ git pull origin main
 make install
 ```
 
-## Compile with CLevelDB support
+## Compile with RocksDB support
 
-Install [LevelDB](https://github.com/google/leveldb) (minimum version is 1.7).
+Install [RocksDB](https://github.com/facebook/rocksdb/blob/main/INSTALL.md).
 
-Install LevelDB with snappy (optionally). Below are commands for Ubuntu:
+Ubuntu:
 
 ```sh
 sudo apt-get update
-sudo apt install build-essential
 
-sudo apt-get install libsnappy-dev
+git clone https://github.com/facebook/rocksdb.git
+cd rocksdb
 
-wget https://github.com/google/leveldb/archive/v1.23.tar.gz && \
-  tar -zxvf v1.23.tar.gz && \
-  cd leveldb-1.23/ && \
-  make && \
-  sudo cp -r out-static/lib* out-shared/lib* /usr/local/lib/ && \
-  cd include/ && \
-  sudo cp -r leveldb /usr/local/include/ && \
-  sudo ldconfig && \
-  rm -f v1.23.tar.gz
+DEBUG_LEVEL=0 make shared_lib install-shared
+
+export LD_LIBRARY_PATH=/usr/local/lib
 ```
 
-Set a database backend to `cleveldb`:
+OSX:
+
+```sh
+brew install rocksdb
+```
+
+Set a database backend to `rocksdb`:
 
 ```toml
 # config/config.toml
-db_backend = "cleveldb"
+db_backend = "rocksdb"
 ```
 
 To install CometBFT, run:
 
 ```sh
-CGO_LDFLAGS="-lsnappy" make install COMETBFT_BUILD_OPTIONS=cleveldb
+make install COMETBFT_BUILD_OPTIONS=rocksdb
 ```
 
 or run:
 
 ```sh
-CGO_LDFLAGS="-lsnappy" make build COMETBFT_BUILD_OPTIONS=cleveldb
+make build COMETBFT_BUILD_OPTIONS=rocksdb
 ```
 
 which puts the binary in `./build`.

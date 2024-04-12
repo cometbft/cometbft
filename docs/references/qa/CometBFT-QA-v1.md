@@ -9,6 +9,7 @@ parent:
 ## Table of Contents
 - [QA results for CometBFT v1.x](#qa-results-for-cometbft-v1x)
   - [Latency emulation (LE)](#latency-emulation-le)
+  - [Storage optimizations](#storage-optimizations)
   - [Saturation point](#saturation-point)
     - [With latency emulation](#with-latency-emulation)
   - [200-nodes test](#200-nodes-test)
@@ -86,6 +87,33 @@ without latency emulation.
 It's important to note that the results with latency emulation in this report are not used to assess
 whether `v1.0.0-alpha.2` passes the QA tests. Instead, they serve as a baseline for future QA tests to
 be conducted for upcoming releases.
+
+## Storage optimizations
+
+We have conducted several experiments aimed to address concerns regarding storage efficiency and
+performance of CometBFT. These experiments focused on various aspects, including the effectiveness
+of the pruning mechanism, the impact of different database key layouts, and the performance of
+alternative database engines like PebbleDB. For a comprehensive overview, you can access the full
+report [here](../storage/README.md).
+
+The experiments were performed on different versions of CometBFT. Of particular relevance for this
+report are those where we targeted a version based on `v1.0.0-alpha.1`. The main difference with
+`v1.0.0-alpha.2` is PBTS, which does not impact storage performance. Hence, we consider the results
+obtained equally applicable to `v1.0.0-alpha.2`. In particular, both versions include the data
+companion API, background pruning, compaction, and support for different key layouts. 
+
+To summarize the findings relevant to `v1`:
+- Pruning does not negatively affect the node performance, though it showed to be ineffective at
+  controlling storage growth. However, combining pruning with forced compaction and the new key
+  layout proved to be an effective strategy, which we recommend adopting.
+- Experiments reveal mixed results regarding the impact of different database key layouts on
+  performance. While some scenarios exhibit improvements in block processing times and storage
+  efficiency, particularly with the new key layout, further analysis suggests that the benefits of
+  the new layout were not consistently realized across different environments. Consequently, we've
+  released the new key layout as purely experimental.
+- Tests with PebbleDB showed promising performance improvements, especially when paired with the new
+  key layout. PebbleDB exhibits superior handling of compaction without the need of manual
+  intervention.
 
 ## Saturation point
 

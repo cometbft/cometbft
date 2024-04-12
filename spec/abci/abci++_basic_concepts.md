@@ -6,25 +6,25 @@ title: Overview and basic concepts
 ## Outline
 
 - [Overview and basic concepts](#overview-and-basic-concepts)
-    - [ABCI++ vs. ABCI](#abci-vs-abci)
-    - [Method overview](#method-overview)
-        - [Consensus/block execution methods](#consensusblock-execution-methods)
-        - [Mempool methods](#mempool-methods)
-        - [Info methods](#info-methods)
-        - [State-sync methods](#state-sync-methods)
-        - [Other methods](#other-methods)
-    - [Proposal timeout](#proposal-timeout)
-    - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
-    - [Events](#events)
-    - [Evidence](#evidence)
-    - [Errors](#errors)
-        - [`CheckTx`](#checktx)
-        - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
-        - [`Query`](#query)
+  - [ABCI 2.0 vs. legacy ABCI](#abci-20-vs-legacy-abci)
+  - [Method overview](#method-overview)
+    - [Consensus/block execution methods](#consensusblock-execution-methods)
+    - [Mempool methods](#mempool-methods)
+    - [Info methods](#info-methods)
+    - [State-sync methods](#state-sync-methods)
+    - [Other methods](#other-methods)
+  - [Proposal timeout](#proposal-timeout)
+  - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
+  - [Events](#events)
+  - [Evidence](#evidence)
+  - [Errors](#errors)
+    - [`CheckTx`](#checktx)
+    - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
+    - [`Query`](#query)
 
 # Overview and basic concepts
 
-## ABCI 2.0 vs. ABCI
+## ABCI 2.0 vs. legacy ABCI
 
 [&#8593; Back to Outline](#outline)
 
@@ -46,12 +46,12 @@ proposal is to be validated, and (c) at the moment a (precommit) vote is sent/re
 The new interface allows block proposers to perform application-dependent
 work in a block through the `PrepareProposal` method (a); and validators to perform application-dependent work
 and checks in a proposed block through the `ProcessProposal` method (b); and applications to require their validators
-to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtensions` methods (c).
+to do more than just validate blocks through the `ExtendVote` and `VerifyVoteExtension` methods (c).
 
 Furthermore, ABCI 2.0 coalesces {`BeginBlock`, [`DeliverTx`], `EndBlock`} into `FinalizeBlock`, as a
 simplified, efficient way to deliver a decided block to the Application.
 
-## Methods overview
+## Method overview
 
 
 [&#8593; Back to Outline](#outline)
@@ -372,7 +372,7 @@ irrefutable proof of malicious behavior by a network participant. It is the resp
 CometBFT to detect such malicious behavior. When malicious behavior is detected, CometBFT
 will gossip evidences of misbehavior to other nodes and commit the evidences to
 the chain once they are verified by a subset of validators. These evidences will then be
-passed on to the Application through ABCI++. It is the responsibility of the
+passed on to the Application through ABCI. It is the responsibility of the
 Application to handle evidence of misbehavior and exercise punishment.
 
 There are two forms of evidence: Duplicate Vote and Light Client Attack. More

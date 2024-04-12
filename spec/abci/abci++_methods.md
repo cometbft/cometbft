@@ -367,10 +367,6 @@ title: Methods
       `FinalizeBlockResponse`.
     * CometBFT does NOT provide any additional validity checks (such as checking for duplicate
       transactions).
-      <!--
-      As a sanity check, CometBFT will check the returned parameters for validity if the Application modified them.
-      In particular, `PrepareProposalResponse.txs` will be deemed invalid if there are duplicate transactions in the list.
-       -->
     * If CometBFT fails to validate the `PrepareProposalResponse`, CometBFT will assume the
       Application is faulty and crash.
     * The implementation of `PrepareProposal` MAY be non-deterministic.
@@ -691,7 +687,7 @@ then _p_ decides block _v_ and finalizes consensus for height _h_ in the followi
 10. _p_'s CometBFT unlocks the mempool &mdash; newly received transactions can now be checked.
 11. _p_ starts consensus for height _h+1_, round 0
 
-## Data Types existing in ABCI
+## Data Types (exist before ABCI 2.0)
 
 Most of the data structures used in ABCI are shared [common data structures](../core/data_structures.md). In certain cases, ABCI uses different data structures which are documented here:
 
@@ -797,7 +793,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     `Metadata`). Chunks may be retrieved from all nodes that have the same snapshot.
     * When sent across the network, a snapshot message can be at most 4 MB.
 
-## Data types introduced or modified in ABCI++
+## Data types introduced or modified in ABCI 2.0
 
 ### VoteInfo
 
@@ -836,6 +832,12 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                          | Commit round. Reflects the round at which the block proposer decided in the previous height. | 1            |
     | votes | repeated [VoteInfo](#voteinfo) | List of validators' addresses in the last validator set with their voting information.       | 2            |
 
+* **Notes**
+  * The `VoteInfo` in `votes` are ordered by the voting power of the validators (descending order, highest to lowest voting power).
+  * CometBFT guarantees the `votes` ordering through its logic to update the validator set in which, in the end, the  validators are sorted (descending) by their voting power.
+  * The ordering is also persisted when a validator set is saved in the store.
+  * The validator set is loaded from the store when building the `CommitInfo`, ensuring order is maintained from the persisted validator set.
+
 ### ExtendedCommitInfo
 
 * **Fields**:
@@ -844,6 +846,12 @@ Most of the data structures used in ABCI are shared [common data structures](../
     |-------|------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|--------------|
     | round | int32                                          | Commit round. Reflects the round at which the block proposer decided in the previous height.                      | 1            |
     | votes | repeated [ExtendedVoteInfo](#extendedvoteinfo) | List of validators' addresses in the last validator set with their voting information, including vote extensions. | 2            |
+
+* **Notes**
+    * The `ExtendedVoteInfo` in `votes` are ordered by the voting power of the validators (descending order, highest to lowest voting power).
+    * CometBFT guarantees the `votes` ordering through its logic to update the validator set in which, in the end, the validators are sorted (descending) by their voting power.
+    * The ordering is also persisted when a validator set is saved in the store.
+    * The validator set is loaded from the store when building the `ExtendedCommitInfo`, ensuring order is maintained from the persisted validator set.
 
 ### ExecTxResult
 

@@ -46,7 +46,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-go version go1.21.8 darwin/amd64
+go version go1.22.2 darwin/amd64
 ```
 
 ## 1.1 Installing CometBFT
@@ -137,7 +137,8 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-go 1.21.8
+go 1.22.2
+
 
 require github.com/cometbft/cometbft v1.0.0 // indirect
 ```
@@ -713,7 +714,7 @@ I[2023-04-25|17:01:28.726] Waiting for new connection...
 
 Then we need to start CometBFT service and point it to our application.
 
-Open a new terminal window and cd into the the same folder where the app is running (this is important because when you run the `kvstore` command above
+Open a new terminal window and cd into the same folder where the app is running (this is important because when you run the `kvstore` command above
 a file will be created `example.sock` and you need to run `cometbft` in the same folder so that they can communicate via sockets)
 
 Then execute the following command:

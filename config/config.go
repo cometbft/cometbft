@@ -207,9 +207,11 @@ type BaseConfig struct {
 	//   - stable
 	//   - pure go
 	// * cleveldb (uses levigo wrapper)
+	//   - DEPRECATED
 	//   - requires gcc
 	//   - use cleveldb build tag (go build -tags cleveldb)
 	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
+	//   - DEPRECATED
 	//   - EXPERIMENTAL
 	//   - stable
 	//   - use boltdb build tag (go build -tags boltdb)
@@ -878,9 +880,12 @@ type MempoolConfig struct {
 	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
-	// Limit the total size of all txs in the mempool.
-	// This only accounts for raw transactions (e.g. given 1MB transactions and
-	// max_txs_bytes=5MB, mempool will only accept 5 transactions).
+	// Maximum size in bytes of a single transaction accepted into the mempool.
+	MaxTxBytes int `mapstructure:"max_tx_bytes"`
+	// The maximum size in bytes of all transactions stored in the mempool.
+	// This is the raw, total transaction size. For example, given 1MB
+	// transactions and a 5MB maximum mempool byte size, the mempool will
+	// only accept five transactions.
 	MaxTxsBytes int64 `mapstructure:"max_txs_bytes"`
 	// Size of the cache (used to filter transactions we saw earlier) in transactions
 	CacheSize int `mapstructure:"cache_size"`
@@ -888,9 +893,6 @@ type MempoolConfig struct {
 	// Set to true if it's not possible for any invalid transaction to become
 	// valid again in the future.
 	KeepInvalidTxsInCache bool `mapstructure:"keep-invalid-txs-in-cache"`
-	// Maximum size of a single transaction
-	// NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
-	MaxTxBytes int `mapstructure:"max_tx_bytes"`
 	// Experimental parameters to limit gossiping txs to up to the specified number of peers.
 	// We use two independent upper values for persistent and non-persistent peers.
 	// Unconditional peers are not affected by this feature.
@@ -917,9 +919,9 @@ func DefaultMempoolConfig() *MempoolConfig {
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,
-		MaxTxsBytes: 1024 * 1024 * 1024, // 1GB
+		MaxTxBytes:  1024 * 1024,      // 1MiB
+		MaxTxsBytes: 64 * 1024 * 1024, // 64MiB, enough to fill 16 blocks of 4 MiB
 		CacheSize:   10000,
-		MaxTxBytes:  1024 * 1024, // 1MB
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
 	}

@@ -149,7 +149,7 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 // store are empty at the time the function is called.
 //
 // If the block store is not empty, the function returns an error.
-func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) (err error) {
+func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, genProvider GenesisDocProvider, height uint64, appHash []byte) (err error) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	if ctx == nil {
 		ctx = context.Background()
@@ -208,7 +208,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	// The state store will use the DBKeyLayout set in config or already existing in the DB.
-	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config), config.Storage.GenesisHash)
+	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genProvider, config.Storage.GenesisHash)
 	if err != nil {
 		return err
 	}

@@ -92,19 +92,7 @@ Additionally:
 This section explains how the tests were carried out for reproducibility purposes.
 
 1. [If you haven't done it before]
-<<<<<<< HEAD
-   Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform, and `doctl`.
-2. Copy file `testnets/testnet200.toml` onto `testnet.toml` (do NOT commit this change)
-3. Set the variable `VERSION_TAG` in the `Makefile` to the git hash that is to be tested.
-   * If you are running the base test, which implies an homogeneous network (all nodes are running the same version),
-     then make sure makefile variable `VERSION2_WEIGHT` is set to 0
-   * If you are running a mixed network, set the variable `VERSION2_TAG` to the other version you want deployed
-     in the network.
-     Then adjust the weight variables `VERSION_WEIGHT` and `VERSION2_WEIGHT` to configure the
-     desired proportion of nodes running each of the two configured versions.
-4. Follow steps 5-10 of the `README.md` to configure and start the 200 node testnet
-=======
-   Follow steps 1-5 of the `README.md` at the top of the testnet repository to configure Terraform and the DigitalOcean CLI (`doctl`).
+   Follow steps 1-4 of the `README.md` at the top of the testnet repository to configure Terraform and the DigitalOcean CLI (`doctl`).
 2. In the `experiment.mk` file, set the following variables (do NOT commit these changes):
    1. Set `MANIFEST` to point to the file `testnets/200-nodes-with-zones.toml`.
    2. Set `VERSION_TAG` to the git hash that is to be tested.
@@ -115,7 +103,6 @@ This section explains how the tests were carried out for reproducibility purpose
         Then adjust the weight variables `VERSION_WEIGHT` and `VERSION2_WEIGHT` to configure the
         desired proportion of nodes running each of the two configured versions.
 3. Follow steps 5-11 of the `README.md` to configure and start the 200 node testnet.
->>>>>>> b31834c30 (docs(qa): Update instructions on the QA methodology (#2405))
     * WARNING: Do NOT forget to run `make terraform-destroy` as soon as you are done with the tests (see step 9)
 4. As a sanity check, connect to the Prometheus node's web interface (port 9090)
     and check the graph for the `cometbft_consensus_height` metric. All nodes

@@ -1299,11 +1299,9 @@ type Data struct {
 // Hash returns the hash of the data
 func (data *Data) Hash() cmtbytes.HexBytes {
 	if data == nil {
-		fmt.Println("Data.Hash() called on nil Data")
 		return (Txs{}).Hash()
 	}
 	if data.hash == nil {
-		fmt.Println("Data.Hash() called")
 		data.hash = data.Txs.Hash() // NOTE: leaves of merkle tree are TxIDs
 	}
 

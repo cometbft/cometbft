@@ -130,7 +130,6 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	}
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
-	fmt.Println("txs: ", txs)
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	rpp, err := blockExec.proxyApp.PrepareProposal(

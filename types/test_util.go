@@ -113,8 +113,10 @@ func MakeVoteNoError(
 func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) *Block {
 	// <sunrise-core>
 	txBytes := Txs(txs).ToSliceOfBytes()
+	fmt.Println("txs: ", txs)
+	fmt.Println("txBytes: ", txBytes)
 	txsWithoutInfoBytes, dataHash, squareSize, _ := ExtractInfoFromTxs(txBytes)
-	fmt.Println("dataHash: ", dataHash)
+	fmt.Println("dataHash: ", dataHash, " squareSize: ", squareSize)
 	txsWithoutInfo := ToTxs(txsWithoutInfoBytes)
 	// </sunrise-core>
 

@@ -114,6 +114,7 @@ func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) 
 	// <sunrise-core>
 	txBytes := Txs(txs).ToSliceOfBytes()
 	txsWithoutInfoBytes, dataHash, squareSize, _ := ExtractInfoFromTxs(txBytes)
+	fmt.Println("dataHash: ", dataHash)
 	txsWithoutInfo := ToTxs(txsWithoutInfoBytes)
 	// </sunrise-core>
 

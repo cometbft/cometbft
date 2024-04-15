@@ -9,10 +9,6 @@ import (
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/version"
 	"github.com/stretchr/testify/require"
-
-	// <sunrise-core>
-	"encoding/binary"
-	// <sunrise-core />
 )
 
 func MakeExtCommit(blockID BlockID, height int64, round int32,
@@ -111,26 +107,13 @@ func MakeVoteNoError(
 // computed from itself.
 // It populates the same set of fields validated by ValidateBasic.
 func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) *Block {
-	// <sunrise-core>
-	txBytes := Txs(txs).ToSliceOfBytes()
-	fmt.Println("txs: ", txs)
-	fmt.Println("txBytes: ", txBytes)
-	txsWithoutInfoBytes, dataHash, squareSize, _ := ExtractInfoFromTxs(txBytes)
-	fmt.Println("dataHash: ", dataHash, " squareSize: ", squareSize)
-	txsWithoutInfo := ToTxs(txsWithoutInfoBytes)
-	// </sunrise-core>
-
 	block := &Block{
 		Header: Header{
 			Version: cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
 			Height:  height,
 		},
 		Data: Data{
-			// <sunrise-core>
-			Txs:        txsWithoutInfo,
-			SquareSize: squareSize,
-			hash:       dataHash,
-			// </sunrise-core>
+			Txs: txs,
 		},
 		Evidence:   EvidenceData{Evidence: evidence},
 		LastCommit: lastCommit,
@@ -139,28 +122,3 @@ func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) 
 	fmt.Println("block: ", block.hash, " ", block.Data.hash, " ", block.Data.SquareSize, " ", block.Data.Txs)
 	return block
 }
-
-// <sunrise-core>
-func ExtractInfoFromTxs(txsWithInfo [][]byte) (txs [][]byte, dataHash []byte, squareSize uint64, err error) {
-	length := len(txsWithInfo)
-	if length == 0 {
-		txs = txsWithInfo
-		dataHash = nil
-		squareSize = 0
-		return
-	}
-
-	if length < 2 {
-		err = fmt.Errorf("txs must contain the data hash and the square size at the end, and its length must not be lower than 2")
-		return
-	}
-
-	txs = txsWithInfo[:length-2]
-	dataHash = txsWithInfo[length-2]
-	squareSizeBigEndian := txsWithInfo[length-1]
-	squareSize = binary.BigEndian.Uint64(squareSizeBigEndian)
-
-	return
-}
-
-// </sunrise-core>

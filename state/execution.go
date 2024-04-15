@@ -3,6 +3,7 @@ package state
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"time"
 
@@ -160,7 +161,26 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		return nil, err
 	}
 
-	return state.MakeBlock(height, txl, commit, evidence, proposerAddr), nil
+	// <sunrise-core>
+	if len(rpp.Txs) == 0 {
+		return block, nil
+	}
+
+	// Sunrise passes the data root & square size back as the last 2 transaction
+	if len(rpp.Txs) < 2 {
+		err = fmt.Errorf("state machine returned an invalid prepare proposal response: expected at least 2 transaction")
+		return nil, err
+	}
+
+	// update the block with the response from PrepareProposal
+	block.Data, _ = types.DataFromProto(&cmtproto.Data{
+		Txs:        rpp.Txs[:len(rpp.Txs)-2],
+		Hash:       rpp.Txs[len(rpp.Txs)-2],
+		SquareSize: binary.BigEndian.Uint64(rpp.Txs[len(rpp.Txs)-1]),
+	})
+
+	return block, nil
+	//</sunrise-core>
 }
 
 func (blockExec *BlockExecutor) ProcessProposal(

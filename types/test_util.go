@@ -136,6 +136,7 @@ func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) 
 		LastCommit: lastCommit,
 	}
 	block.fillHeader()
+	fmt.Println("block: ", block.hash, " ", block.Data.hash, " ", block.Data.SquareSize, " ", block.Data.Txs)
 	return block
 }
 

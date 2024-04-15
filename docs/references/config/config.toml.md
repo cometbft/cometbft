@@ -112,15 +112,13 @@ db_backend = "goleveldb"
 | Value type          | string        | dependencies  | GitHub                                           |
 |:--------------------|:--------------|:--------------|:-------------------------------------------------|
 | **Possible values** | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
-|                     | `"cleveldb"`  | requires gcc  | [leveldb](https://github.com/google/leveldb)     |
-|                     | `"boltdb"`    | pure Golang   | [bbolt](https://github.com/etcd-io/bbolt)        |
 |                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
 |                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
 |                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
 
 During the build process, by default, only the `goleveldb` library is built into the binary.
 To add support for alternative databases, you need to add them in the build tags.
-For example: `go build -tags cleveldb,rocksdb`.
+For example: `go build -tags rocksdb`.
 
 The RocksDB fork has API changes from the upstream RocksDB implementation. All other databases claim a stable API.
 
@@ -351,7 +349,7 @@ filter_peers = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-When this setting is `true`, the ABCI application has to implement a query that will allow 
+When this setting is `true`, the ABCI application has to implement a query that will allow
 the connection to be kept of or dropped.
 
 This feature will likely be deprecated.
@@ -1256,23 +1254,8 @@ If the mempool is full, incoming transactions are dropped.
 
 The value `0` is undefined.
 
-### mempool.max_txs_bytes
-The maximum size of all transactions accepted in the mempool.
-```toml
-max_txs_bytes = 1073741824
-```
-
-| Value type          | integer |
-|:--------------------|:--------|
-| **Possible values** | &gt;= 0 |
-
-This is the raw, total transaction size. Given 1MB transactions and a 5MB maximum transaction size, mempool will only
-accept five transactions.
-
-The default value is 1 Gibibyte (2^30 bytes).
-
 ### mempool.max_tx_bytes
-Maximum size of a single transaction accepted into the mempool.
+Maximum size in bytes of a single transaction accepted into the mempool.
 ```toml
 max_tx_bytes = 1048576
 ```
@@ -1281,7 +1264,33 @@ max_tx_bytes = 1048576
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-This is the maximum size of a transaction allowed to be accepted into the mempool.
+Transactions bigger than the maximum configured size are rejected by mempool,
+this applies to both transactions submitted by clients via RPC endpoints, and
+transactions receveing from peers on the mempool protocol.
+
+### mempool.max_txs_bytes
+The maximum size in bytes of all transactions stored in the mempool.
+```toml
+max_txs_bytes = 67108864
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+This is the raw, total size in bytes of all transactions in the mempool. For example, given 1MB
+transactions and a 5MB maximum mempool byte size, the mempool will
+only accept five transactions.
+
+The maximum mempool byte size should be a factor of the network's maximum block size
+(which is a [consensus parameter](https://docs.cometbft.com/v1.0/spec/abci/abci++_app_requirements#blockparamsmaxbytes)).
+The rationale is to consider how many blocks have to be produced in order to
+drain all transactions stored in a full mempool.
+
+When the mempool is full, incoming transactions are dropped.
+
+The default value is 64 Mibibyte (2^26 bytes).
+This is roughly equivalent to 16 blocks of 4 MiB.
 
 ### mempool.cache_size
 Mempool internal cache size for already seen transactions.
@@ -1447,7 +1456,7 @@ Time to spend discovering snapshots before initiating a restore.
 discovery_time = "15s"
 ```
 
-If `discovery_time` is &gt; 0 and  &lt; 5 seconds, its value will be overridden to 5 seconds. 
+If `discovery_time` is &gt; 0 and  &lt; 5 seconds, its value will be overridden to 5 seconds.
 
 If `discovery_time` is zero, the node will not wait for replies once it has broadcast the "snapshot request" message to its peers. If no snapshot data is received, state sync will fail without retrying.
 

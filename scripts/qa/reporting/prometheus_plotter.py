@@ -60,13 +60,13 @@ def queries_200_nodes(time_window, ext_time_window):
 
 def queries_rotating(time_window):
     return [
-        (( 'rate(cometbft_consensus_height[20s])*60',    time_window[0], time_window[1], '1s'), 'rotating_block_rate',    dict(ylabel='blocks/min',     xlabel='time', title='Rate of Block Creation',         legend=False, figsize=(10,6), grid=True), False),
-        (( 'rate(cometbft_consensus_total_txs[20s])*60', time_window[0], time_window[1], '1s'), 'rotating_txs_rate',      dict(ylabel='TXs/min',        xlabel='time', title='Rate of Transaction processing', legend=False, figsize=(10,6), grid=True), False),
-        (( 'cometbft_consensus_height{job=~"ephemeral.*"} or cometbft_blocksync_latest_block_height{job=~"ephemeral.*"}',
-                                                         time_window[0], time_window[1], '1s'), 'rotating_eph_heights',   dict(ylabel='height',         xlabel='time', title='Heights of Ephemeral Nodes',     legend=False, figsize=(10,6), grid=True), False),
-        (( 'cometbft_p2p_peers',                         time_window[0], time_window[1], '1s'), 'rotating_peers',         dict(ylabel='# peers',        xlabel='time', title='Peers',                          legend=False, figsize=(10,6), grid=True), False),
-        (( 'avg(process_resident_memory_bytes)',         time_window[0], time_window[1], '1s'), 'rotating_avg_memory',    dict(ylabel='memory (bytes)', xlabel='time', title='Average Memory Usage',           legend=False, figsize=(10,6), grid=True), False),
-        (( 'node_load1',                                 time_window[0], time_window[1], '1s'), 'rotating_cpu',           dict(ylabel='load',           xlabel='time', title='Node Load',                      legend=False, figsize=(10,6), grid=True), False),
+        (( 'rate(cometbft_consensus_height[20s])*60<1000>0', time_window[0], time_window[1], '1s'), 'rotating_block_rate',  dict(ylabel='blocks/min',     xlabel='time', title='Rate of Block Creation',         legend=False, figsize=(10,6), grid=True), False),
+        (( 'rate(cometbft_consensus_total_txs[20s])*60',     time_window[0], time_window[1], '1s'), 'rotating_txs_rate',    dict(ylabel='TXs/min',        xlabel='time', title='Rate of Transaction processing', legend=False, figsize=(10,6), grid=True), False),
+        (( 'cometbft_consensus_height{job=~"ephemeral.*"}>cometbft_blocksync_latest_block_height{job=~"ephemeral.*"} or cometbft_blocksync_latest_block_height{job=~"ephemeral.*"}',
+                                                             time_window[0], time_window[1], '1s'), 'rotating_eph_heights', dict(ylabel='height',         xlabel='time', title='Heights of Ephemeral Nodes',     legend=False, figsize=(10,6), grid=True), False),
+        (( 'cometbft_p2p_peers',                             time_window[0], time_window[1], '1s'), 'rotating_peers',       dict(ylabel='# peers',        xlabel='time', title='Peers',                          legend=False, figsize=(10,6), grid=True), False),
+        (( 'avg(process_resident_memory_bytes)',             time_window[0], time_window[1], '1s'), 'rotating_avg_memory',  dict(ylabel='memory (bytes)', xlabel='time', title='Average Memory Usage',           legend=False, figsize=(10,6), grid=True), False),
+        (( 'node_load1',                                     time_window[0], time_window[1], '1s'), 'rotating_cpu',         dict(ylabel='load',           xlabel='time', title='Node Load',                      legend=False, figsize=(10,6), grid=True), False),
     ]
 
 

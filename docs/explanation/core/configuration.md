@@ -27,7 +27,7 @@ like the file below, however, double check by inspecting the
 
 # The version of the CometBFT binary that created or
 # last modified the config file. Do not modify this.
-version = "0.39.0"
+version = "1.0.0-dev"
 
 #######################################################################
 ###                   Main Base Config Options                      ###
@@ -40,18 +40,11 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "thinkpad"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
+# Database backend: goleveldb | rocksdb | badgerdb | pebbledb
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
 #   - pure go
-# * cleveldb (uses levigo wrapper)
-#   - requires gcc
-#   - use cleveldb build tag (go build -tags cleveldb)
-# * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
-#   - EXPERIMENTAL
-#   - stable
-#   - use boltdb build tag (go build -tags boltdb)
 # * rocksdb (uses github.com/linxGnu/grocksdb)
 #   - EXPERIMENTAL
 #   - requires gcc
@@ -59,6 +52,7 @@ moniker = "thinkpad"
 # * badgerdb (uses github.com/dgraph-io/badger)
 #   - EXPERIMENTAL
 #   - stable
+#   - pure go
 #   - use badgerdb build tag (go build -tags badgerdb)
 # * pebbledb (uses github.com/cockroachdb/pebble)
 #   - EXPERIMENTAL
@@ -237,6 +231,32 @@ enabled = true
 [grpc.block_service]
 enabled = true
 
+# The gRPC block results service returns block results for a given height. If no height
+# is given, it will return the block results from the latest height.
+[grpc.block_results_service]
+enabled = true
+
+#
+# Configuration for privileged gRPC endpoints, which should **never** be exposed
+# to the public internet.
+#
+[grpc.privileged]
+# The host/port on which to expose privileged gRPC endpoints.
+laddr = ""
+
+#
+# Configuration specifically for the gRPC pruning service, which is considered a
+# privileged service.
+#
+[grpc.privileged.pruning_service]
+
+# Only controls whether the pruning service is accessible via the gRPC API - not
+# whether a previously set pruning service retain height is honored by the
+# node. See the [storage.pruning] section for control over pruning.
+#
+# Disabled by default.
+enabled = false
+
 #######################################################
 ###           P2P Configuration Options             ###
 #######################################################
@@ -344,10 +364,14 @@ wal_dir = ""
 # Maximum number of transactions in the mempool
 size = 5000
 
-# Limit the total size of all txs in the mempool.
-# This only accounts for raw transactions (e.g. given 1MB transactions and
-# max_txs_bytes=5MB, mempool will only accept 5 transactions).
-max_txs_bytes = 1073741824
+# Maximum size in bytes of a single transaction accepted into the mempool.
+max_tx_bytes = 1048576
+
+# The maximum size in bytes of all transactions stored in the mempool.
+# This is the raw, total transaction size. For example, given 1MB
+# transactions and a 5MB maximum mempool byte size, the mempool will
+# only accept five transactions.
+max_txs_bytes = 67108864
 
 # Size of the cache (used to filter transactions we saw earlier) in transactions
 cache_size = 10000
@@ -357,9 +381,20 @@ cache_size = 10000
 # again in the future.
 keep-invalid-txs-in-cache = false
 
-# Maximum size of a single transaction.
-# NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
-max_tx_bytes = 1048576
+# Experimental parameters to limit gossiping txs to up to the specified number of peers.
+# We use two independent upper values for persistent and non-persistent peers.
+# Unconditional peers are not affected by this feature.
+# If we are connected to more than the specified number of persistent peers, only send txs to
+# ExperimentalMaxGossipConnectionsToPersistentPeers of them. If one of those
+# persistent peers disconnects, activate another persistent peer.
+# Similarly for non-persistent peers, with an upper limit of
+# ExperimentalMaxGossipConnectionsToNonPersistentPeers.
+# If set to 0, the feature is disabled for the corresponding group of peers, that is, the
+# number of active connections to that group of peers is not bounded.
+# For non-persistent peers, if enabled, a value of 10 is recommended based on experimental
+# performance results using the default P2P configuration.
+experimental_max_gossip_connections_to_persistent_peers = 0
+experimental_max_gossip_connections_to_non_persistent_peers = 0
 
 #######################################################
 ###         State Sync Configuration Options        ###
@@ -457,10 +492,16 @@ peer_query_maj23_sleep_duration = "2s"
 #######################################################
 [storage]
 
+# Set to true to discard ABCI responses from the state store, which can save a
+# considerable amount of disk space. Set to false to ensure ABCI responses are
+# persisted. ABCI responses are required for /block_results RPC queries, and to
+# reindex events in the command-line tool.
+discard_abci_responses = false
+
 # The representation of keys in the database.
 # The current representation of keys in Comet's stores is considered to be v1
 # Users can experiment with a different layout by setting this field to v2.
-# Not that this is an experimental feature and switching back from v2 to v1
+# Note that this is an experimental feature and switching back from v2 to v1
 # is not supported by CometBFT.
 # If the database was initially created with v1, it is necessary to migrate the DB
 # before switching to v2. The migration is not done automatically.
@@ -468,9 +509,9 @@ peer_query_maj23_sleep_duration = "2s"
 # v2 - Order preserving representation ordering entries by height.
 # We used a command to migrate from v1 to v2 in our tests. The command is used
 # purely for experimental purposes but can be used as a starting point for experimentation
-#  https://github.com/cometbft/cometbft/blob/migrate_db/cmd/cometbft/commands/migrate_db.go 
+#  https://github.com/cometbft/cometbft/blob/migrate_db/cmd/cometbft/commands/migrate_db.go
 # compiling Comet at this branch and running migrate-db --home PATH_TO_CMT_HOME will transform the
-# db. 
+# db.
 experimental_db_key_layout = "v1"
 
 # Set to true to discard ABCI responses from the state store, which can save a
@@ -481,16 +522,21 @@ discard_abci_responses = false
 
 # If set to true, CometBFT will force compaction to happen for databases that support this feature.
 # and save on storage space. Setting this to true is most benefits when used in combination
-# with pruning as it will phyisically delete the entries marked for deletion.
+# with pruning as it will physically delete the entries marked for deletion.
 # false by default (forcing compaction is disabled).
 compact = false
 
-# To avoid forcing compaction every time, this parameter instructs CometBFT to wait 
+# To avoid forcing compaction every time, this parameter instructs CometBFT to wait
 # the given amount of blocks to be pruned before triggering compaction.
 # It should be tuned depending on the number of items. If your retain height is 1 block,
 # it is too much of an overhead to try compaction every block. But it should also not be a very
 # large multiple of your retain height as it might occur bigger overheads.
 compaction_interval = "1000"
+
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
+# the node is not able to boot.
+genesis_hash = ""
 
 [storage.pruning]
 

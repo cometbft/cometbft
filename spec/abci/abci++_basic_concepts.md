@@ -374,7 +374,7 @@ the chain once they are verified by a subset of validators. These evidences will
 passed on to the Application through ABCI. It is the responsibility of the
 Application to handle evidence of misbehavior and exercise punishment.
 
-There are two forms of evidence of misbehavior: Duplicate Vote and Light Client Attack. More
+There are two forms of misbehavior: Duplicate Vote and Light Client Attack. More
 information can be found in either [data structures](../core/data_structures.md)
 or [accountability](../light-client/accountability/).
 

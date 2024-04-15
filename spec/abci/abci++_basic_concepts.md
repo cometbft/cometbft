@@ -16,7 +16,7 @@ title: Overview and basic concepts
   - [Proposal timeout](#proposal-timeout)
   - [Deterministic State-Machine Replication](#deterministic-state-machine-replication)
   - [Events](#events)
-  - [Evidences of Misbehavior](#evidences-of-misbehavior)
+  - [Evidence of Misbehavior](#evidence-of-misbehavior)
   - [Errors](#errors)
     - [`CheckTx`](#checktx)
     - [`ExecTxResult` (as part of `FinalizeBlock`)](#exectxresult-as-part-of-finalizeblock)
@@ -362,21 +362,20 @@ Example:
 }
 ```
 
-## Evidences of Misbehavior
+## Evidence of Misbehavior
 
 [&#8593; Back to Outline](#outline)
 
-CometBFT's security model relies on the use of evidences of misbehavior. An evidence is an
+CometBFT's security model relies on the use of evidence of misbehavior. An evidence is an
 irrefutable proof of malicious behavior by a network participant. It is the responsibility of
 CometBFT to detect such malicious behavior. When malicious behavior is detected, CometBFT
-will gossip evidences of misbehavior to other nodes and commit the evidences to
-the chain once they are verified by a subset of validators. These evidences will then be
+will gossip evidence of misbehavior to other nodes and commit the evidence to
+the chain once they are verified by a subset of validators. These evidence of misbehavior will then be
 passed on to the Application through ABCI. It is the responsibility of the
-Application to handle evidence of misbehavior and exercise punishment.
+Application to handle the evidence of misbehavior and exercise punishment.
 
-There are two forms of misbehavior: Duplicate Vote and Light Client Attack. More
-information can be found in either [data structures](../core/data_structures.md#evidence)
-or [accountability](../light-client/accountability/).
+There are two forms of misbehavior: `Duplicate Vote` and `Light Client Attack`. More
+information can be found in the consensus [evidence](../consensus/evidence.md) document.
 
 `MisbehaviorType` has the following protobuf format:
 

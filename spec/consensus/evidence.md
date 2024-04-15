@@ -143,9 +143,7 @@ will usually cache verifications so that this process is much quicker.
 ## Sending Evidence to the Application
 
 After evidence is committed, the block is then processed by the block executor
-which delivers the evidence of misbehavior to the application via `FinalizeBlock`. Evidence is
-stripped of the actual proof, split up per faulty validator and only the
-validator, height, time and misbehavior type is sent.
+which delivers the list of misbehavior (`[]abci.Misbehavior`) to the application via the `FinalizeBlock`.
 
 ```proto
 // The type of misbehavior committed by a validator.
@@ -179,9 +177,10 @@ message Misbehavior {
 }
 ```
 
-`DuplicateVoteEvidence` and `LightClientAttackEvidence` are self-contained in
-the sense that the evidence can be used to derive the array of `abci.Misbehavior` for each byzantine validator that is
-sent to the application in the `FinalizeBlockRequest`. Because of this, extra fields are necessary:
+`DuplicateVoteEvidence` and `LightClientAttackEvidence` are can be used to derive the list of `abci.Misbehavior` for
+each byzantine validator that is sent to the application in the `FinalizeBlockRequest`.
+
+Because of this, extra fields are necessary:
 
 ```go
 type DuplicateVoteEvidence struct {

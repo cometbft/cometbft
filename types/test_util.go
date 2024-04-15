@@ -112,6 +112,7 @@ func MakeVoteNoError(
 // It populates the same set of fields validated by ValidateBasic.
 func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) *Block {
 	// <sunrise-core>
+	fmt.Println("MakeBlock", txs)
 	txBytes := Txs(txs).ToSliceOfBytes()
 	txsWithoutInfoBytes, dataHash, squareSize, _ := ExtractInfoFromTxs(txBytes)
 	txsWithoutInfo := ToTxs(txsWithoutInfoBytes)
@@ -140,7 +141,7 @@ func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) 
 func ExtractInfoFromTxs(txsWithInfo [][]byte) (txs [][]byte, dataHash []byte, squareSize uint64, err error) {
 	length := len(txsWithInfo)
 	if length < 2 {
-		err = fmt.Errorf("txs must contain the data hash and the square size at the end, and its length must not be lower than 2")
+		err = fmt.Errorf("txs must contain the data hash and the square size at the end, and its length must not be lower than 2, got %d", length)
 		return
 	}
 

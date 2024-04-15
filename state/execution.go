@@ -130,6 +130,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	}
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
+	fmt.Println("txs: ", txs)
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	rpp, err := blockExec.proxyApp.PrepareProposal(
@@ -184,6 +185,8 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		Hash:       rpp.Txs[len(rpp.Txs)-2],
 		SquareSize: binary.BigEndian.Uint64(rpp.Txs[len(rpp.Txs)-1]),
 	})
+
+	block.DataHash = rpp.Txs[len(rpp.Txs)-2]
 
 	var blockDataSize int
 	for _, tx := range block.Txs {

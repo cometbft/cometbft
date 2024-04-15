@@ -4,7 +4,7 @@ go 1.22.2
 
 require (
 	github.com/BurntSushi/toml v1.3.2
-	github.com/adlio/schema v1.3.4
+	github.com/adlio/schema v1.3.5
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.13.0
@@ -79,7 +79,6 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/docker/cli v24.0.7+incompatible // indirect
-	github.com/docker/docker v24.0.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

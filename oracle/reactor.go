@@ -1,11 +1,8 @@
 package oracle
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"math"
-	"os"
 	"time"
 
 	"github.com/cometbft/cometbft/config"
@@ -16,13 +13,12 @@ import (
 	// cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 
+	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/oracle/service/adapters"
 	"github.com/cometbft/cometbft/oracle/service/runner"
 	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 	"github.com/cometbft/cometbft/p2p"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
-	"github.com/cometbft/cometbft/redis"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -47,29 +43,12 @@ type Reactor struct {
 	OracleInfo *oracletypes.OracleInfo
 	// config  *cfg.MempoolConfig
 	// mempool *CListMempool
-	ids *oracleIDs
+	ids            *oracleIDs
+	ConsensusState *cs.State
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
 func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator types.PrivValidator) *Reactor {
-	// load oracle.json config if present
-	customNodeConfigPath := config.CustomNodePath
-	jsonFile, openErr := os.Open(customNodeConfigPath)
-	if openErr != nil {
-		logrus.Warnf("[oracle] error opening oracle.json config file: %v", openErr)
-	}
-
-	bytes, err := io.ReadAll(jsonFile)
-	if err != nil {
-		logrus.Warnf("[oracle] error reading oracle.json config file: %v", err)
-	}
-
-	var customNodeConfig oracletypes.CustomNodeConfig
-	err = json.Unmarshal(bytes, &customNodeConfig)
-	if err != nil {
-		logrus.Warnf("[oracle] error parsing oracle.json config file: %v", err)
-	}
-
 	gossipVoteBuffer := &oracletypes.GossipVoteBuffer{
 		Buffer: make(map[string]*oracleproto.GossipVote),
 	}
@@ -79,17 +58,13 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 	}
 
 	oracleInfo := &oracletypes.OracleInfo{
-		Oracles:            nil,
 		Config:             config,
-		CustomNodeConfig:   customNodeConfig,
 		GossipVoteBuffer:   gossipVoteBuffer,
 		UnsignedVoteBuffer: unsignedVoteBuffer,
 		SignVotesChan:      make(chan *oracleproto.Vote),
 		PubKey:             pubKey,
 		PrivValidator:      privValidator,
 	}
-
-	jsonFile.Close()
 
 	oracleR := &Reactor{
 		OracleInfo: oracleInfo,
@@ -114,8 +89,6 @@ func (oracleR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements p2p.BaseReactor.
 func (oracleR *Reactor) OnStart() error {
-	oracleR.OracleInfo.Redis = redis.NewService(0)
-	oracleR.OracleInfo.AdapterMap = adapters.GetAdapterMap(&oracleR.OracleInfo.Redis, oracleR.OracleInfo.Config.RestApiAddress)
 	logrus.Info("[oracle] running oracle service...")
 	go func() {
 		runner.Run(oracleR.OracleInfo)
@@ -165,6 +138,8 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
+
+		// verify if val
 		// verify sig of incoming gossip vote, throw if verification fails
 		signType := msg.SignType
 		var pubKey crypto.PubKey

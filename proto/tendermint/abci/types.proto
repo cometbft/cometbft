@@ -36,6 +36,7 @@ service ABCI {
   rpc VerifyVoteExtension(RequestVerifyVoteExtension) returns (ResponseVerifyVoteExtension);
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
   rpc SignGossipVote(RequestSignGossipVote) returns (ResponseSignGossipVote);
+  rpc PrepareOracleVotes(RequestPrepareOracleVotes) returns (ResponsePrepareOracleVotes);
 }
 
 //----------------------------------------
@@ -60,6 +61,7 @@ message Request {
     RequestVerifyVoteExtension verify_vote_extension = 19;
     RequestFinalizeBlock       finalize_block        = 20;
     RequestSignGossipVote      sign_gossip_vote      = 21;
+    RequestPrepareOracleVotes         prepare_oracle_votes  = 22;
   }
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -202,6 +204,8 @@ message RequestSignGossipVote {
   int64                                 height       = 3;
 }
 
+message RequestPrepareOracleVotes {}
+
 //----------------------------------------
 // Response types
 
@@ -225,6 +229,7 @@ message Response {
     ResponseVerifyVoteExtension verify_vote_extension = 20;
     ResponseFinalizeBlock       finalize_block        = 21;
     ResponseSignGossipVote      sign_gossip_vote      = 22;
+    ResponsePrepareOracleVotes      prepare_oracle_votes      = 22;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -377,6 +382,16 @@ message ResponseFinalizeBlock {
 
 message ResponseSignGossipVote {
   bytes encoded_tx = 1;
+}
+
+message Vote {
+  string oracle_id = 1;
+  int64 timestamp = 2;
+  string data = 3;
+}
+
+message ResponsePrepareOracleVotes {
+  repeated Vote votes = 1 [(gogoproto.nullable) = false];
 }
 
 //----------------------------------------

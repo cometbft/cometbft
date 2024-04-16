@@ -412,7 +412,7 @@ func NewNodeWithContext(ctx context.Context,
 		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
-	oracleReactor.OracleInfo.ValidatorSet = consensusState.Validators
+	oracleReactor.ConsensusState = consensusState
 
 	err = stateStore.SetOfflineStateSyncHeight(0)
 	if err != nil {

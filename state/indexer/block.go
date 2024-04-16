@@ -8,7 +8,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-//go:generate ../../../scripts/mockery_generate.sh BlockIndexer
+//go:generate ../../scripts/mockery_generate.sh BlockIndexer
 
 // BlockIndexer defines an interface contract for indexing block events.
 type BlockIndexer interface {

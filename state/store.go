@@ -103,7 +103,7 @@ func (v2l v2Layout) CalcValidatorsKey(height int64) []byte {
 
 var _ KeyLayout = (*v2Layout)(nil)
 
-//go:generate ../../scripts/mockery_generate.sh Store
+//go:generate ../scripts/mockery_generate.sh Store
 
 // Store defines the state store interface
 //

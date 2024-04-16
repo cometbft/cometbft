@@ -244,6 +244,7 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 // It takes a blockID to avoid recomputing the parts hash.
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
+	commit *types.Commit, // <celestia-core>
 ) (State, error) {
 
 	if err := validateBlock(state, block); err != nil {
@@ -347,7 +348,9 @@ func (blockExec *BlockExecutor) ApplyBlock(
 
 	// Events are fired after everything else.
 	// NOTE: if we crash between Commit and Save, events wont be fired during replay
-	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates, state.LastValidators)
+	// <celestia-core>
+	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates, state.LastValidators, commit)
+	// </celestia-core>
 
 	return state, nil
 }
@@ -702,6 +705,7 @@ func fireEvents(
 	validatorUpdates []*types.Validator,
 	// <celestia-core>
 	currentValidatorSet *types.ValidatorSet,
+	seenCommit *types.Commit,
 	// </celestia-core>
 ) {
 	if err := eventBus.PublishEventNewBlock(types.EventDataNewBlock{
@@ -716,7 +720,7 @@ func fireEvents(
 	if block.LastCommit != nil {
 		err := eventBus.PublishEventNewSignedBlock(types.EventDataSignedBlock{
 			Header:       block.Header,
-			Commit:       *block.LastCommit,
+			Commit:       *seenCommit,
 			ValidatorSet: *currentValidatorSet,
 			Data:         block.Data,
 		})

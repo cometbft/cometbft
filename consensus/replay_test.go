@@ -772,7 +772,7 @@ func applyBlock(t *testing.T, stateStore sm.Store, mempool mempool.Mempool, evpo
 	bps, err := blk.MakePartSet(testPartSize)
 	require.NoError(t, err)
 	blkID := types.BlockID{Hash: blk.Hash(), PartSetHeader: bps.Header()}
-	newState, err := blockExec.ApplyBlock(st, blkID, blk)
+	newState, err := blockExec.ApplyBlock(st, blkID, blk, nil)
 	require.NoError(t, err)
 	return newState
 }

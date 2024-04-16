@@ -362,7 +362,7 @@ func TestWALPeriodicSync(t *testing.T) {
 	}
 }
 
-// FIXME: this helper is very similar to the one in internal/state/helpers_test.go.
+// FIXME: this helper is very similar to the one in ../../state/helpers_test.go.
 func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivValidator) {
 	vals, privVals := test.GenesisValidatorSet(nVals)
 

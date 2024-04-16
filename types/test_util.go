@@ -109,8 +109,10 @@ func MakeVoteNoError(
 func MakeBlock(height int64, txs []Tx, lastCommit *Commit, evidence []Evidence) *Block {
 	block := &Block{
 		Header: Header{
-			Version: cmtversion.Consensus{Block: version.BlockProtocol, App: 0},
-			Height:  height,
+			// <sunrise-core>
+			Version: cmtversion.Consensus{Block: version.BlockProtocol, App: version.AppVersion},
+			// </sunrise-core>
+			Height: height,
 		},
 		Data: Data{
 			Txs: txs,

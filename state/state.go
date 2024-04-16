@@ -30,7 +30,9 @@ var (
 var InitStateVersion = cmtstate.Version{
 	Consensus: cmtversion.Consensus{
 		Block: version.BlockProtocol,
-		App:   0,
+		// <sunrise-core>
+		App: version.AppVersion,
+		// </sunrise-core>
 	},
 	Software: version.TMCoreSemVer,
 }

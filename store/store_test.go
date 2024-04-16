@@ -648,7 +648,9 @@ func TestLoadBlockMeta(t *testing.T) {
 	// 3. A good blockMeta serialized and saved to the DB should be retrievable
 	meta := &types.BlockMeta{Header: types.Header{
 		Version: cmtversion.Consensus{
-			Block: version.BlockProtocol, App: 0,
+			// <sunrise-core>
+			Block: version.BlockProtocol, App: version.AppVersion,
+			// </sunrise-core>
 		}, Height: 1, ProposerAddress: cmtrand.Bytes(crypto.AddressSize),
 	}}
 	pbm := meta.ToProto()

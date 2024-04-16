@@ -9,6 +9,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	// <sunrise-core>
+	"github.com/cometbft/cometbft/version"
+	// </sunrise-core>
 )
 
 const (
@@ -120,7 +123,9 @@ func DefaultValidatorParams() ValidatorParams {
 
 func DefaultVersionParams() VersionParams {
 	return VersionParams{
-		App: 0,
+		// <sunrise-core>
+		App: version.AppVersion,
+		// </sunrise-core>
 	}
 }
 

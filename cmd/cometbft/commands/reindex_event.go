@@ -11,12 +11,12 @@ import (
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/progressbar"
-	"github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/state/indexer"
-	blockidxkv "github.com/cometbft/cometbft/internal/state/indexer/block/kv"
-	"github.com/cometbft/cometbft/internal/state/indexer/sink/psql"
-	"github.com/cometbft/cometbft/internal/state/txindex"
-	"github.com/cometbft/cometbft/internal/state/txindex/kv"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/state/indexer/sink/psql"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/types"
 )
 

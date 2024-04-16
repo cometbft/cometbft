@@ -14,6 +14,10 @@ const (
 	// BlockProtocol versions all block data structures and processing.
 	// This includes validity of blocks and state updates.
 	BlockProtocol uint64 = 11
+
+	// <sunrise-core>
+	AppVersion = 2
+	// </sunrise-core>
 )
 
 // TMGitCommitHash uses git rev-parse HEAD to find commit hash which is helpful

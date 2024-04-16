@@ -443,10 +443,10 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 }
 
 func (bcR *Reactor) handleBlockRequestsRoutine() {
-	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
-	defer statusUpdateTicker.Stop()
-
 	go func() {
+		statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
+		defer statusUpdateTicker.Stop()
+
 		for {
 			select {
 			case <-bcR.Quit():

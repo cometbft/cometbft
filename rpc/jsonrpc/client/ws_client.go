@@ -114,12 +114,11 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 	}
 
 	c := &WSClient{
-		Address:              parsedURL.GetTrimmedHostWithPath(),
-		Username:             username,
-		Password:             password,
-		Dialer:               dialFn,
-		Endpoint:             endpoint,
-		PingPongLatencyTimer: metrics.NewTimer(),
+		Address:  parsedURL.GetTrimmedHostWithPath(),
+		Username: username,
+		Password: password,
+		Dialer:   dialFn,
+		Endpoint: endpoint,
 
 		maxReconnectAttempts: defaultMaxReconnectAttempts,
 		readWait:             defaultReadWait,
@@ -190,6 +189,7 @@ func (c *WSClient) OnStart() error {
 	}
 
 	c.ResponsesCh = make(chan types.RPCResponse)
+	c.PingPongLatencyTimer = metrics.NewTimer()
 
 	c.send = make(chan types.RPCRequest)
 	// 1 additional error may come from the read/write
@@ -213,7 +213,6 @@ func (c *WSClient) Stop() error {
 	}
 	// only close user-facing channels when we can't write to them
 	c.wg.Wait()
-	c.PingPongLatencyTimer.Stop()
 	close(c.ResponsesCh)
 
 	return nil
@@ -473,6 +472,7 @@ func (c *WSClient) readRoutine() {
 		// ignore error; it will trigger in tests
 		// likely because it's closing an already closed connection
 		// }
+		c.PingPongLatencyTimer.Stop()
 		c.wg.Done()
 	}()
 

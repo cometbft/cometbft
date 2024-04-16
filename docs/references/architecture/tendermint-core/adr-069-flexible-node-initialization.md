@@ -13,7 +13,7 @@ Proposed.
 ## Context
 
 In an effort to support [Go-API-Stability](adr-060-go-api-stability.md),
-during the 0.35 development cycle, we have attempted to reduce the the API
+during the 0.35 development cycle, we have attempted to reduce the API
 surface area by moving most of the interface of the `node` package into
 unexported functions, as well as moving the reactors to an `internal`
 package. Having this coincide with the 0.35 release made a lot of sense

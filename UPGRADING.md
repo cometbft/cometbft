@@ -2,11 +2,10 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
-## v1.0.0-alpha.1
+## Unreleased
 
-CometBFT v1.0 is mostly functionally equivalent to CometBFT v0.38, but includes
-some substantial breaking API changes that will hopefully allow future changes
-to be rolled out quicker.
+CometBFT `v1.0` includes some substantial breaking API changes that will hopefully
+allow future changes to be rolled out quicker.
 
 ### Versioning
 
@@ -28,6 +27,36 @@ versioning:
 ### Building CometBFT
 
 The minimum Go version has been bumped to [v1.21][go121].
+
+### Proposer-Based Timestamps
+
+CometBFT `v1.0` contains a new algorithm for generating and verifying block timestamps
+called Proposer-Based Timestamps (PBTS).
+The existing algorithm, called BFT-Time is kept for backwards compatibility.
+Upgrading to `v1.0` does not automatically switch the chain from BFT-Time
+to PBTS; rather a ConsensusParam called `PbtsEnableHeight` can be set to a future
+height to transition from BFT-Time to PBTS.
+This flexible mechanism allows chains disentagle the upgrade to `v1.0` from the transition
+in the algorithm used for block times.
+For further information, please check the [PBTS specification][pbts-spec].
+
+### ABCI Mutex
+
+CometBFT's existing ABCI local client is prevented from making
+concurrent calls to ABCI implementations by virtue of a mutex taken
+by the client's implementation.
+In this release, two additional local ABCI clients have been added.
+The first, supports one different mutex per ABCI connection
+(consensus connection, mempool connection, etc.), allowing concurrency
+in the application in different ABCI connections, but still serializing
+ABCI calls within the same connection.
+The second, totally removes mutexes from the ABCI client.
+When using either of the new ABCI clients, the application is now
+responsible to coordinate concurrent ABCI calls in order to prevent
+race conditions or the possibility of non determinism.
+If you are not sure how to ensure those guarantees in your application,
+you are strongly advised to keep on using the existing ABCI client
+containing one global mutex.
 
 ### Consensus
 
@@ -169,6 +198,12 @@ definitions:
    [`api`](./api/) directory. This directory is also an independently versioned
    Go module. This code is still generated using the Cosmos SDK's [gogoproto
    fork](https://github.com/cosmos/gogoproto) at present.
+
+4. Several ABCI-related types were renamed in order to align with [Buf
+   guidelines](https://buf.build/docs/best-practices/style-guide/). `Request*`
+   and `Response*` were renamed to `*Request` and `*Response` (e.g.
+   `RequestQuery` was renamed to `QueryRequest`). See the changelog for more
+   details.
 
 ### RPC
 
@@ -361,3 +396,4 @@ please see the [Tendermint Core upgrading instructions][tmupgrade].
 [tmupgrade]: https://github.com/tendermint/tendermint/blob/35581cf54ec436b8c37fabb43fdaa3f48339a170/UPGRADING.md
 [go120]: https://go.dev/blog/go1.20
 [go121]: https://go.dev/blog/go1.21
+[pbts-spec]: ./spec/consensus/proposer-based-timestamp/README.md

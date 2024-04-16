@@ -9,6 +9,7 @@ import (
 	gogo "github.com/cosmos/gogoproto/types"
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -26,11 +27,18 @@ const (
 
 	ABCIPubKeyTypeEd25519   = ed25519.KeyType
 	ABCIPubKeyTypeSecp256k1 = secp256k1.KeyType
+	ABCIPubKeyTypeBls12381  = bls12381.KeyType
 )
 
 var ABCIPubKeyTypesToNames = map[string]string{
 	ABCIPubKeyTypeEd25519:   ed25519.PubKeyName,
 	ABCIPubKeyTypeSecp256k1: secp256k1.PubKeyName,
+}
+
+func init() {
+	if bls12381.Enabled {
+		ABCIPubKeyTypesToNames[ABCIPubKeyTypeBls12381] = bls12381.PubKeyName
+	}
 }
 
 // ConsensusParams contains consensus critical parameters that determine the
@@ -252,13 +260,16 @@ func (params ConsensusParams) ValidateBasic() error {
 		return fmt.Errorf("Feature.PbtsEnableHeight cannot be negative. Got: %d", params.Feature.PbtsEnableHeight)
 	}
 
-	if params.Synchrony.MessageDelay <= 0 {
-		return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
-			params.Synchrony.MessageDelay)
-	}
-	if params.Synchrony.Precision <= 0 {
-		return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
-			params.Synchrony.Precision)
+	// Synchrony params are only relevant when PBTS is enabled
+	if params.Feature.PbtsEnableHeight > 0 {
+		if params.Synchrony.MessageDelay <= 0 {
+			return fmt.Errorf("synchrony.MessageDelay must be greater than 0. Got: %d",
+				params.Synchrony.MessageDelay)
+		}
+		if params.Synchrony.Precision <= 0 {
+			return fmt.Errorf("synchrony.Precision must be greater than 0. Got: %d",
+				params.Synchrony.Precision)
+		}
 	}
 
 	if len(params.Validator.PubKeyTypes) == 0 {

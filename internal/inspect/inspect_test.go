@@ -18,11 +18,11 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/inspect"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
-	indexermocks "github.com/cometbft/cometbft/internal/state/indexer/mocks"
-	statemocks "github.com/cometbft/cometbft/internal/state/mocks"
-	txindexmocks "github.com/cometbft/cometbft/internal/state/txindex/mocks"
 	"github.com/cometbft/cometbft/internal/test"
 	httpclient "github.com/cometbft/cometbft/rpc/client/http"
+	indexermocks "github.com/cometbft/cometbft/state/indexer/mocks"
+	statemocks "github.com/cometbft/cometbft/state/mocks"
+	txindexmocks "github.com/cometbft/cometbft/state/txindex/mocks"
 	"github.com/cometbft/cometbft/types"
 )
 

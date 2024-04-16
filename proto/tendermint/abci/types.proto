@@ -229,7 +229,7 @@ message Response {
     ResponseVerifyVoteExtension verify_vote_extension = 20;
     ResponseFinalizeBlock       finalize_block        = 21;
     ResponseSignGossipVote      sign_gossip_vote      = 22;
-    ResponsePrepareOracleVotes      prepare_oracle_votes      = 22;
+    ResponsePrepareOracleVotes      prepare_oracle_votes      = 23;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }

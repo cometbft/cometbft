@@ -423,6 +423,17 @@ func (cli *socketClient) SignGossipVote(ctx context.Context, req *types.RequestS
 	return reqRes.Response.GetSignGossipVote(), cli.Error()
 }
 
+func (cli *socketClient) PrepareOracleVotes(ctx context.Context, req *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestPrepareOracleVotes(req))
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Flush(ctx); err != nil {
+		return nil, err
+	}
+	return reqRes.Response.GetPrepareOracleVotes(), cli.Error()
+}
+
 func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (*ReqRes, error) {
 	reqres := NewReqRes(req)
 

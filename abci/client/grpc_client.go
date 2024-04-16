@@ -249,3 +249,7 @@ func (cli *grpcClient) FinalizeBlock(ctx context.Context, req *types.RequestFina
 func (cli *grpcClient) SignGossipVote(ctx context.Context, req *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
 	return cli.client.SignGossipVote(ctx, types.ToRequestSignGossipVote(req).GetSignGossipVote(), grpc.WaitForReady(true))
 }
+
+func (cli *grpcClient) PrepareOracleVotes(ctx context.Context, req *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
+	return cli.client.PrepareOracleVotes(ctx, types.ToRequestPrepareOracleVotes(req).GetPrepareOracleVotes(), grpc.WaitForReady(true))
+}

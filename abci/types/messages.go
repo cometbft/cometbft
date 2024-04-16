@@ -130,6 +130,12 @@ func ToRequestSignGossipVote(req *RequestSignGossipVote) *Request {
 	}
 }
 
+func ToRequestPrepareOracleVotes(req *RequestPrepareOracleVotes) *Request {
+	return &Request{
+		Value: &Request_PrepareOracleVotes{req},
+	}
+}
+
 //----------------------------------------
 
 func ToResponseException(errStr string) *Response {

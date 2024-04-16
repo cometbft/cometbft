@@ -25,6 +25,7 @@ type AppConnConsensus interface {
 	FinalizeBlock(context.Context, *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error)
 	Commit(context.Context) (*types.ResponseCommit, error)
 	SignGossipVote(context.Context, *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error)
+	PrepareOracleVotes(context.Context, *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error)
 }
 
 type AppConnMempool interface {
@@ -113,6 +114,11 @@ func (app *appConnConsensus) Commit(ctx context.Context) (*types.ResponseCommit,
 func (app *appConnConsensus) SignGossipVote(ctx context.Context, req *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
 	return app.appConn.SignGossipVote(ctx, req)
+}
+
+func (app *appConnConsensus) PrepareOracleVotes(ctx context.Context, req *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
+	return app.appConn.PrepareOracleVotes(ctx, req)
 }
 
 //------------------------------------------------

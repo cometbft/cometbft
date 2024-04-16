@@ -8,6 +8,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/sr25519"
+	"github.com/cometbft/cometbft/proxy"
 	"github.com/sirupsen/logrus"
 
 	// cfg "github.com/cometbft/cometbft/config"
@@ -48,7 +49,7 @@ type Reactor struct {
 }
 
 // NewReactor returns a new Reactor with the given config and mempool.
-func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator types.PrivValidator) *Reactor {
+func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator types.PrivValidator, proxyApp proxy.AppConnConsensus) *Reactor {
 	gossipVoteBuffer := &oracletypes.GossipVoteBuffer{
 		Buffer: make(map[string]*oracleproto.GossipVote),
 	}
@@ -64,6 +65,7 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		SignVotesChan:      make(chan *oracleproto.Vote),
 		PubKey:             pubKey,
 		PrivValidator:      privValidator,
+		ProxyApp:           proxyApp,
 	}
 
 	oracleR := &Reactor{

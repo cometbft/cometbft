@@ -1,7 +1,8 @@
 package runner
 
 import (
-	"io/ioutil"
+	"context"
+	"io"
 	"net/http"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 
 	"github.com/cometbft/cometbft/oracle/service/types"
 
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 )
 
@@ -152,21 +154,19 @@ func Run(oracleInfo *types.OracleInfo) {
 	log.Info("[oracle] Service started.")
 	waitForGrpc(oracleInfo.Config.GrpcAddress)
 	waitForRestAPI(oracleInfo.Config.RestApiAddress)
-	count := 0
 	RunProcessSignVoteQueue(oracleInfo)
 	PruneUnsignedVoteBuffer(oracleInfo)
 	PruneGossipVoteBuffer(oracleInfo)
 	// start to take votes from app
 	for {
-		if count == 0 { // on init, and every minute
+		res, err := oracleInfo.ProxyApp.PrepareOracleVotes(context.Background(), &abcitypes.RequestPrepareOracleVotes{})
+		if err != nil {
+			log.Error(err)
 		}
+
+		log.Infof("RESULTS: %v", res.Votes)
 
 		time.Sleep(100 * time.Millisecond)
-
-		count++
-		if count > 600 { // 600 * 0.1s = 60s = every minute
-			count = 0
-		}
 	}
 }
 
@@ -240,7 +240,7 @@ func HTTPRequest(url string, timeout uint64) []byte {
 
 	defer response.Body.Close()
 
-	body, readErr := ioutil.ReadAll(response.Body)
+	body, readErr := io.ReadAll(response.Body)
 
 	if readErr != nil {
 		return []byte{}

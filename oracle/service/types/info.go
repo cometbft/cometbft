@@ -5,6 +5,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
+	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -17,6 +18,7 @@ type OracleInfo struct {
 	PubKey             crypto.PubKey
 	PrivValidator      types.PrivValidator
 	StopChannel        chan int
+	ProxyApp           proxy.AppConnConsensus
 }
 
 type UnsignedVotes struct {

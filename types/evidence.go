@@ -18,7 +18,7 @@ import (
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
-// Evidence represents any provable malicious activity by a validator.
+// Evidence represents any provable misbehavior committed by a validator.
 // Verification logic for each evidence is part of the evidence module.
 type Evidence interface {
 	ABCI() []abci.Misbehavior // forms individual evidence to be sent to the application

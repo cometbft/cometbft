@@ -13,11 +13,11 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

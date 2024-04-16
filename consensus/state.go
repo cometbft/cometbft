@@ -1723,12 +1723,16 @@ func (cs *State) finalizeCommit(height int64) {
 	fail.Fail() // XXX
 
 	// Save to blockStore.
+	// <celestia-core>
 	var seenCommit *types.Commit
+	// </celestia-core>
 	if cs.blockStore.Height() < block.Height {
 		// NOTE: the seenCommit is local justification to commit this block,
 		// but may differ from the LastCommit included in the next block
 		seenExtendedCommit := cs.Votes.Precommits(cs.CommitRound).MakeExtendedCommit(cs.state.ConsensusParams.ABCI)
+		// <celestia-core>
 		seenCommit = seenExtendedCommit.ToCommit()
+		// </celestia-core>
 		if cs.state.ConsensusParams.ABCI.VoteExtensionsEnabled(block.Height) {
 			cs.blockStore.SaveBlockWithExtendedCommit(block, blockParts, seenExtendedCommit)
 		} else {
@@ -1776,7 +1780,9 @@ func (cs *State) finalizeCommit(height int64) {
 			PartSetHeader: blockParts.Header(),
 		},
 		block,
+		// <celestia-core>
 		seenCommit,
+		// </celestia-core>
 	)
 	if err != nil {
 		panic(fmt.Sprintf("failed to apply block; error %v", err))

@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	state "github.com/cometbft/cometbft/internal/state"
+	state "github.com/cometbft/cometbft/state"
 	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/cometbft/cometbft/types"

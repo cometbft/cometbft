@@ -21,9 +21,9 @@ import (
 	"github.com/cometbft/cometbft/internal/autofile"
 	"github.com/cometbft/cometbft/internal/consensus/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
+	sm "github.com/cometbft/cometbft/state"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -362,7 +362,7 @@ func TestWALPeriodicSync(t *testing.T) {
 	}
 }
 
-// FIXME: this helper is very similar to the one in internal/state/helpers_test.go.
+// FIXME: this helper is very similar to the one in ../../state/helpers_test.go.
 func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivValidator) {
 	vals, privVals := test.GenesisValidatorSet(nVals)
 

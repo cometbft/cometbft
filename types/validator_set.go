@@ -689,6 +689,7 @@ func (vals *ValidatorSet) VerifyCommitLightAllSignatures(chainID string, blockID
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
 // It does NOT count all signatures.
+// CONTRACT: must run ValidateBasic() on commit before verifying.
 func (vals *ValidatorSet) VerifyCommitLightTrusting(
 	chainID string,
 	commit *Commit,
@@ -700,6 +701,7 @@ func (vals *ValidatorSet) VerifyCommitLightTrusting(
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
 // this commit.
 // It DOES count all signatures.
+// CONTRACT: must run ValidateBasic() on commit before verifying.
 func (vals *ValidatorSet) VerifyCommitLightTrustingAllSignatures(
 	chainID string,
 	commit *Commit,

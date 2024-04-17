@@ -25,9 +25,9 @@ TODO
 
 Initial notes:
 * Each lane is a mempool on its own, with its own config, capacity, cache, gossip protocol, p2p channel, p2p bandwidth capacity, etc.
-  * @sergio-mena: for an MVP, probably some (most?) of those can be common to all lanes.
+  * for an MVP, probably some (most?) of those can be common to all lanes.
     In further versions, we can see which of those above need to be per-lane
-  * @sergio-mena: it seems clear to me that each lane will need its own Clist, right from the beginning
+  * it seems clear to me that each lane will need its own Clist, right from the beginning
     * cache **can be shared** in MVP
       * lock contention: we think it won't be a big deal performance-wise for an MVP
       * replacement of entries: lanes with a lot of traffic may force replacement on TXs
@@ -83,34 +83,63 @@ Initial notes:
       * We go from the reap loop (currently just one), to probably a nested one
         * the outer loop goes through all TX lists (remember, one per lane), in decreasing priority order
         * the current `break` statements in the inner loop (limit of bytes or gas reached), should also break from the outer loop
-    * Exit flow (Re-Check, Update). Update: unconditionally; Re-Check, only of App say TX is now invalid
+    * Exit flow (Re-Check, Update). Update: unconditionally; Re-Check, only if App says TX is now invalid
       * Depends on how the multiple TX lists are implemented (see discussion above)
-      * WE'RE HERE
-
-* Each lane has a priority then:
-  * Consensus reaps transactions from higher-priority lanes first.
-  * Higher-priority lanes get to be gossiped first (routing).
+      * Update contains Re-check at the end
+      * Remember Update is done while holding the mempool lock (not further CheckTx... they have to wait)
+      * Changes:
+        * We could update the different TX lists in parallel
+        * `Update` method (implementing `Update` method in `Mempool` interface) is implemented by `CListMempool` so
+          * If we go for several `CListMempool`s, the we'll have to call `Update` on each of them with all the TXs every time
+            * or move `Update` method out of `CListMempool` (where?)
+          * Also, the way we will do `ReCheck` would complicated if we had N `Update` calls
+            * We will do `ReCheck` lane-by-lane, in FIFO order within a lane
+          * So, this seems to make us lean toward: 1 `CListMempool` containing N `txs` lists
+* If each lane has a priority, then:
+  * Consensus reaps transactions from higher-priority lanes first, in fifo order
+  * Higher-priority lanes get to be gossiped first, and gossip within a lane is still in FIFO order
   * Transactions in higher-priority lanes are processed (CheckTx'd) first.
-  * @sergio-mena: In my view, there will be a _native_ or _default_ lane, similar to the _native VLAN_ in an 802.1Q network.
-  * @sergio-mena: I would add that the duality lane - priority introduces a powerful indirection
+  * In my view, there will be a _native_ or _default_ lane, similar to the _native VLAN_ in an 802.1Q network.
+  * I would add that the duality lane - priority introduces a powerful indirection
     * The app can just define the lane of a transaction in `CheckTx`, but the priority of the lane
       itself can configured (and fine-tuned) elsewhere (also the app?, operators?)
+  * After discussion with Osmosis and Injective, there's a dilemma
+    * For Osmosis, a two-lane solution ("native" and "priority") would probably be enough.
+      * This means that we could defer the lane and priority configuration, and not tackle it as part of the MVP
+    * For Injective, their use case seems to be more demanding: many lanes (4?, 9?),
+      with one lane even having less prio than the native lane
+      * If we want to address that use case fully, our MVP _does need_ to tackle the design of lane & prio configuration
+      * so, a more ambitious MVP, implying more energy, more time. We must be careful with what we promise for when
 * Each lanes informs consensus when there are txs available.
-  * sergio-mena: `TxsAvailable` is in our laundry list
+  *  `TxsAvailable` is in our laundry list
 * The list of lanes and their priorities: are consensus parameters? are defined by the app?
-  * sergio-mena: $10**6 question :-)
-    * let's discuss it next week with our users
+  *  $10**6 question :-)
+    * let's discuss it next week with our users. Update: Didn't happen so far :-)
+    * TODO
+      * Part 1: static config. How-to
+      * Part 2: config changes; what happens with ongoing TXs
 
 Some considerations:
 
 * The `Tx` message needs an extra `lane` field. If empty, the transaction doesn't have a category (and the message is compatible with the current format).
-  * sergio-mena: yes, _native lane_ (see above)
-* Byzantine nodes may gossip transactions on a high-priority lane to get preferential treatment. We may consider banning peers that send transactions with incorrect lane information.
-  * sergio-mena: good point, we need to discuss further. A good first-hand solution is
-    * every node attaches the lanes to the TXs received locally, just as every node calls `CheckTx` today
-    * nodes transmit TXs without lane information, as they're not supposed to trust each other
+  * yes, _native lane_ (see above)
+  * Update: we decided to
+    * use different p2p channels for different lanes (we will need to _reserve_ a channel range for this in p2p)
+    * not trust info from peers, since we anyway need to run `CheckTx` to check the TX's validity
+      * so not trusting lane info from peers is aligned with our current model on checking validity of TXs received from peers
+  * So, at least in a first version, the lane info won't be shipped with TXs when broadcasting them
+* Byzantine nodes may gossip transactions on a high-priority lane to get preferential treatment.
+  * Idea: we may consider banning peers that send transactions with incorrect lane information.
+    * Decision was not to ship lane info, but we're still using different channels for different lanes
+      * What shall we do when we see a peer misusing a p2p channel?
+        * Likely not clear what to do, will heavily depend on use case. So
+          * let's wait for someone to hit this so we have a use case to solve
+          * and less things to do for MVP
 * Before implementing lanes, is it better to first modularise the current mempool?
-  * sergio-mena: my guess is _no_, at least for an MVP
+  * we currently think improving modularisation is not gating for a mempool lanes MVP
+    * BUT, some things in the
+      _[modularity laundry list](https://www.notion.so/informalsystems/8a887f27e40b45dead689f2d1762b778?v=30a6fd81673b483fb16f4b7a9fc311fb)_
+      will be gating (e.g., `TxsAvailable`)
 
 ## Consequences
 

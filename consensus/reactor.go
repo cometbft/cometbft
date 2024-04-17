@@ -568,6 +568,9 @@ func (conR *Reactor) getRoundState() *cstypes.RoundState {
 	return conR.rs
 }
 
+// -----------------------------------------------------------------------------
+// Reactor gossip routines and helpers
+
 func (conR *Reactor) gossipDataRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
 
@@ -580,206 +583,38 @@ OUTER_LOOP:
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 
-		// Send proposal Block parts?
-		if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
-			if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(); ok {
-				part := rs.ProposalBlockParts.GetPart(index)
-				parts, err := part.ToProto()
-				if err != nil {
-					panic(err)
-				}
-				logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round)
-				if peer.Send(p2p.Envelope{
-					ChannelID: DataChannel,
-					Message: &cmtcons.BlockPart{
-						Height: rs.Height, // This tells peer that this part applies to us.
-						Round:  rs.Round,  // This tells peer that this part applies to us.
-						Part:   *parts,
-					},
-				}) {
-					ps.SetHasProposalBlockPart(prs.Height, prs.Round, index)
-				}
+		// --------------------
+		// Send block part?
+		// (Note these can match on hash so round doesn't matter)
+		// --------------------
+
+		if part, continueLoop := pickPartToSend(logger, conR.conS.blockStore, rs, ps, prs); part != nil {
+			// part is not nil: we either succeed in sending it,
+			// or we were instructed not to sleep (busy-waiting)
+			if ps.SendPartSetHasPart(part, prs) || continueLoop {
 				continue OUTER_LOOP
 			}
-		}
-
-		// If the peer is on a previous height that we have, help catch up.
-		blockStoreBase := conR.conS.blockStore.Base()
-		if blockStoreBase > 0 && 0 < prs.Height && prs.Height < rs.Height && prs.Height >= blockStoreBase {
-			heightLogger := logger.With("height", prs.Height)
-
-			// if we never received the commit message from the peer, the block parts won't be initialized
-			if prs.ProposalBlockParts == nil {
-				blockMeta := conR.conS.blockStore.LoadBlockMeta(prs.Height)
-				if blockMeta == nil {
-					heightLogger.Error("Failed to load block meta",
-						"blockstoreBase", blockStoreBase, "blockstoreHeight", conR.conS.blockStore.Height())
-					time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-				} else {
-					ps.InitProposalBlockParts(blockMeta.BlockID.PartSetHeader)
-				}
-				// continue the loop since prs is a copy and not effected by this initialization
-				continue OUTER_LOOP
-			}
-			conR.gossipDataForCatchup(heightLogger, rs, prs, ps, peer)
+		} else if continueLoop {
+			// part is nil but we don't want to sleep (busy-waiting)
 			continue OUTER_LOOP
 		}
 
-		// If height and round don't match, sleep.
-		if (rs.Height != prs.Height) || (rs.Round != prs.Round) {
-			// logger.Info("Peer Height|Round mismatch, sleeping",
-			// "peerHeight", prs.Height, "peerRound", prs.Round, "peer", peer)
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-			continue OUTER_LOOP
-		}
+		// --------------------
+		// Send proposal?
+		// (If height and round match, and we have a proposal and they don't)
+		// --------------------
 
-		// By here, height and round match.
-		// Proposal block parts were already matched and sent if any were wanted.
-		// (These can match on hash so the round doesn't matter)
-		// Now consider sending other things, like the Proposal itself.
+		heightRoundMatch := (rs.Height == prs.Height) && (rs.Round == prs.Round)
+		proposalToSend := rs.Proposal != nil && !prs.Proposal
 
-		// Send Proposal && ProposalPOL BitArray?
-		if rs.Proposal != nil && !prs.Proposal {
-			// Proposal: share the proposal metadata with peer.
-			{
-				logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
-				if peer.Send(p2p.Envelope{
-					ChannelID: DataChannel,
-					Message:   &cmtcons.Proposal{Proposal: *rs.Proposal.ToProto()},
-				}) {
-					// NOTE[ZM]: A peer might have received different proposal msg so this Proposal msg will be rejected!
-					ps.SetHasProposal(rs.Proposal)
-				}
-			}
-			// ProposalPOL: lets peer know which POL votes we have so far.
-			// Peer must receive ProposalMessage first.
-			// rs.Proposal was validated, so rs.Proposal.POLRound <= rs.Round,
-			// so we definitely have rs.Votes.Prevotes(rs.Proposal.POLRound).
-			if 0 <= rs.Proposal.POLRound {
-				logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
-				peer.Send(p2p.Envelope{
-					ChannelID: DataChannel,
-					Message: &cmtcons.ProposalPOL{
-						Height:           rs.Height,
-						ProposalPolRound: rs.Proposal.POLRound,
-						ProposalPol:      *rs.Votes.Prevotes(rs.Proposal.POLRound).BitArray().ToProto(),
-					},
-				})
-			}
+		if heightRoundMatch && proposalToSend {
+			ps.SendProposalSetHasProposal(logger, rs, prs)
 			continue OUTER_LOOP
 		}
 
 		// Nothing to do. Sleep.
 		time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-		continue OUTER_LOOP
 	}
-}
-
-func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundState,
-	prs *cstypes.PeerRoundState, ps *PeerState, peer p2p.Peer,
-) {
-	if index, ok := prs.ProposalBlockParts.Not().PickRandom(); ok {
-		// Ensure that the peer's PartSetHeader is correct
-		blockMeta := conR.conS.blockStore.LoadBlockMeta(prs.Height)
-		if blockMeta == nil {
-			logger.Error("Failed to load block meta", "ourHeight", rs.Height,
-				"blockstoreBase", conR.conS.blockStore.Base(), "blockstoreHeight", conR.conS.blockStore.Height())
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-			return
-		} else if !blockMeta.BlockID.PartSetHeader.Equals(prs.ProposalBlockPartSetHeader) {
-			logger.Info("Peer ProposalBlockPartSetHeader mismatch, sleeping",
-				"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-			return
-		}
-		// Load the part
-		part := conR.conS.blockStore.LoadBlockPart(prs.Height, index)
-		if part == nil {
-			logger.Error("Could not load part", "index", index,
-				"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-			return
-		}
-		// Send the part
-		logger.Debug("Sending block part for catchup", "round", prs.Round, "index", index)
-		pp, err := part.ToProto()
-		if err != nil {
-			logger.Error("Could not convert part to proto", "index", index, "error", err)
-			return
-		}
-		if peer.Send(p2p.Envelope{
-			ChannelID: DataChannel,
-			Message: &cmtcons.BlockPart{
-				Height: prs.Height, // Not our height, so it doesn't matter.
-				Round:  prs.Round,  // Not our height, so it doesn't matter.
-				Part:   *pp,
-			},
-		}) {
-			ps.SetHasProposalBlockPart(prs.Height, prs.Round, index)
-		} else {
-			logger.Debug("Sending block part for catchup failed")
-			// sleep to avoid retrying too fast
-			time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-		}
-		return
-	}
-	//  logger.Info("No parts to send in catch-up, sleeping")
-	time.Sleep(conR.conS.config.PeerGossipSleepDuration)
-}
-
-func pickVoteToSend(
-	logger log.Logger,
-	conS *State,
-	rs *cstypes.RoundState,
-	ps *PeerState,
-	prs *cstypes.PeerRoundState,
-) *types.Vote {
-	// If height matches, then send LastCommit, Prevotes, Precommits.
-	if rs.Height == prs.Height {
-		heightLogger := logger.With("height", prs.Height)
-		return pickVoteCurrentHeight(heightLogger, rs, prs, ps)
-	}
-
-	// Special catchup logic.
-	// If peer is lagging by height 1, send LastCommit.
-	if prs.Height != 0 && rs.Height == prs.Height+1 {
-		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
-			logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
-			return vote
-		}
-	}
-
-	// Catchup logic
-	// If peer is lagging by more than 1, send Commit.
-	blockStoreBase := conS.blockStore.Base()
-	if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
-		// Load the block's extended commit for prs.Height,
-		// which contains precommit signatures for prs.Height.
-		var ec *types.ExtendedCommit
-		var veEnabled bool
-		func() {
-			conS.mtx.RLock()
-			defer conS.mtx.RUnlock()
-			veEnabled = conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
-		}()
-		if veEnabled {
-			ec = conS.blockStore.LoadBlockExtendedCommit(prs.Height)
-		} else {
-			c := conS.blockStore.LoadBlockCommit(prs.Height)
-			if c == nil {
-				return nil
-			}
-			ec = c.WrappedExtendedCommit()
-		}
-		if ec == nil {
-			return nil
-		}
-		if vote := ps.PickVoteToSend(ec); vote != nil {
-			logger.Debug("Picked Catchup commit to send", "height", prs.Height)
-			return vote
-		}
-	}
-	return nil
 }
 
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
@@ -828,64 +663,6 @@ OUTER_LOOP:
 
 		time.Sleep(conR.conS.config.PeerGossipSleepDuration)
 	}
-}
-
-func pickVoteCurrentHeight(
-	logger log.Logger,
-	rs *cstypes.RoundState,
-	prs *cstypes.PeerRoundState,
-	ps *PeerState,
-) *types.Vote {
-	// If there are lastCommits to send...
-	if prs.Step == cstypes.RoundStepNewHeight {
-		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
-			logger.Debug("Picked rs.LastCommit to send")
-			return vote
-		}
-	}
-	// If there are POL prevotes to send...
-	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
-		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
-				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
-					"round", prs.ProposalPOLRound)
-				return vote
-			}
-		}
-	}
-	// If there are prevotes to send...
-	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
-			return vote
-		}
-	}
-	// If there are precommits to send...
-	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
-		if vote := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
-			return vote
-		}
-	}
-	// If there are prevotes to send...Needed because of validBlock mechanism
-	if prs.Round != -1 && prs.Round <= rs.Round {
-		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
-			return vote
-		}
-	}
-	// If there are POLPrevotes to send...
-	if prs.ProposalPOLRound != -1 {
-		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
-			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
-				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
-					"round", prs.ProposalPOLRound)
-				return vote
-			}
-		}
-	}
-
-	return nil
 }
 
 // NOTE: `queryMaj23Routine` has a simple crude design since it only comes
@@ -988,6 +765,200 @@ OUTER_LOOP:
 		continue OUTER_LOOP
 	}
 }
+
+// pick a block part to send if the peer has the same part set header as us or if they're catching up and we have the block.
+// returns the part and a bool that signals whether to continue to the loop (true) or to sleep.
+// NOTE there is one case where we don't return a part but continue the loop (ie. we return (nil, true)).
+func pickPartToSend(
+	logger log.Logger,
+	blockStore sm.BlockStore,
+	rs *cstypes.RoundState,
+	ps *PeerState,
+	prs *cstypes.PeerRoundState,
+) (*types.Part, bool) {
+	// If peer has same part set header as us, send block parts
+	if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
+		if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(); ok {
+			part := rs.ProposalBlockParts.GetPart(index)
+			// If sending this part fails, restart the OUTER_LOOP (busy-waiting).
+			return part, true
+		}
+	}
+
+	// If the peer is on a previous height that we have, help catch up.
+	blockStoreBase := blockStore.Base()
+	if blockStoreBase > 0 &&
+		0 < prs.Height && prs.Height < rs.Height &&
+		prs.Height >= blockStoreBase {
+		heightLogger := logger.With("height", prs.Height)
+
+		// if we never received the commit message from the peer, the block parts won't be initialized
+		if prs.ProposalBlockParts == nil {
+			blockMeta := blockStore.LoadBlockMeta(prs.Height)
+			if blockMeta == nil {
+				heightLogger.Error("Failed to load block meta",
+					"blockstoreBase", blockStoreBase, "blockstoreHeight", blockStore.Height())
+				return nil, false
+			}
+			ps.InitProposalBlockParts(blockMeta.BlockID.PartSetHeader)
+			// continue the loop since prs is a copy and not affected by this initialization
+			return nil, true // continue OUTER_LOOP
+		}
+		part := pickPartForCatchup(heightLogger, rs, prs, blockStore)
+		if part != nil {
+			// If sending this part fails, do not restart the OUTER_LOOP and sleep.
+			return part, false
+		}
+	}
+
+	return nil, false
+}
+
+func pickPartForCatchup(
+	logger log.Logger,
+	rs *cstypes.RoundState,
+	prs *cstypes.PeerRoundState,
+	blockStore sm.BlockStore,
+) *types.Part {
+	index, ok := prs.ProposalBlockParts.Not().PickRandom()
+	if !ok {
+		return nil
+	}
+	// Ensure that the peer's PartSetHeader is correct
+	blockMeta := blockStore.LoadBlockMeta(prs.Height)
+	if blockMeta == nil {
+		logger.Error("Failed to load block meta", "ourHeight", rs.Height,
+			"blockstoreBase", blockStore.Base(), "blockstoreHeight", blockStore.Height())
+		return nil
+	} else if !blockMeta.BlockID.PartSetHeader.Equals(prs.ProposalBlockPartSetHeader) {
+		logger.Info("Peer ProposalBlockPartSetHeader mismatch, sleeping",
+			"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
+		return nil
+	}
+	// Load the part
+	part := blockStore.LoadBlockPart(prs.Height, index)
+	if part == nil {
+		logger.Error("Could not load part", "index", index,
+			"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
+		return nil
+	}
+	return part
+}
+
+func pickVoteToSend(
+	logger log.Logger,
+	conS *State,
+	rs *cstypes.RoundState,
+	ps *PeerState,
+	prs *cstypes.PeerRoundState,
+) *types.Vote {
+	// If height matches, then send LastCommit, Prevotes, Precommits.
+	if rs.Height == prs.Height {
+		heightLogger := logger.With("height", prs.Height)
+		return pickVoteCurrentHeight(heightLogger, rs, prs, ps)
+	}
+
+	// Special catchup logic.
+	// If peer is lagging by height 1, send LastCommit.
+	if prs.Height != 0 && rs.Height == prs.Height+1 {
+		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
+			logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
+			return vote
+		}
+	}
+
+	// Catchup logic
+	// If peer is lagging by more than 1, send Commit.
+	blockStoreBase := conS.blockStore.Base()
+	if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
+		// Load the block's extended commit for prs.Height,
+		// which contains precommit signatures for prs.Height.
+		var ec *types.ExtendedCommit
+		var veEnabled bool
+		func() {
+			conS.mtx.RLock()
+			defer conS.mtx.RUnlock()
+			veEnabled = conS.state.ConsensusParams.ABCI.VoteExtensionsEnabled(prs.Height)
+		}()
+		if veEnabled {
+			ec = conS.blockStore.LoadBlockExtendedCommit(prs.Height)
+		} else {
+			c := conS.blockStore.LoadBlockCommit(prs.Height)
+			if c == nil {
+				return nil
+			}
+			ec = c.WrappedExtendedCommit()
+		}
+		if ec == nil {
+			return nil
+		}
+		if vote := ps.PickVoteToSend(ec); vote != nil {
+			logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+			return vote
+		}
+	}
+	return nil
+}
+
+func pickVoteCurrentHeight(
+	logger log.Logger,
+	rs *cstypes.RoundState,
+	prs *cstypes.PeerRoundState,
+	ps *PeerState,
+) *types.Vote {
+	// If there are lastCommits to send...
+	if prs.Step == cstypes.RoundStepNewHeight {
+		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
+			logger.Debug("Picked rs.LastCommit to send")
+			return vote
+		}
+	}
+	// If there are POL prevotes to send...
+	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
+		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
+			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
+				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
+					"round", prs.ProposalPOLRound)
+				return vote
+			}
+		}
+	}
+	// If there are prevotes to send...
+	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
+			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are precommits to send...
+	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); vote != nil {
+			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are prevotes to send...Needed because of validBlock mechanism
+	if prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
+			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are POLPrevotes to send...
+	if prs.ProposalPOLRound != -1 {
+		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
+			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
+				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
+					"round", prs.ProposalPOLRound)
+				return vote
+			}
+		}
+	}
+
+	return nil
+}
+
+// -----------------------------------------------------------------------------
 
 func (conR *Reactor) peerStatsRoutine() {
 	for {
@@ -1202,6 +1173,66 @@ func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
 		return false
 	}
 	return false
+}
+
+// SendPartSetHasPart sends the part to the peer.
+// Returns true and marks the peer as having the part if the part was sent.
+func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRoundState) bool {
+	// Send the part
+	ps.logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round, "index", part.Index)
+	pp, err := part.ToProto()
+	if err != nil {
+		// NOTE: only returns error if part is nil, which it should never be by here
+		ps.logger.Error("Could not convert part to proto", "index", part.Index, "error", err)
+		return false
+	}
+	if ps.peer.Send(p2p.Envelope{
+		ChannelID: DataChannel,
+		Message: &cmtcons.BlockPart{
+			Height: prs.Height, // Not our height, so it doesn't matter.
+			Round:  prs.Round,  // Not our height, so it doesn't matter.
+			Part:   *pp,
+		},
+	}) {
+		ps.SetHasProposalBlockPart(prs.Height, prs.Round, int(part.Index))
+		return true
+	}
+	ps.logger.Debug("Sending block part failed")
+	return false
+}
+
+// SendProposalSetHasProposal sends the Proposal (and ProposalPOL if there is one) to the peer.
+// If successful, it marks the peer as having the proposal.
+func (ps *PeerState) SendProposalSetHasProposal(
+	logger log.Logger,
+	rs *cstypes.RoundState,
+	prs *cstypes.PeerRoundState,
+) {
+	// Proposal: share the proposal metadata with peer.
+	logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
+	if ps.peer.Send(p2p.Envelope{
+		ChannelID: DataChannel,
+		Message:   &cmtcons.Proposal{Proposal: *rs.Proposal.ToProto()},
+	}) {
+		// NOTE[ZM]: A peer might have received different proposal msg so this Proposal msg will be rejected!
+		ps.SetHasProposal(rs.Proposal)
+	}
+
+	// ProposalPOL: lets peer know which POL votes we have so far.
+	// Peer must receive ProposalMessage first.
+	// rs.Proposal was validated, so rs.Proposal.POLRound <= rs.Round,
+	// so we definitely have rs.Votes.Prevotes(rs.Proposal.POLRound).
+	if 0 <= rs.Proposal.POLRound {
+		logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
+		ps.peer.Send(p2p.Envelope{
+			ChannelID: DataChannel,
+			Message: &cmtcons.ProposalPOL{
+				Height:           rs.Height,
+				ProposalPolRound: rs.Proposal.POLRound,
+				ProposalPol:      *rs.Votes.Prevotes(rs.Proposal.POLRound).BitArray().ToProto(),
+			},
+		})
+	}
 }
 
 // sendVoteSetHasVote sends the vote to the peer.

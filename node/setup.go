@@ -46,7 +46,7 @@ const readHeaderTimeout = 10 * time.Second
 // SHA256 checksum.
 type ChecksummedGenesisDoc struct {
 	GenesisDoc     *types.GenesisDoc
-	Sha256Checksum []byte
+	Sha256Checksum [32]byte
 }
 
 // GenesisDocProvider returns a GenesisDoc together with its SHA256 checksum.

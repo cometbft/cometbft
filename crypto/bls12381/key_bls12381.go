@@ -89,7 +89,7 @@ func (privKey PrivKey) Sign(digestBz []byte) ([]byte, error) {
 
 	if len(digestBz) > MaxDigestLength {
 		hash := sha256.Sum256(digestBz)
-		sig := secretKey.Sign(hash)
+		sig := secretKey.Sign(hash[:])
 		return sig.Marshal(), nil
 	} else {
 		sig := secretKey.Sign(digestBz)
@@ -134,7 +134,7 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 	bz := msg
 	if len(msg) > MaxDigestLength {
 		hash := sha256.Sum256(msg)
-		bz = hash
+		bz = hash[:]
 	}
 
 	ok, err := bls12381.VerifySignature(sig, [MaxDigestLength]byte(bz[:MaxDigestLength]), pubK)

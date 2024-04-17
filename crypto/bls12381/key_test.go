@@ -37,3 +37,11 @@ func TestSignAndValidateBLS12381(t *testing.T) {
 	// Test the signature
 	assert.True(t, pubKey.VerifySignature(msg, sig))
 }
+
+func TestInvalidPrivKeyBLS12381(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	privKey = privKey[1:] // corrupt key
+	pubKey := privKey.PubKey()
+	require.Nil(t, pubKey)
+}

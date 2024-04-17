@@ -39,6 +39,7 @@ func Routes(cfg config.RPCConfig, s state.Store, bs state.BlockStore, txidx txin
 		"blockchain":       server.NewRPCFunc(env.BlockchainInfo, "minHeight,maxHeight"),
 		"consensus_params": server.NewRPCFunc(env.ConsensusParams, "height"),
 		"block":            server.NewRPCFunc(env.Block, "height"),
+		"signed_block":     server.NewRPCFunc(env.SignedBlock, "height"),
 		"block_by_hash":    server.NewRPCFunc(env.BlockByHash, "hash"),
 		"block_results":    server.NewRPCFunc(env.BlockResults, "height"),
 		"commit":           server.NewRPCFunc(env.Commit, "height"),

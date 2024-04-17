@@ -36,59 +36,50 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 }
 
 func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
-	votes := []*oracleproto.Vote{}
-	for {
-		select {
-		case vote := <-oracleInfo.SignVotesChan:
-			votes = append(votes, vote)
-			continue
-		default:
+	for votes := range oracleInfo.SignVotesChan {
+		if len(votes) == 0 {
+			return
 		}
-		break
+
+		// new batch of unsigned votes
+		newUnsignedVotes := &types.UnsignedVotes{
+			Timestamp: uint64(time.Now().Unix()),
+			Votes:     votes,
+		}
+
+		// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
+		oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
+		oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, newUnsignedVotes)
+		oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
+
+		// loop through unsignedVoteBuffer and combine all votes
+		var batchVotes = []*oracleproto.Vote{}
+		oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
+		for _, unsignedVotes := range oracleInfo.UnsignedVoteBuffer.Buffer {
+			batchVotes = append(batchVotes, unsignedVotes.Votes...)
+		}
+		oracleInfo.UnsignedVoteBuffer.UpdateMtx.RUnlock()
+
+		// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
+		newGossipVote := &oracleproto.GossipVote{
+			PublicKey: oracleInfo.PubKey.Bytes(),
+			SignType:  oracleInfo.PubKey.Type(),
+			Votes:     batchVotes,
+		}
+
+		// signing of vote should append the signature field and timestamp field of gossipVote
+		if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
+			log.Errorf("error signing oracle votes")
+		}
+
+		// replace current gossipVoteBuffer with new one
+		address := oracleInfo.PubKey.Address().String()
+
+		// need to mutex lock as it will clash with concurrent gossip
+		oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+		oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
+		oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 	}
-
-	if len(votes) == 0 {
-		return
-	}
-
-	// new batch of unsigned votes
-	newUnsignedVotes := &types.UnsignedVotes{
-		Timestamp: uint64(time.Now().Unix()),
-		Votes:     votes,
-	}
-
-	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
-	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
-	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, newUnsignedVotes)
-	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
-
-	// loop through unsignedVoteBuffer and combine all votes
-	var batchVotes = []*oracleproto.Vote{}
-	oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
-	for _, unsignedVotes := range oracleInfo.UnsignedVoteBuffer.Buffer {
-		batchVotes = append(batchVotes, unsignedVotes.Votes...)
-	}
-	oracleInfo.UnsignedVoteBuffer.UpdateMtx.RUnlock()
-
-	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
-	newGossipVote := &oracleproto.GossipVote{
-		PublicKey: oracleInfo.PubKey.Bytes(),
-		SignType:  oracleInfo.PubKey.Type(),
-		Votes:     batchVotes,
-	}
-
-	// signing of vote should append the signature field and timestamp field of gossipVote
-	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
-		log.Errorf("error signing oracle votes")
-	}
-
-	// replace current gossipVoteBuffer with new one
-	address := oracleInfo.PubKey.Address().String()
-
-	// need to mutex lock as it will clash with concurrent gossip
-	oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
-	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 }
 
 func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo) {
@@ -164,9 +155,23 @@ func Run(oracleInfo *types.OracleInfo) {
 			log.Error(err)
 		}
 
+		votes := []*oracleproto.Vote{}
+
+		for _, vote := range res.Votes {
+			newVote := oracleproto.Vote{
+				Validator: oracleInfo.PubKey.Address(),
+				OracleId:  vote.OracleId,
+				Data:      vote.Data,
+				Timestamp: uint64(vote.Timestamp),
+			}
+			votes = append(votes, &newVote)
+		}
+
 		log.Infof("RESULTS: %v", res.Votes)
 
-		time.Sleep(100 * time.Millisecond)
+		oracleInfo.SignVotesChan <- votes
+
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 

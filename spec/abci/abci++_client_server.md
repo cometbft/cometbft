@@ -27,23 +27,16 @@ For more details on protobuf, see the [documentation](https://developers.google.
 ## Server Implementations
 
 To use ABCI in your programming language of choice, there must be an ABCI
-server in that language. CometBFT supports four implementations of the ABCI server:
+server in that language. There are a few implementations of the ABCI server:
 
-- in CometBFT's repository:
+- In CometBFT repository:
     - In-process
-    - ABCI-socket
-    - GRPC
+    - [ABCI-socket server](../../abci/server/socket_server.go)
+    - [GRPC server](../../abci/server/grpc_server.go)
 - [tendermint-rs](https://github.com/informalsystems/tendermint-rs)
 - [tower-abci](https://github.com/penumbra-zone/tower-abci)
 
-The implementations in CometBFT's repository can be tested using `abci-cli` by setting
-the `--abci` flag appropriately.
-
-See examples, in various stages of maintenance, in
-[Go](https://github.com/cometbft/cometbft/tree/master/abci/server),
-[JavaScript](https://github.com/tendermint/js-abci),
-[C++](https://github.com/mdyring/cpp-tmsp), and
-[Java](https://github.com/jTendermint/jabci).
+The implementations in CometBFT repository can be tested using the [ABCI-CLI](../../docs/guides/app-dev/abci-cli.md) tool.
 
 ### In Process
 

@@ -46,7 +46,7 @@ const readHeaderTimeout = 10 * time.Second
 // SHA256 checksum.
 type ChecksummedGenesisDoc struct {
 	GenesisDoc     *types.GenesisDoc
-	Sha256Checksum [32]byte
+	Sha256Checksum [tmhash.Size]byte
 }
 
 // GenesisDocProvider returns a GenesisDoc together with its SHA256 checksum.
@@ -70,7 +70,7 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 		if err != nil {
 			return ChecksummedGenesisDoc{}, err
 		}
-		return ChecksummedGenesisDoc{GenesisDoc: genDoc, Sha256Checksum: incomingChecksum}, nil
+		return ChecksummedGenesisDoc{GenesisDoc: genDoc, Sha256Checksum: sizedByteArray(incomingChecksum)}, nil
 	}
 }
 
@@ -596,18 +596,18 @@ func LoadStateFromDBOrGenesisDocProvider(
 		if err != nil {
 			return sm.State{}, nil, errors.New("genesis hash provided by operator cannot be decoded")
 		}
-		if !bytes.Equal(csGenDoc.Sha256Checksum, decodedOperatorGenesisHash) {
+		if !bytes.Equal(csGenDoc.Sha256Checksum[:], decodedOperatorGenesisHash) {
 			return sm.State{}, nil, errors.New("genesis doc hash in db does not match passed --genesis_hash value")
 		}
 	}
 
 	if len(genDocHash) == 0 {
 		// Save the genDoc hash in the store if it doesn't already exist for future verification
-		if err = stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
+		if err = stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum[:]); err != nil {
 			return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
 		}
 	} else {
-		if !bytes.Equal(genDocHash, csGenDoc.Sha256Checksum) {
+		if !bytes.Equal(genDocHash, csGenDoc.Sha256Checksum[:]) {
 			return sm.State{}, nil, errors.New("genesis doc hash in db does not match loaded genesis doc")
 		}
 	}
@@ -671,4 +671,10 @@ func splitAndTrimEmpty(s, sep, cutset string) []string {
 		}
 	}
 	return nonEmptyStrings
+}
+
+func sizedByteArray(bz []byte) [32]byte {
+	b := [32]byte{}
+	copy(b[:], bz)
+	return b
 }

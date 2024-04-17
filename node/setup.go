@@ -673,6 +673,9 @@ func splitAndTrimEmpty(s, sep, cutset string) []string {
 	return nonEmptyStrings
 }
 
+// sizedByteArray converts a byte slice to a fixed-size byte array of length 32.
+// If the input byte slice is shorter than 32 bytes, it will be padded with zero bytes.
+// If the input byte slice is longer than 32 bytes, it will be truncated to 32 bytes.
 func sizedByteArray(bz []byte) [32]byte {
 	b := [32]byte{}
 	copy(b[:], bz)

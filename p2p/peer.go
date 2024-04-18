@@ -401,6 +401,12 @@ func createMConnection(
 	onPeerError func(Peer, any),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
+	// Pre-allocate channel ID labels
+	labelsByChID := make(map[byte]string)
+	for chID := range reactorsByCh {
+		labelsByChID[chID] = fmt.Sprintf("%#x", chID)
+	}
+
 	onReceive := func(chID byte, msgBytes []byte) {
 		reactor := reactorsByCh[chID]
 		if reactor == nil {
@@ -416,7 +422,7 @@ func createMConnection(
 		}
 		labels := []string{
 			"peer_id", string(p.ID()),
-			"chID", fmt.Sprintf("%#x", chID),
+			"chID", labelsByChID[chID],
 		}
 		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()

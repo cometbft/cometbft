@@ -111,7 +111,7 @@ func BenchmarkJsonMarshalStruct(b *testing.B) {
 	car := &Car{Wheels: 4}
 	boat := Boat{Sail: true}
 	for i := 0; i < b.N; i++ {
-		json.Marshal(Struct{
+		_, _ = json.Marshal(Struct{
 			Bool: true, Float64: 3.14, Int32: 32, Int64: 64, Int64Ptr: &i64,
 			String: "foo", StringPtrPtr: &sPtr, Bytes: []byte{1, 2, 3},
 			Time: ti, Car: car, Boat: boat, Vehicles: []Vehicle{car, boat},

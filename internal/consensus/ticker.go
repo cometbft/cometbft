@@ -71,7 +71,7 @@ func (t *timeoutTicker) ScheduleTimeout(ti timeoutInfo) {
 	t.tickChan <- ti
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // stop the timer and drain if necessary.
 func (t *timeoutTicker) stopTimer() {
@@ -96,24 +96,14 @@ func (t *timeoutTicker) timeoutRoutine() {
 		case newti := <-t.tickChan:
 			t.Logger.Debug("Received tick", "old_ti", ti, "new_ti", newti)
 
-			// ignore tickers for old height/round/step
-			if newti.Height < ti.Height {
+			if shouldSkipTick(newti, ti) {
 				continue
-			} else if newti.Height == ti.Height {
-				if newti.Round < ti.Round {
-					continue
-				} else if newti.Round == ti.Round {
-					if ti.Step > 0 && newti.Step <= ti.Step {
-						continue
-					}
-				}
 			}
 
 			// stop the last timer
 			t.stopTimer()
 
 			// update timeoutInfo and reset timer
-			// NOTE time.Timer allows duration to be non-positive
 			ti = newti
 			t.timer.Reset(ti.Duration)
 			t.Logger.Debug("Scheduled timeout", "dur", ti.Duration, "height", ti.Height, "round", ti.Round, "step", ti.Step)
@@ -128,4 +118,15 @@ func (t *timeoutTicker) timeoutRoutine() {
 			return
 		}
 	}
+}
+
+// shouldSkipTick returns true if the new timeoutInfo should be skipped.
+func shouldSkipTick(newti, ti timeoutInfo) bool {
+	if newti.Height < ti.Height {
+		return true
+	}
+	if newti.Height == ti.Height && ((newti.Round < ti.Round) || (newti.Round == ti.Round && ti.Step > 0 && newti.Step <= ti.Step)) {
+		return true
+	}
+	return false
 }

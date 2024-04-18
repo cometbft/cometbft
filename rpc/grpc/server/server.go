@@ -10,12 +10,13 @@ import (
 	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
 	pbversionsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
+	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -48,10 +49,7 @@ func newServerBuilder(listener net.Listener) *serverBuilder {
 func Listen(addr string) (net.Listener, error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf(
-			"invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)",
-			addr,
-		)
+		return nil, grpcerr.ErrInvalidRemoteAddress{Addr: addr}
 	}
 	return net.Listen(parts[0], parts[1])
 }

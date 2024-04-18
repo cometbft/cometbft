@@ -14,13 +14,13 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cfg "github.com/cometbft/cometbft/config"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -43,7 +43,7 @@ func randGenesisDoc() (*types.GenesisDoc, []types.PrivValidator) {
 	sort.Sort(types.PrivValidatorsByAddress(privValidators))
 
 	consPar := types.DefaultConsensusParams()
-	consPar.ABCI.VoteExtensionsEnableHeight = 1
+	consPar.Feature.VoteExtensionsEnableHeight = 1
 	return &types.GenesisDoc{
 		GenesisTime:     cmttime.Now(),
 		ChainID:         test.DefaultTestChainID,
@@ -143,7 +143,7 @@ func newReactor(
 			0,
 			types.PrecommitType,
 			blockID,
-			time.Now(),
+			cmttime.Now(),
 		)
 		if err != nil {
 			panic(err)
@@ -206,7 +206,7 @@ func TestNoBlockResponse(t *testing.T) {
 	}
 
 	for {
-		if reactorPairs[1].reactor.pool.IsCaughtUp() {
+		if isCaughtUp, _, _ := reactorPairs[1].reactor.pool.IsCaughtUp(); isCaughtUp {
 			break
 		}
 
@@ -274,7 +274,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 		time.Sleep(1 * time.Second)
 		caughtUp := true
 		for _, r := range reactorPairs {
-			if !r.reactor.pool.IsCaughtUp() {
+			if isCaughtUp, _, _ := r.reactor.pool.IsCaughtUp(); !isCaughtUp {
 				caughtUp = false
 			}
 		}
@@ -293,7 +293,7 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	lastReactorPair := newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
 	reactorPairs = append(reactorPairs, lastReactorPair) //nolint:makezero // when initializing with 0, the test breaks.
 
-	switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
+	switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(_ int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("BLOCKSYNC", reactorPairs[len(reactorPairs)-1].reactor)
 		return s
 	}, p2p.Connect2Switches)...)
@@ -303,7 +303,8 @@ func TestBadBlockStopsPeer(t *testing.T) {
 	}
 
 	for {
-		if lastReactorPair.reactor.pool.IsCaughtUp() || lastReactorPair.reactor.Switch.Peers().Size() == 0 {
+		isCaughtUp, _, _ := lastReactorPair.reactor.pool.IsCaughtUp()
+		if isCaughtUp || lastReactorPair.reactor.Switch.Peers().Size() == 0 {
 			break
 		}
 
@@ -336,7 +337,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 
 	var switches []*p2p.Switch
 	for _, r := range reactorPairs {
-		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
+		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(_ int, s *p2p.Switch) *p2p.Switch {
 			s.AddReactor("BLOCKSYNC", r.reactor)
 			return s
 		}, p2p.Connect2Switches)...)
@@ -352,7 +353,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		caughtUp := true
 		for _, r := range reactorPairs {
-			if !r.reactor.pool.IsCaughtUp() {
+			if isCaughtUp, _, _ := r.reactor.pool.IsCaughtUp(); !isCaughtUp {
 				caughtUp = false
 				break
 			}
@@ -363,9 +364,8 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 		if time.Since(startTime) > 90*time.Second {
 			msg := "timeout: reactors didn't catch up;"
 			for i, r := range reactorPairs {
-				h, p, lr := r.reactor.pool.GetStatus()
-				c := r.reactor.pool.IsCaughtUp()
-				msg += fmt.Sprintf(" reactor#%d (h %d, p %d, lr %d, c %t);", i, h, p, lr, c)
+				c, h, maxH := r.reactor.pool.IsCaughtUp()
+				msg += fmt.Sprintf(" reactor#%d (h %d, maxH %d, c %t);", i, h, maxH, c)
 			}
 			require.Fail(t, msg)
 		}

@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	state "github.com/cometbft/cometbft/internal/state"
+	state "github.com/cometbft/cometbft/state"
 	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/cometbft/cometbft/types"
@@ -109,7 +109,8 @@ func (_m *StateProvider) State(ctx context.Context, height uint64) (state.State,
 func NewStateProvider(t interface {
 	mock.TestingT
 	Cleanup(func())
-}) *StateProvider {
+},
+) *StateProvider {
 	mock := &StateProvider{}
 	mock.Mock.Test(t)
 

@@ -23,12 +23,7 @@ import (
 	"github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/state/indexer"
-	"github.com/cometbft/cometbft/internal/state/indexer/block"
-	"github.com/cometbft/cometbft/internal/state/txindex"
 	"github.com/cometbft/cometbft/internal/statesync"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -36,6 +31,11 @@ import (
 	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/indexer/block"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -122,20 +122,20 @@ type blockSyncReactor interface {
 	SwitchToBlockSync(state sm.State) error
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 func initDBs(config *cfg.Config, dbProvider cfg.DBProvider) (bsDB dbm.DB, stateDB dbm.DB, err error) {
 	bsDB, err = dbProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
 	stateDB, err = dbProvider(&cfg.DBContext{ID: "state", Config: config})
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	return
+	return bsDB, stateDB, nil
 }
 
 func createAndStartProxyAppConns(clientCreator proxy.ClientCreator, logger log.Logger, metrics *proxy.Metrics) (proxy.AppConns, error) {
@@ -288,7 +288,7 @@ func createEvidenceReactor(config *cfg.Config, dbProvider cfg.DBProvider,
 		return nil, nil, err
 	}
 	evidenceLogger := logger.With("module", "evidence")
-	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
+	evidencePool, err := evidence.NewPool(evidenceDB, stateStore, blockStore, evidence.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -515,6 +515,7 @@ func startStateSync(
 	stateStore sm.Store,
 	blockStore *store.BlockStore,
 	state sm.State,
+	dbKeyLayoutVersion string,
 ) error {
 	ssR.Logger.Info("Starting state sync")
 
@@ -522,14 +523,15 @@ func startStateSync(
 		var err error
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		stateProvider, err = statesync.NewLightClientStateProvider(
+		stateProvider, err = statesync.NewLightClientStateProviderWithDBKeyVersion(
 			ctx,
 			state.ChainID, state.Version, state.InitialHeight,
 			config.RPCServers, light.TrustOptions{
 				Period: config.TrustPeriod,
 				Height: config.TrustHeight,
 				Hash:   config.TrustHashBytes(),
-			}, ssR.Logger.With("module", "light"))
+			}, ssR.Logger.With("module", "light"),
+			dbKeyLayoutVersion)
 		if err != nil {
 			return fmt.Errorf("failed to set up light client state provider: %w", err)
 		}
@@ -561,20 +563,18 @@ func startStateSync(
 	return nil
 }
 
-//------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 
 var (
 	genesisDocKey     = []byte("genesisDoc")
 	genesisDocHashKey = []byte("genesisDocHash")
 )
 
-// LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
-// database, or creates one using the given genesisDocProvider. On success this also
-// returns the genesis doc loaded through the given provider.
-func LoadStateFromDBOrGenesisDocProvider(
+func LoadStateFromDBOrGenesisDocProviderWithConfig(
 	stateDB dbm.DB,
 	genesisDocProvider GenesisDocProvider,
 	operatorGenesisHashHex string,
+	config *cfg.Config,
 ) (sm.State, *types.GenesisDoc, error) {
 	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
@@ -612,14 +612,34 @@ func LoadStateFromDBOrGenesisDocProvider(
 		}
 	}
 
+	dbKeyLayoutVersion := ""
+	if config != nil {
+		dbKeyLayoutVersion = config.Storage.ExperimentalKeyLayout
+	}
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
+		DBKeyLayout:          dbKeyLayoutVersion,
 	})
+
 	state, err := stateStore.LoadFromDBOrGenesisDoc(csGenDoc.GenesisDoc)
 	if err != nil {
 		return sm.State{}, nil, err
 	}
 	return state, csGenDoc.GenesisDoc, nil
+}
+
+// LoadStateFromDBOrGenesisDocProvider attempts to load the state from the
+// database, or creates one using the given genesisDocProvider. On success this also
+// returns the genesis doc loaded through the given provider.
+
+// Note that if you don't have a version of the key layout set in your DB already,
+// and no config is passed, it will default to v1.
+func LoadStateFromDBOrGenesisDocProvider(
+	stateDB dbm.DB,
+	genesisDocProvider GenesisDocProvider,
+	operatorGenesisHashHex string,
+) (sm.State, *types.GenesisDoc, error) {
+	return LoadStateFromDBOrGenesisDocProviderWithConfig(stateDB, genesisDocProvider, operatorGenesisHashHex, nil)
 }
 
 func createAndStartPrivValidatorSocketClient(

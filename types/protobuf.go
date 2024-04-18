@@ -7,7 +7,7 @@ import (
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 )
 
-//-------------------------------------------------------
+// -------------------------------------------------------
 
 // TM2PB is used for converting CometBFT ABCI to protobuf ABCI.
 // UNSTABLE.
@@ -96,7 +96,7 @@ func (tm2pb) NewValidatorUpdate(pubkey crypto.PubKey, power int64) abci.Validato
 	}
 }
 
-//----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 
 // PB2TM is used for converting protobuf ABCI to CometBFT ABCI.
 // UNSTABLE.

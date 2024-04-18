@@ -26,8 +26,9 @@ message PubKeyResponse {
 
 // SignVoteRequest is a request to sign a vote
 message SignVoteRequest {
-  cometbft.types.v1.Vote vote     = 1;
-  string                 chain_id = 2;
+  cometbft.types.v1.Vote vote                   = 1;
+  string                 chain_id               = 2;
+  bool                   skip_extension_signing = 3;  // if true, the signer may skip signing the extension bytes.
 }
 
 // SignedVoteResponse is a response containing a signed vote or an error
@@ -48,6 +49,17 @@ message SignedProposalResponse {
   RemoteSignerError          error    = 2;
 }
 
+// SignBytesRequest is a request to sign arbitrary bytes
+message SignBytesRequest {
+  bytes  value = 1;
+}
+
+// SignBytesResponse is a response containing a signature or an error
+message SignBytesResponse {
+  bytes             signature = 1;
+  RemoteSignerError error     = 2;
+}
+
 // PingRequest is a request to confirm that the connection is alive.
 message PingRequest {}
 
@@ -66,5 +78,7 @@ message Message {
     SignedProposalResponse signed_proposal_response = 6;
     PingRequest            ping_request             = 7;
     PingResponse           ping_response            = 8;
+    SignBytesRequest       sign_bytes_request       = 9;
+    SignBytesResponse      sign_bytes_response      = 10;
   }
 }

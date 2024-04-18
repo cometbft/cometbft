@@ -14,10 +14,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
-	sm "github.com/cometbft/cometbft/internal/state"
-	smmocks "github.com/cometbft/cometbft/internal/state/mocks"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
+	sm "github.com/cometbft/cometbft/state"
+	smmocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -40,26 +40,22 @@ func TestVerifyLightClientAttack_Lunatic(t *testing.T) {
 	require.NoError(t, ev.ValidateBasic())
 
 	// good pass -> no error
-	err := evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet,
-		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
+	err := evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet)
 	require.NoError(t, err)
 
 	// trusted and conflicting hashes are the same -> an error should be returned
-	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, ev.ConflictingBlock.SignedHeader, common.ValidatorSet,
-		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
+	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, ev.ConflictingBlock.SignedHeader, common.ValidatorSet)
 	require.Error(t, err)
 
 	// evidence with different total validator power should fail
 	ev.TotalVotingPower = 1 * defaultVotingPower
-	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet,
-		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
+	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet)
 	require.Error(t, err)
 
 	// evidence without enough malicious votes should fail
 	ev, trusted, common = makeLunaticEvidence(
 		t, height, commonHeight, byzVals-1, totalVals-byzVals, defaultEvidenceTime, attackTime)
-	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet,
-		defaultEvidenceTime.Add(2*time.Hour), 3*time.Hour)
+	err = evidence.VerifyLightClientAttack(ev, common.SignedHeader, trusted.SignedHeader, common.ValidatorSet)
 	require.Error(t, err)
 }
 
@@ -232,20 +228,17 @@ func TestVerifyLightClientAttack_Equivocation(t *testing.T) {
 	}
 
 	// good pass -> no error
-	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, conflictingVals,
-		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
+	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, conflictingVals)
 	require.NoError(t, err)
 
 	// trusted and conflicting hashes are the same -> an error should be returned
-	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, ev.ConflictingBlock.SignedHeader, conflictingVals,
-		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
+	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, ev.ConflictingBlock.SignedHeader, conflictingVals)
 	require.Error(t, err)
 
 	// conflicting header has different next validators hash which should have been correctly derived from
 	// the previous round
 	ev.ConflictingBlock.Header.NextValidatorsHash = crypto.CRandBytes(tmhash.Size)
-	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, nil,
-		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
+	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, nil)
 	require.Error(t, err)
 	// revert next validators hash
 	ev.ConflictingBlock.Header.NextValidatorsHash = trustedHeader.NextValidatorsHash
@@ -316,13 +309,11 @@ func TestVerifyLightClientAttack_Amnesia(t *testing.T) {
 	}
 
 	// good pass -> no error
-	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, conflictingVals,
-		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
+	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, trustedSignedHeader, conflictingVals)
 	require.NoError(t, err)
 
 	// trusted and conflicting hashes are the same -> an error should be returned
-	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, ev.ConflictingBlock.SignedHeader, conflictingVals,
-		defaultEvidenceTime.Add(1*time.Minute), 2*time.Hour)
+	err = evidence.VerifyLightClientAttack(ev, trustedSignedHeader, ev.ConflictingBlock.SignedHeader, conflictingVals)
 	require.Error(t, err)
 
 	state := sm.State{
@@ -370,11 +361,11 @@ func TestVerifyDuplicateVoteEvidence(t *testing.T) {
 	vote1 := types.MakeVoteNoError(t, val, chainID, 0, 10, 2, 1, blockID, defaultEvidenceTime)
 
 	v1 := vote1.ToProto()
-	err := val.SignVote(chainID, v1)
+	err := val.SignVote(chainID, v1, false)
 	require.NoError(t, err)
 	badVote := types.MakeVoteNoError(t, val, chainID, 0, 10, 2, 1, blockID, defaultEvidenceTime)
 	bv := badVote.ToProto()
-	err = val2.SignVote(chainID, bv)
+	err = val2.SignVote(chainID, bv, false)
 	require.NoError(t, err)
 
 	vote1.Signature = v1.Signature

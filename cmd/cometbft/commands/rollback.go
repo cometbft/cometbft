@@ -9,8 +9,8 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
+	"github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 )
 
 var removeBlock = false
@@ -31,7 +31,7 @@ no blocks will be removed so upon restarting CometBFT the transactions in block 
 re-executed against the application. Using --hard will also remove block n. This can
 be done multiple times.
 `,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		height, hash, err := RollbackState(config, removeBlock)
 		if err != nil {
 			return fmt.Errorf("failed to rollback state: %w", err)
@@ -77,7 +77,7 @@ func loadStateAndBlockStore(config *cfg.Config) (*store.BlockStore, state.Store,
 	if err != nil {
 		return nil, nil, err
 	}
-	blockStore := store.NewBlockStore(blockStoreDB)
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 
 	if !os.FileExists(filepath.Join(config.DBDir(), "state.db")) {
 		return nil, nil, fmt.Errorf("no statestore found in %v", config.DBDir())

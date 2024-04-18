@@ -10,7 +10,7 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1";
 
-//----------------------------------------
+// ----------------------------------------
 // Request types
 
 // Request represents a request to the ABCI application.
@@ -208,7 +208,7 @@ message FinalizeBlockRequest {
   bytes proposer_address = 8;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Response types
 
 // Response represents a response from the ABCI application.
@@ -439,7 +439,7 @@ message FinalizeBlockResponse {
   bytes app_hash = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Misc.
 
 // CommitInfo contains votes for the particular round.
@@ -504,7 +504,7 @@ message TxResult {
   ExecTxResult result = 4 [(gogoproto.nullable) = false];
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Blockchain Types
 
 // Validator in the validator set.
@@ -574,7 +574,7 @@ message Misbehavior {
   int64 total_voting_power = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // State Sync Types
 
 // Snapshot of the ABCI application state.

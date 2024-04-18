@@ -1,7 +1,7 @@
 package blockservice
 
 import (
-	context "context"
+	"context"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
@@ -11,8 +11,8 @@ import (
 	ptypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/rpctrace"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 

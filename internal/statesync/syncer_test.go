@@ -14,7 +14,6 @@ import (
 	ssproto "github.com/cometbft/cometbft/api/cometbft/statesync/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/config"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/internal/statesync/mocks"
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
@@ -22,7 +21,9 @@ import (
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
 	"github.com/cometbft/cometbft/proxy"
 	proxymocks "github.com/cometbft/cometbft/proxy/mocks"
+	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -60,7 +61,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 
 		LastBlockHeight: 1,
 		LastBlockID:     types.BlockID{Hash: []byte("blockhash")},
-		LastBlockTime:   time.Now(),
+		LastBlockTime:   cmttime.Now(),
 		LastResultsHash: []byte("last_results_hash"),
 		AppHash:         []byte("app_hash"),
 
@@ -98,7 +99,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	// Adding a couple of peers should trigger snapshot discovery messages
 	peerA := &p2pmocks.Peer{}
 	peerA.On("ID").Return(p2p.ID("a"))
-	peerA.On("Send", mock.MatchedBy(func(i interface{}) bool {
+	peerA.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		if !ok {
 			return false
@@ -111,7 +112,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 
 	peerB := &p2pmocks.Peer{}
 	peerB.On("ID").Return(p2p.ID("b"))
-	peerB.On("Send", mock.MatchedBy(func(i interface{}) bool {
+	peerB.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		if !ok {
 			return false
@@ -176,11 +177,11 @@ func TestSyncer_SyncAny(t *testing.T) {
 		chunkRequests[msg.Index]++
 		chunkRequestsMtx.Unlock()
 	}
-	peerA.On("Send", mock.MatchedBy(func(i interface{}) bool {
+	peerA.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == ChunkChannel
 	})).Maybe().Run(onChunkRequest).Return(true)
-	peerB.On("Send", mock.MatchedBy(func(i interface{}) bool {
+	peerB.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == ChunkChannel
 	})).Maybe().Run(onChunkRequest).Return(true)
@@ -190,7 +191,7 @@ func TestSyncer_SyncAny(t *testing.T) {
 	// beginning. We also wait for a little while, to exercise the retry logic in fetchChunks().
 	connSnapshot.On("ApplySnapshotChunk", mock.Anything, &abci.ApplySnapshotChunkRequest{
 		Index: 2, Chunk: []byte{1, 1, 2},
-	}).Once().Run(func(args mock.Arguments) { time.Sleep(2 * time.Second) }).Return(
+	}).Once().Run(func(_ mock.Arguments) { time.Sleep(2 * time.Second) }).Return(
 		&abci.ApplySnapshotChunkResponse{
 			Result:        abci.APPLY_SNAPSHOT_CHUNK_RESULT_RETRY_SNAPSHOT,
 			RefetchChunks: []uint32{1},

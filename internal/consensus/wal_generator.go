@@ -13,11 +13,11 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -141,7 +141,7 @@ func randPort() int {
 	return base + cmtrand.Intn(spread)
 }
 
-func makeAddrs() (string, string) {
+func makeAddrs() (address, port string) {
 	start := randPort()
 	return fmt.Sprintf("tcp://127.0.0.1:%d", start),
 		fmt.Sprintf("tcp://127.0.0.1:%d", start+1)
@@ -203,15 +203,15 @@ func (w *byteBufferWAL) WriteSync(m WALMessage) error {
 	return w.Write(m)
 }
 
-func (w *byteBufferWAL) FlushAndSync() error { return nil }
+func (*byteBufferWAL) FlushAndSync() error { return nil }
 
-func (w *byteBufferWAL) SearchForEndHeight(
+func (*byteBufferWAL) SearchForEndHeight(
 	int64,
 	*WALSearchOptions,
 ) (rd io.ReadCloser, found bool, err error) {
 	return nil, false, nil
 }
 
-func (w *byteBufferWAL) Start() error { return nil }
-func (w *byteBufferWAL) Stop() error  { return nil }
-func (w *byteBufferWAL) Wait()        {}
+func (*byteBufferWAL) Start() error { return nil }
+func (*byteBufferWAL) Stop() error  { return nil }
+func (*byteBufferWAL) Wait()        {}

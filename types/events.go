@@ -168,6 +168,7 @@ var (
 	EventQueryNewEvidence         = QueryForEvent(EventNewEvidence)
 	EventQueryNewRound            = QueryForEvent(EventNewRound)
 	EventQueryNewRoundStep        = QueryForEvent(EventNewRoundStep)
+	EventQueryNewSignedBlock      = QueryForEvent(EventSignedBlock) // <celestia-core />
 	EventQueryPolka               = QueryForEvent(EventPolka)
 	EventQueryRelock              = QueryForEvent(EventRelock)
 	EventQueryTimeoutPropose      = QueryForEvent(EventTimeoutPropose)

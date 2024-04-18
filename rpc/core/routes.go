@@ -24,6 +24,7 @@ func (env *Environment) GetRoutes() RoutesMap {
 		"genesis":                   rpc.NewRPCFunc(env.Genesis, "", rpc.Cacheable()),
 		"genesis_chunked":           rpc.NewRPCFunc(env.GenesisChunked, "chunk", rpc.Cacheable()),
 		"block":                     rpc.NewRPCFunc(env.Block, "height", rpc.Cacheable("height")),
+		"signed_block":              rpc.NewRPCFunc(env.SignedBlock, "height", rpc.Cacheable("height")), // <celestia-core>
 		"block_by_hash":             rpc.NewRPCFunc(env.BlockByHash, "hash", rpc.Cacheable()),
 		"block_results":             rpc.NewRPCFunc(env.BlockResults, "height", rpc.Cacheable("height")),
 		"commit":                    rpc.NewRPCFunc(env.Commit, "height", rpc.Cacheable("height")),

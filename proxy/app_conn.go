@@ -26,6 +26,7 @@ type AppConnConsensus interface {
 	Commit(context.Context) (*types.ResponseCommit, error)
 	SignGossipVote(context.Context, *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error)
 	PrepareOracleVotes(context.Context, *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error)
+	ValidateOracleVotes(context.Context, *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error)
 }
 
 type AppConnMempool interface {
@@ -119,6 +120,11 @@ func (app *appConnConsensus) SignGossipVote(ctx context.Context, req *types.Requ
 func (app *appConnConsensus) PrepareOracleVotes(ctx context.Context, req *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
 	return app.appConn.PrepareOracleVotes(ctx, req)
+}
+
+func (app *appConnConsensus) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
+	return app.appConn.ValidateOracleVotes(ctx, req)
 }
 
 //------------------------------------------------

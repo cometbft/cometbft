@@ -37,6 +37,7 @@ service ABCI {
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
   rpc SignGossipVote(RequestSignGossipVote) returns (ResponseSignGossipVote);
   rpc PrepareOracleVotes(RequestPrepareOracleVotes) returns (ResponsePrepareOracleVotes);
+  rpc ValidateOracleVotes(RequestValidateOracleVotes) returns (ResponseValidateOracleVotes);
 }
 
 //----------------------------------------
@@ -61,7 +62,8 @@ message Request {
     RequestVerifyVoteExtension verify_vote_extension = 19;
     RequestFinalizeBlock       finalize_block        = 20;
     RequestSignGossipVote      sign_gossip_vote      = 21;
-    RequestPrepareOracleVotes         prepare_oracle_votes  = 22;
+    RequestPrepareOracleVotes  prepare_oracle_votes  = 22;
+    RequestValidateOracleVotes validate_oracle_votes = 23;
   }
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -206,6 +208,10 @@ message RequestSignGossipVote {
 
 message RequestPrepareOracleVotes {}
 
+message RequestValidateOracleVotes {
+  bytes oracle_tx = 1;
+}
+
 //----------------------------------------
 // Response types
 
@@ -229,7 +235,8 @@ message Response {
     ResponseVerifyVoteExtension verify_vote_extension = 20;
     ResponseFinalizeBlock       finalize_block        = 21;
     ResponseSignGossipVote      sign_gossip_vote      = 22;
-    ResponsePrepareOracleVotes      prepare_oracle_votes      = 23;
+    ResponsePrepareOracleVotes  prepare_oracle_votes  = 23;
+    ResponseValidateOracleVotes validate_oracle_votes = 24;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -392,6 +399,16 @@ message Vote {
 
 message ResponsePrepareOracleVotes {
   repeated Vote votes = 1 [(gogoproto.nullable) = false];
+}
+
+message ResponseValidateOracleVotes {
+  bytes encoded_oracle_tx = 1;
+  Status status = 2;
+
+  enum Status {
+    present = 0;
+    absent = 1;
+  }
 }
 
 //----------------------------------------

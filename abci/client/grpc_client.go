@@ -253,3 +253,7 @@ func (cli *grpcClient) SignGossipVote(ctx context.Context, req *types.RequestSig
 func (cli *grpcClient) PrepareOracleVotes(ctx context.Context, req *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
 	return cli.client.PrepareOracleVotes(ctx, types.ToRequestPrepareOracleVotes(req).GetPrepareOracleVotes(), grpc.WaitForReady(true))
 }
+
+func (cli *grpcClient) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
+	return cli.client.ValidateOracleVotes(ctx, types.ToRequestValidateOracleVotes(req).GetValidateOracleVotes(), grpc.WaitForReady(true))
+}

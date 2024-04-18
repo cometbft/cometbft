@@ -272,20 +272,17 @@ func (blockExec *BlockExecutor) ProcessProposal(
 ) (bool, error) {
 	txs := block.Data.Txs.ToSliceOfBytes()
 	if len(txs) > 0 {
-		oracleTx := &oracleproto.GossipVotes{}
-		// check if oracleTx is successfully injected into first position of txs
-		if err := oracleTx.Unmarshal(txs[0]); err != nil {
+		res, err := blockExec.proxyApp.ValidateOracleVotes(context.Background(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
+
+		if err != nil && res.Status == abci.ResponseValidateOracleVotes_absent {
 			// oracleTx is not present, continue normal processProposal flow
 			blockExec.logger.Error("error unmarshalling oracleVotesMsg or oracleVotesMsg not present", "err", err)
-		} else {
-			newTxBz, err := blockExec.validateOracleGossipVotes(oracleTx, block.Header.Height)
-			if err != nil {
-				// oracleTx is present but it is invalid, remove from txs
-				txs = txs[1:]
-			} else {
-				// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig
-				txs[0] = newTxBz
-			}
+		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_present {
+			// oracleTx is present but it is invalid, remove from txs
+			txs = txs[1:]
+		} else if err != nil {
+			// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig
+			txs[0] = res.EncodedOracleTx
 		}
 	}
 

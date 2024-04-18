@@ -38,6 +38,7 @@ type Application interface {
 	// Hooks
 	SignGossipVote(context.Context, *RequestSignGossipVote) (*ResponseSignGossipVote, error)
 	PrepareOracleVotes(context.Context, *RequestPrepareOracleVotes) (*ResponsePrepareOracleVotes, error)
+	ValidateOracleVotes(context.Context, *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error)
 }
 
 //-------------------------------------------------------
@@ -130,4 +131,8 @@ func (BaseApplication) SignGossipVote(_ context.Context, req *RequestSignGossipV
 
 func (BaseApplication) PrepareOracleVotes(_ context.Context, req *RequestPrepareOracleVotes) (*ResponsePrepareOracleVotes, error) {
 	return &ResponsePrepareOracleVotes{}, nil
+}
+
+func (BaseApplication) ValidateOracleVotes(_ context.Context, req *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error) {
+	return &ResponseValidateOracleVotes{}, nil
 }

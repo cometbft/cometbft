@@ -3,6 +3,7 @@ package bits
 import (
 	"encoding/binary"
 	"fmt"
+	"math/bits"
 	"regexp"
 	"strings"
 	"sync"
@@ -247,14 +248,61 @@ func (bA *BitArray) PickRandom() (int, bool) {
 	}
 
 	bA.mtx.Lock()
-	trueIndices := bA.getTrueIndices()
-	bA.mtx.Unlock()
-
-	if len(trueIndices) == 0 { // no bits set to true
+	numTrueIndices := bA.getNumTrueIndices()
+	if numTrueIndices == 0 { // no bits set to true
+		bA.mtx.Unlock()
 		return 0, false
 	}
+	index := bA.getNthTrueIndex(cmtrand.Intn(numTrueIndices))
+	bA.mtx.Unlock()
+	if index == -1 {
+		return 0, false
+	}
+	return index, true
+}
 
-	return trueIndices[cmtrand.Intn(len(trueIndices))], true
+func (bA *BitArray) getNumTrueIndices() int {
+	count := 0
+	numElems := len(bA.Elems)
+	for i := 0; i < numElems; i++ {
+		count += bits.OnesCount64(bA.Elems[i])
+	}
+	return count
+}
+
+// getNthTrueIndex returns the index of the nth true bit in the bit array.
+// If there is no such value, it returns 0. It is required that the caller
+// ensures that n is less than or equal to the number of true bits in the bit array
+func (bA *BitArray) getNthTrueIndex(n int) int {
+	numElems := len(bA.Elems)
+	count := 0
+
+	// Iterate over each element
+	for i := 0; i < numElems; i++ {
+		// Count set bits in the current element
+		setBits := bits.OnesCount64(bA.Elems[i])
+
+		// If the count of set bits in this element plus the count so far
+		// is greater than or equal to n, then the nth bit must be in this element
+		if count+setBits >= n {
+			// Find the index of the nth set bit within this element
+			for j := 0; j < 64; j++ {
+				if bA.Elems[i]&(1<<uint(j)) != 0 {
+					if count == n {
+						// Calculate the absolute index of the set bit
+						return i*64 + j
+					}
+					count++
+				}
+			}
+		} else {
+			// If the count is not enough, continue to the next element
+			count += setBits
+		}
+	}
+
+	// If we reach here, it means n is out of range
+	return -1
 }
 
 func (bA *BitArray) getTrueIndices() []int {

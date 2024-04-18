@@ -238,7 +238,7 @@ func encodeReflectInterface(w *bytes.Buffer, rv reflect.Value) error {
 }
 
 func encodeStdlib(w *bytes.Buffer, v any) error {
-	// Stream the output of the JSON marshalling directly into the buffer.
+	// Stream the output of the JSON marshaling directly into the buffer.
 	// The stdlib encoder will write a newline, so we must truncate it,
 	// which is why we pass in a bytes.Buffer throughout, not io.Writer.
 	enc := json.NewEncoder(w)

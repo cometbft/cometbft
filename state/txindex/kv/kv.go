@@ -546,9 +546,9 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 	return nil, false, nil
 }
 
-func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
-	eventSeq := extractEventSeqFromKey(it.Key())
-	tmpHeights[string(it.Value())+eventSeq] = it.Value()
+func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, key, value []byte) {
+	eventSeq := extractEventSeqFromKey(key)
+	tmpHeights[string(value)+eventSeq] = value
 }
 
 // match returns all matching txs by hash that meet a given condition and start
@@ -584,7 +584,8 @@ func (txi *TxIndex) match(
 		for ; it.Valid(); it.Next() {
 			// If we have a height range in a query, we need only transactions
 			// for this height
-			keyHeight, err := extractHeightFromKey(it.Key())
+			key := it.Key()
+			keyHeight, err := extractHeightFromKey(key)
 			if err != nil {
 				txi.log.Error("failure to parse height from key:", err)
 				continue
@@ -597,7 +598,7 @@ func (txi *TxIndex) match(
 			if !withinBounds {
 				continue
 			}
-			txi.setTmpHashes(tmpHashes, it)
+			txi.setTmpHashes(tmpHashes, key, it.Value())
 			// Potentially exit early.
 			select {
 			case <-ctx.Done():
@@ -620,7 +621,8 @@ func (txi *TxIndex) match(
 
 	EXISTS_LOOP:
 		for ; it.Valid(); it.Next() {
-			keyHeight, err := extractHeightFromKey(it.Key())
+			key := it.Key()
+			keyHeight, err := extractHeightFromKey(key)
 			if err != nil {
 				txi.log.Error("failure to parse height from key:", err)
 				continue
@@ -633,7 +635,7 @@ func (txi *TxIndex) match(
 			if !withinBounds {
 				continue
 			}
-			txi.setTmpHashes(tmpHashes, it)
+			txi.setTmpHashes(tmpHashes, key, it.Value())
 
 			// Potentially exit early.
 			select {
@@ -663,7 +665,8 @@ func (txi *TxIndex) match(
 			}
 
 			if strings.Contains(extractValueFromKey(it.Key()), c.Arg.Value()) {
-				keyHeight, err := extractHeightFromKey(it.Key())
+				key := it.Key()
+				keyHeight, err := extractHeightFromKey(key)
 				if err != nil {
 					txi.log.Error("failure to parse height from key:", err)
 					continue
@@ -676,7 +679,7 @@ func (txi *TxIndex) match(
 				if !withinBounds {
 					continue
 				}
-				txi.setTmpHashes(tmpHashes, it)
+				txi.setTmpHashes(tmpHashes, key, it.Value())
 			}
 
 			// Potentially exit early.
@@ -797,7 +800,7 @@ LOOP:
 			if err != nil {
 				txi.log.Error("failed to parse bounds:", err)
 			} else if withinBounds {
-				txi.setTmpHashes(tmpHashes, it)
+				txi.setTmpHashes(tmpHashes, key, it.Value())
 			}
 
 			// XXX: passing time in a ABCI Events is not yet implemented
@@ -870,9 +873,25 @@ func isTagKey(key []byte) bool {
 }
 
 func extractHeightFromKey(key []byte) (int64, error) {
-	parts := strings.Split(string(key), tagKeySeparator)
+	// the height is the second last element in the key.
+	// Find the position of the last occurrence of tagKeySeparator
+	endPos := bytes.LastIndexByte(key, tagKeySeparatorRune)
+	if endPos == -1 {
+		return 0, errors.New("separator not found")
+	}
 
-	return strconv.ParseInt(parts[len(parts)-2], 10, 64)
+	// Find the position of the second last occurrence of tagKeySeparator
+	startPos := bytes.LastIndexByte(key[:endPos-1], tagKeySeparatorRune)
+	if startPos == -1 {
+		return 0, errors.New("second last separator not found")
+	}
+
+	// Extract the height part of the key
+	height, err := strconv.ParseInt(string(key[startPos+1:endPos]), 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return height, nil
 }
 
 func extractValueFromKey(key []byte) string {

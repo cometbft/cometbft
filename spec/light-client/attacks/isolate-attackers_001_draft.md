@@ -135,7 +135,7 @@ func violatesTMValidity(ref Header, ev Header) boolean
 ```
 
 - Implementation remarks
-    - checks whether the evidence header `ev` violates the validity property of Tendermint consensus algorithm, by checking agains a reference header
+    - checks whether the evidence header `ev` violates the validity property of Tendermint consensus algorithm, by checking against a reference header
 - Expected precondition
     - `ref.Height == ev.Height`
 - Expected postcondition

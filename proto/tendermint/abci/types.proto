@@ -1,8 +1,6 @@
 syntax = "proto3";
 package tendermint.abci;
 
-option go_package = "github.com/cometbft/cometbft/abci/types";
-
 // For more information on gogo.proto, see:
 // https://github.com/cosmos/gogoproto/blob/master/extensions.md
 import "tendermint/crypto/proof.proto";
@@ -36,7 +34,7 @@ service ABCI {
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Request types
 
 message Request {
@@ -193,7 +191,7 @@ message RequestFinalizeBlock {
   bytes proposer_address = 8;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Response types
 
 message Response {
@@ -350,7 +348,7 @@ message ResponseVerifyVoteExtension {
 }
 
 message ResponseFinalizeBlock {
-  // set of block events emmitted as part of executing the block
+  // set of block events emitted as part of executing the block
   repeated Event events = 1
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
   // the result of executing each transaction including the events
@@ -365,7 +363,7 @@ message ResponseFinalizeBlock {
   bytes app_hash = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Misc.
 
 message CommitInfo {
@@ -427,7 +425,7 @@ message TxResult {
   ExecTxResult result = 4 [(gogoproto.nullable) = false];
 }
 
-//----------------------------------------
+// ----------------------------------------
 // Blockchain Types
 
 message Validator {
@@ -482,7 +480,7 @@ message Misbehavior {
   int64 total_voting_power = 5;
 }
 
-//----------------------------------------
+// ----------------------------------------
 // State Sync Types
 
 message Snapshot {

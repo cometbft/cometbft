@@ -1,13 +1,23 @@
 ---
-order: false
+order: 2
+title: CometBFT How-to Guides
+description: How-to Guides
 parent:
-  order: 2
+    order: 1
 ---
 
-# Guides
+# How-To Guides
 
-- [Installing CometBFT](./install.md)
-- [Quick-start using CometBFT](./quick-start.md)
-- [Creating a built-in application in Go](./go-built-in.md)
-- [Creating an external application in Go](./go.md)
-- [Creating an application with ABCI++](abci/forum-application/1.abci-intro.md)
+CometBFT How-To Guides is a resource center that provides users with comprehensive guides
+on how to develop applications, use essential tools, and run networks powered by the
+CometBFT consensus algorithm. The guides are suitable for developers, system administrators,
+and blockchain enthusiasts who want to gain practical skills and knowledge in distributed
+systems and blockchain technology using CometBFT.
+
+The CometBFT How-To Guides are designed to provide step-by-step instructions and practical
+examples to help users acquire real-world experience while learning.
+
+- [Application Development](./app-dev/README.md)
+- [Creating an application with ABCI 2.0](abci/forum-application/1.abci-intro.md)
+- [Tools](./tools/README.md)
+- [Running Networks](./networks/README.md)

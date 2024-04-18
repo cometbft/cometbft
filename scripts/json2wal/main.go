@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	cs "github.com/cometbft/cometbft/consensus"
+	cs "github.com/cometbft/cometbft/internal/consensus"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/types"
 )
@@ -31,7 +31,7 @@ func main() {
 	}
 	defer f.Close()
 
-	walFile, err := os.OpenFile(os.Args[2], os.O_EXCL|os.O_WRONLY|os.O_CREATE, 0666)
+	walFile, err := os.OpenFile(os.Args[2], os.O_EXCL|os.O_WRONLY|os.O_CREATE, 0o666)
 	if err != nil {
 		panic(fmt.Errorf("failed to open WAL file: %v", err))
 	}

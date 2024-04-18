@@ -1,13 +1,11 @@
 package core
 
 import (
-	"errors"
-	"fmt"
 	"sort"
 
+	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
-	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"
@@ -56,10 +54,10 @@ func (env *Environment) BlockchainInfo(
 // error if either min or max are negative or min > max
 // if 0, use blockstore base for min, latest block height for max
 // enforce limit.
-func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
+func filterMinMax(base, height, min, max, limit int64) (minHeight, maxHeight int64, err error) {
 	// filter negatives
 	if min < 0 || max < 0 {
-		return min, max, fmt.Errorf("heights must be non-negative")
+		return min, max, ErrNegativeHeight
 	}
 
 	// adjust for default values
@@ -81,7 +79,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	min = cmtmath.MaxInt64(min, max-limit+1)
 
 	if min > max {
-		return min, max, fmt.Errorf("min height %d can't be greater than max height %d", min, max)
+		return min, max, ErrHeightMinGTMax{Min: min, Max: max}
 	}
 	return min, max, nil
 }
@@ -127,8 +125,7 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 		return nil, err
 	}
 
-	block := env.BlockStore.LoadBlock(height)
-	blockMeta := env.BlockStore.LoadBlockMeta(height)
+	block, blockMeta := env.BlockStore.LoadBlock(height)
 	if blockMeta == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: block}, nil
 	}
@@ -138,12 +135,10 @@ func (env *Environment) Block(_ *rpctypes.Context, heightPtr *int64) (*ctypes.Re
 // BlockByHash gets block by hash.
 // More: https://docs.cometbft.com/main/rpc/#/Info/block_by_hash
 func (env *Environment) BlockByHash(_ *rpctypes.Context, hash []byte) (*ctypes.ResultBlock, error) {
-	block := env.BlockStore.LoadBlockByHash(hash)
-	if block == nil {
+	block, blockMeta := env.BlockStore.LoadBlockByHash(hash)
+	if blockMeta == nil {
 		return &ctypes.ResultBlock{BlockID: types.BlockID{}, Block: nil}, nil
 	}
-	// If block is not nil, then blockMeta can't be nil.
-	blockMeta := env.BlockStore.LoadBlockMeta(block.Height)
 	return &ctypes.ResultBlock{BlockID: blockMeta.BlockID, Block: block}, nil
 }
 
@@ -194,7 +189,7 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 
 	return &ctypes.ResultBlockResults{
 		Height:                height,
-		TxsResults:            results.TxResults,
+		TxResults:             results.TxResults,
 		FinalizeBlockEvents:   results.Events,
 		ValidatorUpdates:      results.ValidatorUpdates,
 		ConsensusParamUpdates: results.ConsensusParamUpdates,
@@ -211,7 +206,7 @@ func (env *Environment) BlockSearch(
 ) (*ctypes.ResultBlockSearch, error) {
 	// skip if block indexing is disabled
 	if _, ok := env.BlockIndexer.(*blockidxnull.BlockerIndexer); ok {
-		return nil, errors.New("block indexing is disabled")
+		return nil, ErrBlockIndexing
 	}
 
 	q, err := cmtquery.New(query)
@@ -233,7 +228,7 @@ func (env *Environment) BlockSearch(
 		sort.Slice(results, func(i, j int) bool { return results[i] < results[j] })
 
 	default:
-		return nil, errors.New("expected order_by to be either `asc` or `desc` or empty")
+		return nil, ErrInvalidOrderBy{orderBy}
 	}
 
 	// paginate results
@@ -250,15 +245,12 @@ func (env *Environment) BlockSearch(
 
 	apiResults := make([]*ctypes.ResultBlock, 0, pageSize)
 	for i := skipCount; i < skipCount+pageSize; i++ {
-		block := env.BlockStore.LoadBlock(results[i])
-		if block != nil {
-			blockMeta := env.BlockStore.LoadBlockMeta(block.Height)
-			if blockMeta != nil {
-				apiResults = append(apiResults, &ctypes.ResultBlock{
-					Block:   block,
-					BlockID: blockMeta.BlockID,
-				})
-			}
+		block, blockMeta := env.BlockStore.LoadBlock(results[i])
+		if blockMeta != nil {
+			apiResults = append(apiResults, &ctypes.ResultBlock{
+				Block:   block,
+				BlockID: blockMeta.BlockID,
+			})
 		}
 	}
 

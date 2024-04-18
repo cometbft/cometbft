@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
-	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/privval"
 )
 
@@ -27,7 +27,7 @@ var ResetStateCmd = &cobra.Command{
 	Use:     "reset-state",
 	Aliases: []string{"reset_state"},
 	Short:   "Remove all the data and WAL",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	RunE: func(cmd *cobra.Command, _ []string) (err error) {
 		config, err = ParseConfig(cmd)
 		if err != nil {
 			return err

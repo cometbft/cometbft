@@ -6,11 +6,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
 	"github.com/cometbft/cometbft/libs/log"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
-
-	brs "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
 )
 
 type blockResultsService struct {
@@ -48,31 +47,7 @@ func (s *blockResultsService) GetBlockResults(_ context.Context, req *brs.GetBlo
 
 	return &brs.GetBlockResultsResponse{
 		Height:              req.Height,
-		TxsResults:          res.TxResults,
-		FinalizeBlockEvents: formatProtoToRef(res.Events),
-		ValidatorUpdates:    formatProtoToRef(res.ValidatorUpdates),
-		AppHash:             res.AppHash,
-	}, nil
-}
-
-// GetLatest BlockResults returns the block results of the last committed height.
-func (s *blockResultsService) GetLatestBlockResults(_ context.Context, _ *brs.GetLatestBlockResultsRequest) (*brs.GetBlockResultsResponse, error) {
-	logger := s.logger.With("endpoint", "GetBlockResults")
-	ss, err := s.stateStore.Load()
-	if err != nil {
-		logger.Error("Error loading store", "err", err)
-		return nil, status.Error(codes.Internal, "Internal server error")
-	}
-
-	res, err := s.stateStore.LoadFinalizeBlockResponse(ss.LastBlockHeight)
-	if err != nil {
-		logger.Error("Error fetching BlockResults", "height", ss.LastBlockHeight, "err", err)
-		return nil, status.Error(codes.Internal, "Internal server error")
-	}
-
-	return &brs.GetBlockResultsResponse{
-		Height:              ss.LastBlockHeight,
-		TxsResults:          res.TxResults,
+		TxResults:           res.TxResults,
 		FinalizeBlockEvents: formatProtoToRef(res.Events),
 		ValidatorUpdates:    formatProtoToRef(res.ValidatorUpdates),
 		AppHash:             res.AppHash,

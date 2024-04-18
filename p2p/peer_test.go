@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"errors"
 	"fmt"
 	golog "log"
 	"net"
@@ -11,13 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	p2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/proto/tendermint/p2p"
-
-	"github.com/cometbft/cometbft/config"
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -30,10 +30,10 @@ func TestPeerBasic(t *testing.T) {
 	t.Cleanup(rp.Stop)
 
 	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), cfg, cmtconn.DefaultMConnConfig())
-	require.Nil(err)
+	require.NoError(err)
 
 	err = p.Start()
-	require.Nil(err)
+	require.NoError(err)
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {
 			t.Error(err)
@@ -60,10 +60,10 @@ func TestPeerSend(t *testing.T) {
 	t.Cleanup(rp.Stop)
 
 	p, err := createOutboundPeerAndPerformHandshake(rp.Addr(), config, cmtconn.DefaultMConnConfig())
-	require.Nil(err)
+	require.NoError(err)
 
 	err = p.Start()
-	require.Nil(err)
+	require.NoError(err)
 
 	t.Cleanup(func() {
 		if err := p.Stop(); err != nil {
@@ -99,14 +99,14 @@ func createOutboundPeerAndPerformHandshake(
 		return nil, err
 	}
 
-	p := newPeer(pc, mConfig, peerNodeInfo, reactorsByCh, msgTypeByChID, chDescs, func(p Peer, r interface{}) {}, newMetricsLabelCache())
+	p := newPeer(pc, mConfig, peerNodeInfo, reactorsByCh, msgTypeByChID, chDescs, func(_ Peer, _ any) {}, newMetricsLabelCache())
 	p.SetLogger(log.TestingLogger().With("peer", addr))
 	return p, nil
 }
 
 func testDial(addr *NetAddress, cfg *config.P2PConfig) (net.Conn, error) {
 	if cfg.TestDialFail {
-		return nil, fmt.Errorf("dial err (peerConfig.DialFail == true)")
+		return nil, errors.New("dial err (peerConfig.DialFail == true)")
 	}
 
 	conn, err := addr.DialTimeout(cfg.DialTimeout)
@@ -122,7 +122,6 @@ func testOutboundPeerConn(
 	persistent bool,
 	ourNodePrivKey crypto.PrivKey,
 ) (peerConn, error) {
-
 	var pc peerConn
 	conn, err := testDial(addr, config)
 	if err != nil {

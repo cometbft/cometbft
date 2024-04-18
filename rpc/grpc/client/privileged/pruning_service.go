@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/pruning/v1"
+	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
 )
 
 // RetainHeights provides information on which block height limits have been
@@ -28,41 +28,41 @@ type PruningServiceClient interface {
 }
 
 type pruningServiceClient struct {
-	inner v1.PruningServiceClient
+	inner pbsvc.PruningServiceClient
 }
 
 func newPruningServiceClient(conn grpc.ClientConn) PruningServiceClient {
 	return &pruningServiceClient{
-		inner: v1.NewPruningServiceClient(conn),
+		inner: pbsvc.NewPruningServiceClient(conn),
 	}
 }
 
 func (c *pruningServiceClient) SetBlockIndexerRetainHeight(ctx context.Context, height uint64) error {
-	_, err := c.inner.SetBlockIndexerRetainHeight(ctx, &v1.SetBlockIndexerRetainHeightRequest{
+	_, err := c.inner.SetBlockIndexerRetainHeight(ctx, &pbsvc.SetBlockIndexerRetainHeightRequest{
 		Height: height,
 	})
 	return err
 }
 
 func (c *pruningServiceClient) GetBlockIndexerRetainHeight(ctx context.Context) (uint64, error) {
-	res, err := c.inner.GetBlockIndexerRetainHeight(ctx, &v1.GetBlockIndexerRetainHeightRequest{})
+	res, err := c.inner.GetBlockIndexerRetainHeight(ctx, &pbsvc.GetBlockIndexerRetainHeightRequest{})
 	if err != nil {
 		return 0, err
 	}
 	return res.Height, nil
 }
 
-// SetTxIndexerRetainHeight implements PruningServiceClient
+// SetTxIndexerRetainHeight implements PruningServiceClient.
 func (c *pruningServiceClient) SetTxIndexerRetainHeight(ctx context.Context, height uint64) error {
-	_, err := c.inner.SetTxIndexerRetainHeight(ctx, &v1.SetTxIndexerRetainHeightRequest{
+	_, err := c.inner.SetTxIndexerRetainHeight(ctx, &pbsvc.SetTxIndexerRetainHeightRequest{
 		Height: height,
 	})
 	return err
 }
 
-// GetTxIndexerRetainHeight implements PruningServiceClient
+// GetTxIndexerRetainHeight implements PruningServiceClient.
 func (c *pruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context) (uint64, error) {
-	res, err := c.inner.GetTxIndexerRetainHeight(ctx, &v1.GetTxIndexerRetainHeightRequest{})
+	res, err := c.inner.GetTxIndexerRetainHeight(ctx, &pbsvc.GetTxIndexerRetainHeightRequest{})
 	if err != nil {
 		return 0, err
 	}
@@ -71,7 +71,7 @@ func (c *pruningServiceClient) GetTxIndexerRetainHeight(ctx context.Context) (ui
 
 // SetBlockRetainHeight implements PruningServiceClient.
 func (c *pruningServiceClient) SetBlockRetainHeight(ctx context.Context, height uint64) error {
-	_, err := c.inner.SetBlockRetainHeight(ctx, &v1.SetBlockRetainHeightRequest{
+	_, err := c.inner.SetBlockRetainHeight(ctx, &pbsvc.SetBlockRetainHeightRequest{
 		Height: height,
 	})
 	return err
@@ -79,7 +79,7 @@ func (c *pruningServiceClient) SetBlockRetainHeight(ctx context.Context, height 
 
 // GetBlockRetainHeight implements PruningServiceClient.
 func (c *pruningServiceClient) GetBlockRetainHeight(ctx context.Context) (RetainHeights, error) {
-	res, err := c.inner.GetBlockRetainHeight(ctx, &v1.GetBlockRetainHeightRequest{})
+	res, err := c.inner.GetBlockRetainHeight(ctx, &pbsvc.GetBlockRetainHeightRequest{})
 	if err != nil {
 		return RetainHeights{}, err
 	}
@@ -91,7 +91,7 @@ func (c *pruningServiceClient) GetBlockRetainHeight(ctx context.Context) (Retain
 
 // SetBlockResultsRetainHeight implements PruningServiceClient.
 func (c *pruningServiceClient) SetBlockResultsRetainHeight(ctx context.Context, height uint64) error {
-	_, err := c.inner.SetBlockResultsRetainHeight(ctx, &v1.SetBlockResultsRetainHeightRequest{
+	_, err := c.inner.SetBlockResultsRetainHeight(ctx, &pbsvc.SetBlockResultsRetainHeightRequest{
 		Height: height,
 	})
 	return err
@@ -99,7 +99,7 @@ func (c *pruningServiceClient) SetBlockResultsRetainHeight(ctx context.Context, 
 
 // GetBlockResultsRetainHeight implements PruningServiceClient.
 func (c *pruningServiceClient) GetBlockResultsRetainHeight(ctx context.Context) (uint64, error) {
-	res, err := c.inner.GetBlockResultsRetainHeight(ctx, &v1.GetBlockResultsRetainHeightRequest{})
+	res, err := c.inner.GetBlockResultsRetainHeight(ctx, &pbsvc.GetBlockResultsRetainHeightRequest{})
 	if err != nil {
 		return 0, err
 	}
@@ -132,18 +132,18 @@ func (*disabledPruningServiceClient) GetBlockResultsRetainHeight(context.Context
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) SetTxIndexerRetainHeight(context.Context, uint64) error {
+func (*disabledPruningServiceClient) SetTxIndexerRetainHeight(context.Context, uint64) error {
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) GetTxIndexerRetainHeight(context.Context) (uint64, error) {
+func (*disabledPruningServiceClient) GetTxIndexerRetainHeight(context.Context) (uint64, error) {
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) SetBlockIndexerRetainHeight(context.Context, uint64) error {
+func (*disabledPruningServiceClient) SetBlockIndexerRetainHeight(context.Context, uint64) error {
 	panic("pruning service client is disabled")
 }
 
-func (c *disabledPruningServiceClient) GetBlockIndexerRetainHeight(context.Context) (uint64, error) {
+func (*disabledPruningServiceClient) GetBlockIndexerRetainHeight(context.Context) (uint64, error) {
 	panic("pruning service client is disabled")
 }

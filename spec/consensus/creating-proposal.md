@@ -4,7 +4,7 @@ order: 2
 # Creating a proposal
 
 A block consists of a header, transactions, votes (the commit),
-and a list of evidence of malfeasance (eg. signing conflicting votes).
+and a list of evidence of misbehavior (e.g. duplicate vote).
 
 Outstanding evidence items get priority over outstanding transactions in the mempool.
 All in all, the block MUST NOT exceed  `ConsensusParams.Block.MaxBytes`,
@@ -36,7 +36,7 @@ Once the transactions have been reaped from the mempool according to the rules d
 CometBFT calls `PrepareProposal` to the application with the transaction list that has just been reaped.
 As part of this call the application can remove, add, or reorder transactions in the transaction list.
 
-The `RequestPrepareProposal` contains two important fields:
+The `PrepareProposalRequest` contains two important fields:
 
 * `MaxTxBytes`, which contains the value returned by `MaxDataBytes` described above.
   The application MUST NOT return a list of transactions whose size exceeds this number.

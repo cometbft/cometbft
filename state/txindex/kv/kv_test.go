@@ -7,17 +7,16 @@ import (
 	"os"
 	"testing"
 
-	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 
 	db "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
 )
@@ -130,7 +129,7 @@ func TestTxIndex_Prune(t *testing.T) {
 	assert.True(t, isSubset(keys1, keys2))
 
 	numPruned, retainedHeight, err := indexer.Prune(2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), numPruned)
 	assert.Equal(t, int64(2), retainedHeight)
 
@@ -220,7 +219,7 @@ func TestTxSearch(t *testing.T) {
 		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
 			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)
 			if tc.resultsLength > 0 {
@@ -313,12 +312,93 @@ func TestTxSearchEventMatch(t *testing.T) {
 		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
 			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)
 			if tc.resultsLength > 0 {
 				for _, txr := range results {
 					assert.True(t, proto.Equal(txResult, txr))
+				}
+			}
+		})
+	}
+}
+
+func TestTxSearchEventMatchByHeight(t *testing.T) {
+	indexer := NewTxIndex(db.NewMemDB())
+
+	txResult := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "Ana", Index: true}}},
+	})
+
+	err := indexer.Index(txResult)
+	require.NoError(t, err)
+
+	txResult10 := txResultWithEvents([]abci.Event{
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: "1", Index: true}, {Key: "owner", Value: "/Ivan/.test", Index: true}}},
+	})
+	txResult10.Tx = types.Tx("HELLO WORLD 10")
+	txResult10.Height = 10
+
+	err = indexer.Index(txResult10)
+	require.NoError(t, err)
+
+	testCases := map[string]struct {
+		q             string
+		resultsLength int
+	}{
+		"Return all events from a height 1": {
+			q:             "tx.height = 1",
+			resultsLength: 1,
+		},
+		"Return all events from a height 10": {
+			q:             "tx.height = 10",
+			resultsLength: 1,
+		},
+		"Return all events from a height 5": {
+			q:             "tx.height = 5",
+			resultsLength: 0,
+		},
+		"Return all events from a height in [2; 5]": {
+			q:             "tx.height >= 2 AND tx.height <= 5",
+			resultsLength: 0,
+		},
+		"Return all events from a height in [1; 5]": {
+			q:             "tx.height >= 1 AND tx.height <= 5",
+			resultsLength: 1,
+		},
+		"Return all events from a height in [1; 10]": {
+			q:             "tx.height >= 1 AND tx.height <= 10",
+			resultsLength: 2,
+		},
+		"Return all events from a height in [1; 5] by account.number": {
+			q:             "tx.height >= 1 AND tx.height <= 5 AND account.number=1",
+			resultsLength: 1,
+		},
+		"Return all events from a height in [1; 10] by account.number 2": {
+			q:             "tx.height >= 1 AND tx.height <= 10 AND account.number=1",
+			resultsLength: 2,
+		},
+	}
+
+	ctx := context.Background()
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.q, func(t *testing.T) {
+			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
+			require.NoError(t, err)
+
+			assert.Len(t, results, tc.resultsLength)
+			if tc.resultsLength > 0 {
+				for _, txr := range results {
+					if txr.Height == 1 {
+						assert.True(t, proto.Equal(txResult, txr))
+					} else if txr.Height == 10 {
+						assert.True(t, proto.Equal(txResult10, txr))
+					} else {
+						assert.True(t, false)
+					}
 				}
 			}
 		})
@@ -339,7 +419,7 @@ func TestTxSearchWithCancelation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	results, err := indexer.Search(ctx, query.MustCompile(`account.number = 1`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Empty(t, results)
 }
 
@@ -495,14 +575,13 @@ func TestTxSearchOneTxWithMultipleSameTagsButDifferentValues(t *testing.T) {
 
 	for _, tc := range testCases {
 		results, err := indexer.Search(ctx, query.MustCompile(tc.q))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		n := 0
 		if tc.found {
 			n = 1
 		}
 		assert.Len(t, results, n)
 		assert.True(t, !tc.found || proto.Equal(txResult, results[0]))
-
 	}
 }
 
@@ -652,7 +731,7 @@ func TestTxSearchMultipleTxs(t *testing.T) {
 	ctx := context.Background()
 
 	results, err := indexer.Search(ctx, query.MustCompile(`account.number >= 1`))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	require.Len(t, results, 3)
 }
@@ -672,7 +751,8 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 	}
 }
 
-func benchmarkTxIndex(txsCount int64, b *testing.B) {
+func benchmarkTxIndex(b *testing.B, txsCount int64) {
+	b.Helper()
 	dir, err := os.MkdirTemp("", "tx_index_db")
 	require.NoError(b, err)
 	defer os.RemoveAll(dir)
@@ -740,7 +820,8 @@ func TestBigInt(t *testing.T) {
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloat, Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigFloat, Index: true}, {Key: "amount", Value: "5", Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigIntSmaller, Index: true}}},
-		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigInt, Index: true}, {Key: "amount", Value: "3", Index: true}}}})
+		{Type: "account", Attributes: []abci.EventAttribute{{Key: "number", Value: bigInt, Index: true}, {Key: "amount", Value: "3", Index: true}}},
+	})
 
 	txResult2.Tx = types.Tx("NEW TX")
 	txResult2.Height = 2
@@ -781,7 +862,7 @@ func TestBigInt(t *testing.T) {
 		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
 			results, err := indexer.Search(ctx, query.MustCompile(tc.q))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			assert.Len(t, results, tc.resultsLength)
 			if tc.resultsLength > 0 && tc.txRes != nil {
 				assert.True(t, proto.Equal(results[0], tc.txRes))
@@ -790,11 +871,24 @@ func TestBigInt(t *testing.T) {
 	}
 }
 
-func BenchmarkTxIndex1(b *testing.B)     { benchmarkTxIndex(1, b) }
-func BenchmarkTxIndex500(b *testing.B)   { benchmarkTxIndex(500, b) }
-func BenchmarkTxIndex1000(b *testing.B)  { benchmarkTxIndex(1000, b) }
-func BenchmarkTxIndex2000(b *testing.B)  { benchmarkTxIndex(2000, b) }
-func BenchmarkTxIndex10000(b *testing.B) { benchmarkTxIndex(10000, b) }
+func BenchmarkTxIndex(b *testing.B) {
+	testCases := []struct {
+		name     string
+		txsCount int64
+	}{
+		{"1", 1},
+		{"500", 500},
+		{"1000", 1000},
+		{"2000", 2000},
+		{"10000", 10000},
+	}
+
+	for _, tc := range testCases {
+		b.Run(tc.name, func(b *testing.B) {
+			benchmarkTxIndex(b, tc.txsCount)
+		})
+	}
+}
 
 func isSubset(smaller [][]byte, bigger [][]byte) bool {
 	for _, elem := range smaller {

@@ -1,10 +1,10 @@
 package version
 
 const (
-	// TMVersionDefault is the used as the fallback version of CometBFT
-	// when not using git describe. It is formatted with semantic versioning.
-	TMCoreSemVer = "0.39.0-dev"
-	// ABCISemVer is the semantic version of the ABCI protocol
+	// CMTSemVer is used as the fallback version of CometBFT
+	// when not using git describe. It uses semantic versioning format.
+	CMTSemVer = "1.0.0-dev"
+	// ABCISemVer is the semantic version of the ABCI protocol.
 	ABCISemVer  = "2.0.0"
 	ABCIVersion = ABCISemVer
 	// P2PProtocol versions all p2p behavior and msgs.
@@ -16,6 +16,6 @@ const (
 	BlockProtocol uint64 = 11
 )
 
-// TMGitCommitHash uses git rev-parse HEAD to find commit hash which is helpful
-// for the engineering team when working with the cometbft binary. See Makefile
-var TMGitCommitHash = ""
+// CMTGitCommitHash uses git rev-parse HEAD to find commit hash which is helpful
+// for the engineering team when working with the cometbft binary. See Makefile.
+var CMTGitCommitHash = ""

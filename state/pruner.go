@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/txindex"
 )
@@ -38,6 +38,10 @@ type Pruner struct {
 	interval     time.Duration
 	observer     PrunerObserver
 	metrics      *Metrics
+
+	// Preserve the number of state entries pruned.
+	// Used to calculated correctly when to trigger compactions
+	prunedStates uint64
 }
 
 type prunerConfig struct {
@@ -292,7 +296,7 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 }
 
 // GetTxIndexerRetainHeight is a convenience method for accessing the
-// GetTxIndexerRetainHeight method of the underlying indexer
+// GetTxIndexerRetainHeight method of the underlying indexer.
 func (p *Pruner) GetTxIndexerRetainHeight() (int64, error) {
 	return p.txIndexer.GetRetainHeight()
 }
@@ -446,10 +450,15 @@ func (p *Pruner) pruneABCIResToRetainHeight(lastRetainHeight int64) int64 {
 		return lastRetainHeight
 	}
 
+	// If the block retain height is 0, pruning of the block and state stores might be disabled
+	// This should not prevent Comet from pruning ABCI results if needed.
+	// We could by default always compact when pruning the responses, but in case the state store
+	// is being compacted we introduce an overhead that might cause performance penalties.
+	forceCompact := p.findMinBlockRetainHeight() == 0
 	// newRetainHeight is the height just after that which we have successfully
 	// pruned. In case of an error it will be 0, but then it will also be
 	// ignored.
-	numPruned, newRetainHeight, err := p.stateStore.PruneABCIResponses(targetRetainHeight)
+	numPruned, newRetainHeight, err := p.stateStore.PruneABCIResponses(targetRetainHeight, forceCompact)
 	if err != nil {
 		p.logger.Error("Failed to prune ABCI responses", "err", err, "targetRetainHeight", targetRetainHeight)
 		return lastRetainHeight
@@ -500,8 +509,12 @@ func (p *Pruner) pruneBlocksToHeight(height int64) (uint64, int64, error) {
 	if err != nil {
 		return 0, 0, ErrFailedToPruneBlocks{Height: height, Err: err}
 	}
-	if err := p.stateStore.PruneStates(base, height, evRetainHeight); err != nil {
-		return 0, 0, ErrFailedToPruneStates{Height: height, Err: err}
+	if pruned > 0 {
+		prunedStates, err := p.stateStore.PruneStates(base, height, evRetainHeight, p.prunedStates)
+		p.prunedStates += prunedStates
+		if err != nil {
+			return 0, 0, ErrFailedToPruneStates{Height: height, Err: err}
+		}
 	}
 	return pruned, evRetainHeight, err
 }

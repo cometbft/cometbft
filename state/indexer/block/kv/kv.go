@@ -10,16 +10,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cometbft/cometbft/state"
 	"github.com/google/orderedcode"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
 )
@@ -40,12 +39,31 @@ type BlockerIndexer struct {
 	// Matching will be done both on height AND eventSeq
 	eventSeq int64
 	log      log.Logger
+
+	compact            bool
+	compactionInterval int64
+	lastPruned         int64
+}
+type IndexerOption func(*BlockerIndexer)
+
+// WithCompaction sets the compaciton parameters.
+func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
+	return func(idx *BlockerIndexer) {
+		idx.compact = compact
+		idx.compactionInterval = compactionInterval
+	}
 }
 
-func New(store dbm.DB) *BlockerIndexer {
-	return &BlockerIndexer{
+func New(store dbm.DB, options ...IndexerOption) *BlockerIndexer {
+	bsIndexer := &BlockerIndexer{
 		store: store,
 	}
+
+	for _, option := range options {
+		option(bsIndexer)
+	}
+
+	return bsIndexer
 }
 
 func (idx *BlockerIndexer) SetLogger(l log.Logger) {
@@ -67,7 +85,7 @@ func (idx *BlockerIndexer) Has(height int64) (bool, error) {
 // The following is indexed:
 //
 // primary key: encode(block.height | height) => encode(height)
-// FinalizeBlock events: encode(eventType.eventAttr|eventValue|height|finalize_block|eventSeq) => encode(height)
+// FinalizeBlock events: encode(eventType.eventAttr|eventValue|height|finalize_block|eventSeq) => encode(height).
 func (idx *BlockerIndexer) Index(bh types.EventDataNewBlockEvents) error {
 	batch := idx.store.NewBatch()
 	defer batch.Close()
@@ -103,7 +121,7 @@ func getKeys(indexer BlockerIndexer) [][]byte {
 	return keys
 }
 
-func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
+func (idx *BlockerIndexer) Prune(retainHeight int64) (numPruned int64, newRetainHeight int64, err error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned or 0 in case of error. E.x. if heights {1, 3, 7} were pruned and there was no error, numPruned == 3
 	// newRetainHeight: new retain height after pruning or lastRetainHeight in case of error
@@ -142,7 +160,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	if err != nil {
 		return 0, lastRetainHeight, err
 	}
-	deleted := 0
+	deleted := int64(0)
 	affectedHeights := make(map[int64]struct{})
 	for ; itr.Valid(); itr.Next() {
 		if keyBelongsToHeightRange(itr.Key(), lastRetainHeight, retainHeight) {
@@ -173,6 +191,12 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (int64, int64, error) {
 		return 0, lastRetainHeight, errWriteBatch
 	}
 
+	if idx.compact && idx.lastPruned+deleted >= idx.compactionInterval {
+		err = idx.store.Compact(nil, nil)
+		idx.lastPruned = 0
+	}
+	idx.lastPruned += deleted
+
 	return int64(len(affectedHeights)), retainHeight, err
 }
 
@@ -197,7 +221,7 @@ func (idx *BlockerIndexer) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (idx *BlockerIndexer) setLastRetainHeight(height int64, batch dbm.Batch) error {
+func (*BlockerIndexer) setLastRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastBlockIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -287,7 +311,6 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 				// additional constraint on events)
 
 				continue
-
 			}
 			prefix, err := orderedcode.Append(nil, qr.Key)
 			if err != nil {
@@ -367,7 +390,6 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 
 		select {
 		case <-ctx.Done():
-			break
 
 		default:
 		}
@@ -461,16 +483,13 @@ LOOP:
 			}
 			if err != nil {
 				idx.log.Error("failed to parse bounds:", err)
-			} else {
-				if withinBounds {
-					idx.setTmpHeights(tmpHeights, it)
-				}
+			} else if withinBounds {
+				idx.setTmpHeights(tmpHeights, it)
 			}
 		}
 
 		select {
 		case <-ctx.Done():
-			break
 
 		default:
 		}
@@ -503,7 +522,6 @@ LOOP:
 
 			select {
 			case <-ctx.Done():
-				break
 
 			default:
 			}
@@ -513,13 +531,12 @@ LOOP:
 	return filteredHeights, nil
 }
 
-func (idx *BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
+func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterator) {
 	// If we return attributes that occur within the same events, then store the event sequence in the
 	// result map as well
 	eventSeq, _ := parseEventSeqFromEventKey(it.Key())
 	retVal := it.Value()
 	tmpHeights[string(retVal)+strconv.FormatInt(eventSeq, 10)] = it.Value()
-
 }
 
 // match returns all matching heights that meet a given query condition and start
@@ -553,7 +570,6 @@ func (idx *BlockerIndexer) match(
 		defer it.Close()
 
 		for ; it.Valid(); it.Next() {
-
 			keyHeight, err := parseHeightFromEventKey(it.Key())
 			if err != nil {
 				idx.log.Error("failure to parse height from key:", err)
@@ -592,7 +608,6 @@ func (idx *BlockerIndexer) match(
 		defer it.Close()
 
 		for ; it.Valid(); it.Next() {
-
 			keyHeight, err := parseHeightFromEventKey(it.Key())
 			if err != nil {
 				idx.log.Error("failure to parse height from key:", err)
@@ -691,7 +706,6 @@ func (idx *BlockerIndexer) match(
 
 			select {
 			case <-ctx.Done():
-				break
 
 			default:
 			}
@@ -705,7 +719,7 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 	heightBz := int64ToBytes(height)
 
 	for _, event := range events {
-		idx.eventSeq = idx.eventSeq + 1
+		idx.eventSeq++
 		// only index events with a non-empty type
 		if len(event.Type) == 0 {
 			continue

@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/inspect"
+	"github.com/cometbft/cometbft/internal/inspect"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer/block"
 	"github.com/cometbft/cometbft/store"
@@ -39,7 +39,7 @@ func init() {
 			config.RPC.ListenAddress, "RPC listenener address. Port required")
 	InspectCmd.Flags().
 		String("db-backend",
-			config.DBBackend, "database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb")
+			config.DBBackend, "database backend: goleveldb | rocksdb | badgerdb | pebbledb")
 	InspectCmd.Flags().
 		String("db-dir", config.DBPath, "database directory")
 }
@@ -59,7 +59,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	blockStore := store.NewBlockStore(blockStoreDB)
+	blockStore := store.NewBlockStore(blockStoreDB, store.WithDBKeyLayout(config.Storage.ExperimentalKeyLayout))
 	defer blockStore.Close()
 
 	stateDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "state", Config: config})

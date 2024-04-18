@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,7 +40,7 @@ const (
 
 // Setup sets up the testnet configuration.
 func Setup(testnet *e2e.Testnet, infp infra.Provider) error {
-	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %q", testnet.Dir))
+	logger.Info("setup", "msg", log.NewLazySprintf("Generating testnet files in %#q", testnet.Dir))
 
 	if err := os.MkdirAll(testnet.Dir, os.ModePerm); err != nil {
 		return err
@@ -137,7 +138,15 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
-	genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
+	if testnet.BlockMaxBytes != 0 {
+		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
+	}
+	if testnet.VoteExtensionsUpdateHeight == -1 {
+		genesis.ConsensusParams.Feature.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
+	}
+	if testnet.PbtsUpdateHeight == -1 {
+		genesis.ConsensusParams.Feature.PbtsEnableHeight = testnet.PbtsEnableHeight
+	}
 	for validator, power := range testnet.Validators {
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
 			Name:    validator.Name,
@@ -182,6 +191,8 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
 	cfg.Consensus.PeerGossipIntraloopSleepDuration = node.Testnet.PeerGossipIntraloopSleepDuration
+	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
+	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
 
 	// Assume that full nodes and validators will have a data companion
 	// attached, which will need access to the privileged gRPC endpoint.
@@ -266,32 +277,59 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		}
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
+	if node.Testnet.DisablePexReactor {
+		cfg.P2P.PexReactor = false
+	}
 
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true
 	}
 
+	if node.ExperimentalKeyLayout != "" {
+		cfg.Storage.ExperimentalKeyLayout = node.ExperimentalKeyLayout
+	}
+
+	if node.Compact {
+		cfg.Storage.Compact = node.Compact
+	}
+
+	if node.DiscardABCIResponses {
+		cfg.Storage.DiscardABCIResponses = node.DiscardABCIResponses
+	}
+
+	if node.Indexer != "" {
+		cfg.TxIndex.Indexer = node.Indexer
+	}
+
+	if node.CompactionInterval != 0 && node.Compact {
+		cfg.Storage.CompactionInterval = node.CompactionInterval
+	}
 	return cfg, nil
 }
 
 // MakeAppConfig generates an ABCI application config for a node.
 func MakeAppConfig(node *e2e.Node) ([]byte, error) {
-	cfg := map[string]interface{}{
-		"chain_id":               node.Testnet.Name,
-		"dir":                    "data/app",
-		"listen":                 AppAddressUNIX,
-		"mode":                   node.Mode,
-		"protocol":               "socket",
-		"persist_interval":       node.PersistInterval,
-		"snapshot_interval":      node.SnapshotInterval,
-		"retain_blocks":          node.RetainBlocks,
-		"key_type":               node.PrivvalKey.Type(),
-		"prepare_proposal_delay": node.Testnet.PrepareProposalDelay,
-		"process_proposal_delay": node.Testnet.ProcessProposalDelay,
-		"check_tx_delay":         node.Testnet.CheckTxDelay,
-		"vote_extension_delay":   node.Testnet.VoteExtensionDelay,
-		"finalize_block_delay":   node.Testnet.FinalizeBlockDelay,
-		"vote_extension_size":    node.Testnet.VoteExtensionSize,
+	cfg := map[string]any{
+		"chain_id":                      node.Testnet.Name,
+		"dir":                           "data/app",
+		"listen":                        AppAddressUNIX,
+		"mode":                          node.Mode,
+		"protocol":                      "socket",
+		"persist_interval":              node.PersistInterval,
+		"snapshot_interval":             node.SnapshotInterval,
+		"retain_blocks":                 node.RetainBlocks,
+		"key_type":                      node.PrivvalKey.Type(),
+		"prepare_proposal_delay":        node.Testnet.PrepareProposalDelay,
+		"process_proposal_delay":        node.Testnet.ProcessProposalDelay,
+		"check_tx_delay":                node.Testnet.CheckTxDelay,
+		"vote_extension_delay":          node.Testnet.VoteExtensionDelay,
+		"finalize_block_delay":          node.Testnet.FinalizeBlockDelay,
+		"vote_extension_size":           node.Testnet.VoteExtensionSize,
+		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
+		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
+		"abci_requests_logging_enabled": node.Testnet.ABCITestsEnabled,
+		"pbts_enable_height":            node.Testnet.PbtsEnableHeight,
+		"pbts_update_height":            node.Testnet.PbtsUpdateHeight,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:
@@ -330,7 +368,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 			for node, power := range validators {
 				updateVals[base64.StdEncoding.EncodeToString(node.PrivvalKey.PubKey().Bytes())] = power
 			}
-			validatorUpdates[fmt.Sprintf("%v", height)] = updateVals
+			validatorUpdates[strconv.FormatInt(height, 10)] = updateVals
 		}
 		cfg["validator_update"] = validatorUpdates
 	}

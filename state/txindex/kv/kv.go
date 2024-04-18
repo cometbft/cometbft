@@ -12,17 +12,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/state"
-
 	"github.com/cosmos/gogoproto/proto"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
-	"github.com/cometbft/cometbft/libs/pubsub/query"
-	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
@@ -45,9 +43,23 @@ type TxIndex struct {
 	eventSeq int64
 
 	log log.Logger
+
+	compact            bool
+	compactionInterval int64
+	lastPruned         int64
 }
 
-func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
+type IndexerOption func(*TxIndex)
+
+// WithCompaction sets the compaciton parameters.
+func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
+	return func(txi *TxIndex) {
+		txi.compact = compact
+		txi.compactionInterval = compactionInterval
+	}
+}
+
+func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight int64, err error) {
 	// Returns numPruned, newRetainHeight, err
 	// numPruned: the number of heights pruned. E.x. if heights {1, 3, 7} were pruned, numPruned == 3
 	// newRetainHeight: new retain height after pruning
@@ -135,7 +147,14 @@ func (txi *TxIndex) Prune(retainHeight int64) (int64, int64, error) {
 	}
 	numHeightsPersistentlyPruned = numHeightsBatchPruned
 	currentPersistentlyRetainedHeight = currentBatchRetainedHeight
-	return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, nil
+
+	txi.lastPruned += numHeightsBatchPruned
+	if txi.compact && txi.lastPruned >= txi.compactionInterval {
+		err = txi.store.Compact(nil, nil)
+		txi.lastPruned = 0
+	}
+
+	return numHeightsPersistentlyPruned, currentPersistentlyRetainedHeight, err
 }
 
 func (txi *TxIndex) SetRetainHeight(retainHeight int64) error {
@@ -159,7 +178,7 @@ func (txi *TxIndex) GetRetainHeight() (int64, error) {
 	return height, nil
 }
 
-func (txi *TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
+func (*TxIndex) setIndexerRetainHeight(height int64, batch dbm.Batch) error {
 	return batch.Set(LastTxIndexerRetainHeightKey, int64ToBytes(height))
 }
 
@@ -176,10 +195,16 @@ func (txi *TxIndex) getIndexerRetainHeight() (int64, error) {
 }
 
 // NewTxIndex creates new KV indexer.
-func NewTxIndex(store dbm.DB) *TxIndex {
-	return &TxIndex{
+func NewTxIndex(store dbm.DB, options ...IndexerOption) *TxIndex {
+	txIndex := &TxIndex{
 		store: store,
 	}
+
+	for _, option := range options {
+		option(txIndex)
+	}
+
+	return txIndex
 }
 
 func (txi *TxIndex) SetLogger(l log.Logger) {
@@ -351,7 +376,7 @@ func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
 
 func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Batch) error {
 	for _, event := range result.Result.Events {
-		txi.eventSeq = txi.eventSeq + 1
+		txi.eventSeq++
 		// only index events with a non-empty type
 		if len(event.Type) == 0 {
 			continue
@@ -442,7 +467,6 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 		skipIndexes = append(skipIndexes, rangeIndexes...)
 
 		for _, qr := range ranges {
-
 			// If we have a query range over height and want to still look for
 			// specific event values we do not want to simply return all
 			// transactios in this height range. We remember the height range info
@@ -491,7 +515,6 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 	resultMap := make(map[string]struct{})
 RESULTS_LOOP:
 	for _, h := range filteredHashes {
-
 		res, err := txi.Get(h)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get Tx{%X}: %w", h, err)
@@ -519,10 +542,10 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 			return decoded, true, err
 		}
 	}
-	return
+	return nil, false, nil
 }
 
-func (txi *TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
+func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
 	eventSeq := extractEventSeqFromKey(it.Key())
 	tmpHeights[string(it.Value())+eventSeq] = it.Value()
 }
@@ -558,7 +581,6 @@ func (txi *TxIndex) match(
 
 	EQ_LOOP:
 		for ; it.Valid(); it.Next() {
-
 			// If we have a height range in a query, we need only transactions
 			// for this height
 			keyHeight, err := extractHeightFromKey(it.Key())
@@ -743,7 +765,6 @@ LOOP:
 				if err != nil {
 					continue LOOP
 				}
-
 			}
 			if qr.Key != types.TxHeightKey {
 				keyHeight, err := extractHeightFromKey(it.Key())
@@ -769,10 +790,8 @@ LOOP:
 			}
 			if err != nil {
 				txi.log.Error("failed to parse bounds:", err)
-			} else {
-				if withinBounds {
-					txi.setTmpHashes(tmpHashes, it)
-				}
+			} else if withinBounds {
+				txi.setTmpHashes(tmpHashes, it)
 			}
 
 			// XXX: passing time in a ABCI Events is not yet implemented
@@ -837,13 +856,14 @@ func isTagKey(key []byte) bool {
 }
 
 func extractHeightFromKey(key []byte) (int64, error) {
-	parts := strings.SplitN(string(key), tagKeySeparator, -1)
+	parts := strings.Split(string(key), tagKeySeparator)
 
 	return strconv.ParseInt(parts[len(parts)-2], 10, 64)
 }
+
 func extractValueFromKey(key []byte) string {
 	keyString := string(key)
-	parts := strings.SplitN(keyString, tagKeySeparator, -1)
+	parts := strings.Split(keyString, tagKeySeparator)
 	partsLen := len(parts)
 	value := strings.TrimPrefix(keyString, parts[0]+tagKeySeparator)
 
@@ -854,11 +874,10 @@ func extractValueFromKey(key []byte) string {
 		suffix = tagKeySeparator + parts[partsLen-i] + suffix
 	}
 	return strings.TrimSuffix(value, suffix)
-
 }
 
 func extractEventSeqFromKey(key []byte) string {
-	parts := strings.SplitN(string(key), tagKeySeparator, -1)
+	parts := strings.Split(string(key), tagKeySeparator)
 
 	lastEl := parts[len(parts)-1]
 
@@ -867,6 +886,7 @@ func extractEventSeqFromKey(key []byte) string {
 	}
 	return "0"
 }
+
 func keyForEvent(key string, value string, result *abci.TxResult, eventSeq int64) []byte {
 	return []byte(fmt.Sprintf("%s/%s/%d/%d%s",
 		key,
@@ -896,10 +916,10 @@ func startKeyForCondition(c syntax.Condition, height int64) []byte {
 	return startKey(c.Tag, c.Arg.Value())
 }
 
-func startKey(fields ...interface{}) []byte {
+func startKey(fields ...any) []byte {
 	var b bytes.Buffer
 	for _, f := range fields {
-		b.Write([]byte(fmt.Sprintf("%v", f) + tagKeySeparator))
+		b.WriteString(fmt.Sprintf("%v", f) + tagKeySeparator)
 	}
 	return b.Bytes()
 }

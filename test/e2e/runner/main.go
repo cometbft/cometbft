@@ -41,7 +41,7 @@ func NewCLI() *CLI {
 		Short:         "End-to-end test runner",
 		SilenceUsage:  true,
 		SilenceErrors: true, // we'll output them ourselves in Run()
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			file, err := cmd.Flags().GetString("file")
 			if err != nil {
 				return err
@@ -80,7 +80,12 @@ func NewCLI() *CLI {
 				return fmt.Errorf("unknown infrastructure type '%s'", inft)
 			}
 
-			testnet, err := e2e.LoadTestnet(file, ifd)
+			testnetDir, err := cmd.Flags().GetString("testnet-dir")
+			if err != nil {
+				return err
+			}
+
+			testnet, err := e2e.LoadTestnet(file, ifd, testnetDir)
 			if err != nil {
 				return fmt.Errorf("loading testnet: %s", err)
 			}
@@ -106,7 +111,7 @@ func NewCLI() *CLI {
 			}
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := Cleanup(cli.testnet); err != nil {
 				return err
 			}
@@ -175,6 +180,8 @@ func NewCLI() *CLI {
 	cli.root.PersistentFlags().StringP("file", "f", "", "Testnet TOML manifest")
 	_ = cli.root.MarkPersistentFlagRequired("file")
 
+	cli.root.PersistentFlags().StringP("testnet-dir", "d", "", "Set the directory for the testnet files generated during setup")
+
 	cli.root.PersistentFlags().StringP("infrastructure-type", "", "docker", "Backing infrastructure used to run the testnet. Either 'digital-ocean' or 'docker'")
 
 	cli.root.PersistentFlags().StringP("infrastructure-data", "", "", "path to the json file containing the infrastructure data. Only used if the 'infrastructure-type' is set to a value other than 'docker'")
@@ -185,7 +192,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "setup",
 		Short: "Generates the testnet directory and configuration",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return Setup(cli.testnet, cli.infp)
 		},
 	})
@@ -193,7 +200,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "start",
 		Short: "Starts the testnet, waiting for nodes to become available",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			_, err := os.Stat(cli.testnet.Dir)
 			if os.IsNotExist(err) {
 				err = Setup(cli.testnet, cli.infp)
@@ -208,7 +215,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "perturb",
 		Short: "Perturbs the testnet, e.g. by restarting or disconnecting nodes",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return Perturb(cmd.Context(), cli.testnet, cli.infp)
 		},
 	})
@@ -216,7 +223,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "wait",
 		Short: "Waits for a few blocks to be produced and all nodes to catch up",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return Wait(cmd.Context(), cli.testnet, 5)
 		},
 	})
@@ -224,7 +231,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "stop",
 		Short: "Stops the testnet",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			logger.Info("Stopping testnet")
 			return cli.infp.StopTestnet(context.Background())
 		},
@@ -233,7 +240,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "load",
 		Short: "Generates transaction load until the command is canceled",
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(_ *cobra.Command, _ []string) (err error) {
 			return Load(context.Background(), cli.testnet)
 		},
 	})
@@ -264,7 +271,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "test",
 		Short: "Runs test cases against a running testnet",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return Test(cli.testnet, cli.infp.GetInfrastructureData())
 		},
 	})
@@ -272,7 +279,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "cleanup",
 		Short: "Removes the testnet directory",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return Cleanup(cli.testnet)
 		},
 	})
@@ -280,7 +287,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "logs",
 		Short: "Shows the testnet logs",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs")
 		},
 	})
@@ -288,7 +295,7 @@ func NewCLI() *CLI {
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "tail",
 		Short: "Tails the testnet logs",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs", "--follow")
 		},
 	})
@@ -305,7 +312,7 @@ over a 100 block sampling period.
 		
 Does not run any perturbations.
 		`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := Cleanup(cli.testnet); err != nil {
 				return err
 			}

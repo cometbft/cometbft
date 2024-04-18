@@ -6,13 +6,12 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	ggrpc "google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
 )
 
 type Option func(*clientBuilder)
@@ -119,8 +118,9 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	}
 	conn, err := ggrpc.DialContext(ctx, addr, builder.grpcOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to dial %s: %w", addr, err)
+		return nil, ErrDial{addr, err}
 	}
+
 	versionServiceClient := newDisabledVersionServiceClient()
 	if builder.versionServiceEnabled {
 		versionServiceClient = newVersionServiceClient(conn)

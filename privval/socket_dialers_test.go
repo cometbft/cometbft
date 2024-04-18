@@ -12,10 +12,11 @@ import (
 )
 
 func getDialerTestCases(t *testing.T) []dialerTestCase {
+	t.Helper()
 	tcpAddr := GetFreeLocalhostAddrPort()
 	unixFilePath, err := testUnixAddr()
 	require.NoError(t, err)
-	unixAddr := fmt.Sprintf("unix://%s", unixFilePath)
+	unixAddr := "unix://" + unixFilePath
 
 	return []dialerTestCase{
 		{
@@ -34,7 +35,7 @@ func TestIsConnTimeoutForFundamentalTimeouts(t *testing.T) {
 	tcpAddr := GetFreeLocalhostAddrPort()
 	dialer := DialTCPFn(tcpAddr, time.Millisecond, ed25519.GenPrivKey())
 	_, err := dialer()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.True(t, IsConnTimeout(err))
 }
 
@@ -42,7 +43,7 @@ func TestIsConnTimeoutForWrappedConnTimeouts(t *testing.T) {
 	tcpAddr := GetFreeLocalhostAddrPort()
 	dialer := DialTCPFn(tcpAddr, time.Millisecond, ed25519.GenPrivKey())
 	_, err := dialer()
-	assert.Error(t, err)
+	require.Error(t, err)
 	err = fmt.Errorf("%v: %w", err, ErrConnectionTimeout)
 	assert.True(t, IsConnTimeout(err))
 }

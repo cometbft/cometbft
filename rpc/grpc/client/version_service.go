@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/gogoproto/grpc"
 
-	v1 "github.com/cometbft/cometbft/proto/tendermint/services/version/v1"
+	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 )
 
 // Version provides version information about a particular CometBFT node.
@@ -22,18 +22,18 @@ type VersionServiceClient interface {
 }
 
 type versionServiceClient struct {
-	client v1.VersionServiceClient
+	client pbsvc.VersionServiceClient
 }
 
 func newVersionServiceClient(conn grpc.ClientConn) VersionServiceClient {
 	return &versionServiceClient{
-		client: v1.NewVersionServiceClient(conn),
+		client: pbsvc.NewVersionServiceClient(conn),
 	}
 }
 
-// GetVersion implements VersionServiceClient
+// GetVersion implements VersionServiceClient.
 func (c *versionServiceClient) GetVersion(ctx context.Context) (*Version, error) {
-	res, err := c.client.GetVersion(ctx, &v1.GetVersionRequest{})
+	res, err := c.client.GetVersion(ctx, &pbsvc.GetVersionRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func newDisabledVersionServiceClient() VersionServiceClient {
 	return &disabledVersionServiceClient{}
 }
 
-// GetVersion implements VersionServiceClient
+// GetVersion implements VersionServiceClient.
 func (*disabledVersionServiceClient) GetVersion(context.Context) (*Version, error) {
 	panic("version service client is disabled")
 }

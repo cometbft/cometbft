@@ -8,11 +8,10 @@ import (
 	"reflect"
 
 	"github.com/cometbft/cometbft/abci/types"
-	cmtnet "github.com/cometbft/cometbft/libs/net"
+	cmtnet "github.com/cometbft/cometbft/internal/net"
 )
 
 func main() {
-
 	conn, err := cmtnet.Connect("unix://test.sock")
 	if err != nil {
 		log.Fatal(err.Error())
@@ -21,7 +20,7 @@ func main() {
 	// Make a bunch of requests
 	counter := 0
 	for i := 0; ; i++ {
-		req := types.ToRequestEcho("foobar")
+		req := types.ToEchoRequest("foobar")
 		_, err := makeRequest(conn, req)
 		if err != nil {
 			log.Fatal(err.Error())
@@ -34,14 +33,14 @@ func main() {
 }
 
 func makeRequest(conn io.ReadWriter, req *types.Request) (*types.Response, error) {
-	var bufWriter = bufio.NewWriter(conn)
+	bufWriter := bufio.NewWriter(conn)
 
 	// Write desired request
 	err := types.WriteMessage(req, bufWriter)
 	if err != nil {
 		return nil, err
 	}
-	err = types.WriteMessage(types.ToRequestFlush(), bufWriter)
+	err = types.WriteMessage(types.ToFlushRequest(), bufWriter)
 	if err != nil {
 		return nil, err
 	}
@@ -51,12 +50,12 @@ func makeRequest(conn io.ReadWriter, req *types.Request) (*types.Response, error
 	}
 
 	// Read desired response
-	var res = &types.Response{}
+	res := &types.Response{}
 	err = types.ReadMessage(conn, res)
 	if err != nil {
 		return nil, err
 	}
-	var resFlush = &types.Response{}
+	resFlush := &types.Response{}
 	err = types.ReadMessage(conn, resFlush)
 	if err != nil {
 		return nil, err

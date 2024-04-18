@@ -41,6 +41,8 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 				node.Name, name))
 	}
 
+	timeout := 20 * time.Second
+
 	switch perturbation {
 	case e2e.PerturbationDisconnect:
 		logger.Info("perturb node", "msg", log.NewLazySprintf("Disconnecting node %v...", node.Name))
@@ -60,6 +62,9 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 		if err := docker.ExecCompose(context.Background(), testnet.Dir, "start", name); err != nil {
 			return nil, err
 		}
+		if node.PersistInterval == 0 {
+			timeout *= 5
+		}
 
 	case e2e.PerturbationPause:
 		logger.Info("perturb node", "msg", log.NewLazySprintf("Pausing node %v...", node.Name))
@@ -75,6 +80,9 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 		logger.Info("perturb node", "msg", log.NewLazySprintf("Restarting node %v...", node.Name))
 		if err := docker.ExecCompose(context.Background(), testnet.Dir, "restart", name); err != nil {
 			return nil, err
+		}
+		if node.PersistInterval == 0 {
+			timeout *= 5
 		}
 
 	case e2e.PerturbationUpgrade:
@@ -101,12 +109,15 @@ func PerturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 		if err := docker.ExecCompose(context.Background(), testnet.Dir, "up", "-d", name+"_u"); err != nil {
 			return nil, err
 		}
+		if node.PersistInterval == 0 {
+			timeout *= 5
+		}
 
 	default:
 		return nil, fmt.Errorf("unexpected perturbation %q", perturbation)
 	}
 
-	status, err := waitForNode(ctx, node, 0, 20*time.Second)
+	status, err := waitForNode(ctx, node, 0, timeout)
 	if err != nil {
 		return nil, err
 	}

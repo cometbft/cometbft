@@ -4,26 +4,26 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/types"
 )
 
 // QueryRanges defines a mapping between a composite event key and a QueryRange.
 //
-// e.g.account.number => queryRange{lowerBound: 1, upperBound: 5}
+// e.g.account.number => queryRange{lowerBound: 1, upperBound: 5}.
 type QueryRanges map[string]QueryRange
 
 // QueryRange defines a range within a query condition.
 type QueryRange struct {
-	LowerBound        interface{} // int || time.Time
-	UpperBound        interface{} // int || time.Time
+	LowerBound        any // int || time.Time
+	UpperBound        any // int || time.Time
 	Key               string
 	IncludeLowerBound bool
 	IncludeUpperBound bool
 }
 
 // AnyBound returns either the lower bound if non-nil, otherwise the upper bound.
-func (qr QueryRange) AnyBound() interface{} {
+func (qr QueryRange) AnyBound() any {
 	if qr.LowerBound != nil {
 		return qr.LowerBound
 	}
@@ -33,7 +33,7 @@ func (qr QueryRange) AnyBound() interface{} {
 
 // LowerBoundValue returns the value for the lower bound. If the lower bound is
 // nil, nil will be returned.
-func (qr QueryRange) LowerBoundValue() interface{} {
+func (qr QueryRange) LowerBoundValue() any {
 	if qr.LowerBound == nil {
 		return nil
 	}
@@ -66,7 +66,7 @@ func (qr QueryRange) LowerBoundValue() interface{} {
 
 // UpperBoundValue returns the value for the upper bound. If the upper bound is
 // nil, nil will be returned.
-func (qr QueryRange) UpperBoundValue() interface{} {
+func (qr QueryRange) UpperBoundValue() any {
 	if qr.UpperBound == nil {
 		return nil
 	}
@@ -96,14 +96,13 @@ func (qr QueryRange) UpperBoundValue() interface{} {
 func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRanges, indexes []int, heightRange QueryRange) {
 	queryRange = make(QueryRanges)
 	for i, c := range conditions {
-		heightKey := false
 		if IsRangeOperation(c.Op) {
+			heightKey := c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey
 			r, ok := queryRange[c.Tag]
 			if !ok {
 				r = QueryRange{Key: c.Tag}
 				if c.Tag == types.BlockHeightKey || c.Tag == types.TxHeightKey {
 					heightRange = QueryRange{Key: c.Tag}
-					heightKey = true
 				}
 			}
 
@@ -145,7 +144,7 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 	return queryRange, indexes, heightRange
 }
 
-// Deprecated: This function is not used anymore and will be replaced with LookForRangesWithHeight
+// Deprecated: This function is not used anymore and will be replaced with LookForRangesWithHeight.
 func LookForRanges(conditions []syntax.Condition) (ranges QueryRanges, indexes []int) {
 	ranges = make(QueryRanges)
 	for i, c := range conditions {
@@ -191,7 +190,7 @@ func IsRangeOperation(op syntax.Token) bool {
 	}
 }
 
-func conditionArg(c syntax.Condition) interface{} {
+func conditionArg(c syntax.Condition) any {
 	if c.Arg == nil {
 		return nil
 	}

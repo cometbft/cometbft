@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	dbm "github.com/cometbft/cometbft-db"
-
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/state/indexer"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
@@ -28,7 +27,7 @@ func IndexerFromConfig(cfg *config.Config, dbProvider config.DBProvider, chainID
 			return nil, nil, err
 		}
 
-		return kv.NewTxIndex(store), blockidxkv.New(dbm.NewPrefixDB(store, []byte("block_events"))), nil
+		return kv.NewTxIndex(store), blockidxkv.New(dbm.NewPrefixDB(store, []byte("block_events")), blockidxkv.WithCompaction(cfg.Storage.Compact, cfg.Storage.CompactionInterval)), nil
 
 	case "psql":
 		conn := cfg.TxIndex.PsqlConn

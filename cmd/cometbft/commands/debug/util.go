@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 
 	cfg "github.com/cometbft/cometbft/config"
@@ -67,7 +66,7 @@ func copyConfig(home, dir string) error {
 func dumpProfile(dir, addr, profile string, debug int) error {
 	endpoint := fmt.Sprintf("%s/debug/pprof/%s?debug=%d", addr, profile, debug)
 
-	//nolint:gosec,nolintlint
+	//nolint:gosec,nolintlint,noctx
 	resp, err := http.Get(endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to query for %s profile: %w", profile, err)
@@ -79,5 +78,5 @@ func dumpProfile(dir, addr, profile string, debug int) error {
 		return fmt.Errorf("failed to read %s profile response body: %w", profile, err)
 	}
 
-	return os.WriteFile(path.Join(dir, fmt.Sprintf("%s.out", profile)), body, os.ModePerm)
+	return os.WriteFile(filepath.Join(dir, profile+".out"), body, os.ModePerm)
 }

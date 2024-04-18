@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
+	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtcrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 )
 
 const (
 	// MaxAunts is the maximum number of aunts that can be included in a Proof.
 	// This corresponds to a tree of size 2^100, which should be sufficient for all conceivable purposes.
-	// This maximum helps prevent Denial-of-Service attacks by limitting the size of the proofs.
+	// This maximum helps prevent Denial-of-Service attacks by limiting the size of the proofs.
 	MaxAunts = 100
 )
 
@@ -50,10 +50,10 @@ func (e ErrInvalidProof) Unwrap() error {
 // everything.  This also affects the generalized proof system as
 // well.
 type Proof struct {
-	Total    int64    `json:"total"`     // Total number of items.
-	Index    int64    `json:"index"`     // Index of item to prove.
-	LeafHash []byte   `json:"leaf_hash"` // Hash of item value.
-	Aunts    [][]byte `json:"aunts"`     // Hashes from leaf's sibling to a root's child.
+	Total    int64    `json:"total"`           // Total number of items.
+	Index    int64    `json:"index"`           // Index of item to prove.
+	LeafHash []byte   `json:"leaf_hash"`       // Hash of item value.
+	Aunts    [][]byte `json:"aunts,omitempty"` // Hashes from leaf's sibling to a root's child.
 }
 
 // ProofsFromByteSlices computes inclusion proof for given items.
@@ -70,11 +70,11 @@ func ProofsFromByteSlices(items [][]byte) (rootHash []byte, proofs []*Proof) {
 			Aunts:    trail.FlattenAunts(),
 		}
 	}
-	return
+	return rootHash, proofs
 }
 
 // Verify that the Proof proves the root hash.
-// Check sp.Index/sp.Total manually if needed
+// Check sp.Index/sp.Total manually if needed.
 func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 	if rootHash == nil {
 		return ErrInvalidHash{
@@ -209,12 +209,12 @@ func computeHashFromAunts(index, total int64, leafHash []byte, innerHashes [][]b
 		panic("Cannot call computeHashFromAunts() with 0 total")
 	case 1:
 		if len(innerHashes) != 0 {
-			return nil, fmt.Errorf("unexpected inner hashes")
+			return nil, errors.New("unexpected inner hashes")
 		}
 		return leafHash, nil
 	default:
 		if len(innerHashes) == 0 {
-			return nil, fmt.Errorf("expected at least one inner hash")
+			return nil, errors.New("expected at least one inner hash")
 		}
 		numLeft := getSplitPoint(total)
 		if index < numLeft {
@@ -257,7 +257,6 @@ func (spn *ProofNode) FlattenAunts() [][]byte {
 		case spn.Right != nil:
 			innerHashes = append(innerHashes, spn.Right.Hash)
 		default:
-			break
 		}
 		spn = spn.Parent
 	}

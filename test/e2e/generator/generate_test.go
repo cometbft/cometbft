@@ -12,7 +12,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
 
-// TestGenerator tests that only valid manifests are generated
+// TestGenerator tests that only valid manifests are generated.
 func TestGenerator(t *testing.T) {
 	cfg := &generateConfig{
 		randSource: rand.New(rand.NewSource(randomSeed)),
@@ -24,7 +24,7 @@ func TestGenerator(t *testing.T) {
 		t.Run(fmt.Sprintf("Case%04d", idx), func(t *testing.T) {
 			infra, err := e2e.NewDockerInfrastructureData(m)
 			require.NoError(t, err)
-			_, err = e2e.NewTestnetFromManifest(m, filepath.Join(t.TempDir(), fmt.Sprintf("Case%04d", idx)), infra)
+			_, err = e2e.NewTestnetFromManifest(m, filepath.Join(t.TempDir(), fmt.Sprintf("Case%04d", idx)), infra, "")
 			require.NoError(t, err)
 		})
 	}

@@ -8,15 +8,15 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-
+	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	cmtstate "github.com/cometbft/cometbft/proto/tendermint/state"
-	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -124,7 +124,7 @@ func TestRollbackHard(t *testing.T) {
 	currState := state.State{
 		Version: cmtstate.Version{
 			Consensus: block.Header.Version,
-			Software:  version.TMCoreSemVer,
+			Software:  version.CMTSemVer,
 		},
 		LastBlockHeight:                  block.Height,
 		LastBlockTime:                    block.Time,
@@ -181,7 +181,7 @@ func TestRollbackHard(t *testing.T) {
 	nextState := state.State{
 		Version: cmtstate.Version{
 			Consensus: block.Header.Version,
-			Software:  version.TMCoreSemVer,
+			Software:  version.CMTSemVer,
 		},
 		LastBlockHeight:                  nextBlock.Height,
 		LastBlockTime:                    nextBlock.Time,
@@ -235,10 +235,11 @@ func TestRollbackDifferentStateHeight(t *testing.T) {
 
 	_, _, err := state.Rollback(blockStore, stateStore, false)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "statestore height (100) is not one below or equal to blockstore height (102)")
+	require.Equal(t, "statestore height (100) is not one below or equal to blockstore height (102)", err.Error())
 }
 
 func setupStateStore(t *testing.T, height int64) state.Store {
+	t.Helper()
 	stateStore := state.NewStore(dbm.NewMemDB(), state.StoreOptions{DiscardABCIResponses: false})
 	valSet, _ := types.RandValidatorSet(5, 10)
 
@@ -251,7 +252,7 @@ func setupStateStore(t *testing.T, height int64) state.Store {
 				Block: version.BlockProtocol,
 				App:   10,
 			},
-			Software: version.TMCoreSemVer,
+			Software: version.CMTSemVer,
 		},
 		ChainID:                          "test-chain",
 		InitialHeight:                    10,
@@ -259,11 +260,11 @@ func setupStateStore(t *testing.T, height int64) state.Store {
 		AppHash:                          tmhash.Sum([]byte("app_hash")),
 		LastResultsHash:                  tmhash.Sum([]byte("last_results_hash")),
 		LastBlockHeight:                  height,
-		LastBlockTime:                    time.Now(),
+		LastBlockTime:                    cmttime.Now(),
 		LastValidators:                   valSet,
 		Validators:                       valSet.CopyIncrementProposerPriority(1),
 		NextValidators:                   valSet.CopyIncrementProposerPriority(2),
-		LastHeightValidatorsChanged:      height + 1,
+		LastHeightValidatorsChanged:      height + 1 + 1,
 		ConsensusParams:                  *params,
 		LastHeightConsensusParamsChanged: height + 1,
 	}

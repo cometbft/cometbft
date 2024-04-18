@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/libs/service"
-	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/internal/service"
+	cmtsync "github.com/cometbft/cometbft/internal/sync"
 )
 
 const (
@@ -28,22 +28,22 @@ type Client interface {
 	// TODO: remove as each method now returns an error
 	Error() error
 	// TODO: remove as this is not implemented
-	Flush(context.Context) error
-	Echo(context.Context, string) (*types.ResponseEcho, error)
+	Flush(ctx context.Context) error
+	Echo(ctx context.Context, echo string) (*types.EchoResponse, error)
 
 	// FIXME: All other operations are run synchronously and rely
 	// on the caller to dictate concurrency (i.e. run a go routine),
 	// with the exception of `CheckTxAsync` which we maintain
 	// for the v0 mempool. We should explore refactoring the
 	// mempool to remove this vestige behavior.
-	SetResponseCallback(Callback)
-	CheckTxAsync(context.Context, *types.RequestCheckTx) (*ReqRes, error)
+	SetResponseCallback(cb Callback)
+	CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error)
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // NewClient returns a new ABCI client of the specified transport type.
-// It returns an error if the transport is not "socket" or "grpc"
+// It returns an error if the transport is not "socket" or "grpc".
 func NewClient(addr, transport string, mustConnect bool) (client Client, err error) {
 	switch transport {
 	case "socket":
@@ -53,7 +53,7 @@ func NewClient(addr, transport string, mustConnect bool) (client Client, err err
 	default:
 		err = ErrUnknownAbciTransport{Transport: transport}
 	}
-	return
+	return client, err
 }
 
 type Callback func(*types.Request, *types.Response)
@@ -128,5 +128,5 @@ func (r *ReqRes) GetCallback() func(*types.Response) {
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
-	return
+	return wg
 }

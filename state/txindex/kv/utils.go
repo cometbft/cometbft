@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/google/orderedcode"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
-	cmtsyntax "github.com/cometbft/cometbft/libs/pubsub/query/syntax"
+	cmtsyntax "github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
-	"github.com/google/orderedcode"
 )
 
 type HeightInfo struct {
@@ -101,11 +102,10 @@ func checkHeightConditions(heightInfo HeightInfo, keyHeight int64) (bool, error)
 		if err != nil || !withinBounds {
 			return false, err
 		}
-	} else {
-		if heightInfo.height != 0 && keyHeight != heightInfo.height {
-			return false, nil
-		}
+	} else if heightInfo.height != 0 && keyHeight != heightInfo.height {
+		return false, nil
 	}
+
 	return true, nil
 }
 

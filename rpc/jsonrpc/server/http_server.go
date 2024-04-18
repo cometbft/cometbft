@@ -10,13 +10,16 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
 	"golang.org/x/net/netutil"
 
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 // Config is a RPC server configuration.
@@ -106,7 +109,7 @@ func WriteRPCResponseHTTPError(
 
 	jsonBytes, err := json.Marshal(res)
 	if err != nil {
-		return fmt.Errorf("json marshal: %w", err)
+		return ErrMarshalResponse{Source: err}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -133,7 +136,7 @@ type httpHeader struct {
 }
 
 func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...types.RPCResponse) error {
-	var v interface{}
+	var v any
 	if len(res) == 1 {
 		v = res[0]
 	} else {
@@ -142,18 +145,18 @@ func writeRPCResponseHTTP(w http.ResponseWriter, headers []httpHeader, res ...ty
 
 	jsonBytes, err := json.Marshal(v)
 	if err != nil {
-		return fmt.Errorf("json marshal: %w", err)
+		return ErrMarshalResponse{Source: err}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	for _, header := range headers {
 		w.Header().Set(header.name, header.value)
 	}
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(jsonBytes)
 	return err
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // RecoverAndLogHandler wraps an HTTP handler, adding error logging.
 // If the inner function panics, the outer function recovers, logs, sends an
@@ -162,21 +165,21 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Wrap the ResponseWriter to remember the status
 		rww := &responseWriterWrapper{-1, w}
-		begin := time.Now()
+		begin := cmttime.Now()
 
-		rww.Header().Set("X-Server-Time", fmt.Sprintf("%v", begin.Unix()))
+		rww.Header().Set("X-Server-Time", strconv.FormatInt(begin.Unix(), 10))
 
 		defer func() {
 			// Handle any panics in the panic handler below. Does not use the logger, since we want
 			// to avoid any further panics. However, we try to return a 500, since it otherwise
 			// defaults to 200 and there is no other way to terminate the connection. If that
 			// should panic for whatever reason then the Go HTTP server will handle it and
-			// terminate the connection - panicing is the de-facto and only way to get the Go HTTP
+			// terminate the connection - panicking is the de-facto and only way to get the Go HTTP
 			// server to terminate the request and close the connection/stream:
 			// https://github.com/golang/go/issues/17790#issuecomment-258481416
 			if e := recover(); e != nil {
 				fmt.Fprintf(os.Stderr, "Panic during RPC panic recovery: %v\n%v\n", e, string(debug.Stack()))
-				w.WriteHeader(500)
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}()
 
@@ -213,7 +216,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 			}
 
 			// Finally, log.
-			durationMS := time.Since(begin).Nanoseconds() / 1000000
+			durationMS := cmttime.Since(begin).Nanoseconds() / 1000000
 			if rww.Status == -1 {
 				rww.Status = 200
 			}
@@ -230,7 +233,7 @@ func RecoverAndLogHandler(handler http.Handler, logger log.Logger) http.Handler 
 	})
 }
 
-// Remember the status for logging
+// Remember the status for logging.
 type responseWriterWrapper struct {
 	Status int
 	http.ResponseWriter
@@ -241,7 +244,7 @@ func (w *responseWriterWrapper) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-// implements http.Hijacker
+// implements http.Hijacker.
 func (w *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
@@ -261,15 +264,12 @@ func (h maxBytesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func Listen(addr string, maxOpenConnections int) (listener net.Listener, err error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf(
-			"invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)",
-			addr,
-		)
+		return nil, grpcerr.ErrInvalidRemoteAddress{Addr: addr}
 	}
 	proto, addr := parts[0], parts[1]
 	listener, err = net.Listen(proto, addr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to listen on %v: %v", addr, err)
+		return nil, ErrListening{Addr: addr, Source: err}
 	}
 	if maxOpenConnections > 0 {
 		listener = netutil.LimitListener(listener, maxOpenConnections)

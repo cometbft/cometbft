@@ -35,14 +35,12 @@ test_abci_cli:
 
 test_integrations:
 	make build_docker_test_image
-	make tools
 	make install
 	make install_abci
 	make test_cover
 	make test_apps
 	make test_abci_apps
 	make test_abci_cli
-	make test_libs
 .PHONY: test_integrations
 
 test_release:
@@ -53,15 +51,10 @@ test100:
 	@for i in {1..100}; do make test; done
 .PHONY: test100
 
-vagrant_test:
-	vagrant up
-	vagrant ssh -c 'make test_integrations'
-.PHONY: vagrant_test
-
 ### go tests
 test:
 	@echo "--> Running go test"
-	@go test -p 1 $(PACKAGES) -tags deadlock
+	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381
 .PHONY: test
 
 test_race:
@@ -71,5 +64,5 @@ test_race:
 
 test_deadlock:
 	@echo "--> Running go test --deadlock"
-	@go test -p 1 -v  $(PACKAGES) -tags deadlock 
+	@go test -p 1 -v  $(PACKAGES) -tags deadlock
 .PHONY: test_race

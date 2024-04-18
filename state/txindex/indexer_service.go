@@ -3,7 +3,7 @@ package txindex
 import (
 	"context"
 
-	"github.com/cometbft/cometbft/libs/service"
+	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
 )
@@ -32,7 +32,6 @@ func NewIndexerService(
 	eventBus *types.EventBus,
 	terminateOnError bool,
 ) *IndexerService {
-
 	is := &IndexerService{
 		txIdxr:           txIdxr,
 		blockIdxr:        blockIdxr,
@@ -87,7 +86,7 @@ func (is *IndexerService) OnStart() error {
 						)
 
 						if is.terminateOnError {
-							if err := is.Stop(); err != nil {
+							if err := is.Stop(); err != nil { //nolint:revive // suppress max-control-nesting linter
 								is.Logger.Error("failed to stop", "err", err)
 							}
 							return

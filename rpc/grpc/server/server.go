@@ -5,19 +5,18 @@ import (
 	"net"
 	"strings"
 
-	sm "github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
-
-	brs "github.com/cometbft/cometbft/proto/tendermint/services/block_results/v1"
-	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"
-
 	"google.golang.org/grpc"
 
+	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
+	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
+	pbversionsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 	"github.com/cometbft/cometbft/libs/log"
-	pbblocksvc "github.com/cometbft/cometbft/proto/tendermint/services/block/v1"
-	pbversionsvc "github.com/cometbft/cometbft/proto/tendermint/services/version/v1"
+	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
+	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -50,10 +49,7 @@ func newServerBuilder(listener net.Listener) *serverBuilder {
 func Listen(addr string) (net.Listener, error) {
 	parts := strings.SplitN(addr, "://", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf(
-			"invalid listening address %s (use fully formed addresses, including the tcp:// or unix:// prefix)",
-			addr,
-		)
+		return nil, grpcerr.ErrInvalidRemoteAddress{Addr: addr}
 	}
 	return net.Listen(parts[0], parts[1])
 }

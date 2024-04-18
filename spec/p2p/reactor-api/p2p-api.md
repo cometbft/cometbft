@@ -45,19 +45,20 @@ the p2p layer: the set of connected peers.
 
     func (sw *Switch) Peers() IPeerSet
 
-The `Peers()` method returns the current set of connected peers.
-The returned `IPeerSet` is an immutable concurrency-safe copy of this set.
-Observe that the `Peer` handlers returned by this method were previously
-[added to the reactor][reactor-addpeer] via the `InitPeer(Peer)` method,
-but not yet removed via the `RemovePeer(Peer)` method.
+The `Peers()` method returns the current set of connected peers. The returned
+`IPeerSet` is concurrency-safe. Observe that the `Peer` handlers returned by
+this method were previously [added to the reactor][reactor-addpeer] via the
+`InitPeer(Peer)` method, but not yet removed via the `RemovePeer(Peer)` method.
 Thus, a priori, reactors should already have this information.
 
     func (sw *Switch) NumPeers() (outbound, inbound, dialing int)
 
 The `NumPeers()` method returns the current number of connected peers,
-distinguished between `outbound` and `inbound` peers.
-An `outbound` peer is a peer the node has dialed to, while an `inbound` peer is
-a peer the node has accepted a connection from.
+distinguished between `outbound` and `inbound` peers. An `outbound` peer is a
+peer the node has dialed to, while an `inbound` peer is a peer the node has
+accepted a connection from. Note that `unconditional` peers are not being
+counted here.
+
 The third field `dialing` reports the number of peers to which the node is
 currently attempting to connect, so not (yet) connected peers.
 
@@ -90,7 +91,7 @@ returned channel, which is closed when all operations are completed.
 >   part of the `Peer.Send(Envelope)` helper method, that is, once per
 >   connected peer.
 > - The return value of the broadcast method is not considered by any of the
->   standard reactors that employ the method. One of the reasons is that is is
+>   standard reactors that employ the method. One of the reasons is that is
 >   not possible to associate each of the boolean outputs added to the
 >   returned channel to a peer.
 

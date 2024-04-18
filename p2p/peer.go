@@ -402,7 +402,7 @@ func createMConnection(
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
 	// Pre-allocate channel ID labels
-	labelsByChID := make(map[byte]string)
+	labelsByChID := make(map[byte]string, len(reactorsByCh))
 	for chID := range reactorsByCh {
 		labelsByChID[chID] = fmt.Sprintf("%#x", chID)
 	}
@@ -420,17 +420,15 @@ func createMConnection(
 		if err != nil {
 			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
 		}
-		labels := []string{
-			"peer_id", string(p.ID()),
-			"chID", labelsByChID[chID],
-		}
 		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
 				panic(fmt.Sprintf("unwrapping message: %v", err))
 			}
 		}
-		p.metrics.PeerReceiveBytesTotal.With(labels...).Add(float64(len(msgBytes)))
+		p.metrics.PeerReceiveBytesTotal.
+			With("peer_id", string(p.ID()), "chID", labelsByChID[chID]).
+			Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{
 			ChannelID: chID,

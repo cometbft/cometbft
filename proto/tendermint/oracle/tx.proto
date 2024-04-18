@@ -19,7 +19,7 @@ service Msg {
 message MsgGossipVotes {
   option (cosmos.msg.v1.signer) = "proposer";
   string proposer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  repeated GossipVote GossipVotes = 1;
+  repeated GossipVote GossipVotes = 2;
 }
 
 message MsgGossipVotesResponse {}

@@ -46,3 +46,7 @@ message Result {
   int64 timestamp = 3 [ (gogoproto.moretags) = "db:\"timestamp\"" ];
   string data = 4 [ (gogoproto.moretags) = "db:\"data\"" ];
 }
+
+message GossipVotes {
+  repeated GossipVote GossipVotes = 1;
+}

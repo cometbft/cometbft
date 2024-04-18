@@ -305,36 +305,6 @@ func (bA *BitArray) getNthTrueIndex(n int) int {
 	return -1
 }
 
-func (bA *BitArray) getTrueIndices() []int {
-	trueIndices := make([]int, 0, bA.Bits)
-	curBit := 0
-	numElems := len(bA.Elems)
-	// set all true indices
-	for i := 0; i < numElems-1; i++ {
-		elem := bA.Elems[i]
-		if elem == 0 {
-			curBit += 64
-			continue
-		}
-		for j := 0; j < 64; j++ {
-			if (elem & (uint64(1) << uint64(j))) > 0 {
-				trueIndices = append(trueIndices, curBit)
-			}
-			curBit++
-		}
-	}
-	// handle last element
-	lastElem := bA.Elems[numElems-1]
-	numFinalBits := bA.Bits - curBit
-	for i := 0; i < numFinalBits; i++ {
-		if (lastElem & (uint64(1) << uint64(i))) > 0 {
-			trueIndices = append(trueIndices, curBit)
-		}
-		curBit++
-	}
-	return trueIndices
-}
-
 // String returns a string representation of BitArray: BA{<bit-string>},
 // where <bit-string> is a sequence of 'x' (1) and '_' (0).
 // The <bit-string> includes spaces and newlines to help people.

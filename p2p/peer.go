@@ -406,6 +406,7 @@ func createMConnection(
 	for chID := range reactorsByCh {
 		labelsByChID[chID] = fmt.Sprintf("%#x", chID)
 	}
+	peerID := string(p.ID())
 
 	onReceive := func(chID byte, msgBytes []byte) {
 		reactor := reactorsByCh[chID]
@@ -427,7 +428,7 @@ func createMConnection(
 			}
 		}
 		p.metrics.PeerReceiveBytesTotal.
-			With("peer_id", string(p.ID()), "chID", labelsByChID[chID]).
+			With("peer_id", peerID, "chID", labelsByChID[chID]).
 			Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{

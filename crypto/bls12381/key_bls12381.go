@@ -91,10 +91,9 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 		hash := sha256.Sum256(msg)
 		sig := secretKey.Sign(hash[:])
 		return sig.Marshal(), nil
-	} else {
-		sig := secretKey.Sign(msg)
-		return sig.Marshal(), nil
 	}
+	sig := secretKey.Sign(msg)
+	return sig.Marshal(), nil
 }
 
 // ===============================================================================================

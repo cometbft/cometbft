@@ -207,8 +207,7 @@ func (_m *TxIndexer) SetRetainHeight(retainHeight int64) error {
 func NewTxIndexer(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *TxIndexer {
+}) *TxIndexer {
 	mock := &TxIndexer{}
 	mock.Mock.Test(t)
 

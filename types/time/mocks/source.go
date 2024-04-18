@@ -36,8 +36,7 @@ func (_m *Source) Now() time.Time {
 func NewSource(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *Source {
+}) *Source {
 	mock := &Source{}
 	mock.Mock.Test(t)
 

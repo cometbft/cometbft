@@ -109,8 +109,7 @@ func (_m *StateProvider) State(ctx context.Context, height uint64) (state.State,
 func NewStateProvider(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *StateProvider {
+}) *StateProvider {
 	mock := &StateProvider{}
 	mock.Mock.Test(t)
 

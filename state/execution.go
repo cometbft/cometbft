@@ -271,19 +271,21 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	state State,
 ) (bool, error) {
 	txs := block.Data.Txs.ToSliceOfBytes()
-	oracleTx := &oracleproto.GossipVotes{}
-	// check if oracleTx is successfully injected into first position of txs
-	if err := oracleTx.Unmarshal(txs[0]); err != nil {
-		// oracleTx is not present, continue normal processProposal flow
-		blockExec.logger.Error("error unmarshalling oracleVotesMsg or oracleVotesMsg not present", "err", err)
-	} else {
-		newTxBz, err := blockExec.validateOracleGossipVotes(oracleTx, block.Header.Height)
-		if err != nil {
-			// oracleTx is present but it is invalid, remove from txs
-			txs = txs[1:]
+	if len(txs) > 0 {
+		oracleTx := &oracleproto.GossipVotes{}
+		// check if oracleTx is successfully injected into first position of txs
+		if err := oracleTx.Unmarshal(txs[0]); err != nil {
+			// oracleTx is not present, continue normal processProposal flow
+			blockExec.logger.Error("error unmarshalling oracleVotesMsg or oracleVotesMsg not present", "err", err)
 		} else {
-			// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig
-			txs[0] = newTxBz
+			newTxBz, err := blockExec.validateOracleGossipVotes(oracleTx, block.Header.Height)
+			if err != nil {
+				// oracleTx is present but it is invalid, remove from txs
+				txs = txs[1:]
+			} else {
+				// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig
+				txs[0] = newTxBz
+			}
 		}
 	}
 

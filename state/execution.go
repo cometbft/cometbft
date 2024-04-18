@@ -144,16 +144,15 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 			votes = append(votes, vote)
 		}
 
-		msg := oracleproto.GossipVotes{
-			GossipVotes: votes,
-		}
-
-		msgBz, err := msg.Marshal()
+		resp, err := blockExec.proxyApp.SignGossipVote(ctx, &abci.RequestSignGossipVote{
+			ProposerAddress: proposerAddr,
+			GossipVotes:     votes,
+			Height:          height,
+		})
 		if err != nil {
-			blockExec.logger.Error("error marshalling oracleVotesMsg", "err", err)
-		} else {
-			signGossipVoteTxBz = msgBz
+			blockExec.logger.Error("error in proxyAppConn.SignGossipVote", "err", err)
 		}
+		signGossipVoteTxBz = resp.EncodedTx
 	}
 
 	var txs types.Txs

@@ -12,7 +12,62 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 )
 
-func TestSignAndValidateBLS12381(t *testing.T) {
+func TestNewPrivateKeyFromBytes(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+
+	privKeyBytes := privKey.Bytes()
+	privKey2, err := bls12381.NewPrivateKeyFromBytes(privKeyBytes)
+	require.NoError(t, err)
+
+	assert.True(t, privKey.Equals(privKey2))
+
+	_, err = bls12381.NewPrivateKeyFromBytes(crypto.CRandBytes(31))
+	assert.Error(t, err)
+}
+
+func TestGenPrivateKey(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	assert.NotNil(t, privKey)
+}
+
+func TestPrivKeyBytes(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+
+	privKeyBytes := privKey.Bytes()
+	privKey2, err := bls12381.NewPrivateKeyFromBytes(privKeyBytes)
+	require.NoError(t, err)
+
+	assert.True(t, privKey.Equals(privKey2))
+}
+
+func TestPrivKeyPubKey(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	pubKey := privKey.PubKey()
+	assert.NotNil(t, pubKey)
+}
+
+func TestPrivKeyEquals(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	privKey2, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+
+	assert.True(t, privKey.Equals(privKey))
+	assert.False(t, privKey.Equals(privKey2))
+}
+
+func TestPrivKeyType(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+
+	assert.Equal(t, "bls12_381", privKey.Type())
+}
+
+func TestPrivKeySignAndPubKeyVerifySignature(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
 	pubKey := privKey.PubKey()
@@ -36,4 +91,37 @@ func TestSignAndValidateBLS12381(t *testing.T) {
 
 	// Test the signature
 	assert.True(t, pubKey.VerifySignature(msg, sig))
+}
+
+func TestPrivKeyPubKey_CorruptPrivKey(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	privKey = privKey[1:] // corrupt key
+	pubKey := privKey.PubKey()
+	require.Nil(t, pubKey)
+}
+
+func TestPubKey(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	pubKey := privKey.PubKey()
+	assert.NotNil(t, pubKey)
+}
+
+func TestPubKeyEquals(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	pubKey := privKey.PubKey()
+	pubKey2 := privKey.PubKey()
+
+	assert.True(t, pubKey.Equals(pubKey))
+	assert.True(t, pubKey.Equals(pubKey2))
+}
+
+func TestPubKeyType(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	pubKey := privKey.PubKey()
+
+	assert.Equal(t, "bls12_381", pubKey.Type())
 }

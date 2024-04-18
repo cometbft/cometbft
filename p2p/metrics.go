@@ -43,6 +43,15 @@ type Metrics struct {
 type metricsLabelCache struct {
 	mtx               *sync.RWMutex
 	messageLabelNames map[reflect.Type]string
+	chIDLabelNames    map[byte]string
+}
+
+func (m *metricsLabelCache) AddChID(chID byte) {
+	m.chIDLabelNames[chID] = fmt.Sprintf("%#x", chID)
+}
+
+func (m *metricsLabelCache) ChIDToMetricLabel(chID byte) string {
+	return m.chIDLabelNames[chID]
 }
 
 // ValueToMetricLabel is a method that is used to produce a prometheus label value of the golang
@@ -72,5 +81,6 @@ func newMetricsLabelCache() *metricsLabelCache {
 	return &metricsLabelCache{
 		mtx:               &sync.RWMutex{},
 		messageLabelNames: map[reflect.Type]string{},
+		chIDLabelNames:    map[byte]string{},
 	}
 }

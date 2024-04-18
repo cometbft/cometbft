@@ -120,9 +120,8 @@ type peer struct {
 	// User data
 	Data *cmap.CMap
 
-	metrics      *Metrics
-	mlc          *metricsLabelCache
-	labelsByChID map[byte]string
+	metrics *Metrics
+	mlc     *metricsLabelCache
 
 	// When removal of a peer fails, we set this flag
 	removalAttemptFailed bool
@@ -141,20 +140,13 @@ func newPeer(
 	mlc *metricsLabelCache,
 	options ...PeerOption,
 ) *peer {
-	// Pre-allocate channel ID labels
-	labelsByChID := make(map[byte]string, len(reactorsByCh))
-	for chID := range reactorsByCh {
-		labelsByChID[chID] = fmt.Sprintf("%#x", chID)
-	}
-
 	p := &peer{
-		peerConn:     pc,
-		nodeInfo:     nodeInfo,
-		channels:     nodeInfo.(DefaultNodeInfo).Channels,
-		Data:         cmap.NewCMap(),
-		metrics:      NopMetrics(),
-		mlc:          mlc,
-		labelsByChID: labelsByChID,
+		peerConn: pc,
+		nodeInfo: nodeInfo,
+		channels: nodeInfo.(DefaultNodeInfo).Channels,
+		Data:     cmap.NewCMap(),
+		metrics:  NopMetrics(),
+		mlc:      mlc,
 	}
 
 	p.mconn = createMConnection(
@@ -291,7 +283,7 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	res := sendFunc(chID, msgBytes)
 	if res {
 		p.metrics.PeerSendBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.labelsByChID[chID]).
+			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
 			Add(float64(len(msgBytes)))
 		p.metrics.MessageSendBytesTotal.With("message_type", metricLabelValue).Add(float64(len(msgBytes)))
 	}
@@ -427,7 +419,7 @@ func createMConnection(
 			}
 		}
 		p.metrics.PeerReceiveBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.labelsByChID[chID]).
+			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
 			Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{

@@ -46,10 +46,14 @@ type metricsLabelCache struct {
 	chIDLabelNames    map[byte]string
 }
 
+// AddChID pre-allocates the metric label for a chID.
+// Labels are populated by the switch, before the p2p layer is started.
 func (m *metricsLabelCache) AddChID(chID byte) {
 	m.chIDLabelNames[chID] = fmt.Sprintf("%#x", chID)
 }
 
+// ChIDToMetricLabel returns the metric label for a chID.
+// No need for synchronization, as labels, once populated, never change.
 func (m *metricsLabelCache) ChIDToMetricLabel(chID byte) string {
 	return m.chIDLabelNames[chID]
 }

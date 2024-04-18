@@ -271,6 +271,7 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	} else if !p.hasChannel(chID) {
 		return false
 	}
+	metricLabelValue := p.mlc.ValueToMetricLabel(msg)
 	if w, ok := msg.(types.Wrapper); ok {
 		msg = w.Wrap()
 	}
@@ -285,7 +286,7 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
 			Add(float64(len(msgBytes)))
 		p.metrics.MessageSendBytesTotal.
-			With("message_type", p.mlc.ValueToMetricLabel(msg)).
+			With("message_type", metricLabelValue).
 			Add(float64(len(msgBytes)))
 	}
 	return res

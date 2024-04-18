@@ -10,8 +10,9 @@
 
 ### FEATURES
 
-- `[crypto]` Add support for BLS12-381 keys. Use `bls12381` build flag to enable
-  it ([\#2765](https://github.com/cometbft/cometbft/pull/2765))
+- `[crypto]` Add support for BLS12-381 keys. Since the implementation needs
+  `cgo` and brings in new dependencies, we use the `bls12381` build flag to
+  enable it ([\#2765](https://github.com/cometbft/cometbft/pull/2765))
 
 ### BUG-FIXES
 

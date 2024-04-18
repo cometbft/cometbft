@@ -23,6 +23,10 @@ RUN set -eux; \
 # ---------- Stage 1: build (compile cometbft + e2e node) ----------
 FROM base AS build
 
+RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
+RUN apt-get -qq install -y zsh vim >/dev/null
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
 # Set up build directory /src/cometbft
 WORKDIR /src/cometbft
 

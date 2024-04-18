@@ -195,6 +195,8 @@ func TestGetNthTrueIndex(t *testing.T) {
 		{"______", 0, -1}, // No true indices
 		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 49, 49},  // Last true index
 		{"____________________________________________", 1, -1},                               // No true indices
+		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 63, 63},  // last index of first word
+		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 64, 64},  // first index of second word
 		{"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 100, -1}, // Out-of-range
 
 		// Input beyond 64 bits

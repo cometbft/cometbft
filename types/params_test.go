@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	valEd25519   = ABCIPubKeyTypeEd25519
-	valSecp256k1 = ABCIPubKeyTypeSecp256k1
+	valEd25519             = []string{ABCIPubKeyTypeEd25519}
+	valSecp256k1           = []string{ABCIPubKeyTypeSecp256k1}
+	valEd25519AndSecp256k1 = []string{ABCIPubKeyTypeEd25519, ABCIPubKeyTypeSecp256k1}
 )
 
 func TestConsensusParamsValidation(t *testing.T) {
@@ -36,11 +37,15 @@ func TestConsensusParamsValidation(t *testing.T) {
 		9:  {makeParams(1000, 0, 2, 1, valEd25519, 0), true},
 		10: {makeParams(1, 0, -1, 0, valEd25519, 0), false},
 		// test no pubkey type provided
-		11: {makeParams(1, 0, 2, 0, "", 0), false},
+		11: {makeParams(1, 0, 2, 0, []string{""}, 0), false},
 		// test invalid pubkey type provided
-		12: {makeParams(1, 0, 2, 0, "potatoes make good pubkeys", 0), false},
+		12: {makeParams(1, 0, 2, 0, []string{"potatoes make good pubkeys"}, 0), false},
 		13: {makeParams(-1, 0, 2, 0, valEd25519, 0), true},
 		14: {makeParams(-2, 0, 2, 0, valEd25519, 0), false},
+		// test multiple pubkey types
+		15: {makeParams(1, 0, 2, 0, valEd25519AndSecp256k1, 0), true},
+		// empty pubkey types
+		16: {makeParams(1, 0, 2, 0, []string{}, 0), false},
 	}
 	for i, tc := range testCases {
 		if tc.valid {
@@ -55,7 +60,7 @@ func makeParams(
 	blockBytes, blockGas int64,
 	evidenceAge int64,
 	maxEvidenceBytes int64,
-	pubkeyType string,
+	pubkeyTypes []string,
 	abciExtensionHeight int64,
 ) ConsensusParams {
 	return ConsensusParams{
@@ -69,7 +74,7 @@ func makeParams(
 			MaxBytes:        maxEvidenceBytes,
 		},
 		Validator: ValidatorParams{
-			PubKeyTypes: []string{pubkeyType},
+			PubKeyTypes: pubkeyTypes,
 		},
 		ABCI: ABCIParams{
 			VoteExtensionsEnableHeight: abciExtensionHeight,
@@ -130,10 +135,20 @@ func TestConsensusParamsUpdate(t *testing.T) {
 					MaxBytes:        50,
 				},
 				Validator: &cmtproto.ValidatorParams{
-					PubKeyTypes: []string{valSecp256k1},
+					PubKeyTypes: valSecp256k1,
 				},
 			},
 			makeParams(100, 200, 300, 50, valSecp256k1, 0),
+		},
+		// multiple pubkey types
+		{
+			makeParams(1, 2, 3, 0, valEd25519, 0),
+			&cmtproto.ConsensusParams{
+				Validator: &cmtproto.ValidatorParams{
+					PubKeyTypes: valEd25519AndSecp256k1,
+				},
+			},
+			makeParams(1, 2, 3, 0, valEd25519AndSecp256k1, 0),
 		},
 	}
 

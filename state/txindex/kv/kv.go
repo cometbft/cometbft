@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	tagKeySeparator   = "/"
-	eventSeqSeparator = "$es$"
+	tagKeySeparator     = "/"
+	tagKeySeparatorRune = '/'
+	eventSeqSeparator   = "$es$"
 )
 
 var (
@@ -749,25 +750,30 @@ func (txi *TxIndex) matchRange(
 		panic(err)
 	}
 	defer it.Close()
+	bigIntValue := new(big.Int)
 
 LOOP:
 	for ; it.Valid(); it.Next() {
-		if !isTagKey(it.Key()) {
+		// TODO: We need to make a function for getting it.Key() as a byte slice with no copies.
+		// It currently copies the source data (which can change on a subsequent .Next() call) but that
+		// is not an issue for us.
+		key := it.Key()
+		if !isTagKey(key) {
 			continue
 		}
 
 		if _, ok := qr.AnyBound().(*big.Float); ok {
-			v := new(big.Int)
-			v, ok := v.SetString(extractValueFromKey(it.Key()), 10)
+			value := extractValueFromKey(key)
+			v, ok := bigIntValue.SetString(value, 10)
 			var vF *big.Float
 			if !ok {
-				vF, _, err = big.ParseFloat(extractValueFromKey(it.Key()), 10, 125, big.ToNearestEven)
+				vF, _, err = big.ParseFloat(value, 10, 125, big.ToNearestEven)
 				if err != nil {
 					continue LOOP
 				}
 			}
 			if qr.Key != types.TxHeightKey {
-				keyHeight, err := extractHeightFromKey(it.Key())
+				keyHeight, err := extractHeightFromKey(key)
 				if err != nil {
 					txi.log.Error("failure to parse height from key:", err)
 					continue
@@ -851,8 +857,16 @@ func isTagKey(key []byte) bool {
 	// tags should 4. Alternatively it should be 3 if the event was not indexed
 	// with the corresponding event sequence. However, some attribute values in
 	// production can contain the tag separator. Therefore, the condition is >= 3.
-	numTags := strings.Count(string(key), tagKeySeparator)
-	return numTags >= 3
+	numTags := 0
+	for i := 0; i < len(key); i++ {
+		if key[i] == tagKeySeparatorRune {
+			numTags++
+			if numTags >= 3 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func extractHeightFromKey(key []byte) (int64, error) {
@@ -862,18 +876,27 @@ func extractHeightFromKey(key []byte) (int64, error) {
 }
 
 func extractValueFromKey(key []byte) string {
-	keyString := string(key)
-	parts := strings.Split(keyString, tagKeySeparator)
-	partsLen := len(parts)
-	value := strings.TrimPrefix(keyString, parts[0]+tagKeySeparator)
-
-	suffix := ""
-	suffixLen := 2
-
-	for i := 1; i <= suffixLen; i++ {
-		suffix = tagKeySeparator + parts[partsLen-i] + suffix
+	// Find the positions of tagKeySeparator in the byte slice
+	var indices []int
+	for i, b := range key {
+		if b == tagKeySeparatorRune {
+			indices = append(indices, i)
+		}
 	}
-	return strings.TrimSuffix(value, suffix)
+
+	// If there are less than 2 occurrences of tagKeySeparator, return an empty string
+	if len(indices) < 2 {
+		return ""
+	}
+
+	// Extract the value between the first and second last occurrence of tagKeySeparator
+	value := key[indices[0]+1 : indices[len(indices)-2]]
+
+	// Trim any leading or trailing whitespace
+	value = bytes.TrimSpace(value)
+
+	// TODO: Do an unsafe cast to avoid an extra allocation here
+	return string(value)
 }
 
 func extractEventSeqFromKey(key []byte) string {

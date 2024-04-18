@@ -79,20 +79,20 @@ func (PrivKey) Type() string {
 	return KeyType
 }
 
-// Sign signs the given byte array. If the digestBz is larger than
-// MaxDigestLength, SHA256 sum will be signed instead of raw bytes.
-func (privKey PrivKey) Sign(digestBz []byte) ([]byte, error) {
+// Sign signs the given byte array. If msg is larger than
+// MaxMsgLen, SHA256 sum will be signed instead of the raw bytes.
+func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	secretKey, err := bls12381.SecretKeyFromBytes(privKey)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(digestBz) > MaxDigestLength {
-		hash := sha256.Sum256(digestBz)
+	if len(msg) > MaxMsgLen {
+		hash := sha256.Sum256(msg)
 		sig := secretKey.Sign(hash[:])
 		return sig.Marshal(), nil
 	} else {
-		sig := secretKey.Sign(digestBz)
+		sig := secretKey.Sign(msg)
 		return sig.Marshal(), nil
 	}
 }
@@ -131,13 +131,12 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 		return false
 	}
 
-	bz := msg
-	if len(msg) > MaxDigestLength {
+	if len(msg) > MaxMsgLen {
 		hash := sha256.Sum256(msg)
-		bz = hash[:]
+		msg = hash[:]
 	}
 
-	ok, err := bls12381.VerifySignature(sig, [MaxDigestLength]byte(bz[:MaxDigestLength]), pubK)
+	ok, err := bls12381.VerifySignature(sig, [MaxMsgLen]byte(msg[:MaxMsgLen]), pubK)
 	if err != nil { // bad signature
 		return false
 	}

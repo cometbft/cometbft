@@ -711,15 +711,17 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-    | Name          | Type   | Description                                         | Field Number | Deterministic |
-    |---------------|--------|-----------------------------------------------------|--------------|---------------|
-    | power         | int64  | Voting power                                        | 2            | Yes           |
-    | pub_key_type  | string | Public key's type (e.g. "tendermint/PubKeyEd25519") | 3            | Yes           |
-    | pub_key_bytes | bytes  | Public key's bytes                                  | 4            | Yes           |
+    | Name          | Type                                             | Description                                         | Field Number | Deterministic |
+    |---------------|--------------------------------------------------|-----------------------------------------------------|--------------|---------------|
+    | pub_key       | [Public Key](../core/data_structures.md#pub_key) | (DEPRECATED) Public key of the validator            | 1            | Yes           |
+    | power         | int64                                            | Voting power                                        | 2            | Yes           |
+    | pub_key_type  | string                                           | Public key's type (e.g. "tendermint/PubKeyEd25519") | 3            | Yes           |
+    | pub_key_bytes | bytes                                            | Public key's bytes                                  | 4            | Yes           |
 
 * **Usage**:
-    * Validator identified by PubKey's type and bytes
+    * Validator identified by PubKeyType and PubKeyBytes
     * Used to tell CometBFT to update the validator set
+    * PubKey is deprecated and will be removed in the future releases
 
 ### Misbehavior
 

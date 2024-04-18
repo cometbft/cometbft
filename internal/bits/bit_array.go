@@ -271,8 +271,8 @@ func (bA *BitArray) getNumTrueIndices() int {
 }
 
 // getNthTrueIndex returns the index of the nth true bit in the bit array.
-// If there is no such value, it returns 0. It is required that the caller
-// ensures that n is less than or equal to the number of true bits in the bit array.
+// n is 0 indexed. (e.g. for bitarray x__x, getNthTrueIndex(0) returns 0).
+// If there is no such value, it returns -1.
 func (bA *BitArray) getNthTrueIndex(n int) int {
 	numElems := len(bA.Elems)
 	count := 0

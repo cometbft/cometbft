@@ -13,6 +13,7 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"
 )
@@ -87,9 +88,9 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 	if len(app.valAddrToPubKeyMap) == 0 && app.state.Height > 0 {
 		validators := app.getValidators()
 		for _, v := range validators {
-			pubkey, err := types.PubKeyFromValidatorUpdate(v)
+			pubkey, err := cryptoenc.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
 			if err != nil {
-				panic(fmt.Errorf("can't build public key: %w", err))
+				panic(fmt.Errorf("can't create public key: %w", err))
 			}
 			app.valAddrToPubKeyMap[string(pubkey.Address())] = pubkey
 		}
@@ -223,7 +224,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 			if err != nil {
 				panic(err)
 			}
-			app.valUpdates = append(app.valUpdates, types.UpdateValidator(pubKey, power, keyType))
+			app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{Power: power, PubKeyType: keyType, PubKeyBytes: pubKey})
 		} else {
 			app.stagedTxs = append(app.stagedTxs, tx)
 		}
@@ -446,9 +447,9 @@ func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 
 // add, update, or remove a validator.
 func (app *Application) updateValidator(v types.ValidatorUpdate) {
-	pubkey, err := types.PubKeyFromValidatorUpdate(v)
+	pubkey, err := cryptoenc.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
 	if err != nil {
-		panic(fmt.Errorf("can't build public key: %w", err))
+		panic(fmt.Errorf("can't create public key: %w", err))
 	}
 	key := []byte(ValidatorPrefix + string(pubkey.Bytes()))
 

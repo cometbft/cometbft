@@ -719,7 +719,7 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 
 func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 	// Store validator data to verify extensions
-	pubKey, err := abci.PubKeyFromValidatorUpdate(*valUpdate)
+	pubKey, err := cryptoenc.PubKeyFromTypeAndBytes(valUpdate.PubKeyType, valUpdate.PubKeyBytes)
 	if err != nil {
 		return err
 	}
@@ -744,7 +744,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
 		}
-		valUpdate := abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType)
+		valUpdate := abci.ValidatorUpdate{Power: int64(power), PubKeyType: app.cfg.KeyType, PubKeyBytes: keyBytes}
 		valUpdates = append(valUpdates, valUpdate)
 		if err := app.storeValidator(&valUpdate); err != nil {
 			return nil, err

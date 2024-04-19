@@ -458,25 +458,25 @@ func TestValidateValidatorUpdates(t *testing.T) {
 	}{
 		{
 			"adding a validator is OK",
-			[]abci.ValidatorUpdate{{Power: 20, PubKeyType: pubkey2.Type(), PubKeyBytes: pubkey2.Bytes()}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 20)},
 			defaultValidatorParams,
 			false,
 		},
 		{
 			"updating a validator is OK",
-			[]abci.ValidatorUpdate{{Power: 20, PubKeyType: pubkey1.Type(), PubKeyBytes: pubkey1.Bytes()}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 20)},
 			defaultValidatorParams,
 			false,
 		},
 		{
 			"removing a validator is OK",
-			[]abci.ValidatorUpdate{{Power: 0, PubKeyType: pubkey2.Type(), PubKeyBytes: pubkey2.Bytes()}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 0)},
 			defaultValidatorParams,
 			false,
 		},
 		{
 			"adding a validator with negative power results in error",
-			[]abci.ValidatorUpdate{{Power: -100, PubKeyType: pubkey2.Type(), PubKeyBytes: pubkey2.Bytes()}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, -100)},
 			defaultValidatorParams,
 			true,
 		},
@@ -513,28 +513,28 @@ func TestUpdateValidators(t *testing.T) {
 		{
 			"adding a validator is OK",
 			types.NewValidatorSet([]*types.Validator{val1}),
-			[]abci.ValidatorUpdate{{Power: 20, PubKeyType: pubkey2.Type(), PubKeyBytes: pubkey2.Bytes()}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 20)},
 			types.NewValidatorSet([]*types.Validator{val1, val2}),
 			false,
 		},
 		{
 			"updating a validator is OK",
 			types.NewValidatorSet([]*types.Validator{val1}),
-			[]abci.ValidatorUpdate{{Power: 20, PubKeyType: pubkey1.Type(), PubKeyBytes: pubkey1.Bytes()}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey1, 20)},
 			types.NewValidatorSet([]*types.Validator{types.NewValidator(pubkey1, 20)}),
 			false,
 		},
 		{
 			"removing a validator is OK",
 			types.NewValidatorSet([]*types.Validator{val1, val2}),
-			[]abci.ValidatorUpdate{{Power: 0, PubKeyType: pubkey2.Type(), PubKeyBytes: pubkey2.Bytes()}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 0)},
 			types.NewValidatorSet([]*types.Validator{val1}),
 			false,
 		},
 		{
 			"removing a non-existing validator results in error",
 			types.NewValidatorSet([]*types.Validator{val1}),
-			[]abci.ValidatorUpdate{{Power: 0, PubKeyType: pubkey2.Type(), PubKeyBytes: pubkey2.Bytes()}},
+			[]abci.ValidatorUpdate{abci.NewValidatorUpdate(pubkey2, 0)},
 			types.NewValidatorSet([]*types.Validator{val1}),
 			true,
 		},
@@ -620,7 +620,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 
 	pubkey := ed25519.GenPrivKey().PubKey()
 	app.ValidatorUpdates = []abci.ValidatorUpdate{
-		{Power: 10, PubKeyType: pubkey.Type(), PubKeyBytes: pubkey.Bytes()},
+		abci.NewValidatorUpdate(pubkey, 10),
 	}
 
 	state, err = blockExec.ApplyBlock(state, blockID, block)
@@ -682,7 +682,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	require.NoError(t, err)
 	// Remove the only validator
 	app.ValidatorUpdates = []abci.ValidatorUpdate{
-		{Power: 0, PubKeyType: pk.Type(), PubKeyBytes: pk.Bytes()},
+		abci.NewValidatorUpdate(pk, 0),
 	}
 
 	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block) })

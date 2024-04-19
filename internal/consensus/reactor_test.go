@@ -1124,6 +1124,5 @@ func TestMarshalJSONPeerState(t *testing.T) {
 }
 
 func updateValTx(pubKey crypto.PubKey, power int64) []byte {
-	return kvstore.MakeValSetChangeTx(
-		abci.ValidatorUpdate{PubKeyType: pubKey.Type(), PubKeyBytes: pubKey.Bytes(), Power: power})
+	return kvstore.MakeValSetChangeTx(abci.NewValidatorUpdate(pubKey, power))
 }

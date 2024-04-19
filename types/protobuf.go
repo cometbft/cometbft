@@ -3,7 +3,7 @@ package types
 import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	"github.com/cometbft/cometbft/crypto"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 )
 
 // -------------------------------------------------------
@@ -58,30 +58,12 @@ func (tm2pb) PartSetHeader(header PartSetHeader) cmtproto.PartSetHeader {
 	}
 }
 
-func (tm2pb) ValidatorUpdate(val *Validator) abci.ValidatorUpdate {
-	return abci.ValidatorUpdate{
-		Power:       val.VotingPower,
-		PubKeyBytes: val.PubKey.Bytes(),
-		PubKeyType:  val.PubKey.Type(),
-	}
-}
-
-// XXX: panics on nil or unknown pubkey type.
 func (tm2pb) ValidatorUpdates(vals *ValidatorSet) []abci.ValidatorUpdate {
 	validators := make([]abci.ValidatorUpdate, vals.Size())
 	for i, val := range vals.Validators {
-		validators[i] = TM2PB.ValidatorUpdate(val)
+		validators[i] = abci.NewValidatorUpdate(val.PubKey, val.VotingPower)
 	}
 	return validators
-}
-
-// XXX: panics on nil or unknown pubkey type.
-func (tm2pb) NewValidatorUpdate(pubkey crypto.PubKey, power int64) abci.ValidatorUpdate {
-	return abci.ValidatorUpdate{
-		Power:       power,
-		PubKeyBytes: pubkey.Bytes(),
-		PubKeyType:  pubkey.Type(),
-	}
 }
 
 // ----------------------------------------------------------------------------
@@ -95,7 +77,7 @@ type pb2tm struct{}
 func (pb2tm) ValidatorUpdates(vals []abci.ValidatorUpdate) ([]*Validator, error) {
 	cmtVals := make([]*Validator, len(vals))
 	for i, v := range vals {
-		pubKey, err := abci.PubKeyFromValidatorUpdate(v)
+		pubKey, err := cryptoenc.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
 		if err != nil {
 			return nil, err
 		}

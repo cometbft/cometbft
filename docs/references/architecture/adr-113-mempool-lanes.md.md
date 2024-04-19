@@ -4,6 +4,8 @@
 
 - 2024-04-12: Initial notes (@hvanz)
 - 2024-04-12: Comments on the notes (@hvanz)
+- 2024-04-17: Discussions (@sergio-mena @hvanz)
+- 2024-04-18: Preliminary structure (@hvanz)
 
 ## Status
 
@@ -27,14 +29,18 @@ Initial notes
 
 ### Mempool components for supporting lanes
 
-A lane can be viewed as a mempool on its own, with its own config, capacity, cache, gossip protocol, p2p channel, p2p bandwidth capacity, etc. For an MVP, probably some (most?) of these components can be common to all lanes. In further versions, we can see which of these need to be per-lane. What is clear is that each lane will need its own `CList` data structure, right from the beginning.
-* clist **need to be different**
-  * if using a common clist, the broadcast routine becomes overly complicated,
-    whereas each lane having its own clist, the broadcast routine is very simple
+A lane can be viewed as a mempool on its own, with its own config, capacity, cache,
+gossip protocol, p2p channel, p2p bandwidth capacity, etc.
+For an MVP, probably some (most?) of these components can be common to all lanes.
+In further versions, we can see which of these need to be per-lane.
+What is clear is that each lane will need its own `CList` data structure, right from the beginning.
+* `CList` **need to be different**
+  * if using a common `CList`, the broadcast routine becomes overly complicated,
+    whereas each lane having its own `CList`, the broadcast routine is very simple
     (advance the highest priority, non-empty lane)
 * cache **can be shared** in MVP
   * lock contention: we think it won't be a big deal performance-wise for an MVP
-  * replacement of entries: lanes with a lot of traffic may force replacement on TXs
+  * cache eviction of entries: lanes with a lot of traffic may force eviction on TXs
     on lanes with little traffic.
     * For an SDK application this is irrelevant: SDK implements replay protection (nonce)
   * it actually doesn't make sense to split the cache per lane, and it would complicate the code significantly.
@@ -46,28 +52,32 @@ A lane can be viewed as a mempool on its own, with its own config, capacity, cac
 * p2p bandwidth capacity **can be shared** in MVP
   * bandwidth capacity per lane is nice to have, but if the MVP doesn't implement it,
     it's still very usable
-* gossip protocol: each lane could select its own gossip protocol. For the future, when we have more than one gossip protocol to choose from.
+* gossip protocol: each lane could select its own gossip protocol.
+  For the future, when we have more than one gossip protocol to choose from.
 * lane/mempool capacity (# of txs, total # of bytes, bytes per tx) **can be different** easily,
   with little extra complexity on config.
   * bytes per tx: ok to share one value for MVP... not so sure
-  * \# of txs: probably not all uses cases not properly addressed if we share a common limit
+  * \# of txs: probably not all use cases properly addressed if we share a common limit
   * total # of bytes: if the other two are per-lane, this can just be a "generous" value
     (and we'd fine tune the other two)
   * IDEA: Leave this for the end: MVP is viable without it, but use cases less customizable
 * re-check **can be shared** in MVP
-  * with PrepareProposal, it becomes _always_ mandatory, so no point in making it per-lane
+  * with `PrepareProposal`, it becomes _always_ mandatory, so no point in making it per-lane
 
 ### Lane coordination
 
-There should be some kind of Lane Coordinator that receives uncategorised txs (from RPC endpoints) and assigns them a lane. This could be implemented in the reactor or inside `CListMempool`.
+There should be some kind of Lane Coordinator that receives uncategorised txs and assigns them a lane.
+This could be implemented in the reactor or inside `CListMempool`.
 * For an MVP, probably it's easier to put the coordination logic in `CListMempool`.
-* After doing `CheckTx`, the transaction will have a category, and only then it can be put in a lane. (So a tx in a lane has been validated at least once by some node.)
+* After doing `CheckTx`, the transaction will have a category, and only then it can be put in a lane.
+  (So a tx in a lane has been validated at least once by some node.)
 * No difference in treatment between TXs coming from RPC, or TXs coming from peers (p2p)
   * Peers aren't trusted
   * In any case, the TXs need to be validated first via `CheckTx`
 * Two options for introducing several TX lists:
   1. Multiple `Clist`s inside `CListMempool`, the cache stays inside `CListMempool`.
   2. Multiple `CListMempool` instances, the cache needs to be outside `CListMempool` (likely, directly controlled by the reactor)
+* We need to investigate the details of these two options in terms of complexity and risks in the code
 
 ### Data flow
 
@@ -87,10 +97,10 @@ There should be some kind of Lane Coordinator that receives uncategorised txs (f
   * We go from the reap loop (currently just one), to probably a nested one
     * the outer loop goes through all TX lists (remember, one per lane), in decreasing priority order
     * the current `break` statements in the inner loop (limit of bytes or gas reached), should also break from the outer loop
-* Exit flow (Update, Re-Check). Update: unconditionally; Re-Check, only if App says TX is now invalid
+* Exit flow (Update, Re-Check). Update: unconditionally; Re-Check: only if App says TX is now invalid
   * Depends on how the multiple TX lists are implemented (see discussion above)
   * Update contains Re-check at the end
-  * Remember Update is done while holding the mempool lock (not further CheckTx... they have to wait)
+  * Remember Update is done while holding the mempool lock (no new CheckTx calls... they have to wait)
   * Changes:
     * We could update the different TX lists in parallel
     * `Update` method (implementing `Update` method in `Mempool` interface) is implemented by `CListMempool` so
@@ -105,7 +115,7 @@ There should be some kind of Lane Coordinator that receives uncategorised txs (f
 ### Priorities
 
 If each lane has a priority, then:
-* Consensus reaps transactions from higher-priority lanes first, in FIFO order.
+* TXs are reaped from higher-priority lanes first, in FIFO order.
 * Higher-priority lanes get to be gossiped first, and gossip within a lane is still in FIFO order.
 * Transactions in higher-priority lanes are processed (updated) first.
 * There will be a _native_ or _default_ lane, similar to the _native VLAN_ in an 802.1Q network.
@@ -119,13 +129,11 @@ After discussion with Osmosis and Injective, there's a dilemma.
 * For Injective, their use case seems to be more demanding: many lanes (4?, 9?),
   with one lane even having less prio than the native lane
   * If we want to address that use case fully, our MVP _does need_ to tackle the design of lane & prio configuration
-  * so, a more ambitious MVP, implying more energy, more time. We must be careful with what we promise for when
+  * so, a more ambitious MVP, implying more energy, time, and resources. We must be careful with what we promise for when
 
-### Who defines lanes and priorites
+### Who defines lanes and priorities
 
 The list of lanes and their priorities: are consensus parameters? are defined by the app?
-* $10**6 question :-)
-* let's discuss it next week with our users. Update: Didn't happen so far :-)
 * TODO
    * Part 1: static config. How-to
    * Part 2: config changes; what happens with ongoing TXs

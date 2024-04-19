@@ -182,15 +182,13 @@ The list of lanes and their priorities: are consensus parameters? are defined by
           * then upgrade the lanes via `ConsensusParams`
         * also, not clear in which order: community should be careful not to break performance between the passing of both proposals
         * the `gov` module may allow the two things to be shipped in the same gov proposal,
-          but, if we need to do it that way, what's this point in having lanes in `ConsensusParams` ?
-      * Conclusion, 3.
-        * lane info is "hardcoded" in the app's logic
-        * lane info is passed to CometBFT during handshake
-      * Advantages:
-        * Simple lane update cycle: one software update gov proposal
-        * CometBFT doesn't not need to deal if dynamic lane changes: it just needs to set up lanes when starting up (afresh, or recovery)
-* How to deal with nodes that are late? So, lane info at mempool level (and thus p2p channels to establish) does not match
-  * TODO
+          but, if we need to do it that way, what's the point in having lanes in `ConsensusParams` ?
+  * Conclusion: 3.
+    * lane info is "hardcoded" in the app's logic
+    * lane info is passed to CometBFT during handshake
+  * Advantages:
+    * Simple lane update cycle: one software update gov proposal
+    * CometBFT doesn't need to deal with dynamic lane changes: it just needs to set up lanes when starting up (whether afresh, or recovery)
 * What does lane info (passed to CometBFT) look like?
   * Current state  of discussions.
     * Draft of data structure
@@ -212,16 +210,18 @@ The list of lanes and their priorities: are consensus parameters? are defined by
     * Current channel distribution (among reactors) goes up to `0x61`
     * Proposal: reserve for mempool lanes all channel ID `0x80` and all channels above (so, all channels whose MSB is 1)
     * currently, mempool is `0x30`, which would be a special case: native lane.
-  * P2P Channel info for nodes that are late
-    * Node that is up to date and falls behind (e.g., network hiccups, etc.)
-      * Not a problem. For lanes to change we need a coordinated update
-    * Node that is blocksyncing from long in the past
+  * How to deal with nodes that are late? So, lane info at mempool level (and thus p2p channels to establish) does not match.
+    * Two cases
+    * A node that is up to date and falls behind (e.g., network instability, etc.)
+      * Not a problem. For lanes to change we need a coordinated update. TODO: Really?
+    * A node that is blocksyncing from far away in the past (software upgrades in the middle)
       * Normal channels (including `0x30`): same as before
       * Lane channels (>=`0x80`), not declared until `SwitchToConsensus`
         * If we're not at the latest version (e.g., Cosmovisor-drive blocksync)
           * channel info likely to be wrong
           * but we Cosmovisor will kill the node before switching to consensus
     * We will need to extend the channel-related handshake between nodes to be able to add channels after initial handshake
+    * TODO: this needs a bit more thought/discussion
 
 ### Tmp notes (likely to be deleted)
 

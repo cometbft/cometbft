@@ -7,9 +7,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/cometbft/cometbft/libs/fail"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/mempool"
@@ -201,86 +199,26 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	return state.MakeBlock(height, txl, commit, evidence, proposerAddr), nil
 }
 
-func (blockExec *BlockExecutor) validateOracleGossipVotes(oracleTx *oracleproto.GossipVotes, height int64) ([]byte, error) {
-	// verify if gossipVote is from validator
-	vals, err := blockExec.store.LoadValidators(height)
-	if err != nil {
-		blockExec.logger.Error("error loading validators from store", "err", err)
-		return nil, err
-	}
-
-	// validate oracle msg
-	verifiedGossipVotes := oracleproto.GossipVotes{
-		GossipVotes: make([]*oracleproto.GossipVote, 0),
-	}
-
-	for _, gossipVote := range oracleTx.GossipVotes {
-		// verify sig
-		signType := gossipVote.SignType
-		switch signType {
-		case "ed25519":
-			pubkey := ed25519.PubKey(gossipVote.PublicKey)
-			if success := pubkey.VerifySignature(types.OracleVoteSignBytes(gossipVote), gossipVote.Signature); !success {
-				err := fmt.Errorf("ed25519: failed to verify signature for gossipVote: %v", gossipVote)
-				blockExec.logger.Error("discarding gossipVote:", "err", err)
-				continue
-			}
-		case "sr25519":
-			pubkey := sr25519.PubKey(gossipVote.PublicKey)
-			if success := pubkey.VerifySignature(types.OracleVoteSignBytes(gossipVote), gossipVote.Signature); !success {
-				err := fmt.Errorf("sr25519: failed to verify signature for gossipVote: %v", gossipVote)
-				blockExec.logger.Error("discarding gossipVote:", "err", err)
-				continue
-			}
-		default:
-			err := fmt.Errorf("signature not supported for gossipVote: %v", gossipVote)
-			blockExec.logger.Error("discarding gossipVote:", "err", err)
-			continue
-		}
-
-		// verify val
-		if !vals.HasAddress(gossipVote.Validator) {
-			err := fmt.Errorf("invalid validator: %v", gossipVote)
-			blockExec.logger.Error("discarding gossipVote:", "err", err)
-			continue
-		}
-
-		verifiedGossipVotes.GossipVotes = append(verifiedGossipVotes.GossipVotes, gossipVote)
-	}
-
-	if len(verifiedGossipVotes.GossipVotes) == 0 {
-		logrus.Warn("no valid oracle gossip votes found")
-		return nil, fmt.Errorf("no valid oracle gossip votes found")
-	}
-
-	newMsg := oracleproto.GossipVotes{
-		GossipVotes: verifiedGossipVotes.GossipVotes,
-	}
-	newMsgBz, err := newMsg.Marshal()
-	if err != nil {
-		blockExec.logger.Error("error marshalling oracleVotesMsg", "err", err)
-		return nil, err
-	}
-
-	return newMsgBz, nil
-}
-
 func (blockExec *BlockExecutor) ProcessProposal(
 	block *types.Block,
 	state State,
 ) (bool, error) {
 	txs := block.Data.Txs.ToSliceOfBytes()
 	if len(txs) > 0 {
+		logrus.Infof("no of txs: %d", len(txs))
 		res, err := blockExec.proxyApp.ValidateOracleVotes(context.Background(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
 
 		if err != nil && res.Status == abci.ResponseValidateOracleVotes_absent {
 			// oracleTx is not present, continue normal processProposal flow
 			blockExec.logger.Error("error unmarshalling oracleVotesMsg or oracleVotesMsg not present", "err", err)
+			logrus.Infof("cant even find oracle votes")
 		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_present {
 			// oracleTx is present but it is invalid, remove from txs
+			logrus.Infof("unsucessful in validating oracle votes")
 			txs = txs[1:]
 		} else if err != nil {
 			// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig
+			logrus.Infof("success in validating oracle votes")
 			txs[0] = res.EncodedOracleTx
 		}
 	}

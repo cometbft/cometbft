@@ -90,7 +90,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		for _, v := range validators {
 			pubkey, err := cryptoenc.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
 			if err != nil {
-				panic(fmt.Errorf("can't create public key: %w", err))
+				panic(err)
 			}
 			app.valAddrToPubKeyMap[string(pubkey.Address())] = pubkey
 		}
@@ -449,7 +449,7 @@ func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 func (app *Application) updateValidator(v types.ValidatorUpdate) {
 	pubkey, err := cryptoenc.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
 	if err != nil {
-		panic(fmt.Errorf("can't create public key: %w", err))
+		panic(err)
 	}
 	key := []byte(ValidatorPrefix + string(pubkey.Bytes()))
 

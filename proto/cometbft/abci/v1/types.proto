@@ -1,7 +1,6 @@
 syntax = "proto3";
 package cometbft.abci.v1;
 
-import "cometbft/crypto/v1/keys.proto";
 import "cometbft/crypto/v1/proof.proto";
 import "cometbft/types/v1/params.proto";
 import "cometbft/types/v1/validator.proto";

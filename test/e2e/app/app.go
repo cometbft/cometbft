@@ -20,7 +20,6 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
@@ -848,12 +847,7 @@ func (app *Application) verifyAndSum(
 		if err != nil {
 			return 0, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", valAddr, err)
 		}
-		var pubKeyProto cryptoproto.PublicKey
-		err = pubKeyProto.Unmarshal(pubKeyBytes)
-		if err != nil {
-			return 0, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", valAddr, err)
-		}
-		pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
+		pubKey, err := cryptoenc.PubKeyFromTypeAndBytes(app.cfg.KeyType, pubKeyBytes)
 		if err != nil {
 			return 0, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", valAddr, err)
 		}

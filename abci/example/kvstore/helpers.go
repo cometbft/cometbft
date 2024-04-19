@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/abci/types"
-	pbcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
-	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 )
 
@@ -69,12 +67,12 @@ func NewTxFromID(i int) []byte {
 
 // Create a transaction to add/remove/update a validator
 // To remove, set power to 0.
-func MakeValSetChangeTx(pubkey pbcrypto.PublicKey, power int64) []byte {
-	pk, err := cryptoencoding.PubKeyFromProto(pubkey)
+func MakeValSetChangeTx(v types.ValidatorUpdate) []byte {
+	pk, err := types.PubKeyFromValidatorUpdate(v)
 	if err != nil {
 		panic(err)
 	}
 	pubStr := base64.StdEncoding.EncodeToString(pk.Bytes())
 	pubTypeStr := pk.Type()
-	return []byte(fmt.Sprintf("%s%s!%s!%d", ValidatorPrefix, pubTypeStr, pubStr, power))
+	return []byte(fmt.Sprintf("%s%s!%s!%d", ValidatorPrefix, pubTypeStr, pubStr, v.Power))
 }

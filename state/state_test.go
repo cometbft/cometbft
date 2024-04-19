@@ -15,7 +15,6 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	sm "github.com/cometbft/cometbft/state"
@@ -472,10 +471,8 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	// add a validator
 	val2PubKey := ed25519.GenPrivKey().PubKey()
 	val2VotingPower := int64(100)
-	fvp, err := cryptoenc.PubKeyToProto(val2PubKey)
-	require.NoError(t, err)
 
-	updateAddVal := abci.ValidatorUpdate{PubKey: fvp, Power: val2VotingPower}
+	updateAddVal := abci.ValidatorUpdate{PubKeyType: val2PubKey.Type(), PubKeyBytes: val2PubKey.Bytes(), Power: val2VotingPower}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateAddVal})
 	require.NoError(t, err)
 	updatedState2, err := sm.UpdateState(updatedState, blockID, &block.Header, abciResponses, validatorUpdates)
@@ -511,7 +508,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	// Updating a validator does not reset the ProposerPriority to zero:
 	// 1. Add - Val2 VotingPower change to 1 =>
 	updatedVotingPowVal2 := int64(1)
-	updateVal := abci.ValidatorUpdate{PubKey: fvp, Power: updatedVotingPowVal2}
+	updateVal := abci.ValidatorUpdate{PubKeyType: val2PubKey.Type(), PubKeyBytes: val2PubKey.Bytes(), Power: updatedVotingPowVal2}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateVal})
 	require.NoError(t, err)
 
@@ -589,9 +586,7 @@ func TestProposerPriorityProposerAlternates(t *testing.T) {
 
 	// add a validator with the same voting power as the first
 	val2PubKey := ed25519.GenPrivKey().PubKey()
-	fvp, err := cryptoenc.PubKeyToProto(val2PubKey)
-	require.NoError(t, err)
-	updateAddVal := abci.ValidatorUpdate{PubKey: fvp, Power: val1VotingPower}
+	updateAddVal := abci.ValidatorUpdate{PubKeyType: val2PubKey.Type(), PubKeyBytes: val2PubKey.Bytes(), Power: val1VotingPower}
 	validatorUpdates, err = types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{updateAddVal})
 	require.NoError(t, err)
 
@@ -768,9 +763,10 @@ func TestLargeGenesisValidator(t *testing.T) {
 	// see: https://github.com/tendermint/tendermint/issues/2960
 	firstAddedValPubKey := ed25519.GenPrivKey().PubKey()
 	firstAddedValVotingPower := int64(10)
-	fvp, err := cryptoenc.PubKeyToProto(firstAddedValPubKey)
-	require.NoError(t, err)
-	firstAddedVal := abci.ValidatorUpdate{PubKey: fvp, Power: firstAddedValVotingPower}
+	firstAddedVal := abci.ValidatorUpdate{
+		PubKeyType:  firstAddedValPubKey.Type(),
+		PubKeyBytes: firstAddedValPubKey.Bytes(), Power: firstAddedValVotingPower,
+	}
 	validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{firstAddedVal})
 	require.NoError(t, err)
 	abciResponses := &abci.FinalizeBlockResponse{
@@ -819,9 +815,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	// add 10 validators with the same voting power as the one added directly after genesis:
 	for i := 0; i < 10; i++ {
 		addedPubKey := ed25519.GenPrivKey().PubKey()
-		ap, err := cryptoenc.PubKeyToProto(addedPubKey)
-		require.NoError(t, err)
-		addedVal := abci.ValidatorUpdate{PubKey: ap, Power: firstAddedValVotingPower}
+		addedVal := abci.ValidatorUpdate{PubKeyType: addedPubKey.Type(), PubKeyBytes: addedPubKey.Bytes(), Power: firstAddedValVotingPower}
 		validatorUpdates, err := types.PB2TM.ValidatorUpdates([]abci.ValidatorUpdate{addedVal})
 		require.NoError(t, err)
 
@@ -839,9 +833,7 @@ func TestLargeGenesisValidator(t *testing.T) {
 	require.Len(t, state.NextValidators.Validators, 10+2)
 
 	// remove genesis validator:
-	gp, err := cryptoenc.PubKeyToProto(genesisPubKey)
-	require.NoError(t, err)
-	removeGenesisVal := abci.ValidatorUpdate{PubKey: gp, Power: 0}
+	removeGenesisVal := abci.ValidatorUpdate{PubKeyType: genesisPubKey.Type(), PubKeyBytes: genesisPubKey.Bytes(), Power: 0}
 	abciResponses = &abci.FinalizeBlockResponse{
 		ValidatorUpdates: []abci.ValidatorUpdate{removeGenesisVal},
 	}

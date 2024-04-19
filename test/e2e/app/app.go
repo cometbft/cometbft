@@ -719,18 +719,14 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 
 func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 	// Store validator data to verify extensions
-	pubKey, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
+	pubKey, err := abci.PubKeyFromValidatorUpdate(*valUpdate)
 	if err != nil {
 		return err
 	}
 	addr := pubKey.Address().String()
 	if valUpdate.Power > 0 {
-		pubKeyBytes, err := valUpdate.PubKey.Marshal()
-		if err != nil {
-			return err
-		}
 		app.logger.Info("setting validator in app_state", "addr", addr)
-		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
+		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(valUpdate.PubKeyBytes))
 	}
 	return nil
 }

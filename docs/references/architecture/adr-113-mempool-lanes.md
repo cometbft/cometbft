@@ -165,9 +165,63 @@ ADR: Core part of detailed design. Bullets will likely become subsections
 ### Who defines lanes and priorities
 
 The list of lanes and their priorities: are consensus parameters? are defined by the app?
-* TODO
-   * Part 1: static config. How-to
-   * Part 2: config changes; what happens with ongoing TXs
+* Discussion on _where_ the lane configuration is set up. Three options
+  1. `config.toml` / `app.toml`
+  2. ConsensusParams
+  3. Hardcoded in the application. Info passed to CometBFT during handshake
+* Outcome of discussion
+  * 1. vs. 2.
+    * It does not make sense for different nodes to have different lane configuration,
+      so definitely we don't want 1
+  * 2. vs. 3.
+    * If we can change lane info via `ConsensusParams`
+      * CometBFT's mempool needs logic for changing lanes dynamically (complex, not really appealing for MVP)
+      * The process of updating lane info very complex and cumbersome:
+        * to update lanes you'd need to pass _two_ governance proposals
+          * upgrade the app, because the lane classification logic (so, the app's code) needs to know the lane config beforehand
+          * then upgrade the lanes via `ConsensusParams`
+        * also, not clear in which order: community should be careful not to break performance between the passing of both proposals
+        * the `gov` module may allow the two things to be shipped in the same gov proposal,
+          but, if we need to do it that way, what's this point in having lanes in `ConsensusParams` ?
+      * Conclusion, 3.
+        * lane info is "hardcoded" in the app's logic
+        * lane info is passed to CometBFT during handshake
+      * Advantages:
+        * Simple lane update cycle: one software update gov proposal
+        * CometBFT doesn't not need to deal if dynamic lane changes: it just needs to set up lanes when starting up (afresh, or recovery)
+* How to deal with nodes that are late? So, lane info at mempool level (and thus p2p channels to establish) does not match
+  * TODO
+* What does lane info (passed to CometBFT) look like?
+  * Current state  of discussions.
+    * Draft of data structure
+        ```protobuf
+        message LaneInfo {
+          repeated Lane lanes;
+        }
+        message Lane {
+          byte id;
+          string name;
+        }
+        ```
+  * The `Lane` list MUST NOT have duplicate lane IDs
+  * The order of the `Lane` elements in the `lanes` field defines their priority
+  * Lane ID 0 is the native lane.
+    * It MAY be present in the list
+    * If it is absent, it is equivalent to having it as the last element (lowest priority)
+  * Channel ID is a byte
+    * Current channel distribution (among reactors) goes up to `0x61`
+    * Proposal: reserve for mempool lanes all channel ID `0x80` and all channels above (so, all channels whose MSB is 1)
+    * currently, mempool is `0x30`, which would be a special case: native lane.
+  * P2P Channel info for nodes that are late
+    * Node that is up to date and falls behind (e.g., network hiccups, etc.)
+      * Not a problem. For lanes to change we need a coordinated update
+    * Node that is blocksyncing from long in the past
+      * Normal channels (including `0x30`): same as before
+      * Lane channels (>=`0x80`), not declared until `SwitchToConsensus`
+        * If we're not at the latest version (e.g., Cosmovisor-drive blocksync)
+          * channel info likely to be wrong
+          * but we Cosmovisor will kill the node before switching to consensus
+    * We will need to extend the channel-related handshake between nodes to be able to add channels after initial handshake
 
 ### Tmp notes (likely to be deleted)
 

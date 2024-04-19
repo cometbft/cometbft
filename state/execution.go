@@ -215,11 +215,12 @@ func (blockExec *BlockExecutor) ProcessProposal(
 		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_present {
 			// oracleTx is present but it is invalid, remove from txs
 			logrus.Infof("unsucessful in validating oracle votes")
-			txs = txs[1:]
+			block.Data.Txs = types.ToTxs(txs[1:])
 		} else if err != nil {
 			// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig
 			logrus.Infof("success in validating oracle votes")
 			txs[0] = res.EncodedOracleTx
+			block.Data.Txs = types.ToTxs(txs)
 		}
 	}
 
@@ -227,7 +228,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 		Hash:               block.Header.Hash(),
 		Height:             block.Header.Height,
 		Time:               block.Header.Time,
-		Txs:                txs,
+		Txs:                block.Data.Txs.ToSliceOfBytes(),
 		ProposedLastCommit: buildLastCommitInfoFromStore(block, blockExec.store, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		ProposerAddress:    block.ProposerAddress,

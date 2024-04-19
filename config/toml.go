@@ -409,15 +409,6 @@ experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.Experi
 #######################################################
 [oracle]
 
-# Path to custom oracle spec should validators decide to use a different spec from the default
-custom_node_path = "{{ .Oracle.CustomNodePath }}"
-
-# REST API address used to query chain for syncing of oracles and fetching cached oracle results
-rest_api_address = "{{ .Oracle.RestApiAddress }}"
-
-# GRPC address used to query chain for syncing of oracles and fetching cached oracle results
-grpc_address = "{{ .Oracle.GrpcAddress }}"
-
 # Interval determines how long we should keep our gossiped votes before pruning
 prune_interval = "{{ .Oracle.PruneInterval }}" 
 

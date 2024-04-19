@@ -2,14 +2,9 @@ package runner
 
 import (
 	"context"
-	"io"
-	"net/http"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/cometbft/cometbft/oracle/service/types"
 
@@ -144,8 +139,6 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo) {
 // Run run oracles
 func Run(oracleInfo *types.OracleInfo) {
 	log.Info("[oracle] Service started.")
-	waitForGrpc(oracleInfo.Config.GrpcAddress)
-	waitForRestAPI(oracleInfo.Config.RestApiAddress)
 	RunProcessSignVoteQueue(oracleInfo)
 	PruneUnsignedVoteBuffer(oracleInfo)
 	PruneGossipVoteBuffer(oracleInfo)
@@ -174,83 +167,4 @@ func Run(oracleInfo *types.OracleInfo) {
 
 		time.Sleep(1000 * time.Millisecond)
 	}
-}
-
-func waitForRestAPI(address string) {
-	restMaxRetryCount := 12
-	retryCount := 0
-	sleepTime := time.Second
-	for {
-		log.Infof("[oracle] checking if rest endpoint is up %s : %d", address, retryCount)
-		if retryCount == restMaxRetryCount {
-			panic("failed to connect to grpc:grpcClient after 12 tries")
-		}
-		time.Sleep(sleepTime)
-
-		res := HTTPRequest(address, 10)
-		if len(res) != 0 {
-			break
-		}
-
-		time.Sleep(time.Duration(retryCount*int(time.Second) + 1))
-		retryCount++
-		sleepTime *= 2
-	}
-}
-
-func waitForGrpc(address string) {
-	grpcMaxRetryCount := 12
-	retryCount := 0
-	sleepTime := time.Second
-	var client *grpc.ClientConn
-
-	for {
-		log.Infof("[oracle] trying to connect to grpc with address %s : %d", address, retryCount)
-		if retryCount == grpcMaxRetryCount {
-			panic("failed to connect to grpc:grpcClient after 12 tries")
-		}
-		time.Sleep(sleepTime)
-
-		// reinit otherwise connection will be idle, in idle we can't tell if it's really ready
-		var err error
-		client, err = grpc.Dial(
-			address,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-		)
-		if err != nil {
-			panic(err)
-		}
-		// give it some time to connect after dailing, but not too long as connection can become idle
-		time.Sleep(time.Duration(retryCount*int(time.Second) + 1))
-
-		if client.GetState() == connectivity.Ready {
-			break
-		}
-		client.Close()
-		retryCount++
-		sleepTime *= 2
-	}
-}
-
-func HTTPRequest(url string, timeout uint64) []byte {
-	httpClient := http.Client{
-		Timeout: time.Duration(timeout) * time.Second,
-	}
-
-	var response *http.Response
-	response, err := httpClient.Get(url)
-
-	if err != nil {
-		return []byte{}
-	}
-
-	defer response.Body.Close()
-
-	body, readErr := io.ReadAll(response.Body)
-
-	if readErr != nil {
-		return []byte{}
-	}
-
-	return body
 }

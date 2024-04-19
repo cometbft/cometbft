@@ -20,6 +20,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
@@ -725,7 +726,15 @@ func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 	addr := pubKey.Address().String()
 	if valUpdate.Power > 0 {
 		app.logger.Info("setting validator in app_state", "addr", addr)
-		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(valUpdate.PubKeyBytes))
+		pk, err := cryptoenc.PubKeyToProto(pubKey)
+		if err != nil {
+			return fmt.Errorf("failed to convert pubkey to proto: %w", err)
+		}
+		pubKeyBytes, err := pk.Marshal()
+		if err != nil {
+			return fmt.Errorf("failed to marshal pubkey: %w", err)
+		}
+		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
 	}
 	return nil
 }
@@ -847,7 +856,12 @@ func (app *Application) verifyAndSum(
 		if err != nil {
 			return 0, fmt.Errorf("could not hex-decode public key for validator address %s, err %w", valAddr, err)
 		}
-		pubKey, err := cryptoenc.PubKeyFromTypeAndBytes(app.cfg.KeyType, pubKeyBytes)
+		var pubKeyProto cryptoproto.PublicKey
+		err = pubKeyProto.Unmarshal(pubKeyBytes)
+		if err != nil {
+			return 0, fmt.Errorf("unable to unmarshal public key for validator address %s, err %w", valAddr, err)
+		}
+		pubKey, err := cryptoenc.PubKeyFromProto(pubKeyProto)
 		if err != nil {
 			return 0, fmt.Errorf("could not obtain a public key from its proto for validator address %s, err %w", valAddr, err)
 		}

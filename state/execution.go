@@ -570,19 +570,17 @@ func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
 	params types.ValidatorParams,
 ) error {
 	for _, valUpdate := range abciUpdates {
-		if valUpdate.GetPower() < 0 {
-			return fmt.Errorf("voting power can't be negative %v", valUpdate)
-		} else if valUpdate.GetPower() == 0 {
-			// continue, since this is deleting the validator, and thus there is no
-			// pubkey to check
-			continue
+		if valUpdate.Power < 0 {
+			return fmt.Errorf("voting power of %X can't be negative", valUpdate.PubKeyBytes)
 		}
 
-		// Check if validator's pubkey matches an ABCI type in the consensus params
+		// Check if validator's pubkey matches an ABCI type in the consensus params.
 		if !types.IsValidPubkeyType(params, valUpdate.PubKeyType) {
-			return fmt.Errorf("validator %v is using pubkey %s, which is unsupported for consensus",
-				valUpdate, valUpdate.PubKeyType)
+			return fmt.Errorf("validator %X is using pubkey %s, which is unsupported for consensus",
+				valUpdate.PubKeyBytes, valUpdate.PubKeyType)
 		}
+
+		// XXX: PubKeyBytes will be checked in PB2TM.ValidatorUpdates
 	}
 	return nil
 }

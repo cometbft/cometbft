@@ -18,6 +18,5 @@ The CometBFT How-To Guides are designed to provide step-by-step instructions and
 examples to help users acquire real-world experience while learning.
 
 - [Application Development](./app-dev/README.md)
-- [Creating an application with ABCI 2.0](abci/forum-application/1.abci-intro.md)
 - [Tools](./tools/README.md)
 - [Running Networks](./networks/README.md)

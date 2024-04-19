@@ -15,9 +15,28 @@ In writing (we're not sure yet whether this will be an ADR or a spec)
 
 TODO
 
+Try using "QoS" term. Because that's what it actually is.
+
+We need problem definition.
+Try to come up with properties:
+* Currently, these properties not guaranteed
+* The rest of this ADR, proposal to guarantee these properties
+
+From discussion with Adi:
+
+* Make clear that **TX latency** is of the utmost importance here (as use case description)
+
 ## Alternative Approaches
 
 TODO
+
+Prio mempool: why is it not a good fit?
+
+Other alternatives:
+* Consider looking into mempool discussions in Solana
+* Ethereum pre-confirmations
+* Timebox this: 1-2 days each
+
 
 ## Decision
 
@@ -92,8 +111,6 @@ What is clear is that each lane will need its own `CList` data structure, right 
   * IDEA: Leave this for the end: MVP is viable without it, but use cases less customizable
 * re-check **can be shared** in MVP
   * with `PrepareProposal`, it becomes _always_ mandatory, so no point in making it per-lane
-
-
 
 ADR: This is good info, should probably go at the beginning,
 "These are our decisions on what to implement and what not to.
@@ -208,8 +225,9 @@ The list of lanes and their priorities: are consensus parameters? are defined by
     * If it is absent, it is equivalent to having it as the last element (lowest priority)
   * Channel ID is a byte
     * Current channel distribution (among reactors) goes up to `0x61`
-    * Proposal: reserve for mempool lanes all channel ID `0x80` and all channels above (so, all channels whose MSB is 1)
-    * currently, mempool is `0x30`, which would be a special case: native lane.
+    * Proposal: reserve for mempool lanes channel ID `0x80` and all channels above (so, all channels whose MSB is 1)
+      * max of 128 lanes. Big enough?
+    * currently, mempool is p2p channel ID is `0x30`, which would be a special case: native lane.
   * How to deal with nodes that are late? So, lane info at mempool level (and thus p2p channels to establish) does not match.
     * Two cases
     * A node that is up to date and falls behind (e.g., network instability, etc.)
@@ -222,6 +240,15 @@ The list of lanes and their priorities: are consensus parameters? are defined by
           * but we Cosmovisor will kill the node before switching to consensus
     * We will need to extend the channel-related handshake between nodes to be able to add channels after initial handshake
     * TODO: this needs a bit more thought/discussion
+    * IDEA: use versions:
+      * bump up the p2p version. Any late legacy node will have to upgrade to latest P2P version to acquire nodes
+      * add a field `version` to `LaneInfo`
+        * in the new p2p version, p2p handshake exchanges that version
+        * if they don't match, we need to cover the Cosmovisor way of things
+          * refuse to open any lane channel
+          * panic upon
+
+ADR: This deserves its own section of the detailed design, likely after the one describing the transaction flows
 
 ### Tmp notes (likely to be deleted)
 

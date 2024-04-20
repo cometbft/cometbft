@@ -254,3 +254,13 @@ type ResultEvent struct {
 	Data   types.TMEventData   `json:"data"`
 	Events map[string][]string `json:"events"`
 }
+
+// Pagination provides pagination information for queries.
+// This allows us to use the same TxSearch API for pruning to return all relevant data,
+// while still limiting public queries to pagination.
+type Pagination struct {
+	OrderDesc   bool
+	IsPaginated bool
+	Page        int
+	PerPage     int
+}

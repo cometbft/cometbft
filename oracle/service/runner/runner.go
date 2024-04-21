@@ -92,6 +92,7 @@ func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo) {
 			// prune gossip vote that have signed timestamps older than 60 secs
 			for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
 				if gossipVote.SignedTimestamp < currTime-uint64(interval) {
+					log.Info(currTime - uint64(interval))
 					log.Infof("DELETING STALE GOSSIP BUFFER (%v) FOR VAL: %s", gossipVote.SignedTimestamp, valAddr)
 					delete(buffer, valAddr)
 				}
@@ -106,12 +107,12 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo) {
 	go func(oracleInfo *types.OracleInfo) {
 		interval := oracleInfo.Config.PruneInterval
 		if interval == 0 {
-			interval = 1 * time.Second
+			interval = 4 * time.Second
 		}
 		ticker := time.Tick(interval)
 		for range ticker {
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
-			// prune everything older than 3 secs
+			// prune everything older than 4 secs
 			currTime := uint64(time.Now().Unix())
 			numberOfVotesToPrune := 0
 			count := 0

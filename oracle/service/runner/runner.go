@@ -66,6 +66,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 		// signing of vote should append the signature field and timestamp field of gossipVote
 		if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
 			log.Errorf("error signing oracle votes")
+			continue
 		}
 
 		// replace current gossipVoteBuffer with new one
@@ -74,6 +75,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 		// need to mutex lock as it will clash with concurrent gossip
 		oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 		oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
+		log.Infof("adding new gossipBuffer at time: %v", newGossipVote.SignedTimestamp)
 		oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 	}
 }
@@ -90,7 +92,7 @@ func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo) {
 			// prune gossip vote that have signed timestamps older than 60 secs
 			for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
 				if gossipVote.SignedTimestamp < currTime-uint64(interval) {
-					log.Infof("DELETING STALE GOSSIP BUFFER FOR VAL: %s", valAddr)
+					log.Infof("DELETING STALE GOSSIP BUFFER (%v) FOR VAL: %s", gossipVote.SignedTimestamp, valAddr)
 					delete(buffer, valAddr)
 				}
 			}

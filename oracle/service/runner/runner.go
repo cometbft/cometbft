@@ -38,7 +38,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo) {
 
 		// new batch of unsigned votes
 		newUnsignedVotes := &types.UnsignedVotes{
-			Timestamp: uint64(time.Now().Unix()),
+			Timestamp: time.Now().Unix(),
 			Votes:     votes,
 		}
 
@@ -86,13 +86,12 @@ func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo) {
 		ticker := time.Tick(interval)
 		for range ticker {
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-			currTime := uint64(time.Now().Unix())
+			currTime := time.Now().Unix()
 			buffer := oracleInfo.GossipVoteBuffer.Buffer
 
 			// prune gossip vote that have signed timestamps older than 60 secs
 			for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
-				if gossipVote.SignedTimestamp < currTime-uint64(interval) {
-					log.Info(currTime - uint64(interval))
+				if gossipVote.SignedTimestamp < currTime-int64(interval.Seconds()) {
 					log.Infof("DELETING STALE GOSSIP BUFFER (%v) FOR VAL: %s", gossipVote.SignedTimestamp, valAddr)
 					delete(buffer, valAddr)
 				}
@@ -113,14 +112,14 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo) {
 		for range ticker {
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.RLock()
 			// prune everything older than 4 secs
-			currTime := uint64(time.Now().Unix())
+			currTime := time.Now().Unix()
 			numberOfVotesToPrune := 0
 			count := 0
 			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
 			for _, unsignedVotes := range unsignedVoteBuffer {
 				// unsigned votes are arranged from least recent to most recent
 				timestamp := unsignedVotes.Timestamp
-				if timestamp <= currTime-uint64(interval) {
+				if timestamp <= currTime-int64(interval.Seconds()) {
 					numberOfVotesToPrune++
 					count += len(unsignedVotes.Votes)
 				} else {
@@ -159,7 +158,7 @@ func Run(oracleInfo *types.OracleInfo) {
 				Validator: oracleInfo.PubKey.Address(),
 				OracleId:  vote.OracleId,
 				Data:      vote.Data,
-				Timestamp: uint64(vote.Timestamp),
+				Timestamp: vote.Timestamp,
 			}
 			votes = append(votes, &newVote)
 		}

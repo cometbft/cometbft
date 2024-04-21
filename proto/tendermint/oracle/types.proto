@@ -3,12 +3,10 @@ package tendermint.oracle;
 
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/oracle";
 
-import "gogoproto/gogo.proto";
-
 message Vote {
   bytes validator = 1;
   string oracle_id = 2;
-  uint64 timestamp = 3;
+  int64 timestamp = 3;
   string data = 4;
 }
 
@@ -17,7 +15,7 @@ message GossipVote {
   bytes public_key = 2;
   string sign_type = 3;
   repeated Vote votes = 4;
-  uint64 signed_timestamp = 5;
+  int64 signed_timestamp = 5;
   bytes signature = 6;
 }
 
@@ -39,12 +37,6 @@ message Oracle {
   string result_strategy        = 8;
   string  resolution             = 9;
   string spec                   = 10;
-}
-
-message Result {
-  string oracle_id = 1 [ (gogoproto.moretags) = "db:\"oracle_id\"" ];
-  int64 timestamp = 3 [ (gogoproto.moretags) = "db:\"timestamp\"" ];
-  string data = 4 [ (gogoproto.moretags) = "db:\"data\"" ];
 }
 
 message GossipVotes {

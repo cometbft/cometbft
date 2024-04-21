@@ -109,7 +109,7 @@ func (pv MockPV) SignOracleVote(chainID string, vote *oracleproto.GossipVote) er
 	if err != nil {
 		return err
 	}
-	vote.SignedTimestamp = uint64(time.Now().Unix())
+	vote.SignedTimestamp = time.Now().Unix()
 	vote.Signature = sig
 
 	return nil

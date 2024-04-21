@@ -22,7 +22,7 @@ type OracleInfo struct {
 }
 
 type UnsignedVotes struct {
-	Timestamp uint64
+	Timestamp int64
 	Votes     []*oracleproto.Vote
 }
 

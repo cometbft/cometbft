@@ -19,7 +19,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
@@ -1121,8 +1120,4 @@ func TestMarshalJSONPeerState(t *testing.T) {
 			"votes":"0",
 			"block_parts":"0"}
 		}`, string(data))
-}
-
-func updateValTx(pubKey crypto.PubKey, power int64) []byte {
-	return kvstore.MakeValSetChangeTx(abci.NewValidatorUpdate(pubKey, power))
 }

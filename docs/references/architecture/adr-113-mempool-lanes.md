@@ -18,13 +18,28 @@ TODO
 Try using "QoS" term. Because that's what it actually is.
 
 We need problem definition.
+
+
+Definitions
+Tx1, Tx2
+Traffic classes
+Traffic class order (partial?)
+Latency(tx) --- important
+
+Properties / Requirements (similar to abci++ requirement)
+
+[Examples]
+* Property 1: tx1 --> tc1, tx2 --> tc1 ---> FIFO
+
+* Property 2: tx1 --> tc1, tx2 --> tc2; tc1 < tc2 --> tx1 first, then tx2
+
+* Property 3: tx1 --> tc1, tx2 --> tc2; tc < tc2 --> latency(tx1)<=latency(tx2)
+
 Try to come up with properties:
 * Currently, these properties not guaranteed
 * The rest of this ADR, proposal to guarantee these properties
 
-From discussion with Adi:
-
-* Make clear that **TX latency** is of the utmost importance here (as use case description)
+Note: Consider explaining that the problem we are trying to solve is **not** general bandwidth or latency improvements: that is an orthogonal problem.
 
 ## Alternative Approaches
 
@@ -231,7 +246,9 @@ The list of lanes and their priorities: are consensus parameters? are defined by
   * How to deal with nodes that are late? So, lane info at mempool level (and thus p2p channels to establish) does not match.
     * Two cases
     * A node that is up to date and falls behind (e.g., network instability, etc.)
-      * Not a problem. For lanes to change we need a coordinated update. TODO: Really?
+      * Not a problem. For lanes to change we **require** a coordinated update.
+        * Reason: if we allow upgrade changing lane info **not** to be a coordinated upgrage,
+          then we won't have consistent lane info across nodes (each node would be running a particular version of the software)
     * A node that is blocksyncing from far away in the past (software upgrades in the middle)
       * Normal channels (including `0x30`): same as before
       * Lane channels (>=`0x80`), not declared until `SwitchToConsensus`
@@ -242,11 +259,23 @@ The list of lanes and their priorities: are consensus parameters? are defined by
     * TODO: this needs a bit more thought/discussion
     * IDEA: use versions:
       * bump up the p2p version. Any late legacy node will have to upgrade to latest P2P version to acquire nodes
+      * two ways of upgrading
+        * Ethereum-like
+          * easy: if `version` in `LaneInfo` don't match --> break down the connection (same treatment as `p2p` version)
+          * we cannot afford this, as we need to support Cosmovisor-like apps (e.g., SDK apps)
+        * Cosmovisor-like
+          * harder: below
       * add a field `version` to `LaneInfo`
         * in the new p2p version, p2p handshake exchanges that version
-        * if they don't match, we need to cover the Cosmovisor way of things
-          * refuse to open any lane channel
-          * panic upon
+        * if `version` in `LaneInfo` match
+          * life is good!
+        * if `version` in `LaneInfo` don't match
+          * we still proceed with the handshake
+          * but we don't announce any mempool channel info
+          * so the two nodes can't exchange mempool-related messages,
+            * they can exchange info in other channels (e.g., BlockSync or StateSync)
+          * panic upon `SwitchToConsensus`
+        * all this is to support the Cosmovisor way of things
 
 ADR: This deserves its own section of the detailed design, likely after the one describing the transaction flows
 

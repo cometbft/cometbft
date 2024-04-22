@@ -213,8 +213,6 @@
 - `[privval]` Retry accepting a connection ([\#2047](https://github.com/cometbft/cometbft/pull/2047))
 - `[state]` Fix rollback to a specific height
   ([\#2136](https://github.com/cometbft/cometbft/pull/2136))
-- `[state]` Fix txSearch performance issue
-  ([\#2855](https://github.com/cometbft/cometbft/pull/2855))
 
 ### DEPENDENCIES
 

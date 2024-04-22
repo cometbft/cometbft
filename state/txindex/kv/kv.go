@@ -1006,7 +1006,7 @@ func startKey(fields ...any) []byte {
 
 func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	if perPage < 1 {
-		panic(fmt.Sprintf("zero or negative perPage: %d", perPage))
+		return 1, fmt.Errorf("zero or negative perPage: %d", perPage)
 	}
 
 	if pagePtr == nil { // no page parameter

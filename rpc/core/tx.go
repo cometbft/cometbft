@@ -4,6 +4,7 @@ import (
 	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/state/txindex/null"
 	"github.com/cometbft/cometbft/types"
 )
@@ -73,7 +74,7 @@ func (env *Environment) TxSearch(
 		*pagePtr = 1
 	}
 
-	pagSettings := ctypes.Pagination{
+	pagSettings := txindex.Pagination{
 		OrderDesc:   orderBy == "desc",
 		IsPaginated: true,
 		Page:        *pagePtr,

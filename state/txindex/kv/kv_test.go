@@ -16,13 +16,12 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
 )
 
-var DefaultPagination = ctypes.Pagination{
+var DefaultPagination = txindex.Pagination{
 	IsPaginated: true,
 	Page:        1,
 	PerPage:     100,

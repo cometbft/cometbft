@@ -20,7 +20,6 @@ import (
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/libs/log"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/txindex"
@@ -76,7 +75,7 @@ func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight 
 
 	ctx := context.Background()
 	results, _, err := txi.Search(ctx, query.MustCompile(
-		fmt.Sprintf("tx.height < %d AND tx.height >= %d", retainHeight, lastRetainHeight)), ctypes.Pagination{})
+		fmt.Sprintf("tx.height < %d AND tx.height >= %d", retainHeight, lastRetainHeight)), txindex.Pagination{})
 	if err != nil {
 		return 0, lastRetainHeight, err
 	}
@@ -417,7 +416,7 @@ func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Ba
 //
 // Search will exit early and return any result fetched so far,
 // when a message is received on the context chan.
-func (txi *TxIndex) Search(ctx context.Context, q *query.Query, pagSettings ctypes.Pagination) ([]*abci.TxResult, int, error) {
+func (txi *TxIndex) Search(ctx context.Context, q *query.Query, pagSettings txindex.Pagination) ([]*abci.TxResult, int, error) {
 	select {
 	case <-ctx.Done():
 		return make([]*abci.TxResult, 0), 0, nil

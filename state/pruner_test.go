@@ -15,9 +15,9 @@ import (
 	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	sm "github.com/cometbft/cometbft/state"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
+	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
@@ -97,14 +97,14 @@ func TestPruneTxIndexerToRetainHeight(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(2), actual)
 
-	results, _, err := txIndexer.Search(context.Background(), query.MustCompile("tx.height < 2"), ctypes.Pagination{})
+	results, _, err := txIndexer.Search(context.Background(), query.MustCompile("tx.height < 2"), txindex.Pagination{})
 	require.NoError(t, err)
 	require.True(t, containsAllTxs(results, []string{"foo1", "bar1"}))
 
 	newRetainHeight := pruner.PruneTxIndexerToRetainHeight(0)
 	require.Equal(t, int64(2), newRetainHeight)
 
-	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 2"), ctypes.Pagination{})
+	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 2"), txindex.Pagination{})
 	require.NoError(t, err)
 	require.Empty(t, results)
 
@@ -114,13 +114,13 @@ func TestPruneTxIndexerToRetainHeight(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(4), actual)
 
-	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 4"), ctypes.Pagination{})
+	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 4"), txindex.Pagination{})
 	require.NoError(t, err)
 	require.True(t, containsAllTxs(results, []string{"foo2", "bar2", "foo3", "bar3"}))
 
 	pruner.PruneTxIndexerToRetainHeight(2)
 
-	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 4"), ctypes.Pagination{})
+	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height < 4"), txindex.Pagination{})
 	require.NoError(t, err)
 	require.Empty(t, results)
 
@@ -130,13 +130,13 @@ func TestPruneTxIndexerToRetainHeight(t *testing.T) {
 	err = txIndexer.Index(txResult2)
 	require.NoError(t, err)
 
-	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height <= 4"), ctypes.Pagination{})
+	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height <= 4"), txindex.Pagination{})
 	require.NoError(t, err)
 	require.True(t, containsAllTxs(results, []string{"foo1", "bar1", "foo4", "bar4"}))
 
 	pruner.PruneTxIndexerToRetainHeight(4)
 
-	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height <= 4"), ctypes.Pagination{})
+	results, _, err = txIndexer.Search(context.Background(), query.MustCompile("tx.height <= 4"), txindex.Pagination{})
 	require.NoError(t, err)
 	require.True(t, containsAllTxs(results, []string{"foo1", "bar1", "foo4", "bar4"}))
 }

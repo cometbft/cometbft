@@ -841,8 +841,8 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 
 // OracleConfig defines the configuration for the CometBFT oracle service
 type OracleConfig struct {
-	// Interval determines how long we should keep our gossiped votes before pruning
-	PruneInterval time.Duration `mapstructure:"prune_interval"`
+	// MaxGossipVoteAge determines how long we should keep the gossip votes in terms of block height
+	MaxGossipVoteAge int `mapstructure:"max_gossip_vote_age"`
 	// Interval determines how long we should wait before batch signing votes
 	SignInterval time.Duration `mapstructure:"sign_interval"`
 	// Interval determines how long we should wait between gossiping of votes
@@ -854,8 +854,8 @@ type OracleConfig struct {
 // DefaultOracleConfig returns a default configuration for the CometBFT oracle service
 func DefaultOracleConfig() *OracleConfig {
 	return &OracleConfig{
-		PruneInterval:    4 * time.Second,        // 4s
-		SignInterval:     500 * time.Millisecond, // 0.5s
+		MaxGossipVoteAge: 3,                      // keep all gossipVotes from 3 blocks behind
+		SignInterval:     100 * time.Millisecond, // 0.1s
 		GossipInterval:   100 * time.Millisecond, // 0.1s
 		MaxGossipMsgSize: 65536,
 	}
@@ -870,8 +870,8 @@ func TestOracleConfig() *OracleConfig {
 
 // ValidateBasic performs basic validation and returns an error if any check fails.
 func (cfg *OracleConfig) ValidateBasic() error {
-	if cfg.PruneInterval < 0 {
-		return errors.New("prune_interval can't be negative")
+	if cfg.MaxGossipVoteAge < 0 {
+		return errors.New("max_gossip_vote_age can't be negative")
 	}
 	if cfg.SignInterval < 0 {
 		return errors.New("sign_interval can't be negative")

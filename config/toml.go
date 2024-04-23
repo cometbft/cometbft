@@ -409,8 +409,8 @@ experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.Experi
 #######################################################
 [oracle]
 
-# Interval determines how long we should keep our gossiped votes before pruning
-prune_interval = "{{ .Oracle.PruneInterval }}" 
+# MaxGossipVoteAge determines how long we should keep the gossip votes in terms of block height
+max_gossip_vote_age = "{{ .Oracle.MaxGossipVoteAge }}" 
 
 # Interval determines how long we should wait before batch signing votes
 sign_interval = "{{ .Oracle.SignInterval }}"

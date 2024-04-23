@@ -11,34 +11,15 @@ message Vote {
 }
 
 message GossipVote {
-  bytes validator = 1;
-  bytes public_key = 2;
-  string sign_type = 3;
-  repeated Vote votes = 4;
-  int64 signed_timestamp = 5;
-  bytes signature = 6;
+  int32 validator_index = 1;
+  string sign_type = 2;
+  repeated Vote votes = 3;
+  int64 signed_timestamp = 4;
+  bytes signature = 5;
 }
 
 message CanonicalGossipVote {
-  bytes validator = 1;
-  bytes public_key = 2;
-  string sign_type = 3;
-  repeated Vote votes = 4;
-}
-
-message Oracle {
-  string creator                = 1;
-  string id                     = 2;
-  string description            = 3;
-  string status                 = 4;
-  string  min_turnout_percentage = 5;
-  string  max_result_age         = 6;
-  string security_type          = 7;
-  string result_strategy        = 8;
-  string  resolution             = 9;
-  string spec                   = 10;
-}
-
-message GossipVotes {
-  repeated GossipVote GossipVotes = 1;
+  int32 validator_index = 1;
+  string sign_type = 2;
+  repeated Vote votes = 3;
 }

@@ -391,14 +391,8 @@ message ResponseSignGossipVote {
   bytes encoded_tx = 1;
 }
 
-message Vote {
-  string oracle_id = 1;
-  int64 timestamp = 2;
-  string data = 3;
-}
-
 message ResponsePrepareOracleVotes {
-  repeated Vote votes = 1 [(gogoproto.nullable) = false];
+  tendermint.oracle.Vote vote = 1;
 }
 
 message ResponseValidateOracleVotes {

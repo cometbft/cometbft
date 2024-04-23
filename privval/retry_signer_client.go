@@ -81,7 +81,6 @@ func (sc *RetrySignerClient) SignVote(chainID string, vote *cmtproto.Vote) error
 }
 
 func (sc *RetrySignerClient) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
-	// TODO TODO TODO: implement sign oracle vote
 	var err error
 	for i := 0; i < sc.retries || sc.retries == 0; i++ {
 		err = sc.next.SignOracleVote(chainID, vote)

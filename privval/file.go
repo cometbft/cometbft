@@ -315,7 +315,6 @@ func (pv *FilePV) signOracleVote(vote *oracleproto.GossipVote) error {
 	if err != nil {
 		return err
 	}
-	vote.SignedTimestamp = time.Now().Unix()
 	vote.Signature = sig
 
 	return nil

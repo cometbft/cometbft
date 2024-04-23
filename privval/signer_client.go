@@ -113,7 +113,6 @@ func (sc *SignerClient) SignVote(chainID string, vote *cmtproto.Vote) error {
 
 // SignVote requests a remote signer to sign a vote
 func (sc *SignerClient) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
-	// TODO TODO TODO: implement sign oracle vote
 	response, err := sc.endpoint.SendRequest(mustWrapMsg(&privvalproto.SignOracleVoteRequest{Vote: vote, ChainId: chainID}))
 	if err != nil {
 		return err

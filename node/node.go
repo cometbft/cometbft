@@ -40,7 +40,6 @@ import (
 	"github.com/cometbft/cometbft/version"
 
 	"github.com/cometbft/cometbft/oracle"
-	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 
 	_ "net/http/pprof" //nolint: gosec
 )
@@ -71,7 +70,6 @@ type Node struct {
 	mempoolReactor    p2p.Reactor       // for gossipping transactions
 	mempool           mempl.Mempool
 	oracleReactor     oracle.Reactor
-	oracleInfo        *oracletypes.OracleInfo
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
@@ -495,7 +493,6 @@ func NewNodeWithContext(ctx context.Context,
 		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
 		oracleReactor:    *oracleReactor,
-		oracleInfo:       oracleInfo,
 		consensusState:   consensusState,
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,

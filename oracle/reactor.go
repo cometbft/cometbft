@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/sr25519"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/sirupsen/logrus"
 
@@ -54,18 +52,14 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		Buffer: make(map[string]*oracleproto.GossipVote),
 	}
 
-	unsignedVoteBuffer := &oracletypes.UnsignedVoteBuffer{
-		Buffer: []*oracletypes.UnsignedVotes{},
-	}
-
 	oracleInfo := &oracletypes.OracleInfo{
-		Config:             config,
-		GossipVoteBuffer:   gossipVoteBuffer,
-		UnsignedVoteBuffer: unsignedVoteBuffer,
-		SignVotesChan:      make(chan []*oracleproto.Vote),
-		PubKey:             pubKey,
-		PrivValidator:      privValidator,
-		ProxyApp:           proxyApp,
+		Config:           config,
+		GossipVoteBuffer: gossipVoteBuffer,
+		SignVotesChan:    make(chan *oracleproto.Vote),
+		PubKey:           pubKey,
+		PrivValidator:    privValidator,
+		ProxyApp:         proxyApp,
+		BlockTimestamps:  make([]int64, 0),
 	}
 
 	oracleR := &Reactor{
@@ -93,7 +87,7 @@ func (oracleR *Reactor) SetLogger(l log.Logger) {
 func (oracleR *Reactor) OnStart() error {
 	logrus.Info("[oracle] running oracle service...")
 	go func() {
-		runner.Run(oracleR.OracleInfo)
+		runner.Run(oracleR.OracleInfo, oracleR.ConsensusState)
 	}()
 	return nil
 }
@@ -140,15 +134,13 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
-
-		// verify if val
 		// verify sig of incoming gossip vote, throw if verification fails
 		signType := msg.SignType
-		var pubKey crypto.PubKey
+		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
+		pubKey := val.PubKey
 
 		switch signType {
 		case "ed25519":
-			pubKey = ed25519.PubKey(msg.PublicKey)
 			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 				oracleR.Logger.Error("failed signature verification", msg)
 				logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
@@ -156,7 +148,6 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 				return
 			}
 		case "sr25519":
-			pubKey = sr25519.PubKey(msg.PublicKey)
 			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 				oracleR.Logger.Error("failed signature verification", msg)
 				logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")

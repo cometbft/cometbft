@@ -11,27 +11,16 @@ import (
 
 // App struct for app
 type OracleInfo struct {
-	Config             *config.OracleConfig
-	UnsignedVoteBuffer *UnsignedVoteBuffer
-	GossipVoteBuffer   *GossipVoteBuffer
-	SignVotesChan      chan []*oracleproto.Vote
-	PubKey             crypto.PubKey
-	PrivValidator      types.PrivValidator
-	StopChannel        chan int
-	ProxyApp           proxy.AppConnConsensus
+	Config           *config.OracleConfig
+	GossipVoteBuffer *GossipVoteBuffer
+	SignVotesChan    chan *oracleproto.Vote
+	PubKey           crypto.PubKey
+	PrivValidator    types.PrivValidator
+	StopChannel      chan int
+	ProxyApp         proxy.AppConnConsensus
+	BlockTimestamps  []int64
 }
-
-type UnsignedVotes struct {
-	Timestamp int64
-	Votes     []*oracleproto.Vote
-}
-
 type GossipVoteBuffer struct {
 	Buffer    map[string]*oracleproto.GossipVote
-	UpdateMtx cmtsync.RWMutex
-}
-
-type UnsignedVoteBuffer struct {
-	Buffer    []*UnsignedVotes // deque of UnsignedVote obj
 	UpdateMtx cmtsync.RWMutex
 }

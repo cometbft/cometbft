@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -103,13 +102,11 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 
 // Implements PrivValidator.
 func (pv MockPV) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
-	// TODO TODO TODO: implement sign oracle vote
 	signBytes := OracleVoteSignBytes(vote)
 	sig, err := pv.PrivKey.Sign(signBytes)
 	if err != nil {
 		return err
 	}
-	vote.SignedTimestamp = time.Now().Unix()
 	vote.Signature = sig
 
 	return nil

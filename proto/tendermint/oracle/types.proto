@@ -22,4 +22,5 @@ message CanonicalGossipVote {
   int32 validator_index = 1;
   string sign_type = 2;
   repeated Vote votes = 3;
+  int64 signed_timestamp = 4;
 }

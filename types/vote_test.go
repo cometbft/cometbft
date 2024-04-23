@@ -585,6 +585,38 @@ func TestSignAndCheckVote(t *testing.T) {
 			}(),
 			expectError: true,
 		},
+		{
+			name:              "precommit without extension signature 1",
+			extensionsEnabled: true,
+			vote: func() *Vote {
+				v := examplePrecommit()
+				v.ExtensionSignature = make([]byte, 0)
+				return v
+			}(),
+			expectError: false, // no error because FilePV always signs non-nil precommits.
+		},
+		{
+			name:              "precommit for nil block without extension signature 2",
+			extensionsEnabled: true,
+			vote: func() *Vote {
+				v := examplePrecommit()
+				v.BlockID = BlockID{make([]byte, 0), PartSetHeader{0, make([]byte, 0)}}
+				v.Extension = make([]byte, 0)
+				v.ExtensionSignature = make([]byte, 0)
+				return v
+			}(),
+			expectError: false,
+		},
+		{
+			name:              "precommit without extension signature 3",
+			extensionsEnabled: false,
+			vote: func() *Vote {
+				v := examplePrecommit()
+				v.ExtensionSignature = make([]byte, 0)
+				return v
+			}(),
+			expectError: false,
+		},
 	}
 
 	for _, tc := range testCases {

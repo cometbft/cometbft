@@ -79,6 +79,8 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		return
 	}
 
+	log.Infof("THIS IS MY COMET PUB KEY: %v", oracleInfo.PubKey)
+
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 }

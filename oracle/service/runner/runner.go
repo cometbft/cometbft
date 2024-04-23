@@ -153,7 +153,9 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	for {
 		res, err := oracleInfo.ProxyApp.PrepareOracleVotes(context.Background(), &abcitypes.RequestPrepareOracleVotes{})
 		if err != nil {
-			log.Error(err)
+			log.Errorf("app not ready: %v, retrying...", err)
+			time.Sleep(1 * time.Second)
+			continue
 		}
 
 		log.Infof("VOTE: %v", res.Vote)

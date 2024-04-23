@@ -496,7 +496,7 @@ FOR_LOOP:
 				}
 			}
 			if err != nil {
-				bcR.Logger.Error("Error in validation", "err", err)
+				bcR.Logger.Error("Invalid block", "height", first.Height, "err", err)
 				peerID := bcR.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
 				peer := bcR.Switch.Peers().Get(peerID)
 				if peer != nil {

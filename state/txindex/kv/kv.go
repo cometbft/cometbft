@@ -527,16 +527,13 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query, pagSettings txin
 			// If heights are equal, sort lexicographically
 			if pagSettings.OrderDesc {
 				return hashKeys[i] > hashKeys[j]
-			} else {
-				return hashKeys[i] < hashKeys[j]
 			}
+			return hashKeys[i] < hashKeys[j]
 		}
 		if pagSettings.OrderDesc {
 			return hi > hj
-
-		} else {
-			return hi < hj
 		}
+		return hi < hj
 	})
 
 	// If paginated, determine which hash keys to return
@@ -603,7 +600,7 @@ type TxInfo struct {
 	Height  int64
 }
 
-func (txi *TxIndex) setTmpHashes(tmpHeights map[string]TxInfo, it dbm.Iterator, height int64) {
+func (*TxIndex) setTmpHashes(tmpHeights map[string]TxInfo, it dbm.Iterator, height int64) {
 	eventSeq := extractEventSeqFromKey(it.Key())
 	txInfo := TxInfo{
 		TxBytes: it.Value(),

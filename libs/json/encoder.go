@@ -42,11 +42,7 @@ func MarshalIndent(v interface{}, prefix, indent string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-<<<<<<< HEAD
-func encode(w io.Writer, v interface{}) error {
-=======
 func encode(w *bytes.Buffer, v any) error {
->>>>>>> eb0960199 (perf(libs/json): Lower heap overhead of JSON encoding (#2846))
 	// Bare nil values can't be reflected, so we must handle them here.
 	if v == nil {
 		return writeStr(w, "null")
@@ -241,19 +237,12 @@ func encodeReflectInterface(w *bytes.Buffer, rv reflect.Value) error {
 	return writeStr(w, "}")
 }
 
-<<<<<<< HEAD
-func encodeStdlib(w io.Writer, v interface{}) error {
-	// Doesn't stream the output because that adds a newline, as per:
-	// https://golang.org/pkg/encoding/json/#Encoder.Encode
-	blob, err := json.Marshal(v)
-=======
 func encodeStdlib(w *bytes.Buffer, v any) error {
 	// Stream the output of the JSON marshaling directly into the buffer.
 	// The stdlib encoder will write a newline, so we must truncate it,
 	// which is why we pass in a bytes.Buffer throughout, not io.Writer.
 	enc := json.NewEncoder(w)
 	err := enc.Encode(v)
->>>>>>> eb0960199 (perf(libs/json): Lower heap overhead of JSON encoding (#2846))
 	if err != nil {
 		return err
 	}

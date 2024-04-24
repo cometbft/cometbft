@@ -13,12 +13,31 @@ In writing (we're not sure yet whether this will be an ADR or a spec)
 
 ## Context
 
-TODO
+In the current implementation, the only property that the mempool tries to enforce when storing and
+disseminating transactions is maintaining the order in which transactions arrive to the nodes, that
+is, a FIFO ordering. However, ensuring a strict transmission order over the network proves
+challenging due to inherent characteristics of the underlying communication protocols that causes
+message delays and potential reordering. Consequently, while Tendermint Core and CometBFT
+applications have always assumed this supposed ordering, the FIFO-ness of transactions is not
+guaranteed and is offered only as a best effort.
 
-Try using "QoS" term. Because that's what it actually is.
+Beyond the apparent FIFO sequencing, transactions in the mempool are treated equally, meaning that
+they are not discriminated as to which are disseminated first or which transactions the mempool
+offers to the proposer when creating the next block. In practice, however, not all transactions have
+the same importance for the application logic, especially when it comes to latency requirements.
+Depending on the application, we may think on countless categories of transactions based on their
+importance and requirements, spanning from IBC messages, transactions for exchanges, for smart
+contract execution, for smart contract deployment, grouped by SDK modules, and so on. Even
+transactions prioritized by economic incentives could be given a preferential treatment.
 
-We need problem definition.
+The goal of this document is thus to propose a mechanism enabling the mempool to prioritize
+transactions by classes, for dissemination and storage, directly impacting block creation. In IP
+networking terminology, this is known as Quality of Service (QoS). By providing certain QoS
+guarantees, developers will be able to more easily estimate when transactions will be processed and
+included in a block. 
 
+Note that improving the dissemination protocol to reduce bandwidth and/or latency is a separate
+concern and falls outside the scope of this proposal.
 
 Definitions
 Tx1, Tx2

@@ -282,12 +282,12 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	}
 	res := sendFunc(chID, msgBytes)
 	if res {
-		labels := []string{
-			"peer_id", string(p.ID()),
-			"chID", fmt.Sprintf("%#x", chID),
-		}
-		p.metrics.PeerSendBytesTotal.With(labels...).Add(float64(len(msgBytes)))
-		p.metrics.MessageSendBytesTotal.With("message_type", metricLabelValue).Add(float64(len(msgBytes)))
+		p.metrics.PeerSendBytesTotal.
+			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
+			Add(float64(len(msgBytes)))
+		p.metrics.MessageSendBytesTotal.
+			With("message_type", metricLabelValue).
+			Add(float64(len(msgBytes)))
 	}
 	return res
 }
@@ -414,18 +414,19 @@ func createMConnection(
 		if err != nil {
 			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
 		}
-		labels := []string{
-			"peer_id", string(p.ID()),
-			"chID", fmt.Sprintf("%#x", chID),
-		}
+		metricLabelValue := p.mlc.ValueToMetricLabel(msg)
 		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
 				panic(fmt.Sprintf("unwrapping message: %v", err))
 			}
 		}
-		p.metrics.PeerReceiveBytesTotal.With(labels...).Add(float64(len(msgBytes)))
-		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
+		p.metrics.PeerReceiveBytesTotal.
+			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
+			Add(float64(len(msgBytes)))
+		p.metrics.MessageReceiveBytesTotal.
+			With("message_type", metricLabelValue).
+			Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{
 			ChannelID: chID,
 			Src:       p,

@@ -312,7 +312,7 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 		didProcessCh = make(chan struct{}, 1)
 	)
 
-	bcR.handleBlockRequestsRoutine()
+	go bcR.handleBlockRequestsRoutine()
 
 	if bcR.switchToConsensusMs == 0 {
 		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
@@ -333,6 +333,7 @@ FOR_LOOP:
 			bcR.Logger.Debug("Consensus ticker", "outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
 			if !initialCommitHasExtensions {
+				// If require extensions, but since we don't have them yet, then we cannot switch to consensus yet.
 				if bcR.isMissingExtension(state, blocksSynced) {
 					continue FOR_LOOP
 				}
@@ -443,29 +444,27 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 }
 
 func (bcR *Reactor) handleBlockRequestsRoutine() {
-	go func() {
-		statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
-		defer statusUpdateTicker.Stop()
+	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
+	defer statusUpdateTicker.Stop()
 
-		for {
-			select {
-			case <-bcR.Quit():
-				return
-			case <-bcR.pool.Quit():
-				return
-			case request := <-bcR.requestsCh:
-				bcR.handleBlockRequest(request)
-			case err := <-bcR.errorsCh:
-				peer := bcR.Switch.Peers().Get(err.peerID)
-				if peer != nil {
-					bcR.Switch.StopPeerForError(peer, err)
-				}
-			case <-statusUpdateTicker.C:
-				// ask for status updates
-				go bcR.BroadcastStatusRequest()
+	for {
+		select {
+		case <-bcR.Quit():
+			return
+		case <-bcR.pool.Quit():
+			return
+		case request := <-bcR.requestsCh:
+			bcR.handleBlockRequest(request)
+		case err := <-bcR.errorsCh:
+			peer := bcR.Switch.Peers().Get(err.peerID)
+			if peer != nil {
+				bcR.Switch.StopPeerForError(peer, err)
 			}
+		case <-statusUpdateTicker.C:
+			// ask for status updates
+			go bcR.BroadcastStatusRequest()
 		}
-	}()
+	}
 }
 
 func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool {
@@ -492,7 +491,6 @@ func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool
 		missingExtension = false
 	}
 
-	// If require extensions, but since we don't have them yet, then we cannot switch to consensus yet.
 	if missingExtension {
 		bcR.Logger.Info(
 			"no extended commit yet",
@@ -500,9 +498,9 @@ func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool
 			"vote_extensions_disabled", voteExtensionsDisabled,
 			"blocks_synced", blocksSynced,
 		)
-		return true
 	}
-	return false
+
+	return missingExtension
 }
 
 func (bcR *Reactor) isCaughtUp(state sm.State, blocksSynced uint64, stateSynced bool) bool {

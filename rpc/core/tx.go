@@ -61,6 +61,11 @@ func (env *Environment) TxSearch(
 		return nil, ErrQueryLength{len(query), maxQueryLength}
 	}
 
+	// if orderBy is not "asc", "desc", or blank, return error
+	if orderBy != "" && orderBy != "asc" && orderBy != "desc" {
+		return nil, ErrInvalidOrderBy{orderBy}
+	}
+
 	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err

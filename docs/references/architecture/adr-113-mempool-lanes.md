@@ -33,7 +33,7 @@ Properties / Requirements (similar to abci++ requirement)
 
 * Property 2: tx1 --> tc1, tx2 --> tc2; tc1 < tc2 --> tx1 first, then tx2
 
-* Property 3: tx1 --> tc1, tx2 --> tc2; tc < tc2 --> latency(tx1)<=latency(tx2)
+* Property 3: tx1 --> tc1, tx2 --> tc2; tc1 < tc2 --> latency(tx1)<=latency(tx2)
 
 Try to come up with properties:
 * Currently, these properties not guaranteed
@@ -164,6 +164,7 @@ ADR: Probably part of [Data flow](#data-flow) section:
     * The lane information is used to decide to which transaction list the Tx will be added
 * Broadcast flow:
   * Higher-priority lanes get to be gossiped first, and gossip within a lane is still in FIFO order.
+  * We will need a warning about channels sharing the send queue at p2p level (will need data early on to see if this is a problem for lanes in practice
   * [Rough description]: we need to extend the loop in the broadcast goroutine. Several channels now, not just one
     * To decide
       * if we're going for (simpler) solution where with max 2 lanes,
@@ -246,12 +247,12 @@ The list of lanes and their priorities: are consensus parameters? are defined by
   * How to deal with nodes that are late? So, lane info at mempool level (and thus p2p channels to establish) does not match.
     * Two cases
     * A node that is up to date and falls behind (e.g., network instability, etc.)
-      * Not a problem. For lanes to change we **require** a coordinated update.
+      * Not a problem. For lanes to change we **require** a coordinated upgrade.
         * Reason: if we allow upgrade changing lane info **not** to be a coordinated upgrage,
           then we won't have consistent lane info across nodes (each node would be running a particular version of the software)
     * A node that is blocksyncing from far away in the past (software upgrades in the middle)
       * Normal channels (including `0x30`): same as before
-      * Lane channels (>=`0x80`), not declared until `SwitchToConsensus`
+      * Lane channels (>=`0x80`), not declared. The node can't send/receive mempool-related info. Not a problem, since it's blocksyncing
         * If we're not at the latest version (e.g., Cosmovisor-drive blocksync)
           * channel info likely to be wrong
           * but we Cosmovisor will kill the node before switching to consensus

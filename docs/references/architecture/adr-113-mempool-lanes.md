@@ -140,6 +140,7 @@ This could be implemented in the reactor or inside `CListMempool`.
 * `CheckTx` will (optionally) return lane information, and only then it can be put in a lane.
   (So a tx in a lane has been validated at least once by some node.)
   * If `CheckTx` provides no lane information: native lane
+  * Note: if we punish peers (e.g., close connection to them) that send messages on wrong lanes, we will need a property that requires all node to produce consistent lane info in `CheckTx`
 * No difference in treatment between TXs coming from RPC, or TXs coming from peers (p2p)
   * Peers aren't trusted
   * In any case, the TXs need to be validated first via `CheckTx`

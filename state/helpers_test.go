@@ -135,8 +135,8 @@ func makeHeaderPartsResponsesValPubKeyChange(
 	_, val := state.NextValidators.GetByIndex(0)
 	if !bytes.Equal(pubkey.Bytes(), val.PubKey.Bytes()) {
 		abciResponses.ValidatorUpdates = []abci.ValidatorUpdate{
-			types.TM2PB.NewValidatorUpdate(val.PubKey, 0),
-			types.TM2PB.NewValidatorUpdate(pubkey, 10),
+			abci.NewValidatorUpdate(val.PubKey, 0),
+			abci.NewValidatorUpdate(pubkey, 10),
 		}
 	}
 
@@ -153,9 +153,7 @@ func makeHeaderPartsResponsesValPowerChange(
 	// If the pubkey is new, remove the old and add the new.
 	_, val := state.NextValidators.GetByIndex(0)
 	if val.VotingPower != power {
-		abciResponses.ValidatorUpdates = []abci.ValidatorUpdate{
-			types.TM2PB.NewValidatorUpdate(val.PubKey, power),
-		}
+		abciResponses.ValidatorUpdates = []abci.ValidatorUpdate{abci.NewValidatorUpdate(val.PubKey, power)}
 	}
 
 	return block.Header, types.BlockID{Hash: block.Hash(), PartSetHeader: types.PartSetHeader{}}, abciResponses

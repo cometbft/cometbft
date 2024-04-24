@@ -42,6 +42,8 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+- [ADR-113: Mempool Lanes](adr-113-mempool-lanes.md)
+
 ### Accepted
 
 - [ADR-101: Data companion pull API](adr-101-data-companion-pull-api.md)
@@ -55,9 +57,11 @@ numbering our ADRs from 100 onwards.
 - [ADR-111: `nop` Mempool](adr-111-nop-mempool.md)
 - [ADR-112: Proposer-Based Timestamps](adr-112-proposer-based-timestamps.md)
 
-### Implemented
+### Accepted but Not (Yet) Implemented
 
-- [ADR-108: E2E tests for CometBFT's behaviour in respect to ABCI 1.0.](adr-108-e2e-abci++.md)
+- [ADR-102: RPC Companion](adr-102-rpc-companion.md)
+- [ADR-104: State sync from local snapshot](adr-104-out-of-band-state-sync.md)
+- [ADR-105: Refactor list of senders in mempool](adr-105-refactor-mempool-senders.md)
 
 ### Deprecated
 

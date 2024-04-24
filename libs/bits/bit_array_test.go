@@ -12,9 +12,6 @@ import (
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 )
 
-<<<<<<< HEAD:libs/bits/bit_array_test.go
-func randBitArray(bits int) (*BitArray, []byte) {
-=======
 var (
 	empty16Bits = "________________"
 	empty64Bits = empty16Bits + empty16Bits + empty16Bits + empty16Bits
@@ -22,8 +19,7 @@ var (
 	full64bits  = full16bits + full16bits + full16bits + full16bits
 )
 
-func randBitArray(bits int) *BitArray {
->>>>>>> b139e139a (perf(internal/bits): Significantly speedup bitArray.PickRandom (#2841)):internal/bits/bit_array_test.go
+func randBitArray(bits int) (*BitArray, []byte) {
 	src := cmtrand.Bytes((bits + 7) / 8)
 	bA := NewBitArray(bits)
 	for i := 0; i < len(src); i++ {

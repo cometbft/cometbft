@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -339,15 +340,9 @@ func lookForHash(conditions []syntax.Condition) (hash []byte, ok bool, err error
 	return
 }
 
-<<<<<<< HEAD
-func (txi *TxIndex) setTmpHashes(tmpHeights map[string][]byte, it dbm.Iterator) {
-	eventSeq := extractEventSeqFromKey(it.Key())
-	tmpHeights[string(it.Value())+eventSeq] = it.Value()
-=======
 func (*TxIndex) setTmpHashes(tmpHeights map[string][]byte, key, value []byte) {
 	eventSeq := extractEventSeqFromKey(key)
 	tmpHeights[string(value)+eventSeq] = value
->>>>>>> e75267fc2 (perf(txindex): Lower allocation overhead of txIndex matchRange (#2839))
 }
 
 // match returns all matching txs by hash that meet a given condition and start
@@ -600,15 +595,8 @@ LOOP:
 			}
 			if err != nil {
 				txi.log.Error("failed to parse bounds:", err)
-<<<<<<< HEAD
-			} else {
-				if withinBounds {
-					txi.setTmpHashes(tmpHashes, it)
-				}
-=======
 			} else if withinBounds {
 				txi.setTmpHashes(tmpHashes, key, it.Value())
->>>>>>> e75267fc2 (perf(txindex): Lower allocation overhead of txIndex matchRange (#2839))
 			}
 
 			// XXX: passing time in a ABCI Events is not yet implemented
@@ -681,16 +669,12 @@ func isTagKey(key []byte) bool {
 }
 
 func extractHeightFromKey(key []byte) (int64, error) {
-<<<<<<< HEAD
-	parts := strings.SplitN(string(key), tagKeySeparator, -1)
-=======
 	// the height is the second last element in the key.
 	// Find the position of the last occurrence of tagKeySeparator
 	endPos := bytes.LastIndexByte(key, tagKeySeparatorRune)
 	if endPos == -1 {
 		return 0, errors.New("separator not found")
 	}
->>>>>>> e75267fc2 (perf(txindex): Lower allocation overhead of txIndex matchRange (#2839))
 
 	// Find the position of the second last occurrence of tagKeySeparator
 	startPos := bytes.LastIndexByte(key[:endPos-1], tagKeySeparatorRune)
@@ -705,22 +689,8 @@ func extractHeightFromKey(key []byte) (int64, error) {
 	}
 	return height, nil
 }
+
 func extractValueFromKey(key []byte) string {
-<<<<<<< HEAD
-	keyString := string(key)
-	parts := strings.SplitN(keyString, tagKeySeparator, -1)
-	partsLen := len(parts)
-	value := strings.TrimPrefix(keyString, parts[0]+tagKeySeparator)
-
-	suffix := ""
-	suffixLen := 2
-
-	for i := 1; i <= suffixLen; i++ {
-		suffix = tagKeySeparator + parts[partsLen-i] + suffix
-	}
-	return strings.TrimSuffix(value, suffix)
-
-=======
 	// Find the positions of tagKeySeparator in the byte slice
 	var indices []int
 	for i, b := range key {
@@ -742,7 +712,6 @@ func extractValueFromKey(key []byte) string {
 
 	// TODO: Do an unsafe cast to avoid an extra allocation here
 	return string(value)
->>>>>>> e75267fc2 (perf(txindex): Lower allocation overhead of txIndex matchRange (#2839))
 }
 
 func extractEventSeqFromKey(key []byte) string {
@@ -755,6 +724,7 @@ func extractEventSeqFromKey(key []byte) string {
 	}
 	return "0"
 }
+
 func keyForEvent(key string, value string, result *abci.TxResult, eventSeq int64) []byte {
 	return []byte(fmt.Sprintf("%s/%s/%d/%d%s",
 		key,

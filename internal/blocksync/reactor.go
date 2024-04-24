@@ -397,7 +397,7 @@ FOR_LOOP:
 			}
 
 			if state, err = bcR.processBlock(first, second, firstParts, state, extCommit); err != nil {
-				bcR.Logger.Error("Error in validation", "err", err)
+				bcR.Logger.Error("Invalid block", "height", first.Height, "err", err)
 				continue FOR_LOOP
 			}
 

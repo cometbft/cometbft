@@ -117,3 +117,55 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		return nil, ErrUnsupportedKey{Key: k}
 	}
 }
+
+// PubKeyFromTypeAndBytes builds a crypto.PubKey from the given type
+// and bytes. It returns ErrUnsupportedKey if the pubkey type is
+// unsupported.
+func PubKeyFromTypeAndBytes(pkType string, bytes []byte) (crypto.PubKey, error) {
+	var pubKey crypto.PubKey
+	switch pkType {
+	case ed25519.KeyType:
+		if len(bytes) != ed25519.PubKeySize {
+			return nil, ErrInvalidKeyLen{
+				Key:  pkType,
+				Got:  len(bytes),
+				Want: ed25519.PubKeySize,
+			}
+		}
+
+		pk := make(ed25519.PubKey, ed25519.PubKeySize)
+		copy(pk, bytes)
+		pubKey = pk
+	case secp256k1.KeyType:
+		if len(bytes) != secp256k1.PubKeySize {
+			return nil, ErrInvalidKeyLen{
+				Key:  pkType,
+				Got:  len(bytes),
+				Want: secp256k1.PubKeySize,
+			}
+		}
+
+		pk := make(secp256k1.PubKey, secp256k1.PubKeySize)
+		copy(pk, bytes)
+		pubKey = pk
+	case bls12381.KeyType:
+		if !bls12381.Enabled {
+			return nil, ErrUnsupportedKey{Key: pkType}
+		}
+
+		if len(bytes) != bls12381.PubKeySize {
+			return nil, ErrInvalidKeyLen{
+				Key:  pkType,
+				Got:  len(bytes),
+				Want: bls12381.PubKeySize,
+			}
+		}
+
+		pk := make(bls12381.PubKey, bls12381.PubKeySize)
+		copy(pk, bytes)
+		pubKey = pk
+	default:
+		return nil, ErrUnsupportedKey{Key: pkType}
+	}
+	return pubKey, nil
+}

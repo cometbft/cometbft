@@ -14,8 +14,9 @@ import (
 )
 
 var (
-	valEd25519   = []string{ABCIPubKeyTypeEd25519}
-	valSecp256k1 = []string{ABCIPubKeyTypeSecp256k1}
+	valEd25519             = []string{ABCIPubKeyTypeEd25519}
+	valSecp256k1           = []string{ABCIPubKeyTypeSecp256k1}
+	valEd25519AndSecp256k1 = []string{ABCIPubKeyTypeEd25519, ABCIPubKeyTypeSecp256k1}
 )
 
 func TestConsensusParamsValidation(t *testing.T) {
@@ -474,6 +475,17 @@ func TestConsensusParamsUpdate(t *testing.T) {
 				maxEvidenceBytes: 50,
 				pubkeyTypes:      valSecp256k1,
 			}),
+		},
+
+		// multiple pubkey types
+		{
+			intialParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3}),
+			updates: &cmtproto.ConsensusParams{
+				Validator: &cmtproto.ValidatorParams{
+					PubKeyTypes: valEd25519AndSecp256k1,
+				},
+			},
+			updatedParams: makeParams(makeParamsArgs{blockBytes: 1, blockGas: 2, evidenceAge: 3, pubkeyTypes: valEd25519AndSecp256k1}),
 		},
 	}
 

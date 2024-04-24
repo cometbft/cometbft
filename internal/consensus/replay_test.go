@@ -23,7 +23,6 @@ import (
 	"github.com/cometbft/cometbft/abci/types/mocks"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -366,9 +365,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	incrementHeight(vss...)
 	newValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
 	require.NoError(t, err)
-	valPubKey1ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey1)
-	require.NoError(t, err)
-	newValidatorTx1 := kvstore.MakeValSetChangeTx(valPubKey1ABCI, testMinPower)
+	newValidatorTx1 := updateValTx(newValidatorPubKey1, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx1)
 	require.NoError(t, err)
 
@@ -390,9 +387,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	incrementHeight(vss...)
 	updateValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
 	require.NoError(t, err)
-	updatePubKey1ABCI, err := cryptoenc.PubKeyToProto(updateValidatorPubKey1)
-	require.NoError(t, err)
-	updateValidatorTx1 := kvstore.MakeValSetChangeTx(updatePubKey1ABCI, 25)
+	updateValidatorTx1 := updateValTx(updateValidatorPubKey1, 25)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(updateValidatorTx1)
 	require.NoError(t, err)
 
@@ -414,16 +409,12 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	incrementHeight(vss...)
 	newValidatorPubKey2, err := css[nVals+1].privValidator.GetPubKey()
 	require.NoError(t, err)
-	newVal2ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey2)
-	require.NoError(t, err)
-	newValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, testMinPower)
+	newValidatorTx2 := updateValTx(newValidatorPubKey2, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx2)
 	require.NoError(t, err)
 	newValidatorPubKey3, err := css[nVals+2].privValidator.GetPubKey()
 	require.NoError(t, err)
-	newVal3ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey3)
-	require.NoError(t, err)
-	newValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, testMinPower)
+	newValidatorTx3 := updateValTx(newValidatorPubKey3, testMinPower)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx3)
 	require.NoError(t, err)
 
@@ -459,7 +450,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	}
 	ensureNewProposal(proposalCh, height, round)
 
-	removeValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, 0)
+	removeValidatorTx2 := updateValTx(newValidatorPubKey2, 0)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2)
 	require.NoError(t, err)
 
@@ -495,7 +486,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	// HEIGHT 6
 	height++
 	incrementHeight(vss...)
-	removeValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, 0)
+	removeValidatorTx3 := updateValTx(newValidatorPubKey3, 0)
 	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx3)
 	require.NoError(t, err)
 

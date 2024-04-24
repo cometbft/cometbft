@@ -11,7 +11,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
@@ -149,10 +148,8 @@ func TestBroadcastEvidence_DuplicateVoteEvidence(t *testing.T) {
 		err = abci.ReadMessage(bytes.NewReader(qres.Value), &v)
 		require.NoError(t, err, "Error reading query result, value %v", qres.Value)
 
-		pk, err := cryptoenc.PubKeyFromProto(v.PubKey)
-		require.NoError(t, err)
-
-		require.EqualValues(t, rawpub, pk, "Stored PubKey not equal with expected, value %v", string(qres.Value))
+		require.EqualValues(t, rawpub, v.PubKeyBytes, "Stored PubKey not equal with expected, value %v", string(qres.Value))
+		require.EqualValues(t, ed25519.KeyType, v.PubKeyType, "Stored PubKeyType not equal with expected, value %v", string(qres.Value))
 		require.Equal(t, int64(9), v.Power, "Stored Power not equal with expected, value %v", string(qres.Value))
 
 		for _, fake := range fakes {

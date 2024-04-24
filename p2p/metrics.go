@@ -43,6 +43,19 @@ type Metrics struct {
 type metricsLabelCache struct {
 	mtx               *sync.RWMutex
 	messageLabelNames map[reflect.Type]string
+	chIDLabelNames    map[byte]string
+}
+
+// RegisterChID pre-allocates the metric label for a chID.
+// Labels are populated by the switch, before the p2p layer is started.
+func (m *metricsLabelCache) RegisterChID(chID byte) {
+	m.chIDLabelNames[chID] = fmt.Sprintf("%#x", chID)
+}
+
+// ChIDToMetricLabel returns the metric label for a chID.
+// No need for synchronization, as labels, once populated, never change.
+func (m *metricsLabelCache) ChIDToMetricLabel(chID byte) string {
+	return m.chIDLabelNames[chID]
 }
 
 // ValueToMetricLabel is a method that is used to produce a prometheus label value of the golang
@@ -72,5 +85,6 @@ func newMetricsLabelCache() *metricsLabelCache {
 	return &metricsLabelCache{
 		mtx:               &sync.RWMutex{},
 		messageLabelNames: map[reflect.Type]string{},
+		chIDLabelNames:    map[byte]string{},
 	}
 }

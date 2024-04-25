@@ -867,8 +867,6 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	// On the second CheckTx request, the app returns an error.
 	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
 
-	mockClient.On("Flush", mock.Anything).Return(nil)
-
 	// Rechecking should panic when the call to the app returns an error.
 	defer func() {
 		if r := recover(); r == nil {

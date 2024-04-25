@@ -1037,7 +1037,7 @@ func (cs *State) handleTxsAvailable() {
 
 // Enter: `timeoutNewHeight` by startTime (commitTime+timeoutCommit),
 //
-//	or, if SkipTimeoutCommit==true, after receiving all precommits from (height,round-1)
+//	or, if TimeoutCommit==0, after receiving all precommits from (height,round-1)
 //
 // Enter: `timeoutPrecommits` after any +2/3 precommits from (height,round-1)
 // Enter: +2/3 precommits for nil at (height,round-1)
@@ -2294,7 +2294,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		cs.evsw.FireEvent(types.EventVote, vote)
 
 		// if we can skip timeoutCommit and have all the votes now,
-		if cs.config.SkipTimeoutCommit && cs.LastCommit.HasAll() {
+		if cs.config.TimeoutCommit == 0 && cs.LastCommit.HasAll() {
 			// go straight to new round (skip timeout commit)
 			// cs.scheduleTimeout(time.Duration(0), cs.Height, 0, cstypes.RoundStepNewHeight)
 			cs.enterNewRound(cs.Height, 0)
@@ -2449,7 +2449,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 			if !blockID.IsNil() {
 				cs.enterCommit(height, vote.Round)
-				if cs.config.SkipTimeoutCommit && precommits.HasAll() {
+				if cs.config.TimeoutCommit == 0 && precommits.HasAll() {
 					cs.enterNewRound(cs.Height, 0)
 				}
 			} else {

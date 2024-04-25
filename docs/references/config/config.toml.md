@@ -1710,21 +1710,6 @@ consensus key was used to sign any precommit message for the last
 If this happens, the validators should stop the state machine, wait for some
 blocks, and then restart the state machine again.
 
-### consensus.skip_timeout_commit
-
-Start the next height as soon as the node gathers all the mandatory +2/3 precommits for a block.
-
-```toml
-skip_timeout_commit = false
-```
-
-| Value type          | boolean |
-|:--------------------|:--------|
-| **Possible values** | `false` |
-|                     | `true`  |
-
-Setting `skip_timeout_commit` to `true` has the similar effect as setting [`timeout_commit`](#consensustimeout_commit) to `"0s"`.
-
 ### consensus.create_empty_blocks
 
 Propose empty blocks if the validator's mempool does not have any transaction.

@@ -222,6 +222,9 @@ experimental_close_on_slow_client = {{ .RPC.CloseOnSlowClient }}
 # See https://github.com/tendermint/tendermint/issues/3435
 timeout_broadcast_tx_commit = "{{ .RPC.TimeoutBroadcastTxCommit }}"
 
+# Maximum number of requests that can be sent in a batch
+max_request_batch_size = {{ .RPC.MaxRequestBatchSize }}
+
 # Maximum size of request body, in bytes
 max_body_bytes = {{ .RPC.MaxBodyBytes }}
 

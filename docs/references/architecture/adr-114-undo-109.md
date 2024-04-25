@@ -6,7 +6,7 @@
 
 ## Status
 
-Accepted (TODO ADD [ISSUE NR])
+Accepted (PR [\#2897])
 
 ## Context
 
@@ -132,7 +132,7 @@ users transition to other general-purpose libraries:
   can be moved back out of the `internal` directory in subsequent minor
   releases.
 
-[\#ISSUE NR]: TODO
+[\#2897]: https://github.com/cometbft/cometbft/pull/2897
 [\#2610]: https://github.com/cometbft/cometbft/issues/2610
 [ADR 109]: adr-109-reduce-go-api-surface.md
 [v1.0.0-alpha.2]: https://github.com/cometbft/cometbft/releases/tag/v1.0.0-alpha.2

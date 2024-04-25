@@ -3,6 +3,7 @@ package mempool
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	mrand "math/rand"
 	"os"
@@ -785,69 +786,74 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	require.False(t, mp.notifiedTxsAvailable.Load())
 }
 
-// Test that rechecking finishes correctly when a request fails, using a sync ABCI client.
+// Test that adding a transaction panics when the CheckTx request fails.
+func TestMempoolSyncCheckTxReturnError(t *testing.T) {
+	mockClient := new(abciclimocks.Client)
+	mockClient.On("Start").Return(nil)
+	mockClient.On("SetLogger", mock.Anything)
+	mockClient.On("SetResponseCallback", mock.Anything)
+
+	mp, cleanup := newMempoolWithAppMock(mockClient)
+	defer cleanup()
+
+	// The app will return an error on a CheckTx request.
+	tx := []byte{0x01}
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
+
+	// Adding the transaction should panic when the call to the app returns an error.
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("CheckTx did not panic")
+		}
+	}()
+	_, err := mp.CheckTx(tx)
+	require.NoError(t, err)
+}
+
+// Test that rechecking panics when a CheckTx request fails, when using a sync ABCI client.
 func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	var callback abciclient.Callback
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
-	mockClient.On("Flush", mock.Anything).Return(nil)
-	mockClient.On("Error").Return(nil).Times(4)
 	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
-	mp.EnableTxsAvailable()
 
-	// First we add a few txs to the mempool.
-	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
+	// First we add a two transactions to the mempool.
+	txs := []types.Tx{[]byte{0x01}, []byte{0x02}}
 	for _, tx := range txs {
-		// We are mocking a sync client, which will call the callback just after the response from
-		// the app.
+		// Mock a sync client, which will call the callback just after the response from the app.
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 			req := args.Get(1).(*abci.CheckTxRequest)
 			reqRes := newReqRes(req.Tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK)
 			callback(reqRes.Request, reqRes.Response)
 		}).Return(nil, nil).Once()
+		mockClient.On("Error").Return(nil)
+
 		_, err := mp.CheckTx(tx)
 		require.NoError(t, err)
 	}
 	require.Len(t, txs, mp.Size())
 
-	// The first tx is valid when rechecking, and the client will call the callback right after the
+	// The first tx is valid when rechecking and the client will call the callback right after the
 	// response from the app and before returning.
 	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(_ mock.Arguments) {
 		reqRes := newReqRes(txs[0], abci.CodeTypeOK, abci.CHECK_TX_TYPE_RECHECK)
 		callback(reqRes.Request, reqRes.Response)
 	}).Return(nil, nil).Once()
 
-	// On the second tx the app returns an error, so the callback will not be called by the client.
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, ErrCheckTxAsync{}).Once()
+	// On the second CheckTx request, the app returns an error.
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
 
-	// The third tx is invalid, so it will be removed from the mempool.
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(_ mock.Arguments) {
-		reqRes := newReqRes(txs[2], 1, abci.CHECK_TX_TYPE_RECHECK)
-		callback(reqRes.Request, reqRes.Response)
-	}).Return(nil, nil).Once()
-
-	// On the fourth tx the app returns an error, so the callback will not be called by the client.
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, ErrCheckTxAsync{}).Once()
-
-	// Check that recheck has not started yet.
-	require.True(t, mp.recheck.done())
-	require.Nil(t, mp.recheck.cursor)
-	require.Nil(t, mp.recheck.end)
-
-	// mp.recheck.done() should be true only before and after calling recheckTxs.
+	// Rechecking should panic when the call to the app returns an error.
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("recheckTxs did not panic")
+		}
+	}()
 	mp.recheckTxs()
-	require.True(t, mp.recheck.done())
-	require.Nil(t, mp.recheck.cursor)
-	require.NotNil(t, mp.recheck.end)
-	require.Equal(t, mp.recheck.end, mp.txs.Back())
-	require.Equal(t, len(txs)-1, mp.Size()) // one invalid tx was removed
-	require.Equal(t, int32(2), mp.recheck.numPendingTxs.Load())
-
-	mockClient.AssertExpectations(t)
 }
 
 // Test that rechecking finishes correctly when a request fails, using an async ABCI client.
@@ -864,7 +870,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// the mempool. The other 4 are for rechecking, and in particular, it fails on the second and
 	// last transactions.
 	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, nil).Times(6)
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, ErrCheckTxAsync{}).Times(2)
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Times(2)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()

@@ -3,7 +3,7 @@ version: '3'
 services:
   node0:
     container_name: node0
-    image: "/skirkyn/cbft-evil"
+    image: "skirkyn/cbft-evil"
     ports:
       - "26656-26657:26656-26657"
       - "26670:26660"
@@ -18,7 +18,7 @@ services:
 
   node1:
     container_name: node1
-    image: "/skirkyn/cbft-normal"
+    image: "skirkyn/cbft-normal"
     ports:
       - "26659-26660:26656-26657"
       - "26671:26660"
@@ -33,7 +33,7 @@ services:
 
   node2:
     container_name: node2
-    image: "/skirkyn/cbft-normal"
+    image: "skirkyn/cbft-normal"
     environment:
       - ID=2
       - LOG=${LOG:-cometbft.log}
@@ -48,7 +48,7 @@ services:
 
   node3:
     container_name: node3
-    image: "/skirkyn/cbft-normal"
+    image: "skirkyn/cbft-normal"
     environment:
       - ID=3
       - LOG=${LOG:-cometbft.log}

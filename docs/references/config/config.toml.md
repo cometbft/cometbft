@@ -570,6 +570,22 @@ and endpoints. There is an old developer discussion about this [here](https://gi
 
 > Note: It is generally recommended *not* to use the `broadcast_tx_commit` method in production, and instead prefer `/broadcast_tx_sync`.
 
+### rpc.max_request_batch_size
+Maximum number of requests that can be sent in a JSON-RPC batch request.
+```toml
+max_request_batch_size = 10
+```
+
+| Value type          | integer |
+|:--------------------|:--------|
+| **Possible values** | &gt;= 0 |
+
+If the number of requests sent in a JSON-RPC batch exceed the maximum batch size configured, an error will be returned.
+
+If the value is set to '0' (zero-value), then no maximum batch size will be enforced for a JSON-RPC batch request.
+
+Reference: https://www.jsonrpc.org/specification#batch
+
 ### rpc.max_body_bytes
 Maximum size of request body, in bytes.
 ```toml

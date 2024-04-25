@@ -856,7 +856,8 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	mp.recheckTxs()
 }
 
-// Test that rechecking finishes correctly when a request fails, using an async ABCI client.
+// Test that rechecking finishes correctly when a CheckTx response never arrives, when using an
+// async ABCI client.
 func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	var callback abciclient.Callback
 	mockClient := new(abciclimocks.Client)
@@ -870,52 +871,60 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 
 	// Mocking the async client will just send the request and not call the callback, which we do
 	// manually later. The first 4 times CheckTxAsync is called are for adding the transactions to
-	// the mempool. The other 4 are for rechecking, and in particular, it fails on the second and
-	// last transactions.
+	// the mempool.
 	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, nil).Times(4)
 
-	// First send CheckTx requests for a few txs.
+	// Add 4 txs to the mempool.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
 	for _, tx := range txs {
 		_, err := mp.CheckTx(tx)
 		require.NoError(t, err)
 	}
+
+	// There are still no replies from the app.
 	require.Zero(t, mp.Size())
 
-	// Invoke CheckTx callbacks asynchronously to add txs to mempool.
+	// Invoke CheckTx callbacks asynchronously.
 	for _, tx := range txs {
 		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK)
 		callback(reqRes.Request, reqRes.Response)
 	}
+
+	// The 4 txs are added to the mempool.
 	require.Len(t, txs, mp.Size())
 
-	// Check that recheck has not started yet.
+	// Check that recheck has not started.
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
 	require.Nil(t, mp.recheck.end)
 	mockClient.AssertExpectations(t)
 
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, nil).Times(2)
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Times(2)
+	// One call to CheckTxAsync per tx, for rechecking.
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, nil).Times(4)
 
-	// The first tx is valid, the third is invalid, and the request for the second and fourth tx
-	// were not sent, so the callback is not called.
+	// On the async client, the callbacks are executed when flushing the connection. The app replies
+	// to the request for the first tx (valid) and for the third tx (invalid), so the callback is
+	// invoked twice. The app does not reply to the requests for the second and fourth txs, so the
+	// callback is not invoked on these two cases.
 	mockClient.On("Flush", mock.Anything).Run(func(_ mock.Arguments) {
+		// First tx is valid.
 		reqRes1 := newReqRes(txs[0], abci.CodeTypeOK, abci.CHECK_TX_TYPE_RECHECK)
 		callback(reqRes1.Request, reqRes1.Response)
+		// Third tx is invalid.
 		reqRes2 := newReqRes(txs[2], 1, abci.CHECK_TX_TYPE_RECHECK)
 		callback(reqRes2.Request, reqRes2.Response)
 	}).Return(nil)
 
-	// Check that the recheck function panics.
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
-
 	// mp.recheck.done() should be true only before and after calling recheckTxs.
 	mp.recheckTxs()
+	require.True(t, mp.recheck.done())
+	require.Nil(t, mp.recheck.cursor)
+	require.NotNil(t, mp.recheck.end)
+	require.Equal(t, mp.recheck.end, mp.txs.Back())
+	require.Equal(t, len(txs)-1, mp.Size()) // one invalid tx was removed
+	require.Equal(t, int32(2), mp.recheck.numPendingTxs.Load())
+
+	mockClient.AssertExpectations(t)
 }
 
 // This test used to cause a data race when rechecking (see https://github.com/cometbft/cometbft/issues/1827).

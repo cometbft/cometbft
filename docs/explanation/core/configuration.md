@@ -456,14 +456,10 @@ wal_file = "data/cs.wal/wal"
 timeout_propose = "3s"
 # How much timeout_propose increases with each round
 timeout_propose_delta = "500ms"
-# How long we wait after receiving +2/3 prevotes for “anything” (ie. not a single block or nil)
-timeout_prevote = "1s"
-# How much the timeout_prevote increases with each round
-timeout_prevote_delta = "500ms"
-# How long we wait after receiving +2/3 precommits for “anything” (ie. not a single block or nil)
-timeout_precommit = "1s"
-# How much the timeout_precommit increases with each round
-timeout_precommit_delta = "500ms"
+# How long we wait after receiving +2/3 prevotes/precommits for “anything” (ie. not a single block or nil)
+timeout_round = "1s"
+# How much the timeout_round increases with each round
+timeout_round_delta = "500ms"
 # How long we wait after committing a block, before starting on the new
 # height (this gives us a chance to receive some more precommits, even
 # though we already have +2/3).
@@ -657,10 +653,8 @@ gossip on BFT consensus](https://arxiv.org/abs/1807.04938).
 
 timeout_propose = "3s"
 timeout_propose_delta = "500ms"
-timeout_prevote = "1s"
-timeout_prevote_delta = "500ms"
-timeout_precommit = "1s"
-timeout_precommit_delta = "500ms"
+timeout_round = "1s"
+timeout_round_delta = "500ms"
 timeout_commit = "1s"
 ```
 
@@ -671,12 +665,9 @@ Here's a brief summary of the timeouts:
 
 - `timeout_propose` = how long a validator should wait for a proposal block before prevoting nil
 - `timeout_propose_delta` = how much `timeout_propose` increases with each round
-- `timeout_prevote` = how long a validator should wait after receiving +2/3 prevotes for
+- `timeout_round` = how long a validator should wait after receiving +2/3 prevotes/precommits for
   anything (ie. not a single block or nil)
-- `timeout_prevote_delta` = how much the `timeout_prevote` increases with each round
-- `timeout_precommit` = how long a validator should wait after receiving +2/3 precommits for
-  anything (ie. not a single block or nil)
-- `timeout_precommit_delta` = how much the `timeout_precommit` increases with each round
+- `timeout_round_delta` = how much the `timeout_round` increases with each round
 - `timeout_commit` = how long a validator should wait after committing a block, before starting
   on the new height (this gives us a chance to receive some more precommits,
   even though we already have +2/3)

@@ -1102,14 +1102,10 @@ type ConsensusConfig struct {
 	TimeoutPropose time.Duration `mapstructure:"timeout_propose"`
 	// How much timeout_propose increases with each round
 	TimeoutProposeDelta time.Duration `mapstructure:"timeout_propose_delta"`
-	// How long we wait after receiving +2/3 prevotes for “anything” (ie. not a single block or nil)
-	TimeoutPrevote time.Duration `mapstructure:"timeout_prevote"`
-	// How much the timeout_prevote increases with each round
-	TimeoutPrevoteDelta time.Duration `mapstructure:"timeout_prevote_delta"`
-	// How long we wait after receiving +2/3 precommits for “anything” (ie. not a single block or nil)
-	TimeoutPrecommit time.Duration `mapstructure:"timeout_precommit"`
-	// How much the timeout_precommit increases with each round
-	TimeoutPrecommitDelta time.Duration `mapstructure:"timeout_precommit_delta"`
+	// How long we wait after receiving +2/3 prevotes/precommits for “anything” (ie. not a single block or nil)
+	TimeoutRound time.Duration `mapstructure:"timeout_round"`
+	// How much the timeout_round increases with each round
+	TimeoutRoundDelta time.Duration `mapstructure:"timeout_round_delta"`
 	// How long we wait after committing a block, before starting on the new
 	// height (this gives us a chance to receive some more precommits, even
 	// though we already have +2/3).
@@ -1137,10 +1133,8 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		WalPath:                          filepath.Join(DefaultDataDir, "cs.wal", "wal"),
 		TimeoutPropose:                   3000 * time.Millisecond,
 		TimeoutProposeDelta:              500 * time.Millisecond,
-		TimeoutPrevote:                   1000 * time.Millisecond,
-		TimeoutPrevoteDelta:              500 * time.Millisecond,
-		TimeoutPrecommit:                 1000 * time.Millisecond,
-		TimeoutPrecommitDelta:            500 * time.Millisecond,
+		TimeoutRound:                     1000 * time.Millisecond,
+		TimeoutRoundDelta:                500 * time.Millisecond,
 		TimeoutCommit:                    1000 * time.Millisecond,
 		SkipTimeoutCommit:                false,
 		CreateEmptyBlocks:                true,
@@ -1157,10 +1151,8 @@ func TestConsensusConfig() *ConsensusConfig {
 	cfg := DefaultConsensusConfig()
 	cfg.TimeoutPropose = 40 * time.Millisecond
 	cfg.TimeoutProposeDelta = 1 * time.Millisecond
-	cfg.TimeoutPrevote = 10 * time.Millisecond
-	cfg.TimeoutPrevoteDelta = 1 * time.Millisecond
-	cfg.TimeoutPrecommit = 10 * time.Millisecond
-	cfg.TimeoutPrecommitDelta = 1 * time.Millisecond
+	cfg.TimeoutRound = 10 * time.Millisecond
+	cfg.TimeoutRoundDelta = 1 * time.Millisecond
 	// NOTE: when modifying, make sure to update time_iota_ms (testGenesisFmt) in toml.go
 	cfg.TimeoutCommit = 10 * time.Millisecond
 	cfg.SkipTimeoutCommit = true
@@ -1185,14 +1177,14 @@ func (cfg *ConsensusConfig) Propose(round int32) time.Duration {
 // Prevote returns the amount of time to wait for straggler votes after receiving any +2/3 prevotes.
 func (cfg *ConsensusConfig) Prevote(round int32) time.Duration {
 	return time.Duration(
-		cfg.TimeoutPrevote.Nanoseconds()+cfg.TimeoutPrevoteDelta.Nanoseconds()*int64(round),
+		cfg.TimeoutRound.Nanoseconds()+cfg.TimeoutRoundDelta.Nanoseconds()*int64(round),
 	) * time.Nanosecond
 }
 
 // Precommit returns the amount of time to wait for straggler votes after receiving any +2/3 precommits.
 func (cfg *ConsensusConfig) Precommit(round int32) time.Duration {
 	return time.Duration(
-		cfg.TimeoutPrecommit.Nanoseconds()+cfg.TimeoutPrecommitDelta.Nanoseconds()*int64(round),
+		cfg.TimeoutRound.Nanoseconds()+cfg.TimeoutRoundDelta.Nanoseconds()*int64(round),
 	) * time.Nanosecond
 }
 
@@ -1224,17 +1216,11 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	if cfg.TimeoutProposeDelta < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_propose_delta"}
 	}
-	if cfg.TimeoutPrevote < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_prevote"}
+	if cfg.TimeoutRound < 0 {
+		return cmterrors.ErrNegativeField{Field: "timeout_round"}
 	}
-	if cfg.TimeoutPrevoteDelta < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_prevote_delta"}
-	}
-	if cfg.TimeoutPrecommit < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_precommit"}
-	}
-	if cfg.TimeoutPrecommitDelta < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_precommit_delta"}
+	if cfg.TimeoutRoundDelta < 0 {
+		return cmterrors.ErrNegativeField{Field: "timeout_round_delta"}
 	}
 	if cfg.TimeoutCommit < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_commit"}

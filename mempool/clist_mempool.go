@@ -50,7 +50,7 @@ type CListMempool struct {
 
 	proxyAppConn proxy.AppConnMempool
 
-	// For keeping track of the rechecking process.
+	// Keeps track of the rechecking process.
 	recheck *recheck
 
 	// Concurrent linked-list of valid txs.

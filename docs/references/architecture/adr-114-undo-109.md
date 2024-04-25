@@ -37,7 +37,7 @@ and `store`, we have made them public ([\#2610]) because this blocked the SDK up
 To select additional modules that we will make public (again) we will follow this high-level strategy:
 
 1. Identify all `/internal` modules that are being imported by open-source projects using a tool
-    such as https://www.sourcegraph.com/search>.
+    such as https://www.sourcegraph.com/search.
 2. For each of these modules, categorize them by importance. There are 3 levels: _high, medium, low_.
     By 'importance' we mean "important for current or later modularization work in CometBFT."
 3. For modules that have _high_ importance, we will:
@@ -71,35 +71,40 @@ The following table contains our research, categorization by importance, and dec
 in the current `internal` -- as of [v1.0.0-alpha.2] -- directory of CometBFT.
 
 Column legend:
-*
+* Comet internal module name: The name of the module
+* Decision: The decision we are taking (either make public, or keep private) for this module
+* \# Repositories affected \(non-forks\): Count of how many public, open-source projects we have identified that are using APIs from this module
+* Affected files: How many files (among the affected repositories, both forks and non-forks) would be affected if we make this module private; this is rough measure of the impact -- or "damage" -- of making the module private
+* Importance: Our assessment of how important is it that we make this module (eventually) private
+* URL: The public source of data we have used to research the data in this table
 
-| Comet internal module name | \# Repositories affected \(non-forks\) | Decision           | Affected files | Importance | URL               |
-|:---------------------------|:---------------------------------------|:-------------------|:---------------|:-----------|:------------------|
-| timer                      | 0                                      | keep private       | 7              | low        | [timer-url]       |
-| progressbar                | 0                                      | keep private       | 4              | low        | [progressbar-url] |
-| inspect                    | 0                                      | keep private       | 0              | low        | [inspect-url]     |
-| fail                       | 0                                      | keep private       | 10             | low        | [fail-url]        |
-| events                     | 0                                      | keep private       | 10             | low        | [events-url]      |
-| cmap                       | 0                                      | keep private       | 10             | low        | [cmap-url]        |
-| autofile                   | 0                                      | keep private       | 10             | low        | [autofile-url]    |
-| async                      | 0                                      | keep private       | 8              | low        | [async-url]       |
-| flowrate                   | 0                                      | keep private       | 10             | low        | [flowrate-url]    |
-| bits                       | 0                                      | keep private       | 26             | low        | [bits-url]        |
-| blocksync                  | 0                                      | keep private       | 6              | low        | [blocksync-url]   |
-| clist                      | 0                                      | keep private       | 24             | low        | [clist-url]       |
-| net                        | 1                                      | keep private       | 40             | low        | [net-url]         |
-| statesync                  | 1                                      | **🧹 make public** | 16             | medium     | [statesync-url]   |
-| evidence                   | 1                                      | **🧹 make public** | 26             | high       | [evidence-url]    |
-| consensus                  | 1                                      | **🧹 make public** | 64             | high       | [consensus-url]   |
-| indexer                    | 2                                      | **🧹 make public** | 100            | medium     | [indexer-url]     |
-| protoio                    | 3                                      | **🧹 make public** | 44             | low        | [protoio-url]     |
-| sync                       | 3                                      | **🧹 make public** | 172            | low        | [sync-url]        |
-| tempfile                   | 4                                      | keep private       | 16             | low        | [tempfile-url]    |
-| strings                    | 4                                      | keep private       | 14             | low        | [strings-url]     |
-| service                    | 6                                      | **🧹 make public** | 156            | low        | [service-url]     |
-| os                         | 7                                      | keep private       | 262            | low        | [os-url]          |
-| rand                       | 7                                      | keep private       | 317            | low        | [rand-url]        |
-| pubsub                     | 7                                      | **🧹 make public** | 169            | medium     | [pubsub-url]      |
+| Comet internal module name | Decision           | \# Repositories affected \(non-forks\) | Affected files | Importance | URL               |
+|:---------------------------|:-------------------|:---------------------------------------|:---------------|:-----------|:------------------|
+| timer                      | keep private       | 0                                      | 7              | low        | [timer-url]       |
+| progressbar                | keep private       | 0                                      | 4              | low        | [progressbar-url] |
+| inspect                    | keep private       | 0                                      | 0              | low        | [inspect-url]     |
+| fail                       | keep private       | 0                                      | 10             | low        | [fail-url]        |
+| events                     | keep private       | 0                                      | 10             | low        | [events-url]      |
+| cmap                       | keep private       | 0                                      | 10             | low        | [cmap-url]        |
+| autofile                   | keep private       | 0                                      | 10             | low        | [autofile-url]    |
+| async                      | keep private       | 0                                      | 8              | low        | [async-url]       |
+| flowrate                   | keep private       | 0                                      | 10             | low        | [flowrate-url]    |
+| bits                       | keep private       | 0                                      | 26             | low        | [bits-url]        |
+| blocksync                  | keep private       | 0                                      | 6              | low        | [blocksync-url]   |
+| clist                      | keep private       | 0                                      | 24             | low        | [clist-url]       |
+| net                        | keep private       | 1                                      | 40             | low        | [net-url]         |
+| statesync                  | **🧹 make public** | 1                                      | 16             | medium     | [statesync-url]   |
+| evidence                   | **🧹 make public** | 1                                      | 26             | high       | [evidence-url]    |
+| consensus                  | **🧹 make public** | 1                                      | 64             | high       | [consensus-url]   |
+| indexer                    | **🧹 make public** | 2                                      | 100            | medium     | [indexer-url]     |
+| protoio                    | **🧹 make public** | 3                                      | 44             | low        | [protoio-url]     |
+| sync                       | **🧹 make public** | 3                                      | 172            | low        | [sync-url]        |
+| tempfile                   | keep private       | 4                                      | 16             | low        | [tempfile-url]    |
+| strings                    | keep private       | 4                                      | 14             | low        | [strings-url]     |
+| service                    | **🧹 make public** | 6                                      | 156            | low        | [service-url]     |
+| os                         | keep private       | 7                                      | 262            | low        | [os-url]          |
+| rand                       | keep private       | 7                                      | 317            | low        | [rand-url]        |
+| pubsub                     | **🧹 make public** | 7                                      | 169            | medium     | [pubsub-url]      |
 
 ### Summary
 

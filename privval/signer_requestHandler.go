@@ -3,11 +3,9 @@ package privval
 import (
 	"fmt"
 
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	pvproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -25,8 +23,8 @@ func DefaultValidationRequestHandler(
 	case *pvproto.Message_PubKeyRequest:
 		if r.PubKeyRequest.GetChainId() != chainID {
 			res = mustWrapMsg(&pvproto.PubKeyResponse{
-				PubKey: cryptoproto.PublicKey{}, Error: &pvproto.RemoteSignerError{
-					Code: 0, Description: "unable to provide pubkey",
+				PubKeyType: "", PubKeyBytes: []byte{}, Error: &pvproto.RemoteSignerError{
+					Code: 0, Description: "unable to provide pubkey type",
 				},
 			})
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.PubKeyRequest.GetChainId(), chainID)
@@ -37,17 +35,15 @@ func DefaultValidationRequestHandler(
 		if err != nil {
 			return res, err
 		}
-		pk, err := cryptoenc.PubKeyToProto(pubKey)
-		if err != nil {
-			return res, err
-		}
 
 		if err != nil {
 			res = mustWrapMsg(&pvproto.PubKeyResponse{
-				PubKey: cryptoproto.PublicKey{}, Error: &pvproto.RemoteSignerError{Code: 0, Description: err.Error()},
+				PubKeyType: "", PubKeyBytes: []byte{}, Error: &pvproto.RemoteSignerError{
+					Code: 0, Description: err.Error(),
+				},
 			})
 		} else {
-			res = mustWrapMsg(&pvproto.PubKeyResponse{PubKey: pk, Error: nil})
+			res = mustWrapMsg(&pvproto.PubKeyResponse{PubKeyType: pubKey.Type(), PubKeyBytes: pubKey.Bytes(), Error: nil})
 		}
 
 	case *pvproto.Message_SignVoteRequest:

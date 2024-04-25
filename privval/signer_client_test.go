@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -406,11 +405,11 @@ func brokenHandler(_ types.PrivValidator, request privvalproto.Message, _ string
 	switch r := request.Sum.(type) {
 	// This is broken and will answer most requests with a pubkey response
 	case *privvalproto.Message_PubKeyRequest:
-		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
+		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
 	case *privvalproto.Message_SignVoteRequest:
-		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
+		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
 	case *privvalproto.Message_SignProposalRequest:
-		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
+		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
 	case *privvalproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&privvalproto.PingResponse{})
 	default:

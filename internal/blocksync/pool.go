@@ -320,6 +320,7 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 
 	peer := pool.peers[peerID]
 	if peer != nil {
+		fmt.Printf("got a block from %s and about to decrease", peerID)
 		peer.decrPending(blockSize)
 	}
 
@@ -417,7 +418,7 @@ func (pool *BlockPool) updateMaxPeerHeight() {
 func (pool *BlockPool) pickIncrAvailablePeer(height int64, excludePeerID p2p.ID) *bpPeer {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
-
+	fmt.Printf("first available peer %s", pool.sortedPeers[0])
 	for _, peer := range pool.sortedPeers {
 		if peer.id == excludePeerID {
 			continue
@@ -805,6 +806,7 @@ OUTER_LOOP:
 					continue OUTER_LOOP
 				}
 			case peerID := <-bpr.redoCh:
+				fmt.Println("redoing")
 				if bpr.didRequestFrom(peerID) {
 					removedBlock := bpr.reset(peerID)
 					if removedBlock {
@@ -832,6 +834,7 @@ OUTER_LOOP:
 				}
 			case <-bpr.gotBlockCh:
 				gotBlock = true
+				fmt.Println("got a block")
 				// We got a block!
 				// Continue the for-loop and wait til Quit.
 			}

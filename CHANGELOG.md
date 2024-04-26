@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## v0.38.7
+
+*April 26, 2024*
+
+This release contains a few bug fixes and performance improvements.
+
+### BUG FIXES
+
+- [`mempool`] Panic when a CheckTx request to the app returns an error
+  ([\#2225](https://github.com/cometbft/cometbft/pull/2225))
+- [`bits`] prevent `BitArray.UnmarshalJSON` from crashing on 0 bits
+  ([\#2774](https://github.com/cometbft/cometbft/pull/2774))
+
+### FEATURES
+
+- [`node`] Add `BootstrapStateWithGenProvider` to boostrap state using a custom
+  genesis doc provider ([\#2793](https://github.com/cometbft/cometbft/pull/2793))
+
+### IMPROVEMENTS
+
+- `[state/indexer]` Lower the heap allocation of transaction searches
+  ([\#2839](https://github.com/cometbft/cometbft/pull/2839))
+- `[internal/bits]` 10x speedup and remove heap overhead of bitArray.PickRandom (used extensively in consensus gossip)
+  ([\#2841](https://github.com/cometbft/cometbft/pull/2841)).
+- `[libs/json]` Lower the memory overhead of JSON encoding by using JSON encoders internally
+  ([\#2846](https://github.com/cometbft/cometbft/pull/2846)).
+
 ## v0.38.6
 
 *March 12, 2024*
@@ -375,6 +402,11 @@ See below for more details.
   ([\#230](https://github.com/cometbft/cometbft/pull/230))
 - Bump minimum Go version to 1.20
   ([\#385](https://github.com/cometbft/cometbft/issues/385))
+- [config] The boolean key `fastsync` is deprecated and replaced by
+    `block_sync`. ([\#9259](https://github.com/tendermint/tendermint/pull/9259))
+    At the same time, `block_sync` is also deprecated. In the next release,
+    BlocSync will always be enabled and `block_sync` will be removed.
+    ([\#409](https://github.com/cometbft/cometbft/issues/409))
 - `[abci]` Make length delimiter encoding consistent
   (`uint64`) between ABCI and P2P wire-level protocols
   ([\#5783](https://github.com/tendermint/tendermint/pull/5783))

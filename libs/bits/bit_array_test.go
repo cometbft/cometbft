@@ -173,6 +173,8 @@ func TestGetNumTrueIndices(t *testing.T) {
 		require.NoError(t, err)
 		result := bitArr.getNumTrueIndices()
 		require.Equal(t, tc.ExpectedResult, result, "for input %s, expected %d, got %d", tc.Input, tc.ExpectedResult, result)
+		result = bitArr.Not().getNumTrueIndices()
+		require.Equal(t, bitArr.Bits-result, bitArr.getNumTrueIndices())
 	}
 }
 

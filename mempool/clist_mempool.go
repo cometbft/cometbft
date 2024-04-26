@@ -3,6 +3,7 @@ package mempool
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -268,8 +269,7 @@ func (mem *CListMempool) CheckTx(
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
-		mem.logger.Error("RequestCheckTx", "err", err)
-		return ErrCheckTxAsync{Err: err}
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
 	}
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
 
@@ -681,8 +681,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CheckTxType_Recheck,
 		})
 		if err != nil {
-			mem.logger.Error("recheckTx", err, "err")
-			return
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", memTx.tx.Hash()), err))
 		}
 	}
 

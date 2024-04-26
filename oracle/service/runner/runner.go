@@ -60,7 +60,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		SignType:        oracleInfo.PubKey.Type(),
 		SignedTimestamp: time.Now().Unix(),
 		Votes:           votes,
-		PublicKey:       oracleInfo.PubKey.Bytes(),
 	}
 
 	address := oracleInfo.PubKey.Address().String()

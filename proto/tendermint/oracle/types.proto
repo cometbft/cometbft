@@ -16,7 +16,6 @@ message GossipVote {
   repeated Vote votes = 3;
   int64 signed_timestamp = 4;
   bytes signature = 5;
-  bytes public_key = 6;
 }
 
 message CanonicalGossipVote {

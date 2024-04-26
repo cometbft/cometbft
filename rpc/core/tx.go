@@ -9,6 +9,11 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+const (
+	Ascending  = "asc"
+	Descending = "desc"
+)
+
 // Tx allows you to query the transaction results. `nil` could mean the
 // transaction is in the mempool, invalidated, or was not sent in the first
 // place.
@@ -62,7 +67,7 @@ func (env *Environment) TxSearch(
 	}
 
 	// if orderBy is not "asc", "desc", or blank, return error
-	if orderBy != "" && orderBy != "asc" && orderBy != "desc" {
+	if orderBy != "" && orderBy != Ascending && orderBy != Descending {
 		return nil, ErrInvalidOrderBy{orderBy}
 	}
 
@@ -80,7 +85,7 @@ func (env *Environment) TxSearch(
 	}
 
 	pagSettings := txindex.Pagination{
-		OrderDesc:   orderBy == "desc",
+		OrderDesc:   orderBy == Descending,
 		IsPaginated: true,
 		Page:        *pagePtr,
 		PerPage:     perPage,

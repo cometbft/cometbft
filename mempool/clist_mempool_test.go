@@ -275,9 +275,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// Add 4 transactions to the mempool by calling the mempool's `CheckTx` on each of them.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
 	for _, tx := range txs {
-		reqRes := abciclient.NewReqRes(abci.ToRequestCheckTx(&abci.RequestCheckTx{Tx: tx}))
-		reqRes.Response = abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK})
-
+		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_Recheck)
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil)
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(t, err)
@@ -830,11 +828,11 @@ func TestMempoolSyncCheckTxReturnError(t *testing.T) {
 
 // Test that rechecking panics when a CheckTx request fails, when using a sync ABCI client.
 func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
-	var callback abciclient.Callback
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
-	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
+	mockClient.On("SetResponseCallback", mock.Anything)
+	mockClient.On("Error").Return(nil)
 
 	mp, cleanup, err := newMempoolWithAppMock(mockClient)
 	require.NoError(t, err)
@@ -843,25 +841,20 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	// First we add a two transactions to the mempool.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}}
 	for _, tx := range txs {
-		// Mock a sync client, which will call the callback just after the response from the app.
-		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
-			req := args.Get(1).(*abci.RequestCheckTx)
-			reqRes := newReqRes(req.Tx, abci.CodeTypeOK, abci.CheckTxType_New)
-			callback(reqRes.Request, reqRes.Response)
-		}).Return(nil, nil).Once()
-		mockClient.On("Error").Return(nil)
-
+		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_Recheck)
+		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(t, err)
+
+		// ensure that the callback that the mempool sets on the ReqRes is run.
+		reqRes.InvokeCallback()
 	}
 	require.Len(t, txs, mp.Size())
 
 	// The first tx is valid when rechecking and the client will call the callback right after the
 	// response from the app and before returning.
-	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Run(func(_ mock.Arguments) {
-		reqRes := newReqRes(txs[0], abci.CodeTypeOK, abci.CheckTxType_Recheck)
-		callback(reqRes.Request, reqRes.Response)
-	}).Return(nil, nil).Once()
+	reqRes0 := newReqRes(txs[0], abci.CodeTypeOK, abci.CheckTxType_Recheck)
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes0, nil).Once()
 
 	// On the second CheckTx request, the app returns an error.
 	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()

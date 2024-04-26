@@ -264,8 +264,16 @@ func (bA *BitArray) PickRandom() (int, bool) {
 func (bA *BitArray) getNumTrueIndices() int {
 	count := 0
 	numElems := len(bA.Elems)
-	for i := 0; i < numElems; i++ {
+	// handle all elements except the last one
+	for i := 0; i < numElems-1; i++ {
 		count += bits.OnesCount64(bA.Elems[i])
+	}
+	// handle last element
+	numFinalBits := bA.Bits - (numElems-1)*64
+	for i := 0; i < numFinalBits; i++ {
+		if (bA.Elems[numElems-1] & (uint64(1) << uint64(i))) > 0 {
+			count++
+		}
 	}
 	return count
 }

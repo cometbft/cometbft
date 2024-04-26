@@ -1,1 +1,0 @@
-- Bump cometbft-db version to v0.9.1, which bring support for RocksDB v8.

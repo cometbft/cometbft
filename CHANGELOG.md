@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v0.34.33
+
+*April 26, 2024*
+
+This release bumps Go version to 1.21.
+
+### BUG FIXES
+
+- [`bits`] prevent `BitArray.UnmarshalJSON` from crashing on 0 bits
+  ([\#2774](https://github.com/cometbft/cometbft/pull/2774))
+
+### DEPENDENCIES
+
+- Bump cometbft-db version to v0.9.1, which brings support for RocksDB v8.
+  ([\#2783](https://github.com/cometbft/cometbft/pull/2783))
+- Bump Go version used to v1.21 since v1.20 has reached EOL
+  ([\#2784](https://github.com/cometbft/cometbft/pull/2784))
+
 ## v0.34.32
 
 *March 12, 2024*

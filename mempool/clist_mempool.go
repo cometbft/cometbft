@@ -3,6 +3,7 @@ package mempool
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -252,7 +253,6 @@ func (mem *CListMempool) CheckTx(
 		return ErrAppConnMempool{Err: err}
 	}
 
-<<<<<<< HEAD
 	if !mem.cache.Push(tx) { // if the transaction already exists in the cache
 		// Record a new sender for a tx we've already seen.
 		// Note it's possible a tx is still in the cache but no longer in the mempool
@@ -265,24 +265,11 @@ func (mem *CListMempool) CheckTx(
 			// but they can spam the same tx with little cost to them atm.
 		}
 		return ErrTxInCache
-=======
-	if added := mem.addToCache(tx); !added {
-		mem.metrics.AlreadyReceivedTxs.Add(1)
-		// TODO: consider punishing peer for dups,
-		// its non-trivial since invalid txs can become valid,
-		// but they can spam the same tx with little cost to them atm.
-		return nil, ErrTxInCache
->>>>>>> 98983fc64 (fix(mempool): panic when the app returns error on CheckTx request (#2894))
 	}
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
-<<<<<<< HEAD
-		mem.logger.Error("RequestCheckTx", "err", err)
-		return ErrCheckTxAsync{Err: err}
-=======
 		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
->>>>>>> 98983fc64 (fix(mempool): panic when the app returns error on CheckTx request (#2894))
 	}
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
 
@@ -694,12 +681,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CheckTxType_Recheck,
 		})
 		if err != nil {
-<<<<<<< HEAD
-			mem.logger.Error("recheckTx", err, "err")
-			return
-=======
 			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", memTx.tx.Hash()), err))
->>>>>>> 98983fc64 (fix(mempool): panic when the app returns error on CheckTx request (#2894))
 		}
 	}
 

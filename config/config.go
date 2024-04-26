@@ -398,7 +398,7 @@ type RPCConfig struct {
 
 	// Maximum number of requests that can be sent in a batch
 	// https://www.jsonrpc.org/specification#batch
-	MaxRequestBatchSize int64 `mapstructure:"max_request_batch_size"`
+	MaxRequestBatchSize int `mapstructure:"max_request_batch_size"`
 
 	// Maximum size of request body, in bytes
 	MaxBodyBytes int64 `mapstructure:"max_body_bytes"`

@@ -3,9 +3,11 @@ package server
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -35,16 +37,19 @@ type Config struct {
 	MaxBodyBytes int64
 	// mirrors http.Server#MaxHeaderBytes
 	MaxHeaderBytes int
+	// maximum number of requests in a batch request
+	MaxRequestBatchSize int
 }
 
 // DefaultConfig returns a default configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		MaxOpenConnections: 0, // unlimited
-		ReadTimeout:        10 * time.Second,
-		WriteTimeout:       10 * time.Second,
-		MaxBodyBytes:       int64(1000000), // 1MB
-		MaxHeaderBytes:     1 << 20,        // same as the net/http default
+		MaxOpenConnections:  0, // unlimited
+		ReadTimeout:         10 * time.Second,
+		WriteTimeout:        10 * time.Second,
+		MaxBodyBytes:        int64(1000000), // 1MB
+		MaxHeaderBytes:      1 << 20,        // same as the net/http default
+		MaxRequestBatchSize: 10,
 	}
 }
 
@@ -56,7 +61,8 @@ func DefaultConfig() *Config {
 func Serve(listener net.Listener, handler http.Handler, logger log.Logger, config *Config) error {
 	logger.Info("serve", "msg", log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr()))
 	s := &http.Server{
-		Handler:           RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger),
+		Handler: MiddlewareMaxReqBatchSize(RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger), config.MaxRequestBatchSize),
+		// Handler:           RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger),
 		ReadTimeout:       config.ReadTimeout,
 		ReadHeaderTimeout: config.ReadTimeout,
 		WriteTimeout:      config.WriteTimeout,
@@ -67,7 +73,7 @@ func Serve(listener net.Listener, handler http.Handler, logger log.Logger, confi
 	return err
 }
 
-// Serve creates a http.Server and calls ServeTLS with the given listener,
+// ServeTLS creates a http.Server and calls ServeTLS with the given listener,
 // certFile and keyFile. It wraps handler with RecoverAndLogHandler and a
 // handler, which limits the max body size to config.MaxBodyBytes.
 //
@@ -276,4 +282,40 @@ func Listen(addr string, maxOpenConnections int) (listener net.Listener, err err
 	}
 
 	return listener, nil
+}
+
+// Middleware
+
+// MiddlewareMaxReqBatchSize is a middleware function that checks the size of batch requests and returns an error
+// if it exceeds the maximum configured size.
+func MiddlewareMaxReqBatchSize(next http.Handler, maxBatchSize int) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var requests []types.RPCRequest
+		var err error
+
+		data, err := io.ReadAll(r.Body)
+		if err != nil {
+			res := types.RPCInternalError(nil, errors.New("error reading request body"))
+			_ = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
+			return
+		}
+
+		err = json.Unmarshal(data, &requests)
+		// if no err it means multiple requests, check if exceed batch size
+		if err == nil {
+			// If number of requests in batch exceed the maximum configured then return an error
+			// If 'MaxRequestBatchSize' is 0 (zero) then don't limit batch size
+			if (len(requests) > maxBatchSize) && (maxBatchSize > 0) {
+				res := types.RPCInvalidRequestError(nil, fmt.Errorf("maximum JSON-RPC batch size exceeded, got: %d, max: %d", len(requests), maxBatchSize))
+				err = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
+				fmt.Println(err)
+				return
+			}
+		}
+
+		// Ensure the request body can be read again
+		r.Body = io.NopCloser(bytes.NewBuffer(data))
+
+		next.ServeHTTP(w, r)
+	})
 }

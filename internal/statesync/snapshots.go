@@ -1,10 +1,11 @@
 package statesync
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"math/rand"
 	"sort"
+
+	sha256 "github.com/minio/sha256-simd"
 
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/p2p"

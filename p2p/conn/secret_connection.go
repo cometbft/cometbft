@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"crypto/cipher"
 	crand "crypto/rand"
-	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"io"
 	"math"
 	"net"
 	"time"
+
+	sha256 "github.com/minio/sha256-simd"
 
 	gogotypes "github.com/cosmos/gogoproto/types"
 	pool "github.com/libp2p/go-buffer-pool"

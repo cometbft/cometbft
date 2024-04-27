@@ -2,9 +2,10 @@ package mempool
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"strconv"
 	"testing"
+
+	sha256 "github.com/minio/sha256-simd"
 
 	"github.com/stretchr/testify/require"
 

@@ -1,9 +1,10 @@
 package merkle
 
 import (
-	"crypto/sha256"
 	"strings"
 	"testing"
+
+	sha256 "github.com/minio/sha256-simd"
 )
 
 var sink any

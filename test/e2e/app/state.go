@@ -1,7 +1,6 @@
 package app
 
 import (
-	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -10,6 +9,8 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
+
+	sha256 "github.com/minio/sha256-simd"
 )
 
 const (

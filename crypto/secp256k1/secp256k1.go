@@ -2,11 +2,12 @@ package secp256k1
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"crypto/subtle"
 	"fmt"
 	"io"
 	"math/big"
+
+	sha256 "github.com/minio/sha256-simd"
 
 	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"

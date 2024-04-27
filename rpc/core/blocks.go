@@ -228,10 +228,10 @@ func (env *Environment) BlockSearch(
 
 	// sort results (must be done before pagination)
 	switch orderBy {
-	case "desc", "":
+	case Descending, "":
 		sort.Slice(results, func(i, j int) bool { return results[i] > results[j] })
 
-	case "asc":
+	case Ascending:
 		sort.Slice(results, func(i, j int) bool { return results[i] < results[j] })
 
 	default:

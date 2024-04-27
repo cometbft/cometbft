@@ -43,8 +43,8 @@ func (txi *TxIndex) Index(_ *abci.TxResult) error {
 	return nil
 }
 
-func (txi *TxIndex) Search(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
-	return []*abci.TxResult{}, nil
+func (txi *TxIndex) Search(_ context.Context, _ *query.Query, _ txindex.Pagination) ([]*abci.TxResult, int, error) {
+	return []*abci.TxResult{}, 0, nil
 }
 
 func (txi *TxIndex) SetLogger(log.Logger) {

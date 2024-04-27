@@ -1,16 +1,24 @@
 package core
 
 import (
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"sort"
 
+=======
+>>>>>>> b420f0765 (perf: TxSearch pagination (#2855))
 	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/state/txindex/null"
 	"github.com/cometbft/cometbft/types"
+)
+
+const (
+	Ascending  = "asc"
+	Descending = "desc"
 )
 
 // Tx allows you to query the transaction results. `nil` could mean the
@@ -65,11 +73,17 @@ func (env *Environment) TxSearch(
 		return nil, errors.New("maximum query length exceeded")
 	}
 
+	// if orderBy is not "asc", "desc", or blank, return error
+	if orderBy != "" && orderBy != Ascending && orderBy != Descending {
+		return nil, ErrInvalidOrderBy{orderBy}
+	}
+
 	q, err := cmtquery.New(query)
 	if err != nil {
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	results, err := env.TxIndexer.Search(ctx.Context(), q)
 	if err != nil {
 		return nil, err
@@ -97,20 +111,30 @@ func (env *Environment) TxSearch(
 
 	// paginate results
 	totalCount := len(results)
+=======
+	// Validate number of results per page
+>>>>>>> b420f0765 (perf: TxSearch pagination (#2855))
 	perPage := env.validatePerPage(perPagePtr)
+	if pagePtr == nil {
+		// Default to page 1 if not specified
+		pagePtr = new(int)
+		*pagePtr = 1
+	}
 
-	page, err := validatePage(pagePtr, perPage, totalCount)
+	pagSettings := txindex.Pagination{
+		OrderDesc:   orderBy == Descending,
+		IsPaginated: true,
+		Page:        *pagePtr,
+		PerPage:     perPage,
+	}
+
+	results, totalCount, err := env.TxIndexer.Search(ctx.Context(), q, pagSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	skipCount := validateSkipCount(page, perPage)
-	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
-
-	apiResults := make([]*ctypes.ResultTx, 0, pageSize)
-	for i := skipCount; i < skipCount+pageSize; i++ {
-		r := results[i]
-
+	apiResults := make([]*ctypes.ResultTx, 0, len(results))
+	for _, r := range results {
 		var proof types.TxProof
 		if prove {
 			block, _ := env.BlockStore.LoadBlock(r.Height)

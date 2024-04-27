@@ -24,7 +24,7 @@ func DefaultValidationRequestHandler(
 		if r.PubKeyRequest.GetChainId() != chainID {
 			res = mustWrapMsg(&pvproto.PubKeyResponse{
 				PubKeyType: "", PubKeyBytes: []byte{}, Error: &pvproto.RemoteSignerError{
-					Code: 0, Description: "unable to provide pubkey type",
+					Code: 0, Description: "unable to provide pubkey type and bytes",
 				},
 			})
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.PubKeyRequest.GetChainId(), chainID)

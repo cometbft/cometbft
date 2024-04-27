@@ -1,13 +1,9 @@
 package core
 
 import (
-<<<<<<< HEAD
 	"errors"
 	"fmt"
-	"sort"
 
-=======
->>>>>>> b420f0765 (perf: TxSearch pagination (#2855))
 	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
@@ -83,37 +79,7 @@ func (env *Environment) TxSearch(
 		return nil, err
 	}
 
-<<<<<<< HEAD
-	results, err := env.TxIndexer.Search(ctx.Context(), q)
-	if err != nil {
-		return nil, err
-	}
-
-	// sort results (must be done before pagination)
-	switch orderBy {
-	case "desc":
-		sort.Slice(results, func(i, j int) bool {
-			if results[i].Height == results[j].Height {
-				return results[i].Index > results[j].Index
-			}
-			return results[i].Height > results[j].Height
-		})
-	case "asc", "":
-		sort.Slice(results, func(i, j int) bool {
-			if results[i].Height == results[j].Height {
-				return results[i].Index < results[j].Index
-			}
-			return results[i].Height < results[j].Height
-		})
-	default:
-		return nil, errors.New("expected order_by to be either `asc` or `desc` or empty")
-	}
-
-	// paginate results
-	totalCount := len(results)
-=======
 	// Validate number of results per page
->>>>>>> b420f0765 (perf: TxSearch pagination (#2855))
 	perPage := env.validatePerPage(perPagePtr)
 	if pagePtr == nil {
 		// Default to page 1 if not specified

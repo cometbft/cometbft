@@ -167,6 +167,8 @@ func (pool *BlockPool) removeTimedoutPeers() {
 			}
 
 			peer.curRate = curRate
+			fmt.Println("new peers' rate ", peer.id, peer.curRate)
+
 		}
 
 		if peer.didTimeout {
@@ -320,7 +322,7 @@ func (pool *BlockPool) AddBlock(peerID p2p.ID, block *types.Block, extCommit *ty
 
 	peer := pool.peers[peerID]
 	if peer != nil {
-		fmt.Printf("got a block from %s and about to decrease", peerID)
+		fmt.Printf("got a block from %s and about to decrease \n", peerID)
 		peer.decrPending(blockSize)
 	}
 
@@ -552,6 +554,7 @@ func (peer *bpPeer) incrPending() {
 
 func (peer *bpPeer) decrPending(recvSize int) {
 	peer.numPending--
+	fmt.Println("new num pending for peer", peer.id, peer.numPending)
 	if peer.numPending == 0 {
 		peer.timeout.Stop()
 	} else {

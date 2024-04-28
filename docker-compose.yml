@@ -11,7 +11,7 @@ services:
       - ID=0
       - LOG=${LOG:-cometbft.log}
     volumes:
-      - ./build:/cometbft_evil:Z
+      - ./evil:/cometbft:Z
     networks:
       localnet:
         ipv4_address: 192.167.10.2

@@ -43,10 +43,11 @@ const (
 type Block struct {
 	mtx cmtsync.Mutex
 
-	Header     `json:"header"`
-	Data       `json:"data"`
-	Evidence   EvidenceData `json:"evidence"`
-	LastCommit *Commit      `json:"last_commit"`
+	verifiedHash cmtbytes.HexBytes // Verified block hash (not included in the struct hash)
+	Header       `json:"header"`
+	Data         `json:"data"`
+	Evidence     EvidenceData `json:"evidence"`
+	LastCommit   *Commit      `json:"last_commit"`
 }
 
 // ValidateBasic performs basic validation that doesn't involve state data.
@@ -130,8 +131,13 @@ func (b *Block) Hash() cmtbytes.HexBytes {
 	if b.LastCommit == nil {
 		return nil
 	}
+	if b.verifiedHash != nil {
+		return b.verifiedHash
+	}
 	b.fillHeader()
-	return b.Header.Hash()
+	hash := b.Header.Hash()
+	b.verifiedHash = hash
+	return hash
 }
 
 // MakePartSet returns a PartSet containing parts of a serialized block.

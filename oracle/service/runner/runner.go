@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -76,6 +77,13 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		newGossipVote.Votes = append(newGossipVote.Votes, currentGossipVote.Votes...)
 	}
 
+	log.Infof("PRESORT: %v", newGossipVote.Votes)
+
+	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
+	sort.Sort(ByVote(newGossipVote.Votes))
+
+	log.Infof("POSTSORT: %v", newGossipVote.Votes)
+
 	// signing of vote should append the signature field of gossipVote
 	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
 		log.Errorf("error signing oracle votes")
@@ -83,17 +91,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		return
 	}
-
-	log.Infof("NORMAL SIGNATURE: %v", newGossipVote.Signature)
-
-	testGossipVote := &oracleproto.GossipVote{
-		ValidatorIndex:  newGossipVote.ValidatorIndex,
-		SignedTimestamp: newGossipVote.SignedTimestamp,
-		Votes:           reverseInts(newGossipVote.Votes),
-	}
-	oracleInfo.PrivValidator.SignOracleVote("", testGossipVote)
-
-	log.Infof("REVERSE SIGNATURE: %v", testGossipVote.Signature)
 
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
@@ -197,4 +194,23 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 		oracleInfo.SignVotesChan <- res.Vote
 	}
+}
+
+type ByVote []*oracleproto.Vote
+
+func (b ByVote) Len() int {
+	return len(b)
+}
+
+func (b ByVote) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+
+// Define custom sorting rules
+func (b ByVote) Less(i, j int) bool {
+	if b[i].OracleId != b[j].OracleId {
+		return b[i].OracleId < b[j].OracleId
+	}
+	if b[i].Timestamp != b[j].Timestamp {
+		return b[i].Timestamp < b[j].Timestamp
+	}
+	return b[i].Data < b[j].Data
 }

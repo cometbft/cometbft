@@ -1,7 +1,6 @@
 syntax = "proto3";
 package cometbft.privval.v1;
 
-import "cometbft/crypto/v1/keys.proto";
 import "cometbft/types/v1/types.proto";
 import "gogoproto/gogo.proto";
 
@@ -20,8 +19,11 @@ message PubKeyRequest {
 
 // PubKeyResponse is a response message containing the public key.
 message PubKeyResponse {
-  cometbft.crypto.v1.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
-  RemoteSignerError            error   = 2;
+  RemoteSignerError error         = 2;
+  bytes             pub_key_bytes = 3;
+  string            pub_key_type  = 4;
+
+  reserved 1;  // pub_key
 }
 
 // SignVoteRequest is a request to sign a vote

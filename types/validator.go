@@ -116,14 +116,10 @@ func ValidatorListString(vals []*Validator) string {
 // as its redundant with the pubkey. This also excludes ProposerPriority
 // which changes every round.
 func (v *Validator) Bytes() []byte {
-	pk, err := ce.PubKeyToProto(v.PubKey)
-	if err != nil {
-		panic(err)
-	}
-
 	pbv := cmtproto.SimpleValidator{
-		PubKey:      &pk,
 		VotingPower: v.VotingPower,
+		PubKeyType:  v.PubKey.Type(),
+		PubKeyBytes: v.PubKey.Bytes(),
 	}
 
 	bz, err := pbv.Marshal()
@@ -139,14 +135,14 @@ func (v *Validator) ToProto() (*cmtproto.Validator, error) {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyToProto(v.PubKey)
-	if err != nil {
-		return nil, err
+	if v.PubKey == nil {
+		return nil, errors.New("nil pubkey")
 	}
 
 	vp := cmtproto.Validator{
 		Address:          v.Address,
-		PubKey:           pk,
+		PubKeyType:       v.PubKey.Type(),
+		PubKeyBytes:      v.PubKey.Bytes(),
 		VotingPower:      v.VotingPower,
 		ProposerPriority: v.ProposerPriority,
 	}
@@ -161,7 +157,7 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyFromProto(vp.PubKey)
+	pk, err := ce.PubKeyFromTypeAndBytes(vp.PubKeyType, vp.PubKeyBytes)
 	if err != nil {
 		return nil, err
 	}

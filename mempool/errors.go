@@ -59,18 +59,6 @@ func IsPreCheckError(err error) bool {
 	return errors.As(err, &ErrPreCheck{})
 }
 
-type ErrCheckTxAsync struct {
-	Err error
-}
-
-func (e ErrCheckTxAsync) Error() string {
-	return fmt.Sprintf("check tx async: %v", e.Err)
-}
-
-func (e ErrCheckTxAsync) Unwrap() error {
-	return e.Err
-}
-
 type ErrAppConnMempool struct {
 	Err error
 }

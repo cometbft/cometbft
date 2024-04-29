@@ -1205,6 +1205,20 @@ might become invalid. Setting `recheck = true` will go through the remaining tra
 If your application may remove transactions passed by CometBFT to your `PrepareProposal` handler,
 you probably want to set this configuration to `true` to avoid possible leaks in your mempool
 (transactions staying in the mempool until the node is next restarted).
+
+### mempool.recheck_timeout
+Time to wait for the application to return CheckTx responses after the rechecking process was
+started. Responses that arrive after the timeout expires are discarded.
+```toml
+recheck_timeout = "300ms"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"300ms"`   |
+
+This setting only applies to asynchronous ABCI clients and when `recheck` is enabled.
+
 ### mempool.broadcast
 Broadcast the mempool content (uncommitted transactions) to other nodes.
 ```toml

@@ -19,10 +19,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-const (
-	timeoutRecheck = 100 * time.Millisecond
-)
-
 // CListMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
 // CheckTx abci message before the transaction is added to the pool. The
@@ -635,10 +631,10 @@ func (mem *CListMempool) recheckTxs() {
 	// Flush any pending asynchronous recheck requests to process.
 	mem.proxyAppConn.Flush(context.TODO())
 
-	// Give some time to finish processing the responses; then finish rechecking, even if not all
-	// txs were rechecked.
+	// Give some time to finish processing the responses; then finish the rechecking process, even
+	// if not all txs were rechecked.
 	select {
-	case <-time.After(timeoutRecheck):
+	case <-time.After(mem.config.RecheckTimeout):
 		mem.recheck.setDone()
 		mem.logger.Error("timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():

@@ -278,22 +278,19 @@ func (mem *CListMempool) CheckTx(tx types.Tx) (*abcicli.ReqRes, error) {
 	}
 
 	if added := mem.addToCache(tx); !added {
-		mem.logger.Debug("Not cached", "tx", tx.Hash())
 		mem.metrics.AlreadyReceivedTxs.Add(1)
 		// TODO: consider punishing peer for dups,
 		// its non-trivial since invalid txs can become valid,
 		// but they can spam the same tx with little cost to them atm.
 		return nil, ErrTxInCache
 	}
-	mem.logger.Debug("Cached", "tx", tx.Hash())
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
 		Tx:   tx,
 		Type: abci.CHECK_TX_TYPE_CHECK,
 	})
 	if err != nil {
-		mem.logger.Error("RequestCheckTx", "err", err)
-		return nil, ErrCheckTxAsync{Err: err}
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
 	}
 
 	return reqRes, nil
@@ -666,8 +663,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})
 		if err != nil {
-			mem.logger.Error("recheckTx", "err", err)
-			return
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", memTx.tx.Hash()), err))
 		}
 	}
 

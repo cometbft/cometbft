@@ -224,6 +224,10 @@ definitions:
   rpcClient, err := client.New("http://localhost:26657/v1")
   ```
 
+### Config Changes
+
+- `consensus.skip_timeout_commit` has been removed in favor of `consensus.timeout_commit=0s`.
+
 ## v0.38.0
 
 This release introduces state machine-breaking changes, as well as substantial changes

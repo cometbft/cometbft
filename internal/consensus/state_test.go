@@ -2839,7 +2839,7 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	signAddVotes(cs1, types.PrecommitType, chainID, blockID, true, vs3)
 
 	// wait till timeout occurs
-	ensureNewTimeout(precommitTimeoutCh, height, round, cs1.config.TimeoutRound.Nanoseconds())
+	ensureNewTimeout(precommitTimeoutCh, height, round, cs1.config.TimeoutVote.Nanoseconds())
 
 	ensureNewRound(newRoundCh, height, round+1)
 

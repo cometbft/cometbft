@@ -1584,12 +1584,12 @@ round of consensus will adopt increased timeout durations.
 Timeouts increase linearly over rounds, so that the `timeout_propose` adopted
 in round `r` is `timeout_propose + r * timeout_propose_delta`.
 
-### consensus.timeout_round
+### consensus.timeout_vote
 
 How long a node waits, after receiving +2/3 conflicting prevotes/precommits, before pre-committing nil/going into a new round.
 
 ```toml
-timeout_round = "1s"
+timeout_vote = "1s"
 ```
 
 | Value type          | string (duration) |
@@ -1602,7 +1602,7 @@ A validator that receives +2/3 prevotes for a block, precommits that block.
 If it receives +2/3 prevotes for nil, it precommits nil.
 But if prevotes are received from +2/3 validators, but the prevotes do not
 match (e.g., they are for different blocks or for blocks and nil), the
-validator waits for `timeout_round` time before precommiting nil.
+validator waits for `timeout_vote` time before precommiting nil.
 This gives the validator a chance to wait for additional prevotes and to
 possibly observe +2/3 prevotes for a block.
 
@@ -1613,24 +1613,24 @@ This is a successful consensus round.
 If no block gathers +2/3 precommits, the node cannot commit.
 This is an unsuccessful consensus round and the node will start an additional
 round of consensus.
-Before starting the next round, the node waits for `timeout_round` time.
+Before starting the next round, the node waits for `timeout_vote` time.
 This gives the node a chance to wait for additional precommits and to possibly
 observe +2/3 precommits for a block, which would allow the node to commit that
 block in the current round.
 
 #### Warning
 
-Setting `timeout_round` to `0s` means that the validator will not wait for
+Setting `timeout_vote` to `0s` means that the validator will not wait for
 additional prevotes/precommits (other than the mandatory +2/3) before
 precommitting nil/moving to the next round. This has important liveness
 implications and should be avoided.
 
-### consensus.timeout_round_delta
+### consensus.timeout_vote_delta
 
-How much the `timeout_round` increases with each round.
+How much the `timeout_vote` increases with each round.
 
 ```toml
-timeout_round_delta = "500ms"
+timeout_vote_delta = "500ms"
 ```
 
 | Value type          | string (duration) |
@@ -1640,8 +1640,8 @@ timeout_round_delta = "500ms"
 Consensus timeouts are adaptive.
 This means that when a round of consensus fails to commit a block, the next
 round of consensus will adopt increased timeout durations.
-Timeouts increase linearly over rounds, so that the `timeout_round` adopted
-in round `r` is `timeout_round + r * timeout_round_delta`.
+Timeouts increase linearly over rounds, so that the `timeout_vote` adopted
+in round `r` is `timeout_vote + r * timeout_vote_delta`.
 
 ### consensus.timeout_commit
 

@@ -506,9 +506,9 @@ timeout_propose = "{{ .Consensus.TimeoutPropose }}"
 # How much timeout_propose increases with each round
 timeout_propose_delta = "{{ .Consensus.TimeoutProposeDelta }}"
 # How long we wait after receiving +2/3 prevotes/precommits for “anything” (ie. not a single block or nil)
-timeout_round = "{{ .Consensus.TimeoutRound }}"
-# How much the timeout_round increases with each round
-timeout_round_delta = "{{ .Consensus.TimeoutRoundDelta }}"
+timeout_vote = "{{ .Consensus.TimeoutVote }}"
+# How much the timeout_vote increases with each round
+timeout_vote_delta = "{{ .Consensus.TimeoutVoteDelta }}"
 # How long we wait after committing a block, before starting on the new
 # height (this gives us a chance to receive some more precommits, even
 # though we already have +2/3).

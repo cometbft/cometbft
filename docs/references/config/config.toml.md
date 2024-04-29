@@ -1692,6 +1692,9 @@ The `timeout_commit` is not a required component of the consensus algorithm,
 meaning that there are no liveness implications if it is set to `0s`.
 But it may have implications in the way the application rewards validators.
 
+Setting `timeout_commit` to `0s` means that the node will start the next height
+as soon as it gathers all the mandatory +2/3 precommits for a block.
+
 ### consensus.double_sign_check_height
 
 How many blocks to look back to check the existence of the node's consensus votes before joining consensus.

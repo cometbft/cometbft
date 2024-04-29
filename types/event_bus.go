@@ -109,17 +109,19 @@ func (b *EventBus) Publish(eventType string, eventData TMEventData) error {
 // map of stringified events where each key is composed of the event
 // type and each of the event's attributes keys in the form of
 // "{event.Type}.{attribute.Key}" and the value is each attribute's value.
+<<<<<<< HEAD
 func (b *EventBus) validateAndStringifyEvents(events []types.Event, logger log.Logger) map[string][]string {
+=======
+func (*EventBus) validateAndStringifyEvents(events []types.Event) map[string][]string {
+>>>>>>> ce68e90da (perf(event bus): Remove expensive Logger debug call in PublishEventTx (#2911))
 	result := make(map[string][]string)
 	for _, event := range events {
 		if len(event.Type) == 0 {
-			logger.Debug("Got an event with an empty type (skipping)", "event", event)
 			continue
 		}
 
 		for _, attr := range event.Attributes {
 			if len(attr.Key) == 0 {
-				logger.Debug("Got an event attribute with an empty key(skipping)", "event", event)
 				continue
 			}
 
@@ -134,9 +136,13 @@ func (b *EventBus) validateAndStringifyEvents(events []types.Event, logger log.L
 func (b *EventBus) PublishEventNewBlock(data EventDataNewBlock) error {
 	// no explicit deadline for publishing events
 	ctx := context.Background()
+<<<<<<< HEAD
 
 	resultEvents := append(data.ResultBeginBlock.Events, data.ResultEndBlock.Events...)
 	events := b.validateAndStringifyEvents(resultEvents, b.Logger.With("block", data.Block.StringShort()))
+=======
+	events := b.validateAndStringifyEvents(data.ResultFinalizeBlock.Events)
+>>>>>>> ce68e90da (perf(event bus): Remove expensive Logger debug call in PublishEventTx (#2911))
 
 	// add predefined new block event
 	events[EventTypeKey] = append(events[EventTypeKey], EventNewBlock)
@@ -148,9 +154,13 @@ func (b *EventBus) PublishEventNewBlockHeader(data EventDataNewBlockHeader) erro
 	// no explicit deadline for publishing events
 	ctx := context.Background()
 
+<<<<<<< HEAD
 	resultTags := append(data.ResultBeginBlock.Events, data.ResultEndBlock.Events...)
 	// TODO: Create StringShort method for Header and use it in logger.
 	events := b.validateAndStringifyEvents(resultTags, b.Logger.With("header", data.Header))
+=======
+	events := b.validateAndStringifyEvents(data.Events)
+>>>>>>> ce68e90da (perf(event bus): Remove expensive Logger debug call in PublishEventTx (#2911))
 
 	// add predefined new block header event
 	events[EventTypeKey] = append(events[EventTypeKey], EventNewBlockHeader)
@@ -177,7 +187,7 @@ func (b *EventBus) PublishEventTx(data EventDataTx) error {
 	// no explicit deadline for publishing events
 	ctx := context.Background()
 
-	events := b.validateAndStringifyEvents(data.Result.Events, b.Logger.With("tx", data.Tx))
+	events := b.validateAndStringifyEvents(data.Result.Events)
 
 	// add predefined compositeKeys
 	events[EventTypeKey] = append(events[EventTypeKey], EventTx)

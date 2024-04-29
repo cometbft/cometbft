@@ -68,21 +68,8 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
-	address := oracleInfo.PubKey.Address().String()
-	// need to mutex lock as it will clash with concurrent gossip
-	oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-	currentGossipVote, ok := oracleInfo.GossipVoteBuffer.Buffer[address]
-	if ok {
-		// append existing entry in gossipVoteBuffer
-		newGossipVote.Votes = append(newGossipVote.Votes, currentGossipVote.Votes...)
-	}
-
-	log.Infof("PRESORT: %v", newGossipVote.Votes)
-
 	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
 	sort.Sort(ByVote(newGossipVote.Votes))
-
-	log.Infof("POSTSORT: %v", newGossipVote.Votes)
 
 	// signing of vote should append the signature field of gossipVote
 	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
@@ -92,6 +79,9 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		return
 	}
 
+	// need to mutex lock as it will clash with concurrent gossip
+	oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+	address := oracleInfo.PubKey.Address().String()
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 }

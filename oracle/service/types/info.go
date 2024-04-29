@@ -11,16 +11,22 @@ import (
 
 // App struct for app
 type OracleInfo struct {
-	Config           *config.OracleConfig
-	GossipVoteBuffer *GossipVoteBuffer
-	SignVotesChan    chan *oracleproto.Vote
-	PubKey           crypto.PubKey
-	PrivValidator    types.PrivValidator
-	StopChannel      chan int
-	ProxyApp         proxy.AppConnConsensus
-	BlockTimestamps  []int64
+	Config             *config.OracleConfig
+	UnsignedVoteBuffer *UnsignedVoteBuffer
+	GossipVoteBuffer   *GossipVoteBuffer
+	SignVotesChan      chan *oracleproto.Vote
+	PubKey             crypto.PubKey
+	PrivValidator      types.PrivValidator
+	StopChannel        chan int
+	ProxyApp           proxy.AppConnConsensus
+	BlockTimestamps    []int64
 }
 type GossipVoteBuffer struct {
 	Buffer    map[string]*oracleproto.GossipVote
+	UpdateMtx cmtsync.RWMutex
+}
+
+type UnsignedVoteBuffer struct {
+	Buffer    []*oracleproto.Vote
 	UpdateMtx cmtsync.RWMutex
 }

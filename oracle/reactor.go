@@ -51,15 +51,19 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 	gossipVoteBuffer := &oracletypes.GossipVoteBuffer{
 		Buffer: make(map[string]*oracleproto.GossipVote),
 	}
+	unsignedVoteBuffer := &oracletypes.UnsignedVoteBuffer{
+		Buffer: []*oracleproto.Vote{},
+	}
 
 	oracleInfo := &oracletypes.OracleInfo{
-		Config:           config,
-		GossipVoteBuffer: gossipVoteBuffer,
-		SignVotesChan:    make(chan *oracleproto.Vote),
-		PubKey:           pubKey,
-		PrivValidator:    privValidator,
-		ProxyApp:         proxyApp,
-		BlockTimestamps:  make([]int64, 0),
+		Config:             config,
+		UnsignedVoteBuffer: unsignedVoteBuffer,
+		GossipVoteBuffer:   gossipVoteBuffer,
+		SignVotesChan:      make(chan *oracleproto.Vote),
+		PubKey:             pubKey,
+		PrivValidator:      privValidator,
+		ProxyApp:           proxyApp,
+		BlockTimestamps:    make([]int64, 0),
 	}
 
 	oracleR := &Reactor{

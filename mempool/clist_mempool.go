@@ -695,12 +695,10 @@ func (rc *recheck) tryFinish() bool {
 	}
 	if rc.done() {
 		// Notify that recheck has finished.
-		go func() {
-			select {
-			case rc.doneCh <- struct{}{}:
-			default:
-			}
-		}()
+		select {
+		case rc.doneCh <- struct{}{}:
+		default:
+		}
 		return true
 	}
 	return false

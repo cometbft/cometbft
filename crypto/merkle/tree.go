@@ -26,7 +26,7 @@ func hashFromByteSlices(sha hash.Hash, items [][]byte) []byte {
 	}
 }
 
-// HashFromByteSliceIterative is an iterative alternative to
+// HashFromByteSlicesIterative is an iterative alternative to
 // HashFromByteSlice motivated by potential performance improvements.
 // (#2611) had suggested that an iterative version of
 // HashFromByteSlice would be faster, presumably because

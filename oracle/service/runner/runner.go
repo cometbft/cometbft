@@ -84,8 +84,26 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		return
 	}
 
+	log.Infof("NORMAL SIGNATURE: %v", newGossipVote.Signature)
+
+	testGossipVote := &oracleproto.GossipVote{
+		ValidatorIndex:  newGossipVote.ValidatorIndex,
+		SignedTimestamp: newGossipVote.SignedTimestamp,
+		Votes:           reverseInts(newGossipVote.Votes),
+	}
+	oracleInfo.PrivValidator.SignOracleVote("", testGossipVote)
+
+	log.Infof("REVERSE SIGNATURE: %v", testGossipVote.Signature)
+
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+}
+
+func reverseInts(input []*oracleproto.Vote) []*oracleproto.Vote {
+	if len(input) == 0 {
+		return input
+	}
+	return append(reverseInts(input[1:]), input[0])
 }
 
 func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.State) {

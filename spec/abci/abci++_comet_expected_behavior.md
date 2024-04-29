@@ -157,6 +157,9 @@ did not store any state CometBFT calls `InitChain`. After this, CometBFT enters 
   `FinalizeBlock`, followed by a call to `Commit`. In each round, the sequence of method calls
   depends on whether the local process is the proposer or not. Note that, if a height contains zero
   rounds, this means the process is replaying an already decided value (catch-up mode).
+  When calling `FinalizeBLock` with a block, the consensus algorithm run by CometBFT guarantees
+  that at least one non-byzantine validator has run `ProcessProposal` on that block.
+
 
 >```abnf
 >consensus-height    = *consensus-round finalize-block commit

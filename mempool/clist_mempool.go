@@ -301,13 +301,15 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 		switch checkType {
 		case abci.CHECK_TX_TYPE_CHECK:
 			if !mem.recheck.done() {
-				panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %v", types.Tx(req.GetCheckTx().Tx).Hash()))
+				panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %v",
+					types.Tx(req.GetCheckTx().Tx).Hash()))
 			}
 			mem.resCbFirstTime(req.GetCheckTx().Tx, res.GetCheckTx())
 
 		case abci.CHECK_TX_TYPE_RECHECK:
 			if mem.recheck.done() {
-				mem.logger.Info("rechecking has finished; discard late recheck response", "tx", log.NewLazySprintf("%v", types.Tx(req.GetCheckTx().Tx).Hash()))
+				mem.logger.Error("rechecking has finished; discard late recheck response",
+					"tx", log.NewLazySprintf("%v", types.Tx(req.GetCheckTx().Tx).Hash()))
 				return
 			}
 			mem.metrics.RecheckTimes.Add(1)

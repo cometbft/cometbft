@@ -139,29 +139,13 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
 		// verify sig of incoming gossip vote, throw if verification fails
-		signType := msg.SignType
 		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
 		pubKey := val.PubKey
 
-		switch signType {
-		case "ed25519":
-			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-				oracleR.Logger.Error("failed signature verification", msg)
-				logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
-				oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed ed25519 signature verification: %T", e.Message))
-				return
-			}
-		case "sr25519":
-			if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-				oracleR.Logger.Error("failed signature verification", msg)
-				logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
-				oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed sr25519 signature verification: %T", e.Message))
-				return
-			}
-		default:
-			logrus.Error("SIGNATURE NOT SUPPORTED NOOOOOOOOO")
-			oracleR.Logger.Error("signature type not supported", msg)
-			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle does not support the following signature type: %T", e.Message))
+		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
+			oracleR.Logger.Error("failed signature verification", msg)
+			logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
+			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
 			return
 		}
 

@@ -1122,10 +1122,8 @@ type ConsensusConfig struct {
 	// height (this gives us a chance to receive some more precommits, even
 	// though we already have +2/3).
 	// NOTE: when modifying, make sure to update time_iota_ms genesis parameter
+	// Set to 0 if you want to make progress as soon as the node has all the precommits.
 	TimeoutCommit time.Duration `mapstructure:"timeout_commit"`
-
-	// Make progress as soon as we have all the precommits (as if TimeoutCommit = 0)
-	SkipTimeoutCommit bool `mapstructure:"skip_timeout_commit"`
 
 	// EmptyBlocks mode and possible interval between empty blocks
 	CreateEmptyBlocks         bool          `mapstructure:"create_empty_blocks"`
@@ -1150,7 +1148,6 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		TimeoutPrecommit:                 1000 * time.Millisecond,
 		TimeoutPrecommitDelta:            500 * time.Millisecond,
 		TimeoutCommit:                    1000 * time.Millisecond,
-		SkipTimeoutCommit:                false,
 		CreateEmptyBlocks:                true,
 		CreateEmptyBlocksInterval:        0 * time.Second,
 		PeerGossipSleepDuration:          100 * time.Millisecond,
@@ -1170,8 +1167,7 @@ func TestConsensusConfig() *ConsensusConfig {
 	cfg.TimeoutPrecommit = 10 * time.Millisecond
 	cfg.TimeoutPrecommitDelta = 1 * time.Millisecond
 	// NOTE: when modifying, make sure to update time_iota_ms (testGenesisFmt) in toml.go
-	cfg.TimeoutCommit = 10 * time.Millisecond
-	cfg.SkipTimeoutCommit = true
+	cfg.TimeoutCommit = 0
 	cfg.PeerGossipSleepDuration = 5 * time.Millisecond
 	cfg.PeerQueryMaj23SleepDuration = 250 * time.Millisecond
 	cfg.DoubleSignCheckHeight = int64(0)

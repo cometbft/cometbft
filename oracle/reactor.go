@@ -133,15 +133,15 @@ func (oracleR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 }
 
 // // Receive implements Reactor.
-// // It adds any received transactions to the mempool.
 func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
+		_, vals := oracleR.ConsensusState.GetValidators()
+		logrus.Infof("$$$$$$$$$$THESE ARE MY VALS:$$$$$$$$$$ %v", vals)
 		// verify sig of incoming gossip vote, throw if verification fails
 		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
 		pubKey := val.PubKey
-
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 			oracleR.Logger.Error("failed signature verification", msg)
 			logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")

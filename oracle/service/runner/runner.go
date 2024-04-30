@@ -101,9 +101,7 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.St
 		}
 		ticker := time.Tick(1 * time.Second)
 		for range ticker {
-			lastHeight := consensusState.GetLastHeight()
 			lastBlockTime := consensusState.GetState().LastBlockTime
-			log.Infof("last height: %v, last time: %v", lastHeight, lastBlockTime)
 
 			if !contains(oracleInfo.BlockTimestamps, lastBlockTime.Unix()) {
 				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime.Unix())
@@ -179,8 +177,6 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-
-		log.Infof("VOTE: %v", res.Vote)
 
 		oracleInfo.SignVotesChan <- res.Vote
 	}

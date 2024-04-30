@@ -164,6 +164,7 @@ func (pool *BlockPool) removeTimedoutPeers() {
 					"curRate", fmt.Sprintf("%d KB/s", curRate/1024),
 					"minRate", fmt.Sprintf("%d KB/s", minRecvRate/1024))
 				peer.didTimeout = true
+				fmt.Println("peer to ", peer.id)
 			}
 
 			peer.curRate = curRate
@@ -420,7 +421,7 @@ func (pool *BlockPool) updateMaxPeerHeight() {
 func (pool *BlockPool) pickIncrAvailablePeer(height int64, excludePeerID p2p.ID) *bpPeer {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
-	fmt.Printf("first available peer %s", pool.sortedPeers[0].id)
+	fmt.Println("first available peer", pool.sortedPeers[0].id)
 	for _, peer := range pool.sortedPeers {
 		if peer.id == excludePeerID {
 			continue
@@ -571,6 +572,7 @@ func (peer *bpPeer) onTimeout() {
 	peer.pool.sendError(err, peer.id)
 	peer.logger.Error("SendTimeout", "reason", err, "timeout", peerTimeout)
 	peer.didTimeout = true
+	fmt.Println("peer to 2 ", peer.id)
 }
 
 // -------------------------------------
@@ -739,7 +741,7 @@ PICK_PEER_LOOP:
 	bpr.mtx.Lock()
 	bpr.peerID = peer.id
 	bpr.mtx.Unlock()
-
+	fmt.Println("sending request to peer ", peer.id)
 	bpr.pool.sendRequest(bpr.height, peer.id)
 }
 
@@ -755,6 +757,8 @@ func (bpr *bpRequester) pickSecondPeerAndSendRequest() (picked bool) {
 	bpr.mtx.Unlock()
 
 	secondPeer := bpr.pool.pickIncrAvailablePeer(bpr.height, peerID)
+	fmt.Println("sending request to peer ", secondPeer.id)
+
 	if secondPeer != nil {
 		bpr.mtx.Lock()
 		bpr.secondPeerID = secondPeer.id

@@ -61,8 +61,7 @@ func DefaultConfig() *Config {
 func Serve(listener net.Listener, handler http.Handler, logger log.Logger, config *Config) error {
 	logger.Info("serve", "msg", log.NewLazySprintf("Starting RPC HTTP server on %s", listener.Addr()))
 	s := &http.Server{
-		Handler: MiddlewareMaxReqBatchSize(RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger), config.MaxRequestBatchSize),
-		// Handler:           RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger),
+		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
 		ReadTimeout:       config.ReadTimeout,
 		ReadHeaderTimeout: config.ReadTimeout,
 		WriteTimeout:      config.WriteTimeout,
@@ -88,7 +87,7 @@ func ServeTLS(
 	logger.Info("serve tls", "msg", log.NewLazySprintf("Starting RPC HTTPS server on %s (cert: %q, key: %q)",
 		listener.Addr(), certFile, keyFile))
 	s := &http.Server{
-		Handler:           RecoverAndLogHandler(maxBytesHandler{h: handler, n: config.MaxBodyBytes}, logger),
+		Handler:           PreChecksHandler(RecoverAndLogHandler(defaultHandler{h: handler}, logger), config),
 		ReadTimeout:       config.ReadTimeout,
 		ReadHeaderTimeout: config.ReadTimeout,
 		WriteTimeout:      config.WriteTimeout,
@@ -255,13 +254,11 @@ func (w *responseWriterWrapper) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
 
-type maxBytesHandler struct {
+type defaultHandler struct {
 	h http.Handler
-	n int64
 }
 
-func (h maxBytesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, h.n)
+func (h defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.h.ServeHTTP(w, r)
 }
 
@@ -286,13 +283,17 @@ func Listen(addr string, maxOpenConnections int) (listener net.Listener, err err
 
 // Middleware
 
-// MiddlewareMaxReqBatchSize is a middleware function that checks the size of batch requests and returns an error
-// if it exceeds the maximum configured size.
-func MiddlewareMaxReqBatchSize(next http.Handler, maxBatchSize int) http.Handler {
+// PreChecksHandler is a middleware function that checks the size of batch requests and returns an error
+// if it exceeds the maximum configured size. It also checks if the request body is not greater than the
+// configured maximum request body bytes limit.
+func PreChecksHandler(next http.Handler, config *Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ensure that the current request body bytes is not greater than the configured maximum request body bytes
+		r.Body = http.MaxBytesReader(w, r.Body, config.MaxBodyBytes)
+
 		// if maxBatchSize is 0 then don't constraint the limit of requests per batch
 		// the default value is 0, and it cannot be negative because of the config validation
-		if maxBatchSize > 0 {
+		if config.MaxRequestBatchSize > 0 {
 			var requests []types.RPCRequest
 			var err error
 
@@ -307,8 +308,8 @@ func MiddlewareMaxReqBatchSize(next http.Handler, maxBatchSize int) http.Handler
 			// if no err it means multiple requests, check if exceed batch size
 			if err == nil {
 				// if the number of requests in batch exceed the maximum configured then return an error
-				if len(requests) > maxBatchSize {
-					res := types.RPCInvalidRequestError(nil, fmt.Errorf("maximum JSON-RPC batch size exceeded, got: %d, max: %d", len(requests), maxBatchSize))
+				if len(requests) > config.MaxRequestBatchSize {
+					res := types.RPCInvalidRequestError(nil, fmt.Errorf("maximum JSON-RPC batch size exceeded, got: %d, max: %d", len(requests), config.MaxRequestBatchSize))
 					err = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
 					fmt.Println(err)
 					return

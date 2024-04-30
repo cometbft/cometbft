@@ -195,6 +195,13 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
 }
 
+// ApplyVerifiedBlock does the same as `ApplyBlock`, but skips verification.
+func (blockExec *BlockExecutor) ApplyVerifiedBlock(
+	state State, blockID types.BlockID, block *types.Block,
+) (State, error) {
+	return blockExec.applyBlock(state, blockID, block)
+}
+
 // ApplyBlock validates the block against the state, executes it against the app,
 // fires the relevant events, commits the app, and saves the new state and responses.
 // It returns the new state.
@@ -209,6 +216,10 @@ func (blockExec *BlockExecutor) ApplyBlock(
 		return state, ErrInvalidBlock(err)
 	}
 
+	return blockExec.applyBlock(state, blockID, block)
+}
+
+func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, block *types.Block) (State, error) {
 	startTime := time.Now().UnixNano()
 	abciResponse, err := blockExec.proxyApp.FinalizeBlock(context.TODO(), &abci.RequestFinalizeBlock{
 		Hash:               block.Hash(),

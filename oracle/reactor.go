@@ -137,9 +137,12 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
-		_, vals := oracleR.ConsensusState.GetValidators()
 		// verify sig of incoming gossip vote, throw if verification fails
-		val := vals[msg.ValidatorIndex]
+		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
+		if val == nil {
+			logrus.Infof("validator with index: %v not found in validator set, skipping gossip", msg.ValidatorIndex)
+			return
+		}
 		pubKey := val.PubKey
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 			oracleR.Logger.Error("failed signature verification", msg)

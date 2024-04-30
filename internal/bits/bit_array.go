@@ -3,6 +3,7 @@ package bits
 import (
 	"encoding/binary"
 	"fmt"
+	"math/bits"
 	"regexp"
 	"strings"
 	"sync"
@@ -247,44 +248,69 @@ func (bA *BitArray) PickRandom() (int, bool) {
 	}
 
 	bA.mtx.Lock()
-	trueIndices := bA.getTrueIndices()
-	bA.mtx.Unlock()
-
-	if len(trueIndices) == 0 { // no bits set to true
+	numTrueIndices := bA.getNumTrueIndices()
+	if numTrueIndices == 0 { // no bits set to true
+		bA.mtx.Unlock()
 		return 0, false
 	}
-
-	return trueIndices[cmtrand.Intn(len(trueIndices))], true
+	index := bA.getNthTrueIndex(cmtrand.Intn(numTrueIndices))
+	bA.mtx.Unlock()
+	if index == -1 {
+		return 0, false
+	}
+	return index, true
 }
 
-func (bA *BitArray) getTrueIndices() []int {
-	trueIndices := make([]int, 0, bA.Bits)
-	curBit := 0
+func (bA *BitArray) getNumTrueIndices() int {
+	count := 0
 	numElems := len(bA.Elems)
-	// set all true indices
+	// handle all elements except the last one
 	for i := 0; i < numElems-1; i++ {
-		elem := bA.Elems[i]
-		if elem == 0 {
-			curBit += 64
-			continue
-		}
-		for j := 0; j < 64; j++ {
-			if (elem & (uint64(1) << uint64(j))) > 0 {
-				trueIndices = append(trueIndices, curBit)
-			}
-			curBit++
-		}
+		count += bits.OnesCount64(bA.Elems[i])
 	}
 	// handle last element
-	lastElem := bA.Elems[numElems-1]
-	numFinalBits := bA.Bits - curBit
+	numFinalBits := bA.Bits - (numElems-1)*64
 	for i := 0; i < numFinalBits; i++ {
-		if (lastElem & (uint64(1) << uint64(i))) > 0 {
-			trueIndices = append(trueIndices, curBit)
+		if (bA.Elems[numElems-1] & (uint64(1) << uint64(i))) > 0 {
+			count++
 		}
-		curBit++
 	}
-	return trueIndices
+	return count
+}
+
+// getNthTrueIndex returns the index of the nth true bit in the bit array.
+// n is 0 indexed. (e.g. for bitarray x__x, getNthTrueIndex(0) returns 0).
+// If there is no such value, it returns -1.
+func (bA *BitArray) getNthTrueIndex(n int) int {
+	numElems := len(bA.Elems)
+	count := 0
+
+	// Iterate over each element
+	for i := 0; i < numElems; i++ {
+		// Count set bits in the current element
+		setBits := bits.OnesCount64(bA.Elems[i])
+
+		// If the count of set bits in this element plus the count so far
+		// is greater than or equal to n, then the nth bit must be in this element
+		if count+setBits >= n {
+			// Find the index of the nth set bit within this element
+			for j := 0; j < 64; j++ {
+				if bA.Elems[i]&(1<<uint(j)) != 0 {
+					if count == n {
+						// Calculate the absolute index of the set bit
+						return i*64 + j
+					}
+					count++
+				}
+			}
+		} else {
+			// If the count is not enough, continue to the next element
+			count += setBits
+		}
+	}
+
+	// If we reach here, it means n is out of range
+	return -1
 }
 
 // String returns a string representation of BitArray: BA{<bit-string>},

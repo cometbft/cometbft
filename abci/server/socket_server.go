@@ -208,7 +208,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 	}
 }
 
-// handleRequests takes a request and calls the application passing the returned.
+// handleRequest takes a request and calls the application passing the returned.
 func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*types.Response, error) {
 	switch r := req.Value.(type) {
 	case *types.Request_Echo:

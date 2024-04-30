@@ -625,7 +625,7 @@ without calling `VerifyVoteExtension` to verify it.
 * **Usage**:
     * Contains the fields of the newly decided block.
     * This method is equivalent to the call sequence `BeginBlock`, [`DeliverTx`],
-      and `EndBlock` in the previous version of ABCI.
+      and `EndBlock` in ABCI 1.0.
     * The height and time values match the values from the header of the proposed block.
     * The Application can use `FinalizeBlockRequest.decided_last_commit` and `FinalizeBlockRequest.misbehavior`
       to determine rewards and punishments for the validators.
@@ -661,6 +661,8 @@ without calling `VerifyVoteExtension` to verify it.
       making the Application's state evolve in the context of state machine replication.
     * Currently, CometBFT will fill up all fields in `FinalizeBlockRequest`, even if they were
       already passed on to the Application via `PrepareProposalRequest` or `ProcessProposalRequest`.
+    * When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+      that at least one non-byzantine validator has run `ProcessProposal` on that block.
 
 #### When does CometBFT call `FinalizeBlock`?
 
@@ -711,13 +713,14 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-    | Name    | Type                                             | Description                   | Field Number | Deterministic |
-    |---------|--------------------------------------------------|-------------------------------|--------------|---------------|
-    | pub_key | [Public Key](../core/data_structures.md#pub_key) | Public key of the validator   | 1            | Yes           |
-    | power   | int64                                            | Voting power of the validator | 2            | Yes           |
+    | Name          | Type                                             | Description                                         | Field Number | Deterministic |
+    |---------------|--------------------------------------------------|-----------------------------------------------------|--------------|---------------|
+    | power         | int64                                            | Voting power                                        | 2            | Yes           |
+    | pub_key_type  | string                                           | Public key's type (e.g. "tendermint/PubKeyEd25519") | 3            | Yes           |
+    | pub_key_bytes | bytes                                            | Public key's bytes                                  | 4            | Yes           |
 
 * **Usage**:
-    * Validator identified by PubKey
+    * Validator identified by PubKeyType and PubKeyBytes
     * Used to tell CometBFT to update the validator set
 
 ### Misbehavior

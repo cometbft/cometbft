@@ -661,7 +661,7 @@ without calling `VerifyVoteExtension` to verify it.
       making the Application's state evolve in the context of state machine replication.
     * Currently, CometBFT will fill up all fields in `FinalizeBlockRequest`, even if they were
       already passed on to the Application via `PrepareProposalRequest` or `ProcessProposalRequest`.
-    * When calling `FinalizeBLock` with a block, the consensus algorithm run by CometBFT guarantees
+    * When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
       that at least one non-byzantine validator has run `ProcessProposal` on that block.
 
 #### When does CometBFT call `FinalizeBlock`?

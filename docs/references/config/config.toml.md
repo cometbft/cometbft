@@ -573,7 +573,7 @@ and endpoints. There is an old developer discussion about this [here](https://gi
 ### rpc.max_request_batch_size
 Maximum number of requests that can be sent in a JSON-RPC batch request.
 ```toml
-max_request_batch_size = 10
+max_request_batch_size = 0
 ```
 
 | Value type          | integer |
@@ -582,7 +582,10 @@ max_request_batch_size = 10
 
 If the number of requests sent in a JSON-RPC batch exceed the maximum batch size configured, an error will be returned.
 
-If the value is set to '0' (zero-value), then no maximum batch size will be enforced for a JSON-RPC batch request.
+The default value is set to `0` (zero-value), which means no maximum batch size will be enforced for a JSON-RPC batch request.
+
+If you want to enforce a maximum value for batch requests set this value to a number greater than `0` (e.g. `10` which will limit the number
+of requests to 10 requests/batch)
 
 Reference: https://www.jsonrpc.org/specification#batch
 

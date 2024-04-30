@@ -22,6 +22,7 @@ import (
 	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/internal/timer"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
 
 const (
@@ -852,15 +853,14 @@ func (ch *Channel) isSendPending() bool {
 func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 	packet := tmp2p.PacketMsg{ChannelID: int32(ch.desc.ID)}
 	maxSize := ch.maxPacketMsgPayloadSize
+	packet.Data = ch.sending[:cmtmath.MinInt(maxSize, len(ch.sending))]
 	if len(ch.sending) <= maxSize {
-		packet.Data = ch.sending
 		packet.EOF = true
 		ch.sending = nil
 		atomic.AddInt32(&ch.sendQueueSize, -1) // decrement sendQueueSize
 	} else {
-		packet.Data = ch.sending[:maxSize]
 		packet.EOF = false
-		ch.sending = ch.sending[maxSize:]
+		ch.sending = ch.sending[cmtmath.MinInt(maxSize, len(ch.sending)):]
 	}
 	return packet
 }

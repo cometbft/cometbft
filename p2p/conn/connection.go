@@ -31,7 +31,9 @@ const (
 	numBatchPacketMsgs = 10
 	minReadBufferSize  = 1024
 	minWriteBufferSize = 65536
-	updateStats        = 2 * time.Second
+
+	updateStats                  = 2 * time.Second
+	recentlySentExponentialDecay = 0.8
 
 	// some of these defaults are written in the user config
 	// flushThrottle, sendRate, recvRate
@@ -755,7 +757,10 @@ type Channel struct {
 	sendQueueSize int32 // atomic.
 	recving       []byte
 	sending       []byte
-	recentlySent  int64 // exponential moving average
+	// recentlySent is an exponential moving average of the number of messages sent.
+	// This is used by the mconnection for choosing what channel to send from next.
+	// The exponential decay is done in updateStats.
+	recentlySent int64
 
 	maxPacketMsgPayloadSize int
 
@@ -856,7 +861,8 @@ func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 		err = ErrPacketWrite{Source: err}
 	}
 
-	atomic.AddInt64(&ch.recentlySent, int64(n))
+	// increment recentlySent by 1, to denote we sent another message.
+	atomic.AddInt64(&ch.recentlySent, 1)
 	return n, err
 }
 
@@ -889,7 +895,8 @@ func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
 func (ch *Channel) updateStats() {
 	// Exponential decay of stats.
 	// TODO: optimize.
-	atomic.StoreInt64(&ch.recentlySent, int64(float64(atomic.LoadInt64(&ch.recentlySent))*0.8))
+	decayedRecentlySent := int64(float64(atomic.LoadInt64(&ch.recentlySent)) * recentlySentExponentialDecay)
+	atomic.StoreInt64(&ch.recentlySent, decayedRecentlySent)
 }
 
 // ----------------------------------------

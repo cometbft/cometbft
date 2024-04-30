@@ -39,9 +39,7 @@ const (
 // peers you received it from.
 type Reactor struct {
 	p2p.BaseReactor
-	OracleInfo *oracletypes.OracleInfo
-	// config  *cfg.MempoolConfig
-	// mempool *CListMempool
+	OracleInfo     *oracletypes.OracleInfo
 	ids            *oracleIDs
 	ConsensusState *cs.State
 }
@@ -99,8 +97,6 @@ func (oracleR *Reactor) OnStart() error {
 // GetChannels implements Reactor by returning the list of channels for this
 // reactor.
 func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
-	// largestTx := make([]byte, oracleR.config.MaxTxBytes)
-	// TODO, confirm these params
 	messageCap := oracleR.OracleInfo.Config.MaxGossipMsgSize
 	if messageCap == 0 {
 		messageCap = 65536
@@ -118,12 +114,10 @@ func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (oracleR *Reactor) AddPeer(peer p2p.Peer) {
-	// if oracleR.config.Broadcast {
 	go func() {
 		oracleR.broadcastVoteRoutine(peer)
 		time.Sleep(100 * time.Millisecond)
 	}()
-	// }
 }
 
 // RemovePeer implements Reactor.
@@ -144,6 +138,9 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			return
 		}
 		pubKey := val.PubKey
+
+		logrus.Infof("gossip: %v:%v", pubKey.Address(), msg.ValidatorIndex)
+
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 			oracleR.Logger.Error("failed signature verification", msg)
 			logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")

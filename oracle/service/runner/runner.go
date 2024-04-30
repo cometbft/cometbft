@@ -51,9 +51,11 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	// batch sign the new votes, along with existing votes in gossipVoteBuffer, if any
 	validatorIndex, _ := consensusState.Validators.GetByAddress(oracleInfo.PubKey.Address())
 	if validatorIndex == -1 {
-		log.Errorf("unable to find validator index")
+		log.Errorf("processSignVoteQueue: unable to find validator index")
 		return
 	}
+
+	log.Infof("runner: %v:%v", oracleInfo.PubKey.Address(), validatorIndex)
 
 	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
@@ -73,9 +75,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 	// signing of vote should append the signature field of gossipVote
 	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
-		log.Errorf("error signing oracle votes")
-		// unlock here to prevent deadlock
-		oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+		log.Errorf("processSignVoteQueue: error signing oracle votes")
 		return
 	}
 
@@ -84,13 +84,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	address := oracleInfo.PubKey.Address().String()
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
-}
-
-func reverseInts(input []*oracleproto.Vote) []*oracleproto.Vote {
-	if len(input) == 0 {
-		return input
-	}
-	return append(reverseInts(input[1:]), input[0])
 }
 
 func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.State) {

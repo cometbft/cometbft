@@ -49,7 +49,7 @@ func DefaultConfig() *Config {
 		WriteTimeout:        10 * time.Second,
 		MaxBodyBytes:        int64(1000000), // 1MB
 		MaxHeaderBytes:      1 << 20,        // same as the net/http default
-		MaxRequestBatchSize: 10,
+		MaxRequestBatchSize: 0,
 	}
 }
 
@@ -290,32 +290,36 @@ func Listen(addr string, maxOpenConnections int) (listener net.Listener, err err
 // if it exceeds the maximum configured size.
 func MiddlewareMaxReqBatchSize(next http.Handler, maxBatchSize int) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var requests []types.RPCRequest
-		var err error
+		// if maxBatchSize is 0 then don't constraint the limit of requests per batch
+		// the default value is 0, and it cannot be negative because of the config validation
+		if maxBatchSize > 0 {
+			var requests []types.RPCRequest
+			var err error
 
-		data, err := io.ReadAll(r.Body)
-		if err != nil {
-			res := types.RPCInternalError(nil, errors.New("error reading request body"))
-			_ = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
-			return
-		}
-
-		err = json.Unmarshal(data, &requests)
-		// if no err it means multiple requests, check if exceed batch size
-		if err == nil {
-			// If number of requests in batch exceed the maximum configured then return an error
-			// If 'MaxRequestBatchSize' is 0 (zero) then don't limit batch size
-			if (len(requests) > maxBatchSize) && (maxBatchSize > 0) {
-				res := types.RPCInvalidRequestError(nil, fmt.Errorf("maximum JSON-RPC batch size exceeded, got: %d, max: %d", len(requests), maxBatchSize))
-				err = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
-				fmt.Println(err)
+			data, err := io.ReadAll(r.Body)
+			if err != nil {
+				res := types.RPCInternalError(nil, errors.New("error reading request body"))
+				_ = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
 				return
 			}
+
+			err = json.Unmarshal(data, &requests)
+			// if no err it means multiple requests, check if exceed batch size
+			if err == nil {
+				// if the number of requests in batch exceed the maximum configured then return an error
+				if len(requests) > maxBatchSize {
+					res := types.RPCInvalidRequestError(nil, fmt.Errorf("maximum JSON-RPC batch size exceeded, got: %d, max: %d", len(requests), maxBatchSize))
+					err = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
+					fmt.Println(err)
+					return
+				}
+			}
+
+			// ensure the request body can be read again by other handlers
+			r.Body = io.NopCloser(bytes.NewBuffer(data))
 		}
 
-		// Ensure the request body can be read again
-		r.Body = io.NopCloser(bytes.NewBuffer(data))
-
+		// next handler
 		next.ServeHTTP(w, r)
 	})
 }

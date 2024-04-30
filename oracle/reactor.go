@@ -138,9 +138,8 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipVote:
 		_, vals := oracleR.ConsensusState.GetValidators()
-		logrus.Infof("$$$$$$$$$$THESE ARE MY VALS:$$$$$$$$$$ %v", vals)
 		// verify sig of incoming gossip vote, throw if verification fails
-		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
+		val := vals[msg.ValidatorIndex]
 		pubKey := val.PubKey
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 			oracleR.Logger.Error("failed signature verification", msg)

@@ -420,7 +420,7 @@ func (pool *BlockPool) updateMaxPeerHeight() {
 func (pool *BlockPool) pickIncrAvailablePeer(height int64, excludePeerID p2p.ID) *bpPeer {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
-	fmt.Printf("first available peer %s", pool.sortedPeers[0])
+	fmt.Printf("first available peer %s", pool.sortedPeers[0].id)
 	for _, peer := range pool.sortedPeers {
 		if peer.id == excludePeerID {
 			continue

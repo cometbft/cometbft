@@ -536,7 +536,7 @@ func (c *MConnection) sendBatchPacketMsgs(batchSize int) bool {
 }
 
 // selects a channel to gossip our next message on.
-// TODO: Make "batchChannelToGossipOn", so we can do our proto marshalling overheads in parallel,
+// TODO: Make "batchChannelToGossipOn", so we can do our proto marshaling overheads in parallel,
 // and we can avoid re-checking for `isSendPending`.
 // We can easily mock the recentlySent differences for the batch choosing.
 func selectChannelToGossipOn(channels []*Channel) *Channel {

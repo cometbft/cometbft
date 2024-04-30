@@ -97,7 +97,7 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.St
 	go func(oracleInfo *types.OracleInfo) {
 		maxGossipVoteAge := oracleInfo.Config.MaxGossipVoteAge
 		if maxGossipVoteAge == 0 {
-			maxGossipVoteAge = 3
+			maxGossipVoteAge = 2
 		}
 		ticker := time.Tick(1 * time.Second)
 		for range ticker {
@@ -107,11 +107,11 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.St
 				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime.Unix())
 			}
 
-			if len(oracleInfo.BlockTimestamps) < 3 {
+			if len(oracleInfo.BlockTimestamps) < maxGossipVoteAge {
 				continue
 			}
 
-			if len(oracleInfo.BlockTimestamps) > 3 {
+			if len(oracleInfo.BlockTimestamps) > maxGossipVoteAge {
 				oracleInfo.BlockTimestamps = oracleInfo.BlockTimestamps[1:]
 			}
 

@@ -295,23 +295,25 @@ func PreChecksHandler(next http.Handler, config *Config) http.Handler {
 		// the default value is 0, and it cannot be negative because of the config validation
 		if config.MaxRequestBatchSize > 0 {
 			var requests []types.RPCRequest
+			var responses []types.RPCResponse
 			var err error
 
 			data, err := io.ReadAll(r.Body)
 			if err != nil {
-				res := types.RPCInternalError(nil, errors.New("error reading request body"))
+				res := types.RPCInvalidRequestError(nil, fmt.Errorf("error reading request body: %w", err))
 				_ = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
 				return
 			}
 
 			err = json.Unmarshal(data, &requests)
-			// if no err it means multiple requests, check if exceed batch size
+			// if no err it means multiple requests, check if the number of request exceeds
+			// the maximum batch size configured
 			if err == nil {
 				// if the number of requests in batch exceed the maximum configured then return an error
 				if len(requests) > config.MaxRequestBatchSize {
-					res := types.RPCInvalidRequestError(nil, fmt.Errorf("maximum JSON-RPC batch size exceeded, got: %d, max: %d", len(requests), config.MaxRequestBatchSize))
-					err = WriteRPCResponseHTTPError(w, http.StatusBadRequest, res)
-					fmt.Println(err)
+					res := types.RPCInvalidRequestError(nil, fmt.Errorf("batch request exceeds maximum (%d) allowed number of requests", config.MaxRequestBatchSize))
+					responses = append(responses, res)
+					_ = WriteRPCResponseHTTP(w, responses...)
 					return
 				}
 			}

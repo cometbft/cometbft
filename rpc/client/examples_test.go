@@ -9,6 +9,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	rpctest "github.com/cometbft/cometbft/rpc/test"
 )
 
@@ -134,4 +135,51 @@ func ExampleHTTP_batching() {
 	// Output:
 	// firstName = satoshi
 	// lastName = nakamoto
+}
+
+// Test the maximum batch request size middleware.
+func ExampleHTTP_maxBatchSize() {
+	// Start a CometBFT node (and kvstore) in the background to test against
+	app := kvstore.NewInMemoryApplication()
+	node := rpctest.StartCometBFT(app, rpctest.RecreateConfig, rpctest.SuppressStdout, rpctest.MaxReqBatchSize)
+
+	// Change the max_request_batch_size
+	node.Config().RPC.MaxRequestBatchSize = 2
+
+	// Create our RPC client
+	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
+	c, err := rpchttp.New(rpcAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer rpctest.StopCometBFT(node)
+
+	// Create a new batch
+	batch := c.NewBatch()
+
+	for i := 1; i <= 5; i++ {
+		if _, err := batch.Health(context.Background()); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Send the requests
+	results, err := batch.Send(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Each result in the returned list is the deserialized result of each
+	// respective status response
+	for _, result := range results {
+		_, ok := result.(*types.RPCError)
+		if !ok {
+			log.Fatal("invalid result type")
+		}
+		fmt.Println("Max Request Batch Exceeded")
+	}
+
+	// Output:
+	// Max Request Batch Exceeded
 }

@@ -139,7 +139,10 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		}
 		pubKey := val.PubKey
 
-		logrus.Infof("gossip: %v:%v", pubKey.Address(), msg.ValidatorIndex)
+		// skip if its own buffer
+		if oracleR.OracleInfo.PubKey.Equals(pubKey) {
+			return
+		}
 
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 			oracleR.Logger.Error("failed signature verification", msg)

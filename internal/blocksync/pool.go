@@ -813,6 +813,7 @@ OUTER_LOOP:
 				if bpr.didRequestFrom(peerID) {
 					removedBlock := bpr.reset(peerID)
 					if removedBlock {
+						fmt.Println("removed block")
 						gotBlock = false
 					}
 				}

@@ -2,3 +2,4 @@
 laddr = "tcp://0.0.0.0:26657"
 [instrumentation]
 prometheus = true
+vote_extensions_enable_height = 1

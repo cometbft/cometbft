@@ -757,16 +757,17 @@ func (bpr *bpRequester) pickSecondPeerAndSendRequest() (picked bool) {
 	bpr.mtx.Unlock()
 
 	secondPeer := bpr.pool.pickIncrAvailablePeer(bpr.height, peerID)
-	fmt.Println("sending request to peer ", secondPeer.id)
 
 	if secondPeer != nil {
 		bpr.mtx.Lock()
 		bpr.secondPeerID = secondPeer.id
 		bpr.mtx.Unlock()
+		fmt.Println("sending request to peer ", secondPeer.id)
 
 		bpr.pool.sendRequest(bpr.height, secondPeer.id)
 		return true
 	}
+	fmt.Println("couldn't pick second peer")
 
 	return false
 }

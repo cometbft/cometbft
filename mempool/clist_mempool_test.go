@@ -3,6 +3,7 @@ package mempool
 import (
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	mrand "math/rand"
 	"os"
@@ -274,9 +275,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// Add 4 transactions to the mempool by calling the mempool's `CheckTx` on each of them.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
 	for _, tx := range txs {
-		reqRes := abciclient.NewReqRes(abci.ToRequestCheckTx(&abci.RequestCheckTx{Tx: tx}))
-		reqRes.Response = abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: abci.CodeTypeOK})
-
+		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_Recheck)
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil)
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(t, err)
@@ -802,8 +801,76 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	require.False(t, mp.notifiedTxsAvailable.Load())
 }
 
-// caller must close server
+// Test that adding a transaction panics when the CheckTx request fails.
+func TestMempoolSyncCheckTxReturnError(t *testing.T) {
+	mockClient := new(abciclimocks.Client)
+	mockClient.On("Start").Return(nil)
+	mockClient.On("SetLogger", mock.Anything)
+	mockClient.On("SetResponseCallback", mock.Anything)
+
+	mp, cleanup, err := newMempoolWithAppMock(mockClient)
+	require.NoError(t, err)
+	defer cleanup()
+
+	// The app will return an error on a CheckTx request.
+	tx := []byte{0x01}
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
+
+	// Adding the transaction should panic when the call to the app returns an error.
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("CheckTx did not panic")
+		}
+	}()
+	err = mp.CheckTx(tx, nil, TxInfo{})
+	require.NoError(t, err)
+}
+
+// Test that rechecking panics when a CheckTx request fails, when using a sync ABCI client.
+func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
+	mockClient := new(abciclimocks.Client)
+	mockClient.On("Start").Return(nil)
+	mockClient.On("SetLogger", mock.Anything)
+	mockClient.On("SetResponseCallback", mock.Anything)
+	mockClient.On("Error").Return(nil)
+
+	mp, cleanup, err := newMempoolWithAppMock(mockClient)
+	require.NoError(t, err)
+	defer cleanup()
+
+	// First we add a two transactions to the mempool.
+	txs := []types.Tx{[]byte{0x01}, []byte{0x02}}
+	for _, tx := range txs {
+		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_Recheck)
+		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
+		err := mp.CheckTx(tx, nil, TxInfo{})
+		require.NoError(t, err)
+
+		// ensure that the callback that the mempool sets on the ReqRes is run.
+		reqRes.InvokeCallback()
+	}
+	require.Len(t, txs, mp.Size())
+
+	// The first tx is valid when rechecking and the client will call the callback right after the
+	// response from the app and before returning.
+	reqRes0 := newReqRes(txs[0], abci.CodeTypeOK, abci.CheckTxType_Recheck)
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes0, nil).Once()
+
+	// On the second CheckTx request, the app returns an error.
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, errors.New("")).Once()
+
+	// Rechecking should panic when the call to the app returns an error.
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("recheckTxs did not panic")
+		}
+	}()
+	mp.recheckTxs()
+}
+
+// caller must close server.
 func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
+	t.Helper()
 	clientCreator, err := abciclient.NewClient(addr, "socket", true)
 	require.NoError(t, err)
 
@@ -815,6 +882,12 @@ func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.C
 	}
 
 	return clientCreator, server
+}
+
+func newReqRes(tx types.Tx, code uint32, requestType abci.CheckTxType) *abciclient.ReqRes { //nolint: unparam
+	reqRes := abciclient.NewReqRes(abci.ToRequestCheckTx(&abci.RequestCheckTx{Tx: tx, Type: requestType}))
+	reqRes.Response = abci.ToResponseCheckTx(&abci.ResponseCheckTx{Code: code})
+	return reqRes
 }
 
 func abciResponses(n int, code uint32) []*abci.ExecTxResult {

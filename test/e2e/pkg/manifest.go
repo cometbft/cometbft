@@ -83,10 +83,15 @@ type Manifest struct {
 	LoadTxSizeBytes   int `toml:"load_tx_size_bytes"`
 	LoadTxBatchSize   int `toml:"load_tx_batch_size"`
 	LoadTxConnections int `toml:"load_tx_connections"`
+	LoadMaxTxs        int `toml:"load_max_txs"`
 
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`
+
+	// BlockMaxBytes specifies the maximum size in bytes of a block. This
+	// value will be written to the genesis file of all nodes.
+	BlockMaxBytes int64 `toml:"block_max_bytes"`
 
 	// VoteExtensionsEnableHeight configures the first height during which
 	// the chain will use and require vote extension data to be present

@@ -3,7 +3,7 @@ package mempool
 import (
 	"bytes"
 	"context"
-	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -175,7 +175,12 @@ func (mem *CListMempool) SizeBytes() int64 {
 
 // Lock() must be help by the caller during execution.
 func (mem *CListMempool) FlushAppConn() error {
-	return mem.proxyAppConn.Flush(context.TODO())
+	err := mem.proxyAppConn.Flush(context.TODO())
+	if err != nil {
+		return ErrFlushAppConn{Err: err}
+	}
+
+	return nil
 }
 
 // XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
@@ -239,15 +244,13 @@ func (mem *CListMempool) CheckTx(
 
 	if mem.preCheck != nil {
 		if err := mem.preCheck(tx); err != nil {
-			return ErrPreCheck{
-				Reason: err,
-			}
+			return ErrPreCheck{Err: err}
 		}
 	}
 
 	// NOTE: proxyAppConn may error if tx buffer is full
 	if err := mem.proxyAppConn.Error(); err != nil {
-		return err
+		return ErrAppConnMempool{Err: err}
 	}
 
 	if !mem.cache.Push(tx) { // if the transaction already exists in the cache
@@ -266,7 +269,7 @@ func (mem *CListMempool) CheckTx(
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
-		return err
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
 	}
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
 
@@ -349,7 +352,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		mem.txsBytes.Add(int64(-len(tx)))
 		return nil
 	}
-	return errors.New("transaction not found in mempool")
+	return ErrTxNotFound
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
@@ -678,8 +681,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CheckTxType_Recheck,
 		})
 		if err != nil {
-			mem.logger.Error("recheckTx", err, "err")
-			return
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", memTx.tx.Hash()), err))
 		}
 	}
 

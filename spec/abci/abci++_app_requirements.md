@@ -6,52 +6,52 @@ title: Requirements for the Application
 # Requirements for the Application
 
 - [Requirements for the Application](#requirements-for-the-application)
-  - [Formal Requirements](#formal-requirements)
-    - [Consensus Connection Requirements](#consensus-connection-requirements)
-    - [Mempool Connection Requirements](#mempool-connection-requirements)
-  - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
-    - [Connection State](#connection-state)
-      - [Concurrency](#concurrency)
-      - [FinalizeBlock](#finalizeblock)
-      - [Commit](#commit)
-      - [Candidate States](#candidate-states)
-    - [States and ABCI++ Connections](#states-and-abci-connections)
-      - [Consensus Connection](#consensus-connection)
-      - [Mempool Connection](#mempool-connection)
-        - [Replay Protection](#replay-protection)
-      - [Info/Query Connection](#infoquery-connection)
-      - [Snapshot Connection](#snapshot-connection)
-    - [Transaction Results](#transaction-results)
-      - [Gas](#gas)
-      - [Specifics of `ResponseCheckTx`](#specifics-of-responsechecktx)
-      - [Specifics of `ExecTxResult`](#specifics-of-exectxresult)
-    - [Updating the Validator Set](#updating-the-validator-set)
-    - [Consensus Parameters](#consensus-parameters)
-      - [List of Parameters](#list-of-parameters)
-        - [BlockParams.MaxBytes](#blockparamsmaxbytes)
-        - [BlockParams.MaxGas](#blockparamsmaxgas)
-        - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
-        - [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
-        - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-        - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
-        - [VersionParams.App](#versionparamsapp)
-        - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
-      - [Updating Consensus Parameters](#updating-consensus-parameters)
-        - [`InitChain`](#initchain)
-        - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
-    - [`Query`](#query)
-      - [Query Proofs](#query-proofs)
-      - [Peer Filtering](#peer-filtering)
-      - [Paths](#paths)
-    - [Crash Recovery](#crash-recovery)
-    - [State Sync](#state-sync)
-      - [Taking Snapshots](#taking-snapshots)
-      - [Bootstrapping a Node](#bootstrapping-a-node)
-        - [Snapshot Discovery](#snapshot-discovery)
-        - [Snapshot Restoration](#snapshot-restoration)
-        - [Snapshot Verification](#snapshot-verification)
-        - [Transition to Consensus](#transition-to-consensus)
-  - [Application configuration required to switch to ABCI 2.0](#application-configuration-required-to-switch-to-abci-20)
+    - [Formal Requirements](#formal-requirements)
+        - [Consensus Connection Requirements](#consensus-connection-requirements)
+        - [Mempool Connection Requirements](#mempool-connection-requirements)
+    - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
+        - [Connection State](#connection-state)
+            - [Concurrency](#concurrency)
+            - [FinalizeBlock](#finalizeblock)
+            - [Commit](#commit)
+            - [Candidate States](#candidate-states)
+        - [States and ABCI++ Connections](#states-and-abci-connections)
+            - [Consensus Connection](#consensus-connection)
+            - [Mempool Connection](#mempool-connection)
+                - [Replay Protection](#replay-protection)
+            - [Info/Query Connection](#infoquery-connection)
+            - [Snapshot Connection](#snapshot-connection)
+        - [Transaction Results](#transaction-results)
+            - [Gas](#gas)
+            - [Specifics of `ResponseCheckTx`](#specifics-of-responsechecktx)
+            - [Specifics of `ExecTxResult`](#specifics-of-exectxresult)
+        - [Updating the Validator Set](#updating-the-validator-set)
+        - [Consensus Parameters](#consensus-parameters)
+            - [List of Parameters](#list-of-parameters)
+                - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
+                - [BlockParams.MaxBytes](#blockparamsmaxbytes)
+                - [BlockParams.MaxGas](#blockparamsmaxgas)
+                - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
+                - [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
+                - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
+                - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
+                - [VersionParams.App](#versionparamsapp)
+            - [Updating Consensus Parameters](#updating-consensus-parameters)
+                - [`InitChain`](#initchain)
+                - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
+        - [`Query`](#query)
+            - [Query Proofs](#query-proofs)
+            - [Peer Filtering](#peer-filtering)
+            - [Paths](#paths)
+        - [Crash Recovery](#crash-recovery)
+        - [State Sync](#state-sync)
+            - [Taking Snapshots](#taking-snapshots)
+            - [Bootstrapping a Node](#bootstrapping-a-node)
+                - [Snapshot Discovery](#snapshot-discovery)
+                - [Snapshot Restoration](#snapshot-restoration)
+                - [Snapshot Verification](#snapshot-verification)
+                - [Transition to Consensus](#transition-to-consensus)
+    - [Application configuration required to switch to ABCI 2.0](#application-configuration-required-to-switch-to-abci-20)
 
 
 ## Formal Requirements
@@ -74,7 +74,7 @@ returns via `ResponsePrepareProposal` to CometBFT, also known as the prepared pr
 
 Process *p*'s prepared proposal can differ in two different rounds where *p* is the proposer.
 
-* Requirement 1 [`PrepareProposal`, timeliness]: If *p*'s Application fully executes prepared blocks in
+- Requirement 1 [`PrepareProposal`, timeliness]: If *p*'s Application fully executes prepared blocks in
   `PrepareProposal` and the network is in a synchronous period while processes *p* and *q* are in *r<sub>p</sub>*,
   then the value of *TimeoutPropose* at *q* must be such that *q*'s propose timer does not time out
   (which would result in *q* prevoting `nil` in *r<sub>p</sub>*).
@@ -87,7 +87,7 @@ compromise liveness because even though `TimeoutPropose` is used as the initial
 value for proposal timeouts, CometBFT will be dynamically adjust these timeouts
 such that they will eventually be enough for completing `PrepareProposal`.
 
-* Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
+- Requirement 2 [`PrepareProposal`, tx-size]: When *p*'s Application calls `ResponsePrepareProposal`, the
   total size in bytes of the transactions returned does not exceed `RequestPrepareProposal.max_tx_bytes`.
 
 Busy blockchains might seek to gain full visibility into transactions in CometBFT's mempool,
@@ -99,7 +99,7 @@ Under these settings, the aggregated size of all transactions may exceed `Reques
 Hence, Requirement 2 ensures that the size in bytes of the transaction list returned by the application will never
 cause the resulting block to go beyond its byte size limit.
 
-* Requirement 3 [`PrepareProposal`, `ProcessProposal`, coherence]: For any two correct processes *p* and *q*,
+- Requirement 3 [`PrepareProposal`, `ProcessProposal`, coherence]: For any two correct processes *p* and *q*,
   if *q*'s CometBFT calls `RequestProcessProposal` on *u<sub>p</sub>*,
   *q*'s Application returns Accept in `ResponseProcessProposal`.
 
@@ -112,12 +112,12 @@ likely hit the bug at the same time. This would result in most (or all) processe
 serious consequences on CometBFT's liveness that this entails. Due to its criticality, Requirement 3 is a
 target for extensive testing and automated verification.
 
-* Requirement 4 [`ProcessProposal`, determinism-1]: `ProcessProposal` is a (deterministic) function of the current
+- Requirement 4 [`ProcessProposal`, determinism-1]: `ProcessProposal` is a (deterministic) function of the current
   state and the block that is about to be applied. In other words, for any correct process *p*, and any arbitrary block *u*,
   if *p*'s CometBFT calls `RequestProcessProposal` on *u* at height *h*,
   then *p*'s Application's acceptance or rejection **exclusively** depends on *u* and *s<sub>p,h-1</sub>*.
 
-* Requirement 5 [`ProcessProposal`, determinism-2]: For any two correct processes *p* and *q*, and any arbitrary
+- Requirement 5 [`ProcessProposal`, determinism-2]: For any two correct processes *p* and *q*, and any arbitrary
   block *u*,
   if *p*'s (resp. *q*'s) CometBFT calls `RequestProcessProposal` on *u* at height *h*,
   then *p*'s Application accepts *u* if and only if *q*'s Application accepts *u*.
@@ -145,7 +145,7 @@ Let *e<sup>r</sup><sub>p</sub>* be the vote extension that the Application of a 
 Let *w<sup>r</sup><sub>p</sub>* be the proposed block that *p*'s CometBFT passes to the Application via `RequestExtendVote`
 in round *r*, height *h*.
 
-* Requirement 6 [`ExtendVote`, `VerifyVoteExtension`, coherence]: For any two different correct
+- Requirement 6 [`ExtendVote`, `VerifyVoteExtension`, coherence]: For any two different correct
   processes *p* and *q*, if *q* receives *e<sup>r</sup><sub>p</sub>* from *p* in height *h*, *q*'s
   Application returns Accept in `ResponseVerifyVoteExtension`.
 
@@ -157,13 +157,13 @@ However, if there is a (deterministic) bug in `ExtendVote` or `VerifyVoteExtensi
 we will face the same liveness issues as described for Requirement 5, as Precommit messages with invalid vote
 extensions will be discarded.
 
-* Requirement 7 [`VerifyVoteExtension`, determinism-1]: `VerifyVoteExtension` is a (deterministic) function of
+- Requirement 7 [`VerifyVoteExtension`, determinism-1]: `VerifyVoteExtension` is a (deterministic) function of
   the current state, the vote extension received, and the prepared proposal that the extension refers to.
   In other words, for any correct process *p*, and any arbitrary vote extension *e*, and any arbitrary
   block *w*, if *p*'s (resp. *q*'s) CometBFT calls `RequestVerifyVoteExtension` on *e* and *w* at height *h*,
   then *p*'s Application's acceptance or rejection **exclusively** depends on *e*, *w* and *s<sub>p,h-1</sub>*.
 
-* Requirement 8 [`VerifyVoteExtension`, determinism-2]: For any two correct processes *p* and *q*,
+- Requirement 8 [`VerifyVoteExtension`, determinism-2]: For any two correct processes *p* and *q*,
   and any arbitrary vote extension *e*, and any arbitrary block *w*,
   if *p*'s (resp. *q*'s) CometBFT calls `RequestVerifyVoteExtension` on *e* and *w* at height *h*,
   then *p*'s Application accepts *e* if and only if *q*'s Application accepts *e*.
@@ -178,12 +178,12 @@ Requirements 7 and 8 can be violated by a bug inducing non-determinism in
 Extra care should be put in the implementation of `ExtendVote` and `VerifyVoteExtension`.
 As a general rule, `VerifyVoteExtension` SHOULD always accept the vote extension.
 
-* Requirement 9 [*all*, no-side-effects]: *p*'s calls to `RequestPrepareProposal`,
+- Requirement 9 [*all*, no-side-effects]: *p*'s calls to `RequestPrepareProposal`,
   `RequestProcessProposal`, `RequestExtendVote`, and `RequestVerifyVoteExtension` at height *h* do
   not modify *s<sub>p,h-1</sub>*.
 
 
-* Requirement 10 [`ExtendVote`, `FinalizeBlock`, non-dependency]: for any correct process *p*,
+- Requirement 10 [`ExtendVote`, `FinalizeBlock`, non-dependency]: for any correct process *p*,
 and any vote extension *e* that *p* received at height *h*, the computation of
 *s<sub>p,h</sub>* does not depend on *e*.
 
@@ -191,10 +191,10 @@ The call to correct process *p*'s `RequestFinalizeBlock` at height *h*, with blo
 passed as parameter, creates state *s<sub>p,h</sub>*.
 Additionally, *p*'s `FinalizeBlock` creates a set of transaction results *T<sub>p,h</sub>*.
 
-* Requirement 11 [`FinalizeBlock`, determinism-1]: For any correct process *p*,
+- Requirement 11 [`FinalizeBlock`, determinism-1]: For any correct process *p*,
   *s<sub>p,h</sub>* exclusively depends on *s<sub>p,h-1</sub>* and *v<sub>p,h</sub>*.
 
-* Requirement 12 [`FinalizeBlock`, determinism-2]: For any correct process *p*,
+- Requirement 12 [`FinalizeBlock`, determinism-2]: For any correct process *p*,
   the contents of *T<sub>p,h</sub>* exclusively depend on *s<sub>p,h-1</sub>* and *v<sub>p,h</sub>*.
 
 Note that Requirements 11 and 12, combined with the Agreement property of consensus ensure
@@ -204,14 +204,14 @@ Also, notice that neither `PrepareProposal` nor `ExtendVote` have determinism-re
 requirements associated.
 Indeed, `PrepareProposal` is not required to be deterministic:
 
-* *u<sub>p</sub>* may depend on *v<sub>p</sub>* and *s<sub>p,h-1</sub>*, but may also depend on other values or operations.
-* *v<sub>p</sub> = v<sub>q</sub> &#8655; u<sub>p</sub> = u<sub>q</sub>*.
+- *u<sub>p</sub>* may depend on *v<sub>p</sub>* and *s<sub>p,h-1</sub>*, but may also depend on other values or operations.
+- *v<sub>p</sub> = v<sub>q</sub> &#8655; u<sub>p</sub> = u<sub>q</sub>*.
 
 Likewise, `ExtendVote` can also be non-deterministic:
 
-* *e<sup>r</sup><sub>p</sub>* may depend on *w<sup>r</sup><sub>p</sub>* and *s<sub>p,h-1</sub>*,
+- *e<sup>r</sup><sub>p</sub>* may depend on *w<sup>r</sup><sub>p</sub>* and *s<sub>p,h-1</sub>*,
   but may also depend on other values or operations.
-* *w<sup>r</sup><sub>p</sub> = w<sup>r</sup><sub>q</sub> &#8655;
+- *w<sup>r</sup><sub>p</sub> = w<sup>r</sup><sub>q</sub> &#8655;
   e<sup>r</sup><sub>p</sub> = e<sup>r</sup><sub>q</sub>*
 
 ### Mempool Connection Requirements
@@ -228,7 +228,7 @@ we define *CheckTxCode<sub>tx,p,h</sub>* as the singleton value of *CheckTxCodes
 If *CheckTxCodes<sub>tx,p,h</sub>* is not a singleton set, *CheckTxCode<sub>tx,p,h</sub>* is undefined.
 Let predicate *OK(CheckTxCode<sub>tx,p,h</sub>)* denote whether *CheckTxCode<sub>tx,p,h</sub>* is `SUCCESS`.
 
-* Requirement 13 [`CheckTx`, eventual non-oscillation]: For any transaction *tx*,
+- Requirement 13 [`CheckTx`, eventual non-oscillation]: For any transaction *tx*,
   there exists a boolean value *b*,
   and a height *h<sub>stable</sub>* such that,
   for any correct process *p*,
@@ -276,20 +276,6 @@ time.
 
 The existence of this global mutex means Go application developers can get thread safety for application state by routing all reads and writes through the ABCI system. Thus it may be unsafe to expose application state directly to an RPC interface, and unless explicit measures are taken, all queries should be routed through the ABCI Query method.
 
-<!--
-This is no longer the case starting from v0.36.0: the global locks have been removed and it is
-up to the Application to synchronize access to its state when handling
-ABCI++ methods on all connections.
- -->
-
-<!--
- TODO CHeck with Sergio whether this is still the case
- -->
-<!--
-Nevertheless, as all ABCI calls are now synchronous, ABCI messages using the same connection are
-still received in sequence.
- -->
-
 #### FinalizeBlock
 
 When the consensus algorithm decides on a block, CometBFT uses `FinalizeBlock` to send the
@@ -327,22 +313,22 @@ Likewise, CometBFT calls `ProcessProposal` upon reception of a proposed block fr
 network. The proposed block's data
 that is disclosed to the Application by these two methods is the following:
 
-* the transaction list
-* the `LastCommit` referring to the previous block
-* the block header's hash (except in `PrepareProposal`, where it is not known yet)
-* list of validators that misbehaved
-* the block's timestamp
-* `NextValidatorsHash`
-* Proposer address
+- the transaction list
+- the `LastCommit` referring to the previous block
+- the block header's hash (except in `PrepareProposal`, where it is not known yet)
+- list of validators that misbehaved
+- the block's timestamp
+- `NextValidatorsHash`
+- Proposer address
 
 The Application may decide to *immediately* execute the given block (i.e., upon `PrepareProposal`
 or `ProcessProposal`). There are two main reasons why the Application may want to do this:
 
-* *Avoiding invalid transactions in blocks*.
+- *Avoiding invalid transactions in blocks*.
   In order to be sure that the block does not contain *any* invalid transaction, there may be
   no way other than fully executing the transactions in the block as though it was the *decided*
   block.
-* *Quick `FinalizeBlock` execution*.
+- *Quick `FinalizeBlock` execution*.
   Upon reception of the decided block via `FinalizeBlock`, if that same block was executed
   upon `PrepareProposal` or `ProcessProposal` and the resulting state was kept in memory, the
   Application can simply apply that state (faster) to the main state, rather than reexecuting
@@ -481,8 +467,8 @@ or validation should fail before it can use more resources than it requested.
 
 When `MaxGas > -1`, CometBFT enforces the following rules:
 
-* `GasWanted <= MaxGas` for every transaction in the mempool
-* `(sum of GasWanted in a block) <= MaxGas` when proposing a block
+- `GasWanted <= MaxGas` for every transaction in the mempool
+- `(sum of GasWanted in a block) <= MaxGas` when proposing a block
 
 If `MaxGas == -1`, no rules about gas are enforced.
 
@@ -500,7 +486,7 @@ it can use `PrepareProposal` and `ProcessProposal` to enforce that `(sum of GasW
 in all proposed or prevoted blocks,
 we have:
 
-* `(sum of GasUsed in a block) <= MaxGas` for every block
+- `(sum of GasUsed in a block) <= MaxGas` for every block
 
 The `GasUsed` field is ignored by CometBFT.
 
@@ -561,21 +547,21 @@ duplicates, the block execution will fail irrecoverably.
 Structure `ValidatorUpdate` contains a public key, which is used to identify the validator:
 The public key currently supports three types:
 
-* `ed25519`
-* `secp256k1`
-* `sr25519`
+- `ed25519`
+- `secp256k1`
+- `sr25519`
 
 Structure `ValidatorUpdate` also contains an `ìnt64` field denoting the validator's new power.
 Applications must ensure that
 `ValidatorUpdate` structures abide by the following rules:
 
-* power must be non-negative
-* if power is set to 0, the validator must be in the validator set; it will be removed from the set
-* if power is greater than 0:
-    * if the validator is not in the validator set, it will be added to the
+- power must be non-negative
+- if power is set to 0, the validator must be in the validator set; it will be removed from the set
+- if power is greater than 0:
+    - if the validator is not in the validator set, it will be added to the
       set with the given power
-    * if the validator is in the validator set, its power will be adjusted to the given power
-* the total power of the new validator set must not exceed `MaxTotalVotingPower`, where
+    - if the validator is in the validator set, its power will be adjusted to the given power
+- the total power of the new validator set must not exceed `MaxTotalVotingPower`, where
   `MaxTotalVotingPower = MaxInt64 / 8`
 
 Note the updates returned after processing the block at height `H` will only take effect
@@ -594,25 +580,35 @@ all full nodes have the same value at a given height.
 
 #### List of Parameters
 
-These are the current consensus parameters (as of v0.37.x):
+These are the current consensus parameters (as of v0.38.x):
 
-1. [BlockParams.MaxBytes](#blockparamsmaxbytes)
-2. [BlockParams.MaxGas](#blockparamsmaxgas)
-3. [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
-4. [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
-5. [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-6. [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
-7. [VersionParams.App](#versionparamsapp)
-<!--
- 6. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
-7. [SynchronyParams.Precision](#synchronyparamsprecision)
-8. [TimeoutParams.Propose](#timeoutparamspropose)
-9. [TimeoutParams.ProposeDelta](#timeoutparamsproposedelta)
-10. [TimeoutParams.Vote](#timeoutparamsvote)
-11. [TimeoutParams.VoteDelta](#timeoutparamsvotedelta)
-12. [TimeoutParams.Commit](#timeoutparamscommit)
-13. [TimeoutParams.BypassCommitTimeout](#timeoutparamsbypasscommittimeout)
--->
+1. [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
+2. [BlockParams.MaxBytes](#blockparamsmaxbytes)
+3. [BlockParams.MaxGas](#blockparamsmaxgas)
+4. [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
+5. [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
+6. [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
+7. [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
+8. [VersionParams.App](#versionparamsapp)
+
+##### ABCIParams.VoteExtensionsEnableHeight
+
+This parameter is either 0 or a positive height at which vote extensions
+become mandatory. If the value is zero (which is the default), vote
+extensions are not expected. Otherwise, at all heights greater than the
+configured height `H` vote extensions must be present (even if empty).
+When the configured height `H` is reached, `PrepareProposal` will not
+include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
+be called. Then, when reaching height `H+1`, `PrepareProposal` will
+include the vote extensions from height `H`. For all heights after `H`
+
+- vote extensions cannot be disabled,
+- they are mandatory: all precommit messages sent MUST have an extension
+  attached. Nevertheless, the application MAY provide 0-length
+  extensions.
+
+Must always be set to a future height, 0, or the same height that was previously set.
+Once the chain's height reaches the value set, it cannot be changed to a different value.
 
 ##### BlockParams.MaxBytes
 
@@ -622,7 +618,7 @@ This is enforced by the consensus algorithm.
 This implies a maximum transaction size that is `MaxBytes`, less the expected size of
 the header, the validator set, and any included evidence in the block.
 
-The Application should be aware that honest validators _may_ produce and
+The Application should be aware that honest validators *may* produce and
 broadcast blocks with up to the configured `MaxBytes` size.
 As a result, the consensus
 [timeout parameters](../../docs/core/configuration.md#consensus-timeouts-explained)
@@ -700,103 +696,6 @@ The parameter restricts the type of keys validators can use. The parameter uses 
 ##### VersionParams.App
 
 This is the version of the ABCI application.
-<!--
-##### SynchronyParams.MessageDelay
-
-This sets a bound on how long a proposal message may take to reach all
-validators on a network and still be considered valid.
-
-This parameter is part of the
-[proposer-based timestamps](../consensus/proposer-based-timestamp)
-(PBTS) algorithm.
-
-
-##### SynchronyParams.Precision
-
-This sets a bound on how skewed a proposer's clock may be from any validator
-on the network while still producing valid proposals.
-
-This parameter is part of the
-[proposer-based timestamps](../consensus/proposer-based-timestamp)
-(PBTS) algorithm.
-
-
-##### TimeoutParams.Propose
-
-Timeout in ms of the propose step of the consensus algorithm.
-This value is the initial timeout at every height (round 0).
-
-The value in subsequent rounds is modified by parameter `ProposeDelta`.
-When a new height is started, the `Propose` timeout value is reset to this
-parameter.
-
-If a node waiting for a proposal message does not receive one matching its
-current height and round before this timeout, the node will issue a
-`nil` prevote for the round and advance to the next step.
-
-##### TimeoutParams.ProposeDelta
-
-Increment in ms to be added to the `Propose` timeout every time the
-consensus algorithm advances one round in a given height.
-
-When a new height is started, the `Propose` timeout value is reset.
-
-##### TimeoutParams.Vote
-
-Timeout in ms of the prevote and precommit steps of the consensus
-algorithm.
-This value is the initial timeout at every height (round 0).
-
-The value in subsequent rounds is modified by parameter `VoteDelta`.
-When a new height is started, the `Vote` timeout value is reset to this
-parameter.
-
-The `Vote` timeout does not begin until a quorum of votes has been received.
-Once a quorum of votes has been seen and this timeout elapses, Tendermint will
-proceed to the next step of the consensus algorithm. If Tendermint receives
-all of the remaining votes before the end of the timeout, it will proceed
-to the next step immediately.
-
-##### TimeoutParams.VoteDelta
-
-Increment in ms to be added to the `Vote` timeout every time the
-consensus algorithm advances one round in a given height.
-
-When a new height is started, the `Vote` timeout value is reset.
-
-##### TimeoutParams.Commit
-
-This configures how long the consensus algorithm will wait after receiving a quorum of
-precommits before beginning consensus for the next height. This can be
-used to allow slow precommits to arrive for inclusion in the next height
-before progressing.
-
-##### TimeoutParams.BypassCommitTimeout
-
-This configures the node to proceed immediately to the next height once the
-node has received all precommits for a block, forgoing the remaining commit timeout.
-Setting this parameter to `false` (the default) causes Tendermint to wait
-for the full commit timeout configured in `TimeoutParams.Commit`.
--->
-
-##### ABCIParams.VoteExtensionsEnableHeight
-
-This parameter is either 0 or a positive height at which vote extensions
-become mandatory. If the value is zero (which is the default), vote
-extensions are not required. Otherwise, at all heights greater than the
-configured height `H` vote extensions must be present (even if empty).
-When the configured height `H` is reached, `PrepareProposal` will not
-include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
-be called. Then, when reaching height `H+1`, `PrepareProposal` will
-include the vote extensions from height `H`. For all heights after `H`
-
-* vote extensions cannot be disabled,
-* they are mandatory: all precommit messages sent MUST have an extension
-  attached. Nevertheless, the application MAY provide 0-length
-  extensions.
-
-Must always be set to a future height, 0, or the same height that was previously set.
-Once the chain's height reaches the value set, it cannot be changed to a different value.
 
 #### Updating Consensus Parameters
 
@@ -863,9 +762,9 @@ For such applications, the `AppHash` provides a much more efficient way to verif
 ABCI applications can take advantage of more efficient light-client proofs for
 their state as follows:
 
-* return the Merkle root of the deterministic application state in
+- return the Merkle root of the deterministic application state in
   `ResponseFinalizeBlock.Data`. This Merkle root will be included as the `AppHash` in the next block.
-* return efficient Merkle proofs about that application state in `ResponseQuery.Proof`
+- return efficient Merkle proofs about that application state in `ResponseQuery.Proof`
   that can be verified using the `AppHash` of the corresponding block.
 
 For instance, this allows an application's light-client to verify proofs of
@@ -900,9 +799,9 @@ the list should match the `AppHash` being verified against.
 When CometBFT connects to a peer, it sends two queries to the ABCI application
 using the following paths, with no additional data:
 
-* `/p2p/filter/addr/<IP:PORT>`, where `<IP:PORT>` denote the IP address and
+- `/p2p/filter/addr/<IP:PORT>`, where `<IP:PORT>` denote the IP address and
   the port of the connection
-* `p2p/filter/id/<ID>`, where `<ID>` is the peer node ID (ie. the
+- `p2p/filter/id/<ID>`, where `<ID>` is the peer node ID (ie. the
   pubkey.Address() for the peer's PubKey)
 
 If either of these queries return a non-zero ABCI code, CometBFT will refuse
@@ -932,6 +831,7 @@ committed state of the app. The app MUST return information consistent with the
 last block for which it successfully completed `Commit`.
 
 The three steps performed before the state of a height is considered persisted are:
+
 - The block is stored by CometBFT in the blockstore
 - CometBFT has stored the state returned by the application through `FinalizeBlockResponse`
 - The application has committed its state within `Commit`.
@@ -965,6 +865,7 @@ and the operations for this height are repeated entirely):
 
 Based on the sequence of these events, CometBFT will panic if any of the steps in the sequence happen out of order,
 that is if:
+
 - The application has persisted a block at a height higher than the blocked saved during `state_stored`.
 - The `block_stored` step persisted a block at a height smaller than the `state_stored`
 - And the difference between the heights of the blocks persisted by `state_stored` and `block_stored` is more
@@ -999,20 +900,20 @@ Applications that want to support state syncing must take state snapshots at reg
 this is accomplished is entirely up to the application. A snapshot consists of some metadata and
 a set of binary chunks in an arbitrary format:
 
-* `Height (uint64)`: The height at which the snapshot is taken. It must be taken after the given
+- `Height (uint64)`: The height at which the snapshot is taken. It must be taken after the given
   height has been committed, and must not contain data from any later heights.
 
-* `Format (uint32)`: An arbitrary snapshot format identifier. This can be used to version snapshot
+- `Format (uint32)`: An arbitrary snapshot format identifier. This can be used to version snapshot
   formats, e.g. to switch from Protobuf to MessagePack for serialization. The application can use
   this when restoring to choose whether to accept or reject a snapshot.
 
-* `Chunks (uint32)`: The number of chunks in the snapshot. Each chunk contains arbitrary binary
+- `Chunks (uint32)`: The number of chunks in the snapshot. Each chunk contains arbitrary binary
   data, and should be less than 16 MB; 10 MB is a good starting point.
 
-* `Hash ([]byte)`: An arbitrary hash of the snapshot. This is used to check whether a snapshot is
+- `Hash ([]byte)`: An arbitrary hash of the snapshot. This is used to check whether a snapshot is
   the same across nodes when downloading chunks.
 
-* `Metadata ([]byte)`: Arbitrary snapshot metadata, e.g. chunk hashes for verification or any other
+- `Metadata ([]byte)`: Arbitrary snapshot metadata, e.g. chunk hashes for verification or any other
   necessary info.
 
 For a snapshot to be considered the same across nodes, all of these fields must be identical. When
@@ -1023,14 +924,14 @@ application via the ABCI `ListSnapshots` method to discover available snapshots,
 snapshot chunks via `LoadSnapshotChunk`. The application is free to choose how to implement this
 and which formats to use, but must provide the following guarantees:
 
-* **Consistent:** A snapshot must be taken at a single isolated height, unaffected by
+- **Consistent:** A snapshot must be taken at a single isolated height, unaffected by
   concurrent writes. This can be accomplished by using a data store that supports ACID
   transactions with snapshot isolation.
 
-* **Asynchronous:** Taking a snapshot can be time-consuming, so it must not halt chain progress,
+- **Asynchronous:** Taking a snapshot can be time-consuming, so it must not halt chain progress,
   for example by running in a separate thread.
 
-* **Deterministic:** A snapshot taken at the same height in the same format must be identical
+- **Deterministic:** A snapshot taken at the same height in the same format must be identical
   (at the byte level) across nodes, including all metadata. This ensures good availability of
   chunks, and that they fit together across nodes.
 
@@ -1115,9 +1016,10 @@ Once the snapshots have all been restored, CometBFT gathers additional informati
 bootstrapping the node (e.g. chain ID, consensus parameters, validator sets, and block headers)
 from the genesis file and light client RPC servers. It also calls `Info` to verify the following:
 
-* that the app hash from the snapshot it has delivered to the Application matches the apphash
+- that the app hash from the snapshot it has delivered to the Application matches the apphash
   stored in the next height's block
-* that the version that the Application returns in `ResponseInfo` matches the version in the
+
+- that the version that the Application returns in `ResponseInfo` matches the version in the
   current height's block header
 
 Once the state machine has been restored and CometBFT has gathered this additional
@@ -1141,8 +1043,9 @@ There is a newly introduced [**consensus parameter**](./abci%2B%2B_app_requireme
 This parameter represents the height at which vote extensions are
 required for consensus to proceed, with 0 being the default value (no vote extensions).
 A chain can enable vote extensions either:
-* at genesis by setting `VoteExtensionsEnableHeight` to be equal, e.g., to the `InitialHeight`
-* or via the application logic by changing the `ConsensusParam` to configure the
+
+- at genesis by setting `VoteExtensionsEnableHeight` to be equal, e.g., to the `InitialHeight`
+- or via the application logic by changing the `ConsensusParam` to configure the
 `VoteExtensionsEnableHeight`.
 
 Once the (coordinated) upgrade to ABCI 2.0 has taken place, at height  *h<sub>u</sub>*,

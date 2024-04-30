@@ -205,20 +205,19 @@ func (blockExec *BlockExecutor) ProcessProposal(
 ) (bool, error) {
 	txs := block.Data.Txs.ToSliceOfBytes()
 	if len(txs) > 0 {
-		logrus.Infof("no of txs: %d", len(txs))
 		res, err := blockExec.proxyApp.ValidateOracleVotes(context.Background(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
 
 		if err != nil && res.Status == abci.ResponseValidateOracleVotes_absent {
 			// oracleTx is not present, continue normal processProposal flow
 			blockExec.logger.Error("error unmarshalling oracleVotesMsg or oracleVotesMsg not present", "err", err)
-			logrus.Infof("cant even find oracle votes")
+			logrus.Infof("processProposal: cant even find oracle votes")
 		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_present {
 			// oracleTx is present but it is invalid, remove from txs
-			logrus.Infof("unsucessful in validating oracle votes")
+			logrus.Infof("processProposal: unsucessful in validating oracle votes")
 			block.Data.Txs = types.ToTxs(txs[1:])
-		} else if err != nil {
+		} else if err == nil {
 			// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig
-			logrus.Infof("success in validating oracle votes")
+			logrus.Infof("processProposal: success in validating oracle votes")
 			txs[0] = res.EncodedOracleTx
 			block.Data.Txs = types.ToTxs(txs)
 		}

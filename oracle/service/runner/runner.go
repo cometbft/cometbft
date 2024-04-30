@@ -55,8 +55,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		return
 	}
 
-	log.Infof("runner: %v:%v", oracleInfo.PubKey.Address(), validatorIndex)
-
 	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)

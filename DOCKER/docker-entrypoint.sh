@@ -13,7 +13,6 @@ if [ ! -d "$CMTHOME/config" ]; then
 		-e 's/^index_all_tags\s*=.*/index_all_tags = true/' \
 		-e 's,^laddr = "tcp://127.0.0.1:26657",laddr = "tcp://0.0.0.0:26657",' \
 		-e 's/^prometheus\s*=.*/prometheus = true/' \
-		-e 's/^vote_extensions_enable_height\s*=.*/vote_extensions_enable_height = 1/' \
 		"$CMTHOME/config/config.toml"
 
 	jq ".chain_id = \"$CHAIN_ID\" | .consensus_params.block.time_iota_ms = \"500\"" \

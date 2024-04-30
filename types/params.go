@@ -185,7 +185,7 @@ func DefaultVersionParams() VersionParams {
 // Disabled by default.
 func DefaultFeatureParams() FeatureParams {
 	return FeatureParams{
-		VoteExtensionsEnableHeight: 1,
+		VoteExtensionsEnableHeight: 0,
 		PbtsEnableHeight:           0,
 	}
 }

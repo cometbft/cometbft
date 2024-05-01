@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -173,11 +174,16 @@ func ExampleHTTP_maxBatchSize() {
 	// Each result in the returned list is the deserialized result of each
 	// respective status response
 	for _, result := range results {
-		_, ok := result.(*types.RPCError)
+		rpcError, ok := result.(*types.RPCError)
 		if !ok {
 			log.Fatal("invalid result type")
 		}
-		fmt.Println("Max Request Batch Exceeded")
+		if !strings.Contains(rpcError.Data, "batch request exceeds maximum") {
+			fmt.Println("Error message does not contain 'Max Request Batch Exceeded'")
+		} else {
+			// The max request batch size rpcError has been returned
+			fmt.Println("Max Request Batch Exceeded")
+		}
 	}
 
 	// Output:

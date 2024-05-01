@@ -3,9 +3,10 @@
 ## Changelog
 
 - 2024-04-12: Initial notes (@hvanz)
-- 2024-04-12: Comments on the notes (@hvanz)
+- 2024-04-12: Comments on the notes (@sergio-mena)
 - 2024-04-17: Discussions (@sergio-mena @hvanz)
 - 2024-04-18: Preliminary structure (@hvanz)
+- 2024-05-01: Add Context and Properties (@hvanz)
 
 ## Status
 

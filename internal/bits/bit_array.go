@@ -32,6 +32,23 @@ func NewBitArray(bits int) *BitArray {
 	}
 }
 
+// NewBitArrayFromFn returns a new bit array.
+// It returns nil if the number of bits is zero.
+// It initializes the `i`th bit to the value of `fn(i)`.
+func NewBitArrayFromFn(bits int, fn func(int) bool) *BitArray {
+	if bits <= 0 {
+		return nil
+	}
+	ba := &BitArray{
+		Bits:  bits,
+		Elems: make([]uint64, (bits+63)/64),
+	}
+	for i := 0; i < bits; i++ {
+		ba.setIndex(i, fn(i))
+	}
+	return ba
+}
+
 // Size returns the number of bits in the bitarray.
 func (bA *BitArray) Size() int {
 	if bA == nil {

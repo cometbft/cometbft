@@ -1414,16 +1414,6 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		}
 	}
 
-	// Validate proposal block, from consensus' perspective
-	err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
-	if err != nil {
-		// ProposalBlock is invalid, prevote nil.
-		logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
-			"err", err)
-		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-		return
-	}
-
 	/*
 		22: upon <PROPOSAL, h_p, round_p, v, −1> from proposer(h_p, round_p) while step_p = propose do
 		23: if valid(v) && (lockedRound_p = −1 || lockedValue_p = v) then
@@ -1455,6 +1445,16 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			if cs.ValidRound != -1 && cs.ProposalBlock.HashesTo(cs.ValidBlock.Hash()) {
 				logger.Debug("prevote step: ProposalBlock matches our valid block; prevoting the proposal")
 				cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+				return
+			}
+
+			// Validate proposal block, from consensus' perspective
+			err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
+			if err != nil {
+				// ProposalBlock is invalid, prevote nil.
+				logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
+					"err", err)
+				cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 				return
 			}
 
@@ -1663,11 +1663,6 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	if cs.ProposalBlock.HashesTo(blockID.Hash) {
 		logger.Debug("precommit step: +2/3 prevoted proposal block; locking", "hash", blockID.Hash)
 
-		// Validate the block.
-		if err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock); err != nil {
-			panic(fmt.Sprintf("precommit step; +2/3 prevoted for an invalid block: %v; relocking", err))
-		}
-
 		cs.LockedRound = round
 		cs.LockedBlock = cs.ProposalBlock
 		cs.LockedBlockParts = cs.ProposalBlockParts
@@ -1840,10 +1835,6 @@ func (cs *State) finalizeCommit(height int64) {
 	}
 	if !block.HashesTo(blockID.Hash) {
 		panic("cannot finalize commit; proposal block does not hash to commit hash")
-	}
-
-	if err := cs.blockExec.ValidateBlock(cs.state, block); err != nil {
-		panic(fmt.Errorf("+2/3 committed an invalid block: %w", err))
 	}
 
 	logger.Info(

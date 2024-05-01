@@ -669,7 +669,7 @@ func newRecheck() *recheck {
 }
 
 func (rc *recheck) init(first, last *clist.CElement) {
-	if rc.cursor != nil || rc.end != nil {
+	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
 	rc.cursor = first

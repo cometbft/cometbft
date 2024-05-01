@@ -606,10 +606,11 @@ func (mem *CListMempool) Update(
 // recheckTxs sends all transactions in the mempool to the app for re-validation. When the function
 // returns, all recheck responses from the app have been processed.
 func (mem *CListMempool) recheckTxs() {
+	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
+
 	if mem.Size() <= 0 {
 		return
 	}
-	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
 
 	mem.recheck.init(mem.txs.Front(), mem.txs.Back())
 

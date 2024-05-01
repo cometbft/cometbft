@@ -862,7 +862,7 @@ type MempoolConfig struct {
 	// RecheckTimeout is the time the application has during the rechecking process
 	// to return CheckTx responses, once all requests have been sent. Responses that
 	// arrive after the timeout expires are discarded. It only applies to
-	// asynchronous ABCI clients and when recheck is enabled.
+	// non-local ABCI clients and when recheck is enabled.
 	RecheckTimeout time.Duration `mapstructure:"recheck_timeout"`
 	// Broadcast (default: true) defines whether the mempool should relay
 	// transactions to other peers. Setting this to false will stop the mempool

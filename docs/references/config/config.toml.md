@@ -1217,7 +1217,7 @@ recheck_timeout = "1000ms"
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"1000ms"`   |
 
-This setting only applies to asynchronous ABCI clients and when `recheck` is enabled.
+This setting only applies to non-local ABCI clients and when `recheck` is enabled.
 
 The ideal value will strongly depend on the application. It could roughly be estimated as the
 average size of the mempool multiplied by the average time it takes the application to validate one

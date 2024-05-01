@@ -400,7 +400,7 @@ recheck = {{ .Mempool.Recheck }}
 # recheck_timeout is the time the application has during the rechecking process
 # to return CheckTx responses, once all requests have been sent. Responses that 
 # arrive after the timeout expires are discarded. It only applies to 
-# asynchronous ABCI clients and when recheck is enabled.
+# non-local ABCI clients and when recheck is enabled.
 recheck_timeout = {{ .Mempool.RecheckTimeout }}
 
 # broadcast (default: true) defines whether the mempool should relay

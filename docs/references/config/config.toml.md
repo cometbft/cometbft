@@ -34,6 +34,9 @@ Description about the possible values too.
 The `config.toml` file is a standard [TOML](https://toml.io/en/v1.0.0) file that configures the basic functionality
 of CometBFT, including the configuration of the reactors.
 
+The default configuration file created by running the command `cometbft init`. `The config.toml` is created with
+all the parameters set with their default values.
+
 All relative paths in the configuration are relative to `$CMTHOME`.
 (See [the HOME folder](./README.md#the-home-folder) for more details.)
 
@@ -1544,6 +1547,12 @@ to re-join consensus with the same state it has before crashing.
 Recovering nodes that "forget" the actions taken before crashing are faulty
 nodes that are likely to present Byzantine behavior (e.g., double signing).
 
+## Consensus timeouts
+
+In this section we describe the consensus timeout parameters. For a more detailed explanation
+of these timeout parameters please refer to the [Consensus timeouts explained](#consensus-timeouts-explained)
+section below.
+
 ### consensus.timeout_propose
 
 How long a node waits for the proposal block before prevoting nil.
@@ -1732,13 +1741,34 @@ create_empty_blocks = true
 
 When set to `true`, empty blocks are produced and proposed to indicate that the
 chain is still operative.
+
+
 When set to `false`, blocks are not produced or proposed while there are no
 transactions in the validator's mempool.
 
 Notice that empty blocks are still proposed whenever the application hash
 (`app_hash`) has been updated.
 
-This is more relevant for networks with a low volume number of transactions.
+In this setting, blocks are created when transactions are received.
+
+Note after the block H, CometBFT creates something we call a "proof block"
+(only if the application hash changed) H+1. The reason for this is to support
+proofs. If you have a transaction in block H that changes the state to X, the
+new application hash will only be included in block H+1. If after your
+transaction is committed, you want to get a light-client proof for the new state
+(X), you need the new block to be committed in order to do that because the new
+block has the new application hash for the state X. That's why we make a new
+(empty) block if the application hash changes. Otherwise, you won't be able to
+make a proof for the new state.
+
+Plus, if you set `create_empty_blocks_interval` to something other than the
+default (`0`), CometBFT will be creating empty blocks even in the absence of
+transactions every `create_empty_blocks_interval`. For instance, with
+`create_empty_blocks = false` and `create_empty_blocks_interval = "30s"`,
+CometBFT will only create blocks if there are transactions, or after waiting
+30 seconds without receiving any transactions.
+
+Setting it to false is more relevant for networks with a low volume number of transactions.
 
 ### consensus.create_empty_blocks_interval
 
@@ -2068,3 +2098,111 @@ namespace = "cometbft"
 | Value type          | string                    |
 |:--------------------|:--------------------------|
 | **Possible values** | Prometheus namespace name |
+
+## Consensus timeouts explained
+
+There's a variety of information about timeouts in [Running in
+production](../../explanation/core/running-in-production.md#configuration-parameters).
+
+You can also find more detailed explanation in the paper describing
+the Tendermint consensus algorithm, adopted by CometBFT: [The latest
+gossip on BFT consensus](https://arxiv.org/abs/1807.04938).
+
+```toml
+[consensus]
+...
+
+timeout_propose = "3s"
+timeout_propose_delta = "500ms"
+timeout_prevote = "1s"
+timeout_prevote_delta = "500ms"
+timeout_precommit = "1s"
+timeout_precommit_delta = "500ms"
+timeout_commit = "1s"
+```
+
+Note that in a successful round, the only timeout that we absolutely wait no
+matter what is `timeout_commit`.
+
+Here's a brief summary of the timeouts:
+
+- `timeout_propose` = how long a validator should wait for a proposal block before prevoting nil
+- `timeout_propose_delta` = how much `timeout_propose` increases with each round
+- `timeout_prevote` = how long a validator should wait after receiving +2/3 prevotes for
+  anything (ie. not a single block or nil)
+- `timeout_prevote_delta` = how much the `timeout_prevote` increases with each round
+- `timeout_precommit` = how long a validator should wait after receiving +2/3 precommits for
+  anything (ie. not a single block or nil)
+- `timeout_precommit_delta` = how much the `timeout_precommit` increases with each round
+- `timeout_commit` = how long a validator should wait after committing a block, before starting
+  on the new height (this gives us a chance to receive some more precommits,
+  even though we already have +2/3)
+
+### The adverse effect of using inconsistent `timeout_propose` in a network
+
+Here's an interesting question. What happens if a particular validator sets a
+very small `timeout_propose`, as compared to the rest of the network?
+
+Imagine there are only two validators in your network: Alice and Bob. Bob sets
+`timeout_propose` to 0s. Alice uses the default value of 3s. Let's say they
+both have an equal voting power. Given the proposer selection algorithm is a
+weighted round-robin, you may expect Alice and Bob to take turns proposing
+blocks, and the result like:
+
+```
+#1 block - Alice
+#2 block - Bob
+#3 block - Alice
+#4 block - Bob
+...
+```
+
+What happens in reality is, however, a little bit different:
+
+```
+#1 block - Bob
+#2 block - Bob
+#3 block - Bob
+#4 block - Bob
+```
+
+That's because Bob doesn't wait for a proposal from Alice (prevotes `nil`).
+This leaves Alice no chances to commit a block. Note that every block Bob
+creates needs a vote from Alice to constitute 2/3+. Bob always gets one because
+Alice has `timeout_propose` set to 3s. Alice never gets one because Bob has it
+set to 0s.
+
+Imagine now there are ten geographically distributed validators. One of them
+(Bob) sets `timeout_propose` to 0s. Others have it set to 3s. Now, Bob won't be
+able to move with his own speed because it still needs 2/3 votes of the other
+validators and it takes time to propagate those. I.e., the network moves with
+the speed of time to accumulate 2/3+ of votes (prevotes & precommits), not with
+the speed of the fastest proposer.
+
+> Isn't block production determined by voting power?
+
+If it were determined solely by voting power, it wouldn't be possible to ensure
+liveness. Timeouts exist because the network can't rely on a single proposer
+being available and must move on if such is not responding.
+
+> How can we address situations where someone arbitrarily adjusts their block
+> production time to gain an advantage?
+
+The impact shown above is negligible in a decentralized network with enough
+decentralization.
+
+### The adverse effect of using inconsistent `timeout_commit` in a network
+
+Let's look at the same scenario as before. There are ten geographically
+distributed validators. One of them (Bob) sets `timeout_commit` to 0s. Others
+have it set to 1s (the default value). Now, Bob will be the fastest producer
+because he doesn't wait for additional precommits after creating a block. If
+waiting for precommits (`timeout_commit`) is not incentivized, Bob will accrue
+more rewards compared to the other 9 validators.
+
+This is because Bob has the advantage of broadcasting its proposal early (1
+second earlier than the others). But it also makes it possible for Bob to miss
+a proposal from another validator and prevote `nil` due to him starting
+`timeout_propose` earlier. I.e., if Bob's `timeout_commit` is too low comparing
+to other validators, then he might miss some proposals and get slashed for
+inactivity.

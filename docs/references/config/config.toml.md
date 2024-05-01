@@ -1207,17 +1207,23 @@ you probably want to set this configuration to `true` to avoid possible leaks in
 (transactions staying in the mempool until the node is next restarted).
 
 ### mempool.recheck_timeout
-Time to wait for the application to return CheckTx responses after the rechecking process was
-started. Responses that arrive after the timeout expires are discarded.
+Time to wait for the application to return CheckTx responses after all recheck requests have been
+sent. Responses that arrive after the timeout expires are discarded.
 ```toml
-recheck_timeout = "300ms"
+recheck_timeout = "1000ms"
 ```
 
 | Value type          | string (duration) |
 |:--------------------|:------------------|
-| **Possible values** | &gt;= `"300ms"`   |
+| **Possible values** | &gt;= `"1000ms"`   |
 
 This setting only applies to asynchronous ABCI clients and when `recheck` is enabled.
+
+The ideal value will strongly depend on the application. It could roughly be estimated as the
+average size of the mempool multiplied by the average time it takes the application to validate one
+transaction. We consider that the ABCI application runs in the same location as the CometBFT binary
+(see [`proxy_app`](#proxy_app)) so that the recheck duration is not affected by network delays when
+making requests and receiving responses.
 
 ### mempool.broadcast
 Broadcast the mempool content (uncommitted transactions) to other nodes.

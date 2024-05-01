@@ -397,9 +397,10 @@ type = "flood"
 # you can disable rechecking.
 recheck = {{ .Mempool.Recheck }}
 
-# RecheckTimeout is the time the application has to return CheckTx responses after the
-# rechecking process was started. Responses that arrive after the timeout expires are
-# discarded. It only applies to asynchronous ABCI clients and when recheck is enabled.
+# recheck_timeout is the time the application has during the rechecking process
+# to return CheckTx responses, once all requests have been sent. Responses that 
+# arrive after the timeout expires are discarded. It only applies to 
+# asynchronous ABCI clients and when recheck is enabled.
 recheck_timeout = {{ .Mempool.RecheckTimeout }}
 
 # broadcast (default: true) defines whether the mempool should relay

@@ -54,6 +54,10 @@ func (l *filter) Debug(msg string, keyvals ...any) {
 	l.next.Debug(msg, keyvals...)
 }
 
+func (l *filter) DebugOn() bool {
+	return l.allowed&levelDebug != 0
+}
+
 func (l *filter) Error(msg string, keyvals ...any) {
 	levelAllowed := l.allowed&levelError != 0
 	if !levelAllowed {

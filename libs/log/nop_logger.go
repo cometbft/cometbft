@@ -15,3 +15,5 @@ func (nopLogger) Error(string, ...any) {}
 func (l *nopLogger) With(...any) Logger {
 	return l
 }
+
+func (*nopLogger) DebugOn() bool { return false }

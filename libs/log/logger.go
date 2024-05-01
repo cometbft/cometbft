@@ -13,6 +13,7 @@ type Logger interface {
 	Error(msg string, keyvals ...any)
 
 	With(keyvals ...any) Logger
+	DebugOn() bool
 }
 
 // NewSyncWriter returns a new writer that is safe for concurrent use by

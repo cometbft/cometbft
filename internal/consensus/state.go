@@ -2711,9 +2711,7 @@ func repairWalFile(src, dst string) error {
 
 func (cs *State) calculateProposalTimestampDifferenceMetric() {
 	if cs.Proposal != nil && cs.Proposal.POLRound == -1 {
-		sp := cs.state.ConsensusParams.Synchrony.InRound(cs.Proposal.Round)
-
-		isTimely := cs.Proposal.IsTimely(cs.ProposalReceiveTime, sp)
+		isTimely := cs.proposalIsTimely()
 		cs.metrics.ProposalTimestampDifference.
 			With("is_timely", strconv.FormatBool(isTimely)).
 			Observe(cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp).Seconds())

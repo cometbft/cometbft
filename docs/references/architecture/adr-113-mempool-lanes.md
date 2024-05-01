@@ -41,11 +41,11 @@ concern and falls outside the scope of this proposal.
 
 ## Properties
 
-Before jumping to the design of the proposal, we make some definitions and state some properties
+Before jumping into the design of the proposal, we make some definitions and state some properties
 that the mempool should offer to guarantee QoS.
 
-Definition: Given any two different transactions `tx1` and `tx2`, we say that `tx` is *processed and
-disseminated before* `tx2`, when:
+Definition: Given any two different transactions `tx1` and `tx2`, we say that `tx1` is *processed
+and disseminated before* `tx2`, when:
 - `tx1` is reaped from the mempool to form a block proposal before `tx2`,
 - `tx1` is rechecked before `tx2`, and
 - `tx1` is disseminated to a peer before `tx2`.
@@ -85,12 +85,12 @@ Now, given these definitions, we want the proposed QoS mechanism to offer the fo
 **Priorities between classes**: Transactions belonging to a certain class will be processed and
 disseminated before transactions belonging to another class with lower priority.
 
-More formally, given two transaction classes `tc1` and `tc2`, with `tc1` having more priority than
-`tc2`, if the application assigns via `CheckTx` the classes `tc1` and `tc2` respectively to
+More formally, given two transaction classes `c1` and `c2`, with `c1` having more priority than
+`c2`, if the application assigns via `CheckTx` the classes `c1` and `c2` respectively to
 transactions `tx1` and `tx2`, then `tx1` will be processed and disseminated before `tx2`.
 
-More importantly, as a direct effect of this property, `tx1` will have a lower latency than `tx2`,
-because `tx1` will be disseminated faster and it will be included in a block before `tx2`.
+More importantly, as a direct consequence of this property, `tx1` will have a lower latency than
+`tx2`, because `tx1` will be disseminated faster and it will be included in a block before `tx2`.
 Currently, it is not possible to guarantee this kind of property.
 
 **Sequential ordering per class**: For transactions within the same class, the mempool will make its

@@ -555,7 +555,6 @@ func (peer *bpPeer) incrPending() {
 
 func (peer *bpPeer) decrPending(recvSize int) {
 	peer.numPending--
-	fmt.Println("new num pending for peer", peer.id, peer.numPending)
 	if peer.numPending == 0 {
 		peer.timeout.Stop()
 	} else {
@@ -572,7 +571,6 @@ func (peer *bpPeer) onTimeout() {
 	peer.pool.sendError(err, peer.id)
 	peer.logger.Error("SendTimeout", "reason", err, "timeout", peerTimeout)
 	peer.didTimeout = true
-	fmt.Println("peer to 2 ", peer.id)
 }
 
 // -------------------------------------

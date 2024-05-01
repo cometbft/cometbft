@@ -75,7 +75,7 @@ func TestOr(t *testing.T) {
 	}
 	if bA3.getNumTrueIndices() == 0 {
 		t.Error("Expected at least one true bit. " +
-			"This has a false positive rate that is less than 1 in 2^70 (sextillion)")
+			"This has a false positive rate that is less than 1 in 2^80 (cryptographically improbable)")
 	}
 }
 

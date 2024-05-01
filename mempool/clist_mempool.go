@@ -669,6 +669,9 @@ func newRecheck() *recheck {
 }
 
 func (rc *recheck) init(first, last *clist.CElement) {
+	if rc.cursor != nil || rc.end != nil {
+		panic("Having more than one rechecking process at a time is not possible.")
+	}
 	rc.cursor = first
 	rc.end = last
 	rc.numPendingTxs.Store(0)

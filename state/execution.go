@@ -163,36 +163,23 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	}
 
 	// <sunrise-core>
-	if len(rpp.Txs) == 0 {
-		return block, nil
-	}
+	if len(rpp.Txs) > 2 && len(rpp.Txs)-2 == tmhash.Size {
+		// update the block with the response from PrepareProposal
+		block.Data, _ = types.DataFromProto(&cmtproto.Data{
+			Txs:        rpp.Txs[:len(rpp.Txs)-2],
+			Hash:       rpp.Txs[len(rpp.Txs)-2],
+			SquareSize: binary.BigEndian.Uint64(rpp.Txs[len(rpp.Txs)-1]),
+		})
 
-	// Sunrise passes the data root & square size back as the last 2 transaction
-	if len(rpp.Txs) < 2 {
-		err = fmt.Errorf("state machine returned an invalid prepare proposal response: expected at least 2 transaction")
-		return nil, err
-	}
+		block.DataHash = rpp.Txs[len(rpp.Txs)-2]
 
-	if len(rpp.Txs[len(rpp.Txs)-2]) != tmhash.Size {
-		err = fmt.Errorf("state machine returned an invalid prepare proposal response: expected last transaction to be a hash, got %d bytes", len(rpp.Txs[len(rpp.Txs)-2]))
-		return nil, err
-	}
-
-	// update the block with the response from PrepareProposal
-	block.Data, _ = types.DataFromProto(&cmtproto.Data{
-		Txs:        rpp.Txs[:len(rpp.Txs)-2],
-		Hash:       rpp.Txs[len(rpp.Txs)-2],
-		SquareSize: binary.BigEndian.Uint64(rpp.Txs[len(rpp.Txs)-1]),
-	})
-
-	block.DataHash = rpp.Txs[len(rpp.Txs)-2]
-
-	var blockDataSize int
-	for _, tx := range block.Txs {
-		blockDataSize += len(tx)
-		if maxDataBytes < int64(blockDataSize) {
-			err = fmt.Errorf("block data exceeds max amount of allowed bytes")
-			return nil, err
+		var blockDataSize int
+		for _, tx := range block.Txs {
+			blockDataSize += len(tx)
+			if maxDataBytes < int64(blockDataSize) {
+				err = fmt.Errorf("block data exceeds max amount of allowed bytes")
+				return nil, err
+			}
 		}
 	}
 

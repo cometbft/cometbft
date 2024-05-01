@@ -446,7 +446,7 @@ func DefaultRPCConfig() *RPCConfig {
 		TimeoutBroadcastTxCommit:  10 * time.Second,
 		WebSocketWriteBufferSize:  defaultSubscriptionBufferSize,
 
-		MaxRequestBatchSize: 0,              // no maximum requests in a batch request
+		MaxRequestBatchSize: 10,             // maximum requests in a JSON-RPC batch request
 		MaxBodyBytes:        int64(1000000), // 1MB
 		MaxHeaderBytes:      1 << 20,        // same as the net/http default
 

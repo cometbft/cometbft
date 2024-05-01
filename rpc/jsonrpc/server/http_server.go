@@ -49,7 +49,7 @@ func DefaultConfig() *Config {
 		WriteTimeout:        10 * time.Second,
 		MaxBodyBytes:        int64(1000000), // 1MB
 		MaxHeaderBytes:      1 << 20,        // same as the net/http default
-		MaxRequestBatchSize: 0,
+		MaxRequestBatchSize: 10,             // default to max 10 requests per batch
 	}
 }
 

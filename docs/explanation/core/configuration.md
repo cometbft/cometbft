@@ -4,13 +4,11 @@ order: 3
 
 # Configuration
 
-CometBFT can be configured via a TOML file in
-`$CMTHOME/config/config.toml`. Some of these parameters can be overridden by
-command-line flags. For most users, the options in the `##### main base configuration options #####` are intended to be modified while config options
-further below are intended for advance power users.
+CometBFT can be configured via a TOML file in `$CMTHOME/config/config.toml`.
 
-## Options
+Some of the parameters can be overridden by command-line flags.
 
+<<<<<<< HEAD
 The default configuration file created by `cometbft init` has all
 the parameters set with their default values. It will look something
 like the file below, however, double check by inspecting the
@@ -753,3 +751,7 @@ a proposal from another validator and prevote `nil` due to him starting
 `timeout_propose` earlier. I.e., if Bob's `timeout_commit` is too low comparing
 to other validators, then he might miss some proposals and get slashed for
 inactivity.
+=======
+For more information and a detailed explanation of all the parameters in the configuration file, please refer to the
+[config.toml document in the CometBFT Configuration Manual](../../references/config/config.toml.md).
+>>>>>>> 88c527bda (docs: merging configuration documents (#2948))

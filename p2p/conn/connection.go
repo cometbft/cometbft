@@ -16,15 +16,11 @@ import (
 
 	flow "github.com/cometbft/cometbft/libs/flowrate"
 	"github.com/cometbft/cometbft/libs/log"
-<<<<<<< HEAD
-	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/libs/timer"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
-=======
->>>>>>> fbf5c60d7 (perf(p2p/conn): Remove a minint call that was appearing in write packet delays (#2952))
 )
 
 const (

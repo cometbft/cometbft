@@ -507,46 +507,64 @@ func (c *MConnection) sendSomePacketMsgs() bool {
 	c.sendMonitor.Limit(c._maxPacketMsgSize, c.config.SendRate, true)
 
 	// Now send some PacketMsgs.
-	for i := 0; i < numBatchPacketMsgs; i++ {
-		if c.sendPacketMsg() {
+	return c.sendBatchPacketMsgs(numBatchPacketMsgs)
+}
+
+// Returns true if messages from channels were exhausted.
+func (c *MConnection) sendBatchPacketMsgs(batchSize int) bool {
+	// Send a batch of PacketMsgs.
+	for i := 0; i < batchSize; i++ {
+		channel := selectChannelToGossipOn(c.channels)
+		// nothing to send across any channel.
+		if channel == nil {
+			return true
+		}
+		err := c.sendPacketMsgOnChannel(channel)
+		if err {
 			return true
 		}
 	}
 	return false
 }
 
-// Returns true if messages from channels were exhausted.
-func (c *MConnection) sendPacketMsg() bool {
+// selects a channel to gossip our next message on.
+// TODO: Make "batchChannelToGossipOn", so we can do our proto marshaling overheads in parallel,
+// and we can avoid re-checking for `isSendPending`.
+// We can easily mock the recentlySent differences for the batch choosing.
+func selectChannelToGossipOn(channels []*Channel) *Channel {
 	// Choose a channel to create a PacketMsg from.
 	// The chosen channel will be the one whose recentlySent/priority is the least.
 	var leastRatio float32 = math.MaxFloat32
 	var leastChannel *Channel
-	for _, channel := range c.channels {
+	for _, channel := range channels {
 		// If nothing to send, skip this channel
+		// TODO: Skip continually looking for isSendPending on channels we've already skipped in this batch-send.
 		if !channel.isSendPending() {
 			continue
 		}
 		// Get ratio, and keep track of lowest ratio.
+		// TODO: RecentlySent right now is bytes. This should be refactored to num messages to fix
+		// gossip prioritization bugs.
 		ratio := float32(channel.recentlySent) / float32(channel.desc.Priority)
 		if ratio < leastRatio {
 			leastRatio = ratio
 			leastChannel = channel
 		}
 	}
+	return leastChannel
+}
 
-	// Nothing to send?
-	if leastChannel == nil {
-		return true
-	}
+func (c *MConnection) sendPacketMsgOnChannel(sendChannel *Channel) bool {
 	// c.Logger.Info("Found a msgPacket to send")
 
 	// Make & send a PacketMsg from this channel
-	_n, err := leastChannel.writePacketMsgTo(c.bufConnWriter)
+	_n, err := sendChannel.writePacketMsgTo(c.bufConnWriter)
 	if err != nil {
 		c.Logger.Error("Failed to write PacketMsg", "err", err)
 		c.stopForError(err)
 		return true
 	}
+	// TODO: Change this to only do one update for the entire bawtch.
 	c.sendMonitor.Update(_n)
 	c.flushTimer.Set()
 	return false

@@ -42,70 +42,87 @@ concern and falls outside the scope of this proposal.
 
 ## Properties
 
-Before jumping into the design of the proposal, we make some definitions and state some properties
-that the mempool should offer to guarantee QoS.
+Before jumping into the design of the proposal, we define more formally the properties supported by
+the current implementation of the mempool. Then we state what properties the new mempool should
+offer to guarantee the desired QoS.
 
-Definition: Given any two different transactions `tx1` and `tx2`, we say that `tx1` is *processed
-and disseminated before* `tx2`, when:
-- `tx1` is reaped from the mempool to form a block proposal before `tx2`,
-- `tx1` is rechecked before `tx2`, and
-- `tx1` is disseminated to a peer before `tx2`.
+The following definition is common to all subsequent properties.
+> Definition: Given any two different transactions `tx1` and `tx2`, we say that `tx1` is *processed
+> and disseminated before* `tx2`, when:
+> - `tx1` is reaped from the mempool to form a block proposal before `tx2`,
+> - `tx1` is rechecked before `tx2`, and
+> - `tx1` is disseminated to a peer before `tx2`.
 
 Note that in the current implementation there is one dissemination routine per peer, so it could
 happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.
 
-**FIFO ordering of transactions**: We say that the mempool makes a best effort in maintaining the
-FIFO ordering of transactions when transactions are validated, processed, and disseminated in the
-same order in which the mempool has received them.
+### Current mempool
 
-Formally, given any two different transactions `tx1` and `tx2`, if the mempool receives `tx1` before
-receiving `tx2`, then:
+As stated above, the current mempool offers a best-effort FIFO ordering of transactions. We state
+this property as follows.
+
+> Property **FIFO ordering of transactions**: We say that the mempool makes a best effort in
+> maintaining the FIFO ordering of transactions when transactions are validated, processed, and
+> disseminated in the same order in which the mempool has received them.
+
+More formally, given any two different transactions `tx1` and `tx2`, if the mempool receives `tx1`
+before receiving `tx2`, then:
 - `tx1` will be validated against the application (via `CheckTx`) before `tx2`, and
 - `tx1` will be processed and disseminated before `tx2`.
 
 Note that a node's mempool can receive a transaction either from a `broadcast_tx_*` RPC endpoint or
 from a peer.
 
+### Mempool with QoS
+
 With the introduction of *transaction classes*, the main goal is to guarantee that certain
 transactions have lower latency than others. 
 
-Definition: a *transaction class* is a disjoint set of transactions having some common
-characteristics as defined by the application. 
+> Definition: a *transaction class* is a disjoint set of transactions having some common
+> characteristics as defined by the application.
 
 A transaction may only have one class. If it is not assigned any specific class, it will be assigned
-a *default class*. Because no transaction can belong to two or more classes, transaction classes
-form a disjoint set. And all the transactions in the mempool are the union of all transaction
-classes.
+a *default class*, which is a special class always present in any set of classes. Because no
+transaction can belong to two or more classes, transaction classes form a disjoint set. Also, all
+transactions in the mempool are the union of the transactions in all classes.
 
-Definition: The *latency of a transaction* is the difference between the time at which the
-transaction was received for the first time by a node, and the timestamp of the block in which the
-transaction finally was included. 
+> Definition: Each class has a *priority* and two classes cannot have the same priority. Then all
+> classes can be ordered by priority.
 
-Now, given these definitions, we want the proposed QoS mechanism to offer the following properties. 
+Now, given these definitions, we want the proposed QoS mechanism to offer the following property:
 
-**Priorities between classes**: Transactions belonging to a certain class will be processed and
-disseminated before transactions belonging to another class with lower priority.
+> Property **Priorities between classes**: Transactions belonging to a certain class will be
+> processed and disseminated before transactions belonging to another class with lower priority.
 
-More formally, given two transaction classes `c1` and `c2`, with `c1` having more priority than
-`c2`, if the application assigns via `CheckTx` the classes `c1` and `c2` respectively to
-transactions `tx1` and `tx2`, then `tx1` will be processed and disseminated before `tx2`.
+Formally, given two transaction classes `c1` and `c2`, with `c1` having more priority than `c2`, if
+the application assigns via `CheckTx` the classes `c1` and `c2` respectively to transactions `tx1`
+and `tx2`, then `tx1` will be processed and disseminated before `tx2`.
 
 More importantly, as a direct consequence of this property, `tx1` will have a lower latency than
 `tx2`, because `tx1` will be disseminated faster and it will be included in a block before `tx2`.
 Currently, it is not possible to guarantee this kind of property.
 
-**Sequential ordering per class**: For transactions within the same class, the mempool will make its
-best effort to maintain a FIFO ordering when they are validated, processed and disseminated.
+> Definition: The *latency of a transaction* is the difference between the time at which the
+> transaction was received for the first time by a node, and the timestamp of the block in which the
+> transaction finally was included.
+
+We want also to keep the FIFO ordering within each class:
+
+> Property **Sequential ordering per class**: For transactions within the same class, the mempool
+> will make its best effort to maintain a FIFO ordering when they are validated, processed, and
+> disseminated.
 
 Given any two different transactions `tx1` and `tx2` belonging to the same class, if the mempool
 receives `tx1` before receiving `tx2`, then:
 - `tx1` will be validated against the application (via `CheckTx`) before `tx2`, and
 - `tx1` will be processed and disseminated before `tx2`.
 
-**Partial ordering of all transactions**: As a consequence, given that classes of transactions have
-a sequential ordering, and that all classes are disjunct, then the set of all the transactions in
-the mempool, regardless of their classes, will have a *partial order*. This means that not all pairs
-of transactions are comparable and, thus, have and order.
+As a consequence, given that classes of transactions have a sequential ordering, and that all
+classes are disjunct, we can state the following property:
+
+> Property **Partial ordering of all transactions**: The set of all the transactions in the mempool,
+> regardless of their classes, will have a *partial order*. This means that some pairs of
+> transactions are comparable and, thus, have and order, while others not.
 
 ## Alternative Approaches
 

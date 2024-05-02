@@ -29,7 +29,9 @@ the same importance for the application logic, especially when it comes to laten
 Depending on the application, we may think on countless categories of transactions based on their
 importance and requirements, spanning from IBC messages, transactions for exchanges, for smart
 contract execution, for smart contract deployment, grouped by SDK modules, and so on. Even
-transactions prioritized by economic incentives could be given a preferential treatment.
+transactions prioritized by economic incentives could be given a preferential treatment. Or big
+transactions, regardless of their nature, could be categorized as low priority, to mitigate
+potential attacks on the mempool.
 
 The goal of this document is thus to propose a mechanism enabling the mempool to prioritize
 transactions by *classes*, for processing and dissemination, directly impacting block creation. In

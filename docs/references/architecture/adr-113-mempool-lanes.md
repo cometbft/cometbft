@@ -37,6 +37,11 @@ IP networking terminology, this is known as Quality of Service (QoS). By providi
 guarantees, developers will be able to more easily estimate when transactions will be processed and
 included in a block. 
 
+In practical terms, we envision an implementation of the transaction class abstraction as *mempool
+lanes*. The mempool transaction space would be split into a hierarchy of lanes, with each lane
+operating as an independent mempool. At the same time, all of them are coordinated to ensure the
+delivery of the desired levels of QoS.
+
 Note that improving the dissemination protocol to reduce bandwidth and/or latency is a separate
 concern and falls outside the scope of this proposal.
 

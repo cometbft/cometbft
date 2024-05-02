@@ -116,7 +116,6 @@ func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 func (oracleR *Reactor) AddPeer(peer p2p.Peer) {
 	go func() {
 		oracleR.broadcastVoteRoutine(peer)
-		time.Sleep(100 * time.Millisecond)
 	}()
 }
 

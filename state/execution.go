@@ -153,10 +153,11 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		CreateOracleResultTxBz = resp.EncodedTx
 	}
 
-	var txs types.Txs
+	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
 
 	if len(CreateOracleResultTxBz) > 0 {
+		txs = types.Txs{}
 		maxReapBytes -= int64(len(CreateOracleResultTxBz))
 		txs = blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 		CreateOracleResultTx := types.Tx(CreateOracleResultTxBz)

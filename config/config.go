@@ -493,7 +493,7 @@ func (cfg *RPCConfig) ValidateBasic() error {
 		return errors.New("timeout_broadcast_tx_commit can't be negative")
 	}
 	if cfg.MaxRequestBatchSize < 0 {
-		return cmterrors.ErrNegativeField{Field: "max_request_batch_size"}
+		return errors.New("max_request_batch_size can't be negative")
 	}
 	if cfg.MaxBodyBytes < 0 {
 		return errors.New("max_body_bytes can't be negative")

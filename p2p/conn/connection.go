@@ -328,10 +328,14 @@ func (c *MConnection) String() string {
 }
 
 func (c *MConnection) flush() {
-	c.Logger.Debug("Flush", "conn", c)
+	if c.Logger.DebugOn() {
+		c.Logger.Debug("Flush", "conn", c)
+	}
 	err := c.bufConnWriter.Flush()
 	if err != nil {
-		c.Logger.Debug("MConnection flush failed", "err", err)
+		if c.Logger.DebugOn() {
+			c.Logger.Debug("MConnection flush failed", "err", err)
+		}
 	}
 }
 
@@ -360,7 +364,9 @@ func (c *MConnection) Send(chID byte, msgBytes []byte) bool {
 		return false
 	}
 
-	c.Logger.Debug("Send", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+	if c.Logger.DebugOn() {
+		c.Logger.Debug("Send", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+	}
 
 	// Send message to channel.
 	channel, ok := c.channelsIdx[chID]
@@ -376,7 +382,7 @@ func (c *MConnection) Send(chID byte, msgBytes []byte) bool {
 		case c.send <- struct{}{}:
 		default:
 		}
-	} else {
+	} else if c.Logger.DebugOn() {
 		c.Logger.Debug("Send failed", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
 	}
 	return success
@@ -389,7 +395,9 @@ func (c *MConnection) TrySend(chID byte, msgBytes []byte) bool {
 		return false
 	}
 
-	c.Logger.Debug("TrySend", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+	if c.Logger.DebugOn() {
+		c.Logger.Debug("TrySend", "channel", chID, "conn", c, "msgBytes", log.NewLazySprintf("%X", msgBytes))
+	}
 
 	// Send message to channel.
 	channel, ok := c.channelsIdx[chID]
@@ -446,14 +454,18 @@ FOR_LOOP:
 				channel.updateStats()
 			}
 		case <-c.pingTimer.C:
-			c.Logger.Debug("Send Ping")
+			if c.Logger.DebugOn() {
+				c.Logger.Debug("Send Ping")
+			}
 			_n, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPing{}))
 			if err != nil {
 				c.Logger.Error("Failed to send PacketPing", "err", err)
 				break SELECTION
 			}
 			c.sendMonitor.Update(_n)
-			c.Logger.Debug("Starting pong timer", "dur", c.config.PongTimeout)
+			if c.Logger.DebugOn() {
+				c.Logger.Debug("Starting pong timer", "dur", c.config.PongTimeout)
+			}
 			c.pongTimer = time.AfterFunc(c.config.PongTimeout, func() {
 				select {
 				case c.pongTimeoutCh <- true:
@@ -463,13 +475,17 @@ FOR_LOOP:
 			c.flush()
 		case timeout := <-c.pongTimeoutCh:
 			if timeout {
-				c.Logger.Debug("Pong timeout")
+				if c.Logger.DebugOn() {
+					c.Logger.Debug("Pong timeout")
+				}
 				err = errors.New("pong timeout")
 			} else {
 				c.stopPongTimer()
 			}
 		case <-c.pong:
-			c.Logger.Debug("Send Pong")
+			if c.Logger.DebugOn() {
+				c.Logger.Debug("Send Pong")
+			}
 			_n, err = protoWriter.WriteMsg(mustWrapPacket(&tmp2p.PacketPong{}))
 			if err != nil {
 				c.Logger.Error("Failed to send PacketPong", "err", err)
@@ -605,7 +621,7 @@ FOR_LOOP:
 			if c.IsRunning() {
 				if err == io.EOF {
 					c.Logger.Info("Connection is closed @ recvRoutine (likely by the other side)", "conn", c)
-				} else {
+				} else if c.Logger.DebugOn() {
 					c.Logger.Debug("Connection failed @ recvRoutine (reading byte)", "conn", c, "err", err)
 				}
 				c.stopForError(err)
@@ -618,14 +634,18 @@ FOR_LOOP:
 		case *tmp2p.Packet_PacketPing:
 			// TODO: prevent abuse, as they cause flush()'s.
 			// https://github.com/tendermint/tendermint/issues/1190
-			c.Logger.Debug("Receive Ping")
+			if c.Logger.DebugOn() {
+				c.Logger.Debug("Receive Ping")
+			}
 			select {
 			case c.pong <- struct{}{}:
 			default:
 				// never block
 			}
 		case *tmp2p.Packet_PacketPong:
-			c.Logger.Debug("Receive Pong")
+			if c.Logger.DebugOn() {
+				c.Logger.Debug("Receive Pong")
+			}
 			select {
 			case c.pongTimeoutCh <- false:
 			default:
@@ -636,7 +656,9 @@ FOR_LOOP:
 			channel, ok := c.channelsIdx[channelID]
 			if pkt.PacketMsg.ChannelID < 0 || pkt.PacketMsg.ChannelID > math.MaxUint8 || !ok || channel == nil {
 				err := fmt.Errorf("unknown channel %X", pkt.PacketMsg.ChannelID)
-				c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
+				if c.Logger.DebugOn() {
+					c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
+				}
 				c.stopForError(err)
 				break FOR_LOOP
 			}
@@ -644,13 +666,17 @@ FOR_LOOP:
 			msgBytes, err := channel.recvPacketMsg(*pkt.PacketMsg)
 			if err != nil {
 				if c.IsRunning() {
-					c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
+					if c.Logger.DebugOn() {
+						c.Logger.Debug("Connection failed @ recvRoutine", "conn", c, "err", err)
+					}
 					c.stopForError(err)
 				}
 				break FOR_LOOP
 			}
 			if msgBytes != nil {
-				c.Logger.Debug("Received bytes", "chID", channelID, "msgBytes", msgBytes)
+				if c.Logger.DebugOn() {
+					c.Logger.Debug("Received bytes", "chID", channelID, "msgBytes", msgBytes)
+				}
 				// NOTE: This means the reactor.Receive runs in the same thread as the p2p recv routine
 				c.onReceive(channelID, msgBytes)
 			}
@@ -864,7 +890,9 @@ func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
 // complete. NOTE message bytes may change on next call to recvPacketMsg.
 // Not goroutine-safe.
 func (ch *Channel) recvPacketMsg(packet tmp2p.PacketMsg) ([]byte, error) {
-	ch.Logger.Debug("Read PacketMsg", "conn", ch.conn, "packet", packet)
+	if ch.Logger.DebugOn() {
+		ch.Logger.Debug("Read PacketMsg", "conn", ch.conn, "packet", packet)
+	}
 	recvCap, recvReceived := ch.desc.RecvMessageCapacity, len(ch.recving)+len(packet.Data)
 	if recvCap < recvReceived {
 		return nil, ErrPacketTooBig{Max: recvCap, Received: recvReceived}

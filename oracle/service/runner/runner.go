@@ -60,7 +60,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
-	newGossipVote := &oracleproto.GossipVote{
+	newGossipVote := &oracleproto.GossipedVotes{
 		ValidatorIndex:  validatorIndex,
 		SignedTimestamp: time.Now().Unix(),
 		Votes:           oracleInfo.UnsignedVoteBuffer.Buffer,
@@ -162,7 +162,7 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	PruneGossipVoteBuffer(oracleInfo)
 	// start to take votes from app
 	for {
-		res, err := oracleInfo.ProxyApp.PrepareOracleVotes(context.Background(), &abcitypes.RequestPrepareOracleVotes{})
+		res, err := oracleInfo.ProxyApp.FetchOracleVotes(context.Background(), &abcitypes.RequestFetchOracleVotes{})
 		if err != nil {
 			log.Errorf("app not ready: %v, retrying...", err)
 			time.Sleep(1 * time.Second)

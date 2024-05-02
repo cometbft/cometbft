@@ -135,32 +135,32 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
 	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 
-	var signGossipVoteTxBz []byte
+	var CreateOracleResultTxBz []byte
 	if len(oracleVotesBuffer) > 0 {
-		votes := []*oracleproto.GossipVote{}
+		votes := []*oracleproto.GossipedVotes{}
 		for _, vote := range oracleVotesBuffer {
 			votes = append(votes, vote)
 		}
 
-		resp, err := blockExec.proxyApp.SignGossipVote(ctx, &abci.RequestSignGossipVote{
+		resp, err := blockExec.proxyApp.CreateOracleResultTx(ctx, &abci.RequestCreateOracleResultTx{
 			ProposerAddress: proposerAddr,
-			GossipVotes:     votes,
+			GossipedVotes:   votes,
 			Height:          height,
 		})
 		if err != nil {
-			blockExec.logger.Error("error in proxyAppConn.SignGossipVote", "err", err)
+			blockExec.logger.Error("error in proxyAppConn.CreateOracleResultTx", "err", err)
 		}
-		signGossipVoteTxBz = resp.EncodedTx
+		CreateOracleResultTxBz = resp.EncodedTx
 	}
 
 	var txs types.Txs
 	commit := lastExtCommit.ToCommit()
 
-	if len(signGossipVoteTxBz) > 0 {
-		maxReapBytes -= int64(len(signGossipVoteTxBz))
+	if len(CreateOracleResultTxBz) > 0 {
+		maxReapBytes -= int64(len(CreateOracleResultTxBz))
 		txs = blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
-		signGossipVoteTx := types.Tx(signGossipVoteTxBz)
-		txs = append([]types.Tx{signGossipVoteTx}, txs...)
+		CreateOracleResultTx := types.Tx(CreateOracleResultTxBz)
+		txs = append([]types.Tx{CreateOracleResultTx}, txs...)
 	}
 
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)

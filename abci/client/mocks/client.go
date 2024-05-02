@@ -406,24 +406,24 @@ func (_m *Client) OnStop() {
 	_m.Called()
 }
 
-// PrepareOracleVotes provides a mock function with given fields: _a0, _a1
-func (_m *Client) PrepareOracleVotes(_a0 context.Context, _a1 *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
+// FetchOracleVotes provides a mock function with given fields: _a0, _a1
+func (_m *Client) FetchOracleVotes(_a0 context.Context, _a1 *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *types.ResponsePrepareOracleVotes
+	var r0 *types.ResponseFetchOracleVotes
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareOracleVotes) *types.ResponsePrepareOracleVotes); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleVotes) *types.ResponseFetchOracleVotes); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponsePrepareOracleVotes)
+			r0 = ret.Get(0).(*types.ResponseFetchOracleVotes)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestPrepareOracleVotes) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestFetchOracleVotes) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -550,24 +550,24 @@ func (_m *Client) SetResponseCallback(_a0 abcicli.Callback) {
 	_m.Called(_a0)
 }
 
-// SignGossipVote provides a mock function with given fields: _a0, _a1
-func (_m *Client) SignGossipVote(_a0 context.Context, _a1 *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
+// CreateOracleResultTx provides a mock function with given fields: _a0, _a1
+func (_m *Client) CreateOracleResultTx(_a0 context.Context, _a1 *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
 	ret := _m.Called(_a0, _a1)
 
-	var r0 *types.ResponseSignGossipVote
+	var r0 *types.ResponseCreateOracleResultTx
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error)); ok {
 		return rf(_a0, _a1)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestSignGossipVote) *types.ResponseSignGossipVote); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCreateOracleResultTx) *types.ResponseCreateOracleResultTx); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponseSignGossipVote)
+			r0 = ret.Get(0).(*types.ResponseCreateOracleResultTx)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestSignGossipVote) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestCreateOracleResultTx) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

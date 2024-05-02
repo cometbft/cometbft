@@ -35,8 +35,8 @@ service ABCI {
   rpc ExtendVote(RequestExtendVote) returns (ResponseExtendVote);
   rpc VerifyVoteExtension(RequestVerifyVoteExtension) returns (ResponseVerifyVoteExtension);
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
-  rpc SignGossipVote(RequestSignGossipVote) returns (ResponseSignGossipVote);
-  rpc PrepareOracleVotes(RequestPrepareOracleVotes) returns (ResponsePrepareOracleVotes);
+  rpc CreateOracleResultTx(RequestCreateOracleResultTx) returns (ResponseCreateOracleResultTx);
+  rpc FetchOracleVotes(RequestFetchOracleVotes) returns (ResponseFetchOracleVotes);
   rpc ValidateOracleVotes(RequestValidateOracleVotes) returns (ResponseValidateOracleVotes);
 }
 
@@ -61,8 +61,8 @@ message Request {
     RequestExtendVote          extend_vote           = 18;
     RequestVerifyVoteExtension verify_vote_extension = 19;
     RequestFinalizeBlock       finalize_block        = 20;
-    RequestSignGossipVote      sign_gossip_vote      = 21;
-    RequestPrepareOracleVotes  prepare_oracle_votes  = 22;
+    RequestCreateOracleResultTx      create_oracle_result_tx      = 21;
+    RequestFetchOracleVotes    fetch_oracle_votes    = 22;
     RequestValidateOracleVotes validate_oracle_votes = 23;
   }
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
@@ -200,13 +200,13 @@ message RequestFinalizeBlock {
   bytes proposer_address = 8;
 }
 
-message RequestSignGossipVote {
-  bytes    proposer_address                          = 1;
-  repeated tendermint.oracle.GossipVote gossip_votes = 2;
-  int64                                 height       = 3;
+message RequestCreateOracleResultTx {
+  bytes    proposer_address                               = 1;
+  repeated tendermint.oracle.GossipedVotes gossiped_votes = 2;
+  int64                                 height            = 3;
 }
 
-message RequestPrepareOracleVotes {}
+message RequestFetchOracleVotes {}
 
 message RequestValidateOracleVotes {
   bytes oracle_tx = 1;
@@ -234,8 +234,8 @@ message Response {
     ResponseExtendVote          extend_vote           = 19;
     ResponseVerifyVoteExtension verify_vote_extension = 20;
     ResponseFinalizeBlock       finalize_block        = 21;
-    ResponseSignGossipVote      sign_gossip_vote      = 22;
-    ResponsePrepareOracleVotes  prepare_oracle_votes  = 23;
+    ResponseCreateOracleResultTx      create_oracle_result_tx      = 22;
+    ResponseFetchOracleVotes    fetch_oracle_votes    = 23;
     ResponseValidateOracleVotes validate_oracle_votes = 24;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
@@ -387,11 +387,11 @@ message ResponseFinalizeBlock {
   bytes app_hash = 5;
 }
 
-message ResponseSignGossipVote {
+message ResponseCreateOracleResultTx {
   bytes encoded_tx = 1;
 }
 
-message ResponsePrepareOracleVotes {
+message ResponseFetchOracleVotes {
   tendermint.oracle.Vote vote = 1;
 }
 

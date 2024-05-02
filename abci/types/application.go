@@ -36,8 +36,8 @@ type Application interface {
 	ApplySnapshotChunk(context.Context, *RequestApplySnapshotChunk) (*ResponseApplySnapshotChunk, error) // Apply a shapshot chunk
 
 	// Hooks
-	SignGossipVote(context.Context, *RequestSignGossipVote) (*ResponseSignGossipVote, error)
-	PrepareOracleVotes(context.Context, *RequestPrepareOracleVotes) (*ResponsePrepareOracleVotes, error)
+	CreateOracleResultTx(context.Context, *RequestCreateOracleResultTx) (*ResponseCreateOracleResultTx, error)
+	FetchOracleVotes(context.Context, *RequestFetchOracleVotes) (*ResponseFetchOracleVotes, error)
 	ValidateOracleVotes(context.Context, *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error)
 }
 
@@ -125,12 +125,12 @@ func (BaseApplication) FinalizeBlock(_ context.Context, req *RequestFinalizeBloc
 	}, nil
 }
 
-func (BaseApplication) SignGossipVote(_ context.Context, req *RequestSignGossipVote) (*ResponseSignGossipVote, error) {
-	return &ResponseSignGossipVote{}, nil
+func (BaseApplication) CreateOracleResultTx(_ context.Context, req *RequestCreateOracleResultTx) (*ResponseCreateOracleResultTx, error) {
+	return &ResponseCreateOracleResultTx{}, nil
 }
 
-func (BaseApplication) PrepareOracleVotes(_ context.Context, req *RequestPrepareOracleVotes) (*ResponsePrepareOracleVotes, error) {
-	return &ResponsePrepareOracleVotes{}, nil
+func (BaseApplication) FetchOracleVotes(_ context.Context, req *RequestFetchOracleVotes) (*ResponseFetchOracleVotes, error) {
+	return &ResponseFetchOracleVotes{}, nil
 }
 
 func (BaseApplication) ValidateOracleVotes(_ context.Context, req *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error) {

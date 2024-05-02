@@ -22,7 +22,7 @@ type OracleInfo struct {
 	BlockTimestamps    []int64
 }
 type GossipVoteBuffer struct {
-	Buffer    map[string]*oracleproto.GossipVote
+	Buffer    map[string]*oracleproto.GossipedVotes
 	UpdateMtx cmtsync.RWMutex
 }
 

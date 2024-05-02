@@ -80,7 +80,7 @@ func (sc *RetrySignerClient) SignVote(chainID string, vote *cmtproto.Vote) error
 	return fmt.Errorf("exhausted all attempts to sign vote: %w", err)
 }
 
-func (sc *RetrySignerClient) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
+func (sc *RetrySignerClient) SignOracleVote(chainID string, vote *oracleproto.GossipedVotes) error {
 	var err error
 	for i := 0; i < sc.retries || sc.retries == 0; i++ {
 		err = sc.next.SignOracleVote(chainID, vote)

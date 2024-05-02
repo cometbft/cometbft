@@ -246,12 +246,12 @@ func (cli *grpcClient) FinalizeBlock(ctx context.Context, req *types.RequestFina
 	return cli.client.FinalizeBlock(ctx, types.ToRequestFinalizeBlock(req).GetFinalizeBlock(), grpc.WaitForReady(true))
 }
 
-func (cli *grpcClient) SignGossipVote(ctx context.Context, req *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
-	return cli.client.SignGossipVote(ctx, types.ToRequestSignGossipVote(req).GetSignGossipVote(), grpc.WaitForReady(true))
+func (cli *grpcClient) CreateOracleResultTx(ctx context.Context, req *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
+	return cli.client.CreateOracleResultTx(ctx, types.ToRequestCreateOracleResultTx(req).GetCreateOracleResultTx(), grpc.WaitForReady(true))
 }
 
-func (cli *grpcClient) PrepareOracleVotes(ctx context.Context, req *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
-	return cli.client.PrepareOracleVotes(ctx, types.ToRequestPrepareOracleVotes(req).GetPrepareOracleVotes(), grpc.WaitForReady(true))
+func (cli *grpcClient) FetchOracleVotes(ctx context.Context, req *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
+	return cli.client.FetchOracleVotes(ctx, types.ToRequestFetchOracleVotes(req).GetFetchOracleVotes(), grpc.WaitForReady(true))
 }
 
 func (cli *grpcClient) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {

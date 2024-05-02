@@ -90,25 +90,25 @@ func (m *Vote) GetData() string {
 	return ""
 }
 
-type GossipVote struct {
+type GossipedVotes struct {
 	ValidatorIndex  int32   `protobuf:"varint,1,opt,name=validator_index,json=validatorIndex,proto3" json:"validator_index,omitempty"`
 	Votes           []*Vote `protobuf:"bytes,2,rep,name=votes,proto3" json:"votes,omitempty"`
 	SignedTimestamp int64   `protobuf:"varint,3,opt,name=signed_timestamp,json=signedTimestamp,proto3" json:"signed_timestamp,omitempty"`
 	Signature       []byte  `protobuf:"bytes,4,opt,name=signature,proto3" json:"signature,omitempty"`
 }
 
-func (m *GossipVote) Reset()         { *m = GossipVote{} }
-func (m *GossipVote) String() string { return proto.CompactTextString(m) }
-func (*GossipVote) ProtoMessage()    {}
-func (*GossipVote) Descriptor() ([]byte, []int) {
+func (m *GossipedVotes) Reset()         { *m = GossipedVotes{} }
+func (m *GossipedVotes) String() string { return proto.CompactTextString(m) }
+func (*GossipedVotes) ProtoMessage()    {}
+func (*GossipedVotes) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ed9227d272ed5d90, []int{1}
 }
-func (m *GossipVote) XXX_Unmarshal(b []byte) error {
+func (m *GossipedVotes) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *GossipVote) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GossipedVotes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_GossipVote.Marshal(b, m, deterministic)
+		return xxx_messageInfo_GossipedVotes.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -118,64 +118,64 @@ func (m *GossipVote) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *GossipVote) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GossipVote.Merge(m, src)
+func (m *GossipedVotes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GossipedVotes.Merge(m, src)
 }
-func (m *GossipVote) XXX_Size() int {
+func (m *GossipedVotes) XXX_Size() int {
 	return m.Size()
 }
-func (m *GossipVote) XXX_DiscardUnknown() {
-	xxx_messageInfo_GossipVote.DiscardUnknown(m)
+func (m *GossipedVotes) XXX_DiscardUnknown() {
+	xxx_messageInfo_GossipedVotes.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_GossipVote proto.InternalMessageInfo
+var xxx_messageInfo_GossipedVotes proto.InternalMessageInfo
 
-func (m *GossipVote) GetValidatorIndex() int32 {
+func (m *GossipedVotes) GetValidatorIndex() int32 {
 	if m != nil {
 		return m.ValidatorIndex
 	}
 	return 0
 }
 
-func (m *GossipVote) GetVotes() []*Vote {
+func (m *GossipedVotes) GetVotes() []*Vote {
 	if m != nil {
 		return m.Votes
 	}
 	return nil
 }
 
-func (m *GossipVote) GetSignedTimestamp() int64 {
+func (m *GossipedVotes) GetSignedTimestamp() int64 {
 	if m != nil {
 		return m.SignedTimestamp
 	}
 	return 0
 }
 
-func (m *GossipVote) GetSignature() []byte {
+func (m *GossipedVotes) GetSignature() []byte {
 	if m != nil {
 		return m.Signature
 	}
 	return nil
 }
 
-type CanonicalGossipVote struct {
+type CanonicalGossipedVotes struct {
 	ValidatorIndex  int32   `protobuf:"varint,1,opt,name=validator_index,json=validatorIndex,proto3" json:"validator_index,omitempty"`
 	Votes           []*Vote `protobuf:"bytes,2,rep,name=votes,proto3" json:"votes,omitempty"`
 	SignedTimestamp int64   `protobuf:"varint,3,opt,name=signed_timestamp,json=signedTimestamp,proto3" json:"signed_timestamp,omitempty"`
 }
 
-func (m *CanonicalGossipVote) Reset()         { *m = CanonicalGossipVote{} }
-func (m *CanonicalGossipVote) String() string { return proto.CompactTextString(m) }
-func (*CanonicalGossipVote) ProtoMessage()    {}
-func (*CanonicalGossipVote) Descriptor() ([]byte, []int) {
+func (m *CanonicalGossipedVotes) Reset()         { *m = CanonicalGossipedVotes{} }
+func (m *CanonicalGossipedVotes) String() string { return proto.CompactTextString(m) }
+func (*CanonicalGossipedVotes) ProtoMessage()    {}
+func (*CanonicalGossipedVotes) Descriptor() ([]byte, []int) {
 	return fileDescriptor_ed9227d272ed5d90, []int{2}
 }
-func (m *CanonicalGossipVote) XXX_Unmarshal(b []byte) error {
+func (m *CanonicalGossipedVotes) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *CanonicalGossipVote) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *CanonicalGossipedVotes) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_CanonicalGossipVote.Marshal(b, m, deterministic)
+		return xxx_messageInfo_CanonicalGossipedVotes.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -185,33 +185,33 @@ func (m *CanonicalGossipVote) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *CanonicalGossipVote) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CanonicalGossipVote.Merge(m, src)
+func (m *CanonicalGossipedVotes) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CanonicalGossipedVotes.Merge(m, src)
 }
-func (m *CanonicalGossipVote) XXX_Size() int {
+func (m *CanonicalGossipedVotes) XXX_Size() int {
 	return m.Size()
 }
-func (m *CanonicalGossipVote) XXX_DiscardUnknown() {
-	xxx_messageInfo_CanonicalGossipVote.DiscardUnknown(m)
+func (m *CanonicalGossipedVotes) XXX_DiscardUnknown() {
+	xxx_messageInfo_CanonicalGossipedVotes.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CanonicalGossipVote proto.InternalMessageInfo
+var xxx_messageInfo_CanonicalGossipedVotes proto.InternalMessageInfo
 
-func (m *CanonicalGossipVote) GetValidatorIndex() int32 {
+func (m *CanonicalGossipedVotes) GetValidatorIndex() int32 {
 	if m != nil {
 		return m.ValidatorIndex
 	}
 	return 0
 }
 
-func (m *CanonicalGossipVote) GetVotes() []*Vote {
+func (m *CanonicalGossipedVotes) GetVotes() []*Vote {
 	if m != nil {
 		return m.Votes
 	}
 	return nil
 }
 
-func (m *CanonicalGossipVote) GetSignedTimestamp() int64 {
+func (m *CanonicalGossipedVotes) GetSignedTimestamp() int64 {
 	if m != nil {
 		return m.SignedTimestamp
 	}
@@ -220,34 +220,34 @@ func (m *CanonicalGossipVote) GetSignedTimestamp() int64 {
 
 func init() {
 	proto.RegisterType((*Vote)(nil), "tendermint.oracle.Vote")
-	proto.RegisterType((*GossipVote)(nil), "tendermint.oracle.GossipVote")
-	proto.RegisterType((*CanonicalGossipVote)(nil), "tendermint.oracle.CanonicalGossipVote")
+	proto.RegisterType((*GossipedVotes)(nil), "tendermint.oracle.GossipedVotes")
+	proto.RegisterType((*CanonicalGossipedVotes)(nil), "tendermint.oracle.CanonicalGossipedVotes")
 }
 
 func init() { proto.RegisterFile("tendermint/oracle/types.proto", fileDescriptor_ed9227d272ed5d90) }
 
 var fileDescriptor_ed9227d272ed5d90 = []byte{
-	// 316 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x92, 0xbf, 0x4e, 0xc3, 0x30,
-	0x10, 0x87, 0xeb, 0xfe, 0x41, 0xe4, 0xa8, 0x28, 0x98, 0x81, 0x48, 0x94, 0x28, 0xea, 0x42, 0x18,
-	0x48, 0x24, 0xe0, 0x09, 0x60, 0x40, 0x5d, 0x18, 0x2c, 0xc4, 0xc0, 0x52, 0xb9, 0xb1, 0x29, 0x96,
-	0x1a, 0x3b, 0x8a, 0xaf, 0x15, 0xbc, 0x05, 0x23, 0x2f, 0xc1, 0x7b, 0x30, 0x76, 0x64, 0x44, 0xed,
-	0x8b, 0xa0, 0x38, 0x52, 0x22, 0xd1, 0x17, 0x60, 0x3b, 0x7d, 0xbf, 0x3b, 0xdf, 0x67, 0xe9, 0xe0,
-	0x14, 0xa5, 0x16, 0xb2, 0xc8, 0x94, 0xc6, 0xc4, 0x14, 0x3c, 0x9d, 0xcb, 0x04, 0xdf, 0x72, 0x69,
-	0xe3, 0xbc, 0x30, 0x68, 0xe8, 0x61, 0x13, 0xc7, 0x55, 0x3c, 0xb2, 0xd0, 0x7d, 0x34, 0x28, 0xe9,
-	0x10, 0xbc, 0x25, 0x9f, 0x2b, 0xc1, 0xd1, 0x14, 0x3e, 0x09, 0x49, 0xd4, 0x67, 0x0d, 0xa0, 0x27,
-	0xe0, 0x55, 0xfd, 0x13, 0x25, 0xfc, 0x76, 0x48, 0x22, 0x8f, 0xed, 0x56, 0x60, 0x2c, 0xca, 0x51,
-	0x54, 0x99, 0xb4, 0xc8, 0xb3, 0xdc, 0xef, 0x84, 0x24, 0xea, 0xb0, 0x06, 0x50, 0x0a, 0x5d, 0xc1,
-	0x91, 0xfb, 0x5d, 0x37, 0xe5, 0xea, 0xd1, 0x27, 0x01, 0xb8, 0x33, 0xd6, 0xaa, 0xdc, 0xed, 0x3e,
-	0x83, 0x41, 0xbd, 0x6a, 0xa2, 0xb4, 0x90, 0xaf, 0xce, 0xa0, 0xc7, 0xf6, 0x6b, 0x3c, 0x2e, 0x29,
-	0xbd, 0x80, 0xde, 0xd2, 0xa0, 0xb4, 0x7e, 0x3b, 0xec, 0x44, 0x7b, 0x97, 0xc7, 0xf1, 0xd6, 0x7f,
-	0xe2, 0xf2, 0x41, 0x56, 0x75, 0xd1, 0x73, 0x38, 0xb0, 0x6a, 0xa6, 0xa5, 0x98, 0xfc, 0xf5, 0x1b,
-	0x54, 0xfc, 0xa1, 0xb6, 0x1c, 0x82, 0x57, 0x22, 0x8e, 0x8b, 0x42, 0x3a, 0xd5, 0x3e, 0x6b, 0xc0,
-	0xe8, 0x83, 0xc0, 0xd1, 0x2d, 0xd7, 0x46, 0xab, 0x94, 0xcf, 0xff, 0x95, 0xf8, 0xcd, 0xfd, 0xd7,
-	0x3a, 0x20, 0xab, 0x75, 0x40, 0x7e, 0xd6, 0x01, 0x79, 0xdf, 0x04, 0xad, 0xd5, 0x26, 0x68, 0x7d,
-	0x6f, 0x82, 0xd6, 0xd3, 0xf5, 0x4c, 0xe1, 0xcb, 0x62, 0x1a, 0xa7, 0x26, 0x4b, 0x52, 0x93, 0x49,
-	0x9c, 0x3e, 0x63, 0x53, 0xb8, 0x83, 0x48, 0xb6, 0xce, 0x65, 0xba, 0xe3, 0x82, 0xab, 0xdf, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0xc9, 0xaa, 0x6d, 0xe3, 0x4a, 0x02, 0x00, 0x00,
+	// 320 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x92, 0x3f, 0x4e, 0xfb, 0x30,
+	0x14, 0xc7, 0xeb, 0xfe, 0xf9, 0xe9, 0x17, 0x53, 0x28, 0x78, 0x80, 0x48, 0x14, 0x2b, 0xea, 0x42,
+	0x18, 0x48, 0x24, 0xe0, 0x04, 0x30, 0xa0, 0x2e, 0x0c, 0x16, 0x62, 0x60, 0xa9, 0xdc, 0xd8, 0x14,
+	0x4b, 0x8d, 0x1d, 0xc5, 0xaf, 0x15, 0xdc, 0x82, 0x9d, 0x4b, 0x70, 0x0c, 0xc6, 0x8e, 0x8c, 0xa8,
+	0xbd, 0x08, 0xb2, 0x23, 0x25, 0x12, 0xbd, 0x00, 0xdb, 0xd3, 0xe7, 0xbd, 0xaf, 0xdf, 0xc7, 0xd2,
+	0xc3, 0x27, 0x20, 0xb5, 0x90, 0x65, 0xae, 0x34, 0xa4, 0xa6, 0xe4, 0xd9, 0x5c, 0xa6, 0xf0, 0x5a,
+	0x48, 0x9b, 0x14, 0xa5, 0x01, 0x43, 0x0e, 0x9a, 0x76, 0x52, 0xb5, 0x47, 0x16, 0x77, 0x1f, 0x0c,
+	0x48, 0x32, 0xc4, 0xc1, 0x92, 0xcf, 0x95, 0xe0, 0x60, 0xca, 0x10, 0x45, 0x28, 0xee, 0xb3, 0x06,
+	0x90, 0x63, 0x1c, 0x54, 0xf3, 0x13, 0x25, 0xc2, 0x76, 0x84, 0xe2, 0x80, 0xfd, 0xaf, 0xc0, 0x58,
+	0xb8, 0x28, 0xa8, 0x5c, 0x5a, 0xe0, 0x79, 0x11, 0x76, 0x22, 0x14, 0x77, 0x58, 0x03, 0x08, 0xc1,
+	0x5d, 0xc1, 0x81, 0x87, 0x5d, 0x9f, 0xf2, 0xf5, 0xe8, 0x03, 0xe1, 0xdd, 0x5b, 0x63, 0xad, 0x2a,
+	0xa4, 0x70, 0xdb, 0x2d, 0x39, 0xc5, 0x83, 0x7a, 0xdb, 0x44, 0x69, 0x21, 0x5f, 0xbc, 0x44, 0x8f,
+	0xed, 0xd5, 0x78, 0xec, 0x28, 0x39, 0xc7, 0xbd, 0xa5, 0x4b, 0x84, 0xed, 0xa8, 0x13, 0xef, 0x5c,
+	0x1c, 0x25, 0x5b, 0x5f, 0x4a, 0xdc, 0x8b, 0xac, 0x9a, 0x22, 0x67, 0x78, 0xdf, 0xaa, 0x99, 0x96,
+	0x62, 0xf2, 0x5b, 0x71, 0x50, 0xf1, 0xfb, 0x5a, 0x74, 0x88, 0x03, 0x87, 0x38, 0x2c, 0x4a, 0xe9,
+	0x6d, 0xfb, 0xac, 0x01, 0xa3, 0x77, 0x84, 0x0f, 0x6f, 0xb8, 0x36, 0x5a, 0x65, 0x7c, 0xfe, 0xd7,
+	0xdc, 0xaf, 0xef, 0x3e, 0xd7, 0x14, 0xad, 0xd6, 0x14, 0x7d, 0xaf, 0x29, 0x7a, 0xdb, 0xd0, 0xd6,
+	0x6a, 0x43, 0x5b, 0x5f, 0x1b, 0xda, 0x7a, 0xbc, 0x9a, 0x29, 0x78, 0x5e, 0x4c, 0x93, 0xcc, 0xe4,
+	0x69, 0x66, 0x72, 0x09, 0xd3, 0x27, 0x68, 0x0a, 0x7f, 0x16, 0xe9, 0xd6, 0xd1, 0x4c, 0xff, 0xf9,
+	0xc6, 0xe5, 0x4f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb6, 0xa6, 0x0c, 0x3d, 0x50, 0x02, 0x00, 0x00,
 }
 
 func (m *Vote) Marshal() (dAtA []byte, err error) {
@@ -299,7 +299,7 @@ func (m *Vote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *GossipVote) Marshal() (dAtA []byte, err error) {
+func (m *GossipedVotes) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -309,12 +309,12 @@ func (m *GossipVote) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *GossipVote) MarshalTo(dAtA []byte) (int, error) {
+func (m *GossipedVotes) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *GossipVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GossipedVotes) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -353,7 +353,7 @@ func (m *GossipVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *CanonicalGossipVote) Marshal() (dAtA []byte, err error) {
+func (m *CanonicalGossipedVotes) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -363,12 +363,12 @@ func (m *CanonicalGossipVote) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CanonicalGossipVote) MarshalTo(dAtA []byte) (int, error) {
+func (m *CanonicalGossipedVotes) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *CanonicalGossipVote) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *CanonicalGossipedVotes) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -435,7 +435,7 @@ func (m *Vote) Size() (n int) {
 	return n
 }
 
-func (m *GossipVote) Size() (n int) {
+func (m *GossipedVotes) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -460,7 +460,7 @@ func (m *GossipVote) Size() (n int) {
 	return n
 }
 
-func (m *CanonicalGossipVote) Size() (n int) {
+func (m *CanonicalGossipedVotes) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -654,7 +654,7 @@ func (m *Vote) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *GossipVote) Unmarshal(dAtA []byte) error {
+func (m *GossipedVotes) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -677,10 +677,10 @@ func (m *GossipVote) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: GossipVote: wiretype end group for non-group")
+			return fmt.Errorf("proto: GossipedVotes: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: GossipVote: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GossipedVotes: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -810,7 +810,7 @@ func (m *GossipVote) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *CanonicalGossipVote) Unmarshal(dAtA []byte) error {
+func (m *CanonicalGossipedVotes) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -833,10 +833,10 @@ func (m *CanonicalGossipVote) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CanonicalGossipVote: wiretype end group for non-group")
+			return fmt.Errorf("proto: CanonicalGossipedVotes: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CanonicalGossipVote: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: CanonicalGossipedVotes: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

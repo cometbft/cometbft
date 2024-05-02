@@ -24,8 +24,8 @@ type AppConnConsensus interface {
 	VerifyVoteExtension(context.Context, *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error)
 	FinalizeBlock(context.Context, *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error)
 	Commit(context.Context) (*types.ResponseCommit, error)
-	SignGossipVote(context.Context, *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error)
-	PrepareOracleVotes(context.Context, *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error)
+	CreateOracleResultTx(context.Context, *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error)
+	FetchOracleVotes(context.Context, *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error)
 	ValidateOracleVotes(context.Context, *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error)
 }
 
@@ -112,14 +112,14 @@ func (app *appConnConsensus) Commit(ctx context.Context) (*types.ResponseCommit,
 	return app.appConn.Commit(ctx, &types.RequestCommit{})
 }
 
-func (app *appConnConsensus) SignGossipVote(ctx context.Context, req *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
+func (app *appConnConsensus) CreateOracleResultTx(ctx context.Context, req *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
-	return app.appConn.SignGossipVote(ctx, req)
+	return app.appConn.CreateOracleResultTx(ctx, req)
 }
 
-func (app *appConnConsensus) PrepareOracleVotes(ctx context.Context, req *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
+func (app *appConnConsensus) FetchOracleVotes(ctx context.Context, req *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
-	return app.appConn.PrepareOracleVotes(ctx, req)
+	return app.appConn.FetchOracleVotes(ctx, req)
 }
 
 func (app *appConnConsensus) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {

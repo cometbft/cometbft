@@ -412,26 +412,26 @@ func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.RequestFi
 	return reqRes.Response.GetFinalizeBlock(), cli.Error()
 }
 
-func (cli *socketClient) SignGossipVote(ctx context.Context, req *types.RequestSignGossipVote) (*types.ResponseSignGossipVote, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToRequestSignGossipVote(req))
+func (cli *socketClient) CreateOracleResultTx(ctx context.Context, req *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestCreateOracleResultTx(req))
 	if err != nil {
 		return nil, err
 	}
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
-	return reqRes.Response.GetSignGossipVote(), cli.Error()
+	return reqRes.Response.GetCreateOracleResultTx(), cli.Error()
 }
 
-func (cli *socketClient) PrepareOracleVotes(ctx context.Context, req *types.RequestPrepareOracleVotes) (*types.ResponsePrepareOracleVotes, error) {
-	reqRes, err := cli.queueRequest(ctx, types.ToRequestPrepareOracleVotes(req))
+func (cli *socketClient) FetchOracleVotes(ctx context.Context, req *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestFetchOracleVotes(req))
 	if err != nil {
 		return nil, err
 	}
 	if err := cli.Flush(ctx); err != nil {
 		return nil, err
 	}
-	return reqRes.Response.GetPrepareOracleVotes(), cli.Error()
+	return reqRes.Response.GetFetchOracleVotes(), cli.Error()
 }
 
 func (cli *socketClient) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
@@ -526,8 +526,8 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_ProcessProposal)
 	case *types.Request_FinalizeBlock:
 		_, ok = res.Value.(*types.Response_FinalizeBlock)
-	case *types.Request_SignGossipVote:
-		_, ok = res.Value.(*types.Response_SignGossipVote)
+	case *types.Request_CreateOracleResultTx:
+		_, ok = res.Value.(*types.Response_CreateOracleResultTx)
 	}
 	return ok
 }

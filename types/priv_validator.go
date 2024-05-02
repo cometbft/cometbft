@@ -18,7 +18,7 @@ type PrivValidator interface {
 
 	SignVote(chainID string, vote *cmtproto.Vote) error
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
-	SignOracleVote(chainID string, oracleVote *oracleproto.GossipVote) error
+	SignOracleVote(chainID string, oracleVote *oracleproto.GossipedVotes) error
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -101,7 +101,7 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 }
 
 // Implements PrivValidator.
-func (pv MockPV) SignOracleVote(chainID string, vote *oracleproto.GossipVote) error {
+func (pv MockPV) SignOracleVote(chainID string, vote *oracleproto.GossipedVotes) error {
 	signBytes := OracleVoteSignBytes(vote)
 	sig, err := pv.PrivKey.Sign(signBytes)
 	if err != nil {

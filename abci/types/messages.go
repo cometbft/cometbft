@@ -124,15 +124,15 @@ func ToRequestFinalizeBlock(req *RequestFinalizeBlock) *Request {
 	}
 }
 
-func ToRequestSignGossipVote(req *RequestSignGossipVote) *Request {
+func ToRequestCreateOracleResultTx(req *RequestCreateOracleResultTx) *Request {
 	return &Request{
-		Value: &Request_SignGossipVote{req},
+		Value: &Request_CreateOracleResultTx{req},
 	}
 }
 
-func ToRequestPrepareOracleVotes(req *RequestPrepareOracleVotes) *Request {
+func ToRequestFetchOracleVotes(req *RequestFetchOracleVotes) *Request {
 	return &Request{
-		Value: &Request_PrepareOracleVotes{req},
+		Value: &Request_FetchOracleVotes{req},
 	}
 }
 
@@ -246,8 +246,8 @@ func ToResponseFinalizeBlock(res *ResponseFinalizeBlock) *Response {
 	}
 }
 
-func ToResponseSignGossipVote(res *ResponseSignGossipVote) *Response {
+func ToResponseCreateOracleResultTx(res *ResponseCreateOracleResultTx) *Response {
 	return &Response{
-		Value: &Response_SignGossipVote{res},
+		Value: &Response_CreateOracleResultTx{res},
 	}
 }

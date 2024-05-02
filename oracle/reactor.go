@@ -47,7 +47,7 @@ type Reactor struct {
 // NewReactor returns a new Reactor with the given config and mempool.
 func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator types.PrivValidator, proxyApp proxy.AppConnConsensus) *Reactor {
 	gossipVoteBuffer := &oracletypes.GossipVoteBuffer{
-		Buffer: make(map[string]*oracleproto.GossipVote),
+		Buffer: make(map[string]*oracleproto.GossipedVotes),
 	}
 	unsignedVoteBuffer := &oracletypes.UnsignedVoteBuffer{
 		Buffer: []*oracleproto.Vote{},
@@ -106,7 +106,7 @@ func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			ID:                  OracleChannel,
 			Priority:            5,
 			RecvMessageCapacity: messageCap,
-			MessageType:         &oracleproto.GossipVote{},
+			MessageType:         &oracleproto.GossipedVotes{},
 		},
 	}
 }
@@ -130,7 +130,7 @@ func (oracleR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
 func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
-	case *oracleproto.GossipVote:
+	case *oracleproto.GossipedVotes:
 		// verify sig of incoming gossip vote, throw if verification fails
 		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
 		if val == nil {

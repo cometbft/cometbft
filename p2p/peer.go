@@ -414,7 +414,6 @@ func createMConnection(
 		if err != nil {
 			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
 		}
-		metricLabelValue := p.mlc.ValueToMetricLabel(msg)
 		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
@@ -425,7 +424,7 @@ func createMConnection(
 			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
 			Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.
-			With("message_type", metricLabelValue).
+			With("message_type", p.mlc.ValueToMetricLabel(msg)).
 			Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{
 			ChannelID: chID,

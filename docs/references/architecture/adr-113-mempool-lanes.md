@@ -38,9 +38,9 @@ guarantees, developers will be able to more easily estimate when transactions wi
 included in a block. 
 
 In practical terms, we envision an implementation of the transaction class abstraction as *mempool
-lanes*. The mempool transaction space would be split into a hierarchy of lanes, with each lane
-operating as an independent mempool. At the same time, all of them are coordinated to ensure the
-delivery of the desired levels of QoS.
+lanes*. The application will be allowed to split the mempool transaction space into a hierarchy of
+lanes, with each lane operating as an independent mempool. At the same time, all of them need to be
+coordinated to ensure the delivery of the desired levels of QoS.
 
 Note that improving the dissemination protocol to reduce bandwidth and/or latency is a separate
 concern and falls outside the scope of this proposal.
@@ -114,7 +114,7 @@ transaction finally was included.
 
 We want also to keep the FIFO ordering within each class:
 
-:parking: _Property_ **Sequential ordering per class**: For transactions within the same class, the
+:parking: _Property_ **FIFO ordering per class**: For transactions within the same class, the
 mempool will make its best effort to maintain a FIFO ordering when they are validated, processed,
 and disseminated.
 

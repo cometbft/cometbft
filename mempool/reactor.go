@@ -147,11 +147,15 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 // Receive implements Reactor.
 // It adds any received transactions to the mempool.
 func (memR *Reactor) Receive(e p2p.Envelope) {
-	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+	if memR.Logger.DebugOn() {
+		memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+	}
 	switch msg := e.Message.(type) {
 	case *protomem.Txs:
 		if memR.WaitSync() {
-			memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
+			if memR.Logger.DebugOn() {
+				memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
+			}
 			return
 		}
 
@@ -166,7 +170,9 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			reqRes, err := memR.mempool.CheckTx(tx)
 			switch {
 			case errors.Is(err, ErrTxInCache):
-				memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
+				if memR.Logger.DebugOn() {
+					memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
+				}
 			case err != nil:
 				memR.Logger.Info("Could not check tx", "tx", tx.Hash(), "err", err)
 			default:

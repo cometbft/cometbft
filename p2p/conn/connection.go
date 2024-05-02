@@ -505,7 +505,7 @@ func (c *MConnection) sendSomePacketMsgs() bool {
 	// Block until .sendMonitor says we can write.
 	// Once we're ready we send more than we asked for,
 	// but amortized it should even out.
-	c.sendMonitor.Limit(c._maxPacketMsgSize, atomic.LoadInt64(&c.config.SendRate), true)
+	c.sendMonitor.Limit(c._maxPacketMsgSize, c.config.SendRate, true)
 
 	// Now send some PacketMsgs.
 	for i := 0; i < numBatchPacketMsgs; i++ {

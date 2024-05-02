@@ -250,7 +250,9 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		return
 	}
 
-	bcR.Logger.Debug("Receive", "e.Src", e.Src, "chID", e.ChannelID, "msg", e.Message)
+	if bcR.Logger.DebugOn() {
+		bcR.Logger.Debug("Receive", "e.Src", e.Src, "chID", e.ChannelID, "msg", e.Message)
+	}
 
 	switch msg := e.Message.(type) {
 	case *bcproto.BlockRequest:
@@ -291,7 +293,9 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		// Got a peer status. Unverified.
 		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
 	case *bcproto.NoBlockResponse:
-		bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
+		if bcR.Logger.DebugOn() {
+			bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
+		}
 		bcR.pool.RedoRequestFrom(msg.Height, e.Src.ID())
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
@@ -330,7 +334,9 @@ FOR_LOOP:
 		select {
 		case <-switchToConsensusTicker.C:
 			outbound, inbound, _ := bcR.Switch.NumPeers()
-			bcR.Logger.Debug("Consensus ticker", "outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+			if bcR.Logger.DebugOn() {
+				bcR.Logger.Debug("Consensus ticker", "outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+			}
 
 			if !initialCommitHasExtensions {
 				// If require extensions, but since we don't have them yet, then we cannot switch to consensus yet.
@@ -439,7 +445,9 @@ func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
 		Message:   &bcproto.BlockRequest{Height: request.Height},
 	})
 	if !queued {
-		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+		if bcR.Logger.DebugOn() {
+			bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+		}
 	}
 }
 

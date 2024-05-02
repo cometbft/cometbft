@@ -32,9 +32,6 @@ func NewBitArray(bits int) *BitArray {
 	}
 }
 
-<<<<<<< HEAD:libs/bits/bit_array.go
-// Size returns the number of bits in the bitarray
-=======
 // NewBitArrayFromFn returns a new bit array.
 // It returns nil if the number of bits is zero.
 // It initializes the `i`th bit to the value of `fn(i)`.
@@ -56,7 +53,6 @@ func NewBitArrayFromFn(bits int, fn func(int) bool) *BitArray {
 }
 
 // Size returns the number of bits in the bitarray.
->>>>>>> edb297be1 (perf(internal/bits): Speedup extended commit.BitArray() (#2959)):internal/bits/bit_array.go
 func (bA *BitArray) Size() int {
 	if bA == nil {
 		return 0

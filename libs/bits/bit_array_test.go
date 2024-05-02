@@ -19,32 +19,17 @@ var (
 	full64bits  = full16bits + full16bits + full16bits + full16bits
 )
 
-func randBitArray(bits int) (*BitArray, []byte) {
+func randBitArray(bits int) *BitArray {
 	src := cmtrand.Bytes((bits + 7) / 8)
-<<<<<<< HEAD:libs/bits/bit_array_test.go
-	bA := NewBitArray(bits)
-	for i := 0; i < len(src); i++ {
-		for j := 0; j < 8; j++ {
-			if i*8+j >= bits {
-				return bA, src
-			}
-			setBit := src[i]&(1<<uint(j)) > 0
-			bA.SetIndex(i*8+j, setBit)
-		}
-	}
-	return bA, src
-=======
 	srcIndexToBit := func(i int) bool {
 		return src[i/8]&(1<<uint(i%8)) > 0
 	}
 	return NewBitArrayFromFn(bits, srcIndexToBit)
->>>>>>> edb297be1 (perf(internal/bits): Speedup extended commit.BitArray() (#2959)):internal/bits/bit_array_test.go
 }
 
 func TestAnd(t *testing.T) {
-
-	bA1, _ := randBitArray(51)
-	bA2, _ := randBitArray(31)
+	bA1 := randBitArray(51)
+	bA2 := randBitArray(31)
 	bA3 := bA1.And(bA2)
 
 	var bNil *BitArray
@@ -67,14 +52,8 @@ func TestAnd(t *testing.T) {
 }
 
 func TestOr(t *testing.T) {
-<<<<<<< HEAD:libs/bits/bit_array_test.go
-
-	bA1, _ := randBitArray(51)
-	bA2, _ := randBitArray(31)
-=======
 	bA1 := randBitArray(57)
 	bA2 := randBitArray(31)
->>>>>>> edb297be1 (perf(internal/bits): Speedup extended commit.BitArray() (#2959)):internal/bits/bit_array_test.go
 	bA3 := bA1.Or(bA2)
 
 	bNil := (*BitArray)(nil)
@@ -294,7 +273,7 @@ func TestEmptyFull(t *testing.T) {
 
 func TestUpdateNeverPanics(t *testing.T) {
 	newRandBitArray := func(n int) *BitArray {
-		ba, _ := randBitArray(n)
+		ba := randBitArray(n)
 		return ba
 	}
 	pairs := []struct {

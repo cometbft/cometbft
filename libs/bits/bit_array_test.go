@@ -28,7 +28,7 @@ func randBitArray(bits int) *BitArray {
 }
 
 func TestAnd(t *testing.T) {
-	bA1 := randBitArray(57)
+	bA1 := randBitArray(51)
 	bA2 := randBitArray(31)
 	bA3 := bA1.And(bA2)
 

@@ -846,12 +846,12 @@ func (commit *Commit) Size() int {
 // Implements VoteSetReader.
 func (commit *Commit) BitArray() *bits.BitArray {
 	if commit.bitArray == nil {
-		commit.bitArray = bits.NewBitArray(len(commit.Signatures))
-		for i, commitSig := range commit.Signatures {
+		initialBitFn := func(i int) bool {
 			// TODO: need to check the BlockID otherwise we could be counting conflicts,
-			// not just the one with +2/3 !
-			commit.bitArray.SetIndex(i, !commitSig.Absent())
+			//       not just the one with +2/3 !
+			return !commit.Signatures[i].Absent()
 		}
+		commit.bitArray = bits.NewBitArrayFromFn(len(commit.Signatures), initialBitFn)
 	}
 	return commit.bitArray
 }

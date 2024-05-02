@@ -16,12 +16,15 @@ import (
 
 	flow "github.com/cometbft/cometbft/libs/flowrate"
 	"github.com/cometbft/cometbft/libs/log"
+<<<<<<< HEAD
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/libs/timer"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
+=======
+>>>>>>> fbf5c60d7 (perf(p2p/conn): Remove a minint call that was appearing in write packet delays (#2952))
 )
 
 const (
@@ -830,14 +833,15 @@ func (ch *Channel) isSendPending() bool {
 func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 	packet := tmp2p.PacketMsg{ChannelID: int32(ch.desc.ID)}
 	maxSize := ch.maxPacketMsgPayloadSize
-	packet.Data = ch.sending[:cmtmath.MinInt(maxSize, len(ch.sending))]
 	if len(ch.sending) <= maxSize {
+		packet.Data = ch.sending
 		packet.EOF = true
 		ch.sending = nil
 		atomic.AddInt32(&ch.sendQueueSize, -1) // decrement sendQueueSize
 	} else {
+		packet.Data = ch.sending[:maxSize]
 		packet.EOF = false
-		ch.sending = ch.sending[cmtmath.MinInt(maxSize, len(ch.sending)):]
+		ch.sending = ch.sending[maxSize:]
 	}
 	return packet
 }

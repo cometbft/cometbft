@@ -142,19 +142,19 @@ func ExampleHTTP_batching() {
 func ExampleHTTP_maxBatchSize() {
 	// Start a CometBFT node (and kvstore) in the background to test against
 	app := kvstore.NewInMemoryApplication()
-	node := rpctest.StartCometBFT(app, rpctest.RecreateConfig, rpctest.SuppressStdout, rpctest.MaxReqBatchSize)
+	node := rpctest.StartTendermint(app, rpctest.RecreateConfig, rpctest.SuppressStdout, rpctest.MaxReqBatchSize)
 
 	// Change the max_request_batch_size
 	node.Config().RPC.MaxRequestBatchSize = 2
 
 	// Create our RPC client
 	rpcAddr := rpctest.GetConfig().RPC.ListenAddress
-	c, err := rpchttp.New(rpcAddr)
+	c, err := rpchttp.New(rpcAddr, "/websocket")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer rpctest.StopCometBFT(node)
+	defer rpctest.StopTendermint(node)
 
 	// Create a new batch
 	batch := c.NewBatch()

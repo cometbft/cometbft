@@ -48,20 +48,13 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		return
 	}
 
-	// batch sign the new votes, along with existing votes in gossipVoteBuffer, if any
-	validatorIndex, _ := consensusState.Validators.GetByAddress(oracleInfo.PubKey.Address())
-	if validatorIndex == -1 {
-		log.Errorf("processSignVoteQueue: unable to find validator index")
-		return
-	}
-
 	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
 	newGossipVote := &oracleproto.GossipedVotes{
-		ValidatorIndex:  validatorIndex,
+		Validator:       oracleInfo.PubKey.Address(),
 		SignedTimestamp: time.Now().Unix(),
 		Votes:           oracleInfo.UnsignedVoteBuffer.Buffer,
 	}

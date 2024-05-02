@@ -131,9 +131,9 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipedVotes:
 		// verify sig of incoming gossip vote, throw if verification fails
-		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
+		_, val := oracleR.ConsensusState.Validators.GetByAddress(msg.Validator)
 		if val == nil {
-			logrus.Infof("validator with index: %v not found in validator set, skipping gossip", msg.ValidatorIndex)
+			logrus.Infof("validator with index: %v not found in validator set, skipping gossip", msg.Validator)
 			return
 		}
 		pubKey := val.PubKey

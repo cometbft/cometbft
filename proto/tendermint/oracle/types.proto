@@ -11,14 +11,14 @@ message Vote {
 }
 
 message GossipedVotes {
-  int32 validator_index = 1;
+  bytes validator = 1;
   repeated Vote votes = 2;
   int64 signed_timestamp = 3;
   bytes signature = 4;
 }
 
 message CanonicalGossipedVotes {
-  int32 validator_index = 1;
+  bytes validator = 1;
   repeated Vote votes = 2;
   int64 signed_timestamp = 3;
 }

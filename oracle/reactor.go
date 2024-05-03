@@ -214,7 +214,8 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
 			// stop sending gossip votes that have passed the maxGossipVoteAge
-			if len(oracleR.OracleInfo.BlockTimestamps) > 0 && gossipVote.SignedTimestamp < oracleR.OracleInfo.BlockTimestamps[0] {
+			if len(oracleR.OracleInfo.BlockTimestamps) >= oracleR.OracleInfo.Config.MaxGossipVoteAge &&
+				gossipVote.SignedTimestamp < oracleR.OracleInfo.BlockTimestamps[0] {
 				continue
 			}
 

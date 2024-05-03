@@ -191,12 +191,8 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	if err != nil {
 		panic(fmt.Errorf("unmarshal to cmtproto.BlockMeta: %w", err))
 	}
-<<<<<<< HEAD
 
-	blockMeta, err := types.BlockMetaFromProto(pbbm)
-=======
 	blockMeta, err := types.BlockMetaFromTrustedProto(pbbm)
->>>>>>> 5601db6c4 (perf(consensus/blockstore): Remove validate basic call from LoadBlockMeta (#2964))
 	if err != nil {
 		panic(fmt.Errorf("error from proto blockMeta: %w", err))
 	}

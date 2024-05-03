@@ -289,9 +289,10 @@ func (c *MConnection) FlushStop() {
 		// Send and flush all pending msgs.
 		// Since sendRoutine has exited, we can call this
 		// safely
-		eof := c.sendSomePacketMsgs()
+		w := protoio.NewDelimitedWriter(c.bufConnWriter)
+		eof := c.sendSomePacketMsgs(w)
 		for !eof {
-			eof = c.sendSomePacketMsgs()
+			eof = c.sendSomePacketMsgs(w)
 		}
 		c.flush()
 
@@ -480,7 +481,7 @@ FOR_LOOP:
 			break FOR_LOOP
 		case <-c.send:
 			// Send some PacketMsgs
-			eof := c.sendSomePacketMsgs()
+			eof := c.sendSomePacketMsgs(protoWriter)
 			if !eof {
 				// Keep sendRoutine awake.
 				select {
@@ -507,18 +508,18 @@ FOR_LOOP:
 
 // Returns true if messages from channels were exhausted.
 // Blocks in accordance to .sendMonitor throttling.
-func (c *MConnection) sendSomePacketMsgs() bool {
+func (c *MConnection) sendSomePacketMsgs(w protoio.Writer) bool {
 	// Block until .sendMonitor says we can write.
 	// Once we're ready we send more than we asked for,
 	// but amortized it should even out.
 	c.sendMonitor.Limit(c._maxPacketMsgSize, c.config.SendRate, true)
 
 	// Now send some PacketMsgs.
-	return c.sendBatchPacketMsgs(numBatchPacketMsgs)
+	return c.sendBatchPacketMsgs(w, numBatchPacketMsgs)
 }
 
 // Returns true if messages from channels were exhausted.
-func (c *MConnection) sendBatchPacketMsgs(batchSize int) bool {
+func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool {
 	// Send a batch of PacketMsgs.
 	for i := 0; i < batchSize; i++ {
 		channel := selectChannelToGossipOn(c.channels)
@@ -526,7 +527,7 @@ func (c *MConnection) sendBatchPacketMsgs(batchSize int) bool {
 		if channel == nil {
 			return true
 		}
-		err := c.sendPacketMsgOnChannel(channel)
+		err := c.sendPacketMsgOnChannel(w, channel)
 		if err {
 			return true
 		}
@@ -561,11 +562,9 @@ func selectChannelToGossipOn(channels []*Channel) *Channel {
 	return leastChannel
 }
 
-func (c *MConnection) sendPacketMsgOnChannel(sendChannel *Channel) bool {
-	// c.Logger.Info("Found a msgPacket to send")
-
+func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Channel) bool {
 	// Make & send a PacketMsg from this channel
-	_n, err := sendChannel.writePacketMsgTo(c.bufConnWriter)
+	_n, err := sendChannel.writePacketMsgTo(w)
 	if err != nil {
 		c.Logger.Error("Failed to write PacketMsg", "err", err)
 		c.stopForError(err)
@@ -867,9 +866,17 @@ func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 
 // Writes next PacketMsg to w and updates c.recentlySent.
 // Not goroutine-safe.
-func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
+func (ch *Channel) writePacketMsgTo(w protoio.Writer) (n int, err error) {
 	packet := ch.nextPacketMsg()
+<<<<<<< HEAD
 	n, err = protoio.NewDelimitedWriter(w).WriteMsg(mustWrapPacket(&packet))
+=======
+	n, err = w.WriteMsg(mustWrapPacket(&packet))
+	if err != nil {
+		err = ErrPacketWrite{Source: err}
+	}
+
+>>>>>>> ab1c7bc05 (perf(p2p/connection): Lower wasted re-allocations in sendRoutine (#2986))
 	atomic.AddInt64(&ch.recentlySent, int64(n))
 	return n, err
 }

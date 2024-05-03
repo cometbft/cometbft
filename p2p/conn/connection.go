@@ -860,23 +860,15 @@ func (ch *Channel) nextPacketMsg() tmp2p.PacketMsg {
 }
 
 // Writes next PacketMsg to w and updates c.recentlySent.
-<<<<<<< HEAD
-// Not goroutine-safe
-func (ch *Channel) writePacketMsgTo(w io.Writer) (n int, err error) {
-	packet := ch.nextPacketMsg()
-	n, err = protoio.NewDelimitedWriter(w).WriteMsg(mustWrapPacket(&packet))
-=======
 // Not goroutine-safe.
 func (ch *Channel) writePacketMsgTo(w protoio.Writer) (n int, err error) {
 	packet := ch.nextPacketMsg()
 	n, err = w.WriteMsg(mustWrapPacket(&packet))
 	if err != nil {
-		err = ErrPacketWrite{Source: err}
+		return 0, err
 	}
-
->>>>>>> ab1c7bc05 (perf(p2p/connection): Lower wasted re-allocations in sendRoutine (#2986))
 	atomic.AddInt64(&ch.recentlySent, int64(n))
-	return
+	return n, nil
 }
 
 // Handles incoming PacketMsgs. It returns a message bytes if message is

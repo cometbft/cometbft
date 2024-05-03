@@ -206,7 +206,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 		panic(fmt.Errorf("unmarshal to cmtproto.BlockMeta: %w", err))
 	}
 
-	blockMeta, err := types.BlockMetaFromProto(pbbm)
+	blockMeta, err := types.BlockMetaFromTrustedProto(pbbm)
 	if err != nil {
 		panic(fmt.Errorf("error from proto blockMeta: %w", err))
 	}
@@ -470,8 +470,8 @@ func (bs *BlockStore) saveBlockToBatch(
 	block *types.Block,
 	blockParts *types.PartSet,
 	seenCommit *types.Commit,
-	batch dbm.Batch) error {
-
+	batch dbm.Batch,
+) error {
 	if block == nil {
 		panic("BlockStore can only save a non-nil block")
 	}

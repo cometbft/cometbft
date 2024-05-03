@@ -770,7 +770,7 @@ func DefaultP2PConfig() *P2PConfig {
 		MaxNumInboundPeers:           40,
 		MaxNumOutboundPeers:          10,
 		PersistentPeersMaxDialPeriod: 0 * time.Second,
-		FlushThrottleTimeout:         100 * time.Millisecond,
+		FlushThrottleTimeout:         10 * time.Millisecond,
 		MaxPacketMsgPayloadSize:      1024,    // 1 kB
 		SendRate:                     5120000, // 5 mB/s
 		RecvRate:                     5120000, // 5 mB/s
@@ -789,7 +789,6 @@ func DefaultP2PConfig() *P2PConfig {
 func TestP2PConfig() *P2PConfig {
 	cfg := DefaultP2PConfig()
 	cfg.ListenAddress = "tcp://127.0.0.1:36656"
-	cfg.FlushThrottleTimeout = 10 * time.Millisecond
 	cfg.AllowDuplicateIP = true
 	return cfg
 }

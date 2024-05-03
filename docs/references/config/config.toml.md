@@ -1006,7 +1006,7 @@ When set to `"0s"`, an exponential backoff is applied when re-dialing the persis
 Time to wait before flushing messages out on a connection.
 
 ```toml
-flush_throttle_timeout = "100ms"
+flush_throttle_timeout = "10ms"
 ```
 
 | Value type          | string (duration) |

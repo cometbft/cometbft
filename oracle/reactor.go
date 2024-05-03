@@ -229,7 +229,6 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 			})
 			if !success {
 				logrus.Info("FAILED TO SEND!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
 		}

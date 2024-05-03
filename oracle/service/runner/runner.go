@@ -85,7 +85,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 }
 
-func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.State) {
+func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	go func(oracleInfo *types.OracleInfo) {
 		maxGossipVoteAge := oracleInfo.Config.MaxGossipVoteAge
 		if maxGossipVoteAge == 0 {
@@ -118,40 +118,7 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.St
 			}
 			oracleInfo.UnsignedVoteBuffer.Buffer = newVotes
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
-		}
-	}(oracleInfo)
-}
 
-func contains(s []int64, e int64) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.State) {
-	go func(oracleInfo *types.OracleInfo) {
-		maxGossipVoteAge := oracleInfo.Config.MaxGossipVoteAge
-		if maxGossipVoteAge == 0 {
-			maxGossipVoteAge = 2
-		}
-		ticker := time.Tick(1 * time.Second)
-		for range ticker {
-			lastBlockTime := consensusState.GetState().LastBlockTime
-
-			if !contains(oracleInfo.BlockTimestamps, lastBlockTime.Unix()) {
-				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime.Unix())
-			}
-
-			if len(oracleInfo.BlockTimestamps) < maxGossipVoteAge {
-				continue
-			}
-
-			if len(oracleInfo.BlockTimestamps) > maxGossipVoteAge {
-				oracleInfo.BlockTimestamps = oracleInfo.BlockTimestamps[1:]
-			}
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 			buffer := oracleInfo.GossipVoteBuffer.Buffer
 
@@ -168,12 +135,20 @@ func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.Stat
 	}(oracleInfo)
 }
 
+func contains(s []int64, e int64) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 // Run run oracles
 func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	log.Info("[oracle] Service started.")
 	RunProcessSignVoteQueue(oracleInfo, consensusState)
-	PruneUnsignedVoteBuffer(oracleInfo, consensusState)
-	PruneGossipVoteBuffer(oracleInfo, consensusState)
+	PruneVoteBuffers(oracleInfo, consensusState)
 	// start to take votes from app
 	for {
 		res, err := oracleInfo.ProxyApp.FetchOracleVotes(context.Background(), &abcitypes.RequestFetchOracleVotes{})

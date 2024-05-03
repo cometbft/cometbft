@@ -92,11 +92,11 @@ Column legend:
 | bits                       | keep private       | 0                                      | 26             | low        | [bits-url]        |
 | blocksync                  | keep private       | 0                                      | 6              | low        | [blocksync-url]   |
 | clist                      | keep private       | 0                                      | 24             | low        | [clist-url]       |
+| indexer                    | keep private       | 0                                      | 0              | low        | [indexer-url]     |
 | net                        | keep private       | 1                                      | 40             | low        | [net-url]         |
 | statesync                  | **🧹 make public** | 1                                      | 16             | medium     | [statesync-url]   |
 | evidence                   | keep private       | 1                                      | 26             | high       | [evidence-url]    |
 | consensus                  | keep private       | 1                                      | 64             | high       | [consensus-url]   |
-| indexer                    | **🧹 make public** | 2                                      | 100            | medium     | [indexer-url]     |
 | protoio                    | **🧹 make public** | 3                                      | 44             | low        | [protoio-url]     |
 | sync                       | **🧹 make public** | 3                                      | 172            | low        | [sync-url]        |
 | tempfile                   | keep private       | 4                                      | 16             | low        | [tempfile-url]    |
@@ -106,7 +106,9 @@ Column legend:
 | rand                       | keep private       | 7                                      | 317            | low        | [rand-url]        |
 | pubsub                     | **🧹 make public** | 7                                      | 169            | medium     | [pubsub-url]      |
 
-Remarks for `evidence` and `consensus`: There is a single project we have identified using APIs from these modules,
+#### Remarks on the table
+
+For `evidence` and `consensus`: There is a single project we have identified using APIs from these modules,
 specifically <https://github.com/forbole/juno>. The maintainers of this project have agreed it is not a problem
 for them if we keep the two modules private.
 
@@ -114,7 +116,6 @@ for them if we keep the two modules private.
 
 To summarize, these modules will remain public in v1 and marked as deprecated:
 - `statesync`
-- `indexer`
 - `protoio`
 - `sync`
 - `service`
@@ -160,7 +161,7 @@ users transition to other general-purpose libraries:
 [statesync-url]: https://sourcegraph.com/search?q=context:global+lang:Go+%22github.com/cometbft/cometbft/statesync%22&patternType=keyword&sm=0
 [evidence-url]: https://sourcegraph.com/search?q=context:global+lang:Go+%22github.com/cometbft/cometbft/evidence%22&patternType=keyword&sm=0
 [consensus-url]: https://sourcegraph.com/search?q=context:global+lang:Go+%22github.com/cometbft/cometbft/consensus%22&patternType=keyword&sm=0
-[indexer-url]: https://sourcegraph.com/search?q=context:global+lang:Go+"github.com/cometbft/cometbft/state/indexer"&patternType=keyword&sm=0
+[indexer-url]: https://sourcegraph.com/search?q=context:global+lang:Go+%22github.com/cometbft/cometbft/indexer%22&patternType=keyword&sm=0
 [protoio-url]: https://sourcegraph.com/search?q=context:global+lang:Go+"github.com/cometbft/cometbft/libs/protoio"&patternType=keyword&sm=0
 [sync-url]: https://sourcegraph.com/search?q=context:global+lang:Go+%22github.com/cometbft/cometbft/libs/sync%22&patternType=keyword&sm=0
 [tempfile-url]: https://sourcegraph.com/search?q=context:global+lang:Go+"github.com/cometbft/cometbft/libs/tempfile"&patternType=keyword&sm=0

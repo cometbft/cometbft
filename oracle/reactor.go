@@ -219,6 +219,10 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 				continue
 			}
 
+			if gossipVote == nil {
+				continue
+			}
+
 			success := peer.Send(p2p.Envelope{
 				ChannelID: OracleChannel,
 				Message:   gossipVote,

@@ -63,9 +63,14 @@ func newReactor(
 	genDoc *types.GenesisDoc,
 	privVals []types.PrivValidator,
 	maxBlockHeight int64,
+	incorrectData ...int64,
 ) ReactorPair {
 	if len(privVals) != 1 {
 		panic("only support one validator")
+	}
+	var incorrectBlock int64 = 0
+	if len(incorrectData) > 0 {
+		incorrectBlock = incorrectData[0]
 	}
 
 	app := abci.NewBaseApplication()
@@ -120,6 +125,8 @@ func newReactor(
 
 	// let's add some blocks in
 	for blockHeight := int64(1); blockHeight <= maxBlockHeight; blockHeight++ {
+		voteExtensionIsEnabled := genDoc.ConsensusParams.ABCI.VoteExtensionsEnabled(blockHeight)
+
 		lastExtCommit := seenExtCommit.Clone()
 
 		thisBlock := state.MakeBlock(blockHeight, nil, lastExtCommit.ToCommit(), nil, state.Validators.Proposer.Address)
@@ -160,7 +167,12 @@ func newReactor(
 			panic(fmt.Errorf("error apply block: %w", err))
 		}
 
-		blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
+		saveCorrectVoteExtensions := blockHeight != incorrectBlock
+		if !(saveCorrectVoteExtensions != voteExtensionIsEnabled) {
+			blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
+		} else {
+			blockStore.SaveBlock(thisBlock, thisParts, seenExtCommit.ToCommit())
+		}
 	}
 
 	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics(), 0)
@@ -377,5 +389,109 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 	const maxDiff = 3
 	for _, r := range reactorPairs {
 		assert.GreaterOrEqual(t, r.reactor.store.Height(), maxBlockHeight-maxDiff)
+	}
+}
+
+// TestCheckExtendedCommitExtra tests when VoteExtension is disabled but an ExtendedVote is present in the block.
+func TestCheckExtendedCommitExtra(t *testing.T) {
+	const maxBlockHeight = 10
+	const enableVoteExtension = 5
+	const invalidBlockHeight = 3
+
+	config = test.ResetTestRoot("blocksync_reactor_test")
+	defer os.RemoveAll(config.RootDir)
+	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc.ConsensusParams.ABCI.VoteExtensionsEnableHeight = enableVoteExtension
+
+	reactorPairs := make([]ReactorPair, 1, 2)
+	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
+	reactorPairs[0].reactor.switchToConsensusMs = 50
+	defer func() {
+		for _, r := range reactorPairs {
+			err := r.reactor.Stop()
+			require.NoError(t, err)
+			err = r.app.Stop()
+			require.NoError(t, err)
+		}
+	}()
+
+	reactorPairs = append(reactorPairs, newReactor(t, log.TestingLogger(), genDoc, privVals, maxBlockHeight, invalidBlockHeight))
+
+	var switches []*p2p.Switch
+	for _, r := range reactorPairs {
+		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
+			s.AddReactor("BLOCKSYNC", r.reactor)
+			return s
+		}, p2p.Connect2Switches)...)
+	}
+
+	time.Sleep(60 * time.Millisecond)
+
+	// Connect both switches
+	p2p.Connect2Switches(switches, 0, 1)
+
+	startTime := time.Now()
+	for {
+		time.Sleep(20 * time.Millisecond)
+		// The reactor can never catch up, because at one point it disconnects.
+		require.False(t, reactorPairs[0].reactor.pool.IsCaughtUp(), "node caught up: accepted block with ExtendedCommit while vote extensions are disabled")
+		// After 5 seconds, the test should have executed.
+		if time.Since(startTime) > 5*time.Second {
+			assert.Equal(t, 0, reactorPairs[0].reactor.Switch.Peers().Size(), "node should have disconnected but didn't")
+			assert.Equal(t, 0, reactorPairs[1].reactor.Switch.Peers().Size(), "node should have disconnected but didn't")
+			break
+		}
+	}
+}
+
+// TestCheckExtendedCommitMissing tests when VoteExtension is enabled but the ExtendedVote is missing from the block.
+func TestCheckExtendedCommitMissing(t *testing.T) {
+	const maxBlockHeight = 10
+	const enableVoteExtension = 5
+	const invalidBlockHeight = 8
+
+	config = test.ResetTestRoot("blocksync_reactor_test")
+	defer os.RemoveAll(config.RootDir)
+	genDoc, privVals := randGenesisDoc(1, false, 30)
+	genDoc.ConsensusParams.ABCI.VoteExtensionsEnableHeight = enableVoteExtension
+
+	reactorPairs := make([]ReactorPair, 1, 2)
+	reactorPairs[0] = newReactor(t, log.TestingLogger(), genDoc, privVals, 0)
+	reactorPairs[0].reactor.switchToConsensusMs = 50
+	defer func() {
+		for _, r := range reactorPairs {
+			err := r.reactor.Stop()
+			require.NoError(t, err)
+			err = r.app.Stop()
+			require.NoError(t, err)
+		}
+	}()
+
+	reactorPairs = append(reactorPairs, newReactor(t, log.TestingLogger(), genDoc, privVals, maxBlockHeight, invalidBlockHeight))
+
+	var switches []*p2p.Switch
+	for _, r := range reactorPairs {
+		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
+			s.AddReactor("BLOCKSYNC", r.reactor)
+			return s
+		}, p2p.Connect2Switches)...)
+	}
+
+	time.Sleep(60 * time.Millisecond)
+
+	// Connect both switches
+	p2p.Connect2Switches(switches, 0, 1)
+
+	startTime := time.Now()
+	for {
+		time.Sleep(20 * time.Millisecond)
+		// The node can never catch up, because at one point it disconnects.
+		require.False(t, reactorPairs[0].reactor.pool.IsCaughtUp(), "node caught up: accepted block with no ExtendedCommit while vote extensions are enabled")
+		// After 5 seconds, the test should have executed.
+		if time.Since(startTime) > 5*time.Second {
+			assert.Equal(t, 0, reactorPairs[0].reactor.Switch.Peers().Size(), "node should have disconnected but didn't")
+			assert.Equal(t, 0, reactorPairs[1].reactor.Switch.Peers().Size(), "node should have disconnected but didn't")
+			break
+		}
 	}
 }

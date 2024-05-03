@@ -119,18 +119,18 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			oracleInfo.UnsignedVoteBuffer.Buffer = newVotes
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
-			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-			buffer := oracleInfo.GossipVoteBuffer.Buffer
+			// oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+			// buffer := oracleInfo.GossipVoteBuffer.Buffer
 
-			// prune gossip votes that have not been updated in the last x amt of blocks, where x is the maxGossipVoteAge
-			for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
-				if gossipVote.SignedTimestamp < oracleInfo.BlockTimestamps[0] {
-					log.Infof("DELETING STALE GOSSIP BUFFER (%v) FOR VAL: %s", gossipVote.SignedTimestamp, valAddr)
-					delete(buffer, valAddr)
-				}
-			}
-			oracleInfo.GossipVoteBuffer.Buffer = buffer
-			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+			// // prune gossip votes that have not been updated in the last x amt of blocks, where x is the maxGossipVoteAge
+			// for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
+			// 	if gossipVote.SignedTimestamp < oracleInfo.BlockTimestamps[0] {
+			// 		log.Infof("DELETING STALE GOSSIP BUFFER (%v) FOR VAL: %s", gossipVote.SignedTimestamp, valAddr)
+			// 		delete(buffer, valAddr)
+			// 	}
+			// }
+			// oracleInfo.GossipVoteBuffer.Buffer = buffer
+			// oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
 	}(oracleInfo)
 }

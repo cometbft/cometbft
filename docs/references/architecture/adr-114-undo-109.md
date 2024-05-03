@@ -109,6 +109,7 @@ Column legend:
 ### Summary
 
 To summarize, these modules will remain public in v1 and marked as deprecated:
+- `statesync`
 - `evidence`
 - `consensus`
 - `indexer`

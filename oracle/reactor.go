@@ -145,7 +145,6 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 			oracleR.Logger.Error("failed signature verification", msg)
-			logrus.Info("FAILED SIGNATURE VERIFICATION!!!!!!!!!!!!!!")
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
 			return
 		}

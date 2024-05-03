@@ -210,11 +210,10 @@ func (blockExec *BlockExecutor) ProcessProposal(
 
 		if err != nil && res.Status == abci.ResponseValidateOracleVotes_absent {
 			// oracleTx is not present, continue normal processProposal flow
-			blockExec.logger.Error("error unmarshalling oracleVotesMsg or oracleVotesMsg not present", "err", err)
-			logrus.Infof("processProposal: cant even find oracle votes")
+			blockExec.logger.Error("error validating oracle votes:", "err", err)
 		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_present {
 			// oracleTx is present but it is invalid, remove from txs
-			logrus.Infof("processProposal: unsucessful in validating oracle votes")
+			blockExec.logger.Error("error validating oracle votes:", "err", err)
 			block.Data.Txs = types.ToTxs(txs[1:])
 		} else if err == nil {
 			// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig

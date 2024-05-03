@@ -133,18 +133,33 @@ func contains(s []int64, e int64) bool {
 	return false
 }
 
-func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo) {
+func PruneGossipVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	go func(oracleInfo *types.OracleInfo) {
-		interval := 60 * time.Second
-		ticker := time.Tick(interval)
+		maxGossipVoteAge := oracleInfo.Config.MaxGossipVoteAge
+		if maxGossipVoteAge == 0 {
+			maxGossipVoteAge = 2
+		}
+		ticker := time.Tick(1 * time.Second)
 		for range ticker {
+			lastBlockTime := consensusState.GetState().LastBlockTime
+
+			if !contains(oracleInfo.BlockTimestamps, lastBlockTime.Unix()) {
+				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime.Unix())
+			}
+
+			if len(oracleInfo.BlockTimestamps) < maxGossipVoteAge {
+				continue
+			}
+
+			if len(oracleInfo.BlockTimestamps) > maxGossipVoteAge {
+				oracleInfo.BlockTimestamps = oracleInfo.BlockTimestamps[1:]
+			}
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-			currTime := time.Now().Unix()
 			buffer := oracleInfo.GossipVoteBuffer.Buffer
 
-			// prune gossip vote that have signed timestamps older than 60 secs
+			// prune gossip votes that have not been updated in the last x amt of blocks, where x is the maxGossipVoteAge
 			for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
-				if gossipVote.SignedTimestamp < currTime-int64(interval.Seconds()) {
+				if gossipVote.SignedTimestamp < oracleInfo.BlockTimestamps[0] {
 					log.Infof("DELETING STALE GOSSIP BUFFER (%v) FOR VAL: %s", gossipVote.SignedTimestamp, valAddr)
 					delete(buffer, valAddr)
 				}
@@ -160,7 +175,7 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	log.Info("[oracle] Service started.")
 	RunProcessSignVoteQueue(oracleInfo, consensusState)
 	PruneUnsignedVoteBuffer(oracleInfo, consensusState)
-	PruneGossipVoteBuffer(oracleInfo)
+	PruneGossipVoteBuffer(oracleInfo, consensusState)
 	// start to take votes from app
 	for {
 		res, err := oracleInfo.ProxyApp.FetchOracleVotes(context.Background(), &abcitypes.RequestFetchOracleVotes{})

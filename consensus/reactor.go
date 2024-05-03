@@ -19,7 +19,6 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -343,7 +342,6 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			cs := conR.conS
 			cs.mtx.RLock()
 			height, valSize, lastCommitSize := cs.Height, cs.Validators.Size(), cs.LastCommit.Size()
-			logrus.Infof("@@@@@@@@@@@@@ VAL SIZE: %v @@@@@@@@@@@@@@@", cs.Validators.Size())
 			cs.mtx.RUnlock()
 			ps.EnsureVoteBitArrays(height, valSize)
 			ps.EnsureVoteBitArrays(height-1, lastCommitSize)

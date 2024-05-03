@@ -53,6 +53,7 @@ numbering our ADRs from 100 onwards.
 - [ADR-109: Reduce CometBFT Go API Surface Area](adr-109-reduce-go-api-surface.md)
 - [ADR-111: `nop` Mempool](adr-111-nop-mempool.md)
 - [ADR-112: Proposer-Based Timestamps](adr-112-proposer-based-timestamps.md)
+- [ADR-114: Partly Undo ADR 109](adr-114-undo-109.md)
 
 ### Implemented
 

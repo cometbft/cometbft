@@ -192,7 +192,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 		panic(fmt.Errorf("unmarshal to cmtproto.BlockMeta: %w", err))
 	}
 
-	blockMeta, err := types.BlockMetaFromProto(pbbm)
+	blockMeta, err := types.BlockMetaFromTrustedProto(pbbm)
 	if err != nil {
 		panic(fmt.Errorf("error from proto blockMeta: %w", err))
 	}

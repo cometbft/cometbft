@@ -2,7 +2,9 @@ package blocksync
 
 import (
 	"fmt"
+	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
 	"os"
+	"reflect"
 	"sort"
 	"testing"
 	"time"
@@ -53,7 +55,7 @@ func randGenesisDoc(numValidators int, randPower bool, minPower int64) (*types.G
 }
 
 type ReactorPair struct {
-	reactor *Reactor
+	reactor *ByzantineReactor
 	app     proxy.AppConns
 }
 
@@ -168,14 +170,14 @@ func newReactor(
 		}
 
 		saveCorrectVoteExtensions := blockHeight != incorrectBlock
-		if !(saveCorrectVoteExtensions != voteExtensionIsEnabled) {
+		if saveCorrectVoteExtensions == voteExtensionIsEnabled {
 			blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
 		} else {
 			blockStore.SaveBlock(thisBlock, thisParts, seenExtCommit.ToCommit())
 		}
 	}
 
-	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics(), 0)
+	bcReactor := NewByzantineReactor(incorrectBlock, NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics(), 0))
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}
@@ -493,5 +495,122 @@ func TestCheckExtendedCommitMissing(t *testing.T) {
 			assert.Equal(t, 0, reactorPairs[1].reactor.Switch.Peers().Size(), "node should have disconnected but didn't")
 			break
 		}
+	}
+}
+
+// ByzantineReactor is a blockstore reactor implementation where a corrupted block can be sent to a peer.
+// The corruption is that the block contains extended commit signatures when vote extensions are disabled or
+// it has no extended commit signatures while vote extensions are enabled.
+// If the corrupted block height is set to 0, the reactor behaves as normal.
+type ByzantineReactor struct {
+	*Reactor
+	corruptedBlock int64
+}
+
+func NewByzantineReactor(invalidBlock int64, conR *Reactor) *ByzantineReactor {
+	return &ByzantineReactor{
+		Reactor:        conR,
+		corruptedBlock: invalidBlock,
+	}
+}
+
+// respondToPeer loads a block and sends it to the requesting peer,
+// if we have it. Otherwise, we'll respond saying we don't have it.
+// Byzantine modification: if corruptedBlock is set, send the wrong Block.
+func (bcR *ByzantineReactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {
+	block := bcR.store.LoadBlock(msg.Height)
+	if block == nil {
+		bcR.Logger.Info("Peer asking for a block we don't have", "src", src, "height", msg.Height)
+		return src.TrySend(p2p.Envelope{
+			ChannelID: BlocksyncChannel,
+			Message:   &bcproto.NoBlockResponse{Height: msg.Height},
+		})
+	}
+
+	state, err := bcR.blockExec.Store().Load()
+	if err != nil {
+		bcR.Logger.Error("loading state", "err", err)
+		return false
+	}
+	var extCommit *types.ExtendedCommit
+	voteExtensionEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(msg.Height)
+	incorrectBlock := bcR.corruptedBlock == msg.Height
+	if voteExtensionEnabled && !incorrectBlock || !voteExtensionEnabled && incorrectBlock {
+		extCommit = bcR.store.LoadBlockExtendedCommit(msg.Height)
+		if extCommit == nil {
+			bcR.Logger.Error("found block in store with no extended commit", "block", block)
+			return false
+		}
+	}
+
+	bl, err := block.ToProto()
+	if err != nil {
+		bcR.Logger.Error("could not convert msg to protobuf", "err", err)
+		return false
+	}
+
+	return src.TrySend(p2p.Envelope{
+		ChannelID: BlocksyncChannel,
+		Message: &bcproto.BlockResponse{
+			Block:     bl,
+			ExtCommit: extCommit.ToProto(),
+		},
+	})
+}
+
+// Receive implements Reactor by handling 4 types of messages (look below).
+// Copied unchanged from reactor.go so the correct respondToPeer is called.
+func (bcR *ByzantineReactor) Receive(e p2p.Envelope) {
+	if err := ValidateMsg(e.Message); err != nil {
+		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
+		bcR.Switch.StopPeerForError(e.Src, err)
+		return
+	}
+
+	bcR.Logger.Debug("Receive", "e.Src", e.Src, "chID", e.ChannelID, "msg", e.Message)
+
+	switch msg := e.Message.(type) {
+	case *bcproto.BlockRequest:
+		bcR.respondToPeer(msg, e.Src)
+	case *bcproto.BlockResponse:
+		bi, err := types.BlockFromProto(msg.Block)
+		if err != nil {
+			bcR.Logger.Error("Peer sent us invalid block", "peer", e.Src, "msg", e.Message, "err", err)
+			bcR.Switch.StopPeerForError(e.Src, err)
+			return
+		}
+		var extCommit *types.ExtendedCommit
+		if msg.ExtCommit != nil {
+			var err error
+			extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
+			if err != nil {
+				bcR.Logger.Error("failed to convert extended commit from proto",
+					"peer", e.Src,
+					"err", err)
+				bcR.Switch.StopPeerForError(e.Src, err)
+				return
+			}
+		}
+
+		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
+			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
+		}
+	case *bcproto.StatusRequest:
+		// Send peer our state.
+		e.Src.TrySend(p2p.Envelope{
+			ChannelID: BlocksyncChannel,
+			Message: &bcproto.StatusResponse{
+				Height: bcR.store.Height(),
+				Base:   bcR.store.Base(),
+			},
+		})
+	case *bcproto.StatusResponse:
+		// Got a peer status. Unverified.
+		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
+	case *bcproto.NoBlockResponse:
+		bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
+		bcR.pool.RedoRequestFrom(msg.Height, e.Src.ID())
+	default:
+		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
 }

@@ -40,6 +40,14 @@ func (bm *BlockMeta) ToProto() *cmtproto.BlockMeta {
 	return pb
 }
 
+func BlockMetaFromProto(pb *cmtproto.BlockMeta) (*BlockMeta, error) {
+	bm, err := BlockMetaFromTrustedProto(pb)
+	if err != nil {
+		return nil, err
+	}
+	return bm, bm.ValidateBasic()
+}
+
 func BlockMetaFromTrustedProto(pb *cmtproto.BlockMeta) (*BlockMeta, error) {
 	if pb == nil {
 		return nil, errors.New("blockmeta is empty")

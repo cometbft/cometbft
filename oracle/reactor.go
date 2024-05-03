@@ -1,6 +1,7 @@
 package oracle
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
 	"time"
@@ -61,7 +62,7 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		PubKey:             pubKey,
 		PrivValidator:      privValidator,
 		ProxyApp:           proxyApp,
-		BlockTimestamps:    make([]int64, 0),
+		BlockTimestamps:    []int64{},
 	}
 
 	oracleR := &Reactor{
@@ -133,7 +134,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		// verify sig of incoming gossip vote, throw if verification fails
 		_, val := oracleR.ConsensusState.Validators.GetByAddress(msg.Validator)
 		if val == nil {
-			logrus.Infof("validator: %v not found in validator set, skipping gossip", msg.Validator)
+			logrus.Infof("validator: %v not found in validator set, skipping gossip", hex.EncodeToString(msg.Validator))
 			return
 		}
 		pubKey := val.PubKey
@@ -144,7 +145,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-			oracleR.Logger.Error("failed signature verification", msg)
+			oracleR.Logger.Error("failed signature verification for validator: %v", hex.EncodeToString(msg.Validator))
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
 			return
 		}
@@ -212,6 +213,11 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
+			// stop sending gossip votes that have passed the maxGossipVoteAge
+			if len(oracleR.OracleInfo.BlockTimestamps) > 0 && gossipVote.SignedTimestamp < oracleR.OracleInfo.BlockTimestamps[0] {
+				continue
+			}
+
 			success := peer.Send(p2p.Envelope{
 				ChannelID: OracleChannel,
 				Message:   gossipVote,

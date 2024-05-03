@@ -114,8 +114,6 @@ func PruneUnsignedVoteBuffer(oracleInfo *types.OracleInfo, consensusState *cs.St
 			for _, vote := range unsignedVoteBuffer {
 				if vote.Timestamp >= oracleInfo.BlockTimestamps[0] {
 					newVotes = append(newVotes, vote)
-				} else {
-					log.Infof("deleting vote timestamp: %v, block timestamp: %v", vote.Timestamp, oracleInfo.BlockTimestamps[0])
 				}
 			}
 			oracleInfo.UnsignedVoteBuffer.Buffer = newVotes

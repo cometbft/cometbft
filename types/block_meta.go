@@ -40,7 +40,7 @@ func (bm *BlockMeta) ToProto() *cmtproto.BlockMeta {
 	return pb
 }
 
-func BlockMetaFromProto(pb *cmtproto.BlockMeta) (*BlockMeta, error) {
+func BlockMetaFromTrustedProto(pb *cmtproto.BlockMeta) (*BlockMeta, error) {
 	if pb == nil {
 		return nil, errors.New("blockmeta is empty")
 	}
@@ -62,7 +62,7 @@ func BlockMetaFromProto(pb *cmtproto.BlockMeta) (*BlockMeta, error) {
 	bm.Header = h
 	bm.NumTxs = int(pb.NumTxs)
 
-	return bm, bm.ValidateBasic()
+	return bm, nil
 }
 
 // ValidateBasic performs basic validation.

@@ -295,7 +295,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	if err != nil {
 		panic(fmt.Errorf("unmarshal to cmtproto.BlockMeta: %w", err))
 	}
-	blockMeta, err := types.BlockMetaFromProto(pbbm)
+	blockMeta, err := types.BlockMetaFromTrustedProto(pbbm)
 	if err != nil {
 		panic(cmterrors.ErrMsgFromProto{MessageName: "BlockMetadata", Err: err})
 	}

@@ -131,12 +131,8 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipedVotes:
-		if msg == nil {
-			return
-		}
-
 		// verify sig of incoming gossip vote, throw if verification fails
-		_, val := oracleR.ConsensusState.Validators.GetByAddress(msg.Validator)
+		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
 		if val == nil {
 			logrus.Infof("validator: %v not found in validator set, skipping gossip", hex.EncodeToString(msg.Validator))
 			return
@@ -223,13 +219,13 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
-			// stop sending gossip votes that have passed the maxGossipVoteAge
-			if len(oracleR.OracleInfo.BlockTimestamps) >= oracleR.OracleInfo.Config.MaxGossipVoteAge &&
-				gossipVote.SignedTimestamp < oracleR.OracleInfo.BlockTimestamps[0] {
+			if gossipVote == nil {
 				continue
 			}
 
-			if gossipVote == nil {
+			// stop sending gossip votes that have passed the maxGossipVoteAge
+			if len(oracleR.OracleInfo.BlockTimestamps) >= oracleR.OracleInfo.Config.MaxGossipVoteAge &&
+				gossipVote.SignedTimestamp < oracleR.OracleInfo.BlockTimestamps[0] {
 				continue
 			}
 

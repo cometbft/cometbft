@@ -11,8 +11,8 @@ message Vote {
 }
 
 message GossipedVotes {
-  int32 validator_index = 1;
-  bytes validator = 2;
+  bytes validator = 1;
+  int32 validator_index = 2;
   repeated Vote votes = 3;
   int64 signed_timestamp = 4;
   bytes signature = 5;

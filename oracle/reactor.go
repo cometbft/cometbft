@@ -145,7 +145,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-			logrus.Warnf("failed signature for validator: %v", hex.EncodeToString(msg.Validator))
+			logrus.Warnf("failed signature verification for validator: %v", hex.EncodeToString(msg.Validator))
 			oracleR.Logger.Error("failed signature verification for validator: %v", hex.EncodeToString(msg.Validator))
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
 			return
@@ -235,7 +235,8 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 			})
 			if !success {
 				logrus.Info("FAILED TO SEND!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-				continue
+				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+				break
 			}
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()

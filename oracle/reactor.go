@@ -148,6 +148,8 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			return
 		}
 
+		logrus.Infof("RECEIVE GOSSIP: THIS IS MY VALIDATOR: %v", hex.EncodeToString(msg.Validator))
+
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
 			oracleR.Logger.Error("failed signature verification for validator: %v", hex.EncodeToString(msg.Validator))
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
@@ -190,6 +192,11 @@ type PeerState interface {
 
 // // Send new oracle votes to peer.
 func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
+	interval := oracleR.OracleInfo.Config.GossipInterval
+	if interval == 0 {
+		interval = 100 * time.Millisecond
+	}
+
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !oracleR.IsRunning() || !peer.IsRunning() {
@@ -227,6 +234,8 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 				continue
 			}
 
+			logrus.Infof("SEND GOSSIP: THIS IS MY VALIDATOR: %v", hex.EncodeToString(gossipVote.Validator))
+
 			success := peer.Send(p2p.Envelope{
 				ChannelID: OracleChannel,
 				Message:   gossipVote,
@@ -238,10 +247,6 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 
-		interval := oracleR.OracleInfo.Config.GossipInterval
-		if interval == 0 {
-			interval = 100 * time.Millisecond
-		}
 		time.Sleep(interval)
 	}
 }

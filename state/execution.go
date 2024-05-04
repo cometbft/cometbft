@@ -149,11 +149,9 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		})
 		if err != nil {
 			blockExec.logger.Error("error in proxyAppConn.CreateOracleResultTx", "err", err)
+		} else {
+			CreateOracleResultTxBz = resp.EncodedTx
 		}
-		CreateOracleResultTxBz = resp.EncodedTx
-		logrus.Info("submitting oracle results...")
-	} else {
-		logrus.Info("skipping submitting of oracle results as no votes")
 	}
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)

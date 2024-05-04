@@ -1,3 +1,5 @@
+// Package statesync may be internalized (made private) in future  releases.
+// XXX Deprecated.
 package statesync
 
 import (

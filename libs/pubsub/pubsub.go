@@ -31,6 +31,9 @@
 //	        return subscription.Err()
 //	    }
 //	}
+//
+// Package pubsub may be internalized (made private) in future  releases.
+// XXX Deprecated.
 package pubsub
 
 import (

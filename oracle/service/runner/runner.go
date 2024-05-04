@@ -64,7 +64,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		Validator:       oracleInfo.PubKey.Address(),
 		ValidatorIndex:  validatorIndex,
 		SignedTimestamp: time.Now().Unix(),
-		Votes:           oracleInfo.UnsignedVoteBuffer.Buffer,
+		// Votes:           oracleInfo.UnsignedVoteBuffer.Buffer,
 	}
 
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()

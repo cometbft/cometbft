@@ -18,10 +18,10 @@ import (
 	"github.com/cometbft/cometbft/config"
 	flow "github.com/cometbft/cometbft/internal/flowrate"
 	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/internal/timer"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (

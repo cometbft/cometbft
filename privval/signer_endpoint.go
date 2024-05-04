@@ -7,8 +7,8 @@ import (
 
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/protoio"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (

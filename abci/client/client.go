@@ -6,7 +6,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // SignerListenerEndpointOption sets an optional parameter on the SignerListenerEndpoint.

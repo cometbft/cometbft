@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"encoding/hex"
 	"sort"
 	"time"
 
@@ -61,7 +60,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
-	log.Infof("signVoteQueue: THIS IS MY VALIDATOR: %v", hex.EncodeToString(oracleInfo.PubKey.Address()))
 	newGossipVote := &oracleproto.GossipedVotes{
 		Validator:       oracleInfo.PubKey.Address(),
 		ValidatorIndex:  validatorIndex,
@@ -150,7 +148,7 @@ func contains(s []int64, e int64) bool {
 func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	log.Info("[oracle] Service started.")
 	RunProcessSignVoteQueue(oracleInfo, consensusState)
-	PruneVoteBuffers(oracleInfo, consensusState)
+	// PruneVoteBuffers(oracleInfo, consensusState)
 	// start to take votes from app
 	for {
 		res, err := oracleInfo.ProxyApp.FetchOracleVotes(context.Background(), &abcitypes.RequestFetchOracleVotes{})

@@ -1,7 +1,7 @@
 package p2p
 
 import (
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 

@@ -12,7 +12,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/types"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 var _ Client = (*grpcClient)(nil)

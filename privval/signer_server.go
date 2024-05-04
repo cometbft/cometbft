@@ -4,7 +4,7 @@ import (
 	"io"
 
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/types"
 )

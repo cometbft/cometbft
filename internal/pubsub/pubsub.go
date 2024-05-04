@@ -38,7 +38,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 

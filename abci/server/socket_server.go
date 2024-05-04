@@ -12,8 +12,8 @@ import (
 
 	"github.com/cometbft/cometbft/abci/types"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
-	"github.com/cometbft/cometbft/internal/service"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 

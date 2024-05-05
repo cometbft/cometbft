@@ -37,14 +37,22 @@ func NewRand() *Rand {
 	return rand
 }
 
-func (r *Rand) init() {
+func NewStdlibRand() *mrand.Rand {
+	return mrand.New(mrand.NewSource(newSeed()))
+}
+
+func newSeed() int64 {
 	bz := cRandBytes(8)
 	var seed uint64
 	for i := 0; i < 8; i++ {
 		seed |= uint64(bz[i])
 		seed <<= 8
 	}
-	r.reset(int64(seed))
+	return int64(seed)
+}
+
+func (r *Rand) init() {
+	r.reset(newSeed())
 }
 
 func (r *Rand) reset(seed int64) {

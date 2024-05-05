@@ -58,13 +58,14 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
+	unsignedVotes := oracleInfo.UnsignedVoteBuffer.Buffer
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
 	newGossipVote := &oracleproto.GossipedVotes{
 		Validator:       oracleInfo.PubKey.Address(),
 		ValidatorIndex:  validatorIndex,
 		SignedTimestamp: time.Now().Unix(),
-		// Votes:           oracleInfo.UnsignedVoteBuffer.Buffer,
+		Votes:           unsignedVotes,
 	}
 
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
@@ -120,16 +121,16 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
-			buffer := oracleInfo.GossipVoteBuffer.Buffer
+			gossipBuffer := oracleInfo.GossipVoteBuffer.Buffer
 
 			// prune gossip votes that have not been updated in the last x amt of blocks, where x is the maxGossipVoteAge
-			for valAddr, gossipVote := range oracleInfo.GossipVoteBuffer.Buffer {
+			for valAddr, gossipVote := range gossipBuffer {
 				if gossipVote.SignedTimestamp < oracleInfo.BlockTimestamps[0] {
 					log.Infof("DELETING STALE GOSSIP BUFFER (%v) FOR VAL: %s", gossipVote.SignedTimestamp, valAddr)
-					delete(buffer, valAddr)
+					delete(gossipBuffer, valAddr)
 				}
 			}
-			oracleInfo.GossipVoteBuffer.Buffer = buffer
+			oracleInfo.GossipVoteBuffer.Buffer = gossipBuffer
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
 	}(oracleInfo)

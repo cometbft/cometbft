@@ -4,7 +4,7 @@ package tendermint.oracle;
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/oracle";
 
 message Vote {
-  string validator = 1;
+  bytes validator = 1;
   string oracle_id = 2;
   int64 timestamp = 3;
   string data = 4;

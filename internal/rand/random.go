@@ -37,6 +37,10 @@ func NewRand() *Rand {
 	return rand
 }
 
+// Make a new stdlib rand source. Its up to the caller to ensure
+// that the rand source is not called in parallel.
+// The failure mode of calling the returned rand multiple times in parallel is
+// repeated values across threads.
 func NewStdlibRand() *mrand.Rand {
 	return mrand.New(mrand.NewSource(newSeed()))
 }
@@ -310,6 +314,8 @@ func (r *Rand) Perm(n int) []int {
 // NOTE: This relies on the os's random number generator.
 // For real security, we should salt that with some seed.
 // See github.com/cometbft/cometbft/crypto for a more secure reader.
+// This function is thread safe, see:
+// https://stackoverflow.com/questions/75685374/is-golang-crypto-rand-thread-safe
 func cRandBytes(numBytes int) []byte {
 	b := make([]byte, numBytes)
 	_, err := crand.Read(b)

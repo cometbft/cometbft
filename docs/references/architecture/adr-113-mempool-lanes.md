@@ -81,38 +81,43 @@ before receiving `tx2`, then:
 Note that a node's mempool can receive a transaction either from a `broadcast_tx_*` RPC endpoint or
 from a peer.
 
+This property guarantees the FIFO ordering at any given node, but it cannot be generalised to all
+the nodes in the network because the property does not hold at the network level. Hence, FIFO
+ordering on the whole system is best effort.
+
 ### Mempool with QoS
 
-With the introduction of *transaction classes*, the main goal is to guarantee that certain
-transactions have lower latency than others. 
+The main goal of QoS is to guarantee that certain transactions have lower latency than others.
+Before stating this property, we need to make some definitions.
 
 :memo: _Definition_: a *transaction class* is a disjoint set of transactions having some common
 characteristics as defined by the application.
 
 A transaction may only have one class. If it is not assigned any specific class, it will be assigned
 a *default class*, which is a special class always present in any set of classes. Because no
-transaction can belong to two or more classes, transaction classes form disjoint sets. Also, all
-transactions in the mempool are the union of the transactions in all classes.
+transaction can belong to two or more classes, transaction classes form disjoint sets, that is, the
+intersection between classes is empty. Also, all transactions in the mempool are the union of the
+transactions in all classes.
 
-:memo: _Definition_: Each class has a *priority* and two classes cannot have the same priority. Therefore
-all classes can be ordered by priority.
+:memo: _Definition_: Each class has a *priority* and two classes cannot have the same priority.
+Therefore all classes can be ordered by priority.
 
-Now, given these definitions, we want the proposed QoS mechanism to offer the following property:
+Given these definitions, we want the proposed QoS mechanism to offer the following property:
 
 :parking: _Property_ **Priorities between classes**: Transactions belonging to a certain class will
 be processed and disseminated before transactions belonging to another class with lower priority.
 
 Formally, given two transaction classes `c1` and `c2`, with `c1` having more priority than `c2`, if
-the application assigns via `CheckTx` the classes `c1` and `c2` respectively to transactions `tx1`
-and `tx2`, then `tx1` will be processed and disseminated before `tx2`.
+the application assigns the classes `c1` and `c2` respectively to transactions `tx1` and `tx2`, then
+`tx1` will be processed and disseminated before `tx2`.
 
-More importantly, as a direct consequence of this property, `tx1` will have a lower latency than
-`tx2`, because `tx1` will be disseminated faster and it will be included in a block before `tx2`.
+More importantly, as a direct consequence of this property, `tx1` will be disseminated faster and it
+will be included in a block before `tx2`, thus `tx1` will have a lower latency than `tx2`.
 Currently, it is not possible to guarantee this kind of property.
 
-:memo: _Definition_: The *latency of a transaction* is the difference between the time at which the
-transaction was received for the first time by a node, and the timestamp of the block in which the
-transaction finally was included.
+:memo: _Definition_: The *latency of a transaction* is the difference between the time at which a
+user or client submits the transaction for the first time to any node in the network, and the
+timestamp of the block in which the transaction finally was included.
 
 We want also to keep the FIFO ordering within each class (for the time being):
 
@@ -125,8 +130,8 @@ receives `tx1` before receiving `tx2`, then:
 - `tx1` will be validated against the application (via `CheckTx`) before `tx2`, and
 - `tx1` will be processed and disseminated before `tx2`.
 
-As a consequence, given that classes of transactions have a sequential ordering, and that all
-classes are disjunct, we can state the following property:
+As a consequence, given that classes of transactions have a sequential ordering, and that classes do
+not have elements in common, we can state the following property:
 
 :parking: _Property_ **Partial ordering of all transactions**: The set of all the transactions in
 the mempool, regardless of their classes, will have a *partial order*.

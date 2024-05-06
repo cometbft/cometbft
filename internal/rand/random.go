@@ -42,6 +42,8 @@ func NewRand() *Rand {
 // The failure mode of calling the returned rand multiple times in parallel is
 // repeated values across threads.
 func NewStdlibRand() *mrand.Rand {
+	// G404: Use of weak random number generator (math/rand instead of crypto/rand)
+	//nolint:gosec
 	return mrand.New(mrand.NewSource(newSeed()))
 }
 

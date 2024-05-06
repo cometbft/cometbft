@@ -61,8 +61,12 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
 	unsignedVotes := oracleInfo.UnsignedVoteBuffer.Buffer
 
+	log.Infof("VOTES PRE SORT: %v, %v", len(unsignedVotes), unsignedVotes)
+
 	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
 	sort.Sort(ByVote(unsignedVotes))
+
+	log.Infof("VOTES POST SORT: %v, %v", len(unsignedVotes), unsignedVotes)
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
 	newGossipVote := &oracleproto.GossipedVotes{
@@ -174,11 +178,5 @@ func (b ByVote) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
 
 // Define custom sorting rules
 func (b ByVote) Less(i, j int) bool {
-	if b[i].OracleId != b[j].OracleId {
-		return b[i].OracleId < b[j].OracleId
-	}
-	if b[i].Timestamp != b[j].Timestamp {
-		return b[i].Timestamp < b[j].Timestamp
-	}
-	return b[i].Data < b[j].Data
+	return b[i].Timestamp < b[j].Timestamp
 }

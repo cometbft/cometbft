@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light/provider"
 	"github.com/cometbft/cometbft/light/store"
 	"github.com/cometbft/cometbft/types"

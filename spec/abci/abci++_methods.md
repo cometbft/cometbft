@@ -625,7 +625,7 @@ without calling `VerifyVoteExtension` to verify it.
 * **Usage**:
     * Contains the fields of the newly decided block.
     * This method is equivalent to the call sequence `BeginBlock`, [`DeliverTx`],
-      and `EndBlock` in the previous version of ABCI.
+      and `EndBlock` in ABCI 1.0.
     * The height and time values match the values from the header of the proposed block.
     * The Application can use `FinalizeBlockRequest.decided_last_commit` and `FinalizeBlockRequest.misbehavior`
       to determine rewards and punishments for the validators.
@@ -661,6 +661,8 @@ without calling `VerifyVoteExtension` to verify it.
       making the Application's state evolve in the context of state machine replication.
     * Currently, CometBFT will fill up all fields in `FinalizeBlockRequest`, even if they were
       already passed on to the Application via `PrepareProposalRequest` or `ProcessProposalRequest`.
+    * When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+      that at least one non-byzantine validator has run `ProcessProposal` on that block.
 
 #### When does CometBFT call `FinalizeBlock`?
 

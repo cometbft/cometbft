@@ -81,6 +81,7 @@ func TestRPCConfigValidateBasic(t *testing.T) {
 		"TimeoutBroadcastTxCommit",
 		"MaxBodyBytes",
 		"MaxHeaderBytes",
+		"MaxRequestBatchSize",
 	}
 
 	for _, fieldName := range fieldsToTest {

@@ -21,17 +21,10 @@ var (
 
 func randBitArray(bits int) *BitArray {
 	src := cmtrand.Bytes((bits + 7) / 8)
-	bA := NewBitArray(bits)
-	for i := 0; i < len(src); i++ {
-		for j := 0; j < 8; j++ {
-			if i*8+j >= bits {
-				return bA
-			}
-			setBit := src[i]&(1<<uint(j)) > 0
-			bA.SetIndex(i*8+j, setBit)
-		}
+	srcIndexToBit := func(i int) bool {
+		return src[i/8]&(1<<uint(i%8)) > 0
 	}
-	return bA
+	return NewBitArrayFromFn(bits, srcIndexToBit)
 }
 
 func TestAnd(t *testing.T) {
@@ -59,7 +52,7 @@ func TestAnd(t *testing.T) {
 }
 
 func TestOr(t *testing.T) {
-	bA1 := randBitArray(51)
+	bA1 := randBitArray(57)
 	bA2 := randBitArray(31)
 	bA3 := bA1.Or(bA2)
 
@@ -68,7 +61,7 @@ func TestOr(t *testing.T) {
 	require.Equal(t, bA1.Or(nil), bA1)
 	require.Equal(t, bNil.Or(nil), (*BitArray)(nil))
 
-	if bA3.Bits != 51 {
+	if bA3.Bits != 57 {
 		t.Error("Expected max bits")
 	}
 	if len(bA3.Elems) != len(bA1.Elems) {
@@ -79,6 +72,10 @@ func TestOr(t *testing.T) {
 		if bA3.GetIndex(i) != expected {
 			t.Error("Wrong bit from bA3", i, bA1.GetIndex(i), bA2.GetIndex(i), bA3.GetIndex(i))
 		}
+	}
+	if bA3.getNumTrueIndices() == 0 {
+		t.Error("Expected at least one true bit. " +
+			"This has a false positive rate that is less than 1 in 2^80 (cryptographically improbable).")
 	}
 }
 

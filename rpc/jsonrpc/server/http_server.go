@@ -292,7 +292,12 @@ func PreChecksHandler(next http.Handler, config *Config) http.Handler {
 		r.Body = http.MaxBytesReader(w, r.Body, config.MaxBodyBytes)
 
 		// if maxBatchSize is 0 then don't constraint the limit of requests per batch
+<<<<<<< HEAD
 		// the default value is 10, and it cannot be negative because of the config validation
+=======
+		// It cannot be negative because the config.toml validation requires it to be
+		// greater than or equal to 0
+>>>>>>> cac1fd8ce (fix: remove comment about default value (#2867) (#3000))
 		if config.MaxRequestBatchSize > 0 {
 			var requests []types.RPCRequest
 			var responses []types.RPCResponse

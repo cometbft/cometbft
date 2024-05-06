@@ -14,7 +14,6 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
-	"github.com/sirupsen/logrus"
 
 	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
@@ -205,25 +204,6 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	block *types.Block,
 	state State,
 ) (bool, error) {
-	txs := block.Data.Txs.ToSliceOfBytes()
-	if len(txs) > 0 {
-		res, err := blockExec.proxyApp.ValidateOracleVotes(context.Background(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
-
-		if err != nil && res.Status == abci.ResponseValidateOracleVotes_absent {
-			// oracleTx is not present, continue normal processProposal flow
-			blockExec.logger.Error("error validating oracle votes:", "err", err)
-		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_present {
-			// oracleTx is present but it is invalid, remove from txs
-			blockExec.logger.Error("error validating oracle votes:", "err", err)
-			block.Data.Txs = types.ToTxs(txs[1:])
-		} else if err == nil {
-			// oracleTx is present and valid, update txBz as some of the gossipVotes might have been removed due to invalid sig
-			logrus.Infof("processProposal: success in validating oracle votes")
-			txs[0] = res.EncodedOracleTx
-			block.Data.Txs = types.ToTxs(txs)
-		}
-	}
-
 	resp, err := blockExec.proxyApp.ProcessProposal(context.TODO(), &abci.RequestProcessProposal{
 		Hash:               block.Header.Hash(),
 		Height:             block.Header.Height,

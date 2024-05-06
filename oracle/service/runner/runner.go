@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"sort"
 
 	"time"
 
@@ -61,7 +62,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	unsignedVotes := oracleInfo.UnsignedVoteBuffer.Buffer
 
 	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
-	// sort.Sort(ByVote(unsignedVotes))
+	sort.Sort(ByVote(unsignedVotes))
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
 	newGossipVote := &oracleproto.GossipedVotes{

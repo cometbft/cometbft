@@ -9,7 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	query "github.com/cometbft/cometbft/internal/pubsub/query"
+	query "github.com/cometbft/cometbft/libs/pubsub/query"
 
 	types "github.com/cometbft/cometbft/types"
 )

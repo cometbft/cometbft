@@ -377,6 +377,13 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	return nil
 }
 
+type mempoolUpdate struct {
+	block        *types.Block
+	state        State
+	abciResponse *abci.FinalizeBlockResponse
+	err          error
+}
+
 // Commit locks the mempool, runs the ABCI Commit message, and updates the
 // mempool.
 // It returns the result of calling abci.Commit which is the height to retain (if any)).
@@ -391,21 +398,13 @@ func (blockExec *BlockExecutor) Commit(
 	block *types.Block,
 	abciResponse *abci.FinalizeBlockResponse,
 ) (int64, error) {
-	blockExec.mempool.Lock()
-	defer blockExec.mempool.Unlock()
-
-	// while mempool is Locked, flush to ensure all async requests have completed
-	// in the ABCI app before Commit.
-	err := blockExec.mempool.FlushAppConn()
-	if err != nil {
-		blockExec.logger.Error("client error during mempool.FlushAppConn", "err", err)
-		return 0, err
-	}
-
+	ch := make(chan mempoolUpdate)
+	go blockExec.asyncUpdateMempool(ch)
 	// Commit block, get hash back
 	res, err := blockExec.proxyApp.Commit(context.TODO())
 	if err != nil {
 		blockExec.logger.Error("client error during proxyAppConn.CommitSync", "err", err)
+		ch <- mempoolUpdate{err: err}
 		return 0, err
 	}
 
@@ -417,6 +416,8 @@ func (blockExec *BlockExecutor) Commit(
 	)
 
 	// Update mempool.
+	ch <- mempoolUpdate{block: block, state: state.Copy(), abciResponse: abciResponse, err: err}
+
 	err = blockExec.mempool.Update(
 		block.Height,
 		block.Txs,
@@ -426,6 +427,41 @@ func (blockExec *BlockExecutor) Commit(
 	)
 
 	return res.RetainHeight, err
+}
+
+// updates the mempool with the latest state asynchronously.
+// it begins flushing the mempool immediately, and then updates the mempool
+// after the new block state is ready.
+func (blockExec *BlockExecutor) asyncUpdateMempool(ch chan mempoolUpdate) {
+	blockExec.mempool.Lock()
+	defer blockExec.mempool.Unlock()
+
+	// while mempool is Locked, flush to ensure all async requests have completed
+	// in the ABCI app before Commit.
+	err := blockExec.mempool.FlushAppConn()
+	if err != nil {
+		blockExec.logger.Error("client error during mempool.FlushAppConn, flushing mempool", "err", err)
+		blockExec.mempool.Flush()
+		return
+	}
+
+	updateData := <-ch
+	if updateData.err != nil {
+		return
+	}
+
+	err = blockExec.mempool.Update(
+		updateData.block.Height,
+		updateData.block.Txs,
+		updateData.abciResponse.TxResults,
+		TxPreCheck(updateData.state),
+		TxPostCheck(updateData.state),
+	)
+	if err != nil {
+		blockExec.logger.Error("client error during mempool.Update, flushing mempool", "err", err)
+		blockExec.mempool.Flush()
+		return
+	}
 }
 
 // ---------------------------------------------------------

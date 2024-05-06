@@ -335,12 +335,14 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) bool {
 	tx := memTx.tx
 
 	if mem.InMempool(tx.Key()) {
-		mem.logger.Debug(
-			"transaction already in mempool, not adding it again",
-			"tx", tx.Hash(),
-			"height", mem.height.Load(),
-			"total", mem.Size(),
-		)
+		if mem.logger.DebugOn() {
+			mem.logger.Debug(
+				"transaction already in mempool, not adding it again",
+				"tx", tx.Hash(),
+				"height", mem.height.Load(),
+				"total", mem.Size(),
+			)
+		}
 		return false
 	}
 
@@ -349,12 +351,14 @@ func (mem *CListMempool) addTx(memTx *mempoolTx) bool {
 	mem.txsBytes.Add(int64(len(tx)))
 	mem.metrics.TxSizeBytes.Observe(float64(len(tx)))
 
-	mem.logger.Debug(
-		"added valid transaction",
-		"tx", tx.Hash(),
-		"height", mem.height.Load(),
-		"total", mem.Size(),
-	)
+	if mem.logger.DebugOn() {
+		mem.logger.Debug(
+			"added valid transaction",
+			"tx", tx.Hash(),
+			"height", mem.height.Load(),
+			"total", mem.Size(),
+		)
+	}
 	return true
 }
 
@@ -377,7 +381,9 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	mem.txsMap.Delete(txKey)
 	tx := elem.Value.(*mempoolTx).tx
 	mem.txsBytes.Add(int64(-len(tx)))
-	mem.logger.Debug("removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
+	if mem.logger.DebugOn() {
+		mem.logger.Debug("removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
+	}
 	return nil
 }
 
@@ -411,12 +417,14 @@ func (mem *CListMempool) resCbFirstTime(tx types.Tx, res *abci.CheckTxResponse) 
 
 	if res.Code != abci.CodeTypeOK || postCheckErr != nil {
 		mem.tryRemoveFromCache(tx)
-		mem.logger.Debug(
-			"rejected invalid transaction",
-			"tx", tx.Hash(),
-			"res", res,
-			"err", postCheckErr,
-		)
+		if mem.logger.DebugOn() {
+			mem.logger.Debug(
+				"rejected invalid transaction",
+				"tx", tx.Hash(),
+				"res", res,
+				"err", postCheckErr,
+			)
+		}
 		mem.metrics.FailedTxs.Add(1)
 		return
 	}
@@ -480,9 +488,13 @@ func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.CheckTxResponse) {
 
 	if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 		// Tx became invalidated due to newly committed block.
-		mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+		if mem.logger.DebugOn() {
+			mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+		}
 		if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
-			mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
+			if mem.logger.DebugOn() {
+				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
+			}
 		}
 		mem.tryRemoveFromCache(tx)
 	}
@@ -495,7 +507,9 @@ func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.CheckTxResponse) {
 
 	if mem.recheckCursor == nil {
 		// Done!
-		mem.logger.Debug("done rechecking txs")
+		if mem.logger.DebugOn() {
+			mem.logger.Debug("done rechecking txs")
+		}
 
 		// in case the recheck removed all txs
 		if mem.Size() > 0 {
@@ -619,9 +633,11 @@ func (mem *CListMempool) Update(
 		//   100
 		// https://github.com/tendermint/tendermint/issues/3322.
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
-			mem.logger.Debug("Committed transaction not in local mempool (not an error)",
-				"key", tx.Key(),
-				"error", err.Error())
+			if mem.logger.DebugOn() {
+				mem.logger.Debug("Committed transaction not in local mempool (not an error)",
+					"key", tx.Key(),
+					"error", err.Error())
+			}
 		}
 	}
 
@@ -629,7 +645,9 @@ func (mem *CListMempool) Update(
 	// or just notify there're some txs left.
 	if mem.Size() > 0 {
 		if mem.config.Recheck {
-			mem.logger.Debug("recheck txs", "numtxs", mem.Size(), "height", height)
+			if mem.logger.DebugOn() {
+				mem.logger.Debug("recheck txs", "numtxs", mem.Size(), "height", height)
+			}
 			mem.recheckTxs()
 			// At this point, mem.txs are being rechecked.
 			// mem.recheckCursor re-scans mem.txs and possibly removes some txs.

@@ -84,3 +84,7 @@ func (l *tmLogger) Error(msg string, keyvals ...any) {
 func (l *tmLogger) With(keyvals ...any) Logger {
 	return &tmLogger{kitlog.With(l.srcLogger, keyvals...)}
 }
+
+func (*tmLogger) DebugOn() bool {
+	return false // TODO implement logic to check if debug mode is on
+}

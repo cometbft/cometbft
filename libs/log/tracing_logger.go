@@ -44,6 +44,8 @@ func (l *tracingLogger) With(keyvals ...any) Logger {
 	return &tracingLogger{next: l.next.With(formatErrors(keyvals)...)}
 }
 
+func (*tracingLogger) DebugOn() bool { return false }
+
 func formatErrors(keyvals []any) []any {
 	newKeyvals := make([]any, len(keyvals))
 	copy(newKeyvals, keyvals)

@@ -238,7 +238,9 @@ func (conR *Reactor) RemovePeer(p2p.Peer, any) {
 // NOTE: blocks on consensus state for proposals, block parts, and votes.
 func (conR *Reactor) Receive(e p2p.Envelope) {
 	if !conR.IsRunning() {
-		conR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID)
+		if conR.Logger.DebugOn() {
+			conR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID)
+		}
 		return
 	}
 	msg, err := MsgFromProto(e.Message)
@@ -254,8 +256,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		return
 	}
 
-	conR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", msg)
-
+	if conR.Logger.DebugOn() {
+		conR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", msg)
+	}
 	// Get peer states
 	ps, ok := e.Src.Get(types.PeerStateKey).(*PeerState)
 	if !ok {
@@ -660,18 +663,22 @@ OUTER_LOOP:
 			if ps.sendVoteSetHasVote(vote) {
 				continue OUTER_LOOP
 			}
-			logger.Debug("Failed to send vote to peer",
-				"height", prs.Height,
-				"vote", vote,
-			)
+			if logger.DebugOn() {
+				logger.Debug("Failed to send vote to peer",
+					"height", prs.Height,
+					"vote", vote,
+				)
+			}
 		}
 
 		if sleeping == 0 {
 			// We sent nothing. Sleep...
 			sleeping = 1
-			logger.Debug("No votes to send, sleeping", "rs.Height", rs.Height, "prs.Height", prs.Height,
-				"localPV", rs.Votes.Prevotes(rs.Round).BitArray(), "peerPV", prs.Prevotes,
-				"localPC", rs.Votes.Precommits(rs.Round).BitArray(), "peerPC", prs.Precommits)
+			if logger.DebugOn() {
+				logger.Debug("No votes to send, sleeping", "rs.Height", rs.Height, "prs.Height", prs.Height,
+					"localPV", rs.Votes.Prevotes(rs.Round).BitArray(), "peerPV", prs.Prevotes,
+					"localPC", rs.Votes.Precommits(rs.Round).BitArray(), "peerPC", prs.Precommits)
+			}
 		} else if sleeping == 2 {
 			// Continued sleep...
 			sleeping = 1
@@ -876,7 +883,9 @@ func pickVoteToSend(
 	// If peer is lagging by height 1, send LastCommit.
 	if prs.Height != 0 && rs.Height == prs.Height+1 {
 		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
-			logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
+			if logger.DebugOn() {
+				logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
+			}
 			return vote
 		}
 	}
@@ -907,7 +916,9 @@ func pickVoteToSend(
 			return nil
 		}
 		if vote := ps.PickVoteToSend(ec); vote != nil {
-			logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+			if logger.DebugOn() {
+				logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+			}
 			return vote
 		}
 	}
@@ -923,7 +934,9 @@ func pickVoteCurrentHeight(
 	// If there are lastCommits to send...
 	if prs.Step == cstypes.RoundStepNewHeight {
 		if vote := ps.PickVoteToSend(rs.LastCommit); vote != nil {
-			logger.Debug("Picked rs.LastCommit to send")
+			if logger.DebugOn() {
+				logger.Debug("Picked rs.LastCommit to send")
+			}
 			return vote
 		}
 	}
@@ -931,8 +944,10 @@ func pickVoteCurrentHeight(
 	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
 		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
 			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
-				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
-					"round", prs.ProposalPOLRound)
+				if logger.DebugOn() {
+					logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
+						"round", prs.ProposalPOLRound)
+				}
 				return vote
 			}
 		}
@@ -940,21 +955,27 @@ func pickVoteCurrentHeight(
 	// If there are prevotes to send...
 	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
 		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			if logger.DebugOn() {
+				logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			}
 			return vote
 		}
 	}
 	// If there are precommits to send...
 	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
 		if vote := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
+			if logger.DebugOn() {
+				logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
+			}
 			return vote
 		}
 	}
 	// If there are prevotes to send...Needed because of validBlock mechanism
 	if prs.Round != -1 && prs.Round <= rs.Round {
 		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round)); vote != nil {
-			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			if logger.DebugOn() {
+				logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			}
 			return vote
 		}
 	}
@@ -962,8 +983,10 @@ func pickVoteCurrentHeight(
 	if prs.ProposalPOLRound != -1 {
 		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
 			if vote := ps.PickVoteToSend(polPrevotes); vote != nil {
-				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
-					"round", prs.ProposalPOLRound)
+				if logger.DebugOn() {
+					logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
+						"round", prs.ProposalPOLRound)
+				}
 				return vote
 			}
 		}
@@ -986,8 +1009,10 @@ func (conR *Reactor) peerStatsRoutine() {
 			// Get peer
 			peer := conR.Switch.Peers().Get(msg.PeerID)
 			if peer == nil {
-				conR.Logger.Debug("Attempt to update stats for non-existent peer",
-					"peer", msg.PeerID)
+				if conR.Logger.DebugOn() {
+					conR.Logger.Debug("Attempt to update stats for non-existent peer",
+						"peer", msg.PeerID)
+				}
 				continue
 			}
 			// Get peer state
@@ -1165,13 +1190,14 @@ func (ps *PeerState) SetHasProposalBlockPart(height int64, round int32, index in
 }
 
 func (ps *PeerState) setHasProposalBlockPart(height int64, round int32, index int) {
-	ps.logger.Debug("setHasProposalBlockPart",
-		"peerH/R",
-		log.NewLazySprintf("%d/%d", ps.PRS.Height, ps.PRS.Round),
-		"H/R",
-		log.NewLazySprintf("%d/%d", height, round),
-		"index", index)
-
+	if ps.logger.DebugOn() {
+		ps.logger.Debug("setHasProposalBlockPart",
+			"peerH/R",
+			log.NewLazySprintf("%d/%d", ps.PRS.Height, ps.PRS.Round),
+			"H/R",
+			log.NewLazySprintf("%d/%d", height, round),
+			"index", index)
+	}
 	if ps.PRS.Height != height || ps.PRS.Round != round {
 		return
 	}
@@ -1183,7 +1209,9 @@ func (ps *PeerState) setHasProposalBlockPart(height int64, round int32, index in
 // Returns true and marks the peer as having the part if the part was sent.
 func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRoundState) bool {
 	// Send the part
-	ps.logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round, "index", part.Index)
+	if ps.logger.DebugOn() {
+		ps.logger.Debug("Sending block part", "height", prs.Height, "round", prs.Round, "index", part.Index)
+	}
 	pp, err := part.ToProto()
 	if err != nil {
 		// NOTE: only returns error if part is nil, which it should never be by here
@@ -1201,7 +1229,9 @@ func (ps *PeerState) SendPartSetHasPart(part *types.Part, prs *cstypes.PeerRound
 		ps.SetHasProposalBlockPart(prs.Height, prs.Round, int(part.Index))
 		return true
 	}
-	ps.logger.Debug("Sending block part failed")
+	if ps.logger.DebugOn() {
+		ps.logger.Debug("Sending block part failed")
+	}
 	return false
 }
 
@@ -1213,7 +1243,9 @@ func (ps *PeerState) SendProposalSetHasProposal(
 	prs *cstypes.PeerRoundState,
 ) {
 	// Proposal: share the proposal metadata with peer.
-	logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
+	if logger.DebugOn() {
+		logger.Debug("Sending proposal", "height", prs.Height, "round", prs.Round)
+	}
 	if ps.peer.Send(p2p.Envelope{
 		ChannelID: DataChannel,
 		Message:   &cmtcons.Proposal{Proposal: *rs.Proposal.ToProto()},
@@ -1227,7 +1259,9 @@ func (ps *PeerState) SendProposalSetHasProposal(
 	// rs.Proposal was validated, so rs.Proposal.POLRound <= rs.Round,
 	// so we definitely have rs.Votes.Prevotes(rs.Proposal.POLRound).
 	if 0 <= rs.Proposal.POLRound {
-		logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
+		if logger.DebugOn() {
+			logger.Debug("Sending POL", "height", prs.Height, "round", prs.Round)
+		}
 		ps.peer.Send(p2p.Envelope{
 			ChannelID: DataChannel,
 			Message: &cmtcons.ProposalPOL{
@@ -1242,7 +1276,9 @@ func (ps *PeerState) SendProposalSetHasProposal(
 // sendVoteSetHasVote sends the vote to the peer.
 // Returns true and marks the peer as having the vote if the vote was sent.
 func (ps *PeerState) sendVoteSetHasVote(vote *types.Vote) bool {
-	ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
+	if ps.logger.DebugOn() {
+		ps.logger.Debug("Sending vote message", "ps", ps, "vote", vote)
+	}
 	if ps.peer.Send(p2p.Envelope{
 		ChannelID: VoteChannel,
 		Message: &cmtcons.Vote{
@@ -1441,13 +1477,14 @@ func (ps *PeerState) SetHasVote(vote *types.Vote) {
 }
 
 func (ps *PeerState) setHasVote(height int64, round int32, voteType types.SignedMsgType, index int32) {
-	ps.logger.Debug("setHasVote",
-		"peerH/R",
-		log.NewLazySprintf("%d/%d", ps.PRS.Height, ps.PRS.Round),
-		"H/R",
-		log.NewLazySprintf("%d/%d", height, round),
-		"type", voteType, "index", index)
-
+	if ps.logger.DebugOn() {
+		ps.logger.Debug("setHasVote",
+			"peerH/R",
+			log.NewLazySprintf("%d/%d", ps.PRS.Height, ps.PRS.Round),
+			"H/R",
+			log.NewLazySprintf("%d/%d", height, round),
+			"type", voteType, "index", index)
+	}
 	// NOTE: some may be nil BitArrays -> no side effects.
 	psVotes := ps.getVoteBitArray(height, round, voteType)
 	if psVotes != nil {

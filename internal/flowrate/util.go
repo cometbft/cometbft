@@ -7,24 +7,47 @@ package flowrate
 import (
 	"math"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
 // clockRate is the resolution and precision of clock().
 const clockRate = 20 * time.Millisecond
 
-// czero is the process start time rounded down to the nearest clockRate
-// increment.
-var czero = time.Now().Round(clockRate)
+var hasInitializedClock = atomic.Bool{}
+var currentClockValue = atomic.Int64{}
+var clockSartTime = time.Time{}
+
+func ensureClockRunning() {
+	firstRun := hasInitializedClock.CompareAndSwap(false, true)
+	if !firstRun {
+		return
+	}
+	// get rid of the machine-specific part
+	clockSartTime = time.Now().Round(time.Nanosecond)
+	go runClockUpdates()
+}
+
+func runClockUpdates() {
+	// sleep, then increment the clock value
+	// This is the only place the clock value is updated.
+	// Ensures that the clock value starts at 0.
+	for {
+		time.Sleep(clockRate)
+		curValue := time.Duration(currentClockValue.Load())
+		nextValue := curValue + clockRate
+		currentClockValue.Store(int64(nextValue))
+	}
+}
 
 // clock returns a low resolution timestamp relative to the process start time.
 func clock() time.Duration {
-	return time.Now().Round(clockRate).Sub(czero)
+	return time.Duration(currentClockValue.Load())
 }
 
 // clockToTime converts a clock() timestamp to an absolute time.Time value.
 func clockToTime(c time.Duration) time.Time {
-	return czero.Add(c)
+	return clockSartTime.Add(c)
 }
 
 // clockRound returns d rounded to the nearest clockRate increment.

@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 )
 
 // All is a query that matches all events.

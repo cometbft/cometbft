@@ -31,6 +31,9 @@
 //	        return subscription.Err()
 //	    }
 //	}
+//
+// Package pubsub may be internalized (made private) in future  releases.
+// XXX Deprecated.
 package pubsub
 
 import (
@@ -38,8 +41,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 type operation int

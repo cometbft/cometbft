@@ -1,3 +1,5 @@
+// Package service may be internalized (made private) in future  releases.
+// XXX Deprecated.
 package service
 
 import (

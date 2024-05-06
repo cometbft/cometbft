@@ -8,8 +8,8 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtstate "github.com/cometbft/cometbft/api/cometbft/state/v1"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light"
 	lightprovider "github.com/cometbft/cometbft/light/provider"
 	lighthttp "github.com/cometbft/cometbft/light/provider/http"
@@ -22,7 +22,7 @@ import (
 	"github.com/cometbft/cometbft/version"
 )
 
-//go:generate ../../scripts/mockery_generate.sh StateProvider
+//go:generate ../scripts/mockery_generate.sh StateProvider
 
 // StateProvider is a provider of trusted state data for bootstrapping a node. This refers
 // to the state.State object, not the state machine.

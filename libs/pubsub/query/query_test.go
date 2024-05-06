@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
-	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 )
 
 var _ pubsub.Query = (*query.Query)(nil)

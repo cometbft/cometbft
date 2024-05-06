@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"sort"
 	// "sort"
 	"time"
 
@@ -70,7 +71,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
 	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
-	// sort.Sort(ByVote(newGossipVote.Votes))
+	sort.Sort(ByVote(newGossipVote.Votes))
 
 	// signing of vote should append the signature field of gossipVote
 	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {

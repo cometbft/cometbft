@@ -56,10 +56,10 @@ offer to guarantee the desired QoS.
 The following definition is common to all properties. 
 
 :memo: _Definition_: Given any two different transactions `tx1` and `tx2`, we say that `tx1` is
-*processed and disseminated before* `tx2`, when:
+*processed and disseminated before* `tx2` in a given node, when:
 - `tx1` is reaped from the mempool to form a block proposal before `tx2`,
 - `tx1` is rechecked before `tx2`, and
-- `tx1` is disseminated to a given peer before `tx2`.
+- `tx1` is sent to a given peer before `tx2`.
 
 Note that in the current implementation there is one dissemination routine per peer, so it could
 happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.
@@ -76,7 +76,7 @@ disseminated in the same order in which the mempool has received them.
 More formally, given any two different transactions `tx1` and `tx2`, if a node's mempool receives `tx1`
 before receiving `tx2`, then:
 - `tx1` will be validated against the application (via `CheckTx`) before `tx2`, and
-- `tx1` will be processed and disseminated before `tx2`.
+- `tx1` will be processed and disseminated before `tx2` (as defined above).
 
 Note that a node's mempool can receive a transaction either from a `broadcast_tx_*` RPC endpoint or
 from a peer.

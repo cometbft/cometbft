@@ -396,6 +396,10 @@ type RPCConfig struct {
 	// See https://github.com/tendermint/tendermint/issues/3435
 	TimeoutBroadcastTxCommit time.Duration `mapstructure:"timeout_broadcast_tx_commit"`
 
+	// Maximum number of requests that can be sent in a batch
+	// https://www.jsonrpc.org/specification#batch
+	MaxRequestBatchSize int `mapstructure:"max_request_batch_size"`
+
 	// Maximum size of request body, in bytes
 	MaxBodyBytes int64 `mapstructure:"max_body_bytes"`
 
@@ -442,8 +446,9 @@ func DefaultRPCConfig() *RPCConfig {
 		TimeoutBroadcastTxCommit:  10 * time.Second,
 		WebSocketWriteBufferSize:  defaultSubscriptionBufferSize,
 
-		MaxBodyBytes:   int64(1000000), // 1MB
-		MaxHeaderBytes: 1 << 20,        // same as the net/http default
+		MaxRequestBatchSize: 10,             // maximum requests in a JSON-RPC batch request
+		MaxBodyBytes:        int64(1000000), // 1MB
+		MaxHeaderBytes:      1 << 20,        // same as the net/http default
 
 		TLSCertFile: "",
 		TLSKeyFile:  "",
@@ -481,6 +486,9 @@ func (cfg *RPCConfig) ValidateBasic() error {
 	}
 	if cfg.TimeoutBroadcastTxCommit < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_broadcast_tx_commit"}
+	}
+	if cfg.MaxRequestBatchSize < 0 {
+		return cmterrors.ErrNegativeField{Field: "max_request_batch_size"}
 	}
 	if cfg.MaxBodyBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_body_bytes"}
@@ -754,7 +762,7 @@ func DefaultP2PConfig() *P2PConfig {
 		MaxNumInboundPeers:           40,
 		MaxNumOutboundPeers:          10,
 		PersistentPeersMaxDialPeriod: 0 * time.Second,
-		FlushThrottleTimeout:         100 * time.Millisecond,
+		FlushThrottleTimeout:         10 * time.Millisecond,
 		MaxPacketMsgPayloadSize:      1024,    // 1 kB
 		SendRate:                     5120000, // 5 mB/s
 		RecvRate:                     5120000, // 5 mB/s
@@ -773,7 +781,6 @@ func DefaultP2PConfig() *P2PConfig {
 func TestP2PConfig() *P2PConfig {
 	cfg := DefaultP2PConfig()
 	cfg.ListenAddress = "tcp://127.0.0.1:36656"
-	cfg.FlushThrottleTimeout = 10 * time.Millisecond
 	cfg.AllowDuplicateIP = true
 	return cfg
 }

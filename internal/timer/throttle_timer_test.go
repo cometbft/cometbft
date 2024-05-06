@@ -6,7 +6,7 @@ import (
 
 	asrt "github.com/stretchr/testify/assert"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 type thCounter struct {

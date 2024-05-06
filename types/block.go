@@ -16,9 +16,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/bits"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
@@ -1207,12 +1207,12 @@ func (ec *ExtendedCommit) Size() int {
 // Implements VoteSetReader.
 func (ec *ExtendedCommit) BitArray() *bits.BitArray {
 	if ec.bitArray == nil {
-		ec.bitArray = bits.NewBitArray(len(ec.ExtendedSignatures))
-		for i, extCommitSig := range ec.ExtendedSignatures {
+		initialBitFn := func(i int) bool {
 			// TODO: need to check the BlockID otherwise we could be counting conflicts,
 			//       not just the one with +2/3 !
-			ec.bitArray.SetIndex(i, extCommitSig.BlockIDFlag != BlockIDFlagAbsent)
+			return ec.ExtendedSignatures[i].BlockIDFlag != BlockIDFlagAbsent
 		}
+		ec.bitArray = bits.NewBitArrayFromFn(len(ec.ExtendedSignatures), initialBitFn)
 	}
 	return ec.bitArray
 }

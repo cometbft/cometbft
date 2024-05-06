@@ -9,8 +9,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cometbft/cometbft/internal/cmap"
-	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 	"github.com/cometbft/cometbft/types"
 )
@@ -414,7 +414,6 @@ func createMConnection(
 		if err != nil {
 			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
 		}
-		metricLabelValue := p.mlc.ValueToMetricLabel(msg)
 		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
@@ -425,7 +424,7 @@ func createMConnection(
 			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
 			Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.
-			With("message_type", metricLabelValue).
+			With("message_type", p.mlc.ValueToMetricLabel(msg)).
 			Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{
 			ChannelID: chID,

@@ -1,7 +1,6 @@
 package oracle
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math"
 	"time"
@@ -134,7 +133,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		// verify sig of incoming gossip vote, throw if verification fails
 		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
 		if val == nil {
-			logrus.Infof("validator: %v not found in validator set, skipping gossip", hex.EncodeToString(msg.Validator))
+			logrus.Infof("validator with index: %v not found in validator set, skipping gossip", msg.ValidatorIndex)
 			return
 		}
 		pubKey := val.PubKey
@@ -145,8 +144,8 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-			logrus.Warnf("failed signature verification for validator: %v", hex.EncodeToString(msg.Validator))
-			oracleR.Logger.Error("failed signature verification for validator: %v", hex.EncodeToString(msg.Validator))
+			logrus.Warnf("failed signature verification for validator with index: %v", msg.ValidatorIndex)
+			oracleR.Logger.Error("failed signature verification for validator with index: %v", msg.ValidatorIndex)
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
 			return
 		}

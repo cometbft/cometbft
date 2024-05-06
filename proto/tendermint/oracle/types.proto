@@ -4,23 +4,21 @@ package tendermint.oracle;
 option go_package = "github.com/cometbft/cometbft/proto/tendermint/oracle";
 
 message Vote {
-  bytes validator = 1;
+  string validator = 1;
   string oracle_id = 2;
   int64 timestamp = 3;
   string data = 4;
 }
 
 message GossipedVotes {
-  bytes validator = 1;
-  int32 validator_index = 2;
-  repeated Vote votes = 3;
-  int64 signed_timestamp = 4;
-  bytes signature = 5;
+  int32 validator_index = 1;
+  repeated Vote votes = 2;
+  int64 signed_timestamp = 3;
+  bytes signature = 4;
 }
 
 message CanonicalGossipedVotes {
-  bytes validator = 1;
-  int32 validator_index = 2;
-  repeated Vote votes = 3;
-  int64 signed_timestamp = 4;
+  int32 validator_index = 1;
+  repeated Vote votes = 2;
+  int64 signed_timestamp = 3;
 }

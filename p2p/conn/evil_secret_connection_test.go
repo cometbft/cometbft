@@ -16,7 +16,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/libs/protoio"
 )
 
 type buffer struct {

@@ -28,6 +28,8 @@
 //
 // Modified to return number of bytes written by Writer.WriteMsg(), and added byteReader.
 
+// Package protoio may be internalized (made private) in future  releases.
+// XXX Deprecated.
 package protoio
 
 import (

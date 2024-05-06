@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 

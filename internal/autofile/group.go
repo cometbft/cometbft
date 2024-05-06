@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 const (

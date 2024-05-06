@@ -13,7 +13,7 @@ import (
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/internal/evidence"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -295,7 +295,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	if err != nil {
 		panic(fmt.Errorf("unmarshal to cmtproto.BlockMeta: %w", err))
 	}
-	blockMeta, err := types.BlockMetaFromProto(pbbm)
+	blockMeta, err := types.BlockMetaFromTrustedProto(pbbm)
 	if err != nil {
 		panic(cmterrors.ErrMsgFromProto{MessageName: "BlockMetadata", Err: err})
 	}

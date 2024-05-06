@@ -20,10 +20,9 @@ import (
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	"github.com/cometbft/cometbft/internal/service"
-	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
@@ -37,6 +36,7 @@ import (
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/state/txindex/null"
+	"github.com/cometbft/cometbft/statesync"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -731,6 +731,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 	}
 
 	config := rpcserver.DefaultConfig()
+	config.MaxRequestBatchSize = n.config.RPC.MaxRequestBatchSize
 	config.MaxBodyBytes = n.config.RPC.MaxBodyBytes
 	config.MaxHeaderBytes = n.config.RPC.MaxHeaderBytes
 	config.MaxOpenConnections = n.config.RPC.MaxOpenConnections

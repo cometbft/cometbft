@@ -1,14 +1,10 @@
 package core
 
 import (
-<<<<<<< HEAD
 	"errors"
 	"fmt"
 
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
-=======
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
->>>>>>> 34e5c05a5 (revert(internal): Implement ADR 114 by making several modules public again (#3004))
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/state/txindex"

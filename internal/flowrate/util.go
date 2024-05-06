@@ -14,10 +14,13 @@ import (
 // clockRate is the resolution and precision of clock().
 const clockRate = 20 * time.Millisecond
 
-var hasInitializedClock = atomic.Bool{}
-var currentClockValue = atomic.Int64{}
-var clockStartTime = time.Time{}
+var (
+	hasInitializedClock = atomic.Bool{}
+	currentClockValue   = atomic.Int64{}
+	clockStartTime      = time.Time{}
+)
 
+// checks if the clock update timer is running. If not, sets clockStartTime and starts it.
 func ensureClockRunning() {
 	firstRun := hasInitializedClock.CompareAndSwap(false, true)
 	if !firstRun {
@@ -27,6 +30,7 @@ func ensureClockRunning() {
 	go runClockUpdates()
 }
 
+// increments the current clock value every clockRate interval.
 func runClockUpdates() {
 	// sleep, then increment the clock value
 	// This is the only place the clock value is updated.

@@ -187,13 +187,19 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 		return nil, err
 	}
 
-	return &ctypes.ResultBlockResults{
+	blockResults := &ctypes.ResultBlockResults{
 		Height:                height,
 		TxResults:             results.TxResults,
 		FinalizeBlockEvents:   results.Events,
 		ValidatorUpdates:      results.ValidatorUpdates,
 		ConsensusParamUpdates: results.ConsensusParamUpdates,
-	}, nil
+	}
+
+	if results.AppHash != nil {
+		blockResults.AppHash = results.AppHash
+	}
+
+	return blockResults, nil
 }
 
 // BlockSearch searches for a paginated set of blocks matching

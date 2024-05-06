@@ -16,15 +16,14 @@ const clockRate = 20 * time.Millisecond
 
 var hasInitializedClock = atomic.Bool{}
 var currentClockValue = atomic.Int64{}
-var clockSartTime = time.Time{}
+var clockStartTime = time.Time{}
 
 func ensureClockRunning() {
 	firstRun := hasInitializedClock.CompareAndSwap(false, true)
 	if !firstRun {
 		return
 	}
-	// get rid of the machine-specific part
-	clockSartTime = time.Now().Round(time.Nanosecond)
+	clockStartTime = time.Now().Round(clockRate)
 	go runClockUpdates()
 }
 
@@ -47,7 +46,7 @@ func clock() time.Duration {
 
 // clockToTime converts a clock() timestamp to an absolute time.Time value.
 func clockToTime(c time.Duration) time.Time {
-	return clockSartTime.Add(c)
+	return clockStartTime.Add(c)
 }
 
 // clockRound returns d rounded to the nearest clockRate increment.

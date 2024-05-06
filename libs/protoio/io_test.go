@@ -41,7 +41,7 @@ import (
 	"github.com/cosmos/gogoproto/test"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/libs/protoio"
 )
 
 func iotest(writer protoio.WriteCloser, reader protoio.ReadCloser) error {

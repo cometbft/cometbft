@@ -50,7 +50,7 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		Buffer: make(map[string]*oracleproto.GossipedVotes),
 	}
 	unsignedVoteBuffer := &oracletypes.UnsignedVoteBuffer{
-		Buffer: make([]*oracleproto.Vote, 0),
+		Buffer: []*oracleproto.Vote{},
 	}
 
 	oracleInfo := &oracletypes.OracleInfo{

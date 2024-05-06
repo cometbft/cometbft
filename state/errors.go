@@ -171,3 +171,7 @@ func (e ErrCannotLoadState) Error() string {
 func (e ErrCannotLoadState) Unwrap() error {
 	return e.Err
 }
+
+var ErrFinalizeBlockResponseUnmarshalError = errors.New("problem retrieving the finalize block response")
+
+var ErrFinalizeBlockResponseCorruptedError = errors.New("cannot retrieve finalize block response, corrupted data or spec change")

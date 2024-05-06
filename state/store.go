@@ -651,14 +651,23 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 
 	resp := new(abci.FinalizeBlockResponse)
 	err = resp.Unmarshal(buf)
+	// if an error is returned, then it needs to be handled here
 	if err != nil {
+		return nil, ErrFinalizeBlockResponseUnmarshalError
+	}
+
+	// If no error was returned then try to unmarshall with 'LegacyABCIResponse'
+	// This means the unmarshalling was not successful but no error returned
+	// Check the AppHash because it should always have a value
+	if resp.AppHash == nil {
 		// The data might be of the legacy ABCI response type, so
 		// we try to unmarshal that
 		legacyResp := new(cmtstate.LegacyABCIResponses)
-		rerr := legacyResp.Unmarshal(buf)
-		if rerr != nil {
-			cmtos.Exit(fmt.Sprintf(`LoadFinalizeBlockResponse: Data has been corrupted or its spec has
-					changed: %v\n`, err))
+		rErr := legacyResp.Unmarshal(buf)
+		if rErr != nil {
+			// only return an error, this method is only invoked through the `/block_results` not for state logic
+			// other than tests, so no need to exit cometbft
+			return nil, ErrFinalizeBlockResponseCorruptedError
 		}
 		// The state store contains the old format. Migrate to
 		// the new FinalizeBlockResponse format. Note that the

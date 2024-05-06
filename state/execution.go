@@ -418,15 +418,7 @@ func (blockExec *BlockExecutor) Commit(
 	// Update mempool.
 	ch <- mempoolUpdate{block: block, state: state.Copy(), abciResponse: abciResponse, err: err}
 
-	err = blockExec.mempool.Update(
-		block.Height,
-		block.Txs,
-		abciResponse.TxResults,
-		TxPreCheck(state),
-		TxPostCheck(state),
-	)
-
-	return res.RetainHeight, err
+	return res.RetainHeight, nil
 }
 
 // updates the mempool with the latest state asynchronously.

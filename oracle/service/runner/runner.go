@@ -71,6 +71,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
 	newGossipVote := &oracleproto.GossipedVotes{
+		Validator:       oracleInfo.PubKey.Address(),
 		ValidatorIndex:  validatorIndex,
 		SignedTimestamp: time.Now().Unix(),
 		Votes:           unsignedVotes,

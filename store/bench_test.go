@@ -13,7 +13,7 @@ import (
 // TestLoadBlockExtendedCommit tests loading the extended commit for a previously
 // saved block. The load method should return nil when only a commit was saved and
 // return the extended commit otherwise.
-func BenchmarkRepeatedLoadSeenCommit(b *testing.B) {
+func BenchmarkRepeatedLoadSeenCommitSameBlock(b *testing.B) {
 	state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
 	defer cleanup()
 	h := bs.Height() + 1

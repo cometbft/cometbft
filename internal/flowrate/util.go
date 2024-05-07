@@ -15,10 +15,9 @@ import (
 const clockRate = 20 * time.Millisecond
 
 var (
-	numMonitors         = atomic.Int64{}
-	hasInitializedClock = atomic.Bool{}
-	currentClockValue   = atomic.Int64{}
-	clockStartTime      = time.Time{}
+	numMonitors       = atomic.Int64{}
+	currentClockValue = atomic.Int64{}
+	clockStartTime    = time.Time{}
 )
 
 // checks if the clock update timer is running. If not, sets clockStartTime and starts it.

@@ -874,6 +874,11 @@ type MempoolConfig struct {
 	// mempool may become invalid. If this does not apply to your application,
 	// you can disable rechecking.
 	Recheck bool `mapstructure:"recheck"`
+	// RecheckTimeout is the time the application has during the rechecking process
+	// to return CheckTx responses, once all requests have been sent. Responses that
+	// arrive after the timeout expires are discarded. It only applies to
+	// non-local ABCI clients and when recheck is enabled.
+	RecheckTimeout time.Duration `mapstructure:"recheck_timeout"`
 	// Broadcast (default: true) defines whether the mempool should relay
 	// transactions to other peers. Setting this to false will stop the mempool
 	// from relaying transactions to other peers until they are included in a
@@ -919,10 +924,11 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
-		Type:      MempoolTypeFlood,
-		Recheck:   true,
-		Broadcast: true,
-		WalPath:   "",
+		Type:           MempoolTypeFlood,
+		Recheck:        true,
+		RecheckTimeout: 1000 * time.Millisecond,
+		Broadcast:      true,
+		WalPath:        "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,

@@ -144,7 +144,6 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-			logrus.Warnf("failed signature verification for validator with index: %v", msg.ValidatorIndex)
 			oracleR.Logger.Error("failed signature verification for validator with index: %v", msg.ValidatorIndex)
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
 			return
@@ -228,8 +227,6 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 				continue
 			}
 
-			logrus.Infof("SIZE OF GOSSIP VOTE: %v", gossipVote.Size())
-
 			success := peer.Send(p2p.Envelope{
 				ChannelID: OracleChannel,
 				Message:   gossipVote,
@@ -243,14 +240,4 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 
 		time.Sleep(interval)
 	}
-}
-
-// TxsMessage is a Message containing transactions.
-type TxsMessage struct {
-	Txs []types.Tx
-}
-
-// String returns a string representation of the TxsMessage.
-func (m *TxsMessage) String() string {
-	return fmt.Sprintf("[TxsMessage %v]", m.Txs)
 }

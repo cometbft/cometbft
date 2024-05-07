@@ -102,9 +102,6 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 		for range ticker {
 			lastBlockTime := consensusState.GetState().LastBlockTime
 
-			log.Infof("LAST BLOCK TIME: %v", lastBlockTime.Unix())
-			log.Infof("BLOCK TIME STAMPS: %v", oracleInfo.BlockTimestamps)
-
 			if !contains(oracleInfo.BlockTimestamps, lastBlockTime.Unix()) {
 				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime.Unix())
 			}
@@ -124,8 +121,6 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			for _, vote := range unsignedVoteBuffer {
 				if vote.Timestamp >= oracleInfo.BlockTimestamps[0] {
 					newVotes = append(newVotes, vote)
-				} else {
-					log.Infof("LASTEST ALLOWABLE TIMESTAMP: %v, DELETING VOTE: %v", oracleInfo.BlockTimestamps[0], vote)
 				}
 			}
 			oracleInfo.UnsignedVoteBuffer.Buffer = newVotes
@@ -137,7 +132,6 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			// prune gossip votes that have not been updated in the last x amt of blocks, where x is the maxGossipVoteAge
 			for valAddr, gossipVote := range gossipBuffer {
 				if gossipVote.SignedTimestamp < oracleInfo.BlockTimestamps[0] {
-					log.Infof("DELETING STALE GOSSIP BUFFER (%v) FOR VAL: %s", gossipVote.SignedTimestamp, valAddr)
 					delete(gossipBuffer, valAddr)
 				}
 			}

@@ -134,7 +134,7 @@ func (m *Metrics) MarkProposalProcessed(accepted bool) {
 
 func (m *Metrics) MarkVoteReceived(vt cmtproto.SignedMsgType, power, totalPower int64) {
 	p := float64(power) / float64(totalPower)
-	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
+	n := types.SignedMsgTypeToShortString(vt)
 	m.RoundVotingPowerPercent.With("vote_type", n).Add(p)
 }
 
@@ -143,6 +143,7 @@ func (m *Metrics) MarkRound(r int32, st time.Time) {
 	roundTime := time.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
+<<<<<<< HEAD:consensus/metrics.go
 	pvt := cmtproto.PrevoteType
 	pvn := strings.ToLower(strings.TrimPrefix(pvt.String(), "SIGNED_MSG_TYPE_"))
 	m.RoundVotingPowerPercent.With("vote_type", pvn).Set(0)
@@ -154,6 +155,17 @@ func (m *Metrics) MarkRound(r int32, st time.Time) {
 
 func (m *Metrics) MarkLateVote(vt cmtproto.SignedMsgType) {
 	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
+=======
+	pvn := types.SignedMsgTypeToShortString(types.PrevoteType)
+	m.RoundVotingPowerPercent.With("vote_type", pvn).Set(0)
+
+	pcn := types.SignedMsgTypeToShortString(types.PrecommitType)
+	m.RoundVotingPowerPercent.With("vote_type", pcn).Set(0)
+}
+
+func (m *Metrics) MarkLateVote(vt types.SignedMsgType) {
+	n := types.SignedMsgTypeToShortString(vt)
+>>>>>>> 4a37c00da (perf: Minor speedup to consenus metrics MarkLateVote (#3017)):internal/consensus/metrics.go
 	m.LateVotes.With("vote_type", n).Add(1)
 }
 

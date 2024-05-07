@@ -136,12 +136,6 @@ func ToRequestFetchOracleVotes(req *RequestFetchOracleVotes) *Request {
 	}
 }
 
-func ToRequestValidateOracleVotes(req *RequestValidateOracleVotes) *Request {
-	return &Request{
-		Value: &Request_ValidateOracleVotes{req},
-	}
-}
-
 //----------------------------------------
 
 func ToResponseException(errStr string) *Response {

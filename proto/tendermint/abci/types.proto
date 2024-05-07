@@ -37,7 +37,6 @@ service ABCI {
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
   rpc CreateOracleResultTx(RequestCreateOracleResultTx) returns (ResponseCreateOracleResultTx);
   rpc FetchOracleVotes(RequestFetchOracleVotes) returns (ResponseFetchOracleVotes);
-  rpc ValidateOracleVotes(RequestValidateOracleVotes) returns (ResponseValidateOracleVotes);
 }
 
 //----------------------------------------
@@ -63,7 +62,6 @@ message Request {
     RequestFinalizeBlock       finalize_block        = 20;
     RequestCreateOracleResultTx      create_oracle_result_tx      = 21;
     RequestFetchOracleVotes    fetch_oracle_votes    = 22;
-    RequestValidateOracleVotes validate_oracle_votes = 23;
   }
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -208,10 +206,6 @@ message RequestCreateOracleResultTx {
 
 message RequestFetchOracleVotes {}
 
-message RequestValidateOracleVotes {
-  bytes oracle_tx = 1;
-}
-
 //----------------------------------------
 // Response types
 
@@ -236,7 +230,6 @@ message Response {
     ResponseFinalizeBlock       finalize_block        = 21;
     ResponseCreateOracleResultTx      create_oracle_result_tx      = 22;
     ResponseFetchOracleVotes    fetch_oracle_votes    = 23;
-    ResponseValidateOracleVotes validate_oracle_votes = 24;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -393,16 +386,6 @@ message ResponseCreateOracleResultTx {
 
 message ResponseFetchOracleVotes {
   tendermint.oracle.Vote vote = 1;
-}
-
-message ResponseValidateOracleVotes {
-  bytes encoded_oracle_tx = 1;
-  Status status = 2;
-
-  enum Status {
-    absent = 0;
-    present = 1;
-  }
 }
 
 //----------------------------------------

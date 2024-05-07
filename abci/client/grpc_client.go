@@ -253,7 +253,3 @@ func (cli *grpcClient) CreateOracleResultTx(ctx context.Context, req *types.Requ
 func (cli *grpcClient) FetchOracleVotes(ctx context.Context, req *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
 	return cli.client.FetchOracleVotes(ctx, types.ToRequestFetchOracleVotes(req).GetFetchOracleVotes(), grpc.WaitForReady(true))
 }
-
-func (cli *grpcClient) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
-	return cli.client.ValidateOracleVotes(ctx, types.ToRequestValidateOracleVotes(req).GetValidateOracleVotes(), grpc.WaitForReady(true))
-}

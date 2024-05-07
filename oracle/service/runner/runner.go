@@ -177,11 +177,11 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 func SortOracleVotes(votes []*oracleproto.Vote) {
 	sort.SliceStable(votes,
 		func(i, j int) bool {
-			if votes[i].OracleId != votes[j].OracleId {
-				return votes[i].OracleId < votes[j].OracleId
-			}
 			if votes[i].Timestamp != votes[j].Timestamp {
 				return votes[i].Timestamp < votes[j].Timestamp
+			}
+			if votes[i].OracleId != votes[j].OracleId {
+				return votes[i].OracleId < votes[j].OracleId
 			}
 			return votes[i].Data < votes[j].Data
 		})

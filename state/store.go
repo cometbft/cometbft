@@ -656,17 +656,16 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 		return nil, ErrFinalizeBlockResponseUnmarshalError
 	}
 
-	// If no error was returned then try to unmarshall with 'LegacyABCIResponse'
-	// This means the unmarshalling was not successful but no error returned
-	// Check the AppHash because it should always have a value
+	// Check the AppHash because it should always have a value, if it's nil then
+	// this means the unmarshalling should be a 'LegacyABCIResponse'
 	if resp.AppHash == nil {
 		// The data might be of the legacy ABCI response type, so
 		// we try to unmarshal that
 		legacyResp := new(cmtstate.LegacyABCIResponses)
 		rErr := legacyResp.Unmarshal(buf)
 		if rErr != nil {
-			// only return an error, this method is only invoked through the `/block_results` not for state logic
-			// other than tests, so no need to exit cometbft
+			// only return an error, this method is only invoked through the `/block_results` not for state logic and
+			// some tests, so no need to exit cometbft if there's an error, just return it.
 			return nil, ErrFinalizeBlockResponseCorruptedError
 		}
 		// The state store contains the old format. Migrate to
@@ -680,7 +679,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 	return resp, nil
 }
 
-// LoadLastFinalizeBlockResponses loads the FinalizeBlockResponses from the most recent height.
+// LoadLastFinalizeBlockResponse loads the FinalizeBlockResponses from the most recent height.
 // The height parameter is used to ensure that the response corresponds to the latest height.
 // If not, an error is returned.
 //

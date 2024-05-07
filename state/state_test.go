@@ -121,6 +121,8 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 		abci.NewValidatorUpdate(ed25519.GenPrivKey().PubKey(), 10),
 	}
 
+	abciResponses.AppHash = make([]byte, 1)
+
 	err := stateStore.SaveFinalizeBlockResponse(block.Height, abciResponses)
 	require.NoError(t, err)
 	loadedABCIResponses, err := stateStore.LoadFinalizeBlockResponse(block.Height)

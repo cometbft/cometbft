@@ -8,6 +8,7 @@ import (
 
 	cstypes "github.com/cometbft/cometbft/consensus/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	types "github.com/cometbft/cometbft/types"
 )
 
 const (
@@ -144,7 +145,7 @@ func (m *Metrics) MarkVoteExtensionReceived(accepted bool) {
 
 func (m *Metrics) MarkVoteReceived(vt cmtproto.SignedMsgType, power, totalPower int64) {
 	p := float64(power) / float64(totalPower)
-	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
+	n := types.SignedMsgTypeToShortString(vt)
 	m.RoundVotingPowerPercent.With("vote_type", n).Add(p)
 }
 
@@ -153,17 +154,15 @@ func (m *Metrics) MarkRound(r int32, st time.Time) {
 	roundTime := time.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
-	pvt := cmtproto.PrevoteType
-	pvn := strings.ToLower(strings.TrimPrefix(pvt.String(), "SIGNED_MSG_TYPE_"))
+	pvn := types.SignedMsgTypeToShortString(cmtproto.PrevoteType)
 	m.RoundVotingPowerPercent.With("vote_type", pvn).Set(0)
 
-	pct := cmtproto.PrecommitType
-	pcn := strings.ToLower(strings.TrimPrefix(pct.String(), "SIGNED_MSG_TYPE_"))
+	pcn := types.SignedMsgTypeToShortString(cmtproto.PrecommitType)
 	m.RoundVotingPowerPercent.With("vote_type", pcn).Set(0)
 }
 
 func (m *Metrics) MarkLateVote(vt cmtproto.SignedMsgType) {
-	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
+	n := types.SignedMsgTypeToShortString(vt)
 	m.LateVotes.With("vote_type", n).Add(1)
 }
 

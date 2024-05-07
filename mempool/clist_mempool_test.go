@@ -267,6 +267,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 
 	mockClient.On("Error").Return(nil).Times(4)
 	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
+	mockClient.On("Flush", mock.Anything).Return(nil)
 
 	mp, cleanup, err := newMempoolWithAppMock(mockClient)
 	require.NoError(t, err)
@@ -275,7 +276,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	// Add 4 transactions to the mempool by calling the mempool's `CheckTx` on each of them.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
 	for _, tx := range txs {
-		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_Recheck)
+		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_New)
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil)
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(t, err)
@@ -283,6 +284,8 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 		// ensure that the callback that the mempool sets on the ReqRes is run.
 		reqRes.InvokeCallback()
 	}
+	require.Len(t, txs, mp.Size())
+	require.True(t, mp.recheck.done())
 
 	// Calling update to remove the first transaction from the mempool.
 	// This call also triggers the mempool to recheck its remaining transactions.
@@ -648,16 +651,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 }
 
 func TestMempoolNoCacheOverflow(t *testing.T) {
-	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
-	app := kvstore.NewInMemoryApplication()
-	_, server := newRemoteApp(t, sockPath, app)
-	t.Cleanup(func() {
-		if err := server.Stop(); err != nil {
-			t.Error(err)
-		}
-	})
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
+	mp, cleanup := newMempoolWithAsyncConnection(t)
 	defer cleanup()
 
 	// add tx0
@@ -697,18 +691,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 // TODO: all of the tests should probably also run using the remote proxy app
 // since otherwise we're not actually testing the concurrency of the mempool here!
 func TestMempoolRemoteAppConcurrency(t *testing.T) {
-	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
-	app := kvstore.NewInMemoryApplication()
-	_, server := newRemoteApp(t, sockPath, app)
-	t.Cleanup(func() {
-		if err := server.Stop(); err != nil {
-			t.Error(err)
-		}
-	})
-
-	cfg := test.ResetTestRoot("mempool_test")
-
-	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
+	mp, cleanup := newMempoolWithAsyncConnection(t)
 	defer cleanup()
 
 	// generate small number of txs
@@ -720,9 +703,9 @@ func TestMempoolRemoteAppConcurrency(t *testing.T) {
 	}
 
 	// simulate a group of peers sending them over and over
-	N := cfg.Mempool.Size
+	n := mp.config.Size
 	maxPeers := 5
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		peerID := mrand.Intn(maxPeers)
 		txNum := mrand.Intn(nTxs)
 		tx := txs[txNum]
@@ -841,7 +824,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	// First we add a two transactions to the mempool.
 	txs := []types.Tx{[]byte{0x01}, []byte{0x02}}
 	for _, tx := range txs {
-		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_Recheck)
+		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_New)
 		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
 		err := mp.CheckTx(tx, nil, TxInfo{})
 		require.NoError(t, err)
@@ -866,6 +849,157 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 		}
 	}()
 	mp.recheckTxs()
+}
+
+// Test that rechecking finishes correctly when a CheckTx response never arrives, when using an
+// async ABCI client.
+func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
+	var callback abciclient.Callback
+	mockClient := new(abciclimocks.Client)
+	mockClient.On("Start").Return(nil)
+	mockClient.On("SetLogger", mock.Anything)
+	mockClient.On("Error").Return(nil).Times(4)
+	mockClient.On("SetResponseCallback", mock.MatchedBy(func(cb abciclient.Callback) bool { callback = cb; return true }))
+
+	mp, cleanup, err := newMempoolWithAppMock(mockClient)
+	require.NoError(t, err)
+	defer cleanup()
+
+	// Add 4 txs to the mempool.
+	txs := []types.Tx{[]byte{0x01}, []byte{0x02}, []byte{0x03}, []byte{0x04}}
+	for _, tx := range txs {
+		reqRes := newReqRes(tx, abci.CodeTypeOK, abci.CheckTxType_New)
+		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
+		err := mp.CheckTx(tx, nil, TxInfo{})
+		require.NoError(t, err)
+
+		// ensure that the callback that the mempool sets on the ReqRes is run.
+		reqRes.InvokeCallback()
+	}
+
+	// The 4 txs are added to the mempool.
+	require.Len(t, txs, mp.Size())
+
+	// Check that recheck has not started.
+	require.True(t, mp.recheck.done())
+	require.Nil(t, mp.recheck.cursor)
+	require.Nil(t, mp.recheck.end)
+	mockClient.AssertExpectations(t)
+
+	// One call to CheckTxAsync per tx, for rechecking.
+	mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(nil, nil).Times(4)
+
+	// On the async client, the callbacks are executed when flushing the connection. The app replies
+	// to the request for the first tx (valid) and for the third tx (invalid), so the callback is
+	// invoked twice. The app does not reply to the requests for the second and fourth txs, so the
+	// callback is not invoked on these two cases.
+	mockClient.On("Flush", mock.Anything).Run(func(_ mock.Arguments) {
+		// First tx is valid.
+		reqRes1 := newReqRes(txs[0], abci.CodeTypeOK, abci.CheckTxType_Recheck)
+		callback(reqRes1.Request, reqRes1.Response)
+		// Third tx is invalid.
+		reqRes2 := newReqRes(txs[2], 1, abci.CheckTxType_Recheck)
+		callback(reqRes2.Request, reqRes2.Response)
+	}).Return(nil)
+
+	// mp.recheck.done() should be true only before and after calling recheckTxs.
+	mp.recheckTxs()
+	require.True(t, mp.recheck.done())
+	require.Nil(t, mp.recheck.cursor)
+	require.NotNil(t, mp.recheck.end)
+	require.Equal(t, mp.recheck.end, mp.txs.Back())
+	require.Equal(t, len(txs)-1, mp.Size()) // one invalid tx was removed
+	require.Equal(t, int32(2), mp.recheck.numPendingTxs.Load())
+
+	mockClient.AssertExpectations(t)
+}
+
+// This test used to cause a data race when rechecking (see https://github.com/cometbft/cometbft/issues/1827).
+func TestMempoolRecheckRace(t *testing.T) {
+	mp, cleanup := newMempoolWithAsyncConnection(t)
+	defer cleanup()
+
+	// Add a bunch of transactions to the mempool.
+	var err error
+	txs := newUniqueTxs(10)
+	for _, tx := range txs {
+		err = mp.CheckTx(tx, nil, TxInfo{})
+		require.NoError(t, err)
+	}
+
+	// Update one transaction to force rechecking the rest.
+	mp.Lock()
+	err = mp.FlushAppConn()
+	require.NoError(t, err)
+	err = mp.Update(1, txs[:1], abciResponses(1, abci.CodeTypeOK), nil, nil)
+	require.NoError(t, err)
+	mp.Unlock()
+
+	// Recheck has finished
+	require.True(t, mp.recheck.done())
+	require.Nil(t, mp.recheck.cursor)
+
+	// Add again the same transaction that was updated. Recheck has finished so adding this tx
+	// should not result in a data race on the variable recheck.cursor.
+	err = mp.CheckTx(txs[:1][0], nil, TxInfo{})
+	require.Equal(t, err, ErrTxInCache)
+	require.Zero(t, mp.recheck.numPendingTxs.Load())
+}
+
+// Test adding transactions while a concurrent routine reaps txs and updates the mempool, simulating
+// the consensus module, when using an async ABCI client.
+func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
+	mp, cleanup := newMempoolWithAsyncConnection(t)
+	defer cleanup()
+
+	maxHeight := 100
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// A process that continuously reaps and update the mempool, simulating creation and committing
+	// of blocks by the consensus module.
+	go func() {
+		defer wg.Done()
+
+		time.Sleep(50 * time.Millisecond) // wait a bit to have some txs in mempool before starting updating
+		for h := 1; h <= maxHeight; h++ {
+			if mp.Size() == 0 {
+				break
+			}
+			txs := mp.ReapMaxBytesMaxGas(100, -1)
+			mp.Lock()
+			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
+			require.NoError(t, err)
+			err = mp.Update(int64(h), txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
+			require.NoError(t, err)
+			mp.Unlock()
+		}
+	}()
+
+	// Concurrently, add transactions (one per height).
+	for h := 1; h <= maxHeight; h++ {
+		err := mp.CheckTx(kvstore.NewTxFromID(h), nil, TxInfo{})
+		require.NoError(t, err)
+	}
+
+	wg.Wait()
+
+	// All added transactions should have been removed from the mempool.
+	require.Zero(t, mp.Size())
+}
+
+func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
+	t.Helper()
+	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
+	app := kvstore.NewInMemoryApplication()
+	_, server := newRemoteApp(t, sockPath, app)
+	t.Cleanup(func() {
+		if err := server.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	cfg := test.ResetTestRoot("mempool_test")
+	return newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
 }
 
 // caller must close server.

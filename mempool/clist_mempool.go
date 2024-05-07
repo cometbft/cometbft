@@ -283,37 +283,23 @@ func (mem *CListMempool) CheckTx(
 // When rechecking, we don't need the peerID, so the recheck callback happens
 // here.
 func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
-<<<<<<< HEAD
-	if mem.recheckCursor == nil {
-		return
-	}
-
-	mem.metrics.RecheckTimes.Add(1)
-	mem.resCbRecheck(req, res)
-=======
-	switch res.Value.(type) {
+	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
-		checkType := req.GetCheckTx().GetType()
-		switch checkType {
-		case abci.CHECK_TX_TYPE_CHECK:
-			if !mem.recheck.done() {
-				panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %v",
-					types.Tx(req.GetCheckTx().Tx).Hash()))
-			}
-			mem.resCbFirstTime(req.GetCheckTx().Tx, res.GetCheckTx())
+		tx := types.Tx(req.GetCheckTx().Tx)
+		if mem.recheck.done() {
+			mem.logger.Error("rechecking has finished; discard late recheck response",
+				"tx", log.NewLazySprintf("%v", tx.Key()))
+			return
+		}
+		mem.metrics.RecheckTimes.Add(1)
+		mem.resCbRecheck(tx, r.CheckTx)
 
-		case abci.CHECK_TX_TYPE_RECHECK:
-			if mem.recheck.done() {
-				mem.logger.Error("rechecking has finished; discard late recheck response",
-					"tx", log.NewLazySprintf("%v", types.Tx(req.GetCheckTx().Tx).Hash()))
-				return
-			}
-			mem.metrics.RecheckTimes.Add(1)
-			mem.resCbRecheck(req.GetCheckTx().Tx, res.GetCheckTx())
->>>>>>> f3775f4bb (fix(mempool): Fix data race when rechecking with async ABCI client (#2268))
+		// update metrics
+		mem.metrics.Size.Set(float64(mem.Size()))
 
-	// update metrics
-	mem.metrics.Size.Set(float64(mem.Size()))
+	default:
+		// ignore other messages
+	}
 }
 
 // Request specific callback that should be set on individual reqRes objects
@@ -331,9 +317,9 @@ func (mem *CListMempool) reqResCb(
 	externalCb func(*abci.ResponseCheckTx),
 ) func(res *abci.Response) {
 	return func(res *abci.Response) {
-		if mem.recheckCursor != nil {
-			// this should never happen
-			panic("recheck cursor is not nil in reqResCb")
+		if !mem.recheck.done() {
+			panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %v",
+				types.Tx(tx).Hash()))
 		}
 
 		mem.resCbFirstTime(tx, txInfo, res)
@@ -472,75 +458,7 @@ func (mem *CListMempool) resCbFirstTime(
 //
 // The case where the app checks the tx for the first time is handled by the
 // resCbFirstTime callback.
-<<<<<<< HEAD
-func (mem *CListMempool) resCbRecheck(req *abci.Request, res *abci.Response) {
-	switch r := res.Value.(type) {
-	case *abci.Response_CheckTx:
-		tx := req.GetCheckTx().Tx
-		memTx := mem.recheckCursor.Value.(*mempoolTx)
-
-		// Search through the remaining list of tx to recheck for a transaction that matches
-		// the one we received from the ABCI application.
-		for {
-			if bytes.Equal(tx, memTx.tx) {
-				// We've found a tx in the recheck list that matches the tx that we
-				// received from the ABCI application.
-				// Break, and use this transaction for further checks.
-				break
-			}
-
-			mem.logger.Error(
-				"re-CheckTx transaction mismatch",
-				"got", types.Tx(tx),
-				"expected", memTx.tx,
-			)
-
-			if mem.recheckCursor == mem.recheckEnd {
-				// we reached the end of the recheckTx list without finding a tx
-				// matching the one we received from the ABCI application.
-				// Return without processing any tx.
-				mem.recheckCursor = nil
-				return
-			}
-
-			mem.recheckCursor = mem.recheckCursor.Next()
-			memTx = mem.recheckCursor.Value.(*mempoolTx)
-		}
-
-		var postCheckErr error
-		if mem.postCheck != nil {
-			postCheckErr = mem.postCheck(tx, r.CheckTx)
-		}
-
-		if (r.CheckTx.Code != abci.CodeTypeOK) || postCheckErr != nil {
-			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("tx is no longer valid", "tx", types.Tx(tx).Hash(), "res", r, "err", postCheckErr)
-			if err := mem.RemoveTxByKey(memTx.tx.Key()); err != nil {
-				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
-			}
-			// We remove the invalid tx from the cache because it might be good later
-			if !mem.config.KeepInvalidTxsInCache {
-				mem.cache.Remove(tx)
-			}
-		}
-		if mem.recheckCursor == mem.recheckEnd {
-			mem.recheckCursor = nil
-		} else {
-			mem.recheckCursor = mem.recheckCursor.Next()
-		}
-		if mem.recheckCursor == nil {
-			// Done!
-			mem.logger.Debug("done rechecking txs")
-
-			// incase the recheck removed all txs
-			if mem.Size() > 0 {
-				mem.notifyTxsAvailable()
-			}
-		}
-	default:
-		// ignore other messages
-=======
-func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.CheckTxResponse) {
+func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.ResponseCheckTx) {
 	// Check whether tx is still in the list of transactions that can be rechecked.
 	if !mem.recheck.findNextEntryMatching(&tx) {
 		// Reached the end of the list and didn't find a matching tx; rechecking has finished.
@@ -558,8 +476,9 @@ func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.CheckTxResponse) {
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 			mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 		}
-		mem.tryRemoveFromCache(tx)
->>>>>>> f3775f4bb (fix(mempool): Fix data race when rechecking with async ABCI client (#2268))
+		if !mem.config.KeepInvalidTxsInCache {
+			mem.cache.Remove(tx)
+		}
 	}
 }
 
@@ -717,21 +636,14 @@ func (mem *CListMempool) recheckTxs() {
 	// NOTE: globalCb may be called concurrently, but CheckTx cannot be executed concurrently
 	// because this function has the lock (via Update and Lock).
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-<<<<<<< HEAD
-		memTx := e.Value.(*mempoolTx)
-		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
-			Tx:   memTx.tx,
-			Type: abci.CheckTxType_Recheck,
-=======
 		tx := e.Value.(*mempoolTx).tx
 		mem.recheck.numPendingTxs.Add(1)
 
 		// Send a CheckTx request to the app. If we're using a sync client, the resCbRecheck
 		// callback will be called right after receiving the response.
-		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
+		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   tx,
-			Type: abci.CHECK_TX_TYPE_RECHECK,
->>>>>>> f3775f4bb (fix(mempool): Fix data race when rechecking with async ABCI client (#2268))
+			Type: abci.CheckTxType_New,
 		})
 		if err != nil {
 			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))

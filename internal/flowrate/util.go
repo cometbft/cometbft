@@ -15,6 +15,7 @@ import (
 const clockRate = 20 * time.Millisecond
 
 var (
+	numMonitors         = atomic.Int64{}
 	hasInitializedClock = atomic.Bool{}
 	currentClockValue   = atomic.Int64{}
 	clockStartTime      = time.Time{}
@@ -22,8 +23,8 @@ var (
 
 // checks if the clock update timer is running. If not, sets clockStartTime and starts it.
 func ensureClockRunning() {
-	firstRun := hasInitializedClock.CompareAndSwap(false, true)
-	if !firstRun {
+	n := numMonitors.Load()
+	if n != 0 {
 		return
 	}
 	clockStartTime = time.Now().Round(clockRate)
@@ -40,6 +41,11 @@ func runClockUpdates() {
 		curValue := time.Duration(currentClockValue.Load())
 		nextValue := curValue + clockRate
 		currentClockValue.Store(int64(nextValue))
+		// check if done
+		n := numMonitors.Load()
+		if n == 0 {
+			break
+		}
 	}
 }
 

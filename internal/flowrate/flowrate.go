@@ -48,6 +48,7 @@ type Monitor struct {
 // respectively.
 func New(sampleRate, windowSize time.Duration) *Monitor {
 	ensureClockRunning()
+	numMonitors.Add(1)
 	if sampleRate = clockRound(sampleRate); sampleRate <= 0 {
 		sampleRate = 5 * clockRate
 	}
@@ -92,6 +93,7 @@ func (m *Monitor) IO(n int, err error) (int, error) {
 // limiting. Instantaneous and current transfer rates drop to 0. Update, IO, and
 // Limit methods become NOOPs. It returns the total number of bytes transferred.
 func (m *Monitor) Done() int64 {
+	numMonitors.Add(-1)
 	m.mu.Lock()
 	if now := m.update(0); m.sBytes > 0 {
 		m.reset(now)

@@ -59,7 +59,12 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
-	unsignedVotes := oracleInfo.UnsignedVoteBuffer.Buffer
+
+	unsignedVotes := []*oracleproto.Vote{}
+
+	for _, vote := range oracleInfo.UnsignedVoteBuffer.Buffer {
+		unsignedVotes = append(unsignedVotes, vote)
+	}
 
 	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
 	SortOracleVotes(unsignedVotes)

@@ -96,3 +96,7 @@ func (r *byteReader) ReadByte() (byte, error) {
 	}
 	return r.buf[0], nil
 }
+
+func (r *byteReader) resetBytesRead() {
+	r.bytesRead = 0
+}

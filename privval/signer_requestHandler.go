@@ -5,7 +5,6 @@ import (
 
 	pvproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -28,22 +27,6 @@ func DefaultValidationRequestHandler(
 				},
 			})
 			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.PubKeyRequest.GetChainId(), chainID)
-		}
-
-		var pubKey crypto.PubKey
-		pubKey, err = privVal.GetPubKey()
-		if err != nil {
-			return res, err
-		}
-
-		if err != nil {
-			res = mustWrapMsg(&pvproto.PubKeyResponse{
-				PubKeyType: "", PubKeyBytes: []byte{}, Error: &pvproto.RemoteSignerError{
-					Code: 0, Description: err.Error(),
-				},
-			})
-		} else {
-			res = mustWrapMsg(&pvproto.PubKeyResponse{PubKeyType: pubKey.Type(), PubKeyBytes: pubKey.Bytes(), Error: nil})
 		}
 
 	case *pvproto.Message_SignVoteRequest:

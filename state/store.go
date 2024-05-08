@@ -122,7 +122,7 @@ type Store interface {
 	LoadValidators(height int64) (*types.ValidatorSet, error)
 	// LoadFinalizeBlockResponse loads the abciResponse for a given height
 	LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
-	// LoadLastABCIResponse loads the last abciResponse for a given height
+	// LoadLastFinalizeBlockResponse loads the last abciResponse for a given height
 	LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
 	// LoadConsensusParams loads the consensus params for a given height
 	LoadConsensusParams(height int64) (types.ConsensusParams, error)
@@ -653,7 +653,8 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 	err = resp.Unmarshal(buf)
 	// if an error is returned, then it needs to be handled here
 	if err != nil {
-		return nil, ErrFinalizeBlockResponseUnmarshalError
+		store.Logger.Debug("failed to unmarshall ABCI response: %s", err.Error())
+		return nil, ErrABCIResponseResponseUnmarshalForHeight{Height: height}
 	}
 
 	// Check the AppHash because it should always have a value, if it's nil then
@@ -665,7 +666,8 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 		if err := legacyResp.Unmarshal(buf); err != nil {
 			// only return an error, this method is only invoked through the `/block_results` not for state logic and
 			// some tests, so no need to exit cometbft if there's an error, just return it.
-			return nil, ErrFinalizeBlockResponseCorruptedError
+			store.Logger.Debug("failed to unmarshall legacy ABCI response: %s", err.Error())
+			return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height}
 		}
 		// The state store contains the old format. Migrate to
 		// the new FinalizeBlockResponse format. Note that the

@@ -2254,7 +2254,54 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 	return added, nil
 }
 
+// addVote adds a vote to the consensus state. It performs various checks and updates the state accordingly.
 func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error) {
+	cs.logVoteDetails(vote)
+
+	if cs.isLateVote(vote) {
+		cs.metrics.MarkLateVote(vote.Type)
+	}
+
+	// A precommit for the previous height?
+	// These come in while we wait timeoutCommit
+	if cs.isPrecommitForPreviousHeight(vote) {
+		return cs.handlePrecommitForPreviousHeight(vote)
+	}
+
+	// Height mismatch is ignored.
+	// Not necessarily a bad peer, but not favorable behavior.
+	if cs.isHeightMismatch(vote) {
+		cs.Logger.Debug("vote ignored and not added", "vote_height", vote.Height, "cs_height", cs.Height, "peer", peerID)
+		return false, nil
+	}
+
+	// Check to see if the chain is configured to extend votes.
+	if err := cs.verifyVoteExtension(vote, peerID); err != nil {
+		return false, err
+	}
+
+	added, err = cs.Votes.AddVote(vote, peerID, cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(vote.Height))
+	if !added {
+		cs.handleDuplicateVote(err)
+		return false, err
+	}
+
+	cs.updateMetricsAndEvents(vote)
+
+	switch vote.Type {
+	case types.PrevoteType:
+		cs.handlePrevote(vote)
+	case types.PrecommitType:
+		cs.handlePrecommit(vote)
+	default:
+		panic(fmt.Sprintf("unexpected vote type %v", vote.Type))
+	}
+
+	return true, nil
+}
+
+// logVoteDetails logs the details of a vote.
+func (cs *State) logVoteDetails(vote *types.Vote) {
 	cs.Logger.Debug(
 		"adding vote",
 		"vote_height", vote.Height,
@@ -2264,54 +2311,59 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		"extLen", len(vote.Extension),
 		"extSigLen", len(vote.ExtensionSignature),
 	)
+}
 
-	if vote.Height < cs.Height || (vote.Height == cs.Height && vote.Round < cs.Round) {
-		cs.metrics.MarkLateVote(vote.Type)
+// isLateVote checks if a vote is a late vote.
+func (cs *State) isLateVote(vote *types.Vote) bool {
+	return vote.Height < cs.Height || (vote.Height == cs.Height && vote.Round < cs.Round)
+}
+
+// isPrecommitForPreviousHeight checks if a vote is a precommit for the previous height.
+func (cs *State) isPrecommitForPreviousHeight(vote *types.Vote) bool {
+	return vote.Height+1 == cs.Height && vote.Type == types.PrecommitType
+}
+
+// handlePrecommitForPreviousHeight handles a precommit vote for the previous height.
+func (cs *State) handlePrecommitForPreviousHeight(vote *types.Vote) (bool, error) {
+	if cs.Step != cstypes.RoundStepNewHeight {
+		// Late precommit at prior height is ignored
+		cs.Logger.Debug("precommit vote came in after commit timeout and has been ignored", "vote", vote)
+		return false, nil
 	}
 
-	// A precommit for the previous height?
-	// These come in while we wait timeoutCommit
-	if vote.Height+1 == cs.Height && vote.Type == types.PrecommitType {
-		if cs.Step != cstypes.RoundStepNewHeight {
-			// Late precommit at prior height is ignored
-			cs.Logger.Debug("precommit vote came in after commit timeout and has been ignored", "vote", vote)
-			return added, err
+	added, err := cs.LastCommit.AddVote(vote)
+	if !added {
+		// If the vote wasn't added but there's no error, it's a duplicate vote
+		if err == nil {
+			cs.metrics.DuplicateVote.Add(1)
 		}
-
-		added, err = cs.LastCommit.AddVote(vote)
-		if !added {
-			// If the vote wasn't added but there's no error, its a duplicate vote
-			if err == nil {
-				cs.metrics.DuplicateVote.Add(1)
-			}
-			return added, err
-		}
-
-		cs.Logger.Debug("added vote to last precommits", "last_commit", cs.LastCommit.StringShort())
-		if err := cs.eventBus.PublishEventVote(types.EventDataVote{Vote: vote}); err != nil {
-			return added, err
-		}
-
-		cs.evsw.FireEvent(types.EventVote, vote)
-
-		// if we can skip timeoutCommit and have all the votes now,
-		if cs.config.TimeoutCommit == 0 && cs.LastCommit.HasAll() {
-			// go straight to new round (skip timeout commit)
-			// cs.scheduleTimeout(time.Duration(0), cs.Height, 0, cstypes.RoundStepNewHeight)
-			cs.enterNewRound(cs.Height, 0)
-		}
-
-		return added, err
+		return false, err
 	}
 
-	// Height mismatch is ignored.
-	// Not necessarily a bad peer, but not favorable behavior.
-	if vote.Height != cs.Height {
-		cs.Logger.Debug("vote ignored and not added", "vote_height", vote.Height, "cs_height", cs.Height, "peer", peerID)
-		return added, err
+	cs.Logger.Debug("added vote to last precommits", "last_commit", cs.LastCommit.StringShort())
+	if err := cs.eventBus.PublishEventVote(types.EventDataVote{Vote: vote}); err != nil {
+		return false, err
 	}
 
-	// Check to see if the chain is configured to extend votes.
+	cs.evsw.FireEvent(types.EventVote, vote)
+
+	// if we can skip timeoutCommit and have all the votes now,
+	if cs.config.TimeoutCommit == 0 && cs.LastCommit.HasAll() {
+		// go straight to new round (skip timeout commit)
+		// cs.scheduleTimeout(time.Duration(0), cs.Height, 0, cstypes.RoundStepNewHeight)
+		cs.enterNewRound(cs.Height, 0)
+	}
+
+	return true, nil
+}
+
+// isHeightMismatch checks if there is a height mismatch between a vote and the current state.
+func (cs *State) isHeightMismatch(vote *types.Vote) bool {
+	return vote.Height != cs.Height
+}
+
+// verifyVoteExtension verifies the vote extension if enabled.
+func (cs *State) verifyVoteExtension(vote *types.Vote, peerID p2p.ID) error {
 	extEnabled := cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(vote.Height)
 	if extEnabled {
 		// The chain is configured to extend votes, check that the vote is
@@ -2332,13 +2384,13 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 			// message.
 			_, val := cs.state.Validators.GetByIndex(vote.ValidatorIndex)
 			if err := vote.VerifyExtension(cs.state.ChainID, val.PubKey); err != nil {
-				return false, err
+				return err
 			}
 
 			err := cs.blockExec.VerifyVoteExtension(context.TODO(), vote)
 			cs.metrics.MarkVoteExtensionReceived(err == nil)
 			if err != nil {
-				return false, err
+				return err
 			}
 		}
 	} else if len(vote.Extension) > 0 || len(vote.ExtensionSignature) > 0 {
@@ -2348,20 +2400,21 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		// TODO punish a peer if it sent a vote with an extension when the feature
 		// is disabled on the network.
 		// https://github.com/tendermint/tendermint/issues/8565
-		return false, fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
+		return fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
 	}
+	return nil
+}
 
-	height := cs.Height
-	added, err = cs.Votes.AddVote(vote, peerID, extEnabled)
-	if !added {
-		// Either duplicate, or error upon cs.Votes.AddByIndex()
-
-		// If the vote wasn't added but there's no error, its a duplicate vote
-		if err == nil {
-			cs.metrics.DuplicateVote.Add(1)
-		}
-		return added, err
+// handleDuplicateVote handles a duplicate vote.
+func (cs *State) handleDuplicateVote(err error) {
+	// If the vote wasn't added but there's no error, it's a duplicate vote
+	if err == nil {
+		cs.metrics.DuplicateVote.Add(1)
 	}
+}
+
+// updateMetricsAndEvents updates metrics and events based on the vote.
+func (cs *State) updateMetricsAndEvents(vote *types.Vote) {
 	if vote.Round == cs.Round {
 		vals := cs.state.Validators
 		_, val := vals.GetByIndex(vote.ValidatorIndex)
@@ -2369,103 +2422,100 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	}
 
 	if err := cs.eventBus.PublishEventVote(types.EventDataVote{Vote: vote}); err != nil {
-		return added, err
+		cs.Logger.Error("failed to publish event vote", "err", err)
 	}
 	cs.evsw.FireEvent(types.EventVote, vote)
+}
 
-	switch vote.Type {
-	case types.PrevoteType:
-		prevotes := cs.Votes.Prevotes(vote.Round)
-		cs.Logger.Debug("added vote to prevote", "vote", vote, "prevotes", prevotes.StringShort())
+// handlePrevote handles a prevote.
+func (cs *State) handlePrevote(vote *types.Vote) {
+	prevotes := cs.Votes.Prevotes(vote.Round)
+	cs.Logger.Debug("added vote to prevote", "vote", vote, "prevotes", prevotes.StringShort())
 
-		// Check to see if >2/3 of the voting power on the network voted for any non-nil block.
-		if blockID, ok := prevotes.TwoThirdsMajority(); ok && !blockID.IsNil() {
-			// Greater than 2/3 of the voting power on the network voted for some
-			// non-nil block
+	// Check to see if >2/3 of the voting power on the network voted for any non-nil block.
+	if blockID, ok := prevotes.TwoThirdsMajority(); ok && !blockID.IsNil() {
+		// Greater than 2/3 of the voting power on the network voted for some
+		// non-nil block
 
-			// Update Valid* if we can.
-			if cs.ValidRound < vote.Round && vote.Round == cs.Round {
-				if cs.ProposalBlock.HashesTo(blockID.Hash) {
-					cs.Logger.Debug("updating valid block because of POL", "valid_round", cs.ValidRound, "pol_round", vote.Round)
-					cs.ValidRound = vote.Round
-					cs.ValidBlock = cs.ProposalBlock
-					cs.ValidBlockParts = cs.ProposalBlockParts
-				} else {
-					cs.Logger.Debug(
-						"valid block we do not know about; set ProposalBlock=nil",
-						"proposal", log.NewLazyBlockHash(cs.ProposalBlock),
-						"block_id", blockID.Hash,
-					)
-
-					// we're getting the wrong block
-					cs.ProposalBlock = nil
-				}
-
-				if !cs.ProposalBlockParts.HasHeader(blockID.PartSetHeader) {
-					cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
-				}
-
-				cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
-				if err := cs.eventBus.PublishEventValidBlock(cs.RoundStateEvent()); err != nil {
-					return added, err
-				}
-			}
-		}
-
-		// If +2/3 prevotes for *anything* for future round:
-		switch {
-		case cs.Round < vote.Round && prevotes.HasTwoThirdsAny():
-			// Round-skip if there is any 2/3+ of votes ahead of us
-			cs.enterNewRound(height, vote.Round)
-
-		case cs.Round == vote.Round && cstypes.RoundStepPrevote <= cs.Step: // current round
-			blockID, ok := prevotes.TwoThirdsMajority()
-			if ok && (cs.isProposalComplete() || blockID.IsNil()) {
-				cs.enterPrecommit(height, vote.Round)
-			} else if prevotes.HasTwoThirdsAny() {
-				cs.enterPrevoteWait(height, vote.Round)
-			}
-
-		case cs.Proposal != nil && 0 <= cs.Proposal.POLRound && cs.Proposal.POLRound == vote.Round:
-			// If the proposal is now complete, enter prevote of cs.Round.
-			if cs.isProposalComplete() {
-				cs.enterPrevote(height, cs.Round)
-			}
-		}
-
-	case types.PrecommitType:
-		precommits := cs.Votes.Precommits(vote.Round)
-		cs.Logger.Debug("added vote to precommit",
-			"height", vote.Height,
-			"round", vote.Round,
-			"validator", vote.ValidatorAddress.String(),
-			"vote_timestamp", vote.Timestamp,
-			"data", precommits.LogString())
-
-		blockID, ok := precommits.TwoThirdsMajority()
-		if ok {
-			// Executed as TwoThirdsMajority could be from a higher round
-			cs.enterNewRound(height, vote.Round)
-			cs.enterPrecommit(height, vote.Round)
-
-			if !blockID.IsNil() {
-				cs.enterCommit(height, vote.Round)
-				if cs.config.TimeoutCommit == 0 && precommits.HasAll() {
-					cs.enterNewRound(cs.Height, 0)
-				}
+		// Update Valid* if we can.
+		if cs.ValidRound < vote.Round && vote.Round == cs.Round {
+			if cs.ProposalBlock.HashesTo(blockID.Hash) {
+				cs.Logger.Debug("updating valid block because of POL", "valid_round", cs.ValidRound, "pol_round", vote.Round)
+				cs.ValidRound = vote.Round
+				cs.ValidBlock = cs.ProposalBlock
+				cs.ValidBlockParts = cs.ProposalBlockParts
 			} else {
-				cs.enterPrecommitWait(height, vote.Round)
-			}
-		} else if cs.Round <= vote.Round && precommits.HasTwoThirdsAny() {
-			cs.enterNewRound(height, vote.Round)
-			cs.enterPrecommitWait(height, vote.Round)
-		}
+				cs.Logger.Debug(
+					"valid block we do not know about; set ProposalBlock=nil",
+					"proposal", log.NewLazyBlockHash(cs.ProposalBlock),
+					"block_id", blockID.Hash,
+				)
 
-	default:
-		panic(fmt.Sprintf("unexpected vote type %v", vote.Type))
+				// we're getting the wrong block
+				cs.ProposalBlock = nil
+			}
+
+			if !cs.ProposalBlockParts.HasHeader(blockID.PartSetHeader) {
+				cs.ProposalBlockParts = types.NewPartSetFromHeader(blockID.PartSetHeader)
+			}
+
+			cs.evsw.FireEvent(types.EventValidBlock, &cs.RoundState)
+			if err := cs.eventBus.PublishEventValidBlock(cs.RoundStateEvent()); err != nil {
+				cs.Logger.Error("failed to publish valid block event", "err", err)
+			}
+		}
 	}
 
-	return added, err
+	// If +2/3 prevotes for *anything* for future round:
+	switch {
+	case cs.Round < vote.Round && prevotes.HasTwoThirdsAny():
+		// Round-skip if there is any 2/3+ of votes ahead of us
+		cs.enterNewRound(cs.Height, vote.Round)
+
+	case cs.Round == vote.Round && cstypes.RoundStepPrevote <= cs.Step: // current round
+		blockID, ok := prevotes.TwoThirdsMajority()
+		if ok && (cs.isProposalComplete() || blockID.IsNil()) {
+			cs.enterPrecommit(cs.Height, vote.Round)
+		} else if prevotes.HasTwoThirdsAny() {
+			cs.enterPrevoteWait(cs.Height, vote.Round)
+		}
+
+	case cs.Proposal != nil && 0 <= cs.Proposal.POLRound && cs.Proposal.POLRound == vote.Round:
+		// If the proposal is now complete, enter prevote of cs.Round.
+		if cs.isProposalComplete() {
+			cs.enterPrevote(cs.Height, cs.Round)
+		}
+	}
+}
+
+// handlePrecommit handles a precommit.
+func (cs *State) handlePrecommit(vote *types.Vote) {
+	precommits := cs.Votes.Precommits(vote.Round)
+	cs.Logger.Debug("added vote to precommit",
+		"height", vote.Height,
+		"round", vote.Round,
+		"validator", vote.ValidatorAddress.String(),
+		"vote_timestamp", vote.Timestamp,
+		"data", precommits.LogString())
+
+	blockID, ok := precommits.TwoThirdsMajority()
+	if ok {
+		// Executed as TwoThirdsMajority could be from a higher round
+		cs.enterNewRound(cs.Height, vote.Round)
+		cs.enterPrecommit(cs.Height, vote.Round)
+
+		if !blockID.IsNil() {
+			cs.enterCommit(cs.Height, vote.Round)
+			if cs.config.TimeoutCommit == 0 && precommits.HasAll() {
+				cs.enterNewRound(cs.Height, 0)
+			}
+		} else {
+			cs.enterPrecommitWait(cs.Height, vote.Round)
+		}
+	} else if cs.Round <= vote.Round && precommits.HasTwoThirdsAny() {
+		cs.enterNewRound(cs.Height, vote.Round)
+		cs.enterPrecommitWait(cs.Height, vote.Round)
+	}
 }
 
 // CONTRACT: cs.privValidator is not nil.

@@ -9,7 +9,6 @@ import (
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/sirupsen/logrus"
 
-	// cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 
 	cs "github.com/cometbft/cometbft/consensus"
@@ -26,10 +25,6 @@ const (
 
 	// PeerCatchupSleepIntervalMS defines how much time to sleep if a peer is behind
 	PeerCatchupSleepIntervalMS = 100
-
-	// UnknownPeerID is the peer ID to use when running CheckTx when there is
-	// no peer (e.g. RPC)
-	UnknownPeerID uint16 = 0
 
 	MaxActiveIDs = math.MaxUint16
 )
@@ -133,7 +128,8 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		// verify sig of incoming gossip vote, throw if verification fails
 		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
 		if val == nil {
-			logrus.Infof("validator with index: %v not found in validator set, skipping gossip", msg.ValidatorIndex)
+			oracleR.Logger.Error("validator with index: %v not found in validator set, skipping gossip", msg.ValidatorIndex)
+			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("validator not found in validator set: %T", e.Message))
 			return
 		}
 		pubKey := val.PubKey

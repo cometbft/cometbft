@@ -847,6 +847,8 @@ type OracleConfig struct {
 	SignInterval time.Duration `mapstructure:"sign_interval"`
 	// Interval determines how long we should wait between gossiping of votes
 	GossipInterval time.Duration `mapstructure:"gossip_interval"`
+	// Interval determines how long we should wait between trying to prune
+	PruneInterval time.Duration `mapstructure:"prune_interval"`
 	// Max allowable size for votes that can be gossiped from peer to peer
 	MaxGossipMsgSize int `mapstructure:"max_gossip_msg_size"`
 }
@@ -857,6 +859,7 @@ func DefaultOracleConfig() *OracleConfig {
 		MaxGossipVoteAge: 3,                      // keep all gossipVotes from 3 blocks behind
 		SignInterval:     100 * time.Millisecond, // 0.1s
 		GossipInterval:   100 * time.Millisecond, // 0.1s
+		PruneInterval:    500 * time.Millisecond, // 0.5s
 		MaxGossipMsgSize: 65536,
 	}
 }
@@ -877,7 +880,10 @@ func (cfg *OracleConfig) ValidateBasic() error {
 		return errors.New("sign_interval can't be negative")
 	}
 	if cfg.GossipInterval < 0 {
-		return errors.New("sync_interval can't be negative")
+		return errors.New("gossip_interval can't be negative")
+	}
+	if cfg.PruneInterval < 0 {
+		return errors.New("prune_interval can't be negative")
 	}
 	if cfg.MaxGossipMsgSize < 0 {
 		return errors.New("max_gossip_msg_size can't be negative")

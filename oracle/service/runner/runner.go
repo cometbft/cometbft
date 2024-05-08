@@ -98,7 +98,14 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 		if maxGossipVoteAge == 0 {
 			maxGossipVoteAge = 2
 		}
-		ticker := time.Tick(500 * time.Millisecond)
+		pruneInterval := oracleInfo.Config.PruneInterval
+		if pruneInterval == 0 {
+			if pruneInterval == 0 {
+				pruneInterval = 500 * time.Millisecond
+			}
+		}
+
+		ticker := time.Tick(pruneInterval)
 		for range ticker {
 			lastBlockTime := consensusState.GetState().LastBlockTime
 

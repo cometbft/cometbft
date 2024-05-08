@@ -418,6 +418,9 @@ sign_interval = "{{ .Oracle.SignInterval }}"
 # Interval determines how long we should wait between gossiping of votes
 gossip_interval = "{{ .Oracle.GossipInterval }}"
 
+# Interval determines how long we should wait between trying to prune
+prune_interval = "{{ .Oracle.PruneInterval }}"
+
 # Max allowable size for votes that can be gossiped from peer to peer
 max_gossip_msg_size = {{ .Oracle.MaxGossipMsgSize }}
 

@@ -24,8 +24,8 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -719,17 +719,21 @@ func (app *Application) checkHeightAndExtensions(isPrepareProcessProposal bool, 
 
 func (app *Application) storeValidator(valUpdate *abci.ValidatorUpdate) error {
 	// Store validator data to verify extensions
-	pubKey, err := cryptoenc.PubKeyFromProto(valUpdate.PubKey)
+	pubKey, err := cryptoenc.PubKeyFromTypeAndBytes(valUpdate.PubKeyType, valUpdate.PubKeyBytes)
 	if err != nil {
 		return err
 	}
 	addr := pubKey.Address().String()
 	if valUpdate.Power > 0 {
-		pubKeyBytes, err := valUpdate.PubKey.Marshal()
-		if err != nil {
-			return err
-		}
 		app.logger.Info("setting validator in app_state", "addr", addr)
+		pk, err := cryptoenc.PubKeyToProto(pubKey)
+		if err != nil {
+			return fmt.Errorf("failed to convert pubkey to proto: %w", err)
+		}
+		pubKeyBytes, err := pk.Marshal()
+		if err != nil {
+			return fmt.Errorf("failed to marshal pubkey: %w", err)
+		}
 		app.state.Set(prefixReservedKey+addr, hex.EncodeToString(pubKeyBytes))
 	}
 	return nil
@@ -748,7 +752,7 @@ func (app *Application) validatorUpdates(height uint64) (abci.ValidatorUpdates, 
 		if err != nil {
 			return nil, fmt.Errorf("invalid base64 pubkey value %q: %w", keyString, err)
 		}
-		valUpdate := abci.UpdateValidator(keyBytes, int64(power), app.cfg.KeyType)
+		valUpdate := abci.ValidatorUpdate{Power: int64(power), PubKeyType: app.cfg.KeyType, PubKeyBytes: keyBytes}
 		valUpdates = append(valUpdates, valUpdate)
 		if err := app.storeValidator(&valUpdate); err != nil {
 			return nil, err

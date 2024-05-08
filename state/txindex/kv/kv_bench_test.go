@@ -9,7 +9,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -66,7 +66,7 @@ func BenchmarkTxSearch(b *testing.B) {
 	ctx := context.Background()
 
 	for i := 0; i < b.N; i++ {
-		if _, err := indexer.Search(ctx, txQuery); err != nil {
+		if _, _, err := indexer.Search(ctx, txQuery, DefaultPagination); err != nil {
 			b.Errorf("failed to query for txs: %s", err)
 		}
 	}

@@ -16,9 +16,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/bits"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
@@ -44,10 +44,11 @@ const (
 type Block struct {
 	mtx cmtsync.Mutex
 
-	Header     `json:"header"`
-	Data       `json:"data"`
-	Evidence   EvidenceData `json:"evidence"`
-	LastCommit *Commit      `json:"last_commit"`
+	verifiedHash cmtbytes.HexBytes // Verified block hash (not included in the struct hash)
+	Header       `json:"header"`
+	Data         `json:"data"`
+	Evidence     EvidenceData `json:"evidence"`
+	LastCommit   *Commit      `json:"last_commit"`
 }
 
 // ValidateBasic performs basic validation that doesn't involve state data.
@@ -131,8 +132,13 @@ func (b *Block) Hash() cmtbytes.HexBytes {
 	if b.LastCommit == nil {
 		return nil
 	}
+	if b.verifiedHash != nil {
+		return b.verifiedHash
+	}
 	b.fillHeader()
-	return b.Header.Hash()
+	hash := b.Header.Hash()
+	b.verifiedHash = hash
+	return hash
 }
 
 // MakePartSet returns a PartSet containing parts of a serialized block.
@@ -1201,12 +1207,12 @@ func (ec *ExtendedCommit) Size() int {
 // Implements VoteSetReader.
 func (ec *ExtendedCommit) BitArray() *bits.BitArray {
 	if ec.bitArray == nil {
-		ec.bitArray = bits.NewBitArray(len(ec.ExtendedSignatures))
-		for i, extCommitSig := range ec.ExtendedSignatures {
+		initialBitFn := func(i int) bool {
 			// TODO: need to check the BlockID otherwise we could be counting conflicts,
 			//       not just the one with +2/3 !
-			ec.bitArray.SetIndex(i, extCommitSig.BlockIDFlag != BlockIDFlagAbsent)
+			return ec.ExtendedSignatures[i].BlockIDFlag != BlockIDFlagAbsent
 		}
+		ec.bitArray = bits.NewBitArrayFromFn(len(ec.ExtendedSignatures), initialBitFn)
 	}
 	return ec.bitArray
 }

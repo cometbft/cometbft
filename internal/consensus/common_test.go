@@ -23,13 +23,14 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
 	cmtos "github.com/cometbft/cometbft/internal/os"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/internal/test"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
@@ -1053,4 +1054,8 @@ func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {
 		bytes.Equal(v1.ValidatorAddress.Bytes(), v2.GetValidatorAddress()) &&
 		v1.ValidatorIndex == v2.GetValidatorIndex() &&
 		bytes.Equal(v1.Extension, v2.Extension)
+}
+
+func updateValTx(pubKey crypto.PubKey, power int64) []byte {
+	return kvstore.MakeValSetChangeTx(abci.NewValidatorUpdate(pubKey, power))
 }

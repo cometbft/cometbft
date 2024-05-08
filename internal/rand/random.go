@@ -5,7 +5,7 @@ import (
 	mrand "math/rand"
 	"time"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (

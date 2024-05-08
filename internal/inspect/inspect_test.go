@@ -17,8 +17,8 @@ import (
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/inspect"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 	httpclient "github.com/cometbft/cometbft/rpc/client/http"
 	indexermocks "github.com/cometbft/cometbft/state/indexer/mocks"
 	statemocks "github.com/cometbft/cometbft/state/mocks"
@@ -122,8 +122,8 @@ func TestTxSearch(t *testing.T) {
 	txIndexerMock.On("Search", mock.Anything,
 		mock.MatchedBy(func(q *query.Query) bool {
 			return testQuery == strings.ReplaceAll(q.String(), " ", "")
-		})).
-		Return([]*abcitypes.TxResult{testTxResult}, nil)
+		}), mock.Anything).
+		Return([]*abcitypes.TxResult{testTxResult}, 1, nil)
 
 	rpcConfig := config.TestRPCConfig()
 	d := inspect.New(rpcConfig, blockStoreMock, stateStoreMock, txIndexerMock, blkIdxMock)

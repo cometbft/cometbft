@@ -18,12 +18,12 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	"github.com/cometbft/cometbft/internal/protoio"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/types"
 )
@@ -2796,7 +2796,7 @@ func (n *fakeTxNotifier) Notify() {
 // and third precommit arrives which leads to the commit of that header and the correct
 // start of the next round.
 func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
-	config.Consensus.SkipTimeoutCommit = false
+	config.Consensus.TimeoutCommit = 10 * time.Millisecond
 	cs1, vss := randState(4)
 	cs1.txNotifier = &fakeTxNotifier{ch: make(chan struct{})}
 
@@ -2839,7 +2839,7 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	signAddVotes(cs1, types.PrecommitType, chainID, blockID, true, vs3)
 
 	// wait till timeout occurs
-	ensureNewTimeout(precommitTimeoutCh, height, round, cs1.config.TimeoutPrecommit.Nanoseconds())
+	ensureNewTimeout(precommitTimeoutCh, height, round, cs1.config.TimeoutVote.Nanoseconds())
 
 	ensureNewRound(newRoundCh, height, round+1)
 
@@ -2862,7 +2862,7 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	config.Consensus.SkipTimeoutCommit = false
+	config.Consensus.TimeoutCommit = 10 * time.Millisecond
 	cs1, vss := randState(4)
 
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]

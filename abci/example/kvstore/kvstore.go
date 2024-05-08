@@ -12,8 +12,8 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
-	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto"
+	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"
 )
@@ -43,7 +43,7 @@ type Application struct {
 
 	// validator set
 	valUpdates         []types.ValidatorUpdate
-	valAddrToPubKeyMap map[string]cryptoproto.PublicKey
+	valAddrToPubKeyMap map[string]crypto.PubKey
 
 	// If true, the app will generate block events in BeginBlock. Used to test the event indexer
 	// Should be false by default to avoid generating too much data.
@@ -55,7 +55,7 @@ func NewApplication(db dbm.DB) *Application {
 	return &Application{
 		logger:             log.NewNopLogger(),
 		state:              loadState(db),
-		valAddrToPubKeyMap: make(map[string]cryptoproto.PublicKey),
+		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
 	}
 }
 
@@ -88,11 +88,11 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 	if len(app.valAddrToPubKeyMap) == 0 && app.state.Height > 0 {
 		validators := app.getValidators()
 		for _, v := range validators {
-			pubkey, err := cryptoencoding.PubKeyFromProto(v.PubKey)
+			pubkey, err := cryptoenc.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
 			if err != nil {
-				panic(fmt.Errorf("can't decode public key: %w", err))
+				panic(err)
 			}
-			app.valAddrToPubKeyMap[string(pubkey.Address())] = v.PubKey
+			app.valAddrToPubKeyMap[string(pubkey.Address())] = pubkey
 		}
 	}
 
@@ -205,8 +205,9 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 			//nolint:revive // this is a false positive from early-return
 			if pubKey, ok := app.valAddrToPubKeyMap[addr]; ok {
 				app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{
-					PubKey: pubKey,
-					Power:  ev.Validator.Power - 1,
+					Power:       ev.Validator.Power - 1,
+					PubKeyType:  pubKey.Type(),
+					PubKeyBytes: pubKey.Bytes(),
 				})
 				app.logger.Info("Decreased val power by 1 because of the equivocation",
 					"val", addr)
@@ -223,7 +224,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 			if err != nil {
 				panic(err)
 			}
-			app.valUpdates = append(app.valUpdates, types.UpdateValidator(pubKey, power, keyType))
+			app.valUpdates = append(app.valUpdates, types.ValidatorUpdate{Power: power, PubKeyType: keyType, PubKeyBytes: pubKey})
 		} else {
 			app.stagedTxs = append(app.stagedTxs, tx)
 		}
@@ -446,9 +447,9 @@ func parseValidatorTx(tx []byte) (string, []byte, int64, error) {
 
 // add, update, or remove a validator.
 func (app *Application) updateValidator(v types.ValidatorUpdate) {
-	pubkey, err := cryptoencoding.PubKeyFromProto(v.PubKey)
+	pubkey, err := cryptoenc.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
 	if err != nil {
-		panic(fmt.Errorf("can't decode public key: %w", err))
+		panic(err)
 	}
 	key := []byte(ValidatorPrefix + string(pubkey.Bytes()))
 
@@ -475,7 +476,7 @@ func (app *Application) updateValidator(v types.ValidatorUpdate) {
 		if err = app.state.db.Set(key, value.Bytes()); err != nil {
 			panic(err)
 		}
-		app.valAddrToPubKeyMap[string(pubkey.Address())] = v.PubKey
+		app.valAddrToPubKeyMap[string(pubkey.Address())] = pubkey
 	}
 }
 

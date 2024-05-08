@@ -5,8 +5,8 @@ import (
 	"net"
 	"net/http"
 
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/light"
 	lrpc "github.com/cometbft/cometbft/light/rpc"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"

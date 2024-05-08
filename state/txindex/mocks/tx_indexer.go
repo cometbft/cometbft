@@ -8,7 +8,7 @@ import (
 	log "github.com/cometbft/cometbft/libs/log"
 	mock "github.com/stretchr/testify/mock"
 
-	query "github.com/cometbft/cometbft/internal/pubsub/query"
+	query "github.com/cometbft/cometbft/libs/pubsub/query"
 
 	txindex "github.com/cometbft/cometbft/state/txindex"
 
@@ -149,34 +149,41 @@ func (_m *TxIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	return r0, r1, r2
 }
 
-// Search provides a mock function with given fields: ctx, q
-func (_m *TxIndexer) Search(ctx context.Context, q *query.Query) ([]*v1.TxResult, error) {
-	ret := _m.Called(ctx, q)
+// Search provides a mock function with given fields: ctx, q, pagSettings
+func (_m *TxIndexer) Search(ctx context.Context, q *query.Query, pagSettings txindex.Pagination) ([]*v1.TxResult, int, error) {
+	ret := _m.Called(ctx, q, pagSettings)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Search")
 	}
 
 	var r0 []*v1.TxResult
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *query.Query) ([]*v1.TxResult, error)); ok {
-		return rf(ctx, q)
+	var r1 int
+	var r2 error
+	if rf, ok := ret.Get(0).(func(context.Context, *query.Query, txindex.Pagination) ([]*v1.TxResult, int, error)); ok {
+		return rf(ctx, q, pagSettings)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *query.Query) []*v1.TxResult); ok {
-		r0 = rf(ctx, q)
+	if rf, ok := ret.Get(0).(func(context.Context, *query.Query, txindex.Pagination) []*v1.TxResult); ok {
+		r0 = rf(ctx, q, pagSettings)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*v1.TxResult)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *query.Query) error); ok {
-		r1 = rf(ctx, q)
+	if rf, ok := ret.Get(1).(func(context.Context, *query.Query, txindex.Pagination) int); ok {
+		r1 = rf(ctx, q, pagSettings)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(int)
 	}
 
-	return r0, r1
+	if rf, ok := ret.Get(2).(func(context.Context, *query.Query, txindex.Pagination) error); ok {
+		r2 = rf(ctx, q, pagSettings)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // SetLogger provides a mock function with given fields: l

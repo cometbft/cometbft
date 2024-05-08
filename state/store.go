@@ -662,8 +662,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 		// The data might be of the legacy ABCI response type, so
 		// we try to unmarshal that
 		legacyResp := new(cmtstate.LegacyABCIResponses)
-		rErr := legacyResp.Unmarshal(buf)
-		if rErr != nil {
+		if err := legacyResp.Unmarshal(buf); err != nil {
 			// only return an error, this method is only invoked through the `/block_results` not for state logic and
 			// some tests, so no need to exit cometbft if there's an error, just return it.
 			return nil, ErrFinalizeBlockResponseCorruptedError

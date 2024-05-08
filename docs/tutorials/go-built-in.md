@@ -567,6 +567,7 @@ Change the contents of your `main.go` file to the following.
 package main
 
 import (
+    "context"
     "flag"
     "fmt"
     "github.com/cometbft/cometbft/p2p"
@@ -643,6 +644,7 @@ func main() {
     }
 
     node, err := nm.NewNode(
+        context.Background(),
         config,
         pv,
         nodeKey,
@@ -733,6 +735,7 @@ the genesis information:
 
 ```go
 node, err := nm.NewNode(
+    context.Background(),
     config,
     pv,
     nodeKey,

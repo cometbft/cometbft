@@ -32,12 +32,13 @@ title: Methods
     | Name          | Type   | Description                              | Field Number |
     |---------------|--------|------------------------------------------|--------------|
     | version       | string | The CometBFT software semantic version | 1            |
-    | block_version | uint64 | The CometBFT Block Protocol version    | 2            |
-    | p2p_version   | uint64 | The CometBFT P2P Protocol version      | 3            |
+    | block_version | uint64 | The CometBFT Block version             | 2            |
+    | p2p_version   | uint64 | The CometBFT P2P version               | 3            |
     | abci_version  | string | The CometBFT ABCI semantic version     | 4            |
 
 * **Response**:
 
+<<<<<<< HEAD
     | Name                | Type   | Description                                         | Field Number |
     |---------------------|--------|-----------------------------------------------------|--------------|
     | data                | string | Some arbitrary information                          | 1            |
@@ -45,6 +46,15 @@ title: Methods
     | app_version         | uint64 | The application protocol version                    | 3            |
     | last_block_height   | int64  | Latest height for which the app persisted its state | 4            |
     | last_block_app_hash | bytes  | Latest AppHash returned by `Commit`                 | 5            |
+=======
+    | Name                | Type   | Description                                         | Field Number | Deterministic |
+    |---------------------|--------|-----------------------------------------------------|--------------|---------------|
+    | data                | string | Some arbitrary information                          | 1            | N/A           |
+    | version             | string | The application software semantic version           | 2            | N/A           |
+    | app_version         | uint64 | The application version                             | 3            | N/A           |
+    | last_block_height   | int64  | Latest height for which the app persisted its state | 4            | N/A           |
+    | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            | N/A           |
+>>>>>>> daa043aaa (docs: disambiguate protocol version (#3034))
 
 * **Usage**:
     * Return information about the application state.

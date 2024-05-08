@@ -550,7 +550,7 @@ func TestJSONRPCCaching(t *testing.T) {
 	res1, err := rawJSONRPCRequest(t, cl, httpAddr, req)
 	defer func() { _ = res1.Body.Close() }()
 	require.NoError(t, err)
-	assert.Equal(t, "", res1.Header.Get("Cache-control"))
+	assert.Equal(t, "", res1.Header.Get("Cache-Control"))
 
 	// Supplying the arg should result in caching
 	params["arg"] = cmtrand.Intn(10000)
@@ -560,7 +560,7 @@ func TestJSONRPCCaching(t *testing.T) {
 	res2, err := rawJSONRPCRequest(t, cl, httpAddr, req)
 	defer func() { _ = res2.Body.Close() }()
 	require.NoError(t, err)
-	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
+	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-Control"))
 }
 
 func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req any) (*http.Response, error) {
@@ -572,7 +572,7 @@ func rawJSONRPCRequest(t *testing.T, cl *http.Client, url string, req any) (*htt
 	httpReq, err := http.NewRequest(http.MethodPost, url, reqBuf)
 	require.NoError(t, err)
 
-	httpReq.Header.Set("Content-type", "application/json")
+	httpReq.Header.Set("Content-Type", "application/json")
 
 	return cl.Do(httpReq)
 }
@@ -588,14 +588,14 @@ func TestURICaching(t *testing.T) {
 	res1, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res1.Body.Close() }()
 	require.NoError(t, err)
-	assert.Equal(t, "", res1.Header.Get("Cache-control"))
+	assert.Equal(t, "", res1.Header.Get("Cache-Control"))
 
 	// Supplying the arg should result in caching
 	args.Set("arg", strconv.Itoa(cmtrand.Intn(10000)))
 	res2, err := rawURIRequest(t, cl, httpAddr+"/echo_default", args)
 	defer func() { _ = res2.Body.Close() }()
 	require.NoError(t, err)
-	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-control"))
+	assert.Equal(t, "public, max-age=86400", res2.Header.Get("Cache-Control"))
 }
 
 func rawURIRequest(t *testing.T, cl *http.Client, url string, args url.Values) (*http.Response, error) {

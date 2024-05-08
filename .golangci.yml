@@ -12,9 +12,11 @@ linters:
     - dupword
     - errorlint
     - errname
+    - err113
     - exhaustive
     - exhaustivestruct
     - exhaustruct
+    - execinquery
     - forbidigo
     - forcetypeassert
     - funlen
@@ -23,15 +25,16 @@ linters:
     - gocognit
     - gocyclo
     - godox
-    - goerr113
     - golint
     - gomnd
     - ifshort
     - interfacebloat
+    - intrange
     - interfacer
     - ireturn
     - lll
     - maintidx
+    - mnd
     - maligned
     - nestif
     - nilnil

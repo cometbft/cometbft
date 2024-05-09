@@ -16,16 +16,17 @@ import (
 )
 
 func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State) {
+	interval := oracleInfo.Config.SignInterval
+	if interval == 0 {
+		interval = 100 * time.Millisecond
+	}
+
 	go func(oracleInfo *types.OracleInfo) {
 		for {
 			select {
 			case <-oracleInfo.StopChannel:
 				return
 			default:
-				interval := oracleInfo.Config.SignInterval
-				if interval == 0 {
-					interval = 100 * time.Millisecond
-				}
 				time.Sleep(interval)
 				ProcessSignVoteQueue(oracleInfo, consensusState)
 			}
@@ -35,14 +36,8 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.St
 
 func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	votes := []*oracleproto.Vote{}
-	for {
-		select {
-		case vote := <-oracleInfo.SignVotesChan:
-			votes = append(votes, vote)
-			continue
-		default:
-		}
-		break
+	for vote := range oracleInfo.SignVotesChan {
+		votes = append(votes, vote)
 	}
 
 	if len(votes) == 0 {
@@ -66,6 +61,8 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		unsignedVotes = append(unsignedVotes, vote)
 	}
 
+	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
+
 	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
 	SortOracleVotes(unsignedVotes)
 
@@ -76,8 +73,6 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 		SignedTimestamp: time.Now().Unix(),
 		Votes:           unsignedVotes,
 	}
-
-	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
 	// signing of vote should append the signature field of gossipVote
 	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {

@@ -228,7 +228,6 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 				Message:   gossipVote,
 			})
 			if !success {
-				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 				break
 			}
 		}

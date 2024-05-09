@@ -1080,7 +1080,6 @@ func TestStateProto(t *testing.T) {
 	}
 
 	for _, tt := range tc {
-		tt := tt
 		pbs, err := tt.state.ToProto()
 		if !tt.expPass1 {
 			require.Error(t, err)

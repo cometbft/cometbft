@@ -338,7 +338,7 @@ func TestReactorTxSendersMultiNode(t *testing.T) {
 // but this is not documented anywhere. If this is well understood and
 // documented, we don't need this test. Until then, let's keep the test.
 func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
-	t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test.")
+	t.Skip("FIFO is not supposed to be guaranteed and this is just used to evidence one of the cases where it does not happen. Hence we skip this test.")
 
 	config := cfg.TestConfig()
 	reactors, _ := makeAndConnectReactors(config, 4)

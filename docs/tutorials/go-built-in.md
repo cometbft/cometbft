@@ -115,6 +115,7 @@ go mod init kvstore
 This should an output similar to this.
 
 **NOTE**: No need to run `go mod tidy` at this time, just ignore it for now.
+
 ```bash
 go: creating new go.mod: module kvstore
 go: to add module requirements and sums:
@@ -134,6 +135,7 @@ or `v1.0.1`
 ```bash
 go: added github.com/cometbft/cometbft v1.0.0
 ```
+
 `
 After running the above commands you will see two generated files, `go.mod` and `go.sum`.
 The go.mod file should look similar to:
@@ -883,10 +885,13 @@ cometbft
 $ echo "cm9ja3M=" | base64 -d
 rocks
 ```
+
 If you want to search for txs, you can leverage `CometBFT` kv indexer by using the `/tx_search` RPC endpoint:
+
 ```bash
 curl "localhost:26657/tx_search?query=\"app.key='cometbft'\""
 ```
+
 The events (`abcitypes.Event`) added in `FinalizeBlock` are indexed by CometBFT (assuming the `kv` indexer is enabled in the CometBFT's configuration).
 
 

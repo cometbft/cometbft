@@ -202,6 +202,20 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	block *types.Block,
 	state State,
 ) (bool, error) {
+	txs := block.Data.Txs.ToSliceOfBytes()
+	if len(txs) > 0 {
+		res, err := blockExec.proxyApp.ValidateOracleVotes(context.Background(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
+
+		if err != nil && res.Status == abci.ResponseValidateOracleVotes_absent {
+			// oracleTx is not present, continue normal processProposal flow
+			blockExec.logger.Error("error validating oracle votes:", "err", err)
+		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_present {
+			// oracleTx is present but it is invalid, remove from txs
+			blockExec.logger.Error("error validating oracle votes:", "err", err)
+			return false, fmt.Errorf("processProposal: invalid oracle votes submitted: %v", err)
+		}
+	}
+
 	resp, err := blockExec.proxyApp.ProcessProposal(context.TODO(), &abci.RequestProcessProposal{
 		Hash:               block.Header.Hash(),
 		Height:             block.Header.Height,

@@ -38,6 +38,7 @@ type Application interface {
 	// Hooks
 	CreateOracleResultTx(context.Context, *RequestCreateOracleResultTx) (*ResponseCreateOracleResultTx, error)
 	FetchOracleVotes(context.Context, *RequestFetchOracleVotes) (*ResponseFetchOracleVotes, error)
+	ValidateOracleVotes(context.Context, *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error)
 }
 
 //-------------------------------------------------------
@@ -130,4 +131,8 @@ func (BaseApplication) CreateOracleResultTx(_ context.Context, req *RequestCreat
 
 func (BaseApplication) FetchOracleVotes(_ context.Context, req *RequestFetchOracleVotes) (*ResponseFetchOracleVotes, error) {
 	return &ResponseFetchOracleVotes{}, nil
+}
+
+func (BaseApplication) ValidateOracleVotes(_ context.Context, req *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error) {
+	return &ResponseValidateOracleVotes{}, nil
 }

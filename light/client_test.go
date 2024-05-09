@@ -214,7 +214,6 @@ func TestClient_SequentialVerification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := light.NewClient(
 				ctx,
@@ -339,7 +338,6 @@ func TestClient_SkippingVerification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := light.NewClient(
 				ctx,

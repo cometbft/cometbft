@@ -384,7 +384,6 @@ func TestSyncer_offerSnapshot(t *testing.T) {
 		"unknown non-zero": {9, nil, unknownErr},
 	}
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			syncer, connSnapshot := setupOfferSyncer()
 			s := &snapshot{Height: 1, Format: 1, Chunks: 3, Hash: []byte{1, 2, 3}, trustedAppHash: []byte("app_hash")}
@@ -425,7 +424,6 @@ func TestSyncer_applyChunks_Results(t *testing.T) {
 		"unknown non-zero": {9, nil, unknownErr},
 	}
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			connQuery := &proxymocks.AppConnQuery{}
 			connSnapshot := &proxymocks.AppConnSnapshot{}
@@ -479,7 +477,6 @@ func TestSyncer_applyChunks_RefetchChunks(t *testing.T) {
 		"reject_snapshot": {abci.APPLY_SNAPSHOT_CHUNK_RESULT_REJECT_SNAPSHOT},
 	}
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			connQuery := &proxymocks.AppConnQuery{}
 			connSnapshot := &proxymocks.AppConnSnapshot{}
@@ -544,7 +541,6 @@ func TestSyncer_applyChunks_RejectSenders(t *testing.T) {
 		"reject_snapshot": {abci.APPLY_SNAPSHOT_CHUNK_RESULT_REJECT_SNAPSHOT},
 	}
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			connQuery := &proxymocks.AppConnQuery{}
 			connSnapshot := &proxymocks.AppConnSnapshot{}
@@ -667,7 +663,6 @@ func TestSyncer_verifyApp(t *testing.T) {
 		"error": {nil, boom, boom},
 	}
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			connQuery := &proxymocks.AppConnQuery{}
 			connSnapshot := &proxymocks.AppConnSnapshot{}

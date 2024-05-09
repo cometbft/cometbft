@@ -199,9 +199,7 @@ message RequestFinalizeBlock {
 }
 
 message RequestCreateOracleResultTx {
-  bytes    proposer_address                               = 1;
-  repeated tendermint.oracle.GossipedVotes gossiped_votes = 2;
-  int64                                 height            = 3;
+  repeated tendermint.oracle.GossipedVotes gossiped_votes = 1;
 }
 
 message RequestFetchOracleVotes {}

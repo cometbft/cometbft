@@ -142,9 +142,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		}
 
 		resp, err := blockExec.proxyApp.CreateOracleResultTx(ctx, &abci.RequestCreateOracleResultTx{
-			ProposerAddress: proposerAddr,
-			GossipedVotes:   votes,
-			Height:          height,
+			GossipedVotes: votes,
 		})
 		if err != nil {
 			blockExec.logger.Error("error in proxyAppConn.CreateOracleResultTx", "err", err)

@@ -232,8 +232,8 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	// Get validators from genesis
 	if req.Validators != nil {
 		for _, val := range req.Validators {
-			val := val
-			if err := app.storeValidator(&val); err != nil {
+			validator := val
+			if err := app.storeValidator(&validator); err != nil {
 				return nil, err
 			}
 		}

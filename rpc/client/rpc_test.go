@@ -637,7 +637,6 @@ func TestTxSearch(t *testing.T) {
 
 		totalTx := 0
 		for page := 1; page <= pages; page++ {
-			page := page
 			result, err := c.TxSearch(context.Background(), "tx.height >= 1", true, &page, &perPage, "asc")
 			require.NoError(t, err)
 			if page < pages {

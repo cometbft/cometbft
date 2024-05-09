@@ -172,7 +172,6 @@ func TestConsensusConfig_ValidateBasic(t *testing.T) {
 		"DoubleSignCheckHeight negative":       {func(c *config.ConsensusConfig) { c.DoubleSignCheckHeight = -1 }, true},
 	}
 	for desc, tc := range testcases {
-		tc := tc // appease linter
 		t.Run(desc, func(t *testing.T) {
 			cfg := config.DefaultConsensusConfig()
 			tc.modify(cfg)

@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"fmt"
+	"math/rand"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -566,6 +567,7 @@ func (conR *Reactor) getRoundState() *cstypes.RoundState {
 
 func (conR *Reactor) gossipDataRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
+	rng := cmtrand.NewStdlibRand()
 
 OUTER_LOOP:
 	for {
@@ -578,13 +580,14 @@ OUTER_LOOP:
 		// so we can reduce the amount of redundant block parts we send
 		if conR.conS.config.PeerGossipIntraloopSleepDuration > 0 {
 			// the config sets an upper bound for how long we sleep.
-			randDuration := cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration))
+			randDuration := rng.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration))
 			time.Sleep(time.Duration(randDuration))
 		}
 
 		rs := conR.getRoundState()
 		prs := ps.GetRoundState()
 
+<<<<<<< HEAD
 		// Send proposal Block parts?
 		if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
 			if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(); ok {
@@ -604,6 +607,17 @@ OUTER_LOOP:
 				}) {
 					ps.SetHasProposalBlockPart(prs.Height, prs.Round, index)
 				}
+=======
+		// --------------------
+		// Send block part?
+		// (Note these can match on hash so round doesn't matter)
+		// --------------------
+
+		if part, continueLoop := pickPartToSend(logger, conR.conS.blockStore, rs, ps, prs, rng); part != nil {
+			// part is not nil: we either succeed in sending it,
+			// or we were instructed not to sleep (busy-waiting)
+			if ps.SendPartSetHasPart(part, prs) || continueLoop {
+>>>>>>> df28e73d3 (perf: Make every gossip thread use its own randomness instance, reducing contention (#3006))
 				continue OUTER_LOOP
 			}
 		}
@@ -734,6 +748,7 @@ func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundSt
 
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
+	rng := cmtrand.NewStdlibRand()
 
 	// Simple hack to throttle logs upon sleep.
 	sleeping := 0
@@ -749,7 +764,7 @@ OUTER_LOOP:
 		// so we can reduce the amount of redundant votes we send
 		if conR.conS.config.PeerGossipIntraloopSleepDuration > 0 {
 			// the config sets an upper bound for how long we sleep.
-			randDuration := cmtrand.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration))
+			randDuration := rng.Int63n(int64(conR.conS.config.PeerGossipIntraloopSleepDuration))
 			time.Sleep(time.Duration(randDuration))
 		}
 
@@ -766,6 +781,7 @@ OUTER_LOOP:
 		// logger.Debug("gossipVotesRoutine", "rsHeight", rs.Height, "rsRound", rs.Round,
 		// "prsHeight", prs.Height, "prsRound", prs.Round, "prsStep", prs.Step)
 
+<<<<<<< HEAD
 		// If height matches, then send LastCommit, Prevotes, Precommits.
 		if rs.Height == prs.Height {
 			heightLogger := logger.With("height", prs.Height)
@@ -810,6 +826,10 @@ OUTER_LOOP:
 			}
 			if ps.PickSendVote(ec) {
 				logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+=======
+		if vote := pickVoteToSend(logger, conR.conS, rs, ps, prs, rng); vote != nil {
+			if ps.sendVoteSetHasVote(vote) {
+>>>>>>> df28e73d3 (perf: Make every gossip thread use its own randomness instance, reducing contention (#3006))
 				continue OUTER_LOOP
 			}
 		}
@@ -987,6 +1007,207 @@ OUTER_LOOP:
 	}
 }
 
+<<<<<<< HEAD
+=======
+// pick a block part to send if the peer has the same part set header as us or if they're catching up and we have the block.
+// returns the part and a bool that signals whether to continue to the loop (true) or to sleep.
+// NOTE there is one case where we don't return a part but continue the loop (ie. we return (nil, true)).
+func pickPartToSend(
+	logger log.Logger,
+	blockStore sm.BlockStore,
+	rs *cstypes.RoundState,
+	ps *PeerState,
+	prs *cstypes.PeerRoundState,
+	rng *rand.Rand,
+) (*types.Part, bool) {
+	// If peer has same part set header as us, send block parts
+	if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
+		if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(rng); ok {
+			part := rs.ProposalBlockParts.GetPart(index)
+			// If sending this part fails, restart the OUTER_LOOP (busy-waiting).
+			return part, true
+		}
+	}
+
+	// If the peer is on a previous height that we have, help catch up.
+	blockStoreBase := blockStore.Base()
+	if blockStoreBase > 0 &&
+		0 < prs.Height && prs.Height < rs.Height &&
+		prs.Height >= blockStoreBase {
+		heightLogger := logger.With("height", prs.Height)
+
+		// if we never received the commit message from the peer, the block parts won't be initialized
+		if prs.ProposalBlockParts == nil {
+			blockMeta := blockStore.LoadBlockMeta(prs.Height)
+			if blockMeta == nil {
+				heightLogger.Error("Failed to load block meta",
+					"blockstoreBase", blockStoreBase, "blockstoreHeight", blockStore.Height())
+				return nil, false
+			}
+			ps.InitProposalBlockParts(blockMeta.BlockID.PartSetHeader)
+			// continue the loop since prs is a copy and not affected by this initialization
+			return nil, true // continue OUTER_LOOP
+		}
+		part := pickPartForCatchup(heightLogger, rs, prs, blockStore, rng)
+		if part != nil {
+			// If sending this part fails, do not restart the OUTER_LOOP and sleep.
+			return part, false
+		}
+	}
+
+	return nil, false
+}
+
+func pickPartForCatchup(
+	logger log.Logger,
+	rs *cstypes.RoundState,
+	prs *cstypes.PeerRoundState,
+	blockStore sm.BlockStore,
+	rng *rand.Rand,
+) *types.Part {
+	index, ok := prs.ProposalBlockParts.Not().PickRandom(rng)
+	if !ok {
+		return nil
+	}
+	// Ensure that the peer's PartSetHeader is correct
+	blockMeta := blockStore.LoadBlockMeta(prs.Height)
+	if blockMeta == nil {
+		logger.Error("Failed to load block meta", "ourHeight", rs.Height,
+			"blockstoreBase", blockStore.Base(), "blockstoreHeight", blockStore.Height())
+		return nil
+	} else if !blockMeta.BlockID.PartSetHeader.Equals(prs.ProposalBlockPartSetHeader) {
+		logger.Info("Peer ProposalBlockPartSetHeader mismatch, sleeping",
+			"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
+		return nil
+	}
+	// Load the part
+	part := blockStore.LoadBlockPart(prs.Height, index)
+	if part == nil {
+		logger.Error("Could not load part", "index", index,
+			"blockPartSetHeader", blockMeta.BlockID.PartSetHeader, "peerBlockPartSetHeader", prs.ProposalBlockPartSetHeader)
+		return nil
+	}
+	return part
+}
+
+func pickVoteToSend(
+	logger log.Logger,
+	conS *State,
+	rs *cstypes.RoundState,
+	ps *PeerState,
+	prs *cstypes.PeerRoundState,
+	rng *rand.Rand,
+) *types.Vote {
+	// If height matches, then send LastCommit, Prevotes, Precommits.
+	if rs.Height == prs.Height {
+		heightLogger := logger.With("height", prs.Height)
+		return pickVoteCurrentHeight(heightLogger, rs, prs, ps, rng)
+	}
+
+	// Special catchup logic.
+	// If peer is lagging by height 1, send LastCommit.
+	if prs.Height != 0 && rs.Height == prs.Height+1 {
+		if vote := ps.PickVoteToSend(rs.LastCommit, rng); vote != nil {
+			logger.Debug("Picked rs.LastCommit to send", "height", prs.Height)
+			return vote
+		}
+	}
+
+	// Catchup logic
+	// If peer is lagging by more than 1, send Commit.
+	blockStoreBase := conS.blockStore.Base()
+	if blockStoreBase > 0 && prs.Height != 0 && rs.Height >= prs.Height+2 && prs.Height >= blockStoreBase {
+		// Load the block's extended commit for prs.Height,
+		// which contains precommit signatures for prs.Height.
+		var ec *types.ExtendedCommit
+		var veEnabled bool
+		func() {
+			conS.mtx.RLock()
+			defer conS.mtx.RUnlock()
+			veEnabled = conS.state.ConsensusParams.Feature.VoteExtensionsEnabled(prs.Height)
+		}()
+		if veEnabled {
+			ec = conS.blockStore.LoadBlockExtendedCommit(prs.Height)
+		} else {
+			c := conS.blockStore.LoadBlockCommit(prs.Height)
+			if c == nil {
+				return nil
+			}
+			ec = c.WrappedExtendedCommit()
+		}
+		if ec == nil {
+			return nil
+		}
+		if vote := ps.PickVoteToSend(ec, rng); vote != nil {
+			logger.Debug("Picked Catchup commit to send", "height", prs.Height)
+			return vote
+		}
+	}
+	return nil
+}
+
+func pickVoteCurrentHeight(
+	logger log.Logger,
+	rs *cstypes.RoundState,
+	prs *cstypes.PeerRoundState,
+	ps *PeerState,
+	rng *rand.Rand,
+) *types.Vote {
+	// If there are lastCommits to send...
+	if prs.Step == cstypes.RoundStepNewHeight {
+		if vote := ps.PickVoteToSend(rs.LastCommit, rng); vote != nil {
+			logger.Debug("Picked rs.LastCommit to send")
+			return vote
+		}
+	}
+	// If there are POL prevotes to send...
+	if prs.Step <= cstypes.RoundStepPropose && prs.Round != -1 && prs.Round <= rs.Round && prs.ProposalPOLRound != -1 {
+		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
+			if vote := ps.PickVoteToSend(polPrevotes, rng); vote != nil {
+				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
+					"round", prs.ProposalPOLRound)
+				return vote
+			}
+		}
+	}
+	// If there are prevotes to send...
+	if prs.Step <= cstypes.RoundStepPrevoteWait && prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round), rng); vote != nil {
+			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are precommits to send...
+	if prs.Step <= cstypes.RoundStepPrecommitWait && prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Precommits(prs.Round), rng); vote != nil {
+			logger.Debug("Picked rs.Precommits(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are prevotes to send...Needed because of validBlock mechanism
+	if prs.Round != -1 && prs.Round <= rs.Round {
+		if vote := ps.PickVoteToSend(rs.Votes.Prevotes(prs.Round), rng); vote != nil {
+			logger.Debug("Picked rs.Prevotes(prs.Round) to send", "round", prs.Round)
+			return vote
+		}
+	}
+	// If there are POLPrevotes to send...
+	if prs.ProposalPOLRound != -1 {
+		if polPrevotes := rs.Votes.Prevotes(prs.ProposalPOLRound); polPrevotes != nil {
+			if vote := ps.PickVoteToSend(polPrevotes, rng); vote != nil {
+				logger.Debug("Picked rs.Prevotes(prs.ProposalPOLRound) to send",
+					"round", prs.ProposalPOLRound)
+				return vote
+			}
+		}
+	}
+
+	return nil
+}
+
+// -----------------------------------------------------------------------------
+
+>>>>>>> df28e73d3 (perf: Make every gossip thread use its own randomness instance, reducing contention (#3006))
 func (conR *Reactor) peerStatsRoutine() {
 	for {
 		if !conR.IsRunning() {
@@ -1214,7 +1435,11 @@ func (ps *PeerState) PickSendVote(votes types.VoteSetReader) bool {
 // PickVoteToSend picks a vote to send to the peer.
 // Returns true if a vote was picked.
 // NOTE: `votes` must be the correct Size() for the Height().
+<<<<<<< HEAD
 func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote, ok bool) {
+=======
+func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader, rng *rand.Rand) *types.Vote {
+>>>>>>> df28e73d3 (perf: Make every gossip thread use its own randomness instance, reducing contention (#3006))
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
@@ -1234,8 +1459,17 @@ func (ps *PeerState) PickVoteToSend(votes types.VoteSetReader) (vote *types.Vote
 	if psVotes == nil {
 		return nil, false // Not something worth sending
 	}
+<<<<<<< HEAD
 	if index, ok := votes.BitArray().Sub(psVotes).PickRandom(); ok {
 		return votes.GetByIndex(int32(index)), true
+=======
+	if index, ok := votes.BitArray().Sub(psVotes).PickRandom(rng); ok {
+		vote := votes.GetByIndex(int32(index))
+		if vote == nil {
+			ps.logger.Error("votes.GetByIndex returned nil", "votes", votes, "index", index)
+		}
+		return vote
+>>>>>>> df28e73d3 (perf: Make every gossip thread use its own randomness instance, reducing contention (#3006))
 	}
 	return nil, false
 }

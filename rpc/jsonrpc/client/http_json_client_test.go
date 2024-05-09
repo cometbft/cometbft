@@ -94,7 +94,6 @@ func Test_parsedURL(t *testing.T) {
 	}
 
 	for name, tt := range tests {
-		// suppressing linter
 		t.Run(name, func(t *testing.T) {
 			parsed, err := newParsedURL(tt.url)
 			require.NoError(t, err)

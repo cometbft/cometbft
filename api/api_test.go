@@ -1,8 +1,11 @@
 package api_test
 
 import (
+	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	v1beta1abci "github.com/cometbft/cometbft/api/cometbft/abci/v1beta1"
@@ -12,13 +15,12 @@ import (
 	v1beta2state "github.com/cometbft/cometbft/api/cometbft/state/v1beta2"
 	v1beta1types "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 	v1beta2types "github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
-	"github.com/stretchr/testify/require"
 )
 
 // The 'v1beta2' is the proto level used by CometBFT v0.37 release (check /proto/README.md for details)
 // This test creates an ABCIResponse message at the v0.37 level and tries to convert to a 'LegacyABCIResponses'
 // that is used in the state store logic to retrieve messages stored using a previous version of ABCI Responses
-// The test checks if fields in the original message are present in the converted legacy message
+// The test checks if fields in the original message are present in the converted legacy message.
 func TestLoadLegacyResponseFromV1Beta2(t *testing.T) {
 	v1beta2ABCIResponse := v1beta2state.ABCIResponses{
 		DeliverTxs: []*v1beta2abci.ResponseDeliverTx{
@@ -43,16 +45,20 @@ func TestLoadLegacyResponseFromV1Beta2(t *testing.T) {
 			}},
 			ConsensusParamUpdates: &v1beta2types.ConsensusParams{
 				Block: &v1beta2types.BlockParams{
-					MaxBytes: int64(100),
-					MaxGas:   int64(0),
+					MaxBytes: int64(100000),
+					MaxGas:   int64(10000),
 				},
 				Evidence: &v1beta1types.EvidenceParams{
 					MaxAgeNumBlocks: int64(10),
-					MaxAgeDuration:  time.Duration(10),
-					MaxBytes:        int64(10),
+					MaxAgeDuration:  time.Duration(1000),
+					MaxBytes:        int64(10000),
 				},
-				Validator: nil,
-				Version:   nil,
+				Validator: &v1beta1types.ValidatorParams{
+					PubKeyTypes: []string{"ed25519"},
+				},
+				Version: &v1beta1types.VersionParams{
+					App: uint64(1),
+				},
 			},
 			Events: []v1beta2abci.Event{
 				{
@@ -86,6 +92,27 @@ func TestLoadLegacyResponseFromV1Beta2(t *testing.T) {
 	require.Equal(t, 1, len(legacyABCIResponse.DeliverTxs))
 	require.Equal(t, 1, len(legacyABCIResponse.BeginBlock.Events))
 	require.Equal(t, 1, len(legacyABCIResponse.EndBlock.Events))
-	require.Equal(t, int64(100), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Block.MaxBytes)
-	require.Equal(t, int64(10), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Evidence.MaxBytes)
+	require.Equal(t, int64(100000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Block.MaxBytes)
+	require.Equal(t, int64(10000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Evidence.MaxBytes)
+	require.Equal(t, []string{"ed25519"}, legacyABCIResponse.EndBlock.ConsensusParamUpdates.Validator.PubKeyTypes)
+}
+
+// This test uses a binary file for an ABCI Response that was saved from a CometBFT v0.37 and tries to parse into a
+// LegacyABCIResponses. The conversion should succeed since they should be compatible.
+func TestV037BlockResultsAsLegacyABCIResponses(t *testing.T) {
+	data, err := readBytesFromFile("./test_files/v037_abci_responses.bin")
+	if err != nil {
+		t.Fatalf("Failed to read data: %v", err)
+	}
+	legacyABCIResponse := new(cmtstate.LegacyABCIResponses)
+	err = legacyABCIResponse.Unmarshal(data)
+	require.NoError(t, err)
+}
+
+func readBytesFromFile(filename string) ([]byte, error) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

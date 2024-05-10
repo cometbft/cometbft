@@ -36,8 +36,15 @@ func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.St
 
 func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	votes := []*oracleproto.Vote{}
-	for vote := range oracleInfo.SignVotesChan {
-		votes = append(votes, vote)
+
+	for {
+		select {
+		case votes := <-oracleInfo.SignVotesChan:
+			votes = append(votes, votes...)
+			continue
+		default:
+		}
+		break
 	}
 
 	if len(votes) == 0 {
@@ -56,10 +63,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
 
 	unsignedVotes := []*oracleproto.Vote{}
-
-	for _, vote := range oracleInfo.UnsignedVoteBuffer.Buffer {
-		unsignedVotes = append(unsignedVotes, vote)
-	}
+	unsignedVotes = append(unsignedVotes, oracleInfo.UnsignedVoteBuffer.Buffer...)
 
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
@@ -166,7 +170,7 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			continue
 		}
 
-		oracleInfo.SignVotesChan <- res.Vote
+		oracleInfo.SignVotesChan <- res.Votes
 	}
 }
 

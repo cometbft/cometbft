@@ -390,7 +390,7 @@ message ResponseCreateOracleResultTx {
 }
 
 message ResponseFetchOracleVotes {
-  tendermint.oracle.Vote vote = 1;
+  repeated tendermint.oracle.Vote votes = 1;
 }
 
 message ResponseValidateOracleVotes {

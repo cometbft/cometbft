@@ -14,7 +14,7 @@ type OracleInfo struct {
 	Config             *config.OracleConfig
 	UnsignedVoteBuffer *UnsignedVoteBuffer
 	GossipVoteBuffer   *GossipVoteBuffer
-	SignVotesChan      chan []*oracleproto.Vote
+	SignVotesChan      chan *oracleproto.Vote
 	PubKey             crypto.PubKey
 	PrivValidator      types.PrivValidator
 	StopChannel        chan int

@@ -51,7 +51,7 @@ func NewReactor(config *config.OracleConfig, pubKey crypto.PubKey, privValidator
 		Config:             config,
 		UnsignedVoteBuffer: unsignedVoteBuffer,
 		GossipVoteBuffer:   gossipVoteBuffer,
-		SignVotesChan:      make(chan []*oracleproto.Vote, 1024),
+		SignVotesChan:      make(chan *oracleproto.Vote, 1024),
 		PubKey:             pubKey,
 		PrivValidator:      privValidator,
 		ProxyApp:           proxyApp,

@@ -59,8 +59,12 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 
 		returns := rpcFunc.f.Call(args)
 
-		logger.Debug("HTTPRestRPC", "method", r.URL.Path, "args", args, "returns", returns)
+		logArgs := make([]any, 0, len(fnArgs))
+		for _, arg := range fnArgs {
+			logArgs = append(logArgs, arg.Interface())
+		}
 		result, err := unreflectResult(returns)
+		logger.Debug("HTTPRestRPC", "method", r.URL.Path, "args", logArgs, "result", result, "error", err)
 		if err != nil {
 			if err := WriteRPCResponseHTTPError(w, http.StatusInternalServerError,
 				types.RPCInternalError(dummyID, err)); err != nil {

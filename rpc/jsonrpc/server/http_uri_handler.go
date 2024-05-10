@@ -34,7 +34,7 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 
 	// All other endpoints
 	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Debug("HTTP HANDLER", "req", map[string]interface{}{
+		logger.Debug("HTTP HANDLER", "req", map[string]any{
 			"method":   r.Method,
 			"url":      r.URL.String(),
 			"header":   r.Header,

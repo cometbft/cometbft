@@ -39,8 +39,8 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 	for {
 		select {
-		case votes := <-oracleInfo.SignVotesChan:
-			votes = append(votes, votes...)
+		case newVotes := <-oracleInfo.SignVotesChan:
+			votes = append(votes, newVotes...)
 			continue
 		default:
 		}

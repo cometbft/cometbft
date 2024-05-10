@@ -7,7 +7,6 @@ import (
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/proxy"
-	"github.com/sirupsen/logrus"
 
 	"github.com/cometbft/cometbft/crypto"
 
@@ -82,7 +81,6 @@ func (oracleR *Reactor) SetLogger(l log.Logger) {
 
 // OnStart implements p2p.BaseReactor.
 func (oracleR *Reactor) OnStart() error {
-	logrus.Info("[oracle] running oracle service...")
 	go func() {
 		runner.Run(oracleR.OracleInfo, oracleR.ConsensusState)
 	}()

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -579,7 +578,7 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
 	if err != nil {
-		return sm.State{}, nil, fmt.Errorf("error retrieving genesis doc hash: %w", err)
+		return sm.State{}, nil, ErrRetrieveGenesisDocHash{Err: err}
 	}
 	csGenDoc, err := genesisDocProvider()
 	if err != nil {
@@ -587,28 +586,28 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 	}
 
 	if err = csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
-		return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
+		return sm.State{}, nil, ErrGenesisDoc{Err: err}
 	}
 
 	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
 	if operatorGenesisHashHex != "" {
 		decodedOperatorGenesisHash, err := hex.DecodeString(operatorGenesisHashHex)
 		if err != nil {
-			return sm.State{}, nil, errors.New("genesis hash provided by operator cannot be decoded")
+			return sm.State{}, nil, ErrGenesisHashDecode
 		}
 		if !bytes.Equal(csGenDoc.Sha256Checksum, decodedOperatorGenesisHash) {
-			return sm.State{}, nil, errors.New("genesis doc hash in db does not match passed --genesis_hash value")
+			return sm.State{}, nil, ErrPassedGenesisHashMismatch
 		}
 	}
 
 	if len(genDocHash) == 0 {
 		// Save the genDoc hash in the store if it doesn't already exist for future verification
 		if err = stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
-			return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
+			return sm.State{}, nil, ErrSaveGenesisDocHash{Err: err}
 		}
 	} else {
 		if !bytes.Equal(genDocHash, csGenDoc.Sha256Checksum) {
-			return sm.State{}, nil, errors.New("genesis doc hash in db does not match loaded genesis doc")
+			return sm.State{}, nil, ErrLoadedGenesisDocHashMismatch
 		}
 	}
 

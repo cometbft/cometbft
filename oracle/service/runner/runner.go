@@ -126,12 +126,17 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 				oracleInfo.BlockTimestamps = oracleInfo.BlockTimestamps[1:]
 			}
 
+			latestAllowableTimestamp := time.Now().Unix() - 30
+			if oracleInfo.BlockTimestamps[0] > latestAllowableTimestamp {
+				latestAllowableTimestamp = oracleInfo.BlockTimestamps[0]
+			}
+
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
-			// prune votes that are older than the maxGossipVoteAge (in terms of block height)
+			// prune votes that are older than the min(maxGossipVoteAge (in terms of block height), 30s)
 			newVotes := []*oracleproto.Vote{}
 			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
 			for _, vote := range unsignedVoteBuffer {
-				if vote.Timestamp >= oracleInfo.BlockTimestamps[0] {
+				if vote.Timestamp >= latestAllowableTimestamp {
 					newVotes = append(newVotes, vote)
 				}
 			}
@@ -143,7 +148,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 			// prune gossip votes that have not been updated in the last x amt of blocks, where x is the maxGossipVoteAge
 			for valAddr, gossipVote := range gossipBuffer {
-				if gossipVote.SignedTimestamp < oracleInfo.BlockTimestamps[0] {
+				if gossipVote.SignedTimestamp < latestAllowableTimestamp {
 					delete(gossipBuffer, valAddr)
 				}
 			}

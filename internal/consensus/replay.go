@@ -127,7 +127,7 @@ func (cs *State) catchupReplay(csHeight int64) error {
 		endHeight = 0
 	}
 	gr, found, err = cs.wal.SearchForEndHeight(endHeight, &WALSearchOptions{IgnoreDataCorruptionErrors: true})
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		cs.Logger.Error("Replay: wal.group.Search returned EOF", "#ENDHEIGHT", endHeight)
 	} else if err != nil {
 		return err
@@ -146,7 +146,7 @@ LOOP:
 	for {
 		msg, err = dec.Decode()
 		switch {
-		case err == io.EOF:
+		case errors.Is(err, io.EOF):
 			break LOOP
 		case IsDataCorruptionError(err):
 			cs.Logger.Error("data has been corrupted in last height of consensus WAL", "err", err, "height", csHeight)

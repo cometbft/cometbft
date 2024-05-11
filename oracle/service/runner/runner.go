@@ -107,8 +107,9 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 		ticker := time.Tick(pruneInterval)
 		for range ticker {
 			lastBlockTime := consensusState.GetState().LastBlockTime
+			currTimestampsLen := len(oracleInfo.BlockTimestamps)
 
-			if !contains(oracleInfo.BlockTimestamps, lastBlockTime.Unix()) {
+			if currTimestampsLen > 0 && oracleInfo.BlockTimestamps[currTimestampsLen-1] != lastBlockTime.Unix() {
 				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime.Unix())
 			}
 

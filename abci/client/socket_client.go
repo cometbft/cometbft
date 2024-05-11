@@ -528,6 +528,10 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_FinalizeBlock)
 	case *types.Request_CreateOracleResultTx:
 		_, ok = res.Value.(*types.Response_CreateOracleResultTx)
+	case *types.Request_ValidateOracleVotes:
+		_, ok = res.Value.(*types.Response_ValidateOracleVotes)
+	case *types.Request_FetchOracleVotes:
+		_, ok = res.Value.(*types.Response_FetchOracleVotes)
 	}
 	return ok
 }

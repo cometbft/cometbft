@@ -217,7 +217,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
 	_, err := DefaultNewNode(config, log.TestingLogger())
-	require.Error(t, err)
+	require.ErrorAs(t, err, &ErrPrivValidatorSocketClient{})
 }
 
 func TestNodeSetPrivValIPC(t *testing.T) {
@@ -603,8 +603,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
 	)
-	require.Error(t, err, "NewNode should error when genesisDoc is changed")
-	require.Equal(t, "genesis doc hash in db does not match loaded genesis doc", err.Error())
+	require.ErrorIs(t, err, ErrLoadedGenesisDocHashMismatch, "NewNode should error when genesisDoc is changed")
 }
 
 func TestNodeGenesisHashFlagMatch(t *testing.T) {
@@ -664,7 +663,7 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
 	)
-	require.Error(t, err)
+	require.ErrorIs(t, err, ErrPassedGenesisHashMismatch, "NewNode should error when genesis flag value is incorrectly set")
 
 	f, err = os.ReadFile(config.GenesisFile())
 	require.NoError(t, err)

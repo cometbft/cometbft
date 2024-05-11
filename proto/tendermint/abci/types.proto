@@ -201,7 +201,8 @@ message RequestFinalizeBlock {
 }
 
 message RequestCreateOracleResultTx {
-  repeated tendermint.oracle.GossipedVotes gossiped_votes = 1;
+  bytes proposer = 1;
+  repeated tendermint.oracle.GossipedVotes gossiped_votes = 2;
 }
 
 message RequestFetchOracleVotes {}

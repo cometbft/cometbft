@@ -142,6 +142,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		}
 
 		resp, err := blockExec.proxyApp.CreateOracleResultTx(ctx, &abci.RequestCreateOracleResultTx{
+			Proposer:      proposerAddr,
 			GossipedVotes: votes,
 		})
 		if err != nil {

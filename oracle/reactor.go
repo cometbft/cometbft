@@ -1,6 +1,7 @@
 package oracle
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/types"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -124,9 +126,9 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipedVotes:
 		// verify sig of incoming gossip vote, throw if verification fails
-		_, val := oracleR.ConsensusState.Validators.GetByIndex(msg.ValidatorIndex)
+		_, val := oracleR.ConsensusState.Validators.GetByAddress(msg.Validator)
 		if val == nil {
-			oracleR.Logger.Error("validator with index: %v not found in validator set, skipping gossip", msg.ValidatorIndex)
+			logrus.Warnf("validator: %v not found in validator set, skipping gossip", hex.EncodeToString(msg.Validator))
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("validator not found in validator set: %T", e.Message))
 			return
 		}
@@ -138,7 +140,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-			oracleR.Logger.Error("failed signature verification for validator with index: %v", msg.ValidatorIndex)
+			logrus.Errorf("failed signature verification for validator: %v", val.Address)
 			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
 			return
 		}
@@ -164,7 +166,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
 	default:
-		oracleR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		logrus.Warnf("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle cannot handle message of type: %T", e.Message))
 		return
 	}

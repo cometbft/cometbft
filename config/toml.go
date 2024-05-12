@@ -2,10 +2,11 @@ package config
 
 import (
 	"bytes"
-	_ "embed"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	_ "embed"
 
 	cmtos "github.com/cometbft/cometbft/internal/os"
 )
@@ -67,5 +68,6 @@ func WriteConfigFile(configFilePath string, config *Config) {
 
 // Note: any changes to the comments/variables/mapstructure
 // must be reflected in the appropriate struct in config/config.go.
+//
 //go:embed config.toml.tpl
 var defaultConfigTemplate string

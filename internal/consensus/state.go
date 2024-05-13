@@ -1663,6 +1663,11 @@ func (cs *State) enterPrecommit(height int64, round int32) {
 	if cs.ProposalBlock.HashesTo(blockID.Hash) {
 		logger.Debug("precommit step: +2/3 prevoted proposal block; locking", "hash", blockID.Hash)
 
+		// Validate the block.
+		if err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock); err != nil {
+			panic(fmt.Sprintf("precommit step; +2/3 prevoted for an invalid block: %v; relocking", err))
+		}
+
 		cs.LockedRound = round
 		cs.LockedBlock = cs.ProposalBlock
 		cs.LockedBlockParts = cs.ProposalBlockParts
@@ -1835,6 +1840,10 @@ func (cs *State) finalizeCommit(height int64) {
 	}
 	if !block.HashesTo(blockID.Hash) {
 		panic("cannot finalize commit; proposal block does not hash to commit hash")
+	}
+
+	if err := cs.blockExec.ValidateBlock(cs.state, block); err != nil {
+		panic(fmt.Errorf("+2/3 committed an invalid block: %w", err))
 	}
 
 	logger.Info(

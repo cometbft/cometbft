@@ -1427,7 +1427,7 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 					return
 				}
 
-				if cs.Proposal.POLRound == -1 && !cs.proposalIsTimely() {
+				if !cs.proposalIsTimely() {
 					lowerBound, upperBound := cs.timelyProposalMargins()
 					// TODO: use Warn level once available.
 					logger.Info("prevote step: Proposal is not timely; prevoting nil",
@@ -1440,12 +1440,10 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 					return
 				}
 
-				if cs.Proposal.POLRound == -1 {
-					logger.Debug("prevote step: Proposal is timely",
-						"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
-						"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
-						"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp))
-				}
+				logger.Debug("prevote step: Proposal is timely",
+					"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+					"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+					"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp))
 			}
 
 			// Validate proposal block, from consensus' perspective

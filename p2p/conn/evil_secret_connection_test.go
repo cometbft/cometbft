@@ -248,9 +248,9 @@ func TestMakeSecretConnection(t *testing.T) {
 		conn       *evilConn
 		checkError func(error) bool // Function to check if the error matches the expectation
 	}{
-		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), func(err error) bool { return err == io.EOF }},
+		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), func(err error) bool { return errors.Is(err, io.EOF) }},
 		{"share bad ethimeral key", newEvilConn(true, true, false, false), func(err error) bool { return assert.Contains(t, err.Error(), "wrong wireType") }},
-		{"refuse to share auth signature", newEvilConn(true, false, false, false), func(err error) bool { return err == io.EOF }},
+		{"refuse to share auth signature", newEvilConn(true, false, false, false), func(err error) bool { return errors.Is(err, io.EOF) }},
 		{"share bad auth signature", newEvilConn(true, false, true, true), func(err error) bool { return errors.As(err, &ErrDecryptFrame{}) }},
 		{"all good", newEvilConn(true, false, true, false), func(err error) bool { return err == nil }},
 	}

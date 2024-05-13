@@ -22,7 +22,7 @@ import (
 // that is used in the state store logic to retrieve messages stored using a previous version of ABCI Responses
 // The test checks if fields in the original message are present in the converted legacy message.
 func TestLoadLegacyResponseFromV1Beta2(t *testing.T) {
-	v1beta2ABCIResponse := v1beta2state.ABCIResponses{
+	v1beta2ABCIResponses := v1beta2state.ABCIResponses{
 		DeliverTxs: []*v1beta2abci.ResponseDeliverTx{
 			{
 				Code: abci.CodeTypeOK,
@@ -81,7 +81,7 @@ func TestLoadLegacyResponseFromV1Beta2(t *testing.T) {
 		},
 	}
 
-	v1b2Resp, err := v1beta2ABCIResponse.Marshal()
+	v1b2Resp, err := v1beta2ABCIResponses.Marshal()
 	require.NoError(t, err)
 	require.NotNil(t, v1b2Resp)
 
@@ -97,16 +97,29 @@ func TestLoadLegacyResponseFromV1Beta2(t *testing.T) {
 	require.Equal(t, []string{"ed25519"}, legacyABCIResponse.EndBlock.ConsensusParamUpdates.Validator.PubKeyTypes)
 }
 
-// This test uses a binary file for an ABCI Response that was saved from a CometBFT v0.37 and tries to parse into a
+// This test uses a binary file for a v1beta2 ABCI Responses and parses it into a
 // LegacyABCIResponses. The conversion should succeed since they should be compatible.
-func TestV037BlockResultsAsLegacyABCIResponses(t *testing.T) {
-	data, err := readBytesFromFile("./test_files/v037_abci_responses.bin")
+func Test_V1Beta2_ABCIResponses_To_LegacyABCIResponses(t *testing.T) {
+	data, err := readBytesFromFile("./test_files/v1beta2_ABCI_Responses.bin")
 	if err != nil {
 		t.Fatalf("Failed to read data: %v", err)
 	}
 	legacyABCIResponse := new(cmtstate.LegacyABCIResponses)
 	err = legacyABCIResponse.Unmarshal(data)
 	require.NoError(t, err)
+}
+
+// This test uses a binary file for a v1beta2 ABCI Responses and parses it into a
+// FinalizeBlockResponse. The conversion should not succeed since the schema is not compatible.
+func Test_V1Beta2_ABCIResponses_To_FinalizeBlockResponse(t *testing.T) {
+	data, err := readBytesFromFile("./test_files/v1beta2_ABCI_Responses.bin")
+	if err != nil {
+		t.Fatalf("Failed to read data: %v", err)
+	}
+
+	finalizeBlockResponse := new(abci.FinalizeBlockResponse)
+	err = finalizeBlockResponse.Unmarshal(data)
+	require.Error(t, err)
 }
 
 func readBytesFromFile(filename string) ([]byte, error) {

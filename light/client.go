@@ -882,7 +882,7 @@ func (c *Client) cleanupAfter(height int64) error {
 
 	for {
 		h, err := c.trustedStore.LightBlockBefore(prevHeight)
-		if err == store.ErrLightBlockNotFound || (h != nil && h.Height <= height) {
+		if errors.Is(err, store.ErrLightBlockNotFound) || (h != nil && h.Height <= height) {
 			break
 		} else if err != nil {
 			return ErrGetHeaderBeforeHeight{Height: prevHeight, Err: err}

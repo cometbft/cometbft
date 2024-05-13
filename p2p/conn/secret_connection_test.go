@@ -409,7 +409,7 @@ func BenchmarkWriteSecretConnection(b *testing.B) {
 		readBuffer := make([]byte, dataMaxSize)
 		for {
 			_, err := barSecConn.Read(readBuffer)
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return
 			} else if err != nil {
 				b.Errorf("failed to read from barSecConn: %v", err)
@@ -468,7 +468,7 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 		readBuffer := make([]byte, dataMaxSize)
 		_, err := barSecConn.Read(readBuffer)
 
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return
 		} else if err != nil {
 			b.Fatalf("Failed to read from barSecConn: %v", err)

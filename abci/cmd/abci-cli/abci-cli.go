@@ -367,7 +367,7 @@ LOOP:
 		switch {
 		case more:
 			return errors.New("input line is too long")
-		case err == io.EOF:
+		case errors.Is(err, io.EOF):
 			break LOOP
 		case len(line) == 0:
 			continue

@@ -1384,46 +1384,6 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 		return
 	}
 
-	// Timestamp validation using Proposed-Based TimeStamp (PBTS) algorithm.
-	// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/
-	if cs.isPBTSEnabled(height) {
-		if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
-			logger.Debug("prevote step: proposal timestamp not equal; prevoting nil")
-			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-			return
-		}
-
-		if cs.Proposal.POLRound == -1 && !cs.proposalIsTimely() {
-			lowerBound, upperBound := cs.timelyProposalMargins()
-			// TODO: use Warn level once available.
-			logger.Info("prevote step: Proposal is not timely; prevoting nil",
-				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
-				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
-				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp),
-				"lower_bound", lowerBound,
-				"upper_bound", upperBound)
-			cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-			return
-		}
-
-		if cs.Proposal.POLRound == -1 {
-			logger.Debug("prevote step: Proposal is timely",
-				"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
-				"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
-				"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp))
-		}
-	}
-
-	// Validate proposal block, from consensus' perspective
-	err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
-	if err != nil {
-		// ProposalBlock is invalid, prevote nil.
-		logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
-			"err", err)
-		cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-		return
-	}
-
 	/*
 		22: upon <PROPOSAL, h_p, round_p, v, −1> from proposer(h_p, round_p) while step_p = propose do
 		23: if valid(v) && (lockedRound_p = −1 || lockedValue_p = v) then
@@ -1455,6 +1415,44 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 			if cs.ValidRound != -1 && cs.ProposalBlock.HashesTo(cs.ValidBlock.Hash()) {
 				logger.Debug("prevote step: ProposalBlock matches our valid block; prevoting the proposal")
 				cs.signAddVote(types.PrevoteType, cs.ProposalBlock.Hash(), cs.ProposalBlockParts.Header(), nil)
+				return
+			}
+
+			// Timestamp validation using Proposed-Based TimeStamp (PBTS) algorithm.
+			// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/
+			if cs.isPBTSEnabled(height) {
+				if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
+					logger.Debug("prevote step: proposal timestamp not equal; prevoting nil")
+					cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+					return
+				}
+
+				if !cs.proposalIsTimely() {
+					lowerBound, upperBound := cs.timelyProposalMargins()
+					// TODO: use Warn level once available.
+					logger.Info("prevote step: Proposal is not timely; prevoting nil",
+						"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+						"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+						"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp),
+						"lower_bound", lowerBound,
+						"upper_bound", upperBound)
+					cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
+					return
+				}
+
+				logger.Debug("prevote step: Proposal is timely",
+					"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
+					"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
+					"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp))
+			}
+
+			// Validate proposal block, from consensus' perspective
+			err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
+			if err != nil {
+				// ProposalBlock is invalid, prevote nil.
+				logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
+					"err", err)
+				cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
 				return
 			}
 

@@ -30,8 +30,8 @@ favorable runs it will drift far apart from 6s due to:
 3. Clock drifts.
 4. The delay for processing a block.
 
-A validator could also change `timeout_commit`  to 0s in its node's config file.
-That means whenever this validator proposes a block, the block time will be 2s
+A validator could also change `timeout_commit` to 0s in its node's config file.
+That means whenever THIS validator proposes a block, the block time will be 2s
 (not 6s!).
 
 Because 1-3 are out of your (and our) control, **we can't have constant block
@@ -56,21 +56,23 @@ Ethereum's slots, which are equal to 12s.
 
 Remove `timeout_commit` in favor of a new field in `FinalizeBlockResponse`:
 `next_block_delay`. This field's semantics stays essentially the same: delay
-between the time when the current block is committed and the next block is
-proposed.
+between the time when the current block is committed and the next height is
+started.
 
 If Comet goes into multiple rounds of consensus, the ABCI application can react
 by lowering `next_block_delay`. Of course, nobody could guarantee that there
 won't be 100000 rounds of consensus, so **it's still best effort** when it
-comes to average block times.
+comes to individual block times.
 
 ## Alternative Approaches
 
-1. Do nothing. The block time will stay approximate.
+1. Do nothing. The block time will stay largely unpredictable.
 2. Make `timeout_commit` global (= consensus parameter). It doesn't solve the
-   problem of multiple rounds of consensus.
-3. Add `next_block_delay`, but keep `timeout_commit`. Validators have control
-   over block times.
+   problem of multiple rounds of consensus + the execution is delayed by one
+   block (as with other consensus parameters).
+3. Add `next_block_delay`, but keep `timeout_commit`. Individual validators can
+   still change `timeout_commit` in their node's config file and mess up the
+   block times.
 4. Add `next_block_delay`, but keep `timeout_commit` and make it global. It's
    confusing to have two parameters controlling the same behavior.
 

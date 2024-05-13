@@ -402,6 +402,12 @@ type = "flood"
 # you can disable rechecking.
 recheck = {{ .Mempool.Recheck }}
 
+# recheck_timeout is the time the application has during the rechecking process
+# to return CheckTx responses, once all requests have been sent. Responses that 
+# arrive after the timeout expires are discarded. It only applies to 
+# non-local ABCI clients and when recheck is enabled.
+recheck_timeout = "{{ .Mempool.RecheckTimeout }}"
+
 # broadcast (default: true) defines whether the mempool should relay
 # transactions to other peers. Setting this to false will stop the mempool
 # from relaying transactions to other peers until they are included in a
@@ -510,14 +516,10 @@ wal_file = "{{ js .Consensus.WalPath }}"
 timeout_propose = "{{ .Consensus.TimeoutPropose }}"
 # How much timeout_propose increases with each round
 timeout_propose_delta = "{{ .Consensus.TimeoutProposeDelta }}"
-# How long we wait after receiving +2/3 prevotes for “anything” (ie. not a single block or nil)
-timeout_prevote = "{{ .Consensus.TimeoutPrevote }}"
-# How much the timeout_prevote increases with each round
-timeout_prevote_delta = "{{ .Consensus.TimeoutPrevoteDelta }}"
-# How long we wait after receiving +2/3 precommits for “anything” (ie. not a single block or nil)
-timeout_precommit = "{{ .Consensus.TimeoutPrecommit }}"
-# How much the timeout_precommit increases with each round
-timeout_precommit_delta = "{{ .Consensus.TimeoutPrecommitDelta }}"
+# How long we wait after receiving +2/3 prevotes/precommits for “anything” (ie. not a single block or nil)
+timeout_vote = "{{ .Consensus.TimeoutVote }}"
+# How much the timeout_vote increases with each round
+timeout_vote_delta = "{{ .Consensus.TimeoutVoteDelta }}"
 # How long we wait after committing a block, before starting on the new
 # height (this gives us a chance to receive some more precommits, even
 # though we already have +2/3).

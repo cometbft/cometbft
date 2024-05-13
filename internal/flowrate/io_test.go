@@ -89,7 +89,6 @@ func TestReader(t *testing.T) {
 		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false},
 	}
 	for i, s := range status {
-		s := s
 		if !statusesAreEqual(&s, &want[i]) {
 			t.Errorf("r.Status(%v)\nexpected: %v\ngot     : %v", i, want[i], s)
 		}

@@ -223,7 +223,7 @@ which sends a 4 byte transaction: \[01 02 03 04\].
 With `POST` (using `json`), the raw hex must be `base64` encoded:
 
 ```sh
-curl --data-binary '{"jsonrpc":"2.0","id":"anything","method":"broadcast_tx_commit","params": {"tx": "AQIDBA=="}}' -H 'content-type:text/plain;' http://localhost:26657
+curl --data-binary '{"jsonrpc":"2.0","id":"anything","method":"broadcast_tx_commit","params": {"tx": "AQIDBA=="}}' -H 'Content-Type:text/plain;' http://localhost:26657
 ```
 
 which sends the same 4 byte transaction: \[01 02 03 04\].

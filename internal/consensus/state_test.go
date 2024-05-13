@@ -1075,7 +1075,7 @@ func TestStateLock_POLDoesNotUnlock(t *testing.T) {
 	// Add precommits from the other validators.
 	// We only issue 1/2 Precommits for the block in this round.
 	// This ensures that the validator being tested does not commit the block.
-	// We do not want the validator to commit the block because we want the test
+	// We do not want the validator to commit the block because we want the
 	// test to proceeds to the next consensus round.
 	signAddVotes(cs1, types.PrecommitType, chainID, types.BlockID{}, true, vs2, vs4)
 	signAddVotes(cs1, types.PrecommitType, chainID, blockID, true, vs3)
@@ -2839,7 +2839,7 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	signAddVotes(cs1, types.PrecommitType, chainID, blockID, true, vs3)
 
 	// wait till timeout occurs
-	ensureNewTimeout(precommitTimeoutCh, height, round, cs1.config.TimeoutPrecommit.Nanoseconds())
+	ensureNewTimeout(precommitTimeoutCh, height, round, cs1.config.TimeoutVote.Nanoseconds())
 
 	ensureNewRound(newRoundCh, height, round+1)
 

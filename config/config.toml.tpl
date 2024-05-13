@@ -1,75 +1,4 @@
-package config
-
-import (
-	"bytes"
-	"path/filepath"
-	"strings"
-	"text/template"
-
-	_ "embed"
-
-	cmtos "github.com/cometbft/cometbft/internal/os"
-)
-
-// DefaultDirPerm is the default permissions used when creating directories.
-const DefaultDirPerm = 0o700
-
-var configTemplate *template.Template
-
-func init() {
-	var err error
-	tmpl := template.New("configFileTemplate").Funcs(template.FuncMap{
-		"StringsJoin": strings.Join,
-	})
-	if configTemplate, err = tmpl.Parse(defaultConfigTemplate); err != nil {
-		panic(err)
-	}
-}
-
-// ****** these are for production settings *********** //
-
-// EnsureRoot creates the root, config, and data directories if they don't exist,
-// and panics if it fails.
-func EnsureRoot(rootDir string) {
-	if err := cmtos.EnsureDir(rootDir, DefaultDirPerm); err != nil {
-		panic(err.Error())
-	}
-	if err := cmtos.EnsureDir(filepath.Join(rootDir, DefaultConfigDir), DefaultDirPerm); err != nil {
-		panic(err.Error())
-	}
-	if err := cmtos.EnsureDir(filepath.Join(rootDir, DefaultDataDir), DefaultDirPerm); err != nil {
-		panic(err.Error())
-	}
-
-	configFilePath := filepath.Join(rootDir, defaultConfigFilePath)
-
-	// Write default config file if missing.
-	if !cmtos.FileExists(configFilePath) {
-		writeDefaultConfigFile(configFilePath)
-	}
-}
-
-// XXX: this func should probably be called by cmd/cometbft/commands/init.go
-// alongside the writing of the genesis.json and priv_validator.json.
-func writeDefaultConfigFile(configFilePath string) {
-	WriteConfigFile(configFilePath, DefaultConfig())
-}
-
-// WriteConfigFile renders config using the template and writes it to configFilePath.
-func WriteConfigFile(configFilePath string, config *Config) {
-	var buffer bytes.Buffer
-
-	if err := configTemplate.Execute(&buffer, config); err != nil {
-		panic(err)
-	}
-
-	cmtos.MustWriteFile(configFilePath, buffer.Bytes(), 0o644)
-}
-
-// Note: any changes to the comments/variables/mapstructure
-// must be reflected in the appropriate struct in config/config.go.
-<<<<<<< HEAD
-const defaultConfigTemplate = `# This is a TOML config file.
+# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 # NOTE: Any path below can be absolute (e.g. "/var/myawesomeapp/data") or
@@ -92,20 +21,11 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
+# Database backend: goleveldb | rocksdb | badgerdb | pebbledb
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
 #   - pure go
-# * cleveldb (uses levigo wrapper)
-#   - DEPRECATED
-#   - requires gcc
-#   - use cleveldb build tag (go build -tags cleveldb)
-# * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
-#   - DEPRECATED
-#   - EXPERIMENTAL
-#   - stable
-#   - use boltdb build tag (go build -tags boltdb)
 # * rocksdb (uses github.com/linxGnu/grocksdb)
 #   - EXPERIMENTAL
 #   - requires gcc
@@ -113,6 +33,7 @@ moniker = "{{ .BaseConfig.Moniker }}"
 # * badgerdb (uses github.com/dgraph-io/badger)
 #   - EXPERIMENTAL
 #   - stable
+#   - pure go
 #   - use badgerdb build tag (go build -tags badgerdb)
 # * pebbledb (uses github.com/cockroachdb/pebble)
 #   - EXPERIMENTAL
@@ -414,8 +335,8 @@ type = "flood"
 recheck = {{ .Mempool.Recheck }}
 
 # recheck_timeout is the time the application has during the rechecking process
-# to return CheckTx responses, once all requests have been sent. Responses that 
-# arrive after the timeout expires are discarded. It only applies to 
+# to return CheckTx responses, once all requests have been sent. Responses that
+# arrive after the timeout expires are discarded. It only applies to
 # non-local ABCI clients and when recheck is enabled.
 recheck_timeout = "{{ .Mempool.RecheckTimeout }}"
 
@@ -665,9 +586,3 @@ max_open_connections = {{ .Instrumentation.MaxOpenConnections }}
 
 # Instrumentation namespace
 namespace = "{{ .Instrumentation.Namespace }}"
-`
-=======
-//
-//go:embed config.toml.tpl
-var defaultConfigTemplate string
->>>>>>> 33d1ba4ce (feat(config): use embed pkg for the default template (#3057))

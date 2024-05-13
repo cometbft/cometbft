@@ -2263,7 +2263,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 	// A precommit for the previous height?
 	// These come in while we wait timeoutCommit
 	if cs.isPrecommitForPreviousHeight(vote) {
-		return cs.handlePrecommitForPreviousHeight(vote)
+		return cs.handleLastCommitVote(vote)
 	}
 
 	// Height mismatch is ignored.
@@ -2321,8 +2321,8 @@ func (cs *State) isPrecommitForPreviousHeight(vote *types.Vote) bool {
 	return vote.Height+1 == cs.Height && vote.Type == types.PrecommitType
 }
 
-// handlePrecommitForPreviousHeight handles a precommit vote for the previous height.
-func (cs *State) handlePrecommitForPreviousHeight(vote *types.Vote) (bool, error) {
+// handleLastCommitVote handles a precommit vote for the previous height.
+func (cs *State) handleLastCommitVote(vote *types.Vote) (bool, error) {
 	if cs.Step != cstypes.RoundStepNewHeight {
 		// Late precommit at prior height is ignored
 		cs.Logger.Debug("precommit vote came in after commit timeout and has been ignored", "vote", vote)

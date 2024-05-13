@@ -151,7 +151,7 @@ INSERT INTO `+tableBlocks+` (height, chain_id, created_at)
   ON CONFLICT DO NOTHING
   RETURNING rowid;
 `, h.Height, es.chainID, ts).Scan(&blockID)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil // we already saw this block; quietly succeed
 	} else if err != nil {
 		return fmt.Errorf("indexing block header: %w", err)

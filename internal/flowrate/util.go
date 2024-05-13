@@ -32,11 +32,11 @@ func ensureClockRunning() {
 
 // increments the current clock value every clockRate interval.
 func runClockUpdates() {
-	// sleep, then increment the clock value
-	// This is the only place the clock value is updated.
-	// Ensures that the clock value starts at 0.
-	for {
-		time.Sleep(clockRate)
+	// Create a ticker that sends the current time on the channel every clockRate interval
+	ticker := time.Tick(clockRate)
+
+	// First tick happens after clockrate, therefore initial value is 0.
+	for range ticker {
 		curValue := time.Duration(currentClockValue.Load())
 		nextValue := curValue + clockRate
 		currentClockValue.Store(int64(nextValue))

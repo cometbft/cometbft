@@ -222,10 +222,12 @@ func (blockExec *BlockExecutor) ApplyVerifiedBlock(
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
-	if err := validateBlock(state, block); err != nil {
-		return state, ErrInvalidBlock(err)
+	if !blockExec.lastValidatedBlock.HashesTo(block.Hash()) {
+		if err := validateBlock(state, block); err != nil {
+			return state, ErrInvalidBlock(err)
+		}
+		blockExec.lastValidatedBlock = block
 	}
-
 	return blockExec.applyBlock(state, blockID, block)
 }
 

@@ -3,6 +3,7 @@ package consensus
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -1006,7 +1007,7 @@ func makeBlockchainFromWAL(wal WAL) ([]*types.Block, []*types.ExtendedCommit, er
 	dec := NewWALDecoder(gr)
 	for {
 		msg, err := dec.Decode()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			return nil, nil, err

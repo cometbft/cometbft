@@ -3,6 +3,7 @@
 ## Changelog
 
  - April 30 2024: Created by @melekes
+ - May 13 2024: Updated by @melekes
 
 ## Status
 
@@ -11,55 +12,65 @@
 ## Context
 
 Let's say you're an ABCI application developer and you want to have
-predictable block times: 1 block each 6s. How would you do that?
+constant block times: 1 block each 6s. How would you do that?
 
 You found out that proposing a block and voting on it takes roughly 2s in your
-network. You change `timeout_commit` (_how long a node waits for additional
-precommits after committing a block, before starting on the next height_) from
-1s to 4s in the default config and ship your app with that modified config. Do
-you have predictable block times now?
+network. You instruct validators in your network to change `timeout_commit`
+(_how long a node waits for additional precommits after committing a block,
+before starting on the next height_) from 1s to 4s in the node's config file.
 
-No - you don't. The block time will be around 6s, but it won't be exactly 6s. A
-validator could set `timeout_commit`  to 0s because it's a local parameter,
-which is not enforced by Comet. That means whenever this validator proposes a
-block, the overall block time will be 2s (not 6s!).
+Do you have predictable block times now?
 
-There are other reasons why the block time might not be predictable:
+No - you don't. The expected block time will be around 6s, but even in
+favorable runs it will drift far apart from 6s due to:
 
-1. CometBFT can go into multiple rounds of consensus, which will increase the
-   block time.
+1. CometBFT going into multiple rounds of consensus (it happens rarely but
+   still).
 2. Network latency.
 3. Clock drifts.
+4. The delay for processing a block.
 
-By now, many teams (Celestia, Berachain, Osmosis, etc.) expressed their
-interest in either a) having predictable block times OR b) having the ability
-to alter the next block time.
+A validator could also change `timeout_commit`  to 0s in its node's config file.
+That means whenever this validator proposes a block, the block time will be 2s
+(not 6s!).
 
-In case of Osmosis, committing a big block might take longer than usual. They
-could increase the block time for big blocks to give the state machine some
-extra time to finish execution if that was possible.
+Because 1-3 are out of your (and our) control, **we can't have constant block
+times**. But we can design a mechanism so that the medium-to-long term average
+block time converges to a desired value.
 
-In case of Berachain, they want to have a predictable block time to match
+To achieve that, we need to define a form of variable block time. Namely, if a
+block takes longer than expected, we should be able to render the next block(s)
+faster in order to converge to the desired (average) block time.
+
+### Use Cases
+
+In case of Osmosis, committing a big block is expected to take longer than
+usual. If we know the approximate size of the next block, we could increase
+`timeout_commit` dynamically (if such feature existed) to give the state
+machine some extra time to finish execution.
+
+In case of Berachain, they want to have a constant block time to match
 Ethereum's slots, which are equal to 12s.
 
-## Decision
+## Proposal
 
 Remove `timeout_commit` in favor of a new field in `FinalizeBlockResponse`:
 `next_block_delay`. This field's semantics stays essentially the same: delay
-between this block and the time when the next block is proposed.
+between the time when the current block is committed and the next block is
+proposed.
 
 If Comet goes into multiple rounds of consensus, the ABCI application can react
 by lowering `next_block_delay`. Of course, nobody could guarantee that there
 won't be 100000 rounds of consensus, so **it's still best effort** when it
-comes to predictable block times.
+comes to average block times.
 
 ## Alternative Approaches
 
 1. Do nothing. The block time will stay approximate.
 2. Make `timeout_commit` global (= consensus parameter). It doesn't solve the
    problem of multiple rounds of consensus.
-3. Add `next_block_delay`, but keep `timeout_commit`. Predictable block times
-   are still not possible since `timeout_commit` is local.
+3. Add `next_block_delay`, but keep `timeout_commit`. Validators have control
+   over block times.
 4. Add `next_block_delay`, but keep `timeout_commit` and make it global. It's
    confusing to have two parameters controlling the same behavior.
 
@@ -76,8 +87,8 @@ message FinalizeBlockResponse {
 }
 ```
 
-Block proposals received before last block time + `next_block_delay` MUST be rejected.
-A proposer MUST wait until last block time + `next_block_delay` to propose a block.
+Block proposals received before the last block is committed + `next_block_delay` MUST be rejected.
+A proposer MUST wait until the last block is committed + `next_block_delay` to propose a block.
 
 ### Specification
 
@@ -97,12 +108,13 @@ See [this comment][spec-comment] for more details.
 
 ### Neutral
 
-- Comet will not guarantee predictable block times to 100%.
+- Comet will not guarantee constant block times.
 
 ### Negative
 
 - ABCI application developers will need to set `next_block_delay` to `1s`
-  to preserve the old behavior.
+  to preserve the old behavior if we remove `timeout_commit` from the node's
+  config file.
 
 ## References
 

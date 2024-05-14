@@ -60,7 +60,7 @@ Ethereum's slots, which are equal to 12s.
 Move `timeout_commit` into `FinalizeBlockResponse` as `next_block_delay`. This
 field's semantics stays essentially the same: delay between the time when the
 current block is committed and the next height is started. The idea is
-literally to have the same behavior as timeout_commit, while allowing the
+literally to have the same behavior as `timeout_commit`, while allowing the
 application to pick a different value for each height.
 
 If Comet goes into multiple rounds of consensus, the ABCI application can react

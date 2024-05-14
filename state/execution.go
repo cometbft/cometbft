@@ -41,6 +41,9 @@ type BlockExecutor struct {
 	mempool mempool.Mempool
 	evpool  EvidencePool
 
+	// 1-element cache of validated blocks
+	lastValidatedBlock *types.Block
+
 	logger log.Logger
 
 	metrics *Metrics
@@ -194,9 +197,11 @@ func (blockExec *BlockExecutor) ProcessProposal(
 // Validation does not mutate state, but does require historical information from the stateDB,
 // ie. to verify evidence from a validator at an old height.
 func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) error {
-	err := validateBlock(state, block)
-	if err != nil {
-		return err
+	if !blockExec.lastValidatedBlock.HashesTo(block.Hash()) {
+		if err := validateBlock(state, block); err != nil {
+			return err
+		}
+		blockExec.lastValidatedBlock = block
 	}
 	return blockExec.evpool.CheckEvidence(block.Evidence.Evidence)
 }
@@ -217,10 +222,12 @@ func (blockExec *BlockExecutor) ApplyVerifiedBlock(
 func (blockExec *BlockExecutor) ApplyBlock(
 	state State, blockID types.BlockID, block *types.Block,
 ) (State, error) {
-	if err := validateBlock(state, block); err != nil {
-		return state, ErrInvalidBlock(err)
+	if !blockExec.lastValidatedBlock.HashesTo(block.Hash()) {
+		if err := validateBlock(state, block); err != nil {
+			return state, ErrInvalidBlock(err)
+		}
+		blockExec.lastValidatedBlock = block
 	}
-
 	return blockExec.applyBlock(state, blockID, block)
 }
 

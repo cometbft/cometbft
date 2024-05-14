@@ -34,6 +34,9 @@ A validator could also change `timeout_commit` to 0s in its node's config file.
 That means whenever THIS validator proposes a block, the block time will be 2s
 (not 6s!).
 
+Note that the value of `timeout_commit` is static and can't be changed
+without restarting the node.
+
 Because 1-3 are out of your (and our) control, **we can't have constant block
 times**. But we can design a mechanism so that the medium-to-long term average
 block time converges to a desired value.
@@ -54,10 +57,11 @@ Ethereum's slots, which are equal to 12s.
 
 ## Proposal
 
-Remove `timeout_commit` in favor of a new field in `FinalizeBlockResponse`:
-`next_block_delay`. This field's semantics stays essentially the same: delay
-between the time when the current block is committed and the next height is
-started.
+Move `timeout_commit` into `FinalizeBlockResponse` as `next_block_delay`. This
+field's semantics stays essentially the same: delay between the time when the
+current block is committed and the next height is started. The idea is
+literally to have the same behavior as timeout_commit, while allowing the
+application to pick a different value for each height.
 
 If Comet goes into multiple rounds of consensus, the ABCI application can react
 by lowering `next_block_delay`. Of course, nobody could guarantee that there
@@ -78,7 +82,7 @@ comes to individual block times.
 
 ## Detailed Design
 
-Remove `timeout_commit` from the config and add `next_block_delay` to `FinalizeBlockResponse`.
+Move `timeout_commit` from the config into `FinalizeBlockResponse` as `next_block_delay`.
 
 ```protobuf
 message FinalizeBlockResponse {
@@ -89,8 +93,8 @@ message FinalizeBlockResponse {
 }
 ```
 
-Block proposals received before the last block is committed + `next_block_delay` MUST be rejected.
-A proposer MUST wait until the last block is committed + `next_block_delay` to propose a block.
+A correct proposer MUST wait until the last block is committed + `next_block_delay` to propose a block.
+A correct validator MUST wait until the last block is committed + `next_block_delay` to prevote on a proposal block.
 
 ### Specification
 
@@ -110,13 +114,11 @@ See [this comment][spec-comment] for more details.
 
 ### Neutral
 
-- Comet will not guarantee constant block times.
-
 ### Negative
 
 - ABCI application developers will need to set `next_block_delay` to `1s`
-  to preserve the old behavior if we remove `timeout_commit` from the node's
-  config file.
+  to preserve the old behavior. If the application ignores this field, it
+  would have the same effect as setting timeout_commit = 0 right now.
 
 ## References
 

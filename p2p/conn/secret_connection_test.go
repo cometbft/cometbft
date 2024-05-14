@@ -3,6 +3,7 @@ package conn
 import (
 	"bufio"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io"

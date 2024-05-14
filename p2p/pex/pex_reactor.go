@@ -292,7 +292,7 @@ func (r *Reactor) Receive(e p2p.Envelope) {
 		err = r.ReceiveAddrs(addrs, e.Src)
 		if err != nil {
 			r.Switch.StopPeerForError(e.Src, err)
-			if err == ErrUnsolicitedList {
+			if errors.Is(err, ErrUnsolicitedList) {
 				r.book.MarkBad(e.Src.SocketAddr(), defaultBanTime)
 			}
 			return

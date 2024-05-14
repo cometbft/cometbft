@@ -163,7 +163,7 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 
 	pk, err := ce.PubKeyFromTypeAndBytes(vp.PubKeyType, vp.PubKeyBytes)
 	if err != nil {
-		pk, err = ce.PubKeyFromProto(vp.PubKey)
+		pk, err = ce.PubKeyFromProto(*vp.PubKey) //nolint:staticcheck
 		if err != nil {
 			return nil, err
 		}

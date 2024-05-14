@@ -159,7 +159,10 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 
 	pk, err := ce.PubKeyFromTypeAndBytes(vp.PubKeyType, vp.PubKeyBytes)
 	if err != nil {
-		return nil, err
+		pk, err = ce.PubKeyFromProto(vp.PubKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 	v := new(Validator)
 	v.Address = vp.GetAddress()

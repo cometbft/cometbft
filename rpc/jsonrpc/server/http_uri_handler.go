@@ -34,7 +34,13 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 
 	// All other endpoints
 	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Debug("HTTP HANDLER", "req", r)
+		logger.Debug("HTTP HANDLER", "req", map[string]any{
+			"method":   r.Method,
+			"url":      r.URL.String(),
+			"header":   r.Header,
+			"ip":       r.RemoteAddr,
+			"postForm": r.PostForm,
+		})
 
 		ctx := &types.Context{HTTPReq: r}
 		args := []reflect.Value{reflect.ValueOf(ctx)}
@@ -53,8 +59,12 @@ func makeHTTPHandler(rpcFunc *RPCFunc, logger log.Logger) func(http.ResponseWrit
 
 		returns := rpcFunc.f.Call(args)
 
-		logger.Debug("HTTPRestRPC", "method", r.URL.Path, "args", args, "returns", returns)
+		logArgs := make([]any, 0, len(fnArgs))
+		for _, arg := range fnArgs {
+			logArgs = append(logArgs, arg.Interface())
+		}
 		result, err := unreflectResult(returns)
+		logger.Debug("HTTPRestRPC", "method", r.URL.Path, "args", logArgs, "result", result, "error", err)
 		if err != nil {
 			if err := WriteRPCResponseHTTPError(w, http.StatusInternalServerError,
 				types.RPCInternalError(dummyID, err)); err != nil {

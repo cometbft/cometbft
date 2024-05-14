@@ -36,10 +36,10 @@ func runClockUpdates() {
 	ticker := time.Tick(clockRate)
 
 	// First tick happens after clockrate, therefore initial value is 0.
-	for range ticker {
-		curValue := time.Duration(currentClockValue.Load())
-		nextValue := curValue + clockRate
-		currentClockValue.Store(int64(nextValue))
+	for t := range ticker {
+		delta := t.Sub(clockStartTime)
+		rounded := clockRound(delta)
+		currentClockValue.Store(int64(rounded))
 	}
 }
 
@@ -56,7 +56,7 @@ func clockToTime(c time.Duration) time.Time {
 // clockRound returns d rounded to the nearest clockRate increment.
 func clockRound(d time.Duration) time.Duration {
 	//nolint:durationcheck
-	return (d + clockRate>>1) / clockRate * clockRate
+	return ((d + clockRate>>1) / clockRate) * clockRate
 }
 
 // round returns x rounded to the nearest int64 (non-negative values only).

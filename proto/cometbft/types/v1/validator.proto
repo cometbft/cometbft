@@ -43,9 +43,6 @@ message Validator {
 // Address is removed because it's redundant with the pubkey.
 // Proposer priority is removed because it changes every round.
 message SimpleValidator {
+  cometbft.crypto.v1.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
   int64  voting_power  = 2;
-  bytes  pub_key_bytes = 3;
-  string pub_key_type  = 4;
-
-  reserved 1;  // pub_key
 }

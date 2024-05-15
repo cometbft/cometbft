@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cosmos/gogoproto/proto"
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	dbm "github.com/cometbft/cometbft-db"

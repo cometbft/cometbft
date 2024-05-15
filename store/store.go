@@ -6,11 +6,7 @@ import (
 	"strconv"
 
 	"github.com/cosmos/gogoproto/proto"
-<<<<<<< HEAD
-=======
-	"github.com/go-kit/kit/metrics"
 	lru "github.com/hashicorp/golang-lru/v2"
->>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
 
 	dbm "github.com/cometbft/cometbft-db"
 
@@ -60,90 +56,22 @@ type BlockStore struct {
 	mtx    cmtsync.RWMutex
 	base   int64
 	height int64
-<<<<<<< HEAD
-=======
-
-	dbKeyLayout BlockKeyLayout
-
-	blocksDeleted      int64
-	compact            bool
-	compactionInterval int64
 
 	seenCommitCache          *lru.Cache[int64, *types.Commit]
 	blockCommitCache         *lru.Cache[int64, *types.Commit]
 	blockExtendedCommitCache *lru.Cache[int64, *types.ExtendedCommit]
 }
 
-type BlockStoreOption func(*BlockStore)
-
-// WithCompaction sets the compaciton parameters.
-func WithCompaction(compact bool, compactionInterval int64) BlockStoreOption {
-	return func(bs *BlockStore) {
-		bs.compact = compact
-		bs.compactionInterval = compactionInterval
-	}
-}
-
-// WithMetrics sets the metrics.
-func WithMetrics(metrics *Metrics) BlockStoreOption {
-	return func(bs *BlockStore) { bs.metrics = metrics }
-}
-
-// WithDBKeyLayout the metrics.
-func WithDBKeyLayout(dbKeyLayout string) BlockStoreOption {
-	return func(bs *BlockStore) { setDBLayout(bs, dbKeyLayout) }
-}
-
-func setDBLayout(bStore *BlockStore, dbKeyLayoutVersion string) {
-	if !bStore.IsEmpty() {
-		var version []byte
-		var err error
-		if version, err = bStore.db.Get([]byte("version")); err != nil {
-			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
-			// If this behavior changes we need to account for that.
-			panic(err)
-		}
-		if len(version) != 0 {
-			dbKeyLayoutVersion = string(version)
-		}
-	}
-	switch dbKeyLayoutVersion {
-	case "v1", "":
-		bStore.dbKeyLayout = &v1LegacyLayout{}
-		dbKeyLayoutVersion = "v1"
-	case "v2":
-		bStore.dbKeyLayout = &v2Layout{}
-	default:
-		panic("unknown key layout version")
-	}
-	if err := bStore.db.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
-		panic(err)
-	}
->>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
-}
-
 // NewBlockStore returns a new BlockStore with the given DB,
 // initialized to the last height that was committed to the DB.
 func NewBlockStore(db dbm.DB) *BlockStore {
 	bs := LoadBlockStoreState(db)
-	return &BlockStore{
+	bStore := &BlockStore{
 		base:   bs.Base,
 		height: bs.Height,
 		db:     db,
 	}
-<<<<<<< HEAD
-=======
 	bStore.addCaches()
-
-	for _, option := range options {
-		option(bStore)
-	}
-
-	if bStore.dbKeyLayout == nil {
-		setDBLayout(bStore, "v1")
-	}
-
-	addTimeSample(bStore.metrics.BlockStoreAccessDurationSeconds.With("method", "new_block_store"), start)()
 	return bStore
 }
 
@@ -162,17 +90,6 @@ func (bs *BlockStore) addCaches() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (bs *BlockStore) GetVersion() string {
-	switch bs.dbKeyLayout.(type) {
-	case *v1LegacyLayout:
-		return "v1"
-	case *v2Layout:
-		return "v2"
-	}
-	return "no version set"
->>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
 }
 
 func (bs *BlockStore) IsEmpty() bool {

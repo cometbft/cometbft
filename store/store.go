@@ -3,6 +3,14 @@ package store
 import (
 	"fmt"
 	"strconv"
+<<<<<<< HEAD
+=======
+	"time"
+
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/go-kit/kit/metrics"
+	lru "github.com/hashicorp/golang-lru/v2"
+>>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
 
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cosmos/gogoproto/proto"
@@ -41,6 +49,66 @@ type BlockStore struct {
 	mtx    cmtsync.RWMutex
 	base   int64
 	height int64
+<<<<<<< HEAD
+=======
+
+	dbKeyLayout BlockKeyLayout
+
+	blocksDeleted      int64
+	compact            bool
+	compactionInterval int64
+
+	seenCommitCache          *lru.Cache[int64, *types.Commit]
+	blockCommitCache         *lru.Cache[int64, *types.Commit]
+	blockExtendedCommitCache *lru.Cache[int64, *types.ExtendedCommit]
+}
+
+type BlockStoreOption func(*BlockStore)
+
+// WithCompaction sets the compaciton parameters.
+func WithCompaction(compact bool, compactionInterval int64) BlockStoreOption {
+	return func(bs *BlockStore) {
+		bs.compact = compact
+		bs.compactionInterval = compactionInterval
+	}
+}
+
+// WithMetrics sets the metrics.
+func WithMetrics(metrics *Metrics) BlockStoreOption {
+	return func(bs *BlockStore) { bs.metrics = metrics }
+}
+
+// WithDBKeyLayout the metrics.
+func WithDBKeyLayout(dbKeyLayout string) BlockStoreOption {
+	return func(bs *BlockStore) { setDBLayout(bs, dbKeyLayout) }
+}
+
+func setDBLayout(bStore *BlockStore, dbKeyLayoutVersion string) {
+	if !bStore.IsEmpty() {
+		var version []byte
+		var err error
+		if version, err = bStore.db.Get([]byte("version")); err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
+			panic(err)
+		}
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
+	}
+	switch dbKeyLayoutVersion {
+	case "v1", "":
+		bStore.dbKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "v1"
+	case "v2":
+		bStore.dbKeyLayout = &v2Layout{}
+	default:
+		panic("unknown key layout version")
+	}
+	if err := bStore.db.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
+		panic(err)
+	}
+>>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
 }
 
 // NewBlockStore returns a new BlockStore with the given DB,
@@ -52,6 +120,48 @@ func NewBlockStore(db dbm.DB) *BlockStore {
 		height: bs.Height,
 		db:     db,
 	}
+<<<<<<< HEAD
+=======
+	bStore.addCaches()
+
+	for _, option := range options {
+		option(bStore)
+	}
+
+	if bStore.dbKeyLayout == nil {
+		setDBLayout(bStore, "v1")
+	}
+
+	addTimeSample(bStore.metrics.BlockStoreAccessDurationSeconds.With("method", "new_block_store"), start)()
+	return bStore
+}
+
+func (bs *BlockStore) addCaches() {
+	var err error
+	// err can only occur if the argument is non-positive, so is impossible in context.
+	bs.blockCommitCache, err = lru.New[int64, *types.Commit](100)
+	if err != nil {
+		panic(err)
+	}
+	bs.blockExtendedCommitCache, err = lru.New[int64, *types.ExtendedCommit](100)
+	if err != nil {
+		panic(err)
+	}
+	bs.seenCommitCache, err = lru.New[int64, *types.Commit](100)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (bs *BlockStore) GetVersion() string {
+	switch bs.dbKeyLayout.(type) {
+	case *v1LegacyLayout:
+		return "v1"
+	case *v2Layout:
+		return "v2"
+	}
+	return "no version set"
+>>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
 }
 
 func (bs *BlockStore) IsEmpty() bool {
@@ -224,6 +334,10 @@ func (bs *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
 // and it comes from the block.LastCommit for `height+1`.
 // If no commit is found for the given height, it returns nil.
 func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
+	comm, ok := bs.blockCommitCache.Get(height)
+	if ok {
+		return comm.Clone()
+	}
 	pbc := new(cmtproto.Commit)
 	bz, err := bs.db.Get(calcBlockCommitKey(height))
 	if err != nil {
@@ -240,13 +354,55 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	if err != nil {
 		panic(fmt.Sprintf("Error reading block commit: %v", err))
 	}
-	return commit
+	bs.blockCommitCache.Add(height, commit)
+	return commit.Clone()
 }
 
+<<<<<<< HEAD
+=======
+// LoadExtendedCommit returns the ExtendedCommit for the given height.
+// The extended commit is not guaranteed to contain the same +2/3 precommits data
+// as the commit in the block.
+func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommit {
+	comm, ok := bs.blockExtendedCommitCache.Get(height)
+	if ok {
+		return comm.Clone()
+	}
+	pbec := new(cmtproto.ExtendedCommit)
+
+	start := time.Now()
+	bz, err := bs.db.Get(bs.dbKeyLayout.CalcExtCommitKey(height))
+	if err != nil {
+		panic(fmt.Errorf("fetching extended commit: %w", err))
+	}
+
+	addTimeSample(bs.metrics.BlockStoreAccessDurationSeconds.With("method", "load_block_ext_commit"), start)()
+
+	if len(bz) == 0 {
+		return nil
+	}
+
+	err = proto.Unmarshal(bz, pbec)
+	if err != nil {
+		panic(fmt.Errorf("decoding extended commit: %w", err))
+	}
+	extCommit, err := types.ExtendedCommitFromProto(pbec)
+	if err != nil {
+		panic(fmt.Errorf("converting extended commit: %w", err))
+	}
+	bs.blockExtendedCommitCache.Add(height, extCommit)
+	return extCommit.Clone()
+}
+
+>>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
 // LoadSeenCommit returns the locally seen Commit for the given height.
 // This is useful when we've seen a commit, but there has not yet been
 // a new block at `height + 1` that includes this commit in its block.LastCommit.
 func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
+	comm, ok := bs.seenCommitCache.Get(height)
+	if ok {
+		return comm.Clone()
+	}
 	pbc := new(cmtproto.Commit)
 	bz, err := bs.db.Get(calcSeenCommitKey(height))
 	if err != nil {
@@ -264,7 +420,8 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 	if err != nil {
 		panic(fmt.Errorf("error from proto commit: %w", err))
 	}
-	return commit
+	bs.seenCommitCache.Add(height, commit)
+	return commit.Clone()
 }
 
 // PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned.

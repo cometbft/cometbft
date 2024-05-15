@@ -63,7 +63,11 @@ linters-settings:
           - github.com/gofrs/uuid
           - github.com/google
           - github.com/gorilla/websocket
+<<<<<<< HEAD
           - github.com/informalsystems/tm-load-test/pkg/loadtest
+=======
+          - github.com/hashicorp/golang-lru/v2
+>>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
           - github.com/Masterminds/semver/v3

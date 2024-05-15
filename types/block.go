@@ -757,6 +757,7 @@ type Commit struct {
 	bitArray *bits.BitArray
 }
 
+<<<<<<< HEAD
 // NewCommit returns a new Commit.
 func NewCommit(height int64, round int32, blockID BlockID, commitSigs []CommitSig) *Commit {
 	return &Commit{
@@ -785,6 +786,20 @@ func CommitToVoteSet(chainID string, commit *Commit, vals *ValidatorSet) *VoteSe
 }
 
 // GetVote converts the CommitSig for the given valIdx to a Vote.
+=======
+// Clone creates a deep copy of this commit.
+func (commit *Commit) Clone() *Commit {
+	sigs := make([]CommitSig, len(commit.Signatures))
+	copy(sigs, commit.Signatures)
+	commCopy := *commit
+	commCopy.Signatures = sigs
+	return &commCopy
+}
+
+// GetVote converts the CommitSig for the given valIdx to a Vote. Commits do
+// not contain vote extensions, so the vote extension and vote extension
+// signature will not be present in the returned vote.
+>>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
 // Returns nil if the precommit at valIdx is nil.
 // Panics if valIdx >= commit.Size().
 func (commit *Commit) GetVote(valIdx int32) *Vote {

@@ -29,7 +29,6 @@ import (
 	"github.com/cometbft/cometbft/version"
 )
 
-<<<<<<< HEAD
 // A cleanupFunc cleans up any config / test files created for a particular
 // test.
 type cleanupFunc func()
@@ -44,35 +43,6 @@ func makeTestCommit(height int64, timestamp time.Time) *types.Commit {
 	}}
 	return types.NewCommit(height, 0,
 		types.BlockID{Hash: []byte(""), PartSetHeader: types.PartSetHeader{Hash: []byte(""), Total: 2}}, commitSigs)
-=======
-// make an extended commit with a single vote containing just the height and a
-// timestamp.
-func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit {
-	return makeTestExtCommitWithNumSigs(height, timestamp, 1)
-}
-
-func makeTestExtCommitWithNumSigs(height int64, timestamp time.Time, numSigs int) *types.ExtendedCommit {
-	extCommitSigs := []types.ExtendedCommitSig{}
-	for i := 0; i < numSigs; i++ {
-		extCommitSigs = append(extCommitSigs, types.ExtendedCommitSig{
-			CommitSig: types.CommitSig{
-				BlockIDFlag:      types.BlockIDFlagCommit,
-				ValidatorAddress: cmtrand.Bytes(crypto.AddressSize),
-				Timestamp:        timestamp,
-				Signature:        cmtrand.Bytes(64),
-			},
-			ExtensionSignature: []byte("ExtensionSignature"),
-		})
-	}
-	return &types.ExtendedCommit{
-		Height: height,
-		BlockID: types.BlockID{
-			Hash:          crypto.CRandBytes(32),
-			PartSetHeader: types.PartSetHeader{Hash: crypto.CRandBytes(32), Total: 2},
-		},
-		ExtendedSignatures: extCommitSigs,
-	}
->>>>>>> 46e24848f (perf(blockstore): Add LRU caches to blockstore operations used in consensus (#3003))
 }
 
 func makeStateAndBlockStore(logger log.Logger) (sm.State, *BlockStore, cleanupFunc) {

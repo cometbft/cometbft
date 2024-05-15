@@ -129,7 +129,7 @@ func WriteRPCResponseHTTP(w http.ResponseWriter, res ...types.RPCResponse) error
 }
 
 // WriteCacheableRPCResponseHTTP marshals res as JSON (with indent) and writes
-// it to w. Adds cache-control to the response header and sets the expiry to
+// it to w. Adds Cache-Control to the response header and sets the expiry to
 // one day.
 func WriteCacheableRPCResponseHTTP(w http.ResponseWriter, res ...types.RPCResponse) error {
 	return writeRPCResponseHTTP(w, []httpHeader{{"Cache-Control", "public, max-age=86400"}}, res...)

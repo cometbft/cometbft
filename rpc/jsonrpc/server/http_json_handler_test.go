@@ -238,7 +238,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "public, max-age=86400", res.Header.Get("Cache-control"))
+	require.Equal(t, "public, max-age=86400", res.Header.Get("Cache-Control"))
 
 	_, err := io.ReadAll(res.Body)
 	res.Body.Close()
@@ -253,7 +253,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "", res.Header.Get("Cache-control"))
+	require.Equal(t, "", res.Header.Get("Cache-Control"))
 
 	_, err = io.ReadAll(res.Body)
 
@@ -269,7 +269,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "", res.Header.Get("Cache-control"))
+	require.Equal(t, "", res.Header.Get("Cache-Control"))
 
 	_, err = io.ReadAll(res.Body)
 

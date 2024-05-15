@@ -855,6 +855,15 @@ type Commit struct {
 	hash cmtbytes.HexBytes
 }
 
+// Clone creates a deep copy of this commit.
+func (commit *Commit) Clone() *Commit {
+	sigs := make([]CommitSig, len(commit.Signatures))
+	copy(sigs, commit.Signatures)
+	commCopy := *commit
+	commCopy.Signatures = sigs
+	return &commCopy
+}
+
 // GetVote converts the CommitSig for the given valIdx to a Vote. Commits do
 // not contain vote extensions, so the vote extension and vote extension
 // signature will not be present in the returned vote.

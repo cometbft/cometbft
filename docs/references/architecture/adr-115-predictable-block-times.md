@@ -55,6 +55,10 @@ machine some extra time to finish execution.
 In case of Berachain, they want to have a constant block time to match
 Ethereum's slots, which are equal to 12s.
 
+Celestia's usecase here for the medium term is to be able to have a longer
+proposal timeout so that they can spend a larger percentage of the block time
+gossiping while having consistent block times.
+
 ## Proposal
 
 Move `timeout_commit` into `FinalizeBlockResponse` as `next_block_delay`. This
@@ -94,7 +98,7 @@ message FinalizeBlockResponse {
 ```
 
 A correct proposer MUST wait until the last block is committed + `next_block_delay` to propose a block.
-A correct validator MUST wait until the last block is committed + `next_block_delay` to prevote on a proposal block.
+A correct validator MUST wait until the last block is committed + `next_block_delay` to start the next height.
 
 ### Specification
 

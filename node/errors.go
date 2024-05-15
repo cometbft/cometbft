@@ -42,6 +42,7 @@ func (e ErrMismatchAppHash) Error() string {
 	return fmt.Sprintf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", e.Expected, e.Actual)
 }
 
+// ErrSetSyncHeight is returned when the node fails to set the synced height.
 type ErrSetSyncHeight struct {
 	Err error
 }

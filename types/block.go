@@ -801,6 +801,15 @@ func (commit *Commit) GetVote(valIdx int32) *Vote {
 	}
 }
 
+// Clone creates a deep copy of this commit.
+func (commit *Commit) Clone() *Commit {
+	sigs := make([]CommitSig, len(commit.Signatures))
+	copy(sigs, commit.Signatures)
+	commCopy := *commit
+	commCopy.Signatures = sigs
+	return &commCopy
+}
+
 // VoteSignBytes returns the bytes of the Vote corresponding to valIdx for
 // signing.
 //

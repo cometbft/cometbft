@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	lru "github.com/hashicorp/golang-lru/v2"
+
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cosmos/gogoproto/proto"
 
@@ -41,16 +43,34 @@ type BlockStore struct {
 	mtx    cmtsync.RWMutex
 	base   int64
 	height int64
+
+	seenCommitCache  *lru.Cache[int64, *types.Commit]
+	blockCommitCache *lru.Cache[int64, *types.Commit]
 }
 
 // NewBlockStore returns a new BlockStore with the given DB,
 // initialized to the last height that was committed to the DB.
 func NewBlockStore(db dbm.DB) *BlockStore {
 	bs := LoadBlockStoreState(db)
-	return &BlockStore{
+	bStore := &BlockStore{
 		base:   bs.Base,
 		height: bs.Height,
 		db:     db,
+	}
+	bStore.addCaches()
+	return bStore
+}
+
+func (bs *BlockStore) addCaches() {
+	var err error
+	// err can only occur if the argument is non-positive, so is impossible in context.
+	bs.blockCommitCache, err = lru.New[int64, *types.Commit](100)
+	if err != nil {
+		panic(err)
+	}
+	bs.seenCommitCache, err = lru.New[int64, *types.Commit](100)
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -224,6 +244,10 @@ func (bs *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
 // and it comes from the block.LastCommit for `height+1`.
 // If no commit is found for the given height, it returns nil.
 func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
+	comm, ok := bs.blockCommitCache.Get(height)
+	if ok {
+		return comm.Clone()
+	}
 	pbc := new(cmtproto.Commit)
 	bz, err := bs.db.Get(calcBlockCommitKey(height))
 	if err != nil {
@@ -240,13 +264,18 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	if err != nil {
 		panic(fmt.Sprintf("Error reading block commit: %v", err))
 	}
-	return commit
+	bs.blockCommitCache.Add(height, commit)
+	return commit.Clone()
 }
 
 // LoadSeenCommit returns the locally seen Commit for the given height.
 // This is useful when we've seen a commit, but there has not yet been
 // a new block at `height + 1` that includes this commit in its block.LastCommit.
 func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
+	comm, ok := bs.seenCommitCache.Get(height)
+	if ok {
+		return comm.Clone()
+	}
 	pbc := new(cmtproto.Commit)
 	bz, err := bs.db.Get(calcSeenCommitKey(height))
 	if err != nil {
@@ -264,7 +293,8 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 	if err != nil {
 		panic(fmt.Errorf("error from proto commit: %w", err))
 	}
-	return commit
+	bs.seenCommitCache.Add(height, commit)
+	return commit.Clone()
 }
 
 // PruneBlocks removes block up to (but not including) a height. It returns number of blocks pruned.

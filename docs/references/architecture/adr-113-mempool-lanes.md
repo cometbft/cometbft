@@ -296,18 +296,19 @@ TODO
 
 TO DECIDE:
 
-* bytes per tx, \# of txs, total # of bytes: shared?
+* Should all lanes share the same mempool capacities (bytes per tx, \# of txs, total # of bytes)?
   * Current view: **can be different** easily
   * MVP is viable without it, but use cases less customizable
   * Update: How about Injective's use case?
 
-* Two options for introducing several TX lists:
+* How to implement several lists of txs? Two options:
   1. Multiple `Clist`s inside `CListMempool`, the cache stays inside `CListMempool`.
   2. Multiple `CListMempool` instances, the cache needs to be outside `CListMempool` (likely, directly controlled by the reactor)
 
 * After discussion with Osmosis and Injective, there's a dilemma.
   * For Osmosis, a two-lane solution ("native" and "priority") would probably be enough.
     * This means that we could defer the lane and priority configuration, and not tackle it as part of the MVP
+    * A two-lanes solution is much easier to implement than a more general solution.
   * For Injective, their use case seems to be more demanding: many lanes (4?, 9?),
     with one lane even having less prio than the native lane
     * If we want to address that use case fully, our MVP _does need_ to tackle the design of lane & prio configuration
@@ -316,14 +317,13 @@ TO DECIDE:
 * Byzantine nodes may gossip transactions on a high-priority lane to get preferential treatment.
   * we may consider banning peers that send transactions with incorrect lane information.
   * Decision was not to ship lane info, but we're still using different channels for different lanes
-    * **What shall we do when we see a peer misusing a p2p channel?**
+    * **What to do when we see a peer misusing a p2p channel?**
       * not clear what to do, will heavily depend on use case. So
         * let's wait for someone to hit this so we have a use case to solve
         * and less things to do for MVP
       * Updated discussion, looks like the way to go is:
         * Do "stop peer for error" in any case
         * Defer decision about banning policy until a use case pops up
-
 
 ### Decisions on Minimum Viable Product (MVP)
 
@@ -400,7 +400,7 @@ ADR: Probably part of [Data flow](#data-flow) section:
     * The lane information is used to decide to which transaction list the Tx will be added
 * Broadcast flow:
   * Higher-priority lanes get to be gossiped first, and gossip within a lane is still in FIFO order.
-  * We will need a warning about channels sharing the send queue at p2p level (will need data early on to see if this is a problem for lanes in practice
+  * We will need a warning about channels sharing the send queue at p2p level (will need data early on to see if this is a problem for lanes in practice)
   * [Rough description]: we need to extend the loop in the broadcast goroutine. Several channels now, not just one
     * To decide
       * if we're going for (simpler) solution where with max 2 lanes,
@@ -413,7 +413,7 @@ ADR: Probably part of [Data flow](#data-flow) section:
   * We go from the reap loop (currently just one), to probably a nested one
     * the outer loop goes through all TX lists (remember, one per lane), in decreasing priority order
     * the current `break` statements in the inner loop (limit of bytes or gas reached), should also break from the outer loop
-* Exit flow (Update, Re-Check). Update: unconditionally; Re-Check: only if App says TX is now invalid
+* Exit flow (Update, Re-Check). Update: remove tx unconditionally; Re-Check: remove only if App says TX is now invalid
   * Transactions in higher-priority lanes are processed (updated) first.
   * Depends on how the multiple TX lists are implemented (see discussion above)
   * Update contains Re-check at the end
@@ -433,34 +433,34 @@ ADR: Core part of detailed design. Bullets will likely become subsections
 
 ### Who defines lanes and priorities
 
-The list of lanes and their priorities: are consensus parameters? are defined by the app?
-* Discussion on _where_ the lane configuration is set up. Three options
-  1. `config.toml` / `app.toml`
-  2. ConsensusParams
-  3. Hardcoded in the application. Info passed to CometBFT during handshake
-* Outcome of discussion
-  * 1. vs. 2.
-    * It does not make sense for different nodes to have different lane configuration,
-      so definitely we don't want 1
-  * 2. vs. 3.
-    * If we can change lane info via `ConsensusParams`
-      * CometBFT's mempool needs logic for changing lanes dynamically (complex, not really appealing for MVP)
-      * The process of updating lane info very complex and cumbersome:
-        * to update lanes you'd need to pass _two_ governance proposals
-          * upgrade the app, because the lane classification logic (so, the app's code) needs to know the lane config beforehand
-          * then upgrade the lanes via `ConsensusParams`
-        * also, not clear in which order: community should be careful not to break performance between the passing of both proposals
-        * the `gov` module may allow the two things to be shipped in the same gov proposal,
-          but, if we need to do it that way, what's the point in having lanes in `ConsensusParams` ?
-  * Conclusion: 3.
-    * lane info is "hardcoded" in the app's logic
-    * lane info is passed to CometBFT during handshake
-  * Advantages:
-    * Simple lane update cycle: one software update gov proposal
-    * CometBFT doesn't need to deal with dynamic lane changes: it just needs to set up lanes when starting up (whether afresh, or recovery)
-* What does lane info (passed to CometBFT) look like?
-  * Current state  of discussions.
-    * Draft of data structure
+The list of lanes and their priorities, are consensus parameters? Are defined by the app?
+
+There are three options for _where_ to configure lanes and priorities:
+1. `config.toml` / `app.toml`
+  * It does not make sense for different nodes to have different lane configurations, so definitely
+    we don't want 1.
+2. `ConsensusParams`
+  * If we can change lane info via `ConsensusParams`, CometBFT's mempool needs logic for changing
+    lanes dynamically (complex, not really appealing for MVP).
+  * The process of updating lane info would be very complex and cumbersome:
+      * To update lanes, you'd need to pass _two_ governance proposals
+        1. Upgrade the app, because the lane classification logic (so, the app's code) needs to know the lane config beforehand.
+        2. Then upgrade the lanes via `ConsensusParams`.
+      * Also, not clear in which order: community should be careful not to break performance between the passing of both proposals.
+      * The `gov` module may allow the two things to be shipped in the same gov proposal,
+        but, if we need to do it that way, what's the point in having lanes in `ConsensusParams`?
+3. Hardcoded in the application. Info passed to CometBFT during handshake.
+  * Simple lane update cycle: one software update gov proposal.
+  * CometBFT doesn't need to deal with dynamic lane changes: it just needs to set up lanes when starting up (whether afresh, or recovery).
+  * Currently, one of the conditions for the handshake to succeed is that there must exist an intersection of p2p channels.
+
+Conclusion: number 3 is the best option.
+  * lane info is "hardcoded" in the app's logic
+  * lane info is passed to CometBFT during handshake
+
+What does lane info (passed to CometBFT) would look like?
+  * Current state of discussions.
+    * Draft of data structure:
         ```protobuf
         message LaneInfo {
           repeated Lane lanes;
@@ -470,29 +470,29 @@ The list of lanes and their priorities: are consensus parameters? are defined by
           string name;
         }
         ```
-  * The `Lane` list MUST NOT have duplicate lane IDs
-  * The order of the `Lane` elements in the `lanes` field defines their priority
+  * The `Lane` list MUST NOT have duplicate lane IDs.
+  * The order of the `Lane` elements in the `lanes` field defines their priority.
   * Lane ID 0 is the native lane.
-    * It MAY be present in the list
-    * If it is absent, it is equivalent to having it as the last element (lowest priority)
-  * Channel ID is a byte
-    * Current channel distribution (among reactors) goes up to `0x61`
+    * It MAY be present in the list.
+    * If it is absent, it is equivalent to having it as the last element (lowest priority).
+  * Channel ID is a byte.
+    * Current channel distribution (among reactors) goes up to `0x61`.
     * Proposal: reserve for mempool lanes channel ID `0x80` and all channels above (so, all channels whose MSB is 1)
       * max of 128 lanes. Big enough?
     * currently, mempool is p2p channel ID is `0x30`, which would be a special case: native lane.
   * How to deal with nodes that are late? So, lane info at mempool level (and thus p2p channels to establish) does not match.
-    * Two cases
-    * A node that is up to date and falls behind (e.g., network instability, etc.)
-      * Not a problem. For lanes to change we **require** a coordinated upgrade.
-        * Reason: if we allow upgrade changing lane info **not** to be a coordinated upgrage,
-          then we won't have consistent lane info across nodes (each node would be running a particular version of the software)
-    * A node that is blocksyncing from far away in the past (software upgrades in the middle)
-      * Normal channels (including `0x30`): same as before
-      * Lane channels (>=`0x80`), not declared. The node can't send/receive mempool-related info. Not a problem, since it's blocksyncing
-        * If we're not at the latest version (e.g., Cosmovisor-drive blocksync)
-          * channel info likely to be wrong
-          * but we Cosmovisor will kill the node before switching to consensus
-    * We will need to extend the channel-related handshake between nodes to be able to add channels after initial handshake
+    * Two cases:
+      1. A node that is up to date and falls behind (e.g., network instability, etc.)
+        * Not a problem. For lanes to change we **require** a coordinated upgrade.
+          * Reason: if we allow upgrade changing lane info **not** to be a coordinated upgrade,
+            then we won't have consistent lane info across nodes (each node would be running a particular version of the software)
+      2. A node that is blocksyncing from far away in the past (software upgrades in the middle)
+        * Normal channels (including `0x30`): same as before
+        * Lane channels (>=`0x80`), not declared. The node can't send/receive mempool-related info. Not a problem, since it's blocksyncing
+          * If we're not at the latest version (e.g., Cosmovisor-drive blocksync)
+            * channel info likely to be wrong
+            * but Cosmovisor will kill the node before switching to consensus
+    * We will need to extend the channel-related handshake between nodes to be able to add channels after initial handshake.
     * TODO: this needs a bit more thought/discussion
     * IDEA: use versions:
       * bump up the p2p version. Any late legacy node will have to upgrade to latest P2P version to acquire nodes

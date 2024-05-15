@@ -6,17 +6,17 @@ import (
 )
 
 var (
-	// ErrNonEmptyBlockStore is returned when the blockstore is not empty and the node is trying to initialize non empty state
+	// ErrNonEmptyBlockStore is returned when the blockstore is not empty and the node is trying to initialize non empty state.
 	ErrNonEmptyBlockStore = errors.New("blockstore not empty, trying to initialize non empty state")
-	// ErrNonEmptyState is returned when the state is not empty and the node is trying to initialize non empty state
+	// ErrNonEmptyState is returned when the state is not empty and the node is trying to initialize non empty state.
 	ErrNonEmptyState = errors.New("state not empty, trying to initialize non empty state")
-	// ErrSwitchStateSync is returned when the blocksync reactor does not support switching from state sync
+	// ErrSwitchStateSync is returned when the blocksync reactor does not support switching from state sync.
 	ErrSwitchStateSync = errors.New("this blocksync reactor does not support switching from state sync")
-	// ErrGenesisHashDecode is returned when the genesis hash provided by the operator cannot be decoded
+	// ErrGenesisHashDecode is returned when the genesis hash provided by the operator cannot be decoded.
 	ErrGenesisHashDecode = errors.New("genesis hash provided by operator cannot be decoded")
-	// ErrPassedGenesisHashMismatch is returned when the genesis doc hash in the database does not match the passed --genesis_hash value
+	// ErrPassedGenesisHashMismatch is returned when the genesis doc hash in the database does not match the passed --genesis_hash value.
 	ErrPassedGenesisHashMismatch = errors.New("genesis doc hash in db does not match passed --genesis_hash value")
-	// ErrLoadedGenesisDocHashMismatch is returned when the genesis doc hash in the database does not match the loaded genesis doc
+	// ErrLoadedGenesisDocHashMismatch is returned when the genesis doc hash in the database does not match the loaded genesis doc.
 	ErrLoadedGenesisDocHashMismatch = errors.New("genesis doc hash in db does not match loaded genesis doc")
 )
 

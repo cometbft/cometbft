@@ -14,7 +14,7 @@ import (
 // saved block. The load method should return nil when only a commit was saved and
 // return the extended commit otherwise.
 func BenchmarkRepeatedLoadSeenCommitSameBlock(b *testing.B) {
-	state, bs, _, _, cleanup, _ := makeStateAndBlockStoreAndIndexers()
+	state, bs, cleanup := makeStateAndBlockStore()
 	defer cleanup()
 	h := bs.Height() + 1
 	block := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)

@@ -100,6 +100,19 @@ message FinalizeBlockResponse {
 A correct proposer MUST wait until the last block is committed + `next_block_delay` to propose a block.
 A correct validator MUST wait until the last block is committed + `next_block_delay` to start the next height.
 
+`next_block_delay` is a non-deterministic field (unlike most fields in
+`FinalizeBlockResponse`), that is: it is not part of the replicated data. This
+means that each node may provide a different value, which is supposed to depend
+on how longs things are taking at the local node.
+
+### ABCI application
+
+In order to leverage this feature most applications need to:
+
+* use real --wallclock-- time;
+* mandate it's nodes to have synchronized clocks (NTP, or other). This is
+  not a big deal since PBTS also requires this.
+
 ### Specification
 
 Timeout estimate in the spec should be updated to reflect `next_block_delay`:
@@ -109,6 +122,16 @@ block(i+1).Time > block(i).Time + NEXTBLOCKDELAY
 ```
 
 See [this comment][spec-comment] for more details.
+
+### Upgrade path
+
+* keep `timeout_commit` deprecated;
+* if a value for `timeout_commit` is detected at process start-up, warn the
+  user that they are using a deprecated field;
+* if the app provides a value for `next_block_delay`, then `timeout_commit` is
+  ignored;
+* if the app does not provide a value for `next_block_delay`, then CometBFT falls
+  back to `timeout_commit`.
 
 ## Consequences
 

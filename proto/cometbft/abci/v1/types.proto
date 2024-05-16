@@ -439,7 +439,10 @@ message FinalizeBlockResponse {
   bytes app_hash = 5;
   // delay between the time when this block is committed and the next height is started.
   // previously `timeout_commit` in config.toml
-  google.protobuf.Duration next_block_delay = 6;
+  google.protobuf.Duration next_block_delay = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
 }
 
 // ----------------------------------------

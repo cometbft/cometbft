@@ -712,15 +712,16 @@ func (cs *State) updateToState(state sm.State) {
 	cs.updateHeight(height)
 	cs.updateRoundStep(0, cstypes.RoundStepNewHeight)
 
+	timeoutCommit := state.NextBlockDelay
 	if cs.CommitTime.IsZero() {
 		// "Now" makes it easier to sync up dev nodes.
-		// We add timeoutCommit to allow transactions
-		// to be gathered for the first block.
-		// And alternative solution that relies on clocks:
-		// cs.StartTime = state.LastBlockTime.Add(timeoutCommit)
-		cs.StartTime = cs.config.Commit(cmttime.Now())
+		//
+		// We add timeoutCommit to allow transactions to be gathered for
+		// the first block. An alternative solution that relies on clocks:
+		// `cs.StartTime = state.LastBlockTime.Add(timeoutCommit)`
+		cs.StartTime = cmttime.Now().Add(timeoutCommit)
 	} else {
-		cs.StartTime = cs.config.Commit(cs.CommitTime)
+		cs.StartTime = cs.CommitTime.Add(timeoutCommit)
 	}
 
 	cs.Validators = validators
@@ -1037,7 +1038,7 @@ func (cs *State) handleTxsAvailable() {
 
 // Enter: `timeoutNewHeight` by startTime (commitTime+timeoutCommit),
 //
-//	or, if TimeoutCommit==0, after receiving all precommits from (height,round-1)
+//	or, if NextBlockDelay==0, after receiving all precommits from (height,round-1)
 //
 // Enter: `timeoutPrecommits` after any +2/3 precommits from (height,round-1)
 // Enter: +2/3 precommits for nil at (height,round-1)
@@ -2293,7 +2294,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		cs.evsw.FireEvent(types.EventVote, vote)
 
 		// if we can skip timeoutCommit and have all the votes now,
-		if cs.config.TimeoutCommit == 0 && cs.LastCommit.HasAll() {
+		if cs.state.NextBlockDelay == 0 && cs.LastCommit.HasAll() {
 			// go straight to new round (skip timeout commit)
 			// cs.scheduleTimeout(time.Duration(0), cs.Height, 0, cstypes.RoundStepNewHeight)
 			cs.enterNewRound(cs.Height, 0)
@@ -2448,7 +2449,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 			if !blockID.IsNil() {
 				cs.enterCommit(height, vote.Round)
-				if cs.config.TimeoutCommit == 0 && precommits.HasAll() {
+				if cs.state.NextBlockDelay == 0 && precommits.HasAll() {
 					cs.enterNewRound(cs.Height, 0)
 				}
 			} else {

@@ -827,6 +827,7 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 			DiscardABCIResponses: false,
 		})
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
+		state.NextBlockDelay = 0
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
 		for _, opt := range configOpts {

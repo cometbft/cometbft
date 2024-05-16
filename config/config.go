@@ -1119,12 +1119,6 @@ type ConsensusConfig struct {
 	TimeoutVote time.Duration `mapstructure:"timeout_vote"`
 	// How much the timeout_vote increases with each round
 	TimeoutVoteDelta time.Duration `mapstructure:"timeout_vote_delta"`
-	// How long we wait after committing a block, before starting on the new
-	// height (this gives us a chance to receive some more precommits, even
-	// though we already have +2/3).
-	// NOTE: when modifying, make sure to update time_iota_ms genesis parameter
-	// Set to 0 if you want to make progress as soon as the node has all the precommits.
-	TimeoutCommit time.Duration `mapstructure:"timeout_commit"`
 
 	// EmptyBlocks mode and possible interval between empty blocks
 	CreateEmptyBlocks         bool          `mapstructure:"create_empty_blocks"`
@@ -1146,7 +1140,6 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		TimeoutProposeDelta:              500 * time.Millisecond,
 		TimeoutVote:                      1000 * time.Millisecond,
 		TimeoutVoteDelta:                 500 * time.Millisecond,
-		TimeoutCommit:                    1000 * time.Millisecond,
 		CreateEmptyBlocks:                true,
 		CreateEmptyBlocksInterval:        0 * time.Second,
 		PeerGossipSleepDuration:          100 * time.Millisecond,
@@ -1163,8 +1156,6 @@ func TestConsensusConfig() *ConsensusConfig {
 	cfg.TimeoutProposeDelta = 1 * time.Millisecond
 	cfg.TimeoutVote = 10 * time.Millisecond
 	cfg.TimeoutVoteDelta = 1 * time.Millisecond
-	// NOTE: when modifying, make sure to update time_iota_ms (testGenesisFmt) in toml.go
-	cfg.TimeoutCommit = 0
 	cfg.PeerGossipSleepDuration = 5 * time.Millisecond
 	cfg.PeerQueryMaj23SleepDuration = 250 * time.Millisecond
 	cfg.DoubleSignCheckHeight = int64(0)
@@ -1197,12 +1188,6 @@ func (cfg *ConsensusConfig) Precommit(round int32) time.Duration {
 	) * time.Nanosecond
 }
 
-// Commit returns the amount of time to wait for straggler votes after receiving +2/3 precommits
-// for a single block (ie. a commit).
-func (cfg *ConsensusConfig) Commit(t time.Time) time.Time {
-	return t.Add(cfg.TimeoutCommit)
-}
-
 // WalFile returns the full path to the write-ahead log file.
 func (cfg *ConsensusConfig) WalFile() string {
 	if cfg.walFile != "" {
@@ -1230,9 +1215,6 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	}
 	if cfg.TimeoutVoteDelta < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_vote_delta"}
-	}
-	if cfg.TimeoutCommit < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_commit"}
 	}
 	if cfg.CreateEmptyBlocksInterval < 0 {
 		return cmterrors.ErrNegativeField{Field: "create_empty_blocks_interval"}

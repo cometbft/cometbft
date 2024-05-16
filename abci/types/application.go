@@ -1,6 +1,9 @@
 package types
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 //go:generate ../../scripts/mockery_generate.sh Application
 
@@ -115,5 +118,7 @@ func (BaseApplication) FinalizeBlock(_ context.Context, req *FinalizeBlockReques
 	}
 	return &FinalizeBlockResponse{
 		TxResults: txs,
+		// Safeguard devs from forgetting to set this field.
+		NextBlockDelay: 1 * time.Second,
 	}, nil
 }

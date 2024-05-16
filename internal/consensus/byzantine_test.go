@@ -54,6 +54,8 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			DiscardABCIResponses: false,
 		})
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
+		// Set NextBlockDelay to 0 to avoid waiting for the next block.
+		state.NextBlockDelay = 0
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		defer os.RemoveAll(thisConfig.RootDir)
 		ensureDir(path.Dir(thisConfig.Consensus.WalFile())) // dir for wal

@@ -1124,6 +1124,8 @@ func stateAndStore(
 	state, err := sm.MakeGenesisStateFromFile(config.GenesisFile())
 	require.NoError(t, err)
 	state.Version.Consensus.App = appVersion
+	// Set NextBlockDelay to 0 to avoid waiting for the next block.
+	state.NextBlockDelay = 0
 	store := newMockBlockStore(t, config, state.ConsensusParams)
 	require.NoError(t, stateStore.Save(state))
 

@@ -143,10 +143,6 @@ See [this comment][spec-comment] for more details.
 
 ### Negative
 
-- ABCI application developers will need to set `next_block_delay` to `1s`
-  to preserve the old behavior. If the application ignores this field, it
-  would have the same effect as setting timeout_commit = 0 right now.
-
 ## References
 
 * [cometbft/cometbft#2655](https://github.com/cometbft/cometbft/issues/2655)

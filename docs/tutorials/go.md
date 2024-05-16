@@ -439,7 +439,7 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.F
 
     return &abcitypes.FinalizeBlockResponse{
         TxResults:      txs,
-		NextBlockDelay: durationpb.New(1 * time.Second),
+        NextBlockDelay: 1 * time.Second,
     }, nil
 }
 ```

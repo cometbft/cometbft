@@ -172,50 +172,49 @@ Example:
 
 ```go
 func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBlockRequest) (*types.FinalizeBlockResponse, error) {
-
     //...
-  tx_results[0] := &types.ExecTxResult{
-			Code: CodeTypeOK,
-			// With every transaction we can emit a series of events. To make it simple, we just emit the same events.
-			Events: []types.Event{
-				{
-					Type: "app",
-					Attributes: []types.EventAttribute{
-						{Key: "creator", Value: "Cosmoshi Netowoko", Index: true},
-						{Key: "key", Value: key, Index: true},
-						{Key: "index_key", Value: "index is working", Index: true},
-						{Key: "noindex_key", Value: "index is working", Index: false},
-					},
-				},
-				{
-					Type: "app",
-					Attributes: []types.EventAttribute{
-						{Key: "creator", Value: "Cosmoshi", Index: true},
-						{Key: "key", Value: value, Index: true},
-						{Key: "index_key", Value: "index is working", Index: true},
-						{Key: "noindex_key", Value: "index is working", Index: false},
-					},
-				},
-			},
-		}
+    tx_results[0] := &types.ExecTxResult{
+        Code: CodeTypeOK,
+        // With every transaction we can emit a series of events. To make it simple, we just emit the same events.
+        Events: []types.Event{
+            {
+                Type: "app",
+                Attributes: []types.EventAttribute{
+                    {Key: "creator", Value: "Cosmoshi Netowoko", Index: true},
+                    {Key: "key", Value: key, Index: true},
+                    {Key: "index_key", Value: "index is working", Index: true},
+                    {Key: "noindex_key", Value: "index is working", Index: false},
+                },
+            },
+            {
+                Type: "app",
+                Attributes: []types.EventAttribute{
+                    {Key: "creator", Value: "Cosmoshi", Index: true},
+                    {Key: "key", Value: value, Index: true},
+                    {Key: "index_key", Value: "index is working", Index: true},
+                    {Key: "noindex_key", Value: "index is working", Index: false},
+                },
+            },
+        },
+    }
 
     block_events = []types.Event{
-			{
-				Type: "loan",
-				Attributes: []types.EventAttribute{
-					{	Key:   "account_no", Value: "1", Index: true},
-					{ Key:   "amount", Value: "200", Index: true },
-				},
-			},
-			{
-				Type: "loan",
-				Attributes: []types.EventAttribute{
-					{ Key:   "account_no", Value: "2",	Index: true },
-					{ Key:   "amount", Value: "300", Index: true},
-				},
-			},
-		}
-        return &types.FinalizeBlockResponse{TxResults: tx_results, Events: block_events, NextBlockDelay: 1 * time.Second}, nil
+        {
+            Type: "loan",
+            Attributes: []types.EventAttribute{
+                {Key: "account_no", Value: "1", Index: true},
+                {Key: "amount", Value: "200", Index: true},
+            },
+        },
+        {
+            Type: "loan",
+            Attributes: []types.EventAttribute{
+                {Key: "account_no", Value: "2", Index: true},
+                {Key: "amount", Value: "300", Index: true},
+            },
+        },
+    }
+    return &types.FinalizeBlockResponse{TxResults: tx_results, Events: block_events, NextBlockDelay: 1 * time.Second}, nil
 }
 ```
 

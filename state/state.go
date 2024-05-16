@@ -16,12 +16,6 @@ import (
 	"github.com/cometbft/cometbft/version"
 )
 
-const (
-	// InitNextBlockDelay is the delay between the time when the genesis block is
-	// committed and the next height is started.
-	InitNextBlockDelay = 1 * time.Second
-)
-
 // database keys.
 var (
 	stateKey = []byte("stateKey")
@@ -344,6 +338,7 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 
 		AppHash: genDoc.AppHash,
 
-		NextBlockDelay: InitNextBlockDelay,
+		// NextBlockDelay is set to 0 because the genesis block is committed.
+		NextBlockDelay: 0,
 	}, nil
 }

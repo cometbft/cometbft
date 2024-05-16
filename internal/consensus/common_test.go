@@ -827,8 +827,6 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 			DiscardABCIResponses: false,
 		})
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
-		// Set NextBlockDelay to 0 to avoid waiting for the next block.
-		state.NextBlockDelay = 0
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
 		for _, opt := range configOpts {
@@ -874,8 +872,6 @@ func randConsensusNetWithPeers(
 		})
 		t.Cleanup(func() { _ = stateStore.Close() })
 		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
-		// Set NextBlockDelay to 0 to avoid waiting for the next block.
-		state.NextBlockDelay = 0
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile())) // dir for wal
@@ -979,8 +975,6 @@ func randGenesisStateWithTime(
 	minPower := int64(10)
 	genDoc, privValidators := randGenesisDoc(numValidators, minPower, consensusParams, genesisTime)
 	s0, _ := sm.MakeGenesisState(genDoc)
-	// Set NextBlockDelay to 0 to avoid waiting for the next block.
-	s0.NextBlockDelay = 0
 	return s0, privValidators
 }
 

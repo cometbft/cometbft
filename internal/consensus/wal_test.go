@@ -370,8 +370,6 @@ func makeState(nVals int, chainID string) (sm.State, map[string]cmttypes.PrivVal
 		AppHash:         nil,
 		ConsensusParams: test.ConsensusParams(),
 	})
-	// Set NextBlockDelay to 0 to avoid waiting for the next block.
-	s.NextBlockDelay = 0
 
 	stateDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{

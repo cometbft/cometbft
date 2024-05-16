@@ -621,7 +621,7 @@ without calling `VerifyVoteExtension` to verify it.
     | validator_updates       | repeated [ValidatorUpdate](#validatorupdate)      | Changes to validator set (set voting power to 0 to remove).                         | 3            | Yes           |
     | consensus_param_updates | [ConsensusParams](#consensusparams)               | Changes to gas, size, and other consensus-related parameters.                       | 4            | Yes           |
     | app_hash                | bytes                                             | The Merkle root hash of the application state.                                      | 5            | Yes           |
-    | next_block_delay        | [google.protobuf.Duration][protobuf-duration]     | Delay between the time when this block is committed and the next height is started. | 6            | Yes           |
+    | next_block_delay        | [google.protobuf.Duration][protobuf-duration]     | Delay between the time when this block is committed and the next height is started. | 6            | No            |
 
 * **Usage**:
     * Contains the fields of the newly decided block.
@@ -667,9 +667,15 @@ without calling `VerifyVoteExtension` to verify it.
     * `FinalizeBlockResponse.next_block_delay` - how long CometBFT waits after
       committing a block, before starting on the new height (this gives the
       proposer a chance to receive some more precommits, even though it
-      already has +2/3). Set to 0 if you want validators to make progress as
-      soon as they have all the precommits. Previously `timeout_commit` in
-      CometBFT config. Set to 1s to preserve the old behavior.
+      already has +2/3). Set to 0 if you want a proposer to make progress as
+      soon as it has all the precommits. Previously `timeout_commit` in
+      CometBFT config. **Set to constant 1s to preserve the old (v0.34 - v1.0) behavior**.
+    * `FinalizeBlockResponse.next_block_delay` is a non-deterministic field.
+      This means that each node MAY provide a different value, which is
+      supposed to depend on how longs things are taking at the local node. It's
+      reasonable to use real --wallclock-- time and mandate for the nodes to have
+      synchronized clocks (NTP, or other; PBTS also requires this) for the
+      variable delay to work properly.
 
 #### When does CometBFT call `FinalizeBlock`?
 

@@ -1119,6 +1119,8 @@ type ConsensusConfig struct {
 	TimeoutVote time.Duration `mapstructure:"timeout_vote"`
 	// How much the timeout_vote increases with each round
 	TimeoutVoteDelta time.Duration `mapstructure:"timeout_vote_delta"`
+	// Deprecated: use `next_block_delay` in the ABCI application's `FinalizeBlockResponse`.
+	TimeoutCommit time.Duration `mapstructure:"timeout_commit"`
 
 	// EmptyBlocks mode and possible interval between empty blocks
 	CreateEmptyBlocks         bool          `mapstructure:"create_empty_blocks"`
@@ -1140,6 +1142,7 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		TimeoutProposeDelta:              500 * time.Millisecond,
 		TimeoutVote:                      1000 * time.Millisecond,
 		TimeoutVoteDelta:                 500 * time.Millisecond,
+		TimeoutCommit:                    1000 * time.Millisecond,
 		CreateEmptyBlocks:                true,
 		CreateEmptyBlocksInterval:        0 * time.Second,
 		PeerGossipSleepDuration:          100 * time.Millisecond,
@@ -1156,6 +1159,7 @@ func TestConsensusConfig() *ConsensusConfig {
 	cfg.TimeoutProposeDelta = 1 * time.Millisecond
 	cfg.TimeoutVote = 10 * time.Millisecond
 	cfg.TimeoutVoteDelta = 1 * time.Millisecond
+	cfg.TimeoutCommit = 0
 	cfg.PeerGossipSleepDuration = 5 * time.Millisecond
 	cfg.PeerQueryMaj23SleepDuration = 250 * time.Millisecond
 	cfg.DoubleSignCheckHeight = int64(0)
@@ -1215,6 +1219,9 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	}
 	if cfg.TimeoutVoteDelta < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_vote_delta"}
+	}
+	if cfg.TimeoutCommit < 0 {
+		return cmterrors.ErrNegativeField{Field: "timeout_commit"}
 	}
 	if cfg.CreateEmptyBlocksInterval < 0 {
 		return cmterrors.ErrNegativeField{Field: "create_empty_blocks_interval"}

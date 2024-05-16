@@ -452,6 +452,8 @@ timeout_propose_delta = "{{ .Consensus.TimeoutProposeDelta }}"
 timeout_vote = "{{ .Consensus.TimeoutVote }}"
 # How much the timeout_vote increases with each round
 timeout_vote_delta = "{{ .Consensus.TimeoutVoteDelta }}"
+# Deprecated: use `next_block_delay` in the ABCI application's `FinalizeBlockResponse`.
+timeout_commit = "{{ .Consensus.TimeoutCommit }}"
 
 # How many blocks to look back to check existence of the node's consensus votes before joining consensus
 # When non-zero, the node will panic upon restart

@@ -163,6 +163,8 @@ func TestConsensusConfig_ValidateBasic(t *testing.T) {
 		"TimeoutVote negative":                 {func(c *config.ConsensusConfig) { c.TimeoutVote = -1 }, true},
 		"TimeoutVoteDelta":                     {func(c *config.ConsensusConfig) { c.TimeoutVoteDelta = time.Second }, false},
 		"TimeoutVoteDelta negative":            {func(c *config.ConsensusConfig) { c.TimeoutVoteDelta = -1 }, true},
+		"TimeoutCommit":                        {func(c *config.ConsensusConfig) { c.TimeoutCommit = time.Second }, false},
+		"TimeoutCommit negative":               {func(c *config.ConsensusConfig) { c.TimeoutCommit = -1 }, true},
 		"PeerGossipSleepDuration":              {func(c *config.ConsensusConfig) { c.PeerGossipSleepDuration = time.Second }, false},
 		"PeerGossipSleepDuration negative":     {func(c *config.ConsensusConfig) { c.PeerGossipSleepDuration = -1 }, true},
 		"PeerQueryMaj23SleepDuration":          {func(c *config.ConsensusConfig) { c.PeerQueryMaj23SleepDuration = time.Second }, false},

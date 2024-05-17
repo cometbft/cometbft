@@ -672,7 +672,7 @@ without calling `VerifyVoteExtension` to verify it.
       CometBFT config. **Set to constant 1s to preserve the old (v0.34 - v1.0) behavior**.
     * `FinalizeBlockResponse.next_block_delay` is a non-deterministic field.
       This means that each node MAY provide a different value, which is
-      supposed to depend on how longs things are taking at the local node. It's
+      supposed to depend on how long things are taking at the local node. It's
       reasonable to use real --wallclock-- time and mandate for the nodes to have
       synchronized clocks (NTP, or other; PBTS also requires this) for the
       variable delay to work properly.

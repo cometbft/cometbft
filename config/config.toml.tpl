@@ -466,6 +466,9 @@ timeout_vote_delta = "{{ .Consensus.TimeoutVoteDelta }}"
 # Set to 0 if you want to make progress as soon as the node has all the precommits.
 timeout_commit = "{{ .Consensus.TimeoutCommit }}"
 
+# Deprecated: set `timeout_commit` to 0 instead.
+skip_timeout_commit = {{ .Consensus.SkipTimeoutCommit }}
+
 # How many blocks to look back to check existence of the node's consensus votes before joining consensus
 # When non-zero, the node will panic upon restart
 # if the same consensus key was used to sign {double_sign_check_height} last blocks.

@@ -11,9 +11,12 @@ import (
 
 func TestTimeoutTicker(t *testing.T) {
 	ticker := NewTimeoutTicker()
-	ticker.Start()
-	defer ticker.Stop()
-	time.Sleep(1 * time.Millisecond)
+	err := ticker.Start()
+	require.NoError(t, err)
+	defer func() {
+		err := ticker.Stop()
+		require.NoError(t, err)
+	}()
 
 	c := ticker.Chan()
 	for i := 1; i <= 10; i++ {

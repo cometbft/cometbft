@@ -79,6 +79,7 @@ func (t *timeoutTicker) ScheduleTimeout(ti timeoutInfo) {
 
 // -------------------------------------------------------------
 
+// if the timer is active, stop it and drain the channel.
 func (t *timeoutTicker) stopTimer() {
 	if !t.timerActive {
 		return
@@ -93,6 +94,8 @@ func (t *timeoutTicker) stopTimer() {
 // send on tickChan to start a new timer.
 // timers are interrupted and replaced by new ticks from later steps
 // timeouts of 0 on the tickChan will be immediately relayed to the tockChan.
+// NOTE: timerActive is not concurrency safe, but it's only accessed in NewTimer and timeoutRoutine,
+// making it single-threaded access.
 func (t *timeoutTicker) timeoutRoutine() {
 	t.Logger.Debug("Starting timeout routine")
 	var ti timeoutInfo

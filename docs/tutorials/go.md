@@ -444,6 +444,8 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.F
 }
 ```
 
+`NextBlockDelay` is a delay between the time when the current block is committed and the next height is started. Normally you don't need to change the default value (1s). Please refer to the [spec](../../spec/abci/abci++_methods.md#finalizeblock) for more information.
+
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
 This can happen if the application state is used to determine transaction validity. The application state may have changed between the initial execution of `CheckTx` and the transaction delivery in `FinalizeBlock` in a way that rendered the transaction no longer valid.

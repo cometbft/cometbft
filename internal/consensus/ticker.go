@@ -29,20 +29,24 @@ type TimeoutTicker interface {
 type timeoutTicker struct {
 	service.BaseService
 
-	timer    *time.Timer
-	tickChan chan timeoutInfo // for scheduling timeouts
-	tockChan chan timeoutInfo // for notifying about them
+	timerActive bool
+	timer       *time.Timer
+	tickChan    chan timeoutInfo // for scheduling timeouts
+	tockChan    chan timeoutInfo // for notifying about them
 }
 
 // NewTimeoutTicker returns a new TimeoutTicker.
 func NewTimeoutTicker() TimeoutTicker {
 	tt := &timeoutTicker{
-		timer:    time.NewTimer(0),
-		tickChan: make(chan timeoutInfo, tickTockBufferSize),
-		tockChan: make(chan timeoutInfo, tickTockBufferSize),
+		timer: time.NewTimer(0),
+		// An indicator variable to check if the timer is active or not.
+		// Concurrency safe because the timer is only accessed by a single goroutine.
+		timerActive: false,
+		tickChan:    make(chan timeoutInfo, tickTockBufferSize),
+		tockChan:    make(chan timeoutInfo, tickTockBufferSize),
 	}
 	tt.BaseService = *service.NewBaseService(nil, "TimeoutTicker", tt)
-	tt.stopTimer() // don't want to fire until the first scheduled timeout
+	tt.mustStopTimer() // don't want to fire until the first scheduled timeout
 	return tt
 }
 
@@ -83,6 +87,18 @@ func (t *timeoutTicker) stopTimer() {
 			t.Logger.Debug("Timer already stopped")
 		}
 	}
+	t.timerActive = false
+}
+
+func (t *timeoutTicker) mustStopTimer() {
+	if !t.timerActive {
+		return
+	}
+	t.timerActive = false
+	// Stop() returns false if it was already fired or was stopped
+	if !t.timer.Stop() {
+		<-t.timer.C
+	}
 }
 
 // send on tickChan to start a new timer.
@@ -100,14 +116,17 @@ func (t *timeoutTicker) timeoutRoutine() {
 				continue
 			}
 
-			// stop the last timer
-			t.stopTimer()
+			// stop the last timer if it exists
+			t.mustStopTimer()
 
-			// update timeoutInfo and reset timer
+			// update timeoutInfo, reset timer, and mark timer as active
 			ti = newti
 			t.timer.Reset(ti.Duration)
+			t.timerActive = true
+
 			t.Logger.Debug("Scheduled timeout", "dur", ti.Duration, "height", ti.Height, "round", ti.Round, "step", ti.Step)
 		case <-t.timer.C:
+			t.timerActive = false
 			t.Logger.Info("Timed out", "dur", ti.Duration, "height", ti.Height, "round", ti.Round, "step", ti.Step)
 			// go routine here guarantees timeoutRoutine doesn't block.
 			// Determinism comes from playback in the receiveRoutine.

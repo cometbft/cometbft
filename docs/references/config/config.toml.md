@@ -1720,6 +1720,21 @@ But it may have implications in the way the application rewards validators.
 Setting `timeout_commit` to `0s` means that the node will start the next height
 as soon as it gathers all the mandatory +2/3 precommits for a block.
 
+### consensus.skip_timeout_commit
+
+Start the next height as soon as the node gathers all the mandatory +2/3 precommits for a block.
+
+```toml
+skip_timeout_commit = false
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `false` |
+|                     | `true`  |
+
+Deprecated: use `timeout_commit = "0s"` instead.
+
 ### consensus.double_sign_check_height
 
 How many blocks to look back to check the existence of the node's consensus votes before joining consensus.

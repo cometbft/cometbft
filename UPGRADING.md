@@ -226,7 +226,7 @@ definitions:
 
 ### Config Changes
 
-- `consensus.skip_timeout_commit` has been removed in favor of `consensus.timeout_commit=0s`.
+- `consensus.skip_timeout_commit` was deprecated in favor of `consensus.timeout_commit=0s`.
 
 ## v0.38.0
 

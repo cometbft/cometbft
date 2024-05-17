@@ -634,6 +634,7 @@ func TestReactorWithDefaultTimeoutCommit(t *testing.T) {
 	// override default TimeoutCommit == 0 for tests
 	for i := 0; i < n; i++ {
 		css[i].config.TimeoutCommit = 1 * time.Second
+		css[i].config.SkipTimeoutCommit = false //nolint:staticcheck
 	}
 
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, n-1)

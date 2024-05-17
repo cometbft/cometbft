@@ -2293,7 +2293,8 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 		cs.evsw.FireEvent(types.EventVote, vote)
 
 		// if we can skip timeoutCommit and have all the votes now,
-		if cs.config.TimeoutCommit == 0 && cs.LastCommit.HasAll() {
+		skipTimeoutCommit := cs.config.SkipTimeoutCommit || cs.config.TimeoutCommit == 0 //nolint:staticcheck
+		if skipTimeoutCommit && cs.LastCommit.HasAll() {
 			// go straight to new round (skip timeout commit)
 			// cs.scheduleTimeout(time.Duration(0), cs.Height, 0, cstypes.RoundStepNewHeight)
 			cs.enterNewRound(cs.Height, 0)
@@ -2448,7 +2449,8 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 			if !blockID.IsNil() {
 				cs.enterCommit(height, vote.Round)
-				if cs.config.TimeoutCommit == 0 && precommits.HasAll() {
+				skipTimeoutCommit := cs.config.SkipTimeoutCommit || cs.config.TimeoutCommit == 0 //nolint:staticcheck
+				if skipTimeoutCommit && precommits.HasAll() {
 					cs.enterNewRound(cs.Height, 0)
 				}
 			} else {

@@ -412,8 +412,8 @@ func (blockExec *BlockExecutor) Commit(
 	// Commit block, get hash back
 	res, err := blockExec.proxyApp.Commit(context.TODO())
 	if err != nil {
-		blockExec.logger.Error("client error during proxyAppConn.CommitSync", "err", err)
 		unlockMempool()
+		blockExec.logger.Error("client error during proxyAppConn.CommitSync", "err", err)
 		return 0, err
 	}
 
@@ -432,8 +432,6 @@ func (blockExec *BlockExecutor) Commit(
 }
 
 // updates the mempool with the latest state asynchronously.
-// it begins flushing the mempool immediately, and then updates the mempool
-// after the new block state is ready.
 func (blockExec *BlockExecutor) asyncUpdateMempool(unlockMempool func(), updateData mempoolUpdate) {
 	defer unlockMempool()
 

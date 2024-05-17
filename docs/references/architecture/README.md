@@ -42,6 +42,8 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+- [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
+
 ### Accepted
 
 - [ADR-101: Data companion pull API](adr-101-data-companion-pull-api.md)

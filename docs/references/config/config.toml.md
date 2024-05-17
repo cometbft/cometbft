@@ -1733,7 +1733,7 @@ skip_timeout_commit = false
 | **Possible values** | `false` |
 |                     | `true`  |
 
-Setting `skip_timeout_commit` to `true` has the same effect as setting [`timeout_commit`](#consensustimeout_commit) to `"0s"`.
+Deprecated: use `timeout_commit = "0s"` instead.
 
 ### consensus.double_sign_check_height
 

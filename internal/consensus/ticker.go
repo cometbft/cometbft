@@ -33,6 +33,7 @@ type timeoutTicker struct {
 	timer       *time.Timer
 	tickChan    chan timeoutInfo // for scheduling timeouts
 	tockChan    chan timeoutInfo // for notifying about them
+	stopChan    chan struct{}    // for stopping the timeout routine
 }
 
 // NewTimeoutTicker returns a new TimeoutTicker.
@@ -41,12 +42,13 @@ func NewTimeoutTicker() TimeoutTicker {
 		timer: time.NewTimer(0),
 		// An indicator variable to check if the timer is active or not.
 		// Concurrency safe because the timer is only accessed by a single goroutine.
-		timerActive: false,
+		timerActive: true,
 		tickChan:    make(chan timeoutInfo, tickTockBufferSize),
 		tockChan:    make(chan timeoutInfo, tickTockBufferSize),
+		stopChan:    make(chan struct{}),
 	}
 	tt.BaseService = *service.NewBaseService(nil, "TimeoutTicker", tt)
-	tt.mustStopTimer() // don't want to fire until the first scheduled timeout
+	tt.stopTimer() // don't want to fire until the first scheduled timeout
 	return tt
 }
 
@@ -60,7 +62,7 @@ func (t *timeoutTicker) OnStart() error {
 // OnStop implements service.Service. It stops the timeout routine.
 func (t *timeoutTicker) OnStop() {
 	t.BaseService.OnStop()
-	t.stopTimer()
+	t.stopChan <- struct{}{}
 }
 
 // Chan returns a channel on which timeouts are sent.
@@ -77,28 +79,15 @@ func (t *timeoutTicker) ScheduleTimeout(ti timeoutInfo) {
 
 // -------------------------------------------------------------
 
-// stop the timer and drain if necessary.
 func (t *timeoutTicker) stopTimer() {
-	// Stop() returns false if it was already fired or was stopped
-	if !t.timer.Stop() {
-		select {
-		case <-t.timer.C:
-		default:
-			t.Logger.Debug("Timer already stopped")
-		}
-	}
-	t.timerActive = false
-}
-
-func (t *timeoutTicker) mustStopTimer() {
 	if !t.timerActive {
 		return
 	}
-	t.timerActive = false
 	// Stop() returns false if it was already fired or was stopped
 	if !t.timer.Stop() {
 		<-t.timer.C
 	}
+	t.timerActive = false
 }
 
 // send on tickChan to start a new timer.
@@ -117,7 +106,7 @@ func (t *timeoutTicker) timeoutRoutine() {
 			}
 
 			// stop the last timer if it exists
-			t.mustStopTimer()
+			t.stopTimer()
 
 			// update timeoutInfo, reset timer, and mark timer as active
 			ti = newti
@@ -134,6 +123,10 @@ func (t *timeoutTicker) timeoutRoutine() {
 			//  and managing the timeouts ourselves with a millisecond ticker
 			go func(toi timeoutInfo) { t.tockChan <- toi }(ti)
 		case <-t.Quit():
+			t.stopTimer()
+			return
+		case <-t.stopChan:
+			t.stopTimer()
 			return
 		}
 	}

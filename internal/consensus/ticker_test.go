@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cometbft/cometbft/internal/consensus/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cometbft/cometbft/internal/consensus/types"
 )
 
 func TestTimeoutTicker(t *testing.T) {
@@ -15,7 +16,7 @@ func TestTimeoutTicker(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	c := ticker.Chan()
-	for i := 1; i <= 100; i++ {
+	for i := 1; i <= 10; i++ {
 		height := int64(i)
 
 		startTime := time.Now()

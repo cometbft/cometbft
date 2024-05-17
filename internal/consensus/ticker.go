@@ -33,7 +33,6 @@ type timeoutTicker struct {
 	timer       *time.Timer
 	tickChan    chan timeoutInfo // for scheduling timeouts
 	tockChan    chan timeoutInfo // for notifying about them
-	stopChan    chan struct{}    // for stopping the timeout routine
 }
 
 // NewTimeoutTicker returns a new TimeoutTicker.
@@ -45,7 +44,6 @@ func NewTimeoutTicker() TimeoutTicker {
 		timerActive: true,
 		tickChan:    make(chan timeoutInfo, tickTockBufferSize),
 		tockChan:    make(chan timeoutInfo, tickTockBufferSize),
-		stopChan:    make(chan struct{}),
 	}
 	tt.BaseService = *service.NewBaseService(nil, "TimeoutTicker", tt)
 	tt.stopTimer() // don't want to fire until the first scheduled timeout
@@ -62,7 +60,6 @@ func (t *timeoutTicker) OnStart() error {
 // OnStop implements service.Service. It stops the timeout routine.
 func (t *timeoutTicker) OnStop() {
 	t.BaseService.OnStop()
-	t.stopChan <- struct{}{}
 }
 
 // Chan returns a channel on which timeouts are sent.
@@ -126,9 +123,6 @@ func (t *timeoutTicker) timeoutRoutine() {
 			//  and managing the timeouts ourselves with a millisecond ticker
 			go func(toi timeoutInfo) { t.tockChan <- toi }(ti)
 		case <-t.Quit():
-			t.stopTimer()
-			return
-		case <-t.stopChan:
 			t.stopTimer()
 			return
 		}

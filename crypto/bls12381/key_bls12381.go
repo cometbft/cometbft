@@ -4,8 +4,7 @@ package bls12381
 
 import (
 	"bytes"
-
-	sha256 "github.com/minio/sha256-simd"
+	"crypto/sha256"
 
 	"github.com/cometbft/cometbft/crypto"
 	bls12381 "github.com/cosmos/crypto/curves/bls12381"

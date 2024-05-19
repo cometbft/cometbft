@@ -2268,7 +2268,7 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 	// Height mismatch is ignored.
 	// Not necessarily a bad peer, but not favorable behavior.
-	if cs.isHeightMismatch(vote) {
+	if vote.Height != cs.Height {
 		cs.Logger.Debug("vote ignored and not added", "vote_height", vote.Height, "cs_height", cs.Height, "peer", peerID)
 		return false, nil
 	}
@@ -2280,7 +2280,9 @@ func (cs *State) addVote(vote *types.Vote, peerID p2p.ID) (added bool, err error
 
 	added, err = cs.Votes.AddVote(vote, peerID, cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(vote.Height))
 	if !added {
-		cs.handleDuplicateVote(err)
+		if err == nil {
+			cs.metrics.DuplicateVote.Add(1)
+		}
 		return false, err
 	}
 
@@ -2355,11 +2357,6 @@ func (cs *State) handleLastCommitVote(vote *types.Vote) (bool, error) {
 	return true, nil
 }
 
-// isHeightMismatch checks if there is a height mismatch between a vote and the current state.
-func (cs *State) isHeightMismatch(vote *types.Vote) bool {
-	return vote.Height != cs.Height
-}
-
 // verifyVoteExtension verifies the vote extension if enabled.
 func (cs *State) verifyVoteExtension(vote *types.Vote, peerID p2p.ID) error {
 	extEnabled := cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(vote.Height)
@@ -2401,14 +2398,6 @@ func (cs *State) verifyVoteExtension(vote *types.Vote, peerID p2p.ID) error {
 		return fmt.Errorf("received vote with vote extension for height %v (extensions disabled) from peer ID %s", vote.Height, peerID)
 	}
 	return nil
-}
-
-// handleDuplicateVote handles a duplicate vote.
-func (cs *State) handleDuplicateVote(err error) {
-	// If the vote wasn't added but there's no error, it's a duplicate vote
-	if err == nil {
-		cs.metrics.DuplicateVote.Add(1)
-	}
 }
 
 // updateMetricsAndEvents updates metrics and events based on the vote.

@@ -1195,6 +1195,13 @@ func (cfg *ConsensusConfig) Precommit(round int32) time.Duration {
 	) * time.Nanosecond
 }
 
+// Commit returns the amount of time to wait for straggler votes after receiving +2/3 precommits
+// for a single block (ie. a commit).
+// Deprecated: use `next_block_delay` in the ABCI application's `FinalizeBlockResponse`.
+func (cfg *ConsensusConfig) Commit(t time.Time) time.Time {
+	return t.Add(cfg.TimeoutCommit)
+}
+
 // WalFile returns the full path to the write-ahead log file.
 func (cfg *ConsensusConfig) WalFile() string {
 	if cfg.walFile != "" {

@@ -6,17 +6,13 @@ It is based on the [CometBFT RFC 019](https://github.com/cometbft/cometbft/blob/
 
 ## Usage
 
-```shell
-cometbft config fix --help
-```
-
 ### Get
 
 Get a configuration value, e.g.:
 
 ```shell
-cometbft config get pruning # gets the value pruning
-cometbft config get chain-id # gets the value chain-id
+cometbft config get mempool.size # gets the value mempool.size
+cometbft config get moniker # gets the value moniker
 ```
 
 ### Set
@@ -24,8 +20,8 @@ cometbft config get chain-id # gets the value chain-id
 Set a configuration value, e.g.:
 
 ```shell
-cometbft config set pruning "enabled" # sets the value pruning
-cometbft config set chain-id "foo-1" # sets the value chain-id
+cometbft config set mempool.size 1000 # sets the value mempool.size
+cometbft config set moniker "foo-1" # sets the value moniker
 ```
 ### Migrate
 

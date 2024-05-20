@@ -106,6 +106,8 @@ func TestVersion(t *testing.T) {
 // It's the responsibility of the ABCI developers to ensure that app_hash
 // and last_results_hash are deterministic.
 
+// =============================================================================
+
 func deterministicValidatorSet(t *testing.T) *ValidatorSet {
 	t.Helper()
 

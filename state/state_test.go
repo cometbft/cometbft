@@ -8,12 +8,20 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	abciv1beta1 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta1"
+	abciv1beta2 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta2"
+	cryptov1 "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
+	statev1 "github.com/cometbft/cometbft/api/cometbft/state/v1"
+	statev1beta2 "github.com/cometbft/cometbft/api/cometbft/state/v1beta2"
+	typesv1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
+	typesv1beta2 "github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
@@ -526,7 +534,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	_, updatedVal2 := updatedState3.NextValidators.GetByAddress(val2PubKey.Address())
 
 	// 2. Scale
-	// old prios: v1(10):-38, v2(1):39
+	// old prios: cryptov1(10):-38, v2(1):39
 	wantVal1Prio = prevVal1.ProposerPriority
 	wantVal2Prio = prevVal2.ProposerPriority
 	// scale to diffMax = 22 = 2 * tvp, diff=39-(-38)=77
@@ -535,14 +543,14 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	dist := wantVal2Prio - wantVal1Prio
 	// ratio := (dist + 2*totalPower - 1) / 2*totalPower = 98/22 = 4
 	ratio := (dist + 2*totalPower - 1) / (2 * totalPower)
-	// v1(10):-38/4, v2(1):39/4
+	// cryptov1(10):-38/4, v2(1):39/4
 	wantVal1Prio /= ratio // -9
 	wantVal2Prio /= ratio // 9
 
 	// 3. Center - noop
 	// 4. IncrementProposerPriority() ->
-	// v1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
-	// v1(10):1, v2(1):-1
+	// cryptov1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
+	// cryptov1(10):1, v2(1):-1
 	wantVal2Prio += updatedVal2.VotingPower // 10 -> prop
 	wantVal1Prio += updatedVal1.VotingPower // 1
 	wantVal2Prio -= totalPower              // -1
@@ -1097,4 +1105,90 @@ func TestStateProto(t *testing.T) {
 			require.Error(t, err, tt.testName)
 		}
 	}
+}
+
+// Compatibility test across different state proto versions
+
+func TestStateProtoV1Beta2ToV1(t *testing.T) {
+	eventAttr := abciv1beta2.EventAttribute{
+		Key:   "key",
+		Value: "value",
+	}
+
+	deliverTxEvent := abciv1beta2.Event{
+		Type:       "deliver_tx_event",
+		Attributes: []abciv1beta2.EventAttribute{eventAttr},
+	}
+
+	responseDeliverTx := abciv1beta2.ResponseDeliverTx{
+		Code:   abci.CodeTypeOK,
+		Data:   []byte("result tx data"),
+		Log:    "tx committed successfully",
+		Info:   "tx processing info",
+		Events: []abciv1beta2.Event{deliverTxEvent},
+	}
+
+	validatorUpdates := []abciv1beta1.ValidatorUpdate{{
+		PubKey: cryptov1.PublicKey{Sum: &cryptov1.PublicKey_Ed25519{Ed25519: make([]byte, 1)}},
+		Power:  int64(10),
+	}}
+
+	consensusParams := &typesv1beta2.ConsensusParams{
+		Block: &typesv1beta2.BlockParams{
+			MaxBytes: int64(100000),
+			MaxGas:   int64(10000),
+		},
+		Evidence: &typesv1beta1.EvidenceParams{
+			MaxAgeNumBlocks: int64(10),
+			MaxAgeDuration:  time.Duration(1000),
+			MaxBytes:        int64(10000),
+		},
+		Validator: &typesv1beta1.ValidatorParams{
+			PubKeyTypes: []string{"ed25519"},
+		},
+		Version: &typesv1beta1.VersionParams{
+			App: uint64(10),
+		},
+	}
+
+	endBlockEvent := abciv1beta2.Event{
+		Type:       "end_block_event",
+		Attributes: []abciv1beta2.EventAttribute{eventAttr},
+	}
+
+	beginBlockEvent := abciv1beta2.Event{
+		Type:       "begin_block_event",
+		Attributes: []abciv1beta2.EventAttribute{eventAttr},
+	}
+
+	// v1beta2 ABCI Responses
+	v1beta2ABCIResponses := statev1beta2.ABCIResponses{
+		BeginBlock: &abciv1beta2.ResponseBeginBlock{
+			Events: []abciv1beta2.Event{beginBlockEvent},
+		},
+		DeliverTxs: []*abciv1beta2.ResponseDeliverTx{
+			&responseDeliverTx,
+		},
+		EndBlock: &abciv1beta2.ResponseEndBlock{
+			ValidatorUpdates:      validatorUpdates,
+			ConsensusParamUpdates: consensusParams,
+			Events:                []abciv1beta2.Event{endBlockEvent},
+		},
+	}
+
+	v1b2Resp, err := v1beta2ABCIResponses.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, v1b2Resp)
+
+	// un-marshall a v1beta2 ABCI Response as a LegacyABCIResponse
+	legacyABCIResponse := new(statev1.LegacyABCIResponses)
+	err = legacyABCIResponse.Unmarshal(v1b2Resp)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(legacyABCIResponse.DeliverTxs))
+	require.Equal(t, 1, len(legacyABCIResponse.BeginBlock.Events))
+	require.Equal(t, 1, len(legacyABCIResponse.EndBlock.Events))
+	require.Equal(t, int64(100000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Block.MaxBytes)
+	require.Equal(t, int64(10000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Evidence.MaxBytes)
+	require.Equal(t, []string{"ed25519"}, legacyABCIResponse.EndBlock.ConsensusParamUpdates.Validator.PubKeyTypes)
+	require.Equal(t, uint64(10), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Version.App)
 }

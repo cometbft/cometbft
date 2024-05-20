@@ -4,10 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/cometbft/cometbft/cmd/cometbft/commands"
-	cfg "github.com/cometbft/cometbft/config"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 )
@@ -18,17 +15,13 @@ func ViewCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "view [config]",
 		Short: "View the config file",
-		Long:  "View the config file. The [config] is an absolute path to the config file (default: `~/.cometbft/config/config.toml`)",
-		Args:  cobra.ExactArgs(1),
+		Long:  "View the config file. The [config] is an optional absolute path to the config file (default: `~/.cometbft/config/config.toml`)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			filename := args[0]
-
-			if filename == "" {
-				home, err := commands.ConfigHome(cmd)
-				if err != nil {
-					return err
-				}
-				filename = filepath.Join(home, cfg.DefaultConfigDir, cfg.DefaultConfigFileName)
+			var filename string
+			if len(args) > 0 {
+				filename = args[0]
+			} else {
+				filename = defaultConfigPath(cmd)
 			}
 
 			file, err := os.ReadFile(filename)
@@ -41,7 +34,7 @@ func ViewCommand() *cobra.Command {
 				return nil
 			}
 
-			var v interface{}
+			var v any
 			if err := toml.Unmarshal(file, &v); err != nil {
 				return fmt.Errorf("failed to decode config file: %w", err)
 			}

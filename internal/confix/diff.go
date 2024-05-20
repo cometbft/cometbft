@@ -168,7 +168,7 @@ func diffDocs(lhs, rhs []KV, value bool) []Diff {
 // -S name    -- section exists in f1 but not f2
 // +S name    -- section exists in f2 but not f1
 // -M name    -- mapping exists in f1 but not f2
-// +M name    -- mapping exists in f2 but not f1
+// +M name    -- mapping exists in f2 but not f1.
 func PrintDiff(w io.Writer, diffs []Diff) {
 	for _, diff := range diffs {
 		if diff.Deleted {

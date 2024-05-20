@@ -4,16 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
-	"github.com/cometbft/cometbft/cmd/cometbft/commands"
-	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/confix"
 	"github.com/creachadair/tomledit"
 	"github.com/creachadair/tomledit/parser"
 	"github.com/creachadair/tomledit/transform"
 	"github.com/spf13/cobra"
+
+	"github.com/cometbft/cometbft/internal/confix"
 )
 
 // SetCommand returns a CLI command to interactively update an application config value.
@@ -21,19 +19,28 @@ func SetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set [config] [key] [value]",
 		Short: "Set a config value",
-		Long:  "Set a config value. The [config] is an absolute path to the config file (default: `~/.cometbft/config/config.toml`)",
-		Args:  cobra.ExactArgs(3),
+		Long:  "Set a config value. The [config] is an optional absolute path to the config file (default: `~/.cometbft/config/config.toml`)",
+		Args:  cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			filename, inputValue := args[0], args[2]
-			// parse key e.g mempool.size -> [mempool, size]
-			key := strings.Split(args[1], ".")
-
-			if filename == "" {
-				home, err := commands.ConfigHome(cmd)
-				if err != nil {
-					return err
+			var (
+				filename, inputValue string
+				key                  []string
+			)
+			switch len(args) {
+			case 2:
+				{
+					filename = defaultConfigPath(cmd)
+					// parse key e.g mempool.size -> [mempool, size]
+					key = strings.Split(args[0], ".")
+					inputValue = args[1]
 				}
-				filename = filepath.Join(home, cfg.DefaultConfigDir, cfg.DefaultConfigFileName)
+			case 3:
+				{
+					filename, inputValue = args[0], args[2]
+					key = strings.Split(args[1], ".")
+				}
+			default:
+				return errors.New("expected 2 or 3 arguments")
 			}
 
 			plan := transform.Plan{
@@ -91,14 +98,30 @@ func GetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get [config] [key]",
 		Short: "Get a config value",
-		Long:  "Get a config value. The [config] is an absolute path to the config file (default: `~/.cometbft/config/config.toml`)",
-		Args:  cobra.ExactArgs(2),
+		Long:  "Get a config value. The [config] is an optional absolute path to the config file (default: `~/.cometbft/config/config.toml`)",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			filename, key := args[0], args[1]
-			// parse key e.g mempool.size -> [mempool, size]
-			keys := strings.Split(key, ".")
-
-			// TODO: home
+			var (
+				filename, key string
+				keys          []string
+			)
+			switch len(args) {
+			case 1:
+				{
+					filename = defaultConfigPath(cmd)
+					// parse key e.g mempool.size -> [mempool, size]
+					key = args[0]
+					keys = strings.Split(key, ".")
+				}
+			case 2:
+				{
+					filename = args[0]
+					key = args[1]
+					keys = strings.Split(key, ".")
+				}
+			default:
+				return errors.New("expected 1 or 2 arguments")
+			}
 
 			doc, err := confix.LoadConfig(filename)
 			if err != nil {

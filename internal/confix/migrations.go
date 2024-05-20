@@ -8,6 +8,8 @@ import (
 	"github.com/creachadair/tomledit"
 	"github.com/creachadair/tomledit/parser"
 	"github.com/creachadair/tomledit/transform"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -30,14 +32,13 @@ func PlanBuilder(from *tomledit.Document, to string) transform.Plan {
 	plan := transform.Plan{}
 	deletedSections := map[string]bool{}
 
-	target, err := LoadLocalConfig(to)
+	target, err := LoadLocalConfig(to + ".toml")
 	if err != nil {
 		panic(fmt.Errorf("failed to parse file: %w. This file should have been valid", err))
 	}
 
 	diffs := DiffKeys(from, target)
 	for _, diff := range diffs {
-		diff := diff
 		kv := diff.KV
 
 		var step transform.Step
@@ -49,7 +50,8 @@ func PlanBuilder(from *tomledit.Document, to string) transform.Plan {
 				step = transform.Step{
 					Desc: fmt.Sprintf("add %s section", kv.Key),
 					T: transform.Func(func(_ context.Context, doc *tomledit.Document) error {
-						title := fmt.Sprintf("###                    %s Configuration                    ###", strings.Title(kv.Key))
+						caser := cases.Title(language.English)
+						title := fmt.Sprintf("###                    %s Configuration                    ###", caser.String(kv.Key))
 						doc.Sections = append(doc.Sections, &tomledit.Section{
 							Heading: &parser.Heading{
 								Block: parser.Comments{

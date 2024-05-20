@@ -12,7 +12,7 @@ import (
 //go:embed data
 var data embed.FS
 
-// LoadLocalConfig loads and parses the TOML document from confix data
+// LoadLocalConfig loads and parses the TOML document from confix data.
 func LoadLocalConfig(fileName string) (*tomledit.Document, error) {
 	f, err := data.Open(filepath.Join("data", fileName))
 	if err != nil {

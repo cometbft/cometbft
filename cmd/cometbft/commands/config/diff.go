@@ -2,16 +2,14 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
 
-	"github.com/cometbft/cometbft/cmd/cometbft/commands"
-	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/confix"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
+
+	"github.com/cometbft/cometbft/internal/confix"
 )
 
-// DiffCommand creates a new command for comparing configuration files
+// DiffCommand creates a new command for comparing configuration files.
 func DiffCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "diff [target-version] <config-path>",
@@ -19,14 +17,11 @@ func DiffCommand() *cobra.Command {
 		Long:  "This command compares the configuration file with the defaults and outputs any differences.",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			configPath := args[1]
-
-			if configPath == "" {
-				home, err := commands.ConfigHome(cmd)
-				if err != nil {
-					return err
-				}
-				configPath = filepath.Join(home, cfg.DefaultConfigDir, cfg.DefaultConfigFileName)
+			var configPath string
+			if len(args) > 1 {
+				configPath = args[1]
+			} else {
+				configPath = defaultConfigPath(cmd)
 			}
 
 			targetVersion := args[0]

@@ -49,7 +49,7 @@ func Upgrade(ctx context.Context, plan transform.Plan, configPath, outputPath st
 	// allow to skip validation
 	if !skipValidate {
 		// verify that file is valid after applying fixes
-		if err := CheckValid(configPath, buf.Bytes()); err != nil {
+		if err := CheckValid(buf.Bytes()); err != nil {
 			return fmt.Errorf("updated config is invalid: %w", err)
 		}
 	}
@@ -63,9 +63,9 @@ func Upgrade(ctx context.Context, plan transform.Plan, configPath, outputPath st
 	return err
 }
 
-// CheckValid checks whether the specified config appears to be a valid Cosmos SDK config file.
+// CheckValid checks whether the specified config appears to be a valid CometBFT config file.
 // It tries to unmarshal the config into both the server and client config structs.
-func CheckValid(fileName string, data []byte) error {
+func CheckValid(data []byte) error {
 	v := viper.New()
 	v.SetConfigType("toml")
 

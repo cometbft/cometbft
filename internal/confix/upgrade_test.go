@@ -20,15 +20,15 @@ func mustReadConfig(t *testing.T, path string) []byte {
 }
 
 func TestCheckValid(t *testing.T) {
-	err := confix.CheckValid("config.toml", mustReadConfig(t, "data/v0.34.toml"))
+	err := confix.CheckValid(mustReadConfig(t, "data/v0.34.toml"))
 	assert.NoError(t, err)
 
-	err = confix.CheckValid("config.toml", mustReadConfig(t, "data/v0.37.toml"))
+	err = confix.CheckValid(mustReadConfig(t, "data/v0.37.toml"))
 	assert.NoError(t, err)
 
-	err = confix.CheckValid("config.toml", mustReadConfig(t, "data/v0.38.toml"))
+	err = confix.CheckValid(mustReadConfig(t, "data/v0.38.toml"))
 	assert.NoError(t, err)
 
-	err = confix.CheckValid("config.toml", mustReadConfig(t, "data/v1.0.toml"))
+	err = confix.CheckValid(mustReadConfig(t, "data/v1.0.toml"))
 	assert.NoError(t, err)
 }

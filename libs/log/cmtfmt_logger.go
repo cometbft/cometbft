@@ -3,6 +3,7 @@ package log
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -119,7 +120,7 @@ KeyvalueLoop:
 		}
 
 		err := enc.EncodeKeyval(keyvals[i], keyvals[i+1])
-		if err == logfmt.ErrUnsupportedValueType {
+		if errors.Is(err, logfmt.ErrUnsupportedValueType) {
 			enc.EncodeKeyval(keyvals[i], fmt.Sprintf("%+v", keyvals[i+1])) //nolint:errcheck // no need to check error again
 		} else if err != nil {
 			return err

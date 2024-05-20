@@ -9,6 +9,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -45,7 +46,7 @@ func main() {
 
 	for {
 		msgJSON, _, err := br.ReadLine()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			panic(fmt.Errorf("failed to read file: %v", err))

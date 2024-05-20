@@ -1110,6 +1110,48 @@ func TestStateProto(t *testing.T) {
 // Compatibility test across different state proto versions
 
 func TestStateProtoV1Beta2ToV1(t *testing.T) {
+	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
+
+	v1b2Resp, err := v1beta2ABCIResponses.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, v1b2Resp)
+
+	// un-marshall a v1beta2 ABCI Response as a LegacyABCIResponse
+	legacyABCIResponse := new(statev1.LegacyABCIResponses)
+	err = legacyABCIResponse.Unmarshal(v1b2Resp)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(legacyABCIResponse.DeliverTxs))
+	require.Equal(t, 1, len(legacyABCIResponse.BeginBlock.Events))
+	require.Equal(t, 1, len(legacyABCIResponse.EndBlock.Events))
+	require.Equal(t, int64(100000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Block.MaxBytes)
+	require.Equal(t, int64(10000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Evidence.MaxBytes)
+	require.Equal(t, []string{"ed25519"}, legacyABCIResponse.EndBlock.ConsensusParamUpdates.Validator.PubKeyTypes)
+	require.Equal(t, uint64(10), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Version.App)
+}
+
+// This test unmarshal a v1beta2 ABCIResponseInfo as a v1 FinalizeBlockResponse
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// The conversion should fail because they are not compatible.
+func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
+	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
+
+	v1b2ABCIRespInfo := statev1beta2.ABCIResponsesInfo{
+		AbciResponses: &v1beta2ABCIResponses,
+		Height:        1,
+	}
+
+	data, err := v1b2ABCIRespInfo.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, data)
+
+	// This cannot work since they have different schemas, a wrong wireType error is generated
+	finalizeBlockResponse := new(abci.FinalizeBlockResponse)
+	err = finalizeBlockResponse.Unmarshal(data)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "proto: wrong wireType = 2 for field Index")
+}
+
+func newV1Beta2ABCIResponses() statev1beta2.ABCIResponses {
 	eventAttr := abciv1beta2.EventAttribute{
 		Key:   "key",
 		Value: "value",
@@ -1175,20 +1217,5 @@ func TestStateProtoV1Beta2ToV1(t *testing.T) {
 			Events:                []abciv1beta2.Event{endBlockEvent},
 		},
 	}
-
-	v1b2Resp, err := v1beta2ABCIResponses.Marshal()
-	require.NoError(t, err)
-	require.NotNil(t, v1b2Resp)
-
-	// un-marshall a v1beta2 ABCI Response as a LegacyABCIResponse
-	legacyABCIResponse := new(statev1.LegacyABCIResponses)
-	err = legacyABCIResponse.Unmarshal(v1b2Resp)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(legacyABCIResponse.DeliverTxs))
-	require.Equal(t, 1, len(legacyABCIResponse.BeginBlock.Events))
-	require.Equal(t, 1, len(legacyABCIResponse.EndBlock.Events))
-	require.Equal(t, int64(100000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Block.MaxBytes)
-	require.Equal(t, int64(10000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Evidence.MaxBytes)
-	require.Equal(t, []string{"ed25519"}, legacyABCIResponse.EndBlock.ConsensusParamUpdates.Validator.PubKeyTypes)
-	require.Equal(t, uint64(10), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Version.App)
+	return v1beta2ABCIResponses
 }

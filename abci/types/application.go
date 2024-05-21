@@ -1,6 +1,8 @@
 package types
 
-import "context"
+import (
+	"context"
+)
 
 //go:generate ../../scripts/mockery_generate.sh Application
 

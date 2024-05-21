@@ -6,6 +6,7 @@ import "cometbft/types/v1/params.proto";
 import "cometbft/types/v1/validator.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1";
 
@@ -438,6 +439,12 @@ message FinalizeBlockResponse {
   // that execution of the transactions was deterministic.
   // It is up to the application to decide which algorithm to use.
   bytes app_hash = 5;
+  // delay between the time when this block is committed and the next height is started.
+  // previously `timeout_commit` in config.toml
+  google.protobuf.Duration next_block_delay = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
 }
 
 // ----------------------------------------

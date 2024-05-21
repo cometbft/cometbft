@@ -185,50 +185,49 @@ Example:
 
 ```go
 func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBlockRequest) (*types.FinalizeBlockResponse, error) {
-
     //...
-  tx_results[0] := &types.ExecTxResult{
-			Code: CodeTypeOK,
-			// With every transaction we can emit a series of events. To make it simple, we just emit the same events.
-			Events: []types.Event{
-				{
-					Type: "app",
-					Attributes: []types.EventAttribute{
-						{Key: "creator", Value: "Cosmoshi Netowoko", Index: true},
-						{Key: "key", Value: key, Index: true},
-						{Key: "index_key", Value: "index is working", Index: true},
-						{Key: "noindex_key", Value: "index is working", Index: false},
-					},
-				},
-				{
-					Type: "app",
-					Attributes: []types.EventAttribute{
-						{Key: "creator", Value: "Cosmoshi", Index: true},
-						{Key: "key", Value: value, Index: true},
-						{Key: "index_key", Value: "index is working", Index: true},
-						{Key: "noindex_key", Value: "index is working", Index: false},
-					},
-				},
-			},
-		}
+    tx_results[0] := &types.ExecTxResult{
+        Code: CodeTypeOK,
+        // With every transaction we can emit a series of events. To make it simple, we just emit the same events.
+        Events: []types.Event{
+            {
+                Type: "app",
+                Attributes: []types.EventAttribute{
+                    {Key: "creator", Value: "Cosmoshi Netowoko", Index: true},
+                    {Key: "key", Value: key, Index: true},
+                    {Key: "index_key", Value: "index is working", Index: true},
+                    {Key: "noindex_key", Value: "index is working", Index: false},
+                },
+            },
+            {
+                Type: "app",
+                Attributes: []types.EventAttribute{
+                    {Key: "creator", Value: "Cosmoshi", Index: true},
+                    {Key: "key", Value: value, Index: true},
+                    {Key: "index_key", Value: "index is working", Index: true},
+                    {Key: "noindex_key", Value: "index is working", Index: false},
+                },
+            },
+        },
+    }
 
     block_events = []types.Event{
-			{
-				Type: "loan",
-				Attributes: []types.EventAttribute{
-					{	Key:   "account_no", Value: "1", Index: true},
-					{ Key:   "amount", Value: "200", Index: true },
-				},
-			},
-			{
-				Type: "loan",
-				Attributes: []types.EventAttribute{
-					{ Key:   "account_no", Value: "2",	Index: true },
-					{ Key:   "amount", Value: "300", Index: true},
-				},
-			},
-		}
-    return &types.FinalizeBlockResponse{TxResults: tx_results, Events: block_events}
+        {
+            Type: "loan",
+            Attributes: []types.EventAttribute{
+                {Key: "account_no", Value: "1", Index: true},
+                {Key: "amount", Value: "200", Index: true},
+            },
+        },
+        {
+            Type: "loan",
+            Attributes: []types.EventAttribute{
+                {Key: "account_no", Value: "2", Index: true},
+                {Key: "amount", Value: "300", Index: true},
+            },
+        },
+    }
+    return &types.FinalizeBlockResponse{TxResults: tx_results, Events: block_events, NextBlockDelay: 1 * time.Second}, nil
 }
 ```
 
@@ -282,10 +281,13 @@ and events were stored only by height. That means that queries returned blocks
 and transactions whose event attributes match within the height but can match
 across different events on that height.
 
-This behavior was fixed with CometBFT 0.34.26+. However, if the data was
-indexed with earlier versions of Tendermint Core and not re-indexed, that data
-will be queried as if all the attributes within a height occurred within the
-same event.
+Storing the event sequence was introduced in CometBFT 0.34.26. Before that, up until Tendermint Core 0.34.26,
+the event sequence was not stored in the kvstore and events were stored only by height. That means that queries
+returned blocks and transactions whose event attributes match within the height but can match across different
+events on that height.
+This behavior was fixed with CometBFT 0.34.26+. However, if the data was indexed with earlier versions of
+Tendermint Core and not re-indexed, that data will be queried as if all the attributes within a height
+occurred within the same event.
 
 ## Event attribute value types
 
@@ -311,5 +313,7 @@ digit, as well as the following characters: `.` (dot), `-` (dash), `_`
 ```
 ^[\w]+[\.-\w]?$
 ```
+
+- Note that comparing to floats can be imprecise with a high number of decimals.
 
 [abci-events]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events

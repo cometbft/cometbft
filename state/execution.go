@@ -204,7 +204,7 @@ func (blockExec *BlockExecutor) ProcessProposal(
 ) (bool, error) {
 	txs := block.Data.Txs.ToSliceOfBytes()
 	if len(txs) > 0 {
-		res, err := blockExec.proxyApp.ValidateOracleVotes(context.TODO(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
+		res, err := blockExec.proxyApp.ValidateOracleVotes(context.Background(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
 
 		if err != nil && res.Status == abci.ResponseValidateOracleVotes_absent {
 			// oracleTx is not present, continue normal processProposal flow

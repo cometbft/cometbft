@@ -1109,6 +1109,9 @@ func TestStateProto(t *testing.T) {
 
 // Compatibility test across different state proto versions
 
+// This test unmarshal a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// The conversion should not fail because they are compatible.
 func TestStateProtoV1Beta2ToV1(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 
@@ -1120,6 +1123,9 @@ func TestStateProtoV1Beta2ToV1(t *testing.T) {
 	legacyABCIResponse := new(statev1.LegacyABCIResponses)
 	err = legacyABCIResponse.Unmarshal(v1b2Resp)
 	require.NoError(t, err)
+	require.NotNil(t, legacyABCIResponse.DeliverTxs)
+	require.NotNil(t, legacyABCIResponse.BeginBlock)
+	require.NotNil(t, legacyABCIResponse.EndBlock)
 	require.Equal(t, 1, len(legacyABCIResponse.DeliverTxs))
 	require.Equal(t, 1, len(legacyABCIResponse.BeginBlock.Events))
 	require.Equal(t, 1, len(legacyABCIResponse.EndBlock.Events))
@@ -1129,18 +1135,13 @@ func TestStateProtoV1Beta2ToV1(t *testing.T) {
 	require.Equal(t, uint64(10), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Version.App)
 }
 
-// This test unmarshal a v1beta2 ABCIResponseInfo as a v1 FinalizeBlockResponse
+// This test unmarshal a v1beta2.ABCIResponses as a v1.FinalizeBlockResponse
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should fail because they are not compatible.
 func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 
-	v1b2ABCIRespInfo := statev1beta2.ABCIResponsesInfo{
-		AbciResponses: &v1beta2ABCIResponses,
-		Height:        1,
-	}
-
-	data, err := v1b2ABCIRespInfo.Marshal()
+	data, err := v1beta2ABCIResponses.Marshal()
 	require.NoError(t, err)
 	require.NotNil(t, data)
 
@@ -1148,7 +1149,7 @@ func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 	finalizeBlockResponse := new(abci.FinalizeBlockResponse)
 	err = finalizeBlockResponse.Unmarshal(data)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "proto: wrong wireType = 2 for field Index")
+	require.ErrorContains(t, err, "unexpected EOF")
 }
 
 func newV1Beta2ABCIResponses() statev1beta2.ABCIResponses {

@@ -166,7 +166,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
 	default:
-		logrus.Warnf("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		logrus.Warn("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle cannot handle message of type: %T", e.Message))
 		return
 	}
@@ -213,10 +213,6 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
-			if gossipVote == nil {
-				continue
-			}
-
 			// stop sending gossip votes that have passed the maxGossipVoteAge
 			if len(oracleR.OracleInfo.BlockTimestamps) >= oracleR.OracleInfo.Config.MaxGossipVoteAge &&
 				gossipVote.SignedTimestamp < oracleR.OracleInfo.BlockTimestamps[0] {
@@ -234,5 +230,12 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 
 		time.Sleep(interval)
+
+		select {
+		case <-peer.Quit():
+			return
+		case <-oracleR.Quit():
+			return
+		}
 	}
 }

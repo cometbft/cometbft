@@ -174,6 +174,10 @@ func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			continue
 		}
 
+		if res.Vote == nil {
+			continue
+		}
+
 		oracleInfo.SignVotesChan <- res.Vote
 	}
 }

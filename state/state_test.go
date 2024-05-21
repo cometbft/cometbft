@@ -20,6 +20,7 @@ import (
 	cryptov1 "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	statev1 "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	statev1beta2 "github.com/cometbft/cometbft/api/cometbft/state/v1beta2"
+	statev1beta3 "github.com/cometbft/cometbft/api/cometbft/state/v1beta3"
 	typesv1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 	typesv1beta2 "github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -1150,6 +1151,21 @@ func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 	err = finalizeBlockResponse.Unmarshal(data)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "unexpected EOF")
+}
+
+// This test unmarshal a v1beta2.ABCIResponses as a v1beta3.FinalizeBlockResponse
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// The conversion should work because they are compatible.
+func TestStateV1Beta2ABCIResponsesAsStateV1Beta3FinalizeBlockResponse(t *testing.T) {
+	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
+
+	data, err := v1beta2ABCIResponses.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, data)
+
+	legacyABCIResponses := new(statev1beta3.LegacyABCIResponses)
+	err = legacyABCIResponses.Unmarshal(data)
+	require.NoError(t, err)
 }
 
 func newV1Beta2ABCIResponses() statev1beta2.ABCIResponses {

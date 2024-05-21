@@ -231,11 +231,11 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 
 		time.Sleep(interval)
 
-		select {
-		case <-peer.Quit():
-			return
-		case <-oracleR.Quit():
-			return
-		}
+		// select {
+		// case <-peer.Quit():
+		// 	return
+		// case <-oracleR.Quit():
+		// 	return
+		// }
 	}
 }

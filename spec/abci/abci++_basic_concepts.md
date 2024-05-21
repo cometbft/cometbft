@@ -403,7 +403,7 @@ Please note that the method signature for the ABCI methods includes a response a
 ### ABCI response error codes (e.g. `Code` and `Codespace`)
 
 Some of the ABCI methods' responses feature a field (e.g., the `Code` field) that can be used to return an error
-in the `[Method_Name]Response` play a significant role as they can return an error in the response, indicating
+in the `[Method_Name]Response`. These fields play a significant role as they can return an error in the response, indicating
 to CometBFT that a problem has occurred during data processing, such as transaction validation or a query.
 
 The `Query` and `CheckTx` methods include a `Code` field in their `*Response`.

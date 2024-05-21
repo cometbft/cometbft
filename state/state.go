@@ -77,6 +77,10 @@ type State struct {
 
 	// the latest AppHash we've received from calling abci.Commit()
 	AppHash []byte
+
+	// delay between the time when this block is committed and the next height is started.
+	// previously `timeout_commit` in config.toml
+	NextBlockDelay time.Duration
 }
 
 // Copy makes a copy of the State for mutating.
@@ -101,6 +105,8 @@ func (state State) Copy() State {
 		AppHash: state.AppHash,
 
 		LastResultsHash: state.LastResultsHash,
+
+		NextBlockDelay: state.NextBlockDelay,
 	}
 }
 
@@ -169,6 +175,7 @@ func (state *State) ToProto() (*cmtstate.State, error) {
 	sm.LastHeightConsensusParamsChanged = state.LastHeightConsensusParamsChanged
 	sm.LastResultsHash = state.LastResultsHash
 	sm.AppHash = state.AppHash
+	sm.NextBlockDelay = state.NextBlockDelay
 
 	return sm, nil
 }
@@ -220,6 +227,7 @@ func FromProto(pb *cmtstate.State) (*State, error) { //nolint:golint
 	state.LastHeightConsensusParamsChanged = pb.LastHeightConsensusParamsChanged
 	state.LastResultsHash = pb.LastResultsHash
 	state.AppHash = pb.AppHash
+	state.NextBlockDelay = pb.NextBlockDelay
 
 	return state, nil
 }
@@ -329,5 +337,8 @@ func MakeGenesisState(genDoc *types.GenesisDoc) (State, error) {
 		LastHeightConsensusParamsChanged: genDoc.InitialHeight,
 
 		AppHash: genDoc.AppHash,
+
+		// NextBlockDelay is set to 0 because the genesis block is committed.
+		NextBlockDelay: 0,
 	}, nil
 }

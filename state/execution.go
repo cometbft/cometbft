@@ -3,7 +3,9 @@ package state
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -290,6 +292,11 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 	}
 	if abciResponse.ConsensusParamUpdates != nil {
 		blockExec.metrics.ConsensusParamUpdates.Add(1)
+	}
+
+	err = validateNextBlockDelay(abciResponse.NextBlockDelay)
+	if err != nil {
+		return state, fmt.Errorf("error in next block delay: %w", err)
 	}
 
 	// Update the state with the block and responses.
@@ -592,6 +599,13 @@ func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
 	return nil
 }
 
+func validateNextBlockDelay(nextBlockDelay time.Duration) error {
+	if nextBlockDelay < 0 {
+		return errors.New("negative duration")
+	}
+	return nil
+}
+
 // updateState returns a new State updated according to the header and responses.
 func updateState(
 	state State,
@@ -659,6 +673,7 @@ func updateState(
 		LastHeightConsensusParamsChanged: lastHeightParamsChanged,
 		LastResultsHash:                  TxResultsHash(abciResponse.TxResults),
 		AppHash:                          nil,
+		NextBlockDelay:                   abciResponse.NextBlockDelay,
 	}, nil
 }
 

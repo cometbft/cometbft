@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,6 +19,7 @@ var (
 	empty64Bits = empty16Bits + empty16Bits + empty16Bits + empty16Bits
 	full16bits  = "xxxxxxxxxxxxxxxx"
 	full64bits  = full16bits + full16bits + full16bits + full16bits
+	grand       = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 func randBitArray(bits int) *BitArray {
@@ -140,7 +143,7 @@ func TestPickRandom(t *testing.T) {
 		var bitArr *BitArray
 		err := json.Unmarshal([]byte(tc.bA), &bitArr)
 		require.NoError(t, err)
-		_, ok := bitArr.PickRandom()
+		_, ok := bitArr.PickRandom(grand)
 		require.Equal(t, tc.ok, ok, "PickRandom got an unexpected result on input %s", tc.bA)
 	}
 }
@@ -325,7 +328,6 @@ func TestJSONMarshalUnmarshal(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.bA.String(), func(t *testing.T) {
 			bz, err := json.Marshal(tc.bA)
 			require.NoError(t, err)
@@ -395,6 +397,6 @@ func BenchmarkPickRandomBitArray(b *testing.B) {
 	require.NoError(b, err)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, _ = bitArr.PickRandom()
+		_, _ = bitArr.PickRandom(grand)
 	}
 }

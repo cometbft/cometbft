@@ -34,15 +34,22 @@ import (
 // make an extended commit with a single vote containing just the height and a
 // timestamp.
 func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit {
-	extCommitSigs := []types.ExtendedCommitSig{{
-		CommitSig: types.CommitSig{
-			BlockIDFlag:      types.BlockIDFlagCommit,
-			ValidatorAddress: cmtrand.Bytes(crypto.AddressSize),
-			Timestamp:        timestamp,
-			Signature:        []byte("Signature"),
-		},
-		ExtensionSignature: []byte("ExtensionSignature"),
-	}}
+	return makeTestExtCommitWithNumSigs(height, timestamp, 1)
+}
+
+func makeTestExtCommitWithNumSigs(height int64, timestamp time.Time, numSigs int) *types.ExtendedCommit {
+	extCommitSigs := []types.ExtendedCommitSig{}
+	for i := 0; i < numSigs; i++ {
+		extCommitSigs = append(extCommitSigs, types.ExtendedCommitSig{
+			CommitSig: types.CommitSig{
+				BlockIDFlag:      types.BlockIDFlagCommit,
+				ValidatorAddress: cmtrand.Bytes(crypto.AddressSize),
+				Timestamp:        timestamp,
+				Signature:        cmtrand.Bytes(64),
+			},
+			ExtensionSignature: []byte("ExtensionSignature"),
+		})
+	}
 	return &types.ExtendedCommit{
 		Height: height,
 		BlockID: types.BlockID{
@@ -121,7 +128,6 @@ func TestNewBlockStore(t *testing.T) {
 	}
 
 	for i, tt := range panicCausers {
-		tt := tt
 		// Expecting a panic here on trying to parse an invalid blockStore
 		_, _, panicErr := doFn(func() (any, error) {
 			err := db.Set(blockStoreKey, tt.data)
@@ -288,7 +294,6 @@ func TestBlockStoreSaveLoadBlock(t *testing.T) {
 	}
 
 	for i, tuple := range tuples {
-		tuple := tuple
 		bs, db := newInMemoryBlockStore()
 		// SaveBlock
 		res, err, panicErr := doFn(func() (any, error) {

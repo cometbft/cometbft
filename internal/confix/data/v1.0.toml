@@ -21,15 +21,17 @@ proxy_app = "tcp://127.0.0.1:26658"
 # A custom human readable name for this node
 moniker = "test"
 
-# Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
 #   - pure go
 # * cleveldb (uses levigo wrapper)
+#   - DEPRECATED
 #   - requires gcc
 #   - use cleveldb build tag (go build -tags cleveldb)
 # * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
+#   - DEPRECATED
 #   - EXPERIMENTAL
 #   - stable
 #   - use boltdb build tag (go build -tags boltdb)
@@ -160,6 +162,11 @@ experimental_close_on_slow_client = false
 # See https://github.com/tendermint/tendermint/issues/3435
 timeout_broadcast_tx_commit = "10s"
 
+# Maximum number of requests that can be sent in a batch
+# If the value is set to '0' (zero-value), then no maximum batch size will be
+# enforced for a JSON-RPC batch request.
+max_request_batch_size = 10
+
 # Maximum size of request body, in bytes
 max_body_bytes = 1000000
 
@@ -283,7 +290,7 @@ unconditional_peer_ids = ""
 persistent_peers_max_dial_period = "0s"
 
 # Time to wait before flushing messages out on the connection
-flush_throttle_timeout = "100ms"
+flush_throttle_timeout = "10ms"
 
 # Maximum size of a message packet payload, in bytes
 max_packet_msg_payload_size = 1024
@@ -335,6 +342,12 @@ type = "flood"
 # you can disable rechecking.
 recheck = true
 
+# recheck_timeout is the time the application has during the rechecking process
+# to return CheckTx responses, once all requests have been sent. Responses that
+# arrive after the timeout expires are discarded. It only applies to
+# non-local ABCI clients and when recheck is enabled.
+recheck_timeout = "1s"
+
 # broadcast (default: true) defines whether the mempool should relay
 # transactions to other peers. Setting this to false will stop the mempool
 # from relaying transactions to other peers until they are included in a
@@ -351,10 +364,14 @@ wal_dir = ""
 # Maximum number of transactions in the mempool
 size = 5000
 
-# Limit the total size of all txs in the mempool.
-# This only accounts for raw transactions (e.g. given 1MB transactions and
-# max_txs_bytes=5MB, mempool will only accept 5 transactions).
-max_txs_bytes = 1073741824
+# Maximum size in bytes of a single transaction accepted into the mempool.
+max_tx_bytes = 1048576
+
+# The maximum size in bytes of all transactions stored in the mempool.
+# This is the raw, total transaction size. For example, given 1MB
+# transactions and a 5MB maximum mempool byte size, the mempool will
+# only accept five transactions.
+max_txs_bytes = 67108864
 
 # Size of the cache (used to filter transactions we saw earlier) in transactions
 cache_size = 10000
@@ -363,10 +380,6 @@ cache_size = 10000
 # Set to true if it's not possible for any invalid transaction to become valid
 # again in the future.
 keep-invalid-txs-in-cache = false
-
-# Maximum size of a single transaction.
-# NOTE: the max size of a tx transmitted over the network is {max_tx_bytes}.
-max_tx_bytes = 1048576
 
 # Experimental parameters to limit gossiping txs to up to the specified number of peers.
 # We use two independent upper values for persistent and non-persistent peers.
@@ -443,27 +456,24 @@ wal_file = "data/cs.wal/wal"
 timeout_propose = "3s"
 # How much timeout_propose increases with each round
 timeout_propose_delta = "500ms"
-# How long we wait after receiving +2/3 prevotes for “anything” (ie. not a single block or nil)
-timeout_prevote = "1s"
-# How much the timeout_prevote increases with each round
-timeout_prevote_delta = "500ms"
-# How long we wait after receiving +2/3 precommits for “anything” (ie. not a single block or nil)
-timeout_precommit = "1s"
-# How much the timeout_precommit increases with each round
-timeout_precommit_delta = "500ms"
+# How long we wait after receiving +2/3 prevotes/precommits for “anything” (ie. not a single block or nil)
+timeout_vote = "1s"
+# How much the timeout_vote increases with each round
+timeout_vote_delta = "500ms"
 # How long we wait after committing a block, before starting on the new
 # height (this gives us a chance to receive some more precommits, even
 # though we already have +2/3).
+# Set to 0 if you want to make progress as soon as the node has all the precommits.
 timeout_commit = "1s"
+
+# Deprecated: set `timeout_commit` to 0 instead.
+skip_timeout_commit = false
 
 # How many blocks to look back to check existence of the node's consensus votes before joining consensus
 # When non-zero, the node will panic upon restart
 # if the same consensus key was used to sign {double_sign_check_height} last blocks.
 # So, validators should stop the state machine, wait for some blocks, and then restart the state machine to avoid panic.
 double_sign_check_height = 0
-
-# Make progress as soon as we have all the precommits (as if TimeoutCommit = 0)
-skip_timeout_commit = false
 
 # EmptyBlocks mode and possible interval between empty blocks
 create_empty_blocks = true
@@ -488,7 +498,7 @@ discard_abci_responses = false
 # The representation of keys in the database.
 # The current representation of keys in Comet's stores is considered to be v1
 # Users can experiment with a different layout by setting this field to v2.
-# Not that this is an experimental feature and switching back from v2 to v1
+# Note that this is an experimental feature and switching back from v2 to v1
 # is not supported by CometBFT.
 # If the database was initially created with v1, it is necessary to migrate the DB
 # before switching to v2. The migration is not done automatically.
@@ -498,7 +508,7 @@ experimental_db_key_layout = "v1"
 
 # If set to true, CometBFT will force compaction to happen for databases that support this feature.
 # and save on storage space. Setting this to true is most benefits when used in combination
-# with pruning as it will phyisically delete the entries marked for deletion.
+# with pruning as it will physically delete the entries marked for deletion.
 # false by default (forcing compaction is disabled).
 compact = false
 
@@ -508,6 +518,11 @@ compact = false
 # it is too much of an overhead to try compaction every block. But it should also not be a very
 # large multiple of your retain height as it might occur bigger overheads.
 compaction_interval = "1000"
+
+# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
+# If this hash mismatches the hash that CometBFT computes on the genesis file,
+# the node is not able to boot.
+genesis_hash = ""
 
 [storage.pruning]
 
@@ -538,11 +553,6 @@ initial_block_retain_height = 0
 # data companion has not yet explicitly set one. If the data companion has
 # already set a block results retain height, this is ignored.
 initial_block_results_retain_height = 0
-
-# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
-# If this hash mismatches the hash that CometBFT computes on the genesis file,
-# the node is not able to boot.
-genesis_hash = ""
 
 #######################################################
 ###   Transaction Indexer Configuration Options     ###

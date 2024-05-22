@@ -31,21 +31,17 @@ type TimeoutTicker interface {
 type timeoutTicker struct {
 	service.BaseService
 
-	timerActive bool
-	timer       *time.Timer
-	tickChan    chan timeoutInfo // for scheduling timeouts
-	tockChan    chan timeoutInfo // for notifying about them
+	timer    *time.Timer
+	tickChan chan timeoutInfo // for scheduling timeouts
+	tockChan chan timeoutInfo // for notifying about them
 }
 
 // NewTimeoutTicker returns a new TimeoutTicker.
 func NewTimeoutTicker() TimeoutTicker {
 	tt := &timeoutTicker{
-		timer: time.NewTimer(0),
-		// An indicator variable to check if the timer is active or not.
-		// Concurrency safe because the timer is only accessed by a single goroutine.
-		timerActive: true,
-		tickChan:    make(chan timeoutInfo, tickTockBufferSize),
-		tockChan:    make(chan timeoutInfo, tickTockBufferSize),
+		timer:    time.NewTimer(0),
+		tickChan: make(chan timeoutInfo, tickTockBufferSize),
+		tockChan: make(chan timeoutInfo, tickTockBufferSize),
 	}
 	tt.BaseService = *service.NewBaseService(nil, "TimeoutTicker", tt)
 	tt.stopTimer() // don't want to fire until the first scheduled timeout
@@ -63,6 +59,7 @@ func (t *timeoutTicker) OnStart() error {
 // OnStop implements service.Service. It stops the timeout routine.
 func (t *timeoutTicker) OnStop() {
 	t.BaseService.OnStop()
+	t.stopTimer()
 }
 
 // Chan returns a channel on which timeouts are sent.
@@ -79,32 +76,21 @@ func (t *timeoutTicker) ScheduleTimeout(ti timeoutInfo) {
 
 //-------------------------------------------------------------
 
-<<<<<<< HEAD:consensus/ticker.go
 // stop the timer and drain if necessary
-=======
-// if the timer is active, stop it and drain the channel.
->>>>>>> 153281af6 (fix: TimeoutTicker returns wrong value/timeout pair when timeouts are scheduled at ~approximately the same time (#3092)):internal/consensus/ticker.go
 func (t *timeoutTicker) stopTimer() {
-	if !t.timerActive {
-		return
-	}
 	// Stop() returns false if it was already fired or was stopped
 	if !t.timer.Stop() {
-		<-t.timer.C
+		select {
+		case <-t.timer.C:
+		default:
+			t.Logger.Debug("Timer already stopped")
+		}
 	}
-	t.timerActive = false
 }
 
 // send on tickChan to start a new timer.
-<<<<<<< HEAD:consensus/ticker.go
 // timers are interupted and replaced by new ticks from later steps
 // timeouts of 0 on the tickChan will be immediately relayed to the tockChan
-=======
-// timers are interrupted and replaced by new ticks from later steps
-// timeouts of 0 on the tickChan will be immediately relayed to the tockChan.
-// NOTE: timerActive is not concurrency safe, but it's only accessed in NewTimer and timeoutRoutine,
-// making it single-threaded access.
->>>>>>> 153281af6 (fix: TimeoutTicker returns wrong value/timeout pair when timeouts are scheduled at ~approximately the same time (#3092)):internal/consensus/ticker.go
 func (t *timeoutTicker) timeoutRoutine() {
 	t.Logger.Debug("Starting timeout routine")
 	var ti timeoutInfo
@@ -126,22 +112,15 @@ func (t *timeoutTicker) timeoutRoutine() {
 				}
 			}
 
-			// stop the last timer if it exists
+			// stop the last timer
 			t.stopTimer()
 
-<<<<<<< HEAD:consensus/ticker.go
 			// update timeoutInfo and reset timer
 			// NOTE time.Timer allows duration to be non-positive
-=======
-			// update timeoutInfo, reset timer, and mark timer as active
->>>>>>> 153281af6 (fix: TimeoutTicker returns wrong value/timeout pair when timeouts are scheduled at ~approximately the same time (#3092)):internal/consensus/ticker.go
 			ti = newti
 			t.timer.Reset(ti.Duration)
-			t.timerActive = true
-
 			t.Logger.Debug("Scheduled timeout", "dur", ti.Duration, "height", ti.Height, "round", ti.Round, "step", ti.Step)
 		case <-t.timer.C:
-			t.timerActive = false
 			t.Logger.Info("Timed out", "dur", ti.Duration, "height", ti.Height, "round", ti.Round, "step", ti.Step)
 			// go routine here guarantees timeoutRoutine doesn't block.
 			// Determinism comes from playback in the receiveRoutine.
@@ -149,7 +128,6 @@ func (t *timeoutTicker) timeoutRoutine() {
 			//  and managing the timeouts ourselves with a millisecond ticker
 			go func(toi timeoutInfo) { t.tockChan <- toi }(ti)
 		case <-t.Quit():
-			t.stopTimer()
 			return
 		}
 	}

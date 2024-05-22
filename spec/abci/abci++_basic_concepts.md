@@ -442,7 +442,7 @@ part of a decided block, the `Code` does not influence consensus.
 When CometBFT receives a `QueryResponse` with a non-zero `Code`, this code is
 returned directly to the client that initiated the query.
 
-### ABCI methods `error` return
+### ABCI methods' `error` return
 
 The `error` return, the second object returned in a ABCI method e.g., `(*abcitypes.[Method_Name]Response, error)`, is utilized in situations
 involving unrecoverable errors.

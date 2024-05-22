@@ -3,7 +3,9 @@ package state
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
@@ -292,6 +294,11 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		blockExec.metrics.ConsensusParamUpdates.Add(1)
 	}
 
+	err = validateNextBlockDelay(abciResponse.NextBlockDelay)
+	if err != nil {
+		return state, fmt.Errorf("error in next block delay: %w", err)
+	}
+
 	// Update the state with the block and responses.
 	state, err = updateState(state, blockID, &block.Header, abciResponse, validatorUpdates)
 	if err != nil {
@@ -384,34 +391,38 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	return nil
 }
 
-// Commit locks the mempool, runs the ABCI Commit message, and updates the
+// Commit locks the mempool, runs the ABCI Commit message, and asynchronously starts updating the
 // mempool.
-// It returns the result of calling abci.Commit which is the height to retain (if any)).
+// Commit returns the result of calling abci.Commit which is the height to retain (if any)).
 // The application is expected to have persisted its state (if any) before returning
 // from the ABCI Commit call. This is the only place where the application should
 // persist its state.
 // The Mempool must be locked during commit and update because state is
 // typically reset on Commit and old txs must be replayed against committed
 // state before new txs are run in the mempool, lest they be invalid.
+// The mempool is unlocked when the Update routine completes, which is
+// asynchronous from Commit.
 func (blockExec *BlockExecutor) Commit(
 	state State,
 	block *types.Block,
 	abciResponse *abci.FinalizeBlockResponse,
 ) (int64, error) {
 	blockExec.mempool.Lock()
-	defer blockExec.mempool.Unlock()
+	unlockMempool := func() { blockExec.mempool.Unlock() }
 
 	// while mempool is Locked, flush to ensure all async requests have completed
 	// in the ABCI app before Commit.
 	err := blockExec.mempool.FlushAppConn()
 	if err != nil {
-		blockExec.logger.Error("client error during mempool.FlushAppConn", "err", err)
+		unlockMempool()
+		blockExec.logger.Error("client error during mempool.FlushAppConn, flushing mempool", "err", err)
 		return 0, err
 	}
 
 	// Commit block, get hash back
 	res, err := blockExec.proxyApp.Commit(context.TODO())
 	if err != nil {
+		unlockMempool()
 		blockExec.logger.Error("client error during proxyAppConn.CommitSync", "err", err)
 		return 0, err
 	}
@@ -424,15 +435,36 @@ func (blockExec *BlockExecutor) Commit(
 	)
 
 	// Update mempool.
-	err = blockExec.mempool.Update(
+	go blockExec.asyncUpdateMempool(unlockMempool, block, state.Copy(), abciResponse)
+
+	return res.RetainHeight, nil
+}
+
+// updates the mempool with the latest state asynchronously.
+func (blockExec *BlockExecutor) asyncUpdateMempool(
+	unlockMempool func(),
+	block *types.Block,
+	state State,
+	abciResponse *abci.FinalizeBlockResponse,
+) {
+	defer unlockMempool()
+
+	err := blockExec.mempool.Update(
 		block.Height,
 		block.Txs,
 		abciResponse.TxResults,
 		TxPreCheck(state),
 		TxPostCheck(state),
 	)
-
-	return res.RetainHeight, err
+	if err != nil {
+		// We panic in this case, out of legacy behavior. Before we made the mempool
+		// update complete asynchronously from Commit, we would panic if the mempool
+		// update failed. This is because we panic on any error within commit.
+		// We should consider changing this behavior in the future, as there is no
+		// need to panic if the mempool update failed. The most severe thing we
+		// would need to do is dump the mempool and restart it.
+		panic(fmt.Sprintf("client error during mempool.Update; error %v", err))
+	}
 }
 
 // ---------------------------------------------------------
@@ -592,6 +624,13 @@ func validateValidatorUpdates(abciUpdates []abci.ValidatorUpdate,
 	return nil
 }
 
+func validateNextBlockDelay(nextBlockDelay time.Duration) error {
+	if nextBlockDelay < 0 {
+		return errors.New("negative duration")
+	}
+	return nil
+}
+
 // updateState returns a new State updated according to the header and responses.
 func updateState(
 	state State,
@@ -659,6 +698,7 @@ func updateState(
 		LastHeightConsensusParamsChanged: lastHeightParamsChanged,
 		LastResultsHash:                  TxResultsHash(abciResponse.TxResults),
 		AppHash:                          nil,
+		NextBlockDelay:                   abciResponse.NextBlockDelay,
 	}, nil
 }
 

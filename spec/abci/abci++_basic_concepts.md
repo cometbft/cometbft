@@ -448,7 +448,7 @@ The `error` return, the second object returned in an ABCI method e.g., `(*abcity
 involving unrecoverable errors.
 
 All ABCI methods return errors. An error in any of these methods represents a critical issue that CometBFT
-has no reasonable way to handle. If there is an error in one of these methods, the application must crash
+has no reasonable way to handle. Therefore, if there is an error in one of these methods, CometBFT will crash
 to ensure that an operator safely handles the error.
 
 In such cases, it is recommended that the application be terminated to avoid any further unintended consequences.

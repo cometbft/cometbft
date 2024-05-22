@@ -445,7 +445,8 @@ func (blockExec *BlockExecutor) asyncUpdateMempool(
 	unlockMempool func(),
 	block *types.Block,
 	state State,
-	abciResponse *abci.FinalizeBlockResponse) {
+	abciResponse *abci.FinalizeBlockResponse,
+) {
 	defer unlockMempool()
 
 	err := blockExec.mempool.Update(

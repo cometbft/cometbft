@@ -558,6 +558,19 @@ func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abci
 }
 ```
 
+### 1.3.6 Handling errors
+
+Please note that in the method signature for the ABCI methods, there is a response and an error return, such as
+`(*abcitypes.[Method]Response, error)`. Some of the ABCI methods' responses might include a field that can return
+an error in the response, such as the `Code` field in the `CheckTxResponse`. The application can use the `Code`
+field to signal CometBFT that the transaction was rejected. Other examples are the `TxResults` in the
+`FinalizeBlockResponse`, the `ExecTxResult` that also has a `Code` field which can be used by the application
+to signal that the transactions didn't execute properly, or the `QueryResponse`. The `QueryResponse` also includes
+a `Code` field to signal that a query to the application was unsuccessful or it could not find the information.
+
+The `error` return, as in `(*abcitypes.[Method]Response, error)`, can be used if there are unrecoverable errors.
+In these cases, the application should abort to prevent further unintended consequences.
+
 ## 1.4 Starting an application and a CometBFT instance in the same process
 
 Now that we have the basic functionality of our application in place, let's put

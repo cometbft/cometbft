@@ -444,7 +444,7 @@ returned directly to the client that initiated the query.
 
 ### ABCI methods' `error` return
 
-The `error` return, the second object returned in a ABCI method e.g., `(*abcitypes.[Method_Name]Response, error)`, is utilized in situations
+The `error` return, the second object returned in an ABCI method e.g., `(*abcitypes.[Method_Name]Response, error)`, is utilized in situations
 involving unrecoverable errors.
 
 All ABCI methods return errors. An error in any of these methods represents a critical issue that CometBFT

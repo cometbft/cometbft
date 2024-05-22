@@ -449,7 +449,13 @@ involving unrecoverable errors.
 
 All ABCI methods return errors. An error returned in any of these methods represents a critical issue that CometBFT
 has no reasonable way to handle. Therefore, if there is an error in one of these methods, CometBFT will crash
-to ensure that an operator safely handles the error.
+to ensure that an operator safely handles the error: the application must be terminated to avoid any further unintended consequences.
 
-In such cases, it is recommended that the application be terminated to avoid any further unintended consequences.
+As a result, upon detecting an non-recoverable error condition, the application has the choice of either
+(a) crashing itself (e.g., a`panic` in the code detecting the unrecoverable condition), or
+(b) returning an error as the second return value in the ABCI method that detects the error condition,
+knowing that CometBFT will panic upon receiving the error.
+The choice between (a) and (b) is up to the application -- both are equivalent -- and depends on
+whether an application (e.g. running in a different process that CometBFT)
+prefers CometBFT to crash first.
 

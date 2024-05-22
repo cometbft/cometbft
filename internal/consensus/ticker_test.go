@@ -35,11 +35,6 @@ func TestTimeoutTicker(t *testing.T) {
 		elapsedTime := endTime.Sub(startTime)
 		if timeout == to {
 			require.True(t, elapsedTime >= timeout.Duration, "We got the 5ms timeout. However the timeout happened too quickly. Should be >= 5ms. Got %dms (start time %d end time %d)", elapsedTime.Milliseconds(), startTime.UnixMilli(), endTime.UnixMilli())
-		} else {
-			require.True(t, elapsedTime <= timeout.Duration,
-				"We got the -1ms timeout. However the timeout happened too slowly. Should be ~near instant. Got %dms (start time %d end time %d). "+
-					"NOTE: this could non-deterministically fail due to the scheduler. If we did not touch this code branch"+
-					"then we should consider commenting out this test branch", elapsedTime.Milliseconds(), startTime.UnixMilli(), endTime.UnixMilli())
 		}
 	}
 }

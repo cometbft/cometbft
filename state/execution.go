@@ -377,12 +377,6 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	return nil
 }
 
-type mempoolUpdate struct {
-	block        *types.Block
-	state        State
-	abciResponse *abci.FinalizeBlockResponse
-}
-
 // Commit locks the mempool, runs the ABCI Commit message, and updates the
 // mempool.
 // It returns the result of calling abci.Commit which is the height to retain (if any)).
@@ -425,27 +419,34 @@ func (blockExec *BlockExecutor) Commit(
 	)
 
 	// Update mempool.
-	memUpdate := mempoolUpdate{block: block, state: state.Copy(), abciResponse: abciResponse}
-	go blockExec.asyncUpdateMempool(unlockMempool, memUpdate)
+	go blockExec.asyncUpdateMempool(unlockMempool, block, state.Copy(), abciResponse)
 
 	return res.RetainHeight, nil
 }
 
 // updates the mempool with the latest state asynchronously.
-func (blockExec *BlockExecutor) asyncUpdateMempool(unlockMempool func(), updateData mempoolUpdate) {
+func (blockExec *BlockExecutor) asyncUpdateMempool(
+	unlockMempool func(),
+	block *types.Block,
+	state State,
+	abciResponse *abci.FinalizeBlockResponse) {
 	defer unlockMempool()
 
 	err := blockExec.mempool.Update(
-		updateData.block.Height,
-		updateData.block.Txs,
-		updateData.abciResponse.TxResults,
-		TxPreCheck(updateData.state),
-		TxPostCheck(updateData.state),
+		block.Height,
+		block.Txs,
+		abciResponse.TxResults,
+		TxPreCheck(state),
+		TxPostCheck(state),
 	)
 	if err != nil {
-		blockExec.logger.Error("client error during mempool.Update, flushing mempool", "err", err)
-		blockExec.mempool.Flush()
-		return
+		// We panic in this case, out of legacy behavior. Before we made the mempool
+		// update complete asynchronously from Commit, we would panic if the mempool
+		// update failed. This is because we panic on any error within commit.
+		// We should consider changing this behavior in the future, as there is no
+		// need to panic if the mempool update failed. The most severe thing we
+		// would need to do is dump the mempool and restart it.
+		panic(fmt.Sprintf("client error during mempool.Update; error %v", err))
 	}
 }
 

@@ -447,7 +447,7 @@ returned directly to the client that initiated the query.
 The `error` return, the second object returned in an ABCI method e.g., `(*abcitypes.[Method_Name]Response, error)`, is utilized in situations
 involving unrecoverable errors.
 
-All ABCI methods return errors. An error in any of these methods represents a critical issue that CometBFT
+All ABCI methods return errors. An error returned in any of these methods represents a critical issue that CometBFT
 has no reasonable way to handle. Therefore, if there is an error in one of these methods, CometBFT will crash
 to ensure that an operator safely handles the error.
 

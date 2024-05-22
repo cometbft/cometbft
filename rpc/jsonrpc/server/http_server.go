@@ -129,7 +129,7 @@ func WriteRPCResponseHTTP(w http.ResponseWriter, res ...types.RPCResponse) error
 }
 
 // WriteCacheableRPCResponseHTTP marshals res as JSON (with indent) and writes
-// it to w. Adds cache-control to the response header and sets the expiry to
+// it to w. Adds Cache-Control to the response header and sets the expiry to
 // one day.
 func WriteCacheableRPCResponseHTTP(w http.ResponseWriter, res ...types.RPCResponse) error {
 	return writeRPCResponseHTTP(w, []httpHeader{{"Cache-Control", "public, max-age=86400"}}, res...)
@@ -292,7 +292,8 @@ func PreChecksHandler(next http.Handler, config *Config) http.Handler {
 		r.Body = http.MaxBytesReader(w, r.Body, config.MaxBodyBytes)
 
 		// if maxBatchSize is 0 then don't constraint the limit of requests per batch
-		// the default value is 0, and it cannot be negative because of the config validation
+		// It cannot be negative because the config.toml validation requires it to be
+		// greater than or equal to 0
 		if config.MaxRequestBatchSize > 0 {
 			var requests []types.RPCRequest
 			var responses []types.RPCResponse

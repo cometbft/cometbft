@@ -14,8 +14,8 @@ import (
 
 	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/internal/test"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/types"
@@ -207,7 +207,6 @@ func TestBlockIndexer(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			results, err := indexer.Search(context.Background(), tc.q)
 			require.NoError(t, err)
@@ -365,7 +364,6 @@ func TestBlockIndexerMulti(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			results, err := indexer.Search(context.Background(), tc.q)
 			require.NoError(t, err)
@@ -500,7 +498,6 @@ func TestBigInt(t *testing.T) {
 		},
 	}
 	for name, tc := range testCases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			results, err := indexer.Search(context.Background(), tc.q)
 			require.NoError(t, err)

@@ -18,12 +18,12 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	"github.com/cometbft/cometbft/internal/protoio"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/types"
 )
@@ -1075,7 +1075,7 @@ func TestStateLock_POLDoesNotUnlock(t *testing.T) {
 	// Add precommits from the other validators.
 	// We only issue 1/2 Precommits for the block in this round.
 	// This ensures that the validator being tested does not commit the block.
-	// We do not want the validator to commit the block because we want the test
+	// We do not want the validator to commit the block because we want the
 	// test to proceeds to the next consensus round.
 	signAddVotes(cs1, types.PrecommitType, chainID, types.BlockID{}, true, vs2, vs4)
 	signAddVotes(cs1, types.PrecommitType, chainID, blockID, true, vs3)
@@ -2796,8 +2796,8 @@ func (n *fakeTxNotifier) Notify() {
 // and third precommit arrives which leads to the commit of that header and the correct
 // start of the next round.
 func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
-	config.Consensus.TimeoutCommit = 10 * time.Millisecond
 	cs1, vss := randState(4)
+	cs1.state.NextBlockDelay = 10 * time.Millisecond
 	cs1.txNotifier = &fakeTxNotifier{ch: make(chan struct{})}
 
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
@@ -2839,7 +2839,7 @@ func TestStartNextHeightCorrectlyAfterTimeout(t *testing.T) {
 	signAddVotes(cs1, types.PrecommitType, chainID, blockID, true, vs3)
 
 	// wait till timeout occurs
-	ensureNewTimeout(precommitTimeoutCh, height, round, cs1.config.TimeoutPrecommit.Nanoseconds())
+	ensureNewTimeout(precommitTimeoutCh, height, round, cs1.config.TimeoutVote.Nanoseconds())
 
 	ensureNewRound(newRoundCh, height, round+1)
 
@@ -2862,8 +2862,8 @@ func TestResetTimeoutPrecommitUponNewHeight(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	config.Consensus.TimeoutCommit = 10 * time.Millisecond
 	cs1, vss := randState(4)
+	cs1.state.NextBlockDelay = 10 * time.Millisecond
 
 	vs2, vs3, vs4 := vss[1], vss[2], vss[3]
 	height, round, chainID := cs1.Height, cs1.Round, cs1.state.ChainID

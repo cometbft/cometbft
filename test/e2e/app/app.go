@@ -24,8 +24,8 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -232,8 +232,8 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	// Get validators from genesis
 	if req.Validators != nil {
 		for _, val := range req.Validators {
-			val := val
-			if err := app.storeValidator(&val); err != nil {
+			validator := val
+			if err := app.storeValidator(&validator); err != nil {
 				return nil, err
 			}
 		}
@@ -339,6 +339,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 				},
 			},
 		},
+		NextBlockDelay: 1 * time.Second,
 	}, nil
 }
 

@@ -13,8 +13,8 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abcimocks "github.com/cometbft/cometbft/abci/types/mocks"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
 	"github.com/cometbft/cometbft/internal/test"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	cmttimemocks "github.com/cometbft/cometbft/types/time/mocks"
@@ -363,7 +363,7 @@ func (hr heightResult) isComplete() bool {
 	return !hr.proposalIssuedAt.IsZero() && !hr.prevoteIssuedAt.IsZero() && hr.prevote != nil
 }
 
-// TestProposerWaitsForGenesisTime tests that a proposer will not propose a block
+// TestPBTSProposerWaitsForGenesisTime tests that a proposer will not propose a block
 // until after the genesis time has passed. The test sets the genesis time in the
 // future and then ensures that the observed validator waits to propose a block.
 func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
@@ -391,7 +391,7 @@ func TestPBTSProposerWaitsForGenesisTime(t *testing.T) {
 	assert.True(t, results.genesisHeight.proposalIssuedAt.After(cfg.genesisTime))
 }
 
-// TestProposerWaitsForPreviousBlock tests that the proposer of a block waits until
+// TestPBTSProposerWaitsForPreviousBlock tests that the proposer of a block waits until
 // the block time of the previous height has passed to propose the next block.
 // The test harness ensures that the observed validator will be the proposer at
 // height 1 and height 5. The test sets the block time of height 4 in the future

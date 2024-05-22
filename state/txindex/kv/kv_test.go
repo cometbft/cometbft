@@ -14,8 +14,8 @@ import (
 
 	db "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
@@ -223,7 +223,6 @@ func TestTxSearch(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
 			results, _, err := indexer.Search(ctx, query.MustCompile(tc.q), DefaultPagination)
 			require.NoError(t, err)
@@ -316,7 +315,6 @@ func TestTxSearchEventMatch(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
 			results, _, err := indexer.Search(ctx, query.MustCompile(tc.q), DefaultPagination)
 			require.NoError(t, err)
@@ -391,7 +389,6 @@ func TestTxSearchEventMatchByHeight(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
 			results, _, err := indexer.Search(ctx, query.MustCompile(tc.q), DefaultPagination)
 			require.NoError(t, err)
@@ -496,7 +493,6 @@ func TestTxSearchDeprecatedIndexing(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
 			results, _, err := indexer.Search(ctx, query.MustCompile(tc.q), DefaultPagination)
 			require.NoError(t, err)
@@ -866,7 +862,6 @@ func TestBigInt(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
 			results, _, err := indexer.Search(ctx, query.MustCompile(tc.q), DefaultPagination)
 			require.NoError(t, err)

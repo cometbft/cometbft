@@ -13,8 +13,8 @@ import (
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	pbtypes "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
 )
 
 const maxPingPongPacketSize = 1024 // bytes
@@ -578,8 +578,6 @@ func TestConnVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
-
 		pm := mustWrapPacket(tc.msg)
 		bz, err := pm.Marshal()
 		require.NoError(t, err, tc.testName)

@@ -1226,6 +1226,26 @@ might become invalid. Setting `recheck = true` will go through the remaining tra
 If your application may remove transactions passed by CometBFT to your `PrepareProposal` handler,
 you probably want to set this configuration to `true` to avoid possible leaks in your mempool
 (transactions staying in the mempool until the node is next restarted).
+
+### mempool.recheck_timeout
+Time to wait for the application to return CheckTx responses after all recheck requests have been
+sent. Responses that arrive after the timeout expires are discarded.
+```toml
+recheck_timeout = "1000ms"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"1000ms"`   |
+
+This setting only applies to non-local ABCI clients and when `recheck` is enabled.
+
+The ideal value will strongly depend on the application. It could roughly be estimated as the
+average size of the mempool multiplied by the average time it takes the application to validate one
+transaction. We consider that the ABCI application runs in the same location as the CometBFT binary
+(see [`proxy_app`](#proxy_app)) so that the recheck duration is not affected by network delays when
+making requests and receiving responses.
+
 ### mempool.broadcast
 Broadcast the mempool content (uncommitted transactions) to other nodes.
 ```toml
@@ -1611,79 +1631,53 @@ round of consensus will adopt increased timeout durations.
 Timeouts increase linearly over rounds, so that the `timeout_propose` adopted
 in round `r` is `timeout_propose + r * timeout_propose_delta`.
 
-### consensus.timeout_prevote
+### consensus.timeout_vote
 
-How long a node waits, after receiving +2/3 conflicting prevotes, before pre-committing nil.
+How long a node waits, after receiving +2/3 conflicting prevotes/precommits, before pre-committing nil/going into a new round.
 
 ```toml
-timeout_prevote = "1s"
+timeout_vote = "1s"
 ```
 
 | Value type          | string (duration) |
 |:--------------------|:------------------|
 | **Possible values** | &gt;= `"0s"`      |
+
+#### Prevotess
 
 A validator that receives +2/3 prevotes for a block, precommits that block.
 If it receives +2/3 prevotes for nil, it precommits nil.
 But if prevotes are received from +2/3 validators, but the prevotes do not
 match (e.g., they are for different blocks or for blocks and nil), the
-validator waits for `timeout_prevote` time before precommiting nil.
+validator waits for `timeout_vote` time before precommiting nil.
 This gives the validator a chance to wait for additional prevotes and to
 possibly observe +2/3 prevotes for a block.
 
-Setting `timeout_prevote` to `0s` means that the validator will not wait
-for additional prevotes (other than the mandatory +2/3) before precommitting nil.
-This has important liveness implications and should be avoided.
-
-### consensus.timeout_prevote_delta
-
-How much the `timeout_prevote` increases with each round.
-
-```toml
-timeout_prevote_delta = "500ms"
-```
-
-| Value type          | string (duration) |
-|:--------------------|:------------------|
-| **Possible values** | &gt;= `"0ms"`     |
-
-Consensus timeouts are adaptive.
-This means that when a round of consensus fails to commit a block, the next
-round of consensus will adopt increased timeout durations.
-Timeouts increase linearly over rounds, so that the `timeout_prevote` adopted
-in round `r` is `timeout_prevote + r * timeout_prevote_delta`.
-
-### consensus.timeout_precommit
-
-How long a node waits, after receiving +2/3 conflicting precommits, before moving to the next round.
-
-```toml
-timeout_precommit = "1s"
-```
-
-| Value type          | string (duration) |
-|:--------------------|:------------------|
-| **Possible values** | &gt;= `"0s"`      |
+#### Precommits
 
 A node that receives +2/3 precommits for a block commits that block.
 This is a successful consensus round.
 If no block gathers +2/3 precommits, the node cannot commit.
 This is an unsuccessful consensus round and the node will start an additional
 round of consensus.
-Before starting the next round, the node waits for `timeout_precommit` time.
+Before starting the next round, the node waits for `timeout_vote` time.
 This gives the node a chance to wait for additional precommits and to possibly
 observe +2/3 precommits for a block, which would allow the node to commit that
 block in the current round.
 
-Setting `timeout_precommit` to `0s` means that the validator will not wait
-for additional precommits (other than the mandatory +2/3) before moving to the
-next round.
-This has important liveness implications and should be avoided.
+#### Warning
 
-### consensus.timeout_precommit_delta
-How much the timeout_precommit increases with each round.
+Setting `timeout_vote` to `0s` means that the validator will not wait for
+additional prevotes/precommits (other than the mandatory +2/3) before
+precommitting nil/moving to the next round. This has important liveness
+implications and should be avoided.
+
+### consensus.timeout_vote_delta
+
+How much the `timeout_vote` increases with each round.
+
 ```toml
-timeout_precommit_delta = "500ms"
+timeout_vote_delta = "500ms"
 ```
 
 | Value type          | string (duration) |
@@ -1693,8 +1687,8 @@ timeout_precommit_delta = "500ms"
 Consensus timeouts are adaptive.
 This means that when a round of consensus fails to commit a block, the next
 round of consensus will adopt increased timeout durations.
-Timeouts increase linearly over rounds, so that the `timeout_precommit` adopted
-in round `r` is `timeout_precommit + r * timeout_precommit_delta`.
+Timeouts increase linearly over rounds, so that the `timeout_vote` adopted
+in round `r` is `timeout_vote + r * timeout_vote_delta`.
 
 ### consensus.timeout_commit
 

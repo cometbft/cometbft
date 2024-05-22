@@ -16,7 +16,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/libs/protoio"
 )
 
 type buffer struct {
@@ -248,15 +248,14 @@ func TestMakeSecretConnection(t *testing.T) {
 		conn       *evilConn
 		checkError func(error) bool // Function to check if the error matches the expectation
 	}{
-		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), func(err error) bool { return err == io.EOF }},
+		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), func(err error) bool { return errors.Is(err, io.EOF) }},
 		{"share bad ethimeral key", newEvilConn(true, true, false, false), func(err error) bool { return assert.Contains(t, err.Error(), "wrong wireType") }},
-		{"refuse to share auth signature", newEvilConn(true, false, false, false), func(err error) bool { return err == io.EOF }},
+		{"refuse to share auth signature", newEvilConn(true, false, false, false), func(err error) bool { return errors.Is(err, io.EOF) }},
 		{"share bad auth signature", newEvilConn(true, false, true, true), func(err error) bool { return errors.As(err, &ErrDecryptFrame{}) }},
 		{"all good", newEvilConn(true, false, true, false), func(err error) bool { return err == nil }},
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			privKey := ed25519.GenPrivKey()
 			_, err := MakeSecretConnection(tc.conn, privKey)

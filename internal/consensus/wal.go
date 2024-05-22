@@ -14,9 +14,9 @@ import (
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	auto "github.com/cometbft/cometbft/internal/autofile"
 	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/internal/service"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -252,7 +252,7 @@ func (wal *BaseWAL) SearchForEndHeight(
 		dec := NewWALDecoder(gr)
 		for {
 			msg, err = dec.Decode()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				// OPTIMISATION: no need to look for height in older files if we've seen h < height
 				if lastHeightFound > 0 && lastHeightFound < height {
 					gr.Close()

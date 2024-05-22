@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light/provider"
 	"github.com/cometbft/cometbft/light/store"
 	"github.com/cometbft/cometbft/types"
@@ -882,7 +882,7 @@ func (c *Client) cleanupAfter(height int64) error {
 
 	for {
 		h, err := c.trustedStore.LightBlockBefore(prevHeight)
-		if err == store.ErrLightBlockNotFound || (h != nil && h.Height <= height) {
+		if errors.Is(err, store.ErrLightBlockNotFound) || (h != nil && h.Height <= height) {
 			break
 		} else if err != nil {
 			return ErrGetHeaderBeforeHeight{Height: prevHeight, Err: err}

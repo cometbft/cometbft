@@ -115,6 +115,7 @@ go mod init kvstore
 This should an output similar to this.
 
 **NOTE**: No need to run `go mod tidy` at this time, just ignore it for now.
+
 ```bash
 go: creating new go.mod: module kvstore
 go: to add module requirements and sums:
@@ -134,6 +135,7 @@ or `v1.0.1`
 ```bash
 go: added github.com/cometbft/cometbft v1.0.0
 ```
+
 `
 After running the above commands you will see two generated files, `go.mod` and `go.sum`.
 The go.mod file should look similar to:
@@ -442,9 +444,12 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.F
 
     return &abcitypes.FinalizeBlockResponse{
       TxResults:        txs,
+      NextBlockDelay:   1 * time.Second,
     }, nil
 }
 ```
+
+`NextBlockDelay` is a delay between the time when the current block is committed and the next height is started. Normally you don't need to change the default value (1s). Please refer to the [spec](../../spec/abci/abci++_methods.md#finalizeblock) for more information.
 
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
@@ -567,6 +572,7 @@ Change the contents of your `main.go` file to the following.
 package main
 
 import (
+    "context"
     "flag"
     "fmt"
     "github.com/cometbft/cometbft/p2p"
@@ -643,6 +649,7 @@ func main() {
     }
 
     node, err := nm.NewNode(
+        context.Background(),
         config,
         pv,
         nodeKey,
@@ -733,6 +740,7 @@ the genesis information:
 
 ```go
 node, err := nm.NewNode(
+    context.Background(),
     config,
     pv,
     nodeKey,
@@ -880,10 +888,13 @@ cometbft
 $ echo "cm9ja3M=" | base64 -d
 rocks
 ```
+
 If you want to search for txs, you can leverage `CometBFT` kv indexer by using the `/tx_search` RPC endpoint:
+
 ```bash
 curl "localhost:26657/tx_search?query=\"app.key='cometbft'\""
 ```
+
 The events (`abcitypes.Event`) added in `FinalizeBlock` are indexed by CometBFT (assuming the `kv` indexer is enabled in the CometBFT's configuration).
 
 

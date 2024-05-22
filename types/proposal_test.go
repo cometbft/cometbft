@@ -12,8 +12,8 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/internal/protoio"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
@@ -176,7 +176,6 @@ func TestProposalValidateBasic(t *testing.T) {
 		}, true},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			prop := NewProposal(
 				4, 2, 1,

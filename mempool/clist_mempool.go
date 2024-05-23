@@ -31,6 +31,7 @@ type CListMempool struct {
 	// notify listeners (ie. consensus) when txs are available
 	notifiedTxsAvailable atomic.Bool
 	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
+	onNewTx              func(types.Tx)
 
 	// Function set by the reactor to be called when a transaction is removed
 	// from the mempool.
@@ -182,6 +183,12 @@ func WithPostCheck(f PostCheckFunc) CListMempoolOption {
 // WithMetrics sets the metrics.
 func WithMetrics(metrics *Metrics) CListMempoolOption {
 	return func(mem *CListMempool) { mem.metrics = metrics }
+}
+
+// WithNewTxCallback sets a callback function to be executed when a new transaction is added to the mempool.
+// The callback function will receive the newly added transaction as a parameter.
+func WithNewTxCallback(cb func(types.Tx)) CListMempoolOption {
+	return func(mem *CListMempool) { mem.onNewTx = cb }
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -434,6 +441,9 @@ func (mem *CListMempool) resCbFirstTime(tx types.Tx, res *abci.CheckTxResponse) 
 		tx:        tx,
 	}) {
 		mem.notifyTxsAvailable()
+		if mem.onNewTx != nil {
+			mem.onNewTx(tx)
+		}
 	}
 }
 

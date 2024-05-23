@@ -1141,7 +1141,6 @@ func TestStateProtoV1Beta2ToV1(t *testing.T) {
 // The conversion should fail because they are not compatible.
 func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
-
 	data, err := v1beta2ABCIResponses.Marshal()
 	require.NoError(t, err)
 	require.NotNil(t, data)
@@ -1153,7 +1152,28 @@ func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 	require.ErrorContains(t, err, "unexpected EOF")
 }
 
-// This test unmarshal a v1beta2.ABCIResponses as a v1beta3.FinalizeBlockResponse
+// This test unmarshal a v1beta2.ABCIResponses as a v1.FinalizeBlockResponse
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// The conversion doesn't fail because no error is return, but they are NOT compatible.
+func TestStateV1Beta2ABCIResponsesWithNullAsStateV1FinalizeBlockResponse(t *testing.T) {
+	v1beta2ABCIResponsesWithNull := newV1Beta2ABCIResponsesWithNullFields()
+	data, err := v1beta2ABCIResponsesWithNull.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, data)
+
+	// This should not work since they have different schemas
+	// but an error is not returned, so it deserializes an ABCIResponse
+	// on top of a FinalizeBlockResponse giving the false impression they are the same
+	// but because it doesn't error out, the fields in finalizeBlockResponse will have
+	// their zero-value (e.g. nil, 0, "")
+	finalizeBlockResponse := new(abci.FinalizeBlockResponse)
+	err = finalizeBlockResponse.Unmarshal(data)
+	require.NoError(t, err)
+	require.Nil(t, finalizeBlockResponse.AppHash)
+	require.Nil(t, finalizeBlockResponse.TxResults)
+}
+
+// This test unmarshal a v1beta2.ABCIResponses as a statev1beta3.LegacyABCIResponses
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should work because they are compatible.
 func TestStateV1Beta2ABCIResponsesAsStateV1Beta3FinalizeBlockResponse(t *testing.T) {
@@ -1163,11 +1183,35 @@ func TestStateV1Beta2ABCIResponsesAsStateV1Beta3FinalizeBlockResponse(t *testing
 	require.NoError(t, err)
 	require.NotNil(t, data)
 
+	// This works because they are equivalent protos and the fields are populated
 	legacyABCIResponses := new(statev1beta3.LegacyABCIResponses)
 	err = legacyABCIResponses.Unmarshal(data)
 	require.NoError(t, err)
+	require.NotNil(t, legacyABCIResponses.DeliverTxs)
+	require.NotNil(t, legacyABCIResponses.EndBlock)
+	require.NotNil(t, legacyABCIResponses.BeginBlock)
 }
 
+// This test unmarshal a v1beta2.ABCIResponses as a statev1beta3.LegacyABCIResponses
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// The conversion should work because they are compatible even if fields to be converted are null.
+func TestStateV1Beta2ABCIResponsesWithNullAsStateV1Beta3FinalizeBlockResponse(t *testing.T) {
+	v1beta2ABCIResponsesWithNull := newV1Beta2ABCIResponsesWithNullFields()
+	data, err := v1beta2ABCIResponsesWithNull.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, data)
+
+	// This works because they are equivalent protos and the fields are populated
+	// even if a field is null, it will be converted properly
+	legacyResponseWithNull := new(statev1beta3.LegacyABCIResponses)
+	err = legacyResponseWithNull.Unmarshal(data)
+	require.NoError(t, err)
+	require.NotNil(t, legacyResponseWithNull.DeliverTxs)
+	require.Nil(t, legacyResponseWithNull.EndBlock)
+	require.NotNil(t, legacyResponseWithNull.BeginBlock)
+}
+
+// Generate a v1beta2 ABCIResponses with data for all fields.
 func newV1Beta2ABCIResponses() statev1beta2.ABCIResponses {
 	eventAttr := abciv1beta2.EventAttribute{
 		Key:   "key",
@@ -1232,6 +1276,40 @@ func newV1Beta2ABCIResponses() statev1beta2.ABCIResponses {
 			ValidatorUpdates:      validatorUpdates,
 			ConsensusParamUpdates: consensusParams,
 			Events:                []abciv1beta2.Event{endBlockEvent},
+		},
+	}
+	return v1beta2ABCIResponses
+}
+
+// Generate a v1beta2 ABCIResponses with fields missing data (nil).
+func newV1Beta2ABCIResponsesWithNullFields() statev1beta2.ABCIResponses {
+	eventAttr := abciv1beta2.EventAttribute{
+		Key:   "key",
+		Value: "value",
+	}
+
+	deliverTxEvent := abciv1beta2.Event{
+		Type:       "deliver_tx_event",
+		Attributes: []abciv1beta2.EventAttribute{eventAttr},
+	}
+
+	responseDeliverTx := abciv1beta2.ResponseDeliverTx{
+		Code:   abci.CodeTypeOK,
+		Events: []abciv1beta2.Event{deliverTxEvent},
+	}
+
+	beginBlockEvent := abciv1beta2.Event{
+		Type:       "begin_block_event",
+		Attributes: []abciv1beta2.EventAttribute{eventAttr},
+	}
+
+	// v1beta2 ABCI Responses
+	v1beta2ABCIResponses := statev1beta2.ABCIResponses{
+		BeginBlock: &abciv1beta2.ResponseBeginBlock{
+			Events: []abciv1beta2.Event{beginBlockEvent},
+		},
+		DeliverTxs: []*abciv1beta2.ResponseDeliverTx{
+			&responseDeliverTx,
 		},
 	}
 	return v1beta2ABCIResponses

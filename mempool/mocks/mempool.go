@@ -53,6 +53,26 @@ func (_m *Mempool) EnableTxsAvailable() {
 	_m.Called()
 }
 
+// FilterTx provides a mock function with given fields: hash
+func (_m *Mempool) FilterTx(hash []byte) types.Tx {
+	ret := _m.Called(hash)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FilterTx")
+	}
+
+	var r0 types.Tx
+	if rf, ok := ret.Get(0).(func([]byte) types.Tx); ok {
+		r0 = rf(hash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Tx)
+		}
+	}
+
+	return r0
+}
+
 // Flush provides a mock function with given fields:
 func (_m *Mempool) Flush() {
 	_m.Called()

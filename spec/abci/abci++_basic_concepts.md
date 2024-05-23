@@ -451,7 +451,7 @@ All ABCI methods return errors. An error returned in any of these methods repres
 has no reasonable way to handle. Therefore, if there is an error in one of these methods, CometBFT will crash
 to ensure that an operator safely handles the error: the application must be terminated to avoid any further unintended consequences.
 
-As a result, upon detecting an non-recoverable error condition, the application has the choice of either
+As a result, upon detecting a non-recoverable error condition, the application has the choice of either
 (a) crashing itself (e.g., a`panic` in the code detecting the unrecoverable condition), or
 (b) returning an error as the second return value in the ABCI method that detects the error condition,
 knowing that CometBFT will panic upon receiving the error.

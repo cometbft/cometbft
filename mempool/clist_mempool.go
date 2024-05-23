@@ -618,7 +618,7 @@ func (mem *CListMempool) recheckTxs() {
 	// because this function has the lock (via Update and Lock).
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		tx := e.Value.(*mempoolTx).tx
-		mem.recheck.numPendingTxs.Add(1)
+		mem.recheck.numTxsToRecheck += 1
 
 		// Send a CheckTx request to the app. If we're using a sync client, the resCbRecheck
 		// callback will be called right after receiving the response.
@@ -643,8 +643,8 @@ func (mem *CListMempool) recheckTxs() {
 	case <-mem.recheck.doneRechecking():
 	}
 
-	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
-		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
+	if n := mem.recheck.numRecheckedTxs.Load(); n < mem.recheck.numTxsToRecheck {
+		mem.logger.Error("not all txs were rechecked", "not-rechecked", mem.recheck.numTxsToRecheck-n)
 	}
 	mem.logger.Debug("done rechecking txs", "height", mem.height.Load(), "num-txs", mem.Size())
 }
@@ -656,10 +656,11 @@ func (mem *CListMempool) recheckTxs() {
 // rechecking. This is to guarantee that recheck responses are processed in the same sequential
 // order as they appear in the mempool.
 type recheck struct {
-	cursor        *clist.CElement // next expected recheck response
-	end           *clist.CElement // last entry in the mempool to recheck
-	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
-	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
+	cursor          *clist.CElement // next expected recheck response
+	end             *clist.CElement // last entry in the mempool to recheck
+	doneCh          chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
+	numTxsToRecheck int32
+	numRecheckedTxs atomic.Int32 // number of transactions still pending to recheck
 }
 
 func newRecheck() *recheck {
@@ -674,7 +675,8 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	}
 	rc.cursor = first
 	rc.end = last
-	rc.numPendingTxs.Store(0)
+	rc.numTxsToRecheck = 0
+	rc.numRecheckedTxs.Store(0)
 }
 
 // done returns true when there is no recheck response to process.
@@ -724,7 +726,7 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 		if bytes.Equal(*tx, expectedTx) {
 			// Found an entry in the list of txs to recheck that matches tx.
 			found = true
-			rc.numPendingTxs.Add(-1)
+			rc.numRecheckedTxs.Add(1)
 			break
 		}
 	}

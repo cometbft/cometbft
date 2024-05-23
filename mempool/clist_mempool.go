@@ -618,7 +618,7 @@ func (mem *CListMempool) recheckTxs() {
 	// because this function has the lock (via Update and Lock).
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		tx := e.Value.(*mempoolTx).tx
-		mem.recheck.numTxsToRecheck += 1
+		mem.recheck.numTxsToRecheck++
 
 		// Send a CheckTx request to the app. If we're using a sync client, the resCbRecheck
 		// callback will be called right after receiving the response.

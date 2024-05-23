@@ -651,15 +651,15 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 
 	resp := new(abci.FinalizeBlockResponse)
 	err = resp.Unmarshal(buf)
-	// if an error is returned, then it needs to be handled here
-	if err != nil {
-		store.Logger.Debug("failed to unmarshall ABCI response: %s", err.Error())
-		return nil, ErrABCIResponseResponseUnmarshalForHeight{Height: height}
-	}
 
-	// Check the AppHash because it should always have a value, if it's nil then
-	// this means the unmarshalling should be a 'LegacyABCIResponse'
-	if resp.AppHash == nil {
+	// Check for an error or if the resp.AppHash is nil if so
+	// this means the unmarshalling should be a LegacyABCIResponses
+	// Depending on a source message content (serialized as ABCIResponses)
+	// there are instances where it can be deserialized as a FinalizeBlockResponse
+	// without causing an error. But the values will not be deserialized properly
+	// and, it will contain zero values, and one of them is an AppHash == nil
+	// This can be verified in the /state/compatibility_test.go file
+	if err != nil || resp.AppHash == nil {
 		// The data might be of the legacy ABCI response type, so
 		// we try to unmarshal that
 		legacyResp := new(cmtstate.LegacyABCIResponses)
@@ -677,6 +677,7 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 
 	// TODO: ensure that buf is completely read.
 
+	// Otherwise return the FinalizeBlockResponse
 	return resp, nil
 }
 

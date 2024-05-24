@@ -486,8 +486,15 @@ func (mem *CListMempool) notifyTxsAvailable() {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
-	mem.updateMtx.RLock()
-	defer mem.updateMtx.RUnlock()
+	canExecuteConcurrentlyWithRecheck := maxBytes > 0 && maxGas > 0
+	canStartReaping := func() bool {
+		bzCond := mem.recheck.recheckReapSharedState.bytesUpdated >= maxBytes
+		gasCond := mem.recheck.recheckReapSharedState.gasUpdated >= maxGas
+		return bzCond || gasCond
+	}
+
+	deferFn := mem.waitToStartReap(canExecuteConcurrentlyWithRecheck, canStartReaping)
+	defer deferFn()
 
 	var (
 		totalGas    int64
@@ -532,14 +539,31 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 		max = memTxsLen
 	}
 	canExecuteConcurrentlyWithRecheck := max < memTxsLen
+	canStartReaping := func() bool {
+		numRecheckedTxs := mem.recheck.numRecheckedTxs.Load()
+		return max < int(numRecheckedTxs)
+	}
+
+	deferFn := mem.waitToStartReap(canExecuteConcurrentlyWithRecheck, canStartReaping)
+	defer deferFn()
+
+	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
+	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
+		memTx := e.Value.(*mempoolTx)
+		txs = append(txs, memTx.tx)
+	}
+	return txs
+}
+
+// waitToStartReap will do oneof:
+// - If rechecking, wait until oneof:
+//   - recheck has fully completed
+//   - recheck has completed a sufficient amount of txs to reap a full block
+//
+// - If not rechecking, take a lock on the updateMtx
+func (mem *CListMempool) waitToStartReap(canExecuteConcurrentlyWithRecheck bool, canStartReaping func() bool) (deferFn func()) {
 	isRechecking := mem.recheck.active.Load()
-
 	if canExecuteConcurrentlyWithRecheck && isRechecking {
-		canStartReaping := func() bool {
-			numRecheckedTxs := mem.recheck.numRecheckedTxs.Load()
-			return max < int(numRecheckedTxs)
-		}
-
 		// Setup a synchronized communication channel with Update to get signaled once
 		// we have rechecked enough txs.
 		ch, err := mem.recheck.recheckReapSharedState.setupWaitingReap(canStartReaping)
@@ -549,21 +573,14 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 		// Wait for the signal from Update that we can proceed with reaping.
 		<-ch
 		close(ch)
-	} else {
-		mem.updateMtx.RLock()
-		defer mem.updateMtx.RUnlock()
+		return func() { mem.recheck.recheckReapSharedState.reapingCompleted() }
 	}
 
-	return mem.performReapMaxTxs(max)
-}
-
-func (mem *CListMempool) performReapMaxTxs(max int) types.Txs {
-	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
-	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
-		memTx := e.Value.(*mempoolTx)
-		txs = append(txs, memTx.tx)
+	mem.updateMtx.RLock()
+	return func() {
+		mem.recheck.recheckReapSharedState.reapingCompleted()
+		mem.updateMtx.RUnlock()
 	}
-	return txs
 }
 
 // Lock() must be help by the caller during execution.
@@ -576,6 +593,8 @@ func (mem *CListMempool) Update(
 	postCheck PostCheckFunc,
 ) error {
 	mem.logger.Debug("Update", "height", height, "len(txs)", len(txs))
+	// Protect against an edge case that seems impossible in practice.
+	mem.recheck.recheckReapSharedState.waitForReapingToFinish()
 
 	// Set height
 	mem.height.Store(height)
@@ -703,6 +722,11 @@ type recheckReapSharedState struct {
 	bytesUpdated          int64
 	gasUpdated            int64
 
+	// indicator variable needed to ensure we don't start a new recheck process
+	// while reaping is in progress. Since reap's only have read-only access,
+	// we could relax this to an "active reaps" counter if we wanted.
+	isReaping bool
+
 	waitingForReap bool
 	reapSignal     chan struct{}
 	// This function is expected to run under recheckReapSharedState lock
@@ -710,27 +734,72 @@ type recheckReapSharedState struct {
 	readyForReap func() bool
 }
 
-func (r *recheckReapSharedState) reset() {
+func (r *recheckReapSharedState) recheckCompleted() {
 	r.mtx.Lock()
 	r.succesfullyUpdatedTxs = 0
 	r.bytesUpdated = 0
 	r.gasUpdated = 0
 	if r.waitingForReap {
-		r.waitingForReap = false
-		r.reapSignal <- struct{}{}
+		r.sendReapSignal()
 	}
 	r.readyForReap = nil
 	r.reapSignal = nil
 	r.mtx.Unlock()
 }
 
+func (r *recheckReapSharedState) startReaping() {
+	r.mtx.Lock()
+	r.isReaping = true
+	r.mtx.Unlock()
+}
+
+func (r *recheckReapSharedState) reapingCompleted() {
+	r.mtx.Lock()
+	r.isReaping = false
+	r.mtx.Unlock()
+}
+
+// This method protects against an edge case that seems impossible in practice.
+// We are still reaping, while we are committing the next block.
+// However reaping only occurs during propose, which is under the consensus mutex.
+// Update only happens during Commit which is also under the consensus mutex.
+// Furthermore Reap is very quick once unlocked.
+// If we are in this edge case that seems impossible, we just retry in a loop until recheck is complete.
+// Unclear if this method is needed in the first place.
+func (r *recheckReapSharedState) waitForReapingToFinish() {
+	r.mtx.Lock()
+	isReaping := r.isReaping
+	r.mtx.Unlock()
+	if !isReaping {
+		return
+	}
+	r.mtx.Unlock()
+	for {
+		time.Sleep(5 * time.Millisecond)
+		r.mtx.Lock()
+		isReaping := r.isReaping
+		r.mtx.Unlock()
+		if !isReaping {
+			return
+		}
+	}
+}
+
 var ErrReapAlreadyWaiting = errors.New("reap already waiting. Only one reap can be waiting for Update to terminate at once")
+
+// TODO: Consider relaxing this, allow multiple concurrent reaps.
+// Not done to save on testing complexity, but should be a minimal code change if the feature is needed.
+var ErrAlreadyReaping = errors.New("already doing another reap instance. Only one reap can occur at once")
 
 func (r *recheckReapSharedState) setupWaitingReap(readyForReap func() bool) (chan struct{}, error) {
 	r.mtx.Lock()
 	if r.waitingForReap {
 		r.mtx.Unlock()
 		return nil, ErrReapAlreadyWaiting
+	}
+	if r.isReaping {
+		r.mtx.Unlock()
+		return nil, ErrAlreadyReaping
 	}
 	r.waitingForReap = true
 	r.readyForReap = readyForReap
@@ -744,10 +813,14 @@ func (r *recheckReapSharedState) setupWaitingReap(readyForReap func() bool) (cha
 // this function assumes we are under lock.
 func (r *recheckReapSharedState) checkAndSendReapSignal() {
 	if r.waitingForReap && r.readyForReap() {
-		r.waitingForReap = false
-		r.reapSignal <- struct{}{}
-		r.reapSignal = nil
+		r.sendReapSignal()
 	}
+}
+func (r *recheckReapSharedState) sendReapSignal() {
+	r.waitingForReap = false
+	r.reapSignal <- struct{}{}
+	r.reapSignal = nil
+	r.isReaping = true
 }
 
 func (rc *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxResponse) {
@@ -791,7 +864,7 @@ func (rc *recheck) done() bool {
 func (rc *recheck) setDone() {
 	rc.active.Store(false)
 	rc.cursor = nil
-	rc.recheckReapSharedState.reset()
+	rc.recheckReapSharedState.recheckCompleted()
 }
 
 // setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.

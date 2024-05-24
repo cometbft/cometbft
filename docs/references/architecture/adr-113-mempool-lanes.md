@@ -153,7 +153,7 @@ across nodes in the network.
 
 :parking: _Property_ **Consistent transaction classes**: For any transaction `tx`,
 and any two correct nodes $p$ and $q$ that receive `tx` for the first time,
-$p$ and $q$ MUST have the same the set of transaction classes and their relative priority and configuration,
+$p$ and $q$ MUST have the same set of transaction classes and their relative priority and configuration,
 as long as `tx` has not been included in a block.
 
 > TODO: Do we really need to require that the `tx` hasn't been decided? Isn't it adding complexity for nothing?

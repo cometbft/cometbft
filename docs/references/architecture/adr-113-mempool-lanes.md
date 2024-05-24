@@ -7,6 +7,7 @@
 - 2024-04-17: Discussions (@sergio-mena @hvanz)
 - 2024-04-18: Preliminary structure (@hvanz)
 - 2024-05-01: Add Context and Properties (@hvanz)
+- 2024-05-21: Add more Properties + priority mempool (@sergio-mena)
 
 ## Status
 
@@ -37,7 +38,7 @@ The goal of this document is thus to propose a mechanism enabling the mempool to
 transactions by *classes*, for processing and dissemination, directly impacting block creation and transaction latency. In
 IP networking terminology, this is known as Quality of Service (QoS). By providing certain QoS
 guarantees, developers will be able to more easily estimate when transactions will be disseminated, processed and
-included in a block. 
+included in a block.
 
 In practical terms, we envision an implementation of the transaction class abstraction as *mempool
 lanes*. The application will be allowed to split the mempool transaction space into a hierarchy of
@@ -45,7 +46,8 @@ lanes, with each lane operating as an independent mempool. At the same time, all
 coordinated to ensure the delivery of the desired levels of QoS.
 
 Note that improving the dissemination protocol to reduce bandwidth and/or latency is a separate
-concern and falls outside the scope of this proposal. Likewise, graceful degradation under high load is an orthogonal problem to transaction classification, although the latter may help improve the former. 
+concern and falls outside the scope of this proposal. Likewise, graceful degradation under high load
+is an orthogonal problem to transaction classification, although the latter may help improve the former.
 
 ## Properties
 
@@ -53,7 +55,7 @@ Before jumping into the design of the proposal, we define more formally the prop
 the current implementation of the mempool. Then we state what properties the new mempool should
 offer to guarantee the desired QoS.
 
-The following definition is common to all properties. 
+The following definition is common to all properties.
 
 :memo: _Definition_: Given any two different transactions `tx1` and `tx2`, we say that `tx1` is
 *processed and disseminated before* `tx2` in a given node, when:

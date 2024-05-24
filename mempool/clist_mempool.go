@@ -529,7 +529,7 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	memTxsLen := mem.txs.Len() // concurrency safe
 	if max < 0 {
-		max = mem.txs.Len()
+		max = memTxsLen
 	}
 	canExecuteConcurrentlyWithRecheck := max < memTxsLen
 	isRechecking := mem.recheck.active.Load()
@@ -540,12 +540,8 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 			return max < int(numRecheckedTxs)
 		}
 
-		// If we have already rechecked enough txs, proceed directly!
-		if canStartReaping() {
-			return mem.performReapMaxTxs(max)
-		}
-		// Otherwise we need to setup a synchronized communication channel with Update
-		// to get signalled once we have rechecked enough txs.
+		// Setup a synchronized communication channel with Update to get signalled once
+		// we have rechecked enough txs.
 		ch, err := mem.recheck.recheckReapSharedState.setupWaitingReap(canStartReaping)
 		if err != nil {
 			panic(err)
@@ -708,8 +704,10 @@ type recheckReapSharedState struct {
 	gasUpdated            int64
 
 	waitingForReap bool
-	readyForReap   func() bool
 	reapSignal     chan struct{}
+	// This function is expected to run under recheckReapSharedState lock
+	// and can therefore safely access variables in here.
+	readyForReap func() bool
 }
 
 func (r *recheckReapSharedState) reset() {
@@ -736,9 +734,20 @@ func (r *recheckReapSharedState) setupWaitingReap(readyForReap func() bool) (cha
 	}
 	r.waitingForReap = true
 	r.readyForReap = readyForReap
-	r.reapSignal = make(chan struct{}, 1)
+	newChan := make(chan struct{}, 1)
+	r.reapSignal = newChan
+	r.checkAndSendReapSignal()
 	r.mtx.Unlock()
-	return r.reapSignal, nil
+	return newChan, nil
+}
+
+// this function assumes we are under lock
+func (r *recheckReapSharedState) checkAndSendReapSignal() {
+	if r.waitingForReap && r.readyForReap() {
+		r.waitingForReap = false
+		r.reapSignal <- struct{}{}
+		r.reapSignal = nil
+	}
 }
 
 func (r *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxResponse) {
@@ -750,12 +759,7 @@ func (r *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxResponse
 		r.recheckReapSharedState.bytesUpdated += int64(types.ComputeProtoSizeForTxs([]types.Tx{tx}))
 		r.recheckReapSharedState.gasUpdated += res.GasWanted
 
-		if r.recheckReapSharedState.waitingForReap && r.recheckReapSharedState.readyForReap() {
-			r.recheckReapSharedState.waitingForReap = false
-			r.recheckReapSharedState.reapSignal <- struct{}{}
-			r.recheckReapSharedState.reapSignal = nil
-		}
-
+		r.recheckReapSharedState.checkAndSendReapSignal()
 		r.recheckReapSharedState.mtx.Unlock()
 	}
 	return

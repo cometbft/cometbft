@@ -3,6 +3,7 @@ package mempool
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -41,6 +42,7 @@ type CListMempool struct {
 	// Exclusive mutex for Update method to prevent concurrent execution of
 	// CheckTx or ReapMaxBytesMaxGas(ReapMaxTxs) methods.
 	updateMtx cmtsync.RWMutex
+
 	preCheck  PreCheckFunc
 	postCheck PostCheckFunc
 
@@ -461,6 +463,7 @@ func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.CheckTxResponse) {
 		}
 		mem.tryRemoveFromCache(tx)
 	}
+	mem.recheck.updateForRecheckSuccess(tx, res)
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -524,13 +527,41 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
-	mem.updateMtx.RLock()
-	defer mem.updateMtx.RUnlock()
-
+	memTxsLen := mem.txs.Len() // concurrency safe
 	if max < 0 {
 		max = mem.txs.Len()
 	}
+	canExecuteConcurrentlyWithRecheck := max < memTxsLen
+	isRechecking := mem.recheck.active.Load()
 
+	if canExecuteConcurrentlyWithRecheck && isRechecking {
+		canStartReaping := func() bool {
+			numRecheckedTxs := mem.recheck.numRecheckedTxs.Load()
+			return max < int(numRecheckedTxs)
+		}
+
+		// If we have already rechecked enough txs, proceed directly!
+		if canStartReaping() {
+			return mem.performReapMaxTxs(max)
+		}
+		// Otherwise we need to setup a synchronized communication channel with Update
+		// to get signalled once we have rechecked enough txs.
+		ch, err := mem.recheck.recheckReapSharedState.setupWaitingReap(canStartReaping)
+		if err != nil {
+			panic(err)
+		}
+		// Wait for the signal from Update that we can proceed with reaping.
+		<-ch
+		close(ch)
+	} else {
+		mem.updateMtx.RLock()
+		defer mem.updateMtx.RUnlock()
+	}
+
+	return mem.performReapMaxTxs(max)
+}
+
+func (mem *CListMempool) performReapMaxTxs(max int) types.Txs {
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.txs.Len(), max))
 	for e := mem.txs.Front(); e != nil && len(txs) <= max; e = e.Next() {
 		memTx := e.Value.(*mempoolTx)
@@ -612,13 +643,12 @@ func (mem *CListMempool) recheckTxs() {
 		return
 	}
 
-	mem.recheck.init(mem.txs.Front(), mem.txs.Back())
+	mem.recheck.init(mem.txs.Front(), mem.txs.Back(), int32(mem.txs.Len()))
 
 	// NOTE: globalCb may be called concurrently, but CheckTx cannot be executed concurrently
 	// because this function has the lock (via Update and Lock).
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
 		tx := e.Value.(*mempoolTx).tx
-		mem.recheck.numTxsToRecheck++
 
 		// Send a CheckTx request to the app. If we're using a sync client, the resCbRecheck
 		// callback will be called right after receiving the response.
@@ -643,8 +673,9 @@ func (mem *CListMempool) recheckTxs() {
 	case <-mem.recheck.doneRechecking():
 	}
 
-	if n := mem.recheck.numRecheckedTxs.Load(); n < mem.recheck.numTxsToRecheck {
-		mem.logger.Error("not all txs were rechecked", "not-rechecked", mem.recheck.numTxsToRecheck-n)
+	initMempoolSize := mem.recheck.initialMempoolSize
+	if n := mem.recheck.numRecheckedTxs.Load(); n < initMempoolSize {
+		mem.logger.Error("not all txs were rechecked", "not-rechecked", initMempoolSize-n)
 	}
 	mem.logger.Debug("done rechecking txs", "height", mem.height.Load(), "num-txs", mem.Size())
 }
@@ -660,11 +691,74 @@ type recheck struct {
 	cursor *clist.CElement // next expected recheck response
 	end    *clist.CElement // last entry in the mempool to recheck
 	doneCh chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
-	// TODO: Benchmark if atomics here are adding meaningful overhead in the synchronized case.
-	numTxsToRecheck int32
-	numRecheckedTxs atomic.Int32 // number of transactions still pending to recheck
-	bytesUpdated    atomic.Int64
-	gasUpdated      atomic.Int64
+
+	// This is only read in the recheck threads
+	initialMempoolSize int32        // initial size of the mempool before rechecking started
+	numRecheckedTxs    atomic.Int32 // number of transactions still pending to recheck
+
+	recheckReapSharedState recheckReapSharedState
+}
+
+var minimumMempoolSizeForConcurrentRecheck int32 = 50
+
+type recheckReapSharedState struct {
+	mtx                   sync.Mutex
+	succesfullyUpdatedTxs int64
+	bytesUpdated          int64
+	gasUpdated            int64
+
+	waitingForReap bool
+	readyForReap   func() bool
+	reapSignal     chan struct{}
+}
+
+func (r *recheckReapSharedState) reset() {
+	r.mtx.Lock()
+	r.succesfullyUpdatedTxs = 0
+	r.bytesUpdated = 0
+	r.gasUpdated = 0
+	if r.waitingForReap {
+		r.waitingForReap = false
+		r.reapSignal <- struct{}{}
+	}
+	r.readyForReap = nil
+	r.reapSignal = nil
+	r.mtx.Unlock()
+}
+
+var ErrReapAlreadyWaiting = errors.New("reap already waiting. Only one reap can be waiting for Update to terminate at once.")
+
+func (r *recheckReapSharedState) setupWaitingReap(readyForReap func() bool) (chan struct{}, error) {
+	r.mtx.Lock()
+	if r.waitingForReap {
+		r.mtx.Unlock()
+		return nil, ErrReapAlreadyWaiting
+	}
+	r.waitingForReap = true
+	r.readyForReap = readyForReap
+	r.reapSignal = make(chan struct{}, 1)
+	r.mtx.Unlock()
+	return r.reapSignal, nil
+}
+
+func (r *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxResponse) {
+	if r.initialMempoolSize > int32(minimumMempoolSizeForConcurrentRecheck) {
+		r.recheckReapSharedState.mtx.Lock()
+		r.recheckReapSharedState.succesfullyUpdatedTxs++
+		// TODO: compute proto size for txs may be slow.
+		// Benchmark, if so we can make a process to only compute if we are listening for it.
+		r.recheckReapSharedState.bytesUpdated += int64(types.ComputeProtoSizeForTxs([]types.Tx{tx}))
+		r.recheckReapSharedState.gasUpdated += res.GasWanted
+
+		if r.recheckReapSharedState.waitingForReap && r.recheckReapSharedState.readyForReap() {
+			r.recheckReapSharedState.waitingForReap = false
+			r.recheckReapSharedState.reapSignal <- struct{}{}
+			r.recheckReapSharedState.reapSignal = nil
+		}
+
+		r.recheckReapSharedState.mtx.Unlock()
+	}
+	return
 }
 
 func newRecheck() *recheck {
@@ -673,7 +767,7 @@ func newRecheck() *recheck {
 	}
 }
 
-func (rc *recheck) init(first, last *clist.CElement) {
+func (rc *recheck) init(first, last *clist.CElement, mempoolLen int32) {
 	// set to active, and check if
 	isAlreadyActive := !rc.active.CompareAndSwap(false, true)
 	if isAlreadyActive {
@@ -681,7 +775,7 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	}
 	rc.cursor = first
 	rc.end = last
-	rc.numTxsToRecheck = 0
+	rc.initialMempoolSize = (mempoolLen)
 	rc.numRecheckedTxs.Store(0)
 }
 
@@ -694,6 +788,7 @@ func (rc *recheck) done() bool {
 func (rc *recheck) setDone() {
 	rc.active.Store(false)
 	rc.cursor = nil
+	rc.recheckReapSharedState.reset()
 }
 
 // setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.

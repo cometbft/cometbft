@@ -922,7 +922,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.NotNil(t, mp.recheck.end)
 	require.Equal(t, mp.recheck.end, mp.txs.Back())
 	require.Equal(t, len(txs)-1, mp.Size()) // one invalid tx was removed
-	require.Equal(t, int32(2), mp.recheck.numTxsToRecheck-mp.recheck.numRecheckedTxs.Load())
+	require.Equal(t, int32(2), mp.recheck.initialMempoolSize-mp.recheck.numRecheckedTxs.Load())
 
 	mockClient.AssertExpectations(t)
 }
@@ -956,7 +956,7 @@ func TestMempoolRecheckRace(t *testing.T) {
 	// should not result in a data race on the variable recheck.cursor.
 	_, err = mp.CheckTx(txs[:1][0])
 	require.Equal(t, err, ErrTxInCache)
-	require.Equal(t, mp.recheck.numTxsToRecheck, mp.recheck.numRecheckedTxs.Load())
+	require.Equal(t, mp.recheck.initialMempoolSize, mp.recheck.numRecheckedTxs.Load())
 }
 
 // Test adding transactions while a concurrent routine reaps txs and updates the mempool, simulating

@@ -182,9 +182,41 @@ there will be at least a period where the these two properties may not hold for 
 
 ## Alternative Approaches
 
-TODO
+### Priority Mempool
 
-Prio mempool: why is it not a good fit?
+CometBFT used to have a `v1` mempool, specified in Tendermint Core [ADR067][adr067] and deprecated as of `v0.37.x`,
+which supported per-transaction priority assignment.
+The key point of the priority mempool's design was that `CheckTxResponse` was extended with a few fields,
+one of which being an `int64` that the application could use to provide a priority to the transaction being checked.
+
+This design can be seen as partially addressing the specification of a Mempool with QoS
+presented in the previous section. Every possible value of the `int64` priority field returned by the application
+can be understood as a _different_ traffic class.
+Let us examine whether the properties specified above are fulfilled by the priority mempool design
+as described in [ADR067][adr067]:
+
+1. Partial ordering of all transactions is maintained because the design still keeps a FIFO queue for gossiping transactions.
+  Also, transactions are reaped according to non-decreasing priority first, and then in FIFO order
+  for transactions with equal priority (see this `ReapMaxBytesMaxGas`'s [docstring][reapmaxbytesmaxgas]).
+1. Since the priority mempool uses FIFO for transactions of equal priority, it also fulfills FIFO ordering per class.
+  The problem here is that, since every value of the priority `int64` field is considered a different transaction class,
+  there are virtually unlimited traffic classes.
+  So it is too easy for an application to end up using hundreds, if not thousands of transactions classes at a given time.
+  In this situation, FIFO ordering per class, while fulfilled, becomes a corner case and thus does not add much value.
+1. The consistent transaction classes property is trivially fulfilled, as the set of transaction classes never changes:
+  it is the set of all possible values of an `int64`.
+1. Finally, the priority mempool design does not make any provisions on how the application is to evolve its prioritization
+  (i.e., transaction classification) logic.
+  Therefore, the design does not guarantee the fulfillment of the consistent transaction classification property.
+
+The main hindrance for the wide adoption of the priority mempool was
+the dramatic reduction of the _observable_ FIFO guarantees for transactions (as explained in point 2 above)
+with respect to the `v0` mempool.
+
+Besides, the lack of provisions for evolving the prioritization logic (point 4 above) could have also got
+in the way of adoption.
+
+TODO
 
 Other alternatives:
 * Consider looking into mempool discussions in Solana
@@ -448,6 +480,8 @@ TODO
 
 ## References
 
-TODO
+- [ADR067][adr067], Priority mempool
+- [Docstring][reapmaxbytesmaxgas] of `ReapMaxBytesMaxGas`
 
-- Reference list
+[adr067]: ./tendermint-core/adr-067-mempool-refactor.md
+[reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324

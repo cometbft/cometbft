@@ -540,7 +540,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 			return max < int(numRecheckedTxs)
 		}
 
-		// Setup a synchronized communication channel with Update to get signalled once
+		// Setup a synchronized communication channel with Update to get signaled once
 		// we have rechecked enough txs.
 		ch, err := mem.recheck.recheckReapSharedState.setupWaitingReap(canStartReaping)
 		if err != nil {
@@ -724,7 +724,7 @@ func (r *recheckReapSharedState) reset() {
 	r.mtx.Unlock()
 }
 
-var ErrReapAlreadyWaiting = errors.New("reap already waiting. Only one reap can be waiting for Update to terminate at once.")
+var ErrReapAlreadyWaiting = errors.New("reap already waiting. Only one reap can be waiting for Update to terminate at once")
 
 func (r *recheckReapSharedState) setupWaitingReap(readyForReap func() bool) (chan struct{}, error) {
 	r.mtx.Lock()
@@ -741,7 +741,7 @@ func (r *recheckReapSharedState) setupWaitingReap(readyForReap func() bool) (cha
 	return newChan, nil
 }
 
-// this function assumes we are under lock
+// this function assumes we are under lock.
 func (r *recheckReapSharedState) checkAndSendReapSignal() {
 	if r.waitingForReap && r.readyForReap() {
 		r.waitingForReap = false
@@ -750,19 +750,18 @@ func (r *recheckReapSharedState) checkAndSendReapSignal() {
 	}
 }
 
-func (r *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxResponse) {
-	if r.initialMempoolSize > int32(minimumMempoolSizeForConcurrentRecheck) {
-		r.recheckReapSharedState.mtx.Lock()
-		r.recheckReapSharedState.succesfullyUpdatedTxs++
+func (rc *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxResponse) {
+	if rc.initialMempoolSize > minimumMempoolSizeForConcurrentRecheck {
+		rc.recheckReapSharedState.mtx.Lock()
+		rc.recheckReapSharedState.succesfullyUpdatedTxs++
 		// TODO: compute proto size for txs may be slow.
 		// Benchmark, if so we can make a process to only compute if we are listening for it.
-		r.recheckReapSharedState.bytesUpdated += int64(types.ComputeProtoSizeForTxs([]types.Tx{tx}))
-		r.recheckReapSharedState.gasUpdated += res.GasWanted
+		rc.recheckReapSharedState.bytesUpdated += types.ComputeProtoSizeForTxs([]types.Tx{tx})
+		rc.recheckReapSharedState.gasUpdated += res.GasWanted
 
-		r.recheckReapSharedState.checkAndSendReapSignal()
-		r.recheckReapSharedState.mtx.Unlock()
+		rc.recheckReapSharedState.checkAndSendReapSignal()
+		rc.recheckReapSharedState.mtx.Unlock()
 	}
-	return
 }
 
 func newRecheck() *recheck {

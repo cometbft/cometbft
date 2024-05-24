@@ -541,14 +541,8 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 
 // FilterTx returns the types.Tx with the given hash if found in the mempool, otherwise returns nil.
 func (mem *CListMempool) FilterTx(hash []byte) types.Tx {
-	mem.updateMtx.RLock()
-	defer mem.updateMtx.RUnlock()
-
-	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		memTx := e.Value.(*mempoolTx)
-		if bytes.Equal(memTx.tx.Hash(), hash) {
-			return memTx.tx
-		}
+	if elem, ok := mem.getCElement(types.TxKey(hash)); ok {
+		return elem.Value.(*mempoolTx).tx
 	}
 	return nil
 }

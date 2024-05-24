@@ -560,7 +560,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 //   - recheck has fully completed
 //   - recheck has completed a sufficient amount of txs to reap a full block
 //
-// - If not rechecking, take a lock on the updateMtx
+// - If not rechecking, take a lock on the updateMtx.
 func (mem *CListMempool) waitToStartReap(canExecuteConcurrentlyWithRecheck bool, canStartReaping func() bool) (deferFn func()) {
 	isRechecking := mem.recheck.active.Load()
 	if canExecuteConcurrentlyWithRecheck && isRechecking {
@@ -744,12 +744,6 @@ func (r *recheckReapSharedState) recheckCompleted() {
 	}
 	r.readyForReap = nil
 	r.reapSignal = nil
-	r.mtx.Unlock()
-}
-
-func (r *recheckReapSharedState) startReaping() {
-	r.mtx.Lock()
-	r.isReaping = true
 	r.mtx.Unlock()
 }
 

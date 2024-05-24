@@ -1192,25 +1192,24 @@ func (cfg *ConsensusConfig) WaitForTxs() bool {
 	return !cfg.CreateEmptyBlocks || cfg.CreateEmptyBlocksInterval > 0
 }
 
+func timeoutTime(baseTimeout, timeoutDelta time.Duration, round int32) time.Duration {
+	timeout := baseTimeout.Nanoseconds() + timeoutDelta.Nanoseconds()*int64(round)
+	return time.Duration(timeout) * time.Nanosecond
+}
+
 // Propose returns the amount of time to wait for a proposal.
 func (cfg *ConsensusConfig) Propose(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutPropose.Nanoseconds()+cfg.TimeoutProposeDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutPropose, cfg.TimeoutProposeDelta, round)
 }
 
 // Prevote returns the amount of time to wait for straggler votes after receiving any +2/3 prevotes.
 func (cfg *ConsensusConfig) Prevote(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutVote.Nanoseconds()+cfg.TimeoutVoteDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutVote, cfg.TimeoutVoteDelta, round)
 }
 
 // Precommit returns the amount of time to wait for straggler votes after receiving any +2/3 precommits.
 func (cfg *ConsensusConfig) Precommit(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutVote.Nanoseconds()+cfg.TimeoutVoteDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutVote, cfg.TimeoutVoteDelta, round)
 }
 
 // Commit returns the amount of time to wait for straggler votes after receiving +2/3 precommits

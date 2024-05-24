@@ -656,11 +656,15 @@ func (mem *CListMempool) recheckTxs() {
 // rechecking. This is to guarantee that recheck responses are processed in the same sequential
 // order as they appear in the mempool.
 type recheck struct {
-	cursor          *clist.CElement // next expected recheck response
-	end             *clist.CElement // last entry in the mempool to recheck
-	doneCh          chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
+	active atomic.Bool
+	cursor *clist.CElement // next expected recheck response
+	end    *clist.CElement // last entry in the mempool to recheck
+	doneCh chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
+	// TODO: Benchmark if atomics here are adding meaningful overhead in the synchronized case.
 	numTxsToRecheck int32
 	numRecheckedTxs atomic.Int32 // number of transactions still pending to recheck
+	bytesUpdated    atomic.Int64
+	gasUpdated      atomic.Int64
 }
 
 func newRecheck() *recheck {
@@ -670,7 +674,9 @@ func newRecheck() *recheck {
 }
 
 func (rc *recheck) init(first, last *clist.CElement) {
-	if !rc.done() {
+	// set to active, and check if
+	isAlreadyActive := !rc.active.CompareAndSwap(false, true)
+	if isAlreadyActive {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
 	rc.cursor = first
@@ -681,11 +687,12 @@ func (rc *recheck) init(first, last *clist.CElement) {
 
 // done returns true when there is no recheck response to process.
 func (rc *recheck) done() bool {
-	return rc.cursor == nil
+	return !rc.active.Load()
 }
 
 // setDone registers that rechecking has finished.
 func (rc *recheck) setDone() {
+	rc.active.Store(false)
 	rc.cursor = nil
 }
 

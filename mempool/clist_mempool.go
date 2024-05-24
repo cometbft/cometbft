@@ -810,6 +810,7 @@ func (r *recheckReapSharedState) checkAndSendReapSignal() {
 		r.sendReapSignal()
 	}
 }
+
 func (r *recheckReapSharedState) sendReapSignal() {
 	r.waitingForReap = false
 	r.reapSignal <- struct{}{}

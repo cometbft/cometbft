@@ -479,7 +479,7 @@ func (gr *GroupReader) Read(p []byte) (n int, err error) {
 		nn, err = gr.curReader.Read(p[n:])
 		n += nn
 		switch {
-		case err == io.EOF:
+		case errors.Is(err, io.EOF):
 			if n >= lenP {
 				return n, nil
 			}

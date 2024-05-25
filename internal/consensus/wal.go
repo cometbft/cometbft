@@ -252,7 +252,7 @@ func (wal *BaseWAL) SearchForEndHeight(
 		dec := NewWALDecoder(gr)
 		for {
 			msg, err = dec.Decode()
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				// OPTIMISATION: no need to look for height in older files if we've seen h < height
 				if lastHeightFound > 0 && lastHeightFound < height {
 					gr.Close()

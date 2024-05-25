@@ -176,8 +176,11 @@ func (cfg *Config) ValidateBasic() error {
 }
 
 // CheckDeprecated returns any deprecation warnings. These are printed to the operator on startup.
-func (*Config) CheckDeprecated() []string {
+func (cfg *Config) CheckDeprecated() []string {
 	var warnings []string
+	if cfg.Consensus.TimeoutCommit != 0 {
+		warnings = append(warnings, "[consensus.timeout_commit] is deprecated. Use `next_block_delay` in the ABCI `FinalizeBlockResponse`.")
+	}
 	return warnings
 }
 
@@ -292,7 +295,7 @@ func (cfg BaseConfig) PrivValidatorKeyFile() string {
 	return rootify(cfg.PrivValidatorKey, cfg.RootDir)
 }
 
-// PrivValidatorFile returns the full path to the priv_validator_state.json file.
+// PrivValidatorStateFile returns the full path to the priv_validator_state.json file.
 func (cfg BaseConfig) PrivValidatorStateFile() string {
 	return rootify(cfg.PrivValidatorState, cfg.RootDir)
 }
@@ -866,6 +869,11 @@ type MempoolConfig struct {
 	// mempool may become invalid. If this does not apply to your application,
 	// you can disable rechecking.
 	Recheck bool `mapstructure:"recheck"`
+	// RecheckTimeout is the time the application has during the rechecking process
+	// to return CheckTx responses, once all requests have been sent. Responses that
+	// arrive after the timeout expires are discarded. It only applies to
+	// non-local ABCI clients and when recheck is enabled.
+	RecheckTimeout time.Duration `mapstructure:"recheck_timeout"`
 	// Broadcast (default: true) defines whether the mempool should relay
 	// transactions to other peers. Setting this to false will stop the mempool
 	// from relaying transactions to other peers until they are included in a
@@ -911,10 +919,11 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
-		Type:      MempoolTypeFlood,
-		Recheck:   true,
-		Broadcast: true,
-		WalPath:   "",
+		Type:           MempoolTypeFlood,
+		Recheck:        true,
+		RecheckTimeout: 1000 * time.Millisecond,
+		Broadcast:      true,
+		WalPath:        "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,
@@ -1113,11 +1122,7 @@ type ConsensusConfig struct {
 	TimeoutVote time.Duration `mapstructure:"timeout_vote"`
 	// How much the timeout_vote increases with each round
 	TimeoutVoteDelta time.Duration `mapstructure:"timeout_vote_delta"`
-	// How long we wait after committing a block, before starting on the new
-	// height (this gives us a chance to receive some more precommits, even
-	// though we already have +2/3).
-	// NOTE: when modifying, make sure to update time_iota_ms genesis parameter
-	// Set to 0 if you want to make progress as soon as the node has all the precommits.
+	// Deprecated: use `next_block_delay` in the ABCI application's `FinalizeBlockResponse`.
 	TimeoutCommit time.Duration `mapstructure:"timeout_commit"`
 
 	// EmptyBlocks mode and possible interval between empty blocks
@@ -1157,7 +1162,6 @@ func TestConsensusConfig() *ConsensusConfig {
 	cfg.TimeoutProposeDelta = 1 * time.Millisecond
 	cfg.TimeoutVote = 10 * time.Millisecond
 	cfg.TimeoutVoteDelta = 1 * time.Millisecond
-	// NOTE: when modifying, make sure to update time_iota_ms (testGenesisFmt) in toml.go
 	cfg.TimeoutCommit = 0
 	cfg.PeerGossipSleepDuration = 5 * time.Millisecond
 	cfg.PeerQueryMaj23SleepDuration = 250 * time.Millisecond
@@ -1170,29 +1174,29 @@ func (cfg *ConsensusConfig) WaitForTxs() bool {
 	return !cfg.CreateEmptyBlocks || cfg.CreateEmptyBlocksInterval > 0
 }
 
+func timeoutTime(baseTimeout, timeoutDelta time.Duration, round int32) time.Duration {
+	timeout := baseTimeout.Nanoseconds() + timeoutDelta.Nanoseconds()*int64(round)
+	return time.Duration(timeout) * time.Nanosecond
+}
+
 // Propose returns the amount of time to wait for a proposal.
 func (cfg *ConsensusConfig) Propose(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutPropose.Nanoseconds()+cfg.TimeoutProposeDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutPropose, cfg.TimeoutProposeDelta, round)
 }
 
 // Prevote returns the amount of time to wait for straggler votes after receiving any +2/3 prevotes.
 func (cfg *ConsensusConfig) Prevote(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutVote.Nanoseconds()+cfg.TimeoutVoteDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutVote, cfg.TimeoutVoteDelta, round)
 }
 
 // Precommit returns the amount of time to wait for straggler votes after receiving any +2/3 precommits.
 func (cfg *ConsensusConfig) Precommit(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutVote.Nanoseconds()+cfg.TimeoutVoteDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutVote, cfg.TimeoutVoteDelta, round)
 }
 
 // Commit returns the amount of time to wait for straggler votes after receiving +2/3 precommits
 // for a single block (ie. a commit).
+// Deprecated: use `next_block_delay` in the ABCI application's `FinalizeBlockResponse`.
 func (cfg *ConsensusConfig) Commit(t time.Time) time.Time {
 	return t.Add(cfg.TimeoutCommit)
 }

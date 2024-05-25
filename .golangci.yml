@@ -12,9 +12,11 @@ linters:
     - dupword
     - errorlint
     - errname
+    - err113
     - exhaustive
     - exhaustivestruct
     - exhaustruct
+    - execinquery
     - forbidigo
     - forcetypeassert
     - funlen
@@ -23,15 +25,16 @@ linters:
     - gocognit
     - gocyclo
     - godox
-    - goerr113
     - golint
     - gomnd
     - ifshort
     - interfacebloat
+    - intrange
     - interfacer
     - ireturn
     - lll
     - maintidx
+    - mnd
     - maligned
     - nestif
     - nilnil
@@ -101,6 +104,7 @@ linters-settings:
           - github.com/gofrs/uuid
           - github.com/google
           - github.com/gorilla/websocket
+          - github.com/hashicorp/golang-lru/v2
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
           - github.com/Masterminds/semver/v3

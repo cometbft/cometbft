@@ -61,9 +61,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 		// 2. Any RPC request doesn't allow to be cached.
 		// 3. Any RPC request has the height argument and the value is 0 (the default).
 		cache := true
-		for _, request := range requests {
-			request := request
-
+		for _, req := range requests {
+			request := req
 			// A Notification is a Request object without an "id" member.
 			// The Server MUST NOT reply to a Notification, including those that are within a batch request.
 			if request.ID == nil {

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"io"
 	"testing"
 
@@ -217,5 +218,21 @@ func TestPartProtoBuf(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.ps1, p, tc.msg)
 		}
+	}
+}
+
+func runBenchMakePartSet(b *testing.B, nParts int) {
+	data := cmtrand.Bytes(testPartSize * nParts)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewPartSetFromData(data, testPartSize)
+	}
+}
+
+func BenchmarkMakePartSet(b *testing.B) {
+	for i := 1; i <= 5; i++ {
+		b.Run(fmt.Sprintf("nParts=%d", i), func(b *testing.B) {
+			runBenchMakePartSet(b, i)
+		})
 	}
 }

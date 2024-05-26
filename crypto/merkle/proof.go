@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"hash"
 
 	cmtcrypto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -266,18 +267,22 @@ func (spn *ProofNode) FlattenAunts() [][]byte {
 // trails[0].Hash is the leaf hash for items[0].
 // trails[i].Parent.Parent....Parent == root for all i.
 func trailsFromByteSlices(items [][]byte) (trails []*ProofNode, root *ProofNode) {
+	return trailsFromByteSlicesInternal(tmhash.New(), items)
+}
+
+func trailsFromByteSlicesInternal(hash hash.Hash, items [][]byte) (trails []*ProofNode, root *ProofNode) {
 	// Recursive impl.
 	switch len(items) {
 	case 0:
 		return []*ProofNode{}, &ProofNode{emptyHash(), nil, nil, nil}
 	case 1:
-		trail := &ProofNode{leafHash(items[0]), nil, nil, nil}
+		trail := &ProofNode{leafHashOpt(hash, items[0]), nil, nil, nil}
 		return []*ProofNode{trail}, trail
 	default:
 		k := getSplitPoint(int64(len(items)))
-		lefts, leftRoot := trailsFromByteSlices(items[:k])
-		rights, rightRoot := trailsFromByteSlices(items[k:])
-		rootHash := innerHash(leftRoot.Hash, rightRoot.Hash)
+		lefts, leftRoot := trailsFromByteSlicesInternal(hash, items[:k])
+		rights, rightRoot := trailsFromByteSlicesInternal(hash, items[k:])
+		rootHash := innerHashOpt(hash, leftRoot.Hash, rightRoot.Hash)
 		root := &ProofNode{rootHash, nil, nil, nil}
 		leftRoot.Parent = root
 		leftRoot.Right = rightRoot

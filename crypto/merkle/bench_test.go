@@ -43,7 +43,7 @@ func BenchmarkInnerHash(b *testing.B) {
 
 // Benchmark the time it takes to hash a 64kb leaf, which is the size of
 // a block part.
-// This helps determine whether its worth parallelizing this hash for the propose.r
+// This helps determine whether its worth parallelizing this hash for the proposer.
 func BenchmarkLeafHash64kb(b *testing.B) {
 	b.ReportAllocs()
 	leaf := make([]byte, 64*1024)

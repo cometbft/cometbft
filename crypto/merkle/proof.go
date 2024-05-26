@@ -92,13 +92,14 @@ func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 			Err: errors.New("negative proof index"),
 		}
 	}
-	leafHash := leafHash(leaf)
+	hash := tmhash.New()
+	leafHash := leafHashOpt(hash, leaf)
 	if !bytes.Equal(sp.LeafHash, leafHash) {
 		return ErrInvalidHash{
 			Err: fmt.Errorf("leaf %x, want %x", sp.LeafHash, leafHash),
 		}
 	}
-	computedHash, err := sp.computeRootHash()
+	computedHash, err := sp.computeRootHash(hash)
 	if err != nil {
 		return ErrInvalidHash{
 			Err: fmt.Errorf("compute root hash: %w", err),
@@ -113,8 +114,9 @@ func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 }
 
 // Compute the root hash given a leaf hash.
-func (sp *Proof) computeRootHash() ([]byte, error) {
+func (sp *Proof) computeRootHash(hash hash.Hash) ([]byte, error) {
 	return computeHashFromAunts(
+		hash,
 		sp.Index,
 		sp.Total,
 		sp.LeafHash,
@@ -201,7 +203,7 @@ func ProofFromProto(pb *cmtcrypto.Proof) (*Proof, error) {
 // Use the leafHash and innerHashes to get the root merkle hash.
 // If the length of the innerHashes slice isn't exactly correct, the result is nil.
 // Recursive impl.
-func computeHashFromAunts(index, total int64, leafHash []byte, innerHashes [][]byte) ([]byte, error) {
+func computeHashFromAunts(hash hash.Hash, index, total int64, leafHash []byte, innerHashes [][]byte) ([]byte, error) {
 	if index >= total || index < 0 || total <= 0 {
 		return nil, fmt.Errorf("invalid index %d and/or total %d", index, total)
 	}
@@ -219,18 +221,18 @@ func computeHashFromAunts(index, total int64, leafHash []byte, innerHashes [][]b
 		}
 		numLeft := getSplitPoint(total)
 		if index < numLeft {
-			leftHash, err := computeHashFromAunts(index, numLeft, leafHash, innerHashes[:len(innerHashes)-1])
+			leftHash, err := computeHashFromAunts(hash, index, numLeft, leafHash, innerHashes[:len(innerHashes)-1])
 			if err != nil {
 				return nil, err
 			}
 
-			return innerHash(leftHash, innerHashes[len(innerHashes)-1]), nil
+			return innerHashOpt(hash, leftHash, innerHashes[len(innerHashes)-1]), nil
 		}
-		rightHash, err := computeHashFromAunts(index-numLeft, total-numLeft, leafHash, innerHashes[:len(innerHashes)-1])
+		rightHash, err := computeHashFromAunts(hash, index-numLeft, total-numLeft, leafHash, innerHashes[:len(innerHashes)-1])
 		if err != nil {
 			return nil, err
 		}
-		return innerHash(innerHashes[len(innerHashes)-1], rightHash), nil
+		return innerHashOpt(hash, innerHashes[len(innerHashes)-1], rightHash), nil
 	}
 }
 

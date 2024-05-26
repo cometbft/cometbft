@@ -128,8 +128,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		// verify sig of incoming gossip vote, throw if verification fails
 		_, val := oracleR.ConsensusState.Validators.GetByAddress(msg.Validator)
 		if val == nil {
-			logrus.Warnf("validator: %v not found in validator set, skipping gossip", hex.EncodeToString(msg.Validator))
-			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("validator not found in validator set: %T", e.Message))
+			logrus.Debugf("validator: %v not found in validator set, skipping gossip", hex.EncodeToString(msg.Validator))
 			return
 		}
 		pubKey := val.PubKey
@@ -140,8 +139,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-			logrus.Errorf("failed signature verification for validator: %v", val.Address)
-			oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle failed signature verification: %T", e.Message))
+			logrus.Errorf("failed signature verification for validator: %v, skipping gossip", val.Address)
 			return
 		}
 

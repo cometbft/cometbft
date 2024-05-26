@@ -221,18 +221,14 @@ func TestPartProtoBuf(t *testing.T) {
 	}
 }
 
-func runBenchMakePartSet(b *testing.B, nParts int) {
-	data := cmtrand.Bytes(testPartSize * nParts)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		NewPartSetFromData(data, testPartSize)
-	}
-}
-
 func BenchmarkMakePartSet(b *testing.B) {
-	for i := 1; i <= 5; i++ {
-		b.Run(fmt.Sprintf("nParts=%d", i), func(b *testing.B) {
-			runBenchMakePartSet(b, i)
+	for nParts := 1; nParts <= 5; nParts++ {
+		b.Run(fmt.Sprintf("nParts=%d", nParts), func(b *testing.B) {
+			data := cmtrand.Bytes(testPartSize * nParts)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				NewPartSetFromData(data, testPartSize)
+			}
 		})
 	}
 }

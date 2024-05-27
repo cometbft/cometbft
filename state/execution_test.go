@@ -70,7 +70,7 @@ func TestApplyBlock(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	state, err = blockExec.ApplyBlock(state, blockID, block)
+	state, err = blockExec.ApplyBlock(state, blockID, block, false)
 	require.NoError(t, err)
 
 	// TODO check state and mempool
@@ -143,7 +143,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			bps, err := block.MakePartSet(testPartSize)
 			require.NoError(t, err)
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
-			_, err = blockExec.ApplyBlock(state, blockID, block)
+			_, err = blockExec.ApplyBlock(state, blockID, block, false)
 			require.NoError(t, err)
 			require.True(t, app.LastTime.After(baseTime))
 
@@ -352,7 +352,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 
 	blockID = types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	_, err = blockExec.ApplyBlock(state, blockID, block)
+	_, err = blockExec.ApplyBlock(state, blockID, block, false)
 	require.NoError(t, err)
 
 	// TODO check state and mempool
@@ -621,7 +621,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 		abci.NewValidatorUpdate(pubkey, 10),
 	}
 
-	state, err = blockExec.ApplyBlock(state, blockID, block)
+	state, err = blockExec.ApplyBlock(state, blockID, block, false)
 	require.NoError(t, err)
 	// test new validator was added to NextValidators
 	if assert.Equal(t, state.Validators.Size()+1, state.NextValidators.Size()) {
@@ -683,7 +683,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 		abci.NewValidatorUpdate(pk, 0),
 	}
 
-	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block) })
+	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block, false) })
 	require.Error(t, err)
 	assert.NotEmpty(t, state.NextValidators.Validators)
 }

@@ -789,6 +789,7 @@ func ExecCommitBlock(
 		DecidedLastCommit:  commitInfo,
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		Txs:                block.Txs.ToSliceOfBytes(),
+		Syncing:            true,
 	})
 	if err != nil {
 		logger.Error("error in proxyAppConn.FinalizeBlock", "err", err)

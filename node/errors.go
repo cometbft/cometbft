@@ -18,6 +18,7 @@ var (
 	ErrPassedGenesisHashMismatch = errors.New("genesis doc hash in db does not match passed --genesis_hash value")
 	// ErrLoadedGenesisDocHashMismatch is returned when the genesis doc hash in the database does not match the loaded genesis doc.
 	ErrLoadedGenesisDocHashMismatch = errors.New("genesis doc hash in db does not match loaded genesis doc")
+	//
 )
 
 // ErrCreateBlockStore is returned when the node fails to create the blockstore.
@@ -231,5 +232,33 @@ func (e ErrSaveGenesisDocHash) Error() string {
 }
 
 func (e ErrSaveGenesisDocHash) Unwrap() error {
+	return e.Err
+}
+
+// ErrReadingGenesisDoc is returned when the node fails to read the genesis doc file.
+type ErrorReadingGenesisDoc struct {
+	Err error
+}
+
+func (e ErrorReadingGenesisDoc) Error() string {
+	return fmt.Sprintf("could not read GenesisDoc file: %v", e.Err)
+}
+
+func (e ErrorReadingGenesisDoc) Unwrap() error {
+	return e.Err
+}
+
+// fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
+
+type ErrorLoadOrGenNodeKey struct {
+	Err         error
+	NodeKeyFile string
+}
+
+func (e ErrorLoadOrGenNodeKey) Error() string {
+	return fmt.Sprintf("failed to load or gen node key %s: %v", e.NodeKeyFile, e.Err)
+}
+
+func (e ErrorLoadOrGenNodeKey) Unwrap() error {
 	return e.Err
 }

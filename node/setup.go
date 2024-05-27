@@ -62,7 +62,7 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 		// https://github.com/cometbft/cometbft/issues/1302
 		jsonBlob, err := os.ReadFile(config.GenesisFile())
 		if err != nil {
-			return ChecksummedGenesisDoc{}, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
+			return ChecksummedGenesisDoc{}, ErrorReadingGenesisDoc{Err: err}
 		}
 		incomingChecksum := tmhash.Sum(jsonBlob)
 		genDoc, err := types.GenesisDocFromJSON(jsonBlob)
@@ -82,7 +82,7 @@ type Provider func(*cfg.Config, log.Logger) (*Node, error)
 func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
-		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
+		return nil, ErrorLoadOrGenNodeKey{Err: err, NodeKeyFile: config.NodeKeyFile()}
 	}
 
 	return NewNode(context.Background(), config,

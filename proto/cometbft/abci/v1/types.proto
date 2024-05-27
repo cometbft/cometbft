@@ -206,6 +206,8 @@ message FinalizeBlockRequest {
   bytes next_validators_hash = 7;
   // address of the public key of the original proposer of the block.
   bytes proposer_address = 8;
+  // true if the node is syncing. false if the node is caught up to the tip of the chain.
+  bool syncing = 9;
 }
 
 // ----------------------------------------

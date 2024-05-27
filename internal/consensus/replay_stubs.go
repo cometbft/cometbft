@@ -3,7 +3,6 @@ package consensus
 import (
 	"context"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/clist"
 	mempl "github.com/cometbft/cometbft/mempool"
@@ -21,8 +20,8 @@ func (emptyMempool) Lock()            {}
 func (emptyMempool) Unlock()          {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
-func (emptyMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
-	return nil, nil
+func (emptyMempool) CheckTx(types.Tx, func(*abci.CheckTxResponse), mempl.TxInfo) error {
+	return nil
 }
 
 func (emptyMempool) RemoveTxByKey(types.TxKey) error {
@@ -40,13 +39,12 @@ func (emptyMempool) Update(
 ) error {
 	return nil
 }
-func (emptyMempool) Flush()                                 {}
-func (emptyMempool) FlushAppConn() error                    { return nil }
-func (emptyMempool) TxsAvailable() <-chan struct{}          { return make(chan struct{}) }
-func (emptyMempool) EnableTxsAvailable()                    {}
-func (emptyMempool) SetTxRemovedCallback(func(types.TxKey)) {}
-func (emptyMempool) TxsBytes() int64                        { return 0 }
-func (emptyMempool) InMempool(types.TxKey) bool             { return false }
+func (emptyMempool) Flush()                        {}
+func (emptyMempool) FlushAppConn() error           { return nil }
+func (emptyMempool) TxsAvailable() <-chan struct{} { return make(chan struct{}) }
+func (emptyMempool) EnableTxsAvailable()           {}
+func (emptyMempool) TxsBytes() int64               { return 0 }
+func (emptyMempool) InMempool(types.TxKey) bool    { return false }
 
 func (emptyMempool) TxsFront() *clist.CElement    { return nil }
 func (emptyMempool) TxsWaitChan() <-chan struct{} { return nil }

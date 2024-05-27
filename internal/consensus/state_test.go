@@ -24,6 +24,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	mempl "github.com/cometbft/cometbft/mempool"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
 	"github.com/cometbft/cometbft/types"
 )
@@ -1518,9 +1519,8 @@ func TestStateLock_POLSafety1(t *testing.T) {
 
 	// add a tx to the mempool
 	tx := kvstore.NewRandomTx(22)
-	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx)
+	err = assertMempool(cs1.txNotifier).CheckTx(tx, nil, mempl.TxInfo{})
 	require.NoError(t, err)
-	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 
 	// start the machine
 	startTestRound(cs1, cs1.Height, round)
@@ -1615,9 +1615,8 @@ func TestStateLock_POLSafety2(t *testing.T) {
 
 	// add a tx to the mempool
 	tx := kvstore.NewRandomTx(22)
-	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx)
+	err = assertMempool(cs1.txNotifier).CheckTx(tx, nil, mempl.TxInfo{})
 	require.NoError(t, err)
-	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 
 	// start the machine
 	startTestRound(cs1, cs1.Height, round)

@@ -3,7 +3,6 @@ package mempool
 import (
 	"errors"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p"
@@ -22,8 +21,8 @@ var errNotAllowed = errors.New("not allowed with `nop` mempool")
 var _ Mempool = &NopMempool{}
 
 // CheckTx always returns an error.
-func (*NopMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
-	return nil, errNotAllowed
+func (*NopMempool) CheckTx(types.Tx, func(*abci.CheckTxResponse), TxInfo) error {
+	return errNotAllowed
 }
 
 // RemoveTxByKey always returns an error.
@@ -65,9 +64,6 @@ func (*NopMempool) TxsAvailable() <-chan struct{} {
 
 // EnableTxsAvailable does nothing.
 func (*NopMempool) EnableTxsAvailable() {}
-
-// SetTxRemovedCallback does nothing.
-func (*NopMempool) SetTxRemovedCallback(func(txKey types.TxKey)) {}
 
 // Size always returns 0.
 func (*NopMempool) Size() int { return 0 }

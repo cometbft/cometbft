@@ -6,6 +6,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	mempl "github.com/cometbft/cometbft/mempool"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/types"
@@ -23,7 +24,7 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp
 	}
-	_, err := env.Mempool.CheckTx(tx)
+	err := env.Mempool.CheckTx(tx, nil, mempl.TxInfo{})
 	if err != nil {
 		return nil, err
 	}
@@ -39,16 +40,16 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	}
 
 	resCh := make(chan *abci.CheckTxResponse, 1)
-	reqRes, err := env.Mempool.CheckTx(tx)
+	err := env.Mempool.CheckTx(tx, func(res *abci.CheckTxResponse) {
+		select {
+		case <-ctx.Context().Done():
+		case resCh <- res:
+		}
+	}, mempl.TxInfo{})
 	if err != nil {
 		return nil, err
 	}
-	reqRes.SetCallback(func(_ *abci.Response) {
-		select {
-		case <-ctx.Context().Done():
-		case resCh <- reqRes.Response.GetCheckTx():
-		}
-	})
+
 	select {
 	case <-ctx.Context().Done():
 		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
@@ -96,17 +97,17 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	// Broadcast tx and wait for CheckTx result
 	checkTxResCh := make(chan *abci.CheckTxResponse, 1)
-	reqRes, err := env.Mempool.CheckTx(tx)
+	err = env.Mempool.CheckTx(tx, func(res *abci.CheckTxResponse) {
+		select {
+		case <-ctx.Context().Done():
+		case checkTxResCh <- res:
+		}
+	}, mempl.TxInfo{})
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
 		return nil, ErrTxBroadcast{Source: err, ErrReason: ErrCheckTxFailed}
 	}
-	reqRes.SetCallback(func(_ *abci.Response) {
-		select {
-		case <-ctx.Context().Done():
-		case checkTxResCh <- reqRes.Response.GetCheckTx():
-		}
-	})
+
 	select {
 	case <-ctx.Context().Done():
 		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}

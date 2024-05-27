@@ -18,6 +18,7 @@ import (
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/rpc/client"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
@@ -373,9 +374,8 @@ func TestUnconfirmedTxs(t *testing.T) {
 
 	ch := make(chan *abci.CheckTxResponse, 1)
 	mempool := node.Mempool()
-	reqRes, err := mempool.CheckTx(tx)
+	err := mempool.CheckTx(tx, func(resp *abci.CheckTxResponse) { ch <- resp }, mempl.TxInfo{})
 	require.NoError(t, err)
-	ch <- reqRes.Response.GetCheckTx()
 
 	// wait for tx to arrive in mempoool.
 	select {
@@ -404,9 +404,8 @@ func TestNumUnconfirmedTxs(t *testing.T) {
 
 	ch := make(chan *abci.CheckTxResponse, 1)
 	mempool := node.Mempool()
-	reqRes, err := mempool.CheckTx(tx)
+	err := mempool.CheckTx(tx, func(resp *abci.CheckTxResponse) { ch <- resp }, mempl.TxInfo{})
 	require.NoError(t, err)
-	ch <- reqRes.Response.GetCheckTx()
 
 	// wait for tx to arrive in mempoool.
 	select {

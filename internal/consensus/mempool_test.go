@@ -111,9 +111,8 @@ func deliverTxsRange(t *testing.T, cs *State, end int) {
 	start := 0
 	// Deliver some txs.
 	for i := start; i < end; i++ {
-		reqRes, err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(i), "true"))
+		err := assertMempool(cs.txNotifier).CheckTx(kvstore.NewTx(strconv.Itoa(i), "true"), nil, mempl.TxInfo{})
 		require.NoError(t, err)
-		require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	}
 }
 
@@ -168,16 +167,17 @@ func TestMempoolRmBadTx(t *testing.T) {
 		// CheckTx should not err, but the app should return a bad abci code
 		// and the tx should get removed from the pool
 		invalidTx := []byte("invalidTx")
-		reqRes, err := assertMempool(cs.txNotifier).CheckTx(invalidTx)
+		err := assertMempool(cs.txNotifier).CheckTx(invalidTx, func(r *abci.CheckTxResponse) {
+			if r.Code != kvstore.CodeTypeInvalidTxFormat {
+				t.Errorf("expected checktx to return invalid format, got %v", r)
+				return
+			}
+			checkTxRespCh <- struct{}{}
+		}, mempl.TxInfo{})
 		if err != nil {
 			t.Errorf("error after CheckTx: %v", err)
 			return
 		}
-		if reqRes.Response.GetCheckTx().Code != kvstore.CodeTypeInvalidTxFormat {
-			t.Errorf("expected checktx to return invalid format, got %v", reqRes.Response)
-			return
-		}
-		checkTxRespCh <- struct{}{}
 
 		// check for the tx
 		for {

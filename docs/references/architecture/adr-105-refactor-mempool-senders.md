@@ -5,10 +5,11 @@
 - 2023-07-19: Choose callbacks option and mark as accepted (@hvanz)
 - 2023-07-10: Add callback alternative (@hvanz)
 - 2023-06-26: Initial draft (@hvanz)
+- 2024-05-22: Reverted (@hvanz)
 
 ## Status
 
-Accepted
+Reverted
 
 ## Context
 

@@ -36,6 +36,11 @@ type Client interface {
 	// with the exception of `CheckTxAsync` which we maintain
 	// for the v0 mempool. We should explore refactoring the
 	// mempool to remove this vestige behavior.
+	//
+	// SetResponseCallback is not actually used anymore. It was used only by the mempool on CheckTx
+	// requests. Now the callback for processing the response is set on the ReqRes returned by
+	// CheckTxAsync. This is more flexible as it allows to pass other tx information such as the
+	// sender.
 	SetResponseCallback(cb Callback)
 	CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error)
 }

@@ -61,7 +61,9 @@ func (app *localClient) CheckTxAsync(ctx context.Context, req *types.CheckTxRequ
 }
 
 func (app *localClient) callback(req *types.Request, res *types.Response) *ReqRes {
-	app.Callback(req, res)
+	if app.Callback != nil {
+		app.Callback(req, res)
+	}
 	rr := newLocalReqRes(req, res)
 	rr.callbackInvoked = true
 	return rr

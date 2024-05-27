@@ -232,11 +232,10 @@ func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// send a tx
-	reqRes, err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1))
-	if err != nil {
-		t.Error(err)
-	}
-	require.False(t, reqRes.Response.GetCheckTx().IsErr())
+	err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1), func(resp *abci.CheckTxResponse) {
+		require.False(t, resp.IsErr())
+	}, mempl.TxInfo{})
+	require.Error(t, err)
 
 	// wait till everyone makes the first new block
 	timeoutWaitGroup(n, func(j int) {
@@ -664,9 +663,8 @@ func waitForAndValidateBlock(
 
 		// optionally add transactions for the next block
 		for _, tx := range txs {
-			reqRes, err := assertMempool(css[j].txNotifier).CheckTx(tx)
+			err := assertMempool(css[j].txNotifier).CheckTx(tx, nil, mempl.TxInfo{})
 			require.NoError(t, err)
-			require.False(t, reqRes.Response.GetCheckTx().IsErr())
 		}
 	})
 }

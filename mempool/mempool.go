@@ -4,8 +4,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -25,7 +25,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx) (*abcicli.ReqRes, error)
+	CheckTx(tx types.Tx, externalCb func(*abci.CheckTxResponse), txInfo TxInfo) error
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
@@ -86,10 +86,6 @@ type Mempool interface {
 	// trigger once every height when transactions are available.
 	EnableTxsAvailable()
 
-	// Set a callback function to be called when a transaction is removed from
-	// the mempool.
-	SetTxRemovedCallback(cb func(types.TxKey))
-
 	// Size returns the number of transactions in the mempool.
 	Size() int
 
@@ -143,3 +139,9 @@ func PostCheckMaxGas(maxGas int64) PostCheckFunc {
 
 // TxKey is the fixed length array key used as an index.
 type TxKey [sha256.Size]byte
+
+// TxInfo is a parameter passed to CheckTx when attempting to add a new tx to the mempool.
+type TxInfo struct {
+	// sender is the peer that sent the transaction to this node.
+	sender p2p.ID
+}

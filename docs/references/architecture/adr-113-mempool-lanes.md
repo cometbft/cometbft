@@ -151,13 +151,12 @@ to be useful and predictable for the whole appchain network.
 These properties are expressed in terms of consistency of the information, configuration and behaviour
 across nodes in the network.
 
-:parking: _Property_ **Consistent transaction classes**: For any transaction `tx`,
-and any two correct nodes $p$ and $q$ that receive `tx` for the first time,
-$p$ and $q$ MUST have the same set of transaction classes and their relative priority and configuration,
-as long as `tx` has not been included in a block.
+> TODO: Define "for the first time" here: receveived from RPC, peer, or `Update`
+> (try to define it an as modular a way as possible)
 
-> TODO: Do we really need to require that the `tx` hasn't been decided? Isn't it adding complexity for nothing?
-> Besides, it break modularity, as we use a consensus concept in the mempool.
+:parking: _Property_ **Consistent transaction classes**: For any transaction `tx`,
+and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
+$p$ and $q$ MUST have the same set of transaction classes and their relative priority and configuration.
 
 The property is only required to hold for on-the-fly transactions:
 if a node receives a (late) transaction that has already been decided, this property does not enforce anything.
@@ -166,9 +165,8 @@ Notice that, if this property does not hold, it is not possible to guarantee any
 such as transaction latency as defined above.
 
 :parking: _Property_ **Consistent transaction classification**: For any transaction `tx`
-and any two correct nodes $p$ and $q$ that receive `tx` for the first time,
-$p$'s application MUST classify `tx` into the same transaction class as $q$'s application,
-as long as `tx` has not been included in a block.
+and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
+$p$'s application MUST classify `tx` into the same transaction class as $q$'s application.
 
 This property only makes sense when the previous property (_consistent transaction classes_) defined above holds.
 Even if we ensure consistent transaction classes, if this property does not hold, a given transaction
@@ -179,6 +177,8 @@ Additionally, it is important to note that these two properties also constrain t
 classes and transaction classification logic can evolve in an existing implementation.
 If either transaction classes or classification logic are not modified in a coordinated manner in a working system,
 there will be at least a period where the these two properties may not hold for all transactions.
+
+> TODO: Need to find somewhere in the text to say: "ReCheckTx" doesn't classify, it's mempool information is disregarded"
 
 ## Alternative Approaches
 

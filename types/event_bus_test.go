@@ -27,7 +27,7 @@ func TestEventBusPublishEventPendingTx(t *testing.T) {
 	})
 
 	tx := Tx("foo")
-	// PublishEventPendingTx adds 3 composite keys, so the query below should work
+	// PublishEventPendingTx adds 1 composite key, so the query below should work
 	query := fmt.Sprintf("tm.event='PendingTx' AND tx.hash='%X'", tx.Hash())
 	txsSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
 	require.NoError(t, err)

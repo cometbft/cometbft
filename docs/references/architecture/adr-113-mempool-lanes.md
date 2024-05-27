@@ -7,6 +7,7 @@
 - 2024-04-17: Discussions (@sergio-mena @hvanz)
 - 2024-04-18: Preliminary structure (@hvanz)
 - 2024-05-01: Add Context and Properties (@hvanz)
+- 2024-05-21: Add more Properties + priority mempool (@sergio-mena)
 
 ## Status
 
@@ -37,7 +38,7 @@ The goal of this document is thus to propose a mechanism enabling the mempool to
 transactions by *classes*, for processing and dissemination, directly impacting block creation and transaction latency. In
 IP networking terminology, this is known as Quality of Service (QoS). By providing certain QoS
 guarantees, developers will be able to more easily estimate when transactions will be disseminated, processed and
-included in a block. 
+included in a block.
 
 In practical terms, we envision an implementation of the transaction class abstraction as *mempool
 lanes*. The application will be allowed to split the mempool transaction space into a hierarchy of
@@ -45,7 +46,8 @@ lanes, with each lane operating as an independent mempool. At the same time, all
 coordinated to ensure the delivery of the desired levels of QoS.
 
 Note that improving the dissemination protocol to reduce bandwidth and/or latency is a separate
-concern and falls outside the scope of this proposal. Likewise, graceful degradation under high load is an orthogonal problem to transaction classification, although the latter may help improve the former. 
+concern and falls outside the scope of this proposal. Likewise, graceful degradation under high load
+is an orthogonal problem to transaction classification, although the latter may help improve the former.
 
 ## Properties
 
@@ -53,7 +55,7 @@ Before jumping into the design of the proposal, we define more formally the prop
 the current implementation of the mempool. Then we state what properties the new mempool should
 offer to guarantee the desired QoS.
 
-The following definition is common to all properties. 
+The following definition is common to all properties.
 
 :memo: _Definition_: Given any two different transactions `tx1` and `tx2`, we say that `tx1` is
 *processed and disseminated before* `tx2` in a given node, when:
@@ -104,6 +106,8 @@ Therefore all classes can be ordered by priority.
 
 Given these definitions, we want the proposed QoS mechanism to offer the following property:
 
+#### Basic properties
+
 :parking: _Property_ **Priorities between classes**: Transactions belonging to a certain class will
 be processed and disseminated before transactions belonging to another class with lower priority.
 
@@ -139,11 +143,80 @@ the mempool, regardless of their classes, will have a *partial order*.
 This means that some pairs of
 transactions are comparable and, thus, have and order, while others not.
 
+#### Network-wide consistency
+
+The properties presented so far may be interpreted as per-node properties.
+However, we need to define some network-wide properties in order for a mempool QoS implementation
+to be useful and predictable for the whole appchain network.
+These properties are expressed in terms of consistency of the information, configuration and behaviour
+across nodes in the network.
+
+> TODO: Define "for the first time" here: received from RPC, peer, or `Update`
+> (try to define it in as modular a way as possible)
+
+:parking: _Property_ **Consistent transaction classes**: For any transaction `tx`,
+and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
+$p$ and $q$ MUST have the same set of transaction classes and their relative priority and configuration.
+
+The property is only required to hold for on-the-fly transactions:
+if a node receives a (late) transaction that has already been decided, this property does not enforce anything.
+The same goes for duplicate transactions.
+Notice that, if this property does not hold, it is not possible to guarantee any property across the network,
+such as transaction latency as defined above.
+
+:parking: _Property_ **Consistent transaction classification**: For any transaction `tx`
+and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
+$p$'s application MUST classify `tx` into the same transaction class as $q$'s application.
+
+This property only makes sense when the previous property (_consistent transaction classes_) defined above holds.
+Even if we ensure consistent transaction classes, if this property does not hold, a given transaction
+may not receive the same classification across the network and it will thus be impossible to reason
+about any network-wide guarantees we want to provide that transaction with.
+
+Additionally, it is important to note that these two properties also constrain the way transaction
+classes and transaction classification logic can evolve in an existing implementation.
+If either transaction classes or classification logic are not modified in a coordinated manner in a working system,
+there will be at least a period where the these two properties may not hold for all transactions.
+
+> TODO: Need to find somewhere in the text to say: "ReCheckTx" doesn't classify, its mempool information is disregarded"
+
 ## Alternative Approaches
 
-TODO
+### Priority Mempool
 
-Prio mempool: why is it not a good fit?
+CometBFT used to have a `v1` mempool, specified in Tendermint Core [ADR067][adr067] and deprecated as of `v0.37.x`,
+which supported per-transaction priority assignment.
+The key point of the priority mempool's design was that `CheckTxResponse` was extended with a few fields,
+one of which being an `int64` that the application could use to provide a priority to the transaction being checked.
+
+This design can be seen as partially addressing the specification of a Mempool with QoS
+presented in the previous section. Every possible value of the `int64` priority field returned by the application
+can be understood as a _different_ traffic class.
+Let us examine whether the properties specified above are fulfilled by the priority mempool design
+as described in [ADR067][adr067]:
+
+1. Partial ordering of all transactions is maintained because the design still keeps a FIFO queue for gossiping transactions.
+  Also, transactions are reaped according to non-decreasing priority first, and then in FIFO order
+  for transactions with equal priority (see this `ReapMaxBytesMaxGas`'s [docstring][reapmaxbytesmaxgas]).
+1. Since the priority mempool uses FIFO for transactions of equal priority, it also fulfills FIFO ordering per class.
+  The problem here is that, since every value of the priority `int64` field is considered a different transaction class,
+  there are virtually unlimited traffic classes.
+  So it is too easy for an application to end up using hundreds, if not thousands of transactions classes at a given time.
+  In this situation, FIFO ordering per class, while fulfilled, becomes a corner case and thus does not add much value.
+1. The consistent transaction classes property is trivially fulfilled, as the set of transaction classes never changes:
+  it is the set of all possible values of an `int64`.
+1. Finally, the priority mempool design does not make any provisions on how the application is to evolve its prioritization
+  (i.e., transaction classification) logic.
+  Therefore, the design does not guarantee the fulfillment of the consistent transaction classification property.
+
+The main hindrance for the wide adoption of the priority mempool was
+the dramatic reduction of the _observable_ FIFO guarantees for transactions (as explained in point 2 above)
+with respect to the `v0` mempool.
+
+Besides, the lack of provisions for evolving the prioritization logic (point 4 above) could have also got
+in the way of adoption.
+
+TODO
 
 Other alternatives:
 * Consider looking into mempool discussions in Solana
@@ -407,6 +480,8 @@ TODO
 
 ## References
 
-TODO
+- [ADR067][adr067], Priority mempool
+- [Docstring][reapmaxbytesmaxgas] of `ReapMaxBytesMaxGas`
 
-- Reference list
+[adr067]: ./tendermint-core/adr-067-mempool-refactor.md
+[reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324

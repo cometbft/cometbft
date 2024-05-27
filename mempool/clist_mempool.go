@@ -442,7 +442,7 @@ func (mem *CListMempool) resCbFirstTime(tx types.Tx, res *abci.CheckTxResponse) 
 	}) {
 		mem.notifyTxsAvailable()
 		if mem.onNewTx != nil {
-			mem.onNewTx(tx)
+			go mem.onNewTx(tx)
 		}
 	}
 }

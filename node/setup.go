@@ -260,11 +260,9 @@ func createMempoolAndMempoolReactor(
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)),
 			mempl.WithNewTxCallback(func(tx types.Tx) {
-				go func() {
 					_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
 						Tx: tx,
 					})
-				}()
 			}),
 		)
 		mp.SetLogger(logger)

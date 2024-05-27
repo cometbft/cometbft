@@ -151,8 +151,8 @@ to be useful and predictable for the whole appchain network.
 These properties are expressed in terms of consistency of the information, configuration and behaviour
 across nodes in the network.
 
-> TODO: Define "for the first time" here: receveived from RPC, peer, or `Update`
-> (try to define it an as modular a way as possible)
+> TODO: Define "for the first time" here: received from RPC, peer, or `Update`
+> (try to define it in as modular a way as possible)
 
 :parking: _Property_ **Consistent transaction classes**: For any transaction `tx`,
 and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
@@ -178,7 +178,7 @@ classes and transaction classification logic can evolve in an existing implement
 If either transaction classes or classification logic are not modified in a coordinated manner in a working system,
 there will be at least a period where the these two properties may not hold for all transactions.
 
-> TODO: Need to find somewhere in the text to say: "ReCheckTx" doesn't classify, it's mempool information is disregarded"
+> TODO: Need to find somewhere in the text to say: "ReCheckTx" doesn't classify, its mempool information is disregarded"
 
 ## Alternative Approaches
 

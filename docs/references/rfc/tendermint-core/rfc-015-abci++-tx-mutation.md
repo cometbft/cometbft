@@ -74,7 +74,7 @@ from the mempool, so this would be a pretty straightforward change.
 
 ### What value may be added to Tendermint by introducing transaction replacement?
 
-Transaction replacement would would enable applications to aggregate or disaggregate transactions.
+Transaction replacement would enable applications to aggregate or disaggregate transactions.
 
 For aggregation, a set of transactions that all related work, such as transferring
 tokens between the same two accounts, could be replaced with a single transaction,

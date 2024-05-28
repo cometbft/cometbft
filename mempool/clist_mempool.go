@@ -289,7 +289,7 @@ func (mem *CListMempool) CheckTx(
 	if err != nil {
 		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
 	}
-	reqRes.SetCallback(mem.handleCheckTxResponse(tx, externalCb, txInfo))
+	reqRes.SetCallback(mem.handleCheckTxResponse(tx, externalCb, &txInfo))
 
 	return nil
 }
@@ -302,7 +302,7 @@ func (mem *CListMempool) CheckTx(
 func (mem *CListMempool) handleCheckTxResponse(
 	tx types.Tx,
 	externalCb func(*abci.CheckTxResponse),
-	txInfo TxInfo,
+	txInfo *TxInfo,
 ) func(res *abci.Response) {
 	return func(r *abci.Response) {
 		// Check that rechecking txs is not in process.
@@ -360,7 +360,7 @@ func (mem *CListMempool) handleCheckTxResponse(
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *mempoolTx, txInfo TxInfo) bool {
+func (mem *CListMempool) addTx(memTx *mempoolTx, txInfo *TxInfo) bool {
 	tx := memTx.tx
 	txKey := tx.Key()
 

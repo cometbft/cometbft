@@ -770,7 +770,7 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	// Adding a new valid tx to the pool will notify a tx is available
 	tx := kvstore.NewTxFromID(1)
 	res := abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
-	mp.handleCheckTxResponse(tx, nil, TxInfo{})(res)
+	mp.handleCheckTxResponse(tx, nil, &TxInfo{})(res)
 	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Len(t, mp.TxsAvailable(), 1)
@@ -778,7 +778,7 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 
 	// Receiving CheckTx response for a tx already in the pool should not notify of available txs
 	res = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
-	mp.handleCheckTxResponse(tx, nil, TxInfo{})(res)
+	mp.handleCheckTxResponse(tx, nil, &TxInfo{})(res)
 	require.Equal(t, 1, mp.Size())
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Empty(t, mp.TxsAvailable())

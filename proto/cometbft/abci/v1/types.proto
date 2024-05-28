@@ -206,8 +206,7 @@ message FinalizeBlockRequest {
   bytes next_validators_hash = 7;
   // address of the public key of the original proposer of the block.
   bytes proposer_address = 8;
-  // height of the tip of a chain if the node is syncing. otherwise, the
-  // latest height (syncing_to == height).
+  // If the node is syncing/replaying blocks - target height. If not, syncing_to == height.
   int64 syncing_to = 9;
 }
 

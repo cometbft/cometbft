@@ -1529,8 +1529,7 @@ type FinalizeBlockRequest struct {
 	NextValidatorsHash []byte    `protobuf:"bytes,7,opt,name=next_validators_hash,json=nextValidatorsHash,proto3" json:"next_validators_hash,omitempty"`
 	// address of the public key of the original proposer of the block.
 	ProposerAddress []byte `protobuf:"bytes,8,opt,name=proposer_address,json=proposerAddress,proto3" json:"proposer_address,omitempty"`
-	// height of the tip of a chain if the node is syncing. otherwise, the
-	// latest height (syncing_to == height).
+	// If the node is syncing/replaying blocks - target height. If not, syncing_to == height.
 	SyncingTo int64 `protobuf:"varint,9,opt,name=syncing_to,json=syncingTo,proto3" json:"syncing_to,omitempty"`
 }
 

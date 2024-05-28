@@ -145,7 +145,7 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	// the second peer sends all the transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	for _, tx := range txs {
-		err := reactors[0].mempool.CheckTx(tx, nil, TxInfo{sender: secondNodeID})
+		_, err := reactors[0].mempool.CheckTx(tx, &TxInfo{sender: secondNodeID})
 		require.NoError(t, err)
 	}
 
@@ -174,8 +174,9 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which has the max size
 	// => ensure it's received by the second reactor.
 	tx1 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes)
-	err := reactors[0].mempool.CheckTx(tx1, nil, TxInfo{})
+	reqRes, err := reactors[0].mempool.CheckTx(tx1, &TxInfo{})
 	require.NoError(t, err)
+	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInOrder)
 
 	reactors[0].mempool.Flush()
@@ -184,8 +185,9 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which is beyond the max size
 	// => ensure it's not sent
 	tx2 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes + 1)
-	err = reactors[0].mempool.CheckTx(tx2, nil, TxInfo{})
+	reqRes, err = reactors[0].mempool.CheckTx(tx2, &TxInfo{})
 	require.Error(t, err)
+	require.Nil(t, reqRes)
 }
 
 func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
@@ -260,7 +262,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		go func() {
 			for _, tx := range txs {
-				_ = mp.CheckTx(tx, nil, TxInfo{})
+				_, _ = mp.CheckTx(tx, &TxInfo{})
 			}
 		}()
 	}

@@ -117,12 +117,13 @@ func sendTxs(ctx context.Context, cs *State) {
 			return
 		default:
 			tx := kvstore.NewTxFromID(i)
-			if err := assertMempool(cs.txNotifier).CheckTx(tx, func(resp *abci.CheckTxResponse) {
-				if resp.Code != 0 {
-					panic(fmt.Sprintf("Unexpected code: %d, log: %s", resp.Code, resp.Log))
-				}
-			}, mempl.TxInfo{}); err != nil {
+			reqRes, err := assertMempool(cs.txNotifier).CheckTx(tx, &mempl.TxInfo{})
+			if err != nil {
 				panic(err)
+			}
+			resp := reqRes.Response.GetCheckTx()
+			if resp.Code != 0 {
+				panic(fmt.Sprintf("Unexpected code: %d, log: %s", resp.Code, resp.Log))
 			}
 			i++
 		}
@@ -365,7 +366,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	newValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
 	require.NoError(t, err)
 	newValidatorTx1 := updateValTx(newValidatorPubKey1, testMinPower)
-	err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx1, nil, mempl.TxInfo{})
+	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx1, &mempl.TxInfo{})
 	require.NoError(t, err)
 
 	propBlock, propBlockParts, blockID := createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
@@ -387,7 +388,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	updateValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
 	require.NoError(t, err)
 	updateValidatorTx1 := updateValTx(updateValidatorPubKey1, 25)
-	err = assertMempool(css[0].txNotifier).CheckTx(updateValidatorTx1, nil, mempl.TxInfo{})
+	_, err = assertMempool(css[0].txNotifier).CheckTx(updateValidatorTx1, &mempl.TxInfo{})
 	require.NoError(t, err)
 
 	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
@@ -409,12 +410,12 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	newValidatorPubKey2, err := css[nVals+1].privValidator.GetPubKey()
 	require.NoError(t, err)
 	newValidatorTx2 := updateValTx(newValidatorPubKey2, testMinPower)
-	err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx2, nil, mempl.TxInfo{})
+	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx2, &mempl.TxInfo{})
 	require.NoError(t, err)
 	newValidatorPubKey3, err := css[nVals+2].privValidator.GetPubKey()
 	require.NoError(t, err)
 	newValidatorTx3 := updateValTx(newValidatorPubKey3, testMinPower)
-	err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx3, nil, mempl.TxInfo{})
+	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx3, &mempl.TxInfo{})
 	require.NoError(t, err)
 
 	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
@@ -450,7 +451,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	ensureNewProposal(proposalCh, height, round)
 
 	removeValidatorTx2 := updateValTx(newValidatorPubKey2, 0)
-	err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2, nil, mempl.TxInfo{})
+	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2, &mempl.TxInfo{})
 	require.NoError(t, err)
 
 	rs = css[0].GetRoundState()
@@ -486,7 +487,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	height++
 	incrementHeight(vss...)
 	removeValidatorTx3 := updateValTx(newValidatorPubKey3, 0)
-	err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx3, nil, mempl.TxInfo{})
+	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx3, &mempl.TxInfo{})
 	require.NoError(t, err)
 
 	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)

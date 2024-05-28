@@ -328,7 +328,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	txLength := 100
 	for i := 0; i <= int(maxBytes)/txLength; i++ {
 		tx := cmtrand.Bytes(txLength)
-		err := mempool.CheckTx(tx, nil, mempl.TxInfo{})
+		_, err := mempool.CheckTx(tx, &mempl.TxInfo{})
 		require.NoError(t, err)
 	}
 
@@ -406,7 +406,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	// fill the mempool with one txs just below the maximum size
 	txLength := int(types.MaxDataBytesNoEvidence(maxBytes, 1))
 	tx := cmtrand.Bytes(txLength - 4) // to account for the varint
-	err = mempool.CheckTx(tx, nil, mempl.TxInfo{})
+	_, err = mempool.CheckTx(tx, &mempl.TxInfo{})
 	require.NoError(t, err)
 
 	blockExec := sm.NewBlockExecutor(

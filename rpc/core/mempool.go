@@ -24,7 +24,7 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp
 	}
-	err := env.Mempool.CheckTx(tx, nil, mempl.TxInfo{})
+	_, err := env.Mempool.CheckTx(tx, &mempl.TxInfo{})
 	if err != nil {
 		return nil, err
 	}
@@ -40,15 +40,14 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	}
 
 	resCh := make(chan *abci.CheckTxResponse, 1)
-	err := env.Mempool.CheckTx(tx, func(res *abci.CheckTxResponse) {
-		select {
-		case <-ctx.Context().Done():
-		case resCh <- res:
-		}
-	}, mempl.TxInfo{})
+	reqRes, err := env.Mempool.CheckTx(tx, &mempl.TxInfo{})
 	if err != nil {
 		return nil, err
 	}
+	go func() {
+		reqRes.Wait()
+		resCh <- reqRes.Response.GetCheckTx()
+	}()
 
 	select {
 	case <-ctx.Context().Done():
@@ -97,16 +96,15 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	// Broadcast tx and wait for CheckTx result
 	checkTxResCh := make(chan *abci.CheckTxResponse, 1)
-	err = env.Mempool.CheckTx(tx, func(res *abci.CheckTxResponse) {
-		select {
-		case <-ctx.Context().Done():
-		case checkTxResCh <- res:
-		}
-	}, mempl.TxInfo{})
+	reqRes, err := env.Mempool.CheckTx(tx, &mempl.TxInfo{})
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
 		return nil, ErrTxBroadcast{Source: err, ErrReason: ErrCheckTxFailed}
 	}
+	go func() {
+		reqRes.Wait()
+		checkTxResCh <- reqRes.Response.GetCheckTx()
+	}()
 
 	select {
 	case <-ctx.Context().Done():

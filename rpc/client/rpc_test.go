@@ -374,8 +374,9 @@ func TestUnconfirmedTxs(t *testing.T) {
 
 	ch := make(chan *abci.CheckTxResponse, 1)
 	mempool := node.Mempool()
-	err := mempool.CheckTx(tx, func(resp *abci.CheckTxResponse) { ch <- resp }, mempl.TxInfo{})
+	reqRes, err := mempool.CheckTx(tx, &mempl.TxInfo{})
 	require.NoError(t, err)
+	ch <- reqRes.Response.GetCheckTx()
 
 	// wait for tx to arrive in mempoool.
 	select {
@@ -404,8 +405,9 @@ func TestNumUnconfirmedTxs(t *testing.T) {
 
 	ch := make(chan *abci.CheckTxResponse, 1)
 	mempool := node.Mempool()
-	err := mempool.CheckTx(tx, func(resp *abci.CheckTxResponse) { ch <- resp }, mempl.TxInfo{})
+	reqRes, err := mempool.CheckTx(tx, &mempl.TxInfo{})
 	require.NoError(t, err)
+	ch <- reqRes.Response.GetCheckTx()
 
 	// wait for tx to arrive in mempoool.
 	select {

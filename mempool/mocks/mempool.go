@@ -16,9 +16,9 @@ type Mempool struct {
 	mock.Mock
 }
 
-// CheckTx provides a mock function with given fields: tx, callback, txInfo
-func (_m *Mempool) CheckTx(tx types.Tx, callback func(*v1.CheckTxResponse), txInfo mempool.TxInfo) error {
-	ret := _m.Called(tx, callback, txInfo)
+// CheckTx provides a mock function with given fields: tx, externalCb, txInfo
+func (_m *Mempool) CheckTx(tx types.Tx, externalCb func(*v1.CheckTxResponse), txInfo mempool.TxInfo) error {
+	ret := _m.Called(tx, externalCb, txInfo)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckTx")
@@ -26,7 +26,7 @@ func (_m *Mempool) CheckTx(tx types.Tx, callback func(*v1.CheckTxResponse), txIn
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(types.Tx, func(*v1.CheckTxResponse), mempool.TxInfo) error); ok {
-		r0 = rf(tx, callback, txInfo)
+		r0 = rf(tx, externalCb, txInfo)
 	} else {
 		r0 = ret.Error(0)
 	}

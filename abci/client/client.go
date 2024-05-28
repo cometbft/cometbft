@@ -37,10 +37,10 @@ type Client interface {
 	// for the v0 mempool. We should explore refactoring the
 	// mempool to remove this vestige behavior.
 	//
-	// SetResponseCallback is not actually used anymore. It was used only by the mempool on CheckTx
-	// requests. Now the callback for processing the response is set on the ReqRes returned by
-	// CheckTxAsync. This is more flexible as it allows to pass other tx information such as the
-	// sender.
+	// SetResponseCallback is not used anymore. The callback was invoked only by the mempool on
+	// CheckTx responses, only during rechecking. Now the responses are handled by the callback of
+	// the *ReqRes struct returned by CheckTxAsync. This callback is more flexible as it allows to
+	// pass other information such as the sender.
 	SetResponseCallback(cb Callback)
 	CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error)
 }

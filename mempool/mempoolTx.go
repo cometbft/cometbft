@@ -15,7 +15,7 @@ type mempoolTx struct {
 	tx        types.Tx // validated by the application
 
 	// ids of peers who've sent us this tx (as a map for quick lookups).
-	// senders: PeerID -> bool
+	// senders: PeerID -> struct{}
 	senders sync.Map
 }
 
@@ -29,7 +29,7 @@ func (memTx *mempoolTx) isSender(peerID p2p.ID) bool {
 	return ok
 }
 
-// Add the peer ID to the list of senders. Return true if it exists already in the list.
+// Add the peer ID to the list of senders. Return true iff it exists already in the list.
 func (memTx *mempoolTx) addSender(peerID p2p.ID) bool {
 	if peerID == "" {
 		return false

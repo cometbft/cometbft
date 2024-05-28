@@ -310,7 +310,7 @@ title: Methods
     | local_last_commit    | [ExtendedCommitInfo](#extendedcommitinfo)       | Info about the last commit, obtained locally from CometBFT's data structures.                 | 3            |
     | misbehavior          | repeated [Misbehavior](#misbehavior)            | List of information about validators that misbehaved.                                         | 4            |
     | height               | int64                                           | The height of the block that will be proposed.                                                | 5            |
-    | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the block that that will be proposed.                                            | 6            |
+    | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the block that will be proposed.                                            | 6            |
     | next_validators_hash | bytes                                           | Merkle root of the next validator set.                                                        | 7            |
     | proposer_address     | bytes                                           | [Address](../core/data_structures.md#address) of the validator that is creating the proposal. | 8            |
 
@@ -498,7 +498,7 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
 
     | Name           | Type  | Description                                           | Field Number | Deterministic |
     |----------------|-------|-------------------------------------------------------|--------------|---------------|
-    | vote_extension | bytes | Information signed by by CometBFT. Can have 0 length. | 1            | No            |
+    | vote_extension | bytes | Information signed by CometBFT. Can have 0 length. | 1            | No            |
 
 * **Usage**:
     * `ExtendVoteResponse.vote_extension` is application-generated information that will be signed

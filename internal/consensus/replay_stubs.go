@@ -30,7 +30,7 @@ func (emptyMempool) RemoveTxByKey(types.TxKey) error {
 }
 
 func (emptyMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return types.Txs{} }
-func (emptyMempool) FilterTx([]byte) types.Tx                  { return types.Tx{} }
+func (emptyMempool) GetTxByHash([]byte) types.Tx               { return types.Tx{} }
 func (emptyMempool) ReapMaxTxs(int) types.Txs                  { return types.Txs{} }
 func (emptyMempool) Update(
 	int64,

@@ -539,8 +539,8 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	return txs
 }
 
-// FilterTx returns the types.Tx with the given hash if found in the mempool, otherwise returns nil.
-func (mem *CListMempool) FilterTx(hash []byte) types.Tx {
+// GetTxByHash returns the types.Tx with the given hash if found in the mempool, otherwise returns nil.
+func (mem *CListMempool) GetTxByHash(hash []byte) types.Tx {
 	if elem, ok := mem.getCElement(types.TxKey(hash)); ok {
 		return elem.Value.(*mempoolTx).tx
 	}

@@ -44,9 +44,9 @@ type Mempool interface {
 	// (~ all available transactions).
 	ReapMaxTxs(max int) types.Txs
 
-	// FilterTx returns the types.Tx with the given hash if found in the mempool,
+	// GetTxByHash returns the types.Tx with the given hash if found in the mempool,
 	// otherwise returns nil.
-	FilterTx(hash []byte) types.Tx
+	GetTxByHash(hash []byte) types.Tx
 
 	// Lock locks the mempool. The consensus must be able to hold lock to safely
 	// update.

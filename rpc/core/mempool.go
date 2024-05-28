@@ -158,7 +158,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 // UnconfirmedTx gets unconfirmed transaction by hash.
 func (env *Environment) UnconfirmedTx(_ *rpctypes.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
 	return &ctypes.ResultUnconfirmedTx{
-		Tx: env.Mempool.FilterTx(hash),
+		Tx: env.Mempool.GetTxByHash(hash),
 	}, nil
 }
 

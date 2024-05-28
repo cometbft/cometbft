@@ -27,6 +27,7 @@ func TestEventBusPublishEventPendingTx(t *testing.T) {
 	})
 
 	tx := Tx("foo")
+	txs := [][]byte{tx}
 	// PublishEventPendingTx adds 1 composite key, so the query below should work
 	query := fmt.Sprintf("tm.event='PendingTx' AND tx.hash='%X'", tx.Hash())
 	txsSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
@@ -36,12 +37,12 @@ func TestEventBusPublishEventPendingTx(t *testing.T) {
 	go func() {
 		msg := <-txsSub.Out()
 		edt := msg.Data().(EventDataPendingTx)
-		assert.EqualValues(t, tx, edt.Tx)
+		assert.EqualValues(t, txs, edt.Txs)
 		close(done)
 	}()
 
 	err = eventBus.PublishEventPendingTx(EventDataPendingTx{
-		Tx: tx,
+		Txs: txs,
 	})
 	require.NoError(t, err)
 

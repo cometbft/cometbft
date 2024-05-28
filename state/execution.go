@@ -206,10 +206,10 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	if len(txs) > 0 {
 		res, err := blockExec.proxyApp.ValidateOracleVotes(context.TODO(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
 
-		if err != nil && res.Status == abci.ResponseValidateOracleVotes_absent {
+		if err != nil && res.Status == abci.ResponseValidateOracleVotes_ABSENT {
 			// oracleTx is not present, continue normal processProposal flow
 			blockExec.logger.Error("error validating oracle votes:", "err", err)
-		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_present {
+		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_PRESENT {
 			// oracleTx is present but it is invalid, remove from txs
 			blockExec.logger.Error("error validating oracle votes:", "err", err)
 			return false, fmt.Errorf("processProposal: invalid oracle votes submitted: %v", err)

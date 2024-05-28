@@ -104,7 +104,7 @@ func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 		}
 	}
 
-	rootHash, err := op.Proof.computeRootHash()
+	rootHash, err := op.Proof.computeRootHash(tmhash.New())
 	if err != nil {
 		return nil, err
 	}

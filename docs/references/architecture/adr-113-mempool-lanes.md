@@ -229,11 +229,11 @@ However, unlike CometBFT, Solana keeps the same leader for a whole epoch, whole 
 According to the Gulf Stream design, rather than maintaining a mempool at all nodes to ensure transactions
 will reach _any_ leader/validator, transactions are directly sent to the current leader and the next,
 according to the sequence of leaders calculated locally (known as _leader schedule_).
-As a result, Gulf Stream does not use gossip-based primitive to send disseminate transactions,
-but UDP packets send directly to the current (and next) leader's IP address.
+As a result, Gulf Stream does not use gossip-based primitives to disseminate transactions,
+but UDP packets sent directly to the current (and next) leader's IP address.
 One of the main points of adopting gossip protocols by Tendermint Core and CometBFT (coming from Bitcoin and Ethereum)
 is censorship resistance. It is not clear how Gulf Stream deals with an adversary controlling a part of the network
-that stans on the way of those UDP packets containing submitted transactions.
+that stands on the way of those UDP packets containing submitted transactions.
 
 #### Transaction Priority Design
 

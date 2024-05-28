@@ -104,7 +104,7 @@ func TestValidatorValidateBasic(t *testing.T) {
 func TestValidatorCopy(t *testing.T) {
 	priv := NewMockPV()
 	pubKey, _ := priv.GetPubKey()
-	val := Validator{
+	val := &Validator{
 		Address:          pubKey.Address(),
 		PubKey:           pubKey,
 		VotingPower:      10,

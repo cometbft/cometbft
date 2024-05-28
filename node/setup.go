@@ -262,9 +262,11 @@ func createMempoolAndMempoolReactor(
 				txs := pendingTxs
 				pendingTxs = make([][]byte, 0)
 				pendingTxLock.Unlock()
-				_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
-					Txs: txs,
-				})
+				if len(txs) > 0 {
+					_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
+						Txs: txs,
+					})
+				}
 			}
 		}()
 		mp := mempl.NewCListMempool(

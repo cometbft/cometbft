@@ -835,13 +835,7 @@ func (cs *State) receiveRoutine(maxSteps int) {
 			cs.handleMsg(mi)
 
 		case mi = <-cs.internalMsgQueue:
-			err := cs.wal.WriteSync(mi) // NOTE: fsync
-			if err != nil {
-				panic(fmt.Sprintf(
-					"failed to write %v msg to consensus WAL due to %v; check your file system and restart the node",
-					mi, err,
-				))
-			}
+			cs.mustWriteWalSync(mi)
 
 			if _, ok := mi.Msg.(*VoteMessage); ok {
 				// we actually want to simulate failing during
@@ -867,6 +861,16 @@ func (cs *State) receiveRoutine(maxSteps int) {
 			onExit(cs)
 			return
 		}
+	}
+}
+
+func (cs *State) mustWriteWalSync(mi msgInfo) {
+	err := cs.wal.WriteSync(mi) // NOTE: fsync
+	if err != nil {
+		panic(fmt.Sprintf(
+			"failed to write %v msg to consensus WAL due to %v; check your file system and restart the node",
+			mi, err,
+		))
 	}
 }
 
@@ -1251,12 +1255,18 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		proposal.Signature = p.Signature
 
 		// send proposal and block parts on internal msg queue
-		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()})
+		mi := msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()}
+		cs.mustWriteWalSync(mi) // TODO: Reconsider if we need this WAL write
+		cs.setProposal(proposal, mi.ReceiveTime)
 
 		for i := 0; i < int(blockParts.Total()); i++ {
 			part := blockParts.GetPart(i)
-			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, "", time.Time{}})
+			mi := msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, "", time.Time{}}
+			cs.mustWriteWalSync(mi) // TODO: Reconsider if we need this WAL write, definitely does not need to be sync
+			// TODO: Make a new method "addAllBlockParts" for use here.
+			cs.addProposalBlockPart(mi.Msg.(*BlockPartMessage), "")
 		}
+		cs.handleCompleteProposal(cs.Height)
 
 		cs.Logger.Debug("signed proposal", "height", height, "round", round, "proposal", proposal)
 	} else if !cs.replayMode {

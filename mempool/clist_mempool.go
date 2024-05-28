@@ -305,6 +305,13 @@ func (mem *CListMempool) handleCheckTxResponse(
 	txInfo *TxInfo,
 ) func(res *abci.Response) {
 	return func(r *abci.Response) {
+		defer func() {
+			// passed in by the caller of CheckTx, eg. the RPC
+			if externalCb != nil {
+				externalCb(r.GetCheckTx())
+			}
+		}()
+
 		// Check that rechecking txs is not in process.
 		if !mem.recheck.done() {
 			panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %X", tx.Hash()))
@@ -350,11 +357,6 @@ func (mem *CListMempool) handleCheckTxResponse(
 		// update metrics
 		mem.metrics.Size.Set(float64(mem.Size()))
 		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
-
-		// passed in by the caller of CheckTx, eg. the RPC
-		if externalCb != nil {
-			externalCb(res)
-		}
 	}
 }
 

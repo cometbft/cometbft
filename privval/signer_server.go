@@ -72,13 +72,16 @@ func (ss *SignerServer) servicePendingRequest() {
 		return
 	}
 
-	ss.handlerMtx.Lock()
-	res, err := ss.validationRequestHandler(ss.privVal, req, ss.chainID)
-	ss.handlerMtx.Unlock()
-	if err != nil {
-		// only log the error; we'll reply with an error in res
-		ss.Logger.Error("SignerServer: handleMessage", "err", err)
-	}
+	var res privvalproto.Message
+	func() {
+		ss.handlerMtx.Lock()
+		defer ss.handlerMtx.Unlock()
+		res, err = ss.validationRequestHandler(ss.privVal, req, ss.chainID)
+		if err != nil {
+			// only log the error; we'll reply with an error in res
+			ss.Logger.Error("SignerServer: handleMessage", "err", err)
+		}
+	}()
 
 	err = ss.endpoint.WriteMessage(res)
 	if err != nil {

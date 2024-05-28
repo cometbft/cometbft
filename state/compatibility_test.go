@@ -19,7 +19,7 @@ import (
 
 // Compatibility test across different state proto versions
 
-// This test unmarshal a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses
+// This test unmarshals a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should not fail because they are compatible.
 func TestStateProtoV1Beta2ToV1(t *testing.T) {

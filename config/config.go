@@ -841,8 +841,10 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 
 // OracleConfig defines the configuration for the CometBFT oracle service
 type OracleConfig struct {
-	// MaxGossipVoteAge determines how long we should keep the gossip votes in terms of block height
-	MaxGossipVoteAge int `mapstructure:"max_gossip_vote_age"`
+	// MaxOracleGossipBlocksDelayed determines how long we should keep the gossip votes in terms of block height
+	MaxOracleGossipBlocksDelayed int `mapstructure:"max_oracle_gossip_blocks_delayed"`
+	// MaxOracleGossipAge determines how long we should keep the gossip votes in terms of seconds
+	MaxOracleGossipAge int `mapstructure:"max_oracle_gossip_age"`
 	// Interval determines how long we should wait before batch signing votes
 	SignInterval time.Duration `mapstructure:"sign_interval"`
 	// Interval determines how long we should wait between gossiping of votes
@@ -856,11 +858,12 @@ type OracleConfig struct {
 // DefaultOracleConfig returns a default configuration for the CometBFT oracle service
 func DefaultOracleConfig() *OracleConfig {
 	return &OracleConfig{
-		MaxGossipVoteAge: 2,                      // keep all gossipVotes from 3 blocks behind
-		SignInterval:     100 * time.Millisecond, // 0.1s
-		GossipInterval:   100 * time.Millisecond, // 0.1s
-		PruneInterval:    500 * time.Millisecond, // 0.5s
-		MaxGossipMsgSize: 65536,
+		MaxOracleGossipBlocksDelayed: 2,                      // keep all gossipVotes from at most 2 blocks behind
+		MaxOracleGossipAge:           30,                     // keep all gossipVotes from at most 30s ago
+		SignInterval:                 100 * time.Millisecond, // 0.1s
+		GossipInterval:               100 * time.Millisecond, // 0.1s
+		PruneInterval:                500 * time.Millisecond, // 0.5s
+		MaxGossipMsgSize:             65536,
 	}
 }
 
@@ -873,8 +876,11 @@ func TestOracleConfig() *OracleConfig {
 
 // ValidateBasic performs basic validation and returns an error if any check fails.
 func (cfg *OracleConfig) ValidateBasic() error {
-	if cfg.MaxGossipVoteAge < 0 {
-		return errors.New("max_gossip_vote_age can't be negative")
+	if cfg.MaxOracleGossipBlocksDelayed < 0 {
+		return errors.New("max_oracle_gossip_blocks_delayed can't be negative")
+	}
+	if cfg.MaxOracleGossipAge < 0 {
+		return errors.New("max_oracle_gossip_age can't be negative")
 	}
 	if cfg.SignInterval < 0 {
 		return errors.New("sign_interval can't be negative")

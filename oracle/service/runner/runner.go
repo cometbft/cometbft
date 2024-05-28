@@ -86,10 +86,18 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	go func(oracleInfo *types.OracleInfo) {
-		maxGossipVoteAge := oracleInfo.Config.MaxGossipVoteAge
-		if maxGossipVoteAge == 0 {
-			maxGossipVoteAge = 3
+		// only keep votes that are less than 2 blocks old
+		maxOracleGossipBlocksDelayed := oracleInfo.Config.MaxOracleGossipBlocksDelayed
+		if maxOracleGossipBlocksDelayed == 0 {
+			maxOracleGossipBlocksDelayed = 2
 		}
+
+		// only keep votes that are less than 30s old
+		maxOracleGossipAge := oracleInfo.Config.MaxOracleGossipAge
+		if maxOracleGossipAge == 0 {
+			maxOracleGossipAge = 30
+		}
+
 		pruneInterval := oracleInfo.Config.PruneInterval
 		if pruneInterval == 0 {
 			pruneInterval = 500 * time.Millisecond
@@ -109,21 +117,23 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 				oracleInfo.BlockTimestamps = append(oracleInfo.BlockTimestamps, lastBlockTime)
 			}
 
-			if len(oracleInfo.BlockTimestamps) < maxGossipVoteAge {
+			// if chain is stale and not enough blockTimestamps have been accumulated, add extra check to see if earliest block timestamp is older than the latest allowable timestamp
+			latestAllowableTimestamp := time.Now().Unix() - int64(maxOracleGossipAge)
+			if len(oracleInfo.BlockTimestamps) < maxOracleGossipBlocksDelayed && oracleInfo.BlockTimestamps[0] > latestAllowableTimestamp {
 				continue
 			}
 
-			if len(oracleInfo.BlockTimestamps) > maxGossipVoteAge {
+			// only keep last x number of block timestamps, where x = maxOracleGossipBlocksDelayed
+			if len(oracleInfo.BlockTimestamps) > maxOracleGossipBlocksDelayed {
 				oracleInfo.BlockTimestamps = oracleInfo.BlockTimestamps[1:]
 			}
 
-			latestAllowableTimestamp := time.Now().Unix() - 30
+			// prune votes that are older than the latestAllowableTimestamp, which is the max(earliest block timestamp collected, current time - maxOracleGossipAge)
 			if oracleInfo.BlockTimestamps[0] > latestAllowableTimestamp {
 				latestAllowableTimestamp = oracleInfo.BlockTimestamps[0]
 			}
 
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
-			// prune votes that are older than the min(maxGossipVoteAge (in terms of block height), 30s)
 			newVotes := []*oracleproto.Vote{}
 			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
 			for _, vote := range unsignedVoteBuffer {
@@ -137,7 +147,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 			gossipBuffer := oracleInfo.GossipVoteBuffer.Buffer
 
-			// prune gossip votes that have not been updated in the last x amt of blocks, where x is the maxGossipVoteAge
+			// prune gossipedVotes that are older than the latestAllowableTimestamp, which is the max(earliest block timestamp collected, current time - maxOracleGossipAge)
 			for valAddr, gossipVote := range gossipBuffer {
 				if gossipVote.SignedTimestamp < latestAllowableTimestamp {
 					delete(gossipBuffer, valAddr)

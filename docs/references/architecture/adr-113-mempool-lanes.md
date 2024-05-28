@@ -182,7 +182,7 @@ there will be at least a period where the these two properties may not hold for 
 
 ## Alternative Approaches
 
-### Priority Mempool
+### CometBFT Priority Mempool
 
 CometBFT used to have a `v1` mempool, specified in Tendermint Core [ADR067][adr067] and deprecated as of `v0.37.x`,
 which supported per-transaction priority assignment.
@@ -216,12 +216,55 @@ with respect to the `v0` mempool.
 Besides, the lack of provisions for evolving the prioritization logic (point 4 above) could have also got
 in the way of adoption.
 
+
+### Solana
+
+#### Introduction to Gulf Stream and Comparison with CometBFT's Mempool
+
+A core part of Solana's design is [Gulf Stream][gulf-stream],
+which is marketed as a "mempool-less" way of processing in-flight transactions.
+Similarly of a CometBFT- based chain, the sequence of leaders (nodes that produce blocks) is known in advance.
+However, unlike CometBFT, Solana keeps the same leader for a whole epoch, whole typical length is approx. 2 days
+(what if the leader fails in the middle of an epoch?).
+According to the Gulf Stream design, rather than maintaining a mempool at all nodes to ensure transactions
+will reach _any_ leader/validator, transactions are directly sent to the current leader and the next,
+according to the sequence of leaders calculated locally (known as _leader schedule_).
+As a result, Gulf Stream does not use gossip-based primitives to disseminate transactions,
+but UDP packets sent directly to the current (and next) leader's IP address.
+One of the main points of adopting gossip protocols by Tendermint Core and CometBFT (coming from Bitcoin and Ethereum)
+is censorship resistance. It is not clear how Gulf Stream deals with an adversary controlling a part of the network
+that stands on the way of those UDP packets containing submitted transactions.
+
+#### Transaction Priority Design
+
+In Solana, transaction priority is controlled by fees: they introduce the concept of [_priority fees_][solana-prio-fees].
+The priority fee is an optional configuration parameter when submitting a transaction,
+which allows the submitter to increase the likelihood of their transaction making it to a block.
+The priority fee is provided in terms of _price per Unit of Computation_ (UC), priced in [micro-lamports per CU][prio-fee-price].
+A UC is the equivalent of Cosmos's _gas_, and so, the priority fee is analogous (in concept)
+to the Cosmos SDK's `--gas-prices` [flag][sdk-gas-prices].
+The main difference if that the SDK (currently) uses `--gas-prices`
+to set up a per-node threshold of acceptability in gas prices,
+whereas Solana uses the (default or user-configured) priority fee as the transaction's _actual_ priority.
+
+This is very similar to the way CometBFT's priority mempool in `v0.37.x` was supposed to be used by applications,
+but in a monolithic manner: there is no "priority" abstraction in Solana as there is nothing similar to ABCI.
+In short, the fees _are_ the priority.
+Thus, if we were to check the properties specified [above](#mempool-with-qos),
+with the caveat that Solana does not have a built-in mempool,
+we would reach the same conclusions as with the CometBFT's `v0.37.x` [priority mempool](#cometbft-priority-mempool).
+Namely, a _degradation_ in observable FIFO guarantees (affecting applications that depend on it for performance),
+and a lack a provisions of evolving priority classification in a consistent manner.
+The latter may appear less important as transactions are directly sent to the current leader,
+but it is not clear how retried transactions in periods of high load can be receive a consistent priority treatment.
+
+### Ethereum pre-confirmations
+
 TODO
 
-Other alternatives:
-* Consider looking into mempool discussions in Solana
-* Ethereum pre-confirmations
+* https://pkg.go.dev/github.com/skip-mev/block-sdk/v2/block#section-readme
 * Timebox this: 1-2 days each
+
 
 
 ## Decision
@@ -482,6 +525,14 @@ TODO
 
 - [ADR067][adr067], Priority mempool
 - [Docstring][reapmaxbytesmaxgas] of `ReapMaxBytesMaxGas`
+- Solana's [Gulf Stream][gulf-stream]
+- Solana's [Priority Fees][solana-prio-fees]
+- Solana's [priority fee pricing][prio-fee-price]
+- SDK's [gas prices][sdk-gas-prices]
 
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
 [reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324
+[gulf-stream]: https://medium.com/solana-labs/gulf-stream-solanas-mempool-less-transaction-forwarding-protocol-d342e72186ad
+[solana-prio-fees]: https://solana.com/developers/guides/advanced/how-to-use-priority-fees
+[prio-fee-price]: https://solana.com/developers/guides/advanced/how-to-use-priority-fees
+[sdk-gas-prices]: https://docs.cosmos.network/v0.50/learn/beginner/tx-lifecycle#gas-and-fees

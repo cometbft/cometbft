@@ -121,7 +121,8 @@ type State struct {
 	nSteps int
 
 	// some functions can be overwritten for testing
-	decideProposal func(height int64, round int32)
+	// decideProposal returns a function for gossiping the block.
+	decideProposal func(height int64, round int32) func()
 	doPrevote      func(height int64, round int32)
 	setProposal    func(proposal *types.Proposal, t time.Time) error
 
@@ -190,6 +191,7 @@ func NewState(
 		}
 	}
 
+	fmt.Println("NewState call to update2state")
 	cs.updateToState(state)
 
 	// NOTE: we do not call scheduleRound0 yet, we do that upon Start()
@@ -638,6 +640,7 @@ func (cs *State) votesFromSeenCommit(state sm.State) (*types.VoteSet, error) {
 // Updates State and increments height to match that of state.
 // The round becomes 0 and cs.Step becomes cstypes.RoundStepNewHeight.
 func (cs *State) updateToState(state sm.State) {
+	fmt.Println("update to STate calll")
 	if cs.CommitRound > -1 && 0 < cs.Height && cs.Height != state.LastBlockHeight {
 		panic(fmt.Sprintf(
 			"updateToState() expected state height of %v but found %v",
@@ -954,6 +957,10 @@ func (cs *State) handleMsg(mi msgInfo) {
 		return
 	}
 
+	cs.logMsgErr(err, peerID, msg)
+}
+
+func (cs *State) logMsgErr(err error, peerID p2p.ID, msg Message) {
 	if err != nil {
 		cs.Logger.Error(
 			"failed to process message",
@@ -1164,6 +1171,8 @@ func (cs *State) enterPropose(height int64, round int32) {
 
 	logger.Debug("entering propose step", "current", log.NewLazySprintf("%v/%v/%v", cs.Height, cs.Round, cs.Step))
 
+	var disseminateProposalSet bool
+	var disseminateProposal func()
 	defer func() {
 		// Done enterPropose:
 		cs.updateRoundStep(round, cstypes.RoundStepPropose)
@@ -1174,6 +1183,9 @@ func (cs *State) enterPropose(height int64, round int32) {
 		// or else after timeoutPropose
 		if cs.isProposalComplete() {
 			cs.enterPrevote(height, cs.Round)
+		}
+		if disseminateProposalSet {
+			disseminateProposal()
 		}
 	}()
 
@@ -1205,7 +1217,8 @@ func (cs *State) enterPropose(height int64, round int32) {
 
 	if cs.isProposer(addr) {
 		logger.Debug("propose step; our turn to propose", "proposer", addr)
-		cs.decideProposal(height, round)
+		disseminateProposal = cs.decideProposal(height, round)
+		disseminateProposalSet = true
 	} else {
 		logger.Debug("propose step; not our turn to propose", "proposer", cs.Validators.GetProposer().Address)
 	}
@@ -1215,9 +1228,14 @@ func (cs *State) isProposer(address []byte) bool {
 	return bytes.Equal(cs.Validators.GetProposer().Address, address)
 }
 
+func blockGossipedViaMsgQueue() {}
+func noBlockGossip()            {}
+
 // We are the proposer, we either need to choose the locked block
 // or create a new proposal block.
-func (cs *State) defaultDecideProposal(height int64, round int32) {
+// This function returns a function that will update our internal state
+// directly for the proposal and block parts.
+func (cs *State) defaultDecideProposal(height int64, round int32) func() {
 	var block *types.Block
 	var blockParts *types.PartSet
 
@@ -1231,7 +1249,7 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		block, err = cs.createProposalBlock(context.TODO())
 		if err != nil {
 			cs.Logger.Error("unable to create proposal block", "error", err)
-			return
+			return noBlockGossip
 		} else if block == nil {
 			panic("Method createProposalBlock should not provide a nil block without errors")
 		}
@@ -1239,7 +1257,7 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 		blockParts, err = block.MakePartSet(types.BlockPartSizeBytes)
 		if err != nil {
 			cs.Logger.Error("unable to create proposal block part set", "error", err)
-			return
+			return noBlockGossip
 		}
 	}
 
@@ -1254,22 +1272,25 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 	proposal := types.NewProposal(height, round, cs.ValidRound, propBlockID, block.Header.Time)
 	p := proposal.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err == nil {
-		proposal.Signature = p.Signature
-
-		// send proposal and block parts on internal msg queue
-		mi := msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()}
-		cs.mustWriteWalSync(mi) // TODO: Reconsider if we need this WAL write
-		cs.setProposal(proposal, mi.ReceiveTime)
-
-		for i := 0; i < int(blockParts.Total()); i++ {
-			part := blockParts.GetPart(i)
-			cs.sendInternalMessage(msgInfo{&BlockPartMessage{cs.Height, cs.Round, part}, "", time.Time{}})
-		}
-
 		cs.Logger.Debug("signed proposal", "height", height, "round", round, "proposal", proposal)
+		proposal.Signature = p.Signature
+		return func() {
+			// send proposal and block parts on internal msg queue
+			mi := msgInfo{&ProposalMessage{proposal}, "", cmttime.Now()}
+			cs.sendInternalMessage(mi)
+			// cs.mustWriteWalSync(mi) // TODO: Reconsider if we need this WAL write
+			// err := cs.setProposal(proposal, mi.ReceiveTime)
+			// cs.logMsgErr(err, "", mi.Msg)
+
+			for i := 0; i < int(blockParts.Total()); i++ {
+				part := blockParts.GetPart(i)
+				cs.sendInternalMessage(msgInfo{&BlockPartMessage{height, round, part}, "", time.Time{}})
+			}
+		}
 	} else if !cs.replayMode {
 		cs.Logger.Error("propose step; failed signing proposal", "height", height, "round", round, "err", err)
 	}
+	return noBlockGossip
 }
 
 // Returns true if the proposal block is complete &&
@@ -1931,6 +1952,7 @@ func (cs *State) finalizeCommit(height int64) {
 	cs.recordMetrics(height, block)
 
 	// NewHeightStep!
+	fmt.Println("finalize commit call to update2state")
 	cs.updateToState(stateCopy)
 
 	fail.Fail() // XXX
@@ -2041,6 +2063,7 @@ func (cs *State) recordMetrics(height int64, block *types.Block) {
 // -----------------------------------------------------------------------------
 
 func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time) error {
+	fmt.Println("defaultSetProposal", proposal)
 	// Already have one
 	// TODO: possibly catch double proposals
 	if cs.Proposal != nil || proposal == nil {

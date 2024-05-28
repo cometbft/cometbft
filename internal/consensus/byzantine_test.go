@@ -176,7 +176,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 	// proposed will have a valid timestamp
 	lazyProposer := css[1]
 
-	lazyProposer.decideProposal = func(height int64, round int32) {
+	lazyProposer.decideProposal = func(height int64, round int32) func() {
 		lazyProposer.Logger.Info("Lazy Proposer proposing condensed commit")
 		if lazyProposer.privValidator == nil {
 			panic("entered createProposalBlock with privValidator being nil")
@@ -195,7 +195,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			extCommit = lazyProposer.LastCommit.MakeExtendedCommit(veHeightParam)
 		default: // This shouldn't happen.
 			lazyProposer.Logger.Error("enterPropose: Cannot propose anything: No commit for the previous block")
-			return
+			return blockGossipedViaMsgQueue
 		}
 
 		// omit the last signature in the commit
@@ -205,7 +205,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 			// If this node is a validator & proposer in the current round, it will
 			// miss the opportunity to create a block.
 			lazyProposer.Logger.Error(fmt.Sprintf("enterPropose: %v", ErrPubKeyIsNotSet))
-			return
+			return blockGossipedViaMsgQueue
 		}
 		proposerAddr := lazyProposer.privValidatorPubKey.Address()
 
@@ -239,6 +239,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		} else if !lazyProposer.replayMode {
 			lazyProposer.Logger.Error("enterPropose: Error signing proposal", "height", height, "round", round, "err", err)
 		}
+		return blockGossipedViaMsgQueue
 	}
 
 	// start the consensus reactors
@@ -335,8 +336,9 @@ func TestByzantineConflictingProposalsWithPartition(t *testing.T) {
 			// do any safety checks.
 			css[i].privValidator.(types.MockPV).DisableChecks()
 			j := i
-			css[i].decideProposal = func(height int64, round int32) {
+			css[i].decideProposal = func(height int64, round int32) func() {
 				byzantineDecideProposalFunc(ctx, t, height, round, css[j], switches[j])
+				return blockGossipedViaMsgQueue
 			}
 			// We are setting the prevote function to do nothing because the prevoting
 			// and precommitting are done alongside the proposal.

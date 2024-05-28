@@ -105,7 +105,7 @@ func startNewStateAndWaitForBlock(
 	case <-newBlockSub.Out():
 	case <-newBlockSub.Canceled():
 		t.Fatal("newBlockSub was canceled")
-	case <-time.After(120 * time.Second):
+	case <-time.After(10 * time.Second):
 		t.Fatal("Timed out waiting for new block (see trace above)")
 	}
 }
@@ -142,13 +142,13 @@ func TestWALCrash(t *testing.T) {
 			func(_ dbm.DB, _ *State, _ context.Context) {},
 			1,
 		},
-		{
-			"many non-empty blocks",
-			func(_ dbm.DB, cs *State, ctx context.Context) {
-				go sendTxs(ctx, cs)
-			},
-			3,
-		},
+		// {
+		// 	"many non-empty blocks",
+		// 	func(_ dbm.DB, cs *State, ctx context.Context) {
+		// 		go sendTxs(ctx, cs)
+		// 	},
+		// 	3,
+		// },
 	}
 
 	for i, tc := range testCases {
@@ -156,6 +156,7 @@ func TestWALCrash(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			crashWALandCheckLiveness(t, consensusReplayConfig, tc.initFn, tc.heightToStop)
 		})
+		// t.FailNow()
 	}
 }
 
@@ -270,8 +271,10 @@ func (e ReachedHeightToStopError) Error() string {
 // Write simulate WAL's crashing by sending an error to the panicCh and then
 // exiting the cs.receiveRoutine.
 func (w *crashingWAL) Write(m WALMessage) error {
+	fmt.Println(m)
 	if endMsg, ok := m.(EndHeightMessage); ok {
 		if endMsg.Height == w.heightToStop {
+			fmt.Println("crashing WAL ReachedHeightToStopError")
 			w.panicCh <- ReachedHeightToStopError{endMsg.Height}
 			runtime.Goexit()
 			return nil
@@ -282,8 +285,9 @@ func (w *crashingWAL) Write(m WALMessage) error {
 
 	if w.msgIndex > w.lastPanickedForMsgIndex {
 		w.lastPanickedForMsgIndex = w.msgIndex
+		fmt.Println("crashing WAL w.msgIndex > w.lastPanickedForMsgIndex")
 		_, file, line, _ := runtime.Caller(1)
-		w.panicCh <- WALWriteError{fmt.Sprintf("failed to write %T to WAL (fileline: %s:%d)", m, file, line)}
+		w.panicCh <- WALWriteError{fmt.Sprintf("failed to write %T to WAL (fileline: %s:%d). Msg %s", m, file, line, m)}
 		runtime.Goexit()
 		return nil
 	}

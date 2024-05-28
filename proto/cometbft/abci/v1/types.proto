@@ -207,7 +207,7 @@ message FinalizeBlockRequest {
   // address of the public key of the original proposer of the block.
   bytes proposer_address = 8;
   // If the node is syncing/replaying blocks - target height. If not, syncing_to == height.
-  int64 syncing_to = 9;
+  int64 syncing_to_height = 9;
 }
 
 // ----------------------------------------

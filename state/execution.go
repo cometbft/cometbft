@@ -244,7 +244,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		DecidedLastCommit:  buildLastCommitInfoFromStore(block, blockExec.store, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		Txs:                block.Txs.ToSliceOfBytes(),
-		SyncingTo:          syncingTo,
+		SyncingToHeight:    syncingTo,
 	})
 	endTime := cmttime.Now().UnixNano()
 	blockExec.metrics.BlockProcessingTime.Observe(float64(endTime-startTime) / 1000000)
@@ -788,7 +788,7 @@ func ExecCommitBlock(
 		DecidedLastCommit:  commitInfo,
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		Txs:                block.Txs.ToSliceOfBytes(),
-		SyncingTo:          finalHeight,
+		SyncingToHeight:    finalHeight,
 	})
 	if err != nil {
 		logger.Error("error in proxyAppConn.FinalizeBlock", "err", err)

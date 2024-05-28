@@ -1,9 +1,7 @@
 version: v1
-name: buf.build/Switcheo/cometbft
+name: buf.build/tendermint/tendermint
 deps:
-  - buf.build/cosmos/cosmos-proto
   - buf.build/cosmos/gogo-proto
-  - buf.build/googleapis/googleapis
 breaking:
   use:
     - FILE

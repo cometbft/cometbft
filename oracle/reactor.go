@@ -228,12 +228,5 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 
 		time.Sleep(interval)
-
-		// select {
-		// case <-peer.Quit():
-		// 	return
-		// case <-oracleR.Quit():
-		// 	return
-		// }
 	}
 }

@@ -856,7 +856,7 @@ type OracleConfig struct {
 // DefaultOracleConfig returns a default configuration for the CometBFT oracle service
 func DefaultOracleConfig() *OracleConfig {
 	return &OracleConfig{
-		MaxGossipVoteAge: 3,                      // keep all gossipVotes from 3 blocks behind
+		MaxGossipVoteAge: 2,                      // keep all gossipVotes from 3 blocks behind
 		SignInterval:     100 * time.Millisecond, // 0.1s
 		GossipInterval:   100 * time.Millisecond, // 0.1s
 		PruneInterval:    500 * time.Millisecond, // 0.5s

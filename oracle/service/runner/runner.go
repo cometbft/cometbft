@@ -92,9 +92,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 		}
 		pruneInterval := oracleInfo.Config.PruneInterval
 		if pruneInterval == 0 {
-			if pruneInterval == 0 {
-				pruneInterval = 500 * time.Millisecond
-			}
+			pruneInterval = 500 * time.Millisecond
 		}
 
 		ticker := time.Tick(pruneInterval)
@@ -149,15 +147,6 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
 	}(oracleInfo)
-}
-
-func contains(s []int64, e int64) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }
 
 // Run run oracles

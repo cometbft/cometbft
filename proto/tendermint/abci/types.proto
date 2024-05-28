@@ -398,8 +398,8 @@ message ResponseValidateOracleVotes {
   Status status = 1;
 
   enum Status {
-    absent = 0;
-    present = 1;
+    ABSENT = 0;
+    PRESENT = 1;
   }
 }
 

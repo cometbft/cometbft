@@ -118,4 +118,32 @@ func TestUpdateAndReapConcurrently(t *testing.T) {
 	ensureCleanReapUpdateSharedState(t, mp)
 }
 
-// TODO: Make a test that ensures that multiple concurrent reaps while updating fails
+func TestMultipleConcurrentReapsWhileUpdating(t *testing.T) {
+	mp, _, cleanup := setupConcurrentUpdateReapTest(t, 500, func(conf *config.Config) {})
+	defer cleanup()
+
+	doneUpdating, wg := &atomic.Bool{}, &sync.WaitGroup{}
+	asyncRunEmptyUpdateWithWg(t, mp, doneUpdating, wg)
+	// give some time for update to start
+	time.Sleep(200 * time.Microsecond)
+
+	// Start multiple goroutines to perform reaps concurrently
+	numReaps := 10
+	go func() {
+		mp.ReapMaxTxs(400)
+	}()
+	// give some time for the first reap to start
+	time.Sleep(200 * time.Microsecond)
+
+	// The first reap should be blocked for 50ms, plenty of time for
+	// attempting 10 concurrent reaps that should all fail.
+	for i := 0; i < numReaps; i++ {
+		wg.Add(1)
+		go func() {
+			require.Panics(t, func() { mp.ReapMaxTxs(400) }, "concurrent reap should panic")
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}

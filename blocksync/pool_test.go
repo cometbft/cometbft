@@ -248,3 +248,72 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 
 	assert.EqualValues(t, 0, pool.MaxPeerHeight())
 }
+
+func TestBlockPoolMaliciousNode(t *testing.T) {
+	var (
+		start      = int64(42)
+		peers      = makePeers(5, start, 100)
+		errorsCh   = make(chan peerError)
+		requestsCh = make(chan BlockRequest)
+	)
+	pool := NewBlockPool(start, requestsCh, errorsCh)
+	pool.SetLogger(log.TestingLogger())
+
+	err := pool.Start()
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Cleanup(func() {
+		if err := pool.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	maliciousPeers := makePeers(1, int64(101), 200)
+	maliciousPeers.start()
+	defer maliciousPeers.stop()
+
+	peers.start()
+	defer peers.stop()
+
+	// Introduce each peer.
+	go func() {
+		for _, peer := range maliciousPeers {
+			pool.SetPeerRange(peer.id, peer.base, peer.height)
+		}
+		for _, peer := range peers {
+			pool.SetPeerRange(peer.id, peer.base, peer.height)
+		}
+	}()
+
+	// Start a goroutine to pull blocks
+	go func() {
+		for {
+			if !pool.IsRunning() {
+				return
+			}
+			first, second, _ := pool.PeekTwoBlocks()
+			if first != nil && second != nil {
+				pool.PopRequest()
+			} else {
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}()
+
+	// Pull from channels
+	for {
+		select {
+		case err := <-errorsCh:
+			t.Error(err)
+		case request := <-requestsCh:
+			t.Logf("Pulled new BlockRequest %v", request)
+			if request.Height == 120 {
+				return // Done!
+			}
+
+			peers[request.PeerID].inputChan <- inputData{t, pool, request}
+		}
+	}
+}

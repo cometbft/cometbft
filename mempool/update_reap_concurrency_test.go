@@ -51,6 +51,7 @@ func mockClientWithInstantCheckDelayedRecheck(recheckDelay time.Duration) *abcic
 }
 
 func ensureCleanReapUpdateSharedState(t *testing.T, mp *CListMempool) {
+	t.Helper()
 	// ensure Reap<>Update shared state metrics are wiped
 	state := &mp.recheck.recheckReapSharedState
 	state.mtx.Lock()
@@ -76,6 +77,7 @@ func setupConcurrentUpdateReapTest(t *testing.T, numTxs int, configUpdates func(
 }
 
 func asyncRunEmptyUpdateWithWg(t *testing.T, mp *CListMempool, doneUpdating *atomic.Bool, wg *sync.WaitGroup) {
+	t.Helper()
 	mp.Lock()
 	wg.Add(1)
 	go func() {
@@ -119,7 +121,7 @@ func TestUpdateAndReapConcurrently(t *testing.T) {
 }
 
 func TestMultipleConcurrentReapsWhileUpdating(t *testing.T) {
-	mp, _, cleanup := setupConcurrentUpdateReapTest(t, 500, func(conf *config.Config) {})
+	mp, _, cleanup := setupConcurrentUpdateReapTest(t, 500, func(*config.Config) {})
 	defer cleanup()
 
 	doneUpdating, wg := &atomic.Bool{}, &sync.WaitGroup{}

@@ -691,10 +691,10 @@ func (mem *CListMempool) recheckTxs() {
 	// if not all txs were rechecked.
 	select {
 	case <-time.After(mem.config.RecheckTimeout):
-		mem.recheck.setDone()
 		mem.logger.Error("timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
 	}
+	mem.recheck.setDone()
 
 	initMempoolSize := mem.recheck.initialMempoolSize
 	if n := mem.recheck.numRecheckedTxs.Load(); n < initMempoolSize {
@@ -832,7 +832,7 @@ func (rc *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxRespons
 		rc.recheckReapSharedState.succesfullyUpdatedTxs++
 		// TODO: compute proto size for txs may be slow.
 		// Benchmark, if so we can compute this just once when the tx initially comes in
-		// via CheckTx
+		// via CheckTx.
 		rc.recheckReapSharedState.bytesUpdated += types.ComputeProtoSizeForTxs([]types.Tx{tx})
 		rc.recheckReapSharedState.gasUpdated += res.GasWanted
 

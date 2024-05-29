@@ -50,6 +50,17 @@ func mockClientWithInstantCheckDelayedRecheck(recheckDelay time.Duration) *abcic
 	return mockClient
 }
 
+func ensureCleanReapUpdateSharedState(t *testing.T, mp *CListMempool) {
+	// ensure Reap<>Update shared state metrics are wiped
+	state := &mp.recheck.recheckReapSharedState
+	state.mtx.Lock()
+	defer state.mtx.Unlock()
+	require.Equal(t, int64(0), state.bytesUpdated, "bytesUpdated should be 0")
+	require.Equal(t, int64(0), state.gasUpdated, "gasUpdated should be 0")
+	require.Equal(t, int64(0), state.succesfullyUpdatedTxs, "succesfully updated Txs should be 0")
+	require.False(t, state.isReaping)
+}
+
 // Test calling clist mempool Update, and then reap concurrently,
 // with various mempool sizes at the start of Update.
 // Set the CheckTx function to just be a 100microsecond sleep.
@@ -87,5 +98,9 @@ func TestUpdateAndReapConcurrently(t *testing.T) {
 	}
 	updateStatus := doneUpdating.Load()
 	require.False(t, updateStatus, "reap waited until update was done")
+
+	// ensure non-default Reap<>Update shared state metrics
 	wg.Wait()
+	// ensure Reap<>Update shared state metrics are wiped
+	ensureCleanReapUpdateSharedState(t, mp)
 }

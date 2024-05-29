@@ -183,6 +183,13 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 	}
 }
 
+// UnconfirmedTx gets unconfirmed transaction by hash.
+func (env *Environment) UnconfirmedTx(_ *rpctypes.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+	return &ctypes.ResultUnconfirmedTx{
+		Tx: env.Mempool.GetTxByHash(hash),
+	}, nil
+}
+
 // UnconfirmedTxs gets unconfirmed transactions (maximum ?limit entries)
 // including their number.
 // More: https://docs.cometbft.com/main/rpc/#/Info/unconfirmed_txs

@@ -142,29 +142,24 @@ The `Mempool` interface was modified on `CheckTx`. Note that this interface is
 meant for internal use only, so you should be aware of these changes only if you
 happen to call these methods directly.
 
-`CheckTx`'s signature changed from `CheckTx(tx types.Tx, cb
-func(*abci.ResponseCheckTx), txInfo TxInfo) error` to 
+`CheckTx`'s signature changed from 
+`CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error` to 
 `CheckTx(tx types.Tx, txInfo *TxInfo) (*abcicli.ReqRes, error)`.
 The method used to take a callback function `cb` to be applied to the
 ABCI `CheckTx` response. Now `CheckTx` returns the ABCI response of
-type `*abcicli.ReqRes`, on which one can apply the callback manually.
+type `*abcicli.ReqRes`, on which one can apply any callback manually.
 For example:
 ```golang
-reqRes, err := CheckTx(tx, &TxInfo)
+reqRes, err := CheckTx(tx, &txInfo)
 cb(reqRes.Response.GetCheckTx())
 ```
 
-The `*abcicli.ReqRes` structure is returned with a callback already set. 
-The callback is process the CheckTx response and it can be invoked manually. 
-For example:
+The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to 
+process the response already set (namely, the function `handleCheckTxResponse`).
+The callback can be invoked manually; for example:
 ```golang
-reqRes, err := CheckTx(tx, &TxInfo)
+reqRes, err := CheckTx(tx, &txInfo)
 reqRes.InvokeCallback()
-```
-Also, one can wait for the response to be ready. For example:
-```golang
-reqRes, err := CheckTx(tx, &TxInfo)
-reqRes.Wait()
 ```
 
 ### Protobufs and Generated Go Code

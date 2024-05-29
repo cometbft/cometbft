@@ -28,6 +28,7 @@ func (emptyMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
 }
 func (emptyMempool) RemoveTxByKey(types.TxKey) error           { return nil }
 func (emptyMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return types.Txs{} }
+func (emptyMempool) GetTxByHash([]byte) types.Tx               { return types.Tx{} }
 func (emptyMempool) ReapMaxTxs(int) types.Txs                  { return types.Txs{} }
 func (emptyMempool) Update(
 	int64,

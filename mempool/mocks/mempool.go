@@ -96,6 +96,26 @@ func (_m *Mempool) FlushAppConn() error {
 	return r0
 }
 
+// GetTxByHash provides a mock function with given fields: hash
+func (_m *Mempool) GetTxByHash(hash []byte) types.Tx {
+	ret := _m.Called(hash)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetTxByHash")
+	}
+
+	var r0 types.Tx
+	if rf, ok := ret.Get(0).(func([]byte) types.Tx); ok {
+		r0 = rf(hash)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(types.Tx)
+		}
+	}
+
+	return r0
+}
+
 // Lock provides a mock function with given fields:
 func (_m *Mempool) Lock() {
 	_m.Called()

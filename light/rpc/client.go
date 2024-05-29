@@ -203,6 +203,10 @@ func (c *Client) BroadcastTxSync(ctx context.Context, tx types.Tx) (*ctypes.Resu
 	return c.next.BroadcastTxSync(ctx, tx)
 }
 
+func (c *Client) UnconfirmedTx(ctx context.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+	return c.next.UnconfirmedTx(ctx, hash)
+}
+
 func (c *Client) UnconfirmedTxs(ctx context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {
 	return c.next.UnconfirmedTxs(ctx, limit)
 }

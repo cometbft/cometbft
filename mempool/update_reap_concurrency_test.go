@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	abcicli "github.com/cometbft/cometbft/abci/client"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
 	abciclient "github.com/cometbft/cometbft/abci/client"
 	abciclimocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/types"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 // Set the CheckTx function to be instant, and the recheck function
@@ -38,10 +38,10 @@ func mockClientWithInstantCheckDelayedRecheck(recheckDelay time.Duration) *abcic
 				time.Sleep(recheckDelay)
 			}
 		},
-	).Return(func(_ context.Context, req *abci.CheckTxRequest) (*abcicli.ReqRes, error) {
+	).Return(func(_ context.Context, req *abci.CheckTxRequest) (*abciclient.ReqRes, error) {
 		abciReq := abcitypes.ToCheckTxRequest(req)
 		resp := &abci.CheckTxResponse{Code: abci.CodeTypeOK, GasWanted: 100, GasUsed: 99}
-		ret := abcicli.NewReqRes(abciReq)
+		ret := abciclient.NewReqRes(abciReq)
 		ret.Response = abcitypes.ToCheckTxResponse(resp)
 		callback(abciReq, ret.Response)
 		return ret, nil
@@ -71,7 +71,8 @@ func TestUpdateAndReapConcurrently(t *testing.T) {
 	go func() {
 		txs := []types.Tx{}
 		txResults := []*abci.ExecTxResult{}
-		mp.Update(1, txs, txResults, PreCheckMaxBytes(100000), nil)
+		err := mp.Update(1, txs, txResults, PreCheckMaxBytes(100000), nil)
+		require.NoError(t, err, "update should not error")
 		mp.Unlock()
 		doneUpdating.Store(true)
 		wg.Done()

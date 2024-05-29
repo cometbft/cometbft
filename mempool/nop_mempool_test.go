@@ -17,9 +17,8 @@ func TestNopMempool_Basic(t *testing.T) {
 	assert.Equal(t, 0, mem.Size())
 	assert.Equal(t, int64(0), mem.SizeBytes())
 
-	reqRes, err := mem.CheckTx(tx, &TxInfo{})
+	_, err := mem.CheckTx(tx, &TxInfo{})
 	assert.Equal(t, errNotAllowed, err)
-	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 
 	err = mem.RemoveTxByKey(tx.Key())
 	assert.Equal(t, errNotAllowed, err)

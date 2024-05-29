@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"sync/atomic"
 	"time"
 
 	flow "github.com/cometbft/cometbft/internal/flowrate"
@@ -79,10 +78,9 @@ type BlockPool struct {
 	requesters map[int64]*bpRequester
 	height     int64 // the lowest key in requesters.
 	// peers
-	peers       map[p2p.ID]*bpPeer
-	sortedPeers []*bpPeer // sorted by curRate, highest first
-
-	maxPeerHeight atomic.Int64 // the biggest reported height
+	peers         map[p2p.ID]*bpPeer
+	sortedPeers   []*bpPeer // sorted by curRate, highest first
+	maxPeerHeight int64     // the biggest reported height
 
 	requestsCh chan<- BlockRequest
 	errorsCh   chan<- peerError
@@ -132,7 +130,7 @@ func (pool *BlockPool) makeRequestersRoutine() {
 			maxRequestersCreated = len(pool.requesters) >= len(pool.peers)*maxPendingRequestsPerPeer
 
 			nextHeight           = pool.height + int64(len(pool.requesters))
-			maxPeerHeightReached = nextHeight > pool.maxPeerHeight.Load()
+			maxPeerHeightReached = nextHeight > pool.maxPeerHeight
 		)
 		pool.mtx.Unlock()
 
@@ -182,15 +180,13 @@ func (pool *BlockPool) removeTimedoutPeers() {
 // IsCaughtUp returns true if this node is caught up, false - otherwise.
 // TODO: relax conditions, prevent abuse.
 func (pool *BlockPool) IsCaughtUp() (isCaughtUp bool, height, maxPeerHeight int64) {
-	maxPeerHeight = pool.maxPeerHeight.Load()
-
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
 	// Need at least 1 peer to be considered caught up.
 	if len(pool.peers) == 0 {
 		pool.Logger.Debug("Blockpool has no peers")
-		return false, pool.height, maxPeerHeight
+		return false, pool.height, pool.maxPeerHeight
 	}
 
 	// Some conditions to determine if we're caught up.
@@ -199,9 +195,9 @@ func (pool *BlockPool) IsCaughtUp() (isCaughtUp bool, height, maxPeerHeight int6
 	// Note we use maxPeerHeight - 1 because to sync block H requires block H+1
 	// to verify the LastCommit.
 	receivedBlockOrTimedOut := pool.height > 0 || time.Since(pool.startTime) > 5*time.Second
-	ourChainIsLongestAmongPeers := maxPeerHeight == 0 || pool.height >= (maxPeerHeight-1)
+	ourChainIsLongestAmongPeers := pool.maxPeerHeight == 0 || pool.height >= (pool.maxPeerHeight-1)
 	isCaughtUp = receivedBlockOrTimedOut && ourChainIsLongestAmongPeers
-	return isCaughtUp, pool.height, maxPeerHeight
+	return isCaughtUp, pool.height, pool.maxPeerHeight
 }
 
 // PeekTwoBlocks returns blocks at pool.height and pool.height+1. We need to
@@ -339,15 +335,13 @@ func (pool *BlockPool) Height() int64 {
 
 // MaxPeerHeight returns the highest reported height.
 func (pool *BlockPool) MaxPeerHeight() int64 {
-	return pool.maxPeerHeight.Load()
+	pool.mtx.Lock()
+	defer pool.mtx.Unlock()
+	return pool.maxPeerHeight
 }
 
 // SetPeerRange sets the peer's alleged blockchain base and height.
 func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
-	if height > pool.maxPeerHeight.Load() {
-		pool.maxPeerHeight.Store(height)
-	}
-
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
@@ -362,6 +356,10 @@ func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
 		// no need to sort because curRate is 0 at start.
 		// just add to the beginning so it's picked first by pickIncrAvailablePeer.
 		pool.sortedPeers = append([]*bpPeer{peer}, pool.sortedPeers...)
+	}
+
+	if height > pool.maxPeerHeight {
+		pool.maxPeerHeight = height
 	}
 }
 
@@ -397,7 +395,7 @@ func (pool *BlockPool) removePeer(peerID p2p.ID) {
 
 		// Find a new peer with the biggest height and update maxPeerHeight if the
 		// peer's height was the biggest.
-		if peer.height == pool.maxPeerHeight.Load() {
+		if peer.height == pool.maxPeerHeight {
 			pool.updateMaxPeerHeight()
 		}
 	}
@@ -411,7 +409,7 @@ func (pool *BlockPool) updateMaxPeerHeight() {
 			max = peer.height
 		}
 	}
-	pool.maxPeerHeight.Store(max)
+	pool.maxPeerHeight = max
 }
 
 // Pick an available peer with the given height available.

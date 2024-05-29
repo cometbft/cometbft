@@ -253,34 +253,38 @@ func createMempoolAndMempoolReactor(
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
 		logger = logger.With("module", "mempool")
-
-		pendingTxLock := new(sync.Mutex)
-		pendingTxs := make([][]byte, 0)
-		go func() {
-			for {
+		options := []mempl.CListMempoolOption{
+			mempl.WithMetrics(memplMetrics),
+			mempl.WithPreCheck(sm.TxPreCheck(state)),
+			mempl.WithPostCheck(sm.TxPostCheck(state)),
+		}
+		if config.Mempool.PublishEventPendingTx {
+			pendingTxLock := new(sync.Mutex)
+			pendingTxs := make([][]byte, 0)
+			options = append(options, mempl.WithNewTxCallback(func(tx types.Tx) {
 				pendingTxLock.Lock()
-				txs := pendingTxs
-				pendingTxs = make([][]byte, 0)
-				pendingTxLock.Unlock()
-				if len(txs) > 0 {
-					_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
-						Txs: txs,
-					})
+				defer pendingTxLock.Unlock()
+				pendingTxs = append(pendingTxs, tx)
+			}))
+			go func() {
+				for {
+					pendingTxLock.Lock()
+					txs := pendingTxs
+					pendingTxs = make([][]byte, 0)
+					pendingTxLock.Unlock()
+					if len(txs) > 0 {
+						_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
+							Txs: txs,
+						})
+					}
 				}
-			}
-		}()
+			}()
+		}
 		mp := mempl.NewCListMempool(
 			config.Mempool,
 			proxyApp.Mempool(),
 			state.LastBlockHeight,
-			mempl.WithMetrics(memplMetrics),
-			mempl.WithPreCheck(sm.TxPreCheck(state)),
-			mempl.WithPostCheck(sm.TxPostCheck(state)),
-			mempl.WithNewTxCallback(func(tx types.Tx) {
-				pendingTxLock.Lock()
-				defer pendingTxLock.Unlock()
-				pendingTxs = append(pendingTxs, tx)
-			}),
+			options...,
 		)
 		mp.SetLogger(logger)
 		reactor := mempl.NewReactor(

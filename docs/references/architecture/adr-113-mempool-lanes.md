@@ -262,10 +262,31 @@ but it is not clear how retried transactions in periods of high load can be rece
 
 TODO
 
-* https://pkg.go.dev/github.com/skip-mev/block-sdk/v2/block#section-readme
-* Timebox this: 1-2 days each
+### Skip's Block-SDK Lanes
 
+As of version `v0.47.x`, the Cosmos SDK offers application developers the possibility to use an [Application-Side Mempool][sdk-app-mempool].
+It is a mempool structure maintained by the SDK application and populated with valid transactions received via `CheckTx`.
+An application maintaining such a mempool is free to define the way transactions are ordered, reaped for a block, aggregated, removed, etc.
+Typically, upon `PrepareProposal`, the SDK application disregards the transactions proposed by CometBFT,
+and rather proposes transactions reaped from its own mempool, and according to its mempool's rules.
 
+The Skip team have released an extension of the Application-Side mempool, called [Block-SDK][skip-block-sdk],
+that introduces the concept of _lanes_, turning the mempool "into a *highway* consisting of individual *lanes*".
+The concept of lanes, introduced in Skip's Block-SDK, is pretty aligned with Mempool QoS as specified above.
+Indeed, we use the same term, _lanes_, in the [Detailed Design](#detailed-design) section below,
+which describes a minimum-viable-product (MVP) implementation of the concept of transaction classes.
+
+The main difference between Skip's Block-SDK's lanes and the design we present below is that
+the Block-SDK implements mempool lanes at the application level, whereas this ADR proposes a specification and a design at CometBFT level,
+thus including provisions for **transaction gossiping** as an integral part of it.
+As a result, the Block-SDK's lanes can be used to implement the Mempool QoS specification in everything that relates to block production,
+but not at the network gossip level.
+
+Importantly, both designs, Skip's Block SDK and the one described [below](#detailed-design), are complementary.
+An application using Skip's Block-SDK lanes already contains transaction classification logic, and so,
+it can easily be extended to provide `CheckTx` with the information needed by an implementation of CometBFT mempool QoS
+(such as the design we propose below) to also achieve a more predictable transaction latency,
+depending on the lane/class a transaction belongs to.
 
 ## Decision
 
@@ -528,7 +549,9 @@ TODO
 - Solana's [Gulf Stream][gulf-stream]
 - Solana's [Priority Fees][solana-prio-fees]
 - Solana's [priority fee pricing][prio-fee-price]
-- SDK's [gas prices][sdk-gas-prices]
+- Cosmos SDK's [gas prices][sdk-gas-prices]
+- Cosmos SDK's [application-side mempool][sdk-app-mempool]
+- Skip's [Block SDK][skip-block-sdk]
 
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
 [reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324
@@ -536,3 +559,5 @@ TODO
 [solana-prio-fees]: https://solana.com/developers/guides/advanced/how-to-use-priority-fees
 [prio-fee-price]: https://solana.com/developers/guides/advanced/how-to-use-priority-fees
 [sdk-gas-prices]: https://docs.cosmos.network/v0.50/learn/beginner/tx-lifecycle#gas-and-fees
+[sdk-app-mempool]: https://docs.cosmos.network/v0.47/build/building-apps/app-mempool
+[skip-block-sdk]: https://github.com/skip-mev/block-sdk/blob/v2.1.3/README.md

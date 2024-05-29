@@ -55,9 +55,9 @@ func ensureCleanReapUpdateSharedState(t *testing.T, mp *CListMempool) {
 	state := &mp.recheck.recheckReapSharedState
 	state.mtx.Lock()
 	defer state.mtx.Unlock()
+	require.Equal(t, int64(0), state.successfullyUpdatedTxs, "successfully updated Txs should be 0")
 	require.Equal(t, int64(0), state.bytesUpdated, "bytesUpdated should be 0")
 	require.Equal(t, int64(0), state.gasUpdated, "gasUpdated should be 0")
-	require.Equal(t, int64(0), state.successfullyUpdatedTxs, "successfully updated Txs should be 0")
 	require.False(t, state.isReaping)
 }
 
@@ -68,6 +68,7 @@ func TestUpdateAndReapConcurrently(t *testing.T) {
 	mockClient := mockClientWithInstantCheckDelayedRecheck(100 * time.Microsecond)
 	conf := test.ResetTestRoot("mempool_test")
 	conf.Mempool.Recheck = true
+	conf.Mempool.RecheckTimeout = time.Minute
 	mp, cleanup := newMempoolWithAppAndConfigMock(conf, mockClient)
 
 	defer cleanup()

@@ -694,6 +694,8 @@ func (mem *CListMempool) recheckTxs() {
 		mem.logger.Error("timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
 	}
+	// setDone is safe to run multiple times. Right now doneRechecking will leave one extra
+	// tx updated in the recheck metrics, hence we clear it a second time.
 	mem.recheck.setDone()
 
 	initMempoolSize := mem.recheck.initialMempoolSize

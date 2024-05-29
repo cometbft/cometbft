@@ -831,7 +831,8 @@ func (rc *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxRespons
 		rc.recheckReapSharedState.mtx.Lock()
 		rc.recheckReapSharedState.succesfullyUpdatedTxs++
 		// TODO: compute proto size for txs may be slow.
-		// Benchmark, if so we can make a process to only compute if we are listening for it.
+		// Benchmark, if so we can compute this just once when the tx initially comes in
+		// via CheckTx
 		rc.recheckReapSharedState.bytesUpdated += types.ComputeProtoSizeForTxs([]types.Tx{tx})
 		rc.recheckReapSharedState.gasUpdated += res.GasWanted
 

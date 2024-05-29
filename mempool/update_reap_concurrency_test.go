@@ -19,7 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Set the CheckTx function to just be a 100 microsecond sleep
+// Set the CheckTx function to be instant, and the recheck function
+// to be a recheckDelay sleep.
 func mockClientWithInstantCheckDelayedRecheck(recheckDelay time.Duration) *abciclimocks.Client {
 	var callback abciclient.Callback
 

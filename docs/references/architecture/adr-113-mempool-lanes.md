@@ -274,11 +274,11 @@ The Skip team have released an extension of the Application-Side mempool, called
 that introduces the concept of _lanes_, turning the mempool "into a *highway* consisting of individual *lanes*".
 The concept of lanes, introduced in Skip's Block-SDK, is pretty aligned with Mempool QoS as specified above.
 Indeed, we use the same term, _lanes_, in the [Detailed Design](#detailed-design) section below,
-which describes a (minimum-viable-product) implementation of the concept of transaction classes.
+which describes a minimum-viable-product (MVP) implementation of the concept of transaction classes.
 
 The main difference between Skip's Block-SDK's lanes and the design we present below is that
 the Block-SDK implements mempool lanes at the application level, whereas this ADR proposes a specification and a design at CometBFT level,
-thus including provisions for **transaction gossipping** as an integral part of it.
+thus including provisions for **transaction gossiping** as an integral part of it.
 As a result, the Block-SDK's lanes can be used to implement the Mempool QoS specification in everything that relates to block production,
 but not at the network gossip level.
 

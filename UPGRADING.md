@@ -159,6 +159,7 @@ process the response already set (namely, the function `handleCheckTxResponse`).
 The callback can be invoked manually; for example:
 ```golang
 reqRes, err := CheckTx(tx, &txInfo)
+reqRes.Wait()
 reqRes.InvokeCallback()
 ```
 

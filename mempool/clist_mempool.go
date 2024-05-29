@@ -293,12 +293,15 @@ func (mem *CListMempool) CheckTx(tx types.Tx, txInfo *TxInfo) (*abcicli.ReqRes, 
 //   - txInfo optionally holds the ID of the peer that sent the transaction, if any.
 func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, txInfo *TxInfo) func(res *abci.Response) {
 	return func(r *abci.Response) {
+		res := r.GetCheckTx()
+		if res == nil {
+			panic(fmt.Sprintf("unexpected response value %v not of type CheckTx", r))
+		}
+
 		// Check that rechecking txs is not in process.
 		if !mem.recheck.done() {
 			panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %X", tx.Hash()))
 		}
-
-		res := r.GetCheckTx()
 
 		var postCheckErr error
 		if mem.postCheck != nil {
@@ -426,6 +429,11 @@ func (mem *CListMempool) isFull(txSize int) error {
 // revalidated after a mempool update.
 func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Response) {
 	return func(r *abci.Response) {
+		res := r.GetCheckTx()
+		if res == nil {
+			panic(fmt.Sprintf("unexpected response value %v not of type CheckTx", r))
+		}
+
 		// Check whether the rechecking process has finished.
 		if mem.recheck.done() {
 			mem.logger.Error("rechecking has finished; discard late recheck response",
@@ -439,8 +447,6 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 			// Reached the end of the list and didn't find a matching tx; rechecking has finished.
 			return
 		}
-
-		res := r.GetCheckTx()
 
 		var postCheckErr error
 		if mem.postCheck != nil {

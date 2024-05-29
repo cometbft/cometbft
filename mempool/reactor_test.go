@@ -174,7 +174,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which has the max size
 	// => ensure it's received by the second reactor.
 	tx1 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes)
-	reqRes, err := reactors[0].mempool.CheckTx(tx1, &TxInfo{})
+	reqRes, err := reactors[0].mempool.CheckTx(tx1, nil)
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInOrder)
@@ -185,7 +185,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which is beyond the max size
 	// => ensure it's not sent
 	tx2 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes + 1)
-	reqRes, err = reactors[0].mempool.CheckTx(tx2, &TxInfo{})
+	reqRes, err = reactors[0].mempool.CheckTx(tx2, nil)
 	require.Error(t, err)
 	require.Nil(t, reqRes)
 }
@@ -262,7 +262,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		go func() {
 			for _, tx := range txs {
-				_, _ = mp.CheckTx(tx, &TxInfo{})
+				_, _ = mp.CheckTx(tx, nil)
 			}
 		}()
 	}

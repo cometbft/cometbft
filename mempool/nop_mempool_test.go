@@ -17,7 +17,7 @@ func TestNopMempool_Basic(t *testing.T) {
 	assert.Equal(t, 0, mem.Size())
 	assert.Equal(t, int64(0), mem.SizeBytes())
 
-	_, err := mem.CheckTx(tx, &TxInfo{})
+	_, err := mem.CheckTx(tx, nil)
 	assert.Equal(t, errNotAllowed, err)
 
 	err = mem.RemoveTxByKey(tx.Key())

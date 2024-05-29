@@ -349,11 +349,13 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, txInfo *TxInfo) bool {
 
 	// Check if the transaction is already in the mempool.
 	if elem, ok := mem.getCElement(txKey); ok {
-		// Update senders on existing entry.
-		memTx := elem.Value.(*mempoolTx)
-		if found := memTx.addSender(txInfo.sender); found {
-			// It should not be possible to receive twice a tx from the same sender.
-			mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", txInfo.sender)
+		if txInfo != nil {
+			// Update senders on existing entry.
+			memTx := elem.Value.(*mempoolTx)
+			if found := memTx.addSender(txInfo.sender); found {
+				// It should not be possible to receive twice a tx from the same sender.
+				mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", txInfo.sender)
+			}
 		}
 
 		mem.logger.Debug(
@@ -367,9 +369,8 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, txInfo *TxInfo) bool {
 
 	// Add new transaction.
 	if txInfo != nil {
-		mem.logger.Debug("add sender **", "tx", tx.Hash()[:8], "sender", txInfo.sender)
+		_ = memTx.addSender(txInfo.sender)
 	}
-	_ = memTx.addSender(txInfo.sender)
 	e := mem.txs.PushBack(memTx)
 	mem.txsMap.Store(txKey, e)
 	mem.txsBytes.Add(int64(len(tx)))

@@ -45,7 +45,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 		return nil, err
 	}
 	go func() {
-		reqRes.Wait()
+		reqRes.InvokeCallback()
 		resCh <- reqRes.Response.GetCheckTx()
 	}()
 
@@ -102,7 +102,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		return nil, ErrTxBroadcast{Source: err, ErrReason: ErrCheckTxFailed}
 	}
 	go func() {
-		reqRes.Wait()
+		reqRes.InvokeCallback()
 		checkTxResCh <- reqRes.Response.GetCheckTx()
 	}()
 

@@ -725,10 +725,10 @@ type recheck struct {
 var minimumMempoolSizeForConcurrentRecheck int32 = 50
 
 type recheckReapSharedState struct {
-	mtx                   sync.Mutex
-	succesfullyUpdatedTxs int64
-	bytesUpdated          int64
-	gasUpdated            int64
+	mtx                    sync.Mutex
+	successfullyUpdatedTxs int64
+	bytesUpdated           int64
+	gasUpdated             int64
 
 	// indicator variable needed to ensure we don't start a new recheck process
 	// while reaping is in progress. Since reap's only have read-only access,
@@ -744,7 +744,7 @@ type recheckReapSharedState struct {
 
 func (r *recheckReapSharedState) recheckCompleted() {
 	r.mtx.Lock()
-	r.succesfullyUpdatedTxs = 0
+	r.successfullyUpdatedTxs = 0
 	r.bytesUpdated = 0
 	r.gasUpdated = 0
 	if r.waitingForReap {
@@ -829,7 +829,7 @@ func (r *recheckReapSharedState) sendReapSignal() {
 func (rc *recheck) updateForRecheckSuccess(tx types.Tx, res *abci.CheckTxResponse) {
 	if rc.initialMempoolSize > minimumMempoolSizeForConcurrentRecheck {
 		rc.recheckReapSharedState.mtx.Lock()
-		rc.recheckReapSharedState.succesfullyUpdatedTxs++
+		rc.recheckReapSharedState.successfullyUpdatedTxs++
 		// TODO: compute proto size for txs may be slow.
 		// Benchmark, if so we can compute this just once when the tx initially comes in
 		// via CheckTx.

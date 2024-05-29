@@ -57,7 +57,7 @@ func ensureCleanReapUpdateSharedState(t *testing.T, mp *CListMempool) {
 	defer state.mtx.Unlock()
 	require.Equal(t, int64(0), state.bytesUpdated, "bytesUpdated should be 0")
 	require.Equal(t, int64(0), state.gasUpdated, "gasUpdated should be 0")
-	require.Equal(t, int64(0), state.succesfullyUpdatedTxs, "succesfully updated Txs should be 0")
+	require.Equal(t, int64(0), state.successfullyUpdatedTxs, "successfully updated Txs should be 0")
 	require.False(t, state.isReaping)
 }
 

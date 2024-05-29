@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	abciclimocks "github.com/cometbft/cometbft/abci/client/mocks"
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	abci "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/types"
 )
@@ -61,24 +61,23 @@ func ensureCleanReapUpdateSharedState(t *testing.T, mp *CListMempool) {
 	require.False(t, state.isReaping)
 }
 
-// Test calling clist mempool Update, and then reap concurrently,
-// with various mempool sizes at the start of Update.
-// Set the CheckTx function to just be a 100microsecond sleep.
-func TestUpdateAndReapConcurrently(t *testing.T) {
+func setupConcurrentUpdateReapTest(t *testing.T, numTxs int, configUpdates func(*config.Config)) (*CListMempool, []types.Tx, func()) {
 	mockClient := mockClientWithInstantCheckDelayedRecheck(100 * time.Microsecond)
 	conf := test.ResetTestRoot("mempool_test")
 	conf.Mempool.Recheck = true
-	conf.Mempool.RecheckTimeout = time.Minute
+	configUpdates(conf)
 	mp, cleanup := newMempoolWithAppAndConfigMock(conf, mockClient)
-
-	defer cleanup()
 
 	initTxs := checkTxs(t, mp, 500)
 	require.Equal(t, mp.Size(), 500, "mempool size should be 1000")
-	fmt.Println("finish check tx")
+
+	return mp, initTxs, cleanup
+}
+
+func asyncRunEmptyUpdateWithWg(t *testing.T, mp *CListMempool) (doneUpdating *atomic.Bool, wg *sync.WaitGroup) {
 	mp.Lock()
-	doneUpdating := atomic.Bool{}
-	wg := sync.WaitGroup{}
+	doneUpdating = &atomic.Bool{}
+	wg = &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		txs := []types.Tx{}
@@ -89,6 +88,20 @@ func TestUpdateAndReapConcurrently(t *testing.T) {
 		doneUpdating.Store(true)
 		wg.Done()
 	}()
+	return doneUpdating, wg
+}
+
+// Test calling clist mempool Update, and then reap concurrently,
+// with various mempool sizes at the start of Update.
+// Set the CheckTx function to just be a 100microsecond sleep.
+func TestUpdateAndReapConcurrently(t *testing.T) {
+	confUpdate := func(conf *config.Config) {
+		conf.Mempool.RecheckTimeout = time.Minute
+	}
+	mp, initTxs, cleanup := setupConcurrentUpdateReapTest(t, 500, confUpdate)
+	defer cleanup()
+
+	doneUpdating, wg := asyncRunEmptyUpdateWithWg(t, mp)
 	// give some time for update to start
 	time.Sleep(200 * time.Microsecond)
 
@@ -105,3 +118,5 @@ func TestUpdateAndReapConcurrently(t *testing.T) {
 	// ensure Reap<>Update shared state metrics are wiped
 	ensureCleanReapUpdateSharedState(t, mp)
 }
+
+// TODO: Make a test that ensures that multiple concurrent reaps while updating fails

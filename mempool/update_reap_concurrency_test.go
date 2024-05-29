@@ -62,22 +62,21 @@ func ensureCleanReapUpdateSharedState(t *testing.T, mp *CListMempool) {
 }
 
 func setupConcurrentUpdateReapTest(t *testing.T, numTxs int, configUpdates func(*config.Config)) (*CListMempool, []types.Tx, func()) {
+	t.Helper()
 	mockClient := mockClientWithInstantCheckDelayedRecheck(100 * time.Microsecond)
 	conf := test.ResetTestRoot("mempool_test")
 	conf.Mempool.Recheck = true
 	configUpdates(conf)
 	mp, cleanup := newMempoolWithAppAndConfigMock(conf, mockClient)
 
-	initTxs := checkTxs(t, mp, 500)
-	require.Equal(t, mp.Size(), 500, "mempool size should be 1000")
+	initTxs := checkTxs(t, mp, numTxs)
+	require.Equal(t, numTxs, mp.Size(), "mempool size should be %d", numTxs)
 
 	return mp, initTxs, cleanup
 }
 
-func asyncRunEmptyUpdateWithWg(t *testing.T, mp *CListMempool) (doneUpdating *atomic.Bool, wg *sync.WaitGroup) {
+func asyncRunEmptyUpdateWithWg(t *testing.T, mp *CListMempool, doneUpdating *atomic.Bool, wg *sync.WaitGroup) {
 	mp.Lock()
-	doneUpdating = &atomic.Bool{}
-	wg = &sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		txs := []types.Tx{}
@@ -88,7 +87,6 @@ func asyncRunEmptyUpdateWithWg(t *testing.T, mp *CListMempool) (doneUpdating *at
 		doneUpdating.Store(true)
 		wg.Done()
 	}()
-	return doneUpdating, wg
 }
 
 // Test calling clist mempool Update, and then reap concurrently,
@@ -101,7 +99,8 @@ func TestUpdateAndReapConcurrently(t *testing.T) {
 	mp, initTxs, cleanup := setupConcurrentUpdateReapTest(t, 500, confUpdate)
 	defer cleanup()
 
-	doneUpdating, wg := asyncRunEmptyUpdateWithWg(t, mp)
+	doneUpdating, wg := &atomic.Bool{}, &sync.WaitGroup{}
+	asyncRunEmptyUpdateWithWg(t, mp, doneUpdating, wg)
 	// give some time for update to start
 	time.Sleep(200 * time.Microsecond)
 

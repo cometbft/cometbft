@@ -203,9 +203,9 @@ func (blockExec *BlockExecutor) ValidateBlock(state State, block *types.Block) e
 
 // ApplyVerifiedBlock does the same as `ApplyBlock`, but skips verification.
 func (blockExec *BlockExecutor) ApplyVerifiedBlock(
-	state State, blockID types.BlockID, block *types.Block,
+	state State, blockID types.BlockID, block *types.Block, syncingToHeight int64,
 ) (State, error) {
-	return blockExec.applyBlock(state, blockID, block)
+	return blockExec.applyBlock(state, blockID, block, syncingToHeight)
 }
 
 // ApplyBlock validates the block against the state, executes it against the app,
@@ -215,16 +215,16 @@ func (blockExec *BlockExecutor) ApplyVerifiedBlock(
 // from outside this package to process and commit an entire block.
 // It takes a blockID to avoid recomputing the parts hash.
 func (blockExec *BlockExecutor) ApplyBlock(
-	state State, blockID types.BlockID, block *types.Block,
+	state State, blockID types.BlockID, block *types.Block, syncingToHeight int64,
 ) (State, error) {
 	if err := validateBlock(state, block); err != nil {
 		return state, ErrInvalidBlock(err)
 	}
 
-	return blockExec.applyBlock(state, blockID, block)
+	return blockExec.applyBlock(state, blockID, block, syncingToHeight)
 }
 
-func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, block *types.Block) (State, error) {
+func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, block *types.Block, syncingToHeight int64) (State, error) {
 	startTime := cmttime.Now().UnixNano()
 	abciResponse, err := blockExec.proxyApp.FinalizeBlock(context.TODO(), &abci.FinalizeBlockRequest{
 		Hash:               block.Hash(),
@@ -235,6 +235,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		DecidedLastCommit:  buildLastCommitInfoFromStore(block, blockExec.store, state.InitialHeight),
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		Txs:                block.Txs.ToSliceOfBytes(),
+		SyncingToHeight:    syncingToHeight,
 	})
 	endTime := cmttime.Now().UnixNano()
 	blockExec.metrics.BlockProcessingTime.Observe(float64(endTime-startTime) / 1000000)
@@ -249,14 +250,13 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		"num_txs_res", len(abciResponse.TxResults),
 		"num_val_updates", len(abciResponse.ValidatorUpdates),
 		"block_app_hash", fmt.Sprintf("%X", abciResponse.AppHash),
+		"syncing_to_height", syncingToHeight,
 	)
 
 	// Assert that the application correctly returned tx results for each of the transactions provided in the block
 	if len(block.Data.Txs) != len(abciResponse.TxResults) {
 		return state, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(abciResponse.TxResults))
 	}
-
-	blockExec.logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", abciResponse.AppHash))
 
 	fail.Fail() // XXX
 
@@ -728,7 +728,7 @@ func ExecCommitBlock(
 	block *types.Block,
 	logger log.Logger,
 	store Store,
-	initialHeight int64,
+	initialHeight, finalHeight int64,
 ) ([]byte, error) {
 	commitInfo := buildLastCommitInfoFromStore(block, store, initialHeight)
 
@@ -741,6 +741,7 @@ func ExecCommitBlock(
 		DecidedLastCommit:  commitInfo,
 		Misbehavior:        block.Evidence.Evidence.ToABCI(),
 		Txs:                block.Txs.ToSliceOfBytes(),
+		SyncingToHeight:    finalHeight,
 	})
 	if err != nil {
 		logger.Error("error in proxyAppConn.FinalizeBlock", "err", err)

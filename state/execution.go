@@ -220,12 +220,8 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	if err := validateBlock(state, block); err != nil {
 		return state, ErrInvalidBlock(err)
 	}
-<<<<<<< HEAD
 
-	return blockExec.applyBlock(state, blockID, block)
-=======
 	return blockExec.applyBlock(state, blockID, block, syncingToHeight)
->>>>>>> 68e5e1b4e (feat(proto): add `SyncingToHeight` to `FinalizeBlockRequest` (#3134))
 }
 
 func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, block *types.Block, syncingToHeight int64) (State, error) {

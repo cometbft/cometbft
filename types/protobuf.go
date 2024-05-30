@@ -39,7 +39,7 @@ func (tm2pb) Header(header *Header) cmtproto.Header {
 
 func (tm2pb) Validator(val *Validator) abci.Validator {
 	return abci.Validator{
-		Address: val.PubKey.Address(),
+		Address: val.Address,
 		Power:   val.VotingPower,
 	}
 }

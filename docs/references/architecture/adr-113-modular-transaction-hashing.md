@@ -48,88 +48,69 @@ Give app developers a way to provide their own transaction hash function.
 Use `sha256` by default, but give developers a way to change the hashing function:
 
 ```go
-const (
-    Size          = 32 // all hashes
-    TruncatedSize = 20 // except validator's address
+import (
+	"hash"
+	"crypto/sha256"
 )
 
 var (
-    hashFunc = func() Hash256 {
-        return sha256.New()
-    }
+	// The size of a checksum in bytes.
+	Size = sha256.Size // all hashes
+	// The truncated size of a checksum in bytes.
+	TruncatedSize = 20 // except validators addresses
+
+	hashFunc = func() hash.Hash {
+		return sha256.New()
+	}
+
+	stringFunc = func(bz []byte) string {
+		return fmt.Sprintf("%X", bz)
+	}
 )
 
-type Hash256 interface {
-    hash.Hash
-    // Fix the size where it's needed: block hash, evidence hash, ...
-    Sum256(bz []byte) []byte
-    // Allow custom representation of a resulting bytes
-    String(bz []byte) string
+// New returns a new hash.Hash calculating the given hash function.
+func New() hash.Hash {
+	return hashFunc()
 }
 
-func New() Hash256 {
-    return hashFunc()
+// ReplaceHashFuncWith replaces the default SHA256 hashing function with a given one.
+func ReplaceHashFuncWith(f func() hash.Hash, size, truncatedSize int) {
+	hashFunc = f
+	Size = size
+	TruncatedSize = truncatedSize
 }
 
-func ReplaceDefaultWith(f func() Hash256) {
-    hashFunc = f
+// ReplaceStringFuncWith replaces the default string function (`%X`) with a given one.
+func ReplaceStringFuncWith(f func([]byte) string) {
+	stringFunc = f
 }
 
-// For fixed size hashes.
-func Sum256(bz []byte) [32]byte {
-    return hashFunc().Sum256(bz)
+// Sum returns the checksum of the data.
+func Sum(bz []byte) []byte {
+	return hashFunc().Sum(bz)
 }
 
-// For validators addresses.
-func Sum160(bz []byte) [20]byte {
-    return hashFunc().Sum256(bz)[:TruncatedSize]
+// TruncatedSum returns the truncated checksum of the data.
+func TruncatedSum(bz []byte) []byte {
+	return hashFunc().Sum(bz)[:TruncatedSize]
 }
 ```
 
-```go
-import (
-    gosha256 "crypto/sha256"
-)
+Let's break this down. By default, we use `sha256` standard crypto library.
+`ReplaceHashFuncWith` allows developers to swap the default hashing function
+with the hashing function of their choice. Not that `size` and `truncatedSize`
+are also configurable, which doesn't limit us to 32 byte checksums.
 
-type sha256 struct {
-   h hash.Hash
-}
+`ReplaceStringFuncWith` allows developers to swap the default string function
+(`fmt.Sprintf("%X", bz)`) with their own implementation.
 
-func New() Hash256 {
-    return sha256{
-        h: gosha256.New(),
-    }
-}
+The above solution changes hashes across the whole CometBFT, meaning header's
+hash, evidence's hash, data's hash, etc.
 
-func (h sha256) Write(p []byte) (n int, err error) {
-	return h.h.Write(p)
-}
-
-func (h sha256) Sum(b []byte) []byte {
-	return h.h.Sum(b)
-}
-
-func (h sha256) Reset() {
-	h.h.Reset()
-}
-
-func (sha256) Size() int {
-	return gosha256.Size
-}
-
-func (h sha256) BlockSize() int {
-	return h.h.BlockSize()
-}
-
-func (h sha256) Sum256(bz []byte) []byte {
-	return h.h.Sum256(bz)
-}
-
-func (h sha256) String(bz []byte) string {
-	return fmt.Sprintf("%X", bz)
-}
-```
-
+If the application developer decides to change the default hashing scheme, they
+can only do so once before launching their app. If they attempt to upgrade
+after, the resulting hashes won't match. A hard fork is an option, but they
+have to be careful with the past data.
 
 ## Consequences
 
@@ -143,6 +124,8 @@ func (h sha256) String(bz []byte) string {
   hash function.
 
 ### Negative
+
+- Global variables.
 
 ## References
 

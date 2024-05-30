@@ -368,6 +368,32 @@ func TestBroadcastTxCommit(t *testing.T) {
 	}
 }
 
+func TestUnconfirmedTx(t *testing.T) {
+	_, _, tx := MakeTxKV()
+
+	ch := make(chan *abci.CheckTxResponse, 1)
+	mempool := node.Mempool()
+	reqRes, err := mempool.CheckTx(tx)
+	require.NoError(t, err)
+	ch <- reqRes.Response.GetCheckTx()
+
+	// wait for tx to arrive in mempoool.
+	select {
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		t.Error("Timed out waiting for CheckTx callback")
+	}
+	target := types.Tx(tx)
+	for _, c := range GetClients() {
+		mc := c.(client.MempoolClient)
+		res, err := mc.UnconfirmedTx(context.Background(), target.Hash())
+		require.NoError(t, err)
+		assert.Exactly(t, target, res.Tx)
+	}
+
+	mempool.Flush()
+}
+
 func TestUnconfirmedTxs(t *testing.T) {
 	_, _, tx := MakeTxKV()
 

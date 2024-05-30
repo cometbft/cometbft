@@ -98,3 +98,21 @@ func TestValidatorValidateBasic(t *testing.T) {
 		}
 	}
 }
+
+// TestValidatorCopy tests if the Copy() method of a validator does
+// a deep copy of all the fields.
+func TestValidatorCopy(t *testing.T) {
+	priv := NewMockPV()
+	pubKey, _ := priv.GetPubKey()
+	val := &Validator{
+		Address:          pubKey.Address(),
+		PubKey:           pubKey,
+		VotingPower:      10,
+		ProposerPriority: 1,
+	}
+	copyVal := val.Copy()
+	assert.Equal(t, val.Address.Bytes(), copyVal.Address.Bytes())
+	assert.Equal(t, val.PubKey.Bytes(), copyVal.PubKey.Bytes())
+	assert.Equal(t, val.VotingPower, copyVal.VotingPower)
+	assert.Equal(t, val.ProposerPriority, copyVal.ProposerPriority)
+}

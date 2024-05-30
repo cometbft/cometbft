@@ -22,7 +22,7 @@ The hash is then used by:
 to search for a transaction using its hash;
 - `types` package to calculate the Merkle root of block's transactions.
 
-`tmhash` is also used to calculate various hashes in CometBFT (e.g.,
+`tmhash` library is also used to calculate various hashes in CometBFT repo (e.g.,
 evidence, consensus params, commit, header, partset header).
 
 The problem some application developers are facing is a mismatch between the
@@ -35,7 +35,9 @@ hashing algorithm if desired by the app developers.
 
 ## Alternative Approaches
 
-None.
+1. Do nothing => not flexible.
+2. Add `HashFn` argument to `NewNode` and pass this function down the stack =>
+   complicates the code.
 
 ## Decision
 
@@ -43,57 +45,104 @@ Give app developers a way to provide their own transaction hash function.
 
 ## Detailed Design
 
-Add `hashFn HashFn` option to `NewNode` in `node.go`.
+Use `sha256` by default, but give developers a way to change the hashing function:
 
 ```go
-// HashFn defines an interface for the transaction hashing function.
-type HashFn interface {
-    // New returns a new hash.Hash calculating the given hash function.
-    New() hash.Hash
-    // Size returns the length, in bytes, of a digest resulting from the given hash function.
-    Size() int
+const (
+    Size          = 32 // all hashes
+    TruncatedSize = 20 // except validator's address
+)
+
+var (
+    hashFunc = func() Hash256 {
+        return sha256.New()
+    }
+)
+
+type Hash256 interface {
+    hash.Hash
+    // Fix the size where it's needed: block hash, evidence hash, ...
+    Sum256(bz []byte) []byte
+    // Allow custom representation of a resulting bytes
+    String(bz []byte) string
 }
 
-// Use CustomHashFn to supply custom hashing function.
-func CustomHashFn(hashFn HashFn) Option {
-	return func(n *Node) {
-		n.hashFn = hashFn
-	}
+func New() Hash256 {
+    return hashFunc()
 }
 
-// DefaultHashFn is a TMHash.
-func DefaultHashFn() HashFn {
-    return TMHash{}
+func ReplaceDefaultWith(f func() Hash256) {
+    hashFunc = f
 }
 
-// TMHash uses tmhash package to implement transaction hashing.
-type TMHash struct {}
-func (TMHash) New() hash.Hash {
-    return tmhash.New()
+// For fixed size hashes.
+func Sum256(bz []byte) [32]byte {
+    return hashFunc().Sum256(bz)
 }
-func (TMHash) Size(bz []byte) {
-    return tmhash.Size
+
+// For validators addresses.
+func Sum160(bz []byte) [20]byte {
+    return hashFunc().Sum256(bz)[:TruncatedSize]
 }
 ```
 
-And then use it to calculate a transaction's hash.
+```go
+import (
+    gosha256 "crypto/sha256"
+)
+
+type sha256 struct {
+   h hash.Hash
+}
+
+func New() Hash256 {
+    return sha256{
+        h: gosha256.New(),
+    }
+}
+
+func (h sha256) Write(p []byte) (n int, err error) {
+	return h.h.Write(p)
+}
+
+func (h sha256) Sum(b []byte) []byte {
+	return h.h.Sum(b)
+}
+
+func (h sha256) Reset() {
+	h.h.Reset()
+}
+
+func (sha256) Size() int {
+	return gosha256.Size
+}
+
+func (h sha256) BlockSize() int {
+	return h.h.BlockSize()
+}
+
+func (h sha256) Sum256(bz []byte) []byte {
+	return h.h.Sum256(bz)
+}
+
+func (h sha256) String(bz []byte) string {
+	return fmt.Sprintf("%X", bz)
+}
+```
+
 
 ## Consequences
 
 ### Positive
 
 - Modular transaction hashing
-- Paving a way for the pluggable cryptography. hashFn can later be used to
-  calculate header's hash, evidence hash.
-
-### Negative
-
-- Potentially adds complexity for developers.
 
 ### Neutral
 
 - App developers need to take performance into account when choosing custom
   hash function.
+
+### Negative
 
 ## References
 

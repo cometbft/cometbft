@@ -724,7 +724,7 @@ type recheck struct {
 	recheckReapSharedState recheckReapSharedState
 }
 
-var minimumMempoolSizeForConcurrentRecheck int32 = 50
+const minimumMempoolSizeForConcurrentRecheck int32 = 50
 
 type recheckReapSharedState struct {
 	mtx                    sync.Mutex
@@ -763,6 +763,8 @@ func (r *recheckReapSharedState) reapingCompleted() {
 	r.mtx.Unlock()
 }
 
+const updateBlockedOnReapPollInterval = 5 * time.Millisecond
+
 // This method protects against an edge case that seems impossible in practice.
 // We are still reaping, while we are committing the next block.
 // However reaping only occurs during propose, which is under the consensus mutex.
@@ -777,9 +779,8 @@ func (r *recheckReapSharedState) waitForReapingToFinish() {
 	if !isReaping {
 		return
 	}
-	r.mtx.Unlock()
 	for {
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(updateBlockedOnReapPollInterval)
 		r.mtx.Lock()
 		isReaping := r.isReaping
 		r.mtx.Unlock()
@@ -857,7 +858,7 @@ func (rc *recheck) init(first, last *clist.CElement, mempoolLen int32) {
 	}
 	rc.cursor = first
 	rc.end = last
-	rc.initialMempoolSize = (mempoolLen)
+	rc.initialMempoolSize = mempoolLen
 	rc.numRecheckedTxs.Store(0)
 }
 

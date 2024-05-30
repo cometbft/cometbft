@@ -11,7 +11,10 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-var ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is catching up")
+var (
+	ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is catching up")
+	ErrorEmptyTxHash            = errors.New("transaction hash cannot be empty")
+)
 
 // -----------------------------------------------------------------------------
 // NOTE: tx should be signed, but this is only checked at the app level (not by CometBFT!)
@@ -157,6 +160,10 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 // UnconfirmedTx gets unconfirmed transaction by hash.
 func (env *Environment) UnconfirmedTx(_ *rpctypes.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+	if len(hash) == 0 {
+		return nil, ErrorEmptyTxHash
+	}
+
 	return &ctypes.ResultUnconfirmedTx{
 		Tx: env.Mempool.GetTxByHash(hash),
 	}, nil

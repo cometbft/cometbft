@@ -3253,10 +3253,14 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 	return nil, nil
 }
 
-// TestReadSerializedBlockFromBlockParts tests the readSerializedBlockFromBlockParts function.
+// TestReadSerializedBlockFromBlockParts tests that the readSerializedBlockFromBlockParts function
+// reads the block correctly from the block parts.
 func TestReadSerializedBlockFromBlockParts(t *testing.T) {
-	sizes := []int{0, 5, 64, 70, 128}
+	sizes := []int{0, 5, 64, 70, 128, 200}
 
+	// iterate through many initial buffer sizes and new block sizes.
+	// (Skip new block size = 0, as that is not valid construction)
+	// Ensure that we read back the correct block size, and the buffer is resized correctly.
 	for i := 0; i < len(sizes); i++ {
 		for j := 1; j < len(sizes); j++ {
 			initialSize, newBlockSize := sizes[i], sizes[j]

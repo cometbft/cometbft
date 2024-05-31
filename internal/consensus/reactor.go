@@ -352,11 +352,21 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *VoteMessage:
 			cs := conR.conS
 			cs.mtx.RLock()
-			height, valSize, lastCommitSize := cs.Height, cs.Validators.Size(), cs.LastCommit.Size()
+			csHeight, csRound, valSize, lastCommitSize := cs.Height, cs.Round, cs.Validators.Size(), cs.LastCommit.Size()
 			cs.mtx.RUnlock()
-			ps.EnsureVoteBitArrays(height, valSize)
-			ps.EnsureVoteBitArrays(height-1, lastCommitSize)
+			ps.EnsureVoteBitArrays(csHeight, valSize)
+			ps.EnsureVoteBitArrays(csHeight-1, lastCommitSize)
 			ps.SetHasVote(msg.Vote)
+
+			// if vote is late, and is not a precommit for the last block, mark it late and return.
+			isLate := msg.Vote.Height < csHeight || (msg.Vote.Height == cs.Height && msg.Vote.Round < csRound)
+			if isLate {
+				isLastBlockPrecommit := msg.Vote.Type != types.PrecommitType || msg.Vote.Height != csHeight-1
+				if isLastBlockPrecommit {
+					cs.metrics.MarkLateVote(msg.Vote.Type)
+					return
+				}
+			}
 
 			cs.peerMsgQueue <- msgInfo{msg, e.Src.ID(), time.Time{}}
 

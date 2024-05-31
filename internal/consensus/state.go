@@ -2086,6 +2086,7 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 
 // checks if we should allow processing the proposal block part.
 // Shared code between reactor and state machine.
+// This must not modify csBlockParts, only take read-only accesses to it.
 // Returns true if the block part is not old or duplicated.
 func allowProcessingProposalBlockPart(msg *BlockPartMessage, logger log.Logger, metrics *Metrics, csHeight int64, csBlockParts *types.PartSet, allowFutureHeights bool, peerID p2p.ID) bool {
 	height, round, part := msg.Height, msg.Round, msg.Part

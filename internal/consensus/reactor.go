@@ -361,8 +361,8 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			// if vote is late, and is not a precommit for the last block, mark it late and return.
 			isLate := msg.Vote.Height < csHeight || (msg.Vote.Height == csHeight && msg.Vote.Round < csRound)
 			if isLate {
-				isLastBlockPrecommit := msg.Vote.Type != types.PrecommitType || msg.Vote.Height != csHeight-1
-				if isLastBlockPrecommit {
+				notLastBlockPrecommit := msg.Vote.Type != types.PrecommitType || msg.Vote.Height != csHeight-1
+				if notLastBlockPrecommit {
 					cs.metrics.MarkLateVote(msg.Vote.Type)
 					return
 				}

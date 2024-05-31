@@ -3278,7 +3278,6 @@ func TestReadSerializedBlockFromBlockParts(t *testing.T) {
 				require.Equal(t, blockData, serializedBlock)
 				require.Equal(t, len(cs.serializedBlockBuffer), max(initialSize, newBlockSize))
 			})
-
 		}
 	}
 }

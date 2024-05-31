@@ -129,42 +129,10 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		maxReapBytes = -1
 	}
 
-	// check if oracle's gossipVoteMap has any results
-	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
-	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
-	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
-
-	var createOracleResultTxBz []byte
-	if len(oracleVotesBuffer) > 0 {
-		votes := []*oracleproto.GossipedVotes{}
-		for _, vote := range oracleVotesBuffer {
-			votes = append(votes, vote)
-		}
-
-		resp, err := blockExec.proxyApp.CreateOracleResultTx(ctx, &abci.RequestCreateOracleResultTx{
-			Proposer:      proposerAddr,
-			GossipedVotes: votes,
-		})
-		if err != nil {
-			blockExec.logger.Error("error in proxyAppConn.CreateOracleResultTx", "err", err)
-		} else {
-			createOracleResultTxBz = resp.EncodedTx
-		}
-	}
-
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
-
-	if len(createOracleResultTxBz) > 0 {
-		maxReapBytes -= int64(len(createOracleResultTxBz))
-		txs = blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
-		CreateOracleResultTx := types.Tx(createOracleResultTxBz)
-		txs = append([]types.Tx{CreateOracleResultTx}, txs...)
-	}
-
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	txSlice := block.Txs.ToSliceOfBytes()
-
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{
@@ -195,6 +163,37 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		return nil, err
 	}
 
+	// inject oracleTx containing gossipedVotes from vals, this is ran after PrepareProposal, so that CreateOracleResultTx
+	// hook will use the updated context from prepareProposalState
+
+	// check if oracle's gossipVoteMap has any results
+	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
+	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
+	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
+
+	var createOracleResultTxBz []byte
+	if len(oracleVotesBuffer) > 0 {
+		votes := []*oracleproto.GossipedVotes{}
+		for _, vote := range oracleVotesBuffer {
+			votes = append(votes, vote)
+		}
+
+		resp, err := blockExec.proxyApp.CreateOracleResultTx(ctx, &abci.RequestCreateOracleResultTx{
+			Proposer:      proposerAddr,
+			GossipedVotes: votes,
+		})
+		if err != nil {
+			blockExec.logger.Error("error in proxyAppConn.CreateOracleResultTx", "err", err)
+		} else {
+			createOracleResultTxBz = resp.EncodedTx
+		}
+	}
+
+	if len(createOracleResultTxBz) > 0 {
+		CreateOracleResultTx := types.Tx(createOracleResultTxBz)
+		txl = append([]types.Tx{CreateOracleResultTx}, txl...)
+	}
+
 	return state.MakeBlock(height, txl, commit, evidence, proposerAddr), nil
 }
 
@@ -202,20 +201,6 @@ func (blockExec *BlockExecutor) ProcessProposal(
 	block *types.Block,
 	state State,
 ) (bool, error) {
-	txs := block.Data.Txs.ToSliceOfBytes()
-	if len(txs) > 0 {
-		res, err := blockExec.proxyApp.ValidateOracleVotes(context.TODO(), &abci.RequestValidateOracleVotes{OracleTx: txs[0]})
-
-		if err != nil && res.Status == abci.ResponseValidateOracleVotes_ABSENT {
-			// oracleTx is not present, continue normal processProposal flow
-			blockExec.logger.Error("error validating oracle votes:", "err", err)
-		} else if err != nil && res.Status == abci.ResponseValidateOracleVotes_PRESENT {
-			// oracleTx is present but it is invalid, remove from txs
-			blockExec.logger.Error("error validating oracle votes:", "err", err)
-			return false, fmt.Errorf("processProposal: invalid oracle votes submitted: %v", err)
-		}
-	}
-
 	resp, err := blockExec.proxyApp.ProcessProposal(context.TODO(), &abci.RequestProcessProposal{
 		Hash:               block.Header.Hash(),
 		Height:             block.Header.Height,

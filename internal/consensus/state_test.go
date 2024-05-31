@@ -3252,3 +3252,29 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 	require.Fail(t, "We shouldn't hit the end of the loop")
 	return nil, nil
 }
+
+// TestReadSerializedBlockFromBlockParts tests the readSerializedBlockFromBlockParts function.
+func TestReadSerializedBlockFromBlockParts(t *testing.T) {
+	sizes := []int{0, 5, 64, 70, 128}
+
+	for i := 0; i < len(sizes); i++ {
+		for j := 1; j < len(sizes); j++ {
+			initialSize, newBlockSize := sizes[i], sizes[j]
+			testName := fmt.Sprintf("initialSize=%d,newBlockSize=%d", initialSize, newBlockSize)
+			t.Run(testName, func(t *testing.T) {
+				blockData := cmtrand.Bytes(newBlockSize)
+				ps := types.NewPartSetFromData(blockData, 64)
+				cs := &State{
+					serializedBlockBuffer: make([]byte, initialSize),
+				}
+				cs.ProposalBlockParts = ps
+
+				serializedBlock, err := cs.readSerializedBlockFromBlockParts()
+				require.NoError(t, err)
+				require.Equal(t, blockData, serializedBlock)
+				require.Equal(t, len(cs.serializedBlockBuffer), max(initialSize, newBlockSize))
+			})
+
+		}
+	}
+}

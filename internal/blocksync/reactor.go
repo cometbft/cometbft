@@ -586,7 +586,7 @@ func (bcR *Reactor) processBlock(first, second *types.Block, firstParts *types.P
 
 	// TODO: same thing for app - but we would need a way to
 	// get the hash without persisting the state
-	state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
+	state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first, bcR.pool.MaxPeerHeight())
 	if err != nil {
 		// TODO This is bad, are we zombie?
 		panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))

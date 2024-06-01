@@ -18,7 +18,6 @@ var (
 	ErrPassedGenesisHashMismatch = errors.New("genesis doc hash in db does not match passed --genesis_hash value")
 	// ErrLoadedGenesisDocHashMismatch is returned when the genesis doc hash in the database does not match the loaded genesis doc.
 	ErrLoadedGenesisDocHashMismatch = errors.New("genesis doc hash in db does not match loaded genesis doc")
-	//
 )
 
 // ErrCreateBlockStore is returned when the node fails to create the blockstore.

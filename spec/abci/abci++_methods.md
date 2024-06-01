@@ -611,6 +611,7 @@ without calling `VerifyVoteExtension` to verify it.
     | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the finalized block.                                                         | 6            |
     | next_validators_hash | bytes                                           | Merkle root of the next validator set.                                                    | 7            |
     | proposer_address     | bytes                                           | [Address](../core/data_structures.md#address) of the validator that created the proposal. | 8            |
+    | syncing_to_height    | int64                                           | If the node is syncing/replaying blocks then syncing_to_height == target height. If not, syncing_to_height == height.    | 9            |  
 
 * **Response**:
 

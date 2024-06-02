@@ -65,6 +65,7 @@ func (app *localClient) callback(req *types.Request, res *types.Response) *ReqRe
 		app.Callback(req, res)
 	}
 	rr := newLocalReqRes(req, res)
+	rr.Done() // release waiters
 	rr.callbackInvoked = true
 	return rr
 }

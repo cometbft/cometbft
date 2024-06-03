@@ -219,19 +219,14 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 
 		preLockTime := time.Now().UnixMicro()
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
+		votes := []*oracleproto.GossipedVotes{}
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
 			// stop sending gossip votes that have passed the maxGossipVoteAge
 			if gossipVote.SignedTimestamp < latestAllowableTimestamp {
 				continue
 			}
 
-			success := peer.Send(p2p.Envelope{
-				ChannelID: OracleChannel,
-				Message:   gossipVote,
-			})
-			if !success {
-				break
-			}
+			votes = append(votes, gossipVote)
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 		postLockTime := time.Now().UnixMicro()
@@ -240,6 +235,15 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 			logrus.Infof("Sending gossip lock took %v microseconds", diff)
 		}
 
+		for _, vote := range votes {
+			success := peer.Send(p2p.Envelope{
+				ChannelID: OracleChannel,
+				Message:   vote,
+			})
+			if !success {
+				break
+			}
+		}
 		time.Sleep(interval)
 	}
 }

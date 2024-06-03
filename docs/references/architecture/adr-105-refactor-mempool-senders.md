@@ -150,7 +150,7 @@ synchoronized.
 
 Update: We have decided to revert this change as it may cause in some cases that the transaction is
 sent back to the sender. Storing the sender in the reactor after storing the transaction in `CList`
-introduces a small delay resulting in the transaction having no sender during a very small window of
+introduces a race condition resulting in the transaction having no sender during a very small window of
 time.
 
 ## Consequences

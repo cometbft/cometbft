@@ -84,7 +84,10 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 	postLockTime := time.Now().UnixMicro()
-	log.Infof("Updating gossip lock took %v microseconds", postLockTime-preLockTime)
+	diff := postLockTime - preLockTime
+	if diff > 1000 {
+		log.Infof("Updating gossip lock took %v microseconds", diff)
+	}
 }
 
 func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
@@ -160,7 +163,10 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			oracleInfo.GossipVoteBuffer.Buffer = gossipBuffer
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 			postLockTime := time.Now().UnixMicro()
-			log.Infof("Pruning gossip lock took %v microseconds", postLockTime-preLockTime)
+			diff := postLockTime - preLockTime
+			if diff > 1000 {
+				log.Infof("Pruning gossip lock took %v microseconds", diff)
+			}
 		}
 	}(oracleInfo)
 }

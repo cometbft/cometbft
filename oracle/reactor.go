@@ -161,7 +161,10 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		postLockTime := time.Now().UnixMicro()
-		logrus.Infof("Receiving gossip lock took %v microseconds", postLockTime-preLockTime)
+		diff := postLockTime - preLockTime
+		if diff > 1000 {
+			logrus.Infof("Receiving gossip lock took %v microseconds", diff)
+		}
 	default:
 		logrus.Warn("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle cannot handle message of type: %T", e.Message))
@@ -232,7 +235,10 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 		postLockTime := time.Now().UnixMicro()
-		logrus.Infof("Sending gossip lock took %v microseconds", postLockTime-preLockTime)
+		diff := postLockTime - preLockTime
+		if diff > 1000 {
+			logrus.Infof("Sending gossip lock took %v microseconds", diff)
+		}
 
 		time.Sleep(interval)
 	}

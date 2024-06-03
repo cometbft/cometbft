@@ -178,7 +178,10 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	}
 	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 	postLockTime := time.Now().UnixMicro()
-	logrus.Infof("Injecting oracle tx gossip lock took %v microseconds", postLockTime-preLockTime)
+	diff := postLockTime - preLockTime
+	if diff > 1000 {
+		logrus.Infof("Injecting oracle tx gossip lock took %v microseconds", diff)
+	}
 
 	var createOracleResultTxBz []byte
 	if len(votes) > 0 {

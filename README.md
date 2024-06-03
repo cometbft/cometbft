@@ -46,7 +46,7 @@ us, in order of preference:
 - [Create a new discussion on
   GitHub](https://github.com/cometbft/cometbft/discussions)
 - Reach out to us via [Telegram](https://t.me/CometBFT)
-- [Join the Cosmos Network Discord](https://discord.gg/cosmosnetwork) and
+- [Join the Cosmos Network Discord](https://discord.gg/interchain) and
   discuss in
   [`#cometbft`](https://discord.com/channels/669268347736686612/1069933855307472906)
 
@@ -176,7 +176,7 @@ maintains [cometbft.com](https://cometbft.com).
 [go-badge]: https://img.shields.io/badge/go-1.20-blue.svg
 [go-url]: https://github.com/moovweb/gvm
 [discord-badge]: https://img.shields.io/discord/669268347736686612.svg
-[discord-url]: https://discord.gg/cosmosnetwork
+[discord-url]: https://discord.gg/interchain
 [license-badge]: https://img.shields.io/github/license/cometbft/cometbft.svg
 [license-url]: https://github.com/cometbft/cometbft/blob/main/LICENSE
 [sg-badge]: https://sourcegraph.com/github.com/cometbft/cometbft/-/badge.svg

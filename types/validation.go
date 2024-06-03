@@ -247,7 +247,7 @@ func verifyCommitBatch(
 		if lookUpByIndex {
 			val = vals.Validators[idx]
 		} else {
-			valIdx, val = vals.GetByAddress(commitSig.ValidatorAddress)
+			valIdx, val = vals.GetByAddressMut(commitSig.ValidatorAddress)
 
 			// if the signature doesn't belong to anyone in the validator set
 			// then we just skip over it

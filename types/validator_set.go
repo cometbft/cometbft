@@ -284,9 +284,21 @@ func (vals *ValidatorSet) HasAddress(address []byte) bool {
 // GetByAddress returns an index of the validator with address and validator
 // itself (copy) if found. Otherwise, -1 and nil are returned.
 func (vals *ValidatorSet) GetByAddress(address []byte) (index int32, val *Validator) {
+	i, val := vals.GetByAddressMut(address)
+	if i == -1 {
+		return -1, nil
+	}
+	return i, val.Copy()
+}
+
+// GetByAddressMut returns an index of the validator with address and the
+// direct validator object if found. Mutations on this return value affect the validator set.
+// This method should be used by callers who will not mutate Val.
+// Otherwise, -1 and nil are returned.
+func (vals *ValidatorSet) GetByAddressMut(address []byte) (index int32, val *Validator) {
 	for idx, val := range vals.Validators {
 		if bytes.Equal(val.Address, address) {
-			return int32(idx), val.Copy()
+			return int32(idx), val
 		}
 	}
 	return -1, nil
@@ -465,7 +477,7 @@ func verifyUpdates(
 	removedPower int64,
 ) (tvpAfterUpdatesBeforeRemovals int64, err error) {
 	delta := func(update *Validator, vals *ValidatorSet) int64 {
-		_, val := vals.GetByAddress(update.Address)
+		_, val := vals.GetByAddressMut(update.Address)
 		if val != nil {
 			return update.VotingPower - val.VotingPower
 		}
@@ -512,7 +524,7 @@ func numNewValidators(updates []*Validator, vals *ValidatorSet) int {
 func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotalVotingPower int64) {
 	for _, valUpdate := range updates {
 		address := valUpdate.Address
-		_, val := vals.GetByAddress(address)
+		_, val := vals.GetByAddressMut(address)
 		if val == nil {
 			// add val
 			// Set ProposerPriority to -C*totalVotingPower (with C ~= 1.125) to make sure validators can't
@@ -576,7 +588,7 @@ func verifyRemovals(deletes []*Validator, vals *ValidatorSet) (votingPower int64
 	removedVotingPower := int64(0)
 	for _, valUpdate := range deletes {
 		address := valUpdate.Address
-		_, val := vals.GetByAddress(address)
+		_, val := vals.GetByAddressMut(address)
 		if val == nil {
 			return removedVotingPower, fmt.Errorf("failed to find validator %X to remove", address)
 		}

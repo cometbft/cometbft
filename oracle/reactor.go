@@ -143,26 +143,24 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			return
 		}
 
-		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
+		logrus.Infof("Locking gossip vote buffer for receiving gossip...")
+		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 		currentGossipVote, ok := oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()]
-		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 
 		if !ok {
 			// first gossipVote entry from this validator
-			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 			oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()] = msg
-			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		} else {
 			// existing gossipVote entry from this validator
-			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 			previousTimestamp := currentGossipVote.SignedTimestamp
 			newTimestamp := msg.SignedTimestamp
 			// only replace if the gossipVote received has a later timestamp than our current one
 			if newTimestamp > previousTimestamp {
 				oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()] = msg
 			}
-			oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		}
+		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+		logrus.Infof("Unlocking gossip vote buffer for receiving gossip...")
 	default:
 		logrus.Warn("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		oracleR.Switch.StopPeerForError(e.Src, fmt.Errorf("oracle cannot handle message of type: %T", e.Message))
@@ -215,6 +213,7 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 			latestAllowableTimestamp = oracleR.OracleInfo.BlockTimestamps[0]
 		}
 
+		logrus.Infof("Locking gossip buffer mutex for sending gossip...")
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
 			// stop sending gossip votes that have passed the maxGossipVoteAge
@@ -231,6 +230,7 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 			}
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
+		logrus.Infof("Unlocking gossip buffer mutex for sending gossip...")
 
 		time.Sleep(interval)
 	}

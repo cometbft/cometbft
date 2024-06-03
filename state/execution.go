@@ -14,6 +14,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/sirupsen/logrus"
 
 	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
@@ -133,6 +134,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	txSlice := block.Txs.ToSliceOfBytes()
+	logrus.Infof("Proposer :%v, preparing block proposal for height: %v", block.ProposerAddress.String(), block.Height)
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{
@@ -167,17 +169,18 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	// hook will use the updated context from prepareProposalState
 
 	// check if oracle's gossipVoteMap has any results
+	logrus.Infof("Locking gossip buffer mutex for injecting oracle tx...")
 	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
+	votes := []*oracleproto.GossipedVotes{}
+	for _, vote := range oracleVotesBuffer {
+		votes = append(votes, vote)
+	}
 	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
+	logrus.Infof("Unlocking gossip buffer mutex for injecting oracle tx...")
 
 	var createOracleResultTxBz []byte
-	if len(oracleVotesBuffer) > 0 {
-		votes := []*oracleproto.GossipedVotes{}
-		for _, vote := range oracleVotesBuffer {
-			votes = append(votes, vote)
-		}
-
+	if len(votes) > 0 {
 		resp, err := blockExec.proxyApp.CreateOracleResultTx(ctx, &abci.RequestCreateOracleResultTx{
 			Proposer:      proposerAddr,
 			GossipedVotes: votes,

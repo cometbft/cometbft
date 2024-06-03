@@ -53,6 +53,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 	// batch sign the new votes, along with existing votes in gossipVoteBuffer, if any
 	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
+	log.Infof("Locking unsigned vote buffer for signing...")
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
 
@@ -60,6 +61,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	unsignedVotes = append(unsignedVotes, oracleInfo.UnsignedVoteBuffer.Buffer...)
 
 	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
+	log.Infof("Unlocking unsigned vote buffer for signing...")
 
 	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
 	SortOracleVotes(unsignedVotes)
@@ -78,10 +80,12 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	}
 
 	// need to mutex lock as it will clash with concurrent gossip
+	log.Infof("Locking gossip vote buffer for updating my own gossip...")
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 	address := oracleInfo.PubKey.Address().String()
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+	log.Infof("Unlocking gossip vote buffer for updating my own gossip...")
 }
 
 func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
@@ -133,6 +137,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 				latestAllowableTimestamp = oracleInfo.BlockTimestamps[0]
 			}
 
+			log.Infof("Locking unsigned vote buffer for pruning...")
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
 			newVotes := []*oracleproto.Vote{}
 			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
@@ -143,7 +148,9 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			}
 			oracleInfo.UnsignedVoteBuffer.Buffer = newVotes
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
+			log.Infof("Unlocking unsigned vote buffer for pruning...")
 
+			log.Infof("Locking gossip vote buffer for pruning...")
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 			gossipBuffer := oracleInfo.GossipVoteBuffer.Buffer
 
@@ -155,13 +162,13 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			}
 			oracleInfo.GossipVoteBuffer.Buffer = gossipBuffer
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+			log.Infof("Unlocking gossip vote buffer for pruning...")
 		}
 	}(oracleInfo)
 }
 
 // Run run oracles
 func Run(oracleInfo *types.OracleInfo, consensusState *cs.State) {
-	log.Info("[oracle] Service started.")
 	RunProcessSignVoteQueue(oracleInfo, consensusState)
 	PruneVoteBuffers(oracleInfo, consensusState)
 	// start to take votes from app

@@ -2098,9 +2098,13 @@ func (cs *State) readSerializedBlockFromBlockParts() ([]byte, error) {
 		serializedBlockBuffer = cs.serializedBlockBuffer[:cs.ProposalBlockParts.ByteSize()]
 	}
 
-	_, err := io.ReadFull(cs.ProposalBlockParts.GetReader(), serializedBlockBuffer)
+	n, err := io.ReadFull(cs.ProposalBlockParts.GetReader(), serializedBlockBuffer)
 	if err != nil {
 		return nil, err
+	}
+	// Consistency check, should be impossible to fail.
+	if n != len(serializedBlockBuffer) {
+		return nil, fmt.Errorf("unexpected error in reading block parts, expected to read %d bytes, read %d", len(serializedBlockBuffer), n)
 	}
 	return serializedBlockBuffer, nil
 }

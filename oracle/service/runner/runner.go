@@ -78,15 +78,15 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	}
 
 	// need to mutex lock as it will clash with concurrent gossip
-	preLockTime := time.Now().UnixMicro()
+	preLockTime := time.Now().UnixMilli()
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 	address := oracleInfo.PubKey.Address().String()
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
-	postLockTime := time.Now().UnixMicro()
+	postLockTime := time.Now().UnixMilli()
 	diff := postLockTime - preLockTime
-	if diff > 1000 {
-		log.Infof("Updating gossip lock took %v microseconds", diff)
+	if diff > 10 {
+		log.Warnf("WARNING!!! Updating gossip lock took %v milliseconds", diff)
 	}
 }
 
@@ -150,7 +150,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			oracleInfo.UnsignedVoteBuffer.Buffer = newVotes
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
 
-			preLockTime := time.Now().UnixMicro()
+			preLockTime := time.Now().UnixMilli()
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 			gossipBuffer := oracleInfo.GossipVoteBuffer.Buffer
 
@@ -162,10 +162,10 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			}
 			oracleInfo.GossipVoteBuffer.Buffer = gossipBuffer
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
-			postLockTime := time.Now().UnixMicro()
+			postLockTime := time.Now().UnixMilli()
 			diff := postLockTime - preLockTime
-			if diff > 1000 {
-				log.Infof("Pruning gossip lock took %v microseconds", diff)
+			if diff > 10 {
+				log.Warnf("WARNING!!! Pruning gossip lock took %v milliseconds", diff)
 			}
 		}
 	}(oracleInfo)

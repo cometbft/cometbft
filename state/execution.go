@@ -169,7 +169,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	// hook will use the updated context from prepareProposalState
 
 	// check if oracle's gossipVoteMap has any results
-	preLockTime := time.Now().UnixMicro()
+	preLockTime := time.Now().UnixMilli()
 	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
 	votes := []*oracleproto.GossipedVotes{}
@@ -177,10 +177,10 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		votes = append(votes, vote)
 	}
 	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
-	postLockTime := time.Now().UnixMicro()
+	postLockTime := time.Now().UnixMilli()
 	diff := postLockTime - preLockTime
-	if diff > 1000 {
-		logrus.Infof("Injecting oracle tx gossip lock took %v microseconds", diff)
+	if diff > 10 {
+		logrus.Warnf("WARNING!!! Injecting oracle tx gossip lock took %v milliseconds", diff)
 	}
 
 	var createOracleResultTxBz []byte

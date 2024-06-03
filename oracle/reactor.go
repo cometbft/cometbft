@@ -143,7 +143,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			return
 		}
 
-		preLockTime := time.Now().UnixMicro()
+		preLockTime := time.Now().UnixMilli()
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
 		currentGossipVote, ok := oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()]
 
@@ -160,10 +160,10 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 			}
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
-		postLockTime := time.Now().UnixMicro()
+		postLockTime := time.Now().UnixMilli()
 		diff := postLockTime - preLockTime
-		if diff > 1000 {
-			logrus.Infof("Receiving gossip lock took %v microseconds", diff)
+		if diff > 10 {
+			logrus.Warnf("WARNING!!! Receiving gossip lock took %v milliseconds", diff)
 		}
 	default:
 		logrus.Warn("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
@@ -217,7 +217,7 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 			latestAllowableTimestamp = oracleR.OracleInfo.BlockTimestamps[0]
 		}
 
-		preLockTime := time.Now().UnixMicro()
+		preLockTime := time.Now().UnixMilli()
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
 		votes := []*oracleproto.GossipedVotes{}
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
@@ -229,10 +229,10 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 			votes = append(votes, gossipVote)
 		}
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
-		postLockTime := time.Now().UnixMicro()
+		postLockTime := time.Now().UnixMilli()
 		diff := postLockTime - preLockTime
-		if diff > 1000 {
-			logrus.Infof("Sending gossip lock took %v microseconds", diff)
+		if diff > 10 {
+			logrus.Warnf("WARNING!!! Sending gossip lock took %v milliseconds", diff)
 		}
 
 		for _, vote := range votes {

@@ -77,6 +77,8 @@ type Metrics struct {
 	// Number of disabled routes.
 	DisabledRoutes metrics.Gauge
 
+	Redundancy metrics.Gauge
+
 	// Cumulative time spent rechecking transactions
 	RecheckDurationSeconds metrics.Gauge
 }

@@ -18,8 +18,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-const defaultHaveTxDisabledDuration = 1000 * time.Millisecond
-
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
@@ -258,27 +256,50 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 		switch {
 		case errors.Is(err, ErrTxInCache):
 			memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%X", txKey.Hash()), "sender", senderID)
-			memR.router.doIfTimerExpired(func() {
+			memR.router.incDuplicateTxs()
+			if !memR.router.isHaveTxBlocked() {
 				ok := sender.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.HaveTx{TxKey: txKey[:]}})
 				if !ok {
 					memR.Logger.Error("Failed to send HaveTx message", "peer", senderID, "txKey", txKey)
 				} else {
 					memR.Logger.Debug("Sent HaveTx message", "tx", log.NewLazySprintf("%X", txKey.Hash()), "peer", senderID)
+					memR.router.setBlockHaveTx()
 				}
-			})
+			}
 			return nil, err
 
 		case errors.As(err, &ErrMempoolIsFull{}):
 			// using debug level to avoid flooding when traffic is high
 			memR.Logger.Debug(err.Error())
 			return nil, err
+
 		default:
 			memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID, "err", err)
 			return nil, err
 		}
 	}
 
+	// adjust redundancy
+	memR.router.incFirstTimeTx()
+	redundancy := memR.router.adjustRedundancy(memR.Logger, func() {
+		// Send Reset to a random peer.
+		p := memR.Switch.Peers().Random()
+		memR.SendReset(p)
+	})
+
+	// update metrics
+	if redundancy >= 0 {
+		memR.mempool.metrics.Redundancy.Set(redundancy)
+	}
+
 	return reqRes, nil
+}
+
+func (memR *Reactor) SendReset(p p2p.Peer) {
+	if !p.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.Reset{}}) {
+		memR.Logger.Error("Failed to send Reset", "peer", p.ID())
+	}
+	memR.mempool.metrics.ResetMsgsSent.Add(1)
 }
 
 func (memR *Reactor) EnableInOutTxs() {
@@ -415,11 +436,11 @@ type gossipRouter struct {
 	// A set of `source -> target` routes that are disabled for disseminating transactions. Source
 	// and target are node IDs.
 	disabledRoutes map[p2p.ID]p2pIDSet
+	first          int64 // number of transactions received for the first time
+	duplicate      int64 // number of duplicate transactions
 	mtx            cmtsync.RWMutex
 
-	// For temporarily disabling sending HaveTx messages.
-	timer   *time.Timer
-	timeMtx cmtsync.Mutex
+	blockHaveTx atomic.Bool
 }
 
 func newGossipRouter() *gossipRouter {
@@ -507,31 +528,57 @@ func (r *gossipRouter) numRoutes() int {
 	return count
 }
 
-// doIfTimerExpired checks whether the timer has not started or if it expired. We don't want to send
-// more than one HaveTx message at the same time. It could cut all the routes to this node,
-// isolating it from Txs messages. Every time we send a HaveTx message, we start a timer. During the
-// time the timer is on, we don't send any HaveTx to allow the last peer we send HaveTx to finish
-// sending us transactions, while still receiving those same transactions through another peer.
-// After the timer expires, and if we're still receiving duplicate transactions, we can send HaveTx
-// again.
-func (r *gossipRouter) doIfTimerExpired(sendHaveTx func()) {
-	r.timeMtx.Lock()
-	defer r.timeMtx.Unlock()
+func (r *gossipRouter) setBlockHaveTx() {
+	r.blockHaveTx.Store(true)
+}
 
-	// do not send HaveTx for some time, counting from the last time a HaveTx was sent.
-	if r.timer != nil {
-		select {
-		case <-r.timer.C:
-			// The timer expired: continue sending HaveTx.
-		default:
-			// Timer's still running: do not send HaveTx (a HaveTx message was sent recently).
-			return
+func (r *gossipRouter) isHaveTxBlocked() bool {
+	return r.blockHaveTx.Load()
+}
+
+func (r *gossipRouter) incDuplicateTxs() {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	r.duplicate++
+}
+
+const (
+	targetRedundancy      = 1
+	targetRedundancySlack = 10  // expressed as % of targetRedundancy
+	txsPerAdjustment      = 500 // We probably need to make this bigger
+)
+
+func (r *gossipRouter) incFirstTimeTx() {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	r.first++
+}
+
+func (r *gossipRouter) adjustRedundancy(logger log.Logger, sendReset func()) float64 {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	if r.first >= txsPerAdjustment {
+		redundancy := float64(r.duplicate) / float64(r.first)
+		targetRedundancySlackAbs := float64(targetRedundancy) * float64(targetRedundancySlack) / 100.
+		if redundancy < targetRedundancy-targetRedundancySlackAbs {
+			logger.Info("TX redundancy BELOW limit, increasing it",
+				"redundancy", redundancy,
+				"limit", targetRedundancy+targetRedundancySlackAbs,
+			)
+			sendReset()
+		} else if targetRedundancy+targetRedundancySlackAbs <= redundancy {
+			logger.Info("TX redundancy ABOVE limit, decreasing it",
+				"redundancy", redundancy,
+				"limit", targetRedundancy-targetRedundancySlackAbs,
+			)
+			r.blockHaveTx.Store(false)
 		}
+		r.first = 0
+		r.duplicate = 0
+		return redundancy
 	}
-
-	sendHaveTx()
-
-	// (Re)start timer.
-	// TODO: check that timer.C channel is drained.
-	r.timer = time.NewTimer(defaultHaveTxDisabledDuration)
+	return -1
 }

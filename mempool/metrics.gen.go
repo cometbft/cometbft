@@ -108,6 +108,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "disabled_routes",
 			Help:      "Number of disabled routes.",
 		}, labels).With(labelsAndValues...),
+		Redundancy: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "redundancy",
+			Help:      "",
+		}, labels).With(labelsAndValues...),
 		RecheckDurationSeconds: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -134,6 +140,7 @@ func NopMetrics() *Metrics {
 		HaveTxMsgsReceived:        discard.NewCounter(),
 		ResetMsgsSent:             discard.NewCounter(),
 		DisabledRoutes:            discard.NewGauge(),
+		Redundancy:                discard.NewGauge(),
 		RecheckDurationSeconds:    discard.NewGauge(),
 	}
 }

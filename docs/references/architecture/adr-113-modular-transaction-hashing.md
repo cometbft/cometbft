@@ -38,6 +38,8 @@ hashing algorithm if desired by the app developers.
 1. Do nothing => not flexible.
 2. Add `HashFn` argument to `NewNode` and pass this function down the stack =>
    complicates the code.
+3. Limit the scope of the solution described below to just transaction hashing
+   (do not change header's hash, evidence's hash, etc.) => ?
 
 ## Decision
 
@@ -111,6 +113,13 @@ If the application developer decides to change the default hashing scheme, they
 can only do so once before launching their app. If they attempt to upgrade
 after, the resulting hashes won't match. A hard fork is an option, but they
 have to be careful with the past data.
+
+If the application developer wants a chain to be IBC compatible
+
+- in order to verify an IBC packet, they will need to know/support the hashing
+  function used.
+- in order to send an IBC packet to another chain, they will need to be aware
+  of the hashing scheme used by that chain.
 
 ## Consequences
 

@@ -52,7 +52,7 @@ Use `sha256` by default, but give developers a way to change the hashing functio
 ```go
 import (
 	"crypto"
-    "hash"
+	"hash"
 	"crypto/sha256"
 )
 

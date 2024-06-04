@@ -146,8 +146,9 @@ happen to call these methods directly.
 `CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error` to 
 `CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)`.
 The method used to take a callback function `cb` to be applied to the
-ABCI `CheckTx` response. Now `CheckTx` returns the ABCI response of
-type `*abcicli.ReqRes`, on which one can apply any callback manually.
+ABCI `CheckTx` response and a `TxInfo` structure containing a sender. 
+Now the sender ID is passed directly and `CheckTx` returns the ABCI response 
+of type `*abcicli.ReqRes`, on which one can apply any callback manually.
 For example:
 ```golang
 reqRes, err := CheckTx(tx, sender)

@@ -419,28 +419,28 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 	const subscriber = "consensus-reactor"
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventNewRoundStep,
 		func(data cmtevents.EventData) {
-			go func() { conR.broadcastNewRoundStepMessage(data.(*cstypes.RoundState)) }()
+			conR.broadcastNewRoundStepMessage(data.(*cstypes.RoundState))
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (NewRoundStep)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventValidBlock,
 		func(data cmtevents.EventData) {
-			go func() { conR.broadcastNewValidBlockMessage(data.(*cstypes.RoundState)) }()
+			conR.broadcastNewValidBlockMessage(data.(*cstypes.RoundState))
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (ValidBlock)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventVote,
 		func(data cmtevents.EventData) {
-			go func() { conR.broadcastHasVoteMessage(data.(*types.Vote)) }()
+			conR.broadcastHasVoteMessage(data.(*types.Vote))
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (Vote)", "err", err)
 	}
 
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
 		func(data cmtevents.EventData) {
-			go func() { conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage)) }()
+			conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (ProposalBlockPart)", "err", err)
 	}
@@ -453,10 +453,12 @@ func (conR *Reactor) unsubscribeFromBroadcastEvents() {
 
 func (conR *Reactor) broadcastNewRoundStepMessage(rs *cstypes.RoundState) {
 	nrsMsg := makeRoundStepMessage(rs)
-	conR.Switch.Broadcast(p2p.Envelope{
-		ChannelID: StateChannel,
-		Message:   nrsMsg,
-	})
+	go func() {
+		conR.Switch.Broadcast(p2p.Envelope{
+			ChannelID: StateChannel,
+			Message:   nrsMsg,
+		})
+	}()
 }
 
 func (conR *Reactor) broadcastNewValidBlockMessage(rs *cstypes.RoundState) {
@@ -468,10 +470,12 @@ func (conR *Reactor) broadcastNewValidBlockMessage(rs *cstypes.RoundState) {
 		BlockParts:         rs.ProposalBlockParts.BitArray().ToProto(),
 		IsCommit:           rs.Step == cstypes.RoundStepCommit,
 	}
-	conR.Switch.Broadcast(p2p.Envelope{
-		ChannelID: StateChannel,
-		Message:   csMsg,
-	})
+	go func() {
+		conR.Switch.Broadcast(p2p.Envelope{
+			ChannelID: StateChannel,
+			Message:   csMsg,
+		})
+	}()
 }
 
 // Broadcasts HasVoteMessage to peers that care.
@@ -482,10 +486,13 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 		Type:   vote.Type,
 		Index:  vote.ValidatorIndex,
 	}
-	conR.Switch.Broadcast(p2p.Envelope{
-		ChannelID: StateChannel,
-		Message:   msg,
-	})
+
+	go func() {
+		conR.Switch.Broadcast(p2p.Envelope{
+			ChannelID: StateChannel,
+			Message:   msg,
+		})
+	}()
 	/*
 		// TODO: Make this broadcast more selective.
 		for _, peer := range conR.Switch.Peers().Copy() {
@@ -517,10 +524,12 @@ func (conR *Reactor) broadcastHasProposalBlockPartMessage(partMsg *BlockPartMess
 		Round:  partMsg.Round,
 		Index:  int32(partMsg.Part.Index),
 	}
-	conR.Switch.Broadcast(p2p.Envelope{
-		ChannelID: StateChannel,
-		Message:   msg,
-	})
+	go func() {
+		conR.Switch.Broadcast(p2p.Envelope{
+			ChannelID: StateChannel,
+			Message:   msg,
+		})
+	}()
 }
 
 func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep) {

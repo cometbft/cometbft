@@ -118,7 +118,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 			latestAllowableTimestamp := time.Now().Unix() - int64(maxOracleGossipAge)
 			// prune votes that are older than the latestAllowableTimestamp, which is the max(earliest block timestamp collected, current time - maxOracleGossipAge)
-			if oracleInfo.BlockTimestamps[0] > latestAllowableTimestamp {
+			if len(oracleInfo.BlockTimestamps) == maxOracleGossipBlocksDelayed && oracleInfo.BlockTimestamps[0] > latestAllowableTimestamp {
 				latestAllowableTimestamp = oracleInfo.BlockTimestamps[0]
 			}
 

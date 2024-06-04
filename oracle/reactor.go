@@ -210,7 +210,7 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 
 		// only gossip votes that are younger than the latestAllowableTimestamp, which is the max(earliest block timestamp collected, current time - maxOracleGossipAge)
 		latestAllowableTimestamp := time.Now().Unix() - int64(oracleR.OracleInfo.Config.MaxOracleGossipAge)
-		if len(oracleR.OracleInfo.BlockTimestamps) > 0 && oracleR.OracleInfo.BlockTimestamps[0] > latestAllowableTimestamp {
+		if len(oracleR.OracleInfo.BlockTimestamps) == oracleR.OracleInfo.Config.MaxOracleGossipBlocksDelayed && oracleR.OracleInfo.BlockTimestamps[0] > latestAllowableTimestamp {
 			latestAllowableTimestamp = oracleR.OracleInfo.BlockTimestamps[0]
 		}
 

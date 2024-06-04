@@ -267,9 +267,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 	case StateChannel:
 		switch msg := msg.(type) {
 		case *NewRoundStepMessage:
-			conR.conS.mtx.Lock()
+			conR.conS.mtx.RLock()
 			initialHeight := conR.conS.state.InitialHeight
-			conR.conS.mtx.Unlock()
+			conR.conS.mtx.RUnlock()
 			if err = msg.ValidateHeight(initialHeight); err != nil {
 				conR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", msg, "err", err)
 				conR.Switch.StopPeerForError(e.Src, err)
@@ -284,9 +284,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			ps.ApplyHasProposalBlockPartMessage(msg)
 		case *VoteSetMaj23Message:
 			cs := conR.conS
-			cs.mtx.Lock()
+			cs.mtx.RLock()
 			height, votes := cs.Height, cs.Votes
-			cs.mtx.Unlock()
+			cs.mtx.RUnlock()
 			if height != msg.Height {
 				return
 			}
@@ -354,9 +354,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 			cs.mtx.RLock()
 			height, valSize, lastCommitSize := cs.Height, cs.Validators.Size(), cs.LastCommit.Size()
 			cs.mtx.RUnlock()
-			ps.EnsureVoteBitArrays(height, valSize)
-			ps.EnsureVoteBitArrays(height-1, lastCommitSize)
-			ps.SetHasVote(msg.Vote)
+			ps.SetHasVoteFromPeer(msg.Vote, height, valSize, lastCommitSize)
 
 			cs.peerMsgQueue <- msgInfo{msg, e.Src.ID(), time.Time{}}
 
@@ -373,9 +371,9 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		switch msg := msg.(type) {
 		case *VoteSetBitsMessage:
 			cs := conR.conS
-			cs.mtx.Lock()
+			cs.mtx.RLock()
 			height, votes := cs.Height, cs.Votes
-			cs.mtx.Unlock()
+			cs.mtx.RUnlock()
 
 			if height == msg.Height {
 				var ourVotes *bits.BitArray
@@ -1444,6 +1442,16 @@ func (ps *PeerState) SetHasVote(vote *types.Vote) {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
+	ps.setHasVote(vote.Height, vote.Round, vote.Type, vote.ValidatorIndex)
+}
+
+// SetHasVote sets the given vote as known by the peer.
+func (ps *PeerState) SetHasVoteFromPeer(vote *types.Vote, csHeight int64, valSize, lastCommitSize int) {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+
+	ps.ensureVoteBitArrays(csHeight, valSize)
+	ps.ensureVoteBitArrays(csHeight-1, lastCommitSize)
 	ps.setHasVote(vote.Height, vote.Round, vote.Type, vote.ValidatorIndex)
 }
 

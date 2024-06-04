@@ -112,7 +112,7 @@ func (r *ReqRes) InvokeCallback() {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	if r.cb != nil {
+	if r.cb != nil && r.Response != nil {
 		r.cb(r.Response)
 	}
 	r.callbackInvoked = true

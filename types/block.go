@@ -949,7 +949,7 @@ func (commit *Commit) MedianTime(validators *ValidatorSet) time.Time {
 		if commitSig.BlockIDFlag == BlockIDFlagAbsent {
 			continue
 		}
-		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)
+		_, validator := validators.GetByAddressMut(commitSig.ValidatorAddress)
 		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
 		if validator != nil {
 			totalVotingPower += validator.VotingPower

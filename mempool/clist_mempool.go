@@ -15,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
@@ -226,7 +227,7 @@ func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 
 // It blocks if we're waiting on Update() or Reap().
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) CheckTx(tx types.Tx, txInfo *TxInfo) (*abcicli.ReqRes, error) {
+func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error) {
 	mem.updateMtx.RLock()
 	// use defer to unlock mutex because application (*local client*) might panic
 	defer mem.updateMtx.RUnlock()
@@ -257,16 +258,16 @@ func (mem *CListMempool) CheckTx(tx types.Tx, txInfo *TxInfo) (*abcicli.ReqRes, 
 
 	if added := mem.addToCache(tx); !added {
 		mem.metrics.AlreadyReceivedTxs.Add(1)
-		if txInfo != nil {
+		if sender != "" {
 			// Record a new sender for a tx we've already seen.
 			// Note it's possible a tx is still in the cache but no longer in the mempool
 			// (eg. after committing a block, txs are removed from mempool but not cache),
 			// so we only record the sender for txs still in the mempool.
 			if elem, ok := mem.getCElement(tx.Key()); ok {
 				memTx := elem.Value.(*mempoolTx)
-				if found := memTx.addSender(txInfo.sender); found {
+				if found := memTx.addSender(sender); found {
 					// It should not be possible to receive twice a tx from the same sender.
-					mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", txInfo.sender)
+					mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", sender)
 				}
 			}
 		}
@@ -283,15 +284,15 @@ func (mem *CListMempool) CheckTx(tx types.Tx, txInfo *TxInfo) (*abcicli.ReqRes, 
 	if err != nil {
 		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
 	}
-	reqRes.SetCallback(mem.handleCheckTxResponse(tx, txInfo))
+	reqRes.SetCallback(mem.handleCheckTxResponse(tx, sender))
 
 	return reqRes, nil
 }
 
 // handleCheckTxResponse handles CheckTx responses for transactions validated for the first time.
 //
-//   - txInfo optionally holds the ID of the peer that sent the transaction, if any.
-func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, txInfo *TxInfo) func(res *abci.Response) {
+//   - sender optionally holds the ID of the peer that sent the transaction, if any.
+func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(res *abci.Response) {
 	return func(r *abci.Response) {
 		res := r.GetCheckTx()
 		if res == nil {
@@ -334,7 +335,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, txInfo *TxInfo) func
 			gasWanted: res.GasWanted,
 			tx:        tx,
 		}
-		if mem.addTx(&memTx, txInfo) {
+		if mem.addTx(&memTx, sender) {
 			mem.notifyTxsAvailable()
 
 			// update metrics
@@ -346,18 +347,18 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, txInfo *TxInfo) func
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *mempoolTx, txInfo *TxInfo) bool {
+func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 	tx := memTx.tx
 	txKey := tx.Key()
 
 	// Check if the transaction is already in the mempool.
 	if elem, ok := mem.getCElement(txKey); ok {
-		if txInfo != nil {
+		if sender != "" {
 			// Update senders on existing entry.
 			memTx := elem.Value.(*mempoolTx)
-			if found := memTx.addSender(txInfo.sender); found {
+			if found := memTx.addSender(sender); found {
 				// It should not be possible to receive twice a tx from the same sender.
-				mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", txInfo.sender)
+				mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", sender)
 			}
 		}
 
@@ -371,9 +372,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, txInfo *TxInfo) bool {
 	}
 
 	// Add new transaction.
-	if txInfo != nil {
-		_ = memTx.addSender(txInfo.sender)
-	}
+	_ = memTx.addSender(sender)
 	e := mem.txs.PushBack(memTx)
 	mem.txsMap.Store(txKey, e)
 	mem.txsBytes.Add(int64(len(tx)))

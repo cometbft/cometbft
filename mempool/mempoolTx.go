@@ -31,7 +31,7 @@ func (memTx *mempoolTx) isSender(peerID p2p.ID) bool {
 
 // Add the peer ID to the list of senders. Return true iff it exists already in the list.
 func (memTx *mempoolTx) addSender(peerID p2p.ID) bool {
-	if peerID == "" {
+	if len(peerID) == 0 {
 		return false
 	}
 	if _, loaded := memTx.senders.LoadOrStore(peerID, struct{}{}); loaded {

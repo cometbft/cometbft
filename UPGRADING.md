@@ -144,13 +144,13 @@ happen to call these methods directly.
 
 `CheckTx`'s signature changed from 
 `CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error` to 
-`CheckTx(tx types.Tx, txInfo *TxInfo) (*abcicli.ReqRes, error)`.
+`CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)`.
 The method used to take a callback function `cb` to be applied to the
 ABCI `CheckTx` response. Now `CheckTx` returns the ABCI response of
 type `*abcicli.ReqRes`, on which one can apply any callback manually.
 For example:
 ```golang
-reqRes, err := CheckTx(tx, &txInfo)
+reqRes, err := CheckTx(tx, sender)
 // check `err` here
 cb(reqRes.Response.GetCheckTx())
 ```
@@ -159,7 +159,7 @@ The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to
 process the response already set (namely, the function `handleCheckTxResponse`).
 The callback can be invoked manually; for example:
 ```golang
-reqRes, err := CheckTx(tx, &txInfo)
+reqRes, err := CheckTx(tx, sender)
 // check `err` here
 reqRes.Wait()
 reqRes.InvokeCallback()

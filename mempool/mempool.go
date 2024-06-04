@@ -26,7 +26,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx, txInfo *TxInfo) (*abcicli.ReqRes, error)
+	CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
@@ -144,9 +144,3 @@ func PostCheckMaxGas(maxGas int64) PostCheckFunc {
 
 // TxKey is the fixed length array key used as an index.
 type TxKey [sha256.Size]byte
-
-// TxInfo is a parameter passed to CheckTx when attempting to add a new tx to the mempool.
-type TxInfo struct {
-	// sender is the peer that sent the transaction to this node, if any.
-	sender p2p.ID
-}

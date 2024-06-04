@@ -24,7 +24,7 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp
 	}
-	_, err := env.Mempool.CheckTx(tx)
+	_, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -40,18 +40,23 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	}
 
 	resCh := make(chan *abci.CheckTxResponse, 1)
-	reqRes, err := env.Mempool.CheckTx(tx)
+	reqRes, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		return nil, err
 	}
-	reqRes.SetCallback(func(_ *abci.Response) {
+	go func() {
+		reqRes.Wait() // wait for response
 		select {
 		case <-ctx.Context().Done():
-		case resCh <- reqRes.Response.GetCheckTx():
+		default:
+			reqRes.InvokeCallback()
+			resCh <- reqRes.Response.GetCheckTx()
 		}
-	})
+	}()
+
 	select {
 	case <-ctx.Context().Done():
+		reqRes.Done() // release waiter on goroutine
 		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
 	case res := <-resCh:
 		return &ctypes.ResultBroadcastTx{
@@ -97,19 +102,24 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	// Broadcast tx and wait for CheckTx result
 	checkTxResCh := make(chan *abci.CheckTxResponse, 1)
-	reqRes, err := env.Mempool.CheckTx(tx)
+	reqRes, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
 		return nil, fmt.Errorf("error on broadcastTxCommit: %v", err)
 	}
-	reqRes.SetCallback(func(_ *abci.Response) {
+	go func() {
+		reqRes.Wait() // wait for response
 		select {
 		case <-ctx.Context().Done():
-		case checkTxResCh <- reqRes.Response.GetCheckTx():
+		default:
+			reqRes.InvokeCallback()
+			checkTxResCh <- reqRes.Response.GetCheckTx()
 		}
-	})
+	}()
+
 	select {
 	case <-ctx.Context().Done():
+		reqRes.Done() // release waiter on goroutine
 		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
 	case checkTxRes := <-checkTxResCh:
 		if checkTxRes.Code != abci.CodeTypeOK {

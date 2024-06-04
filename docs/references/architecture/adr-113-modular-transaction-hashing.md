@@ -1,4 +1,4 @@
-# ADR 113: Modular transaction hashing
+# ADR 113: Modular hashing
 
 ## Changelog
 
@@ -11,19 +11,19 @@ Proposed
 
 ## Context
 
-Transaction hashing in CometBFT is currently implemented using `crypto/tmhash`
-package, which itself relies on [`sha256`](https://pkg.go.dev/crypto/sha256) to
-calculate a transaction's hash.
+Hashing in CometBFT is currently implemented using `crypto/tmhash`
+package, which itself relies on [`sha256`](https://pkg.go.dev/crypto/sha256).
 
-The hash is then used by:
+Among the things which are hashed are the block's header, evidence, consensus
+params, commit, partset header, transactions and others.
+
+### Transaction hashing
+
+The transaction hash is used by:
 
 - the built-in transaction indexer;
 - the `/tx` and `/tx_search` RPC endpoints, which allow users
 to search for a transaction using its hash;
-- `types` package to calculate the Merkle root of block's transactions.
-
-`tmhash` library is also used to calculate various hashes in CometBFT repo (e.g.,
-evidence, consensus params, commit, header, partset header).
 
 The problem some application developers are facing is a mismatch between the
 internal/app representation of transactions and the one employed by CometBFT. For
@@ -33,17 +33,22 @@ the [RLP][rlp].
 In order to be flexible, CometBFT needs to allow changing the transaction
 hashing algorithm if desired by the app developers.
 
+### General hashing
+
+It's up for a debate whether the hashing function should be changed for the
+whole CometBFT or just transactions.
+
 ## Alternative Approaches
 
 1. Do nothing => not flexible.
 2. Add `HashFn` argument to `NewNode` and pass this function down the stack =>
    complicates the code.
-3. Limit the scope of the solution described below to just transaction hashing
+3. Limit the scope of the solution described below to transaction hashing
    (do not change header's hash, evidence's hash, etc.) => ?
 
 ## Decision
 
-Give app developers a way to provide their own transaction hash function.
+Give app developers a way to provide their own hash function.
 
 ## Detailed Design
 
@@ -133,7 +138,7 @@ Light clients would then use ^ when calculating validators hash or header's hash
 
 ### Positive
 
-- Modular transaction hashing
+- Modular hashing
 
 ### Neutral
 

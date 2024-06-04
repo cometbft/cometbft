@@ -134,7 +134,6 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
 	txSlice := block.Txs.ToSliceOfBytes()
-	logrus.Infof("Proposer :%v, preparing block proposal for height: %v", block.ProposerAddress.String(), block.Height)
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{
@@ -179,7 +178,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 	postLockTime := time.Now().UnixMilli()
 	diff := postLockTime - preLockTime
-	if diff > 10 {
+	if diff > 100 {
 		logrus.Warnf("WARNING!!! Injecting oracle tx gossip lock took %v milliseconds", diff)
 	}
 

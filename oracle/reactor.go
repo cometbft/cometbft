@@ -162,7 +162,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 		postLockTime := time.Now().UnixMilli()
 		diff := postLockTime - preLockTime
-		if diff > 10 {
+		if diff > 100 {
 			logrus.Warnf("WARNING!!! Receiving gossip lock took %v milliseconds", diff)
 		}
 	default:
@@ -231,7 +231,7 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
 		postLockTime := time.Now().UnixMilli()
 		diff := postLockTime - preLockTime
-		if diff > 10 {
+		if diff > 100 {
 			logrus.Warnf("WARNING!!! Sending gossip lock took %v milliseconds", diff)
 		}
 

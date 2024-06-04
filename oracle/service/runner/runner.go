@@ -85,7 +85,7 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 	postLockTime := time.Now().UnixMilli()
 	diff := postLockTime - preLockTime
-	if diff > 10 {
+	if diff > 100 {
 		log.Warnf("WARNING!!! Updating gossip lock took %v milliseconds", diff)
 	}
 }
@@ -164,7 +164,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
 			postLockTime := time.Now().UnixMilli()
 			diff := postLockTime - preLockTime
-			if diff > 10 {
+			if diff > 100 {
 				log.Warnf("WARNING!!! Pruning gossip lock took %v milliseconds", diff)
 			}
 		}

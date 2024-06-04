@@ -1518,7 +1518,7 @@ func TestStateLock_POLSafety1(t *testing.T) {
 
 	// add a tx to the mempool
 	tx := kvstore.NewRandomTx(22)
-	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx)
+	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx, "")
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 
@@ -1615,7 +1615,7 @@ func TestStateLock_POLSafety2(t *testing.T) {
 
 	// add a tx to the mempool
 	tx := kvstore.NewRandomTx(22)
-	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx)
+	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx, "")
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 

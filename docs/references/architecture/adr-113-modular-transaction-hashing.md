@@ -105,6 +105,11 @@ func TruncatedSum(bz []byte) []byte {
     }
 	return sum[:TruncatedSize]
 }
+
+// FmtHash returns the checksum of the data as a string.
+func FmtHash(bz []byte) string {
+    return stringFunc(bz)
+}
 ```
 
 Let's break this down. By default, we use `sha256` standard crypto library.

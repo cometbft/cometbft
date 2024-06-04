@@ -81,13 +81,13 @@ func New() hash.Hash {
 	return Hash.New()
 }
 
-// ReplaceDefaultHashWith replaces the default SHA256 hashing function with a given one.
-func ReplaceDefaultHashWith(h crypto.Hash) {
+// SetHash replaces the default SHA256 hashing function with a given one.
+func SetHash(h crypto.Hash) {
 	Hash = h
 }
 
-// ReplaceStringFuncWith replaces the default string function (`%X`) with a given one.
-func ReplaceStringFuncWith(f func([]byte) string) {
+// SetFmtHash replaces the default hash format function (`%X`) with a given one.
+func SetFmtHash(f func([]byte) string) {
 	stringFunc = f
 }
 
@@ -113,10 +113,10 @@ func FmtHash(bz []byte) string {
 ```
 
 Let's break this down. By default, we use `sha256` standard crypto library.
-`ReplaceDefaultHashWith` allows developers to swap the default hashing function
+`SetHash` allows developers to swap the default hashing function
 with the hashing function of their choice.
 
-`ReplaceStringFuncWith` allows developers to swap the default string function
+`SetFmtHash` allows developers to swap the default string function
 (`fmt.Sprintf("%X", bz)`) with their own implementation.
 
 The above solution changes hashes across the whole CometBFT, meaning header's
@@ -127,17 +127,34 @@ can only do so once before launching their app. If they attempt to upgrade
 after without a hard fork, the resulting hashes won't match. A hard fork would
 work.
 
-The hashing function needs to be added to `Header`, so that light clients are aware of
-the function to use for verification.
+### IBC
+
+In IBC, a zone is running a light client for each zone it's connected to. If we
+allow changing the hash, light clients need to be aware of that.
+
+Specifically, the `light.Client` constructor needs to be updated:
 
 ```go
-type Header struct {
-    // ...
-	Hash crypto.Hash `json:"hash"`
-}
+func NewClient(
+	ctx context.Context,
+	chainID string,
+	trustOptions TrustOptions,
+	primary provider.Provider,
+	witnesses []provider.Provider,
+	trustedStore store.Store,
+    hash crypto.Hash,
+	options ...Option,
+) (*Client, error) {
 ```
 
-Light clients would then use ^ when calculating validators hash or header's hash.
+To help discover the hash function used by the other zone, we can add a new
+field to the genesis file:
+
+```json
+{
+    "hash": 5, // crypto.SHA256 (https://pkg.go.dev/crypto#Hash)
+}
+```
 
 ## Consequences
 

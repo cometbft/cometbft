@@ -51,19 +51,20 @@ Use `sha256` by default, but give developers a way to change the hashing functio
 
 ```go
 import (
-	"hash"
+	"crypto"
+    "hash"
 	"crypto/sha256"
 )
 
-var (
-	// The size of a checksum in bytes.
-	Size = sha256.Size // all hashes
+const (
 	// The truncated size of a checksum in bytes.
-	TruncatedSize = 20 // except validators addresses
+	TruncatedSize = 20 // validators addresses
+)
 
-	hashFunc = func() hash.Hash {
-		return sha256.New()
-	}
+var (
+
+    // Hash used
+    Hash = crypto.SHA256
 
 	stringFunc = func(bz []byte) string {
 		return fmt.Sprintf("%X", bz)
@@ -72,14 +73,12 @@ var (
 
 // New returns a new hash.Hash calculating the given hash function.
 func New() hash.Hash {
-	return hashFunc()
+	return Hash.New()
 }
 
-// ReplaceHashFuncWith replaces the default SHA256 hashing function with a given one.
-func ReplaceHashFuncWith(f func() hash.Hash, size, truncatedSize int) {
-	hashFunc = f
-	Size = size
-	TruncatedSize = truncatedSize
+// ReplaceDefaultHashWith replaces the default SHA256 hashing function with a given one.
+func ReplaceDefaultHashWith(h crypto.Hash) {
+	Hash = h
 }
 
 // ReplaceStringFuncWith replaces the default string function (`%X`) with a given one.
@@ -89,19 +88,23 @@ func ReplaceStringFuncWith(f func([]byte) string) {
 
 // Sum returns the checksum of the data.
 func Sum(bz []byte) []byte {
-	return hashFunc().Sum(bz)
+	return New().Sum(bz)
 }
 
 // TruncatedSum returns the truncated checksum of the data.
+// The checksum is only trimmed when its size is greater than TruncatedSize.
 func TruncatedSum(bz []byte) []byte {
-	return hashFunc().Sum(bz)[:TruncatedSize]
+    sume := New().Sum(bz)
+    if len(sum) < TruncatedSize {
+        return sum
+    }
+	return sum[:TruncatedSize]
 }
 ```
 
 Let's break this down. By default, we use `sha256` standard crypto library.
-`ReplaceHashFuncWith` allows developers to swap the default hashing function
-with the hashing function of their choice. Not that `size` and `truncatedSize`
-are also configurable, which doesn't limit us to 32 byte checksums.
+`ReplaceDefaultHashWith` allows developers to swap the default hashing function
+with the hashing function of their choice.
 
 `ReplaceStringFuncWith` allows developers to swap the default string function
 (`fmt.Sprintf("%X", bz)`) with their own implementation.
@@ -111,15 +114,20 @@ hash, evidence's hash, data's hash, etc.
 
 If the application developer decides to change the default hashing scheme, they
 can only do so once before launching their app. If they attempt to upgrade
-after, the resulting hashes won't match. A hard fork is an option, but they
-have to be careful with the past data.
+after without a hard fork, the resulting hashes won't match. A hard fork would
+work.
 
-If the application developer wants a chain to be IBC compatible
+The hashing function needs to be added to `Header`, so that light clients are aware of
+the function to use for verification.
 
-- in order to verify an IBC packet, they will need to know/support the hashing
-  function used.
-- in order to send an IBC packet to another chain, they will need to be aware
-  of the hashing scheme used by that chain.
+```go
+type Header struct {
+    // ...
+	Hash crypto.Hash `json:"hash"`
+}
+```
+
+Light clients would then use ^ when calculating validators hash or header's hash.
 
 ## Consequences
 
@@ -131,6 +139,9 @@ If the application developer wants a chain to be IBC compatible
 
 - App developers need to take performance into account when choosing custom
   hash function.
+- IBC is not affected by this change since the proof contains `Hash` (hashing
+  function used) and, most importantly, `app_hash` is controlled by the app,
+  not CometBFT.
 
 ### Negative
 

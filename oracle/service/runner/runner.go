@@ -16,10 +16,8 @@ import (
 )
 
 func RunProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State) {
+	// sign votes every x milliseconds, where x = Config.SignInterval
 	interval := oracleInfo.Config.SignInterval
-	if interval == 0 {
-		interval = 100 * time.Millisecond
-	}
 
 	go func(oracleInfo *types.OracleInfo) {
 		for {
@@ -92,22 +90,12 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 	go func(oracleInfo *types.OracleInfo) {
-		// only keep votes that are less than 2 blocks old
+		// only keep votes that are less than x blocks old, where x = Config.MaxOracleGossipBlocksDelayed
 		maxOracleGossipBlocksDelayed := oracleInfo.Config.MaxOracleGossipBlocksDelayed
-		if maxOracleGossipBlocksDelayed == 0 {
-			maxOracleGossipBlocksDelayed = 2
-		}
-
-		// only keep votes that are less than 30s old
+		// only keep votes that are less than x seconds old, where x = Config.MaxOracleGossipAge
 		maxOracleGossipAge := oracleInfo.Config.MaxOracleGossipAge
-		if maxOracleGossipAge == 0 {
-			maxOracleGossipAge = 30
-		}
-
+		// run pruner every x milliseconds, where x = Config.PruneInterval
 		pruneInterval := oracleInfo.Config.PruneInterval
-		if pruneInterval == 0 {
-			pruneInterval = 500 * time.Millisecond
-		}
 
 		ticker := time.Tick(pruneInterval)
 		for range ticker {

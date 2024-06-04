@@ -92,10 +92,9 @@ func (oracleR *Reactor) OnStart() error {
 // GetChannels implements Reactor by returning the list of channels for this
 // reactor.
 func (oracleR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+	// only gossip votes with a max size of x, where x = Config.MaxGossipMsgSize
 	messageCap := oracleR.OracleInfo.Config.MaxGossipMsgSize
-	if messageCap == 0 {
-		messageCap = 65536
-	}
+
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  OracleChannel,
@@ -181,10 +180,8 @@ type PeerState interface {
 
 // // Send new oracle votes to peer.
 func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
+	// gossip votes every x milliseconds, where x = Config.GossipInterval
 	interval := oracleR.OracleInfo.Config.GossipInterval
-	if interval == 0 {
-		interval = 100 * time.Millisecond
-	}
 
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time

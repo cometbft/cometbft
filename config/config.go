@@ -859,7 +859,7 @@ type OracleConfig struct {
 func DefaultOracleConfig() *OracleConfig {
 	return &OracleConfig{
 		MaxOracleGossipBlocksDelayed: 2,                      // keep all gossipVotes from at most 2 blocks behind
-		MaxOracleGossipAge:           30,                     // keep all gossipVotes from at most 30s ago
+		MaxOracleGossipAge:           15,                     // keep all gossipVotes from at most 15s ago
 		SignInterval:                 100 * time.Millisecond, // 0.1s
 		GossipInterval:               100 * time.Millisecond, // 0.1s
 		PruneInterval:                500 * time.Millisecond, // 0.5s
@@ -876,23 +876,23 @@ func TestOracleConfig() *OracleConfig {
 
 // ValidateBasic performs basic validation and returns an error if any check fails.
 func (cfg *OracleConfig) ValidateBasic() error {
-	if cfg.MaxOracleGossipBlocksDelayed < 0 {
-		return errors.New("max_oracle_gossip_blocks_delayed can't be negative")
+	if cfg.MaxOracleGossipBlocksDelayed <= 0 {
+		return errors.New("max_oracle_gossip_blocks_delayed must be positive")
 	}
-	if cfg.MaxOracleGossipAge < 0 {
-		return errors.New("max_oracle_gossip_age can't be negative")
+	if cfg.MaxOracleGossipAge <= 0 {
+		return errors.New("max_oracle_gossip_age must be positive")
 	}
-	if cfg.SignInterval < 0 {
-		return errors.New("sign_interval can't be negative")
+	if cfg.SignInterval <= 0 {
+		return errors.New("sign_interval must be positive")
 	}
-	if cfg.GossipInterval < 0 {
-		return errors.New("gossip_interval can't be negative")
+	if cfg.GossipInterval <= 0 {
+		return errors.New("gossip_interval must be positive")
 	}
-	if cfg.PruneInterval < 0 {
-		return errors.New("prune_interval can't be negative")
+	if cfg.PruneInterval <= 0 {
+		return errors.New("prune_interval must be positive")
 	}
-	if cfg.MaxGossipMsgSize < 0 {
-		return errors.New("max_gossip_msg_size can't be negative")
+	if cfg.MaxGossipMsgSize <= 0 {
+		return errors.New("max_gossip_msg_size must be positive")
 	}
 	return nil
 }

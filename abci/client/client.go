@@ -41,6 +41,8 @@ type Client interface {
 	// CheckTx responses, only during rechecking. Now the responses are handled by the callback of
 	// the *ReqRes struct returned by CheckTxAsync. This callback is more flexible as it allows to
 	// pass other information such as the sender.
+	//
+	// Deprecated: Do not use.
 	SetResponseCallback(cb Callback)
 	CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error)
 }

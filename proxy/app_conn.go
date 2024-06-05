@@ -125,6 +125,7 @@ func NewAppConnMempool(appConn abcicli.Client, metrics *Metrics) AppConnMempool 
 	}
 }
 
+// Deprecated: Do not use.
 func (app *appConnMempool) SetResponseCallback(cb abcicli.Callback) {
 	app.appConn.SetResponseCallback(cb)
 }

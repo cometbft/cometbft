@@ -407,7 +407,7 @@ experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.Experi
 #######################################################
 ###          Oracle Configuration Option          ###
 #######################################################
-[oracle]
+[oraclesvc]
 
 # MaxOracleGossipBlocksDelayed determines how long we should keep the gossip votes in terms of block height
 max_oracle_gossip_blocks_delayed = "{{ .Oracle.MaxOracleGossipBlocksDelayed }}" 

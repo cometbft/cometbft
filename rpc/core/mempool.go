@@ -58,12 +58,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 
 	select {
 	case <-ctx.Context().Done():
-<<<<<<< HEAD
-		reqRes.Done() // release waiter on goroutine
 		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
-=======
-		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
->>>>>>> cd465c51f (fix(rpc): Race condition when waiting for response on `broadcast_tx_sync/commit` (#3193))
 	case res := <-resCh:
 		return &ctypes.ResultBroadcastTx{
 			Code:      res.Code,
@@ -127,12 +122,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	select {
 	case <-ctx.Context().Done():
-<<<<<<< HEAD
-		reqRes.Done() // release waiter on goroutine
 		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
-=======
-		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
->>>>>>> cd465c51f (fix(rpc): Race condition when waiting for response on `broadcast_tx_sync/commit` (#3193))
 	case checkTxRes := <-checkTxResCh:
 		if checkTxRes.Code != abci.CodeTypeOK {
 			return &ctypes.ResultBroadcastTxCommit{

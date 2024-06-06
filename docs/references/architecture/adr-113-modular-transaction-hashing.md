@@ -122,6 +122,8 @@ with the hashing function of their choice.
 The above solution changes hashes across the whole CometBFT, meaning header's
 hash, evidence's hash, data's hash, etc.
 
+The the design in the current ADR only aims to support custom hash functions,
+it does not support _changing_ the hash function for an existing chain.
 If the application developer decides to change the default hashing scheme, they
 can only do so once before launching their app. If they attempt to upgrade
 after without a hard fork, the resulting hashes won't match. A hard fork would

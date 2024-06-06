@@ -30,7 +30,7 @@ type grpcClient struct {
 	mtx   sync.Mutex
 	addr  string
 	err   error
-	resCb func(*types.Request, *types.Response) // listens to all callbacks
+	resCb Callback // listens to all callbacks
 }
 
 func NewGRPCClient(addr string, mustConnect bool) Client {

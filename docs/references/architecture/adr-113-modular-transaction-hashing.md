@@ -43,8 +43,9 @@ whole CometBFT or just transactions.
 1. Do nothing => not flexible.
 2. Add `HashFn` argument to `NewNode` and pass this function down the stack =>
    complicates the code.
-3. Limit the scope of the solution described below to transaction hashing
-   (do not change header's hash, evidence's hash, etc.) => ?
+3. Limit the scope of the solution described below to transaction hashing (do
+   not change header's hash, evidence's hash, etc.). SHA256 is a standard and
+   we may decide to hardcode it everywhere and disallow changing it => ?
 
 ## Decision
 
@@ -67,7 +68,6 @@ const (
 )
 
 var (
-
     // Hash used
     Hash = crypto.SHA256
 
@@ -86,11 +86,6 @@ func SetHash(h crypto.Hash) {
 	Hash = h
 }
 
-// SetFmtHash replaces the default hash format function (`%X`) with a given one.
-func SetFmtHash(f func([]byte) string) {
-	stringFunc = f
-}
-
 // Sum returns the checksum of the data.
 func Sum(bz []byte) []byte {
 	return New().Sum(bz)
@@ -105,6 +100,14 @@ func TruncatedSum(bz []byte) []byte {
     }
 	return sum[:TruncatedSize]
 }
+
+////////////// Formatting //////////////////
+
+// SetFmtHash replaces the default hash format function (`%X`) with a given one.
+func SetFmtHash(f func([]byte) string) {
+	stringFunc = f
+}
+
 
 // FmtHash returns the checksum of the data as a string.
 func FmtHash(bz []byte) string {

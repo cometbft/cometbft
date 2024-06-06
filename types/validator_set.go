@@ -75,7 +75,6 @@ func NewValidatorSet(valz []*Validator) *ValidatorSet {
 	if err != nil {
 		panic(fmt.Sprintf("Cannot create validator set: %v", err))
 	}
-	vals.checkAllKeysHaveSameType()
 	if len(valz) > 0 {
 		vals.IncrementProposerPriority(1)
 	}
@@ -748,18 +747,21 @@ func (vals *ValidatorSet) findPreviousProposer() *Validator {
 }
 
 func (vals *ValidatorSet) checkAllKeysHaveSameType() {
-	if vals == nil {
-		return
-	}
-
 	if vals.Size() == 0 {
 		vals.allKeysHaveSameType = true
 		return
 	}
 
-	keyType := vals.Validators[0].PubKey.Type()
-	for _, val := range vals.Validators[1:] {
-		if val.PubKey.Type() != keyType {
+	firstKeyType := ""
+	for _, val := range vals.Validators {
+		if firstKeyType == "" {
+			// XXX: Should only be the case in tests.
+			if val.PubKey == nil {
+				continue
+			}
+			firstKeyType = val.PubKey.Type()
+		}
+		if val.PubKey.Type() != firstKeyType {
 			vals.allKeysHaveSameType = false
 			return
 		}

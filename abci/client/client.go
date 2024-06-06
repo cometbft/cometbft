@@ -36,6 +36,13 @@ type Client interface {
 	// with the exception of `CheckTxAsync` which we maintain
 	// for the v0 mempool. We should explore refactoring the
 	// mempool to remove this vestige behavior.
+	//
+	// SetResponseCallback is not used anymore. The callback was invoked only by the mempool on
+	// CheckTx responses, only during rechecking. Now the responses are handled by the callback of
+	// the *ReqRes struct returned by CheckTxAsync. This callback is more flexible as it allows to
+	// pass other information such as the sender.
+	//
+	// Deprecated: Do not use.
 	SetResponseCallback(cb Callback)
 	CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error)
 }
@@ -85,7 +92,7 @@ func NewReqRes(req *types.Request) *ReqRes {
 	}
 }
 
-// Sets sets the callback. If reqRes is already done, it will call the cb
+// SetCallback sets the callback. If reqRes is already done, it will call the cb
 // immediately. Note, reqRes.cb should not change if reqRes.done and only one
 // callback is supported.
 func (r *ReqRes) SetCallback(cb func(res *types.Response)) {
@@ -107,7 +114,7 @@ func (r *ReqRes) InvokeCallback() {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	if r.cb != nil {
+	if r.cb != nil && r.Response != nil {
 		r.cb(r.Response)
 	}
 	r.callbackInvoked = true

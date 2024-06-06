@@ -27,7 +27,7 @@ func BenchmarkReap(b *testing.B) {
 	size := 10000
 	for i := 0; i < size; i++ {
 		tx := kvstore.NewTxFromID(i)
-		if _, err := mp.CheckTx(tx); err != nil {
+		if _, err := mp.CheckTx(tx, ""); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -51,7 +51,7 @@ func BenchmarkCheckTx(b *testing.B) {
 		tx := kvstore.NewTxFromID(i)
 		b.StartTimer()
 
-		if _, err := mp.CheckTx(tx); err != nil {
+		if _, err := mp.CheckTx(tx, ""); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -74,7 +74,7 @@ func BenchmarkParallelCheckTx(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			tx := kvstore.NewTxFromID(int(next()))
-			if _, err := mp.CheckTx(tx); err != nil {
+			if _, err := mp.CheckTx(tx, ""); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -90,15 +90,15 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 	mp.config.Size = 2
 
 	tx := kvstore.NewTxFromID(1)
-	if _, err := mp.CheckTx(tx); err != nil {
+	if _, err := mp.CheckTx(tx, ""); err != nil {
 		b.Fatal(err)
 	}
-	e := mp.FlushAppConn()
-	require.NotErrorIs(b, nil, e)
+	err := mp.FlushAppConn()
+	require.NotErrorIs(b, nil, err)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := mp.CheckTx(tx); err == nil {
+		if _, err := mp.CheckTx(tx, ""); err == nil {
 			b.Fatal("tx should be duplicate")
 		}
 	}
@@ -128,11 +128,11 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 	for i := 1; i <= b.N; i++ {
 		tx := kvstore.NewTxFromID(i)
 
-		_, e := mp.CheckTx(tx)
-		require.NoError(b, e)
+		_, err := mp.CheckTx(tx, "")
+		require.NoError(b, err)
 
-		e = mp.FlushAppConn()
-		require.NoError(b, e)
+		err = mp.FlushAppConn()
+		require.NoError(b, err)
 
 		require.Equal(b, 1, mp.Size())
 

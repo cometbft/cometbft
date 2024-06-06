@@ -40,8 +40,8 @@ type socketClient struct {
 
 	mtx     sync.Mutex
 	err     error
-	reqSent *list.List                            // list of requests sent, waiting for response
-	resCb   func(*types.Request, *types.Response) // called on all requests, if set.
+	reqSent *list.List // list of requests sent, waiting for response
+	resCb   Callback   // called on all requests, if set.
 }
 
 var _ Client = (*socketClient)(nil)

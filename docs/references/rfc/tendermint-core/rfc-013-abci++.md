@@ -228,7 +228,7 @@ Proposed
     - Finalize Block - Can black-box call BeginBlock, DeliverTx, EndBlock given the cached block data
 
 - Vote Extensions adds more complexity to core Tendermint Data Structures
-- Allowing alternate alternate execution models will lead to a proliferation of new ways for applications to violate expected guarantees.
+- Allowing alternate execution models will lead to a proliferation of new ways for applications to violate expected guarantees.
 
 ### Neutral
 

@@ -6,6 +6,7 @@ import (
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -25,7 +26,7 @@ const (
 type Mempool interface {
 	// CheckTx executes a new transaction against the application to determine
 	// its validity and whether it should be added to the mempool.
-	CheckTx(tx types.Tx) (*abcicli.ReqRes, error)
+	CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)
 
 	// RemoveTxByKey removes a transaction, identified by its key,
 	// from the mempool.
@@ -43,6 +44,10 @@ type Mempool interface {
 	// negative, there is no cap on the size of all returned transactions
 	// (~ all available transactions).
 	ReapMaxTxs(max int) types.Txs
+
+	// GetTxByHash returns the types.Tx with the given hash if found in the mempool,
+	// otherwise returns nil.
+	GetTxByHash(hash []byte) types.Tx
 
 	// Lock locks the mempool. The consensus must be able to hold lock to safely
 	// update.
@@ -85,10 +90,6 @@ type Mempool interface {
 	// EnableTxsAvailable initializes the TxsAvailable channel, ensuring it will
 	// trigger once every height when transactions are available.
 	EnableTxsAvailable()
-
-	// Set a callback function to be called when a transaction is removed from
-	// the mempool.
-	SetTxRemovedCallback(cb func(types.TxKey))
 
 	// Size returns the number of transactions in the mempool.
 	Size() int

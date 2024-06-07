@@ -1,11 +1,13 @@
 package state_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	abciv1beta1 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta1"
 	abciv1beta2 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta2"
@@ -15,12 +17,93 @@ import (
 	statev1beta3 "github.com/cometbft/cometbft/api/cometbft/state/v1beta3"
 	typesv1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 	typesv1beta2 "github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
+	sm "github.com/cometbft/cometbft/state"
 )
 
 // Compatibility test across different state proto versions
 
+func calcABCIResponsesKey(height int64) []byte {
+	return []byte(fmt.Sprintf("abciResponsesKey:%v", height))
+}
+
+var lastABCIResponseKey = []byte("lastABCIResponseKey")
+
+var _ sm.Store = (*MultiStore)(nil)
+
+type MultiStore struct {
+	sm.Store
+	db dbm.DB
+	sm.StoreOptions
+	LegacyStore
+}
+
+func NewMultiStore(db dbm.DB, options sm.StoreOptions) *MultiStore {
+	return &MultiStore{
+		Store:        sm.NewStore(db, options),
+		db:           db,
+		StoreOptions: options,
+	}
+}
+
+type LegacyStore interface {
+	SaveABCIResponses(height int64, abciResponses *statev1beta2.ABCIResponses) error
+}
+
+func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *statev1beta2.ABCIResponses) error {
+	var dtxs []*abciv1beta2.ResponseDeliverTx
+	// strip nil values,
+	for _, tx := range abciResponses.DeliverTxs {
+		if tx != nil {
+			dtxs = append(dtxs, tx)
+		}
+	}
+	abciResponses.DeliverTxs = dtxs
+
+	// If the flag is false then we save the ABCIResponse. This can be used for the /BlockResults
+	// query or to reindex an event using the command line.
+	if !multi.StoreOptions.DiscardABCIResponses {
+		bz, err := abciResponses.Marshal()
+		if err != nil {
+			return err
+		}
+		if err := multi.db.Set(calcABCIResponsesKey(height), bz); err != nil {
+			return err
+		}
+	}
+
+	// We always save the last ABCI response for crash recovery.
+	// This overwrites the previous saved ABCI Response.
+	response := &statev1beta2.ABCIResponsesInfo{
+		AbciResponses: abciResponses,
+		Height:        height,
+	}
+	bz, err := response.Marshal()
+	if err != nil {
+		return err
+	}
+
+	return multi.db.SetSync(lastABCIResponseKey, bz)
+}
+
+func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
+	tearDown, stateDB, _ := setupTestCase(t)
+	defer tearDown(t)
+	options := sm.StoreOptions{
+		DiscardABCIResponses: false,
+	}
+
+	height := int64(1)
+	multiStore := NewMultiStore(stateDB, options)
+	abciResponses := newV1Beta2ABCIResponses()
+	err := multiStore.SaveABCIResponses(height, &abciResponses)
+	require.NoError(t, err)
+	loadedABCIResponses, err := multiStore.LoadFinalizeBlockResponse(height)
+	require.NoError(t, err)
+	require.Equal(t, len(abciResponses.DeliverTxs), len(loadedABCIResponses.TxResults))
+}
+
 // This test unmarshals a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses
-// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// This logic is important for the LoadFinalizeBlockResponse method in the state sm
 // The conversion should not fail because they are compatible.
 func TestStateProtoV1Beta2ToV1(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
@@ -46,7 +129,7 @@ func TestStateProtoV1Beta2ToV1(t *testing.T) {
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a v1.FinalizeBlockResponse
-// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// This logic is important for the LoadFinalizeBlockResponse method in the state sm
 // The conversion should fail because they are not compatible.
 func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
@@ -62,7 +145,7 @@ func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a v1.FinalizeBlockResponse
-// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// This logic is important for the LoadFinalizeBlockResponse method in the state sm
 // The conversion doesn't fail because no error is return, but they are NOT compatible.
 func TestStateV1Beta2ABCIResponsesWithNullAsStateV1FinalizeBlockResponse(t *testing.T) {
 	v1beta2ABCIResponsesWithNull := newV1Beta2ABCIResponsesWithNullFields()
@@ -83,7 +166,7 @@ func TestStateV1Beta2ABCIResponsesWithNullAsStateV1FinalizeBlockResponse(t *test
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a statev1beta3.LegacyABCIResponses
-// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// This logic is important for the LoadFinalizeBlockResponse method in the state sm
 // The conversion should work because they are compatible.
 func TestStateV1Beta2ABCIResponsesAsStateV1Beta3FinalizeBlockResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
@@ -102,7 +185,7 @@ func TestStateV1Beta2ABCIResponsesAsStateV1Beta3FinalizeBlockResponse(t *testing
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a statev1beta3.LegacyABCIResponses
-// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// This logic is important for the LoadFinalizeBlockResponse method in the state sm
 // The conversion should work because they are compatible even if fields to be converted are null.
 func TestStateV1Beta2ABCIResponsesWithNullAsStateV1Beta3FinalizeBlockResponse(t *testing.T) {
 	v1beta2ABCIResponsesWithNull := newV1Beta2ABCIResponsesWithNullFields()

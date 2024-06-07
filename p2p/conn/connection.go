@@ -336,7 +336,7 @@ func (c *MConnection) flush() {
 }
 
 // Catch panics, usually caused by remote disconnects.
-func (c *MConnection) _recover() {
+func (c *MConnection) PanicRecover() {
 	if r := recover(); r != nil {
 		c.Logger.Error("MConnection panicked", "err", r, "stack", string(debug.Stack()))
 		c.stopForError(fmt.Errorf("recovered from panic: %v", r))
@@ -427,7 +427,7 @@ func (c *MConnection) CanSend(chID byte) bool {
 
 // sendRoutine polls for packets to send from channels.
 func (c *MConnection) sendRoutine() {
-	defer c._recover()
+	defer c.PanicRecover()
 
 	protoWriter := protoio.NewDelimitedWriter(c.bufConnWriter)
 
@@ -581,7 +581,7 @@ func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Chan
 // Blocks depending on how the connection is throttled.
 // Otherwise, it never blocks.
 func (c *MConnection) recvRoutine() {
-	defer c._recover()
+	defer c.PanicRecover()
 
 	protoReader := protoio.NewDelimitedReader(c.bufConnReader, c._maxPacketMsgSize)
 

@@ -408,6 +408,47 @@ func createMConnection(
 	// We guarantee in-order message delivery per TM-channel,
 	// by making a go-channel per TM-channel.
 	channelIdToProcessChannel := make(map[byte]chan []byte)
+	channelProcessorsStarted := false
+
+	onReceive := func(chID byte, msgBytes []byte) {
+		// should never happen, it means we received a packet before createMConnection returned.
+		// This would imply that at minimum NewMConnectionWithConfig also did mConn.OnStart()
+		if !channelProcessorsStarted {
+			// Note that its ok to panic here as it's caught in the conn.PanicRecover,
+			// which does onPeerError.
+			panic("Called onReceive before channel processors setup")
+		}
+		channel, ok := channelIdToProcessChannel[chID]
+		if !ok {
+			panic(fmt.Sprintf("Unknown channel %X", chID))
+		}
+		channel <- msgBytes
+	}
+
+	mconn := cmtconn.NewMConnectionWithConfig(
+		conn,
+		chDescs,
+		onReceive,
+		onError,
+		config,
+	)
+	defer mconn.PanicRecover()
+
+	setupChannelProcessors(p, reactorsByCh, msgTypeByChID, channelIdToProcessChannel)
+	channelProcessorsStarted = true
+
+	return mconn
+}
+
+// Setsup the go-channels for every logical channel,
+// and a goroutine to process incoming messages on each logical channel.
+// The channelIdToProcessChannel argument is updated for every channel here.
+func setupChannelProcessors(
+	p *peer,
+	reactorsByCh map[byte]Reactor,
+	msgTypeByChID map[byte]proto.Message,
+	channelIdToProcessChannel map[byte]chan []byte) {
+	// setup channel processors
 	for i := 0; i < 256; i++ {
 		chID := byte(i)
 		reactor, ok1 := reactorsByCh[chID]
@@ -415,35 +456,19 @@ func createMConnection(
 		if !(ok1 && ok2) || reactor == nil {
 			continue
 		}
-		// allow 32 messages to be in proto-processing queue per channel.
+		// allow 256 messages to be in proto-processing queue per channel.
 		// Note that every reactor should itself buffer messages.
-		// 32 is a magic constant that can be optimized later, but likely can
-		// remain very small.
-		channel := make(chan []byte, 32)
+		// 256 is a magic constant that can be optimized later, but likely can
+		// remain very small. (This is more justified once there is a buffer per-reactor)
+		channel := make(chan []byte, 256)
 		channelIdToProcessChannel[chID] = channel
-		go channelProcessor(p, onError, reactor, chID, msgType, channel)
+		go channelProcessor(p, reactor, chID, msgType, channel)
 	}
-	onReceive := func(chID byte, msgBytes []byte) {
-		channel, ok := channelIdToProcessChannel[chID]
-		if !ok {
-			// Note that its ok to panic here as it's caught in the conn._recover,
-			// which does onPeerError.
-			panic(fmt.Sprintf("Unknown channel %X", chID))
-		}
-		channel <- msgBytes
-	}
-
-	return cmtconn.NewMConnectionWithConfig(
-		conn,
-		chDescs,
-		onReceive,
-		onError,
-		config,
-	)
 }
 
-// Processes incoming packets for this channel
-func channelProcessor(p *peer, onError func(any), reactor Reactor, chID byte, msgType proto.Message, channel chan []byte) {
+// Processes incoming packets for this channel. This should be ran in a go-routine.
+// when it hits an error, it panics, which is safe as it must be caught by a conn.PanicRecover.
+func channelProcessor(p *peer, reactor Reactor, chID byte, msgType proto.Message, channel chan []byte) {
 	for {
 		select {
 		case msgBytes := <-channel:
@@ -452,12 +477,12 @@ func channelProcessor(p *peer, onError func(any), reactor Reactor, chID byte, ms
 			msg := proto.Clone(mt)
 			err := proto.Unmarshal(msgBytes, msg)
 			if err != nil {
-				onError(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
+				panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
 			}
 			if w, ok := msg.(types.Unwrapper); ok {
 				msg, err = w.Unwrap()
 				if err != nil {
-					onError(fmt.Sprintf("unwrapping message: %v", err))
+					panic(fmt.Sprintf("unwrapping message: %v", err))
 				}
 			}
 			p.metrics.PeerReceiveBytesTotal.

@@ -158,12 +158,12 @@ cb(reqRes.Response.GetCheckTx())
 
 The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to 
 process the response already set (namely, the function `handleCheckTxResponse`).
-The callback can be invoked manually; for example:
+The callback will be invoked internally when the response is ready. We need only 
+to wait for it; for example:
 ```golang
 reqRes, err := CheckTx(tx, sender)
 // check `err` here
 reqRes.Wait()
-reqRes.InvokeCallback()
 ```
 
 ### Protobufs and Generated Go Code

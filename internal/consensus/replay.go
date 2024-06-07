@@ -417,6 +417,9 @@ func (h *Handshaker) ReplayBlocks(
 			// but we'd have to allow the WAL to replay a block that wrote it's #ENDHEIGHT
 			h.logger.Info("Replay last block using real app")
 			state, err = h.replayBlock(state, storeBlockHeight, proxyApp.Consensus())
+			if err != nil {
+				return nil, err
+			}
 			return state.AppHash, err
 
 		case appBlockHeight == storeBlockHeight:
@@ -435,6 +438,9 @@ func (h *Handshaker) ReplayBlocks(
 			mockApp := newMockProxyApp(finalizeBlockResponse)
 			h.logger.Info("Replay last block using mock app")
 			state, err = h.replayBlock(state, storeBlockHeight, mockApp)
+			if err != nil {
+				return nil, err
+			}
 			return state.AppHash, err
 		}
 	}

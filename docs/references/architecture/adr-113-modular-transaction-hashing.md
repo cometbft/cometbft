@@ -1,9 +1,10 @@
-# ADR 113: Modular hashing
+# ADR 113: Modular transaction hashing
 
 ## Changelog
 
 - 2024-02-05: First version (@melekes)
 - 2024-05-28: Complete refactor (@melekes)
+- 2024-06-07: Limit the scope to transaction hashing (@melekes)
 
 ## Status
 
@@ -35,17 +36,20 @@ hashing algorithm if desired by the app developers.
 
 ### General hashing
 
-It's up for a debate whether the hashing function should be changed for the
-whole CometBFT or just transactions.
+The suggested solution could've been used to change the hashing function for
+all structs, not just transactions. But the implification of that change is
+quite significant. For example, if the chain is using a different hashing
+scheme, then it looses IBC-compatibility. The IBC modules assumes fixed hashing
+scheme. The destination chain needs to know the hashing function of the source
+chain in order to verify the validators hash.
 
 ## Alternative Approaches
 
 1. Do nothing => not flexible.
 2. Add `HashFn` argument to `NewNode` and pass this function down the stack =>
    complicates the code.
-3. Limit the scope of the solution described below to transaction hashing (do
-   not change header's hash, evidence's hash, etc.). SHA256 is a standard and
-   we may decide to hardcode it everywhere and disallow changing it => ?
+3. Allow changing the hashing function for all structs => breaks IBC
+   compatibility (see 'General hashing' above).
 
 ## Decision
 
@@ -62,120 +66,70 @@ import (
 	"crypto/sha256"
 )
 
-const (
-	// The truncated size of a checksum in bytes.
-	TruncatedSize = 20 // validators addresses
-)
-
 var (
-    // Hash used
-    Hash = crypto.SHA256
+    // Hash function used for transaction hashing.
+    txHash = crypto.SHA256
 
-	stringFunc = func(bz []byte) string {
-		return fmt.Sprintf("%X", bz)
-	}
+    // fmtHash is a function that converts a byte slice to a string.
+    fmtHash = func(bz []byte) string {
+        return fmt.Sprintf("%X", bz)
+    }
 )
 
-// New returns a new hash.Hash calculating the given hash function.
-func New() hash.Hash {
-	return Hash.New()
-}
-
-// SetHash replaces the default SHA256 hashing function with a given one.
-func SetHash(h crypto.Hash) {
-	Hash = h
-}
-
-// Sum returns the checksum of the data.
-func Sum(bz []byte) []byte {
-	return New().Sum(bz)
-}
-
-// TruncatedSum returns the truncated checksum of the data.
-// The checksum is only trimmed when its size is greater than TruncatedSize.
-func TruncatedSum(bz []byte) []byte {
-    sume := New().Sum(bz)
-    if len(sum) < TruncatedSize {
-        return sum
-    }
-	return sum[:TruncatedSize]
-}
-
-////////////// Formatting //////////////////
-
-// SetFmtHash replaces the default hash format function (`%X`) with a given one.
+// SetFmtHash sets the function used to convert a checksum to a string.
 func SetFmtHash(f func([]byte) string) {
-	stringFunc = f
+    fmtHash = f
 }
 
+// SetTxHash sets the hash function used for transaction hashing.
+func SetTxHash(h crypto.Hash) {
+    txHash = h
+}
 
-// FmtHash returns the checksum of the data as a string.
-func FmtHash(bz []byte) string {
-    return stringFunc(bz)
+// Bytes is a wrapper around a byte slice that implements the fmt.Stringer.
+type Bytes []byte
+
+func (bz Bytes) String() string {
+    return fmtHash(bz)
+}
+
+func (bz Bytes) Bytes() []byte {
+    return bz
+}
+
+// Sum returns the checksum of the data as Bytes.
+func Sum(bz []byte) Bytes {
+	return Bytes(TxHash.Hash.Sum(bz))
 }
 ```
 
 Let's break this down. By default, we use `sha256` standard crypto library.
-`SetHash` allows developers to swap the default hashing function
+`SetTxHash` allows developers to swap the default hashing function
 with the hashing function of their choice.
 
 `SetFmtHash` allows developers to swap the default string function
 (`fmt.Sprintf("%X", bz)`) with their own implementation.
 
-The above solution changes hashes across the whole CometBFT, meaning header's
-hash, evidence's hash, data's hash, etc.
+The above solution only changes transaction hashes (including the header's
+`DataHash`).
 
-The the design in the current ADR only aims to support custom hash functions,
+The design in the current ADR only aims to support custom hash functions,
 it does not support _changing_ the hash function for an existing chain.
 If the application developer decides to change the default hashing scheme, they
 can only do so once before launching their app. If they attempt to upgrade
 after without a hard fork, the resulting hashes won't match. A hard fork would
 work.
 
-### IBC
-
-In IBC, a zone is running a light client for each zone it's connected to. If we
-allow changing the hash, light clients need to be aware of that.
-
-Specifically, the `light.Client` constructor needs to be updated:
-
-```go
-func NewClient(
-	ctx context.Context,
-	chainID string,
-	trustOptions TrustOptions,
-	primary provider.Provider,
-	witnesses []provider.Provider,
-	trustedStore store.Store,
-    hash crypto.Hash,
-	options ...Option,
-) (*Client, error) {
-```
-
-To help discover the hash function used by the other zone, we can add a new
-field to the genesis file:
-
-```json
-{
-    "hash": 5, // crypto.SHA256 (https://pkg.go.dev/crypto#Hash)
-}
-```
-
 ## Consequences
 
 ### Positive
 
-- Modular hashing
+- Modular transaction hashing
 
 ### Neutral
 
 - App developers need to take performance into account when choosing custom
   hash function.
-- This will break IBC-compatibility for a chain who chose a different hashing
-  scheme since now IBC assumes fixed hashing function. I.e. a destination
-  chain will need to know the hashing function of the source chain and set it
-  via `SetHash` when calculating validators hash and asserting that
-  `Header.ValidatorsHash == vals.Hash()`.
 
 ### Negative
 

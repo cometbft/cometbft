@@ -401,40 +401,36 @@ func createMConnection(
 	onPeerError func(Peer, any),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
+	onError := func(r any) {
+		onPeerError(p, r)
+	}
+
+	// We guarantee in-order message delivery per TM-channel,
+	// by making a go-channel per TM-channel.
+	channelIdToProcessChannel := make(map[byte]chan []byte)
+	for i := 0; i < 256; i++ {
+		chID := byte(i)
+		reactor, ok1 := reactorsByCh[chID]
+		msgType, ok2 := msgTypeByChID[chID]
+		if !(ok1 && ok2) || reactor == nil {
+			continue
+		}
+		// allow 32 messages to be in proto-processing queue per channel.
+		// Note that every reactor should itself buffer messages.
+		// 32 is a magic constant that can be optimized later, but likely can
+		// remain very small.
+		channel := make(chan []byte, 32)
+		channelIdToProcessChannel[chID] = channel
+		go channelProcessor(p, onError, reactor, chID, msgType, channel)
+	}
 	onReceive := func(chID byte, msgBytes []byte) {
-		reactor := reactorsByCh[chID]
-		if reactor == nil {
+		channel, ok := channelIdToProcessChannel[chID]
+		if !ok {
 			// Note that its ok to panic here as it's caught in the conn._recover,
 			// which does onPeerError.
 			panic(fmt.Sprintf("Unknown channel %X", chID))
 		}
-		mt := msgTypeByChID[chID]
-		msg := proto.Clone(mt)
-		err := proto.Unmarshal(msgBytes, msg)
-		if err != nil {
-			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
-		}
-		if w, ok := msg.(types.Unwrapper); ok {
-			msg, err = w.Unwrap()
-			if err != nil {
-				panic(fmt.Sprintf("unwrapping message: %v", err))
-			}
-		}
-		p.metrics.PeerReceiveBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
-			Add(float64(len(msgBytes)))
-		p.metrics.MessageReceiveBytesTotal.
-			With("message_type", p.mlc.ValueToMetricLabel(msg)).
-			Add(float64(len(msgBytes)))
-		reactor.Receive(Envelope{
-			ChannelID: chID,
-			Src:       p,
-			Message:   msg,
-		})
-	}
-
-	onError := func(r any) {
-		onPeerError(p, r)
+		channel <- msgBytes
 	}
 
 	return cmtconn.NewMConnectionWithConfig(
@@ -444,4 +440,39 @@ func createMConnection(
 		onError,
 		config,
 	)
+}
+
+// Processes incoming packets for this channel
+func channelProcessor(p *peer, onError func(any), reactor Reactor, chID byte, msgType proto.Message, channel chan []byte) {
+	for {
+		select {
+		case msgBytes := <-channel:
+			// TODO: Re-architect to keep already-cloned copies ready to go
+			mt := msgType
+			msg := proto.Clone(mt)
+			err := proto.Unmarshal(msgBytes, msg)
+			if err != nil {
+				onError(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
+			}
+			if w, ok := msg.(types.Unwrapper); ok {
+				msg, err = w.Unwrap()
+				if err != nil {
+					onError(fmt.Sprintf("unwrapping message: %v", err))
+				}
+			}
+			p.metrics.PeerReceiveBytesTotal.
+				With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
+				Add(float64(len(msgBytes)))
+			p.metrics.MessageReceiveBytesTotal.
+				With("message_type", p.mlc.ValueToMetricLabel(msg)).
+				Add(float64(len(msgBytes)))
+			reactor.Receive(Envelope{
+				ChannelID: chID,
+				Src:       p,
+				Message:   msg,
+			})
+		case <-p.Quit():
+			return
+		}
+	}
 }

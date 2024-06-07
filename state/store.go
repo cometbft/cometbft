@@ -651,23 +651,14 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 
 	resp := new(abci.FinalizeBlockResponse)
 	err = resp.Unmarshal(buf)
-
-	// Check for an error or if the resp.AppHash is nil if so
-	// this means the unmarshalling should be a LegacyABCIResponses
-	// Depending on a source message content (serialized as ABCIResponses)
-	// there are instances where it can be deserialized as a FinalizeBlockResponse
-	// without causing an error. But the values will not be deserialized properly
-	// and, it will contain zero values, and one of them is an AppHash == nil
-	// This can be verified in the /state/compatibility_test.go file
-	if err != nil || resp.AppHash == nil {
+	if err != nil {
 		// The data might be of the legacy ABCI response type, so
 		// we try to unmarshal that
 		legacyResp := new(cmtstate.LegacyABCIResponses)
-		if err := legacyResp.Unmarshal(buf); err != nil {
-			// only return an error, this method is only invoked through the `/block_results` not for state logic and
-			// some tests, so no need to exit cometbft if there's an error, just return it.
-			store.Logger.Debug("failed to unmarshall legacy ABCI response: %s", err.Error())
-			return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height}
+		rerr := legacyResp.Unmarshal(buf)
+		if rerr != nil {
+			cmtos.Exit(fmt.Sprintf(`LoadFinalizeBlockResponse: Data has been corrupted or its spec has
+					changed: %v\n`, err))
 		}
 		// The state store contains the old format. Migrate to
 		// the new FinalizeBlockResponse format. Note that the

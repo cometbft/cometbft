@@ -94,10 +94,21 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 
 	height := int64(1)
 	multiStore := NewMultiStore(stateDB, options)
+
+	// try with a complete ABCI Response
 	abciResponses := newV1Beta2ABCIResponses()
 	err := multiStore.SaveABCIResponses(height, &abciResponses)
 	require.NoError(t, err)
 	loadedABCIResponses, err := multiStore.LoadFinalizeBlockResponse(height)
+	require.NoError(t, err)
+	require.Equal(t, len(abciResponses.DeliverTxs), len(loadedABCIResponses.TxResults))
+
+	// try with an ABCI Response missing fields
+	height = int64(2)
+	abciResponses = newV1Beta2ABCIResponsesWithNullFields()
+	err = multiStore.SaveABCIResponses(height, &abciResponses)
+	require.NoError(t, err)
+	loadedABCIResponses, err = multiStore.LoadFinalizeBlockResponse(height)
 	require.NoError(t, err)
 	require.Equal(t, len(abciResponses.DeliverTxs), len(loadedABCIResponses.TxResults))
 }

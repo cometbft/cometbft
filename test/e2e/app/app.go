@@ -39,6 +39,7 @@ const (
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
+	txTTL               uint64 = 5 // height difference at which transactions should be invalid
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -52,6 +53,8 @@ type Application struct {
 	cfg             *Config
 	restoreSnapshot *abci.Snapshot
 	restoreChunks   [][]byte
+	// It's OK not to persist this, as it is not part of the state machine
+	seenTxs map[cmttypes.TxKey]uint64
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -158,6 +161,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 		state:     state,
 		snapshots: snapshots,
 		cfg:       cfg,
+		seenTxs:   make(map[cmttypes.TxKey]uint64),
 	}, nil
 }
 
@@ -268,6 +272,23 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		}, nil
 	}
 
+	txKey := cmttypes.Tx(req.Tx).Key()
+	stHeight, _ := app.state.Info()
+	if txHeight, ok := app.seenTxs[txKey]; ok {
+		if stHeight < txHeight {
+			panic(fmt.Sprintf("txHeight is less than current height; txHeight %v, height %v", txHeight, stHeight))
+		}
+		if stHeight > txHeight+txTTL {
+			delete(app.seenTxs, txKey)
+			return &abci.CheckTxResponse{
+				Code: kvstore.CodeTypeExpired,
+				Log:  fmt.Sprintf("transaction expired; seen height %v, current height %v", txHeight, stHeight),
+			}, nil
+		}
+	} else {
+		app.seenTxs[txKey] = stHeight
+	}
+
 	if app.cfg.CheckTxDelay != 0 {
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
@@ -294,6 +315,8 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 			panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", prefixReservedKey))
 		}
 		app.state.Set(key, value)
+
+		delete(app.seenTxs, cmttypes.Tx(tx).Key())
 
 		txs[i] = &abci.ExecTxResult{Code: kvstore.CodeTypeOK}
 	}

@@ -125,6 +125,7 @@ type peer struct {
 
 	// When removal of a peer fails, we set this flag
 	removalAttemptFailed bool
+	peerServiceQuitChan  chan struct{}
 }
 
 type PeerOption func(*peer)
@@ -149,11 +150,14 @@ func newPeer(
 		mlc:      mlc,
 	}
 
+	// We process each channel's received packets concurrently,
+	// in-order per channel. channelIDToProcessChannel is a map of channelID
+	// to the go-channel for processing messages.
+	channelIDToProcessChannel := make(map[byte]chan []byte)
 	p.mconn = createMConnection(
 		pc.conn,
 		p,
-		reactorsByCh,
-		msgTypeByChID,
+		channelIDToProcessChannel,
 		chDescs,
 		onPeerError,
 		mConfig,
@@ -162,6 +166,13 @@ func newPeer(
 	for _, option := range options {
 		option(p)
 	}
+
+	// TODO: Move below logic block to OnStart
+	// we need to multi-cast a quit signal to all channel processors and
+	p.peerServiceQuitChan = make(chan struct{}, len(channelIDToProcessChannel)+1)
+
+	defer p.mconn.PanicRecover()
+	p.setupChannelProcessors(reactorsByCh, msgTypeByChID, channelIDToProcessChannel)
 
 	return p
 }
@@ -392,11 +403,11 @@ func (p *peer) metricsReporter() {
 // ------------------------------------------------------------------
 // helper funcs
 
+// returns an mconnection, and a map of channelID to channel for processing messages.
 func createMConnection(
 	conn net.Conn,
 	p *peer,
-	reactorsByCh map[byte]Reactor,
-	msgTypeByChID map[byte]proto.Message,
+	channelIDToProcessChannel map[byte]chan []byte,
 	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, any),
 	config cmtconn.MConnConfig,
@@ -405,52 +416,34 @@ func createMConnection(
 		onPeerError(p, r)
 	}
 
-	// We guarantee in-order message delivery per TM-channel,
-	// by making a go-channel per TM-channel.
-	channelIdToProcessChannel := make(map[byte]chan []byte)
-	channelProcessorsStarted := false
-
 	onReceive := func(chID byte, msgBytes []byte) {
 		// TODO: Consider sync.Pool for this, upon examining benchmarks
 		chanBytes := make([]byte, len(msgBytes))
 		copy(chanBytes, msgBytes)
-		// should never happen, it means we received a packet before createMConnection returned.
-		// This would imply that at minimum NewMConnectionWithConfig also did mConn.OnStart()
-		if !channelProcessorsStarted {
-			// Note that its ok to panic here as it's caught in the conn.PanicRecover,
-			// which does onPeerError.
-			panic("Called onReceive before channel processors setup")
-		}
-		channel, ok := channelIdToProcessChannel[chID]
+
+		channel, ok := channelIDToProcessChannel[chID]
 		if !ok {
 			panic(fmt.Sprintf("Unknown channel %X", chID))
 		}
 		channel <- chanBytes
 	}
 
-	mconn := cmtconn.NewMConnectionWithConfig(
+	return cmtconn.NewMConnectionWithConfig(
 		conn,
 		chDescs,
 		onReceive,
 		onError,
 		config,
 	)
-	defer mconn.PanicRecover()
-
-	setupChannelProcessors(p, reactorsByCh, msgTypeByChID, channelIdToProcessChannel)
-	channelProcessorsStarted = true
-
-	return mconn
 }
 
 // Setsup the go-channels for every logical channel,
 // and a goroutine to process incoming messages on each logical channel.
-// The channelIdToProcessChannel argument is updated for every channel here.
-func setupChannelProcessors(
-	p *peer,
+// The channelIDToProcessChannel argument is updated for every channel here.
+func (p *peer) setupChannelProcessors(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
-	channelIdToProcessChannel map[byte]chan []byte) {
+	channelIDToProcessChannel map[byte]chan []byte) {
 	// setup channel processors
 	for i := 0; i < 256; i++ {
 		chID := byte(i)
@@ -464,7 +457,7 @@ func setupChannelProcessors(
 		// 256 is a magic constant that can be optimized later, but likely can
 		// remain very small. (This is more justified once there is a buffer per-reactor)
 		channel := make(chan []byte, 256)
-		channelIdToProcessChannel[chID] = channel
+		channelIDToProcessChannel[chID] = channel
 		go channelProcessor(p, reactor, chID, msgType, channel)
 	}
 }

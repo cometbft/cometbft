@@ -171,9 +171,11 @@ field to the genesis file:
 
 - App developers need to take performance into account when choosing custom
   hash function.
-- IBC is not affected by this change since the proof contains `Hash` (hashing
-  function used) and, most importantly, `app_hash` is controlled by the app,
-  not CometBFT.
+- This will break IBC-compatibility for a chain who chose a different hashing
+  scheme since now IBC assumes fixed hashing function. I.e. a destination
+  chain will need to know the hashing function of the source chain and set it
+  via `SetHash` when calculating validators hash and asserting that
+  `Header.ValidatorsHash == vals.Hash()`.
 
 ### Negative
 

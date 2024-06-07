@@ -53,7 +53,6 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 		select {
 		case <-ctx.Context().Done():
 		default:
-			reqRes.InvokeCallback()
 			resCh <- reqRes.Response.GetCheckTx()
 		}
 	}()
@@ -117,7 +116,6 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		select {
 		case <-ctx.Context().Done():
 		default:
-			reqRes.InvokeCallback()
 			checkTxResCh <- reqRes.Response.GetCheckTx()
 		}
 	}()

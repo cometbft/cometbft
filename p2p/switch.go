@@ -298,6 +298,24 @@ func (sw *Switch) Broadcast(e Envelope) chan bool {
 	return successChan
 }
 
+// BroadcastAsync runs a go routine for each attempted send, which will block
+// trying to send for defaultSendTimeoutSeconds.
+//
+// NOTE: BroadcastAsync uses goroutines, so order of broadcast may not be
+// preserved.
+func (sw *Switch) BroadcastAsync(e Envelope) {
+	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
+
+	sw.peers.ForEach(func(p Peer) {
+		go func(peer Peer) {
+			// TODO: We don't use the success value. Should most behavior
+			// really be TrySend?
+			success := peer.Send(e)
+			_ = success
+		}(p)
+	})
+}
+
 // NumPeers returns the count of outbound/inbound and outbound-dialing peers.
 // unconditional peers are not counted here.
 func (sw *Switch) NumPeers() (outbound, inbound, dialing int) {

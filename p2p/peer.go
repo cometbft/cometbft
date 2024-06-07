@@ -411,6 +411,9 @@ func createMConnection(
 	channelProcessorsStarted := false
 
 	onReceive := func(chID byte, msgBytes []byte) {
+		// TODO: Consider sync.Pool for this, upon examining benchmarks
+		chanBytes := make([]byte, len(msgBytes))
+		copy(chanBytes, msgBytes)
 		// should never happen, it means we received a packet before createMConnection returned.
 		// This would imply that at minimum NewMConnectionWithConfig also did mConn.OnStart()
 		if !channelProcessorsStarted {
@@ -422,7 +425,7 @@ func createMConnection(
 		if !ok {
 			panic(fmt.Sprintf("Unknown channel %X", chID))
 		}
-		channel <- msgBytes
+		channel <- chanBytes
 	}
 
 	mconn := cmtconn.NewMConnectionWithConfig(

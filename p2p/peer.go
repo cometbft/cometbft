@@ -123,9 +123,11 @@ type peer struct {
 	metrics *Metrics
 	mlc     *metricsLabelCache
 
+	setupRecvListeners    func()
+	recvListenersQuitChan chan struct{}
+
 	// When removal of a peer fails, we set this flag
 	removalAttemptFailed bool
-	peerServiceQuitChan  chan struct{}
 }
 
 type PeerOption func(*peer)
@@ -154,6 +156,9 @@ func newPeer(
 	// in-order per channel. channelIDToProcessChannel is a map of channelID
 	// to the go-channel for processing messages.
 	channelIDToProcessChannel := make(map[byte]chan []byte)
+	// However we want to actually start these threads when the peer is started,
+	// so we queue the function we will send.
+	p.setupRecvListeners = func() { p.setupChannelProcessors(reactorsByCh, msgTypeByChID, channelIDToProcessChannel) }
 	p.mconn = createMConnection(
 		pc.conn,
 		p,
@@ -166,13 +171,6 @@ func newPeer(
 	for _, option := range options {
 		option(p)
 	}
-
-	// TODO: Move below logic block to OnStart
-	// we need to multi-cast a quit signal to all channel processors and
-	p.peerServiceQuitChan = make(chan struct{}, len(channelIDToProcessChannel)+1)
-
-	defer p.mconn.PanicRecover()
-	p.setupChannelProcessors(reactorsByCh, msgTypeByChID, channelIDToProcessChannel)
 
 	return p
 }
@@ -201,6 +199,10 @@ func (p *peer) OnStart() error {
 		return err
 	}
 
+	defer p.mconn.PanicRecover()
+	p.recvListenersQuitChan = make(chan struct{}, len(p.channels))
+	p.setupRecvListeners()
+
 	if err := p.mconn.Start(); err != nil {
 		return err
 	}
@@ -221,6 +223,9 @@ func (p *peer) FlushStop() {
 func (p *peer) OnStop() {
 	if err := p.mconn.Stop(); err != nil { // stop everything and close the conn
 		p.Logger.Debug("Error while stopping peer", "err", err)
+	}
+	for i := 0; i < len(p.channels); i++ {
+		p.recvListenersQuitChan <- struct{}{}
 	}
 }
 
@@ -443,7 +448,8 @@ func createMConnection(
 func (p *peer) setupChannelProcessors(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
-	channelIDToProcessChannel map[byte]chan []byte) {
+	channelIDToProcessChannel map[byte]chan []byte,
+) {
 	// setup channel processors
 	for i := 0; i < 256; i++ {
 		chID := byte(i)
@@ -492,7 +498,7 @@ func channelProcessor(p *peer, reactor Reactor, chID byte, msgType proto.Message
 				Src:       p,
 				Message:   msg,
 			})
-		case <-p.Quit():
+		case <-p.recvListenersQuitChan:
 			return
 		}
 	}

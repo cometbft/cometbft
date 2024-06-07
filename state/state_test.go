@@ -24,6 +24,13 @@ import (
 // setupTestCase does setup common to all test cases.
 func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 	t.Helper()
+	tearDown, stateDB, state, _ := setupTestCaseWithStore(t)
+	return tearDown, stateDB, state
+}
+
+// setupTestCase does setup common to all test cases.
+func setupTestCaseWithStore(t *testing.T) (func(t *testing.T), dbm.DB, sm.State, sm.Store) {
+	t.Helper()
 	config := test.ResetTestRoot("state_")
 	dbType := dbm.BackendType(config.DBBackend)
 	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
@@ -41,7 +48,7 @@ func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 		os.RemoveAll(config.RootDir)
 	}
 
-	return tearDown, stateDB, state
+	return tearDown, stateDB, state, stateStore
 }
 
 // TestStateCopy tests the correct copying behavior of State.

@@ -28,18 +28,20 @@ func calcABCIResponsesKey(height int64) []byte {
 
 var lastABCIResponseKey = []byte("lastABCIResponseKey")
 
-var _ sm.Store = (*MultiStore)(nil)
+var (
+	_ sm.Store    = (*MultiStore)(nil)
+	_ LegacyStore = (*MultiStore)(nil)
+)
 
 type MultiStore struct {
 	sm.Store
 	db dbm.DB
 	sm.StoreOptions
-	LegacyStore
 }
 
-func NewMultiStore(db dbm.DB, options sm.StoreOptions) *MultiStore {
+func NewMultiStore(db dbm.DB, options sm.StoreOptions, store sm.Store) *MultiStore {
 	return &MultiStore{
-		Store:        sm.NewStore(db, options),
+		Store:        store,
 		db:           db,
 		StoreOptions: options,
 	}
@@ -86,31 +88,44 @@ func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *statev1be
 }
 
 func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
-	tearDown, stateDB, _ := setupTestCase(t)
+	tearDown, stateDB, _, store := setupTestCaseWithStore(t)
 	defer tearDown(t)
 	options := sm.StoreOptions{
 		DiscardABCIResponses: false,
 	}
 
 	height := int64(1)
-	multiStore := NewMultiStore(stateDB, options)
+	multiStore := NewMultiStore(stateDB, options, store)
 
 	// try with a complete ABCI Response
 	abciResponses := newV1Beta2ABCIResponses()
+	require.Equal(t, 1, len(abciResponses.DeliverTxs))
+	require.Equal(t, 1, len(abciResponses.BeginBlock.Events))
+	require.Equal(t, 1, len(abciResponses.EndBlock.Events))
 	err := multiStore.SaveABCIResponses(height, &abciResponses)
 	require.NoError(t, err)
 	loadedABCIResponses, err := multiStore.LoadFinalizeBlockResponse(height)
 	require.NoError(t, err)
-	require.Equal(t, len(abciResponses.DeliverTxs), len(loadedABCIResponses.TxResults))
+	require.Equal(t, 1, len(loadedABCIResponses.TxResults))
+	require.Equal(t, abciResponses.DeliverTxs[0].String(), loadedABCIResponses.TxResults[0].String())
+	require.Equal(t, 2, len(loadedABCIResponses.Events))
+	require.Equal(t, abciResponses.BeginBlock.Events[0].String(), loadedABCIResponses.Events[0].String())
+	require.Equal(t, abciResponses.EndBlock.Events[0].String(), loadedABCIResponses.Events[1].String())
 
 	// try with an ABCI Response missing fields
 	height = int64(2)
 	abciResponses = newV1Beta2ABCIResponsesWithNullFields()
+	require.Equal(t, 1, len(abciResponses.DeliverTxs))
+	require.Equal(t, 1, len(abciResponses.BeginBlock.Events))
+	require.Nil(t, abciResponses.EndBlock)
 	err = multiStore.SaveABCIResponses(height, &abciResponses)
 	require.NoError(t, err)
 	loadedABCIResponses, err = multiStore.LoadFinalizeBlockResponse(height)
 	require.NoError(t, err)
-	require.Equal(t, len(abciResponses.DeliverTxs), len(loadedABCIResponses.TxResults))
+	require.Equal(t, 1, len(loadedABCIResponses.TxResults))
+	require.Equal(t, abciResponses.DeliverTxs[0].String(), loadedABCIResponses.TxResults[0].String())
+	require.Equal(t, 1, len(loadedABCIResponses.Events))
+	require.Equal(t, abciResponses.BeginBlock.Events[0].String(), loadedABCIResponses.Events[0].String())
 }
 
 // This test unmarshals a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses

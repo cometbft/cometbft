@@ -270,7 +270,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *NewRoundStepMessage:
 			// TODO: Set this up on load
 			conR.rsMtx.RLock()
-			initialHeight := conR.conS.state.InitialHeight
+			initialHeight := conR.initialHeight
 			conR.rsMtx.RUnlock()
 			if err = msg.ValidateHeight(initialHeight); err != nil {
 				conR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", msg, "err", err)

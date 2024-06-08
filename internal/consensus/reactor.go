@@ -268,7 +268,6 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 	case StateChannel:
 		switch msg := msg.(type) {
 		case *NewRoundStepMessage:
-			// TODO: Set this up on load
 			conR.rsMtx.RLock()
 			initialHeight := conR.initialHeight
 			conR.rsMtx.RUnlock()

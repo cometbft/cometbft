@@ -213,13 +213,11 @@ func (p *peer) OnStart() error {
 
 // FlushStop mimics OnStop but additionally ensures that all successful
 // .Send() calls will get flushed before closing the connection.
+// Correct API usage requires FlushStop to terminate, and then OnStop getting called.
 //
 // NOTE: it is not safe to call this method more than once.
 func (p *peer) FlushStop() {
 	p.mconn.FlushStop() // stop everything and close the conn
-	for i := 0; i < len(p.channels); i++ {
-		p.recvListenersQuitChan <- struct{}{}
-	}
 }
 
 // OnStop implements BaseService.
@@ -230,6 +228,7 @@ func (p *peer) OnStop() {
 	for i := 0; i < len(p.channels); i++ {
 		p.recvListenersQuitChan <- struct{}{}
 	}
+	close(p.recvListenersQuitChan)
 }
 
 // ---------------------------------------------------

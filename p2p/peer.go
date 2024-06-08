@@ -199,7 +199,6 @@ func (p *peer) OnStart() error {
 		return err
 	}
 
-	defer p.mconn.PanicRecover()
 	p.recvListenersQuitChan = make(chan struct{}, len(p.channels))
 	p.setupRecvListeners()
 
@@ -473,6 +472,7 @@ func (p *peer) setupChannelProcessors(
 // Processes incoming packets for this channel. This should be ran in a go-routine.
 // when it hits an error, it panics, which is safe as it must be caught by a conn.PanicRecover.
 func channelProcessor(p *peer, reactor Reactor, chID byte, msgType proto.Message, channel chan []byte) {
+	defer p.mconn.PanicRecover()
 	for {
 		select {
 		case msgBytes := <-channel:

@@ -217,6 +217,9 @@ func (p *peer) OnStart() error {
 // NOTE: it is not safe to call this method more than once.
 func (p *peer) FlushStop() {
 	p.mconn.FlushStop() // stop everything and close the conn
+	for i := 0; i < len(p.channels); i++ {
+		p.recvListenersQuitChan <- struct{}{}
+	}
 }
 
 // OnStop implements BaseService.

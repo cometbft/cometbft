@@ -255,6 +255,12 @@ func (cs *State) GetRoundState() *cstypes.RoundState {
 	return &rs
 }
 
+// getRoundState returns a shallow copy of the internal consensus state.
+func (cs *State) getRoundState() *cstypes.RoundState {
+	rs := cs.RoundState // copy
+	return &rs
+}
+
 // GetRoundStateJSON returns a json of RoundState.
 func (cs *State) GetRoundStateJSON() ([]byte, error) {
 	cs.mtx.RLock()

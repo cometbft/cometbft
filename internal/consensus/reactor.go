@@ -267,6 +267,7 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 	case StateChannel:
 		switch msg := msg.(type) {
 		case *NewRoundStepMessage:
+			// TODO: Set this up on load
 			conR.conS.mtx.RLock()
 			initialHeight := conR.conS.state.InitialHeight
 			conR.conS.mtx.RUnlock()
@@ -420,6 +421,7 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventNewRoundStep,
 		func(data cmtevents.EventData) {
 			conR.broadcastNewRoundStepMessage(data.(*cstypes.RoundState))
+			conR.updateRoundStateNoCsLock()
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (NewRoundStep)", "err", err)
 	}
@@ -434,6 +436,7 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventVote,
 		func(data cmtevents.EventData) {
 			conR.broadcastHasVoteMessage(data.(*types.Vote))
+			conR.updateRoundStateNoCsLock()
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (Vote)", "err", err)
 	}
@@ -441,6 +444,7 @@ func (conR *Reactor) subscribeToBroadcastEvents() {
 	if err := conR.conS.evsw.AddListenerForEvent(subscriber, types.EventProposalBlockPart,
 		func(data cmtevents.EventData) {
 			conR.broadcastHasProposalBlockPartMessage(data.(*BlockPartMessage))
+			conR.updateRoundStateNoCsLock()
 		}); err != nil {
 		conR.Logger.Error("Error adding listener for events (ProposalBlockPart)", "err", err)
 	}
@@ -555,6 +559,13 @@ func (conR *Reactor) updateRoundStateRoutine() {
 		conR.rs = rs
 		conR.rsMtx.Unlock()
 	}
+}
+
+func (conR *Reactor) updateRoundStateNoCsLock() {
+	rs := conR.conS.getRoundState()
+	conR.rsMtx.Lock()
+	conR.rs = rs
+	conR.rsMtx.Unlock()
 }
 
 func (conR *Reactor) getRoundState() *cstypes.RoundState {

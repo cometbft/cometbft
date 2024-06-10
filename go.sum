@@ -86,8 +86,8 @@ github.com/cometbft/cometbft-db v0.12.0 h1:v77/z0VyfSU7k682IzZeZPFZrQAKiQwkqGN0Q
 github.com/cometbft/cometbft-db v0.12.0/go.mod h1:aX2NbCrjNVd2ZajYxt1BsiFf/Z+TQ2MN0VxdicheYuw=
 github.com/cometbft/cometbft-load-test v0.1.0 h1:Axw5oVXlQqZLVUHVxmULSfEtpEuaUMmoeM560hvBAmw=
 github.com/cometbft/cometbft-load-test v0.1.0/go.mod h1:QEXKZ2L5SH1gEw6DRSKYpd3nDCWrzIejaHxwYdgKtkc=
-github.com/cometbft/cometbft/api v1.0.0-alpha.2 h1:pw6k48EnA/FjxBP2/gCyDGnSdCNjB5yPFd2du/9rNoE=
-github.com/cometbft/cometbft/api v1.0.0-alpha.2/go.mod h1:H52lgJKkSPeVpTcKr9a4nrSpyr6s1B352SWa6ajNHv0=
+github.com/cometbft/cometbft/api v1.0.0-rc.1 h1:GtdXwDGlqwHYs16A4egjwylfYOMYyEacLBrs3Zvpt7g=
+github.com/cometbft/cometbft/api v1.0.0-rc.1/go.mod h1:NDFKiBBD8HJC6QQLAoUI99YhsiRZtg2+FJWfk6A6m6o=
 github.com/containerd/continuity v0.3.0 h1:nisirsYROK15TAMVukJOUyGJjz4BNQJBVsNvAXZJ/eg=
 github.com/containerd/continuity v0.3.0/go.mod h1:wJEAIwKOm/pBZuBd0JmeTvnLquTB1Ag8espWhkykbPM=
 github.com/cosmos/crypto v0.0.0-20240309083813-82ed2537802e h1:Zk4OsfLBN+0WOfH15Hg/aAYsSP7IuZQC6RZjewPuITw=

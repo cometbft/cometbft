@@ -41,7 +41,7 @@ require (
 	github.com/btcsuite/btcd/btcutil v1.1.5
 	github.com/cometbft/cometbft-db v0.12.0
 	github.com/cometbft/cometbft-load-test v0.1.0
-	github.com/cometbft/cometbft/api v1.0.0-alpha.2
+	github.com/cometbft/cometbft/api v1.0.0-rc.1
 	github.com/cosmos/crypto v0.0.0-20240309083813-82ed2537802e
 	github.com/cosmos/gogoproto v1.5.0
 	github.com/go-git/go-git/v5 v5.12.0

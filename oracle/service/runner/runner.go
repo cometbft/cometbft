@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"time"
@@ -125,7 +126,17 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
 			newVotes := []*oracleproto.Vote{}
 			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
+			visitedVoteMap := make(map[string]struct{})
 			for _, vote := range unsignedVoteBuffer {
+				// check for dup votes
+				key := fmt.Sprintf("%v:%v", vote.Timestamp, vote.OracleId)
+				_, exists := visitedVoteMap[key]
+				if exists {
+					continue
+				}
+
+				visitedVoteMap[key] = struct{}{}
+
 				if vote.Timestamp >= latestAllowableTimestamp {
 					newVotes = append(newVotes, vote)
 				}

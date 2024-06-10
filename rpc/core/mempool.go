@@ -47,18 +47,18 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 		return nil, err
 	}
 	go func() {
-		reqRes.Wait() // wait for response
+		// Wait for a response. The ABCI client guarantees that it will eventually call
+		// reqRes.Done(), even in the case of error.
+		reqRes.Wait()
 		select {
 		case <-ctx.Context().Done():
 		default:
-			reqRes.InvokeCallback()
 			resCh <- reqRes.Response.GetCheckTx()
 		}
 	}()
 
 	select {
 	case <-ctx.Context().Done():
-		reqRes.Done() // release waiter on goroutine
 		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
 	case res := <-resCh:
 		return &ctypes.ResultBroadcastTx{
@@ -110,18 +110,18 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		return nil, ErrTxBroadcast{Source: err, ErrReason: ErrCheckTxFailed}
 	}
 	go func() {
-		reqRes.Wait() // wait for response
+		// Wait for a response. The ABCI client guarantees that it will eventually call
+		// reqRes.Done(), even in the case of error.
+		reqRes.Wait()
 		select {
 		case <-ctx.Context().Done():
 		default:
-			reqRes.InvokeCallback()
 			checkTxResCh <- reqRes.Response.GetCheckTx()
 		}
 	}()
 
 	select {
 	case <-ctx.Context().Done():
-		reqRes.Done() // release waiter on goroutine
 		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
 	case checkTxRes := <-checkTxResCh:
 		if checkTxRes.Code != abci.CodeTypeOK {

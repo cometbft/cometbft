@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/go-kit/kit/metrics"
+	"github.com/go-kit/kit/metrics/discard"
 )
 
 const (
@@ -86,5 +87,17 @@ func newMetricsLabelCache() *metricsLabelCache {
 		mtx:               &sync.RWMutex{},
 		messageLabelNames: map[reflect.Type]string{},
 		chIDLabelNames:    map[byte]string{},
+	}
+}
+
+func NoopMetrics() *Metrics {
+	return &Metrics{
+		Peers:                    discard.NewGauge(),
+		PeerReceiveBytesTotal:    discard.NewCounter(),
+		PeerSendBytesTotal:       discard.NewCounter(),
+		PeerPendingSendBytes:     discard.NewGauge(),
+		NumTxs:                   discard.NewGauge(),
+		MessageReceiveBytesTotal: discard.NewCounter(),
+		MessageSendBytesTotal:    discard.NewCounter(),
 	}
 }

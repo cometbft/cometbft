@@ -62,7 +62,7 @@ func NewReactor(consensusState *State, waitSync bool, options ...ReactorOption) 
 		rs:       consensusState.GetRoundState(),
 		Metrics:  NopMetrics(),
 	}
-	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR)
+	conR.BaseReactor = *p2p.NewBaseReactor("Consensus", conR, p2p.WithIncomingQueueSize(1000))
 	if waitSync {
 		conR.waitSync.Store(true)
 	}

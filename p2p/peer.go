@@ -3,7 +3,6 @@ package p2p
 import (
 	"fmt"
 	"net"
-	"reflect"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -45,6 +44,13 @@ type Peer interface {
 
 	SetRemovalFailed()
 	GetRemovalFailed() bool
+}
+
+type IntrospectivePeer interface {
+	Peer
+	Metrics() *Metrics
+	ChIDToMetricLabel(chID byte) string
+	ValueToMetricLabel(i any) string
 }
 
 // ----------------------------------------------------------
@@ -134,7 +140,7 @@ func newPeer(
 	mConfig cmtconn.MConnConfig,
 	nodeInfo NodeInfo,
 	reactorsByCh map[byte]Reactor,
-	msgTypeByChID map[byte]proto.Message,
+	_ map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, any),
 	mlc *metricsLabelCache,
@@ -153,7 +159,6 @@ func newPeer(
 		pc.conn,
 		p,
 		reactorsByCh,
-		msgTypeByChID,
 		chDescs,
 		onPeerError,
 		mConfig,
@@ -339,6 +344,18 @@ func (p *peer) GetRemovalFailed() bool {
 	return p.removalAttemptFailed
 }
 
+func (p *peer) Metrics() *Metrics {
+	return p.metrics
+}
+
+func (p *peer) ChIDToMetricLabel(chID byte) string {
+	return p.mlc.ChIDToMetricLabel(chID)
+}
+
+func (p *peer) ValueToMetricLabel(i any) string {
+	return p.mlc.ValueToMetricLabel(i)
+}
+
 // ---------------------------------------------------
 // methods only used for testing
 // TODO: can we remove these?
@@ -396,7 +413,6 @@ func createMConnection(
 	conn net.Conn,
 	p *peer,
 	reactorsByCh map[byte]Reactor,
-	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, any),
 	config cmtconn.MConnConfig,
@@ -408,28 +424,11 @@ func createMConnection(
 			// which does onPeerError.
 			panic(fmt.Sprintf("Unknown channel %X", chID))
 		}
-		mt := msgTypeByChID[chID]
-		msg := proto.Clone(mt)
-		err := proto.Unmarshal(msgBytes, msg)
-		if err != nil {
-			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
-		}
-		if w, ok := msg.(types.Unwrapper); ok {
-			msg, err = w.Unwrap()
-			if err != nil {
-				panic(fmt.Sprintf("unwrapping message: %v", err))
-			}
-		}
-		p.metrics.PeerReceiveBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
-			Add(float64(len(msgBytes)))
-		p.metrics.MessageReceiveBytesTotal.
-			With("message_type", p.mlc.ValueToMetricLabel(msg)).
-			Add(float64(len(msgBytes)))
-		reactor.Receive(Envelope{
+
+		reactor.QueueUnprocessedEnvelope(UnprocessedEnvelope{
 			ChannelID: chID,
 			Src:       p,
-			Message:   msg,
+			Message:   msgBytes,
 		})
 	}
 

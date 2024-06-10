@@ -20,6 +20,12 @@ type Envelope struct {
 	ChannelID byte
 }
 
+type UnprocessedEnvelope struct {
+	Src       IntrospectivePeer
+	Message   []byte
+	ChannelID byte
+}
+
 var (
 	_ types.Wrapper = &tmp2p.PexRequest{}
 	_ types.Wrapper = &tmp2p.PexAddrs{}

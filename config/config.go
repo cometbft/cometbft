@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -324,6 +325,37 @@ func (cfg BaseConfig) ValidateBasic() error {
 	default:
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
 	}
+
+	switch cfg.ProxyApp {
+	case "kvstore",
+		"kvstore_connsync",
+		"kvstore_unsync",
+		"persistent_kvstore",
+		"persistent_kvstore_connsync",
+		"persistent_kvstore_unsync",
+		"e2e",
+		"e2e_connsync",
+		"e2e_unsync",
+		"noop":
+	default: // network address
+		parts := strings.SplitN(cfg.ProxyApp, "://", 2)
+		if len(parts) != 2 { // TCP address
+			_, err := net.ResolveTCPAddr("tcp", cfg.ProxyApp)
+			if err != nil {
+				return fmt.Errorf("failed to resolve TCP proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		} else {
+			switch parts[0] { // other protocol
+			case "tcp", "tcp4", "tcp6":
+			case "udp", "udp4", "udp6":
+			case "ip", "ip4", "ip6":
+			case "unix", "unixgram", "unixpacket":
+			default:
+				return fmt.Errorf("invalid protocol in proxy_app: %s (expected one supported by net.Dial)", cfg.ProxyApp)
+			}
+		}
+	}
+
 	return nil
 }
 

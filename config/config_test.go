@@ -70,6 +70,15 @@ func TestBaseConfigValidateBasic(t *testing.T) {
 	require.Error(t, cfg.ValidateBasic())
 }
 
+func TestBaseConfigValidateBasic2(t *testing.T) {
+	cfg := config.TestBaseConfig()
+	require.NoError(t, cfg.ValidateBasic())
+
+	// tamper with proxy_app
+	cfg.ProxyApp = "invalid"
+	require.Error(t, cfg.ValidateBasic())
+}
+
 func TestRPCConfigValidateBasic(t *testing.T) {
 	cfg := config.TestRPCConfig()
 	require.NoError(t, cfg.ValidateBasic())

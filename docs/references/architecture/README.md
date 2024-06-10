@@ -43,7 +43,7 @@ numbering our ADRs from 100 onwards.
 ### Proposed
 
 - [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
-- [ADR-113: Modular crypto](adr-113-modular-transaction-hashing.md)
+- [ADR-113: Modular transaction hashing](adr-113-modular-transaction-hashing.md)
 
 ### Accepted
 

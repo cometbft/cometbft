@@ -25,6 +25,7 @@ The transaction hash is used by:
 - the built-in transaction indexer;
 - the `/tx` and `/tx_search` RPC endpoints, which allow users
 to search for a transaction using its hash;
+- mempool to identify transactions.
 
 The problem some application developers are facing is a mismatch between the
 internal/app representation of transactions and the one employed by CometBFT. For
@@ -46,8 +47,8 @@ chain in order to verify the validators hash.
 ## Alternative Approaches
 
 1. Do nothing => not flexible.
-2. Add `HashFn` argument to `NewNode` and pass this function down the stack =>
-   complicates the code.
+2. Add `TxHashFunc` (transaction hashing function) to `NewNode` as an option
+   and pass this function down the stack => complicates the code.
 3. Allow changing the hashing function for all structs => breaks IBC
    compatibility (see 'General hashing' above).
 
@@ -76,14 +77,18 @@ var (
     }
 )
 
-// SetFmtHash sets the function used to convert a checksum to a string.
-func SetFmtHash(f func([]byte) string) {
-    fmtHash = f
-}
-
 // SetTxHash sets the hash function used for transaction hashing.
+//
+// Call this function before starting the node.
 func SetTxHash(h crypto.Hash) {
     txHash = h
+}
+
+// SetFmtHash sets the function used to convert a checksum to a string.
+//
+// Call this function before starting the node.
+func SetFmtHash(f func([]byte) string) {
+    fmtHash = f
 }
 
 // Bytes is a wrapper around a byte slice that implements the fmt.Stringer.
@@ -105,13 +110,17 @@ func Sum(bz []byte) Bytes {
 
 Let's break this down. By default, we use `sha256` standard crypto library.
 `SetTxHash` allows developers to swap the default hashing function
-with the hashing function of their choice.
+with the hashing function of their choice. It will be used in:
+
+- mempool;
+- transaction indexer;
+- `/tx` and `/tx_search` RPC endpoints.
+
+Note the Header's `data_hash` will be different if the default hashing function
+is changed.
 
 `SetFmtHash` allows developers to swap the default string function
 (`fmt.Sprintf("%X", bz)`) with their own implementation.
-
-The above solution only changes transaction hashes (including the header's
-`DataHash`).
 
 The design in the current ADR only aims to support custom hash functions,
 it does not support _changing_ the hash function for an existing chain.

@@ -34,12 +34,12 @@ jobs:
         # based on the current branch as compared to the latest version.
         run: ./build/generator -g 5 -m "latest:1,local:2" -d networks/nightly/ -p
 
-      - name: Run ${{ matrix.p2p }} p2p testnets
+      - name: Run p2p testnets (${{ matrix.group }})
         if: matrix.group != 5
         working-directory: test/e2e
         run: ./run-multiple.sh networks/nightly/*-group${{ matrix.group }}-*.toml
 
-      - name: Run ${{ matrix.p2p }} p2p regression testnets
+      - name: Run p2p testnets (regression)
         if: matrix.group == 5
         working-directory: test/e2e
         run: ./run-multiple.sh networks_regressions/*.toml

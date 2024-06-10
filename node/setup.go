@@ -272,9 +272,9 @@ func createMempoolAndMempoolReactor(
 					txs := pendingTxs
 					pendingTxs = make([][]byte, 0)
 					pendingTxLock.Unlock()
-					if len(txs) > 0 {
+					for _, tx := range txs {
 						_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
-							Txs: txs,
+							Tx: tx,
 						})
 					}
 				}

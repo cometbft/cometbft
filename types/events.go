@@ -87,7 +87,7 @@ type EventDataNewEvidence struct {
 
 // All txs fire EventDataPendingTx.
 type EventDataPendingTx struct {
-	Txs [][]byte `json:"txs"`
+	Tx []byte `json:"tx"`
 }
 
 // All txs fire EventDataTx.

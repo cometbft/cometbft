@@ -42,8 +42,6 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
-- [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
-
 ### Accepted
 
 - [ADR-101: Data companion pull API](adr-101-data-companion-pull-api.md)
@@ -57,6 +55,7 @@ numbering our ADRs from 100 onwards.
 - [ADR-111: `nop` Mempool](adr-111-nop-mempool.md)
 - [ADR-112: Proposer-Based Timestamps](adr-112-proposer-based-timestamps.md)
 - [ADR-114: Partly Undo ADR 109](adr-114-undo-109.md)
+- [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
 
 ### Implemented
 

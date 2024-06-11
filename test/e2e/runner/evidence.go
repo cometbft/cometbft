@@ -124,6 +124,7 @@ func InjectEvidence(ctx context.Context, r *rand.Rand, testnet *e2e.Testnet, amo
 			}
 			return err
 		}
+		time.Sleep(5 * time.Second / time.Duration(amount))
 	}
 
 	// wait for the node to reach the height above the forged height so that

@@ -1,10 +1,9 @@
-# Runs randomly generated E2E testnets nightly on main
+# Runs randomly generated E2E testnets nightly on the v1.x branch.
 
-# !! Relevant changes to this file should be propagated to the e2e-nightly-<V>x
-# files for the supported backport branches, when appropriate, modulo version
-# markers.
+# !! This file should be kept in sync with the e2e-nightly-main.yml file,
+# modulo changes to the version labels.
 
-name: e2e-nightly-main
+name: e2e-nightly-1x
 on:
   schedule:
     - cron: '0 2 * * *'
@@ -22,9 +21,16 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: "1.22"
 
       - uses: actions/checkout@v4
+        with:
+          ref: 'v1.x'
+
+      - name: Capture git repo info
+        id: git-info
+        run: |
+          echo "branch=`git branch --show-current`" >> $GITHUB_OUTPUT
 
       - name: Build
         working-directory: test/e2e
@@ -47,6 +53,9 @@ jobs:
         working-directory: test/e2e
         run: ./run-multiple.sh networks_regressions/*.toml
 
+    outputs:
+      git-branch: ${{ steps.git-info.outputs.branch }}
+
   e2e-nightly-fail:
     needs: e2e-nightly-test
     if: ${{ failure() }}
@@ -57,9 +66,9 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-          BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ needs.e2e-nightly-test.outputs.git-branch }}
           RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          COMMITS_URL: "${{ github.server_url }}/${{ github.repository }}/commits/${{ github.ref_name }}"
+          COMMITS_URL: "${{ github.server_url }}/${{ github.repository }}/commits/${{ needs.e2e-nightly-test.outputs.git-branch }}"
         with:
           payload: |
             {

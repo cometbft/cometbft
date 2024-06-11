@@ -47,9 +47,16 @@ var (
 		2 * int(e2e.EvidenceAgeHeight),
 		4 * int(e2e.EvidenceAgeHeight),
 	}
+<<<<<<< HEAD
 	evidence          = uniformChoice{0, 1, 10}
 	abciDelays        = uniformChoice{"none", "small", "large"}
 	nodePerturbations = probSetChoice{
+=======
+	nodeEnableCompanionPruning = uniformChoice{true, false}
+	evidence                   = uniformChoice{0, 1, 10, 20, 200}
+	abciDelays                 = uniformChoice{"none", "small", "large"}
+	nodePerturbations          = probSetChoice{
+>>>>>>> bb6c7027e (fix(e2e): reproduction an fixing of missing evidence in `e2e` nightlies  (#3234))
 		"disconnect": 0.1,
 		"pause":      0.1,
 		"kill":       0.1,

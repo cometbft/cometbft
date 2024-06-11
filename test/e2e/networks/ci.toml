@@ -55,7 +55,12 @@ seeds = ["seed01"]
 database = "badgerdb"
 privval_protocol = "unix"
 persist_interval = 3
+<<<<<<< HEAD
 retain_blocks = 10
+=======
+retain_blocks = 20
+enable_companion_pruning = true
+>>>>>>> bb6c7027e (fix(e2e): reproduction an fixing of missing evidence in `e2e` nightlies  (#3234))
 perturb = ["kill"]
 
 [node.validator04]
@@ -74,7 +79,12 @@ perturb = ["kill", "pause", "disconnect", "restart"]
 start_at = 1010
 mode = "full"
 persistent_peers = ["validator01", "validator02", "validator03", "validator04", "validator05"]
+<<<<<<< HEAD
 retain_blocks = 10
+=======
+retain_blocks = 20
+enable_companion_pruning = true
+>>>>>>> bb6c7027e (fix(e2e): reproduction an fixing of missing evidence in `e2e` nightlies  (#3234))
 perturb = ["restart"]
 
 [node.full02]

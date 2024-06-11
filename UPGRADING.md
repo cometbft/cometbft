@@ -142,23 +142,29 @@ The `Mempool` interface was modified on `CheckTx`. Note that this interface is
 meant for internal use only, so you should be aware of these changes only if you
 happen to call these methods directly.
 
-`CheckTx`'s signature changed from `CheckTx(tx types.Tx, cb
-func(*abci.ResponseCheckTx), txInfo TxInfo) error` to `CheckTx(tx types.Tx)
-(abcicli.ReqRes, error)`.
-- The method used to take a callback function `cb` to be applied to the
-  ABCI `CheckTx` response. Now `CheckTx` returns the ABCI response of
-  type `abcicli.ReqRes`, on which the callback must be applied manually.
-  For example:
+`CheckTx`'s signature changed from 
+`CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error` to 
+`CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)`.
+The method used to take a callback function `cb` to be applied to the
+ABCI `CheckTx` response and a `TxInfo` structure containing a sender. 
+Now the sender ID is passed directly and `CheckTx` returns the ABCI response 
+of type `*abcicli.ReqRes`, on which one can apply any callback manually.
+For example:
+```golang
+reqRes, err := CheckTx(tx, sender)
+// check `err` here
+cb(reqRes.Response.GetCheckTx())
+```
 
-  ```golang
-  reqRes, err := CheckTx(tx)
-  cb(reqRes.Response.GetCheckTx())
-  ```
-
-- The second parameter was `txInfo`, which essentially contained
-  information about the sender of the transaction. Now that information
-  is stored in the mempool reactor instead of the data structure, so it
-  is no longer needed in this method.
+The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to 
+process the response already set (namely, the function `handleCheckTxResponse`).
+The callback will be invoked internally when the response is ready. We need only 
+to wait for it; for example:
+```golang
+reqRes, err := CheckTx(tx, sender)
+// check `err` here
+reqRes.Wait()
+```
 
 ### Protobufs and Generated Go Code
 

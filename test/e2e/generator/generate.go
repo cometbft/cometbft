@@ -49,7 +49,7 @@ var (
 		4 * int(e2e.EvidenceAgeHeight),
 	}
 	nodeEnableCompanionPruning = uniformChoice{true, false}
-	evidence                   = uniformChoice{0, 1, 10}
+	evidence                   = uniformChoice{0, 1, 10, 20, 200}
 	abciDelays                 = uniformChoice{"none", "small", "large"}
 	nodePerturbations          = probSetChoice{
 		"disconnect": 0.1,

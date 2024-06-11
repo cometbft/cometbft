@@ -294,6 +294,165 @@ TODO
 
 ## Detailed Design
 
+### Lanes definition and initialization
+
+The list of lanes and their corresponding priorities will be hardcoded in the application logic. A
+priority is a value of type `uint32`. The application also needs to define which of the existing
+lanes is the default lane. 
+
+To obtain the lane information from the application, we need to extend the ABCI `Info` response to
+include these values. If the application wants to implement lanes, it will need to fill in the
+following extra fields in the response:
+```protobuf
+message InfoResponse {
+  ...
+  repeated uint32 lanes = 6;
+  uint32 default_lane = 7;
+}
+```
+Internally, the application may use `string`s to name lanes, and then map those names to priorities.
+The mempool does not care about the names, only about the priorities. That is why the lane
+information returned by the application only contains priorities.
+
+Currently, querying the app for `Info` happens during the handshae between CometBFT and the app,
+during the node initialization, and only when state sync is not enabled. The `Handshaker` first
+sends an `Info` request to fetch the app information, and then replays any stored block needed to
+sync CometBFT with the app. The lane information is needed regardless of whether the state sync is
+enabled, so we will need to query the app information outside of the `Handshaker`.
+
+The highest priority a lane may have is 1. The value 0 is reserved for two cases: when there are no
+priorities and for `CheckTx` responses of invalid transactions.
+
+On receiving the information from the app, CometBFT will validate that:
+- `lanes` has no duplicates (values in `lanes` don't need to be sorted),
+- `default_value` is in `lanes`,
+- if `lanes` is empty, then `default_value` must be 0, and
+- if `default_value` is 0, then `lanes` must be empty.
+
+Note that the default lane may not necessarily be the lane with the lowest priority. 
+
+Different nodes also need to agree on the lanes they use. When a node connects to a peer, they both
+perform a handshake to agree on some basic information (see `DefaultNodeInfo`), including the
+version of the application they are executing. Since the application includes the lane definitions,
+both nodes will also agree on the lanes they implement. Therefore we don't need to modify the P2P
+handshake.
+
+### Internal data structures
+
+In the mempool, a lane is defined by its priority:
+```golang
+type Lane uint32
+```
+
+Currently, the `CListMempool` data structure has two fields to store and access transactions:
+```golang
+txs    *clist.CList // Concurrent list of mempool entries.
+txsMap sync.Map     // Map of type TxKey -> *clist.CElement, for quick access to elements in txs.
+```
+
+With the introduction of lanes, the main change will be to divide the `CList` data structure into
+$N$ `Clist`s, one per lane. `CListMempool` will have the following fields:
+```golang
+lanes   map[Lane]*clist.CList
+txsMap  sync.Map // Map of type TxKey -> *clist.CElement, for quick access to elements in lanes.
+txLanes sync.Map // Map of type TxKey -> Lane, for quick access to the lane corresponding to a tx.
+
+// Fixed variables set during initialization.
+defaultLane Lane
+sortedLanes []Lane // Lanes sorted by priority
+```
+The auxiliary fields `txsMap` and `txLanes` are for direct access to the mempool entries and the
+lane of a given transaction, respectively.
+
+If the application does not implement lanes (that is, it responds with empty values in
+`InfoResponse`), then `defaultLane` will be set to 1, and `lanes` will have only one entry for the
+default lane.
+
+`CListMempool` also stores the cache, which is independent of the lanes, so it will not be modified.
+
+### Configuration
+
+For an MVP, there is no need to adapt the mempool configuration: all lanes will share the same
+mempool configuration. In particular, all lanes will be capped by the total mempool capacities as
+currently defined in the configuration. Namely, these are `Size`, total number of transactions, and
+`MaxTxsBytes`, the maximum total number of bytes. `MaxTxBytes`, the maximum size in bytes of a
+single transaction accepted into the mempool, will also continue to apply to each lane.
+
+Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none.
+
+### Adding a transaction to the mempool
+
+When validating a transaction received for the first time with `CheckTx`, the application will
+optionally return its lane in the response.
+```protobuf
+message CheckTxResponse {
+  ...
+  uint32 lane = 12;
+}
+```
+The callback that handles the first-time CheckTx response will append the new mempool entry to the
+corresponding `CList`, namely `lanes[lane]`, and update the other auxiliary variables accordingly.
+If `lane` is 0, it means that the application did not set any lane in the response message, so the
+transaction will be assigned to the default lane.
+
+### Removing a transaction from the mempool
+
+Removing a transaction may happen in two cases: when updating a list of committed transactions, and
+during rechecking, if the transaction is re-assesed as invalid. In any case, we first need to find
+the lane the transaction belongs by accessing the `txLanes` map. Then simply we remove the entry
+from the CList corresponding to its lane and update the auxiliary variables accordingly.
+
+When updating the mempool, there is the possibility of a slight optimization by removing
+transactions from different lanes in parallel. For that, we would first need to preprocess the list
+of transactions to know to which lane belongs each transaction. This optimization does not really
+have an impact if the committed block has few transactions, thus we decided to leave it out of the
+MVP.
+
+### Reaping transactions for creating blocks
+
+Currently, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects transactions for a block
+proposal until either reaching `maxBytes` or `maxGas`. Both of these values are consensus
+parameters.
+
+With lanes, we need to iterate on `sortedLanes`, from the highest to the lowest priority, collecting
+transactions in the same way as before but on each lane, once at a time.
+```golang
+for _, lane := range sortedLanes {
+    // collect transactions on lanes[lane] until either reaching `maxBytes` or `maxGas`
+}
+```
+The mempool is locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed during
+reaping.
+
+### Disseminating transactions
+
+The current broadcast routine in the mempool reactor has a pointer called `next` to an entry in the
+CList. Once it sends the transaction pointed by `next` to the peer, it obtains the next element in
+the list, `next.Next()` and continues traversing the list sending transactions.
+
+Initially, `next` is nil, so the dissemination algorithm first waits on the channel
+`mempool.TxsWaitChan()` for a signal that the CList is not empty, and then obtains the first element
+in the list with `next = mempool.TxsFront()`. Once it reaches the end of the list, `next.Next()`
+returns nil, and it starts again from the beginning. Another instance when `next` may be nil is when
+the rechecking process removes the entry being broadcasted.
+
+We have two possible options when disseminating from multiple lanes.
+1. Reserve $N$ p2p channels for use by mempool lanes. Each P2P channel has a priority that we can
+   reuse as the lane priority. There are a maximum of 256 P2P channels. The number of lanes will be
+   limited by this number.
+2. Continue using the current P2P channel for disseminating transactions, and implement the logic
+   for selecting the order in which to send transactions in the mempool. With this option, the
+   number of lanes is unlimited; only restricted by the capacity of the nodes to store the lane's
+   data structures.
+
+We choose the second option, as it gives us more flexibility to implement initially a simple
+scheduling algorithm that we can improve later. We want a queueing algorithm that is fair, meaning
+that low-priority lanes will not get starved, and that it supports selection by weight, so that each
+lane gets a fraction of the P2P channel capacity proportional to its priority.
+
+
+### Data flow
+
 TO DECIDE:
 
 * Should all lanes share the same mempool capacities (bytes per tx, \# of txs, total # of bytes)?

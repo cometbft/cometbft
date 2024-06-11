@@ -770,6 +770,8 @@ func (vals *ValidatorSet) checkAllKeysHaveSameType() {
 	vals.allKeysHaveSameType = true
 }
 
+// AllKeysHaveSameType returns true if all validators have the same type of
+// public key or if the set is empty.
 func (vals *ValidatorSet) AllKeysHaveSameType() bool {
 	return vals.allKeysHaveSameType
 }

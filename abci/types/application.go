@@ -1,6 +1,8 @@
 package types
 
-import "context"
+import (
+	"context"
+)
 
 //go:generate ../../scripts/mockery_generate.sh Application
 
@@ -32,6 +34,11 @@ type Application interface {
 	OfferSnapshot(context.Context, *RequestOfferSnapshot) (*ResponseOfferSnapshot, error)                // Offer a snapshot to the application
 	LoadSnapshotChunk(context.Context, *RequestLoadSnapshotChunk) (*ResponseLoadSnapshotChunk, error)    // Load a snapshot chunk
 	ApplySnapshotChunk(context.Context, *RequestApplySnapshotChunk) (*ResponseApplySnapshotChunk, error) // Apply a shapshot chunk
+
+	// Hooks
+	CreateOracleResultTx(context.Context, *RequestCreateOracleResultTx) (*ResponseCreateOracleResultTx, error)
+	FetchOracleVotes(context.Context, *RequestFetchOracleVotes) (*ResponseFetchOracleVotes, error)
+	ValidateOracleVotes(context.Context, *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error)
 }
 
 //-------------------------------------------------------
@@ -116,4 +123,16 @@ func (BaseApplication) FinalizeBlock(_ context.Context, req *RequestFinalizeBloc
 	return &ResponseFinalizeBlock{
 		TxResults: txs,
 	}, nil
+}
+
+func (BaseApplication) CreateOracleResultTx(_ context.Context, req *RequestCreateOracleResultTx) (*ResponseCreateOracleResultTx, error) {
+	return &ResponseCreateOracleResultTx{}, nil
+}
+
+func (BaseApplication) FetchOracleVotes(_ context.Context, req *RequestFetchOracleVotes) (*ResponseFetchOracleVotes, error) {
+	return &ResponseFetchOracleVotes{}, nil
+}
+
+func (BaseApplication) ValidateOracleVotes(_ context.Context, req *RequestValidateOracleVotes) (*ResponseValidateOracleVotes, error) {
+	return &ResponseValidateOracleVotes{}, nil
 }

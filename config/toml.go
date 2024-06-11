@@ -405,6 +405,29 @@ experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.Experiment
 experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
 
 #######################################################
+###          Oracle Configuration Option          ###
+#######################################################
+[oraclesvc]
+
+# MaxOracleGossipBlocksDelayed determines how long we should keep the gossip votes in terms of block height
+max_oracle_gossip_blocks_delayed = "{{ .Oracle.MaxOracleGossipBlocksDelayed }}" 
+
+# MaxOracleGossipAge determines how long we should keep the gossip votes in terms of seconds
+max_oracle_gossip_age = "{{ .Oracle.MaxOracleGossipAge }}" 
+
+# Interval determines how long we should wait before batch signing votes
+sign_interval = "{{ .Oracle.SignInterval }}"
+
+# Interval determines how long we should wait between gossiping of votes
+gossip_interval = "{{ .Oracle.GossipInterval }}"
+
+# Interval determines how long we should wait between trying to prune
+prune_interval = "{{ .Oracle.PruneInterval }}"
+
+# Max allowable size for votes that can be gossiped from peer to peer
+max_gossip_msg_size = {{ .Oracle.MaxGossipMsgSize }}
+
+#######################################################
 ###         State Sync Configuration Options        ###
 #######################################################
 [statesync]

@@ -7,6 +7,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -17,6 +18,7 @@ type PrivValidator interface {
 
 	SignVote(chainID string, vote *cmtproto.Vote) error
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
+	SignOracleVote(chainID string, oracleVote *oracleproto.GossipedVotes) error
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -95,6 +97,18 @@ func (pv MockPV) SignVote(chainID string, vote *cmtproto.Vote) error {
 		return errors.New("unexpected vote extension - vote extensions are only allowed in non-nil precommits")
 	}
 	vote.ExtensionSignature = extSig
+	return nil
+}
+
+// Implements PrivValidator.
+func (pv MockPV) SignOracleVote(chainID string, vote *oracleproto.GossipedVotes) error {
+	signBytes := OracleVoteSignBytes(vote)
+	sig, err := pv.PrivKey.Sign(signBytes)
+	if err != nil {
+		return err
+	}
+	vote.Signature = sig
+
 	return nil
 }
 

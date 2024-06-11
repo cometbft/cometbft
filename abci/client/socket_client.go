@@ -412,6 +412,39 @@ func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.RequestFi
 	return reqRes.Response.GetFinalizeBlock(), cli.Error()
 }
 
+func (cli *socketClient) CreateOracleResultTx(ctx context.Context, req *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestCreateOracleResultTx(req))
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Flush(ctx); err != nil {
+		return nil, err
+	}
+	return reqRes.Response.GetCreateOracleResultTx(), cli.Error()
+}
+
+func (cli *socketClient) FetchOracleVotes(ctx context.Context, req *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestFetchOracleVotes(req))
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Flush(ctx); err != nil {
+		return nil, err
+	}
+	return reqRes.Response.GetFetchOracleVotes(), cli.Error()
+}
+
+func (cli *socketClient) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
+	reqRes, err := cli.queueRequest(ctx, types.ToRequestValidateOracleVotes(req))
+	if err != nil {
+		return nil, err
+	}
+	if err := cli.Flush(ctx); err != nil {
+		return nil, err
+	}
+	return reqRes.Response.GetValidateOracleVotes(), cli.Error()
+}
+
 func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (*ReqRes, error) {
 	reqres := NewReqRes(req)
 
@@ -493,6 +526,12 @@ func resMatchesReq(req *types.Request, res *types.Response) (ok bool) {
 		_, ok = res.Value.(*types.Response_ProcessProposal)
 	case *types.Request_FinalizeBlock:
 		_, ok = res.Value.(*types.Response_FinalizeBlock)
+	case *types.Request_CreateOracleResultTx:
+		_, ok = res.Value.(*types.Response_CreateOracleResultTx)
+	case *types.Request_ValidateOracleVotes:
+		_, ok = res.Value.(*types.Response_ValidateOracleVotes)
+	case *types.Request_FetchOracleVotes:
+		_, ok = res.Value.(*types.Response_FetchOracleVotes)
 	}
 	return ok
 }

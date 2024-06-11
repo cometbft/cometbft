@@ -22,6 +22,8 @@ import (
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 )
 
 const validationTestsStopHeight int64 = 10
@@ -49,11 +51,14 @@ func TestValidateBlockHeader(t *testing.T) {
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		sm.EmptyEvidencePool{},
 		blockStore,
 	)
@@ -144,6 +149,7 @@ func TestValidateBlockCommit(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 
+	oracleInfo := oracletypes.OracleInfo{}
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
 	blockExec := sm.NewBlockExecutor(
@@ -151,6 +157,7 @@ func TestValidateBlockCommit(t *testing.T) {
 		log.TestingLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		sm.EmptyEvidencePool{},
 		blockStore,
 	)
@@ -296,6 +303,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 		mock.Anything,
 		mock.Anything).Return(nil)
 	state.ConsensusParams.Evidence.MaxBytes = 1000
+	oracleInfo := oracletypes.OracleInfo{}
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
 	blockExec := sm.NewBlockExecutor(
@@ -303,6 +311,7 @@ func TestValidateBlockEvidence(t *testing.T) {
 		log.TestingLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		evpool,
 		blockStore,
 	)

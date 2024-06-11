@@ -133,6 +133,32 @@ func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *types.RequestIni
 	return r0, r1
 }
 
+// FetchOracleVotes provides a mock function with given fields: _a0, _a1
+func (_m *AppConnConsensus) FetchOracleVotes(_a0 context.Context, _a1 *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *types.ResponseFetchOracleVotes
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleVotes) *types.ResponseFetchOracleVotes); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseFetchOracleVotes)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestFetchOracleVotes) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // PrepareProposal provides a mock function with given fields: _a0, _a1
 func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
 	ret := _m.Called(_a0, _a1)
@@ -177,6 +203,58 @@ func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *types.Requ
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestProcessProposal) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CreateOracleResultTx provides a mock function with given fields: _a0, _a1
+func (_m *AppConnConsensus) CreateOracleResultTx(_a0 context.Context, _a1 *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *types.ResponseCreateOracleResultTx
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCreateOracleResultTx) *types.ResponseCreateOracleResultTx); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseCreateOracleResultTx)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestCreateOracleResultTx) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ValidateOracleVotes provides a mock function with given fields: _a0, _a1
+func (_m *AppConnConsensus) ValidateOracleVotes(_a0 context.Context, _a1 *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *types.ResponseValidateOracleVotes
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestValidateOracleVotes) *types.ResponseValidateOracleVotes); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseValidateOracleVotes)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestValidateOracleVotes) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

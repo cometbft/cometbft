@@ -408,6 +408,7 @@ func createSwitch(config *cfg.Config,
 	p2pMetrics *p2p.Metrics,
 	peerFilters []p2p.PeerFilterFunc,
 	mempoolReactor p2p.Reactor,
+	oracleReactor p2p.Reactor,
 	bcReactor p2p.Reactor,
 	stateSyncReactor *statesync.Reactor,
 	consensusReactor *cs.Reactor,
@@ -423,6 +424,7 @@ func createSwitch(config *cfg.Config,
 		p2p.SwitchPeerFilters(peerFilters...),
 	)
 	sw.SetLogger(p2pLogger)
+	sw.AddReactor("ORACLE", oracleReactor)
 	if config.Mempool.Type != cfg.MempoolTypeNop {
 		sw.AddReactor("MEMPOOL", mempoolReactor)
 	}

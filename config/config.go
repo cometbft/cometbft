@@ -75,6 +75,7 @@ type Config struct {
 	RPC             *RPCConfig             `mapstructure:"rpc"`
 	P2P             *P2PConfig             `mapstructure:"p2p"`
 	Mempool         *MempoolConfig         `mapstructure:"mempool"`
+	Oracle          *OracleConfig          `mapstructure:"oraclesvc"`
 	StateSync       *StateSyncConfig       `mapstructure:"statesync"`
 	BlockSync       *BlockSyncConfig       `mapstructure:"blocksync"`
 	Consensus       *ConsensusConfig       `mapstructure:"consensus"`
@@ -90,6 +91,7 @@ func DefaultConfig() *Config {
 		RPC:             DefaultRPCConfig(),
 		P2P:             DefaultP2PConfig(),
 		Mempool:         DefaultMempoolConfig(),
+		Oracle:          DefaultOracleConfig(),
 		StateSync:       DefaultStateSyncConfig(),
 		BlockSync:       DefaultBlockSyncConfig(),
 		Consensus:       DefaultConsensusConfig(),
@@ -106,6 +108,7 @@ func TestConfig() *Config {
 		RPC:             TestRPCConfig(),
 		P2P:             TestP2PConfig(),
 		Mempool:         TestMempoolConfig(),
+		Oracle:          TestOracleConfig(),
 		StateSync:       TestStateSyncConfig(),
 		BlockSync:       TestBlockSyncConfig(),
 		Consensus:       TestConsensusConfig(),
@@ -139,6 +142,9 @@ func (cfg *Config) ValidateBasic() error {
 	}
 	if err := cfg.Mempool.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [mempool] section: %w", err)
+	}
+	if err := cfg.Oracle.ValidateBasic(); err != nil {
+		return fmt.Errorf("error in [oracle] section: %w", err)
 	}
 	if err := cfg.StateSync.ValidateBasic(); err != nil {
 		return fmt.Errorf("error in [statesync] section: %w", err)
@@ -826,6 +832,67 @@ func (cfg *MempoolConfig) ValidateBasic() error {
 	}
 	if cfg.ExperimentalMaxGossipConnectionsToNonPersistentPeers < 0 {
 		return errors.New("experimental_max_gossip_connections_to_non_persistent_peers can't be negative")
+	}
+	return nil
+}
+
+//-----------------------------------------------------------------------------
+// OracleConfig
+
+// OracleConfig defines the configuration for the CometBFT oracle service
+type OracleConfig struct {
+	// MaxOracleGossipBlocksDelayed determines how long we should keep the gossip votes in terms of block height
+	MaxOracleGossipBlocksDelayed int `mapstructure:"max_oracle_gossip_blocks_delayed"`
+	// MaxOracleGossipAge determines how long we should keep the gossip votes in terms of seconds
+	MaxOracleGossipAge int `mapstructure:"max_oracle_gossip_age"`
+	// Interval determines how long we should wait before batch signing votes
+	SignInterval time.Duration `mapstructure:"sign_interval"`
+	// Interval determines how long we should wait between gossiping of votes
+	GossipInterval time.Duration `mapstructure:"gossip_interval"`
+	// Interval determines how long we should wait between trying to prune
+	PruneInterval time.Duration `mapstructure:"prune_interval"`
+	// Max allowable size for votes that can be gossiped from peer to peer
+	MaxGossipMsgSize int `mapstructure:"max_gossip_msg_size"`
+}
+
+// DefaultOracleConfig returns a default configuration for the CometBFT oracle service
+func DefaultOracleConfig() *OracleConfig {
+	return &OracleConfig{
+		MaxOracleGossipBlocksDelayed: 3,                      // keep all gossipVotes from at most 3 blocks behind
+		MaxOracleGossipAge:           20,                     // keep all gossipVotes from at most 20s ago
+		SignInterval:                 100 * time.Millisecond, // 0.1s
+		GossipInterval:               100 * time.Millisecond, // 0.1s
+		PruneInterval:                500 * time.Millisecond, // 0.5s
+		MaxGossipMsgSize:             65536,
+	}
+}
+
+// TestOracleConfig returns a configuration for testing the CometBFT mempool
+func TestOracleConfig() *OracleConfig {
+	cfg := DefaultOracleConfig()
+	cfg.MaxGossipMsgSize = 1000
+	return cfg
+}
+
+// ValidateBasic performs basic validation and returns an error if any check fails.
+func (cfg *OracleConfig) ValidateBasic() error {
+	if cfg.MaxOracleGossipBlocksDelayed <= 0 {
+		return errors.New("max_oracle_gossip_blocks_delayed must be positive")
+	}
+	if cfg.MaxOracleGossipAge <= 0 {
+		return errors.New("max_oracle_gossip_age must be positive")
+	}
+	if cfg.SignInterval <= 0 {
+		return errors.New("sign_interval must be positive")
+	}
+	if cfg.GossipInterval <= 0 {
+		return errors.New("gossip_interval must be positive")
+	}
+	if cfg.PruneInterval <= 0 {
+		return errors.New("prune_interval must be positive")
+	}
+	if cfg.MaxGossipMsgSize <= 0 {
+		return errors.New("max_gossip_msg_size must be positive")
 	}
 	return nil
 }

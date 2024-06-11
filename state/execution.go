@@ -14,6 +14,10 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	"github.com/sirupsen/logrus"
+
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 )
 
 //-----------------------------------------------------------------------------
@@ -37,8 +41,9 @@ type BlockExecutor struct {
 
 	// manage the mempool lock during commit
 	// and update both with block results after commit.
-	mempool mempool.Mempool
-	evpool  EvidencePool
+	mempool    mempool.Mempool
+	oracleInfo *oracletypes.OracleInfo
+	evpool     EvidencePool
 
 	logger log.Logger
 
@@ -60,6 +65,7 @@ func NewBlockExecutor(
 	logger log.Logger,
 	proxyApp proxy.AppConnConsensus,
 	mempool mempool.Mempool,
+	oracleInfo *oracletypes.OracleInfo,
 	evpool EvidencePool,
 	blockStore BlockStore,
 	options ...BlockExecutorOption,
@@ -69,6 +75,7 @@ func NewBlockExecutor(
 		proxyApp:   proxyApp,
 		eventBus:   types.NopEventBus{},
 		mempool:    mempool,
+		oracleInfo: oracleInfo,
 		evpool:     evpool,
 		logger:     logger,
 		metrics:    NopMetrics(),
@@ -126,11 +133,12 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
 	block := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
+	txSlice := block.Txs.ToSliceOfBytes()
 	rpp, err := blockExec.proxyApp.PrepareProposal(
 		ctx,
 		&abci.RequestPrepareProposal{
 			MaxTxBytes:         maxDataBytes,
-			Txs:                block.Txs.ToSliceOfBytes(),
+			Txs:                txSlice,
 			LocalLastCommit:    buildExtendedCommitInfoFromStore(lastExtCommit, blockExec.store, state.InitialHeight, state.ConsensusParams.ABCI),
 			Misbehavior:        block.Evidence.Evidence.ToABCI(),
 			Height:             block.Height,
@@ -154,6 +162,42 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 	txl := types.ToTxs(rpp.Txs)
 	if err := txl.Validate(maxDataBytes); err != nil {
 		return nil, err
+	}
+
+	// inject oracleTx containing gossipedVotes from vals, this is ran after PrepareProposal, so that CreateOracleResultTx
+	// hook will use the updated context from prepareProposalState
+
+	// check if oracle's gossipVoteMap has any results
+	preLockTime := time.Now().UnixMilli()
+	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
+	oracleVotesBuffer := blockExec.oracleInfo.GossipVoteBuffer.Buffer
+	votes := []*oracleproto.GossipedVotes{}
+	for _, vote := range oracleVotesBuffer {
+		votes = append(votes, vote)
+	}
+	blockExec.oracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
+	postLockTime := time.Now().UnixMilli()
+	diff := postLockTime - preLockTime
+	if diff > 100 {
+		logrus.Warnf("WARNING!!! Injecting oracle tx gossip lock took %v milliseconds", diff)
+	}
+
+	var createOracleResultTxBz []byte
+	if len(votes) > 0 {
+		resp, err := blockExec.proxyApp.CreateOracleResultTx(ctx, &abci.RequestCreateOracleResultTx{
+			Proposer:      proposerAddr,
+			GossipedVotes: votes,
+		})
+		if err != nil {
+			blockExec.logger.Error("error in proxyAppConn.CreateOracleResultTx", "err", err)
+		} else {
+			createOracleResultTxBz = resp.EncodedTx
+		}
+	}
+
+	if len(createOracleResultTxBz) > 0 {
+		CreateOracleResultTx := types.Tx(createOracleResultTxBz)
+		txl = append([]types.Tx{CreateOracleResultTx}, txl...)
 	}
 
 	return state.MakeBlock(height, txl, commit, evidence, proposerAddr), nil

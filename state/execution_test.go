@@ -32,6 +32,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
+
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 )
 
 var (
@@ -64,8 +66,11 @@ func TestApplyBlock(t *testing.T) {
 		mock.Anything,
 		mock.Anything,
 		mock.Anything).Return(nil)
+
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(),
-		mp, sm.EmptyEvidencePool{}, blockStore)
+		mp, &oracleInfo, sm.EmptyEvidencePool{}, blockStore)
 
 	block := makeBlock(state, 1, new(types.Commit))
 	bps, err := block.MakePartSet(testPartSize)
@@ -130,7 +135,8 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			eventBus := types.NewEventBus()
 			require.NoError(t, eventBus.Start())
 
-			blockExec := sm.NewBlockExecutor(stateStore, log.NewNopLogger(), proxyApp.Consensus(), mp, evpool, blockStore)
+			oracleInfo := oracletypes.OracleInfo{}
+			blockExec := sm.NewBlockExecutor(stateStore, log.NewNopLogger(), proxyApp.Consensus(), mp, &oracleInfo, evpool, blockStore)
 			state, _, lastCommit, err := makeAndCommitGoodBlock(state, 1, new(types.Commit), state.NextValidators.Validators[0].Address, blockExec, privVals, nil)
 			require.NoError(t, err)
 
@@ -343,8 +349,9 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 
+	oracleInfo := oracletypes.OracleInfo{}
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(),
-		mp, evpool, blockStore)
+		mp, &oracleInfo, evpool, blockStore)
 
 	block := makeBlock(state, 1, new(types.Commit))
 	block.Evidence = types.EvidenceData{Evidence: ev}
@@ -384,11 +391,14 @@ func TestProcessProposal(t *testing.T) {
 	err = eventBus.Start()
 	require.NoError(t, err)
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		logger,
 		proxyApp.Consensus(),
 		new(mpmocks.Mempool),
+		&oracleInfo,
 		sm.EmptyEvidencePool{},
 		blockStore,
 	)
@@ -600,12 +610,15 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 		mock.Anything).Return(nil)
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs{})
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		sm.EmptyEvidencePool{},
 		blockStore,
 	)
@@ -676,12 +689,16 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
 		proxyApp.Consensus(),
 		new(mpmocks.Mempool),
+		&oracleInfo,
 		sm.EmptyEvidencePool{},
 		blockStore,
 	)
@@ -732,12 +749,15 @@ func TestEmptyPrepareProposal(t *testing.T) {
 		mock.Anything).Return(nil)
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs{})
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		sm.EmptyEvidencePool{},
 		blockStore,
 	)
@@ -777,12 +797,15 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		evpool,
 		blockStore,
 	)
@@ -832,12 +855,15 @@ func TestPrepareProposalReorderTxs(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.TestingLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		evpool,
 		blockStore,
 	)
@@ -888,12 +914,15 @@ func TestPrepareProposalErrorOnTooManyTxs(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.NewNopLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		evpool,
 		blockStore,
 	)
@@ -945,12 +974,14 @@ func TestPrepareProposalCountSerializationOverhead(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
+	oracleInfo := oracletypes.OracleInfo{}
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.NewNopLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		evpool,
 		blockStore,
 	)
@@ -996,12 +1027,15 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 	require.NoError(t, err)
 	defer proxyApp.Stop() //nolint:errcheck // ignore for tests
 
+	oracleInfo := oracletypes.OracleInfo{}
+
 	blockStore := store.NewBlockStore(dbm.NewMemDB())
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		log.NewNopLogger(),
 		proxyApp.Consensus(),
 		mp,
+		&oracleInfo,
 		evpool,
 		blockStore,
 	)
@@ -1085,12 +1119,15 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 				mock.Anything).Return(nil)
 			mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(types.Txs{})
 
+			oracleInfo := oracletypes.OracleInfo{}
+
 			blockStore := store.NewBlockStore(dbm.NewMemDB())
 			blockExec := sm.NewBlockExecutor(
 				stateStore,
 				log.NewNopLogger(),
 				proxyApp.Consensus(),
 				mp,
+				&oracleInfo,
 				sm.EmptyEvidencePool{},
 				blockStore,
 			)

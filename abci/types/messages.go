@@ -124,6 +124,24 @@ func ToRequestFinalizeBlock(req *RequestFinalizeBlock) *Request {
 	}
 }
 
+func ToRequestCreateOracleResultTx(req *RequestCreateOracleResultTx) *Request {
+	return &Request{
+		Value: &Request_CreateOracleResultTx{req},
+	}
+}
+
+func ToRequestFetchOracleVotes(req *RequestFetchOracleVotes) *Request {
+	return &Request{
+		Value: &Request_FetchOracleVotes{req},
+	}
+}
+
+func ToRequestValidateOracleVotes(req *RequestValidateOracleVotes) *Request {
+	return &Request{
+		Value: &Request_ValidateOracleVotes{req},
+	}
+}
+
 //----------------------------------------
 
 func ToResponseException(errStr string) *Response {
@@ -225,5 +243,11 @@ func ToResponseVerifyVoteExtension(res *ResponseVerifyVoteExtension) *Response {
 func ToResponseFinalizeBlock(res *ResponseFinalizeBlock) *Response {
 	return &Response{
 		Value: &Response_FinalizeBlock{res},
+	}
+}
+
+func ToResponseCreateOracleResultTx(res *ResponseCreateOracleResultTx) *Response {
+	return &Response{
+		Value: &Response_CreateOracleResultTx{res},
 	}
 }

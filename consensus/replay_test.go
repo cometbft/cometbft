@@ -34,6 +34,8 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	smmocks "github.com/cometbft/cometbft/state/mocks"
 	"github.com/cometbft/cometbft/types"
+
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 )
 
 func TestMain(m *testing.M) {
@@ -767,7 +769,8 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 
 func applyBlock(t *testing.T, stateStore sm.Store, mempool mempool.Mempool, evpool sm.EvidencePool, st sm.State, blk *types.Block, proxyApp proxy.AppConns, bs sm.BlockStore) sm.State {
 	testPartSize := types.BlockPartSizeBytes
-	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, evpool, bs)
+	oracleInfo := oracletypes.OracleInfo{}
+	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, &oracleInfo, evpool, bs)
 
 	bps, err := blk.MakePartSet(testPartSize)
 	require.NoError(t, err)

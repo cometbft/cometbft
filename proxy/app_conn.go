@@ -24,6 +24,9 @@ type AppConnConsensus interface {
 	VerifyVoteExtension(context.Context, *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error)
 	FinalizeBlock(context.Context, *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error)
 	Commit(context.Context) (*types.ResponseCommit, error)
+	CreateOracleResultTx(context.Context, *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error)
+	FetchOracleVotes(context.Context, *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error)
+	ValidateOracleVotes(context.Context, *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error)
 }
 
 type AppConnMempool interface {
@@ -107,6 +110,21 @@ func (app *appConnConsensus) FinalizeBlock(ctx context.Context, req *types.Reque
 func (app *appConnConsensus) Commit(ctx context.Context) (*types.ResponseCommit, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
 	return app.appConn.Commit(ctx, &types.RequestCommit{})
+}
+
+func (app *appConnConsensus) CreateOracleResultTx(ctx context.Context, req *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
+	return app.appConn.CreateOracleResultTx(ctx, req)
+}
+
+func (app *appConnConsensus) FetchOracleVotes(ctx context.Context, req *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
+	return app.appConn.FetchOracleVotes(ctx, req)
+}
+
+func (app *appConnConsensus) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
+	return app.appConn.ValidateOracleVotes(ctx, req)
 }
 
 //------------------------------------------------

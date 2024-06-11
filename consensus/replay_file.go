@@ -19,6 +19,8 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
+
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 )
 
 const (
@@ -329,7 +331,8 @@ func newConsensusStateForReplay(config cfg.BaseConfig, csConfig *cfg.ConsensusCo
 	}
 
 	mempool, evpool := emptyMempool{}, sm.EmptyEvidencePool{}
-	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, evpool, blockStore)
+	oracleInfo := oracletypes.OracleInfo{}
+	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, &oracleInfo, evpool, blockStore)
 
 	consensusState := NewState(csConfig, state.Copy(), blockExec,
 		blockStore, mempool, evpool)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 )
@@ -67,6 +68,22 @@ func (sc *RetrySignerClient) SignVote(chainID string, vote *cmtproto.Vote) error
 	var err error
 	for i := 0; i < sc.retries || sc.retries == 0; i++ {
 		err = sc.next.SignVote(chainID, vote)
+		if err == nil {
+			return nil
+		}
+		// If remote signer errors, we don't retry.
+		if _, ok := err.(*RemoteSignerError); ok {
+			return err
+		}
+		time.Sleep(sc.timeout)
+	}
+	return fmt.Errorf("exhausted all attempts to sign vote: %w", err)
+}
+
+func (sc *RetrySignerClient) SignOracleVote(chainID string, vote *oracleproto.GossipedVotes) error {
+	var err error
+	for i := 0; i < sc.retries || sc.retries == 0; i++ {
+		err = sc.next.SignOracleVote(chainID, vote)
 		if err == nil {
 			return nil
 		}

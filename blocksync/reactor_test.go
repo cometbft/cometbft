@@ -25,6 +25,8 @@ import (
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+
+	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
 )
 
 var config *cfg.Config
@@ -108,8 +110,9 @@ func newReactor(
 	stateStore = sm.NewStore(db, sm.StoreOptions{
 		DiscardABCIResponses: false,
 	})
+	oracleInfo := oracletypes.OracleInfo{}
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(),
-		mp, sm.EmptyEvidencePool{}, blockStore)
+		mp, &oracleInfo, sm.EmptyEvidencePool{}, blockStore)
 	if err = stateStore.Save(state); err != nil {
 		panic(err)
 	}

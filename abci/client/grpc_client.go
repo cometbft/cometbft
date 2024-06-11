@@ -245,3 +245,15 @@ func (cli *grpcClient) VerifyVoteExtension(ctx context.Context, req *types.Reque
 func (cli *grpcClient) FinalizeBlock(ctx context.Context, req *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
 	return cli.client.FinalizeBlock(ctx, types.ToRequestFinalizeBlock(req).GetFinalizeBlock(), grpc.WaitForReady(true))
 }
+
+func (cli *grpcClient) CreateOracleResultTx(ctx context.Context, req *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
+	return cli.client.CreateOracleResultTx(ctx, types.ToRequestCreateOracleResultTx(req).GetCreateOracleResultTx(), grpc.WaitForReady(true))
+}
+
+func (cli *grpcClient) FetchOracleVotes(ctx context.Context, req *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
+	return cli.client.FetchOracleVotes(ctx, types.ToRequestFetchOracleVotes(req).GetFetchOracleVotes(), grpc.WaitForReady(true))
+}
+
+func (cli *grpcClient) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
+	return cli.client.ValidateOracleVotes(ctx, types.ToRequestValidateOracleVotes(req).GetValidateOracleVotes(), grpc.WaitForReady(true))
+}

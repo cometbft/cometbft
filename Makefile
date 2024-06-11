@@ -15,6 +15,8 @@ GOOS ?= linux
 GOARCH ?= amd64
 GOARM ?=
 
+DOCKER := $(shell which docker)
+
 ifeq (linux/arm,$(findstring linux/arm,$(TARGETPLATFORM)))
 	GOOS=linux
 	GOARCH=arm

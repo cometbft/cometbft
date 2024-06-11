@@ -11,6 +11,7 @@ import "tendermint/types/params.proto";
 import "tendermint/types/validator.proto";
 import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
+import "tendermint/oracle/types.proto";
 
 // NOTE: When using custom types, mind the warnings.
 // https://github.com/cosmos/gogoproto/blob/master/custom_types.md#warnings-and-issues
@@ -34,6 +35,9 @@ service ABCI {
   rpc ExtendVote(RequestExtendVote) returns (ResponseExtendVote);
   rpc VerifyVoteExtension(RequestVerifyVoteExtension) returns (ResponseVerifyVoteExtension);
   rpc FinalizeBlock(RequestFinalizeBlock) returns (ResponseFinalizeBlock);
+  rpc CreateOracleResultTx(RequestCreateOracleResultTx) returns (ResponseCreateOracleResultTx);
+  rpc FetchOracleVotes(RequestFetchOracleVotes) returns (ResponseFetchOracleVotes);
+  rpc ValidateOracleVotes(RequestValidateOracleVotes) returns (ResponseValidateOracleVotes);
 }
 
 //----------------------------------------
@@ -57,6 +61,9 @@ message Request {
     RequestExtendVote          extend_vote           = 18;
     RequestVerifyVoteExtension verify_vote_extension = 19;
     RequestFinalizeBlock       finalize_block        = 20;
+    RequestCreateOracleResultTx      create_oracle_result_tx      = 21;
+    RequestFetchOracleVotes    fetch_oracle_votes    = 22;
+    RequestValidateOracleVotes validate_oracle_votes = 23;
   }
   reserved 4, 7, 9, 10;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -173,7 +180,7 @@ message RequestExtendVote {
 // Verify the vote extension
 message RequestVerifyVoteExtension {
   // the hash of the block that this received vote corresponds to
-  bytes hash              = 1;
+  bytes hash = 1;
   // the validator that signed the vote extension
   bytes validator_address = 2;
   int64 height            = 3;
@@ -191,6 +198,17 @@ message RequestFinalizeBlock {
   bytes                     next_validators_hash = 7;
   // proposer_address is the address of the public key of the original proposer of the block.
   bytes proposer_address = 8;
+}
+
+message RequestCreateOracleResultTx {
+  bytes proposer = 1;
+  repeated tendermint.oracle.GossipedVotes gossiped_votes = 2;
+}
+
+message RequestFetchOracleVotes {}
+
+message RequestValidateOracleVotes {
+  bytes oracle_tx = 1;
 }
 
 //----------------------------------------
@@ -215,6 +233,9 @@ message Response {
     ResponseExtendVote          extend_vote           = 19;
     ResponseVerifyVoteExtension verify_vote_extension = 20;
     ResponseFinalizeBlock       finalize_block        = 21;
+    ResponseCreateOracleResultTx      create_oracle_result_tx      = 22;
+    ResponseFetchOracleVotes    fetch_oracle_votes    = 23;
+    ResponseValidateOracleVotes validate_oracle_votes = 24;
   }
   reserved 5, 8, 10, 11;  // SetOption, BeginBlock, DeliverTx, EndBlock
 }
@@ -345,7 +366,7 @@ message ResponseVerifyVoteExtension {
     // Incorrectly implementing this thus has liveness implications as it may affect
     // CometBFT's ability to receive 2/3+ valid votes to finalize the block.
     // Honest nodes should never be rejected.
-    REJECT  = 2;
+    REJECT = 2;
   }
 }
 
@@ -363,6 +384,23 @@ message ResponseFinalizeBlock {
   tendermint.types.ConsensusParams consensus_param_updates = 4;
   // app_hash is the hash of the applications' state which is used to confirm that execution of the transactions was deterministic. It is up to the application to decide which algorithm to use.
   bytes app_hash = 5;
+}
+
+message ResponseCreateOracleResultTx {
+  bytes encoded_tx = 1;
+}
+
+message ResponseFetchOracleVotes {
+  tendermint.oracle.Vote vote = 1;
+}
+
+message ResponseValidateOracleVotes {
+  Status status = 1;
+
+  enum Status {
+    ABSENT = 0;
+    PRESENT = 1;
+  }
 }
 
 //----------------------------------------
@@ -442,10 +480,10 @@ message ValidatorUpdate {
 }
 
 message VoteInfo {
-  Validator validator         = 1 [(gogoproto.nullable) = false];
+  Validator                    validator     = 1 [(gogoproto.nullable) = false];
   tendermint.types.BlockIDFlag block_id_flag = 3;
 
-  reserved 2; // signed_last_block
+  reserved 2;  // signed_last_block
 }
 
 message ExtendedVoteInfo {
@@ -458,7 +496,7 @@ message ExtendedVoteInfo {
   // block_id_flag indicates whether the validator voted for a block, nil, or did not vote at all
   tendermint.types.BlockIDFlag block_id_flag = 5;
 
-  reserved 2; // signed_last_block
+  reserved 2;  // signed_last_block
 }
 
 enum MisbehaviorType {

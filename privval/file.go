@@ -16,6 +16,7 @@ import (
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/libs/tempfile"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -275,6 +276,15 @@ func (pv *FilePV) SignProposal(chainID string, proposal *cmtproto.Proposal) erro
 	return nil
 }
 
+// SignOracleVote signs a canonical representation of the vote, along with the
+// chainID. Implements PrivValidator.
+func (pv *FilePV) SignOracleVote(chainID string, vote *oracleproto.GossipedVotes) error {
+	if err := pv.signOracleVote(vote); err != nil {
+		return fmt.Errorf("error signing vote: %v", err)
+	}
+	return nil
+}
+
 // Save persists the FilePV to disk.
 func (pv *FilePV) Save() {
 	pv.Key.Save()
@@ -297,6 +307,17 @@ func (pv *FilePV) String() string {
 		pv.LastSignState.Round,
 		pv.LastSignState.Step,
 	)
+}
+
+func (pv *FilePV) signOracleVote(vote *oracleproto.GossipedVotes) error {
+	signBytes := types.OracleVoteSignBytes(vote)
+	sig, err := pv.Key.PrivKey.Sign(signBytes)
+	if err != nil {
+		return err
+	}
+	vote.Signature = sig
+
+	return nil
 }
 
 //------------------------------------------------------------------------------------

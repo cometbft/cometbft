@@ -39,6 +39,8 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 
+	"github.com/cometbft/cometbft/oracle"
+
 	_ "net/http/pprof" //nolint: gosec
 )
 
@@ -67,6 +69,7 @@ type Node struct {
 	bcReactor         p2p.Reactor       // for block-syncing
 	mempoolReactor    p2p.Reactor       // for gossipping transactions
 	mempool           mempl.Mempool
+	oracleReactor     oracle.Reactor
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
@@ -373,12 +376,17 @@ func NewNodeWithContext(ctx context.Context,
 		return nil, err
 	}
 
+	// Make OracleReactor
+	oracleReactor := oracle.NewReactor(config.Oracle, pubKey, privValidator, proxyApp.Consensus())
+	oracleInfo := oracleReactor.OracleInfo
+
 	// make block executor for consensus and blocksync reactors to execute blocks
 	blockExec := sm.NewBlockExecutor(
 		stateStore,
 		logger.With("module", "state"),
 		proxyApp.Consensus(),
 		mempool,
+		oracleInfo,
 		evidencePool,
 		blockStore,
 		sm.BlockExecutorWithMetrics(smMetrics),
@@ -401,6 +409,8 @@ func NewNodeWithContext(ctx context.Context,
 		config, state, blockExec, blockStore, mempool, evidencePool,
 		privValidator, csMetrics, stateSync || blockSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
+
+	oracleReactor.ConsensusState = consensusState
 
 	err = stateStore.SetOfflineStateSyncHeight(0)
 	if err != nil {
@@ -427,7 +437,7 @@ func NewNodeWithContext(ctx context.Context,
 
 	p2pLogger := logger.With("module", "p2p")
 	sw := createSwitch(
-		config, transport, p2pMetrics, peerFilters, mempoolReactor, bcReactor,
+		config, transport, p2pMetrics, peerFilters, mempoolReactor, oracleReactor, bcReactor,
 		stateSyncReactor, consensusReactor, evidenceReactor, nodeInfo, nodeKey, p2pLogger,
 	)
 
@@ -482,6 +492,7 @@ func NewNodeWithContext(ctx context.Context,
 		bcReactor:        bcReactor,
 		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
+		oracleReactor:    *oracleReactor,
 		consensusState:   consensusState,
 		consensusReactor: consensusReactor,
 		stateSyncReactor: stateSyncReactor,
@@ -938,6 +949,7 @@ func makeNodeInfo(
 			bc.BlocksyncChannel,
 			cs.StateChannel, cs.DataChannel, cs.VoteChannel, cs.VoteSetBitsChannel,
 			mempl.MempoolChannel,
+			oracle.OracleChannel,
 			evidence.EvidenceChannel,
 			statesync.SnapshotChannel, statesync.ChunkChannel,
 		},

@@ -73,6 +73,20 @@ var (
 
 	// taken from https://semver.org/
 	semverRegexp = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
+
+	// Don't forget to change proxy.DefaultClientCreator if you add new options here.
+	proxyAppList = []string{
+		"kvstore",
+		"kvstore_connsync",
+		"kvstore_unsync",
+		"persistent_kvstore",
+		"persistent_kvstore_connsync",
+		"persistent_kvstore_unsync",
+		"e2e",
+		"e2e_connsync",
+		"e2e_unsync",
+		"noop",
+	}
 )
 
 // Config defines the top level configuration for a CometBFT node.
@@ -326,33 +340,54 @@ func (cfg BaseConfig) ValidateBasic() error {
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
 	}
 
-	switch cfg.ProxyApp {
-	case "kvstore",
-		"kvstore_connsync",
-		"kvstore_unsync",
-		"persistent_kvstore",
-		"persistent_kvstore_connsync",
-		"persistent_kvstore_unsync",
-		"e2e",
-		"e2e_connsync",
-		"e2e_unsync",
-		"noop":
-	default: // network address
-		parts := strings.SplitN(cfg.ProxyApp, "://", 2)
-		if len(parts) != 2 { // TCP address
-			_, err := net.ResolveTCPAddr("tcp", cfg.ProxyApp)
+	return cfg.validateProxyApp()
+}
+
+func (cfg BaseConfig) validateProxyApp() error {
+	if cfg.ProxyApp == "" {
+		return errors.New("proxy_app cannot be empty")
+	}
+
+	// proxy is a static application.
+	for _, proxyApp := range proxyAppList {
+		if cfg.ProxyApp == proxyApp {
+			return nil
+		}
+	}
+
+	// proxy is a network address.
+	parts := strings.SplitN(cfg.ProxyApp, "://", 2)
+	if len(parts) != 2 { // TCP address
+		_, err := net.ResolveTCPAddr("tcp", cfg.ProxyApp)
+		if err != nil {
+			return fmt.Errorf("failed to resolve TCP proxy_app %s: %w", cfg.ProxyApp, err)
+		}
+	} else { // other protocol
+		proto := parts[0]
+		address := parts[1]
+		switch proto {
+		case "tcp", "tcp4", "tcp6":
+			_, err := net.ResolveTCPAddr(proto, address)
 			if err != nil {
 				return fmt.Errorf("failed to resolve TCP proxy_app %s: %w", cfg.ProxyApp, err)
 			}
-		} else {
-			switch parts[0] { // other protocol
-			case "tcp", "tcp4", "tcp6":
-			case "udp", "udp4", "udp6":
-			case "ip", "ip4", "ip6":
-			case "unix", "unixgram", "unixpacket":
-			default:
-				return fmt.Errorf("invalid protocol in proxy_app: %s (expected one supported by net.Dial)", cfg.ProxyApp)
+		case "udp", "udp4", "udp6":
+			_, err := net.ResolveUDPAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve UDP proxy_app %s: %w", cfg.ProxyApp, err)
 			}
+		case "ip", "ip4", "ip6":
+			_, err := net.ResolveIPAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve IP proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		case "unix", "unixgram", "unixpacket":
+			_, err := net.ResolveUnixAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve UNIX proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		default:
+			return fmt.Errorf("invalid protocol in proxy_app: %s (expected one supported by net.Dial)", cfg.ProxyApp)
 		}
 	}
 

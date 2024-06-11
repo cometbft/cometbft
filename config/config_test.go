@@ -70,13 +70,33 @@ func TestBaseConfigValidateBasic(t *testing.T) {
 	require.Error(t, cfg.ValidateBasic())
 }
 
-func TestBaseConfigValidateBasic2(t *testing.T) {
-	cfg := config.TestBaseConfig()
-	require.NoError(t, cfg.ValidateBasic())
+func TestBaseConfigProxyApp_ValidateBasic(t *testing.T) {
+	testcases := map[string]struct {
+		proxyApp  string
+		expectErr bool
+	}{
+		"empty":                  {"", true},
+		"valid":                  {"kvstore", false},
+		"invalid static":         {"kvstore1", true},
+		"invalid tcp":            {"127.0.0.1", true},
+		"invalid tcp with proto": {"tcp://127.0.0.1", true},
+		"valid tcp":              {"tcp://127.0.0.1:80", false},
+		"invalid proto":          {"unix1://local", true},
+		"valid unix":             {"unix://local", false},
+	}
+	for desc, tc := range testcases {
+		t.Run(desc, func(t *testing.T) {
+			cfg := config.DefaultBaseConfig()
+			cfg.ProxyApp = tc.proxyApp
 
-	// tamper with proxy_app
-	cfg.ProxyApp = "invalid"
-	require.Error(t, cfg.ValidateBasic())
+			err := cfg.ValidateBasic()
+			if tc.expectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestRPCConfigValidateBasic(t *testing.T) {

@@ -212,8 +212,11 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	case e2e.ProtocolGRPC:
 		cfg.ProxyApp = AppAddressTCP
 		cfg.ABCI = "grpc"
-	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
-		cfg.ProxyApp = ""
+	case e2e.ProtocolBuiltin:
+		cfg.ProxyApp = "e2e"
+		cfg.ABCI = ""
+	case e2e.ProtocolBuiltinConnSync:
+		cfg.ProxyApp = "e2e_connsync"
 		cfg.ABCI = ""
 	default:
 		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)

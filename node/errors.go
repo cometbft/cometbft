@@ -33,7 +33,7 @@ func (e ErrLightClientStateProvider) Unwrap() error {
 	return e.Err
 }
 
-// ErrMismatchAppHash is returned when the app hash returned by the light client does not match the provided appHash
+// ErrMismatchAppHash is returned when the app hash returned by the light client does not match the provided appHash.
 type ErrMismatchAppHash struct {
 	Expected, Actual []byte
 }
@@ -51,7 +51,7 @@ func (e ErrSetSyncHeight) Error() string {
 	return fmt.Sprintf("failed to set synced height: %v", e.Err)
 }
 
-// ErrPrivValidatorSocketClient is returned when the node fails to create private validator socket client
+// ErrPrivValidatorSocketClient is returned when the node fails to create private validator socket client.
 type ErrPrivValidatorSocketClient struct {
 	Err error
 }
@@ -247,8 +247,7 @@ func (e ErrorReadingGenesisDoc) Unwrap() error {
 	return e.Err
 }
 
-
-// ErrorLoadOrGenNodeKey is returned when the node fails to load or generate node key
+// ErrorLoadOrGenNodeKey is returned when the node fails to load or generate node key.
 type ErrorLoadOrGenNodeKey struct {
 	Err         error
 	NodeKeyFile string

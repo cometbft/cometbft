@@ -96,10 +96,11 @@ Before stating this property, we need to make some definitions.
 characteristics as defined by the application.
 
 A transaction may only have one class. If it is not assigned any specific class, it will be assigned
-a *default class*, which is a special class always present in any set of classes. Because no
-transaction can belong to two or more classes, transaction classes form disjoint sets, that is, the
-intersection between classes is empty. Also, all transactions in the mempool are the union of the
-transactions in all classes.
+a *default class*, which is a special class always present in any set of classes. This is analogous
+to the _native VLAN_ for untagged traffic in an 802.1Q network. Because no transaction can belong to
+two or more classes, transaction classes form disjoint sets, that is, the intersection between
+classes is empty. Also, all transactions in the mempool are the union of the transactions in all
+classes.
 
 :memo: _Definition_: Each class has a *priority* and two classes cannot have the same priority.
 Therefore all classes can be ordered by priority.
@@ -314,7 +315,7 @@ Internally, the application may use `string`s to name lanes, and then map those 
 The mempool does not care about the names, only about the priorities. That is why the lane
 information returned by the application only contains priorities.
 
-Currently, querying the app for `Info` happens during the handshae between CometBFT and the app,
+Currently, querying the app for `Info` happens during the handshake between CometBFT and the app,
 during the node initialization, and only when state sync is not enabled. The `Handshaker` first
 sends an `Info` request to fetch the app information, and then replays any stored block needed to
 sync CometBFT with the app. The lane information is needed regardless of whether the state sync is
@@ -325,9 +326,8 @@ priorities and for `CheckTx` responses of invalid transactions.
 
 On receiving the information from the app, CometBFT will validate that:
 - `lanes` has no duplicates (values in `lanes` don't need to be sorted),
-- `default_value` is in `lanes`,
-- if `lanes` is empty, then `default_value` must be 0, and
-- if `default_value` is 0, then `lanes` must be empty.
+- `default_value` is in `lanes`, and
+- the list `lanes` is empty if and only if `default_value` is 0.
 
 Note that the default lane may not necessarily be the lane with the lowest priority. 
 
@@ -368,17 +368,17 @@ If the application does not implement lanes (that is, it responds with empty val
 `InfoResponse`), then `defaultLane` will be set to 1, and `lanes` will have only one entry for the
 default lane.
 
-`CListMempool` also stores the cache, which is independent of the lanes, so it will not be modified.
+`CListMempool` also contains the cache, which is independent of the lanes, so we do not need to be
+modified.
 
 ### Configuration
 
-For an MVP, there is no need to adapt the mempool configuration: all lanes will share the same
-mempool configuration. In particular, all lanes will be capped by the total mempool capacities as
-currently defined in the configuration. Namely, these are `Size`, total number of transactions, and
-`MaxTxsBytes`, the maximum total number of bytes. `MaxTxBytes`, the maximum size in bytes of a
-single transaction accepted into the mempool, will also continue to apply to each lane.
-
-Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none.
+For an MVP, all lanes can share the same mempool configuration. In particular, all lanes will be
+capped by the total mempool capacities as currently defined in the configuration. Namely, these are
+`Size`, the total number of transactions allowed in the mempool, and `MaxTxsBytes`, the maximum
+total number of bytes. `MaxTxBytes`, the maximum size in bytes of a single transaction accepted into
+the mempool, will also continue to apply to each lane. Additionally, the `Recheck` and `Broadcast`
+flags will apply to all lanes or to none.
 
 ### Adding a transaction to the mempool
 
@@ -402,6 +402,9 @@ during rechecking, if the transaction is re-assesed as invalid. In any case, we 
 the lane the transaction belongs by accessing the `txLanes` map. Then simply we remove the entry
 from the CList corresponding to its lane and update the auxiliary variables accordingly.
 
+Because the broadcast goroutines are constantly reading the list of transactions to disseminate
+them, it's important to clean transactions from high-priority lanes first.
+
 When updating the mempool, there is the possibility of a slight optimization by removing
 transactions from different lanes in parallel. For that, we would first need to preprocess the list
 of transactions to know to which lane belongs each transaction. This optimization does not really
@@ -410,19 +413,20 @@ MVP.
 
 ### Reaping transactions for creating blocks
 
-Currently, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects transactions for a block
-proposal until either reaching `maxBytes` or `maxGas`. Both of these values are consensus
+Currently, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects transactions to be included
+in a block proposal until either reaching `maxBytes` or `maxGas`. Both of these values are consensus
 parameters.
 
-With lanes, we need to iterate on `sortedLanes`, from the highest to the lowest priority, collecting
-transactions in the same way as before but on each lane, once at a time.
+With lanes, transactions will be reaped from higher-priority lanes first, in FIFO order, by
+iterating on `sortedLanes`, while collecting transactions with the same criteria as before, but on
+each lane, once at a time.
 ```golang
 for _, lane := range sortedLanes {
     // collect transactions on lanes[lane] until either reaching `maxBytes` or `maxGas`
 }
 ```
-The mempool is locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed during
-reaping.
+The mempool is locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed from
+the mempool during reaping.
 
 ### Disseminating transactions
 
@@ -450,6 +454,13 @@ scheduling algorithm that we can improve later. We want a queueing algorithm tha
 that low-priority lanes will not get starved, and that it supports selection by weight, so that each
 lane gets a fraction of the P2P channel capacity proportional to its priority.
 
+
+### Checking received transactions
+
+A malicious node may decide to send low-pririty transactions before a high-priority ones. The
+receiving node can easily check the priority of a transaction when it calls `CheckTx`. Still, when
+using one P2P channel, it is not possible to detect when a peer sends transactions out of order,
+unless for example, when all received transactions are low priority.
 
 ### Data flow
 
@@ -553,10 +564,6 @@ ADR: Probably part of [Data flow](#data-flow) section:
 
 ### Data flow
 
-* Entry flow:
-  * [Rough description]: the steps when a Tx enters the node are unmodified, except
-    * `CheckTx` (optionally) returns lane information (if TX valid)
-    * The lane information is used to decide to which transaction list the Tx will be added
 * Broadcast flow:
   * Higher-priority lanes get to be gossiped first, and gossip within a lane is still in FIFO order.
   * We will need a warning about channels sharing the send queue at p2p level (will need data early on to see if this is a problem for lanes in practice)
@@ -675,21 +682,12 @@ What does lane info (passed to CometBFT) would look like?
 
 ADR: This deserves its own section of the detailed design, likely after the one describing the transaction flows
 
-### Tmp notes (likely to be deleted)
+## Alternative designs
 
-* The `Tx` message needs an extra `lane` field? If empty, the transaction doesn't have a category (and the message is compatible with the current format).
-  * yes, _native lane_ (see above)
-  * Update: we decided to
-    * use different p2p channels for different lanes (we will need to _reserve_ a channel range for this in p2p)
-    * not trust info from peers, since we anyway need to run `CheckTx` to check the TX's validity
-      * so not trusting lane info from peers is aligned with our current model on checking validity of TXs received from peers
-  * So, at least in a first version, the lane info won't be shipped with TXs when broadcasting them
-  * TODO: we leave this bullet point here ATM, but we'll probably just deleted it
-* Before implementing lanes, is it better to first modularise the current mempool?
-  * we currently think improving modularisation is not gating for a mempool lanes MVP
-    * BUT, some things in the
-      _[modularity laundry list](https://www.notion.so/informalsystems/8a887f27e40b45dead689f2d1762b778?v=30a6fd81673b483fb16f4b7a9fc311fb)_
-      will be gating (e.g., `TxsAvailable`)
+- The duality lane/priority could introduce a powerful indirection. The app could just define the
+  lane of a transaction in `CheckTx`, but the priority of the lane itself could be configured (and
+  fine-tuned) elsewhere. For example, by the app itself or by node operators. The proposed design
+  does not support this pattern.
 
 ## Consequences
 
@@ -697,9 +695,20 @@ TODO
 
 ### Positive
 
+- Application developers will be able to better predict when transactions will be disseminated and
+  included in a block.
+- Lanes will preserve the FIFO ordering of transactions within the same class (as best effort).
+
 ### Negative
 
+- Total FIFO ordering of transaction dissemination and block creation will not be guaranteed.
+
 ### Neutral
+
+- Lanes are optional. Current applications do not need to make any change to their code. Future
+  applications will not be forced to use the lanes feature.
+- The dissemination algorithm is fair, so low-priority transactions will not get stuck in the
+  mempool forever.
 
 ## References
 

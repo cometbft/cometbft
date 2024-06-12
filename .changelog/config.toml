@@ -14,4 +14,4 @@ release_date_formats = [
 ]
 
 [change_set_sections]
-sort_entries_by = "entry-text"
+sort_entries_by = "id"

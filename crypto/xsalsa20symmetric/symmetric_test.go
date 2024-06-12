@@ -1,13 +1,12 @@
 package xsalsa20symmetric
 
 import (
+	"crypto/sha256"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/cometbft/cometbft/crypto"
 )
 
 func TestSimple(t *testing.T) {
@@ -27,7 +26,8 @@ func TestSimpleWithKDF(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	secret = crypto.Sha256(secret)
+	sum := sha256.Sum256(secret)
+	copy(secret, sum[:])
 
 	ciphertext := EncryptSymmetric(plaintext, secret)
 	plaintext2, err := DecryptSymmetric(ciphertext, secret)

@@ -208,6 +208,10 @@ func (evR Reactor) prepareEvidenceMessage(
 	return []types.Evidence{ev}
 }
 
+func (evR *Reactor) OnStop() {
+	evR.BaseReactor.OnStop()
+}
+
 // PeerState describes the state of a peer.
 type PeerState interface {
 	GetHeight() int64

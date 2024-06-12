@@ -275,7 +275,7 @@ The Skip team have released an extension of the Application-Side mempool, called
 that introduces the concept of _lanes_, turning the mempool "into a *highway* consisting of individual *lanes*".
 The concept of lanes, introduced in Skip's Block-SDK, is pretty aligned with Mempool QoS as specified above.
 Indeed, we use the same term, _lanes_, in the [Detailed Design](#detailed-design) section below,
-which describes a minimum-viable-product (MVP) implementation of the concept of transaction classes.
+which describes a minimum viable product (MVP) implementation of the concept of transaction classes.
 
 The main difference between Skip's Block-SDK's lanes and the design we present below is that
 the Block-SDK implements mempool lanes at the application level, whereas this ADR proposes a specification and a design at CometBFT level,
@@ -295,15 +295,29 @@ TODO
 
 ## Detailed Design
 
+This sections describes the architectural changes needed to implement lanes in the mempool. This is
+a summary of the key design decisions:
+- [[1](#lanes-definition-and-initialization)] The list of lanes and their corresponding priorities
+  will be hardcoded in the application logic.
+- [[2](#internal-data-structures)] There will be one CList per lane.
+- [[3](#configuration)] All lanes will share the same mempool configuration.
+- [[4](#adding-transactions-to-the-mempool)] On a CheckTx request, the application will optionally
+  return a lane for the transaction.
+- [[5](#reaping-transactions-for-creating-blocks)] Transactions will be reaped from higher-priority
+  lanes first, in FIFO order.
+- [[6](#transaction-dissemination)] We will continue to use the current P2P channel for
+   disseminating transactions, and then will implement the logic for selecting the order in which to
+   send transactions in the mempool.
+
 ### Lanes definition and initialization
 
 The list of lanes and their corresponding priorities will be hardcoded in the application logic. A
-priority is a value of type `uint32`. The application also needs to define which of the existing
-lanes is the default lane. 
+priority is a value of type `uint32`, with 0 being a reserved value (see below). The application
+also needs to define which of the lanes it defines is the default lane. 
 
 To obtain the lane information from the application, we need to extend the ABCI `Info` response to
-include these values. If the application wants to implement lanes, it will need to fill in the
-following extra fields in the response:
+include the following fields. These fields need to be filled by the application only in case it
+wants to implement lanes.
 ```protobuf
 message InfoResponse {
   ...
@@ -318,18 +332,17 @@ information returned by the application only contains priorities.
 Currently, querying the app for `Info` happens during the handshake between CometBFT and the app,
 during the node initialization, and only when state sync is not enabled. The `Handshaker` first
 sends an `Info` request to fetch the app information, and then replays any stored block needed to
-sync CometBFT with the app. The lane information is needed regardless of whether the state sync is
-enabled, so we will need to query the app information outside of the `Handshaker`.
+sync CometBFT with the app. The lane information is needed regardless of whether state sync is
+enabled, so one option is to query the app information outside of the `Handshaker`.
 
 The highest priority a lane may have is 1. The value 0 is reserved for two cases: when there are no
 priorities and for `CheckTx` responses of invalid transactions.
 
 On receiving the information from the app, CometBFT will validate that:
 - `lanes` has no duplicates (values in `lanes` don't need to be sorted),
-- `default_value` is in `lanes`, and
+- `default_value` is in `lanes` (the default lane is not necessarily the lane with the lowest
+  priority), and
 - the list `lanes` is empty if and only if `default_value` is 0.
-
-Note that the default lane may not necessarily be the lane with the lowest priority. 
 
 Different nodes also need to agree on the lanes they use. When a node connects to a peer, they both
 perform a handshake to agree on some basic information (see `DefaultNodeInfo`), including the
@@ -361,26 +374,29 @@ txLanes sync.Map // Map of type TxKey -> Lane, for quick access to the lane corr
 defaultLane Lane
 sortedLanes []Lane // Lanes sorted by priority
 ```
-The auxiliary fields `txsMap` and `txLanes` are for direct access to the mempool entries and the
-lane of a given transaction, respectively.
+The auxiliary fields `txsMap` and `txLanes` are, respectively, for direct access to the mempool
+entries, and for direct access to the lane of a given transaction.
 
 If the application does not implement lanes (that is, it responds with empty values in
 `InfoResponse`), then `defaultLane` will be set to 1, and `lanes` will have only one entry for the
 default lane.
 
-`CListMempool` also contains the cache, which is independent of the lanes, so we do not need to be
-modified.
+`CListMempool` also contains the cache, which is independent of the lanes, so we do not need to
+modify it.
 
 ### Configuration
 
 For an MVP, all lanes can share the same mempool configuration. In particular, all lanes will be
-capped by the total mempool capacities as currently defined in the configuration. Namely, these are
-`Size`, the total number of transactions allowed in the mempool, and `MaxTxsBytes`, the maximum
-total number of bytes. `MaxTxBytes`, the maximum size in bytes of a single transaction accepted into
-the mempool, will also continue to apply to each lane. Additionally, the `Recheck` and `Broadcast`
-flags will apply to all lanes or to none.
+capped by the total mempool capacities as currently defined in the configuration. Namely, these are:
+- `Size`, the total number of transactions allowed in the mempool, 
+- `MaxTxsBytes`, the maximum total number of bytes of the mempool,
+- `MaxTxBytes`, the maximum size in bytes of a single transaction accepted into the mempool.
 
-### Adding a transaction to the mempool
+The total size of the mempool is now the sum of the sizes of all lanes.
+
+Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none.
+
+### Adding transactions to the mempool
 
 When validating a transaction received for the first time with `CheckTx`, the application will
 optionally return its lane in the response.
@@ -395,7 +411,7 @@ corresponding `CList`, namely `lanes[lane]`, and update the other auxiliary vari
 If `lane` is 0, it means that the application did not set any lane in the response message, so the
 transaction will be assigned to the default lane.
 
-### Removing a transaction from the mempool
+### Removing transactions from the mempool
 
 Removing a transaction may happen in two cases: when updating a list of committed transactions, and
 during rechecking, if the transaction is re-assesed as invalid. In any case, we first need to find
@@ -413,22 +429,18 @@ MVP.
 
 ### Reaping transactions for creating blocks
 
-Currently, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects transactions to be included
-in a block proposal until either reaching `maxBytes` or `maxGas`. Both of these values are consensus
+Currently, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects transactions in FIFO order
+from the CList until either reaching `maxBytes` or `maxGas`. Both of these values are consensus
 parameters.
 
-With lanes, transactions will be reaped from higher-priority lanes first, in FIFO order, by
-iterating on `sortedLanes`, while collecting transactions with the same criteria as before, but on
-each lane, once at a time.
-```golang
-for _, lane := range sortedLanes {
-    // collect transactions on lanes[lane] until either reaching `maxBytes` or `maxGas`
-}
-```
+With multiple CLists, we need to collect transactions from higher-priority lanes first, also in FIFO
+order, continuing successive lanes in `sortedLanes`, that is, in decreasing priority order, until
+reaching `maxBytes` or `maxGas`.
+
 The mempool is locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed from
 the mempool during reaping.
 
-### Disseminating transactions
+### Transaction dissemination
 
 The current broadcast routine in the mempool reactor has a pointer called `next` to an entry in the
 CList. Once it sends the transaction pointed by `next` to the peer, it obtains the next element in
@@ -574,55 +586,8 @@ ADR: Probably part of [Data flow](#data-flow) section:
       * if we're going for (future-proof) solution where max lanes can be configurable,
         we need to refactor method `TxWaitChan` (or the code that sends the data to that channel) to manage the lane priority there.
         In this case, the broadcast goroutine will be mainly unmodified.
-* Reap flow
-  * TXs are reaped from higher-priority lanes first, in FIFO order.
-  * We go from the reap loop (currently just one), to probably a nested one
-    * the outer loop goes through all TX lists (remember, one per lane), in decreasing priority order
-    * the current `break` statements in the inner loop (limit of bytes or gas reached), should also break from the outer loop
-* Exit flow (Update, Re-Check). Update: remove tx unconditionally; Re-Check: remove only if App says TX is now invalid
-  * Transactions in higher-priority lanes are processed (updated) first.
-  * Depends on how the multiple TX lists are implemented (see discussion above)
-  * Update contains Re-check at the end
-  * Remember Update is done while holding the mempool lock (no new CheckTx calls... they have to wait)
-  * Changes:
-    * We could update the different TX lists in parallel
-    * `Update` method (implementing `Update` method in `Mempool` interface) is implemented by `CListMempool` so
-      * If we go for several `CListMempool`s, then we'll have to call `Update` on each of them with all the TXs every time
-        * or move `Update` method out of `CListMempool` (where?)
-      * Also, the way we will do `ReCheck` would be complicated if we had N `Update` calls
-        * We will do `ReCheck` lane-by-lane, in FIFO order within a lane
-      * So, this seems to make us lean toward: one `CListMempool` containing N `txs` lists
-* Each lane informs consensus when there are txs available.
-  *  `TxsAvailable` is in our laundry list
-
-ADR: Core part of detailed design. Bullets will likely become subsections
 
 ### Who defines lanes and priorities
-
-The list of lanes and their priorities, are consensus parameters? Are defined by the app?
-
-There are three options for _where_ to configure lanes and priorities:
-1. `config.toml` / `app.toml`
-  * It does not make sense for different nodes to have different lane configurations, so definitely
-    we don't want 1.
-2. `ConsensusParams`
-  * If we can change lane info via `ConsensusParams`, CometBFT's mempool needs logic for changing
-    lanes dynamically (complex, not really appealing for MVP).
-  * The process of updating lane info would be very complex and cumbersome:
-      * To update lanes, you'd need to pass _two_ governance proposals
-        1. Upgrade the app, because the lane classification logic (so, the app's code) needs to know the lane config beforehand.
-        2. Then upgrade the lanes via `ConsensusParams`.
-      * Also, not clear in which order: community should be careful not to break performance between the passing of both proposals.
-      * The `gov` module may allow the two things to be shipped in the same gov proposal,
-        but, if we need to do it that way, what's the point in having lanes in `ConsensusParams`?
-3. Hardcoded in the application. Info passed to CometBFT during handshake.
-  * Simple lane update cycle: one software update gov proposal.
-  * CometBFT doesn't need to deal with dynamic lane changes: it just needs to set up lanes when starting up (whether afresh, or recovery).
-  * Currently, one of the conditions for the handshake to succeed is that there must exist an intersection of p2p channels.
-
-Conclusion: number 3 is the best option.
-  * lane info is "hardcoded" in the app's logic
-  * lane info is passed to CometBFT during handshake
 
 What does lane info (passed to CometBFT) would look like?
   * Current state of discussions.
@@ -684,10 +649,48 @@ ADR: This deserves its own section of the detailed design, likely after the one 
 
 ## Alternative designs
 
+- We briefly considered sharing one CList for all lanes, changing the internal logic of CList to
+  accommodate the lanes requirements, but this design clearly not scalable. In particular, the
+  broadcast routine becomes overly complicated.
+
+- One P2P channel per lane. 
+  - * Channel ID is a byte.
+    * Current channel distribution (among reactors) goes up to `0x61`.
+    * Proposal: reserve for mempool lanes channel ID `0x80` and all channels above (so, all channels whose MSB is 1)
+      * max of 128 lanes. Big enough?
+    * currently, mempool is p2p channel ID is `0x30`, which would be a special case: native lane.
+
+
 - The duality lane/priority could introduce a powerful indirection. The app could just define the
   lane of a transaction in `CheckTx`, but the priority of the lane itself could be configured (and
   fine-tuned) elsewhere. For example, by the app itself or by node operators. The proposed design
   does not support this pattern.
+
+- * lane/mempool capacity (# of txs, total # of bytes, bytes per tx) **can be different** easily,
+  with little extra complexity on config.
+  * bytes per tx: ok to share one value for MVP... not so sure
+  * \# of txs: probably not all use cases properly addressed if we share a common limit
+  * total # of bytes: if the other two are per-lane, this can just be a "generous" value
+    (and we'd fine tune the other two)
+
+- There are three options for _where_ to configure lanes and priorities:
+  1. `config.toml` / `app.toml`
+    * It does not make sense for different nodes to have different lane configurations, so definitely
+      we don't want 1.
+  2. `ConsensusParams`
+    * If we can change lane info via `ConsensusParams`, CometBFT's mempool needs logic for changing
+      lanes dynamically (complex, not really appealing for MVP).
+    * The process of updating lane info would be very complex and cumbersome:
+        * To update lanes, you'd need to pass _two_ governance proposals
+          1. Upgrade the app, because the lane classification logic (so, the app's code) needs to know the lane config beforehand.
+          2. Then upgrade the lanes via `ConsensusParams`.
+        * Also, not clear in which order: community should be careful not to break performance between the passing of both proposals.
+        * The `gov` module may allow the two things to be shipped in the same gov proposal,
+          but, if we need to do it that way, what's the point in having lanes in `ConsensusParams`?
+  3. Hardcoded in the application. Info passed to CometBFT during handshake.
+    * Simple lane update cycle: one software update gov proposal.
+    * CometBFT doesn't need to deal with dynamic lane changes: it just needs to set up lanes when starting up (whether afresh, or recovery).
+    * Currently, one of the conditions for the handshake to succeed is that there must exist an intersection of p2p channels.
 
 ## Consequences
 

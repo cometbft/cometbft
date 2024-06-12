@@ -947,11 +947,6 @@ type MempoolConfig struct {
 	// block. In other words, if Broadcast is disabled, only the peer you send
 	// the tx to will see it until it is included in a block.
 	Broadcast bool `mapstructure:"broadcast"`
-	// WalPath (default: "") configures the location of the Write Ahead Log
-	// (WAL) for the mempool. The WAL is disabled by default. To enable, set
-	// WalPath to where you want the WAL to be written (e.g.
-	// "data/mempool.wal").
-	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
 	// Maximum size in bytes of a single transaction accepted into the mempool.
@@ -990,7 +985,6 @@ func DefaultMempoolConfig() *MempoolConfig {
 		Recheck:        true,
 		RecheckTimeout: 1000 * time.Millisecond,
 		Broadcast:      true,
-		WalPath:        "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,
@@ -1007,16 +1001,6 @@ func TestMempoolConfig() *MempoolConfig {
 	cfg := DefaultMempoolConfig()
 	cfg.CacheSize = 1000
 	return cfg
-}
-
-// WalDir returns the full path to the mempool's write-ahead log.
-func (cfg *MempoolConfig) WalDir() string {
-	return rootify(cfg.WalPath, cfg.RootDir)
-}
-
-// WalEnabled returns true if the WAL is enabled.
-func (cfg *MempoolConfig) WalEnabled() bool {
-	return cfg.WalPath != ""
 }
 
 // ValidateBasic performs basic validation (checking param bounds, etc.) and

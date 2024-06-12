@@ -115,7 +115,7 @@ func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
 			}
 			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
 		}
-		rr.InvokeCallback()
+		rr.Wait()
 	}
 }
 

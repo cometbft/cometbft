@@ -42,6 +42,8 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+- [ADR-116: Modular crypto](adr-116-modular-crypto.md)
+
 ### Accepted
 
 - [ADR-101: Data companion pull API](adr-101-data-companion-pull-api.md)

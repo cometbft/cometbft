@@ -263,6 +263,7 @@ func (r *remoteClientCreator) newABCIClient() (abcicli.Client, error) {
 // "_connsync" variant (i.e. "kvstore_connsync", etc.), which attempts to
 // replicate the same concurrency model as the remote client.
 func DefaultClientCreator(addr, transport, dbDir string) ClientCreator {
+	// Don't forget to change BaseConfig#ValidateBasic if you add new options here.
 	switch addr {
 	case "kvstore":
 		return NewLocalClientCreator(kvstore.NewInMemoryApplication())

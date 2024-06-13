@@ -26,7 +26,29 @@ of maintaining the code for all possible curves in the main codebase.
 
 ## Proposal
 
+Add a signature schemes registry to the CometBFT codebase:
 
+```go
+type Signer interface {
+    GenPrivKey() PrivKey
+}
+
+type SignatureScheme uint
+
+const (
+	Ed25519 SignatureScheme = 1 + iota
+	Secp256k1
+	Sr25519
+	Bls12381 // import github.com/cometbft/bls12381
+)
+
+// Available reports whether the given signature scheme is linked into the binary.
+func (ss SignatureScheme) Available() bool { }
+
+func (ss SignatureScheme) New() (Signer, error) { }
+
+func RegisterSignatureScheme(ss SignatureScheme, f func() Signer) {}
+```
 
 ## Alternative Approaches
 

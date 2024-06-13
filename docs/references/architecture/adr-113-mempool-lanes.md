@@ -468,7 +468,7 @@ extensive research on scheduling algorithms in operating systems and networking,
 MVP implementing a variant of the [Weighted Round Robin (WRR)](wrr) algorithm, which meets these
 requirements and is straightforward to implement.
 
-Before modifying the dessemination logic, we need to refactor the current implementation and the
+Before modifying the dissemination logic, we need to refactor the current implementation and the
 `Mempool` interface to clearly separate the broadcast goroutine in the mempool reactor from
 `CListMempool` that includes the mempool data structures. `CListMempool` provides two methods used
 by the broadcast code, `TxsWaitChan() <-chan struct{}` and `TxsFront() *clist.CElement`, which are
@@ -481,7 +481,7 @@ Transactions are transmitted without lane information because peers cannot be tr
 correct data. A node may take advantage of the network by sending lower-priority transactions before
 higher-priority ones. Although the receiving node could easily verify the priority of a transaction
 when it calls `CheckTx`, it cannot detect if a peer is sending transactions out of order over a
-single P2P channel. For the moment, we leave out of the MVP any mechanism to detect and possible
+single P2P channel. For the moment, we leave out of the MVP any mechanism to detect and possibly
 punish nodes for this kind of behaviour.
 
 ## Alternative designs
@@ -516,7 +516,7 @@ application version, as it already happens in the current implementation.
 
 The duality lane/priority could introduce a powerful indirection. The app could just define the lane
 of a transaction in `CheckTx`, but the priority of the lane itself could be configured (and
-fine-tuned) elsewhere. For example, by the app itself or by node operators. The proposed design does
+fine-tuned) elsewhere. For example, by the app itself or by node operators. The proposed design for the MVP does
 not support this pattern.
 
 ### Custom configuration per lane
@@ -530,7 +530,8 @@ the handshake.
 
 We have considered two alternative approaches for _where_ to configure lanes and priorities:
 1. In `config.toml` or `app.toml`. We have discarded this option as it does not make sense for
-   different nodes to have different lane configurations.
+   different nodes to have different lane configurations. The properties defined in the specification above
+   are end-to-end, and so, the lane configuration has to be consistent across the network.
 1. In `ConsensusParams`. There are several disadvantages with this approach. If we allow changing
    lane information via `ConsensusParams`, the mempool would need to update lanes dynamically. The
    updating process would be very complex and cumbersome, and not really appealing for an MVP. Two
@@ -538,6 +539,8 @@ We have considered two alternative approaches for _where_ to configure lanes and
    would be required for upgrading the application, because the lane classification logic (thus the
    application's code) needs to know the lane configuration beforehand. And a second proposal would
    be needed for upgrading the lanes via `ConsensusParams`.
+   While it is true that SDK applications could pass a governance proposal with both elements together,
+   it would be something to _always_ do, and it is not clear what the situation would be for non-SDK applications.
   
    Also, it is not clear in which order the proposals should apply. The community should be careful
    not to break performance between the passing of both proposals. The `gov` module could be
@@ -560,19 +563,21 @@ TODO
   current implementation. 
 - Lanes will preserve the "FIFO ordering of transactions" property within the same class (with a
   best effort approach, as the current implementation).
-
+- Applications that are unaware of this feature, and therefore not classifying transactions in `CheckTX`
+  will observe the same behavior from the mempool as the current implementation.  
 ### Negative
 
 - The total FIFO ordering of transaction dissemination and block creation may be broken when
   multiple lanes are used. Since FIFO ordering is important within the same class of transactions,
   we expect this will not be a real problem.
-
+- Increased complexity in the logic of `CheckTx` (ante handlers) in order to classify transactions,
+  with a possibility of introducing bugs in the classification logic.
 ### Neutral
 
 - Lanes are optional. Current applications do not need to make any change to their code. Future
   applications will not be forced to use the lanes feature.
 - The proposed prioritization logic (WRR) for the dissemination algorithm is fair, so low-priority
-  transactions will not get stuck in the mempool long periods of time.
+  transactions will not get stuck in the mempool for long periods of time.
 
 ## References
 

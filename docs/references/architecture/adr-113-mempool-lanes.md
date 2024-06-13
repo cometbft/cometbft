@@ -296,7 +296,7 @@ TODO
 
 ## Detailed Design
 
-This sections describes the architectural changes needed to implement an MVP of lanes in the
+This section describes the architectural changes needed to implement an MVP of lanes in the
 mempool. The following is a summary of the key design decisions:
 - [[Lanes definition](#lanes-definition)] The list of lanes and their corresponding priorities
   will be hardcoded in the application logic.
@@ -331,12 +331,11 @@ Internally, the application may use `string`s to name lanes, and then map those 
 The mempool does not care about the names, only about the priorities. That is why the lane
 information returned by the application only contains priorities.
 
-The lowest priority a lane may have is 1. The value 0 is reserved for two cases: when there are no
-priorities and for `CheckTx` responses of invalid transactions.
+The lowest priority a lane may have is 1. The value 0 is reserved for two cases: when the application does not classify the transaction (i.e. no priority returned) and for `CheckTx` responses of invalid transactions.
 
 On receiving the information from the app, CometBFT will validate that:
 - `lanes` has no duplicates (values in `lanes` don't need to be sorted),
-- `default_value` is in `lanes` (the default lane is not necessarily the lane with the lowest
+- `default_lane` is in `lanes` (the default lane is not necessarily the lane with the lowest
   priority), and
 - the list `lanes` is empty if and only if `default_value` is 0.
 
@@ -387,7 +386,7 @@ entries, and for direct access to the lane of a given transaction.
 
 If the application does not implement lanes (that is, it responds with empty values in
 `InfoResponse`), then `defaultLane` will be set to 1, and `lanes` will have only one entry for the
-default lane.
+default lane. In this case, the new mempool's behaviour will be equivalent to that of the current mempool.
 
 `CListMempool` also contains the cache, which is only needed before transactions have a lane
 assigned. Since the cache is independent of the lanes, we do not need to modify it.
@@ -403,7 +402,7 @@ capped by the total mempool capacities as currently defined in the configuration
 With lanes, the total size of the mempool will be the sum of the sizes of all lanes.
 
 Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none. Remember that,
-with `PrepareProposal`, it becomes _always_ mandatory to recheck remaining transactions in the
+if `PrepareProposal`'s app logic can ever add a new transaction, it becomes _always_ mandatory to recheck remaining transactions in the
 mempool, so there is no point in disabling `Recheck` per lane.
 
 ### Adding transactions to the mempool

@@ -36,17 +36,6 @@ func TestGRPC_Version(t *testing.T) {
 func TestGRPC_Block_GetByHeight(t *testing.T) {
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
 		t.Helper()
-		client, err := node.Client()
-		require.NoError(t, err)
-		status, err := client.Status(ctx)
-		require.NoError(t, err)
-
-		// We are not testing getting the first block in these
-		// tests to prevent race conditions with the pruning mechanism
-		// that might make the tests fail. Just testing the last block
-		// is enough to validate the fact that we can fetch a block using
-		// the gRPC endpoint
-		last := status.SyncInfo.LatestBlockHeight
 
 		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
 		defer ctxCancel()
@@ -54,13 +43,21 @@ func TestGRPC_Block_GetByHeight(t *testing.T) {
 		require.NoError(t, err)
 		defer gRPCClient.Close()
 
+		latestHeightCh, err := gRPCClient.GetLatestHeight(ctx)
+		require.NoError(t, err)
+
+		latest, ok := <-latestHeightCh
+		require.Equal(t, ok, true)
+		require.Greater(t, latest.Height, int64(0))
+
 		// Get last block and fetch it using the gRPC endpoint
-		lastBlock, err := gRPCClient.GetBlockByHeight(ctx, last)
+		lastBlock, err := gRPCClient.GetBlockByHeight(ctx, latest.Height)
 
 		// Last block tests
 		require.NoError(t, err)
 		require.NotNil(t, lastBlock.BlockID)
-		require.Equal(t, lastBlock.Block.Height, last)
+		require.Equal(t, lastBlock.Block.Height, latest.Height)
+		require.NotNil(t, lastBlock.Block.LastCommit)
 	})
 }
 
@@ -97,17 +94,6 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 	t.Helper()
 	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
 		t.Helper()
-		client, err := node.Client()
-		require.NoError(t, err)
-		status, err := client.Status(ctx)
-		require.NoError(t, err)
-
-		// We are not testing getting the first block in these
-		// tests to prevent race conditions with the pruning mechanism
-		// that might make the tests fail. Just testing the last block
-		// is enough to validate the fact that we can fetch the block results
-		// using the gRPC endpoint
-		last := status.SyncInfo.LatestBlockHeight
 
 		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
 		defer ctxCancel()
@@ -115,16 +101,20 @@ func TestGRPC_GetBlockResults(t *testing.T) {
 		require.NoError(t, err)
 		defer gRPCClient.Close()
 
+		latestHeightCh, err := gRPCClient.GetLatestHeight(ctx)
+		require.NoError(t, err)
+
+		latest, ok := <-latestHeightCh
+		require.Equal(t, ok, true)
+		require.Greater(t, latest.Height, int64(0))
+
 		// Get last block and fetch it using the gRPC endpoint
-		lastBlockResults, err := gRPCClient.GetBlockResults(ctx, last)
+		lastBlockResults, err := gRPCClient.GetBlockResults(ctx, latest.Height)
 
 		// Last block results tests
 		require.NoError(t, err)
-		require.Equal(t, lastBlockResults.Height, last)
+		require.Equal(t, lastBlockResults.Height, latest.Height)
 		require.NotNil(t, lastBlockResults.AppHash)
-		require.GreaterOrEqual(t, len(lastBlockResults.FinalizeBlockEvents), 0)
-		require.GreaterOrEqual(t, len(lastBlockResults.TxResults), 0)
-		require.GreaterOrEqual(t, len(lastBlockResults.ValidatorUpdates), 0)
 	})
 }
 

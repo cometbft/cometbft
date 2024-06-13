@@ -283,6 +283,17 @@ func (mem *CListMempool) CheckTx(
 // When rechecking, we don't need the peerID, so the recheck callback happens
 // here.
 func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
+	switch r := req.Value.(type) {
+	case *abci.Request_CheckTx:
+		// Process only Recheck responses.
+		if r.CheckTx.Type != abci.CheckTxType_Recheck {
+			return
+		}
+	default:
+		// ignore other type of requests
+		return
+	}
+
 	switch r := res.Value.(type) {
 	case *abci.Response_CheckTx:
 		tx := types.Tx(req.GetCheckTx().Tx)
@@ -643,7 +654,7 @@ func (mem *CListMempool) recheckTxs() {
 		// callback will be called right after receiving the response.
 		_, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{
 			Tx:   tx,
-			Type: abci.CheckTxType_New,
+			Type: abci.CheckTxType_Recheck,
 		})
 		if err != nil {
 			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))

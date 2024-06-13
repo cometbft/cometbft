@@ -263,11 +263,12 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 			// Note it's possible a tx is still in the cache but no longer in the mempool
 			// (eg. after committing a block, txs are removed from mempool but not cache),
 			// so we only record the sender for txs still in the mempool.
-			if elem, ok := mem.getCElement(tx.Key()); ok {
+			txKey := tx.Key()
+			if elem, ok := mem.getCElement(txKey); ok {
 				memTx := elem.Value.(*mempoolTx)
 				if found := memTx.addSender(sender); found {
 					// It should not be possible to receive twice a tx from the same sender.
-					mem.logger.Error("tx already received from peer", "tx", fmt.Sprintf("%X", tx.Hash()), "sender", sender)
+					mem.logger.Error("tx already received from peer", "tx", log.NewLazySprintf("%X", txKey), "sender", sender)
 				}
 			}
 		}
@@ -300,8 +301,9 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		}
 
 		// Check that rechecking txs is not in process.
+		txKey := tx.Key()
 		if !mem.recheck.done() {
-			panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %X", tx.Hash()))
+			panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %X", txKey))
 		}
 
 		var postCheckErr error
@@ -314,7 +316,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
 				"rejected invalid transaction",
-				"tx", fmt.Sprintf("%X", tx.Hash()),
+				"tx", log.NewLazySprintf("%X", txKey),
 				"res", res,
 				"err", postCheckErr,
 			)
@@ -358,13 +360,13 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 			memTx := elem.Value.(*mempoolTx)
 			if found := memTx.addSender(sender); found {
 				// It should not be possible to receive twice a tx from the same sender.
-				mem.logger.Error("tx already received from peer", "tx", fmt.Sprintf("%X", tx.Hash()), "sender", sender)
+				mem.logger.Error("tx already received from peer", "tx", log.NewLazySprintf("%X", txKey), "sender", sender)
 			}
 		}
 
 		mem.logger.Debug(
 			"transaction already in mempool, not adding it again",
-			"tx", fmt.Sprintf("%X", tx.Hash()),
+			"tx", log.NewLazySprintf("%X", txKey),
 			"height", mem.height.Load(),
 			"total", mem.Size(),
 		)
@@ -380,7 +382,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 
 	mem.logger.Debug(
 		"added valid transaction",
-		"tx", fmt.Sprintf("%X", tx.Hash()),
+		"tx", log.NewLazySprintf("%X", txKey),
 		"height", mem.height.Load(),
 		"total", mem.Size(),
 	)
@@ -402,7 +404,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	mem.txsMap.Delete(txKey)
 	tx := elem.Value.(*mempoolTx).tx
 	mem.txsBytes.Add(int64(-len(tx)))
-	mem.logger.Debug("removed transaction", "tx", fmt.Sprintf("%X", tx.Hash()), "height", mem.height.Load(), "total", mem.Size())
+	mem.logger.Debug("removed transaction", "tx", log.NewLazySprintf("%X", txKey), "height", mem.height.Load(), "total", mem.Size())
 	return nil
 }
 
@@ -455,8 +457,9 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 		// If tx is invalid, remove it from the mempool and the cache.
 		if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("tx is no longer valid", "tx", fmt.Sprintf("%X", tx.Hash()), "res", res, "postCheckErr", postCheckErr)
-			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
+			txKey := tx.Key()
+			mem.logger.Debug("tx is no longer valid", "tx", log.NewLazySprintf("%X", txKey), "res", res, "postCheckErr", postCheckErr)
+			if err := mem.RemoveTxByKey(txKey); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			} else {
 				// update metrics
@@ -592,9 +595,10 @@ func (mem *CListMempool) Update(
 		// Mempool after:
 		//   100
 		// https://github.com/tendermint/tendermint/issues/3322.
-		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
+		txKey := tx.Key()
+		if err := mem.RemoveTxByKey(txKey); err != nil {
 			mem.logger.Debug("Committed transaction not in local mempool (not an error)",
-				"tx", fmt.Sprintf("%X", tx.Hash()),
+				"tx", log.NewLazySprintf("%X", txKey),
 				"error", err.Error())
 		}
 	}

@@ -99,7 +99,7 @@ characteristics as defined by the application.
 A transaction may only have one class. If it is not assigned any specific class, it will be assigned
 a *default class*, which is a special class always present in any set of classes. This is analogous
 to the _native VLAN_ for untagged traffic in an 802.1Q network. Because no transaction can belong to
-two or more classes, transaction classes form disjoint sets, that is, the intersection between
+two or more classes, transaction classes form disjoint sets, that is, the intersection between any two
 classes is empty. Also, all transactions in the mempool are the union of the transactions in all
 classes.
 
@@ -298,16 +298,16 @@ TODO
 
 This sections describes the architectural changes needed to implement an MVP of lanes in the
 mempool. The following is a summary of the key design decisions:
-- [[1](#lanes-definition)] The list of lanes and their corresponding priorities
+- [[Lanes definition](#lanes-definition)] The list of lanes and their corresponding priorities
   will be hardcoded in the application logic.
-- [[2](#internal-data-structures)] There will be one concurrent list (CList) data structure per
+- [[Internal data structures](#internal-data-structures)] There will be one concurrent list (CList) data structure per
   lane.
-- [[3](#configuration)] All lanes will share the same mempool configuration.
-- [[4](#adding-transactions-to-the-mempool)] When validating a transaction via CheckTx, the
+- [[Configuration](#configuration)] All lanes will share the same mempool configuration.
+- [[Adding transactions to the mempool](#adding-transactions-to-the-mempool)] When validating a transaction via CheckTx, the
   application will optionally return a lane for the transaction.
-- [[5](#reaping-transactions-for-creating-blocks)] Transactions will be reaped from higher-priority
-  lanes first, preserving the FIFO ordering.
-- [[6](#transaction-dissemination)] We will continue to use the current P2P channel for
+- [[Reaping transactions for creating blocks](#reaping-transactions-for-creating-blocks)] Transactions will be reaped from higher-priority
+  lanes first, preserving intra-lane FIFO ordering.
+- [[Transaction dissemination](#transaction-dissemination)] We will continue to use the current P2P channel for
    disseminating transactions, and we will implement in the mempool the logic for selecting the
    order in which to send transactions.
 

@@ -79,7 +79,7 @@ Decoding the RPC response for a secp256k1 pubkey:
 #     "value": "AkeI23hsiCXVTf2+k+hGJAj/tuXRlwNRHI/Iv2Cvj3LQ"
 # },
 
-$ echo AkeI23hsiCXVTf2+k+hGJAj/tuXRlwNRHI/Iv2Cvj3LQ | base64 -D | xxd -p -c 999
+$ echo AkeI23hsiCXVTf2+k+hGJAj/tuXRlwNRHI/Iv2Cvj3LQ | base64 -d | xxd -p -c 33
 024788db786c8825d54dfdbe93e8462408ffb6e5d19703511c8fc8bf60af8f72d0
 ```
 

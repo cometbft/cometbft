@@ -28,6 +28,7 @@ func TestSimpleWithKDF(t *testing.T) {
 	}
 	sum := sha256.Sum256(secret)
 	copy(secret, sum[:])
+	secret = secret[:32]
 
 	ciphertext := EncryptSymmetric(plaintext, secret)
 	plaintext2, err := DecryptSymmetric(ciphertext, secret)

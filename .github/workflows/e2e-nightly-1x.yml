@@ -7,6 +7,7 @@ name: e2e-nightly-1x
 on:
   schedule:
     - cron: '0 2 * * *'
+  workflow_dispatch: # This allows the workflow to be manually triggered
 
 jobs:
   e2e-nightly-test:

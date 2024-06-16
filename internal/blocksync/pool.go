@@ -785,23 +785,24 @@ OUTER_LOOP:
 			bpr.pickSecondPeerAndSendRequest()
 		}
 
-		retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
-		defer retryTimer.Stop()
-
 		for {
+			retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
 			select {
 			case <-bpr.pool.Quit():
 				if err := bpr.Stop(); err != nil {
 					bpr.Logger.Error("Error stopped requester", "err", err)
 				}
+				retryTimer.Stop()
 				return
 			case <-bpr.Quit():
+				retryTimer.Stop()
 				return
 			case <-retryTimer.C:
 				if !gotBlock {
 					bpr.Logger.Debug("Retrying block request(s) after timeout", "height", bpr.height, "peer", bpr.peerID, "secondPeerID", bpr.secondPeerID)
 					bpr.reset(bpr.peerID)
 					bpr.reset(bpr.secondPeerID)
+					retryTimer.Stop()
 					continue OUTER_LOOP
 				}
 			case peerID := <-bpr.redoCh:
@@ -835,6 +836,7 @@ OUTER_LOOP:
 				// We got a block!
 				// Continue the for-loop and wait til Quit.
 			}
+			retryTimer.Stop()
 		}
 	}
 }

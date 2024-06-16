@@ -214,7 +214,7 @@ func (c *WSClient) Stop() error {
 	// only close user-facing channels when we can't write to them
 	c.wg.Wait()
 	close(c.ResponsesCh)
-
+	c.PingPongLatencyTimer.Stop()
 	return nil
 }
 

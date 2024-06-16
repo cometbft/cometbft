@@ -74,6 +74,7 @@ func TestMConnectionSendFlushStop(t *testing.T) {
 	clientConn.FlushStop()
 
 	timer := time.NewTimer(3 * time.Second)
+	defer timer.Stop()
 	select {
 	case <-errCh:
 	case <-timer.C:

@@ -84,6 +84,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 func ensureNoFire(t *testing.T, ch <-chan struct{}) {
 	t.Helper()
 	timer := time.NewTimer(100 * time.Millisecond)
+	defer timer.Stop()
 	select {
 	case <-ch:
 		t.Fatal("Expected not to fire")
@@ -94,6 +95,7 @@ func ensureNoFire(t *testing.T, ch <-chan struct{}) {
 func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	t.Helper()
 	timer := time.NewTimer(time.Duration(timeoutMS) * time.Millisecond)
+	defer timer.Stop()
 	select {
 	case <-ch:
 	case <-timer.C:

@@ -785,14 +785,13 @@ OUTER_LOOP:
 			bpr.pickSecondPeerAndSendRequest()
 		}
 
+		retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
 		for {
-			retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
 			select {
 			case <-bpr.pool.Quit():
 				if err := bpr.Stop(); err != nil {
 					bpr.Logger.Error("Error stopped requester", "err", err)
 				}
-				retryTimer.Stop()
 				return
 			case <-bpr.Quit():
 				retryTimer.Stop()
@@ -836,7 +835,6 @@ OUTER_LOOP:
 				// We got a block!
 				// Continue the for-loop and wait til Quit.
 			}
-			retryTimer.Stop()
 		}
 	}
 }

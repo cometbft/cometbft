@@ -2,6 +2,7 @@ package log_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"io"
 	"math"
@@ -58,6 +59,26 @@ func TestTMFmtLogger(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+ hash=74657374206D65\n$`), buf.String())
+
+	buf.Reset()
+	if err := logger.Log("myhash_obj", myhash("test me")); err != nil {
+		t.Fatal(err)
+	}
+	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+ myhash_obj=0x74657374206d65\n$`), buf.String())
+
+	var h *myhash
+	buf.Reset()
+	if err := logger.Log("myhash_nil", h); err != nil {
+		t.Fatal(err)
+	}
+	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+ myhash_nil=<nil>\n$`), buf.String())
+
+	h = &myhash{'t', 'e', 's', 't', ' ', 'm', 'e'}
+	buf.Reset()
+	if err := logger.Log("myhash_ptr", h); err != nil {
+		t.Fatal(err)
+	}
+	assert.Regexp(t, regexp.MustCompile(`N\[.+\] unknown \s+ myhash_ptr=0x74657374206d65\n$`), buf.String())
 }
 
 func BenchmarkTMFmtLoggerSimple(b *testing.B) {
@@ -123,3 +144,9 @@ func spam(logger kitlog.Logger, count int) error {
 type mymap map[int]int
 
 func (mymap) String() string { return "special_behavior" }
+
+type myhash []byte
+
+func (h myhash) String() string {
+	return "0x" + hex.EncodeToString(h)
+}

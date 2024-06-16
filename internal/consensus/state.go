@@ -2129,7 +2129,7 @@ func allowProcessingProposalBlockPart(msg *BlockPartMessage, logger log.Logger, 
 
 	// We're not expecting a block part.
 	if csBlockParts == nil {
-		// Proposal Message should be in queue ahead of this
+		// Proposal Message should be in queue ahead of this block part message.
 		if allowFutureHeights {
 			return true
 		}

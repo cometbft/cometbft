@@ -2129,6 +2129,10 @@ func allowProcessingProposalBlockPart(msg *BlockPartMessage, logger log.Logger, 
 
 	// We're not expecting a block part.
 	if csBlockParts == nil {
+		// Proposal Message should be in queue ahead of this
+		if allowFutureHeights {
+			return true
+		}
 		metrics.BlockGossipPartsReceived.With("matches_current", "false").Add(1)
 		// NOTE: this can happen when we've gone to a higher round and
 		// then receive parts from the previous round - not necessarily a bad peer.

@@ -326,8 +326,8 @@ wants to implement lanes.
 ```protobuf
 message InfoResponse {
   ...
-  repeated uint32 priorities = 6;
-  uint32 default_priority = 7;
+  repeated uint32 lane_priorities = 6;
+  uint32 default_lane_priority = 7;
 }
 ```
 Internally, the application may use `string`s to name lanes, and then map those names to priorities.
@@ -339,10 +339,10 @@ application does not classify the transaction (i.e. no priority returned) and fo
 responses of invalid transactions.
 
 On receiving the information from the app, CometBFT will validate that:
-- `priorities` has no duplicates (values in `priorities` don't need to be sorted),
-- `default_priority` is in `priorities` (the default lane is not necessarily the lane with the
+- `lane_priorities` has no duplicates (values in `lane_priorities` don't need to be sorted),
+- `default_lane_priority` is in `lane_priorities` (the default lane is not necessarily the lane with the
   lowest priority), and
-- the list `priorities` is empty if and only if `default_priority` is 0.
+- the list `lane_priorities` is empty if and only if `default_lane_priority` is 0.
 
 ### Initialization
 
@@ -357,16 +357,17 @@ for updating the software. CometBFT will not need to deal with dynamic lane chan
 need to set up the lanes when starting up (whether afresh or in recovery mode).
 
 Different nodes also need to agree on the lanes they use. When a node connects to a peer, they both
-perform a handshake to agree on some basic information (see `DefaultNodeInfo`), including the
-version of the application they are executing. Since the application includes the lane definitions,
-both nodes will also agree on the lanes they implement. Therefore we don't need to modify the P2P
-handshake.
+perform a handshake to agree on some basic information (see `DefaultNodeInfo`). Since the
+application includes the lane definitions, it suffices to ensure that both nodes agree on the
+version of the application. Although the application version is included in `DefaultNodeInfo`, there
+is currently no check for compatibility between the versions. To address this, we would need to
+modify the P2P handshake process to validate that the application versions are compatible.
 
 Finally, this approach is compatible with applications that need to swap binaries when
 catching up or upgrading, such as SDK applications using [Cosmovisor][cosmovisor].
-When the local node is catching up (i.e. BlockSyncing), peer nodes will detect
-that the the local node is late and will not send it any transactions until it is caught up.
-So, the particular lane configuration of the local node is irrelevant while catching up.
+When a node is catching up (i.e. BlockSyncing), its peers will detect
+that the node is late and will not send it any transactions until it is caught up.
+So, the particular lane configuration of the node is irrelevant while catching up.
 When going through a Cosmovisor-driven upgrade, all nodes will swap binaries at the same
 height (which is specified by the corresponding Software Upgrade gov proposal).
 If the new version of the software contains modified lane configuration

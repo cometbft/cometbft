@@ -305,17 +305,19 @@ mempool. The following is a summary of the key design decisions:
 - [[Configuration](#configuration)] All lanes will share the same mempool configuration.
 - [[Adding transactions to the mempool](#adding-transactions-to-the-mempool)] When validating a transaction via CheckTx, the
   application will optionally return a lane for the transaction.
-- [[Reaping transactions for creating blocks](#reaping-transactions-for-creating-blocks)] Transactions will be reaped from higher-priority
-  lanes first, preserving intra-lane FIFO ordering.
-- [[Transaction dissemination](#transaction-dissemination)] We will continue to use the current P2P channel for
-   disseminating transactions, and we will implement in the mempool the logic for selecting the
-   order in which to send transactions.
+- [[Transaction dissemination](#transaction-dissemination)] We will continue to use the current P2P
+   channel for disseminating transactions, and we will implement in the mempool the logic for
+   selecting the order in which to send transactions. In particular, the scheduling algorithm to
+   select transactions should be prevent starvation of low-priority lanes.
+- [[Reaping transactions for creating blocks](#reaping-transactions-for-creating-blocks)]
+  Transactions will be reaped from higher-priority lanes first, preserving intra-lane FIFO ordering.
+  Reaping should also avoid starvation of low-priority lanes.
 
 ### Lanes definition
 
 The list of lanes and their corresponding priorities will be hardcoded in the application logic. A
 priority is a value of type `uint32`, with 0 being a reserved value (see below). The application
-also needs to define which of the lanes it defines is the default lane. 
+also needs to define which of the lanes in the list it defines is the **default lane**. 
 
 To obtain the lane information from the application, we need to extend the ABCI `Info` response to
 include the following fields. These fields need to be filled by the application only in case it
@@ -323,21 +325,23 @@ wants to implement lanes.
 ```protobuf
 message InfoResponse {
   ...
-  repeated uint32 lanes = 6;
-  uint32 default_lane = 7;
+  repeated uint32 priorities = 6;
+  uint32 default_priority = 7;
 }
 ```
 Internally, the application may use `string`s to name lanes, and then map those names to priorities.
 The mempool does not care about the names, only about the priorities. That is why the lane
-information returned by the application only contains priorities.
+information returned by the application only contains priorities, which are used to identify lanes.
 
-The lowest priority a lane may have is 1. The value 0 is reserved for two cases: when the application does not classify the transaction (i.e. no priority returned) and for `CheckTx` responses of invalid transactions.
+The lowest priority a lane may have is 1. The value 0 is reserved for two cases: when the
+application does not classify the transaction (i.e. no priority returned) and for `CheckTx`
+responses of invalid transactions.
 
 On receiving the information from the app, CometBFT will validate that:
-- `lanes` has no duplicates (values in `lanes` don't need to be sorted),
-- `default_lane` is in `lanes` (the default lane is not necessarily the lane with the lowest
-  priority), and
-- the list `lanes` is empty if and only if `default_value` is 0.
+- `priorities` has no duplicates (values in `priorities` don't need to be sorted),
+- `default_priority` is in `priorities` (the default lane is not necessarily the lane with the
+  lowest priority), and
+- the list `priorities` is empty if and only if `default_priority` is 0.
 
 ### Initialization
 
@@ -393,13 +397,14 @@ assigned. Since the cache is independent of the lanes, we do not need to modify 
 
 ### Configuration
 
-For an MVP, all lanes can share the same mempool configuration. In this scenario, all lanes will be
-capped by the total mempool capacities as currently defined in the configuration. Namely, these are:
+For an MVP, we do not need to have a customized configuration for each lane. The current mempool
+configuration will continue to apply to the mempool, which now is a union of lanes. The total size
+of the mempool will be the sum of the sizes of all lanes. Therefore, the mempool capacities as
+currently defined in the configuration will put an upper limit on the union of all lanes. These
+configurations are:
 - `Size`, the total number of transactions allowed in the mempool, 
 - `MaxTxsBytes`, the maximum total number of bytes of the mempool, and
 - `MaxTxBytes`, the maximum size in bytes of a single transaction accepted into the mempool.
-
-With lanes, the total size of the mempool will be the sum of the sizes of all lanes.
 
 Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none. Remember that,
 if `PrepareProposal`'s app logic can ever add a new transaction, it becomes _always_ mandatory to recheck remaining transactions in the
@@ -436,19 +441,6 @@ transactions to determine the lane of each transaction. However, this optimizati
 impact if the committed block contains few transactions. Therefore, we decided to exclude it from
 the MVP.
 
-### Reaping transactions for creating blocks
-
-Currently, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects transactions in FIFO order
-from the CList until either reaching `maxBytes` or `maxGas` (both of these values are consensus
-parameters).
-
-With multiple CLists, we need to collect transactions from higher-priority lanes first, also in FIFO
-order, continuing with successive lanes in the `sortedLanes` array, that is, in decreasing priority
-order, and breaking the iteration when reaching `maxBytes` or `maxGas`.
-
-The mempool is locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed from
-the mempool during reaping.
-
 ### Transaction dissemination
 
 For broadcasting transactions from multiple lanes, we have considered two possible approaches:
@@ -475,14 +467,30 @@ by the broadcast code, `TxsWaitChan() <-chan struct{}` and `TxsFront() *clist.CE
 just wrappers around the methods `WaitChan` and `Front` of the `CList` implementation. In
 particular, `TxsFront` is leaking implementation details outside the `Mempool` interface.
 
-### Checking received transactions
+### Reaping transactions for block creation
+
+Currently, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects transactions in FIFO order
+from the CList until either reaching `maxBytes` or `maxGas` (both of these values are consensus
+parameters).
+
+With multiple CLists, we need to collect transactions from higher-priority lanes first, also in FIFO
+order, continuing with successive lanes in the `sortedLanes` array, that is, in decreasing priority
+order, and breaking the iteration when reaching `maxBytes` or `maxGas`. Similar to transaction
+dissemination, we want to avoid starvation of low-priority lanes by reaping transactions by their
+weight and fairly. Consequently, we should implement a scheduling algorithm that meets these
+properties, which could be the same or similar to the one used for transaction dissemination.
+
+The mempool is locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed from
+the mempool during reaping.
+
+### Validating lanes of received transactions
 
 Transactions are transmitted without lane information because peers cannot be trusted to send the
 correct data. A node may take advantage of the network by sending lower-priority transactions before
 higher-priority ones. Although the receiving node could easily verify the priority of a transaction
 when it calls `CheckTx`, it cannot detect if a peer is sending transactions out of order over a
 single P2P channel. For the moment, we leave out of the MVP any mechanism to detect and possibly
-punish nodes for this kind of behaviour.
+penalize nodes for this kind of behaviour.
 
 ## Alternative designs
 
@@ -552,8 +560,6 @@ late, possibly having lane definitions that do not match with those of nodes at 
 
 ## Consequences
 
-TODO
-
 ### Positive
 
 - Application developers will be able to better predict when transactions will be disseminated and
@@ -561,23 +567,26 @@ TODO
   latency.
 - The mempool will be able to offer Quality of Service guarantees, which does not exist in the
   current implementation. 
-- Lanes will preserve the "FIFO ordering of transactions" property within the same class (with a
-  best effort approach, as the current implementation).
 - Applications that are unaware of this feature, and therefore not classifying transactions in `CheckTX`
   will observe the same behavior from the mempool as the current implementation.  
+
 ### Negative
 
-- The total FIFO ordering of transaction dissemination and block creation may be broken when
-  multiple lanes are used. Since FIFO ordering is important within the same class of transactions,
-  we expect this will not be a real problem.
+- The best-effort FIFO ordering that currently applies to all transactions may be broken when using
+  multiple lanes, which will apply FIFO ordering per lane. Since FIFO ordering is important within
+  the same class of transactions, we expect this will not be a real problem.
 - Increased complexity in the logic of `CheckTx` (ante handlers) in order to classify transactions,
   with a possibility of introducing bugs in the classification logic.
+
 ### Neutral
 
 - Lanes are optional. Current applications do not need to make any change to their code. Future
   applications will not be forced to use the lanes feature.
-- The proposed prioritization logic (WRR) for the dissemination algorithm is fair, so low-priority
-  transactions will not get stuck in the mempool for long periods of time.
+- Lanes will preserve the "FIFO ordering of transactions" property within the same class (with a
+  best effort approach, as the current implementation).
+- The proposed prioritization algorithm (WRR) for transaction dissemination and block creation is
+  fair, so low-priority transactions will not get stuck in the mempool for long periods of time, and
+  will get included in blocks proportionally to their priorities.
 
 ## References
 

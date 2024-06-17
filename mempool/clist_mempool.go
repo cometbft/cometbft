@@ -287,10 +287,9 @@ func (mem *CListMempool) globalCb(req *abci.Request, res *abci.Response) {
 	case *abci.Response_CheckTx:
 		tx := types.Tx(req.GetCheckTx().Tx)
 		if mem.recheck.done() {
-			mem.logger.Error("rechecking has finished; discard late recheck response",
-				"tx", log.NewLazySprintf("%v", tx.Key()))
 			return
 		}
+
 		mem.metrics.RecheckTimes.Add(1)
 		mem.resCbRecheck(tx, r.CheckTx)
 

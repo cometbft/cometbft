@@ -444,8 +444,9 @@ during rechecking if the transaction is reassessed as invalid. In either case, t
 identify the lane the transaction belongs to by accessing the `txLanes` map. Then, we remove the
 entry from the CList corresponding to its lane and update the auxiliary variables accordingly.
 
-Since the broadcast goroutines are constantly reading the list of transactions to disseminate them,
-it's important to prioritize the removal of transactions from high-priority lanes first.
+As an optimization, we could prioritize the removal of transactions from high-priority lanes first.
+The broadcast goroutines are constantly reading the list of transactions to disseminate them, though
+there is no guarantee that they will not send transactions that are about to be removed.
 
 When updating the mempool, there is potential for a slight optimization by removing transactions
 from different lanes in parallel. To achieve this, we would first need to preprocess the list of
@@ -469,7 +470,7 @@ algorithm that can be refined over time. The desired algorithm must satisfy the 
 _weight_, ensuring each lane gets a fraction of the P2P channel capacity proportional to its
 priority. Moreover, it should be _fair_, to prevent starvation of low-priority lanes. Given the
 extensive research on scheduling algorithms in operating systems and networking, we propose for the
-MVP implementing a variant of the [Weighted Round Robin (WRR)](wrr) algorithm, which meets these
+MVP implementing a variant of the [Weighted Round Robin][wrr] (WRR) algorithm, which meets these
 requirements and is straightforward to implement.
 
 Before modifying the dissemination logic, we need to refactor the current implementation and the
@@ -481,9 +482,9 @@ particular, `TxsFront` is leaking implementation details outside the `Mempool` i
 
 ### Reaping transactions for block creation
 
-Currently, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects transactions in FIFO order
-from the CList until either reaching `maxBytes` or `maxGas` (both of these values are consensus
-parameters).
+In the current single-lane mempool, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects
+transactions in FIFO order from the CList until either reaching `maxBytes` or `maxGas` (both of
+these values are consensus parameters).
 
 With multiple CLists, we need to collect transactions from higher-priority lanes first, also in FIFO
 order, continuing with successive lanes in the `sortedLanes` array, that is, in decreasing priority

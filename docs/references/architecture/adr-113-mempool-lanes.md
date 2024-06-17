@@ -308,11 +308,11 @@ mempool. The following is a summary of the key design decisions:
   application will optionally return a lane for the transaction.
 - [[Transaction dissemination](#transaction-dissemination)] We will continue to use the current P2P
    channel for disseminating transactions, and we will implement in the mempool the logic for
-   selecting the order in which to send transactions. In particular, the scheduling algorithm to
-   select transactions should be prevent starvation of low-priority lanes.
+   selecting the order in which to send transactions.
 - [[Reaping transactions for creating blocks](#reaping-transactions-for-creating-blocks)]
   Transactions will be reaped from higher-priority lanes first, preserving intra-lane FIFO ordering.
-  Reaping should also avoid starvation of low-priority lanes.
+- [[Prioritization logic](#prioritization-logic)] For disseminating and reaping transactions, the
+   scheduling algorithm should be prevent starvation of low-priority lanes.
 
 ### Lanes definition
 
@@ -464,14 +464,10 @@ For broadcasting transactions from multiple lanes, we have considered two possib
    allows for an unlimited number of lanes, constrained only by the nodes’ capacity to store the
    lane data structures.
 
-We choose the second option for its flexibility, allowing us to start with a simple scheduling
-algorithm that can be refined over time. The desired algorithm must satisfy the properties
-"Priorities between classes" and "FIFO ordering per class". This requires supporting selection by
-_weight_, ensuring each lane gets a fraction of the P2P channel capacity proportional to its
-priority. Moreover, it should be _fair_, to prevent starvation of low-priority lanes. Given the
-extensive research on scheduling algorithms in operating systems and networking, we propose for the
-MVP implementing a variant of the [Weighted Round Robin][wrr] (WRR) algorithm, which meets these
-requirements and is straightforward to implement.
+We choose the second approach for its flexibility, allowing us to start with a simple scheduling
+algorithm that can be refined over time (see below). Another reason is that on the first option we
+would need to initialize channels dynamically (currently there is a fixed list of channels passed as
+node info) and assign lanes to channels.
 
 Before modifying the dissemination logic, we need to refactor the current implementation and the
 `Mempool` interface to clearly separate the broadcast goroutine in the mempool reactor from
@@ -488,13 +484,36 @@ these values are consensus parameters).
 
 With multiple CLists, we need to collect transactions from higher-priority lanes first, also in FIFO
 order, continuing with successive lanes in the `sortedLanes` array, that is, in decreasing priority
-order, and breaking the iteration when reaching `maxBytes` or `maxGas`. Similar to transaction
-dissemination, we want to avoid starvation of low-priority lanes by reaping transactions by their
-weight and fairly. Consequently, we should implement a scheduling algorithm that meets these
-properties, which could be the same or similar to the one used for transaction dissemination.
+order, and breaking the iteration when reaching `maxBytes` or `maxGas`. Note that the mempool is
+locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed from the mempool
+during reaping.
 
-The mempool is locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed from
-the mempool during reaping.
+This simple algorithm, though good enough for an MVP, does not guarantee that low-priority lanes
+will not starve. That is why we prefer to implement one that is starvation-free, as explained in the
+next section. It could be the same algorithm or similar to the one used for transaction
+dissemination.
+
+### Prioritization logic
+
+For transaction dissemination and for reaping transactions for creating blocks we want a scheduling
+algorithm that satisfies the properties "Priorities between classes" and "FIFO ordering per class".
+This means that it must support selection by _weight_, ensuring each lane gets a fraction of the P2P
+channel capacity proportional to its priority. Additionally, we want the algorithm to be _fair_ to
+prevent starvation of low-priority lanes. 
+
+A first option that meets these criteria is the current prioritization algorithm on the P2P reactor,
+which we could easily reimplement in the mempool. It works as follows:
+- On each P2P channel, the variable `recentlySent` keeps track of how many bytes were recently sent
+  over the channel. Every time data is sent, increase `recentlySent` with the number of bytes
+  written to the channel. Every 2 seconds, decrease `recentlySent` by 20% on all channels (these
+  values are fixed).
+- When sending the next message, [pick the channel][selectChannelToGossipOn] whose ratio
+  `recentlySent/Priority` is the least.
+
+From the extensive research in operating systems and networking, we can choose for the MVP an
+existing scheduling algorithm that meet these requirements and are straightforward to implement,
+such as a variant of the [Weighted Round Robin][wrr] (WRR) algorithm. Another one to consider is
+[Weighted Random Early Detection][wred].
 
 ### Validating lanes of received transactions
 
@@ -611,7 +630,9 @@ late, possibly having lane definitions that do not match with those of nodes at 
 - Cosmos SDK's [gas prices][sdk-gas-prices]
 - Cosmos SDK's [application-side mempool][sdk-app-mempool]
 - Skip's [Block SDK][skip-block-sdk]
+- P2P's [selectChannelToGossipOn][selectChannelToGossipOn] function
 - [Weighted Round Robin][wrr]
+- [Weighted Random Early Detection][wred]
 - [Cosmovisor][cosmovisor]
 
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
@@ -622,5 +643,7 @@ late, possibly having lane definitions that do not match with those of nodes at 
 [sdk-gas-prices]: https://docs.cosmos.network/v0.50/learn/beginner/tx-lifecycle#gas-and-fees
 [sdk-app-mempool]: https://docs.cosmos.network/v0.47/build/building-apps/app-mempool
 [skip-block-sdk]: https://github.com/skip-mev/block-sdk/blob/v2.1.3/README.md
-[wrr]: https://en.wikipedia.org/wiki/Weighted_round_robin
 [cosmovisor]: https://docs.cosmos.network/v0.50/build/tooling/cosmovisor
+[selectChannelToGossipOn]: https://github.com/cometbft/cometbft/blob/6d3ff343c2d5a06e7522344d1a4e17d24ce982ad/p2p/conn/connection.go#L542-L563
+[wrr]: https://en.wikipedia.org/wiki/Weighted_round_robin
+[wred]: https://en.wikipedia.org/wiki/Weighted_random_early_detection

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -269,10 +270,14 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 
 	fail.Fail() // XXX
 
-	// Save the results before we commit.
-	if err := blockExec.store.SaveFinalizeBlockResponse(block.Height, abciResponse); err != nil {
-		return state, err
-	}
+	wg := sync.WaitGroup{}
+	var saveBlockResponseErr, commitErr error
+
+	wg.Add(1)
+	go func() {
+		saveBlockResponseErr = blockExec.store.SaveFinalizeBlockResponse(block.Height, abciResponse)
+		wg.Done()
+	}()
 
 	fail.Fail() // XXX
 
@@ -300,19 +305,31 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 	}
 
 	// Update the state with the block and responses.
+	oldState := state
 	state, err = updateState(state, blockID, &block.Header, abciResponse, validatorUpdates)
 	if err != nil {
 		return state, fmt.Errorf("commit failed for application: %w", err)
 	}
 
+	var retainHeight int64
+	wg.Add(2)
 	// Lock mempool, commit app state, update mempoool.
-	retainHeight, err := blockExec.Commit(state, block, abciResponse)
-	if err != nil {
-		return state, fmt.Errorf("commit failed for application: %w", err)
-	}
-
+	go func() {
+		retainHeight, commitErr = blockExec.Commit(state, block, abciResponse)
+		wg.Done()
+	}()
 	// Update evpool with the latest state.
-	blockExec.evpool.Update(state, block.Evidence.Evidence)
+	go func() {
+		blockExec.evpool.Update(state, block.Evidence.Evidence)
+		wg.Done()
+	}()
+
+	wg.Wait()
+	if saveBlockResponseErr != nil {
+		return oldState, saveBlockResponseErr
+	} else if commitErr != nil {
+		return state, fmt.Errorf("commit failed for application: %v", commitErr)
+	}
 
 	fail.Fail() // XXX
 

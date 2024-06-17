@@ -511,9 +511,8 @@ which we could easily reimplement in the mempool. It works as follows:
   `recentlySent/Priority` is the least.
 
 From the extensive research in operating systems and networking, we can choose for the MVP an
-existing scheduling algorithm that meet these requirements and are straightforward to implement,
-such as a variant of the [Weighted Round Robin][wrr] (WRR) algorithm. Another one to consider is
-[Weighted Random Early Detection][wred].
+existing scheduling algorithm that meets these requirements and is straightforward to implement,
+such as a variant of the [Weighted Round Robin][wrr] (WRR) algorithm.
 
 ### Validating lanes of received transactions
 
@@ -632,7 +631,6 @@ late, possibly having lane definitions that do not match with those of nodes at 
 - Skip's [Block SDK][skip-block-sdk]
 - P2P's [selectChannelToGossipOn][selectChannelToGossipOn] function
 - [Weighted Round Robin][wrr]
-- [Weighted Random Early Detection][wred]
 - [Cosmovisor][cosmovisor]
 
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
@@ -646,4 +644,3 @@ late, possibly having lane definitions that do not match with those of nodes at 
 [cosmovisor]: https://docs.cosmos.network/v0.50/build/tooling/cosmovisor
 [selectChannelToGossipOn]: https://github.com/cometbft/cometbft/blob/6d3ff343c2d5a06e7522344d1a4e17d24ce982ad/p2p/conn/connection.go#L542-L563
 [wrr]: https://en.wikipedia.org/wiki/Weighted_round_robin
-[wred]: https://en.wikipedia.org/wiki/Weighted_random_early_detection

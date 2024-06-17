@@ -726,15 +726,6 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Finalize
 //
 // CONTRACT: height must be monotonically increasing every time this is called.
 func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.FinalizeBlockResponse) error {
-	var dtxs []*abci.ExecTxResult
-	// strip nil values,
-	for _, tx := range resp.TxResults {
-		if tx != nil {
-			dtxs = append(dtxs, tx)
-		}
-	}
-	resp.TxResults = dtxs
-
 	bz, err := resp.Marshal()
 	if err != nil {
 		return err

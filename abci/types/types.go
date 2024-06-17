@@ -224,5 +224,17 @@ func MarshalTxResults(r []*ExecTxResult) ([][]byte, error) {
 	return s, nil
 }
 
+// Strip the Nil ExecTxResults from the FinalizeBlockResponse
+func StripNilTxResults(resp *FinalizeBlockResponse) {
+	var dtxs []*ExecTxResult
+	// strip nil values,
+	for _, tx := range resp.TxResults {
+		if tx != nil {
+			dtxs = append(dtxs, tx)
+		}
+	}
+	resp.TxResults = dtxs
+}
+
 // -----------------------------------------------
 // construct Result data

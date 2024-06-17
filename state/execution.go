@@ -270,6 +270,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 
 	fail.Fail() // XXX
 
+	abci.StripNilTxResults(abciResponse)
 	wg := sync.WaitGroup{}
 	var saveBlockResponseErr, commitErr error
 

@@ -300,6 +300,7 @@ This section describes the architectural changes needed to implement an MVP of l
 mempool. The following is a summary of the key design decisions:
 - [[Lanes definition](#lanes-definition)] The list of lanes and their corresponding priorities
   will be hardcoded in the application logic.
+- [[Initialization](#initialization)] How the application configures lanes on CometBFT.
 - [[Internal data structures](#internal-data-structures)] There will be one concurrent list (CList) data structure per
   lane.
 - [[Configuration](#configuration)] All lanes will share the same mempool configuration.
@@ -360,6 +361,17 @@ perform a handshake to agree on some basic information (see `DefaultNodeInfo`), 
 version of the application they are executing. Since the application includes the lane definitions,
 both nodes will also agree on the lanes they implement. Therefore we don't need to modify the P2P
 handshake.
+
+Finally, this approach is compatible with applications that need to swap binaries when
+catching up or upgrading, such as SDK applications using [Cosmovisor][cosmovisor].
+When the local node is catching up (i.e. BlockSyncing), peer nodes will detect
+that the the local node is late and will not send it any transactions until it is caught up.
+So, the particular lane configuration of the local node is irrelevant while catching up.
+When going through a Cosmovisor-driven upgrade, all nodes will swap binaries at the same
+height (which is specified by the corresponding Software Upgrade gov proposal).
+If the new version of the software contains modified lane configuration
+(and therefore new transaction classification logic), those changes will kick in
+in a coordinated manner thanks to the regular Cosmovisor workflow.
 
 ### Internal data structures
 
@@ -598,6 +610,8 @@ late, possibly having lane definitions that do not match with those of nodes at 
 - Cosmos SDK's [gas prices][sdk-gas-prices]
 - Cosmos SDK's [application-side mempool][sdk-app-mempool]
 - Skip's [Block SDK][skip-block-sdk]
+- [Weighted Round Robin][wrr]
+- [Cosmovisor][cosmovisor]
 
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
 [reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324
@@ -608,3 +622,4 @@ late, possibly having lane definitions that do not match with those of nodes at 
 [sdk-app-mempool]: https://docs.cosmos.network/v0.47/build/building-apps/app-mempool
 [skip-block-sdk]: https://github.com/skip-mev/block-sdk/blob/v2.1.3/README.md
 [wrr]: https://en.wikipedia.org/wiki/Weighted_round_robin
+[cosmovisor]: https://docs.cosmos.network/v0.50/build/tooling/cosmovisor

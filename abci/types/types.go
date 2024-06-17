@@ -224,7 +224,7 @@ func MarshalTxResults(r []*ExecTxResult) ([][]byte, error) {
 	return s, nil
 }
 
-// Strip the Nil ExecTxResults from the FinalizeBlockResponse
+// Strip the Nil ExecTxResults from the FinalizeBlockResponse.
 func StripNilTxResults(resp *FinalizeBlockResponse) {
 	var dtxs []*ExecTxResult
 	// strip nil values,

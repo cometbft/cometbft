@@ -725,6 +725,8 @@ func (store dbStore) LoadLastFinalizeBlockResponse(height int64) (*abci.Finalize
 // Merkle proofs.
 //
 // CONTRACT: height must be monotonically increasing every time this is called.
+// CONTRACT: response.TxResults should have no non-nil ExecTxResults.
+// Caller is expected to run abci.StripNilTxResults(resp) before calling this.
 func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.FinalizeBlockResponse) error {
 	bz, err := resp.Marshal()
 	if err != nil {

@@ -427,7 +427,7 @@ transaction will be assigned to the default lane.
 
 ### Removing transactions from the mempool
 
-A transaction may be removed in two scenarios: when updating a list of committed transactions, and
+A transaction may be removed in two scenarios: when updating the mempool with a list of committed transactions, or
 during rechecking if the transaction is reassessed as invalid. In either case, the first step is to
 identify the lane the transaction belongs to by accessing the `txLanes` map. Then, we remove the
 entry from the CList corresponding to its lane and update the auxiliary variables accordingly.

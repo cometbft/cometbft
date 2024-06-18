@@ -121,7 +121,6 @@ type peer struct {
 	Data *cmap.CMap
 
 	metrics *Metrics
-	mlc     *metricsLabelCache
 
 	// When removal of a peer fails, we set this flag
 	removalAttemptFailed bool
@@ -137,7 +136,6 @@ func newPeer(
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, any),
-	mlc *metricsLabelCache,
 	options ...PeerOption,
 ) *peer {
 	p := &peer{
@@ -146,7 +144,6 @@ func newPeer(
 		channels: nodeInfo.(DefaultNodeInfo).Channels,
 		Data:     cmap.NewCMap(),
 		metrics:  NopMetrics(),
-		mlc:      mlc,
 	}
 
 	p.mconn = createMConnection(
@@ -271,7 +268,6 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	} else if !p.hasChannel(chID) {
 		return false
 	}
-	metricLabelValue := p.mlc.ValueToMetricLabel(msg)
 	if w, ok := msg.(types.Wrapper); ok {
 		msg = w.Wrap()
 	}
@@ -280,13 +276,7 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 		p.Logger.Error("marshaling message to send", "error", err)
 		return false
 	}
-	res := sendFunc(chID, msgBytes)
-	if res {
-		p.metrics.MessageSendBytesTotal.
-			With("message_type", metricLabelValue).
-			Add(float64(len(msgBytes)))
-	}
-	return res
+	return sendFunc(chID, msgBytes)
 }
 
 // Get the data for a given key.
@@ -417,12 +407,6 @@ func createMConnection(
 				panic(fmt.Sprintf("unwrapping message: %v", err))
 			}
 		}
-		p.metrics.PeerReceiveBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
-			Add(float64(len(msgBytes)))
-		p.metrics.MessageReceiveBytesTotal.
-			With("message_type", p.mlc.ValueToMetricLabel(msg)).
-			Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{
 			ChannelID: chID,
 			Src:       p,

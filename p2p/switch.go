@@ -95,7 +95,6 @@ type Switch struct {
 	rng *rand.Rand // seed for randomizing dial times and orders
 
 	metrics *Metrics
-	mlc     *metricsLabelCache
 }
 
 // NetAddress returns the address the switch is listening on.
@@ -127,7 +126,6 @@ func NewSwitch(
 		filterTimeout:        defaultFilterTimeout,
 		persistentPeersAddrs: make([]*NetAddress, 0),
 		unconditionalPeerIDs: make(map[ID]struct{}),
-		mlc:                  newMetricsLabelCache(),
 	}
 
 	// Ensure we have a completely undeterministic PRNG.
@@ -172,7 +170,6 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 		sw.chDescs = append(sw.chDescs, chDesc)
 		sw.reactorsByCh[chID] = reactor
 		sw.msgTypeByChID[chID] = chDesc.MessageType
-		sw.mlc.RegisterChID(chID)
 	}
 	sw.reactors[name] = reactor
 	reactor.SetSwitch(sw)
@@ -626,7 +623,6 @@ func (sw *Switch) acceptRoutine() {
 			reactorsByCh:  sw.reactorsByCh,
 			msgTypeByChID: sw.msgTypeByChID,
 			metrics:       sw.metrics,
-			mlc:           sw.mlc,
 			isPersistent:  sw.IsPeerPersistent,
 		})
 		if err != nil {
@@ -731,7 +727,6 @@ func (sw *Switch) addOutboundPeerWithConfig(
 		reactorsByCh:  sw.reactorsByCh,
 		msgTypeByChID: sw.msgTypeByChID,
 		metrics:       sw.metrics,
-		mlc:           sw.mlc,
 	})
 	if err != nil {
 		if e, ok := err.(ErrRejected); ok {

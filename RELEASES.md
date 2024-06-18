@@ -271,6 +271,12 @@ To create a patch release:
    from the latest release.
    * Do not merge the backport branch into main.
 
+After the release of `v1.0.0`, the backport branch is named `v1.x`. Any future minor or patch releases will be cut
+from the `v1.x` branch. There won't be a separate backport branch for minor releases, so there won't be a `v1.1.x` backport branch.
+
+For more details about versioning guarantees after the `v1.0.0` release, please check
+the [versioning](https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#versioning) section in the `UPGRADING.md` document.
+
 ## Major Release Checklist
 
 The following set of steps are performed on all releases that increment the

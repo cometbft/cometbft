@@ -801,7 +801,6 @@ OUTER_LOOP:
 					bpr.Logger.Debug("Retrying block request(s) after timeout", "height", bpr.height, "peer", bpr.peerID, "secondPeerID", bpr.secondPeerID)
 					bpr.reset(bpr.peerID)
 					bpr.reset(bpr.secondPeerID)
-					retryTimer.Stop()
 					continue OUTER_LOOP
 				}
 			case peerID := <-bpr.redoCh:

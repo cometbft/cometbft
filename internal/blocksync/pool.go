@@ -792,6 +792,7 @@ OUTER_LOOP:
 				if err := bpr.Stop(); err != nil {
 					bpr.Logger.Error("Error stopped requester", "err", err)
 				}
+				retryTimer.Stop()
 				return
 			case <-bpr.Quit():
 				retryTimer.Stop()

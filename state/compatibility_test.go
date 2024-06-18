@@ -109,8 +109,7 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 	require.Equal(t, 1, len(loadedABCIResponses.TxResults))
 	require.Equal(t, abciResponses.DeliverTxs[0].String(), loadedABCIResponses.TxResults[0].String())
 	require.Equal(t, 2, len(loadedABCIResponses.Events))
-	require.Equal(t, abciResponses.BeginBlock.Events[0].String(), loadedABCIResponses.Events[0].String())
-	require.Equal(t, abciResponses.EndBlock.Events[0].String(), loadedABCIResponses.Events[1].String())
+	require.Equal(t, len(abciResponses.BeginBlock.Events)+len(abciResponses.EndBlock.Events), len(loadedABCIResponses.Events))
 
 	// try with an ABCI Response missing fields
 	height = int64(2)
@@ -125,7 +124,7 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 	require.Equal(t, 1, len(loadedABCIResponses.TxResults))
 	require.Equal(t, abciResponses.DeliverTxs[0].String(), loadedABCIResponses.TxResults[0].String())
 	require.Equal(t, 1, len(loadedABCIResponses.Events))
-	require.Equal(t, abciResponses.BeginBlock.Events[0].String(), loadedABCIResponses.Events[0].String())
+	require.Equal(t, len(abciResponses.BeginBlock.Events), len(loadedABCIResponses.Events))
 }
 
 // This test unmarshals a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses

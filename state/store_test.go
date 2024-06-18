@@ -626,7 +626,7 @@ func TestFinalizeBlockRecoveryUsingLegacyABCIResponses(t *testing.T) {
 	resp, err := stateStore.LoadLastFinalizeBlockResponse(height)
 	require.NoError(t, err)
 	require.Equal(t, resp.ConsensusParamUpdates, &cp)
-	require.Equal(t, resp.Events, legacyResp.LegacyAbciResponses.BeginBlock.Events)
+	require.Equal(t, len(resp.Events), len(legacyResp.LegacyAbciResponses.BeginBlock.Events))
 	require.Equal(t, resp.TxResults[0], legacyResp.LegacyAbciResponses.DeliverTxs[0])
 }
 

@@ -37,7 +37,7 @@ func (se *signerEndpoint) IsConnected() bool {
 	return se.isConnected()
 }
 
-// TryGetConnection retrieves a connection if it is already available.
+// GetAvailableConnection retrieves a connection if it is already available.
 func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.Conn) bool {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()

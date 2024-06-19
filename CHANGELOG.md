@@ -357,22 +357,20 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
   streaming of the latest committed block height
   ([\#1094](https://github.com/cometbft/cometbft/issues/1094))
 - `[light/store]` Added support for a different DB key representation within the light block store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
-- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
-
-  If you want to use it, change mempool's `type` to `nop`:
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643)). If you want to use it, change mempool's `type` to `nop`:
 
   ```toml
-  [mempool]
+      [mempool]
 
-  # The type of mempool for this node to use.
-  #
-  # Possible types:
-  # - "flood" : concurrent linked list mempool with flooding gossip protocol
-  # (default)
-  # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
-  # for storing, disseminating and proposing txs). "create_empty_blocks=false"
-  # is not supported.
-  type = "nop"
+      # The type of mempool for this node to use.
+      #
+      # Possible types:
+      # - "flood" : concurrent linked list mempool with flooding gossip protocol
+      # (default)
+      # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+      # for storing, disseminating and proposing txs). "create_empty_blocks=false"
+      # is not supported.
+      type = "nop"
   ```
 - `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
   ([\#1512](https://github.com/cometbft/cometbft/pull/1512))

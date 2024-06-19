@@ -180,7 +180,7 @@ const (
 // Some compile time assertions to ensure we don't
 // have accidental runtime surprises later on.
 
-// jsonEncodingRoundTripper ensures that asserted
+// jsonRoundTripper ensures that asserted
 // interfaces implement both MarshalJSON and UnmarshalJSON.
 type jsonRoundTripper interface {
 	json.Marshaler

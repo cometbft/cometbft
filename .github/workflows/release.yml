@@ -43,7 +43,7 @@ jobs:
           echo "See the [CHANGELOG](${CHANGELOG_URL}) for this release." > ../release_notes.md
 
       - name: Release
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: release --clean --release-notes ../release_notes.md

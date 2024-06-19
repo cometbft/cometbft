@@ -172,7 +172,6 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 		sw.chDescs = append(sw.chDescs, chDesc)
 		sw.reactorsByCh[chID] = reactor
 		sw.msgTypeByChID[chID] = chDesc.MessageType
-		sw.mlc.RegisterChID(chID)
 	}
 	sw.reactors[name] = reactor
 	reactor.SetSwitch(sw)

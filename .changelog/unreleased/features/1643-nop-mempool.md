@@ -1,6 +1,5 @@
 - `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643)). If you want to use it, change mempool's `type` to `nop`:
-
-  ```toml
+```toml
       [mempool]
 
       # The type of mempool for this node to use.
@@ -12,4 +11,4 @@
       # for storing, disseminating and proposing txs). "create_empty_blocks=false"
       # is not supported.
       type = "nop"
-  ```
+```

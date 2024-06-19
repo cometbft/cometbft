@@ -358,8 +358,7 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
   ([\#1094](https://github.com/cometbft/cometbft/issues/1094))
 - `[light/store]` Added support for a different DB key representation within the light block store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
 - `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643)). If you want to use it, change mempool's `type` to `nop`:
-
-  ```toml
+```toml
       [mempool]
 
       # The type of mempool for this node to use.
@@ -371,7 +370,7 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
       # for storing, disseminating and proposing txs). "create_empty_blocks=false"
       # is not supported.
       type = "nop"
-  ```
+```
 - `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
   ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
 - `[metrics]` Add metrics to monitor pruning and current available data in stores: `PruningServiceBlockRetainHeight`, `PruningServiceBlockResultsRetainHeight`, `ApplicationBlockRetainHeight`, `BlockStoreBaseHeight`, `ABCIResultsBaseHeight`.
@@ -424,7 +423,6 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
 
 ### IMPROVEMENTS
 
-- Update Apalache type annotations in the light client spec ([#955](https://github.com/cometbft/cometbft/pull/955))
 - `[abci/client]` Add consensus-synchronized local client creator,
   which only imposes a mutex on the consensus "connection", leaving
   the concurrency of all other "connections" up to the application
@@ -595,6 +593,7 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
   via `/v1/*` as well as `/*`
   ([\#1412](https://github.com/cometbft/cometbft/pull/1412))
 - `[rpc]` Use default port for HTTP(S) URLs when there is no explicit port ([\#1903](https://github.com/cometbft/cometbft/pull/1903))
+- `[spec]` Update Apalache type annotations in the light client spec ([#955](https://github.com/cometbft/cometbft/pull/955))
 - `[state/execution]` Cache the block hash computation inside of the Block Type, so we only compute it once.
   ([\#2924](https://github.com/cometbft/cometbft/pull/2924))
 - `[state/indexer]` Add transaction and block index pruning

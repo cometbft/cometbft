@@ -1,7 +1,6 @@
 package xsalsa20symmetric
 
 import (
-	"crypto/sha256"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,8 +25,6 @@ func TestSimpleWithKDF(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	sum := sha256.Sum256(secret)
-	copy(secret, sum[:])
 	secret = secret[:32]
 
 	ciphertext := EncryptSymmetric(plaintext, secret)

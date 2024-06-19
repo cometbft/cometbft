@@ -24,5 +24,13 @@
 //	}
 //	pubKey := privKey.PubKey()
 //
-// TODO: Add more docs in here
+// The resulting public key is an instance of the PubKey interface:
+//
+//	type PubKey interface {
+//		Address() Address
+//		Bytes() []byte
+//		VerifySignature(msg []byte, sig []byte) bool
+//		Equals(other PubKey) bool
+//		Type() string
+//	}
 package crypto

@@ -1,5 +1,4 @@
-// crypto is a customized/convenience cryptography package for supporting
-// CometBFT.
+// crypto is a customized/convenience cryptography package for CometBFT.
 //
 // It wraps select functionality of equivalent functions in the
 // Go standard library, for easy usage with our libraries.

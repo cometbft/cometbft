@@ -5,6 +5,7 @@
 - 2024-02-05: First version (@melekes)
 - 2024-05-28: Complete refactor (@melekes)
 - 2024-06-07: Limit the scope to transaction hashing (@melekes)
+- 2024-06-19: Explain why we don't expose this functionality in the CLI (@melekes)
 
 ## Status
 
@@ -16,7 +17,7 @@ Hashing in CometBFT is currently implemented using `crypto/tmhash`
 package, which itself relies on [`sha256`](https://pkg.go.dev/crypto/sha256).
 
 Among the things which are hashed are the block's header, evidence, consensus
-params, commit, partset header, transactions and others.
+params, commit, partset header, transactions.
 
 ### Transaction hashing
 
@@ -37,19 +38,21 @@ hashing algorithm if desired by the app developers.
 
 ### General hashing
 
-The suggested solution could've been used to change the hashing function for
-all structs, not just transactions. But the implification of that change is
-quite significant. For example, if the chain is using a different hashing
-scheme, then it looses IBC-compatibility. The IBC modules assumes fixed hashing
-scheme. The destination chain needs to know the hashing function of the source
-chain in order to verify the validators hash.
+The suggested solution could be used to change the hashing function for all
+structs, not just transactions. But the result of such a change is quite
+significant. If the chain is using a different hashing scheme, then it looses
+IBC-compatibility. The IBC modules assumes fixed hashing scheme. The
+destination chain needs to know the hashing function of the source chain in
+order to verify the validators hash. So, this remains a future work for now.
 
 ## Alternative Approaches
 
-1. Do nothing => not flexible.
-2. Add `TxHashFunc` (transaction hashing function) to `NewNode` as an option
-   and pass this function down the stack => complicates the code.
-3. Allow changing the hashing function for all structs => breaks IBC
+1. Add `TxHashFunc` (transaction hashing function) to `NewNode` as an option
+   and pass this function down the stack => avoids gloval variables, but leads
+   to a massive API breakage. The problem is we're not 100% sure this will be a
+   final solution. So every time we decide to change it, we will be breaking
+   tons of API. The suggested solution allows us to be more flexible.
+2. Allow changing the hashing function for all structs => breaks IBC
    compatibility (see 'General hashing' above).
 
 ## Decision
@@ -79,14 +82,13 @@ var (
 
 // SetTxHash sets the hash function used for transaction hashing.
 //
-// Call this function before starting the node.
+// Call this function before starting the node. Changing the hashing function
+// after the chain has started can ONLY be done with a hard fork.
 func SetTxHash(h crypto.Hash) {
     txHash = h
 }
 
 // SetFmtHash sets the function used to convert a checksum to a string.
-//
-// Call this function before starting the node.
 func SetFmtHash(f func([]byte) string) {
     fmtHash = f
 }
@@ -129,6 +131,14 @@ can only do so once before launching their app. If they attempt to upgrade
 after without a hard fork, the resulting hashes won't match. A hard fork would
 work.
 
+The majority of chains should still use the default hashing function. That's
+why we don't expose this functionality in the CLI or anything like that
+(`TxHashFunc` in `NewNode`). Even though the number of chains using a different
+hashing function can be significant, it's not the use-case we're optimizing
+for. It's good to support it, but it's not the primary goal. Similarly, it's
+good to support different p2p protocols, but we're optimizing for the default
+one.
+
 ## Consequences
 
 ### Positive
@@ -146,6 +156,7 @@ work.
 
 ## References
 
-- [Original issue](https://github.com/tendermint/tendermint/issues/6539)
+- [tendermint#6539](https://github.com/tendermint/tendermint/issues/6539)
+- [tendermint#6773](https://github.com/tendermint/tendermint/pull/6773)
 
 [rlp]: https://ethereum.org/developers/docs/data-structures-and-encoding/rlp

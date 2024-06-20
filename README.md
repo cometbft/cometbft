@@ -22,12 +22,13 @@ CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
 replicates it on many machines.
 
-It is a fork of [Tendermint Core][tm-core] and implements the Tendermint
-consensus algorithm.
+CometBFT is the canonical implementation of the Tendermint consensus algorithm and is a
+primary building block for the [Interchain Stack](https://interchain.io/). Historically, 
+CometBFT has its roots and is a fork of [Tendermint Core][tm-core].
 
 For protocol details, refer to the [CometBFT Specification](./spec/README.md).
 
-For detailed analysis of the consensus protocol, including safety and liveness
+For detailed analysis of the Tendermint consensus protocol, including safety and liveness
 proofs, read our paper, "[The latest gossip on BFT
 consensus](https://arxiv.org/abs/1807.04938)".
 

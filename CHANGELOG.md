@@ -39,16 +39,18 @@ team, including:
    takes 6 to 12 months to reach production use for many users). See [ADR
    109](./docs/architecture/adr-109-reduce-go-api-surface.md) for more details.
 7. Proposer-Based Timestamps (PBTS) support. PBTS is a Byzantine fault-tolerant
-algorithm used by CometBFT for computing block times. See [spec](./spec/consensus/proposer-based-timestamp) doc for PBTS.
+    algorithm used by CometBFT for computing block times.
+    When activated on a chain, it replaces the pre-existing BFT-time algorithm.
+    See [spec](./spec/consensus/proposer-based-timestamp) doc for PBTS.
 
 None of these changes are state machine-breaking for CometBFT-based networks,
 but could be breaking for some users who depend on the Protobuf definitions type
 URLs. See the [upgrading guidelines](./UPGRADING.md) and specific changes below
 for more details.
 
-**NB: This version is still an alpha-series release, which means that
-API-breaking changes might still be introduced until such time that a _release
-candidate_ is cut.** See [RELEASES.md](./RELEASES.md) for more information on
+**NB: This version is still a release candidate, which means that
+API-breaking changes, although very unlikely, might still be introduced
+before the final release.** See [RELEASES.md](./RELEASES.md) for more information on
 the stability guarantees we provide for pre-releases.
 
 ### BREAKING CHANGES
@@ -287,6 +289,8 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
    ([\#1616](https://github.com/cometbft/cometbft/pull/1616))
 - `[state]` Fix rollback to a specific height
   ([\#2136](https://github.com/cometbft/cometbft/pull/2136))
+- `[types]` Do not batch verify a commit if the validator set keys have different
+  types. ([\#3195](https://github.com/cometbft/cometbft/issues/3195)
 
 ### DEPENDENCIES
 
@@ -476,6 +480,10 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
   ([\#3180](https://github.com/cometbft/cometbft/issues/3180))
 - `[consensus]` Make Vote messages only take one peerstate mutex
   ([\#3156](https://github.com/cometbft/cometbft/issues/3156))
+- `[consensus]` Make the consensus reactor no longer have packets on receive take the consensus lock.
+Consensus will now update the reactor's view after every relevant change through the existing 
+synchronous event bus subscription.
+  ([\#3211](https://github.com/cometbft/cometbft/pull/3211))
 - `[consensus]` New metrics (counters) to track duplicate votes and block parts.
   ([\#896](https://github.com/cometbft/cometbft/pull/896))
 - `[consensus]` Optimize vote and block part gossip with new message `HasProposalBlockPartMessage`,

@@ -727,9 +727,6 @@ func (vals *ValidatorSet) findPreviousProposer() *Validator {
 	return previousProposer
 }
 
-<<<<<<< HEAD
-//-----------------
-=======
 func (vals *ValidatorSet) checkAllKeysHaveSameType() {
 	if vals.Size() == 0 {
 		vals.allKeysHaveSameType = true
@@ -761,7 +758,6 @@ func (vals *ValidatorSet) AllKeysHaveSameType() bool {
 }
 
 // -----------------
->>>>>>> 35401c321 (fix(types): DO NOT batch verify if vals keys (#3196))
 
 // IsErrNotEnoughVotingPowerSigned returns true if err is
 // ErrNotEnoughVotingPowerSigned.

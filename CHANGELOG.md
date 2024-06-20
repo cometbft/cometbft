@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-*December 4, 2023*
+*June 20, 2024*
 
 This is a major release of CometBFT that includes several substantial changes
 that aim to reduce bandwidth consumption, enable modularity, improve

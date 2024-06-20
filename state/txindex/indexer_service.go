@@ -50,7 +50,7 @@ func NewIndexerService(
 func (is *IndexerService) OnStart() error {
 	if reflect.TypeOf(is.txIdxr) == reflect.TypeOf(&null.TxIndex{}) &&
 		reflect.TypeOf(is.blockIdxr) == reflect.TypeOf(&blockidxnull.BlockerIndexer{}) {
-		is.Logger.Info("no indexers configured, skipping")
+		is.Logger.Info("No indexers configured, skipping startup of IndexerService")
 		return nil
 	}
 	// Use SubscribeUnbuffered here to ensure both subscriptions does not get

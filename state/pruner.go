@@ -226,6 +226,10 @@ func (p *Pruner) SetABCIResRetainHeight(height int64) error {
 }
 
 func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
+	if p.txIndexer == nil {
+		return nil
+	}
+
 	// Ensure that all requests to set retain heights via the application are
 	// serialized.
 	p.mtx.Lock()
@@ -252,6 +256,10 @@ func (p *Pruner) SetTxIndexerRetainHeight(height int64) error {
 }
 
 func (p *Pruner) SetBlockIndexerRetainHeight(height int64) error {
+	if p.blockIndexer == nil {
+		return nil
+	}
+
 	// Ensure that all requests to set retain heights via the application are
 	// serialized.
 	p.mtx.Lock()
@@ -298,12 +306,18 @@ func (p *Pruner) GetABCIResRetainHeight() (int64, error) {
 // GetTxIndexerRetainHeight is a convenience method for accessing the
 // GetTxIndexerRetainHeight method of the underlying indexer.
 func (p *Pruner) GetTxIndexerRetainHeight() (int64, error) {
+	if p.txIndexer == nil {
+		return 0, nil
+	}
 	return p.txIndexer.GetRetainHeight()
 }
 
 // GetBlockIndexerRetainHeight is a convenience method for accessing the
 // GetBlockIndexerRetainHeight method of the underlying state store.
 func (p *Pruner) GetBlockIndexerRetainHeight() (int64, error) {
+	if p.blockIndexer == nil {
+		return 0, nil
+	}
 	return p.blockIndexer.GetRetainHeight()
 }
 
@@ -367,6 +381,9 @@ func (p *Pruner) pruneIndexesRoutine() {
 }
 
 func (p *Pruner) pruneTxIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	if p.txIndexer == nil {
+		return 0
+	}
 	targetRetainHeight, err := p.GetTxIndexerRetainHeight()
 	if err != nil {
 		// Indexer retain height has not yet been set - do not log any
@@ -393,6 +410,9 @@ func (p *Pruner) pruneTxIndexerToRetainHeight(lastRetainHeight int64) int64 {
 }
 
 func (p *Pruner) pruneBlockIndexerToRetainHeight(lastRetainHeight int64) int64 {
+	if p.blockIndexer == nil {
+		return 0
+	}
 	targetRetainHeight, err := p.GetBlockIndexerRetainHeight()
 	if err != nil {
 		// Indexer retain height has not yet been set - do not log any

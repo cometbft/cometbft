@@ -330,10 +330,20 @@ func NewNode(ctx context.Context,
 		return nil, err
 	}
 
-	indexerService, txIndexer, blockIndexer, err := createAndStartIndexerService(config,
-		genDoc.ChainID, dbProvider, eventBus, logger)
-	if err != nil {
-		return nil, err
+	var (
+		indexerService *txindex.IndexerService
+		txIndexer      txindex.TxIndexer
+		blockIndexer   indexer.BlockIndexer
+	)
+
+	if config.TxIndex.Indexer != "null" {
+		indexerService, txIndexer, blockIndexer, err = createAndStartIndexerService(
+			config, genDoc.ChainID, dbProvider, eventBus, logger)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		logger.Info("tx indexer is disabled, skipping indexer service creation")
 	}
 
 	// If an address is provided, listen on the socket for a connection from an

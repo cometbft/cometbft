@@ -23,6 +23,7 @@ type testPeer struct {
 	base      int64
 	height    int64
 	inputChan chan inputData // make sure each peer's data is sequential
+	malicious bool
 }
 
 type inputData struct {
@@ -30,6 +31,11 @@ type inputData struct {
 	pool    *BlockPool
 	request BlockRequest
 }
+
+// Malicious nodes parameters
+const MaliciousLie = 5  // This is how much the malicious node is higher than the real height
+const BlackholeSize = 3 // This is how many blocks the malicious node will not report immediately above real height
+const MaliciousTestMaximumLength = 5 * time.Minute
 
 func (p testPeer) runInputRoutine() {
 	go func() {
@@ -41,18 +47,32 @@ func (p testPeer) runInputRoutine() {
 
 // Request desired, pretend like we got the block immediately.
 func (p testPeer) simulateInput(input inputData) {
-	block := &types.Block{Header: types.Header{Height: input.request.Height}}
+	block := &types.Block{Header: types.Header{Height: input.request.Height}, LastCommit: &types.Commit{}} // real blocks have LastCommit
 	extCommit := &types.ExtendedCommit{
 		Height: input.request.Height,
 	}
-	_ = input.pool.AddBlock(input.request.PeerID, block, extCommit, 123)
+	// If this peer is malicious
+	if p.malicious {
+		realHeight := p.height - MaliciousLie
+		// And the requested height is above the real height
+		if input.request.Height > realHeight {
+			// Then provide a fake block
+			block.LastCommit = nil // Fake block, no LastCommit
+			// or provide no block at all, if we are close to the real height
+			if input.request.Height <= realHeight+BlackholeSize {
+				return
+			}
+		}
+	}
+	err := input.pool.AddBlock(input.request.PeerID, block, extCommit, 123)
+	require.NoError(input.t, err)
 	// TODO: uncommenting this creates a race which is detected by:
 	// https://github.com/golang/go/blob/2bd767b1022dd3254bcec469f0ee164024726486/src/testing/testing.go#L854-L856
 	// see: https://github.com/tendermint/tendermint/issues/3390#issue-418379890
 	// input.t.Logf("Added block from peer %v (height: %v)", input.request.PeerID, input.request.Height)
 }
 
-type testPeers map[p2p.ID]testPeer
+type testPeers map[p2p.ID]*testPeer
 
 func (ps testPeers) start() {
 	for _, v := range ps {
@@ -75,7 +95,7 @@ func makePeers(numPeers int, minHeight, maxHeight int64) testPeers {
 		if base > height {
 			base = height
 		}
-		peers[peerID] = testPeer{peerID, base, height, make(chan inputData, 10)}
+		peers[peerID] = &testPeer{peerID, base, height, make(chan inputData, 10), false}
 	}
 	return peers
 }
@@ -213,7 +233,7 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		peerID := p2p.ID(fmt.Sprintf("%d", i+1))
 		height := int64(i + 1)
-		peers[peerID] = testPeer{peerID, 0, height, make(chan inputData)}
+		peers[peerID] = &testPeer{peerID, 0, height, make(chan inputData), false}
 	}
 	requestsCh := make(chan BlockRequest)
 	errorsCh := make(chan peerError)
@@ -250,13 +270,32 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 }
 
 func TestBlockPoolMaliciousNode(t *testing.T) {
-	var (
-		start      = int64(42)
-		peers      = makePeers(5, start, 100)
-		errorsCh   = make(chan peerError)
-		requestsCh = make(chan BlockRequest)
-	)
-	pool := NewBlockPool(start, requestsCh, errorsCh)
+	// Setup:
+	// * each peer has blocks 1..N but the malicious peer reports 1..N+5 (block N+1,N+2,N+3 missing, N+4,N+5 fake)
+	// * The malicious peer is ahead of the network but not by much, so it does not get dropped from the pool
+	//   with a timeout error. (If a peer does not send blocks after 2 seconds, they are disconnected.)
+	// * The network creates new blocks every second. The malicious peer will also get ahead with another fake block.
+	// * The pool verifies blocks every half second. This ensures that the pool catches up with the network.
+	// * When the pool encounters a fake block sent by the malicious peer and has the previous block from a good peer,
+	//   it can prove that the block is fake. The malicious peer gets banned.
+	// Additional notes:
+	// * After a minute of ban, the malicious peer is unbanned. If the pool IsCaughtUp() by then and consensus started,
+	//   there is no impact. If blocksync did not catch up yet, the malicious peer can continue its lie until the next ban.
+	// * The pool has an initial 3 seconds spin-up time before it starts verifying peers. (So peers have a chance to
+	//   connect.) If the initial height is 7 and the block creation is 1/second, verification will start at height 10.
+	// * Testing with height 7, the main functionality of banning a malicious peer is tested.
+	//   Testing with height 207, a malicious peer can reconnect and the subsequent banning is also tested.
+	//   This takes a couple of minutes to complete, so we don't run it.
+	const InitialHeight = 7
+	peers := testPeers{
+		p2p.ID("good0"): &testPeer{p2p.ID("good0"), 1, InitialHeight, make(chan inputData), false},
+		p2p.ID("good1"): &testPeer{p2p.ID("good1"), 1, InitialHeight, make(chan inputData), false},
+		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, InitialHeight + MaliciousLie, make(chan inputData), true},
+	}
+	errorsCh := make(chan peerError)
+	requestsCh := make(chan BlockRequest)
+
+	pool := NewBlockPool(1, requestsCh, errorsCh)
 	pool.SetLogger(log.TestingLogger())
 
 	err := pool.Start()
@@ -270,37 +309,55 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 		}
 	})
 
-	maliciousPeers := makePeers(1, int64(101), 200)
-	maliciousPeers.start()
-	defer maliciousPeers.stop()
-
 	peers.start()
 	defer peers.stop()
 
-	// Introduce each peer.
+	// Connect the peers to each other.
 	go func() {
-		for _, peer := range maliciousPeers {
-			pool.SetPeerRange(peer.id, peer.base, peer.height)
-		}
 		for _, peer := range peers {
 			pool.SetPeerRange(peer.id, peer.base, peer.height)
 		}
 	}()
 
-	// Start a goroutine to pull blocks
+	// Simulate blocks created on each peer regularly and update pool max height.
 	go func() {
 		for {
+			time.Sleep(1 * time.Second) // Speed of new block creation
+			for _, peer := range peers {
+				peer.height += 1                // Network height increases on all peers
+				if pool.peers[peer.id] != nil { // Avoid race condition when bad peer is banned.
+					pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
+				}
+			}
+			t.Logf("New network height: %d", peers["good0"].height)
+		}
+	}()
+
+	// Start a goroutine to verify blocks
+	go func() {
+		for {
+			time.Sleep(500 * time.Millisecond) // Speed of block verification
 			if !pool.IsRunning() {
 				return
 			}
 			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
-				pool.PopRequest()
-			} else {
-				time.Sleep(1 * time.Second)
+				t.Logf("Verifying blocks %v vs %v", first.Height, second.Height)
+				if second.LastCommit == nil {
+					// Second block is fake
+					t.Logf("Second block is fake")
+					pool.RemovePeerAndRedoAllPeerRequests(second.Height)
+				} else {
+					pool.PopRequest()
+				}
 			}
 		}
 	}()
+
+	testTicker := time.NewTicker(200 * time.Millisecond) // speed of test execution
+	defer testTicker.Stop()
+	bannedOnce := false // true when the malicious peer was banned at least once
+	startTime := time.Now()
 
 	// Pull from channels
 	for {
@@ -308,12 +365,41 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 		case err := <-errorsCh:
 			t.Error(err)
 		case request := <-requestsCh:
-			t.Logf("Pulled new BlockRequest %v", request)
-			if request.Height == 120 {
-				return // Done!
-			}
-
+			// Process request
+			t.Logf("BlockRequest(%d) from peer '%s' at height %d", request.Height, request.PeerID, peers[request.PeerID].height)
 			peers[request.PeerID].inputChan <- inputData{t, pool, request}
+		case <-testTicker.C:
+			if time.Now().Sub(startTime) > MaliciousTestMaximumLength {
+				require.Fail(t, "Network ran too long, stopping test.")
+			}
+			_, banned := pool.bannedPeers["bad"]
+			_, connected := pool.peers["bad"]
+			if !banned {
+				if bannedOnce {
+					if pool.IsCaughtUp() {
+						t.Logf("Pool caught up, malicious peer was banned at least once, start consensus.")
+						return
+					}
+					if !connected {
+						t.Logf("Malicious peer was unbanned, reconnecting.")
+						// We just got unbanned, let's reconnect
+						pool.SetPeerRange(peers["bad"].id, peers["bad"].base, peers["bad"].height)
+						_, connected = pool.peers["bad"]
+					}
+				}
+				// The pool should not have caught up, if the malicious peer was not banned before or the test is moot.
+				require.False(t, pool.IsCaughtUp())
+				// The bad peer should be connected. If it timed out, change the parameters, so it lies less.
+				require.True(t, connected)
+			} else {
+				bannedOnce = true
+				// The banned peer cannot be part of the pool
+				require.False(t, connected)
+				if pool.IsCaughtUp() {
+					t.Logf("Pool caught up, malicious peer is still banned, start consensus.")
+					return
+				}
+			}
 		}
 	}
 }

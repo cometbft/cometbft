@@ -44,7 +44,8 @@ type CListMempool struct {
 	proxyAppConn proxy.AppConnMempool
 
 	// Keeps track of the rechecking process.
-	recheck *recheck
+	recheck        *recheck
+	stopRechecking atomic.Bool
 
 	// Concurrent linked-list of valid txs.
 	// `txsMap`: txKey -> CElement is for quick access to txs.
@@ -178,6 +179,11 @@ func (mem *CListMempool) Lock() {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Unlock() {
 	mem.updateMtx.Unlock()
+}
+
+// Safe for concurrent use by multiple goroutines.
+func (mem *CListMempool) ResetUpdate() {
+	mem.stopRechecking.Store(true)
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -625,6 +631,7 @@ func (mem *CListMempool) Update(
 // returns, all recheck responses from the app have been processed.
 func (mem *CListMempool) recheckTxs() {
 	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
+	mem.stopRechecking.Store(false)
 
 	if mem.Size() <= 0 {
 		return
@@ -635,6 +642,10 @@ func (mem *CListMempool) recheckTxs() {
 	// NOTE: CheckTx for new transactions cannot be executed concurrently
 	// because this function has the lock (via Update and Lock).
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
+		if mem.stopRechecking.Load() {
+			break
+		}
+
 		tx := e.Value.(*mempoolTx).tx
 		mem.recheck.numPendingTxs.Add(1)
 
@@ -664,6 +675,7 @@ func (mem *CListMempool) recheckTxs() {
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
 		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
 	}
+	mem.stopRechecking.Store(false)
 	mem.logger.Debug("done rechecking txs", "height", mem.height.Load(), "num-txs", mem.Size())
 }
 

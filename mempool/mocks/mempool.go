@@ -161,6 +161,11 @@ func (_m *Mempool) RemoveTxByKey(txKey types.TxKey) error {
 	return r0
 }
 
+// ResetUpdate provides a mock function with given fields:
+func (_m *Mempool) ResetUpdate() {
+	_m.Called()
+}
+
 // Size provides a mock function with given fields:
 func (_m *Mempool) Size() int {
 	ret := _m.Called()

@@ -35,7 +35,9 @@ team, including:
    takes 6 to 12 months to reach production use for many users). See [ADR
    109](./docs/architecture/adr-109-reduce-go-api-surface.md) for more details.
 7. Proposer-Based Timestamps (PBTS) support. PBTS is a Byzantine fault-tolerant
-algorithm used by CometBFT for computing block times. See [spec](./spec/consensus/proposer-based-timestamp) doc for PBTS.
+    algorithm used by CometBFT for computing block times.
+    When activated on a chain, it replaces the pre-existing BFT-time algorithm.
+    See [spec](./spec/consensus/proposer-based-timestamp) doc for PBTS.
 
 None of these changes are state machine-breaking for CometBFT-based networks,
 but could be breaking for some users who depend on the Protobuf definitions type

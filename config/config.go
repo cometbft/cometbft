@@ -987,6 +987,12 @@ type MempoolConfig struct {
 	// Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
 	// Use this feature with caution and consider the impact on transaction processing performance.
 	ExperimentalPublishEventPendingTx bool `mapstructure:"experimental_publish_event_pending_tx"`
+
+	// For DOG gossip protocol.
+	// TargetRedundancySlack is expressed as % of TargetRedundancy.
+	TargetRedundancy      float64 `mapstructure:"target_redundancy"`
+	TargetRedundancySlack float64 `mapstructure:"target_redundancy_slack"`
+	TxsPerAdjustment      int64   `mapstructure:"txs_per_adjustment"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
@@ -1004,6 +1010,9 @@ func DefaultMempoolConfig() *MempoolConfig {
 		CacheSize:   10000,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: 0,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    0,
+		TargetRedundancy:      1,
+		TargetRedundancySlack: 10,
+		TxsPerAdjustment:      500,
 	}
 }
 

@@ -45,6 +45,6 @@ URLs. See the [upgrading guidelines](./UPGRADING.md) and specific changes below
 for more details.
 
 **NB: This version is still a release candidate, which means that
-API-breaking changes might still be introduced until such time that a _release
-candidate_ is cut.** See [RELEASES.md](./RELEASES.md) for more information on
+API-breaking changes, although very unlikely, might still be introduced
+before the final release.** See [RELEASES.md](./RELEASES.md) for more information on
 the stability guarantees we provide for pre-releases.

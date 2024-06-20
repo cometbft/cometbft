@@ -58,6 +58,10 @@ type CListMempool struct {
 
 	logger  log.Logger
 	metrics *Metrics
+
+	// if the recheck txs cannot be completed before
+	// a max recheck timeout is reached
+	recheckSaturated bool
 }
 
 var _ Mempool = &CListMempool{}
@@ -412,12 +416,13 @@ func (mem *CListMempool) isFull(txSize int) error {
 		txsBytes = mem.SizeBytes()
 	)
 
-	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) {
+	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) || mem.recheckSaturated {
 		return ErrMempoolIsFull{
-			NumTxs:      memSize,
-			MaxTxs:      mem.config.Size,
-			TxsBytes:    txsBytes,
-			MaxTxsBytes: mem.config.MaxTxsBytes,
+			NumTxs:           memSize,
+			MaxTxs:           mem.config.Size,
+			TxsBytes:         txsBytes,
+			MaxTxsBytes:      mem.config.MaxTxsBytes,
+			RecheckSaturated: mem.recheckSaturated,
 		}
 	}
 
@@ -651,9 +656,11 @@ func (mem *CListMempool) recheckTxs() {
 	// if not all txs were rechecked.
 	select {
 	case <-time.After(mem.config.RecheckTimeout):
+		mem.recheckSaturated = true
 		mem.recheck.setDone()
 		mem.logger.Error("timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
+		mem.recheckSaturated = false
 	}
 
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {

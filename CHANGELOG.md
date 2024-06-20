@@ -2,7 +2,11 @@
 
 ## Unreleased
 
+<<<<<<< HEAD
 *December 4, 2023*
+=======
+*June 20, 2024*
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 
 This is a major release of CometBFT that includes several substantial changes
 that aim to reduce bandwidth consumption, enable modularity, improve
@@ -20,16 +24,28 @@ team, including:
    transaction dissemination mechanism, for example a standalone mempool-like
    process that can be scaled independently of the consensus engine/application.
    This requires application developers to implement their own gossip/networking
+<<<<<<< HEAD
    mechanisms. See [ADR 111](./docs/references/architecture/adr-111-nop-mempool.md)
    for details.
 4. The first officially supported release of the [data companion
    API](./docs/references/architecture/adr-101-data-companion-pull-api.md).
+=======
+   mechanisms. See [ADR 111](./docs/architecture/adr-111-nop-mempool.md) for
+   details.
+4. The first officially supported release of the [data companion
+   API](./docs/architecture/adr-101-data-companion-pull-api.md).
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 5. Versioning of both the Protobuf definitions _and_ RPC. By versioning our
    APIs, we aim to provide a level of commitment to API stability while
    simultaneously affording ourselves the ability to roll out substantial
    changes in non-breaking releases of CometBFT. See [ADR
+<<<<<<< HEAD
    103](./docs/references/architecture/adr-103-proto-versioning.md) and [ADR
    107](./docs/references/architecture/adr-107-betaize-proto-versions.md).
+=======
+   103](./docs/architecture/adr-103-proto-versioning.md) and [ADR
+   107](./docs/architecture/adr-107-betaize-proto-versions.md).
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 6. Moving many Go packages that are currently publicly accessible into the
    `internal` directory such that the team can roll out substantial changes in
    future without needing to worry about causing breakages in users' codebases.
@@ -37,23 +53,47 @@ team, including:
    hampered the team's ability to roll out impactful new changes to users, as
    previously such changes required a new breaking release (which currently
    takes 6 to 12 months to reach production use for many users). See [ADR
+<<<<<<< HEAD
    109](./docs/references/architecture/adr-109-reduce-go-api-surface.md) for
    more details.
+=======
+   109](./docs/architecture/adr-109-reduce-go-api-surface.md) for more details.
+7. Proposer-Based Timestamps (PBTS) support. PBTS is a Byzantine fault-tolerant
+    algorithm used by CometBFT for computing block times.
+    When activated on a chain, it replaces the pre-existing BFT-time algorithm.
+    See [spec](./spec/consensus/proposer-based-timestamp) doc for PBTS.
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 
 None of these changes are state machine-breaking for CometBFT-based networks,
 but could be breaking for some users who depend on the Protobuf definitions type
 URLs. See the [upgrading guidelines](./UPGRADING.md) and specific changes below
 for more details.
 
+<<<<<<< HEAD
 **NB: This version is still an alpha-series release, which means that
 API-breaking changes might still be introduced until such time that a _release
 candidate_ is cut.** See [RELEASES.md](./RELEASES.md) for more information on
+=======
+**NB: This version is still a release candidate, which means that
+API-breaking changes, although very unlikely, might still be introduced
+before the final release.** See [RELEASES.md](./RELEASES.md) for more information on
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 the stability guarantees we provide for pre-releases.
 
 ### BREAKING CHANGES
 
+<<<<<<< HEAD
 - Made `/api` a standalone Go module with its own `go.mod`
   ([\#1561](https://github.com/cometbft/cometbft/issues/1561))
+=======
+ - `[abci/types]` Rename `UpdateValidator` to `NewValidatorUpdate`, remove
+   `Ed25519ValidatorUpdate` ([\#2843](https://github.com/cometbft/cometbft/pull/2843))
+- `[abci/client]` Deprecate `SetResponseCallback(cb Callback)` in the `Client` interface as it is no
+longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
+- `[abci/types]` Replace `ValidatorUpdate.PubKey` with `PubKeyType` and
+  `PubKeyBytes` to allow applications to avoid implementing `PubKey` interface.
+  ([\#2843](https://github.com/cometbft/cometbft/pull/2843))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[abci]` Changed the proto-derived enum type and constant aliases to the
   buf-recommended naming conventions adopted in the `abci/v1` proto package.
   For example, `ResponseProcessProposal_ACCEPT` is renamed to `PROCESS_PROPOSAL_STATUS_ACCEPT`
@@ -81,6 +121,7 @@ the stability guarantees we provide for pre-releases.
   `consensus.RunReplayFile`, and `consensus.State.ReplayFile`
   ([\#1170](https://github.com/cometbft/cometbft/pull/1170))
 - `[comet]` Version variables, in `version/version.go`, have been renamed to reflect the CometBFT rebranding.
+<<<<<<< HEAD
    ([cometbft/cometbft\#1621](https://github.com/cometbft/cometbft/pull/1621))
 - `[consensus]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
@@ -90,6 +131,28 @@ the stability guarantees we provide for pre-releases.
    ([\#558](https://github.com/cometbft/cometbft/issues/558))
 - `[evidence]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+=======
+   ([\#1621](https://github.com/cometbft/cometbft/pull/1621))
+- `[config]` Merge `timeout_prevote` and `timeout_precommit`,
+  `timeout_prevote_delta` and `timeout_precommit_delta` into `timeout_round`
+  and `timeout_round_delta` accordingly
+  ([\#2895](https://github.com/cometbft/cometbft/pull/2895))
+- `[config]` Remove `cleveldb` and `boltdb` ([\#2786](https://github.com/cometbft/cometbft/pull/2786))
+- `[config]` Remove `skip_timeout_commit` in favor of `timeout_commit=0`
+  ([\#2892](https://github.com/cometbft/cometbft/pull/2892))
+- `[consensus]` Move to `internal`
+  ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+- `[consensus]` `Handshaker.Handshake` now requires `context.Context` ([\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[node]` `NewNode` now requires `context.Context` as the first parameter ([\#857](https://github.com/cometbft/cometbft/pull/857))
+- `[crypto/merkle]` The public `Proof.ComputeRootHash` function has been deleted.
+   ([\#558](https://github.com/cometbft/cometbft/issues/558))
+- `[crypto]` Remove unnecessary `Sha256` wrapper
+  ([\#3248](https://github.com/cometbft/cometbft/pull/3248))
+- `[evidence]` Move to `internal`
+  ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+- `[go/runtime]` Bump minimum Go version to v1.22
+  ([\#2725](https://github.com/cometbft/cometbft/pull/2725))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[inspect]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
 - `[internal/state]` Moved function `MedianTime` to package `types`,
@@ -117,6 +180,7 @@ the stability guarantees we provide for pre-releases.
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
 - `[libs/progressbar]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+<<<<<<< HEAD
 - `[libs/protoio]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
 - `[libs/pubsub]` Move to `internal`
@@ -129,10 +193,22 @@ the stability guarantees we provide for pre-releases.
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
 - `[libs/sync]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+=======
+- `[libs/rand]` Move to `internal`
+  ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+- `[libs/strings]` Move to `internal`
+  ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[libs/tempfile]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
 - `[libs/timer]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+<<<<<<< HEAD
+=======
+- `[mempool]` Change the signature of `CheckTx` in the `Mempool` interface to
+`CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)`.
+([\#1010](https://github.com/cometbft/cometbft/issues/1010), [\#3084](https://github.com/cometbft/cometbft/issues/3084))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[mempool]` Remove `mempoolIDs` for internally storing peer ids as `p2p.ID`
   instead of `uint16`.
   ([\#1146](https://github.com/cometbft/cometbft/pull/1146))
@@ -142,9 +218,28 @@ the stability guarantees we provide for pre-releases.
 - `[node]` Go-API breaking: Change the signature of `LoadStateFromDBOrGenesisDocProvider`
    to accept an optional operator provided hash of the genesis file
   ([\#1324](https://github.com/cometbft/cometbft/pull/1324)).
+<<<<<<< HEAD
 - `[p2p]` Rename `IPeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
    Rename `PeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
    ([\#2246](https://github.com/cometbft/cometbft/pull/2246))
+=======
+- `[p2p]` Remove `p2p_peer_send_bytes_total` and `p2p_peer_receive_bytes_total`
+  metrics as they are costly to track, and not that informative in debugging
+  ([\#3184](https://github.com/cometbft/cometbft/issues/3184))
+- `[p2p]` Rename `IPeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
+   Rename `PeerSet#List` to `Copy`, add `Random`, `ForEach` methods.
+   ([\#2246](https://github.com/cometbft/cometbft/pull/2246))
+- `[privval]` allow privval to sign arbitrary bytes
+  ([\#2692](https://github.com/cometbft/cometbft/pull/2692))
+- `[proto/api]` Made `/api` a standalone Go module with its own `go.mod`
+  ([\#1561](https://github.com/cometbft/cometbft/issues/1561))
+- `[proto/privval]`  Replace `pub_key` with `pub_key_type` and `pub_key_bytes` in
+  `PubKeyResponse` ([\#2878](https://github.com/cometbft/cometbft/issues/2878))
+- `[proto/types]` Deprecate `pub_key` in favor of `pub_key_type` and `pub_key_bytes` in
+  `Validator` ([\#2878](https://github.com/cometbft/cometbft/issues/2878))
+- `[proto]` Remove `abci.ValidatorUpdate.pub_key`, add `pub_key_type` and
+  `pub_key_bytes` ([\#2843](https://github.com/cometbft/cometbft/pull/2843))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[proto]` Remove stateful block data retrieval methods from the
   data companion gRPC API as per
   [RFC 106](https://github.com/cometbft/cometbft/blob/main/docs/references/rfc/rfc-106-separate-stateful-methods.md)
@@ -159,13 +254,13 @@ the stability guarantees we provide for pre-releases.
   * `GetLatestBlockResults` endpoint is no longer served by `BlockResultServiceServer` instances.
 - `[proto]` Renamed the packages from `tendermint.*` to `cometbft.*`
   and introduced versioned packages to distinguish between proto definitions
-  released in 0.34.x, 0.37.x, 0.38.x, and 1.0.x versions.
+  released in `0.34.x`, `0.37.x`, `0.38.x`, and `1.x` versions.
   Prior to the 1.0 release, the versioned packages are suffixed with
   `.v1beta1`, `.v1beta2`, and so on; all definitions describing the protocols
   as per the 1.0.0 release are in packages suffixed with `.v1`.
   Relocated generated Go code into a new `api` folder and changed the import
   paths accordingly.
-  ([\#495](https://github.com/cometbft/cometbft/pull/495)
+  ([\#495](https://github.com/cometbft/cometbft/pull/495),
   [\#1504](https://github.com/cometbft/cometbft/issues/1504))
 - `[proto]` The names in the `cometbft.abci.v1` versioned proto package
   are changed to satisfy the
@@ -214,6 +309,7 @@ the stability guarantees we provide for pre-releases.
 - `[state/txindex]` TxIndexer now has additional methods: `Prune`, `GetRetainHeight`, `SetRetainHeight` ([\#1176](https://github.com/cometbft/cometbft/pull/1176))
 - `[state/store]` go-API breaking change in `PruneABCIResponses`: added parameter to force compaction. ([\#1972](https://github.com/cometbft/cometbft/pull/1972))
 - `[state/store]` go-API breaking change in `PruneStates`: added parameter to pass the number of pruned states and return pruned entries in current pruning iteration. ([\#1972](https://github.com/cometbft/cometbft/pull/1972))
+<<<<<<< HEAD
 - `[state]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
 - `[state]` The `state.Store` interface has been expanded
@@ -235,10 +331,29 @@ the stability guarantees we provide for pre-releases.
 ### BUG FIXES
 
 - `[blocksync]` wait for `poolRoutine` to stop in `(*Reactor).OnStop`
+=======
+- `[state]` The `state.Store` interface has been expanded
+  to accommodate the data pull companion API of ADR 101
+  ([\#1096](https://github.com/cometbft/cometbft/issues/1096))
+- `[store]` Make the `LoadBlock` method also return block metadata
+  ([\#1556](https://github.com/cometbft/cometbft/issues/1556))
+- `[version]` Bumped the P2P version from 8 to 9, as this release contains new P2P messages.
+   ([\#1411](https://github.com/cometbft/cometbft/pull/1411))
+
+### BUG FIXES
+
+- `[bits]` prevent `BitArray.UnmarshalJSON` from crashing on 0 bits
+  ([\#2774](https://github.com/cometbft/cometbft/pull/2774))
+- `[blocksync]` Wait for `poolRoutine` to stop in `(*Reactor).OnStop`
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
   ([\#1879](https://github.com/cometbft/cometbft/pull/1879))
 - `[consensus]` Consensus now prevotes `nil` when the proposed value does not
   match the value the local validator has locked on
   ([\#1203](https://github.com/cometbft/cometbft/pull/1203))
+- `[consensus]` Fix a race condition in the consensus timeout ticker. Race is caused by two timeouts being scheduled at the same time.
+  ([\#3092](https://github.com/cometbft/cometbft/pull/2136))
+- `[consensus]` Fix for Security Advisory `ASA-2024-001`: Validation of `VoteExtensionsEnableHeight` can cause chain halt
+  ([ASA-2024-001](https://github.com/cometbft/cometbft/security/advisories/GHSA-qr8r-m495-7hc4))
 - `[consensus]` Remove logic to unlock block on +2/3 prevote for nil
   ([\#1175](https://github.com/cometbft/cometbft/pull/1175): @BrendanChou)
 - `[crypto]` `SupportsBatchVerifier` returns false
@@ -247,11 +362,26 @@ the stability guarantees we provide for pre-releases.
 - `[evidence]` When `VerifyCommitLight` & `VerifyCommitLightTrusting` are called as part
   of evidence verification, all signatures present in the evidence must be verified
   ([\#1749](https://github.com/cometbft/cometbft/pull/1749))
+<<<<<<< HEAD
 - `[mempool]` Fix data races in `CListMempool` by making atomic the types of `height`, `txsBytes`, and
   `notifiedTxsAvailable`. ([\#642](https://github.com/cometbft/cometbft/pull/642))
 - `[mempool]` The calculation method of tx size returned by calling proxyapp should be consistent with that of mempool
   ([\#1687](https://github.com/cometbft/cometbft/pull/1687))
 - `[p2p/pex]` gracefully shutdown Reactor ([\#2010](https://github.com/cometbft/cometbft/pull/2010))
+=======
+- `[log]` Fix panic when log with nil val which is a pointer who implements
+  fmt.Stringer interface
+  ([\#3145](https://github.com/cometbft/cometbft/pull/3145))
+- `[mempool]` Fix data race when rechecking with async ABCI client
+  ([\#1827](https://github.com/cometbft/cometbft/issues/1827))
+- `[mempool]` Fix data races in `CListMempool` by making atomic the types of `height`, `txsBytes`, and
+  `notifiedTxsAvailable`. ([\#642](https://github.com/cometbft/cometbft/pull/642))
+- `[mempool]` Panic when a CheckTx request to the app returns an error
+  ([\#2225](https://github.com/cometbft/cometbft/pull/2225))
+- `[mempool]` The calculation method of tx size returned by calling proxyapp should be consistent with that of mempool
+  ([\#1687](https://github.com/cometbft/cometbft/pull/1687))
+- `[p2p/pex]` Gracefully shutdown Reactor ([\#2010](https://github.com/cometbft/cometbft/pull/2010))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[privval]` Retry accepting a connection ([\#2047](https://github.com/cometbft/cometbft/pull/2047))
 - `[state/indexer]` Respect both height params while querying for events
    ([\#1529](https://github.com/cometbft/cometbft/pull/1529))
@@ -259,26 +389,57 @@ the stability guarantees we provide for pre-releases.
    ([\#1616](https://github.com/cometbft/cometbft/pull/1616))
 - `[state]` Fix rollback to a specific height
   ([\#2136](https://github.com/cometbft/cometbft/pull/2136))
+<<<<<<< HEAD
 `[consensus]` Fix for "Validation of `VoteExtensionsEnableHeight` can cause chain halt"
   ([ASA-2024-001](https://github.com/cometbft/cometbft/security/advisories/GHSA-qr8r-m495-7hc4))
+=======
+- `[types]` Do not batch verify a commit if the validator set keys have different
+  types. ([\#3195](https://github.com/cometbft/cometbft/issues/3195)
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 
 ### DEPENDENCIES
 
+- Bump api to v1.0.0-rc.1 for v1.0.0 Release Candidate 1
+  ([\#3191](https://github.com/cometbft/cometbft/pull/3191))
 - Bump cometbft-db to v0.9.0, providing support for RocksDB v8
   ([\#1725](https://github.com/cometbft/cometbft/pull/1725))
 
 ### FEATURES
 
+<<<<<<< HEAD
 - Add [`pebbledb`](https://github.com/cockroachdb/pebble). To use, build with
   `pebbledb` tag (`go build -tags pebbledb`) ([\#2132](https://github.com/cometbft/cometbft/pull/2132/))
 - [evidence/store] Added support for a different DB key representation within the evidence store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
 - [light/store] Added support for a different DB key representation within the light block store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
 - [store] Added support for a different DB key representation to state and block store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
+=======
+- `[config]` Add [`pebbledb`](https://github.com/cockroachdb/pebble). To use, build with
+  `pebbledb` tag (`go build -tags pebbledb`) ([\#2132](https://github.com/cometbft/cometbft/pull/2132/))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[config]` Add `[grpc.block_results_service]` gRPC configuration `BlockResultsService`
   ([\#1095](https://github.com/cometbft/cometbft/issues/1095))
 - `[config]` Add `[grpc.block_service]` section to configure gRPC `BlockService`
   ([\#1094](https://github.com/cometbft/cometbft/issues/1094))
 - `[config]` Add configuration parameters to tweak forced compaction. ([\#1972](https://github.com/cometbft/cometbft/pull/1972))
+<<<<<<< HEAD
+=======
+- `[config]` Added `[grpc.version_service]` section for configuring the gRPC version service.
+  ([\#816](https://github.com/cometbft/cometbft/issues/816))
+- `[config]` Added `[grpc]` section to configure the gRPC server.
+  ([\#816](https://github.com/cometbft/cometbft/issues/816))
+- `[config]` Added `[storage.experimental_db_key_layout]` storage parameter, set to "v2"
+  for order preserving representation
+([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
+- `[config]` Move `timeout_commit` into the ABCI `FinalizeBlockResponse`
+  ([\#2655](https://github.com/cometbft/cometbft/issues/2655))
+- `[config]` Removed unused `[mempool.max_batch_bytes]` mempool parameter.
+ ([\#2056](https://github.com/cometbft/cometbft/pull/2056/))
+- `[config]` Update the default value of `mempool.max_txs_bytes` to 64 MiB.
+  ([\#2756](https://github.com/cometbft/cometbft/issues/2756))
+- `[consensus]` Make mempool updates asynchronous from consensus Commit's,
+  reducing latency for reaching consensus timeouts.
+  ([#3008](https://github.com/cometbft/cometbft/pull/3008))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[consensus]` Update block validation to no longer require the block timestamp
   to be the median of the timestamps of the previous commit. (@anca)
   ([tendermint/tendermint\#7382](https://github.com/tendermint/tendermint/pull/7382))
@@ -300,16 +461,28 @@ the stability guarantees we provide for pre-releases.
 - `[consensus]` add a new `synchrony` field to the `ConsensusParameter` struct
   for controlling the parameters of the proposer-based timestamp algorithm. (@williambanfield)
   ([tendermint/tendermint\#7354](https://github.com/tendermint/tendermint/pull/7354))
+<<<<<<< HEAD
+=======
+- `[crypto]` Add support for BLS12-381 keys. Since the implementation needs
+  `cgo` and brings in new dependencies, we use the `bls12381` build flag to
+  enable it ([\#2765](https://github.com/cometbft/cometbft/pull/2765))
+- `[docs]` Add report on storage improvements and findings. ([\#2569](https://github.com/cometbft/cometbft/pull/2569))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[e2e]` Add `block_max_bytes` option to the manifest file.
   ([\#2362](https://github.com/cometbft/cometbft/pull/2362))
 - `[e2e]` Add new `--testnet-dir` parameter to set a custom directory for the generated testnet files.
   ([\#2433](https://github.com/cometbft/cometbft/pull/2433))
+<<<<<<< HEAD
+=======
+- `[evidence/store]` Added support for a different DB key representation within the evidence store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[grpc]` Add `BlockResultsService` with client to fetch BlockResults
   for a given height, or latest.
   ([\#1095](https://github.com/cometbft/cometbft/issues/1095))
 - `[grpc]` Add `BlockService` with client to facilitate fetching of blocks and
   streaming of the latest committed block height
   ([\#1094](https://github.com/cometbft/cometbft/issues/1094))
+<<<<<<< HEAD
 - `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643))
 
   If you want to use it, change mempool's `type` to `nop`:
@@ -327,6 +500,23 @@ the stability guarantees we provide for pre-releases.
   # is not supported.
   type = "nop"
   ```
+=======
+- `[light/store]` Added support for a different DB key representation within the light block store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
+- `[mempool]` Add `nop` mempool ([\#1643](https://github.com/cometbft/cometbft/pull/1643)). If you want to use it, change mempool's `type` to `nop`:
+```toml
+      [mempool]
+
+      # The type of mempool for this node to use.
+      #
+      # Possible types:
+      # - "flood" : concurrent linked list mempool with flooding gossip protocol
+      # (default)
+      # - "nop"   : nop-mempool (short for no operation; the ABCI app is responsible
+      # for storing, disseminating and proposing txs). "create_empty_blocks=false"
+      # is not supported.
+      type = "nop"
+```
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[metrics]` Add metric for mempool size in bytes `SizeBytes`.
   ([\#1512](https://github.com/cometbft/cometbft/pull/1512))
 - `[metrics]` Add metrics to monitor pruning and current available data in stores: `PruningServiceBlockRetainHeight`, `PruningServiceBlockResultsRetainHeight`, `ApplicationBlockRetainHeight`, `BlockStoreBaseHeight`, `ABCIResultsBaseHeight`.
@@ -336,17 +526,26 @@ the stability guarantees we provide for pre-releases.
 - `[proto]` Add definitions and generated code for
   [ADR-101](./docs/architecture/adr-101-data-companion-pull-api.md)
   `PruningService` in the `cometbft.services.pruning.v1` proto package
+<<<<<<< HEAD
   ([\#1097](https://github.com/cometbft/cometbft/issues/1097)).
+=======
+  ([\#1097](https://github.com/cometbft/cometbft/issues/1097))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[rpc/grpc]` Add privileged gRPC server and client facilities, in
   `server/privileged` and `client/privileged` packages respectively, to
   enable a separate API server within the node which serves trusted clients
   without authentication and should never be exposed to public internet
+<<<<<<< HEAD
   ([\#1097](https://github.com/cometbft/cometbft/issues/1097)).
+=======
+  ([\#1097](https://github.com/cometbft/cometbft/issues/1097))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[rpc/grpc]` Add a pruning service adding on the privileged gRPC server API to
   give an [ADR-101](./docs/architecture/adr-101-data-companion-pull-api.md) data
   companion control over block data retained by the node. The
   `WithPruningService` option method in `server/privileged` is provided to
   configure the pruning service
+<<<<<<< HEAD
   ([\#1097](https://github.com/cometbft/cometbft/issues/1097)).
 - `[rpc/grpc]` Add `PruningServiceClient` interface
   for the gRPC client in `client/privileged` along with a configuration option
@@ -358,12 +557,31 @@ the stability guarantees we provide for pre-releases.
   ([\#1097](https://github.com/cometbft/cometbft/issues/1097)).
 - `[rpc/grpc]` Add gRPC client with support for version service
   ([\#816](https://github.com/cometbft/cometbft/issues/816))
+=======
+  ([\#1097](https://github.com/cometbft/cometbft/issues/1097))
+- `[rpc/grpc]` Add `PruningServiceClient` interface
+  for the gRPC client in `client/privileged` along with a configuration option
+  to enable it
+  ([\#1097](https://github.com/cometbft/cometbft/issues/1097))
+- `[config]` Add `[grpc.privileged]` section to configure the privileged
+  gRPC server for the node, and `[grpc.privileged.pruning_service]` section
+  to control the pruning service
+  ([\#1097](https://github.com/cometbft/cometbft/issues/1097))
+- `[proto]` add `syncing_to_height` to `FinalizeBlockRequest` to let the ABCI app
+  know if the node is syncing or not.
+  ([\#1247](https://github.com/cometbft/cometbft/issues/1247))
+- `[rpc/grpc]` Add gRPC client with support for version service
+  ([\#816](https://github.com/cometbft/cometbft/issues/816))
+- `[rpc/grpc]` Add gRPC endpoint for pruning the block and transaction indexes
+([\#1327](https://github.com/cometbft/cometbft/pull/1327))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[rpc/grpc]` Add gRPC server to the node, configurable
   via a new `[grpc]` section in the configuration file
   ([\#816](https://github.com/cometbft/cometbft/issues/816))
 - `[rpc/grpc]` Add gRPC version service to allow clients to
   establish the software and protocol versions of the node
   ([\#816](https://github.com/cometbft/cometbft/issues/816))
+<<<<<<< HEAD
 - `[state]` Add TxIndexer and BlockIndexer pruning metrics
   ([\#1334](https://github.com/cometbft/cometbft/issues/1334))
 - `[store]` When pruning force compaction of the database. ([\#1972](https://github.com/cometbft/cometbft/pull/1972))
@@ -376,6 +594,18 @@ the stability guarantees we provide for pre-releases.
 - Optimized the PSQL indexer
   ([\#2142](https://github.com/cometbft/cometbft/pull/2142)) thanks to external contributor @k0marov !
 - Update Apalache type annotations in the light client spec ([#955](https://github.com/cometbft/cometbft/pull/955))
+=======
+- `[rpc]` Add `unconfirmed_tx` to support query mempool transaction by transaction hash.
+  ([\#3079](https://github.com/cometbft/cometbft/pull/3079))
+- `[state]` Add TxIndexer and BlockIndexer pruning metrics
+  ([\#1334](https://github.com/cometbft/cometbft/issues/1334))
+- `[store]` Added support for a different DB key representation to state and block store ([\#2327](https://github.com/cometbft/cometbft/pull/2327/))
+- `[store]` When pruning force compaction of the database. ([\#1972](https://github.com/cometbft/cometbft/pull/1972))
+- `[test]` Added monitoring tools and dashboards for local testing with `localnet`. ([\#2107](https://github.com/cometbft/cometbft/issues/2107))
+
+### IMPROVEMENTS
+
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[abci/client]` Add consensus-synchronized local client creator,
   which only imposes a mutex on the consensus "connection", leaving
   the concurrency of all other "connections" up to the application
@@ -384,10 +614,18 @@ the stability guarantees we provide for pre-releases.
   imposes no mutexes on the application, leaving all handling of concurrency up
   to the application ([\#1141](https://github.com/cometbft/cometbft/pull/1141))
 - `[abci]` Increase ABCI socket message size limit to 2GB ([\#1730](https://github.com/cometbft/cometbft/pull/1730): @troykessler)
+<<<<<<< HEAD
+=======
+- `[blockstore]` Remove a redundant `Header.ValidateBasic` call in `LoadBlockMeta`, 75% reducing this time.
+  ([\#2964](https://github.com/cometbft/cometbft/pull/2964))
+- `[blockstore]` Use LRU caches in blockstore, significiantly improving consensus gossip routine performance
+  ([\#3003](https://github.com/cometbft/cometbft/issues/3003))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[blocksync]` Avoid double-calling `types.BlockFromProto` for performance
   reasons ([\#2016](https://github.com/cometbft/cometbft/pull/2016))
 - `[blocksync]` Request a block from peer B if we are approaching pool's height
   (less than 50 blocks) and the current peer A is slow in sending us the
+<<<<<<< HEAD
   block [\#2475](https://github.com/cometbft/cometbft/pull/2475)
 - `[blocksync]` Request the block N from peer B immediately after getting
   `NoBlockResponse` from peer A
@@ -407,6 +645,49 @@ the stability guarantees we provide for pre-releases.
   ([\#2093](https://github.com/cometbft/cometbft/pull/2093))
 - `[consensus]` Log vote validation failures at info level
   ([\#1022](https://github.com/cometbft/cometbft/pull/1022))
+=======
+  block ([\#2475](https://github.com/cometbft/cometbft/pull/2475))
+- `[blocksync]` Request the block N from peer B immediately after getting
+  `NoBlockResponse` from peer A
+  ([\#2475](https://github.com/cometbft/cometbft/pull/2475))
+- `[blocksync]` Sort peers by download rate (the fastest peer is picked first)
+  ([\#2475](https://github.com/cometbft/cometbft/pull/2475))
+- `[blocksync]` make the max number of downloaded blocks dynamic.
+  Previously it was a const 600. Now it's `peersCount * maxPendingRequestsPerPeer (20)`
+  ([\#2467](https://github.com/cometbft/cometbft/pull/2467))
+- `[cli/node]` The genesis hash provided with the `--genesis-hash` is now
+   forwarded to the node, instead of reading the file.
+  ([\#1324](https://github.com/cometbft/cometbft/pull/1324))
+- `[config]` Added `[storage.pruning]` and `[storage.pruning.data_companion]`
+  sections to facilitate background pruning and data companion (ADR 101)
+  operations ([\#1096](https://github.com/cometbft/cometbft/issues/1096))
+- `[config]` Added `genesis_hash` storage parameter, which when set it is checked
+ on node startup
+ ([\#1324](https://github.com/cometbft/cometbft/pull/1324/))
+- `[config]` Added `recheck_timeout` mempool parameter to set how much time to wait for recheck
+ responses from the app (only applies to non-local ABCI clients).
+ ([\#1827](https://github.com/cometbft/cometbft/issues/1827/))
+- `[config]` Use embed pkg for the default template
+  ([\#3057](https://github.com/cometbft/cometbft/pull/3057))
+- `[consensus/state]` Remove a redundant `VerifyBlock` call in `FinalizeCommit`
+  ([\#2928](https://github.com/cometbft/cometbft/pull/2928))
+- `[consensus]` Add `chain_size_bytes` metric for measuring the size of the blockchain in bytes
+  ([\#2093](https://github.com/cometbft/cometbft/pull/2093))
+- `[consensus]` Fix some reactor messages taking write locks instead of read locks.
+  ([\#3159](https://github.com/cometbft/cometbft/issues/3159))
+- `[consensus]` Improve performance of consensus metrics by lowering string operations
+  ([\#3017](https://github.com/cometbft/cometbft/issues/3017))
+- `[consensus]` Log vote validation failures at info level
+  ([\#1022](https://github.com/cometbft/cometbft/pull/1022))
+- `[consensus]` Lower the consensus blocking overhead of broadcasts from `num_peers * process_creation_time` to `process_creation_time`.
+  ([\#3180](https://github.com/cometbft/cometbft/issues/3180))
+- `[consensus]` Make Vote messages only take one peerstate mutex
+  ([\#3156](https://github.com/cometbft/cometbft/issues/3156))
+- `[consensus]` Make the consensus reactor no longer have packets on receive take the consensus lock.
+Consensus will now update the reactor's view after every relevant change through the existing 
+synchronous event bus subscription.
+  ([\#3211](https://github.com/cometbft/cometbft/pull/3211))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[consensus]` New metrics (counters) to track duplicate votes and block parts.
   ([\#896](https://github.com/cometbft/cometbft/pull/896))
 - `[consensus]` Optimize vote and block part gossip with new message `HasProposalBlockPartMessage`,
@@ -415,10 +696,26 @@ the stability guarantees we provide for pre-releases.
   by default as this is experimental.
   Our scale tests show substantial bandwidth improvement with a value of 50 ms.
   ([\#904](https://github.com/cometbft/cometbft/pull/904))
+<<<<<<< HEAD
+=======
+- `[consensus]` Reduce the default MaxBytes to 4MB and increase MaxGas to 10 million
+  ([\#1518](https://github.com/cometbft/cometbft/pull/1518))
+- `[consensus]` Reuse an internal buffer for block building to reduce memory allocation overhead.
+  ([\#3162](https://github.com/cometbft/cometbft/issues/3162))
+- `[consensus]` Use an independent rng for gossip threads, reducing mutex contention.
+  ([\#3005](https://github.com/cometbft/cometbft/issues/3005))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[consensus]` When prevoting, avoid calling PropocessProposal when we know the
   proposal was already validated by correct nodes.
   ([\#1230](https://github.com/cometbft/cometbft/pull/1230))
 - `[crypto/merkle]` faster calculation of hashes ([#1921](https://github.com/cometbft/cometbft/pull/1921))
+<<<<<<< HEAD
+=======
+- `[docs/references]` Added ADR-102: RPC Companion.
+  ([\#658](https://github.com/cometbft/cometbft/pull/658))
+- `[docs]` Merge configuration doc in explanation section with the config.toml document in references.
+  ([\#2769](https://github.com/cometbft/cometbft/pull/2769))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[e2e]` Add manifest option `VoteExtensionsUpdateHeight` to test
   vote extension activation via `InitChain` and `FinalizeBlock`.
   Also, extend the manifest generator to produce different values
@@ -431,11 +728,38 @@ the stability guarantees we provide for pre-releases.
 - `[e2e]` Allow disabling the PEX reactor on all nodes in the testnet
   ([\#1579](https://github.com/cometbft/cometbft/pull/1579))
 - `[e2e]` Allow latency emulation between nodes.
+<<<<<<< HEAD
+=======
+  ([\#1559](https://github.com/cometbft/cometbft/pull/1559))
+- `[e2e]` Allow latency emulation between nodes.
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
   ([\#1560](https://github.com/cometbft/cometbft/pull/1560))
 - `[e2e]` Introduce the possibility in the manifest for some nodes
   to run in a preconfigured clock skew.
   ([\#2453](https://github.com/cometbft/cometbft/pull/2453))
+<<<<<<< HEAD
 - `[jsonrpc]` enable HTTP basic auth in websocket client ([#2434](https://github.com/cometbft/cometbft/pull/2434))
+=======
+- `[e2e]` Log the number of transactions that were sent successfully or failed.
+  ([\#2328](https://github.com/cometbft/cometbft/pull/2328))
+- `[event-bus]` Remove the debug logs in PublishEventTx, which were noticed production slowdowns.
+  ([\#2911](https://github.com/cometbft/cometbft/pull/2911))
+- `[flowrate]` Remove expensive time.Now() calls from flowrate calls.
+  Changes clock updates to happen in a separate goroutine.
+  ([\#3016](https://github.com/cometbft/cometbft/issues/3016))
+- `[indexer]` Optimized the PSQL indexer
+  ([\#2142](https://github.com/cometbft/cometbft/pull/2142)) thanks to external contributor @k0marov !
+- `[internal/bits]` 10x speedup and remove heap overhead of `bitArray.PickRandom` (used extensively in consensus gossip)
+  ([\#2841](https://github.com/cometbft/cometbft/pull/2841)).
+- `[internal/bits]` 10x speedup creating initialized bitArrays, which speedsup extendedCommit.BitArray(). This is used in consensus vote gossip.
+  ([\#2959](https://github.com/cometbft/cometbft/pull/2841)).
+- `[jsonrpc]` enable HTTP basic auth in websocket client ([#2434](https://github.com/cometbft/cometbft/pull/2434))
+- `[libs/json]` Lower the memory overhead of JSON encoding by using JSON encoders internally.
+  ([\#2846](https://github.com/cometbft/cometbft/pull/2846))
+- `[light]` Export light package errors ([\#1904](https://github.com/cometbft/cometbft/pull/1904)) (contributes to [\#1140](https://github.com/cometbft/cometbft/issues/1140))
+- `[linting]` Removed undesired linting from `Makefile` and added dependency check for `codespell`.
+  ([\#1958](https://github.com/cometbft/cometbft/pull/1958/))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[mempool]` Add a metric (a counter) to measure whether a tx was received more than once.
   ([\#634](https://github.com/cometbft/cometbft/pull/634))
 - `[mempool]` Add experimental feature to limit the number of persistent peers and non-persistent
@@ -448,6 +772,7 @@ the stability guarantees we provide for pre-releases.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[node]` On upgrade, after [\#1296](https://github.com/cometbft/cometbft/pull/1296), delete the genesis file existing in the DB.
+<<<<<<< HEAD
   ([cometbft/cometbft\#1297](https://github.com/cometbft/cometbft/pull/1297)
 - `[node]` Remove genesis persistence in state db, replaced by a hash
   ([cometbft/cometbft\#1017](https://github.com/cometbft/cometbft/pull/1017),
@@ -455,26 +780,77 @@ the stability guarantees we provide for pre-releases.
 - `[node]` The `node.Node` struct now manages a
   `state.Pruner` service to facilitate background pruning
   ([\#1096](https://github.com/cometbft/cometbft/issues/1096))
+=======
+  ([\#1297](https://github.com/cometbft/cometbft/pull/1297))
+- `[node]` Remove genesis persistence in state db, replaced by a hash
+  ([\#1017](https://github.com/cometbft/cometbft/pull/1017),
+  [\#1295](https://github.com/cometbft/cometbft/pull/1295))
+- `[node]` The `node.Node` struct now manages a
+  `state.Pruner` service to facilitate background pruning
+  ([\#1096](https://github.com/cometbft/cometbft/issues/1096))
+- `[node]` export node package errors
+  ([\#3056](https://github.com/cometbft/cometbft/pull/3056))
+- `[p2p/channel]` Speedup `ProtoIO` writer creation time, and thereby speedup channel writing by 5%.
+  ([\#2949](https://github.com/cometbft/cometbft/pull/2949))
+- `[p2p/conn]` Minor speedup (3%) to connection.WritePacketMsgTo, by removing MinInt calls.
+  ([\#2952](https://github.com/cometbft/cometbft/pull/2952))
+- `[p2p/conn]` Speedup connection.WritePacketMsgTo, by reusing internal buffers rather than re-allocating.
+  ([\#2986](https://github.com/cometbft/cometbft/pull/2986))
+- `[p2p]` Export p2p package errors ([\#1901](https://github.com/cometbft/cometbft/pull/1901)) (contributes to [\#1140](https://github.com/cometbft/cometbft/issues/1140))
+- `[p2p]` Lower `flush_throttle_timeout` to 10ms
+  ([\#2988](https://github.com/cometbft/cometbft/issues/2988))
+- `[p2p]` Remove `Switch#Broadcast` unused return channel
+  ([\#3182](https://github.com/cometbft/cometbft/pull/3182))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[p2p]` make `PeerSet.Remove` more efficient (Author: @odeke-em) [\#2246](https://github.com/cometbft/cometbft/pull/2246)
 - `[privval]` DO NOT require extension signature from privval if vote
   extensions are disabled. Remote signers can skip signing the extension if
   `skip_extension_signing` flag in `SignVoteRequest` is true.
+<<<<<<< HEAD
   [\#2496](https://github.com/cometbft/cometbft/pull/2496)
+=======
+  ([\#2496](https://github.com/cometbft/cometbft/pull/2496))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[proto]` Add `skip_extension_signing` field to the `SignVoteRequest` message
   in `cometbft.privval.v1` ([\#2522](https://github.com/cometbft/cometbft/pull/2522)).
   The `cometbft.privval.v1beta2` package is added to capture the protocol as it was
   released in CometBFT 0.38.x
   ([\#2529](https://github.com/cometbft/cometbft/pull/2529)).
+<<<<<<< HEAD
 - `[rpc]` Export `MakeHTTPDialer` to allow HTTP client constructors more flexibility.
   ([\#1594](https://github.com/cometbft/cometbft/pull/1594))
+=======
+- `[protoio]` Remove one allocation and new object call from `ReadMsg`,
+  leading to a 4% p2p message reading performance gain.
+  ([\#3018](https://github.com/cometbft/cometbft/issues/3018))
+- `[rpc]` Add a configurable maximum batch size for RPC requests.
+  ([\#2867](https://github.com/cometbft/cometbft/pull/2867)).
+- `[rpc]` Export RPC package errors ([\#2200](https://github.com/cometbft/cometbft/pull/2200)) (contributes to [\#1140](https://github.com/cometbft/cometbft/issues/1140))
+- `[rpc]` Export `MakeHTTPDialer` to allow HTTP client constructors more flexibility.
+  ([\#1594](https://github.com/cometbft/cometbft/pull/1594))
+- `[rpc]` Move the websockets info log for successful replies to debug.
+  ([\#2788](https://github.com/cometbft/cometbft/pull/2788))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[rpc]` Support setting proxy from env to `DefaultHttpClient`.
   ([\#1900](https://github.com/cometbft/cometbft/pull/1900))
 - `[rpc]` The RPC API is now versioned, with all existing endpoints accessible
   via `/v1/*` as well as `/*`
   ([\#1412](https://github.com/cometbft/cometbft/pull/1412))
 - `[rpc]` Use default port for HTTP(S) URLs when there is no explicit port ([\#1903](https://github.com/cometbft/cometbft/pull/1903))
+<<<<<<< HEAD
 - `[state/indexer]` Add transaction and block index pruning
   ([\#1176](https://github.com/cometbft/cometbft/pull/1176))
+=======
+- `[spec]` Update Apalache type annotations in the light client spec ([#955](https://github.com/cometbft/cometbft/pull/955))
+- `[state/execution]` Cache the block hash computation inside of the Block Type, so we only compute it once.
+  ([\#2924](https://github.com/cometbft/cometbft/pull/2924))
+- `[state/indexer]` Add transaction and block index pruning
+  ([\#1176](https://github.com/cometbft/cometbft/pull/1176))
+- `[state/indexer]` Fix txSearch performance issue
+  ([\#2855](https://github.com/cometbft/cometbft/pull/2855))
+- `[state/indexer]` Lower the heap allocation of transaction searches
+  ([\#2839](https://github.com/cometbft/cometbft/pull/2839))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[state]` ABCI response pruning has been added for use by the data companion
   ([\#1096](https://github.com/cometbft/cometbft/issues/1096))
 - `[state]` Block pruning has been moved from the block executor into a
@@ -484,6 +860,7 @@ the stability guarantees we provide for pre-releases.
   ([\#2017](https://github.com/cometbft/cometbft/pull/2017))
 - `[store]` Save block using a single DB batch if block is less than 640kB, otherwise each block part is saved individually
   ([\#1755](https://github.com/cometbft/cometbft/pull/1755))
+<<<<<<< HEAD
 - `[types]` Validate `Validator#Address` in `ValidateBasic` ([\#1715](https://github.com/cometbft/cometbft/pull/1715))
 
 ### MINIMUM GO VERSION
@@ -678,6 +1055,14 @@ gossip.
 - `[node]` Close evidence.db OnStop ([cometbft/cometbft\#1210](https://github.com/cometbft/cometbft/pull/1210): @chillyvee)
 - `[node]` Make handshake cancelable ([cometbft/cometbft\#857](https://github.com/cometbft/cometbft/pull/857))
 
+=======
+- `[types]` Make a new method `GetByAddressMut` for `ValSet`, which does not copy the returned validator.
+  ([\#3119](https://github.com/cometbft/cometbft/issues/3119))
+- `[types]` Significantly speedup types.MakePartSet and types.AddPart, which are used in creating a block proposal
+  ([\#3117](https://github.com/cometbft/cometbft/issues/3117))
+- `[types]` Validate `Validator#Address` in `ValidateBasic` ([\#1715](https://github.com/cometbft/cometbft/pull/1715))
+
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 ## v0.38.0
 
 *September 12, 2023*
@@ -830,6 +1215,7 @@ for people who forked CometBFT and interact directly with the indexers kvstore.
   ([\#797](https://github.com/cometbft/cometbft/pull/797))
 - `[pubsub]` Performance improvements for the event query API
   ([\#7319](https://github.com/tendermint/tendermint/pull/7319))
+<<<<<<< HEAD
 - `[rpc]` Remove response data from response failure logs in order
   to prevent large quantities of log data from being produced
   ([\#654](https://github.com/cometbft/cometbft/issues/654))
@@ -942,6 +1328,13 @@ that code.
 - `[jsonrpc/client]` Improve the error message for client errors stemming from
   bad HTTP responses.
   ([cometbft/cometbft\#638](https://github.com/cometbft/cometbft/pull/638))
+=======
+- `[rpc]` Remove response data from response failure logs in order
+  to prevent large quantities of log data from being produced
+  ([\#654](https://github.com/cometbft/cometbft/issues/654))
+- `[state]` Make logging `block_app_hash` and `app_hash` consistent by logging them both as hex.
+  ([\#1264](https://github.com/cometbft/cometbft/pull/1264))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 
 ## v0.34.28
 
@@ -1014,6 +1407,14 @@ See below for more details.
   ([\#9144](https://github.com/tendermint/tendermint/pull/9144))
 - The `TMHOME` environment variable was renamed to `CMTHOME`, and all environment variables starting with `TM_` are instead prefixed with `CMT_`
   ([\#211](https://github.com/cometbft/cometbft/issues/211))
+<<<<<<< HEAD
+=======
+- [config] The boolean key `fastsync` is deprecated and replaced by
+    `block_sync`. ([\#9259](https://github.com/tendermint/tendermint/pull/9259))
+    At the same time, `block_sync` is also deprecated. In the next release,
+    BlocSync will always be enabled and `block_sync` will be removed.
+    ([\#409](https://github.com/cometbft/cometbft/issues/409))
+>>>>>>> f4c622fe5 (chore: updates to changelog before v1.0.0-rc.1 release (#3253))
 - `[abci/counter]` Delete counter example app
   ([\#6684](https://github.com/tendermint/tendermint/pull/6684))
 - `[abci/params]` Deduplicate `ConsensusParams` and `BlockParams` so

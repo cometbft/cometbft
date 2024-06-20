@@ -2,9 +2,12 @@ package txindex
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/state/indexer"
+	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"
+	"github.com/cometbft/cometbft/state/txindex/null"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -45,6 +48,11 @@ func NewIndexerService(
 // OnStart implements service.Service by subscribing for all transactions
 // and indexing them by events.
 func (is *IndexerService) OnStart() error {
+	if reflect.TypeOf(is.txIdxr) == reflect.TypeOf(&null.TxIndex{}) &&
+		reflect.TypeOf(is.blockIdxr) == reflect.TypeOf(&blockidxnull.BlockerIndexer{}) {
+		is.Logger.Info("no indexers configured, skipping")
+		return nil
+	}
 	// Use SubscribeUnbuffered here to ensure both subscriptions does not get
 	// canceled due to not pulling messages fast enough. Cause this might
 	// sometimes happen when there are no other subscribers.

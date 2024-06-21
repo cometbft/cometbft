@@ -178,7 +178,7 @@ func (mem *CListMempool) Unlock() {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
-	rechecking := mem.recheck.done()
+	rechecking := !mem.recheck.done()
 	reCheckFull := mem.recheck.recheckFull.Swap(rechecking)
 	if rechecking != reCheckFull {
 		mem.logger.Info("the state of recheckFull has flipped", "before", reCheckFull, "after", rechecking)

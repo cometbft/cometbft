@@ -427,11 +427,11 @@ func (mem *CListMempool) isFull(txSize int) error {
 
 	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) || recheckFull {
 		return ErrMempoolIsFull{
-			NumTxs:           memSize,
-			MaxTxs:           mem.config.Size,
-			TxsBytes:         txsBytes,
-			MaxTxsBytes:      mem.config.MaxTxsBytes,
-			RecheckSaturated: recheckFull,
+			NumTxs:      memSize,
+			MaxTxs:      mem.config.Size,
+			TxsBytes:    txsBytes,
+			MaxTxsBytes: mem.config.MaxTxsBytes,
+			RecheckFull: recheckFull,
 		}
 	}
 

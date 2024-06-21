@@ -25,11 +25,11 @@ func (e ErrTxTooLarge) Error() string {
 // ErrMempoolIsFull defines an error where CometBFT and the application cannot
 // handle that much load.
 type ErrMempoolIsFull struct {
-	NumTxs           int
-	MaxTxs           int
-	TxsBytes         int64
-	MaxTxsBytes      int64
-	RecheckSaturated bool
+	NumTxs      int
+	MaxTxs      int
+	TxsBytes    int64
+	MaxTxsBytes int64
+	RecheckFull bool
 }
 
 func (e ErrMempoolIsFull) Error() string {

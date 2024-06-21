@@ -656,11 +656,9 @@ func (mem *CListMempool) recheckTxs() {
 	// if not all txs were rechecked.
 	select {
 	case <-time.After(mem.config.RecheckTimeout):
-		mem.recheckSaturated = true
 		mem.recheck.setDone()
 		mem.logger.Error("timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
-		mem.recheckSaturated = false
 	}
 
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {

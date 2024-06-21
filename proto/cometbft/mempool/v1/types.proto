@@ -8,6 +8,7 @@ message Txs {
   repeated bytes txs = 1;
 }
 
+// MempoolIsFull signals that the mempool of the sender is full.
 message MempoolIsFull {}
 
 // Message is an abstract mempool message.
@@ -15,6 +16,6 @@ message Message {
   // Sum of all possible messages.
   oneof sum {
     Txs txs = 1;
-    MempoolIsFull mempoolIsFull = 2;
+    MempoolIsFull mempool_is_full = 2;
   }
 }

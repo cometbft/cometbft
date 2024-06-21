@@ -18,6 +18,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+const broadcastBackoff = 5 * time.Second // time to wait before sending txs again to peer that reported a full mempool
+
 // Reactor handles mempool tx broadcasting amongst peers.
 // It maintains a map from peer ID to counter, to prevent gossiping txs to the
 // peers you received it from.
@@ -164,7 +166,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		switch e.Message.(type) {
 		case *protomem.MempoolIsFull:
 			// Start timer to temporarily stop sending txs to sender.
-			memR.broadcastBackoffTimers.Store(senderID, time.NewTimer(5*time.Second))
+			memR.broadcastBackoffTimers.Store(senderID, time.NewTimer(broadcastBackoff))
 		default:
 			memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 			memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))

@@ -67,6 +67,42 @@ func (m *Txs) GetTxs() [][]byte {
 	return nil
 }
 
+type MempoolIsFull struct {
+}
+
+func (m *MempoolIsFull) Reset()         { *m = MempoolIsFull{} }
+func (m *MempoolIsFull) String() string { return proto.CompactTextString(m) }
+func (*MempoolIsFull) ProtoMessage()    {}
+func (*MempoolIsFull) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d8bb39f484575b79, []int{1}
+}
+func (m *MempoolIsFull) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MempoolIsFull) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MempoolIsFull.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MempoolIsFull) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MempoolIsFull.Merge(m, src)
+}
+func (m *MempoolIsFull) XXX_Size() int {
+	return m.Size()
+}
+func (m *MempoolIsFull) XXX_DiscardUnknown() {
+	xxx_messageInfo_MempoolIsFull.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MempoolIsFull proto.InternalMessageInfo
+
 // Message is an abstract mempool message.
 type Message struct {
 	// Sum of all possible messages.
@@ -74,6 +110,7 @@ type Message struct {
 	// Types that are valid to be assigned to Sum:
 	//
 	//	*Message_Txs
+	//	*Message_MempoolIsFull
 	Sum isMessage_Sum `protobuf_oneof:"sum"`
 }
 
@@ -81,7 +118,7 @@ func (m *Message) Reset()         { *m = Message{} }
 func (m *Message) String() string { return proto.CompactTextString(m) }
 func (*Message) ProtoMessage()    {}
 func (*Message) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d8bb39f484575b79, []int{1}
+	return fileDescriptor_d8bb39f484575b79, []int{2}
 }
 func (m *Message) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -119,8 +156,12 @@ type isMessage_Sum interface {
 type Message_Txs struct {
 	Txs *Txs `protobuf:"bytes,1,opt,name=txs,proto3,oneof" json:"txs,omitempty"`
 }
+type Message_MempoolIsFull struct {
+	MempoolIsFull *MempoolIsFull `protobuf:"bytes,2,opt,name=mempoolIsFull,proto3,oneof" json:"mempoolIsFull,omitempty"`
+}
 
-func (*Message_Txs) isMessage_Sum() {}
+func (*Message_Txs) isMessage_Sum()           {}
+func (*Message_MempoolIsFull) isMessage_Sum() {}
 
 func (m *Message) GetSum() isMessage_Sum {
 	if m != nil {
@@ -136,34 +177,45 @@ func (m *Message) GetTxs() *Txs {
 	return nil
 }
 
+func (m *Message) GetMempoolIsFull() *MempoolIsFull {
+	if x, ok := m.GetSum().(*Message_MempoolIsFull); ok {
+		return x.MempoolIsFull
+	}
+	return nil
+}
+
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*Message) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
 		(*Message_Txs)(nil),
+		(*Message_MempoolIsFull)(nil),
 	}
 }
 
 func init() {
 	proto.RegisterType((*Txs)(nil), "cometbft.mempool.v1.Txs")
+	proto.RegisterType((*MempoolIsFull)(nil), "cometbft.mempool.v1.MempoolIsFull")
 	proto.RegisterType((*Message)(nil), "cometbft.mempool.v1.Message")
 }
 
 func init() { proto.RegisterFile("cometbft/mempool/v1/types.proto", fileDescriptor_d8bb39f484575b79) }
 
 var fileDescriptor_d8bb39f484575b79 = []byte{
-	// 182 bytes of a gzipped FileDescriptorProto
+	// 219 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4f, 0xce, 0xcf, 0x4d,
 	0x2d, 0x49, 0x4a, 0x2b, 0xd1, 0xcf, 0x4d, 0xcd, 0x2d, 0xc8, 0xcf, 0xcf, 0xd1, 0x2f, 0x33, 0xd4,
 	0x2f, 0xa9, 0x2c, 0x48, 0x2d, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x86, 0x29, 0xd0,
 	0x83, 0x2a, 0xd0, 0x2b, 0x33, 0x54, 0x12, 0xe7, 0x62, 0x0e, 0xa9, 0x28, 0x16, 0x12, 0xe0, 0x62,
-	0x2e, 0xa9, 0x28, 0x96, 0x60, 0x54, 0x60, 0xd6, 0xe0, 0x09, 0x02, 0x31, 0x95, 0xec, 0xb8, 0xd8,
-	0x7d, 0x53, 0x8b, 0x8b, 0x13, 0xd3, 0x53, 0x85, 0x74, 0x60, 0x92, 0x8c, 0x1a, 0xdc, 0x46, 0x12,
-	0x7a, 0x58, 0x8c, 0xd1, 0x0b, 0xa9, 0x28, 0xf6, 0x60, 0x00, 0x6b, 0x74, 0x62, 0xe5, 0x62, 0x2e,
-	0x2e, 0xcd, 0x75, 0xf2, 0x3b, 0xf1, 0x48, 0x8e, 0xf1, 0xc2, 0x23, 0x39, 0xc6, 0x07, 0x8f, 0xe4,
-	0x18, 0x27, 0x3c, 0x96, 0x63, 0xb8, 0xf0, 0x58, 0x8e, 0xe1, 0xc6, 0x63, 0x39, 0x86, 0x28, 0x93,
-	0xf4, 0xcc, 0x92, 0x8c, 0xd2, 0x24, 0x90, 0x39, 0xfa, 0x70, 0x37, 0xc3, 0x19, 0x89, 0x05, 0x99,
-	0xfa, 0x58, 0x7c, 0x92, 0xc4, 0x06, 0xf6, 0x84, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x3f, 0x09,
-	0x89, 0xce, 0xe7, 0x00, 0x00, 0x00,
+	0x2e, 0xa9, 0x28, 0x96, 0x60, 0x54, 0x60, 0xd6, 0xe0, 0x09, 0x02, 0x31, 0x95, 0xf8, 0xb9, 0x78,
+	0x7d, 0x21, 0xca, 0x3c, 0x8b, 0xdd, 0x4a, 0x73, 0x72, 0x94, 0xba, 0x18, 0xb9, 0xd8, 0x7d, 0x53,
+	0x8b, 0x8b, 0x13, 0xd3, 0x53, 0x85, 0x74, 0x60, 0xca, 0x19, 0x35, 0xb8, 0x8d, 0x24, 0xf4, 0xb0,
+	0x18, 0xac, 0x17, 0x52, 0x51, 0xec, 0xc1, 0x00, 0x36, 0x4a, 0xc8, 0x8b, 0x8b, 0x37, 0x17, 0xd9,
+	0x28, 0x09, 0x26, 0xb0, 0x3e, 0x25, 0xac, 0xfa, 0x50, 0x2c, 0xf5, 0x60, 0x08, 0x42, 0xd5, 0xea,
+	0xc4, 0xca, 0xc5, 0x5c, 0x5c, 0x9a, 0xeb, 0xe4, 0x77, 0xe2, 0x91, 0x1c, 0xe3, 0x85, 0x47, 0x72,
+	0x8c, 0x0f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7, 0x70, 0xe1, 0xb1, 0x1c, 0xc3, 0x8d, 0xc7,
+	0x72, 0x0c, 0x51, 0x26, 0xe9, 0x99, 0x25, 0x19, 0xa5, 0x49, 0x20, 0xb3, 0xf5, 0xe1, 0x21, 0x02,
+	0x67, 0x24, 0x16, 0x64, 0xea, 0x63, 0x09, 0xa7, 0x24, 0x36, 0x70, 0x10, 0x19, 0x03, 0x02, 0x00,
+	0x00, 0xff, 0xff, 0x76, 0xe2, 0x4f, 0xcd, 0x45, 0x01, 0x00, 0x00,
 }
 
 func (m *Txs) Marshal() (dAtA []byte, err error) {
@@ -195,6 +247,29 @@ func (m *Txs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0xa
 		}
 	}
+	return len(dAtA) - i, nil
+}
+
+func (m *MempoolIsFull) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MempoolIsFull) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MempoolIsFull) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
 	return len(dAtA) - i, nil
 }
 
@@ -251,6 +326,27 @@ func (m *Message_Txs) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	return len(dAtA) - i, nil
 }
+func (m *Message_MempoolIsFull) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Message_MempoolIsFull) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.MempoolIsFull != nil {
+		{
+			size, err := m.MempoolIsFull.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintTypes(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
 func encodeVarintTypes(dAtA []byte, offset int, v uint64) int {
 	offset -= sovTypes(v)
 	base := offset
@@ -277,6 +373,15 @@ func (m *Txs) Size() (n int) {
 	return n
 }
 
+func (m *MempoolIsFull) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
 func (m *Message) Size() (n int) {
 	if m == nil {
 		return 0
@@ -297,6 +402,18 @@ func (m *Message_Txs) Size() (n int) {
 	_ = l
 	if m.Txs != nil {
 		l = m.Txs.Size()
+		n += 1 + l + sovTypes(uint64(l))
+	}
+	return n
+}
+func (m *Message_MempoolIsFull) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.MempoolIsFull != nil {
+		l = m.MempoolIsFull.Size()
 		n += 1 + l + sovTypes(uint64(l))
 	}
 	return n
@@ -390,6 +507,56 @@ func (m *Txs) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *MempoolIsFull) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowTypes
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MempoolIsFull: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MempoolIsFull: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipTypes(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthTypes
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Message) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -453,6 +620,41 @@ func (m *Message) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			m.Sum = &Message_Txs{v}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MempoolIsFull", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTypes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthTypes
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthTypes
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &MempoolIsFull{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Sum = &Message_MempoolIsFull{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

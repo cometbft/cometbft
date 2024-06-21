@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,6 +28,10 @@ type Reactor struct {
 
 	waitSync   atomic.Bool
 	waitSyncCh chan struct{} // for signaling when to start receiving and sending txs
+
+	// For a simple back-pressure mechanism. Each peer may have a timer that we use to wait before
+	// sending txs to it.
+	broadcastBackoffTimers sync.Map // p2p.ID -> time.Timer
 
 	// Semaphores to keep track of how many connections to peers are active for broadcasting
 	// transactions. Each semaphore has a capacity that puts an upper bound on the number of
@@ -79,12 +84,21 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 			Txs: &protomem.Txs{Txs: [][]byte{largestTx}},
 		},
 	}
+	imFullMsg := protomem.Message{
+		Sum: &protomem.Message_MempoolIsFull{MempoolIsFull: &protomem.MempoolIsFull{}},
+	}
 
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  MempoolChannel,
 			Priority:            5,
 			RecvMessageCapacity: batchMsg.Size(),
+			MessageType:         &protomem.Message{},
+		},
+		{
+			ID:                  MempoolControlChannel,
+			Priority:            6,
+			RecvMessageCapacity: imFullMsg.Size(),
 			MessageType:         &protomem.Message{},
 		},
 	}
@@ -137,32 +151,57 @@ func (memR *Reactor) AddPeer(peer p2p.Peer) {
 // It adds any received transactions to the mempool.
 func (memR *Reactor) Receive(e p2p.Envelope) {
 	memR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-	switch msg := e.Message.(type) {
-	case *protomem.Txs:
-		if memR.WaitSync() {
-			memR.Logger.Debug("Ignored message received while syncing", "msg", msg)
-			return
-		}
 
-		protoTxs := msg.GetTxs()
-		if len(protoTxs) == 0 {
-			memR.Logger.Error("received empty txs from peer", "src", e.Src)
-			return
-		}
-
-		for _, txBytes := range protoTxs {
-			tx := types.Tx(txBytes)
-			_, err := memR.mempool.CheckTx(tx, e.Src.ID())
-			if errors.Is(err, ErrTxInCache) {
-				memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
-			} else if err != nil {
-				memR.Logger.Info("Could not check tx", "tx", tx.Hash(), "err", err)
-			}
-		}
-	default:
-		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
-		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
+	if memR.WaitSync() {
+		memR.Logger.Debug("Ignore message received while syncing", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		return
+	}
+
+	senderID := e.Src.ID()
+
+	switch e.ChannelID {
+	case MempoolControlChannel:
+		switch e.Message.(type) {
+		case *protomem.MempoolIsFull:
+			// Start timer to temporarily stop sending txs to sender.
+			memR.broadcastBackoffTimers.Store(senderID, time.NewTimer(5*time.Second))
+		default:
+			memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+			memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
+		}
+
+	case MempoolChannel:
+		switch msg := e.Message.(type) {
+		case *protomem.Txs:
+
+			protoTxs := msg.GetTxs()
+			if len(protoTxs) == 0 {
+				memR.Logger.Error("received empty txs from peer", "src", e.Src)
+				return
+			}
+
+			for _, txBytes := range protoTxs {
+				tx := types.Tx(txBytes)
+				_, err := memR.mempool.CheckTx(tx, senderID)
+				switch {
+				case errors.Is(err, ErrTxInCache):
+					memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
+				case errors.As(err, &ErrMempoolIsFull{}):
+					// Tell peer to temporarily stop sending transactions.
+					e.Src.Send(p2p.Envelope{ChannelID: MempoolControlChannel, Message: &protomem.MempoolIsFull{}})
+				case err != nil:
+					memR.Logger.Info("Could not check tx", "tx", tx.Hash(), "err", err)
+				}
+			}
+		default:
+			memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+			memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
+			return
+		}
+
+	default:
+		memR.Logger.Error("unknown message channel", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message on channel: %T", e.Message))
 	}
 
 	// broadcasting happens from go routines per peer
@@ -235,6 +274,19 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			// milliseconds and retry.
 			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
+		}
+
+		// If the peer has reported a full mempool, wait before sending.
+		timer, ok := memR.broadcastBackoffTimers.Load(peer.ID())
+		if ok {
+			// If timer expired, delete it; otherwise wait before sending.
+			select {
+			case <-timer.(*time.Timer).C:
+				memR.broadcastBackoffTimers.Delete(peer.ID())
+			default:
+				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+				continue
+			}
 		}
 
 		// If we suspect that the peer is lagging behind, at least by more than

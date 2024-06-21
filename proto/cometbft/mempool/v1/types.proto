@@ -8,10 +8,13 @@ message Txs {
   repeated bytes txs = 1;
 }
 
+message MempoolIsFull {}
+
 // Message is an abstract mempool message.
 message Message {
   // Sum of all possible messages.
   oneof sum {
     Txs txs = 1;
+    MempoolIsFull mempoolIsFull = 2;
   }
 }

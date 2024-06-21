@@ -45,11 +45,6 @@ type CListMempool struct {
 
 	// Keeps track of the rechecking process.
 	recheck *recheck
-	// It is true while TXs are being rechecked
-	rechecking atomic.Bool
-	// whether rechecking TXs cannot be completed before
-	// a new block is decided
-	recheckFull atomic.Bool
 
 	// Concurrent linked-list of valid txs.
 	// `txsMap`: txKey -> CElement is for quick access to txs.
@@ -183,8 +178,8 @@ func (mem *CListMempool) Unlock() {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
-	rechecking := mem.rechecking.Load()
-	reCheckFull := mem.recheckFull.Swap(rechecking)
+	rechecking := mem.recheck.done()
+	reCheckFull := mem.recheck.recheckFull.Swap(rechecking)
 	if rechecking != reCheckFull {
 		mem.logger.Info("the state of recheckFull has flipped", "before", reCheckFull, "after", rechecking)
 	}
@@ -423,7 +418,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 func (mem *CListMempool) isFull(txSize int) error {
 	memSize := mem.Size()
 	txsBytes := mem.SizeBytes()
-	recheckFull := mem.recheckFull.Load()
+	recheckFull := mem.recheck.recheckFull.Load()
 
 	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) || recheckFull {
 		return ErrMempoolIsFull{
@@ -634,8 +629,6 @@ func (mem *CListMempool) Update(
 // returns, all recheck responses from the app have been processed.
 func (mem *CListMempool) recheckTxs() {
 	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
-	mem.rechecking.Store(true)
-	defer mem.rechecking.Store(false)
 
 	if mem.Size() <= 0 {
 		return
@@ -689,6 +682,7 @@ type recheck struct {
 	end           *clist.CElement // last entry in the mempool to recheck
 	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
+	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
 }
 
 func newRecheck() *recheck {

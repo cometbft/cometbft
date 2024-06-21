@@ -103,6 +103,11 @@ func (_m *Mempool) Lock() {
 	_m.Called()
 }
 
+// PreUpdate provides a mock function with given fields:
+func (_m *Mempool) PreUpdate() {
+	_m.Called()
+}
+
 // ReapMaxBytesMaxGas provides a mock function with given fields: maxBytes, maxGas
 func (_m *Mempool) ReapMaxBytesMaxGas(maxBytes int64, maxGas int64) types.Txs {
 	ret := _m.Called(maxBytes, maxGas)
@@ -159,11 +164,6 @@ func (_m *Mempool) RemoveTxByKey(txKey types.TxKey) error {
 	}
 
 	return r0
-}
-
-// ResetUpdate provides a mock function with given fields:
-func (_m *Mempool) ResetUpdate() {
-	_m.Called()
 }
 
 // Size provides a mock function with given fields:

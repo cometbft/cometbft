@@ -44,7 +44,7 @@ func (*NopMempool) Lock() {}
 // Unlock does nothing.
 func (*NopMempool) Unlock() {}
 
-func (*NopMempool) ResetUpdate() {}
+func (*NopMempool) PreUpdate() {}
 
 // Update does nothing.
 func (*NopMempool) Update(

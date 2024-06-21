@@ -44,8 +44,12 @@ type CListMempool struct {
 	proxyAppConn proxy.AppConnMempool
 
 	// Keeps track of the rechecking process.
-	recheck        *recheck
-	stopRechecking atomic.Bool
+	recheck *recheck
+	// It is true while TXs are being rechecked
+	rechecking atomic.Bool
+	// whether rechecking TXs cannot be completed before
+	// a new block is decided
+	recheckFull atomic.Bool
 
 	// Concurrent linked-list of valid txs.
 	// `txsMap`: txKey -> CElement is for quick access to txs.
@@ -59,10 +63,6 @@ type CListMempool struct {
 
 	logger  log.Logger
 	metrics *Metrics
-
-	// if the recheck txs cannot be completed before
-	// a max recheck timeout is reached
-	recheckSaturated bool
 }
 
 var _ Mempool = &CListMempool{}
@@ -182,8 +182,12 @@ func (mem *CListMempool) Unlock() {
 }
 
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) ResetUpdate() {
-	mem.stopRechecking.Store(true)
+func (mem *CListMempool) PreUpdate() {
+	rechecking := mem.rechecking.Load()
+	reCheckFull := mem.recheckFull.Swap(rechecking)
+	if rechecking != reCheckFull {
+		mem.logger.Info("the state of recheckTooLong has flipped", "before", reCheckFull, "after", rechecking)
+	}
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -417,18 +421,17 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
-	var (
-		memSize  = mem.Size()
-		txsBytes = mem.SizeBytes()
-	)
+	memSize := mem.Size()
+	txsBytes := mem.SizeBytes()
+	recheckFull := mem.recheckFull.Load()
 
-	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) || mem.recheckSaturated {
+	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) || recheckFull {
 		return ErrMempoolIsFull{
 			NumTxs:           memSize,
 			MaxTxs:           mem.config.Size,
 			TxsBytes:         txsBytes,
 			MaxTxsBytes:      mem.config.MaxTxsBytes,
-			RecheckSaturated: mem.recheckSaturated,
+			RecheckSaturated: recheckFull,
 		}
 	}
 
@@ -631,7 +634,8 @@ func (mem *CListMempool) Update(
 // returns, all recheck responses from the app have been processed.
 func (mem *CListMempool) recheckTxs() {
 	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
-	mem.stopRechecking.Store(false)
+	mem.rechecking.Store(true)
+	defer mem.rechecking.Store(false)
 
 	if mem.Size() <= 0 {
 		return
@@ -642,10 +646,6 @@ func (mem *CListMempool) recheckTxs() {
 	// NOTE: CheckTx for new transactions cannot be executed concurrently
 	// because this function has the lock (via Update and Lock).
 	for e := mem.txs.Front(); e != nil; e = e.Next() {
-		if mem.stopRechecking.Load() {
-			break
-		}
-
 		tx := e.Value.(*mempoolTx).tx
 		mem.recheck.numPendingTxs.Add(1)
 
@@ -675,7 +675,6 @@ func (mem *CListMempool) recheckTxs() {
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
 		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
 	}
-	mem.stopRechecking.Store(false)
 	mem.logger.Debug("done rechecking txs", "height", mem.height.Load(), "num-txs", mem.Size())
 }
 

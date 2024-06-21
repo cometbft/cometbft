@@ -475,7 +475,7 @@ func NewByzantineReactor(invalidBlock int64, conR *Reactor) *ByzantineReactor {
 	}
 }
 
-// respondToPeer loads a block and sends it to the requesting peer,
+// respondToPeer (overridden method) loads a block and sends it to the requesting peer,
 // if we have it. Otherwise, we'll respond saying we don't have it.
 // Byzantine modification: if corruptedBlock is set, send the wrong Block.
 func (bcR *ByzantineReactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queued bool) {

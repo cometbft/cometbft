@@ -181,7 +181,7 @@ func (mem *CListMempool) PreUpdate() {
 	rechecking := !mem.recheck.done()
 	reCheckFull := mem.recheck.recheckFull.Swap(rechecking)
 	if rechecking != reCheckFull {
-		mem.logger.Info("the state of recheckFull has flipped", "before", reCheckFull, "after", rechecking)
+		mem.logger.Debug("the state of recheckFull has flipped", "before", reCheckFull, "after", rechecking)
 	}
 }
 

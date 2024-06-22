@@ -378,11 +378,9 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 				return
 			}
 			// Failure: the pool caught up without banning the bad peer at least once
-			require.False(t, caughtUp)
+			require.False(t, caughtUp, "Network caught up without banning the malicious peer at least once.")
 			// Failure: the network could not catch up in the allotted time
-			if time.Now().Sub(startTime) > MaliciousTestMaximumLength {
-				require.Fail(t, "Network ran too long, stopping test.")
-			}
+			require.True(t, time.Now().Sub(startTime) < MaliciousTestMaximumLength, "Network ran too long, stopping test.")
 		}
 	}
 }

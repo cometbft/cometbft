@@ -181,7 +181,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if !blockStore.IsEmpty() {
-		return errors.New("blockstore not empty, trying to initialize non empty state")
+		return ErrNonEmptyBlockStore
 	}
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -203,7 +203,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if !state.IsEmpty() {
-		return errors.New("state not empty, trying to initialize non empty state")
+		return ErrNonEmptyState
 	}
 
 	// The state store will use the DBKeyLayout set in config or already existing in the DB.
@@ -222,7 +222,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		}, logger.With("module", "light"),
 		config.Storage.ExperimentalKeyLayout)
 	if err != nil {
-		return fmt.Errorf("failed to set up light client state provider: %w", err)
+		return ErrLightClientStateProvider{Err: err}
 	}
 
 	state, err = stateProvider.State(ctx, height)
@@ -238,7 +238,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		if err := stateStore.Close(); err != nil {
 			logger.Error("failed to close statestore: %w", err)
 		}
-		return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+		return ErrMismatchAppHash{Expected: appHash, Actual: state.AppHash}
 	}
 
 	commit, err := stateProvider.Commit(ctx, height)
@@ -261,7 +261,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
 	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
 	if err != nil {
-		return fmt.Errorf("failed to set synced height: %w", err)
+		return ErrSetSyncHeight{Err: err}
 	}
 
 	return err
@@ -342,13 +342,13 @@ func NewNode(ctx context.Context,
 		// FIXME: we should start services inside OnStart
 		privValidator, err = createAndStartPrivValidatorSocketClient(config.PrivValidatorListenAddr, genDoc.ChainID, logger)
 		if err != nil {
-			return nil, fmt.Errorf("error with private validator socket client: %w", err)
+			return nil, ErrPrivValidatorSocketClient{Err: err}
 		}
 	}
 
 	pubKey, err := privValidator.GetPubKey()
 	if err != nil {
-		return nil, fmt.Errorf("can't get pubkey: %w", err)
+		return nil, ErrGetPubKey{Err: err}
 	}
 
 	// Determine whether we should attempt state sync.
@@ -399,7 +399,7 @@ func NewNode(ctx context.Context,
 		logger.With("module", "state"),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pruner: %w", err)
+		return nil, ErrCreatePruner{Err: err}
 	}
 
 	// make block executor for consensus and blocksync reactors to execute blocks
@@ -424,7 +424,7 @@ func NewNode(ctx context.Context,
 	// Don't start block sync if we're doing a state sync first.
 	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
-		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
+		return nil, ErrCreateBlockSyncReactor{Err: err}
 	}
 
 	consensusReactor, consensusState := createConsensusReactor(
@@ -463,17 +463,17 @@ func NewNode(ctx context.Context,
 
 	err = sw.AddPersistentPeers(splitAndTrimEmpty(config.P2P.PersistentPeers, ",", " "))
 	if err != nil {
-		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
+		return nil, ErrAddPersistentPeers{Err: err}
 	}
 
 	err = sw.AddUnconditionalPeerIDs(splitAndTrimEmpty(config.P2P.UnconditionalPeerIDs, ",", " "))
 	if err != nil {
-		return nil, fmt.Errorf("could not add peer ids from unconditional_peer_ids field: %w", err)
+		return nil, ErrAddUnconditionalPeerIDs{Err: err}
 	}
 
 	addrBook, err := createAddrBookAndSetOnSwitch(config, sw, p2pLogger, nodeKey)
 	if err != nil {
-		return nil, fmt.Errorf("could not create addrbook: %w", err)
+		return nil, ErrCreateAddrBook{Err: err}
 	}
 
 	// Optionally, start the pex reactor
@@ -584,25 +584,25 @@ func (n *Node) OnStart() error {
 	// Always connect to persistent peers
 	err = n.sw.DialPeersAsync(splitAndTrimEmpty(n.config.P2P.PersistentPeers, ",", " "))
 	if err != nil {
-		return fmt.Errorf("could not dial peers from persistent_peers field: %w", err)
+		return ErrDialPeers{Err: err}
 	}
 
 	// Run state sync
 	if n.stateSync {
 		bcR, ok := n.bcReactor.(blockSyncReactor)
 		if !ok {
-			return errors.New("this blocksync reactor does not support switching from state sync")
+			return ErrSwitchStateSync
 		}
 		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
 			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
-			return fmt.Errorf("failed to start state sync: %w", err)
+			return ErrStartStateSync{Err: err}
 		}
 	}
 
 	// Start background pruning
 	if err := n.pruner.Start(); err != nil {
-		return fmt.Errorf("failed to start background pruning routine: %w", err)
+		return ErrStartPruning{Err: err}
 	}
 
 	return nil
@@ -685,7 +685,7 @@ func (n *Node) OnStop() {
 func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 	pubKey, err := n.privValidator.GetPubKey()
 	if pubKey == nil || err != nil {
-		return nil, fmt.Errorf("can't get pubkey: %w", err)
+		return nil, ErrGetPubKey{Err: err}
 	}
 	rpcCoreEnv := rpccore.Environment{
 		ProxyAppQuery:   n.proxyApp.Query(),

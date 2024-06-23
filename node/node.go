@@ -979,7 +979,7 @@ func makeNodeInfo(
 	state sm.State,
 ) (p2p.DefaultNodeInfo, error) {
 	txIndexerStatus := "on"
-	if _, ok := txIndexer.(*null.TxIndex); ok {
+	if _, ok := txIndexer.(*null.TxIndex[*txindex.Batch, txindex.Pagination]); ok {
 		txIndexerStatus = "off"
 	}
 

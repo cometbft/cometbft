@@ -41,6 +41,6 @@ func IndexerFromConfig(cfg *config.Config, dbProvider config.DBProvider, chainID
 		return es.TxIndexer(), es.BlockIndexer(), nil
 
 	default:
-		return &null.TxIndex{}, &blockidxnull.BlockerIndexer{}, nil
+		return &null.TxIndex[*txindex.Batch, txindex.Pagination]{}, &blockidxnull.BlockerIndexer{}, nil
 	}
 }

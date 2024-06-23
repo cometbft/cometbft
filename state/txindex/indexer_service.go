@@ -11,6 +11,11 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+var (
+	nullTxIndexT  = reflect.TypeOf(&null.TxIndex[*Batch, Pagination]{})
+	nullBlockIdxT = reflect.TypeOf(&blockidxnull.BlockerIndexer{})
+)
+
 // XXX/TODO: These types should be moved to the indexer package.
 
 const (
@@ -48,8 +53,8 @@ func NewIndexerService(
 // OnStart implements service.Service by subscribing for all transactions
 // and indexing them by events.
 func (is *IndexerService) OnStart() error {
-	if reflect.TypeOf(is.txIdxr) == reflect.TypeOf(&null.TxIndex{}) &&
-		reflect.TypeOf(is.blockIdxr) == reflect.TypeOf(&blockidxnull.BlockerIndexer{}) {
+	if reflect.TypeOf(is.txIdxr).AssignableTo(nullTxIndexT) &&
+		reflect.TypeOf(is.blockIdxr).AssignableTo(nullBlockIdxT) {
 		is.Logger.Info("No indexers configured, skipping startup of IndexerService")
 		return nil
 	}

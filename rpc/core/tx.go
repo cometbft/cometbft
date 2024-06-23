@@ -20,7 +20,7 @@ const (
 // More: https://docs.cometbft.com/main/rpc/#/Info/tx
 func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
-	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
+	if _, ok := env.TxIndexer.(*null.TxIndex[*txindex.Batch, txindex.Pagination]); ok {
 		return nil, ErrTxIndexingDisabled
 	}
 
@@ -60,7 +60,7 @@ func (env *Environment) TxSearch(
 	orderBy string,
 ) (*ctypes.ResultTxSearch, error) {
 	// if index is disabled, return error
-	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
+	if _, ok := env.TxIndexer.(*null.TxIndex[*txindex.Batch, txindex.Pagination]); ok {
 		return nil, ErrTxIndexingDisabled
 	} else if len(query) > maxQueryLength {
 		return nil, ErrQueryLength{len(query), maxQueryLength}

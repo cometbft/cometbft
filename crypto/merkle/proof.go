@@ -253,6 +253,7 @@ type ProofNode struct {
 func (spn *ProofNode) FlattenAunts() [][]byte {
 	// Nonrecursive impl.
 	innerHashes := [][]byte{}
+FOR_LOOP:
 	for spn != nil {
 		switch {
 		case spn.Left != nil:
@@ -260,6 +261,7 @@ func (spn *ProofNode) FlattenAunts() [][]byte {
 		case spn.Right != nil:
 			innerHashes = append(innerHashes, spn.Right.Hash)
 		default:
+			break FOR_LOOP
 		}
 		spn = spn.Parent
 	}

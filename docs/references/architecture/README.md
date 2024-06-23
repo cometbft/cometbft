@@ -42,7 +42,7 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
-- [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
+- [ADR-113: Modular transaction hashing](adr-113-modular-transaction-hashing.md)
 
 ### Accepted
 
@@ -57,6 +57,7 @@ numbering our ADRs from 100 onwards.
 - [ADR-111: `nop` Mempool](adr-111-nop-mempool.md)
 - [ADR-112: Proposer-Based Timestamps](adr-112-proposer-based-timestamps.md)
 - [ADR-114: Partly Undo ADR 109](adr-114-undo-109.md)
+- [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
 
 ### Implemented
 

@@ -7,4 +7,5 @@ const (
 	CodeTypeInvalidTxFormat uint32 = 2
 	CodeTypeUnauthorized    uint32 = 3
 	CodeTypeExecuted        uint32 = 5
+	CodeTypeExpired         uint32 = 5
 )

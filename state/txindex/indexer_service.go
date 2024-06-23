@@ -53,8 +53,8 @@ func NewIndexerService(
 // OnStart implements service.Service by subscribing for all transactions
 // and indexing them by events.
 func (is *IndexerService) OnStart() error {
-	if reflect.TypeOf(is.txIdxr).AssignableTo(nullTxIndexT) &&
-		reflect.TypeOf(is.blockIdxr).AssignableTo(nullBlockIdxT) {
+	if reflect.TypeOf(is.txIdxr) == nullTxIndexT &&
+		reflect.TypeOf(is.blockIdxr) == nullBlockIdxT {
 		is.Logger.Info("No indexers configured, skipping startup of IndexerService")
 		return nil
 	}

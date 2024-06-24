@@ -33,7 +33,7 @@ type inputData struct {
 }
 
 // Malicious nodes parameters
-const MaliciousLie = 5  // This is how much the malicious node is higher than the real height
+const MaliciousLie = 5  // This is how much the malicious node claims to be higher than the real height
 const BlackholeSize = 3 // This is how many blocks the malicious node will not report immediately above real height
 const MaliciousTestMaximumLength = 5 * time.Minute
 

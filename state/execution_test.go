@@ -56,6 +56,7 @@ func TestApplyBlock(t *testing.T) {
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
+	mp.On("PreUpdate").Return()
 	mp.On("FlushAppConn", mock.Anything).Return(nil)
 	mp.On("Update",
 		mock.Anything,
@@ -117,6 +118,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			mp := &mpmocks.Mempool{}
 			mp.On("Lock").Return()
 			mp.On("Unlock").Return()
+			mp.On("PreUpdate").Return()
 			mp.On("FlushAppConn", mock.Anything).Return(nil)
 			mp.On("Update",
 				mock.Anything,
@@ -332,6 +334,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
+	mp.On("PreUpdate").Return()
 	mp.On("FlushAppConn", mock.Anything).Return(nil)
 	mp.On("Update",
 		mock.Anything,
@@ -590,6 +593,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
+	mp.On("PreUpdate").Return()
 	mp.On("FlushAppConn", mock.Anything).Return(nil)
 	mp.On("Update",
 		mock.Anything,
@@ -722,6 +726,7 @@ func TestEmptyPrepareProposal(t *testing.T) {
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
+	mp.On("PreUpdate").Return()
 	mp.On("FlushAppConn", mock.Anything).Return(nil)
 	mp.On("Update",
 		mock.Anything,

@@ -734,7 +734,16 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 		go func(h int) {
 			defer wg.Done()
 
+<<<<<<< HEAD
 			err := mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+=======
+			mp.PreUpdate()
+			mp.Lock()
+			err := mp.FlushAppConn()
+			require.NoError(t, err)
+			err = mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+			mp.Unlock()
+>>>>>>> 0cd2907ac (fix(mempool)!: stop accepting TXs in the mempool if we can't keep up with reCheckTX (#3314))
 			require.NoError(t, err)
 			require.Equal(t, int64(h), mp.height.Load(), "height mismatch")
 		}(h)
@@ -884,6 +893,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
 	require.Nil(t, mp.recheck.end)
+	require.False(t, mp.recheck.isRechecking.Load())
 	mockClient.AssertExpectations(t)
 
 	// One call to CheckTxAsync per tx, for rechecking.
@@ -905,6 +915,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// mp.recheck.done() should be true only before and after calling recheckTxs.
 	mp.recheckTxs()
 	require.True(t, mp.recheck.done())
+	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
 	require.NotNil(t, mp.recheck.end)
 	require.Equal(t, mp.recheck.end, mp.txs.Back())
@@ -928,6 +939,7 @@ func TestMempoolRecheckRace(t *testing.T) {
 	}
 
 	// Update one transaction to force rechecking the rest.
+	mp.PreUpdate()
 	mp.Lock()
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
@@ -967,6 +979,7 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 				break
 			}
 			txs := mp.ReapMaxBytesMaxGas(100, -1)
+			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
 			require.NoError(t, err)
@@ -1031,3 +1044,24 @@ func abciResponses(n int, code uint32) []*abci.ExecTxResult {
 	}
 	return responses
 }
+<<<<<<< HEAD
+=======
+
+func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Txs, height int64) {
+	rfb := &abci.FinalizeBlockRequest{Txs: make([][]byte, len(txs))}
+	for i, tx := range txs {
+		rfb.Txs[i] = tx
+	}
+	_, e := app.FinalizeBlock(context.Background(), rfb)
+	require.NoError(t, e)
+	mp.PreUpdate()
+	mp.Lock()
+	e = mp.FlushAppConn()
+	require.NoError(t, e)
+	_, e = app.Commit(context.Background(), &abci.CommitRequest{})
+	require.NoError(t, e)
+	e = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
+	require.NoError(t, e)
+	mp.Unlock()
+}
+>>>>>>> 0cd2907ac (fix(mempool)!: stop accepting TXs in the mempool if we can't keep up with reCheckTX (#3314))

@@ -178,10 +178,8 @@ func (mem *CListMempool) Unlock() {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
-	rechecking := !mem.recheck.done()
-	reCheckFull := mem.recheck.recheckFull.Swap(rechecking)
-	if rechecking != reCheckFull {
-		mem.logger.Debug("the state of recheckFull has flipped", "before", reCheckFull, "after", rechecking)
+	if mem.recheck.setRecheckFull() {
+		mem.logger.Debug("the state of recheckFull has flipped")
 	}
 }
 
@@ -418,7 +416,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 func (mem *CListMempool) isFull(txSize int) error {
 	memSize := mem.Size()
 	txsBytes := mem.SizeBytes()
-	recheckFull := mem.recheck.recheckFull.Load()
+	recheckFull := mem.recheck.consideredFull()
 
 	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) || recheckFull {
 		return ErrMempoolIsFull{
@@ -682,6 +680,7 @@ type recheck struct {
 	end           *clist.CElement // last entry in the mempool to recheck
 	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
+	isRechecking  atomic.Bool     // true iff the rechecking process has begun and is not yet finished
 	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
 }
 
@@ -698,16 +697,20 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	rc.cursor = first
 	rc.end = last
 	rc.numPendingTxs.Store(0)
+	rc.isRechecking.Store(true)
 }
 
 // done returns true when there is no recheck response to process.
+// Safe for concurrent use by multiple goroutines.
 func (rc *recheck) done() bool {
-	return rc.cursor == nil
+	return !rc.isRechecking.Load()
 }
 
 // setDone registers that rechecking has finished.
 func (rc *recheck) setDone() {
 	rc.cursor = nil
+	rc.recheckFull.Store(false)
+	rc.isRechecking.Store(false)
 }
 
 // setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.
@@ -762,4 +765,18 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 // doneRechecking returns the channel used to signal that rechecking has finished.
 func (rc *recheck) doneRechecking() <-chan struct{} {
 	return rc.doneCh
+}
+
+// setRecheckFull sets recheckFull to true if rechecking is still in progress. It returns true iff
+// the value of recheckFull has changed.
+func (rc *recheck) setRecheckFull() bool {
+	rechecking := !rc.done()
+	recheckFull := rc.recheckFull.Swap(rechecking)
+	return rechecking != recheckFull
+}
+
+// consideredFull returns true iff the mempool should be considered as full while rechecking is in
+// progress.
+func (rc *recheck) consideredFull() bool {
+	return rc.recheckFull.Load()
 }

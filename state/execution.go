@@ -285,6 +285,7 @@ func (blockExec *BlockExecutor) Commit(
 	block *types.Block,
 	deliverTxResponses []*abci.ResponseDeliverTx,
 ) ([]byte, int64, error) {
+	blockExec.mempool.PreUpdate()
 	blockExec.mempool.Lock()
 	defer blockExec.mempool.Unlock()
 

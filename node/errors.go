@@ -20,7 +20,7 @@ var (
 	ErrLoadedGenesisDocHashMismatch = errors.New("genesis doc hash in db does not match loaded genesis doc")
 )
 
-// ErrCreateBlockStore is returned when the node fails to create the blockstore.
+// ErrLightClientStateProvider is returned when the node fails to create the blockstore.
 type ErrLightClientStateProvider struct {
 	Err error
 }
@@ -234,7 +234,7 @@ func (e ErrSaveGenesisDocHash) Unwrap() error {
 	return e.Err
 }
 
-// ErrReadingGenesisDoc is returned when the node fails to read the genesis doc file.
+// ErrorReadingGenesisDoc is returned when the node fails to read the genesis doc file.
 type ErrorReadingGenesisDoc struct {
 	Err error
 }

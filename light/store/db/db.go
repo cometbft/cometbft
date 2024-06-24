@@ -120,7 +120,7 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 	return nil
 }
 
-// DeleteLightBlockAndValidatorSet deletes the LightBlock from
+// DeleteLightBlock deletes the LightBlock from
 // the db.
 //
 // Safe for concurrent use by multiple goroutines.

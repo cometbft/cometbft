@@ -785,8 +785,8 @@ OUTER_LOOP:
 			bpr.pickSecondPeerAndSendRequest()
 		}
 
-		retryTimer := time.NewTimer(requestRetrySeconds * time.Second)
-		defer retryTimer.Stop()
+		retryTicker := time.NewTicker(requestRetrySeconds * time.Second)
+		defer retryTicker.Stop()
 
 		for {
 			select {
@@ -797,7 +797,7 @@ OUTER_LOOP:
 				return
 			case <-bpr.Quit():
 				return
-			case <-retryTimer.C:
+			case <-retryTicker.C:
 				if !gotBlock {
 					bpr.Logger.Debug("Retrying block request(s) after timeout", "height", bpr.height, "peer", bpr.peerID, "secondPeerID", bpr.secondPeerID)
 					bpr.reset(bpr.peerID)
@@ -814,20 +814,21 @@ OUTER_LOOP:
 				// If both peers returned NoBlockResponse or bad block, reschedule both
 				// requests. If not, wait for the other peer.
 				if len(bpr.requestedFrom()) == 0 {
-					retryTimer.Stop()
+					retryTicker.Stop()
 					continue OUTER_LOOP
 				}
 			case newHeight := <-bpr.newHeightCh:
 				if !gotBlock && bpr.height-newHeight < minBlocksForSingleRequest {
 					// The operation is a noop if the second peer is already set. The cost is checking a mutex.
 					//
-					// If the second peer was just set, reset the retryTimer to give the
+					// If the second peer was just set, reset the retryTicker to give the
 					// second peer a chance to respond.
 					if picked := bpr.pickSecondPeerAndSendRequest(); picked {
-						if !retryTimer.Stop() { //nolint:revive // suppress max-control-nesting linter
-							<-retryTimer.C
+						retryTicker.Stop()
+						select {
+						case <-retryTicker.C:
+						default:
 						}
-						retryTimer.Reset(requestRetrySeconds * time.Second)
 					}
 				}
 			case <-bpr.gotBlockCh:

@@ -155,7 +155,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			_, err := memR.mempool.CheckTx(tx, e.Src.ID())
 			if errors.Is(err, ErrTxInCache) {
 				memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
-			} else {
+			} else if err != nil {
 				memR.Logger.Info("Could not check tx", "tx", tx.Hash(), "err", err)
 			}
 		}

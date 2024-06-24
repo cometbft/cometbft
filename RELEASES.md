@@ -166,8 +166,8 @@ backport branch (see above). Otherwise:
    * Ensure that `UPGRADING.md` is up-to-date and includes notes on any breaking
      changes or other upgrading flows.
 4. Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-   file. If it does not point to an official api version, run `go get`
-   so that it points to one. You may need to tag a new version of the api
+   file. If it does not point to an official api version, run `go get github.com/cometbft/cometbft/api`
+   and `go mod tidy` (to update `go.sum`) so that it points to one. You may need to tag a new version of the api
    if the last version is too old (i.e., it does not contain the latest
    changes to the protos). If that is the case:
    * `git tag -a api/v2.0.0-rc1 -s -m "Release api module v2.0.0-rc1" origin/v2.x`
@@ -203,8 +203,8 @@ Before performing these steps, be sure the
    <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Prepare the release:
    * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-     file. If it does not point to an official api version, run `go get`
-     so that it points to one. You may need to tag a new version of the api
+     file. If it does not point to an official api version, run `go get github.com/cometbft/cometbft/api`
+     and `go mod tidy` (to update `go.sum`) so that it points to one. You may need to tag a new version of the api
      if the last released version is too old (i.e., it does not contain the latest
      changes to the protos). If that is the case:
      * `git tag -a api/v2.0.0 -s -m "Release api module v2.0.0" origin/v2.x`
@@ -244,8 +244,8 @@ To create a patch release:
    <https://github.com/cometbft/cometbft/actions/workflows/e2e-manual.yml>).
 3. Check out a new branch and prepare the release:
    * Check the dependency to `github.com/cometbft/cometbft/api` in the `go.mod`
-     file. If it does not point to an official api version, run `go get`
-     so that it points to one. You may need to tag a new version of the api
+     file. If it does not point to an official api version, run `go get github.com/cometbft/cometbft/api`
+     and `go mod tidy` (to update `go.sum`) so that it points to one. You may need to tag a new version of the api
      if the last released version is too old (i.e., it does not contain the latest
      changes to the protos). If that is the case:
      * `git tag -a api/v2.0.1 -s -m "Release api module v2.0.1" origin/v2.x`
@@ -270,6 +270,12 @@ To create a patch release:
 6. Create a pull request back to main with the CHANGELOG and version changes
    from the latest release.
    * Do not merge the backport branch into main.
+
+After the release of `v1.0.0`, the backport branch is named `v1.x`. Any future minor or patch releases will be cut
+from the `v1.x` branch. There won't be a separate backport branch for minor releases, so there won't be a `v1.1.x` backport branch.
+
+For more details about versioning guarantees after the `v1.0.0` release, please check
+the [versioning](https://github.com/cometbft/cometbft/blob/main/UPGRADING.md#versioning) section in the `UPGRADING.md` document.
 
 ## Major Release Checklist
 

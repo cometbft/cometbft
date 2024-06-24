@@ -90,7 +90,7 @@ func setDBLayout(pool *Pool, dbKeyLayoutVersion string) {
 
 type PoolOptions func(*Pool)
 
-// WithCompaction sets the compaciton parameters.
+// WithDBKeyLayout sets the db key layout.
 func WithDBKeyLayout(dbKeyLayoutV string) PoolOptions {
 	return func(pool *Pool) {
 		setDBLayout(pool, dbKeyLayoutV)

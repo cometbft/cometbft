@@ -46,10 +46,6 @@ func (BackportTxIndexer) Prune(_ int64) (numPruned, newRetainHeight int64, err e
 	return 0, 0, nil
 }
 
-func (BackportTxIndexer) IsNull() bool {
-	return true
-}
-
 // AddBatch indexes a batch of transactions in Postgres, as part of TxIndexer.
 func (b BackportTxIndexer) AddBatch(batch *txindex.Batch) error {
 	return b.psql.IndexTxEvents(batch.Ops)
@@ -116,7 +112,3 @@ func (BackportBlockIndexer) Search(context.Context, *query.Query) ([]int64, erro
 }
 
 func (BackportBlockIndexer) SetLogger(log.Logger) {}
-
-func (BackportBlockIndexer) IsNull() bool {
-	return true
-}

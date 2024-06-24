@@ -72,7 +72,7 @@ func makeStateAndBlockStoreAndIndexers() (sm.State, *BlockStore, txindex.TxIndex
 		panic(fmt.Errorf("error constructing state from genesis file: %w", err))
 	}
 
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, "test")
+	txIndexer, blockIndexer, _, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, "test")
 	if err != nil {
 		panic(err)
 	}

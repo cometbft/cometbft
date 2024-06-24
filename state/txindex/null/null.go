@@ -48,7 +48,3 @@ func (*TxIndex) Search(_ context.Context, _ *query.Query, _ txindex.Pagination) 
 
 func (*TxIndex) SetLogger(log.Logger) {
 }
-
-func (*TxIndex) IsNull() bool {
-	return true
-}

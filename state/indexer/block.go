@@ -30,7 +30,4 @@ type BlockIndexer interface {
 	SetRetainHeight(retainHeight int64) error
 
 	GetRetainHeight() (int64, error)
-
-	// IsNull returns true if the indexer is a no-op.
-	IsNull() bool
 }

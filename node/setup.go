@@ -167,24 +167,24 @@ func createAndStartIndexerService(
 		blockIndexer indexer.BlockIndexer
 	)
 
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, dbProvider, chainID)
+	txIndexer, blockIndexer, allIndexersDisabled, err := block.IndexerFromConfig(config, dbProvider, chainID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	if allIndexersDisabled {
+		return nil, txIndexer, blockIndexer, nil
+	}
+
 	txIndexer.SetLogger(logger.With("module", "txindex"))
 	blockIndexer.SetLogger(logger.With("module", "txindex"))
 
-	if !txIndexer.IsNull() || !blockIndexer.IsNull() {
-		indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
-		indexerService.SetLogger(logger.With("module", "txindex"))
-
-		if err := indexerService.Start(); err != nil {
-			return nil, nil, nil, err
-		}
-		return indexerService, txIndexer, blockIndexer, nil
+	indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
+	indexerService.SetLogger(logger.With("module", "txindex"))
+	if err := indexerService.Start(); err != nil {
+		return nil, nil, nil, err
 	}
 
-	return nil, txIndexer, blockIndexer, nil
+	return indexerService, txIndexer, blockIndexer, nil
 }
 
 func doHandshake(

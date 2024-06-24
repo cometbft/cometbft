@@ -343,10 +343,6 @@ func (txi *TxIndex) Index(result *abci.TxResult) error {
 	return b.WriteSync()
 }
 
-func (*TxIndex) IsNull() bool {
-	return false
-}
-
 func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
 	for _, event := range result.Result.Events {
 		// only delete events with a non-empty type

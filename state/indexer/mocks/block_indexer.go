@@ -93,24 +93,6 @@ func (_m *BlockIndexer) Index(events types.EventDataNewBlockEvents) error {
 	return r0
 }
 
-// IsNull provides a mock function with given fields:
-func (_m *BlockIndexer) IsNull() bool {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for IsNull")
-	}
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func() bool); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
 // Prune provides a mock function with given fields: retainHeight
 func (_m *BlockIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	ret := _m.Called(retainHeight)

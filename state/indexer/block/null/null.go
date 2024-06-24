@@ -41,7 +41,3 @@ func (*BlockerIndexer) Search(context.Context, *query.Query) ([]int64, error) {
 
 func (*BlockerIndexer) SetLogger(log.Logger) {
 }
-
-func (*BlockerIndexer) IsNull() bool {
-	return true
-}

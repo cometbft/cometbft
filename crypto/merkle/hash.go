@@ -2,8 +2,6 @@ package merkle
 
 import (
 	"hash"
-
-	"github.com/cometbft/cometbft/crypto/tmhash"
 )
 
 // TODO: make these have a large predefined capacity
@@ -12,33 +10,26 @@ var (
 	innerPrefix = []byte{1}
 )
 
-// returns tmhash(<empty>)
-func emptyHash() []byte {
-	return tmhash.Sum([]byte{})
+// returns h(<empty>).
+func emptyHash(h hash.Hash) []byte {
+	h.Reset()
+	h.Write([]byte{})
+	return h.Sum(nil)
 }
 
-// returns tmhash(0x00 || leaf)
-func leafHash(leaf []byte) []byte {
-	return tmhash.Sum(append(leafPrefix, leaf...))
+// returns h(0x00 || leaf).
+func leafHash(h hash.Hash, leaf []byte) []byte {
+	h.Reset()
+	h.Write(leafPrefix)
+	h.Write(leaf)
+	return h.Sum(nil)
 }
 
-// returns tmhash(0x00 || leaf)
-func leafHashOpt(s hash.Hash, leaf []byte) []byte {
-	s.Reset()
-	s.Write(leafPrefix)
-	s.Write(leaf)
-	return s.Sum(nil)
-}
-
-// returns tmhash(0x01 || left || right)
-func innerHash(left []byte, right []byte) []byte {
-	return tmhash.SumMany(innerPrefix, left, right)
-}
-
-func innerHashOpt(s hash.Hash, left []byte, right []byte) []byte {
-	s.Reset()
-	s.Write(innerPrefix)
-	s.Write(left)
-	s.Write(right)
-	return s.Sum(nil)
+// returns h(0x01 || left || right).
+func innerHash(h hash.Hash, left []byte, right []byte) []byte {
+	h.Reset()
+	h.Write(innerPrefix)
+	h.Write(left)
+	h.Write(right)
+	return h.Sum(nil)
 }

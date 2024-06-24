@@ -7,22 +7,24 @@ import (
 )
 
 // HashFromByteSlices computes a Merkle tree where the leaves are the byte slice,
-// in the provided order. It follows RFC-6962.
+// in the provided order. It follows RFC-6962. It uses SHA256 as the hash function.
 func HashFromByteSlices(items [][]byte) []byte {
-	return hashFromByteSlices(sha256.New(), items)
+	return HashFromByteSlicesWithHash(sha256.New(), items)
 }
 
-func hashFromByteSlices(sha hash.Hash, items [][]byte) []byte {
+// HashFromByteSlicesWithHash computes a Merkle tree where the leaves are the byte slice,
+// in the provided order. It follows RFC-6962. It uses the provided hash function.
+func HashFromByteSlicesWithHash(h hash.Hash, items [][]byte) []byte {
 	switch len(items) {
 	case 0:
-		return emptyHash()
+		return emptyHash(h)
 	case 1:
-		return leafHashOpt(sha, items[0])
+		return leafHash(h, items[0])
 	default:
 		k := getSplitPoint(int64(len(items)))
-		left := hashFromByteSlices(sha, items[:k])
-		right := hashFromByteSlices(sha, items[k:])
-		return innerHashOpt(sha, left, right)
+		left := HashFromByteSlicesWithHash(h, items[:k])
+		right := HashFromByteSlicesWithHash(h, items[k:])
+		return innerHash(h, left, right)
 	}
 }
 
@@ -69,14 +71,14 @@ func HashFromByteSlicesIterative(input [][]byte) []byte {
 	items := make([][]byte, len(input))
 	sha := sha256.New()
 	for i, leaf := range input {
-		items[i] = leafHash(leaf)
+		items[i] = leafHash(sha, leaf)
 	}
 
 	size := len(items)
 	for {
 		switch size {
 		case 0:
-			return emptyHash()
+			return emptyHash(sha)
 		case 1:
 			return items[0]
 		default:
@@ -84,7 +86,7 @@ func HashFromByteSlicesIterative(input [][]byte) []byte {
 			wp := 0 // write position
 			for rp < size {
 				if rp+1 < size {
-					items[wp] = innerHashOpt(sha, items[rp], items[rp+1])
+					items[wp] = innerHash(sha, items[rp], items[rp+1])
 					rp += 2
 				} else {
 					items[wp] = items[rp]

@@ -3,7 +3,6 @@ package mempool
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -269,7 +268,7 @@ func (mem *CListMempool) CheckTx(
 
 	reqRes, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.RequestCheckTx{Tx: tx})
 	if err != nil {
-		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
+		panic(log.NewLazySprintf("CheckTx request for tx %v failed: %w", tx.Hash(), err))
 	}
 	reqRes.SetCallback(mem.reqResCb(tx, txInfo, cb))
 
@@ -332,8 +331,7 @@ func (mem *CListMempool) reqResCb(
 ) func(res *abci.Response) {
 	return func(res *abci.Response) {
 		if !mem.recheck.done() {
-			panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %v",
-				types.Tx(tx).Hash()))
+			panic(log.NewLazySprintf("rechecking has not finished; cannot check new tx %X", tx))
 		}
 
 		mem.resCbFirstTime(tx, txInfo, res)
@@ -615,7 +613,7 @@ func (mem *CListMempool) Update(
 		// https://github.com/tendermint/tendermint/issues/3322.
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 			mem.logger.Debug("Committed transaction not in local mempool (not an error)",
-				"key", tx.Key(),
+				"tx", log.NewLazySprintf("%v", tx.Hash()),
 				"error", err.Error())
 		}
 	}
@@ -661,7 +659,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CheckTxType_Recheck,
 		})
 		if err != nil {
-			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
+			panic(log.NewLazySprintf("(re-)CheckTx request for tx %v failed: %w", tx.Hash(), err))
 		}
 	}
 

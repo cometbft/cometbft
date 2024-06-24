@@ -2,6 +2,7 @@ package merkle
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -9,6 +10,10 @@ import (
 )
 
 const ProofOpValue = "simple:v"
+
+// ErrTooManyArgs is returned when the input to [ValueOp.Run] has length
+// exceeding 1.
+var ErrTooManyArgs = errors.New("merkle: len(args) > 1")
 
 // ValueOp takes a key and a single value as argument and
 // produces the root hash.  The corresponding tree structure is
@@ -79,21 +84,21 @@ func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 		return nil, fmt.Errorf("expected 1 arg, got %v", len(args))
 	}
 	value := args[0]
-	hasher := tmhash.New()
-	hasher.Write(value)
-	vhash := hasher.Sum(nil)
+	h := tmhash.New()
+	h.Write(value)
+	vhash := h.Sum(nil)
 
 	bz := new(bytes.Buffer)
 	// Wrap <op.Key, vhash> to hash the KVPair.
 	encodeByteSlice(bz, op.key) //nolint: errcheck // does not error
 	encodeByteSlice(bz, vhash)  //nolint: errcheck // does not error
-	kvhash := leafHash(bz.Bytes())
+	kvhash := leafHash(h, bz.Bytes())
 
 	if !bytes.Equal(kvhash, op.Proof.LeafHash) {
 		return nil, fmt.Errorf("leaf hash mismatch: want %X got %X", op.Proof.LeafHash, kvhash)
 	}
 
-	rootHash, err := op.Proof.computeRootHash()
+	rootHash, err := op.Proof.computeRootHash(h)
 	if err != nil {
 		return nil, err
 	}

@@ -17,6 +17,7 @@ package merkle
 // and consequently fall under the above license.
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"testing"
 
@@ -24,11 +25,12 @@ import (
 )
 
 func TestRFC6962Hasher(t *testing.T) {
-	_, leafHashTrail := trailsFromByteSlices([][]byte{[]byte("L123456")})
+	h := sha256.New()
+	_, leafHashTrail := trailsFromByteSlices(h, [][]byte{[]byte("L123456")})
 	leafHash := leafHashTrail.Hash
-	_, leafHashTrail = trailsFromByteSlices([][]byte{{}})
+	_, leafHashTrail = trailsFromByteSlices(h, [][]byte{{}})
 	emptyLeafHash := leafHashTrail.Hash
-	_, emptyHashTrail := trailsFromByteSlices([][]byte{})
+	_, emptyHashTrail := trailsFromByteSlices(h, [][]byte{})
 	emptyTreeHash := emptyHashTrail.Hash
 	for _, tc := range []struct {
 		desc string
@@ -60,7 +62,7 @@ func TestRFC6962Hasher(t *testing.T) {
 		{
 			desc: "RFC6962 Node",
 			want: "aa217fe888e47007fa15edab33c2b492a722cb106c64667fc2b044444de66bbb"[:tmhash.Size*2],
-			got:  innerHash([]byte("N123"), []byte("N456")),
+			got:  innerHash(sha256.New(), []byte("N123"), []byte("N456")),
 		},
 	} {
 		tc := tc
@@ -78,26 +80,27 @@ func TestRFC6962Hasher(t *testing.T) {
 
 func TestRFC6962HasherCollisions(t *testing.T) {
 	// Check that different leaves have different hashes.
+	h := sha256.New()
 	leaf1, leaf2 := []byte("Hello"), []byte("World")
-	_, leafHashTrail := trailsFromByteSlices([][]byte{leaf1})
+	_, leafHashTrail := trailsFromByteSlices(h, [][]byte{leaf1})
 	hash1 := leafHashTrail.Hash
-	_, leafHashTrail = trailsFromByteSlices([][]byte{leaf2})
+	_, leafHashTrail = trailsFromByteSlices(h, [][]byte{leaf2})
 	hash2 := leafHashTrail.Hash
 	if bytes.Equal(hash1, hash2) {
 		t.Errorf("leaf hashes should differ, but both are %x", hash1)
 	}
 	// Compute an intermediate subtree hash.
-	_, subHash1Trail := trailsFromByteSlices([][]byte{hash1, hash2})
+	_, subHash1Trail := trailsFromByteSlices(h, [][]byte{hash1, hash2})
 	subHash1 := subHash1Trail.Hash
 	// Check that this is not the same as a leaf hash of their concatenation.
 	preimage := append(hash1, hash2...)
-	_, forgedHashTrail := trailsFromByteSlices([][]byte{preimage})
+	_, forgedHashTrail := trailsFromByteSlices(h, [][]byte{preimage})
 	forgedHash := forgedHashTrail.Hash
 	if bytes.Equal(subHash1, forgedHash) {
 		t.Errorf("hasher is not second-preimage resistant")
 	}
 	// Swap the order of nodes and check that the hash is different.
-	_, subHash2Trail := trailsFromByteSlices([][]byte{hash2, hash1})
+	_, subHash2Trail := trailsFromByteSlices(h, [][]byte{hash2, hash1})
 	subHash2 := subHash2Trail.Hash
 	if bytes.Equal(subHash1, subHash2) {
 		t.Errorf("subtree hash does not depend on the order of leaves")

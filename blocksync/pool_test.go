@@ -289,8 +289,9 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	//   This takes a couple of minutes to complete, so we don't run it.
 	const InitialHeight = 7
 	peers := testPeers{
-		p2p.ID("good"): &testPeer{p2p.ID("good"), 1, InitialHeight, make(chan inputData), false},
-		p2p.ID("bad"):  &testPeer{p2p.ID("bad"), 1, InitialHeight + MaliciousLie, make(chan inputData), true},
+		p2p.ID("good"):  &testPeer{p2p.ID("good"), 1, InitialHeight, make(chan inputData), false},
+		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, InitialHeight + MaliciousLie, make(chan inputData), true},
+		p2p.ID("good1"): &testPeer{p2p.ID("good1"), 1, InitialHeight, make(chan inputData), false},
 	}
 	errorsCh := make(chan peerError)
 	requestsCh := make(chan BlockRequest)

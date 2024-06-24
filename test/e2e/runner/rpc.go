@@ -23,13 +23,13 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 		lastIncrease = time.Now()
 	)
 
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, nil, ctx.Err()
-		case <-ticker.C:
+		case <-timer.C:
 			for _, node := range testnet.Nodes {
 				if node.Stateless() {
 					continue
@@ -70,6 +70,7 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 				}
 				return nil, nil, fmt.Errorf("chain stalled at height %v", maxResult.Block.Height)
 			}
+			timer.Reset(1 * time.Second)
 		}
 	}
 }
@@ -81,15 +82,15 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 		return nil, err
 	}
 
-	ticker := time.NewTicker(300 * time.Millisecond)
-	defer ticker.Stop()
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 	var curHeight int64
 	lastChanged := time.Now()
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-ticker.C:
+		case <-timer.C:
 			status, err := client.Status(ctx)
 			switch {
 			case time.Since(lastChanged) > timeout:
@@ -101,6 +102,8 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 				curHeight = status.SyncInfo.LatestBlockHeight
 				lastChanged = time.Now()
 			}
+
+			timer.Reset(300 * time.Millisecond)
 		}
 	}
 }

@@ -84,7 +84,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 
 // loadGenerate generates jobs until the context is canceled.
 func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testnet, id []byte) {
-	t := time.NewTicker(time.Second)
+	t := time.NewTimer(0)
 	defer t.Stop()
 	for {
 		select {
@@ -93,6 +93,8 @@ func loadGenerate(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testne
 			close(txCh)
 			return
 		}
+		t.Reset(time.Second)
+
 		// A context with a timeout is created here to time the createTxBatch
 		// function out. If createTxBatch has not completed its work by the time
 		// the next batch is set to be sent out, then the context is canceled so that

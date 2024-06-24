@@ -178,7 +178,7 @@ func (mem *CListMempool) Unlock() {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
-	if mem.recheck.updateRecheckFull() {
+	if mem.recheck.setRecheckFull() {
 		mem.logger.Debug("the state of recheckFull has flipped")
 	}
 }
@@ -416,7 +416,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 func (mem *CListMempool) isFull(txSize int) error {
 	memSize := mem.Size()
 	txsBytes := mem.SizeBytes()
-	recheckFull := mem.recheck.recheckFull.Load()
+	recheckFull := mem.recheck.consideredFull()
 
 	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) || recheckFull {
 		return ErrMempoolIsFull{
@@ -709,6 +709,7 @@ func (rc *recheck) done() bool {
 // setDone registers that rechecking has finished.
 func (rc *recheck) setDone() {
 	rc.cursor = nil
+	rc.recheckFull.Store(false)
 	rc.isRechecking.Store(false)
 }
 
@@ -766,12 +767,19 @@ func (rc *recheck) doneRechecking() <-chan struct{} {
 	return rc.doneCh
 }
 
-// updateRecheckFull updates the value of recheckFull and returns true iff its value has changed.
+// setRecheckFull sets recheckFull to true if rechecking is still in progress. It returns true iff
+// the value of recheckFull has changed.
 //   - If rechecking has not finished and recheckFull is false, set recheckFull to true and return true.
 //   - If rechecking has finished and recheckFull is true, set recheckFull to false and return true.
 //   - Otherwise leave recheckFull unchanged and return false.
-func (rc *recheck) updateRecheckFull() bool {
+func (rc *recheck) setRecheckFull() bool {
 	rechecking := !rc.done()
 	recheckFull := rc.recheckFull.Swap(rechecking)
 	return rechecking != recheckFull
+}
+
+// consideredFull returns true iff the mempool should be considered as full while rechecking is in
+// progress.
+func (rc *recheck) consideredFull() bool {
+	return rc.recheckFull.Load()
 }

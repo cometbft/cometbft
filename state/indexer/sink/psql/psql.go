@@ -271,5 +271,7 @@ func (*EventSink) HasBlock(_ int64) (bool, error) {
 	return false, errors.New("hasBlock is not supported via the postgres event sink")
 }
 
+func (*EventSink) IsNull() bool { return false }
+
 // Stop closes the underlying PostgreSQL database.
 func (es *EventSink) Stop() error { return es.store.Close() }

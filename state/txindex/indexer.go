@@ -36,6 +36,9 @@ type TxIndexer interface {
 	GetRetainHeight() (int64, error)
 
 	SetRetainHeight(retainHeight int64) error
+
+	// IsNull returns true if the indexer is a no-op.
+	IsNull() bool
 }
 
 // Batch groups together multiple Index operations to be performed at the same time.

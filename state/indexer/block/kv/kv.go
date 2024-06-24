@@ -752,3 +752,7 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 	}
 	return nil
 }
+
+func (*BlockerIndexer) IsNull() bool {
+	return false
+}

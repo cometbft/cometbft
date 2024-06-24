@@ -170,7 +170,7 @@ such as transaction latency as defined above.
 and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
 $p$'s application MUST classify `tx` into the same transaction class as $q$'s application.
 
-This property only makes sense when the previous property (_consistent transaction classes_) defined above holds.
+This property only makes sense when the previous property ("Consistent transaction classes") defined above holds.
 Even if we ensure consistent transaction classes, if this property does not hold, a given transaction
 may not receive the same classification across the network and it will thus be impossible to reason
 about any network-wide guarantees we want to provide that transaction with.
@@ -178,7 +178,7 @@ about any network-wide guarantees we want to provide that transaction with.
 Additionally, it is important to note that these two properties also constrain the way transaction
 classes and transaction classification logic can evolve in an existing implementation.
 If either transaction classes or classification logic are not modified in a coordinated manner in a working system,
-there will be at least a period where the these two properties may not hold for all transactions.
+there will be at least a period where these two properties may not hold for all transactions.
 
 > TODO: Need to find somewhere in the text to say: "ReCheckTx" doesn't classify, its mempool information is disregarded"
 
@@ -440,10 +440,11 @@ transaction will be assigned to the default lane.
 
 ### Removing transactions from the mempool
 
-A transaction may be removed in two scenarios: when updating the mempool with a list of committed transactions, or
-during rechecking if the transaction is reassessed as invalid. In either case, the first step is to
-identify the lane the transaction belongs to by accessing the `txLanes` map. Then, we remove the
-entry from the CList corresponding to its lane and update the auxiliary variables accordingly.
+A transaction may be removed in two scenarios: when updating the mempool with a list of committed
+transactions, or during rechecking if the transaction is reassessed as invalid. In either case, the
+first step is to identify the lane the transaction belongs to by accessing the `txLanes` map. Then,
+we remove the entry from the CList corresponding to its lane and update the auxiliary variables
+accordingly.
 
 As an optimization, we could prioritize the removal of transactions from high-priority lanes first.
 The broadcast goroutines are constantly reading the list of transactions to disseminate them, though

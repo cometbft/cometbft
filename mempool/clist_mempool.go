@@ -769,9 +769,6 @@ func (rc *recheck) doneRechecking() <-chan struct{} {
 
 // setRecheckFull sets recheckFull to true if rechecking is still in progress. It returns true iff
 // the value of recheckFull has changed.
-//   - If rechecking has not finished and recheckFull is false, set recheckFull to true and return true.
-//   - If rechecking has finished and recheckFull is true, set recheckFull to false and return true.
-//   - Otherwise leave recheckFull unchanged and return false.
 func (rc *recheck) setRecheckFull() bool {
 	rechecking := !rc.done()
 	recheckFull := rc.recheckFull.Swap(rechecking)

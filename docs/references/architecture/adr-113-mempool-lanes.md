@@ -340,8 +340,8 @@ responses of invalid transactions.
 
 On receiving the information from the app, CometBFT will validate that:
 - `lane_priorities` has no duplicates (values in `lane_priorities` don't need to be sorted),
-- `default_lane_priority` is in `lane_priorities` (the default lane is not necessarily the lane with the
-  lowest priority), and
+- `default_lane_priority` is in `lane_priorities` (the default lane is not necessarily the lane with
+  the lowest priority), and
 - the list `lane_priorities` is empty if and only if `default_lane_priority` is 0.
 
 ### Initialization
@@ -420,8 +420,8 @@ configurations are:
 - `MaxTxBytes`, the maximum size in bytes of a single transaction accepted into the mempool.
 
 Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none. Remember that,
-if `PrepareProposal`'s app logic can ever add a new transaction, it becomes _always_ mandatory to recheck remaining transactions in the
-mempool, so there is no point in disabling `Recheck` per lane.
+if `PrepareProposal`'s app logic can ever add a new transaction, it becomes _always_ mandatory to
+recheck remaining transactions in the mempool, so there is no point in disabling `Recheck` per lane.
 
 ### Adding transactions to the mempool
 
@@ -511,9 +511,11 @@ which we could easily reimplement in the mempool. It works as follows:
 - When sending the next message, [pick the channel][selectChannelToGossipOn] whose ratio
   `recentlySent/Priority` is the least.
 
-From the extensive research in operating systems and networking, we can choose for the MVP an
-existing scheduling algorithm that meets these requirements and is straightforward to implement,
-such as a variant of the [Weighted Round Robin][wrr] (WRR) algorithm.
+From the extensive research in operating systems and networking, we can pick for the MVP an existing
+scheduling algorithm that meets these requirements and is straightforward to implement, such as a
+variant of the [Weighted Round Robin][wrr] (WRR) algorithm. We choose this option at it gives us
+more flexibility for improving the logic in the future, for example, by adding a mechanism for
+congestion control or by allowing some lanes to have customized, non-FIFO scheduling algorithms.
 
 ### Validating lanes of received transactions
 
@@ -521,8 +523,8 @@ Transactions are transmitted without lane information because peers cannot be tr
 correct data. A node may take advantage of the network by sending lower-priority transactions before
 higher-priority ones. Although the receiving node could easily verify the priority of a transaction
 when it calls `CheckTx`, it cannot detect if a peer is sending transactions out of order over a
-single P2P channel. For the moment, we leave out of the MVP any mechanism to detect and possibly
-penalize nodes for this kind of behaviour.
+single P2P channel. For the moment, we leave out of the MVP any mechanism for detecting and possibly
+penalizing nodes for this kind of behaviour.
 
 ## Alternative designs
 
@@ -556,8 +558,8 @@ application version, as it already happens in the current implementation.
 
 The duality lane/priority could introduce a powerful indirection. The app could just define the lane
 of a transaction in `CheckTx`, but the priority of the lane itself could be configured (and
-fine-tuned) elsewhere. For example, by the app itself or by node operators. The proposed design for the MVP does
-not support this pattern.
+fine-tuned) elsewhere. For example, by the app itself or by node operators. The proposed design for
+the MVP does not support this pattern.
 
 ### Custom configuration per lane
 
@@ -570,17 +572,18 @@ the handshake.
 
 We have considered two alternative approaches for _where_ to configure lanes and priorities:
 1. In `config.toml` or `app.toml`. We have discarded this option as it does not make sense for
-   different nodes to have different lane configurations. The properties defined in the specification above
-   are end-to-end, and so, the lane configuration has to be consistent across the network.
+   different nodes to have different lane configurations. The properties defined in the
+   specification above are end-to-end, and so, the lane configuration has to be consistent across
+   the network.
 1. In `ConsensusParams`. There are several disadvantages with this approach. If we allow changing
    lane information via `ConsensusParams`, the mempool would need to update lanes dynamically. The
    updating process would be very complex and cumbersome, and not really appealing for an MVP. Two
    governance proposals would be required to pass to update the lane definitions. A first proposal
    would be required for upgrading the application, because the lane classification logic (thus the
    application's code) needs to know the lane configuration beforehand. And a second proposal would
-   be needed for upgrading the lanes via `ConsensusParams`.
-   While it is true that SDK applications could pass a governance proposal with both elements together,
-   it would be something to _always_ do, and it is not clear what the situation would be for non-SDK applications.
+   be needed for upgrading the lanes via `ConsensusParams`. While it is true that SDK applications
+   could pass a governance proposal with both elements together, it would be something to _always_
+   do, and it is not clear what the situation would be for non-SDK applications.
   
    Also, it is not clear in which order the proposals should apply. The community should be careful
    not to break performance between the passing of both proposals. The `gov` module could be

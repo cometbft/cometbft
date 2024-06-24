@@ -8,7 +8,7 @@
 
 ## Status
 
-Accepted | Rejected | Deprecated | Superseded by
+Accepted
 
 Tracking issue: [\#81]
 

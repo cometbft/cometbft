@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	gogo "github.com/cosmos/gogoproto/types"
@@ -54,7 +55,7 @@ type Application struct {
 	restoreSnapshot *abci.Snapshot
 	restoreChunks   [][]byte
 	// It's OK not to persist this, as it is not part of the state machine
-	seenTxs map[cmttypes.TxKey]uint64
+	seenTxs sync.Map // cmttypes.TxKey -> uint64
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -161,7 +162,6 @@ func NewApplication(cfg *Config) (*Application, error) {
 		state:     state,
 		snapshots: snapshots,
 		cfg:       cfg,
-		seenTxs:   make(map[cmttypes.TxKey]uint64),
 	}, nil
 }
 
@@ -274,19 +274,19 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 
 	txKey := cmttypes.Tx(req.Tx).Key()
 	stHeight, _ := app.state.Info()
-	if txHeight, ok := app.seenTxs[txKey]; ok {
-		if stHeight < txHeight {
+	if txHeight, ok := app.seenTxs.Load(txKey); ok {
+		if stHeight < txHeight.(uint64) {
 			panic(fmt.Sprintf("txHeight is less than current height; txHeight %v, height %v", txHeight, stHeight))
 		}
-		if stHeight > txHeight+txTTL {
-			delete(app.seenTxs, txKey)
+		if stHeight > txHeight.(uint64)+txTTL {
+			app.seenTxs.Delete(txKey)
 			return &abci.CheckTxResponse{
 				Code: kvstore.CodeTypeExpired,
 				Log:  fmt.Sprintf("transaction expired; seen height %v, current height %v", txHeight, stHeight),
 			}, nil
 		}
 	} else {
-		app.seenTxs[txKey] = stHeight
+		app.seenTxs.Store(txKey, stHeight)
 	}
 
 	if app.cfg.CheckTxDelay != 0 {
@@ -316,7 +316,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 		}
 		app.state.Set(key, value)
 
-		delete(app.seenTxs, cmttypes.Tx(tx).Key())
+		app.seenTxs.Delete(cmttypes.Tx(tx).Key())
 
 		txs[i] = &abci.ExecTxResult{Code: kvstore.CodeTypeOK}
 	}

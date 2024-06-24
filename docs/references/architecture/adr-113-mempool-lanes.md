@@ -365,7 +365,7 @@ modify the P2P handshake process to validate that the application versions are c
 
 Finally, this approach is compatible with applications that need to swap binaries when
 catching up or upgrading, such as SDK applications using [Cosmovisor][cosmovisor].
-When a node is catching up (i.e. BlockSyncing), its peers will detect
+When a node is catching up (i.e., state or block syncing), its peers will detect
 that the node is late and will not send it any transactions until it is caught up.
 So, the particular lane configuration of the node is irrelevant while catching up.
 When going through a Cosmovisor-driven upgrade, all nodes will swap binaries at the same

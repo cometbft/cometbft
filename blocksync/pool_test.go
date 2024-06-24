@@ -312,15 +312,12 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	peers.start()
 	defer peers.stop()
 
-	// Introduce each peer
+	// Simulate blocks created on each peer regularly and update pool max height.
 	go func() {
+		// Introduce each peer
 		for _, peer := range peers {
 			pool.SetPeerRange(peer.id, peer.base, peer.height)
 		}
-	}()
-
-	// Simulate blocks created on each peer regularly and update pool max height.
-	go func() {
 		for {
 			time.Sleep(1 * time.Second) // Speed of new block creation
 			for _, peer := range peers {

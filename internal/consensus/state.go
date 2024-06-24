@@ -2616,7 +2616,7 @@ func (cs *State) signAddVote(
 	hasExt := len(vote.ExtensionSignature) > 0
 	extEnabled := cs.state.ConsensusParams.Feature.VoteExtensionsEnabled(vote.Height)
 	if vote.Type == types.PrecommitType && !vote.BlockID.IsNil() && hasExt != extEnabled {
-		panic(fmt.Errorf("Vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
+		panic(fmt.Errorf("vote extension absence/presence does not match extensions enabled %t!=%t, height %d, type %v",
 			hasExt, extEnabled, vote.Height, vote.Type))
 	}
 	cs.sendInternalMessage(msgInfo{&VoteMessage{vote}, "", time.Time{}})

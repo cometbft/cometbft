@@ -391,6 +391,7 @@ func (blockExec *BlockExecutor) Commit(
 	block *types.Block,
 	abciResponse *abci.FinalizeBlockResponse,
 ) (int64, error) {
+	blockExec.mempool.PreUpdate()
 	blockExec.mempool.Lock()
 	defer blockExec.mempool.Unlock()
 

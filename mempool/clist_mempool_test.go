@@ -735,6 +735,7 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 		go func(h int) {
 			defer wg.Done()
 
+			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn()
 			require.NoError(t, err)
@@ -885,6 +886,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
 	require.Nil(t, mp.recheck.end)
+	require.False(t, mp.recheck.isRechecking.Load())
 	mockClient.AssertExpectations(t)
 
 	// For rechecking, there will be one call to CheckTxAsync per tx.
@@ -910,6 +912,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// mp.recheck.done() should be true only before and after calling recheckTxs.
 	mp.recheckTxs()
 	require.True(t, mp.recheck.done())
+	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
 	require.NotNil(t, mp.recheck.end)
 	require.Equal(t, mp.recheck.end, mp.txs.Back())
@@ -933,6 +936,7 @@ func TestMempoolRecheckRace(t *testing.T) {
 	}
 
 	// Update one transaction to force rechecking the rest.
+	mp.PreUpdate()
 	mp.Lock()
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
@@ -972,6 +976,7 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 				break
 			}
 			txs := mp.ReapMaxBytesMaxGas(100, -1)
+			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
 			require.NoError(t, err)
@@ -1044,6 +1049,7 @@ func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Tx
 	}
 	_, e := app.FinalizeBlock(context.Background(), rfb)
 	require.NoError(t, e)
+	mp.PreUpdate()
 	mp.Lock()
 	e = mp.FlushAppConn()
 	require.NoError(t, e)

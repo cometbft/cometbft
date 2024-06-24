@@ -734,16 +734,12 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 		go func(h int) {
 			defer wg.Done()
 
-<<<<<<< HEAD
-			err := mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
-=======
 			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn()
 			require.NoError(t, err)
 			err = mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 			mp.Unlock()
->>>>>>> 0cd2907ac (fix(mempool)!: stop accepting TXs in the mempool if we can't keep up with reCheckTX (#3314))
 			require.NoError(t, err)
 			require.Equal(t, int64(h), mp.height.Load(), "height mismatch")
 		}(h)
@@ -1044,24 +1040,3 @@ func abciResponses(n int, code uint32) []*abci.ExecTxResult {
 	}
 	return responses
 }
-<<<<<<< HEAD
-=======
-
-func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Txs, height int64) {
-	rfb := &abci.FinalizeBlockRequest{Txs: make([][]byte, len(txs))}
-	for i, tx := range txs {
-		rfb.Txs[i] = tx
-	}
-	_, e := app.FinalizeBlock(context.Background(), rfb)
-	require.NoError(t, e)
-	mp.PreUpdate()
-	mp.Lock()
-	e = mp.FlushAppConn()
-	require.NoError(t, e)
-	_, e = app.Commit(context.Background(), &abci.CommitRequest{})
-	require.NoError(t, e)
-	e = mp.Update(height, txs, abciResponses(txs.Len(), abci.CodeTypeOK), nil, nil)
-	require.NoError(t, e)
-	mp.Unlock()
-}
->>>>>>> 0cd2907ac (fix(mempool)!: stop accepting TXs in the mempool if we can't keep up with reCheckTX (#3314))

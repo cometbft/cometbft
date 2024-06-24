@@ -383,11 +383,7 @@ func (mem *CListMempool) isFull(txSize int) error {
 	txsBytes := mem.SizeBytes()
 	recheckFull := mem.recheck.consideredFull()
 
-<<<<<<< HEAD
-	if memSize >= mem.config.Size || int64(txSize)+txsBytes > mem.config.MaxTxsBytes {
-=======
-	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) || recheckFull {
->>>>>>> 0cd2907ac (fix(mempool)!: stop accepting TXs in the mempool if we can't keep up with reCheckTX (#3314))
+	if memSize >= mem.config.Size || int64(txSize)+txsBytes > mem.config.MaxTxsBytes || recheckFull {
 		return ErrMempoolIsFull{
 			NumTxs:      memSize,
 			MaxTxs:      mem.config.Size,

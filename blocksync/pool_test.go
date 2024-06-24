@@ -278,7 +278,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	// * The network creates new blocks every second. The malicious peer will also get ahead with another fake block.
 	// * The pool verifies blocks every half second. This ensures that the pool catches up with the network.
 	// * When the pool encounters a fake block sent by the malicious peer and has the previous block from a good peer,
-	//   it can prove that the block is fake. The malicious peer gets banned.
+	//   it can prove that the block is fake. The malicious peer gets banned, together with the sender of the previous (valid) block.
 	// Additional notes:
 	// * After a minute of ban, the malicious peer is unbanned. If the pool IsCaughtUp() by then and consensus started,
 	//   there is no impact. If blocksync did not catch up yet, the malicious peer can continue its lie until the next ban.

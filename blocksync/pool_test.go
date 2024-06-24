@@ -310,7 +310,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	})
 
 	peers.start()
-	defer peers.stop()
+	t.Cleanup(func() { peers.stop() })
 
 	// Simulate blocks created on each peer regularly and update pool max height.
 	go func() {
@@ -352,7 +352,8 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	}()
 
 	testTicker := time.NewTicker(200 * time.Millisecond) // speed of test execution
-	defer testTicker.Stop()
+	t.Cleanup(func() { testTicker.Stop() })
+
 	bannedOnce := false // true when the malicious peer was banned at least once
 	startTime := time.Now()
 

@@ -56,7 +56,7 @@ type Mempool interface {
 	// Unlock unlocks the mempool.
 	Unlock()
 
-	// PreUpdate Signal that a new update is coming, before acquiring the mempool lock.
+	// PreUpdate signals that a new update is coming, before acquiring the mempool lock.
 	// If the mempool is still reChecking at this point, it should be considered full
 	PreUpdate()
 

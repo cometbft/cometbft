@@ -73,10 +73,10 @@ func TestMConnectionSendFlushStop(t *testing.T) {
 	// stop the conn - it should flush all conns
 	clientConn.FlushStop()
 
-	ticker := time.NewTicker(3 * time.Second)
+	timer := time.NewTimer(3 * time.Second)
 	select {
 	case <-errCh:
-	case <-ticker.C:
+	case <-timer.C:
 		t.Error("timed out waiting for msgs to be read")
 	}
 }

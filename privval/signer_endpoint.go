@@ -51,7 +51,7 @@ func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.
 	return false
 }
 
-// TryGetConnection retrieves a connection if it is already available.
+// WaitConnection waits for the connection to be available.
 func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, maxWait time.Duration) error {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()

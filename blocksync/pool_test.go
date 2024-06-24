@@ -312,7 +312,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	peers.start()
 	defer peers.stop()
 
-	// Connect the peers to each other.
+	// Introduce each peer
 	go func() {
 		for _, peer := range peers {
 			pool.SetPeerRange(peer.id, peer.base, peer.height)

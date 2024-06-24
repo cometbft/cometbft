@@ -96,6 +96,7 @@ func TestReactorConcurrency(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
+			reactors[0].mempool.PreUpdate()
 			reactors[0].mempool.Lock()
 			defer reactors[0].mempool.Unlock()
 
@@ -113,6 +114,7 @@ func TestReactorConcurrency(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
+			reactors[1].mempool.PreUpdate()
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ResponseDeliverTx, 0), nil, nil)

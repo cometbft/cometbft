@@ -117,6 +117,9 @@ func (txmp *TxMempool) Lock() { txmp.mtx.Lock() }
 // Unlock releases a write-lock on the mempool.
 func (txmp *TxMempool) Unlock() { txmp.mtx.Unlock() }
 
+// PreUpdate does nothing on the v1 mempool
+func (txmp *TxMempool) PreUpdate() {}
+
 // Size returns the number of valid transactions in the mempool. It is
 // thread-safe.
 func (txmp *TxMempool) Size() int { return txmp.txs.Len() }

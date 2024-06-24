@@ -59,6 +59,11 @@ func (_m *Mempool) Lock() {
 	_m.Called()
 }
 
+// PreUpdate provides a mock function with given fields:
+func (_m *Mempool) PreUpdate() {
+	_m.Called()
+}
+
 // ReapMaxBytesMaxGas provides a mock function with given fields: maxBytes, maxGas
 func (_m *Mempool) ReapMaxBytesMaxGas(maxBytes int64, maxGas int64) types.Txs {
 	ret := _m.Called(maxBytes, maxGas)

@@ -178,10 +178,8 @@ func (mem *CListMempool) Unlock() {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
-	rechecking := !mem.recheck.done()
-	reCheckFull := mem.recheck.recheckFull.Swap(rechecking)
-	if rechecking != reCheckFull {
-		mem.logger.Debug("the state of recheckFull has flipped", "before", reCheckFull, "after", rechecking)
+	if mem.recheck.updateRecheckFull() {
+		mem.logger.Debug("the state of recheckFull has flipped")
 	}
 }
 
@@ -682,6 +680,7 @@ type recheck struct {
 	end           *clist.CElement // last entry in the mempool to recheck
 	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
+	isRechecking  atomic.Bool     // true iff the rechecking process has begun and is not yet finished
 	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
 }
 
@@ -698,16 +697,19 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	rc.cursor = first
 	rc.end = last
 	rc.numPendingTxs.Store(0)
+	rc.isRechecking.Store(true)
 }
 
 // done returns true when there is no recheck response to process.
+// Safe for concurrent use by multiple goroutines.
 func (rc *recheck) done() bool {
-	return rc.cursor == nil
+	return !rc.isRechecking.Load()
 }
 
 // setDone registers that rechecking has finished.
 func (rc *recheck) setDone() {
 	rc.cursor = nil
+	rc.isRechecking.Store(false)
 }
 
 // setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.
@@ -762,4 +764,14 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 // doneRechecking returns the channel used to signal that rechecking has finished.
 func (rc *recheck) doneRechecking() <-chan struct{} {
 	return rc.doneCh
+}
+
+// updateRecheckFull updates the value of recheckFull and returns true iff its value has changed.
+//   - If rechecking has not finished and recheckFull is false, set recheckFull to true and return true.
+//   - If rechecking has finished and recheckFull is true, set recheckFull to false and return true.
+//   - Otherwise leave recheckFull unchanged and return false.
+func (rc *recheck) updateRecheckFull() bool {
+	rechecking := !rc.done()
+	recheckFull := rc.recheckFull.Swap(rechecking)
+	return rechecking != recheckFull
 }

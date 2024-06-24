@@ -886,6 +886,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
 	require.Nil(t, mp.recheck.end)
+	require.False(t, mp.recheck.isRechecking.Load())
 	mockClient.AssertExpectations(t)
 
 	// For rechecking, there will be one call to CheckTxAsync per tx.
@@ -911,6 +912,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// mp.recheck.done() should be true only before and after calling recheckTxs.
 	mp.recheckTxs()
 	require.True(t, mp.recheck.done())
+	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
 	require.NotNil(t, mp.recheck.end)
 	require.Equal(t, mp.recheck.end, mp.txs.Back())

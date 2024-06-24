@@ -17,6 +17,7 @@ package merkle
 // and consequently fall under the above license.
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"testing"
 
@@ -60,7 +61,7 @@ func TestRFC6962Hasher(t *testing.T) {
 		{
 			desc: "RFC6962 Node",
 			want: "aa217fe888e47007fa15edab33c2b492a722cb106c64667fc2b044444de66bbb"[:tmhash.Size*2],
-			got:  innerHash([]byte("N123"), []byte("N456")),
+			got:  innerHash(sha256.New(), []byte("N123"), []byte("N456")),
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

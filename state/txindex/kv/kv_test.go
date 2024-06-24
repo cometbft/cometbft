@@ -157,7 +157,7 @@ func TestTxSearch(t *testing.T) {
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
 	})
-	hash := types.Tx(txResult.Tx).Hash()
+	hash := []byte(types.Tx(txResult.Tx).Hash())
 
 	err := indexer.Index(txResult)
 	require.NoError(t, err)
@@ -813,7 +813,7 @@ func TestBigInt(t *testing.T) {
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: "owner", Value: "/Ivan/", Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: "not_allowed", Value: "Vlad", Index: true}}},
 	})
-	hash := types.Tx(txResult.Tx).Hash()
+	hash := []byte(types.Tx(txResult.Tx).Hash())
 
 	err := indexer.Index(txResult)
 
@@ -830,7 +830,7 @@ func TestBigInt(t *testing.T) {
 	txResult2.Height = 2
 	txResult2.Index = 2
 
-	hash2 := types.Tx(txResult2.Tx).Hash()
+	hash2 := []byte(types.Tx(txResult2.Tx).Hash())
 
 	err = indexer.Index(txResult2)
 	require.NoError(t, err)

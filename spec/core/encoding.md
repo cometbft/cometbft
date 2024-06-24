@@ -178,36 +178,48 @@ h0  h1  h2 h3                      h0  h1  h2  h3  h4  h5
 The function `MerkleRoot` is a simple recursive function defined as follows:
 
 ```go
-// SHA256([]byte{})
-func emptyHash() []byte {
-    return tmhash.Sum([]byte{})
+// h([]byte{})
+func emptyHash(h hash.Hash) []byte {
+	return h.Sum([]byte{})
 }
 
-// SHA256(0x00 || leaf)
-func leafHash(leaf []byte) []byte {
- return tmhash.Sum(append(0x00, leaf...))
+// h(0x00 || leaf)
+func leafHash(h hash.Hash, leaf []byte) []byte {
+	return h.Sum(append(0x00, leaf...))
 }
 
-// SHA256(0x01 || left || right)
-func innerHash(left []byte, right []byte) []byte {
- return tmhash.Sum(append(0x01, append(left, right...)...))
+// h(0x01 || left || right)
+func innerHash(h hash.Hash, left []byte, right []byte) []byte {
+	return h.Sum(append(0x01, append(left, right...)...))
 }
 
 // largest power of 2 less than k
-func getSplitPoint(k int) { ... }
+// getSplitPoint returns the largest power of 2 less than length.
+func getSplitPoint(length int64) int64 {
+	if length < 1 {
+		panic("Trying to split a tree with size < 1")
+	}
+	uLength := uint(length)
+	bitlen := bits.Len(uLength)
+	k := int64(1 << uint(bitlen-1))
+	if k == length {
+		k >>= 1
+	}
+	return k
+}
 
-func MerkleRoot(items [][]byte) []byte{
- switch len(items) {
- case 0:
-  return emptyHash()
- case 1:
-  return leafHash(items[0])
- default:
-  k := getSplitPoint(len(items))
-  left := MerkleRoot(items[:k])
-  right := MerkleRoot(items[k:])
-  return innerHash(left, right)
- }
+func MerkleRoot(h hash.Hash, items [][]byte) []byte {
+	switch len(items) {
+	case 0:
+		return emptyHash(h)
+	case 1:
+		return leafHash(h, items[0])
+	default:
+		k := getSplitPoint(len(items))
+		left := MerkleRoot(h, items[:k])
+		right := MerkleRoot(h, items[k:])
+		return innerHash(h, left, right)
+	}
 }
 ```
 

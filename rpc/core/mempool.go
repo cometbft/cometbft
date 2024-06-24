@@ -30,7 +30,7 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 	if err != nil {
 		return nil, err
 	}
-	return &ctypes.ResultBroadcastTx{Hash: tx.Hash()}, nil
+	return &ctypes.ResultBroadcastTx{Hash: []byte(tx.Hash())}, nil
 }
 
 // BroadcastTxSync returns with the response from CheckTx. Does not wait for
@@ -66,7 +66,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 			Data:      res.Data,
 			Log:       res.Log,
 			Codespace: res.Codespace,
-			Hash:      tx.Hash(),
+			Hash:      []byte(tx.Hash()),
 		}, nil
 	}
 }
@@ -128,7 +128,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
 				TxResult: abci.ExecTxResult{},
-				Hash:     tx.Hash(),
+				Hash:     []byte(tx.Hash()),
 			}, nil
 		}
 
@@ -139,7 +139,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
 				TxResult: txResultEvent.Result,
-				Hash:     tx.Hash(),
+				Hash:     []byte(tx.Hash()),
 				Height:   txResultEvent.Height,
 			}, nil
 		case <-txSub.Canceled():
@@ -154,7 +154,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
 				TxResult: abci.ExecTxResult{},
-				Hash:     tx.Hash(),
+				Hash:     []byte(tx.Hash()),
 			}, err
 		case <-time.After(env.Config.TimeoutBroadcastTxCommit):
 			err = ErrTimedOutWaitingForTx
@@ -162,7 +162,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 			return &ctypes.ResultBroadcastTxCommit{
 				CheckTx:  *checkTxRes,
 				TxResult: abci.ExecTxResult{},
-				Hash:     tx.Hash(),
+				Hash:     []byte(tx.Hash()),
 			}, err
 		}
 	}

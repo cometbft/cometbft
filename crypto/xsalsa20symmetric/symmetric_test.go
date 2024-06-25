@@ -6,8 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/cometbft/cometbft/crypto"
 )
 
 func TestSimple(t *testing.T) {
@@ -27,7 +25,7 @@ func TestSimpleWithKDF(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	secret = crypto.Sha256(secret)
+	secret = secret[:32]
 
 	ciphertext := EncryptSymmetric(plaintext, secret)
 	plaintext2, err := DecryptSymmetric(ciphertext, secret)

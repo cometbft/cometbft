@@ -571,6 +571,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact b
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}
+
 	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "prune_abci_responses"), time.Now())()
 	lastRetainHeight, err := store.getLastABCIResponsesRetainHeight()
 	if err != nil {
@@ -629,9 +630,10 @@ func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 	return types.NewResults(txResults).Hash()
 }
 
-// LoadFinalizeBlockResponse loads the DiscardABCIResponses for the given height from the
-// database. If the node has D set to true, ErrFinalizeBlockResponsesNotPersisted
-// is persisted. If not found, ErrNoABCIResponsesForHeight is returned.
+// LoadFinalizeBlockResponse loads FinalizeBlockResponse for the given height
+// from the database. If the node has DiscardABCIResponses set to true,
+// ErrFinalizeBlockResponsesNotPersisted is returned. If not found,
+// ErrNoABCIResponsesForHeight is returned.
 func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	if store.DiscardABCIResponses {
 		return nil, ErrFinalizeBlockResponsesNotPersisted
@@ -758,7 +760,17 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Finalize
 		if err := store.db.Delete(store.DBKeyLayout.CalcABCIResponsesKey(height - 1)); err != nil {
 			return err
 		}
+		// Compact the database to cleanup ^ responses.
+		//
+		// This is because PruneABCIResponses will not delete anything if
+		// DiscardABCIResponses is true, so we have to do it here.
+		if height%1000 == 0 {
+			if err := store.db.Compact(nil, nil); err != nil {
+				return err
+			}
+		}
 	}
+
 	if err := store.db.SetSync(store.DBKeyLayout.CalcABCIResponsesKey(height), bz); err != nil {
 		return err
 	}

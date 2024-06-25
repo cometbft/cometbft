@@ -29,6 +29,7 @@ type ErrMempoolIsFull struct {
 	MaxTxs      int
 	TxsBytes    int64
 	MaxTxsBytes int64
+	RecheckFull bool
 }
 
 func (e ErrMempoolIsFull) Error() string {

@@ -264,7 +264,7 @@ func TestValidatorSimpleSaveLoad(t *testing.T) {
 	assert.Equal(vp1.Hash(), state.NextValidators.Hash(), "expected next validator hashes to match")
 }
 
-// TestValidatorChangesSaveLoad tests saving and loading a validator set with changes.
+// TestOneValidatorChangesSaveLoad tests saving and loading a validator set with changes.
 func TestOneValidatorChangesSaveLoad(t *testing.T) {
 	tearDown, stateDB, state := setupTestCase(t)
 	defer tearDown(t)
@@ -937,7 +937,7 @@ func TestStoreLoadValidatorsIncrementsProposerPriority(t *testing.T) {
 	assert.NotEqual(t, acc1, acc0, "expected ProposerPriority value to change between heights")
 }
 
-// TestValidatorChangesSaveLoad tests saving and loading a validator set with
+// TestManyValidatorChangesSaveLoad tests saving and loading a validator set with
 // changes.
 func TestManyValidatorChangesSaveLoad(t *testing.T) {
 	const valSetSize = 7

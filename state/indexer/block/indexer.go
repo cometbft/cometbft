@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/state/txindex/null"
 )
 
-// EventSinksFromConfig constructs a slice of indexer.EventSink using the provided
+// IndexerFromConfig constructs a slice of indexer.EventSink using the provided
 // configuration.
 func IndexerFromConfig(cfg *config.Config, dbProvider config.DBProvider, chainID string) (
 	txIdx txindex.TxIndexer, blockIdx indexer.BlockIndexer, allIndexersDisabled bool, err error,

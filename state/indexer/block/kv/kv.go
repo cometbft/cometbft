@@ -46,7 +46,7 @@ type BlockerIndexer struct {
 }
 type IndexerOption func(*BlockerIndexer)
 
-// WithCompaction sets the compaciton parameters.
+// WithCompaction sets the compaction parameters.
 func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
 	return func(idx *BlockerIndexer) {
 		idx.compact = compact

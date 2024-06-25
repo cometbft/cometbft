@@ -1456,47 +1456,6 @@ func (cs *State) defaultDoPrevote(height int64, round int32) {
 				return
 			}
 
-<<<<<<< HEAD
-=======
-			// Timestamp validation using Proposed-Based TimeStamp (PBTS) algorithm.
-			// See: https://github.com/cometbft/cometbft/blob/main/spec/consensus/proposer-based-timestamp/
-			if cs.isPBTSEnabled(height) {
-				if !cs.Proposal.Timestamp.Equal(cs.ProposalBlock.Header.Time) {
-					logger.Debug("Prevote step: proposal timestamp not equal; prevoting nil")
-					cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-					return
-				}
-
-				if !cs.proposalIsTimely() {
-					lowerBound, upperBound := cs.timelyProposalMargins()
-					// TODO: use Warn level once available.
-					logger.Info("Prevote step: Proposal is not timely; prevoting nil",
-						"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
-						"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
-						"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp),
-						"lower_bound", lowerBound,
-						"upper_bound", upperBound)
-					cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-					return
-				}
-
-				logger.Debug("Prevote step: Proposal is timely",
-					"timestamp", cs.Proposal.Timestamp.Format(time.RFC3339Nano),
-					"receive_time", cs.ProposalReceiveTime.Format(time.RFC3339Nano),
-					"timestamp_difference", cs.ProposalReceiveTime.Sub(cs.Proposal.Timestamp))
-			}
-
-			// Validate proposal block, from consensus' perspective
-			err := cs.blockExec.ValidateBlock(cs.state, cs.ProposalBlock)
-			if err != nil {
-				// ProposalBlock is invalid, prevote nil.
-				logger.Error("prevote step: consensus deems this block invalid; prevoting nil",
-					"err", err)
-				cs.signAddVote(types.PrevoteType, nil, types.PartSetHeader{}, nil)
-				return
-			}
-
->>>>>>> 67aa24b48 (chore(consensus): Logs should be capitalize for consistency across repo (#3318))
 			// We request the Application, via a `ProcessProposal` ABCI call, to
 			// confirm that the block is valid. If the application does not
 			// accept the block, consensus prevotes nil.

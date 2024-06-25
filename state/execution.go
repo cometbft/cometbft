@@ -399,24 +399,14 @@ func (blockExec *BlockExecutor) Commit(
 	// in the ABCI app before Commit.
 	err := blockExec.mempool.FlushAppConn()
 	if err != nil {
-<<<<<<< HEAD
-		blockExec.logger.Error("client error during mempool.FlushAppConn", "err", err)
-=======
-		unlockMempool()
-		blockExec.logger.Error("Client error during mempool.FlushAppConn, flushing mempool", "err", err)
->>>>>>> 67aa24b48 (chore(consensus): Logs should be capitalize for consistency across repo (#3318))
+		blockExec.logger.Error("Client error during mempool.FlushAppConn", "err", err)
 		return 0, err
 	}
 
 	// Commit block, get hash back
 	res, err := blockExec.proxyApp.Commit(context.TODO())
 	if err != nil {
-<<<<<<< HEAD
-		blockExec.logger.Error("client error during proxyAppConn.CommitSync", "err", err)
-=======
-		unlockMempool()
 		blockExec.logger.Error("Client error during proxyAppConn.CommitSync", "err", err)
->>>>>>> 67aa24b48 (chore(consensus): Logs should be capitalize for consistency across repo (#3318))
 		return 0, err
 	}
 

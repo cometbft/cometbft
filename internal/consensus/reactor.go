@@ -338,7 +338,18 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *BlockPartMessage:
 			ps.SetHasProposalBlockPart(msg.Height, msg.Round, int(msg.Part.Index))
 			conR.Metrics.BlockParts.With("peer_id", string(e.Src.ID())).Add(1)
-			conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID(), time.Time{}}
+
+			// Check if the block part is old, or we already have it. If so don't write to WAL.
+			cs := conR.conS
+			cs.mtx.RLock()
+			height, blockParts := cs.Height, cs.ProposalBlockParts
+			cs.mtx.RUnlock()
+
+			allowFutureBlockPart := true
+			ok := allowProcessingProposalBlockPart(msg, conR.Logger, conR.Metrics, height, blockParts, allowFutureBlockPart, e.Src.ID())
+			if ok {
+				conR.conS.peerMsgQueue <- msgInfo{msg, e.Src.ID(), time.Time{}}
+			}
 		default:
 			conR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 		}

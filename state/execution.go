@@ -240,12 +240,12 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 	endTime := cmttime.Now().UnixNano()
 	blockExec.metrics.BlockProcessingTime.Observe(float64(endTime-startTime) / 1000000)
 	if err != nil {
-		blockExec.logger.Error("error in proxyAppConn.FinalizeBlock", "err", err)
+		blockExec.logger.Error("Error in proxyAppConn.FinalizeBlock", "err", err)
 		return state, err
 	}
 
 	blockExec.logger.Info(
-		"finalized block",
+		"Finalized block",
 		"height", block.Height,
 		"num_txs_res", len(abciResponse.TxResults),
 		"num_val_updates", len(abciResponse.ValidatorUpdates),
@@ -278,7 +278,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		return state, err
 	}
 	if len(validatorUpdates) > 0 {
-		blockExec.logger.Info("updates to validators", "updates", types.ValidatorListString(validatorUpdates))
+		blockExec.logger.Info("Updates to validators", "updates", types.ValidatorListString(validatorUpdates))
 		blockExec.metrics.ValidatorSetUpdates.Add(1)
 	}
 	if abciResponse.ConsensusParamUpdates != nil {
@@ -399,20 +399,20 @@ func (blockExec *BlockExecutor) Commit(
 	// in the ABCI app before Commit.
 	err := blockExec.mempool.FlushAppConn()
 	if err != nil {
-		blockExec.logger.Error("client error during mempool.FlushAppConn", "err", err)
+		blockExec.logger.Error("Client error during mempool.FlushAppConn", "err", err)
 		return 0, err
 	}
 
 	// Commit block, get hash back
 	res, err := blockExec.proxyApp.Commit(context.TODO())
 	if err != nil {
-		blockExec.logger.Error("client error during proxyAppConn.CommitSync", "err", err)
+		blockExec.logger.Error("Client error during proxyAppConn.CommitSync", "err", err)
 		return 0, err
 	}
 
 	// ResponseCommit has no error code - just data
 	blockExec.logger.Info(
-		"committed state",
+		"Committed state",
 		"height", block.Height,
 		"block_app_hash", fmt.Sprintf("%X", block.AppHash),
 	)
@@ -672,13 +672,13 @@ func fireEvents(
 		BlockID:             blockID,
 		ResultFinalizeBlock: *abciResponse,
 	}); err != nil {
-		logger.Error("failed publishing new block", "err", err)
+		logger.Error("Failed publishing new block", "err", err)
 	}
 
 	if err := eventBus.PublishEventNewBlockHeader(types.EventDataNewBlockHeader{
 		Header: block.Header,
 	}); err != nil {
-		logger.Error("failed publishing new block header", "err", err)
+		logger.Error("Failed publishing new block header", "err", err)
 	}
 
 	if err := eventBus.PublishEventNewBlockEvents(types.EventDataNewBlockEvents{
@@ -686,7 +686,7 @@ func fireEvents(
 		Events: abciResponse.Events,
 		NumTxs: int64(len(block.Txs)),
 	}); err != nil {
-		logger.Error("failed publishing new block events", "err", err)
+		logger.Error("Failed publishing new block events", "err", err)
 	}
 
 	if len(block.Evidence.Evidence) != 0 {
@@ -695,7 +695,7 @@ func fireEvents(
 				Evidence: ev,
 				Height:   block.Height,
 			}); err != nil {
-				logger.Error("failed publishing new evidence", "err", err)
+				logger.Error("Failed publishing new evidence", "err", err)
 			}
 		}
 	}
@@ -707,14 +707,14 @@ func fireEvents(
 			Tx:     tx,
 			Result: *(abciResponse.TxResults[i]),
 		}}); err != nil {
-			logger.Error("failed publishing event TX", "err", err)
+			logger.Error("Failed publishing event TX", "err", err)
 		}
 	}
 
 	if len(validatorUpdates) > 0 {
 		if err := eventBus.PublishEventValidatorSetUpdates(
 			types.EventDataValidatorSetUpdates{ValidatorUpdates: validatorUpdates}); err != nil {
-			logger.Error("failed publishing event", "err", err)
+			logger.Error("Failed publishing event", "err", err)
 		}
 	}
 }
@@ -745,7 +745,7 @@ func ExecCommitBlock(
 		SyncingToHeight:    finalHeight,
 	})
 	if err != nil {
-		logger.Error("error in proxyAppConn.FinalizeBlock", "err", err)
+		logger.Error("Error in proxyAppConn.FinalizeBlock", "err", err)
 		return nil, err
 	}
 
@@ -754,12 +754,12 @@ func ExecCommitBlock(
 		return nil, fmt.Errorf("expected tx results length to match size of transactions in block. Expected %d, got %d", len(block.Data.Txs), len(resp.TxResults))
 	}
 
-	logger.Info("executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))
+	logger.Info("Executed block", "height", block.Height, "app_hash", fmt.Sprintf("%X", resp.AppHash))
 
 	// Commit block
 	_, err = appConnConsensus.Commit(context.TODO())
 	if err != nil {
-		logger.Error("client error during proxyAppConn.Commit", "err", err)
+		logger.Error("Client error during proxyAppConn.Commit", "err", err)
 		return nil, err
 	}
 

@@ -20,6 +20,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+const maxHeightDiffForRechecking = 2
+
 // CListMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
 // CheckTx abci message before the transaction is added to the pool. The
@@ -55,6 +57,8 @@ type CListMempool struct {
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
 	cache TxCache
+
+	sw *p2p.Switch
 
 	logger  log.Logger
 	metrics *Metrics
@@ -94,6 +98,10 @@ func NewCListMempool(
 	}
 
 	return mp
+}
+
+func (mem *CListMempool) SetSwitch(sw *p2p.Switch) {
+	mem.sw = sw
 }
 
 func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) {
@@ -608,7 +616,24 @@ func (mem *CListMempool) Update(
 
 	// Recheck txs left in the mempool to remove them if they became invalid in the new state.
 	if mem.config.Recheck {
-		mem.recheckTxs()
+		// Don't perform doRecheck if one of the peers is known to be at least at our height +
+		// maxHeightDiffForRechecking.
+		doRecheck := true
+		if mem.sw != nil {
+			mem.sw.Peers().ForEach(func(peer p2p.Peer) {
+				if peerState, ok := peer.Get(types.PeerStateKey).(PeerState); ok {
+					if peerState.GetHeight() >= height+maxHeightDiffForRechecking {
+						doRecheck = false
+					}
+				}
+			})
+		}
+
+		if doRecheck {
+			mem.recheckTxs()
+		} else {
+			mem.logger.Debug("recheck disabled at this height", "height", height)
+		}
 	}
 
 	// Notify if there are still txs left in the mempool.

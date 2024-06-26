@@ -44,7 +44,7 @@ const (
 	labelDHSecret                = "DH_SECRET"
 	labelSecretConnectionMac     = "SECRET_CONNECTION_MAC"
 
-	defaultWriteBufferSize = 1024 * 1024
+	defaultWriteBufferSize = 128 * 1024
 	defaultReadBufferSize  = 65536
 )
 

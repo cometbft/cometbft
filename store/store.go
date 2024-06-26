@@ -69,6 +69,7 @@ type BlockStore struct {
 	seenCommitCache          *lru.Cache[int64, *types.Commit]
 	blockCommitCache         *lru.Cache[int64, *types.Commit]
 	blockExtendedCommitCache *lru.Cache[int64, *types.ExtendedCommit]
+	blockPartCache           *lru.Cache[blockPartIndex, *types.Part]
 }
 
 type BlockStoreOption func(*BlockStore)
@@ -157,6 +158,10 @@ func (bs *BlockStore) addCaches() {
 		panic(err)
 	}
 	bs.seenCommitCache, err = lru.New[int64, *types.Commit](100)
+	if err != nil {
+		panic(err)
+	}
+	bs.blockPartCache, err = lru.New[blockPartIndex, *types.Part](500)
 	if err != nil {
 		panic(err)
 	}
@@ -270,10 +275,20 @@ func (bs *BlockStore) LoadBlockByHash(hash []byte) (*types.Block, *types.BlockMe
 	return bs.LoadBlock(height)
 }
 
+type blockPartIndex struct {
+	height int64
+	index  int
+}
+
 // LoadBlockPart returns the Part at the given index
 // from the block at the given height.
 // If no part is found for the given height and index, it returns nil.
+// The returned part should not be modified by the caller. Take a copy if you need to modify it.
 func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
+	part, ok := bs.blockPartCache.Get(blockPartIndex{height, index})
+	if ok {
+		return part
+	}
 	pbpart := new(cmtproto.Part)
 	start := time.Now()
 	bz, err := bs.db.Get(bs.dbKeyLayout.CalcBlockPartKey(height, index))
@@ -290,11 +305,11 @@ func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 	if err != nil {
 		panic(fmt.Errorf("unmarshal to cmtproto.Part failed: %w", err))
 	}
-	part, err := types.PartFromProto(pbpart)
+	part, err = types.PartFromProto(pbpart)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading block part: %v", err))
 	}
-
+	bs.blockPartCache.Add(blockPartIndex{height, index}, part)
 	return part
 }
 
@@ -351,10 +366,13 @@ func (bs *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
 // This commit consists of the +2/3 and other Precommit-votes for block at `height`,
 // and it comes from the block.LastCommit for `height+1`.
 // If no commit is found for the given height, it returns nil.
+//
+// This return value should not be modified. If you need to modify it,
+// do bs.LoadBlockCommit(height).Clone().
 func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	comm, ok := bs.blockCommitCache.Get(height)
 	if ok {
-		return comm.Clone()
+		return comm
 	}
 	pbc := new(cmtproto.Commit)
 
@@ -379,7 +397,7 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 		panic(cmterrors.ErrMsgToProto{MessageName: "Commit", Err: err})
 	}
 	bs.blockCommitCache.Add(height, commit)
-	return commit.Clone()
+	return commit
 }
 
 // LoadExtendedCommit returns the ExtendedCommit for the given height.
@@ -677,6 +695,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	for i := 0; i < int(blockParts.Total()); i++ {
 		part := blockParts.GetPart(i)
 		bs.saveBlockPart(height, i, part, batch, saveBlockPartsToBatch)
+		bs.blockPartCache.Add(blockPartIndex{height, i}, part)
 	}
 
 	marshallTime := time.Now()

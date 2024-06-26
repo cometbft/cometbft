@@ -27,7 +27,7 @@ import (
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
-	"github.com/cometbft/cometbft/mempool"
+	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	sm "github.com/cometbft/cometbft/state"
@@ -117,7 +117,7 @@ func sendTxs(ctx context.Context, cs *State) {
 			return
 		default:
 			tx := kvstore.NewTxFromID(i)
-			reqRes, err := assertMempool(cs.txNotifier).CheckTx(tx)
+			reqRes, err := assertMempool(cs.txNotifier).CheckTx(tx, "")
 			if err != nil {
 				panic(err)
 			}
@@ -366,7 +366,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	newValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
 	require.NoError(t, err)
 	newValidatorTx1 := updateValTx(newValidatorPubKey1, testMinPower)
-	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx1)
+	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx1, "")
 	require.NoError(t, err)
 
 	propBlock, propBlockParts, blockID := createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
@@ -388,7 +388,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	updateValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
 	require.NoError(t, err)
 	updateValidatorTx1 := updateValTx(updateValidatorPubKey1, 25)
-	_, err = assertMempool(css[0].txNotifier).CheckTx(updateValidatorTx1)
+	_, err = assertMempool(css[0].txNotifier).CheckTx(updateValidatorTx1, "")
 	require.NoError(t, err)
 
 	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
@@ -410,12 +410,12 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	newValidatorPubKey2, err := css[nVals+1].privValidator.GetPubKey()
 	require.NoError(t, err)
 	newValidatorTx2 := updateValTx(newValidatorPubKey2, testMinPower)
-	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx2)
+	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx2, "")
 	require.NoError(t, err)
 	newValidatorPubKey3, err := css[nVals+2].privValidator.GetPubKey()
 	require.NoError(t, err)
 	newValidatorTx3 := updateValTx(newValidatorPubKey3, testMinPower)
-	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx3)
+	_, err = assertMempool(css[0].txNotifier).CheckTx(newValidatorTx3, "")
 	require.NoError(t, err)
 
 	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
@@ -451,7 +451,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	ensureNewProposal(proposalCh, height, round)
 
 	removeValidatorTx2 := updateValTx(newValidatorPubKey2, 0)
-	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2)
+	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx2, "")
 	require.NoError(t, err)
 
 	rs = css[0].GetRoundState()
@@ -487,7 +487,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 	height++
 	incrementHeight(vss...)
 	removeValidatorTx3 := updateValTx(newValidatorPubKey3, 0)
-	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx3)
+	_, err = assertMempool(css[0].txNotifier).CheckTx(removeValidatorTx3, "")
 	require.NoError(t, err)
 
 	propBlock, propBlockParts, blockID = createProposalBlock(t, css[0]) // changeProposer(t, cs1, v2)
@@ -731,7 +731,7 @@ func testHandshakeReplay(t *testing.T, config *cfg.Config, nBlocks int, mode uin
 	}
 }
 
-func applyBlock(t *testing.T, stateStore sm.Store, mempool mempool.Mempool, evpool sm.EvidencePool, st sm.State, blk *types.Block, proxyApp proxy.AppConns, bs sm.BlockStore) sm.State {
+func applyBlock(t *testing.T, stateStore sm.Store, mempool mempl.Mempool, evpool sm.EvidencePool, st sm.State, blk *types.Block, proxyApp proxy.AppConns, bs sm.BlockStore) sm.State {
 	t.Helper()
 	testPartSize := types.BlockPartSizeBytes
 	blockExec := sm.NewBlockExecutor(stateStore, log.TestingLogger(), proxyApp.Consensus(), mempool, evpool, bs)
@@ -744,7 +744,7 @@ func applyBlock(t *testing.T, stateStore sm.Store, mempool mempool.Mempool, evpo
 	return newState
 }
 
-func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm.Store, mempool mempool.Mempool, evpool sm.EvidencePool,
+func buildAppStateFromChain(t *testing.T, proxyApp proxy.AppConns, stateStore sm.Store, mempool mempl.Mempool, evpool sm.EvidencePool,
 	state sm.State, chain []*types.Block, nBlocks int, mode uint, bs sm.BlockStore,
 ) {
 	t.Helper()
@@ -793,7 +793,7 @@ func buildTMStateFromChain(
 	t *testing.T,
 	config *cfg.Config,
 	stateStore sm.Store,
-	mempool mempool.Mempool,
+	mempool mempl.Mempool,
 	evpool sm.EvidencePool,
 	state sm.State,
 	chain []*types.Block,

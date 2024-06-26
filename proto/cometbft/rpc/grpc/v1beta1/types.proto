@@ -4,7 +4,7 @@ option  go_package = "github.com/cometbft/cometbft/api/cometbft/rpc/grpc/v1beta1
 
 import "cometbft/abci/v1beta1/types.proto";
 
-// PingRequest is a request to confirm that the connection is alive.
+// RequestPing is a request to confirm that the connection is alive.
 message RequestPing {}
 
 // RequestBroadcastTx is a request to broadcast the transaction.
@@ -12,7 +12,7 @@ message RequestBroadcastTx {
   bytes tx = 1;
 }
 
-// PingResponse is a response to confirm that the connection is alive.
+// ResponsePing is a response to confirm that the connection is alive.
 message ResponsePing {}
 
 // ResponseBroadcastTx is a response of broadcasting the transaction.

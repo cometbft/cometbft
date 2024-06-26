@@ -282,9 +282,6 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	}
 	res := sendFunc(chID, msgBytes)
 	if res {
-		p.metrics.PeerSendBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
-			Add(float64(len(msgBytes)))
 		p.metrics.MessageSendBytesTotal.
 			With("message_type", metricLabelValue).
 			Add(float64(len(msgBytes)))
@@ -420,9 +417,6 @@ func createMConnection(
 				panic(fmt.Sprintf("unwrapping message: %v", err))
 			}
 		}
-		p.metrics.PeerReceiveBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
-			Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.
 			With("message_type", p.mlc.ValueToMetricLabel(msg)).
 			Add(float64(len(msgBytes)))

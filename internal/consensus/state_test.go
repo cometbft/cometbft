@@ -1518,7 +1518,7 @@ func TestStateLock_POLSafety1(t *testing.T) {
 
 	// add a tx to the mempool
 	tx := kvstore.NewRandomTx(22)
-	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx)
+	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx, "")
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 
@@ -1615,7 +1615,7 @@ func TestStateLock_POLSafety2(t *testing.T) {
 
 	// add a tx to the mempool
 	tx := kvstore.NewRandomTx(22)
-	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx)
+	reqRes, err := assertMempool(cs1.txNotifier).CheckTx(tx, "")
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 
@@ -3251,4 +3251,33 @@ func findBlockSizeLimit(t *testing.T, height, maxBytes int64, cs *State, partSiz
 	}
 	require.Fail(t, "We shouldn't hit the end of the loop")
 	return nil, nil
+}
+
+// TestReadSerializedBlockFromBlockParts tests that the readSerializedBlockFromBlockParts function
+// reads the block correctly from the block parts.
+func TestReadSerializedBlockFromBlockParts(t *testing.T) {
+	sizes := []int{0, 5, 64, 70, 128, 200}
+
+	// iterate through many initial buffer sizes and new block sizes.
+	// (Skip new block size = 0, as that is not valid construction)
+	// Ensure that we read back the correct block size, and the buffer is resized correctly.
+	for i := 0; i < len(sizes); i++ {
+		for j := 1; j < len(sizes); j++ {
+			initialSize, newBlockSize := sizes[i], sizes[j]
+			testName := fmt.Sprintf("initialSize=%d,newBlockSize=%d", initialSize, newBlockSize)
+			t.Run(testName, func(t *testing.T) {
+				blockData := cmtrand.Bytes(newBlockSize)
+				ps := types.NewPartSetFromData(blockData, 64)
+				cs := &State{
+					serializedBlockBuffer: make([]byte, initialSize),
+				}
+				cs.ProposalBlockParts = ps
+
+				serializedBlock, err := cs.readSerializedBlockFromBlockParts()
+				require.NoError(t, err)
+				require.Equal(t, blockData, serializedBlock)
+				require.Equal(t, len(cs.serializedBlockBuffer), max(initialSize, newBlockSize))
+			})
+		}
+	}
 }

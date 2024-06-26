@@ -1,3 +1,8 @@
+# In this testnet, the full nodes start late and then never catch up to the latest height because
+# rechecking transactions is very slow. Solved by disabling rechecking when the nodes are lagging
+# behind their peers by more than N blocks (in the PR, N=2).
+# (https://github.com/cometbft/cometbft/pull/3343)
+
 ipv6 = false
 initial_height = 0
 disable_pex = false

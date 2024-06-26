@@ -530,14 +530,17 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 			if err := batch.Delete(bs.dbKeyLayout.CalcBlockCommitKey(h)); err != nil {
 				return 0, -1, err
 			}
+			bs.blockCommitCache.Remove(h)
 		}
 		if err := batch.Delete(bs.dbKeyLayout.CalcSeenCommitKey(h)); err != nil {
 			return 0, -1, err
 		}
+		bs.seenCommitCache.Remove(h)
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
 			if err := batch.Delete(bs.dbKeyLayout.CalcBlockPartKey(h, p)); err != nil {
 				return 0, -1, err
 			}
+			bs.blockPartCache.Remove(blockPartIndex{h, p})
 		}
 		pruned++
 

@@ -14,11 +14,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-<<<<<<< HEAD
-=======
 	"github.com/cometbft/cometbft/crypto/sr25519"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
->>>>>>> 792992892 (chore(types): add test for ValidatorSet#AllKeysHaveSameType (#3310))
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"

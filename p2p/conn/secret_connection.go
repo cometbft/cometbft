@@ -296,6 +296,7 @@ func (sc *SecretConnection) RemoteAddr() net.Addr { return sc.underlyingConn.(ne
 func (sc *SecretConnection) SetDeadline(t time.Time) error {
 	return sc.underlyingConn.(net.Conn).SetDeadline(t)
 }
+
 func (sc *SecretConnection) SetReadDeadline(t time.Time) error {
 	return sc.underlyingConn.(net.Conn).SetReadDeadline(t)
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -1611,4 +1612,36 @@ func TestVerifyCommitSingleWithInvalidSignatures(t *testing.T) {
 
 	err := verifyCommitSingle(cid, vs, commit, votingPowerNeeded, ignore, count, true, true)
 	assert.Error(t, err)
+}
+
+func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {
+	testCases := []struct {
+		vals     *ValidatorSet
+		sameType bool
+	}{
+		{
+			vals:     NewValidatorSet([]*Validator{}),
+			sameType: true,
+		},
+		{
+			vals:     randValidatorSet(1),
+			sameType: true,
+		},
+		{
+			vals:     randValidatorSet(2),
+			sameType: true,
+		},
+		{
+			vals:     NewValidatorSet([]*Validator{randValidator(100), NewValidator(sr25519.GenPrivKey().PubKey(), 200)}),
+			sameType: false,
+		},
+	}
+
+	for i, tc := range testCases {
+		if tc.sameType {
+			assert.True(t, tc.vals.AllKeysHaveSameType(), "test %d", i)
+		} else {
+			assert.False(t, tc.vals.AllKeysHaveSameType(), "test %d", i)
+		}
+	}
 }

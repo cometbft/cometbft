@@ -616,7 +616,7 @@ func (mem *CListMempool) Update(
 
 	// Recheck txs left in the mempool to remove them if they became invalid in the new state.
 	if mem.config.Recheck {
-		// Don't perform doRecheck if one of the peers is known to be at least at our height +
+		// Don't perform recheck if one of the peers is known to be at least at our height +
 		// maxHeightDiffForRechecking.
 		doRecheck := true
 		if mem.sw != nil {

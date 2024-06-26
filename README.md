@@ -23,8 +23,9 @@ state transition machine - written in any programming language - and securely
 replicates it on many machines.
 
 CometBFT is the canonical implementation of the Tendermint consensus algorithm and is a
-primary building block for the [Interchain Stack](https://interchain.io/). Historically, 
-CometBFT has its roots and is a fork of [Tendermint Core][tm-core].
+primary building block for the [Interchain Stack](https://interchain.io/). Historically,
+CometBFT originated as a fork of [Tendermint Core][tm-core] in early 2023
+(announcement [here][comet-announcement]) and since then it diverged significantly by adopting modern features such as [PBTS][pbts] or [ABCI v2][abci-v2].
 
 For protocol details, refer to the [CometBFT Specification](./spec/README.md).
 
@@ -207,3 +208,6 @@ maintains [cometbft.com](https://cometbft.com).
 [lint-url-v038x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.38.x
 [lint-url-v1x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av1.x
 [tm-core]: https://github.com/tendermint/tendermint
+[pbts]: https://docs.cometbft.com/v1.0/explanation/core/proposer-based-timestamps
+[abci-v2]: https://docs.cometbft.com/v1.0/spec/abci/
+[comet-announcement]: https://informal.systems/blog/cosmos-meet-cometbft

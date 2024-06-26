@@ -2146,6 +2146,12 @@ func allowProcessingProposalBlockPart(msg *BlockPartMessage, logger log.Logger, 
 		return false
 	}
 
+	if csBlockParts.Total() >= part.Index {
+		metrics.BlockGossipPartsReceived.With("matches_current", "false").Add(1)
+		logger.Debug("received block part with unexpected index", "height", height, "round", round, "index", part.Index)
+		return false
+	}
+
 	if csBlockParts.IsComplete() || csBlockParts.GetPart(int(part.Index)) != nil {
 		metrics.DuplicateBlockPart.Add(1)
 		return false

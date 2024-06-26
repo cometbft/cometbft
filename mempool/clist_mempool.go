@@ -624,6 +624,7 @@ func (mem *CListMempool) Update(
 				if peerState, ok := peer.Get(types.PeerStateKey).(PeerState); ok {
 					if peerState.GetHeight() >= height+maxHeightDiffForRechecking {
 						doRecheck = false
+						return
 					}
 				}
 			})

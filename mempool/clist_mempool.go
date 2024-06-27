@@ -637,7 +637,7 @@ func (mem *CListMempool) Update(
 		if doRecheck {
 			mem.recheckTxs()
 		} else {
-			mem.logger.Debug("recheck disabled at this height", "height", height)
+			mem.logger.Info("recheck disabled at this height", "height", height)
 		}
 	}
 

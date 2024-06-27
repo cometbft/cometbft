@@ -284,13 +284,29 @@ func NewCLI() *CLI {
 		},
 	})
 
-	cli.root.AddCommand(&cobra.Command{
+	var splitLogs bool
+	logCmd := &cobra.Command{
 		Use:   "logs",
 		Short: "Shows the testnet logs",
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			splitLogs, _ = cmd.Flags().GetBool("split")
+			if splitLogs {
+				fmt.Println("Output separate logs for each node")
+				for _, node := range cli.testnet.Nodes {
+					fmt.Println("Log for", node.Name)
+					err := docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs", node.Name)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+			fmt.Println("Output combined log for all nodes")
 			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs")
 		},
-	})
+	}
+	logCmd.PersistentFlags().BoolVar(&splitLogs, "split", false, "outputs separate logs for each container")
+	cli.root.AddCommand(logCmd)
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "tail",
@@ -309,7 +325,7 @@ func NewCLI() *CLI {
 	Min Block Interval
 	Max Block Interval
 over a 100 block sampling period.
-		
+
 Does not run any perturbations.
 		`,
 		RunE: func(cmd *cobra.Command, _ []string) error {

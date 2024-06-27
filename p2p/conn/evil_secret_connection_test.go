@@ -223,14 +223,13 @@ func (c *evilConn) signChallenge() []byte {
 
 	b := &buffer{}
 	c.secretConn = &SecretConnection{
-		underlyingConn: b,
-		connReader:     b,
-		connWriter:     bufio.NewWriterSize(b, 65536),
-		recvBuffer:     nil,
-		recvNonce:      new([aeadNonceSize]byte),
-		sendNonce:      new([aeadNonceSize]byte),
-		recvAead:       recvAead,
-		sendAead:       sendAead,
+		conn:       b,
+		connWriter: bufio.NewWriterSize(b, defaultWriteBufferSize),
+		recvBuffer: nil,
+		recvNonce:  new([aeadNonceSize]byte),
+		sendNonce:  new([aeadNonceSize]byte),
+		recvAead:   recvAead,
+		sendAead:   sendAead,
 	}
 	c.buffer = b
 

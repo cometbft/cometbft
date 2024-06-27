@@ -45,7 +45,6 @@ const (
 	labelSecretConnectionMac     = "SECRET_CONNECTION_MAC"
 
 	defaultWriteBufferSize = 128 * 1024
-	defaultReadBufferSize  = 65536
 )
 
 var (
@@ -69,9 +68,8 @@ type SecretConnection struct {
 
 	remPubKey crypto.PubKey
 
-	underlyingConn io.ReadWriteCloser
-	connWriter     *bufio.Writer
-	connReader     io.Reader
+	conn       io.ReadWriteCloser
+	connWriter *bufio.Writer
 
 	// net.Conn must be thread safe:
 	// https://golang.org/pkg/net/#Conn.
@@ -147,14 +145,13 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	}
 
 	sc := &SecretConnection{
-		underlyingConn: conn,
-		connWriter:     bufio.NewWriterSize(conn, defaultWriteBufferSize),
-		connReader:     conn,
-		recvBuffer:     nil,
-		recvNonce:      new([aeadNonceSize]byte),
-		sendNonce:      new([aeadNonceSize]byte),
-		recvAead:       recvAead,
-		sendAead:       sendAead,
+		conn:       conn,
+		connWriter: bufio.NewWriterSize(conn, defaultWriteBufferSize),
+		recvBuffer: nil,
+		recvNonce:  new([aeadNonceSize]byte),
+		sendNonce:  new([aeadNonceSize]byte),
+		recvAead:   recvAead,
+		sendAead:   sendAead,
 	}
 
 	// Sign the challenge bytes for authentication.
@@ -253,7 +250,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	// read off the conn
 	sealedFrame := pool.Get(aeadSizeOverhead + totalFrameSize)
 	defer pool.Put(sealedFrame)
-	_, err = io.ReadFull(sc.connReader, sealedFrame)
+	_, err = io.ReadFull(sc.conn, sealedFrame)
 	if err != nil {
 		return n, err
 	}
@@ -290,19 +287,19 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 }
 
 // Implements net.Conn.
-func (sc *SecretConnection) Close() error         { return sc.underlyingConn.Close() }
-func (sc *SecretConnection) LocalAddr() net.Addr  { return sc.underlyingConn.(net.Conn).LocalAddr() }
-func (sc *SecretConnection) RemoteAddr() net.Addr { return sc.underlyingConn.(net.Conn).RemoteAddr() }
+func (sc *SecretConnection) Close() error         { return sc.conn.Close() }
+func (sc *SecretConnection) LocalAddr() net.Addr  { return sc.conn.(net.Conn).LocalAddr() }
+func (sc *SecretConnection) RemoteAddr() net.Addr { return sc.conn.(net.Conn).RemoteAddr() }
 func (sc *SecretConnection) SetDeadline(t time.Time) error {
-	return sc.underlyingConn.(net.Conn).SetDeadline(t)
+	return sc.conn.(net.Conn).SetDeadline(t)
 }
 
 func (sc *SecretConnection) SetReadDeadline(t time.Time) error {
-	return sc.underlyingConn.(net.Conn).SetReadDeadline(t)
+	return sc.conn.(net.Conn).SetReadDeadline(t)
 }
 
 func (sc *SecretConnection) SetWriteDeadline(t time.Time) error {
-	return sc.underlyingConn.(net.Conn).SetWriteDeadline(t)
+	return sc.conn.(net.Conn).SetWriteDeadline(t)
 }
 
 func genEphKeys() (ephPub, ephPriv *[32]byte) {

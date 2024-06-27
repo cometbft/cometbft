@@ -592,10 +592,11 @@ func (n *Node) OnStop() {
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}
-	if err := n.indexerService.Stop(); err != nil {
-		n.Logger.Error("Error closing indexerService", "err", err)
+	if n.indexerService != nil {
+		if err := n.indexerService.Stop(); err != nil {
+			n.Logger.Error("Error closing indexerService", "err", err)
+		}
 	}
-
 	// now stop the reactors
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)

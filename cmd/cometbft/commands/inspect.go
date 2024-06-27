@@ -73,7 +73,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
+	txIndexer, blockIndexer, _, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
 	if err != nil {
 		return err
 	}

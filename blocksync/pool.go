@@ -14,6 +14,7 @@ import (
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 /*
@@ -78,6 +79,7 @@ type BlockPool struct {
 	height     int64 // the lowest key in requesters.
 	// peers
 	peers         map[p2p.ID]*bpPeer
+	bannedPeers   map[p2p.ID]time.Time
 	sortedPeers   []*bpPeer // sorted by curRate, highest first
 	maxPeerHeight int64     // the biggest reported height
 
@@ -92,8 +94,8 @@ type BlockPool struct {
 // requests and errors will be sent to requestsCh and errorsCh accordingly.
 func NewBlockPool(start int64, requestsCh chan<- BlockRequest, errorsCh chan<- peerError) *BlockPool {
 	bp := &BlockPool{
-		peers: make(map[p2p.ID]*bpPeer),
-
+		peers:       make(map[p2p.ID]*bpPeer),
+		bannedPeers: make(map[p2p.ID]time.Time),
 		requesters:  make(map[int64]*bpRequester),
 		height:      start,
 		startHeight: start,
@@ -176,6 +178,12 @@ func (pool *BlockPool) removeTimedoutPeers() {
 
 		if peer.didTimeout {
 			pool.removePeer(peer.id)
+		}
+	}
+
+	for peerID := range pool.bannedPeers {
+		if !pool.isPeerBanned(peerID) {
+			delete(pool.bannedPeers, peerID)
 		}
 	}
 
@@ -269,6 +277,7 @@ func (pool *BlockPool) RemovePeerAndRedoAllPeerRequests(height int64) p2p.ID {
 	peerID := request.gotBlockFromPeerID()
 	// RemovePeer will redo all requesters associated with this peer.
 	pool.removePeer(peerID)
+	pool.banPeer(peerID)
 	return peerID
 }
 
@@ -365,6 +374,10 @@ func (pool *BlockPool) SetPeerRange(peerID p2p.ID, base int64, height int64) {
 		peer.base = base
 		peer.height = height
 	} else {
+		if pool.isPeerBanned(peerID) {
+			pool.Logger.Debug("Ignoring banned peer", peerID)
+			return
+		}
 		peer = newBPPeer(pool, peerID, base, height)
 		peer.setLogger(pool.Logger.With("peer", peerID))
 		pool.peers[peerID] = peer
@@ -425,6 +438,16 @@ func (pool *BlockPool) updateMaxPeerHeight() {
 		}
 	}
 	pool.maxPeerHeight = max
+}
+
+func (pool *BlockPool) isPeerBanned(peerID p2p.ID) bool {
+	// Todo: replace with cmttime.Since in future versions
+	return time.Since(pool.bannedPeers[peerID]) < time.Second*60
+}
+
+func (pool *BlockPool) banPeer(peerID p2p.ID) {
+	pool.Logger.Debug("Banning peer", peerID)
+	pool.bannedPeers[peerID] = cmttime.Now()
 }
 
 // Pick an available peer with the given height available.

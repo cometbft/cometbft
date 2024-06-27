@@ -100,10 +100,6 @@ func NewCListMempool(
 	return mp
 }
 
-func (mem *CListMempool) SetSwitch(sw *p2p.Switch) {
-	mem.sw = sw
-}
-
 func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) {
 	if e, ok := mem.txsMap.Load(txKey); ok {
 		return e.(*clist.CElement), true
@@ -153,6 +149,14 @@ func (mem *CListMempool) EnableTxsAvailable() {
 // SetLogger sets the Logger.
 func (mem *CListMempool) SetLogger(l log.Logger) {
 	mem.logger = l
+}
+
+// SetSwitch sets the switch to access the peers.
+func (mem *CListMempool) SetSwitch(sw *p2p.Switch) {
+	if sw == nil {
+		mem.logger.Error("switch passed as argument is empty")
+	}
+	mem.sw = sw
 }
 
 // WithPreCheck sets a filter for the mempool to reject a tx if f(tx) returns

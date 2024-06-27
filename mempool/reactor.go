@@ -43,7 +43,6 @@ func NewReactor(config *cfg.MempoolConfig, mempool *CListMempool, waitSync bool)
 		waitSync: atomic.Bool{},
 	}
 	memR.BaseReactor = *p2p.NewBaseReactor("Mempool", memR)
-	mempool.SetSwitch(memR.Switch)
 	if waitSync {
 		memR.waitSync.Store(true)
 		memR.waitSyncCh = make(chan struct{})
@@ -68,6 +67,7 @@ func (memR *Reactor) OnStart() error {
 	if !memR.config.Broadcast {
 		memR.Logger.Info("Tx broadcasting is disabled")
 	}
+	memR.mempool.SetSwitch(memR.Switch)
 	return nil
 }
 

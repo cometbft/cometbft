@@ -325,9 +325,6 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 				peer.height += 1                                   // Network height increases on all peers
 				pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
 			}
-			if peers["good"].height%3 == 0 { // Lower the amount of logs
-				t.Logf("New network height: %d", peers["good"].height)
-			}
 		}
 	}()
 
@@ -340,10 +337,8 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 			}
 			first, second, _ := pool.PeekTwoBlocks()
 			if first != nil && second != nil {
-				t.Logf("Verifying blocks %v vs %v", first.Height, second.Height)
 				if second.LastCommit == nil {
 					// Second block is fake
-					t.Logf("Second block is fake")
 					pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 				} else {
 					pool.PopRequest()
@@ -365,7 +360,6 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 			t.Error(err)
 		case request := <-requestsCh:
 			// Process request
-			t.Logf("BlockRequest(%d) from peer '%s' at height %d", request.Height, request.PeerID, peers[request.PeerID].height)
 			peers[request.PeerID].inputChan <- inputData{t, pool, request}
 		case <-testTicker.C:
 			banned := pool.isPeerBanned("bad")

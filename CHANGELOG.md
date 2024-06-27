@@ -1,5 +1,65 @@
 # CHANGELOG
 
+## v0.38.8
+
+*June 27, 2024*
+
+This release contains a few bug fixes and performance improvements.
+
+### BREAKING CHANGES
+
+- `[mempool]` Add to the `Mempool` interface a new method `PreUpdate()`. This method should be
+  called before acquiring the mempool lock, to signal that a new update is coming. Also add to
+  `ErrMempoolIsFull` a new field `RecheckFull`.
+  ([\#3314](https://github.com/cometbft/cometbft/pull/3314))
+
+### BUG FIXES
+
+- [`mempool`] Fix data race when rechecking with async ABCI client
+  ([\#1827](https://github.com/cometbft/cometbft/issues/1827))
+- `[consensus]` Fix a race condition in the consensus timeout ticker. Race is caused by two timeouts being scheduled at the same time.
+  ([\#3092](https://github.com/cometbft/cometbft/pull/2136))
+- `[types]` Do not batch verify a commit if the validator set keys have different
+  types. ([\#3195](https://github.com/cometbft/cometbft/issues/3195)
+
+### IMPROVEMENTS
+
+- `[blockstore]` Added peer banning in blockstore
+  ([\#ABC-0013](https://github.com/cometbft/cometbft/security/advisories/GHSA-hg58-rf2h-6rr7))
+- `[blockstore]` Send correct error message when vote extensions do not align with received packet
+  ([\#ABC-0014](https://github.com/cometbft/cometbft/security/advisories/GHSA-hg58-rf2h-6rr7))
+- `[config]` Added `recheck_timeout` mempool parameter to set how much time to wait for recheck
+  responses from the app (only applies to non-local ABCI clients).
+  ([\#1827](https://github.com/cometbft/cometbft/issues/1827/))
+- `[rpc]` Add a configurable maximum batch size for RPC requests.
+  ([\#2867](https://github.com/cometbft/cometbft/pull/2867)).
+- `[event-bus]` Remove the debug logs in PublishEventTx, which were noticed production slowdowns.
+  ([\#2911](https://github.com/cometbft/cometbft/pull/2911))
+- `[state/execution]` Cache the block hash computation inside of the Block Type, so we only compute it once.
+  ([\#2924](https://github.com/cometbft/cometbft/pull/2924))
+- `[consensus/state]` Remove a redundant `VerifyBlock` call in `FinalizeCommit`
+  ([\#2928](https://github.com/cometbft/cometbft/pull/2928))
+- `[p2p/channel]` Speedup `ProtoIO` writer creation time, and thereby speedup channel writing by 5%.
+  ([\#2949](https://github.com/cometbft/cometbft/pull/2949))
+- `[p2p/conn]` Minor speedup (3%) to connection.WritePacketMsgTo, by removing MinInt calls.
+  ([\#2952](https://github.com/cometbft/cometbft/pull/2952))
+- `[internal/bits]` 10x speedup creating initialized bitArrays, which speedsup extendedCommit.BitArray(). This is used in consensus vote gossip.
+  ([\#2959](https://github.com/cometbft/cometbft/pull/2841)).
+- `[blockstore]` Remove a redundant `Header.ValidateBasic` call in `LoadBlockMeta`, 75% reducing this time.
+  ([\#2964](https://github.com/cometbft/cometbft/pull/2964))
+- `[p2p/conn]` Speedup connection.WritePacketMsgTo, by reusing internal buffers rather than re-allocating.
+  ([\#2986](https://github.com/cometbft/cometbft/pull/2986))
+- [`blockstore`] Use LRU caches in blockstore, significiantly improving consensus gossip routine performance
+  ([\#3003](https://github.com/cometbft/cometbft/issues/3003)
+- [`consensus`] Improve performance of consensus metrics by lowering string operations
+  ([\#3017](https://github.com/cometbft/cometbft/issues/3017)
+- [`protoio`] Remove one allocation and new object call from `ReadMsg`,
+  leading to a 4% p2p message reading performance gain.
+  ([\#3018](https://github.com/cometbft/cometbft/issues/3018)
+- `[mempool]` Before updating the mempool, consider it as full if rechecking is still in progress.
+  This will stop accepting transactions in the mempool if the node can't keep up with re-CheckTx.
+  ([\#3314](https://github.com/cometbft/cometbft/pull/3314))
+
 ## v0.38.7
 
 *April 26, 2024*

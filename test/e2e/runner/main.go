@@ -287,11 +287,10 @@ func NewCLI() *CLI {
 	var splitLogs bool
 	logCmd := &cobra.Command{
 		Use:   "logs",
-		Short: "Shows the testnet logs",
+		Short: "Shows the testnet logs. Use `--split` to split logs into separate files",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			splitLogs, _ = cmd.Flags().GetBool("split")
 			if splitLogs {
-				fmt.Println("Output separate logs for each node")
 				for _, node := range cli.testnet.Nodes {
 					fmt.Println("Log for", node.Name)
 					err := docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs", node.Name)
@@ -301,7 +300,6 @@ func NewCLI() *CLI {
 				}
 				return nil
 			}
-			fmt.Println("Output combined log for all nodes")
 			return docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs")
 		},
 	}

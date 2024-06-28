@@ -18,7 +18,6 @@ var _ mempl.Mempool = emptyMempool{}
 
 func (emptyMempool) Lock()            {}
 func (emptyMempool) Unlock()          {}
-func (emptyMempool) PreUpdate()       {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
 func (emptyMempool) CheckTx(types.Tx, func(*abci.ResponseCheckTx), mempl.TxInfo) error {

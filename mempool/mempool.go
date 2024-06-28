@@ -52,14 +52,12 @@ type Mempool interface {
 
 	// Lock locks the mempool. The consensus must be able to hold lock to safely
 	// update.
+	// Before acquiring the lock, it signals the mempool that a new update is coming.
+	// If the mempool is still rechecking at this point, it should be considered full.
 	Lock()
 
 	// Unlock unlocks the mempool.
 	Unlock()
-
-	// PreUpdate signals that a new update is coming, before acquiring the mempool lock.
-	// If the mempool is still rechecking at this point, it should be considered full.
-	PreUpdate()
 
 	// Update informs the mempool that the given txs were committed and can be
 	// discarded.

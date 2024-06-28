@@ -152,19 +152,15 @@ func WithMetrics(metrics *Metrics) CListMempoolOption {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Lock() {
+	if mem.recheck.setRecheckFull() {
+		mem.logger.Debug("the state of recheckFull has flipped")
+	}
 	mem.updateMtx.Lock()
 }
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Unlock() {
 	mem.updateMtx.Unlock()
-}
-
-// Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) PreUpdate() {
-	if mem.recheck.setRecheckFull() {
-		mem.logger.Debug("the state of recheckFull has flipped")
-	}
 }
 
 // Safe for concurrent use by multiple goroutines.

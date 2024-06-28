@@ -34,8 +34,15 @@ func Tx(ctx *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error
 
 	var proof types.TxProof
 	if prove {
+<<<<<<< HEAD
 		block := env.BlockStore.LoadBlock(r.Height)
 		proof = block.Data.Txs.Proof(int(r.Index))
+=======
+		block, _ := env.BlockStore.LoadBlock(r.Height)
+		if block != nil {
+			proof = block.Data.Txs.Proof(int(r.Index))
+		}
+>>>>>>> 3d9bbb6f3 (fix(rpc): fix nil pointer error in `/tx` and `/tx_search` (#3355))
 	}
 
 	return &ctypes.ResultTx{
@@ -113,8 +120,15 @@ func TxSearch(
 
 		var proof types.TxProof
 		if prove {
+<<<<<<< HEAD
 			block := env.BlockStore.LoadBlock(r.Height)
 			proof = block.Data.Txs.Proof(int(r.Index))
+=======
+			block, _ := env.BlockStore.LoadBlock(r.Height)
+			if block != nil {
+				proof = block.Data.Txs.Proof(int(r.Index))
+			}
+>>>>>>> 3d9bbb6f3 (fix(rpc): fix nil pointer error in `/tx` and `/tx_search` (#3355))
 		}
 
 		apiResults = append(apiResults, &ctypes.ResultTx{

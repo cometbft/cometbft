@@ -309,9 +309,10 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 
 	// 6. Assert that the configured maximum number of inbound/outbound peers
 	// are respected, see https://github.com/cometbft/cometbft/issues/486
-	outbound, inbound, _ := node.NumPeers()
-	assert.LessOrEqual(t, outbound, cfg.MaxNumOutboundPeers)
+	outbound, inbound, dialing := node.NumPeers()
 	assert.LessOrEqual(t, inbound, cfg.MaxNumInboundPeers)
+	assert.LessOrEqual(t, outbound, cfg.MaxNumOutboundPeers)
+	assert.Zero(t, dialing)
 }
 
 func TestPEXReactorSeedMode(t *testing.T) {

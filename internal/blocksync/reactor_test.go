@@ -8,14 +8,13 @@ import (
 	"testing"
 	"time"
 
-	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -72,7 +71,7 @@ func newReactor(
 	if len(privVals) != 1 {
 		panic("only support one validator")
 	}
-	var incorrectBlock int64 = 0
+	var incorrectBlock int64
 	if len(incorrectData) > 0 {
 		incorrectBlock = incorrectData[0]
 	}
@@ -397,6 +396,7 @@ func TestCheckSwitchToConsensusLastHeightZero(t *testing.T) {
 }
 
 func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteExtensionAt int64, invalidBlockHeightAt int64) {
+	t.Helper()
 	config = test.ResetTestRoot("blocksync_reactor_test")
 	defer os.RemoveAll(config.RootDir)
 	genDoc, privVals := randGenesisDoc()
@@ -418,7 +418,7 @@ func ExtendedCommitNetworkHelper(t *testing.T, maxBlockHeight int64, enableVoteE
 
 	var switches []*p2p.Switch
 	for _, r := range reactorPairs {
-		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(i int, s *p2p.Switch) *p2p.Switch {
+		switches = append(switches, p2p.MakeConnectedSwitches(config.P2P, 1, func(_ int, s *p2p.Switch) *p2p.Switch {
 			s.AddReactor("BLOCKSYNC", r.reactor)
 			return s
 		}, p2p.Connect2Switches)...)

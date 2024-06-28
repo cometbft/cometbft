@@ -32,10 +32,12 @@ type inputData struct {
 	request BlockRequest
 }
 
-// Malicious nodes parameters
-const MaliciousLie = 5  // This is how much the malicious node claims to be higher than the real height
-const BlackholeSize = 3 // This is how many blocks the malicious node will not return (missing) above real height
-const MaliciousTestMaximumLength = 5 * time.Minute
+// Malicious nodes parameters.
+const (
+	MaliciousLie               = 5 // This is how much the malicious node claims to be higher than the real height
+	BlackholeSize              = 3 // This is how many blocks the malicious node will not return (missing) above real height
+	MaliciousTestMaximumLength = 5 * time.Minute
+)
 
 func (p testPeer) runInputRoutine() {
 	go func() {
@@ -285,11 +287,11 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 	// * Testing with height 7, the main functionality of banning a malicious peer is tested.
 	//   Testing with height 127, a malicious peer can reconnect and the subsequent banning is also tested.
 	//   This takes a couple of minutes to complete, so we don't run it.
-	const InitialHeight = 7
+	const initialHeight = 7
 	peers := testPeers{
-		p2p.ID("good"):  &testPeer{p2p.ID("good"), 1, InitialHeight, make(chan inputData), false},
-		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, InitialHeight + MaliciousLie, make(chan inputData), true},
-		p2p.ID("good1"): &testPeer{p2p.ID("good1"), 1, InitialHeight, make(chan inputData), false},
+		p2p.ID("good"):  &testPeer{p2p.ID("good"), 1, initialHeight, make(chan inputData), false},
+		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, initialHeight + MaliciousLie, make(chan inputData), true},
+		p2p.ID("good1"): &testPeer{p2p.ID("good1"), 1, initialHeight, make(chan inputData), false},
 	}
 	errorsCh := make(chan peerError)
 	requestsCh := make(chan BlockRequest)
@@ -320,7 +322,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 		for {
 			time.Sleep(1 * time.Second) // Speed of new block creation
 			for _, peer := range peers {
-				peer.height += 1                                   // Network height increases on all peers
+				peer.height++                                      // Network height increases on all peers
 				pool.SetPeerRange(peer.id, peer.base, peer.height) // Tell the pool that a new height is available
 			}
 		}
@@ -362,7 +364,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 		case <-testTicker.C:
 			banned := pool.isPeerBanned("bad")
 			bannedOnce = bannedOnce || banned // Keep bannedOnce true, even if the malicious peer gets unbanned
-			caughtUp := pool.IsCaughtUp()
+			caughtUp, _, _ := pool.IsCaughtUp()
 			// Success: pool caught up and malicious peer was banned at least once
 			if caughtUp && bannedOnce {
 				t.Logf("Pool caught up, malicious peer was banned at least once, start consensus.")

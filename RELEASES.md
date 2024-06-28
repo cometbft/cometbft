@@ -139,12 +139,12 @@ off of backport branches, for example:
   will have QA'd them better than alpha releases, but there still may be
   minor breaking API changes if users have strong demands for such changes.
 
-* `v2.0.0-rc1` - The first release candidate (RC) of `v2.0.0`. Subsequent RCs
-  will be numbered `v2.0.0-rc2`, `v2.0.0-rc3`, etc.
+* `v2.0.0-rc.1` - The first release candidate (RC) of `v2.0.0`. Subsequent RCs
+  will be numbered `v2.0.0-rc.2`, `v2.0.0-rc.3`, etc.
 
-  RCs are considered more stable than beta releases in that we will have
+  Release Candidates are considered more stable than beta releases in that we will have
   completed our QA on them. APIs will most likely be stable at this point. The
-  difference between an RC and a release is that there may still be small
+  difference between a release candidate and a release is that there may still be small
   changes (bug fixes, features) that may make their way into the series before
   cutting a final release.
 

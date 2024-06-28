@@ -367,9 +367,7 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 		if seedAddr.Equals(srcAddr) {
 			select {
 			case r.ensurePeersCh <- struct{}{}:
-				// Wake up ensurePeersRoutine()
 			default:
-				// But do not block
 			}
 			break
 		}

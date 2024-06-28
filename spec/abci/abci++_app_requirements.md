@@ -295,9 +295,7 @@ will be received on the mempool connection during this processing step, providin
 update all four
 connection states to the latest committed state at the same time.
 
-CometBFT unlocks the mempool after it has finished updating for the new block,
-which occurs asynchronously from `Commit`.
-See [Mempool Update](../mempool/mempool.md) for more information on what the `update` task does.
+When `Commit` returns, CometBFT unlocks the mempool.
 
 WARNING: if the ABCI app logic processing the `Commit` message sends a
 `/broadcast_tx_sync` or `/broadcast_tx` and waits for the response

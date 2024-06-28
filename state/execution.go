@@ -377,17 +377,15 @@ func (blockExec *BlockExecutor) VerifyVoteExtension(ctx context.Context, vote *t
 	return nil
 }
 
-// Commit locks the mempool, runs the ABCI Commit message, and asynchronously starts updating the
+// Commit locks the mempool, runs the ABCI Commit message, and updates the
 // mempool.
-// Commit returns the result of calling abci.Commit which is the height to retain (if any)).
+// It returns the result of calling abci.Commit which is the height to retain (if any)).
 // The application is expected to have persisted its state (if any) before returning
 // from the ABCI Commit call. This is the only place where the application should
 // persist its state.
 // The Mempool must be locked during commit and update because state is
 // typically reset on Commit and old txs must be replayed against committed
 // state before new txs are run in the mempool, lest they be invalid.
-// The mempool is unlocked when the Update routine completes, which is
-// asynchronous from Commit.
 func (blockExec *BlockExecutor) Commit(
 	state State,
 	block *types.Block,
@@ -395,30 +393,20 @@ func (blockExec *BlockExecutor) Commit(
 ) (int64, error) {
 	blockExec.mempool.PreUpdate()
 	blockExec.mempool.Lock()
-	unlockMempool := func() { blockExec.mempool.Unlock() }
+	defer blockExec.mempool.Unlock()
 
 	// while mempool is Locked, flush to ensure all async requests have completed
 	// in the ABCI app before Commit.
 	err := blockExec.mempool.FlushAppConn()
 	if err != nil {
-<<<<<<< HEAD
 		blockExec.logger.Error("Client error during mempool.FlushAppConn", "err", err)
-=======
-		unlockMempool()
-		blockExec.logger.Error("client error during mempool.FlushAppConn, flushing mempool", "err", err)
->>>>>>> 1c277c065 (perf: Make mempool update async from block.Commit (#3008))
 		return 0, err
 	}
 
 	// Commit block, get hash back
 	res, err := blockExec.proxyApp.Commit(context.TODO())
 	if err != nil {
-<<<<<<< HEAD
 		blockExec.logger.Error("Client error during proxyAppConn.CommitSync", "err", err)
-=======
-		unlockMempool()
-		blockExec.logger.Error("client error during proxyAppConn.CommitSync", "err", err)
->>>>>>> 1c277c065 (perf: Make mempool update async from block.Commit (#3008))
 		return 0, err
 	}
 
@@ -430,36 +418,15 @@ func (blockExec *BlockExecutor) Commit(
 	)
 
 	// Update mempool.
-	go blockExec.asyncUpdateMempool(unlockMempool, block, state.Copy(), abciResponse)
-
-	return res.RetainHeight, nil
-}
-
-// updates the mempool with the latest state asynchronously.
-func (blockExec *BlockExecutor) asyncUpdateMempool(
-	unlockMempool func(),
-	block *types.Block,
-	state State,
-	abciResponse *abci.FinalizeBlockResponse,
-) {
-	defer unlockMempool()
-
-	err := blockExec.mempool.Update(
+	err = blockExec.mempool.Update(
 		block.Height,
 		block.Txs,
 		abciResponse.TxResults,
 		TxPreCheck(state),
 		TxPostCheck(state),
 	)
-	if err != nil {
-		// We panic in this case, out of legacy behavior. Before we made the mempool
-		// update complete asynchronously from Commit, we would panic if the mempool
-		// update failed. This is because we panic on any error within commit.
-		// We should consider changing this behavior in the future, as there is no
-		// need to panic if the mempool update failed. The most severe thing we
-		// would need to do is dump the mempool and restart it.
-		panic(fmt.Sprintf("client error during mempool.Update; error %v", err))
-	}
+
+	return res.RetainHeight, err
 }
 
 // ---------------------------------------------------------

@@ -71,7 +71,11 @@ func (t *timeoutTicker) Chan() <-chan timeoutInfo {
 // The timeoutRoutine is always available to read from tickChan, so this won't block.
 // The scheduling may fail if the timeoutRoutine has already scheduled a timeout for a later height/round/step.
 func (t *timeoutTicker) ScheduleTimeout(ti timeoutInfo) {
-	t.tickChan <- ti
+	select {
+	case t.tickChan <- ti:
+	default:
+		t.Logger.Error("Failed to schedule timeout, tickChan is full")
+	}
 }
 
 // -------------------------------------------------------------
@@ -83,7 +87,10 @@ func (t *timeoutTicker) stopTimer() {
 	}
 	// Stop() returns false if it was already fired or was stopped
 	if !t.timer.Stop() {
-		<-t.timer.C
+		select {
+		case <-t.timer.C:
+		default:
+		}
 	}
 	t.timerActive = false
 }
@@ -121,7 +128,11 @@ func (t *timeoutTicker) timeoutRoutine() {
 			// Determinism comes from playback in the receiveRoutine.
 			// We can eliminate it by merging the timeoutRoutine into receiveRoutine
 			//  and managing the timeouts ourselves with a millisecond ticker
-			go func(toi timeoutInfo) { t.tockChan <- toi }(ti)
+			select {
+			case t.tockChan <- ti:
+			default:
+				t.Logger.Error("Failed to notify timeout, tockChan is full")
+			}
 		case <-t.Quit():
 			t.stopTimer()
 			return

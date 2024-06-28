@@ -487,13 +487,17 @@ FOR_LOOP:
 				// validate the block before we persist it
 				err = bcR.blockExec.ValidateBlock(state, first)
 			}
-			if err == nil {
+			presentExtCommit := extCommit != nil
+			extensionsEnabled := state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height)
+			if presentExtCommit != extensionsEnabled {
+				err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
+					"(height %d, non-nil extended commit %t, extensions enabled %t)",
+					first.Height, presentExtCommit, extensionsEnabled,
+				)
+			}
+			if err == nil && extensionsEnabled {
 				// if vote extensions were required at this height, ensure they exist.
-				if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
-					err = extCommit.EnsureExtensions(true)
-				} else if extCommit != nil {
-					err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-				}
+				err = extCommit.EnsureExtensions(true)
 			}
 			if err != nil {
 				bcR.Logger.Error("Invalid block", "height", first.Height, "err", err)
@@ -517,7 +521,7 @@ FOR_LOOP:
 			bcR.pool.PopRequest()
 
 			// TODO: batch saves so we dont persist to disk every block
-			if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
+			if extensionsEnabled {
 				bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
 			} else {
 				// We use LastCommit here instead of extCommit. extCommit is not

@@ -734,7 +734,6 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 		go func(h int) {
 			defer wg.Done()
 
-			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn()
 			require.NoError(t, err)
@@ -935,7 +934,6 @@ func TestMempoolRecheckRace(t *testing.T) {
 	}
 
 	// Update one transaction to force rechecking the rest.
-	mp.PreUpdate()
 	mp.Lock()
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
@@ -975,7 +973,6 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 				break
 			}
 			txs := mp.ReapMaxBytesMaxGas(100, -1)
-			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
 			require.NoError(t, err)

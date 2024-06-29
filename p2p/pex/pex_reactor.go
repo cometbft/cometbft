@@ -544,6 +544,8 @@ func (r *Reactor) ensurePeers() {
 							r.Logger.Debug(err.Error(), "addr", addr)
 						} else {
 							successCount++
+						}
+						if err == nil {
 							break
 						}
 					}

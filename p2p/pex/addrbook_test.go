@@ -29,7 +29,7 @@ func TestAddrBookPickAddress(t *testing.T) {
 	book.SetLogger(log.TestingLogger())
 	assert.Zero(t, book.Size())
 
-	addr := book.PickAddress(50)
+	addr := book.PickAddress(50, nil)
 	assert.Nil(t, addr, "expected no address")
 
 	randAddrs := randNetAddressPairs(t, 1)
@@ -38,22 +38,22 @@ func TestAddrBookPickAddress(t *testing.T) {
 	require.NoError(t, err)
 
 	// pick an address when we only have new address
-	addr = book.PickAddress(0)
+	addr = book.PickAddress(0, nil)
 	assert.NotNil(t, addr, "expected an address")
-	addr = book.PickAddress(50)
+	addr = book.PickAddress(50, nil)
 	assert.NotNil(t, addr, "expected an address")
-	addr = book.PickAddress(100)
+	addr = book.PickAddress(100, nil)
 	assert.NotNil(t, addr, "expected an address")
 
 	// pick an address when we only have old address
 	book.MarkGood(addrSrc.addr.ID)
-	addr = book.PickAddress(0)
+	addr = book.PickAddress(0, nil)
 	assert.NotNil(t, addr, "expected an address")
-	addr = book.PickAddress(50)
+	addr = book.PickAddress(50, nil)
 	assert.NotNil(t, addr, "expected an address")
 
 	// in this case, nNew==0 but we biased 100% to new, so we return nil
-	addr = book.PickAddress(100)
+	addr = book.PickAddress(100, nil)
 	assert.Nil(t, addr, "did not expect an address")
 }
 

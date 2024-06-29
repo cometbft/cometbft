@@ -604,9 +604,25 @@ func (r *Reactor) dialAttemptsInfo(addr *p2p.NetAddress) (attempts int, lastDial
 }
 
 func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
+	attempts, lastDialed := r.dialAttemptsInfo(addr)
+	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
+		r.book.MarkBad(addr, defaultBanTime)
+		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}
+	}
+
+	// exponential backoff if it's not our first attempt to dial given address
+	if attempts > 0 {
+		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
+		backoffDuration := jitter + ((1 << uint(attempts)) * time.Second)
+		backoffDuration = r.maxBackoffDurationForPeer(addr, backoffDuration)
+		sinceLastDialed := time.Since(lastDialed)
+		if sinceLastDialed < backoffDuration {
+			return ErrTooEarlyToDial{backoffDuration, lastDialed}
+		}
+	}
+
 	err := r.Switch.DialPeerWithAddress(addr)
 	if err != nil {
-		attempts, _ := r.dialAttemptsInfo(addr)
 		if _, ok := err.(p2p.ErrCurrentlyDialingOrExistingAddress); ok {
 			return err
 		}

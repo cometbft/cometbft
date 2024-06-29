@@ -506,7 +506,6 @@ func (r *Reactor) ensurePeers() {
 		toDial[prospectivePeer.ID] = prospectivePeer
 	}
 
-	// Add extra peers to the reserve
 	for i := 0; i < maxReserveAttempts && len(reserve) < reserveSize; i++ {
 		prospectivePeer := r.book.PickAddress(newBias, filter)
 		if prospectivePeer == nil {
@@ -532,14 +531,14 @@ func (r *Reactor) ensurePeers() {
 				errorCount++
 				mu.Unlock()
 				r.Logger.Debug(err.Error(), "addr", addr)
-				// Attempt to dial reserve peers if there was an error
+				// If reserve addresses are available, try to dial them due to this toDial address erroring out
 				mu.Lock()
 				for id, reserveAddr := range reserve {
 					if reserveAddr != nil {
-						delete(reserve, id) // Remove from reserve
-						mu.Unlock()         // Unlock before dialing
+						delete(reserve, id)
+						mu.Unlock()
 						err := r.dialPeer(reserveAddr)
-						mu.Lock() // Re-lock after dialing
+						mu.Lock()
 						if err != nil {
 							errorCount++
 							r.Logger.Debug(err.Error(), "addr", addr)

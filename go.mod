@@ -42,7 +42,7 @@ require (
 	github.com/cometbft/cometbft-db v0.12.0
 	github.com/cometbft/cometbft-load-test v0.1.0
 	github.com/cometbft/cometbft/api v1.0.0-rc.1
-	github.com/cosmos/crypto v0.0.0-20240309083813-82ed2537802e
+	github.com/cosmos/crypto v0.1.1
 	github.com/cosmos/gogoproto v1.5.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccmack/goutil v1.2.3
@@ -132,7 +132,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/supranational/blst v0.3.11 // indirect
+	github.com/supranational/blst v0.3.12 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.etcd.io/bbolt v1.4.0-alpha.0.0.20240404170359-43604f3112c5 // indirect
 	go.opencensus.io v0.24.0 // indirect

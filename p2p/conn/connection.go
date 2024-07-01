@@ -568,15 +568,15 @@ func selectChannelToGossipOn(channels []*Channel) *Channel {
 // returns (num_bytes_written, error_occurred).
 func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Channel) (int, bool) {
 	// Make & send a PacketMsg from this channel
-	_n, err := sendChannel.writePacketMsgTo(w)
+	n, err := sendChannel.writePacketMsgTo(w)
 	if err != nil {
 		c.Logger.Error("Failed to write PacketMsg", "err", err)
 		c.stopForError(err)
-		return _n, true
+		return n, true
 	}
 	// TODO: Change this to only do one update for the entire bawtch.
 	c.flushTimer.Set()
-	return _n, false
+	return n, false
 }
 
 // recvRoutine reads PacketMsgs and reconstructs the message using the channels' "recving" buffer.

@@ -12,6 +12,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
@@ -195,6 +196,65 @@ func TestSignerVote(t *testing.T) {
 		require.NoError(t, tc.signerClient.SignVote(tc.chainID, have.ToProto()))
 
 		assert.Equal(t, want.Signature, have.Signature)
+	}
+}
+
+func TestSignerOracleVote(t *testing.T) {
+	for _, tc := range getSignerTestCases(t) {
+		valAddr := cmtrand.Bytes(crypto.AddressSize)
+		want := &oracleproto.GossipedVotes{
+			Validator:       valAddr,
+			SignedTimestamp: 2,
+			Votes: []*oracleproto.Vote{
+				{
+					Validator: "test-val",
+					OracleId:  "test-id",
+					Timestamp: 1,
+					Data:      "test-data",
+				},
+			},
+		}
+
+		have := &oracleproto.GossipedVotes{
+			Validator:       valAddr,
+			SignedTimestamp: 2,
+			Votes: []*oracleproto.Vote{
+				{
+					Validator: "test-val",
+					OracleId:  "test-id",
+					Timestamp: 1,
+					Data:      "test-data",
+				},
+			},
+		}
+
+		tc := tc
+		t.Cleanup(func() {
+			if err := tc.signerServer.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(func() {
+			if err := tc.signerClient.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		require.NoError(t, tc.mockPV.SignOracleVote("", want))
+		require.NoError(t, tc.signerClient.SignOracleVote("", have))
+
+		assert.Equal(t, want.Signature, have.Signature)
+
+		// test get pubkey
+		pvPubKey, err := tc.mockPV.GetPubKey()
+		require.NoError(t, err)
+
+		scPubKey, err := tc.signerClient.GetPubKey()
+		require.NoError(t, err)
+
+		// test verify sig with pv and signing client signatures
+		require.True(t, pvPubKey.VerifySignature(types.OracleVoteSignBytes(want), want.Signature))
+		require.True(t, scPubKey.VerifySignature(types.OracleVoteSignBytes(have), have.Signature))
 	}
 }
 

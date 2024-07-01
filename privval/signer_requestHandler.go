@@ -6,6 +6,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
+	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
@@ -63,6 +64,17 @@ func DefaultValidationRequestHandler(
 				Vote: cmtproto.Vote{}, Error: &privvalproto.RemoteSignerError{Code: 0, Description: err.Error()}})
 		} else {
 			res = mustWrapMsg(&privvalproto.SignedVoteResponse{Vote: *vote, Error: nil})
+		}
+
+	case *privvalproto.Message_SignOracleVoteRequest:
+		vote := r.SignOracleVoteRequest.Vote
+
+		err = privVal.SignOracleVote("", vote)
+		if err != nil {
+			res = mustWrapMsg(&privvalproto.SignedOracleVoteResponse{
+				Vote: oracleproto.GossipedVotes{}, Error: &privvalproto.RemoteSignerError{Code: 0, Description: err.Error()}})
+		} else {
+			res = mustWrapMsg(&privvalproto.SignedOracleVoteResponse{Vote: *vote, Error: nil})
 		}
 
 	case *privvalproto.Message_SignProposalRequest:

@@ -39,5 +39,5 @@ jobs:
 
       - name: Run Regression testnets
         working-directory: test/e2e
-        run: ./run-multiple.sh networks_regression/*.toml
+        run: ./run-multiple.sh networks_regressions/*.toml
         if: "env.GIT_DIFF != ''"

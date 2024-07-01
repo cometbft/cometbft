@@ -1,0 +1,31 @@
+prometheus = true
+
+[node]
+  [node.validator01]
+  [node.full01]
+    mode = "full"
+    retain_blocks = 14
+    enable_companion_pruning = true
+  [node.full02]
+    mode = "full"
+    retain_blocks = 14
+    enable_companion_pruning = true
+  [node.full03]
+    mode = "full"
+    retain_blocks = 14
+  [node.full04]
+    mode = "full"
+    retain_blocks = 14
+  [node.full05]
+    mode = "full"
+    retain_blocks = 14
+  [node.full06]
+    mode = "full"
+    retain_blocks = 14
+  [node.full07]
+    mode = "full"
+    retain_blocks = 14
+  [node.full08]
+    mode = "full"
+    retain_blocks = 14
+    start_at = 2

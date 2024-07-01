@@ -34,10 +34,10 @@ jobs:
 
       - name: Run CI testnet
         working-directory: test/e2e
-        run: echo ./run-multiple.sh networks/ci.toml
+        run: ./run-multiple.sh networks/ci.toml
         if: "env.GIT_DIFF != ''"
 
       - name: Run Regression testnets
         working-directory: test/e2e
-        run: ./run-multiple.sh networks_regressions/nodes_pruning.toml
+        run: ./run-multiple.sh networks_regression/*.toml
         if: "env.GIT_DIFF != ''"

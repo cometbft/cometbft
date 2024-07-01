@@ -565,7 +565,7 @@ func selectChannelToGossipOn(channels []*Channel) *Channel {
 	return leastChannel
 }
 
-// returns (num_bytes_written, error_occurred)
+// returns (num_bytes_written, error_occurred).
 func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Channel) (int, bool) {
 	// Make & send a PacketMsg from this channel
 	_n, err := sendChannel.writePacketMsgTo(w)

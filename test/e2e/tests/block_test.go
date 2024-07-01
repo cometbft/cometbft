@@ -1,7 +1,9 @@
 package e2e_test
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,6 +57,38 @@ func TestBlock_Header(t *testing.T) {
 	})
 }
 
+// Tests that the node configured to prune are actually pruning.
+func TestBlock_Pruning(t *testing.T) {
+	t.Helper()
+	testNode(t, func(t *testing.T, node e2e.Node) {
+		t.Helper()
+		// We do not run this test on seed nodes or nodes with data
+		// companion-related pruning enabled or nodes not pruning.
+		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning || node.RetainBlocks == 0 {
+			return
+		}
+		client, err := node.Client()
+		require.NoError(t, err)
+		status, err := client.Status(ctx)
+		first0 := status.SyncInfo.EarliestBlockHeight
+		require.NoError(t, err)
+
+		require.Eventually(t, func() bool {
+			status, err := client.Status(ctx)
+			require.NoError(t, err)
+			first := status.SyncInfo.EarliestBlockHeight
+			return first > first0
+		}, 1*time.Minute, 3*time.Second, "node %v is not pruning", node.Name)
+		require.Eventually(t, func() bool {
+			status, err := client.Status(ctx)
+			require.NoError(t, err)
+			first := status.SyncInfo.EarliestBlockHeight
+			last := status.SyncInfo.LatestBlockHeight
+			return last-first+1 < int64(node.RetainBlocks)+10 // Margin
+		}, 1*time.Minute, 3*time.Second, "node %v is not pruning enough", node.Name)
+	})
+}
+
 // Tests that the node contains the expected block range.
 func TestBlock_Range(t *testing.T) {
 	t.Helper()
@@ -62,7 +96,7 @@ func TestBlock_Range(t *testing.T) {
 		t.Helper()
 		// We do not run this test on seed nodes or nodes with data
 		// companion-related pruning enabled.
-		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning {
+		if node.Mode == e2e.ModeSeed {
 			return
 		}
 
@@ -80,13 +114,7 @@ func TestBlock_Range(t *testing.T) {
 				"state synced nodes should not contain network's initial height")
 
 		case node.RetainBlocks > 0 && int64(node.RetainBlocks) < (last-node.Testnet.InitialHeight+1):
-			// Delta handles race conditions in reading first/last heights.
-			// The pruning mechanism is now asynchronous and might have been woken up yet to complete the pruning
-			// So we have no guarantees that all the blocks will have been pruned by the time we check
-			// Thus we allow for some flexibility in the difference between the expected retain blocks number
-			// and the actual retain blocks (which should be greater)
-			assert.InDelta(t, node.RetainBlocks, last-first+1, 10,
-				"node not pruning expected blocks")
+			// we test nodes are actually pruning in `TestBlock_Pruning`
 			assert.GreaterOrEqual(t, uint64(last-first+1), node.RetainBlocks, "node pruned more blocks than it should")
 
 		default:
@@ -95,13 +123,34 @@ func TestBlock_Range(t *testing.T) {
 		}
 
 		for h := first; h <= last; h++ {
-			resp, err := client.Block(ctx, &(h))
-			if err != nil && node.RetainBlocks > 0 && h == first {
-				// Ignore errors in first block if node is pruning blocks due to race conditions.
-				continue
+			for i := 0; i < 6; i++ {
+				if h < first {
+					continue
+				}
+				if node.EnableCompanionPruning || strings.Contains(node.Name, "validator01") {
+					continue
+				}
+				time.Sleep(300 * time.Millisecond)
+				resp, err := client.Block(ctx, &(h))
+				/*
+					if node.RetainBlocks > 0 && !node.EnableCompanionPruning &&
+						(err != nil && strings.Contains(err.Error(), " is not available, lowest height is ") ||
+							resp.Block == nil) {
+						// If node is pruning and doesn't return a valid block
+						// compare wanted block to blockstore's base, and update `first`.
+						status, err := client.Status(ctx)
+						require.NoError(t, err)
+						first = status.SyncInfo.EarliestBlockHeight
+						if h < first {
+							continue
+						}
+					}
+				*/
+				require.NoError(t, err)
+				require.NotNil(t, resp)
+				require.NotNil(t, resp.Block)
+				assert.Equal(t, h, resp.Block.Height)
 			}
-			require.NoError(t, err)
-			assert.Equal(t, h, resp.Block.Height)
 		}
 
 		for h := node.Testnet.InitialHeight; h < first; h++ {

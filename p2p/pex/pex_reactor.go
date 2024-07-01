@@ -493,11 +493,6 @@ func (r *Reactor) ensurePeers() {
 		return true
 	}
 
-	var (
-		successCount int
-		errorCount   int
-	)
-
 	for i := 0; i < maxToDialAttempts && len(toDial) < numToDial; i++ {
 		prospectivePeer := r.book.PickAddress(newBias, filter)
 		if prospectivePeer == nil {
@@ -517,9 +512,13 @@ func (r *Reactor) ensurePeers() {
 	toDialCount := len(toDial)
 	reserveCount := len(reserve)
 
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+	var (
+		successCh = make(chan int)
+		errorCh   = make(chan int)
+		wg        sync.WaitGroup
+	)
 
+	// Dial picked addresses
 	// Dial picked addresses
 	for _, addr := range toDial {
 		wg.Add(1)
@@ -527,41 +526,45 @@ func (r *Reactor) ensurePeers() {
 			defer wg.Done()
 			err := r.dialPeer(addr)
 			if err != nil {
-				mu.Lock()
-				errorCount++
-				mu.Unlock()
+				errorCh <- 1
 				r.Logger.Debug(err.Error(), "addr", addr)
 				// If reserve addresses are available, try to dial them due to this toDial address erroring out
-				mu.Lock()
 				for id, reserveAddr := range reserve {
 					if reserveAddr != nil {
 						delete(reserve, id)
-						mu.Unlock()
 						err := r.dialPeer(reserveAddr)
-						mu.Lock()
 						if err != nil {
-							errorCount++
+							errorCh <- 1
 							r.Logger.Debug(err.Error(), "addr", addr)
 						} else {
-							successCount++
+							successCh <- 1
 						}
 						if err == nil {
 							break
 						}
 					}
 				}
-				mu.Unlock()
 			} else {
-				mu.Lock()
-				successCount++
-				mu.Unlock()
+				successCh <- 1
 			}
 		}(addr)
 	}
 
-	// Log the summary in a separate goroutine
 	go func() {
 		wg.Wait()
+		close(successCh)
+		close(errorCh)
+	}()
+
+	go func() {
+		successCount := 0
+		errorCount := 0
+		for count := range successCh {
+			successCount += count
+		}
+		for count := range errorCh {
+			errorCount += count
+		}
 		r.Logger.Info(
 			"Dialing summary",
 			"toDialCount", toDialCount,

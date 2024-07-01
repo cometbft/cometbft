@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.37.8
+
+*July 1, 2024*
+
+This release reverts the API-breaking change to the `Mempool` interface introduced in the last patch
+release (v0.37.7) while still keeping the performance improvement added to the mempool. It also
+includes a minor fix to the RPC endpoints `/tx` and `/tx_search`.
+
+### BREAKING CHANGES
+
+- `[mempool]` Revert adding the method `PreUpdate()` to the `Mempool` interface, recently introduced
+  in the previous patch release (v0.37.7). Its logic is now moved into the `Lock` method. With this change,
+  the `Mempool` interface is the same as in v0.37.6.
+  ([\#3363](https://github.com/cometbft/cometbft/pull/3363))
+
+### BUG FIXES
+
+- `[rpc]` Fix nil pointer error in `/tx` and `/tx_search` when block is
+  absent ([\#3352](https://github.com/cometbft/cometbft/issues/3352))
+
 ## v0.37.7
 
 *June 27, 2024*

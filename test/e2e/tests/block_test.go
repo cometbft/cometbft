@@ -132,20 +132,18 @@ func TestBlock_Range(t *testing.T) {
 				}
 				time.Sleep(300 * time.Millisecond)
 				resp, err := client.Block(ctx, &(h))
-				/*
-					if node.RetainBlocks > 0 && !node.EnableCompanionPruning &&
-						(err != nil && strings.Contains(err.Error(), " is not available, lowest height is ") ||
-							resp.Block == nil) {
-						// If node is pruning and doesn't return a valid block
-						// compare wanted block to blockstore's base, and update `first`.
-						status, err := client.Status(ctx)
-						require.NoError(t, err)
-						first = status.SyncInfo.EarliestBlockHeight
-						if h < first {
-							continue
-						}
+				if node.RetainBlocks > 0 && !node.EnableCompanionPruning &&
+					(err != nil && strings.Contains(err.Error(), " is not available, lowest height is ") ||
+						resp.Block == nil) {
+					// If node is pruning and doesn't return a valid block
+					// compare wanted block to blockstore's base, and update `first`.
+					status, err := client.Status(ctx)
+					require.NoError(t, err)
+					first = status.SyncInfo.EarliestBlockHeight
+					if h < first {
+						continue
 					}
-				*/
+				}
 				require.NoError(t, err)
 				require.NotNil(t, resp)
 				require.NotNil(t, resp.Block)

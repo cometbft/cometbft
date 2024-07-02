@@ -36,7 +36,7 @@ jobs:
         run: make -j2 docker runner
         if: "env.GIT_DIFF != ''"
 
-      - name: Run "{{ matrix.group }}" testnet
+      - name: Run "${{ matrix.group }}"" testnet
         working-directory: test/e2e
         run: ./run-multiple.sh ${{ matrix.group }}.toml
         if: "env.GIT_DIFF != ''"

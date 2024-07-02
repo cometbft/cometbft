@@ -84,6 +84,7 @@ type Reactor struct {
 
 	book              AddrBook
 	config            *ReactorConfig
+	ensurePeersCh     chan struct{} // Wakes up ensurePeersRoutine()
 	ensurePeersPeriod time.Duration // TODO: should go in the config
 
 	// maps to prevent abuse
@@ -132,6 +133,7 @@ func NewReactor(b AddrBook, config *ReactorConfig) *Reactor {
 	r := &Reactor{
 		book:                 b,
 		config:               config,
+		ensurePeersCh:        make(chan struct{}),
 		ensurePeersPeriod:    defaultEnsurePeersPeriod,
 		requestsSent:         cmap.NewCMap(),
 		lastReceivedRequests: cmap.NewCMap(),
@@ -362,14 +364,6 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 		return err
 	}
 
-	srcIsSeed := false
-	for _, seedAddr := range r.seedAddrs {
-		if seedAddr.Equals(srcAddr) {
-			srcIsSeed = true
-			break
-		}
-	}
-
 	for _, netAddr := range addrs {
 		// NOTE: we check netAddr validity and routability in book#AddAddress.
 		err = r.book.AddAddress(netAddr, srcAddr)
@@ -379,7 +373,9 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 			// peer here too?
 			continue
 		}
+	}
 
+<<<<<<< HEAD
 		// If this address came from a seed node, try to connect to it without
 		// waiting (#2093)
 		if srcIsSeed {
@@ -394,6 +390,16 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 					}
 				}
 			}(netAddr)
+=======
+	// Try to connect to addresses coming from a seed node without waiting (#2093)
+	for _, seedAddr := range r.seedAddrs {
+		if seedAddr.Equals(srcAddr) {
+			select {
+			case r.ensurePeersCh <- struct{}{}:
+			default:
+			}
+			break
+>>>>>>> 4241776d5 (fix(p2p/pex): respect MaxNumOutboundPeers limit while dialing peers provided by a seed node (#3360))
 		}
 	}
 
@@ -438,6 +444,13 @@ func (r *Reactor) ensurePeersRoutine() {
 		select {
 		case <-ticker.C:
 			r.ensurePeers()
+<<<<<<< HEAD
+=======
+		case <-r.ensurePeersCh:
+			r.ensurePeers()
+		case <-r.book.Quit():
+			return
+>>>>>>> 4241776d5 (fix(p2p/pex): respect MaxNumOutboundPeers limit while dialing peers provided by a seed node (#3360))
 		case <-r.Quit():
 			ticker.Stop()
 			return

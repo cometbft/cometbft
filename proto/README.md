@@ -21,7 +21,8 @@ parts of [CometBFT]:
 
 The canonical Protobuf definitions live in the `proto` folder of the relevant
 release branch of CometBFT. These definitions are published to the [Buf
-registry][buf] for integrators' convenience.
+registry][buf] for integrators' convenience. For detailed instructions on how to publish
+the files to the Buf registry, please refer to the [RELEASES.md](../RELEASES.md) document.
 
 The Protobuf files are organized under two domains: `cometbft` and `tendermint`.
 The `cometbft.*` packages use version suffixes to let application developers

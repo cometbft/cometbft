@@ -458,7 +458,7 @@ func (r *Reactor) ensurePeers() {
 	// Calculate reserve size as 50% of numToDial with a minimum of 10
 	reserveSize := cmtmath.MaxInt(numToDial/2, 10)
 
-	// Try maxAttempts times to pick numToDial addresses to dial
+	// Try maxAttempts times to pick numToDial + reserveSize addresses to dial
 	maxToDialAttempts := numToDial * 3
 
 	for i := 0; i < maxToDialAttempts && len(toDial) < numToDial+reserveSize; i++ {
@@ -487,7 +487,8 @@ func (r *Reactor) ensurePeers() {
 			wg        sync.WaitGroup
 		)
 
-		// Dial a subset of toDial, specifically aiming to respect the max connections set by the user.
+		// Dial a subset of toDial, in order to respect the max connections set by the user
+		// while still having a reserve of addresses to dial in case of failures.
 		subsetSize := cmtmath.MinInt(numToDial-successCount, len(toDial))
 		subset := make([]*p2p.NetAddress, 0, subsetSize)
 		for _, addr := range toDial {

@@ -54,6 +54,17 @@ info:
     However, the support for unsuffixed methods will be dropped in future releases and all users are
     encouraged to migrate as soon as possible.
 
+    ## Encoding
+
+    All data is encoded in amino-compatible JSON. This mostly differs from
+    `encoding/json` in encoding of integers (64-bit integers are encoded as
+    strings, not numbers), and handling of interfaces (wrapped in an interface
+    object with type/value keys).
+
+    Please refer to [this
+    documentation](https://pkg.go.dev/github.com/cometbft/cometbft/libs/json)
+    for additional details.
+
     ## URI/HTTP
 
     A REST like interface.

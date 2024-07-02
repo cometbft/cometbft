@@ -58,7 +58,7 @@ type AddrBook interface {
 	Empty() bool
 
 	// Pick an address to dial
-	PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress
+	PickAddress(biasTowardsNewAddrs int, filter func(*knownAddress) bool) *p2p.NetAddress
 
 	// Mark address
 	MarkGood(id p2p.ID)
@@ -269,7 +269,7 @@ func (a *addrBook) Empty() bool {
 // and determines how biased we are to pick an address from a new bucket.
 // PickAddress returns nil if the AddrBook is empty or if we try to pick
 // from an empty bucket.
-func (a *addrBook) PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress {
+func (a *addrBook) PickAddress(biasTowardsNewAddrs int, filter func(*knownAddress) bool) *p2p.NetAddress {
 	a.mtx.Lock()
 	defer a.mtx.Unlock()
 
@@ -306,13 +306,23 @@ func (a *addrBook) PickAddress(biasTowardsNewAddrs int) *p2p.NetAddress {
 			bucket = a.bucketsNew[a.rand.Intn(len(a.bucketsNew))]
 		}
 	}
-	// pick a random index and loop over the map to return that index
-	randIndex := a.rand.Intn(len(bucket))
+
+	// Create a slice of known addresses from the bucket
+	addresses := make([]*knownAddress, 0, len(bucket))
 	for _, ka := range bucket {
-		if randIndex == 0 {
+		addresses = append(addresses, ka)
+	}
+
+	// Shuffle the addresses
+	a.rand.Shuffle(len(addresses), func(i, j int) {
+		addresses[i], addresses[j] = addresses[j], addresses[i]
+	})
+
+	// Iterate through the shuffled addresses and apply the filter until we find a suitable address
+	for _, ka := range addresses {
+		if filter == nil || filter(ka) {
 			return ka.Addr
 		}
-		randIndex--
 	}
 	return nil
 }

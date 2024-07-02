@@ -455,44 +455,115 @@ func (r *Reactor) ensurePeers() {
 	newBias := cmtmath.MinInt(out, 8)*10 + 10
 
 	toDial := make(map[p2p.ID]*p2p.NetAddress)
+	reserve := make(map[p2p.ID]*p2p.NetAddress)
 	// Try maxAttempts times to pick numToDial addresses to dial
-	maxAttempts := numToDial * 3
+	maxToDialAttempts := numToDial * 3
 
-	for i := 0; i < maxAttempts && len(toDial) < numToDial; i++ {
-		if !r.IsRunning() || !r.book.IsRunning() {
-			return
-		}
+	// Calculate reserve size as 50% of numToDial with a minimum of 10
+	reserveSize := cmtmath.MaxInt(numToDial/2, 10)
+	maxReserveAttempts := reserveSize * 3
 
-		try := r.book.PickAddress(newBias)
-		if try == nil {
-			continue
+	filter := func(ka *knownAddress) bool {
+		attempts, lastDialedTime := r.dialAttemptsInfo(ka.Addr)
+		if r.TooEarlyToDial(ka.Addr, attempts, lastDialedTime) != nil {
+			return false
 		}
-		if _, selected := toDial[try.ID]; selected {
-			continue
+		if r.MaxAttemptsToDial(ka.Addr, attempts) != nil {
+			r.book.MarkBad(ka.Addr, defaultBanTime)
+			return false
 		}
-		if r.Switch.IsDialingOrExistingAddress(try) {
-			continue
+		if r.Switch.IsDialingOrExistingAddress(ka.Addr) {
+			return false
 		}
-		// TODO: consider moving some checks from toDial into here
-		// so we don't even consider dialing peers that we want to wait
-		// before dialing again, or have dialed too many times already
-		toDial[try.ID] = try
+		if _, selected := toDial[ka.Addr.ID]; selected {
+			return false
+		}
+		if _, selected := reserve[ka.Addr.ID]; selected {
+			return false
+		}
+		return true
 	}
 
+	for i := 0; i < maxToDialAttempts && len(toDial) < numToDial; i++ {
+		prospectivePeer := r.book.PickAddress(newBias, filter)
+		if prospectivePeer == nil {
+			continue
+		}
+		toDial[prospectivePeer.ID] = prospectivePeer
+	}
+
+	for i := 0; i < maxReserveAttempts && len(reserve) < reserveSize; i++ {
+		prospectivePeer := r.book.PickAddress(newBias, filter)
+		if prospectivePeer == nil {
+			continue
+		}
+		reserve[prospectivePeer.ID] = prospectivePeer
+	}
+
+	toDialCount := len(toDial)
+	reserveCount := len(reserve)
+
+	var (
+		successCh = make(chan int)
+		errorCh   = make(chan int)
+		wg        sync.WaitGroup
+	)
+
+	// Dial picked addresses
 	// Dial picked addresses
 	for _, addr := range toDial {
+		wg.Add(1)
 		go func(addr *p2p.NetAddress) {
+			defer wg.Done()
 			err := r.dialPeer(addr)
 			if err != nil {
-				switch err.(type) {
-				case ErrMaxAttemptsToDial, ErrTooEarlyToDial:
-					r.Logger.Debug(err.Error(), "addr", addr)
-				default:
-					r.Logger.Debug(err.Error(), "addr", addr)
+				errorCh <- 1
+				r.Logger.Debug(err.Error(), "addr", addr)
+				// If reserve addresses are available, try to dial them due to this toDial address erroring out
+				for id, reserveAddr := range reserve {
+					if reserveAddr != nil {
+						delete(reserve, id)
+						err := r.dialPeer(reserveAddr)
+						if err != nil {
+							errorCh <- 1
+							r.Logger.Debug(err.Error(), "addr", addr)
+						} else {
+							successCh <- 1
+						}
+						if err == nil {
+							break
+						}
+					}
 				}
+			} else {
+				successCh <- 1
 			}
 		}(addr)
 	}
+
+	go func() {
+		wg.Wait()
+		close(successCh)
+		close(errorCh)
+	}()
+
+	go func() {
+		successCount := 0
+		errorCount := 0
+		for count := range successCh {
+			successCount += count
+		}
+		for count := range errorCh {
+			errorCount += count
+		}
+		r.Logger.Info(
+			"Dialing summary",
+			"toDialCount", toDialCount,
+			"reserveCount", reserveCount,
+			"successCount", successCount,
+			"errorCount", errorCount,
+		)
+	}()
 
 	if r.book.NeedMoreAddrs() {
 		// Check if banned nodes can be reinstated
@@ -528,23 +599,18 @@ func (r *Reactor) dialAttemptsInfo(addr *p2p.NetAddress) (attempts int, lastDial
 
 func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 	attempts, lastDialed := r.dialAttemptsInfo(addr)
-	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
-		r.book.MarkBad(addr, defaultBanTime)
-		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}
+	err := r.MaxAttemptsToDial(addr, attempts)
+	if err != nil {
+		return err
 	}
 
 	// exponential backoff if it's not our first attempt to dial given address
-	if attempts > 0 {
-		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
-		backoffDuration := jitter + ((1 << uint(attempts)) * time.Second)
-		backoffDuration = r.maxBackoffDurationForPeer(addr, backoffDuration)
-		sinceLastDialed := time.Since(lastDialed)
-		if sinceLastDialed < backoffDuration {
-			return ErrTooEarlyToDial{backoffDuration, lastDialed}
-		}
+	err = r.TooEarlyToDial(addr, attempts, lastDialed)
+	if err != nil {
+		return err
 	}
 
-	err := r.Switch.DialPeerWithAddress(addr)
+	err = r.Switch.DialPeerWithAddress(addr)
 	if err != nil {
 		if _, ok := err.(p2p.ErrCurrentlyDialingOrExistingAddress); ok {
 			return err
@@ -743,10 +809,33 @@ func (r *Reactor) attemptDisconnects() {
 
 func markAddrInBookBasedOnErr(addr *p2p.NetAddress, book AddrBook, err error) {
 	// TODO: detect more "bad peer" scenarios
+	// TODO, blacklist peer if fmt.Errorf("peer is on a different network. Got %v, expected %v", other.Network, info.Network)
 	switch err.(type) {
 	case p2p.ErrSwitchAuthenticationFailure:
 		book.MarkBad(addr, defaultBanTime)
 	default:
 		book.MarkAttempt(addr)
 	}
+}
+
+func (r *Reactor) TooEarlyToDial(addr *p2p.NetAddress, attempts int, lastDialedTime time.Time) error {
+	if attempts > 0 {
+		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
+		backoffDuration := jitter + ((1 << uint(attempts)) * time.Second)
+		backoffDuration = r.maxBackoffDurationForPeer(addr, backoffDuration)
+		sinceLastDialed := time.Since(lastDialedTime)
+		if sinceLastDialed < backoffDuration {
+			r.Logger.Debug("Skipping peer due to backoff", "addr", addr, "backoffDuration", backoffDuration)
+			return ErrTooEarlyToDial{backoffDuration, lastDialedTime}
+		}
+	}
+	return nil
+}
+
+func (r *Reactor) MaxAttemptsToDial(addr *p2p.NetAddress, attempts int) error {
+	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
+		r.book.MarkBad(addr, defaultBanTime)
+		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}
+	}
+	return nil
 }

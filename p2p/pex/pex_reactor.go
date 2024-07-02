@@ -474,11 +474,7 @@ func (r *Reactor) ensurePeers() {
 
 	filter := func(ka *knownAddress) bool {
 		attempts, lastDialedTime := r.dialAttemptsInfo(ka.Addr)
-		if r.TooEarlyToDial(ka.Addr, attempts, lastDialedTime) != nil {
-			return false
-		}
-		if r.MaxAttemptsToDial(ka.Addr, attempts) != nil {
-			r.book.MarkBad(ka.Addr, defaultBanTime)
+		if r.CheckDialStatus(ka.Addr, attempts, lastDialedTime) != nil {
 			return false
 		}
 		if r.Switch.IsDialingOrExistingAddress(ka.Addr) {
@@ -608,13 +604,7 @@ func (r *Reactor) dialAttemptsInfo(addr *p2p.NetAddress) (attempts int, lastDial
 
 func (r *Reactor) dialPeer(addr *p2p.NetAddress) error {
 	attempts, lastDialed := r.dialAttemptsInfo(addr)
-	err := r.MaxAttemptsToDial(addr, attempts)
-	if err != nil {
-		return err
-	}
-
-	// exponential backoff if it's not our first attempt to dial given address
-	err = r.TooEarlyToDial(addr, attempts, lastDialed)
+	err := r.CheckDialStatus(addr, attempts, lastDialed)
 	if err != nil {
 		return err
 	}
@@ -827,7 +817,10 @@ func markAddrInBookBasedOnErr(addr *p2p.NetAddress, book AddrBook, err error) {
 	}
 }
 
-func (r *Reactor) TooEarlyToDial(addr *p2p.NetAddress, attempts int, lastDialedTime time.Time) error {
+// CheckDialStatus checks if we are above the maximum number of dial attempts or if we are dialing too frequently.
+// If we are above the maximum number of dial attempts, the peer is marked as bad.
+// If either of the above conditions are met, an error is returned.
+func (r *Reactor) CheckDialStatus(addr *p2p.NetAddress, attempts int, lastDialedTime time.Time) error {
 	if attempts > 0 {
 		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
 		backoffDuration := jitter + ((1 << uint(attempts)) * time.Second)
@@ -838,10 +831,6 @@ func (r *Reactor) TooEarlyToDial(addr *p2p.NetAddress, attempts int, lastDialedT
 			return ErrTooEarlyToDial{backoffDuration, lastDialedTime}
 		}
 	}
-	return nil
-}
-
-func (r *Reactor) MaxAttemptsToDial(addr *p2p.NetAddress, attempts int) error {
 	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
 		r.book.MarkBad(addr, defaultBanTime)
 		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}

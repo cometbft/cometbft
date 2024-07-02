@@ -228,6 +228,8 @@ func (c *evilConn) signChallenge() []byte {
 		sendNonce:       new([aeadNonceSize]byte),
 		recvAead:        recvAead,
 		sendAead:        sendAead,
+		recvFrame:       make([]byte, totalFrameSize),
+		recvSealedFrame: make([]byte, totalFrameSize+aeadSizeOverhead),
 		sendFrame:       make([]byte, totalFrameSize),
 		sendSealedFrame: make([]byte, totalFrameSize+aeadSizeOverhead),
 	}

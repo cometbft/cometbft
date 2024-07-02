@@ -13,7 +13,6 @@ import (
 	"time"
 
 	gogotypes "github.com/cosmos/gogoproto/types"
-	pool "github.com/libp2p/go-buffer-pool"
 	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
@@ -73,9 +72,11 @@ type SecretConnection struct {
 	// are independent, so we can use two mtxs.
 	// All .Read are covered by recvMtx,
 	// all .Write are covered by sendMtx.
-	recvMtx    cmtsync.Mutex
-	recvBuffer []byte
-	recvNonce  *[aeadNonceSize]byte
+	recvMtx         cmtsync.Mutex
+	recvBuffer      []byte
+	recvNonce       *[aeadNonceSize]byte
+	recvFrame       []byte
+	recvSealedFrame []byte
 
 	sendMtx         cmtsync.Mutex
 	sendNonce       *[aeadNonceSize]byte
@@ -148,6 +149,8 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 		sendNonce:       new([aeadNonceSize]byte),
 		recvAead:        recvAead,
 		sendAead:        sendAead,
+		recvFrame:       make([]byte, totalFrameSize),
+		recvSealedFrame: make([]byte, aeadSizeOverhead+totalFrameSize),
 		sendFrame:       make([]byte, totalFrameSize),
 		sendSealedFrame: make([]byte, aeadSizeOverhead+totalFrameSize),
 	}
@@ -240,8 +243,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	}
 
 	// read off the conn
-	sealedFrame := pool.Get(aeadSizeOverhead + totalFrameSize)
-	defer pool.Put(sealedFrame)
+	sealedFrame := sc.recvSealedFrame
 	_, err = io.ReadFull(sc.conn, sealedFrame)
 	if err != nil {
 		return n, err
@@ -249,8 +251,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 
 	// decrypt the frame.
 	// reads and updates the sc.recvNonce
-	frame := pool.Get(totalFrameSize)
-	defer pool.Put(frame)
+	frame := sc.recvFrame
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
 		return n, ErrDecryptFrame{Source: err}

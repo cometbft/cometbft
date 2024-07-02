@@ -199,6 +199,7 @@ func TestFinalizeBlockResponsesSaveLoad2(t *testing.T) {
 			TxResults: tc.added,
 			AppHash:   []byte(strconv.FormatInt(h, 10)),
 		}
+		abci.StripNilTxResults(responses)
 		err := stateStore.SaveFinalizeBlockResponse(h, responses)
 		require.NoError(t, err)
 	}

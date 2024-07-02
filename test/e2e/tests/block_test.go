@@ -77,15 +77,11 @@ func TestBlock_Pruning(t *testing.T) {
 			status, err := client.Status(ctx)
 			require.NoError(t, err)
 			first := status.SyncInfo.EarliestBlockHeight
-			return first > first0
-		}, 1*time.Minute, 3*time.Second, "node %v is not pruning", node.Name)
-		require.Eventually(t, func() bool {
-			status, err := client.Status(ctx)
-			require.NoError(t, err)
-			first := status.SyncInfo.EarliestBlockHeight
 			last := status.SyncInfo.LatestBlockHeight
-			return last-first+1 < int64(node.RetainBlocks)+10 // Margin
-		}, 1*time.Minute, 3*time.Second, "node %v is not pruning enough", node.Name)
+			pruning := first > first0
+			pruningEnough := last-first+1 < int64(node.RetainBlocks)+10 // 10 represents some leeway
+			return pruning && pruningEnough
+		}, 1*time.Minute, 3*time.Second, "node %v is not pruning correctly", node.Name)
 	})
 }
 

@@ -94,8 +94,7 @@ func TestBlock_Range(t *testing.T) {
 	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		t.Helper()
-		// We do not run this test on seed nodes or nodes with data
-		// companion-related pruning enabled.
+		// We do not run this test on seed nodes.
 		if node.Mode == e2e.ModeSeed {
 			return
 		}

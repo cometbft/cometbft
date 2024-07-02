@@ -70,8 +70,8 @@ func TestBlock_Pruning(t *testing.T) {
 		client, err := node.Client()
 		require.NoError(t, err)
 		status, err := client.Status(ctx)
-		first0 := status.SyncInfo.EarliestBlockHeight
 		require.NoError(t, err)
+		first0 := status.SyncInfo.EarliestBlockHeight
 
 		require.Eventually(t, func() bool {
 			status, err := client.Status(ctx)

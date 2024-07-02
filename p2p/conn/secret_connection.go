@@ -287,12 +287,10 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 }
 
 // Implements net.Conn.
-func (sc *SecretConnection) Close() error         { return sc.conn.Close() }
-func (sc *SecretConnection) LocalAddr() net.Addr  { return sc.conn.(net.Conn).LocalAddr() }
-func (sc *SecretConnection) RemoteAddr() net.Addr { return sc.conn.(net.Conn).RemoteAddr() }
-func (sc *SecretConnection) SetDeadline(t time.Time) error {
-	return sc.conn.(net.Conn).SetDeadline(t)
-}
+func (sc *SecretConnection) Close() error                  { return sc.conn.Close() }
+func (sc *SecretConnection) LocalAddr() net.Addr           { return sc.conn.(net.Conn).LocalAddr() }
+func (sc *SecretConnection) RemoteAddr() net.Addr          { return sc.conn.(net.Conn).RemoteAddr() }
+func (sc *SecretConnection) SetDeadline(t time.Time) error { return sc.conn.(net.Conn).SetDeadline(t) }
 
 func (sc *SecretConnection) SetReadDeadline(t time.Time) error {
 	return sc.conn.(net.Conn).SetReadDeadline(t)

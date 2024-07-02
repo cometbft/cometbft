@@ -36,10 +36,10 @@ transactions, regardless of their nature, could be categorized as low priority, 
 potential attacks on the mempool.
 
 The goal of this document is thus to propose a mechanism enabling the mempool to prioritize
-transactions by *classes*, for processing and dissemination, directly impacting block creation and transaction latency. In
-IP networking terminology, this is known as Quality of Service (QoS). By providing certain QoS
-guarantees, developers will be able to more easily estimate when transactions will be disseminated, processed and
-included in a block.
+transactions by *classes*, for processing and dissemination, directly impacting block creation and
+transaction latency. In IP networking terminology, this is known as Quality of Service (QoS). By
+providing certain QoS guarantees, developers will be able to more easily estimate when transactions
+will be disseminated and reaped from the mempool to be included in a block.
 
 In practical terms, we envision an implementation of the transaction class abstraction as *mempool
 lanes*. The application will be allowed to split the mempool transaction space into a hierarchy of
@@ -56,16 +56,26 @@ Before jumping into the design of the proposal, we define more formally the prop
 the current implementation of the mempool. Then we state what properties the new mempool should
 offer to guarantee the desired QoS.
 
-The following definition is common to all properties.
+The following definitions are common to all properties.
 
-:memo: _Definition_: Given any two different transactions `tx1` and `tx2`, we say that `tx1` is
-*processed and disseminated before* `tx2` in a given node, when:
-- `tx1` is reaped from the mempool to form a block proposal before `tx2`,
-- `tx1` is rechecked before `tx2`, and
-- `tx1` is sent to a given peer before `tx2`.
+:memo: _Definition_: We say that a node receives a transaction `tx` _for the first time_ when the
+node receives `tx` and `tx` is not in the [cache][cache].
 
-Note that in the current implementation there is one dissemination routine per peer, so it could
-happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.
+Because of how transactions are evicted from the cache (see [spec][cache]), it is possible by this
+definition that a transaction is removed from the cache and added back at a later time. Hence, a
+transaction could be received for the first time on multiple occasions.
+
+:memo: _Definition_: Given any two different transactions `tx1` and `tx2`, in a given node, we say that:
+1. `tx1` is *validated before* `tx2`, when `tx1` and `tx2` are received for the first time, and `tx1`
+is validated against the application (via `CheckTx`) before `tx2`,
+2. `tx1` is *rechecked before* `tx2`, when `tx` and `tx2` are in the mempool and `tx1` is
+re-validated (rechecked via `CheckTx`) before `tx2`,
+3. `tx1` is *reaped before* `tx2`, when `tx1` is reaped from the mempool to be included in a block
+  proposal before `tx2`,
+4. `tx1` is *disseminated before* `tx2`, when `tx1` is sent to a given peer before `tx2`.
+
+In 4, note that in the current implementation there is one dissemination routine per peer, so it
+could happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.
 
 ### Current mempool
 
@@ -73,13 +83,12 @@ As stated above, the current mempool offers a best-effort FIFO ordering of trans
 this property as follows.
 
 :parking: _Property_ **FIFO ordering of transactions**: We say that the mempool makes a best effort
-in maintaining the FIFO ordering of transactions when transactions are validated, processed, and
-disseminated in the same order in which the mempool has received them.
+in maintaining the FIFO ordering of transactions when transactions are validated, rechecked, reaped,
+and disseminated in the same order in which the mempool has received them.
 
-More formally, given any two different transactions `tx1` and `tx2`, if a node's mempool receives `tx1`
-before receiving `tx2`, then:
-- `tx1` will be validated against the application (via `CheckTx`) before `tx2`, and
-- `tx1` will be processed and disseminated before `tx2` (as defined above).
+More formally, given any two different transactions `tx1` and `tx2`, if a node's mempool receives
+`tx1` before receiving `tx2`, then `tx1` will be validated, rechecked, reaped, and disseminated
+before `tx2` (as defined above).
 
 Note that a node's mempool can receive a transaction either from a `broadcast_tx_*` RPC endpoint or
 from a peer.
@@ -106,19 +115,23 @@ classes.
 :memo: _Definition_: Each class has a *priority* and two classes cannot have the same priority.
 Therefore all classes can be ordered by priority.
 
+When a transaction is received for the first time and validated via `CheckTx`, the application MUST
+return the class that it assigns to the transaction. When transactions are rechecked, applications
+MAY return a class, but the mempool will discard it.
+
 Given these definitions, we want the proposed QoS mechanism to offer the following property:
 
 #### Basic properties
 
 :parking: _Property_ **Priorities between classes**: Transactions belonging to a certain class will
-be processed and disseminated before transactions belonging to another class with lower priority.
+be reaped and disseminated before transactions belonging to another class with lower priority.
 
 Formally, given two transaction classes `c1` and `c2`, with `c1` having more priority than `c2`, if
 the application assigns the classes `c1` and `c2` respectively to transactions `tx1` and `tx2`, then
-`tx1` will be processed and disseminated before `tx2`.
+`tx1` will be reaped and disseminated before `tx2`.
 
 More importantly, as a direct consequence of this property, `tx1` will be disseminated faster and it
-will be included in a block before `tx2`, thus `tx1` will have a lower latency than `tx2`.
+will be included in a block before `tx2`. Thus, `tx1` will have a lower latency than `tx2`.
 Currently, it is not possible to guarantee this kind of property.
 
 :memo: _Definition_: The *latency of a transaction* is the difference between the time at which a
@@ -128,13 +141,13 @@ timestamp of the block in which the transaction finally was included.
 We want also to keep the FIFO ordering within each class (for the time being):
 
 :parking: _Property_ **FIFO ordering per class**: For transactions within the same class, the
-mempool will maintain FIFO order at a node when they are validated, processed,
-and disseminated.
+mempool will maintain a FIFO order within the class when transactions are validated, rechecked,
+reaped, and disseminated.
 
 Given any two different transactions `tx1` and `tx2` belonging to the same class, if the mempool
 receives `tx1` before receiving `tx2`, then:
-- `tx1` will be validated against the application (via `CheckTx`) before `tx2`, and
-- `tx1` will be processed and disseminated before `tx2`.
+- `tx1` will be validated and recheck against the application (via `CheckTx`) before `tx2`, and
+- `tx1` will be reaped and disseminated before `tx2`.
 
 As a consequence, given that classes of transactions have a sequential ordering, and that classes do
 not have elements in common, we can state the following property:
@@ -142,8 +155,8 @@ not have elements in common, we can state the following property:
 :parking: _Property_ **Partial ordering of all transactions**: The set of all the transactions in
 the mempool, regardless of their classes, will have a *partial order*.
 
-This means that some pairs of
-transactions are comparable and, thus, have and order, while others not.
+This means that some pairs of transactions are comparable and, thus, have and order, while others
+not.
 
 #### Network-wide consistency
 
@@ -152,9 +165,6 @@ However, we need to define some network-wide properties in order for a mempool Q
 to be useful and predictable for the whole appchain network.
 These properties are expressed in terms of consistency of the information, configuration and behaviour
 across nodes in the network.
-
-> TODO: Define "for the first time" here: received from RPC, peer, or `Update`
-> (try to define it in as modular a way as possible)
 
 :parking: _Property_ **Consistent transaction classes**: For any transaction `tx`,
 and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
@@ -179,8 +189,6 @@ Additionally, it is important to note that these two properties also constrain t
 classes and transaction classification logic can evolve in an existing implementation.
 If either transaction classes or classification logic are not modified in a coordinated manner in a working system,
 there will be at least a period where these two properties may not hold for all transactions.
-
-> TODO: Need to find somewhere in the text to say: "ReCheckTx" doesn't classify, its mempool information is disregarded"
 
 ## Alternative Approaches
 
@@ -599,12 +607,13 @@ late, possibly having lane definitions that do not match with those of nodes at 
 ### Positive
 
 - Application developers will be able to better predict when transactions will be disseminated and
-  processed to be included in a block. This has direct impact on block creation and transaction
-  latency.
-- The mempool will be able to offer Quality of Service guarantees, which does not exist in the
-  current implementation. 
-- Applications that are unaware of this feature, and therefore not classifying transactions in `CheckTX`
-  will observe the same behavior from the mempool as the current implementation.  
+  reaped from the mempool to be included in a block. This has direct impact on block creation and
+  transaction latency.
+- The mempool will be able to offer Quality of Service (QoS) guarantees, which does not exist in the
+  current implementation. This MVP will serve as a base to further extend QoS in future iterations
+  of lanes.
+- Applications that are unaware of this feature, and therefore not classifying transactions in
+  `CheckTx`, will observe the same behavior from the mempool as the current implementation.  
 
 ### Negative
 
@@ -637,7 +646,9 @@ late, possibly having lane definitions that do not match with those of nodes at 
 - P2P's [selectChannelToGossipOn][selectChannelToGossipOn] function
 - [Weighted Round Robin][wrr]
 - [Cosmovisor][cosmovisor]
+- [Mempool's cache][cache]
 
+[cache]: https://github.com/cometbft/cometbft/blob/main/spec/mempool/cache.md
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
 [reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324
 [gulf-stream]: https://medium.com/solana-labs/gulf-stream-solanas-mempool-less-transaction-forwarding-protocol-d342e72186ad

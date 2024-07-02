@@ -222,12 +222,14 @@ func (c *evilConn) signChallenge() []byte {
 
 	b := &buffer{}
 	c.secretConn = &SecretConnection{
-		conn:       b,
-		recvBuffer: nil,
-		recvNonce:  new([aeadNonceSize]byte),
-		sendNonce:  new([aeadNonceSize]byte),
-		recvAead:   recvAead,
-		sendAead:   sendAead,
+		conn:            b,
+		recvBuffer:      nil,
+		recvNonce:       new([aeadNonceSize]byte),
+		sendNonce:       new([aeadNonceSize]byte),
+		recvAead:        recvAead,
+		sendAead:        sendAead,
+		sendFrame:       make([]byte, totalFrameSize),
+		sendSealedFrame: make([]byte, totalFrameSize+aeadSizeOverhead),
 	}
 	c.buffer = b
 

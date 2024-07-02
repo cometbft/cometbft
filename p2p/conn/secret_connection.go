@@ -77,8 +77,10 @@ type SecretConnection struct {
 	recvBuffer []byte
 	recvNonce  *[aeadNonceSize]byte
 
-	sendMtx   cmtsync.Mutex
-	sendNonce *[aeadNonceSize]byte
+	sendMtx         cmtsync.Mutex
+	sendNonce       *[aeadNonceSize]byte
+	sendFrame       []byte
+	sendSealedFrame []byte
 }
 
 // MakeSecretConnection performs handshake and returns a new authenticated
@@ -140,12 +142,14 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	}
 
 	sc := &SecretConnection{
-		conn:       conn,
-		recvBuffer: nil,
-		recvNonce:  new([aeadNonceSize]byte),
-		sendNonce:  new([aeadNonceSize]byte),
-		recvAead:   recvAead,
-		sendAead:   sendAead,
+		conn:            conn,
+		recvBuffer:      nil,
+		recvNonce:       new([aeadNonceSize]byte),
+		sendNonce:       new([aeadNonceSize]byte),
+		recvAead:        recvAead,
+		sendAead:        sendAead,
+		sendFrame:       make([]byte, totalFrameSize),
+		sendSealedFrame: make([]byte, aeadSizeOverhead+totalFrameSize),
 	}
 
 	// Sign the challenge bytes for authentication.
@@ -188,15 +192,10 @@ func (sc *SecretConnection) RemotePubKey() crypto.PubKey {
 func (sc *SecretConnection) Write(data []byte) (n int, err error) {
 	sc.sendMtx.Lock()
 	defer sc.sendMtx.Unlock()
+	sealedFrame, frame := sc.sendSealedFrame, sc.sendFrame
 
 	for 0 < len(data) {
 		if err := func() error {
-			sealedFrame := pool.Get(aeadSizeOverhead + totalFrameSize)
-			frame := pool.Get(totalFrameSize)
-			defer func() {
-				pool.Put(sealedFrame)
-				pool.Put(frame)
-			}()
 			var chunk []byte
 			if dataMaxSize < len(data) {
 				chunk = data[:dataMaxSize]

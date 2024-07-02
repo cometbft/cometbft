@@ -380,22 +380,6 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 		}
 	}
 
-<<<<<<< HEAD
-		// If this address came from a seed node, try to connect to it without
-		// waiting (#2093)
-		if srcIsSeed {
-			go func(addr *p2p.NetAddress) {
-				err := r.dialPeer(addr)
-				if err != nil {
-					switch err.(type) {
-					case errMaxAttemptsToDial, errTooEarlyToDial, p2p.ErrCurrentlyDialingOrExistingAddress:
-						r.Logger.Debug(err.Error(), "addr", addr)
-					default:
-						r.Logger.Debug(err.Error(), "addr", addr)
-					}
-				}
-			}(netAddr)
-=======
 	// Try to connect to addresses coming from a seed node without waiting (#2093)
 	for _, seedAddr := range r.seedAddrs {
 		if seedAddr.Equals(srcAddr) {
@@ -404,7 +388,6 @@ func (r *Reactor) ReceiveAddrs(addrs []*p2p.NetAddress, src Peer) error {
 			default:
 			}
 			break
->>>>>>> 4241776d5 (fix(p2p/pex): respect MaxNumOutboundPeers limit while dialing peers provided by a seed node (#3360))
 		}
 	}
 

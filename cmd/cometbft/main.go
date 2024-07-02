@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	cmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
+	"github.com/cometbft/cometbft/cmd/cometbft/commands/config"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands/debug"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/cli"
@@ -29,6 +30,7 @@ func main() {
 		cmd.CompactGoLevelDBCmd,
 		cmd.InspectCmd,
 		debug.DebugCmd,
+		config.Command(),
 		cli.NewCompletionCmd(rootCmd, true),
 	)
 

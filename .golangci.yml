@@ -94,10 +94,13 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
+          - github.com/BurntSushi/toml
+          - github.com/Masterminds/semver/v3
+          - github.com/btcsuite/btcd/btcec/v2
           - github.com/cometbft
           - github.com/cosmos
-          - github.com/btcsuite/btcd/btcec/v2
-          - github.com/BurntSushi/toml
+          - github.com/creachadair/atomicfile
+          - github.com/creachadair/tomledit
           - github.com/go-git/go-git/v5
           - github.com/go-kit
           - github.com/go-logfmt/logfmt
@@ -107,9 +110,9 @@ linters-settings:
           - github.com/hashicorp/golang-lru/v2
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
-          - github.com/Masterminds/semver/v3
           - github.com/minio/highwayhash
           - github.com/oasisprotocol/curve25519-voi
+          - github.com/pelletier/go-toml/v2
           - github.com/pkg/errors
           - github.com/prometheus
           - github.com/rcrowley/go-metrics

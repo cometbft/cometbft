@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: ['networks/ci.toml', 'networks_regressions/*.toml']
+        group: ['networks/ci', 'networks_regressions/*']
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -38,5 +38,5 @@ jobs:
 
       - name: Run "{{ matrix.group }}" testnet
         working-directory: test/e2e
-        run: ./run-multiple.sh {{ matrix.group }}
+        run: ./run-multiple.sh ${{ matrix.group }}.toml
         if: "env.GIT_DIFF != ''"

@@ -16,6 +16,42 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
+func TestEventBusPublishEventPendingTx(t *testing.T) {
+	eventBus := NewEventBus()
+	err := eventBus.Start()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if err := eventBus.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	tx := Tx("foo")
+	// PublishEventPendingTx adds 1 composite key, so the query below should work
+	query := fmt.Sprintf("tm.event='PendingTx' AND tx.hash='%X'", tx.Hash())
+	txsSub, err := eventBus.Subscribe(context.Background(), "test", cmtquery.MustCompile(query))
+	require.NoError(t, err)
+
+	done := make(chan struct{})
+	go func() {
+		msg := <-txsSub.Out()
+		edt := msg.Data().(EventDataPendingTx)
+		assert.EqualValues(t, tx, edt.Tx)
+		close(done)
+	}()
+
+	err = eventBus.PublishEventPendingTx(EventDataPendingTx{
+		Tx: tx,
+	})
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+	case <-time.After(1 * time.Second):
+		t.Fatal("did not receive a pending transaction after 1 sec.")
+	}
+}
+
 func TestEventBusPublishEventTx(t *testing.T) {
 	eventBus := NewEventBus()
 	err := eventBus.Start()

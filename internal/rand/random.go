@@ -326,9 +326,3 @@ func cRandBytes(numBytes int) []byte {
 	}
 	return b
 }
-
-func (r *Rand) Shuffle(n int, swap func(i, j int)) {
-	r.Lock()
-	defer r.Unlock()
-	mrand.Shuffle(n, swap)
-}

@@ -453,113 +453,89 @@ func (r *Reactor) ensurePeers() {
 	// not perfect, but somewhate ensures that we prioritize connecting to more-vetted
 	// NOTE: range here is [10, 90]. Too high ?
 	newBias := cmtmath.MinInt(out, 8)*10 + 10
-
 	toDial := make(map[p2p.ID]*p2p.NetAddress)
-	reserve := make(map[p2p.ID]*p2p.NetAddress)
-	// Try maxAttempts times to pick numToDial addresses to dial
-	maxToDialAttempts := numToDial * 3
 
 	// Calculate reserve size as 50% of numToDial with a minimum of 10
 	reserveSize := cmtmath.MaxInt(numToDial/2, 10)
-	maxReserveAttempts := reserveSize * 3
 
-	filter := func(ka *knownAddress) bool {
-		attempts, lastDialedTime := r.dialAttemptsInfo(ka.Addr)
-		if r.CheckDialStatus(ka.Addr, attempts, lastDialedTime) != nil {
-			return false
-		}
-		if r.Switch.IsDialingOrExistingAddress(ka.Addr) {
-			return false
-		}
-		if _, selected := toDial[ka.Addr.ID]; selected {
-			return false
-		}
-		if _, selected := reserve[ka.Addr.ID]; selected {
-			return false
-		}
-		return true
-	}
+	// Try maxAttempts times to pick numToDial addresses to dial
+	maxToDialAttempts := numToDial * 3
 
-	for i := 0; i < maxToDialAttempts && len(toDial) < numToDial; i++ {
-		prospectivePeer := r.book.PickAddress(newBias, filter)
-		if prospectivePeer == nil {
+	for i := 0; i < maxToDialAttempts && len(toDial) < numToDial+reserveSize; i++ {
+		prospectivePeers := r.book.GetSelectionWithBias(newBias)
+		if prospectivePeers == nil {
 			continue
 		}
-		toDial[prospectivePeer.ID] = prospectivePeer
-	}
-
-	for i := 0; i < maxReserveAttempts && len(reserve) < reserveSize; i++ {
-		prospectivePeer := r.book.PickAddress(newBias, filter)
-		if prospectivePeer == nil {
-			continue
+		for _, prospectivePeer := range prospectivePeers {
+			if r.filterAddress(prospectivePeer, toDial) {
+				toDial[prospectivePeer.ID] = prospectivePeer
+				if len(toDial) >= numToDial+reserveSize {
+					break
+				}
+			}
 		}
-		reserve[prospectivePeer.ID] = prospectivePeer
 	}
 
 	toDialCount := len(toDial)
-	reserveCount := len(reserve)
+	successCount := 0
+	errorCount := 0
 
-	var (
-		successCh = make(chan int)
-		errorCh   = make(chan int)
-		wg        sync.WaitGroup
-	)
+	for successCount < numToDial && len(toDial) > 0 {
+		var (
+			successCh = make(chan int)
+			errorCh   = make(chan int)
+			wg        sync.WaitGroup
+		)
 
-	// Dial picked addresses
-	// Dial picked addresses
-	for _, addr := range toDial {
-		wg.Add(1)
-		go func(addr *p2p.NetAddress) {
-			defer wg.Done()
-			err := r.dialPeer(addr)
-			if err != nil {
-				errorCh <- 1
-				r.Logger.Debug(err.Error(), "addr", addr)
-				// If reserve addresses are available, try to dial them due to this toDial address erroring out
-				for id, reserveAddr := range reserve {
-					if reserveAddr != nil {
-						delete(reserve, id)
-						err := r.dialPeer(reserveAddr)
-						if err != nil {
-							errorCh <- 1
-							r.Logger.Debug(err.Error(), "addr", addr)
-						} else {
-							successCh <- 1
-						}
-						if err == nil {
-							break
-						}
-					}
-				}
-			} else {
-				successCh <- 1
+		// Dial a subset of toDial, specifically aiming to respect the max connections set by the user.
+		subsetSize := cmtmath.MinInt(numToDial-successCount, len(toDial))
+		subset := make([]*p2p.NetAddress, 0, subsetSize)
+		for _, addr := range toDial {
+			if len(subset) >= subsetSize {
+				break
 			}
-		}(addr)
-	}
+			subset = append(subset, addr)
+		}
 
-	go func() {
-		wg.Wait()
-		close(successCh)
-		close(errorCh)
-	}()
+		for _, addr := range subset {
+			wg.Add(1)
+			go func(addr *p2p.NetAddress) {
+				defer wg.Done()
+				err := r.dialPeer(addr)
+				if err != nil {
+					errorCh <- 1
+					r.Logger.Debug(err.Error(), "addr", addr)
+				} else {
+					successCh <- 1
+				}
+			}(addr)
+		}
 
-	go func() {
-		successCount := 0
-		errorCount := 0
+		go func() {
+			wg.Wait()
+			close(successCh)
+			close(errorCh)
+		}()
+
 		for count := range successCh {
 			successCount += count
 		}
 		for count := range errorCh {
 			errorCount += count
 		}
-		r.Logger.Info(
-			"Dialing summary",
-			"toDialCount", toDialCount,
-			"reserveCount", reserveCount,
-			"successCount", successCount,
-			"errorCount", errorCount,
-		)
-	}()
+
+		// Remove dialed addresses from toDial
+		for _, addr := range subset {
+			delete(toDial, addr.ID)
+		}
+	}
+
+	r.Logger.Info(
+		"Dialing summary",
+		"toDialCount", toDialCount,
+		"successCount", successCount,
+		"errorCount", errorCount,
+	)
 
 	if r.book.NeedMoreAddrs() {
 		// Check if banned nodes can be reinstated
@@ -827,4 +803,18 @@ func (r *Reactor) CheckDialStatus(addr *p2p.NetAddress, attempts int, lastDialed
 		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}
 	}
 	return nil
+}
+
+func (r *Reactor) filterAddress(addr *p2p.NetAddress, toDial map[p2p.ID]*p2p.NetAddress) bool {
+	attempts, lastDialedTime := r.dialAttemptsInfo(addr)
+	if r.CheckDialStatus(addr, attempts, lastDialedTime) != nil {
+		return false
+	}
+	if r.Switch.IsDialingOrExistingAddress(addr) {
+		return false
+	}
+	if _, selected := toDial[addr.ID]; selected {
+		return false
+	}
+	return true
 }

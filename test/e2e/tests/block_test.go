@@ -62,9 +62,9 @@ func TestBlock_Pruning(t *testing.T) {
 	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		t.Helper()
-		// We do not run this test on seed nodes or nodes with data
+		// We do not run this test on stateless nodes or nodes with data
 		// companion-related pruning enabled or nodes not pruning.
-		if node.Mode == e2e.ModeSeed || node.EnableCompanionPruning || node.RetainBlocks == 0 {
+		if node.Stateless() || node.EnableCompanionPruning || node.RetainBlocks == 0 {
 			return
 		}
 		client, err := node.Client()
@@ -90,10 +90,6 @@ func TestBlock_Range(t *testing.T) {
 	t.Helper()
 	testNode(t, func(t *testing.T, node e2e.Node) {
 		t.Helper()
-		// We do not run this test on seed nodes.
-		if node.Mode == e2e.ModeSeed {
-			return
-		}
 
 		client, err := node.Client()
 		require.NoError(t, err)

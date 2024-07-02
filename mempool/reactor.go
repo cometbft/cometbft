@@ -154,9 +154,9 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			tx := types.Tx(txBytes)
 			_, err := memR.mempool.CheckTx(tx, e.Src.ID())
 			if errors.Is(err, ErrTxInCache) {
-				memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
+				memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%v", tx.Hash()))
 			} else if err != nil {
-				memR.Logger.Info("Could not check tx", "tx", tx.Hash(), "err", err)
+				memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%v", tx.Hash()), "err", err)
 			}
 		}
 	default:

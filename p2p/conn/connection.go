@@ -522,6 +522,11 @@ func (c *MConnection) sendSomePacketMsgs(w protoio.Writer) bool {
 func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool {
 	// Send a batch of PacketMsgs.
 	totalBytesWritten := 0
+	defer func() {
+		if totalBytesWritten > 0 {
+			c.sendMonitor.Update(totalBytesWritten)
+		}
+	}()
 	for i := 0; i < batchSize; i++ {
 		channel := selectChannelToGossipOn(c.channels)
 		// nothing to send across any channel.

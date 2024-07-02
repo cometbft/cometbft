@@ -8,10 +8,15 @@ on:
   push:
     branches:
       - main
-      - release/**
+      - v[0-9].[0-9]+.x
 
 jobs:
   e2e-test:
+    # Run two parallel jobs: for `ci.toml`, and for the regression manifests
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ['networks/ci.toml', 'networks_regressions/*.toml']
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -28,16 +33,10 @@ jobs:
 
       - name: Build
         working-directory: test/e2e
-        # Run two make jobs in parallel, since we can't run steps in parallel.
         run: make -j2 docker runner
         if: "env.GIT_DIFF != ''"
 
-      - name: Run CI testnet
+      - name: Run "{{ matrix.group }}" testnet
         working-directory: test/e2e
-        run: ./run-multiple.sh networks/ci.toml
-        if: "env.GIT_DIFF != ''"
-
-      - name: Run Regression testnets
-        working-directory: test/e2e
-        run: ./run-multiple.sh networks_regressions/*.toml
+        run: ./run-multiple.sh {{ matrix.group }}
         if: "env.GIT_DIFF != ''"

@@ -539,7 +539,6 @@ func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool 
 		}
 		totalBytesWritten += bytesWritten
 	}
-	c.sendMonitor.Update(totalBytesWritten)
 	return false
 }
 
@@ -579,7 +578,7 @@ func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Chan
 		c.stopForError(err)
 		return n, true
 	}
-	// TODO: Change this to only do one update for the entire bawtch.
+	// TODO: Change this to only add flush signals at the start and end of the batch.
 	c.flushTimer.Set()
 	return n, false
 }

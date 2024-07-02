@@ -9,6 +9,7 @@
 - 2024-05-01: Add Context and Properties (@hvanz)
 - 2024-05-21: Add more Properties + priority mempool (@sergio-mena)
 - 2024-06-13: Technical design (@hvanz)
+- 2024-07-02: Updates based on reviewer's comments (@hvanz, @sergio-mena)
 
 ## Status
 

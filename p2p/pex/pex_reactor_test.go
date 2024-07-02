@@ -270,17 +270,6 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	require.Nil(t, err)
 	defer os.RemoveAll(dir)
 
-<<<<<<< HEAD
-	// 1. create peer
-	peerSwitch := testCreateDefaultPeer(dir, 1)
-	require.Nil(t, peerSwitch.Start())
-	defer peerSwitch.Stop() //nolint:errcheck // ignore for tests
-
-	// 2. Create seed which knows about the peer
-	peerAddr := peerSwitch.NetAddress()
-	seed := testCreateSeed(dir, 2, []*p2p.NetAddress{peerAddr}, []*p2p.NetAddress{peerAddr})
-	require.Nil(t, seed.Start())
-=======
 	// Default is 10, we need one connection for the seed node.
 	cfg.MaxNumOutboundPeers = 2
 
@@ -301,22 +290,9 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	// 2. Create seed node which knows about the previous peers
 	seed := testCreateSeed(dir, id, knownAddrs, knownAddrs)
 	require.NoError(t, seed.Start())
->>>>>>> 4241776d5 (fix(p2p/pex): respect MaxNumOutboundPeers limit while dialing peers provided by a seed node (#3360))
 	defer seed.Stop() //nolint:errcheck // ignore for tests
 	t.Log("Created seed", id, seed.NetAddress())
 
-<<<<<<< HEAD
-	// 3. create another peer with only seed configured.
-	secondPeer := testCreatePeerWithSeed(dir, 3, seed)
-	require.Nil(t, secondPeer.Start())
-	defer secondPeer.Stop() //nolint:errcheck // ignore for tests
-
-	// 4. check that the second peer connects to seed immediately
-	assertPeersWithTimeout(t, []*p2p.Switch{secondPeer}, 10*time.Millisecond, 3*time.Second, 1)
-
-	// 5. check that the second peer connects to the first peer immediately
-	assertPeersWithTimeout(t, []*p2p.Switch{secondPeer}, 10*time.Millisecond, 1*time.Second, 2)
-=======
 	// 3. Create a node with only seed configured.
 	id++
 	node := testCreatePeerWithSeed(dir, id, seed)
@@ -325,10 +301,10 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	t.Log("Created node", id, node.NetAddress())
 
 	// 4. Check that the node connects to seed immediately
-	assertPeersWithTimeout(t, []*p2p.Switch{node}, 3*time.Second, 1)
+	assertPeersWithTimeout(t, []*p2p.Switch{node}, 10*time.Millisecond, 3*time.Second, 1)
 
 	// 5. Check that the node connects to the peers reported by the seed node
-	assertPeersWithTimeout(t, []*p2p.Switch{node}, 1*time.Second, cfg.MaxNumOutboundPeers)
+	assertPeersWithTimeout(t, []*p2p.Switch{node}, 10*time.Millisecond, 1*time.Second, cfg.MaxNumOutboundPeers)
 
 	// 6. Assert that the configured maximum number of inbound/outbound peers
 	// are respected, see https://github.com/cometbft/cometbft/issues/486
@@ -336,7 +312,6 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 	assert.LessOrEqual(t, inbound, cfg.MaxNumInboundPeers)
 	assert.LessOrEqual(t, outbound, cfg.MaxNumOutboundPeers)
 	assert.Zero(t, dialing)
->>>>>>> 4241776d5 (fix(p2p/pex): respect MaxNumOutboundPeers limit while dialing peers provided by a seed node (#3360))
 }
 
 func TestPEXReactorSeedMode(t *testing.T) {

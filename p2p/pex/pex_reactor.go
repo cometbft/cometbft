@@ -788,6 +788,10 @@ func markAddrInBookBasedOnErr(addr *p2p.NetAddress, book AddrBook, err error) {
 // If we are above the maximum number of dial attempts, the peer is marked as bad.
 // If either of the above conditions are met, an error is returned.
 func (r *Reactor) CheckDialStatus(addr *p2p.NetAddress, attempts int, lastDialedTime time.Time) error {
+	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
+		r.book.MarkBad(addr, defaultBanTime)
+		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}
+	}
 	if attempts > 0 {
 		jitter := time.Duration(cmtrand.Float64() * float64(time.Second)) // 1s == (1e9 ns)
 		backoffDuration := jitter + ((1 << uint(attempts)) * time.Second)
@@ -797,10 +801,6 @@ func (r *Reactor) CheckDialStatus(addr *p2p.NetAddress, attempts int, lastDialed
 			r.Logger.Debug("Skipping peer due to backoff", "addr", addr, "backoffDuration", backoffDuration)
 			return ErrTooEarlyToDial{backoffDuration, lastDialedTime}
 		}
-	}
-	if !r.Switch.IsPeerPersistent(addr) && attempts > maxAttemptsToDial {
-		r.book.MarkBad(addr, defaultBanTime)
-		return ErrMaxAttemptsToDial{Max: maxAttemptsToDial}
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package conn
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"io"
@@ -222,6 +223,7 @@ func (c *evilConn) signChallenge() []byte {
 	b := &buffer{}
 	c.secretConn = &SecretConnection{
 		conn:            b,
+		connWriter:      bufio.NewWriterSize(b, defaultWriteBufferSize),
 		recvBuffer:      nil,
 		recvNonce:       new([aeadNonceSize]byte),
 		sendNonce:       new([aeadNonceSize]byte),

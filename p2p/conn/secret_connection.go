@@ -148,13 +148,13 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	}
 
 	sc := &SecretConnection{
-		conn:       conn,
-		connWriter: bufio.NewWriterSize(conn, defaultWriteBufferSize),
-		recvBuffer: nil,
-		recvNonce:  new([aeadNonceSize]byte),
-		sendNonce:  new([aeadNonceSize]byte),
-		recvAead:   recvAead,
-		sendAead:   sendAead,
+		conn:            conn,
+		connWriter:      bufio.NewWriterSize(conn, defaultWriteBufferSize),
+		recvBuffer:      nil,
+		recvNonce:       new([aeadNonceSize]byte),
+		sendNonce:       new([aeadNonceSize]byte),
+		recvAead:        recvAead,
+		sendAead:        sendAead,
 		recvFrame:       make([]byte, totalFrameSize),
 		recvSealedFrame: make([]byte, aeadSizeOverhead+totalFrameSize),
 		sendFrame:       make([]byte, totalFrameSize),

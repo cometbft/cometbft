@@ -1,4 +1,8 @@
-# This test intends to verify the reliability of the data retention settings, pruning behavior, and the overall stability and performance of the network setup under these conditions. Retention of blocks for full nodes is set at 14, this means that full nodes will retain the last 14 blocks of data. The 'enable_companion_pruning' flags for the first two full nodes are set to 'true', enabling them to prune or delete older data that is not needed.
+# This test intends to verify the reliability of the data retention settings, and pruning behavior.
+# Retention of blocks for full nodes is set at 14 (the minimum given the evidence age settings),
+# this means that full nodes will retain at least the last 14 blocks of data.
+# The 'enable_companion_pruning' flags for the first two full nodes are set to 'true'; since there is
+# no actual data companion running in this setup, it effectively prevents the actual pruning from kicking in.
 
 prometheus = true
 

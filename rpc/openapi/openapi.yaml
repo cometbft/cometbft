@@ -966,7 +966,7 @@ paths:
           required: true
           schema:
             type: string
-            example: '"block.height > 1000 AND valset.changed > 0"'
+            example: '"block.height > 1000"'
         - in: query
           name: page
           description: "Page number (1-based)"

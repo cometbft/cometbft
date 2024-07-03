@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
-	abci "github.com/cometbft/cometbft/abci/types"
 	abciv1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	abciv1beta1 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta1"
 	abciv1beta2 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta2"
@@ -38,12 +37,29 @@ var (
 	_ LegacyStore = (*MultiStore)(nil)
 )
 
+// MultiStore represents a state store that implements the Store interface
+// and contains additional store and database options.
+//
+// Fields:
+// - Store (sm.Store): The store instance used by the MultiStore.
+// - db (dbm.DB): The database instance used by the MultiStore.
+// - StoreOptions (sm.StoreOptions): The options for the MultiStore.
 type MultiStore struct {
 	sm.Store
 	db dbm.DB
 	sm.StoreOptions
 }
 
+// NewMultiStore initializes a new instance of MultiStore with the provided parameters.
+// It sets the store, db, and StoreOptions fields of the MultiStore struct.
+//
+// Parameters:
+// - db (dbm.DB): The database instance to be used by the MultiStore.
+// - options (sm.StoreOptions): The store options to be used by the MultiStore.
+// - store (sm.Store): The store instance to be used by the MultiStore.
+//
+// Returns:
+// - *MultiStore: A pointer to the newly created MultiStore instance.
 func NewMultiStore(db dbm.DB, options sm.StoreOptions, store sm.Store) *MultiStore {
 	return &MultiStore{
 		Store:        store,
@@ -52,10 +68,27 @@ func NewMultiStore(db dbm.DB, options sm.StoreOptions, store sm.Store) *MultiSto
 	}
 }
 
+// LegacyStore represents a legacy data store.
+// Example usage:
+//
+//	_ LegacyStore = (*MultiStore)(nil)
 type LegacyStore interface {
 	SaveABCIResponses(height int64, abciResponses *statev1beta2.ABCIResponses) error
 }
 
+// SaveABCIResponses saves the ABCIResponses for a given height in the MultiStore.
+// It strips out any nil values from the DeliverTxs field, and saves the ABCIResponses to
+// disk if the DiscardABCIResponses flag is set to false. It also saves the last ABCI response
+// for crash recovery, overwriting the previously saved response.
+//
+// Parameters:
+// - height (int64): The height at which the ABCIResponses are being saved.
+// - abciResponses (ABCIResponses): The ABCIResponses to be saved.
+//
+// Returns:
+// - error: An error if there was a problem saving the ABCIResponses.
+//
+// NOTE: The MultiStore must be properly configured with the StoreOptions and db before calling this method.
 func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *statev1beta2.ABCIResponses) error {
 	var dtxs []*abciv1beta2.ResponseDeliverTx
 	// strip nil values,
@@ -92,6 +125,10 @@ func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *statev1be
 	return multi.db.SetSync(lastABCIResponseKey, bz)
 }
 
+// TestSaveLegacyAndLoadFinalizeBlock tests saving and loading of ABCIResponses
+// using the multiStore. It verifies that the loaded ABCIResponses match the
+// original ones and that missing fields are correctly handled.
+// This test is important for the LoadFinalizeBlockResponse method in the state store.
 func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 	tearDown, stateDB, _, store := setupTestCaseWithStore(t)
 	defer tearDown(t)
@@ -103,39 +140,85 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 	multiStore := NewMultiStore(stateDB, options, store)
 
 	// try with a complete ABCI Response
-	abciResponses := newV1Beta2ABCIResponses()
-	require.Equal(t, 1, len(abciResponses.DeliverTxs))
-	require.Equal(t, 1, len(abciResponses.BeginBlock.Events))
-	require.Equal(t, 1, len(abciResponses.EndBlock.Events))
-	err := multiStore.SaveABCIResponses(height, &abciResponses)
+	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
+	err := multiStore.SaveABCIResponses(height, &v1beta2ABCIResponses)
 	require.NoError(t, err)
-	loadedABCIResponses, err := multiStore.LoadFinalizeBlockResponse(height)
+	finalizeBlockResponse, err := multiStore.LoadFinalizeBlockResponse(height)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(loadedABCIResponses.TxResults))
-	require.Equal(t, abciResponses.DeliverTxs[0].String(), loadedABCIResponses.TxResults[0].String())
-	require.Equal(t, 2, len(loadedABCIResponses.Events))
-	require.Equal(t, len(abciResponses.BeginBlock.Events)+len(abciResponses.EndBlock.Events), len(loadedABCIResponses.Events))
+
+	// Test for not nil
+	require.NotNil(t, finalizeBlockResponse.TxResults)
+	require.NotNil(t, finalizeBlockResponse.Events)
+	require.NotNil(t, finalizeBlockResponse.ValidatorUpdates)
+	require.NotNil(t, finalizeBlockResponse.ConsensusParamUpdates)
+	require.Nil(t, finalizeBlockResponse.AppHash)
+
+	// Test for equality
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs), len(finalizeBlockResponse.TxResults))
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Code, finalizeBlockResponse.TxResults[0].Code)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Data, finalizeBlockResponse.TxResults[0].Data)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Log, finalizeBlockResponse.TxResults[0].Log)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].GasWanted, finalizeBlockResponse.TxResults[0].GasWanted)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].GasUsed, finalizeBlockResponse.TxResults[0].GasUsed)
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs[0].Events), len(finalizeBlockResponse.TxResults[0].Events))
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Events[0].Type, finalizeBlockResponse.TxResults[0].Events[0].Type)
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes), len(finalizeBlockResponse.TxResults[0].Events[0].Attributes))
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Key, finalizeBlockResponse.TxResults[0].Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Value, finalizeBlockResponse.TxResults[0].Events[0].Attributes[0].Value)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Codespace, finalizeBlockResponse.TxResults[0].Codespace)
+
+	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events)+len(v1beta2ABCIResponses.EndBlock.Events), len(finalizeBlockResponse.Events))
+
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Type, finalizeBlockResponse.Events[0].Type)
+	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events[0].Attributes)+1, len(finalizeBlockResponse.Events[0].Attributes)) // +1 for inject 'mode' attribute
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Attributes[0].Key, finalizeBlockResponse.Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Attributes[0].Value, finalizeBlockResponse.Events[0].Attributes[0].Value)
+
+	require.Equal(t, v1beta2ABCIResponses.EndBlock.ConsensusParamUpdates.Block.MaxBytes, finalizeBlockResponse.ConsensusParamUpdates.Block.MaxBytes)
+	require.Equal(t, v1beta2ABCIResponses.EndBlock.ConsensusParamUpdates.Block.MaxGas, finalizeBlockResponse.ConsensusParamUpdates.Block.MaxGas)
+	require.Equal(t, v1beta2ABCIResponses.EndBlock.ConsensusParamUpdates.Evidence.MaxAgeNumBlocks, finalizeBlockResponse.ConsensusParamUpdates.Evidence.MaxAgeNumBlocks)
+	require.Equal(t, v1beta2ABCIResponses.EndBlock.ConsensusParamUpdates.Evidence.MaxAgeDuration, finalizeBlockResponse.ConsensusParamUpdates.Evidence.MaxAgeDuration)
+	require.Equal(t, v1beta2ABCIResponses.EndBlock.ConsensusParamUpdates.Evidence.MaxBytes, finalizeBlockResponse.ConsensusParamUpdates.Evidence.MaxBytes)
+	require.Equal(t, v1beta2ABCIResponses.EndBlock.ConsensusParamUpdates.Validator.PubKeyTypes, finalizeBlockResponse.ConsensusParamUpdates.Validator.PubKeyTypes)
+	require.Equal(t, v1beta2ABCIResponses.EndBlock.ConsensusParamUpdates.Version.App, finalizeBlockResponse.ConsensusParamUpdates.Version.App)
+
+	require.Nil(t, finalizeBlockResponse.ConsensusParamUpdates.Abci)
+	require.Nil(t, finalizeBlockResponse.ConsensusParamUpdates.Synchrony)
+	require.Nil(t, finalizeBlockResponse.ConsensusParamUpdates.Feature)
+	require.Nil(t, finalizeBlockResponse.AppHash)
+
+	require.Equal(t, finalizeBlockResponse.NextBlockDelay, time.Duration(0))
+
+	require.Equal(t, len(v1beta2ABCIResponses.EndBlock.ValidatorUpdates), len(finalizeBlockResponse.ValidatorUpdates))
+	require.Equal(t, v1beta2ABCIResponses.EndBlock.ValidatorUpdates[0].Power, finalizeBlockResponse.ValidatorUpdates[0].Power)
+
+	// skip until an equivalency test is possible
+	// require.NotNil(t, finalizeBlockResponse.ValidatorUpdates[0].PubKeyBytes)
+	// require.NotEmpty(t, finalizeBlockResponse.ValidatorUpdates[0].PubKeyType)
+	// require.Equal(t, v1beta2ABCIResponses.ValidatorUpdates[0].PubKey.GetEd25519(), finalizeBlockResponse.ValidatorUpdates[0].PubKeyBytes)
 
 	// try with an ABCI Response missing fields
 	height = int64(2)
-	abciResponses = newV1Beta2ABCIResponsesWithNullFields()
-	require.Equal(t, 1, len(abciResponses.DeliverTxs))
-	require.Equal(t, 1, len(abciResponses.BeginBlock.Events))
-	require.Nil(t, abciResponses.EndBlock)
-	err = multiStore.SaveABCIResponses(height, &abciResponses)
+	v1beta2ABCIResponses = newV1Beta2ABCIResponsesWithNullFields()
+	require.Equal(t, 1, len(v1beta2ABCIResponses.DeliverTxs))
+	require.Equal(t, 1, len(v1beta2ABCIResponses.BeginBlock.Events))
+	require.Nil(t, v1beta2ABCIResponses.EndBlock)
+	err = multiStore.SaveABCIResponses(height, &v1beta2ABCIResponses)
 	require.NoError(t, err)
-	loadedABCIResponses, err = multiStore.LoadFinalizeBlockResponse(height)
+	finalizeBlockResponse, err = multiStore.LoadFinalizeBlockResponse(height)
 	require.NoError(t, err)
-	require.Equal(t, 1, len(loadedABCIResponses.TxResults))
-	require.Equal(t, abciResponses.DeliverTxs[0].String(), loadedABCIResponses.TxResults[0].String())
-	require.Equal(t, 1, len(loadedABCIResponses.Events))
-	require.Equal(t, len(abciResponses.BeginBlock.Events), len(loadedABCIResponses.Events))
+
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs), len(finalizeBlockResponse.TxResults))
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].String(), finalizeBlockResponse.TxResults[0].String())
+	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events), len(finalizeBlockResponse.Events))
 }
 
-// This test unmarshals a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses
+// This test un-marshals a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should not fail because they are compatible.
-func TestStateProtoV1Beta2ToV1(t *testing.T) {
+//
+//nolint:dupl
+func TestStateV1Beta2ABCIResponsesAsStateV1LegacyABCIResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 
 	v1b2Resp, err := v1beta2ABCIResponses.Marshal()
@@ -143,41 +226,71 @@ func TestStateProtoV1Beta2ToV1(t *testing.T) {
 	require.NotNil(t, v1b2Resp)
 
 	// un-marshall a v1beta2 ABCI Response as a LegacyABCIResponse
-	legacyABCIResponse := new(statev1.LegacyABCIResponses)
-	err = legacyABCIResponse.Unmarshal(v1b2Resp)
+	legacyABCIResponses := new(statev1.LegacyABCIResponses)
+	err = legacyABCIResponses.Unmarshal(v1b2Resp)
 	require.NoError(t, err)
-	require.NotNil(t, legacyABCIResponse.DeliverTxs)
-	require.NotNil(t, legacyABCIResponse.BeginBlock)
-	require.NotNil(t, legacyABCIResponse.EndBlock)
-	require.Equal(t, 1, len(legacyABCIResponse.DeliverTxs))
-	require.Equal(t, 1, len(legacyABCIResponse.BeginBlock.Events))
-	require.Equal(t, 1, len(legacyABCIResponse.EndBlock.Events))
-	require.Equal(t, int64(100000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Block.MaxBytes)
-	require.Equal(t, int64(10000), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Evidence.MaxBytes)
-	require.Equal(t, []string{"ed25519"}, legacyABCIResponse.EndBlock.ConsensusParamUpdates.Validator.PubKeyTypes)
-	require.Equal(t, uint64(10), legacyABCIResponse.EndBlock.ConsensusParamUpdates.Version.App)
+
+	// ensure not nil
+	require.NotNil(t, legacyABCIResponses.DeliverTxs)
+	require.NotNil(t, legacyABCIResponses.EndBlock)
+	require.NotNil(t, legacyABCIResponses.BeginBlock)
+
+	// ensure for equality
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs), len(legacyABCIResponses.DeliverTxs))
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Code, legacyABCIResponses.DeliverTxs[0].Code)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Data, legacyABCIResponses.DeliverTxs[0].Data)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Log, legacyABCIResponses.DeliverTxs[0].Log)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].GasWanted, legacyABCIResponses.DeliverTxs[0].GasWanted)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].GasUsed, legacyABCIResponses.DeliverTxs[0].GasUsed)
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs[0].Events), len(legacyABCIResponses.DeliverTxs[0].Events))
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes), len(legacyABCIResponses.DeliverTxs[0].Events[0].Attributes))
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Key, legacyABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Value, legacyABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Value)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Codespace, legacyABCIResponses.DeliverTxs[0].Codespace)
+
+	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events), len(legacyABCIResponses.BeginBlock.Events))
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Type, legacyABCIResponses.BeginBlock.Events[0].Type)
+	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events[0].Attributes), len(legacyABCIResponses.BeginBlock.Events[0].Attributes))
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Attributes[0].Key, legacyABCIResponses.BeginBlock.Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Attributes[0].Value, legacyABCIResponses.BeginBlock.Events[0].Attributes[0].Value)
 }
 
-// This test unmarshal a v1beta2.ABCIResponses as a v1.FinalizeBlockResponse
+// This test unmarshal a v1beta2.ABCIResponses as a v1beta3.ResponseFinalizeBlock
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should fail because they are not compatible.
-func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
+func TestStateV1Beta2ABCIResponsesAsV1Beta3ResponseFinalizeBlock(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 	data, err := v1beta2ABCIResponses.Marshal()
 	require.NoError(t, err)
 	require.NotNil(t, data)
 
 	// This cannot work since they have different schemas, a wrong wireType error is generated
-	finalizeBlockResponse := new(abci.FinalizeBlockResponse)
-	err = finalizeBlockResponse.Unmarshal(data)
+	responseFinalizeBlock := new(abciv1beta3.ResponseFinalizeBlock)
+	err = responseFinalizeBlock.Unmarshal(data)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "unexpected EOF")
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a v1.FinalizeBlockResponse
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
+// The conversion should fail because they are not compatible.
+func TestStateV1Beta2ABCIResponsesAsV1FinalizeBlockResponse(t *testing.T) {
+	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
+	data, err := v1beta2ABCIResponses.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, data)
+
+	// This cannot work since they have different schemas, a wrong wireType error is generated
+	finalizeBlockResponse := new(abciv1.FinalizeBlockResponse)
+	err = finalizeBlockResponse.Unmarshal(data)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "unexpected EOF")
+}
+
+// This test unmarshal a v1beta2.ABCIResponses as a v1beta3.ResponseFinalizeBlock
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion doesn't fail because no error is return, but they are NOT compatible.
-func TestStateV1Beta2ABCIResponsesWithNullAsStateV1FinalizeBlockResponse(t *testing.T) {
+func TestStateV1Beta2ABCIResponsesWithNullAsV1Beta3ResponseFinalizeBlock(t *testing.T) {
 	v1beta2ABCIResponsesWithNull := newV1Beta2ABCIResponsesWithNullFields()
 	data, err := v1beta2ABCIResponsesWithNull.Marshal()
 	require.NoError(t, err)
@@ -188,7 +301,7 @@ func TestStateV1Beta2ABCIResponsesWithNullAsStateV1FinalizeBlockResponse(t *test
 	// on top of a FinalizeBlockResponse giving the false impression they are the same
 	// but because it doesn't error out, the fields in finalizeBlockResponse will have
 	// their zero-value (e.g. nil, 0, "")
-	finalizeBlockResponse := new(abci.FinalizeBlockResponse)
+	finalizeBlockResponse := new(abciv1beta3.ResponseFinalizeBlock)
 	err = finalizeBlockResponse.Unmarshal(data)
 	require.NoError(t, err)
 	require.Nil(t, finalizeBlockResponse.AppHash)
@@ -198,6 +311,8 @@ func TestStateV1Beta2ABCIResponsesWithNullAsStateV1FinalizeBlockResponse(t *test
 // This test unmarshal a v1beta2.ABCIResponses as a statev1beta3.LegacyABCIResponses
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should work because they are compatible.
+//
+//nolint:dupl
 func TestStateV1Beta2ABCIResponsesAsStateV1Beta3LegacyABCIResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 
@@ -209,12 +324,33 @@ func TestStateV1Beta2ABCIResponsesAsStateV1Beta3LegacyABCIResponse(t *testing.T)
 	legacyABCIResponses := new(statev1beta3.LegacyABCIResponses)
 	err = legacyABCIResponses.Unmarshal(data)
 	require.NoError(t, err)
+
+	// ensure not nil
 	require.NotNil(t, legacyABCIResponses.DeliverTxs)
 	require.NotNil(t, legacyABCIResponses.EndBlock)
 	require.NotNil(t, legacyABCIResponses.BeginBlock)
+
+	// ensure for equality
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs), len(legacyABCIResponses.DeliverTxs))
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Code, legacyABCIResponses.DeliverTxs[0].Code)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Data, legacyABCIResponses.DeliverTxs[0].Data)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Log, legacyABCIResponses.DeliverTxs[0].Log)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].GasWanted, legacyABCIResponses.DeliverTxs[0].GasWanted)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].GasUsed, legacyABCIResponses.DeliverTxs[0].GasUsed)
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs[0].Events), len(legacyABCIResponses.DeliverTxs[0].Events))
+	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes), len(legacyABCIResponses.DeliverTxs[0].Events[0].Attributes))
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Key, legacyABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Value, legacyABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Value)
+	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Codespace, legacyABCIResponses.DeliverTxs[0].Codespace)
+
+	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events), len(legacyABCIResponses.BeginBlock.Events))
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Type, legacyABCIResponses.BeginBlock.Events[0].Type)
+	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events[0].Attributes), len(legacyABCIResponses.BeginBlock.Events[0].Attributes))
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Attributes[0].Key, legacyABCIResponses.BeginBlock.Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Attributes[0].Value, legacyABCIResponses.BeginBlock.Events[0].Attributes[0].Value)
 }
 
-// This test unmarshal a v1beta2.ABCIResponses as a statev1beta3.LegacyABCIResponses
+// This test unmarshal a v1beta2.ABCIResponsesWithNullFields as a statev1beta3.LegacyABCIResponses
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should work because they are compatible even if fields to be converted are null.
 func TestStateV1Beta2ABCIResponsesWithNullAsStateV1Beta3LegacyABCIResponse(t *testing.T) {
@@ -231,6 +367,24 @@ func TestStateV1Beta2ABCIResponsesWithNullAsStateV1Beta3LegacyABCIResponse(t *te
 	require.NotNil(t, legacyResponseWithNull.DeliverTxs)
 	require.Nil(t, legacyResponseWithNull.EndBlock)
 	require.NotNil(t, legacyResponseWithNull.BeginBlock)
+
+	require.Equal(t, len(v1beta2ABCIResponsesWithNull.BeginBlock.Events), len(legacyResponseWithNull.BeginBlock.Events))
+	require.Equal(t, v1beta2ABCIResponsesWithNull.BeginBlock.Events[0].Type, legacyResponseWithNull.BeginBlock.Events[0].Type)
+	require.Equal(t, len(v1beta2ABCIResponsesWithNull.BeginBlock.Events[0].Attributes), len(legacyResponseWithNull.BeginBlock.Events[0].Attributes))
+	require.Equal(t, v1beta2ABCIResponsesWithNull.BeginBlock.Events[0].Attributes[0].Key, legacyResponseWithNull.BeginBlock.Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta2ABCIResponsesWithNull.BeginBlock.Events[0].Attributes[0].Value, legacyResponseWithNull.BeginBlock.Events[0].Attributes[0].Value)
+
+	require.Equal(t, len(v1beta2ABCIResponsesWithNull.DeliverTxs), len(legacyResponseWithNull.DeliverTxs))
+	require.Equal(t, v1beta2ABCIResponsesWithNull.DeliverTxs[0].Code, legacyResponseWithNull.DeliverTxs[0].Code)
+	require.Equal(t, v1beta2ABCIResponsesWithNull.DeliverTxs[0].Data, legacyResponseWithNull.DeliverTxs[0].Data)
+	require.Equal(t, v1beta2ABCIResponsesWithNull.DeliverTxs[0].Log, legacyResponseWithNull.DeliverTxs[0].Log)
+	require.Equal(t, v1beta2ABCIResponsesWithNull.DeliverTxs[0].GasWanted, legacyResponseWithNull.DeliverTxs[0].GasWanted)
+	require.Equal(t, v1beta2ABCIResponsesWithNull.DeliverTxs[0].GasUsed, legacyResponseWithNull.DeliverTxs[0].GasUsed)
+	require.Equal(t, len(v1beta2ABCIResponsesWithNull.DeliverTxs[0].Events), len(legacyResponseWithNull.DeliverTxs[0].Events))
+	require.Equal(t, len(v1beta2ABCIResponsesWithNull.DeliverTxs[0].Events[0].Attributes), len(legacyResponseWithNull.DeliverTxs[0].Events[0].Attributes))
+	require.Equal(t, v1beta2ABCIResponsesWithNull.DeliverTxs[0].Events[0].Attributes[0].Key, legacyResponseWithNull.DeliverTxs[0].Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta2ABCIResponsesWithNull.DeliverTxs[0].Events[0].Attributes[0].Value, legacyResponseWithNull.DeliverTxs[0].Events[0].Attributes[0].Value)
+	require.Equal(t, v1beta2ABCIResponsesWithNull.DeliverTxs[0].Codespace, legacyResponseWithNull.DeliverTxs[0].Codespace)
 }
 
 // This test unmarshal a v1beta3.ResponseFinalizeBlock as a abciv1.FinalizeBlockResponse
@@ -311,7 +465,7 @@ func newV1Beta2ABCIResponses() statev1beta2.ABCIResponses {
 	}
 
 	responseDeliverTx := abciv1beta2.ResponseDeliverTx{
-		Code:   abci.CodeTypeOK,
+		Code:   abciv1beta1.CodeTypeOK,
 		Data:   []byte("result tx data"),
 		Log:    "tx committed successfully",
 		Info:   "tx processing info",
@@ -381,7 +535,7 @@ func newV1Beta2ABCIResponsesWithNullFields() statev1beta2.ABCIResponses {
 	}
 
 	responseDeliverTx := abciv1beta2.ResponseDeliverTx{
-		Code:   abci.CodeTypeOK,
+		Code:   abciv1beta1.CodeTypeOK,
 		Events: []abciv1beta2.Event{deliverTxEvent},
 	}
 
@@ -401,8 +555,6 @@ func newV1Beta2ABCIResponsesWithNullFields() statev1beta2.ABCIResponses {
 	}
 	return v1beta2ABCIResponses
 }
-
-// TODO: add test to convert from a v1beta3 to v1
 
 // Generate a v1beta3 Response Finalize Block with data for all fields.
 func newV1Beta3ResponsesFinalizeBlock() abciv1beta3.ResponseFinalizeBlock {

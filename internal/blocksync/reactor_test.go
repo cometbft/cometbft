@@ -165,7 +165,7 @@ func newReactor(
 		blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
 	}
 
-	// As the tests only support one validator in the valSet, we pass a different address to bypass the `localNodeBlocksTheChain` check
+	// As the tests only support one validator in the valSet, we pass a different address to bypass the `localNodeBlocksTheChain` check. Namely, the tested node is not an active validator.
 	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, blockSync, []byte("anotherAddress"), NopMetrics(), 0)
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 

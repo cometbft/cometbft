@@ -408,7 +408,7 @@ FOR_LOOP:
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
-				_, height, maxPeerHeight := bcR.pool.IsCaughtUp(state, bcR.myAddr)
+				_, height, maxPeerHeight := bcR.pool.IsCaughtUp()
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
 				bcR.Logger.Info("Block Sync Rate", "height", height, "max_peer_height", maxPeerHeight, "blocks/s", lastRate)
 				lastHundred = time.Now()
@@ -507,7 +507,7 @@ func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool
 }
 
 func (bcR *Reactor) isCaughtUp(state sm.State, blocksSynced uint64, stateSynced bool) bool {
-	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(state, bcR.myAddr); isCaughtUp {
+	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp || weBlockTheChain(state, bcR.myAddr) {
 		bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)

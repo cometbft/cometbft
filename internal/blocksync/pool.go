@@ -191,13 +191,9 @@ func weBlockTheChain(state sm.State, myAddr crypto.Address) bool {
 
 // IsCaughtUp returns true if this node is caught up, false - otherwise.
 // TODO: relax conditions, prevent abuse.
-func (pool *BlockPool) IsCaughtUp(state sm.State, myAddr crypto.Address) (isCaughtUp bool, height, maxPeerHeight int64) {
+func (pool *BlockPool) IsCaughtUp() (isCaughtUp bool, height, maxPeerHeight int64) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
-
-	if weBlockTheChain(state, myAddr) {
-		return true, pool.height, pool.maxPeerHeight
-	}
 
 	// Need at least 1 peer to be considered caught up.
 	if len(pool.peers) == 0 {

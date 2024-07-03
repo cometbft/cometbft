@@ -827,8 +827,7 @@ func makeSwitchesForBenchmark(b *testing.B) (s1, s2 *Switch) {
 
 func BenchmarkSwitchBroadcast(b *testing.B) {
 	s1, _ := makeSwitchesForBenchmark(b)
-	// Lets send some messages
-	ch0Msg := &p2pproto.PexAddrs{
+	chMsg := &p2pproto.PexAddrs{
 		Addrs: []p2pproto.NetAddress{
 			{
 				ID: "1",
@@ -841,14 +840,14 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		s1.Broadcast(Envelope{ChannelID: chID, Message: ch0Msg})
+		s1.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
 	}
 }
 
 func BenchmarkSwitchTryBroadcast(b *testing.B) {
 	s1, _ := makeSwitchesForBenchmark(b)
 	// Lets send some messages
-	ch0Msg := &p2pproto.PexAddrs{
+	chMsg := &p2pproto.PexAddrs{
 		Addrs: []p2pproto.NetAddress{
 			{
 				ID: "1",
@@ -861,7 +860,7 @@ func BenchmarkSwitchTryBroadcast(b *testing.B) {
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		s1.TryBroadcast(Envelope{ChannelID: chID, Message: ch0Msg})
+		s1.TryBroadcast(Envelope{ChannelID: chID, Message: chMsg})
 	}
 }
 

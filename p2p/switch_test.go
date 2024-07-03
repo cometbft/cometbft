@@ -811,6 +811,7 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 }
 
 func makeSwitchForBenchmark(b *testing.B) *Switch {
+	b.Helper()
 	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	b.Cleanup(func() {
 		if err := s2.Stop(); err != nil {

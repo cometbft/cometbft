@@ -810,8 +810,8 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	assert.False(t, reactor.InitCalledBeforeRemoveFinished())
 }
 
-func makeSwitchesForBenchmark(b *testing.B) (s1, s2 *Switch) {
-	s1, s2 = MakeSwitchPair(initSwitchFunc)
+func makeSwitchForBenchmark(b *testing.B) *Switch {
+	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	b.Cleanup(func() {
 		if err := s2.Stop(); err != nil {
 			b.Error(err)
@@ -822,11 +822,11 @@ func makeSwitchesForBenchmark(b *testing.B) (s1, s2 *Switch) {
 	})
 	// Allow time for goroutines to boot up
 	time.Sleep(1 * time.Second)
-	return s1, s2
+	return s1
 }
 
 func BenchmarkSwitchBroadcast(b *testing.B) {
-	s1, _ := makeSwitchesForBenchmark(b)
+	sw := makeSwitchForBenchmark(b)
 	chMsg := &p2pproto.PexAddrs{
 		Addrs: []p2pproto.NetAddress{
 			{
@@ -840,12 +840,12 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		s1.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
+		sw.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
 	}
 }
 
 func BenchmarkSwitchTryBroadcast(b *testing.B) {
-	s1, _ := makeSwitchesForBenchmark(b)
+	sw := makeSwitchForBenchmark(b)
 	// Lets send some messages
 	chMsg := &p2pproto.PexAddrs{
 		Addrs: []p2pproto.NetAddress{
@@ -860,7 +860,7 @@ func BenchmarkSwitchTryBroadcast(b *testing.B) {
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		s1.TryBroadcast(Envelope{ChannelID: chID, Message: chMsg})
+		sw.TryBroadcast(Envelope{ChannelID: chID, Message: chMsg})
 	}
 }
 

@@ -7,13 +7,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cometbft/cometbft/crypto"
 	flow "github.com/cometbft/cometbft/internal/flowrate"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -177,16 +175,6 @@ func (pool *BlockPool) removeTimedoutPeers() {
 	}
 
 	pool.sortPeers()
-}
-
-func weBlockTheChain(state sm.State, myAddr crypto.Address) bool {
-	_, val := state.Validators.GetByAddress(myAddr)
-	if val == nil {
-		return false
-	}
-	total := state.Validators.TotalVotingPower()
-	power := val.VotingPower
-	return power > total*2/3
 }
 
 // IsCaughtUp returns true if this node is caught up, false - otherwise.

@@ -506,8 +506,18 @@ func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool
 	return missingExtension
 }
 
+func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
+	_, val := state.Validators.GetByAddress(bcR.myAddr)
+	if val == nil {
+		return false
+	}
+	total := state.Validators.TotalVotingPower()
+	power := val.VotingPower
+	return power > total*2/3
+}
+
 func (bcR *Reactor) isCaughtUp(state sm.State, blocksSynced uint64, stateSynced bool) bool {
-	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp || weBlockTheChain(state, bcR.myAddr) {
+	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp || bcR.localNodeBlocksTheChain(state) {
 		bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)

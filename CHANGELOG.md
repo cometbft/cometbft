@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-*June 20, 2024*
+*July 1, 2024*
 
 This is a major release of CometBFT that includes several substantial changes
 that aim to reduce bandwidth consumption, enable modularity, improve
@@ -105,6 +105,8 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
    ([\#558](https://github.com/cometbft/cometbft/issues/558))
 - `[crypto]` Remove unnecessary `Sha256` wrapper
   ([\#3248](https://github.com/cometbft/cometbft/pull/3248))
+- `[crypto]` Remove unnecessary `xchacha20` and `xsalsa20` implementations
+  ([\#3347](https://github.com/cometbft/cometbft/pull/3347))
 - `[evidence]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
 - `[go/runtime]` Bump minimum Go version to v1.22
@@ -144,6 +146,10 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
 - `[libs/timer]` Move to `internal`
   ([\#1485](https://github.com/cometbft/cometbft/pull/1485))
+- `[mempool]` Add to the `Mempool` interface a new method `PreUpdate()`. This method should be
+  called before acquiring the mempool lock, to signal that a new update is coming. Also add to
+  `ErrMempoolIsFull` a new field `RecheckFull`.
+  ([\#3314](https://github.com/cometbft/cometbft/pull/3314))
 - `[mempool]` Change the signature of `CheckTx` in the `Mempool` interface to
 `CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)`.
 ([\#1010](https://github.com/cometbft/cometbft/issues/1010), [\#3084](https://github.com/cometbft/cometbft/issues/3084))
@@ -283,6 +289,8 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
   ([\#1687](https://github.com/cometbft/cometbft/pull/1687))
 - `[p2p/pex]` Gracefully shutdown Reactor ([\#2010](https://github.com/cometbft/cometbft/pull/2010))
 - `[privval]` Retry accepting a connection ([\#2047](https://github.com/cometbft/cometbft/pull/2047))
+- `[rpc]` Fix nil pointer error in `/tx` and `/tx_search` when block is
+  absent ([\#3352](https://github.com/cometbft/cometbft/issues/3352))
 - `[state/indexer]` Respect both height params while querying for events
    ([\#1529](https://github.com/cometbft/cometbft/pull/1529))
 - `[state/pruning]` When no blocks are pruned, do not attempt to prune statestore
@@ -437,6 +445,9 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
 - `[abci]` Increase ABCI socket message size limit to 2GB ([\#1730](https://github.com/cometbft/cometbft/pull/1730): @troykessler)
 - `[blockstore]` Remove a redundant `Header.ValidateBasic` call in `LoadBlockMeta`, 75% reducing this time.
   ([\#2964](https://github.com/cometbft/cometbft/pull/2964))
+- `[blockstore]` Use LRU caches for LoadBlockPart. Make the LoadBlockPart and LoadBlockCommit APIs 
+    return mutative copies, that the caller is expected to not modify. This saves on memory copying.
+  ([\#3342](https://github.com/cometbft/cometbft/issues/3342))
 - `[blockstore]` Use LRU caches in blockstore, significiantly improving consensus gossip routine performance
   ([\#3003](https://github.com/cometbft/cometbft/issues/3003))
 - `[blocksync]` Avoid double-calling `types.BlockFromProto` for performance
@@ -455,6 +466,9 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
 - `[cli/node]` The genesis hash provided with the `--genesis-hash` is now
    forwarded to the node, instead of reading the file.
   ([\#1324](https://github.com/cometbft/cometbft/pull/1324))
+- `[cmd]` Add support for all key types in `gen-validator` command. Use
+ `--key-type=` (or `-k`) to specify the key type (e.g., `-k secp256k1`).
+  ([\#1757](https://github.com/cometbft/cometbft/issues/1757))
 - `[config]` Added `[storage.pruning]` and `[storage.pruning.data_companion]`
   sections to facilitate background pruning and data companion (ADR 101)
   operations ([\#1096](https://github.com/cometbft/cometbft/issues/1096))
@@ -480,10 +494,6 @@ longer used. ([\#3084](https://github.com/cometbft/cometbft/issues/3084))
   ([\#3180](https://github.com/cometbft/cometbft/issues/3180))
 - `[consensus]` Make Vote messages only take one peerstate mutex
   ([\#3156](https://github.com/cometbft/cometbft/issues/3156))
-- `[consensus]` Make the consensus reactor no longer have packets on receive take the consensus lock.
-Consensus will now update the reactor's view after every relevant change through the existing 
-synchronous event bus subscription.
-  ([\#3211](https://github.com/cometbft/cometbft/pull/3211))
 - `[consensus]` New metrics (counters) to track duplicate votes and block parts.
   ([\#896](https://github.com/cometbft/cometbft/pull/896))
 - `[consensus]` Optimize vote and block part gossip with new message `HasProposalBlockPartMessage`,
@@ -526,6 +536,8 @@ synchronous event bus subscription.
   ([\#2453](https://github.com/cometbft/cometbft/pull/2453))
 - `[e2e]` Log the number of transactions that were sent successfully or failed.
   ([\#2328](https://github.com/cometbft/cometbft/pull/2328))
+- `[e2e]` add option to the 'runner logs' command to output logs separately.
+  ([\#3353](https://github.com/cometbft/cometbft/pull/3353))
 - `[event-bus]` Remove the debug logs in PublishEventTx, which were noticed production slowdowns.
   ([\#2911](https://github.com/cometbft/cometbft/pull/2911))
 - `[flowrate]` Remove expensive time.Now() calls from flowrate calls.
@@ -554,6 +566,9 @@ synchronous event bus subscription.
   which the node gossip transactions.
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
+- `[mempool]` Before updating the mempool, consider it as full if rechecking is still in progress.
+  This will stop accepting transactions in the mempool if the node can't keep up with re-CheckTx.
+  ([\#3314](https://github.com/cometbft/cometbft/pull/3314))
 - `[node]` On upgrade, after [\#1296](https://github.com/cometbft/cometbft/pull/1296), delete the genesis file existing in the DB.
   ([\#1297](https://github.com/cometbft/cometbft/pull/1297))
 - `[node]` Remove genesis persistence in state db, replaced by a hash

@@ -512,8 +512,7 @@ func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
 		return false
 	}
 	total := state.Validators.TotalVotingPower()
-	power := val.VotingPower
-	return power > total*2/3
+	return val.VotingPower > total*2/3
 }
 
 func (bcR *Reactor) isCaughtUp(state sm.State, blocksSynced uint64, stateSynced bool) bool {

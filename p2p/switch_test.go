@@ -846,7 +846,6 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 
 func BenchmarkSwitchTryBroadcast(b *testing.B) {
 	sw := makeSwitchForBenchmark(b)
-	// Lets send some messages
 	chMsg := &p2pproto.PexAddrs{
 		Addrs: []p2pproto.NetAddress{
 			{

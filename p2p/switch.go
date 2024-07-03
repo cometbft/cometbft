@@ -273,8 +273,6 @@ func (sw *Switch) Broadcast(e Envelope) {
 
 	sw.peers.ForEach(func(p Peer) {
 		go func(peer Peer) {
-			// TODO: We don't use the success value. Should most behavior
-			// really be TrySend?
 			success := peer.Send(e)
 			_ = success
 		}(p)

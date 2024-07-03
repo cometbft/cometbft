@@ -285,7 +285,7 @@ func (sw *Switch) Broadcast(e Envelope) {
 //
 // NOTE: TryBroadcast uses goroutines, so order of broadcast may not be preserved.
 func (sw *Switch) TryBroadcast(e Envelope) {
-	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
+	sw.Logger.Debug("TryBroadcast", "channel", e.ChannelID)
 
 	sw.peers.ForEach(func(p Peer) {
 		go func(peer Peer) {

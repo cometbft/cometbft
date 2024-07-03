@@ -44,8 +44,8 @@ const (
 	labelSecretConnectionMac     = "SECRET_CONNECTION_MAC"
 
 	defaultWriteBufferSize = 128 * 1024
-	// try to read the biggest logical packet we can get, in one file read.
-	// biggest logical packet is encoding_overhead(64kb)
+	// try to read the biggest logical packet we can get, in one read.
+	// biggest logical packet is encoding_overhead(64kb).
 	defaultReadBufferSize = 65 * 1024
 )
 

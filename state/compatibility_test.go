@@ -5,16 +5,20 @@ import (
 	"testing"
 	"time"
 
+	gogo "github.com/cosmos/gogoproto/types"
 	"github.com/stretchr/testify/require"
 
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	abciv1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	abciv1beta1 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta1"
 	abciv1beta2 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta2"
+	abciv1beta3 "github.com/cometbft/cometbft/api/cometbft/abci/v1beta3"
 	cryptov1 "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	statev1 "github.com/cometbft/cometbft/api/cometbft/state/v1"
 	statev1beta2 "github.com/cometbft/cometbft/api/cometbft/state/v1beta2"
 	statev1beta3 "github.com/cometbft/cometbft/api/cometbft/state/v1beta3"
+	typesv1 "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	typesv1beta1 "github.com/cometbft/cometbft/api/cometbft/types/v1beta1"
 	typesv1beta2 "github.com/cometbft/cometbft/api/cometbft/types/v1beta2"
 	sm "github.com/cometbft/cometbft/state"
@@ -128,7 +132,7 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 }
 
 // This test unmarshals a v1beta2.ABCIResponses as a statev1.LegacyABCIResponses
-// This logic is important for the LoadFinalizeBlockResponse method in the state sm
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should not fail because they are compatible.
 func TestStateProtoV1Beta2ToV1(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
@@ -154,7 +158,7 @@ func TestStateProtoV1Beta2ToV1(t *testing.T) {
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a v1.FinalizeBlockResponse
-// This logic is important for the LoadFinalizeBlockResponse method in the state sm
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should fail because they are not compatible.
 func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
@@ -170,7 +174,7 @@ func TestStateV1Beta2ABCIResponsesAsStateV1FinalizeBlockResponse(t *testing.T) {
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a v1.FinalizeBlockResponse
-// This logic is important for the LoadFinalizeBlockResponse method in the state sm
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion doesn't fail because no error is return, but they are NOT compatible.
 func TestStateV1Beta2ABCIResponsesWithNullAsStateV1FinalizeBlockResponse(t *testing.T) {
 	v1beta2ABCIResponsesWithNull := newV1Beta2ABCIResponsesWithNullFields()
@@ -191,9 +195,9 @@ func TestStateV1Beta2ABCIResponsesWithNullAsStateV1FinalizeBlockResponse(t *test
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a statev1beta3.LegacyABCIResponses
-// This logic is important for the LoadFinalizeBlockResponse method in the state sm
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should work because they are compatible.
-func TestStateV1Beta2ABCIResponsesAsStateV1Beta3FinalizeBlockResponse(t *testing.T) {
+func TestStateV1Beta2ABCIResponsesAsStateV1Beta3LegacyABCIResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 
 	data, err := v1beta2ABCIResponses.Marshal()
@@ -210,9 +214,9 @@ func TestStateV1Beta2ABCIResponsesAsStateV1Beta3FinalizeBlockResponse(t *testing
 }
 
 // This test unmarshal a v1beta2.ABCIResponses as a statev1beta3.LegacyABCIResponses
-// This logic is important for the LoadFinalizeBlockResponse method in the state sm
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should work because they are compatible even if fields to be converted are null.
-func TestStateV1Beta2ABCIResponsesWithNullAsStateV1Beta3FinalizeBlockResponse(t *testing.T) {
+func TestStateV1Beta2ABCIResponsesWithNullAsStateV1Beta3LegacyABCIResponse(t *testing.T) {
 	v1beta2ABCIResponsesWithNull := newV1Beta2ABCIResponsesWithNullFields()
 	data, err := v1beta2ABCIResponsesWithNull.Marshal()
 	require.NoError(t, err)
@@ -226,6 +230,69 @@ func TestStateV1Beta2ABCIResponsesWithNullAsStateV1Beta3FinalizeBlockResponse(t 
 	require.NotNil(t, legacyResponseWithNull.DeliverTxs)
 	require.Nil(t, legacyResponseWithNull.EndBlock)
 	require.NotNil(t, legacyResponseWithNull.BeginBlock)
+}
+
+// This test unmarshal a v1beta3.ResponseFinalizeBlock as a abciv1.FinalizeBlockResponse
+// This logic is important for the LoadFinalizeBlockResponse method in the state store
+// The conversion should work because they are compatible.
+func TestStateV1Beta3ResponsesFinalizeBlockAsV1FinalizeBlockResponse(t *testing.T) {
+	v1beta3ResponseFinalizeBlock := newV1Beta3ResponsesFinalizeBlock()
+
+	data, err := v1beta3ResponseFinalizeBlock.Marshal()
+	require.NoError(t, err)
+	require.NotNil(t, data)
+
+	// This works because they are equivalent protos and the fields are populated
+	finalizeBlockResponse := new(abciv1.FinalizeBlockResponse)
+	err = finalizeBlockResponse.Unmarshal(data)
+	require.NoError(t, err)
+
+	// Test for not nil
+	require.NotNil(t, finalizeBlockResponse.TxResults)
+	require.NotNil(t, finalizeBlockResponse.Events)
+	require.NotNil(t, finalizeBlockResponse.ValidatorUpdates)
+	require.NotNil(t, finalizeBlockResponse.ConsensusParamUpdates)
+	require.NotNil(t, finalizeBlockResponse.AppHash)
+
+	// Test for equality
+	require.Equal(t, len(v1beta3ResponseFinalizeBlock.TxResults), len(finalizeBlockResponse.TxResults))
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].Code, finalizeBlockResponse.TxResults[0].Code)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].Data, finalizeBlockResponse.TxResults[0].Data)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].Log, finalizeBlockResponse.TxResults[0].Log)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].GasWanted, finalizeBlockResponse.TxResults[0].GasWanted)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].GasUsed, finalizeBlockResponse.TxResults[0].GasUsed)
+	require.Equal(t, len(v1beta3ResponseFinalizeBlock.TxResults[0].Events), len(finalizeBlockResponse.TxResults[0].Events))
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].Events[0].Type, finalizeBlockResponse.TxResults[0].Events[0].Type)
+	require.Equal(t, len(v1beta3ResponseFinalizeBlock.TxResults[0].Events[0].Attributes), len(finalizeBlockResponse.TxResults[0].Events[0].Attributes))
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].Events[0].Attributes[0].Key, finalizeBlockResponse.TxResults[0].Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].Events[0].Attributes[0].Value, finalizeBlockResponse.TxResults[0].Events[0].Attributes[0].Value)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.TxResults[0].Codespace, finalizeBlockResponse.TxResults[0].Codespace)
+
+	require.Equal(t, len(v1beta3ResponseFinalizeBlock.Events), len(finalizeBlockResponse.Events))
+	require.Equal(t, v1beta3ResponseFinalizeBlock.Events[0].Type, finalizeBlockResponse.Events[0].Type)
+	require.Equal(t, len(v1beta3ResponseFinalizeBlock.Events[0].Attributes), len(finalizeBlockResponse.Events[0].Attributes))
+	require.Equal(t, v1beta3ResponseFinalizeBlock.Events[0].Attributes[0].Key, finalizeBlockResponse.Events[0].Attributes[0].Key)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.Events[0].Attributes[0].Value, finalizeBlockResponse.Events[0].Attributes[0].Value)
+
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Block.MaxBytes, finalizeBlockResponse.ConsensusParamUpdates.Block.MaxBytes)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Block.MaxGas, finalizeBlockResponse.ConsensusParamUpdates.Block.MaxGas)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Evidence.MaxAgeNumBlocks, finalizeBlockResponse.ConsensusParamUpdates.Evidence.MaxAgeNumBlocks)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Evidence.MaxAgeDuration, finalizeBlockResponse.ConsensusParamUpdates.Evidence.MaxAgeDuration)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Evidence.MaxBytes, finalizeBlockResponse.ConsensusParamUpdates.Evidence.MaxBytes)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Validator.PubKeyTypes, finalizeBlockResponse.ConsensusParamUpdates.Validator.PubKeyTypes)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Version.App, finalizeBlockResponse.ConsensusParamUpdates.Version.App)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Synchrony.Precision, finalizeBlockResponse.ConsensusParamUpdates.Synchrony.Precision)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Synchrony.MessageDelay, finalizeBlockResponse.ConsensusParamUpdates.Synchrony.MessageDelay)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Feature.VoteExtensionsEnableHeight.Value, finalizeBlockResponse.ConsensusParamUpdates.Feature.VoteExtensionsEnableHeight.Value)
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Feature.PbtsEnableHeight.Value, finalizeBlockResponse.ConsensusParamUpdates.Feature.PbtsEnableHeight.Value)
+
+	require.Equal(t, v1beta3ResponseFinalizeBlock.AppHash, finalizeBlockResponse.AppHash)
+
+	require.Equal(t, len(v1beta3ResponseFinalizeBlock.ValidatorUpdates), len(finalizeBlockResponse.ValidatorUpdates))
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ValidatorUpdates[0].Power, finalizeBlockResponse.ValidatorUpdates[0].Power)
+
+	// skip until an equivalency test is possible
+	// require.Equal(t, v1beta3ResponseFinalizeBlock.ValidatorUpdates[0].PubKey.GetEd25519(), finalizeBlockResponse.ValidatorUpdates[0].PubKeyBytes)
 }
 
 // Generate a v1beta2 ABCIResponses with data for all fields.
@@ -330,4 +397,94 @@ func newV1Beta2ABCIResponsesWithNullFields() statev1beta2.ABCIResponses {
 		},
 	}
 	return v1beta2ABCIResponses
+}
+
+// TODO: add test to convert from a v1beta3 to v1
+
+// Generate a v1beta3 Response Finalize Block with data for all fields.
+func newV1Beta3ResponsesFinalizeBlock() abciv1beta3.ResponseFinalizeBlock {
+	eventAttr := abciv1beta2.EventAttribute{
+		Key:   "key",
+		Value: "value",
+	}
+
+	txEvent := abciv1beta2.Event{
+		Type:       "tx_event",
+		Attributes: []abciv1beta2.EventAttribute{eventAttr},
+	}
+
+	oneEvent := abciv1beta2.Event{
+		Type:       "one_event",
+		Attributes: []abciv1beta2.EventAttribute{eventAttr},
+	}
+
+	twoEvent := abciv1beta2.Event{
+		Type:       "two_event",
+		Attributes: []abciv1beta2.EventAttribute{eventAttr},
+	}
+
+	events := make([]abciv1beta2.Event, 0)
+	events = append(events, txEvent)
+	events = append(events, oneEvent)
+	events = append(events, twoEvent)
+
+	txResults := []*abciv1beta3.ExecTxResult{{
+		Code:      0,
+		Data:      []byte("result tx data"),
+		Log:       "tx committed successfully",
+		Info:      "tx processing info",
+		GasWanted: 15,
+		GasUsed:   10,
+		Events:    []abciv1beta2.Event{txEvent},
+		Codespace: "01",
+	}}
+
+	validatorUpdates := []abciv1beta1.ValidatorUpdate{{
+		PubKey: cryptov1.PublicKey{Sum: &cryptov1.PublicKey_Ed25519{Ed25519: make([]byte, 1)}},
+		Power:  int64(10),
+	}}
+
+	consensusParams := &typesv1.ConsensusParams{
+		Block: &typesv1.BlockParams{
+			MaxBytes: int64(100000),
+			MaxGas:   int64(10000),
+		},
+		Evidence: &typesv1.EvidenceParams{
+			MaxAgeNumBlocks: int64(10),
+			MaxAgeDuration:  time.Duration(1000),
+			MaxBytes:        int64(10000),
+		},
+		Validator: &typesv1.ValidatorParams{
+			PubKeyTypes: []string{"ed25519"},
+		},
+		Version: &typesv1.VersionParams{
+			App: uint64(10),
+		},
+		Synchrony: &typesv1.SynchronyParams{
+			Precision:    durationPtr(time.Second * 2),
+			MessageDelay: durationPtr(time.Second * 4),
+		},
+		Feature: &typesv1.FeatureParams{
+			VoteExtensionsEnableHeight: &gogo.Int64Value{
+				Value: 10,
+			},
+			PbtsEnableHeight: &gogo.Int64Value{
+				Value: 10,
+			},
+		},
+	}
+
+	// v1beta3 FinalizeBlock Response
+	v1beta3FinalizeBlock := abciv1beta3.ResponseFinalizeBlock{
+		Events:                events,
+		TxResults:             txResults,
+		ValidatorUpdates:      validatorUpdates,
+		ConsensusParamUpdates: consensusParams,
+		AppHash:               make([]byte, 32),
+	}
+	return v1beta3FinalizeBlock
+}
+
+func durationPtr(t time.Duration) *time.Duration {
+	return &t
 }

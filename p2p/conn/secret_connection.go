@@ -14,8 +14,12 @@ import (
 	"time"
 
 	gogotypes "github.com/cosmos/gogoproto/types"
+<<<<<<< HEAD
 	"github.com/gtank/merlin"
 	pool "github.com/libp2p/go-buffer-pool"
+=======
+	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
+>>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
@@ -76,12 +80,16 @@ type SecretConnection struct {
 	// are independent, so we can use two mtxs.
 	// All .Read are covered by recvMtx,
 	// all .Write are covered by sendMtx.
-	recvMtx    cmtsync.Mutex
-	recvBuffer []byte
-	recvNonce  *[aeadNonceSize]byte
+	recvMtx         cmtsync.Mutex
+	recvBuffer      []byte
+	recvNonce       *[aeadNonceSize]byte
+	recvFrame       []byte
+	recvSealedFrame []byte
 
-	sendMtx   cmtsync.Mutex
-	sendNonce *[aeadNonceSize]byte
+	sendMtx         cmtsync.Mutex
+	sendNonce       *[aeadNonceSize]byte
+	sendFrame       []byte
+	sendSealedFrame []byte
 }
 
 // MakeSecretConnection performs handshake and returns a new authenticated
@@ -146,12 +154,16 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	}
 
 	sc := &SecretConnection{
-		conn:       conn,
-		recvBuffer: nil,
-		recvNonce:  new([aeadNonceSize]byte),
-		sendNonce:  new([aeadNonceSize]byte),
-		recvAead:   recvAead,
-		sendAead:   sendAead,
+		conn:            conn,
+		recvBuffer:      nil,
+		recvNonce:       new([aeadNonceSize]byte),
+		sendNonce:       new([aeadNonceSize]byte),
+		recvAead:        recvAead,
+		sendAead:        sendAead,
+		recvFrame:       make([]byte, totalFrameSize),
+		recvSealedFrame: make([]byte, aeadSizeOverhead+totalFrameSize),
+		sendFrame:       make([]byte, totalFrameSize),
+		sendSealedFrame: make([]byte, aeadSizeOverhead+totalFrameSize),
 	}
 
 	// Sign the challenge bytes for authentication.
@@ -189,15 +201,19 @@ func (sc *SecretConnection) RemotePubKey() crypto.PubKey {
 func (sc *SecretConnection) Write(data []byte) (n int, err error) {
 	sc.sendMtx.Lock()
 	defer sc.sendMtx.Unlock()
+	sealedFrame, frame := sc.sendSealedFrame, sc.sendFrame
 
 	for 0 < len(data) {
 		if err := func() error {
+<<<<<<< HEAD
 			var sealedFrame = pool.Get(aeadSizeOverhead + totalFrameSize)
 			var frame = pool.Get(totalFrameSize)
 			defer func() {
 				pool.Put(sealedFrame)
 				pool.Put(frame)
 			}()
+=======
+>>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 			var chunk []byte
 			if dataMaxSize < len(data) {
 				chunk = data[:dataMaxSize]
@@ -241,8 +257,12 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	}
 
 	// read off the conn
+<<<<<<< HEAD
 	var sealedFrame = pool.Get(aeadSizeOverhead + totalFrameSize)
 	defer pool.Put(sealedFrame)
+=======
+	sealedFrame := sc.recvSealedFrame
+>>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 	_, err = io.ReadFull(sc.conn, sealedFrame)
 	if err != nil {
 		return
@@ -250,8 +270,12 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 
 	// decrypt the frame.
 	// reads and updates the sc.recvNonce
+<<<<<<< HEAD
 	var frame = pool.Get(totalFrameSize)
 	defer pool.Put(frame)
+=======
+	frame := sc.recvFrame
+>>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
 		return n, fmt.Errorf("failed to decrypt SecretConnection: %w", err)

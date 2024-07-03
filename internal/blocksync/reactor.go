@@ -62,7 +62,7 @@ type Reactor struct {
 	store         sm.BlockStore
 	pool          *BlockPool
 	blockSync     bool
-	myAddr        crypto.Address
+	localAddr     crypto.Address
 	poolRoutineWg sync.WaitGroup
 
 	requestsCh <-chan BlockRequest
@@ -75,7 +75,7 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, myAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
+	blockSync bool, localAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
 	storeHeight := store.Height()
 	if storeHeight == 0 {
@@ -111,7 +111,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		store:        store,
 		pool:         pool,
 		blockSync:    blockSync,
-		myAddr:       myAddr,
+		localAddr:    localAddr,
 		requestsCh:   requestsCh,
 		errorsCh:     errorsCh,
 		metrics:      metrics,
@@ -507,7 +507,7 @@ func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool
 }
 
 func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
-	_, val := state.Validators.GetByAddress(bcR.myAddr)
+	_, val := state.Validators.GetByAddress(bcR.localAddr)
 	if val == nil {
 		return false
 	}

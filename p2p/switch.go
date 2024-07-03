@@ -281,6 +281,19 @@ func (sw *Switch) Broadcast(e Envelope) {
 	})
 }
 
+// TryBroadcast runs a go routine for each attempted send.
+//
+// NOTE: TryBroadcast uses goroutines, so order of broadcast may not be preserved.
+func (sw *Switch) TryBroadcast(e Envelope) {
+	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
+
+	sw.peers.ForEach(func(p Peer) {
+		go func(peer Peer) {
+			peer.TrySend(e)
+		}(p)
+	})
+}
+
 // NumPeers returns the count of outbound/inbound and outbound-dialing peers.
 // unconditional peers are not counted here.
 func (sw *Switch) NumPeers() (outbound, inbound, dialing int) {

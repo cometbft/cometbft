@@ -165,7 +165,8 @@ func newReactor(
 		blockStore.SaveBlockWithExtendedCommit(thisBlock, thisParts, seenExtCommit)
 	}
 
-	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, blockSync, addr, NopMetrics(), 0)
+	// As the tests only support one validator in the valSet, we pass a different address to disable the `weBlockTheChain` check
+	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, blockSync, []byte("anotherAddress"), NopMetrics(), 0)
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}

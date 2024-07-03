@@ -7,10 +7,21 @@ on:
   merge_group:
   push:
     branches:
+<<<<<<< HEAD
       - v1.x
+=======
+      - main
+      - v0.3[478].x
+      - v[1-9][0-9]?.x
+>>>>>>> 9742bf6e1 (fix(e2e): test case `TestBlock_Range` is flaky because of pruning (#3389))
 
 jobs:
   e2e-test:
+    # Run two parallel jobs: for `ci.toml`, and for the regression manifests
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ['networks/ci', 'networks_regressions/*']
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -35,11 +46,15 @@ jobs:
 
       - name: Build
         working-directory: test/e2e
+<<<<<<< HEAD
         # Run two make jobs in parallel, since we can't run steps in parallel.
         run: make -j2 docker runner tests
+=======
+        run: make -j2 docker runner
+>>>>>>> 9742bf6e1 (fix(e2e): test case `TestBlock_Range` is flaky because of pruning (#3389))
         if: "env.GIT_DIFF != ''"
 
-      - name: Run CI testnet
+      - name: Run "${{ matrix.group }}"" testnet
         working-directory: test/e2e
-        run: ./run-multiple.sh networks/ci.toml
+        run: ./run-multiple.sh ${{ matrix.group }}.toml
         if: "env.GIT_DIFF != ''"

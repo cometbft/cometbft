@@ -262,7 +262,7 @@ You can query for a paginated set of blocks by their events by calling the
 `/block_search` RPC endpoint:
 
 ```bash
-curl "localhost:26657/block_search?query=\"block.height > 10 AND val_set.num_changed > 0\""
+curl "localhost:26657/block_search?query=\"block.height > 10\""
 ```
 
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	sm "github.com/cometbft/cometbft/state"
@@ -61,6 +62,7 @@ type Reactor struct {
 	store         sm.BlockStore
 	pool          *BlockPool
 	blockSync     bool
+	myAddr        crypto.Address
 	poolRoutineWg sync.WaitGroup
 
 	requestsCh <-chan BlockRequest
@@ -73,7 +75,7 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
+	blockSync bool, myAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
 	storeHeight := store.Height()
 	if storeHeight == 0 {
@@ -109,6 +111,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		store:        store,
 		pool:         pool,
 		blockSync:    blockSync,
+		myAddr:       myAddr,
 		requestsCh:   requestsCh,
 		errorsCh:     errorsCh,
 		metrics:      metrics,
@@ -405,7 +408,7 @@ FOR_LOOP:
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
-				_, height, maxPeerHeight := bcR.pool.IsCaughtUp()
+				_, height, maxPeerHeight := bcR.pool.IsCaughtUp(state, bcR.myAddr)
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
 				bcR.Logger.Info("Block Sync Rate", "height", height, "max_peer_height", maxPeerHeight, "blocks/s", lastRate)
 				lastHundred = time.Now()
@@ -504,7 +507,7 @@ func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool
 }
 
 func (bcR *Reactor) isCaughtUp(state sm.State, blocksSynced uint64, stateSynced bool) bool {
-	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp {
+	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(state, bcR.myAddr); isCaughtUp {
 		bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)

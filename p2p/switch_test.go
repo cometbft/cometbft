@@ -117,12 +117,10 @@ func initSwitchFunc(_ int, sw *Switch) *Switch {
 func TestSwitches(t *testing.T) {
 	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	t.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
+		if err := s2.Stop(); err != nil {
 			t.Error(err)
 		}
-	})
-	t.Cleanup(func() {
-		if err := s2.Stop(); err != nil {
+		if err := s1.Stop(); err != nil {
 			t.Error(err)
 		}
 	})
@@ -812,41 +810,58 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	assert.False(t, reactor.InitCalledBeforeRemoveFinished())
 }
 
-func BenchmarkSwitchBroadcast(b *testing.B) {
-	s1, s2 := MakeSwitchPair(func(_ int, sw *Switch) *Switch {
-		// Make bar reactors of bar channels each
-		sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
-			{ID: byte(0x00), Priority: 10},
-			{ID: byte(0x01), Priority: 10},
-		}, false))
-		sw.AddReactor("bar", NewTestReactor([]*conn.ChannelDescriptor{
-			{ID: byte(0x02), Priority: 10},
-			{ID: byte(0x03), Priority: 10},
-		}, false))
-		return sw
-	})
-
-	b.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
-			b.Error(err)
-		}
-	})
-
+func makeSwitchesForBenchmark(b *testing.B) (s1, s2 *Switch) {
+	s1, s2 = MakeSwitchPair(initSwitchFunc)
 	b.Cleanup(func() {
 		if err := s2.Stop(); err != nil {
 			b.Error(err)
 		}
+		if err := s1.Stop(); err != nil {
+			b.Error(err)
+		}
 	})
-
 	// Allow time for goroutines to boot up
 	time.Sleep(1 * time.Second)
+	return s1, s2
+}
+
+func BenchmarkSwitchBroadcast(b *testing.B) {
+	s1, _ := makeSwitchesForBenchmark(b)
+	// Lets send some messages
+	ch0Msg := &p2pproto.PexAddrs{
+		Addrs: []p2pproto.NetAddress{
+			{
+				ID: "1",
+			},
+		},
+	}
 
 	b.ResetTimer()
 
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		s1.Broadcast(Envelope{ChannelID: chID})
+		s1.Broadcast(Envelope{ChannelID: chID, Message: ch0Msg})
+	}
+}
+
+func BenchmarkSwitchTryBroadcast(b *testing.B) {
+	s1, _ := makeSwitchesForBenchmark(b)
+	// Lets send some messages
+	ch0Msg := &p2pproto.PexAddrs{
+		Addrs: []p2pproto.NetAddress{
+			{
+				ID: "1",
+			},
+		},
+	}
+
+	b.ResetTimer()
+
+	// Send random message from foo channel to another
+	for i := 0; i < b.N; i++ {
+		chID := byte(i % 4)
+		s1.TryBroadcast(Envelope{ChannelID: chID, Message: ch0Msg})
 	}
 }
 

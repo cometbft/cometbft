@@ -771,6 +771,7 @@ type Channel struct {
 	recving       []byte
 	sending       []byte
 	recentlySent  int64 // exponential moving average
+	timer         *time.Timer
 
 	maxPacketMsgPayloadSize int
 
@@ -785,6 +786,7 @@ func newChannel(conn *MConnection, desc ChannelDescriptor) *Channel {
 	return &Channel{
 		conn:                    conn,
 		desc:                    desc,
+		timer:                   time.NewTimer(0),
 		sendQueue:               make(chan []byte, desc.SendQueueCapacity),
 		recving:                 make([]byte, 0, desc.RecvBufferCapacity),
 		maxPacketMsgPayloadSize: conn.config.MaxPacketMsgPayloadSize,
@@ -795,15 +797,22 @@ func (ch *Channel) SetLogger(l log.Logger) {
 	ch.Logger = l
 }
 
-// Queues message to send to this channel.
+// sendBytes queues a message to send to this channel.
 // Goroutine-safe
 // Times out (and returns false) after defaultSendTimeout.
 func (ch *Channel) sendBytes(bytes []byte) bool {
+	// Reset timer instead of creating a new one each time
+	ch.timer.Reset(defaultSendTimeout)
+
 	select {
 	case ch.sendQueue <- bytes:
 		atomic.AddInt32(&ch.sendQueueSize, 1)
 		return true
-	case <-time.After(defaultSendTimeout):
+	case <-ch.timer.C:
+		// Stop the timer to release its resources
+		if !ch.timer.Stop() {
+			<-ch.timer.C
+		}
 		return false
 	}
 }

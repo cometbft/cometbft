@@ -860,7 +860,7 @@ func (ch *Channel) isSendPending() bool {
 }
 
 // Updates the nextPacket proto message for us to send.
-// Not goroutine-safe
+// Not goroutine-safe.
 func (ch *Channel) updateNextPacket() {
 	maxSize := ch.maxPacketMsgPayloadSize
 	if len(ch.sending) <= maxSize {

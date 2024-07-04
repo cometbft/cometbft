@@ -55,25 +55,27 @@ is an orthogonal problem to transaction classification, although the latter may 
 
 Before jumping into the design of the proposal, we define more formally the properties supported by
 the current implementation of the mempool. Then we state what properties the new mempool should
-offer to guarantee the desired QoS.
+offer to guarantee the desired QoS. The following definitions are common to all properties.
 
-The following definitions are common to all properties.
+When attempting to add an incoming transaction to the mempool, the node first checks that it is not
+already in the cache before checking its validity with the application. 
 
 :memo: _Definition_: We say that a node receives a transaction `tx` _for the first time_ when the
-node receives `tx` and `tx` is not in the [cache][cache].
+node receives `tx` and `tx` is not in the cache.
 
-Because of how transactions are evicted from the cache (see [spec][cache]), it is possible by this
-definition that a transaction is removed from the cache and added back at a later time. Hence, a
-transaction could be received for the first time on multiple occasions.
+By this definition, it is possible that a node receives a transaction "for the first time", then
+gets the transaction evicted from the cache, and at a later time receives it "for the first time"
+again. The cache implements a Least-Recently Used (LRU) policy for removing entries when the
+cache is full.
 
 :memo: _Definition_: Given any two different transactions `tx1` and `tx2`, in a given node, we say that:
 1. `tx1` is *validated before* `tx2`, when `tx1` and `tx2` are received for the first time, and `tx1`
 is validated against the application (via `CheckTx`) before `tx2`,
-2. `tx1` is *rechecked before* `tx2`, when `tx` and `tx2` are in the mempool and `tx1` is
+1. `tx1` is *rechecked before* `tx2`, when `tx` and `tx2` are in the mempool and `tx1` is
 re-validated (rechecked via `CheckTx`) before `tx2`,
-3. `tx1` is *reaped before* `tx2`, when `tx1` is reaped from the mempool to be included in a block
+1. `tx1` is *reaped before* `tx2`, when `tx1` is reaped from the mempool to be included in a block
   proposal before `tx2`,
-4. `tx1` is *disseminated before* `tx2`, when `tx1` is sent to a given peer before `tx2`.
+1. `tx1` is *disseminated before* `tx2`, when `tx1` is sent to a given peer before `tx2`.
 
 In 4, note that in the current implementation there is one dissemination routine per peer, so it
 could happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.

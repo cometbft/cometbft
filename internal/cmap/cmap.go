@@ -7,7 +7,7 @@ import (
 // CMap is a goroutine-safe map.
 type CMap struct {
 	m map[string]any
-	l cmtsync.Mutex
+	l cmtsync.RWMutex
 }
 
 func NewCMap() *CMap {
@@ -23,16 +23,16 @@ func (cm *CMap) Set(key string, value any) {
 }
 
 func (cm *CMap) Get(key string) any {
-	cm.l.Lock()
+	cm.l.RLock()
 	val := cm.m[key]
-	cm.l.Unlock()
+	cm.l.RUnlock()
 	return val
 }
 
 func (cm *CMap) Has(key string) bool {
-	cm.l.Lock()
+	cm.l.RLock()
 	_, ok := cm.m[key]
-	cm.l.Unlock()
+	cm.l.RUnlock()
 	return ok
 }
 
@@ -43,9 +43,9 @@ func (cm *CMap) Delete(key string) {
 }
 
 func (cm *CMap) Size() int {
-	cm.l.Lock()
+	cm.l.RLock()
 	size := len(cm.m)
-	cm.l.Unlock()
+	cm.l.RUnlock()
 	return size
 }
 
@@ -56,22 +56,21 @@ func (cm *CMap) Clear() {
 }
 
 func (cm *CMap) Keys() []string {
-	cm.l.Lock()
-
+	cm.l.RLock()
 	keys := make([]string, 0, len(cm.m))
 	for k := range cm.m {
 		keys = append(keys, k)
 	}
-	cm.l.Unlock()
+	cm.l.RUnlock()
 	return keys
 }
 
 func (cm *CMap) Values() []any {
-	cm.l.Lock()
+	cm.l.RLock()
 	items := make([]any, 0, len(cm.m))
 	for _, v := range cm.m {
 		items = append(items, v)
 	}
-	cm.l.Unlock()
+	cm.l.RUnlock()
 	return items
 }

@@ -360,32 +360,33 @@ func (g *Group) readGroupInfo() GroupInfo {
 
 	// For each file in the directory, filter by pattern
 	for _, fileInfo := range fiz {
-		if fileInfo.Name() == headBase {
-			fileSize := fileInfo.Size()
-			totalSize += fileSize
+		fileName := fileInfo.Name()
+		fileSize := fileInfo.Size()
+		totalSize += fileSize
+
+		if fileName == headBase {
 			headSize = fileSize
 			continue
-		} else if strings.HasPrefix(fileInfo.Name(), headBase) {
-			fileSize := fileInfo.Size()
-			totalSize += fileSize
+		}
 
-			submatch := indexedFilePattern.FindSubmatch([]byte(fileInfo.Name()))
-			if len(submatch) != 0 {
-				// Matches
-				fileIndex, err := strconv.Atoi(string(submatch[1]))
-				if err != nil {
-					panic(err)
-				}
-				if maxIndex < fileIndex {
-					maxIndex = fileIndex
-				}
-				if minIndex == -1 || fileIndex < minIndex {
-					minIndex = fileIndex
-				}
+		if !strings.HasPrefix(fileName, headBase) {
+			continue
+		}
+
+		submatch := indexedFilePattern.FindStringSubmatch(fileName)
+		if len(submatch) == 2 {
+			fileIndex, err := strconv.Atoi(submatch[1])
+			if err != nil {
+				panic(err)
+			}
+			if fileIndex > maxIndex {
+				maxIndex = fileIndex
+			}
+			if minIndex == -1 || fileIndex < minIndex {
+				minIndex = fileIndex
 			}
 		}
 	}
-
 	// Now account for the head.
 	if minIndex == -1 {
 		// If there were no numbered files,

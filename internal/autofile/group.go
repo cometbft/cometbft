@@ -109,8 +109,7 @@ func OpenGroup(headPath string, groupOptions ...func(*Group)) (*Group, error) {
 	g.BaseService = *service.NewBaseService(nil, "Group", g)
 
 	gInfo := g.readGroupInfo()
-	g.minIndex = gInfo.MinIndex
-	g.maxIndex = gInfo.MaxIndex
+	g.minIndex, g.maxIndex = gInfo.MinIndex, gInfo.MaxIndex
 	return g, nil
 }
 
@@ -322,8 +321,7 @@ func (g *Group) RotateFile() {
 // CONTRACT: Caller must close the returned GroupReader.
 func (g *Group) NewReader(index int) (*GroupReader, error) {
 	r := newGroupReader(g)
-	err := r.SetIndex(index)
-	if err != nil {
+	if err := r.SetIndex(index); err != nil {
 		return nil, err
 	}
 	return r, nil

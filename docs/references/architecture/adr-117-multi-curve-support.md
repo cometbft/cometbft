@@ -1,4 +1,4 @@
-# ADR 116: Cryptography: Multi curve support
+# ADR 117: Cryptography: Multi curve support
 
 ## Change log
 
@@ -42,7 +42,7 @@ Implementations of crypto providers (previously `Privval` implementations) shoul
 * **[Optional]** Use `Keyring` to load and instantiate validators when booting up a node.
 
 
-#### Create a single implementation for `PrivValidator` 
+#### Create a single implementation for `PrivValidator`
 
 The current CometBFT codebase includes the following implementations of `PrivValidator`:
 
@@ -152,7 +152,7 @@ func (pv *CryptoProviderPV) SignVote(chainID string, vote *Vote, signExtension b
         "chainID": chainID,
         "vote":    vote,
     }
- 
+
     sig, _ := signer.Sign(voteBytes, options)
     vote.Signature = sig
     return nil
@@ -170,7 +170,7 @@ func (pv *CryptoProviderPV) SignProposal(chainID string, proposal *Proposal) err
         "chainID":  chainID,
         "proposal": proposal,
     }
- 
+
     sig, _ := signer.Sign(proposalBytes, options)
     proposal.Signature = sig
     return nil
@@ -200,7 +200,7 @@ Alternatives:
 * *Greater impact / better security*: Use cosmos-sdk's [Keyring](https://github.com/cosmos/cosmos-sdk/blob/439f2f9d5b5884bc9df4b58d702555330549a898/crypto/keyring/keyring). to manage `CryptoProvider` along with its private keys. This specifically applies to the `FilePV` implementation, which could store its private keys through `Keyring` instead of a file in the filesystem. This approach will require decoupling the `Keyring` package from the cosmos-sdk, which could be cumbersome.
 
 
-#### Directories reorganization  
+#### Directories reorganization
 
 Implementations of crypto providers (previously `Privval` implementations) should be in their own directory:
 

@@ -61,7 +61,7 @@ type Group struct {
 	headBuf            *bufio.Writer
 	Dir                string // Directory that contains .Head
 	ticker             *time.Ticker
-	mtx                sync.RWMutex
+	mtx                sync.Mutex
 	headSizeLimit      int64
 	totalSizeLimit     int64
 	groupCheckDuration time.Duration
@@ -172,29 +172,21 @@ func (g *Group) Close() {
 
 // HeadSizeLimit returns the current head size limit.
 func (g *Group) HeadSizeLimit() int64 {
-	g.mtx.RLock()
-	defer g.mtx.RUnlock()
 	return g.headSizeLimit
 }
 
 // TotalSizeLimit returns total size limit of the group.
 func (g *Group) TotalSizeLimit() int64 {
-	g.mtx.RLock()
-	defer g.mtx.RUnlock()
 	return g.totalSizeLimit
 }
 
 // MaxIndex returns index of the last file in the group.
 func (g *Group) MaxIndex() int {
-	g.mtx.RLock()
-	defer g.mtx.RUnlock()
 	return g.maxIndex
 }
 
 // MinIndex returns index of the first file in the group.
 func (g *Group) MinIndex() int {
-	g.mtx.RLock()
-	defer g.mtx.RUnlock()
 	return g.minIndex
 }
 
@@ -221,8 +213,6 @@ func (g *Group) WriteLine(line string) error {
 
 // Buffered returns the size of the currently buffered data.
 func (g *Group) Buffered() int {
-	g.mtx.RLock()
-	defer g.mtx.RUnlock()
 	return g.headBuf.Buffered()
 }
 
@@ -349,8 +339,6 @@ type GroupInfo struct {
 
 // Returns info after scanning all files in g.Head's dir.
 func (g *Group) ReadGroupInfo() GroupInfo {
-	g.mtx.RLock()
-	defer g.mtx.RUnlock()
 	return g.readGroupInfo()
 }
 

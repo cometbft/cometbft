@@ -98,7 +98,7 @@ func newReactor(
 	// Make the Reactor itself.
 	// NOTE we have to create and commit the blocks first because
 	// pool.height is determined from the store.
-	fastSync := true
+	blockSync := true
 	db := dbm.NewMemDB()
 	stateStore = sm.NewStore(db, sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -109,6 +109,19 @@ func newReactor(
 		panic(err)
 	}
 
+<<<<<<< HEAD:blocksync/reactor_test.go
+=======
+	// The commit we are building for the current height.
+	seenExtCommit := &types.ExtendedCommit{}
+
+	pubKey, err := privVals[0].GetPubKey()
+	if err != nil {
+		panic(err)
+	}
+	addr := pubKey.Address()
+	idx, _ := state.Validators.GetByAddress(addr)
+
+>>>>>>> bd95579fa (fix(blocksync)!: don't block in blocksync if our voting power is blocking the chain (#3406)):internal/blocksync/reactor_test.go
 	// let's add some blocks in
 	for blockHeight := int64(1); blockHeight <= maxBlockHeight; blockHeight++ {
 		lastCommit := types.NewCommit(blockHeight-1, 0, types.BlockID{}, nil)
@@ -137,7 +150,32 @@ func newReactor(
 		require.NoError(t, err)
 		blockID := types.BlockID{Hash: thisBlock.Hash(), PartSetHeader: thisParts.Header()}
 
+<<<<<<< HEAD:blocksync/reactor_test.go
 		state, _, err = blockExec.ApplyBlock(state, blockID, thisBlock)
+=======
+		// Simulate a commit for the current height
+		vote, err := types.MakeVote(
+			privVals[0],
+			thisBlock.Header.ChainID,
+			idx,
+			thisBlock.Header.Height,
+			0,
+			types.PrecommitType,
+			blockID,
+			cmttime.Now(),
+		)
+		if err != nil {
+			panic(err)
+		}
+		seenExtCommit = &types.ExtendedCommit{
+			Height:             vote.Height,
+			Round:              vote.Round,
+			BlockID:            blockID,
+			ExtendedSignatures: []types.ExtendedCommitSig{vote.ExtendedCommitSig()},
+		}
+
+		state, err = blockExec.ApplyBlock(state, blockID, thisBlock, maxBlockHeight)
+>>>>>>> bd95579fa (fix(blocksync)!: don't block in blocksync if our voting power is blocking the chain (#3406)):internal/blocksync/reactor_test.go
 		if err != nil {
 			panic(fmt.Errorf("error apply block: %w", err))
 		}
@@ -145,8 +183,14 @@ func newReactor(
 		blockStore.SaveBlock(thisBlock, thisParts, lastCommit)
 	}
 
+<<<<<<< HEAD:blocksync/reactor_test.go
 	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, fastSync)
 	bcReactor.SetLogger(logger.With("module", "blockchain"))
+=======
+	// As the tests only support one validator in the valSet, we pass a different address to bypass the `localNodeBlocksTheChain` check. Namely, the tested node is not an active validator.
+	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, blockSync, []byte("anotherAddress"), NopMetrics(), 0)
+	bcReactor.SetLogger(logger.With("module", "blocksync"))
+>>>>>>> bd95579fa (fix(blocksync)!: don't block in blocksync if our voting power is blocking the chain (#3406)):internal/blocksync/reactor_test.go
 
 	return ReactorPair{bcReactor, proxyApp}
 }

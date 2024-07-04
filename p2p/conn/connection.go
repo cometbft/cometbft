@@ -786,7 +786,7 @@ func newChannel(conn *MConnection, desc ChannelDescriptor) *Channel {
 	return &Channel{
 		conn:                    conn,
 		desc:                    desc,
-		timer:                   time.NewTimer(0),
+		timer:                   time.NewTimer(defaultSendTimeout),
 		sendQueue:               make(chan []byte, desc.SendQueueCapacity),
 		recving:                 make([]byte, 0, desc.RecvBufferCapacity),
 		maxPacketMsgPayloadSize: conn.config.MaxPacketMsgPayloadSize,

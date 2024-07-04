@@ -111,7 +111,7 @@ func newReactor(
 	// Make the Reactor itself.
 	// NOTE we have to create and commit the blocks first because
 	// pool.height is determined from the store.
-	blockSync := true
+	fastSync := true
 	db := dbm.NewMemDB()
 	stateStore = sm.NewStore(db, sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -124,13 +124,6 @@ func newReactor(
 
 	// The commit we are building for the current height.
 	seenExtCommit := &types.ExtendedCommit{}
-
-	pubKey, err := privVals[0].GetPubKey()
-	if err != nil {
-		panic(err)
-	}
-	addr := pubKey.Address()
-	idx, _ := state.Validators.GetByAddress(addr)
 
 	// let's add some blocks in
 	for blockHeight := int64(1); blockHeight <= maxBlockHeight; blockHeight++ {
@@ -145,6 +138,12 @@ func newReactor(
 		blockID := types.BlockID{Hash: thisBlock.Hash(), PartSetHeader: thisParts.Header()}
 
 		// Simulate a commit for the current height
+		pubKey, err := privVals[0].GetPubKey()
+		if err != nil {
+			panic(err)
+		}
+		addr := pubKey.Address()
+		idx, _ := state.Validators.GetByAddress(addr)
 		vote, err := types.MakeVote(
 			privVals[0],
 			thisBlock.Header.ChainID,
@@ -178,12 +177,7 @@ func newReactor(
 		}
 	}
 
-<<<<<<< HEAD:blocksync/reactor_test.go
 	bcReactor := NewByzantineReactor(incorrectBlock, NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics(), 0))
-=======
-	// As the tests only support one validator in the valSet, we pass a different address to bypass the `localNodeBlocksTheChain` check. Namely, the tested node is not an active validator.
-	bcReactor := NewReactor(state.Copy(), blockExec, blockStore, blockSync, []byte("anotherAddress"), NopMetrics(), 0)
->>>>>>> bd95579fa (fix(blocksync)!: don't block in blocksync if our voting power is blocking the chain (#3406)):internal/blocksync/reactor_test.go
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}

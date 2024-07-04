@@ -344,10 +344,9 @@ func NewNodeWithContext(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
 	}
-	localAddr := pubKey.Address()
 
 	// Determine whether we should attempt state sync.
-	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
+	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, pubKey)
 	if stateSync && state.LastBlockHeight > 0 {
 		logger.Info("Found local state with non-zero height, skipping state sync")
 		stateSync = false
@@ -372,12 +371,7 @@ func NewNodeWithContext(ctx context.Context,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
-<<<<<<< HEAD
 	blockSync := !onlyValidatorIsUs(state, pubKey)
-=======
-	blockSync := !onlyValidatorIsUs(state, localAddr)
-	waitSync := stateSync || blockSync
->>>>>>> bd95579fa (fix(blocksync)!: don't block in blocksync if our voting power is blocking the chain (#3406))
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
@@ -407,7 +401,7 @@ func NewNodeWithContext(ctx context.Context,
 		}
 	}
 	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}

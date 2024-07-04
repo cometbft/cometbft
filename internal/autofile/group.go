@@ -16,6 +16,8 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 )
 
+var indexedFilePattern = regexp.MustCompile(`^.+\.([0-9]{3,})$`)
+
 const (
 	defaultGroupCheckDuration = 5000 * time.Millisecond
 	defaultHeadSizeLimit      = 10 * 1024 * 1024       // 10MB
@@ -59,7 +61,7 @@ type Group struct {
 	headBuf            *bufio.Writer
 	Dir                string // Directory that contains .Head
 	ticker             *time.Ticker
-	mtx                sync.Mutex
+	mtx                sync.RWMutex
 	headSizeLimit      int64
 	totalSizeLimit     int64
 	groupCheckDuration time.Duration
@@ -170,29 +172,29 @@ func (g *Group) Close() {
 
 // HeadSizeLimit returns the current head size limit.
 func (g *Group) HeadSizeLimit() int64 {
-	g.mtx.Lock()
-	defer g.mtx.Unlock()
+	g.mtx.RLock()
+	defer g.mtx.RUnlock()
 	return g.headSizeLimit
 }
 
 // TotalSizeLimit returns total size limit of the group.
 func (g *Group) TotalSizeLimit() int64 {
-	g.mtx.Lock()
-	defer g.mtx.Unlock()
+	g.mtx.RLock()
+	defer g.mtx.RUnlock()
 	return g.totalSizeLimit
 }
 
 // MaxIndex returns index of the last file in the group.
 func (g *Group) MaxIndex() int {
-	g.mtx.Lock()
-	defer g.mtx.Unlock()
+	g.mtx.RLock()
+	defer g.mtx.RUnlock()
 	return g.maxIndex
 }
 
 // MinIndex returns index of the first file in the group.
 func (g *Group) MinIndex() int {
-	g.mtx.Lock()
-	defer g.mtx.Unlock()
+	g.mtx.RLock()
+	defer g.mtx.RUnlock()
 	return g.minIndex
 }
 
@@ -219,8 +221,8 @@ func (g *Group) WriteLine(line string) error {
 
 // Buffered returns the size of the currently buffered data.
 func (g *Group) Buffered() int {
-	g.mtx.Lock()
-	defer g.mtx.Unlock()
+	g.mtx.RLock()
+	defer g.mtx.RUnlock()
 	return g.headBuf.Buffered()
 }
 
@@ -347,8 +349,8 @@ type GroupInfo struct {
 
 // Returns info after scanning all files in g.Head's dir.
 func (g *Group) ReadGroupInfo() GroupInfo {
-	g.mtx.Lock()
-	defer g.mtx.Unlock()
+	g.mtx.RLock()
+	defer g.mtx.RUnlock()
 	return g.readGroupInfo()
 }
 
@@ -380,7 +382,7 @@ func (g *Group) readGroupInfo() GroupInfo {
 		} else if strings.HasPrefix(fileInfo.Name(), headBase) {
 			fileSize := fileInfo.Size()
 			totalSize += fileSize
-			indexedFilePattern := regexp.MustCompile(`^.+\.([0-9]{3,})$`)
+
 			submatch := indexedFilePattern.FindSubmatch([]byte(fileInfo.Name()))
 			if len(submatch) != 0 {
 				// Matches
@@ -422,7 +424,7 @@ func filePathForIndex(headPath string, index int, maxIndex int) string {
 // GroupReader provides an interface for reading from a Group.
 type GroupReader struct {
 	*Group
-	mtx       sync.Mutex
+	mtx       sync.RWMutex
 	curIndex  int
 	curFile   *os.File
 	curReader *bufio.Reader

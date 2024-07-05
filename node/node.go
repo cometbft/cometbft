@@ -479,12 +479,12 @@ func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusL
 	}
 }
 
-func onlyValidatorIsUs(state sm.State, pubKey crypto.PubKey) bool {
+func onlyValidatorIsUs(state sm.State, localAddr crypto.Address) bool {
 	if state.Validators.Size() > 1 {
 		return false
 	}
-	addr, _ := state.Validators.GetByIndex(0)
-	return bytes.Equal(pubKey.Address(), addr)
+	valAddr, _ := state.Validators.GetByIndex(0)
+	return bytes.Equal(localAddr, valAddr)
 }
 
 func createMempoolAndMempoolReactor(
@@ -577,12 +577,13 @@ func createBlockchainReactor(config *cfg.Config,
 	blockExec *sm.BlockExecutor,
 	blockStore *store.BlockStore,
 	blockSync bool,
+	localAddr crypto.Address,
 	logger log.Logger,
 	offlineStateSyncHeight int64,
 ) (bcReactor p2p.Reactor, err error) {
 	switch config.BlockSync.Version {
 	case "v0":
-		bcReactor = bc.NewReactorWithOfflineStateSync(state.Copy(), blockExec, blockStore, blockSync, offlineStateSyncHeight)
+		bcReactor = bc.NewReactorWithOfflineStateSyncAndAddr(state.Copy(), blockExec, blockStore, blockSync, localAddr, offlineStateSyncHeight)
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:
@@ -914,9 +915,10 @@ func NewNodeWithContext(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
 	}
+	localAddr := pubKey.Address()
 
 	// Determine whether we should attempt state sync.
-	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, pubKey)
+	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
 	if stateSync && state.LastBlockHeight > 0 {
 		logger.Info("Found local state with non-zero height, skipping state sync")
 		stateSync = false
@@ -941,7 +943,7 @@ func NewNodeWithContext(ctx context.Context,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := config.BlockSyncMode && !onlyValidatorIsUs(state, pubKey)
+	blockSync := config.BlockSyncMode && !onlyValidatorIsUs(state, localAddr)
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
@@ -970,7 +972,7 @@ func NewNodeWithContext(ctx context.Context,
 		}
 	}
 	// Make BlockchainReactor. Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlockchainReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, offlineStateSyncHeight)
+	bcReactor, err := createBlockchainReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blockchain reactor: %w", err)
 	}

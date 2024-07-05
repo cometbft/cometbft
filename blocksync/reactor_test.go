@@ -111,7 +111,7 @@ func newReactor(
 	// Make the Reactor itself.
 	// NOTE we have to create and commit the blocks first because
 	// pool.height is determined from the store.
-	fastSync := true
+	blockSync := true
 	db := dbm.NewMemDB()
 	stateStore = sm.NewStore(db, sm.StoreOptions{
 		DiscardABCIResponses: false,
@@ -124,6 +124,13 @@ func newReactor(
 
 	// The commit we are building for the current height.
 	seenExtCommit := &types.ExtendedCommit{}
+
+	pubKey, err := privVals[0].GetPubKey()
+	if err != nil {
+		panic(err)
+	}
+	addr := pubKey.Address()
+	idx, _ := state.Validators.GetByAddress(addr)
 
 	// let's add some blocks in
 	for blockHeight := int64(1); blockHeight <= maxBlockHeight; blockHeight++ {
@@ -138,12 +145,6 @@ func newReactor(
 		blockID := types.BlockID{Hash: thisBlock.Hash(), PartSetHeader: thisParts.Header()}
 
 		// Simulate a commit for the current height
-		pubKey, err := privVals[0].GetPubKey()
-		if err != nil {
-			panic(err)
-		}
-		addr := pubKey.Address()
-		idx, _ := state.Validators.GetByAddress(addr)
 		vote, err := types.MakeVote(
 			privVals[0],
 			thisBlock.Header.ChainID,
@@ -177,7 +178,7 @@ func newReactor(
 		}
 	}
 
-	bcReactor := NewByzantineReactor(incorrectBlock, NewReactor(state.Copy(), blockExec, blockStore, fastSync, NopMetrics(), 0))
+	bcReactor := NewByzantineReactor(incorrectBlock, NewReactor(state.Copy(), blockExec, blockStore, blockSync, NopMetrics(), 0))
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}

@@ -221,6 +221,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *types.FinalizeBloc
 If the indexer is not `null`, the transaction will be indexed. Each event is
 indexed using a composite key in the form of `{eventType}.{eventAttribute}={eventValue}`,
 e.g. `transfer.sender=bob`.
+or   `wasm-transfer.sender=bob`.
 
 ## Querying Transactions Events
 

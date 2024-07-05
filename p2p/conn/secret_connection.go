@@ -45,6 +45,9 @@ const (
 	labelSecretConnectionMac     = "SECRET_CONNECTION_MAC"
 
 	defaultWriteBufferSize = 128 * 1024
+	// try to read the biggest logical packet we can get, in one read.
+	// biggest logical packet is encoding_overhead(64kb).
+	defaultReadBufferSize = 65 * 1024
 )
 
 var (
@@ -72,6 +75,7 @@ type SecretConnection struct {
 
 	conn       io.ReadWriteCloser
 	connWriter *bufio.Writer
+	connReader io.Reader
 
 	// net.Conn must be thread safe:
 	// https://golang.org/pkg/net/#Conn.
@@ -154,6 +158,7 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	sc := &SecretConnection{
 		conn:            conn,
 		connWriter:      bufio.NewWriterSize(conn, defaultWriteBufferSize),
+		connReader:      bufio.NewReaderSize(conn, defaultReadBufferSize),
 		recvBuffer:      nil,
 		recvNonce:       new([aeadNonceSize]byte),
 		sendNonce:       new([aeadNonceSize]byte),
@@ -249,7 +254,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 
 	// read off the conn
 	sealedFrame := sc.recvSealedFrame
-	_, err = io.ReadFull(sc.conn, sealedFrame)
+	_, err = io.ReadFull(sc.connReader, sealedFrame)
 	if err != nil {
 		return n, err
 	}

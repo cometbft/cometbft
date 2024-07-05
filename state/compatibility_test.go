@@ -143,6 +143,10 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 	err := multiStore.SaveABCIResponses(height, &v1beta2ABCIResponses)
 	require.NoError(t, err)
+	require.Equal(t, 1, len(v1beta2ABCIResponses.DeliverTxs))
+	require.Equal(t, 1, len(v1beta2ABCIResponses.BeginBlock.Events))
+	require.Equal(t, 1, len(v1beta2ABCIResponses.EndBlock.Events))
+
 	finalizeBlockResponse, err := multiStore.LoadFinalizeBlockResponse(height)
 	require.NoError(t, err)
 
@@ -154,6 +158,7 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 	require.Nil(t, finalizeBlockResponse.AppHash)
 
 	// Test for equality
+	require.Equal(t, 1, len(finalizeBlockResponse.TxResults))
 	require.Equal(t, len(v1beta2ABCIResponses.DeliverTxs), len(finalizeBlockResponse.TxResults))
 	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Code, finalizeBlockResponse.TxResults[0].Code)
 	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Data, finalizeBlockResponse.TxResults[0].Data)
@@ -167,6 +172,7 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Events[0].Attributes[0].Value, finalizeBlockResponse.TxResults[0].Events[0].Attributes[0].Value)
 	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Codespace, finalizeBlockResponse.TxResults[0].Codespace)
 
+	require.Equal(t, 2, len(finalizeBlockResponse.Events))
 	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events)+len(v1beta2ABCIResponses.EndBlock.Events), len(finalizeBlockResponse.Events))
 
 	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Type, finalizeBlockResponse.Events[0].Type)

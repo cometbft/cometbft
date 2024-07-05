@@ -42,7 +42,7 @@ type metricsLabelCache struct {
 }
 
 type peerPendingMetricsCache struct {
-	mtx             *sync.Mutex
+	mtx             sync.Mutex
 	perMessageCache map[reflect.Type]peerPendingMetricsCacheEntry
 }
 

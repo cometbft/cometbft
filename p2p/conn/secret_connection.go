@@ -14,7 +14,7 @@ import (
 	"time"
 
 	gogotypes "github.com/cosmos/gogoproto/types"
-	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
+	"github.com/gtank/merlin"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"

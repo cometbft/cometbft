@@ -52,7 +52,6 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang/protobuf v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a
 	github.com/vektra/mockery/v2 v2.14.0
 	golang.org/x/sync v0.5.0
 	gonum.org/v1/gonum v0.8.2

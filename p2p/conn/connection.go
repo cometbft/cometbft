@@ -521,16 +521,23 @@ func (c *MConnection) sendSomePacketMsgs(w protoio.Writer) bool {
 // Returns true if messages from channels were exhausted.
 func (c *MConnection) sendBatchPacketMsgs(w protoio.Writer, batchSize int) bool {
 	// Send a batch of PacketMsgs.
+	totalBytesWritten := 0
+	defer func() {
+		if totalBytesWritten > 0 {
+			c.sendMonitor.Update(totalBytesWritten)
+		}
+	}()
 	for i := 0; i < batchSize; i++ {
 		channel := selectChannelToGossipOn(c.channels)
 		// nothing to send across any channel.
 		if channel == nil {
 			return true
 		}
-		err := c.sendPacketMsgOnChannel(w, channel)
+		bytesWritten, err := c.sendPacketMsgOnChannel(w, channel)
 		if err {
 			return true
 		}
+		totalBytesWritten += bytesWritten
 	}
 	return false
 }
@@ -562,18 +569,18 @@ func selectChannelToGossipOn(channels []*Channel) *Channel {
 	return leastChannel
 }
 
-func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Channel) bool {
+// returns (num_bytes_written, error_occurred).
+func (c *MConnection) sendPacketMsgOnChannel(w protoio.Writer, sendChannel *Channel) (int, bool) {
 	// Make & send a PacketMsg from this channel
-	_n, err := sendChannel.writePacketMsgTo(w)
+	n, err := sendChannel.writePacketMsgTo(w)
 	if err != nil {
 		c.Logger.Error("Failed to write PacketMsg", "err", err)
 		c.stopForError(err)
-		return true
+		return n, true
 	}
-	// TODO: Change this to only do one update for the entire bawtch.
-	c.sendMonitor.Update(_n)
+	// TODO: Change this to only add flush signals at the start and end of the batch.
 	c.flushTimer.Set()
-	return false
+	return n, false
 }
 
 // recvRoutine reads PacketMsgs and reconstructs the message using the channels' "recving" buffer.

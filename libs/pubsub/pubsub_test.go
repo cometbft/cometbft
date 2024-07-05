@@ -420,7 +420,7 @@ func benchmarkNClients(b *testing.B, n int) {
 	for i := 0; i < n; i++ {
 		subscription, err := s.Subscribe(
 			ctx,
-			clientID,
+			fmt.Sprintf("%s-%d", clientID, i+1),
 			query.MustCompile(fmt.Sprintf("abci.Account.Owner = 'Ivan' AND abci.Invoices.Number = %d", i)),
 		)
 		if err != nil {
@@ -464,7 +464,7 @@ func benchmarkNClientsOneQuery(b *testing.B, n int) {
 	ctx := context.Background()
 	q := query.MustCompile("abci.Account.Owner = 'Ivan' AND abci.Invoices.Number = 1")
 	for i := 0; i < n; i++ {
-		subscription, err := s.Subscribe(ctx, clientID, q)
+		subscription, err := s.Subscribe(ctx, fmt.Sprintf("%s-%d", clientID, i+1), q)
 		if err != nil {
 			b.Fatal(err)
 		}

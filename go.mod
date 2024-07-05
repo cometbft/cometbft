@@ -13,17 +13,11 @@ require (
 	github.com/gofrs/uuid v4.3.0+incompatible
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/google/orderedcode v0.0.1
-<<<<<<< HEAD
 	github.com/google/uuid v1.4.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/gtank/merlin v0.1.1
 	github.com/informalsystems/tm-load-test v1.3.0
 	github.com/lib/pq v1.10.7
-	github.com/libp2p/go-buffer-pool v0.1.0
-=======
-	github.com/gorilla/websocket v1.5.3
-	github.com/lib/pq v1.10.9
->>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 	github.com/minio/highwayhash v1.0.2
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pkg/errors v0.9.1
@@ -58,6 +52,7 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang/protobuf v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a
 	github.com/vektra/mockery/v2 v2.14.0
 	golang.org/x/sync v0.5.0
 	gonum.org/v1/gonum v0.8.2

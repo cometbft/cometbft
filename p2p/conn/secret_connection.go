@@ -14,12 +14,8 @@ import (
 	"time"
 
 	gogotypes "github.com/cosmos/gogoproto/types"
-<<<<<<< HEAD
 	"github.com/gtank/merlin"
-	pool "github.com/libp2p/go-buffer-pool"
-=======
 	"github.com/oasisprotocol/curve25519-voi/primitives/merlin"
->>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
 	"golang.org/x/crypto/hkdf"
@@ -205,15 +201,6 @@ func (sc *SecretConnection) Write(data []byte) (n int, err error) {
 
 	for 0 < len(data) {
 		if err := func() error {
-<<<<<<< HEAD
-			var sealedFrame = pool.Get(aeadSizeOverhead + totalFrameSize)
-			var frame = pool.Get(totalFrameSize)
-			defer func() {
-				pool.Put(sealedFrame)
-				pool.Put(frame)
-			}()
-=======
->>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 			var chunk []byte
 			if dataMaxSize < len(data) {
 				chunk = data[:dataMaxSize]
@@ -257,12 +244,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 	}
 
 	// read off the conn
-<<<<<<< HEAD
-	var sealedFrame = pool.Get(aeadSizeOverhead + totalFrameSize)
-	defer pool.Put(sealedFrame)
-=======
 	sealedFrame := sc.recvSealedFrame
->>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 	_, err = io.ReadFull(sc.conn, sealedFrame)
 	if err != nil {
 		return
@@ -270,12 +252,7 @@ func (sc *SecretConnection) Read(data []byte) (n int, err error) {
 
 	// decrypt the frame.
 	// reads and updates the sc.recvNonce
-<<<<<<< HEAD
-	var frame = pool.Get(totalFrameSize)
-	defer pool.Put(frame)
-=======
 	frame := sc.recvFrame
->>>>>>> d33525503 (perf(p2p/conn): Remove unneeded global pool buffers in secret connection (#3403))
 	_, err = sc.recvAead.Open(frame[:0], sc.recvNonce[:], sealedFrame, nil)
 	if err != nil {
 		return n, fmt.Errorf("failed to decrypt SecretConnection: %w", err)

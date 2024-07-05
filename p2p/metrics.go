@@ -54,7 +54,6 @@ type peerPendingMetricsCacheEntry struct {
 
 func peerPendingMetricsCacheFromMlc(mlc *metricsLabelCache) *peerPendingMetricsCache {
 	pendingCache := &peerPendingMetricsCache{
-		mtx:             &sync.Mutex{},
 		perMessageCache: make(map[reflect.Type]peerPendingMetricsCacheEntry),
 	}
 	if mlc != nil {

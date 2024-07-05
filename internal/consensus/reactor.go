@@ -569,10 +569,21 @@ func (conR *Reactor) getRoundState() *cstypes.RoundState {
 func (conR *Reactor) gossipDataRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
 	rng := cmtrand.NewStdlibRand()
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 
 	for {
 		// Manage disconnects from self or peer.
 		if !peer.IsRunning() || !conR.IsRunning() {
+			return
+		}
+
+		// Sleep for a random duration to reduce redundant block parts
+		timer.Reset(conR.getRandomSleepDuration(rng))
+		select {
+		case <-timer.C:
+			// Continue after sleep
+		case <-conR.Quit():
 			return
 		}
 
@@ -590,6 +601,7 @@ func (conR *Reactor) gossipDataRoutine(peer p2p.Peer, ps *PeerState) {
 				continue
 			}
 		}
+
 		if continueLoop {
 			continue
 		}
@@ -608,9 +620,17 @@ func (conR *Reactor) gossipDataRoutine(peer p2p.Peer, ps *PeerState) {
 		}
 
 		// If we've reached this point, we have nothing to send.
-		// Instead of sleeping, we'll just continue the loop.
-		// This allows the routine to quickly check for new data to send.
+		// The loop will continue immediately to check for new data.
 	}
+}
+
+// getRandomSleepDuration returns a random duration to sleep based on the configuration.
+func (conR *Reactor) getRandomSleepDuration(rng *rand.Rand) time.Duration {
+	if conR.conS.config.PeerGossipIntraloopSleepDuration <= 0 {
+		return 0
+	}
+	maxSleepDuration := conR.conS.config.PeerGossipIntraloopSleepDuration
+	return time.Duration(rng.Int63n(int64(maxSleepDuration)))
 }
 
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {

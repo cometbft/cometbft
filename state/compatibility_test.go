@@ -255,7 +255,7 @@ func TestStateV1Beta2ABCIResponsesAsStateV1LegacyABCIResponse(t *testing.T) {
 	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Attributes[0].Value, legacyABCIResponses.BeginBlock.Events[0].Attributes[0].Value)
 }
 
-// This test unmarshal a v1beta2.ABCIResponses as a v1beta3.ResponseFinalizeBlock
+// This test unmarshals a v1beta2.ABCIResponses as a v1beta3.ResponseFinalizeBlock
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should fail because they are not compatible.
 func TestStateV1Beta2ABCIResponsesAsV1Beta3ResponseFinalizeBlock(t *testing.T) {

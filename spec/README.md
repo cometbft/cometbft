@@ -12,9 +12,9 @@ This is a markdown specification of CometBFT.
 It defines the base data structures, how they are validated,
 and how they are communicated over the network.
 
-If you find discrepancies between the spec and the code that
-do not have an associated issue or pull request on github,
-please submit them to our [bug bounty](https://cometbft.com/security)!
+If you find discrepancies between the spec and the code that do not have an
+associated issue or pull request on github, please submit them to our [bug
+bounty](https://github.com/cometbft/cometbft#security)!
 
 ## Contents
 

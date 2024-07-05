@@ -42,6 +42,8 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
+- [ADR-113: Modular transaction hashing](adr-113-modular-transaction-hashing.md)
+
 ### Accepted
 
 - [ADR-101: Data companion pull API](adr-101-data-companion-pull-api.md)

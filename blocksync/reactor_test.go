@@ -178,8 +178,7 @@ func newReactor(
 		}
 	}
 
-	// As the tests only support one validator in the valSet, we pass a different address to bypass the `localNodeBlocksTheChain` check. Namely, the tested node is not an active validator.
-	bcReactor := NewByzantineReactor(incorrectBlock, NewReactor(state.Copy(), blockExec, blockStore, blockSync, []byte("anotherAddress"), NopMetrics(), 0))
+	bcReactor := NewByzantineReactor(incorrectBlock, NewReactor(state.Copy(), blockExec, blockStore, blockSync, NopMetrics(), 0))
 	bcReactor.SetLogger(logger.With("module", "blocksync"))
 
 	return ReactorPair{bcReactor, proxyApp}

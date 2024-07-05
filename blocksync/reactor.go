@@ -70,6 +70,13 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
+) *Reactor {
+	return NewReactorWithAddr(state, blockExec, store, blockSync, nil, metrics, offlineStateSyncHeight)
+}
+
+// Funtion added to keep existing API.
+func NewReactorWithAddr(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
 	blockSync bool, localAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
 

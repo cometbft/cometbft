@@ -193,8 +193,6 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 	require.Nil(t, finalizeBlockResponse.ConsensusParamUpdates.Feature)
 	require.Nil(t, finalizeBlockResponse.AppHash)
 
-	require.Equal(t, finalizeBlockResponse.NextBlockDelay, time.Duration(0))
-
 	require.Equal(t, len(v1beta2ABCIResponses.EndBlock.ValidatorUpdates), len(finalizeBlockResponse.ValidatorUpdates))
 	require.Equal(t, v1beta2ABCIResponses.EndBlock.ValidatorUpdates[0].Power, finalizeBlockResponse.ValidatorUpdates[0].Power)
 

@@ -129,7 +129,7 @@ The test runner has the following stages, which can also be executed explicitly 
 
 Auxiliary commands:
 
-* `logs`: outputs all node logs.
+* `logs`: outputs all node logs (specify `--split` to output individual logs).
 
 * `tail`: tails (follows) node logs until canceled.
 

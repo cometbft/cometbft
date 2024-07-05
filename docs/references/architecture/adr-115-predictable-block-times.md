@@ -4,10 +4,11 @@
 
  - April 30 2024: Created by @melekes
  - May 13 2024: Updated by @melekes
+ - June 11 2024: Mark as accepted @melekes
 
 ## Status
 
-**Proposed**
+**Accepted**
 
 ## Context
 
@@ -103,22 +104,26 @@ A correct validator MUST wait until the last block is committed + `next_block_de
 `next_block_delay` is a non-deterministic field (unlike most fields in
 `FinalizeBlockResponse`), that is: it is not part of the replicated data. This
 means that each node may provide a different value, which is supposed to depend
-on how longs things are taking at the local node.
+on how longs things are taking at the local node. Or it can replicate the
+existing behavior (fixed `timeout_commit`) by always returning a constant value
+(e.g. "3s").
 
 ### ABCI application
 
-In order to leverage this feature most applications need to:
+In order to leverage this feature most applications:
 
-* use real --wallclock-- time;
+* need to use real --wallclock-- time;
 * mandate it's nodes to have synchronized clocks (NTP, or other). This is
-  not a big deal since PBTS also requires this.
+  not a big deal since PBTS also requires this;
+* `time` field in `PrepareProposalRequest`, `ProcessProposalRequest` and
+  `FinalizeBlockRequest` could be trusted when using PBTS.
 
 ### Specification
 
 Timeout estimate in the spec should be updated to reflect `next_block_delay`:
 
 ```
-block(i+1).Time > block(i).Time + NEXTBLOCKDELAY
+block(i+1).ProposalTime > block(i).CommitTime + NEXTBLOCKDELAY
 ```
 
 See [this comment][spec-comment] for more details.

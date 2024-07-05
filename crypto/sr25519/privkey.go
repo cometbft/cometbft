@@ -1,6 +1,7 @@
 package sr25519
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -159,10 +160,10 @@ func genPrivKey(rng io.Reader) PrivKey {
 // NOTE: secret should be the output of a KDF like bcrypt,
 // if it's derived from user input.
 func GenPrivKeyFromSecret(secret []byte) PrivKey {
-	seed := crypto.Sha256(secret) // Not Ripemd160 because we want 32 bytes.
+	seed := sha256.Sum256(secret) // Not Ripemd160 because we want 32 bytes.
 
 	var privKey PrivKey
-	if err := privKey.msk.UnmarshalBinary(seed); err != nil {
+	if err := privKey.msk.UnmarshalBinary(seed[:]); err != nil {
 		panic("sr25519: failed to deserialize MiniSecretKey: " + err.Error())
 	}
 

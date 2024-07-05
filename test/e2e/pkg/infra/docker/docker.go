@@ -193,7 +193,7 @@ func ExecCompose(ctx context.Context, dir string, args ...string) error {
 		args...)...)
 }
 
-// ExecCompose runs a Docker Compose command for a testnet and returns the command's output.
+// ExecComposeOutput runs a Docker Compose command for a testnet and returns the command's output.
 func ExecComposeOutput(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	return exec.CommandOutput(ctx, append(
 		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
@@ -212,7 +212,7 @@ func Exec(ctx context.Context, args ...string) error {
 	return exec.Command(ctx, append([]string{"docker"}, args...)...)
 }
 
-// Exec runs a Docker command while displaying its output.
+// ExecVerbose runs a Docker command while displaying its output.
 func ExecVerbose(ctx context.Context, args ...string) error {
 	return exec.CommandVerbose(ctx, append([]string{"docker"}, args...)...)
 }

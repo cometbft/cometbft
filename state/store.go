@@ -62,9 +62,15 @@ type Store interface {
 	// LoadValidators loads the validator set at a given height
 	LoadValidators(int64) (*types.ValidatorSet, error)
 	// LoadFinalizeBlockResponse loads the abciResponse for a given height
+<<<<<<< HEAD
 	LoadFinalizeBlockResponse(int64) (*abci.ResponseFinalizeBlock, error)
 	// LoadLastABCIResponse loads the last abciResponse for a given height
 	LoadLastFinalizeBlockResponse(int64) (*abci.ResponseFinalizeBlock, error)
+=======
+	LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
+	// LoadLastFinalizeBlockResponse loads the last abciResponse for a given height
+	LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
+>>>>>>> db6b60822 (fix: invalid `txs_results` returned for legacy ABCI responses (#3031))
 	// LoadConsensusParams loads the consensus params for a given height
 	LoadConsensusParams(int64) (types.ConsensusParams, error)
 	// Save overwrites the previous state with the updated one
@@ -430,15 +436,30 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 
 	resp := new(abci.ResponseFinalizeBlock)
 	err = resp.Unmarshal(buf)
-	if err != nil {
+	// Check for an error or if the resp.AppHash is nil if so
+	// this means the unmarshalling should be a LegacyABCIResponses
+	// Depending on a source message content (serialized as ABCIResponses)
+	// there are instances where it can be deserialized as a FinalizeBlockResponse
+	// without causing an error. But the values will not be deserialized properly
+	// and, it will contain zero values, and one of them is an AppHash == nil
+	// This can be verified in the /state/compatibility_test.go file
+	if err != nil || resp.AppHash == nil {
 		// The data might be of the legacy ABCI response type, so
 		// we try to unmarshal that
 		legacyResp := new(cmtstate.LegacyABCIResponses)
+<<<<<<< HEAD
 		rerr := legacyResp.Unmarshal(buf)
 		if rerr != nil {
 			// DATA HAS BEEN CORRUPTED OR THE SPEC HAS CHANGED
 			cmtos.Exit(fmt.Sprintf(`LoadFinalizeBlockResponse: Data has been corrupted or its spec has
 					changed: %v\n`, err))
+=======
+		if err := legacyResp.Unmarshal(buf); err != nil {
+			// only return an error, this method is only invoked through the `/block_results` not for state logic and
+			// some tests, so no need to exit cometbft if there's an error, just return it.
+			store.Logger.Error("failed in LoadFinalizeBlockResponse", "error", ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height, Err: err})
+			return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height, Err: err}
+>>>>>>> db6b60822 (fix: invalid `txs_results` returned for legacy ABCI responses (#3031))
 		}
 		// The state store contains the old format. Migrate to
 		// the new ResponseFinalizeBlock format. Note that the
@@ -448,10 +469,11 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 
 	// TODO: ensure that buf is completely read.
 
+	// Otherwise return the FinalizeBlockResponse
 	return resp, nil
 }
 
-// LoadLastFinalizeBlockResponses loads the FinalizeBlockResponses from the most recent height.
+// LoadLastFinalizeBlockResponse loads the FinalizeBlockResponses from the most recent height.
 // The height parameter is used to ensure that the response corresponds to the latest height.
 // If not, an error is returned.
 //
@@ -759,6 +781,7 @@ func min(a int64, b int64) int64 {
 }
 
 // responseFinalizeBlockFromLegacy is a convenience function that takes the old abci responses and morphs
+<<<<<<< HEAD
 // it to the finalize block response. Note that the app hash is missing
 func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.ResponseFinalizeBlock {
 	return &abci.ResponseFinalizeBlock{
@@ -768,7 +791,56 @@ func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *
 		Events:                append(legacyResp.BeginBlock.Events, legacyResp.EndBlock.Events...),
 		// NOTE: AppHash is missing in the response but will
 		// be caught and filled in consensus/replay.go
+=======
+// it to the finalize block response. Note that the app hash is missing.
+func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.FinalizeBlockResponse {
+	var response abci.FinalizeBlockResponse
+	events := make([]abci.Event, 0)
+
+	if legacyResp.DeliverTxs != nil {
+		response.TxResults = legacyResp.DeliverTxs
+>>>>>>> db6b60822 (fix: invalid `txs_results` returned for legacy ABCI responses (#3031))
 	}
+
+	// Check for begin block and end block and only append events or assign values if they are not nil
+	if legacyResp.BeginBlock != nil {
+		if legacyResp.BeginBlock.Events != nil {
+			// Add BeginBlock attribute to BeginBlock events
+			for idx := range legacyResp.BeginBlock.Events {
+				legacyResp.BeginBlock.Events[idx].Attributes = append(legacyResp.BeginBlock.Events[idx].Attributes, abci.EventAttribute{
+					Key:   "mode",
+					Value: "BeginBlock",
+					Index: false,
+				})
+			}
+			events = append(events, legacyResp.BeginBlock.Events...)
+		}
+	}
+	if legacyResp.EndBlock != nil {
+		if legacyResp.EndBlock.ValidatorUpdates != nil {
+			response.ValidatorUpdates = legacyResp.EndBlock.ValidatorUpdates
+		}
+		if legacyResp.EndBlock.ConsensusParamUpdates != nil {
+			response.ConsensusParamUpdates = legacyResp.EndBlock.ConsensusParamUpdates
+		}
+		if legacyResp.EndBlock.Events != nil {
+			// Add EndBlock attribute to BeginBlock events
+			for idx := range legacyResp.EndBlock.Events {
+				legacyResp.EndBlock.Events[idx].Attributes = append(legacyResp.EndBlock.Events[idx].Attributes, abci.EventAttribute{
+					Key:   "mode",
+					Value: "EndBlock",
+					Index: false,
+				})
+			}
+			events = append(events, legacyResp.EndBlock.Events...)
+		}
+	}
+
+	response.Events = events
+
+	// NOTE: AppHash is missing in the response but will
+	// be caught and filled in consensus/replay.go
+	return &response
 }
 
 func int64FromBytes(bz []byte) int64 {

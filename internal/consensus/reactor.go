@@ -657,10 +657,21 @@ func (conR *Reactor) getRandomSleepDuration(rng *rand.Rand) time.Duration {
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
 	rng := cmtrand.NewStdlibRand()
+	timer := time.NewTimer(0)
 
 	for {
 		// Manage disconnects from self or peer.
 		if !peer.IsRunning() || !conR.IsRunning() {
+			return
+		}
+
+		// sleep random amount to give reactor a chance to receive HasProposalBlockPart messages
+		// so we can reduce the amount of redundant block parts we send
+		timer.Reset(conR.getRandomSleepDuration(rng))
+		select {
+		case <-timer.C:
+			// Continue after sleep
+		case <-conR.Quit():
 			return
 		}
 
@@ -682,14 +693,6 @@ func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 			logger.Debug("No votes to send", "rs.Height", rs.Height, "prs.Height", prs.Height,
 				"localPV", rs.Votes.Prevotes(rs.Round).BitArray(), "peerPV", prs.Prevotes,
 				"localPC", rs.Votes.Precommits(rs.Round).BitArray(), "peerPC", prs.Precommits)
-		}
-
-		// Instead of sleeping, we'll use a non-blocking select to allow for immediate continuation
-		select {
-		case <-conR.conS.Quit():
-			return
-		default:
-			// Continue immediately
 		}
 	}
 }

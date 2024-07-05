@@ -280,6 +280,7 @@ func (sw *Switch) Broadcast(e Envelope) {
 }
 
 // TryBroadcast runs a go routine for each attempted send.
+// If the send queue of the destination channel and peer are full, the message will not be sent. To make sure that messages are indeed sent to all destination, use `Broadcast`.
 //
 // NOTE: TryBroadcast uses goroutines, so order of broadcast may not be preserved.
 func (sw *Switch) TryBroadcast(e Envelope) {

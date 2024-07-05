@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
@@ -55,13 +56,14 @@ type Reactor struct {
 	store     *store.BlockStore
 	pool      *BlockPool
 	blockSync bool
+	localAddr crypto.Address
 
 	requestsCh <-chan BlockRequest
 	errorsCh   <-chan peerError
 }
 
-func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, offlineStateSyncHeight int64) *Reactor {
+func NewReactorWithOfflineStateSyncAndAddr(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+	blockSync bool, localAddr crypto.Address, offlineStateSyncHeight int64) *Reactor {
 
 	storeHeight := store.Height()
 	if storeHeight == 0 {
@@ -97,11 +99,17 @@ func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor,
 		store:        store,
 		pool:         pool,
 		blockSync:    blockSync,
+		localAddr:    localAddr,
 		requestsCh:   requestsCh,
 		errorsCh:     errorsCh,
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	return bcR
+}
+
+func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+	blockSync bool, offlineStateSyncHeight int64) *Reactor {
+	return NewReactorWithOfflineStateSyncAndAddr(state, blockExec, store, blockSync, nil, offlineStateSyncHeight)
 }
 
 // NewReactor returns new reactor instance.
@@ -253,6 +261,15 @@ func (bcR *Reactor) ReceiveEnvelope(e p2p.Envelope) {
 	}
 }
 
+func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
+	_, val := state.Validators.GetByAddress(bcR.localAddr)
+	if val == nil {
+		return false
+	}
+	total := state.Validators.TotalVotingPower()
+	return val.VotingPower >= total/3
+}
+
 // Handle messages from the poolReactor telling the reactor what to do.
 // NOTE: Don't sleep in the FOR_LOOP or otherwise slow it down!
 func (bcR *Reactor) poolRoutine(stateSynced bool) {
@@ -317,7 +334,7 @@ FOR_LOOP:
 			outbound, inbound, _ := bcR.Switch.NumPeers()
 			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
 				"outbound", outbound, "inbound", inbound)
-			if bcR.pool.IsCaughtUp() {
+			if bcR.pool.IsCaughtUp() || bcR.localNodeBlocksTheChain(state) {
 				bcR.Logger.Info("Time to switch to consensus reactor!", "height", height)
 				if err := bcR.pool.Stop(); err != nil {
 					bcR.Logger.Error("Error stopping pool", "err", err)

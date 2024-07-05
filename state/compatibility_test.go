@@ -217,7 +217,7 @@ func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should not fail because they are compatible.
 //
-//nolint:dupl
+
 func TestStateV1Beta2ABCIResponsesAsStateV1LegacyABCIResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 
@@ -312,7 +312,7 @@ func TestStateV1Beta2ABCIResponsesWithNullAsV1Beta3ResponseFinalizeBlock(t *test
 // This logic is important for the LoadFinalizeBlockResponse method in the state store
 // The conversion should work because they are compatible.
 //
-//nolint:dupl
+
 func TestStateV1Beta2ABCIResponsesAsStateV1Beta3LegacyABCIResponse(t *testing.T) {
 	v1beta2ABCIResponses := newV1Beta2ABCIResponses()
 
@@ -344,6 +344,7 @@ func TestStateV1Beta2ABCIResponsesAsStateV1Beta3LegacyABCIResponse(t *testing.T)
 	require.Equal(t, v1beta2ABCIResponses.DeliverTxs[0].Codespace, legacyABCIResponses.DeliverTxs[0].Codespace)
 
 	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events), len(legacyABCIResponses.BeginBlock.Events))
+	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events, legacyABCIResponses.BeginBlock.Events)
 	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Type, legacyABCIResponses.BeginBlock.Events[0].Type)
 	require.Equal(t, len(v1beta2ABCIResponses.BeginBlock.Events[0].Attributes), len(legacyABCIResponses.BeginBlock.Events[0].Attributes))
 	require.Equal(t, v1beta2ABCIResponses.BeginBlock.Events[0].Attributes[0].Key, legacyABCIResponses.BeginBlock.Events[0].Attributes[0].Key)
@@ -369,6 +370,7 @@ func TestStateV1Beta2ABCIResponsesWithNullAsStateV1Beta3LegacyABCIResponse(t *te
 	require.NotNil(t, legacyResponseWithNull.BeginBlock)
 
 	require.Equal(t, len(v1beta2ABCIResponsesWithNull.BeginBlock.Events), len(legacyResponseWithNull.BeginBlock.Events))
+	require.Equal(t, v1beta2ABCIResponsesWithNull.BeginBlock.Events, legacyResponseWithNull.BeginBlock.Events)
 	require.Equal(t, v1beta2ABCIResponsesWithNull.BeginBlock.Events[0].Type, legacyResponseWithNull.BeginBlock.Events[0].Type)
 	require.Equal(t, len(v1beta2ABCIResponsesWithNull.BeginBlock.Events[0].Attributes), len(legacyResponseWithNull.BeginBlock.Events[0].Attributes))
 	require.Equal(t, v1beta2ABCIResponsesWithNull.BeginBlock.Events[0].Attributes[0].Key, legacyResponseWithNull.BeginBlock.Events[0].Attributes[0].Key)
@@ -429,6 +431,7 @@ func TestStateV1Beta3ResponsesFinalizeBlockAsV1FinalizeBlockResponse(t *testing.
 	require.Equal(t, v1beta3ResponseFinalizeBlock.Events[0].Attributes[0].Key, finalizeBlockResponse.Events[0].Attributes[0].Key)
 	require.Equal(t, v1beta3ResponseFinalizeBlock.Events[0].Attributes[0].Value, finalizeBlockResponse.Events[0].Attributes[0].Value)
 
+	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates, finalizeBlockResponse.ConsensusParamUpdates)
 	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Block.MaxBytes, finalizeBlockResponse.ConsensusParamUpdates.Block.MaxBytes)
 	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Block.MaxGas, finalizeBlockResponse.ConsensusParamUpdates.Block.MaxGas)
 	require.Equal(t, v1beta3ResponseFinalizeBlock.ConsensusParamUpdates.Evidence.MaxAgeNumBlocks, finalizeBlockResponse.ConsensusParamUpdates.Evidence.MaxAgeNumBlocks)

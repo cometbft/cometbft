@@ -411,7 +411,7 @@ func filePathForIndex(headPath string, index int, maxIndex int) string {
 // GroupReader provides an interface for reading from a Group.
 type GroupReader struct {
 	*Group
-	mtx       sync.RWMutex
+	mtx       sync.Mutex
 	curIndex  int
 	curFile   *os.File
 	curReader *bufio.Reader

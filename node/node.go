@@ -583,7 +583,7 @@ func createBlockchainReactor(config *cfg.Config,
 ) (bcReactor p2p.Reactor, err error) {
 	switch config.BlockSync.Version {
 	case "v0":
-		bcReactor = bc.NewReactorWithOfflineStateSync(state.Copy(), blockExec, blockStore, blockSync, localAddr, offlineStateSyncHeight)
+		bcReactor = bc.NewReactorWithOfflineStateSyncAndAddr(state.Copy(), blockExec, blockStore, blockSync, localAddr, offlineStateSyncHeight)
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:

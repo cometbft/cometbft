@@ -62,7 +62,7 @@ type Reactor struct {
 	errorsCh   <-chan peerError
 }
 
-func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+func NewReactorWithOfflineStateSyncAndAddr(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
 	blockSync bool, localAddr crypto.Address, offlineStateSyncHeight int64) *Reactor {
 
 	storeHeight := store.Height()
@@ -105,6 +105,11 @@ func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor,
 	}
 	bcR.BaseReactor = *p2p.NewBaseReactor("Reactor", bcR)
 	return bcR
+}
+
+func NewReactorWithOfflineStateSync(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+	blockSync bool, offlineStateSyncHeight int64) *Reactor {
+	return NewReactorWithOfflineStateSyncAndAddr(state, blockExec, store, blockSync, nil, offlineStateSyncHeight)
 }
 
 // NewReactor returns new reactor instance.

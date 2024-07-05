@@ -667,8 +667,8 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 		if err := legacyResp.Unmarshal(buf); err != nil {
 			// only return an error, this method is only invoked through the `/block_results` not for state logic and
 			// some tests, so no need to exit cometbft if there's an error, just return it.
-			store.Logger.Debug("failed to unmarshall FinalizeBlockResponse (also tried as legacy ABCI response)", "error", err)
-			return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height}
+			store.Logger.Error("failed in LoadFinalizeBlockResponse", "error", ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height, Err: err})
+			return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height, Err: err}
 		}
 		// The state store contains the old format. Migrate to
 		// the new FinalizeBlockResponse format. Note that the

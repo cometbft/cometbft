@@ -86,6 +86,7 @@ type (
 	}
 
 	ErrABCIResponseCorruptedOrSpecChangeForHeight struct {
+		Err    error
 		Height int64
 	}
 )
@@ -145,7 +146,11 @@ func (e ErrABCIResponseResponseUnmarshalForHeight) Error() string {
 }
 
 func (e ErrABCIResponseCorruptedOrSpecChangeForHeight) Error() string {
-	return fmt.Sprintf("could not retrieve results for height %d", e.Height)
+	return fmt.Sprintf("failed to unmarshall FinalizeBlockResponse (also tried as legacy ABCI response) for height %d", e.Height)
+}
+
+func (e ErrABCIResponseCorruptedOrSpecChangeForHeight) Unwrap() error {
+	return e.Err
 }
 
 func (e ErrPrunerFailedToGetRetainHeight) Error() string {

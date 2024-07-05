@@ -216,7 +216,6 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 		// Peer does not have a state yet.
 		time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-		continue
 	}
 
 	for {

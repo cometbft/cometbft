@@ -220,7 +220,7 @@ func (mem *CListMempool) Flush() {
 //
 // Safe for concurrent use by multiple goroutines.
 //
-// Deprecated: Use Iterator instead.
+// Deprecated: Use CListIterator instead.
 func (mem *CListMempool) TxsFront() *clist.CElement {
 	return mem.txs.Front()
 }
@@ -231,7 +231,7 @@ func (mem *CListMempool) TxsFront() *clist.CElement {
 //
 // Safe for concurrent use by multiple goroutines.
 //
-// Deprecated: Use Iterator instead.
+// Deprecated: Use CListIterator instead.
 func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 	return mem.txs.WaitChan()
 }

@@ -434,9 +434,9 @@ func byHeightAsc(i, j *hashKey) bool {
 	hi := i.height
 	hj := j.height
 	if hi == hj {
-		return i.hash > j.hash
+		return i.hash < j.hash
 	}
-	return hi > hj
+	return hi < hj
 }
 
 // Search performs a search using the given query.

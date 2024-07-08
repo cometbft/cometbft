@@ -785,7 +785,9 @@ func (rc *recheck) consideredFull() bool {
 	return rc.recheckFull.Load()
 }
 
-// CListIterator implements an Iterator that traverses the CList sequentially.
+// CListIterator implements an Iterator that traverses the CList sequentially. When the current
+// entry is removed from the mempool, the iterator starts from the beginning of the CList. When it
+// reaches the end, it waits until a new entry is appended.
 type CListIterator struct {
 	txs    *clist.CList    // to wait on and retrieve the first entry
 	cursor *clist.CElement // pointer to the current entry in the list

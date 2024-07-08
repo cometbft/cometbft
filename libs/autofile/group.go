@@ -16,6 +16,8 @@ import (
 	"github.com/cometbft/cometbft/libs/service"
 )
 
+var indexedFilePattern = regexp.MustCompile(`^.+\.([0-9]{3,})$`)
+
 const (
 	defaultGroupCheckDuration = 5000 * time.Millisecond
 	defaultHeadSizeLimit      = 10 * 1024 * 1024       // 10MB
@@ -107,8 +109,7 @@ func OpenGroup(headPath string, groupOptions ...func(*Group)) (*Group, error) {
 	g.BaseService = *service.NewBaseService(nil, "Group", g)
 
 	gInfo := g.readGroupInfo()
-	g.minIndex = gInfo.MinIndex
-	g.maxIndex = gInfo.MaxIndex
+	g.minIndex, g.maxIndex = gInfo.MinIndex, gInfo.MaxIndex
 	return g, nil
 }
 
@@ -146,7 +147,7 @@ func (g *Group) OnStart() error {
 func (g *Group) OnStop() {
 	g.ticker.Stop()
 	if err := g.FlushAndSync(); err != nil {
-		g.Logger.Error("Error flushin to disk", "err", err)
+		g.Logger.Error("Error flushing to disk", "err", err)
 	}
 }
 
@@ -330,8 +331,7 @@ func (g *Group) RotateFile() {
 // CONTRACT: Caller must close the returned GroupReader.
 func (g *Group) NewReader(index int) (*GroupReader, error) {
 	r := newGroupReader(g)
-	err := r.SetIndex(index)
-	if err != nil {
+	if err := r.SetIndex(index); err != nil {
 		return nil, err
 	}
 	return r, nil
@@ -372,32 +372,33 @@ func (g *Group) readGroupInfo() GroupInfo {
 
 	// For each file in the directory, filter by pattern
 	for _, fileInfo := range fiz {
-		if fileInfo.Name() == headBase {
-			fileSize := fileInfo.Size()
-			totalSize += fileSize
+		fileName := fileInfo.Name()
+		fileSize := fileInfo.Size()
+		totalSize += fileSize
+
+		if fileName == headBase {
 			headSize = fileSize
 			continue
-		} else if strings.HasPrefix(fileInfo.Name(), headBase) {
-			fileSize := fileInfo.Size()
-			totalSize += fileSize
-			indexedFilePattern := regexp.MustCompile(`^.+\.([0-9]{3,})$`)
-			submatch := indexedFilePattern.FindSubmatch([]byte(fileInfo.Name()))
-			if len(submatch) != 0 {
-				// Matches
-				fileIndex, err := strconv.Atoi(string(submatch[1]))
-				if err != nil {
-					panic(err)
-				}
-				if maxIndex < fileIndex {
-					maxIndex = fileIndex
-				}
-				if minIndex == -1 || fileIndex < minIndex {
-					minIndex = fileIndex
-				}
+		}
+
+		if !strings.HasPrefix(fileName, headBase) {
+			continue
+		}
+
+		submatch := indexedFilePattern.FindStringSubmatch(fileName)
+		if len(submatch) == 2 {
+			fileIndex, err := strconv.Atoi(submatch[1])
+			if err != nil {
+				panic(err)
+			}
+			if fileIndex > maxIndex {
+				maxIndex = fileIndex
+			}
+			if minIndex == -1 || fileIndex < minIndex {
+				minIndex = fileIndex
 			}
 		}
 	}
-
 	// Now account for the head.
 	if minIndex == -1 {
 		// If there were no numbered files,

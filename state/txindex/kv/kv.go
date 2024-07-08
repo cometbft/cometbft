@@ -1032,7 +1032,7 @@ func extractEventSeqFromKey(key []byte) string {
 	}
 
 	for ; endPos < len(key); endPos++ {
-		if key[endPos] == eventSeqSeperatorRuneAt0 && len(key)-endPos > 4 {
+		if key[endPos] == eventSeqSeperatorRuneAt0 {
 			eventSeq := string(key[endPos:])
 			if eventSeq, ok := strings.CutPrefix(eventSeq, eventSeqSeparator); ok {
 				return eventSeq

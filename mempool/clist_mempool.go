@@ -780,3 +780,39 @@ func (rc *recheck) setRecheckFull() bool {
 func (rc *recheck) consideredFull() bool {
 	return rc.recheckFull.Load()
 }
+
+// CListIterator implements an Iterator that traverses the CList sequentially.
+type CListIterator struct {
+	txs    *clist.CList    // to wait on and retrieve the first entry
+	cursor *clist.CElement // pointer to the current entry in the list
+}
+
+func (mem *CListMempool) NewIterator() Iterator {
+	return &CListIterator{
+		txs: mem.txs,
+	}
+}
+
+// WaitNextCh returns a channel to wait for the next available entry. The
+// channel will be closed once the entry is sent.
+func (iter *CListIterator) WaitNextCh() <-chan Entry {
+	ch := make(chan Entry)
+	// Spawn goroutine that waits for the next entry, saves it locally, and puts it in the channel.
+	go func() {
+		if iter.cursor == nil {
+			// We are at the beginning of the iteration or the saved entry got removed: wait until
+			// the list becomes not empty and select the first entry.
+			<-iter.txs.WaitChan()
+			iter.cursor = iter.txs.Front()
+		} else {
+			// Wait for the next entry after the current one.
+			<-iter.cursor.NextWaitChan()
+			iter.cursor = iter.cursor.Next()
+		}
+		if iter.cursor != nil {
+			ch <- iter.cursor.Value.(Entry)
+		}
+		close(ch)
+	}()
+	return ch
+}

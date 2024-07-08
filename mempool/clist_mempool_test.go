@@ -146,10 +146,11 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	checkTxs(t, mp, 1)
-	tx0 := mp.TxsFront().Value.(*mempoolTx)
-	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
+	iter := mp.NewIterator()
+	tx0 := <-iter.WaitNextCh()
+	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
-	require.Len(t, tx0.tx, 20, "Tx is longer than 20 bytes")
+	require.Len(t, tx0.Tx(), 20, "Tx is longer than 20 bytes")
 	mp.Flush()
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.

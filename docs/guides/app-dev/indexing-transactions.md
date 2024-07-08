@@ -292,10 +292,11 @@ is a number, the following needs to be taken into account:
 
 An event type/attribute key is a string that can contain any Unicode letter or
 digit, as well as the following characters: `.` (dot), `-` (dash), `_`
-(underscore):
+(underscore). The event type/attribute key must not start with `-` (dash) or
+`.` (dot).
 
 ```
-^[\w-]+(\.\w+)?$
+^[\w]+[\.-\w]?$
 ```
 
 [abci-events]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events

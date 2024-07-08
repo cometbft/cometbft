@@ -169,6 +169,8 @@ func TestParseValid(t *testing.T) {
 
 		{"hash='136E18F7E4C348B780CF873A0BF43922E5BAFA63'", true},
 		{"hash=136E18F7E4C348B780CF873A0BF43922E5BAFA63", false},
+
+		{"cosm-wasm.transfer_amount=100", true},
 	}
 
 	for _, test := range tests {

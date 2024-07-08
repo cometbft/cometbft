@@ -24,17 +24,6 @@ import (
 
 // setupTestCase does setup common to all test cases.
 func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
-<<<<<<< HEAD
-=======
-	t.Helper()
-	tearDown, stateDB, state, _ := setupTestCaseWithStore(t)
-	return tearDown, stateDB, state
-}
-
-// setupTestCase does setup common to all test cases.
-func setupTestCaseWithStore(t *testing.T) (func(t *testing.T), dbm.DB, sm.State, sm.Store) {
-	t.Helper()
->>>>>>> db6b60822 (fix: invalid `txs_results` returned for legacy ABCI responses (#3031))
 	config := test.ResetTestRoot("state_")
 	dbType := dbm.BackendType(config.DBBackend)
 	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
@@ -49,7 +38,7 @@ func setupTestCaseWithStore(t *testing.T) (func(t *testing.T), dbm.DB, sm.State,
 
 	tearDown := func(t *testing.T) { os.RemoveAll(config.RootDir) }
 
-	return tearDown, stateDB, state, stateStore
+	return tearDown, stateDB, state
 }
 
 // TestStateCopy tests the correct copying behavior of State.
@@ -127,8 +116,6 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 	abciResponses.ValidatorUpdates = []abci.ValidatorUpdate{
 		types.TM2PB.NewValidatorUpdate(ed25519.GenPrivKey().PubKey(), 10),
 	}
-
-	abciResponses.AppHash = make([]byte, 1)
 
 	err := stateStore.SaveFinalizeBlockResponse(block.Height, abciResponses)
 	require.NoError(t, err)
@@ -534,7 +521,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	_, updatedVal2 := updatedState3.NextValidators.GetByAddress(val2PubKey.Address())
 
 	// 2. Scale
-	// old prios: cryptov1(10):-38, v2(1):39
+	// old prios: v1(10):-38, v2(1):39
 	wantVal1Prio = prevVal1.ProposerPriority
 	wantVal2Prio = prevVal2.ProposerPriority
 	// scale to diffMax = 22 = 2 * tvp, diff=39-(-38)=77
@@ -543,14 +530,14 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	dist := wantVal2Prio - wantVal1Prio
 	// ratio := (dist + 2*totalPower - 1) / 2*totalPower = 98/22 = 4
 	ratio := (dist + 2*totalPower - 1) / (2 * totalPower)
-	// cryptov1(10):-38/4, v2(1):39/4
+	// v1(10):-38/4, v2(1):39/4
 	wantVal1Prio /= ratio // -9
 	wantVal2Prio /= ratio // 9
 
 	// 3. Center - noop
 	// 4. IncrementProposerPriority() ->
-	// cryptov1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
-	// cryptov1(10):1, v2(1):-1
+	// v1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
+	// v1(10):1, v2(1):-1
 	wantVal2Prio += updatedVal2.VotingPower // 10 -> prop
 	wantVal1Prio += updatedVal1.VotingPower // 1
 	wantVal2Prio -= totalPower              // -1

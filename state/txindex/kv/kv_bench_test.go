@@ -15,6 +15,7 @@ import (
 )
 
 func generateDummyTxs(b *testing.B, indexer *TxIndex, numHeights int, numTxs int) {
+	b.Helper()
 	for h := 0; h < numHeights; h++ {
 		batch := txindex.NewBatch(int64(numTxs))
 
@@ -49,7 +50,9 @@ func generateDummyTxs(b *testing.B, indexer *TxIndex, numHeights int, numTxs int
 			}
 		}
 
-		indexer.AddBatch(batch)
+		if err := indexer.AddBatch(batch); err != nil {
+			b.Errorf("failed to add batch: %s", err)
+		}
 	}
 }
 

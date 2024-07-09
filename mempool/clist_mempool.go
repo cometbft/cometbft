@@ -20,6 +20,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+const noSender = p2p.ID("")
+
 // CListMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
 // CheckTx abci message before the transaction is added to the pool. The
@@ -265,7 +267,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 
 	if added := mem.addToCache(tx); !added {
 		mem.metrics.AlreadyReceivedTxs.Add(1)
-		if sender != "" {
+		if sender != noSender {
 			// Record a new sender for a tx we've already seen.
 			// Note it's possible a tx is still in the cache but no longer in the mempool
 			// (eg. after committing a block, txs are removed from mempool but not cache),
@@ -360,7 +362,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 
 	// Check if the transaction is already in the mempool.
 	if elem, ok := mem.getCElement(txKey); ok {
-		if sender != "" {
+		if sender != noSender {
 			// Update senders on existing entry.
 			memTx := elem.Value.(*mempoolTx)
 			if found := memTx.addSender(sender); found {

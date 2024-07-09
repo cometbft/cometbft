@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/sync/semaphore"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/clist"
@@ -151,14 +152,9 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		for _, txBytes := range protoTxs {
-			tx := types.Tx(txBytes)
-			_, err := memR.mempool.CheckTx(tx, e.Src.ID())
-			if errors.Is(err, ErrTxInCache) {
-				memR.Logger.Debug("Tx already exists in cache", "tx", tx.Hash())
-			} else if err != nil {
-				memR.Logger.Info("Could not check tx", "tx", tx.Hash(), "err", err)
-			}
+			_, _ = memR.TryAddTx(types.Tx(txBytes), e.Src)
 		}
+
 	default:
 		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
@@ -166,6 +162,27 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 	}
 
 	// broadcasting happens from go routines per peer
+}
+
+// TryAddTx attempts to add an incoming transaction to the mempool.
+// When the sender is nil, it means the transaction comes from an RPC endpoint.
+func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, error) {
+	senderID := noSender
+	if sender != nil {
+		senderID = sender.ID()
+	}
+
+	reqRes, err := memR.mempool.CheckTx(tx, senderID)
+	switch {
+	case errors.Is(err, ErrTxInCache):
+		memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%v", tx.Hash()), "sender", senderID)
+		return nil, err
+	case err != nil:
+		memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%v", tx.Hash()), "sender", senderID, "err", err)
+		return nil, err
+	}
+
+	return reqRes, nil
 }
 
 func (memR *Reactor) EnableInOutTxs() {

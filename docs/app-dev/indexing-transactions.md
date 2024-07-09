@@ -291,9 +291,6 @@ is a number, the following needs to be taken into account:
 - As of CometBFT v0.38.x, queries can contain floating point numbers as well.
 - Note that comparing to floats can be imprecise with a high number of decimals.
 
-<<<<<<< HEAD:docs/app-dev/indexing-transactions.md
-[abci-events]: ../spec/abci/abci++_basic_concepts.md#events
-=======
 ## Event type and attribute key format
 
 An event type/attribute key is a string that can contain any Unicode letter or
@@ -305,5 +302,4 @@ digit, as well as the following characters: `.` (dot), `-` (dash), `_`
 ^[\w]+[\.-\w]?$
 ```
 
-[abci-events]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events
->>>>>>> a3ec97e3b (feat(libs/pubsub): allow dash symbol in event type/attribute (#3456)):docs/guides/app-dev/indexing-transactions.md
+[abci-events]: ../spec/abci/abci++_basic_concepts.md#events

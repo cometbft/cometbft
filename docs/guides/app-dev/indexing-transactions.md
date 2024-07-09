@@ -32,7 +32,7 @@ would be equal to the composite key of `jack.account.number`.
 By default, CometBFT will index all transactions by their respective hashes
 and height and blocks by their height.
 
-CometBFT allows for different events within the same height to have 
+CometBFT allows for different events within the same height to have
 equal attributes.
 
 ## Configuration
@@ -70,7 +70,7 @@ entirely in the future.
 
 **Implementation and data layout**
 
-The kv indexer stores each attribute of an event individually, by creating a composite key 
+The kv indexer stores each attribute of an event individually, by creating a composite key
 with
 - event type,
 - attribute key,
@@ -79,7 +79,7 @@ with
 - the height, and
 - event counter.
  For example the following events:
- 
+
 ```
 Type: "transfer",
   Attributes: []abci.EventAttribute{
@@ -88,9 +88,9 @@ Type: "transfer",
    {Key: "balance", Value: "100", Index: true},
    {Key: "note", Value: "nothing", Index: true},
    },
- 
+
 ```
- 
+
 ```
 Type: "transfer",
   Attributes: []abci.EventAttribute{
@@ -101,7 +101,7 @@ Type: "transfer",
    },
 ```
 
-will be represented as follows in the store, assuming these events result from the `FinalizeBlock` call for height 1: 
+will be represented as follows in the store, assuming these events result from the `FinalizeBlock` call for height 1:
 
 ```
 Key                                 value
@@ -115,12 +115,12 @@ transferSenderTomFinalizeBlock12           1
 transferRecepientAliceFinalizeBlock12      1
 transferBalance200FinalizeBlock12          1
 transferNodeNothingFinalizeBlock12         1
- 
+
 ```
-The event number is a local variable kept by the indexer and incremented when a new event is processed. 
-It is an `int64` variable and has no other semantics besides being used to associate attributes belonging to the same events within a height. 
+The event number is a local variable kept by the indexer and incremented when a new event is processed.
+It is an `int64` variable and has no other semantics besides being used to associate attributes belonging to the same events within a height.
 This variable is not atomically incremented as event indexing is deterministic. **Should this ever change**, the event id generation
-will be broken. 
+will be broken.
 
 #### PostgreSQL
 
@@ -263,23 +263,40 @@ You can query for a paginated set of blocks by their events by calling the
 curl "localhost:26657/block_search?query=\"block.height > 10\""
 ```
 
+Storing the event sequence was introduced in CometBFT 0.34.26. Before that, up
+until Tendermint Core 0.34.26, the event sequence was not stored in the kvstore
+and events were stored only by height. That means that queries returned blocks
+and transactions whose event attributes match within the height but can match
+across different events on that height.
 
-Storing the event sequence was introduced in CometBFT 0.34.26. Before that, up until Tendermint Core 0.34.26, 
-the event sequence was not stored in the kvstore and events were stored only by height. That means that queries 
-returned blocks and transactions whose event attributes match within the height but can match across different 
-events on that height. 
-This behavior was fixed with CometBFT 0.34.26+. However, if the data was indexed with earlier versions of
-Tendermint Core and not re-indexed, that data will be queried as if all the attributes within a height
-occurred within the same event.
+This behavior was fixed with CometBFT 0.34.26+. However, if the data was
+indexed with earlier versions of Tendermint Core and not re-indexed, that data
+will be queried as if all the attributes within a height occurred within the
+same event.
 
 ## Event attribute value types
 
-Users can use anything as an event value. However, if the event attribute value is a number, the following needs to be taken into account:
+Users can use anything as an event value. However, if the event attribute value
+is a number, the following needs to be taken into account:
 
 - Negative numbers will not be properly retrieved when querying the indexer.
-- Event values are converted to big floats (from the `big/math` package). The precision of the floating point number is set to the bit length 
-of the integer it is supposed to represent, so that there is no loss of information due to insufficient precision. This was not present before CometBFT v0.38.x and all float values were ignored. 
+- Event values are converted to big floats (from the `big/math` package). The
+  precision of the floating point number is set to the bit length of the
+  integer it is supposed to represent, so that there is no loss of information
+  due to insufficient precision. This was not present before CometBFT v0.38.x
+  and all float values were ignored.
 - As of CometBFT v0.38.x, queries can contain floating point numbers as well.
-- Note that comparing to floats can be imprecise with a high number of decimals. 
+- Note that comparing to floats can be imprecise with a high number of decimals.
+
+## Event type and attribute key format
+
+An event type/attribute key is a string that can contain any Unicode letter or
+digit, as well as the following characters: `.` (dot), `-` (dash), `_`
+(underscore). The event type/attribute key must not start with `-` (dash) or
+`.` (dot).
+
+```
+^[\w]+[\.-\w]?$
+```
 
 [abci-events]: https://github.com/cometbft/cometbft/blob/main/spec/abci/abci++_basic_concepts.md#events

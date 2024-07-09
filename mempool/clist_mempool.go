@@ -219,6 +219,8 @@ func (mem *CListMempool) Flush() {
 // FIXME: leaking implementation details!
 //
 // Safe for concurrent use by multiple goroutines.
+//
+// Deprecated: Use CListIterator instead.
 func (mem *CListMempool) TxsFront() *clist.CElement {
 	return mem.txs.Front()
 }
@@ -228,6 +230,8 @@ func (mem *CListMempool) TxsFront() *clist.CElement {
 // element)
 //
 // Safe for concurrent use by multiple goroutines.
+//
+// Deprecated: Use CListIterator instead.
 func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 	return mem.txs.WaitChan()
 }
@@ -776,4 +780,49 @@ func (rc *recheck) setRecheckFull() bool {
 // progress.
 func (rc *recheck) consideredFull() bool {
 	return rc.recheckFull.Load()
+}
+
+// CListIterator implements an Iterator that traverses the CList sequentially. When the current
+// entry is removed from the mempool, the iterator starts from the beginning of the CList. When it
+// reaches the end, it waits until a new entry is appended.
+type CListIterator struct {
+	txs    *clist.CList    // to wait on and retrieve the first entry
+	cursor *clist.CElement // pointer to the current entry in the list
+}
+
+func (mem *CListMempool) NewIterator() Iterator {
+	return &CListIterator{
+		txs: mem.txs,
+	}
+}
+
+// WaitNextCh returns a channel to wait for the next available entry. The channel will be explicitly
+// closed when the entry gets removed before it is added to the channel, or when reaching the end of
+// the list.
+//
+// Unsafe for concurrent use by multiple goroutines.
+func (iter *CListIterator) WaitNextCh() <-chan Entry {
+	ch := make(chan Entry)
+	// Spawn goroutine that waits for the next entry, saves it locally, and puts it in the channel.
+	go func() {
+		if iter.cursor == nil {
+			// We are at the beginning of the iteration or the saved entry got removed: wait until
+			// the list becomes not empty and select the first entry.
+			<-iter.txs.WaitChan()
+			// Note that Front can return nil.
+			iter.cursor = iter.txs.Front()
+		} else {
+			// Wait for the next entry after the current one.
+			<-iter.cursor.NextWaitChan()
+			// If the current entry is the last one or was removed, Next will return nil.
+			iter.cursor = iter.cursor.Next()
+		}
+		if iter.cursor != nil {
+			ch <- iter.cursor.Value.(Entry)
+		} else {
+			// Unblock the receiver (it will receive nil).
+			close(ch)
+		}
+	}()
+	return ch
 }

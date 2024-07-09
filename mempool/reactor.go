@@ -12,7 +12,6 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	protomem "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
@@ -208,8 +207,6 @@ type PeerState interface {
 
 // Send new mempool txs to peer.
 func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
-	var next *clist.CElement
-
 	// If the node is catching up, don't start this routine immediately.
 	if memR.WaitSync() {
 		select {
@@ -235,26 +232,24 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 	}
 
+	iter := memR.mempool.NewIterator()
+	var entry Entry
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
 
-		// This happens because the CElement we were looking at got garbage
-		// collected (removed). That is, .NextWait() returned nil. Go ahead and
-		// start from the beginning.
-		if next == nil {
-			select {
-			case <-memR.mempool.TxsWaitChan(): // Wait until a tx is available
-				if next = memR.mempool.TxsFront(); next == nil {
-					continue
-				}
-			case <-peer.Quit():
-				return
-			case <-memR.Quit():
-				return
+		select {
+		case entry = <-iter.WaitNextCh():
+			// If the entry we were looking at got garbage collected (removed), try again.
+			if entry == nil {
+				continue
 			}
+		case <-peer.Quit():
+			return
+		case <-memR.Quit():
+			return
 		}
 
 		// If we suspect that the peer is lagging behind, at least by more than
@@ -263,8 +258,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// node. See [RFC 103] for an analysis on this optimization.
 		//
 		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
-		memTx := next.Value.(*mempoolTx)
-		if peerState.GetHeight() < memTx.Height()-1 {
+		if peerState.GetHeight() < entry.Height()-1 {
 			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
 		}
@@ -272,25 +266,15 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memTx.isSender(peer.ID()) {
+		if !entry.IsSender(peer.ID()) {
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
+				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
 			})
 			if !success {
 				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 				continue
 			}
-		}
-
-		select {
-		case <-next.NextWaitChan():
-			// see the start of the for loop for nil check
-			next = next.Next()
-		case <-peer.Quit():
-			return
-		case <-memR.Quit():
-			return
 		}
 	}
 }

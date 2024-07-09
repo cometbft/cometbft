@@ -799,8 +799,11 @@ func (mem *CListMempool) NewIterator() Iterator {
 	}
 }
 
-// WaitNextCh returns a channel to wait for the next available entry. The channel will be closed
-// once the entry is added to the channel or when reaching the end of the list.
+// WaitNextCh returns a channel to wait for the next available entry. The channel will be explicitly
+// closed when the entry gets removed before it is added to the channel, or when reaching the end of
+// the list.
+//
+// Unsafe for concurrent use by multiple goroutines.
 func (iter *CListIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	// Spawn goroutine that waits for the next entry, saves it locally, and puts it in the channel.
@@ -809,17 +812,20 @@ func (iter *CListIterator) WaitNextCh() <-chan Entry {
 			// We are at the beginning of the iteration or the saved entry got removed: wait until
 			// the list becomes not empty and select the first entry.
 			<-iter.txs.WaitChan()
+			// Note that Front can return nil.
 			iter.cursor = iter.txs.Front()
 		} else {
 			// Wait for the next entry after the current one.
 			<-iter.cursor.NextWaitChan()
+			// If the current entry is the last one or was removed, Next will return nil.
 			iter.cursor = iter.cursor.Next()
 		}
-		// Check if we reached the end of the list (CElement.Next returned nil).
 		if iter.cursor != nil {
 			ch <- iter.cursor.Value.(Entry)
+		} else {
+			// Unblock the receiver (it will receive nil).
+			close(ch)
 		}
-		close(ch)
 	}()
 	return ch
 }

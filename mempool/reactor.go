@@ -175,10 +175,10 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 	reqRes, err := memR.mempool.CheckTx(tx, senderID)
 	switch {
 	case errors.Is(err, ErrTxInCache):
-		memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%v", tx.Hash()))
+		memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%v", tx.Hash()), "sender", senderID)
 		return nil, err
 	case err != nil:
-		memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%v", tx.Hash()), "err", err)
+		memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%v", tx.Hash()), "sender", senderID, "err", err)
 		return nil, err
 	}
 

@@ -41,9 +41,16 @@ type metricsLabelCache struct {
 	messageLabelNames map[reflect.Type]string
 }
 
+func newMetricsLabelCache() *metricsLabelCache {
+	return &metricsLabelCache{
+		mtx:               &sync.RWMutex{},
+		messageLabelNames: map[reflect.Type]string{},
+	}
+}
+
 type peerPendingMetricsCache struct {
 	mtx             sync.Mutex
-	perMessageCache map[reflect.Type]peerPendingMetricsCacheEntry
+	perMessageCache map[reflect.Type]*peerPendingMetricsCacheEntry
 }
 
 type peerPendingMetricsCacheEntry struct {
@@ -54,12 +61,12 @@ type peerPendingMetricsCacheEntry struct {
 
 func peerPendingMetricsCacheFromMlc(mlc *metricsLabelCache) *peerPendingMetricsCache {
 	pendingCache := &peerPendingMetricsCache{
-		perMessageCache: make(map[reflect.Type]peerPendingMetricsCacheEntry),
+		perMessageCache: make(map[reflect.Type]*peerPendingMetricsCacheEntry),
 	}
 	if mlc != nil {
 		mlc.mtx.RLock()
 		for k, v := range mlc.messageLabelNames {
-			pendingCache.perMessageCache[k] = peerPendingMetricsCacheEntry{label: v}
+			pendingCache.perMessageCache[k] = &peerPendingMetricsCacheEntry{label: v}
 		}
 		mlc.mtx.RUnlock()
 	}
@@ -71,9 +78,8 @@ func (c *peerPendingMetricsCache) AddPendingSendBytes(msgType reflect.Type, addB
 	defer c.mtx.Unlock()
 	if entry, ok := c.perMessageCache[msgType]; ok {
 		entry.pendingSendBytes += addBytes
-		c.perMessageCache[msgType] = entry
 	} else {
-		c.perMessageCache[msgType] = peerPendingMetricsCacheEntry{
+		c.perMessageCache[msgType] = &peerPendingMetricsCacheEntry{
 			label:            buildLabel(msgType),
 			pendingSendBytes: addBytes,
 		}
@@ -85,38 +91,12 @@ func (c *peerPendingMetricsCache) AddPendingRecvBytes(msgType reflect.Type, addB
 	defer c.mtx.Unlock()
 	if entry, ok := c.perMessageCache[msgType]; ok {
 		entry.pendingRecvBytes += addBytes
-		c.perMessageCache[msgType] = entry
 	} else {
-		c.perMessageCache[msgType] = peerPendingMetricsCacheEntry{
+		c.perMessageCache[msgType] = &peerPendingMetricsCacheEntry{
 			label:            buildLabel(msgType),
 			pendingRecvBytes: addBytes,
 		}
 	}
-}
-
-func getMsgType(i any) reflect.Type {
-	return reflect.TypeOf(i)
-}
-
-// ValueToMetricLabel is a method that is used to produce a prometheus label value of the golang
-// type that is passed in.
-// This method uses a map on the Metrics struct so that each label name only needs
-// to be produced once to prevent expensive string operations.
-func (m *metricsLabelCache) ValueToMetricLabel(i any) string {
-	t := getMsgType(i)
-	m.mtx.RLock()
-
-	if s, ok := m.messageLabelNames[t]; ok {
-		m.mtx.RUnlock()
-		return s
-	}
-	m.mtx.RUnlock()
-
-	l := buildLabel(t)
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-	m.messageLabelNames[t] = l
-	return l
 }
 
 func buildLabel(msgType reflect.Type) string {
@@ -125,9 +105,6 @@ func buildLabel(msgType reflect.Type) string {
 	return fmt.Sprintf("%s_%s", ss[1], ss[2])
 }
 
-func newMetricsLabelCache() *metricsLabelCache {
-	return &metricsLabelCache{
-		mtx:               &sync.RWMutex{},
-		messageLabelNames: map[reflect.Type]string{},
-	}
+func getMsgType(i any) reflect.Type {
+	return reflect.TypeOf(i)
 }

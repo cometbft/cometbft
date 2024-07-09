@@ -119,7 +119,7 @@ func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *cmtstate.
 // using the multiStore. It verifies that the loaded ABCIResponses match the
 // original ones and that missing fields are correctly handled.
 // This test is important for the LoadFinalizeBlockResponse method in the state store.
-func TestSaveLegacyAndLoadFinalizeBlock(t *testing.T) {
+func TestLegacySaveAndLoadFinalizeBlock(t *testing.T) {
 	tearDown, stateDB, _, store := setupTestCaseWithStore(t)
 	defer tearDown(t)
 	options := sm.StoreOptions{

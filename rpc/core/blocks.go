@@ -189,7 +189,7 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 
 	results, err := env.StateStore.LoadFinalizeBlockResponse(height)
 	if err != nil {
-		env.Logger.Error("failed in LoadFinalizeBlockResponse", "error", err.Error())
+		env.Logger.Error("failed to LoadFinalizeBlockResponse", "err", err)
 		return nil, err
 	}
 

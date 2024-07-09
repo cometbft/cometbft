@@ -10,6 +10,7 @@
 - 2024-05-21: Add more Properties + priority mempool (@sergio-mena)
 - 2024-06-13: Technical design (@hvanz)
 - 2024-07-02: Updates based on reviewer's comments (@hvanz, @sergio-mena)
+- 2024-07-09: Updates based on reviewer's comments (@hvanz)
 
 ## Status
 
@@ -77,6 +78,8 @@ re-validated (rechecked via `CheckTx`) before `tx2`,
   proposal before `tx2`,
 1. `tx1` is *disseminated before* `tx2`, when `tx1` is sent to a given peer before `tx2`.
 
+In 2, both transactions are rechecked at the same height, because both are in the mempool.
+
 In 4, note that in the current implementation there is one dissemination routine per peer, so it
 could happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.
 Hence the importance of expression "to a given peer" in that definition.
@@ -119,9 +122,10 @@ classes.
 :memo: _Definition_: Each class has a *priority* and two classes cannot have the same priority.
 Therefore all classes can be ordered by priority.
 
-When a transaction is received for the first time and validated via `CheckTx`, the application MUST
-return the class that it assigns to the transaction. When transactions are rechecked, applications
-MAY return a class, but the mempool will discard it.
+When a transaction is received for the first time and validated via `CheckTx`, the application MAY
+return the class that it assigns to the transaction. If it actually returns a class, the mempool
+MUST use it to prioritize the transaction. When transactions are rechecked, applications MAY return
+a class, but the mempool will discard it.
 
 Given these definitions, we want the proposed QoS mechanism to offer the following property:
 

@@ -71,7 +71,7 @@ cache is full.
 :memo: _Definition_: Given any two different transactions `tx1` and `tx2`, in a given node, we say that:
 1. `tx1` is *validated before* `tx2`, when `tx1` and `tx2` are received for the first time, and `tx1`
 is validated against the application (via `CheckTx`) before `tx2`,
-1. `tx1` is *rechecked before* `tx2`, when `tx` and `tx2` are in the mempool and `tx1` is
+1. `tx1` is *rechecked before* `tx2`, when `tx1` and `tx2` are in the mempool and `tx1` is
 re-validated (rechecked via `CheckTx`) before `tx2`,
 1. `tx1` is *reaped before* `tx2`, when `tx1` is reaped from the mempool to be included in a block
   proposal before `tx2`,
@@ -79,6 +79,7 @@ re-validated (rechecked via `CheckTx`) before `tx2`,
 
 In 4, note that in the current implementation there is one dissemination routine per peer, so it
 could happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.
+Hence the importance of expression "to a given peer" in that definition.
 
 ### Current mempool
 
@@ -158,7 +159,7 @@ not have elements in common, we can state the following property:
 :parking: _Property_ **Partial ordering of all transactions**: The set of all the transactions in
 the mempool, regardless of their classes, will have a *partial order*.
 
-This means that some pairs of transactions are comparable and, thus, have and order, while others
+This means that some pairs of transactions are comparable and, thus, have an order, while others
 not.
 
 #### Network-wide consistency

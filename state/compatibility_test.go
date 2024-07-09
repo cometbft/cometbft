@@ -115,7 +115,7 @@ func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *cmtstate.
 	return multi.db.SetSync(lastABCIResponseKey, bz)
 }
 
-// TestSaveLegacyAndLoadFinalizeBlock tests saving and loading of ABCIResponses
+// TestLegacySaveAndLoadFinalizeBlock tests saving and loading of ABCIResponses
 // using the multiStore. It verifies that the loaded ABCIResponses match the
 // original ones and that missing fields are correctly handled.
 // This test is important for the LoadFinalizeBlockResponse method in the state store.

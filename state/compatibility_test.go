@@ -79,7 +79,6 @@ type LegacyStore interface {
 // Returns:
 // - error: An error if there was a problem saving the ABCIResponses.
 //
-// NOTE: The MultiStore must be properly configured with the StoreOptions and db before calling this method.
 func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *cmtstate.LegacyABCIResponses) error {
 	var dtxs []*abci.ExecTxResult
 	// strip nil values,

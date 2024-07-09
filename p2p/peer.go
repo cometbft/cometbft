@@ -137,7 +137,6 @@ func newPeer(
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
 	onPeerError func(Peer, any),
-	mlc *metricsLabelCache,
 	options ...PeerOption,
 ) *peer {
 	p := &peer{
@@ -146,7 +145,7 @@ func newPeer(
 		channels:       nodeInfo.(DefaultNodeInfo).Channels,
 		Data:           cmap.NewCMap(),
 		metrics:        NopMetrics(),
-		pendingMetrics: peerPendingMetricsCacheFromMlc(mlc),
+		pendingMetrics: newPeerPendingMetricsCache(),
 	}
 
 	p.mconn = createMConnection(
@@ -373,7 +372,7 @@ func (p *peer) metricsReporter() {
 			func() {
 				p.pendingMetrics.mtx.Lock()
 				defer p.pendingMetrics.mtx.Unlock()
-				for msgType, entry := range p.pendingMetrics.perMessageCache {
+				for _, entry := range p.pendingMetrics.perMessageCache {
 					if entry.pendingSendBytes > 0 {
 						p.metrics.MessageSendBytesTotal.
 							With("message_type", entry.label).
@@ -386,7 +385,6 @@ func (p *peer) metricsReporter() {
 							Add(float64(entry.pendingRecvBytes))
 						entry.pendingRecvBytes = 0
 					}
-					p.pendingMetrics.perMessageCache[msgType] = entry
 				}
 			}()
 

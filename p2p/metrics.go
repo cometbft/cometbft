@@ -36,18 +36,6 @@ type Metrics struct {
 	MessageSendBytesTotal metrics.Counter `metrics_labels:"message_type"`
 }
 
-type metricsLabelCache struct {
-	mtx               *sync.RWMutex
-	messageLabelNames map[reflect.Type]string
-}
-
-func newMetricsLabelCache() *metricsLabelCache {
-	return &metricsLabelCache{
-		mtx:               &sync.RWMutex{},
-		messageLabelNames: map[reflect.Type]string{},
-	}
-}
-
 type peerPendingMetricsCache struct {
 	mtx             sync.Mutex
 	perMessageCache map[reflect.Type]*peerPendingMetricsCacheEntry
@@ -59,18 +47,10 @@ type peerPendingMetricsCacheEntry struct {
 	pendingRecvBytes int
 }
 
-func peerPendingMetricsCacheFromMlc(mlc *metricsLabelCache) *peerPendingMetricsCache {
-	pendingCache := &peerPendingMetricsCache{
+func newPeerPendingMetricsCache() *peerPendingMetricsCache {
+	return &peerPendingMetricsCache{
 		perMessageCache: make(map[reflect.Type]*peerPendingMetricsCacheEntry),
 	}
-	if mlc != nil {
-		mlc.mtx.RLock()
-		for k, v := range mlc.messageLabelNames {
-			pendingCache.perMessageCache[k] = &peerPendingMetricsCacheEntry{label: v}
-		}
-		mlc.mtx.RUnlock()
-	}
-	return pendingCache
 }
 
 func (c *peerPendingMetricsCache) AddPendingSendBytes(msgType reflect.Type, addBytes int) {

@@ -44,6 +44,7 @@ test/loadtime/build
 test/e2e/build
 test/e2e/data/
 test/e2e/networks/*/
+test/e2e/networks_regressions/*/
 test/logs
 test/p2p/data/
 tools/goleveldb_perf/.ipynb_checkpoints

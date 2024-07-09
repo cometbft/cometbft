@@ -233,12 +233,12 @@ func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusL
 	}
 }
 
-func onlyValidatorIsUs(state sm.State, pubKey crypto.PubKey) bool {
+func onlyValidatorIsUs(state sm.State, localAddr crypto.Address) bool {
 	if state.Validators.Size() > 1 {
 		return false
 	}
-	addr, _ := state.Validators.GetByIndex(0)
-	return bytes.Equal(pubKey.Address(), addr)
+	valAddr, _ := state.Validators.GetByIndex(0)
+	return bytes.Equal(localAddr, valAddr)
 }
 
 // createMempoolAndMempoolReactor creates a mempool and a mempool reactor based on the config.
@@ -305,13 +305,14 @@ func createBlocksyncReactor(config *cfg.Config,
 	blockExec *sm.BlockExecutor,
 	blockStore *store.BlockStore,
 	blockSync bool,
+	localAddr crypto.Address,
 	logger log.Logger,
 	metrics *blocksync.Metrics,
 	offlineStateSyncHeight int64,
 ) (bcReactor p2p.Reactor, err error) {
 	switch config.BlockSync.Version {
 	case "v0":
-		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, metrics, offlineStateSyncHeight)
+		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, localAddr, metrics, offlineStateSyncHeight)
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:

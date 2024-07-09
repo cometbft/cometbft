@@ -534,7 +534,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	_, updatedVal2 := updatedState3.NextValidators.GetByAddress(val2PubKey.Address())
 
 	// 2. Scale
-	// old prios: cryptov1(10):-38, v2(1):39
+	// old prios: v1(10):-38, v2(1):39
 	wantVal1Prio = prevVal1.ProposerPriority
 	wantVal2Prio = prevVal2.ProposerPriority
 	// scale to diffMax = 22 = 2 * tvp, diff=39-(-38)=77
@@ -543,14 +543,14 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	dist := wantVal2Prio - wantVal1Prio
 	// ratio := (dist + 2*totalPower - 1) / 2*totalPower = 98/22 = 4
 	ratio := (dist + 2*totalPower - 1) / (2 * totalPower)
-	// cryptov1(10):-38/4, v2(1):39/4
+	// v1(10):-38/4, v2(1):39/4
 	wantVal1Prio /= ratio // -9
 	wantVal2Prio /= ratio // 9
 
 	// 3. Center - noop
 	// 4. IncrementProposerPriority() ->
-	// cryptov1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
-	// cryptov1(10):1, v2(1):-1
+	// v1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
+	// v1(10):1, v2(1):-1
 	wantVal2Prio += updatedVal2.VotingPower // 10 -> prop
 	wantVal1Prio += updatedVal1.VotingPower // 1
 	wantVal2Prio -= totalPower              // -1

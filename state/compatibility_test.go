@@ -30,11 +30,6 @@ var (
 
 // MultiStore represents a state store that implements the Store interface
 // and contains additional store and database options.
-//
-// Fields:
-// - Store (sm.Store): The store instance used by the MultiStore.
-// - db (dbm.DB): The database instance used by the MultiStore.
-// - StoreOptions (sm.StoreOptions): The options for the MultiStore.
 type MultiStore struct {
 	sm.Store
 	db dbm.DB
@@ -43,14 +38,6 @@ type MultiStore struct {
 
 // NewMultiStore returns a new MultiStore.
 // It sets the store, db, and StoreOptions fields of the MultiStore struct.
-//
-// Parameters:
-// - db (dbm.DB): The database instance to be used by the MultiStore.
-// - options (sm.StoreOptions): The store options to be used by the MultiStore.
-// - store (sm.Store): The store instance to be used by the MultiStore.
-//
-// Returns:
-// - *MultiStore: A pointer to the newly created MultiStore instance.
 func NewMultiStore(db dbm.DB, options sm.StoreOptions, store sm.Store) *MultiStore {
 	return &MultiStore{
 		Store:        store,
@@ -60,9 +47,6 @@ func NewMultiStore(db dbm.DB, options sm.StoreOptions, store sm.Store) *MultiSto
 }
 
 // LegacyStore represents a legacy data store.
-// Example usage:
-//
-//	_ LegacyStore = (*MultiStore)(nil)
 type LegacyStore interface {
 	SaveABCIResponses(height int64, abciResponses *cmtstate.LegacyABCIResponses) error
 }
@@ -71,14 +55,6 @@ type LegacyStore interface {
 // It strips out any nil values from the DeliverTxs field, and saves the ABCIResponses to
 // disk if the DiscardABCIResponses flag is set to false. It also saves the last ABCI response
 // for crash recovery, overwriting the previously saved response.
-//
-// Parameters:
-// - height (int64): The height at which the ABCIResponses are being saved.
-// - abciResponses (ABCIResponses): The ABCIResponses to be saved.
-//
-// Returns:
-// - error: An error if there was a problem saving the ABCIResponses.
-//
 func (multi MultiStore) SaveABCIResponses(height int64, abciResponses *cmtstate.LegacyABCIResponses) error {
 	var dtxs []*abci.ExecTxResult
 	// strip nil values,

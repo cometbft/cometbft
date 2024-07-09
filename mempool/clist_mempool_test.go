@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -997,6 +998,44 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 
 	// All added transactions should have been removed from the mempool.
 	require.Zero(t, mp.Size())
+}
+
+func TestMempoolIterator(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	n := numTxs
+
+	// Spawn a goroutine that iterates on the list until counting n entries.
+	counter := 0
+	go func() {
+		defer wg.Done()
+
+		iter := mp.NewIterator()
+		for counter < n {
+			entry := <-iter.WaitNextCh()
+			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
+			counter++
+		}
+	}()
+
+	// Add n transactions with sequential ids.
+	for i := 0; i < n; i++ {
+		tx := kvstore.NewTxFromID(i)
+		rr, err := mp.CheckTx(tx, "")
+		require.NoError(t, err)
+		rr.Wait()
+	}
+
+	wg.Wait()
+	require.Equal(t, n, counter)
 }
 
 func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {

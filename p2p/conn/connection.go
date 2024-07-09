@@ -847,7 +847,7 @@ func (ch *Channel) canSend() bool {
 }
 
 // Returns true if any PacketMsgs are pending to be sent.
-// Call before calling nextPacketMsg()
+// Call before calling updateNextPacket
 // Goroutine-safe.
 func (ch *Channel) isSendPending() bool {
 	if len(ch.sending) == 0 {
@@ -873,7 +873,9 @@ func (ch *Channel) updateNextPacket() {
 		ch.nextPacketMsg.EOF = false
 		ch.sending = ch.sending[maxSize:]
 	}
-	wrapPacketMsgWithBuffers(ch.nextPacketMsg, ch.nextP2pWrapperPacketMsg, ch.nextPacket)
+
+	ch.nextP2pWrapperPacketMsg.PacketMsg = ch.nextPacketMsg
+	ch.nextPacket.Sum = ch.nextP2pWrapperPacketMsg
 }
 
 // Writes next PacketMsg to w and updates c.recentlySent.
@@ -933,8 +935,6 @@ func mustWrapPacket(pb proto.Message) *tmp2p.Packet {
 
 func mustWrapPacketInto(pb proto.Message, dst *tmp2p.Packet) {
 	switch pb := pb.(type) {
-	case *tmp2p.Packet: // already a packet, make a copy
-		*dst = *pb
 	case *tmp2p.PacketPing:
 		dst.Sum = &tmp2p.Packet_PacketPing{
 			PacketPing: pb,
@@ -950,9 +950,4 @@ func mustWrapPacketInto(pb proto.Message, dst *tmp2p.Packet) {
 	default:
 		panic(fmt.Errorf("unknown packet type %T", pb))
 	}
-}
-
-func wrapPacketMsgWithBuffers(pb *tmp2p.PacketMsg, sumArg *tmp2p.Packet_PacketMsg, dst *tmp2p.Packet) {
-	sumArg.PacketMsg = pb
-	dst.Sum = sumArg
 }

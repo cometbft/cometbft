@@ -41,7 +41,7 @@ type MultiStore struct {
 	sm.StoreOptions
 }
 
-// NewMultiStore initializes a new instance of MultiStore with the provided parameters.
+// NewMultiStore returns a new MultiStore.
 // It sets the store, db, and StoreOptions fields of the MultiStore struct.
 //
 // Parameters:

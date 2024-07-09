@@ -167,6 +167,6 @@ type Entry interface {
 // An iterator is used to iterate through the mempool entries.
 // Multiple iterators should be allowed to run concurrently.
 type Iterator interface {
-	// WaitTxAvailableCh returns a channel on which to wait for the next available entry.
+	// WaitNextCh returns a channel on which to wait for the next available entry.
 	WaitNextCh() <-chan Entry
 }

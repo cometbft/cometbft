@@ -800,7 +800,7 @@ func (mem *CListMempool) NewIterator() Iterator {
 }
 
 // WaitNextCh returns a channel to wait for the next available entry. The
-// channel will be closed once the entry is sent.
+// channel will be closed once the entry is added to the channel.
 func (iter *CListIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	// Spawn goroutine that waits for the next entry, saves it locally, and puts it in the channel.

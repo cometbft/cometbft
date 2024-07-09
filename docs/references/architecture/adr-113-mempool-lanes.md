@@ -8,6 +8,9 @@
 - 2024-04-18: Preliminary structure (@hvanz)
 - 2024-05-01: Add Context and Properties (@hvanz)
 - 2024-05-21: Add more Properties + priority mempool (@sergio-mena)
+- 2024-06-13: Technical design (@hvanz)
+- 2024-07-02: Updates based on reviewer's comments (@hvanz, @sergio-mena)
+- 2024-07-09: Updates based on reviewer's comments (@hvanz)
 
 ## Status
 
@@ -28,17 +31,17 @@ they are not discriminated as to which are disseminated first or which transacti
 offers to the proposer when creating the next block. In practice, however, not all transactions have
 the same importance for the application logic, especially when it comes to latency requirements.
 Depending on the application, we may think of countless categories of transactions based on their
-importance and requirements, spanning from IBC messages, transactions for exchanges, for smart
+importance and requirements, spanning from IBC messages to transactions for exchanges, for smart
 contract execution, for smart contract deployment, grouped by SDK modules, and so on. Even
 transactions prioritized by economic incentives could be given a preferential treatment. Or big
 transactions, regardless of their nature, could be categorized as low priority, to mitigate
 potential attacks on the mempool.
 
 The goal of this document is thus to propose a mechanism enabling the mempool to prioritize
-transactions by *classes*, for processing and dissemination, directly impacting block creation and transaction latency. In
-IP networking terminology, this is known as Quality of Service (QoS). By providing certain QoS
-guarantees, developers will be able to more easily estimate when transactions will be disseminated, processed and
-included in a block.
+transactions by *classes*, for processing and dissemination, directly impacting block creation and
+transaction latency. In IP networking terminology, this is known as Quality of Service (QoS). By
+providing certain QoS guarantees, developers will be able to more easily estimate when transactions
+will be disseminated and reaped from the mempool to be included in a block.
 
 In practical terms, we envision an implementation of the transaction class abstraction as *mempool
 lanes*. The application will be allowed to split the mempool transaction space into a hierarchy of
@@ -53,18 +56,33 @@ is an orthogonal problem to transaction classification, although the latter may 
 
 Before jumping into the design of the proposal, we define more formally the properties supported by
 the current implementation of the mempool. Then we state what properties the new mempool should
-offer to guarantee the desired QoS.
+offer to guarantee the desired QoS. The following definitions are common to all properties.
 
-The following definition is common to all properties.
+When attempting to add an incoming transaction to the mempool, the node first checks that it is not
+already in the cache before checking its validity with the application. 
 
-:memo: _Definition_: Given any two different transactions `tx1` and `tx2`, we say that `tx1` is
-*processed and disseminated before* `tx2` in a given node, when:
-- `tx1` is reaped from the mempool to form a block proposal before `tx2`,
-- `tx1` is rechecked before `tx2`, and
-- `tx1` is sent to a given peer before `tx2`.
+:memo: _Definition_: We say that a node receives a transaction `tx` _for the first time_ when the
+node receives `tx` and `tx` is not in the cache.
 
-Note that in the current implementation there is one dissemination routine per peer, so it could
-happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.
+By this definition, it is possible that a node receives a transaction "for the first time", then
+gets the transaction evicted from the cache, and at a later time receives it "for the first time"
+again. The cache implements a Least-Recently Used (LRU) policy for removing entries when the
+cache is full.
+
+:memo: _Definition_: Given any two different transactions `tx1` and `tx2`, in a given node, we say that:
+1. `tx1` is *validated before* `tx2`, when `tx1` and `tx2` are received for the first time, and `tx1`
+is validated against the application (via `CheckTx`) before `tx2`,
+1. `tx1` is *rechecked before* `tx2`, when `tx1` and `tx2` are in the mempool and `tx1` is
+re-validated (rechecked via `CheckTx`) before `tx2`,
+1. `tx1` is *reaped before* `tx2`, when `tx1` is reaped from the mempool to be included in a block
+  proposal before `tx2`,
+1. `tx1` is *disseminated before* `tx2`, when `tx1` is sent to a given peer before `tx2`.
+
+In 2, both transactions are rechecked at the same height, because both are in the mempool.
+
+In 4, note that in the current implementation there is one dissemination routine per peer, so it
+could happen that `tx2` is sent to a peer before `tx1` is sent to a different peer.
+Hence the importance of expression "to a given peer" in that definition.
 
 ### Current mempool
 
@@ -72,13 +90,12 @@ As stated above, the current mempool offers a best-effort FIFO ordering of trans
 this property as follows.
 
 :parking: _Property_ **FIFO ordering of transactions**: We say that the mempool makes a best effort
-in maintaining the FIFO ordering of transactions when transactions are validated, processed, and
-disseminated in the same order in which the mempool has received them.
+in maintaining the FIFO ordering of transactions when transactions are validated, rechecked, reaped,
+and disseminated in the same order in which the mempool has received them.
 
-More formally, given any two different transactions `tx1` and `tx2`, if a node's mempool receives `tx1`
-before receiving `tx2`, then:
-- `tx1` will be validated against the application (via `CheckTx`) before `tx2`, and
-- `tx1` will be processed and disseminated before `tx2` (as defined above).
+More formally, given any two different transactions `tx1` and `tx2`, if a node's mempool receives
+`tx1` before receiving `tx2`, then `tx1` will be validated, rechecked, reaped, and disseminated
+before `tx2` (as defined above).
 
 Note that a node's mempool can receive a transaction either from a `broadcast_tx_*` RPC endpoint or
 from a peer.
@@ -96,27 +113,33 @@ Before stating this property, we need to make some definitions.
 characteristics as defined by the application.
 
 A transaction may only have one class. If it is not assigned any specific class, it will be assigned
-a *default class*, which is a special class always present in any set of classes. Because no
-transaction can belong to two or more classes, transaction classes form disjoint sets, that is, the
-intersection between classes is empty. Also, all transactions in the mempool are the union of the
-transactions in all classes.
+a *default class*, which is a special class always present in any set of classes. This is analogous
+to the _native VLAN_ for untagged traffic in an 802.1Q network. Because no transaction can belong to
+two or more classes, transaction classes form disjoint sets, that is, the intersection between any two
+classes is empty. Also, all transactions in the mempool are the union of the transactions in all
+classes.
 
 :memo: _Definition_: Each class has a *priority* and two classes cannot have the same priority.
 Therefore all classes can be ordered by priority.
+
+When a transaction is received for the first time and validated via `CheckTx`, the application MAY
+return the class that it assigns to the transaction. If it actually returns a class, the mempool
+MUST use it to prioritize the transaction. When transactions are rechecked, applications MAY return
+a class, but the mempool will discard it.
 
 Given these definitions, we want the proposed QoS mechanism to offer the following property:
 
 #### Basic properties
 
 :parking: _Property_ **Priorities between classes**: Transactions belonging to a certain class will
-be processed and disseminated before transactions belonging to another class with lower priority.
+be reaped and disseminated before transactions belonging to another class with lower priority.
 
 Formally, given two transaction classes `c1` and `c2`, with `c1` having more priority than `c2`, if
 the application assigns the classes `c1` and `c2` respectively to transactions `tx1` and `tx2`, then
-`tx1` will be processed and disseminated before `tx2`.
+`tx1` will be reaped and disseminated before `tx2`.
 
 More importantly, as a direct consequence of this property, `tx1` will be disseminated faster and it
-will be included in a block before `tx2`, thus `tx1` will have a lower latency than `tx2`.
+will be included in a block before `tx2`. Thus, `tx1` will have a lower latency than `tx2`.
 Currently, it is not possible to guarantee this kind of property.
 
 :memo: _Definition_: The *latency of a transaction* is the difference between the time at which a
@@ -126,13 +149,13 @@ timestamp of the block in which the transaction finally was included.
 We want also to keep the FIFO ordering within each class (for the time being):
 
 :parking: _Property_ **FIFO ordering per class**: For transactions within the same class, the
-mempool will maintain FIFO order at a node when they are validated, processed,
-and disseminated.
+mempool will maintain a FIFO order within the class when transactions are validated, rechecked,
+reaped, and disseminated.
 
 Given any two different transactions `tx1` and `tx2` belonging to the same class, if the mempool
 receives `tx1` before receiving `tx2`, then:
-- `tx1` will be validated against the application (via `CheckTx`) before `tx2`, and
-- `tx1` will be processed and disseminated before `tx2`.
+- `tx1` will be validated and recheck against the application (via `CheckTx`) before `tx2`, and
+- `tx1` will be reaped and disseminated before `tx2`.
 
 As a consequence, given that classes of transactions have a sequential ordering, and that classes do
 not have elements in common, we can state the following property:
@@ -140,8 +163,8 @@ not have elements in common, we can state the following property:
 :parking: _Property_ **Partial ordering of all transactions**: The set of all the transactions in
 the mempool, regardless of their classes, will have a *partial order*.
 
-This means that some pairs of
-transactions are comparable and, thus, have and order, while others not.
+This means that some pairs of transactions are comparable and, thus, have an order, while others
+not.
 
 #### Network-wide consistency
 
@@ -150,9 +173,6 @@ However, we need to define some network-wide properties in order for a mempool Q
 to be useful and predictable for the whole appchain network.
 These properties are expressed in terms of consistency of the information, configuration and behaviour
 across nodes in the network.
-
-> TODO: Define "for the first time" here: received from RPC, peer, or `Update`
-> (try to define it in as modular a way as possible)
 
 :parking: _Property_ **Consistent transaction classes**: For any transaction `tx`,
 and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
@@ -168,7 +188,7 @@ such as transaction latency as defined above.
 and any two correct nodes $p$ and $q$ that receive `tx` *for the first time*,
 $p$'s application MUST classify `tx` into the same transaction class as $q$'s application.
 
-This property only makes sense when the previous property (_consistent transaction classes_) defined above holds.
+This property only makes sense when the previous property ("Consistent transaction classes") defined above holds.
 Even if we ensure consistent transaction classes, if this property does not hold, a given transaction
 may not receive the same classification across the network and it will thus be impossible to reason
 about any network-wide guarantees we want to provide that transaction with.
@@ -176,9 +196,7 @@ about any network-wide guarantees we want to provide that transaction with.
 Additionally, it is important to note that these two properties also constrain the way transaction
 classes and transaction classification logic can evolve in an existing implementation.
 If either transaction classes or classification logic are not modified in a coordinated manner in a working system,
-there will be at least a period where the these two properties may not hold for all transactions.
-
-> TODO: Need to find somewhere in the text to say: "ReCheckTx" doesn't classify, its mempool information is disregarded"
+there will be at least a period where these two properties may not hold for all transactions.
 
 ## Alternative Approaches
 
@@ -198,11 +216,11 @@ as described in [ADR067][adr067]:
 1. Partial ordering of all transactions is maintained because the design still keeps a FIFO queue for gossiping transactions.
   Also, transactions are reaped according to non-decreasing priority first, and then in FIFO order
   for transactions with equal priority (see this `ReapMaxBytesMaxGas`'s [docstring][reapmaxbytesmaxgas]).
-1. Since the priority mempool uses FIFO for transactions of equal priority, it also fulfills FIFO ordering per class.
+1. Since the priority mempool uses FIFO for transactions of equal priority, it also fulfills the "FIFO ordering per class" property.
   The problem here is that, since every value of the priority `int64` field is considered a different transaction class,
   there are virtually unlimited traffic classes.
   So it is too easy for an application to end up using hundreds, if not thousands of transactions classes at a given time.
-  In this situation, FIFO ordering per class, while fulfilled, becomes a corner case and thus does not add much value.
+  In this situation, "FIFO ordering per class", while fulfilled, becomes a corner case and thus does not add much value.
 1. The consistent transaction classes property is trivially fulfilled, as the set of transaction classes never changes:
   it is the set of all possible values of an `int64`.
 1. Finally, the priority mempool design does not make any provisions on how the application is to evolve its prioritization
@@ -274,7 +292,7 @@ The Skip team have released an extension of the Application-Side mempool, called
 that introduces the concept of _lanes_, turning the mempool "into a *highway* consisting of individual *lanes*".
 The concept of lanes, introduced in Skip's Block-SDK, is pretty aligned with Mempool QoS as specified above.
 Indeed, we use the same term, _lanes_, in the [Detailed Design](#detailed-design) section below,
-which describes a minimum-viable-product (MVP) implementation of the concept of transaction classes.
+which describes a minimum viable product (MVP) implementation of the concept of transaction classes.
 
 The main difference between Skip's Block-SDK's lanes and the design we present below is that
 the Block-SDK implements mempool lanes at the application level, whereas this ADR proposes a specification and a design at CometBFT level,
@@ -294,253 +312,334 @@ TODO
 
 ## Detailed Design
 
-TO DECIDE:
+This section describes the architectural changes needed to implement an MVP of lanes in the
+mempool. The following is a summary of the key design decisions:
+- [[Lanes definition](#lanes-definition)] The list of lanes and their corresponding priorities
+  will be hardcoded in the application logic.
+- [[Initialization](#initialization)] How the application configures lanes on CometBFT.
+- [[Internal data structures](#internal-data-structures)] There will be one concurrent list (CList) data structure per
+  lane.
+- [[Configuration](#configuration)] All lanes will share the same mempool configuration.
+- [[Adding transactions to the mempool](#adding-transactions-to-the-mempool)] When validating a transaction via CheckTx, the
+  application will optionally return a lane for the transaction.
+- [[Transaction dissemination](#transaction-dissemination)] We will continue to use the current P2P
+   channel for disseminating transactions, and we will implement in the mempool the logic for
+   selecting the order in which to send transactions.
+- [[Reaping transactions for creating blocks](#reaping-transactions-for-creating-blocks)]
+  Transactions will be reaped from higher-priority lanes first, preserving intra-lane FIFO ordering.
+- [[Prioritization logic](#prioritization-logic)] For disseminating and reaping transactions, the
+   scheduling algorithm should be prevent starvation of low-priority lanes.
 
-* bytes per tx, \# of txs, total # of bytes: shared?
-  * Current view: **can be different** easily
-  * MVP is viable without it, but use cases less customizable
-  * Update: How about Injective's use case?
+### Lanes definition
 
-* Two options for introducing several TX lists:
-  1. Multiple `Clist`s inside `CListMempool`, the cache stays inside `CListMempool`.
-  2. Multiple `CListMempool` instances, the cache needs to be outside `CListMempool` (likely, directly controlled by the reactor)
+The list of lanes and their corresponding priorities will be hardcoded in the application logic. A
+priority is a value of type `uint32`, with 0 being a reserved value (see below). The application
+also needs to define which of the lanes in the list it defines is the **default lane**. 
 
-* After discussion with Osmosis and Injective, there's a dilemma.
-  * For Osmosis, a two-lane solution ("native" and "priority") would probably be enough.
-    * This means that we could defer the lane and priority configuration, and not tackle it as part of the MVP
-  * For Injective, their use case seems to be more demanding: many lanes (4?, 9?),
-    with one lane even having less prio than the native lane
-    * If we want to address that use case fully, our MVP _does need_ to tackle the design of lane & prio configuration
-    * so, a more ambitious MVP, implying more energy, time, and resources. We must be careful with what we promise for when
+To obtain the lane information from the application, we need to extend the ABCI `Info` response to
+include the following fields. These fields need to be filled by the application only in case it
+wants to implement lanes.
+```protobuf
+message InfoResponse {
+  ...
+  repeated uint32 lane_priorities = 6;
+  uint32 default_lane_priority = 7;
+}
+```
+Internally, the application may use `string`s to name lanes, and then map those names to priorities.
+The mempool does not care about the names, only about the priorities. That is why the lane
+information returned by the application only contains priorities, which are used to identify lanes.
 
-* Byzantine nodes may gossip transactions on a high-priority lane to get preferential treatment.
-  * we may consider banning peers that send transactions with incorrect lane information.
-  * Decision was not to ship lane info, but we're still using different channels for different lanes
-    * **What shall we do when we see a peer misusing a p2p channel?**
-      * not clear what to do, will heavily depend on use case. So
-        * let's wait for someone to hit this so we have a use case to solve
-        * and less things to do for MVP
-      * Updated discussion, looks like the way to go is:
-        * Do "stop peer for error" in any case
-        * Defer decision about banning policy until a use case pops up
+The lowest priority a lane may have is 1. The value 0 is reserved for two cases: when the
+application does not classify the transaction (i.e. no priority returned) and for `CheckTx`
+responses of invalid transactions.
 
+On receiving the information from the app, CometBFT will validate that:
+- `lane_priorities` has no duplicates (values in `lane_priorities` don't need to be sorted),
+- `default_lane_priority` is in `lane_priorities` (the default lane is not necessarily the lane with
+  the lowest priority), and
+- the list `lane_priorities` is empty if and only if `default_lane_priority` is 0.
 
-### Decisions on Minimum Viable Product (MVP)
+### Initialization
 
-A lane can be viewed as a mempool on its own, with its own config, capacity, cache,
-gossip protocol, p2p channel, p2p bandwidth capacity, etc.
-For an MVP, probably some (most?) of these components can be common to all lanes.
-In further versions, we can see which of these need to be per-lane.
-What is clear is that each lane will need its own `CList` data structure, right from the beginning.
-* `CList` **need to be different**
-  * if using a common `CList`, the broadcast routine becomes overly complicated,
-    whereas each lane having its own `CList`, the broadcast routine is very simple
-    (advance the highest priority, non-empty lane)
-* cache **can be shared** in MVP
-  * lock contention: we think it won't be a big deal performance-wise for an MVP
-  * cache eviction of entries: lanes with a lot of traffic may force eviction on TXs
-    on lanes with little traffic.
-    * For an SDK application this is irrelevant: SDK implements replay protection (nonce)
-  * it actually doesn't make sense to split the cache per lane, and it would complicate the code significantly.
-* p2p channel **need to be different** in MVP for different lanes
-  * p2p channels already have priorities implemented.
-  * we can implement priorities of lanes by assigning them to different p2p channels
-    as a first approach
-  * currently mempool uses one channel: we would reserve a _channel range_ for the lanes
-* p2p bandwidth capacity **can be shared** in MVP
-  * bandwidth capacity per lane is nice to have, but if the MVP doesn't implement it,
-    it's still very usable
-* gossip protocol: each lane could select its own gossip protocol.
-  For the future, when we have more than one gossip protocol to choose from.
-* lane/mempool capacity (# of txs, total # of bytes, bytes per tx) **can be different** easily,
-  with little extra complexity on config.
-  * bytes per tx: ok to share one value for MVP... not so sure
-  * \# of txs: probably not all use cases properly addressed if we share a common limit
-  * total # of bytes: if the other two are per-lane, this can just be a "generous" value
-    (and we'd fine tune the other two)
-  * IDEA: Leave this for the end: MVP is viable without it, but use cases less customizable
-* re-check **can be shared** in MVP
-  * with `PrepareProposal`, it becomes _always_ mandatory, so no point in making it per-lane
+Currently, querying the app for `Info` happens during the handshake between CometBFT and the app,
+during the node initialization, and only when state sync is not enabled. The `Handshaker` first
+sends an `Info` request to fetch the app information, and then replays any stored block needed to
+sync CometBFT with the app. The lane information is needed regardless of whether state sync is
+enabled, so one option is to query the app information outside of the `Handshaker`.
 
-ADR: This is good info, should probably go at the beginning,
-"These are our decisions on what to implement and what not to.
-The rest of the document only tackles the items reported as "to implement" here.
+In this proposed approach, updating the lane definitions will require a single governance proposal
+for updating the software. CometBFT will not need to deal with dynamic lane changes: it will just
+need to set up the lanes when starting up (whether afresh or in recovery mode).
 
-### Lane coordination
+Different nodes also need to agree on the lanes they use. When a node connects to a peer, they both
+perform a handshake to agree on some basic information (see `DefaultNodeInfo`). Since the
+application includes the lane definitions, it suffices to ensure that both nodes agree on the
+version of the application. Although the application version is included in `DefaultNodeInfo`, there
+is currently no check for compatibility between the versions. To address this, we would need to
+modify the P2P handshake process to validate that the application versions are compatible.
 
-There should be some kind of Lane Coordinator that receives uncategorised txs and assigns them a lane.
-This could be implemented in the reactor or inside `CListMempool`.
-* For an MVP, probably it's easier to put the coordination logic in `CListMempool`.
-* There will be a _native_ or _default_ lane, similar to the _native VLAN_ in an 802.1Q network.
-* `CheckTx` will (optionally) return lane information, and only then it can be put in a lane.
-  (So a tx in a lane has been validated at least once by some node.)
-  * If `CheckTx` provides no lane information: native lane
-  * Note: if we punish peers (e.g., close connection to them) that send messages on wrong lanes, we will need a property that requires all node to produce consistent lane info in `CheckTx`
-* No difference in treatment between TXs coming from RPC, or TXs coming from peers (p2p)
-  * Peers aren't trusted
-  * In any case, the TXs need to be validated first via `CheckTx`
-* The duality lane/priority introduces a powerful indirection
-  * The app can just define the lane of a transaction in `CheckTx`, but the priority of the lane
-    itself can configured (and fine-tuned) elsewhere (also the app?, operators?)
-* Two options for introducing several TX lists:
-  1. Multiple `Clist`s inside `CListMempool`, the cache stays inside `CListMempool`.
-  2. Multiple `CListMempool` instances, the cache needs to be outside `CListMempool` (likely, directly controlled by the reactor)
-* We need to investigate the details of these two options in terms of complexity and risks in the code
+Finally, this approach is compatible with applications that need to swap binaries when
+catching up or upgrading, such as SDK applications using [Cosmovisor][cosmovisor].
+When a node is catching up (i.e., state or block syncing), its peers will detect
+that the node is late and will not send it any transactions until it is caught up.
+So, the particular lane configuration of the node is irrelevant while catching up.
+When going through a Cosmovisor-driven upgrade, all nodes will swap binaries at the same
+height (which is specified by the corresponding Software Upgrade gov proposal).
+If the new version of the software contains modified lane configuration
+(and therefore new transaction classification logic), those changes will kick in
+in a coordinated manner thanks to the regular Cosmovisor workflow.
 
-ADR: Probably part of [Data flow](#data-flow) section:
-1. some bullets are clearly "Entry flow"
-2. other are general considerations of all flows, or architectural.
-   These are likely to go in a first, introductory subsection of [Data flow](#data-flow) section
+### Internal data structures
 
-### Data flow
+In the mempool, a lane is defined by its priority:
+```golang
+type Lane uint32
+```
 
-* Entry flow:
-  * [Rough description]: the steps when a Tx enters the node are unmodified, except
-    * `CheckTx` (optionally) returns lane information (if TX valid)
-    * The lane information is used to decide to which transaction list the Tx will be added
-* Broadcast flow:
-  * Higher-priority lanes get to be gossiped first, and gossip within a lane is still in FIFO order.
-  * We will need a warning about channels sharing the send queue at p2p level (will need data early on to see if this is a problem for lanes in practice
-  * [Rough description]: we need to extend the loop in the broadcast goroutine. Several channels now, not just one
-    * To decide
-      * if we're going for (simpler) solution where with max 2 lanes,
-        the broadcast goroutine itself could manage the priority of lanes within the existing `select` at the end of the loop
-      * if we're going for (future-proof) solution where max lanes can be configurable,
-        we need to refactor method `TxWaitChan` (or the code that sends the data to that channel) to manage the lane priority there.
-        In this case, the broadcast goroutine will be mainly unmodified.
-* Reap flow
-  * TXs are reaped from higher-priority lanes first, in FIFO order.
-  * We go from the reap loop (currently just one), to probably a nested one
-    * the outer loop goes through all TX lists (remember, one per lane), in decreasing priority order
-    * the current `break` statements in the inner loop (limit of bytes or gas reached), should also break from the outer loop
-* Exit flow (Update, Re-Check). Update: unconditionally; Re-Check: only if App says TX is now invalid
-  * Transactions in higher-priority lanes are processed (updated) first.
-  * Depends on how the multiple TX lists are implemented (see discussion above)
-  * Update contains Re-check at the end
-  * Remember Update is done while holding the mempool lock (no new CheckTx calls... they have to wait)
-  * Changes:
-    * We could update the different TX lists in parallel
-    * `Update` method (implementing `Update` method in `Mempool` interface) is implemented by `CListMempool` so
-      * If we go for several `CListMempool`s, then we'll have to call `Update` on each of them with all the TXs every time
-        * or move `Update` method out of `CListMempool` (where?)
-      * Also, the way we will do `ReCheck` would be complicated if we had N `Update` calls
-        * We will do `ReCheck` lane-by-lane, in FIFO order within a lane
-      * So, this seems to make us lean toward: one `CListMempool` containing N `txs` lists
-* Each lane informs consensus when there are txs available.
-  *  `TxsAvailable` is in our laundry list
+Currently, the `CListMempool` data structure has two fields to store and access transactions:
+```golang
+txs    *clist.CList // Concurrent list of mempool entries.
+txsMap sync.Map     // Map of type TxKey -> *clist.CElement, for quick access to elements in txs.
+```
 
-ADR: Core part of detailed design. Bullets will likely become subsections
+With the introduction of lanes, the main change will be to divide the `CList` data structure into
+$N$ `Clist`s, one per lane. `CListMempool` will have the following fields:
+```golang
+lanes   map[Lane]*clist.CList
+txsMap  sync.Map // Map of type TxKey -> *clist.CElement, for quick access to elements in lanes.
+txLanes sync.Map // Map of type TxKey -> Lane, for quick access to the lane corresponding to a tx.
 
-### Who defines lanes and priorities
+// Fixed variables set during initialization.
+defaultLane Lane
+sortedLanes []Lane // Lanes sorted by priority
+```
+The auxiliary fields `txsMap` and `txLanes` are, respectively, for direct access to the mempool
+entries, and for direct access to the lane of a given transaction.
 
-The list of lanes and their priorities: are consensus parameters? are defined by the app?
-* Discussion on _where_ the lane configuration is set up. Three options
-  1. `config.toml` / `app.toml`
-  2. ConsensusParams
-  3. Hardcoded in the application. Info passed to CometBFT during handshake
-* Outcome of discussion
-  * 1. vs. 2.
-    * It does not make sense for different nodes to have different lane configuration,
-      so definitely we don't want 1
-  * 2. vs. 3.
-    * If we can change lane info via `ConsensusParams`
-      * CometBFT's mempool needs logic for changing lanes dynamically (complex, not really appealing for MVP)
-      * The process of updating lane info very complex and cumbersome:
-        * to update lanes you'd need to pass _two_ governance proposals
-          * upgrade the app, because the lane classification logic (so, the app's code) needs to know the lane config beforehand
-          * then upgrade the lanes via `ConsensusParams`
-        * also, not clear in which order: community should be careful not to break performance between the passing of both proposals
-        * the `gov` module may allow the two things to be shipped in the same gov proposal,
-          but, if we need to do it that way, what's the point in having lanes in `ConsensusParams` ?
-  * Conclusion: 3.
-    * lane info is "hardcoded" in the app's logic
-    * lane info is passed to CometBFT during handshake
-  * Advantages:
-    * Simple lane update cycle: one software update gov proposal
-    * CometBFT doesn't need to deal with dynamic lane changes: it just needs to set up lanes when starting up (whether afresh, or recovery)
-* What does lane info (passed to CometBFT) look like?
-  * Current state  of discussions.
-    * Draft of data structure
-        ```protobuf
-        message LaneInfo {
-          repeated Lane lanes;
-        }
-        message Lane {
-          byte id;
-          string name;
-        }
-        ```
-  * The `Lane` list MUST NOT have duplicate lane IDs
-  * The order of the `Lane` elements in the `lanes` field defines their priority
-  * Lane ID 0 is the native lane.
-    * It MAY be present in the list
-    * If it is absent, it is equivalent to having it as the last element (lowest priority)
-  * Channel ID is a byte
-    * Current channel distribution (among reactors) goes up to `0x61`
-    * Proposal: reserve for mempool lanes channel ID `0x80` and all channels above (so, all channels whose MSB is 1)
-      * max of 128 lanes. Big enough?
-    * currently, mempool is p2p channel ID is `0x30`, which would be a special case: native lane.
-  * How to deal with nodes that are late? So, lane info at mempool level (and thus p2p channels to establish) does not match.
-    * Two cases
-    * A node that is up to date and falls behind (e.g., network instability, etc.)
-      * Not a problem. For lanes to change we **require** a coordinated upgrade.
-        * Reason: if we allow upgrade changing lane info **not** to be a coordinated upgrage,
-          then we won't have consistent lane info across nodes (each node would be running a particular version of the software)
-    * A node that is blocksyncing from far away in the past (software upgrades in the middle)
-      * Normal channels (including `0x30`): same as before
-      * Lane channels (>=`0x80`), not declared. The node can't send/receive mempool-related info. Not a problem, since it's blocksyncing
-        * If we're not at the latest version (e.g., Cosmovisor-drive blocksync)
-          * channel info likely to be wrong
-          * but we Cosmovisor will kill the node before switching to consensus
-    * We will need to extend the channel-related handshake between nodes to be able to add channels after initial handshake
-    * TODO: this needs a bit more thought/discussion
-    * IDEA: use versions:
-      * bump up the p2p version. Any late legacy node will have to upgrade to latest P2P version to acquire nodes
-      * two ways of upgrading
-        * Ethereum-like
-          * easy: if `version` in `LaneInfo` don't match --> break down the connection (same treatment as `p2p` version)
-          * we cannot afford this, as we need to support Cosmovisor-like apps (e.g., SDK apps)
-        * Cosmovisor-like
-          * harder: below
-      * add a field `version` to `LaneInfo`
-        * in the new p2p version, p2p handshake exchanges that version
-        * if `version` in `LaneInfo` match
-          * life is good!
-        * if `version` in `LaneInfo` don't match
-          * we still proceed with the handshake
-          * but we don't announce any mempool channel info
-          * so the two nodes can't exchange mempool-related messages,
-            * they can exchange info in other channels (e.g., BlockSync or StateSync)
-          * panic upon `SwitchToConsensus`
-        * all this is to support the Cosmovisor way of things
+If the application does not implement lanes (that is, it responds with empty values in
+`InfoResponse`), then `defaultLane` will be set to 1, and `lanes` will have only one entry for the
+default lane. In this case, the new mempool's behaviour will be equivalent to that of the current mempool.
 
-ADR: This deserves its own section of the detailed design, likely after the one describing the transaction flows
+`CListMempool` also contains the cache, which is only needed before transactions have a lane
+assigned. Since the cache is independent of the lanes, we do not need to modify it.
 
-### Tmp notes (likely to be deleted)
+### Configuration
 
-* The `Tx` message needs an extra `lane` field? If empty, the transaction doesn't have a category (and the message is compatible with the current format).
-  * yes, _native lane_ (see above)
-  * Update: we decided to
-    * use different p2p channels for different lanes (we will need to _reserve_ a channel range for this in p2p)
-    * not trust info from peers, since we anyway need to run `CheckTx` to check the TX's validity
-      * so not trusting lane info from peers is aligned with our current model on checking validity of TXs received from peers
-  * So, at least in a first version, the lane info won't be shipped with TXs when broadcasting them
-  * TODO: we leave this bullet point here ATM, but we'll probably just deleted it
-* Before implementing lanes, is it better to first modularise the current mempool?
-  * we currently think improving modularisation is not gating for a mempool lanes MVP
-    * BUT, some things in the
-      _[modularity laundry list](https://www.notion.so/informalsystems/8a887f27e40b45dead689f2d1762b778?v=30a6fd81673b483fb16f4b7a9fc311fb)_
-      will be gating (e.g., `TxsAvailable`)
+For an MVP, we do not need to have a customized configuration for each lane. The current mempool
+configuration will continue to apply to the mempool, which now is a union of lanes. The total size
+of the mempool will be the sum of the sizes of all lanes. Therefore, the mempool capacities as
+currently defined in the configuration will put an upper limit on the union of all lanes. These
+configurations are:
+- `Size`, the total number of transactions allowed in the mempool, 
+- `MaxTxsBytes`, the maximum total number of bytes of the mempool, and
+- `MaxTxBytes`, the maximum size in bytes of a single transaction accepted into the mempool.
+
+Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none. Remember that,
+if `PrepareProposal`'s app logic can ever add a new transaction, it becomes _always_ mandatory to
+recheck remaining transactions in the mempool, so there is no point in disabling `Recheck` per lane.
+
+### Adding transactions to the mempool
+
+When validating a transaction received for the first time with `CheckTx`, the application will
+optionally return its lane in the response.
+```protobuf
+message CheckTxResponse {
+  ...
+  uint32 lane = 12;
+}
+```
+The callback that handles the first-time CheckTx response will append the new mempool entry to the
+corresponding `CList`, namely `lanes[lane]`, and update the other auxiliary variables accordingly.
+If `lane` is 0, it means that the application did not set any lane in the response message, so the
+transaction will be assigned to the default lane.
+
+### Removing transactions from the mempool
+
+A transaction may be removed in two scenarios: when updating the mempool with a list of committed
+transactions, or during rechecking if the transaction is reassessed as invalid. In either case, the
+first step is to identify the lane the transaction belongs to by accessing the `txLanes` map. Then,
+we remove the entry from the CList corresponding to its lane and update the auxiliary variables
+accordingly.
+
+As an optimization, we could prioritize the removal of transactions from high-priority lanes first.
+The broadcast goroutines are constantly reading the list of transactions to disseminate them, though
+there is no guarantee that they will not send transactions that are about to be removed.
+
+When updating the mempool, there is potential for a slight optimization by removing transactions
+from different lanes in parallel. To achieve this, we would first need to preprocess the list of
+transactions to determine the lane of each transaction. However, this optimization has minimal
+impact if the committed block contains few transactions. Therefore, we decided to exclude it from
+the MVP.
+
+### Transaction dissemination
+
+For broadcasting transactions from multiple lanes, we have considered two possible approaches:
+1. Reserve $N$ p2p channels for use by the mempool. P2P channels have priorities that we can reuse
+   as lane priorities. There are a maximum of 256 P2P channels, thus limiting the number of lanes.
+2. Continue using the current P2P channel for disseminating transactions and implement logic within
+   the mempool to select the order of transactions to put in the channel. This option theoretically
+   allows for an unlimited number of lanes, constrained only by the nodes’ capacity to store the
+   lane data structures.
+
+We choose the second approach for its flexibility, allowing us to start with a simple scheduling
+algorithm that can be refined over time (see below). Another reason is that on the first option we
+would need to initialize channels dynamically (currently there is a fixed list of channels passed as
+node info) and assign lanes to channels.
+
+Before modifying the dissemination logic, we need to refactor the current implementation and the
+`Mempool` interface to clearly separate the broadcast goroutine in the mempool reactor from
+`CListMempool` that includes the mempool data structures. `CListMempool` provides two methods used
+by the broadcast code, `TxsWaitChan() <-chan struct{}` and `TxsFront() *clist.CElement`, which are
+just wrappers around the methods `WaitChan` and `Front` of the `CList` implementation. In
+particular, `TxsFront` is leaking implementation details outside the `Mempool` interface.
+
+### Reaping transactions for block creation
+
+In the current single-lane mempool, the function `ReapMaxBytesMaxGas(maxBytes, maxGas)` collects
+transactions in FIFO order from the CList until either reaching `maxBytes` or `maxGas` (both of
+these values are consensus parameters).
+
+With multiple CLists, we need to collect transactions from higher-priority lanes first, also in FIFO
+order, continuing with successive lanes in the `sortedLanes` array, that is, in decreasing priority
+order, and breaking the iteration when reaching `maxBytes` or `maxGas`. Note that the mempool is
+locked during `ReapMaxBytesMaxGas`, so no transaction will be added or removed from the mempool
+during reaping.
+
+This simple algorithm, though good enough for an MVP, does not guarantee that low-priority lanes
+will not starve. That is why we prefer to implement one that is starvation-free, as explained in the
+next section. It could be the same algorithm or similar to the one used for transaction
+dissemination.
+
+### Prioritization logic
+
+For transaction dissemination and for reaping transactions for creating blocks we want a scheduling
+algorithm that satisfies the properties "Priorities between classes" and "FIFO ordering per class".
+This means that it must support selection by _weight_, ensuring each lane gets a fraction of the P2P
+channel capacity proportional to its priority. Additionally, we want the algorithm to be _fair_ to
+prevent starvation of low-priority lanes. 
+
+A first option that meets these criteria is the current prioritization algorithm on the P2P reactor,
+which we could easily reimplement in the mempool. It works as follows:
+- On each P2P channel, the variable `recentlySent` keeps track of how many bytes were recently sent
+  over the channel. Every time data is sent, increase `recentlySent` with the number of bytes
+  written to the channel. Every 2 seconds, decrease `recentlySent` by 20% on all channels (these
+  values are fixed).
+- When sending the next message, [pick the channel][selectChannelToGossipOn] whose ratio
+  `recentlySent/Priority` is the least.
+
+From the extensive research in operating systems and networking, we can pick for the MVP an existing
+scheduling algorithm that meets these requirements and is straightforward to implement, such as a
+variant of the [Weighted Round Robin][wrr] (WRR) algorithm. We choose this option at it gives us
+more flexibility for improving the logic in the future, for example, by adding a mechanism for
+congestion control or by allowing some lanes to have customized, non-FIFO scheduling algorithms.
+
+### Validating lanes of received transactions
+
+Transactions are transmitted without lane information because peers cannot be trusted to send the
+correct data. A node may take advantage of the network by sending lower-priority transactions before
+higher-priority ones. Although the receiving node could easily verify the priority of a transaction
+when it calls `CheckTx`, it cannot detect if a peer is sending transactions out of order over a
+single P2P channel. For the moment, we leave out of the MVP any mechanism for detecting and possibly
+penalizing nodes for this kind of behaviour.
+
+## Alternative designs
+
+### One CList for all lanes
+
+We briefly considered sharing one CList for all lanes, changing the internal logic of CList to
+accommodate lane requirements. However, this design significantly increases code complexity,
+particularly in the transaction dissemination logic.
+
+### One P2P channel per lane
+
+Since P2P channels already have a built-in priority mechanism, they present a reasonable option to
+implement transaction dissemination from lanes. By assigning a P2P channel to each lane, we could
+simply append new transactions to their respective channels and allow the P2P layer to manage the
+order of transmission. We decided against this option mainly because the prioritization logic cannot
+be easily modified without altering the P2P code, potentially affecting other non-mempool channels.
+
+Another drawback is that this option imposes a limit to the number of P2P channels. Channels use a
+byte as an ID, and the current distribution among all reactors goes up to channel `0x61`. For
+example, the current mempool’s P2P channel ID is `0x30`, which would serve as the default lane. We
+could reserve a range of channels for the mempool, such as starting from channel ID `0x80` and above
+(all channels with the most significant byte set to 1). This would provide a maximum of 128 lanes,
+which should suffice for most users.
+
+Nodes would also need to agree on the channel assignments during the P2P handshake. Currently, one
+of the conditions for the handshake to succeed is that there must exist an intersection of P2P
+channels. Since lanes are defined in the application logic, the nodes only need to agree on the
+application version, as it already happens in the current implementation.
+
+### Duality lane/priority
+
+The duality lane/priority could introduce a powerful indirection. The app could just define the lane
+of a transaction in `CheckTx`, but the priority of the lane itself could be configured (and
+fine-tuned) elsewhere. For example, by the app itself or by node operators. The proposed design for
+the MVP does not support this pattern.
+
+### Custom configuration per lane
+
+A straightforward, future improvement that we leave for after the MVP is to allow customized
+configuration of the lanes instead of sharing the current mempool configuration among lanes. The
+application would need to define new configuration values per lane and pass them to CometBFT during
+the handshake.
+
+### Where to define lanes and priorities
+
+We have considered two alternative approaches for _where_ to configure lanes and priorities:
+1. In `config.toml` or `app.toml`. We have discarded this option as it does not make sense for
+   different nodes to have different lane configurations. The properties defined in the
+   specification above are end-to-end, and so, the lane configuration has to be consistent across
+   the network.
+1. In `ConsensusParams`. There are several disadvantages with this approach. If we allow changing
+   lane information via `ConsensusParams`, the mempool would need to update lanes dynamically. The
+   updating process would be very complex and cumbersome, and not really appealing for an MVP. Two
+   governance proposals would be required to pass to update the lane definitions. A first proposal
+   would be required for upgrading the application, because the lane classification logic (thus the
+   application's code) needs to know the lane configuration beforehand. And a second proposal would
+   be needed for upgrading the lanes via `ConsensusParams`. While it is true that SDK applications
+   could pass a governance proposal with both elements together, it would be something to _always_
+   do, and it is not clear what the situation would be for non-SDK applications.
+  
+   Also, it is not clear in which order the proposals should apply. The community should be careful
+   not to break performance between the passing of both proposals. The `gov` module could be
+   modified to allow the two changes to be shipped in the same gov proposal, but this does not seem
+   a feasible solution.
+
+Moreover, these two alternatives have a common problem which is how to deal with nodes that are
+late, possibly having lane definitions that do not match with those of nodes at the latest heights.
 
 ## Consequences
 
-TODO
-
 ### Positive
+
+- Application developers will be able to better predict when transactions will be disseminated and
+  reaped from the mempool to be included in a block. This has direct impact on block creation and
+  transaction latency.
+- The mempool will be able to offer Quality of Service (QoS) guarantees, which does not exist in the
+  current implementation. This MVP will serve as a base to further extend QoS in future iterations
+  of lanes.
+- Applications that are unaware of this feature, and therefore not classifying transactions in
+  `CheckTx`, will observe the same behavior from the mempool as the current implementation.  
 
 ### Negative
 
+- The best-effort FIFO ordering that currently applies to all transactions may be broken when using
+  multiple lanes, which will apply FIFO ordering per lane. Since FIFO ordering is important within
+  the same class of transactions, we expect this will not be a real problem.
+- Increased complexity in the logic of `CheckTx` (ante handlers) in order to classify transactions,
+  with a possibility of introducing bugs in the classification logic.
+
 ### Neutral
+
+- Lanes are optional. Current applications do not need to make any change to their code. Future
+  applications will not be forced to use the lanes feature.
+- Lanes will preserve the "FIFO ordering of transactions" property within the same class (with a
+  best effort approach, as the current implementation).
+- The proposed prioritization algorithm (WRR) for transaction dissemination and block creation is
+  fair, so low-priority transactions will not get stuck in the mempool for long periods of time, and
+  will get included in blocks proportionally to their priorities.
 
 ## References
 
@@ -552,7 +651,12 @@ TODO
 - Cosmos SDK's [gas prices][sdk-gas-prices]
 - Cosmos SDK's [application-side mempool][sdk-app-mempool]
 - Skip's [Block SDK][skip-block-sdk]
+- P2P's [selectChannelToGossipOn][selectChannelToGossipOn] function
+- [Weighted Round Robin][wrr]
+- [Cosmovisor][cosmovisor]
+- [Mempool's cache][cache]
 
+[cache]: https://github.com/cometbft/cometbft/blob/main/spec/mempool/cache.md
 [adr067]: ./tendermint-core/adr-067-mempool-refactor.md
 [reapmaxbytesmaxgas]: https://github.com/cometbft/cometbft/blob/v0.37.6/mempool/v1/mempool.go#L315-L324
 [gulf-stream]: https://medium.com/solana-labs/gulf-stream-solanas-mempool-less-transaction-forwarding-protocol-d342e72186ad
@@ -561,3 +665,6 @@ TODO
 [sdk-gas-prices]: https://docs.cosmos.network/v0.50/learn/beginner/tx-lifecycle#gas-and-fees
 [sdk-app-mempool]: https://docs.cosmos.network/v0.47/build/building-apps/app-mempool
 [skip-block-sdk]: https://github.com/skip-mev/block-sdk/blob/v2.1.3/README.md
+[cosmovisor]: https://docs.cosmos.network/v0.50/build/tooling/cosmovisor
+[selectChannelToGossipOn]: https://github.com/cometbft/cometbft/blob/6d3ff343c2d5a06e7522344d1a4e17d24ce982ad/p2p/conn/connection.go#L542-L563
+[wrr]: https://en.wikipedia.org/wiki/Weighted_round_robin

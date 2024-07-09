@@ -454,7 +454,6 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.ResponseFina
 
 	// TODO: ensure that buf is completely read.
 
-	// Otherwise return the FinalizeBlockResponse
 	return resp, nil
 }
 

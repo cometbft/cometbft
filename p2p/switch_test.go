@@ -22,8 +22,8 @@ import (
 	p2pproto "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -584,7 +584,6 @@ func TestSwitchFullConnectivity(t *testing.T) {
 	switches := MakeConnectedSwitches(cfg, 3, initSwitchFunc, Connect2Switches)
 	defer func() {
 		for _, sw := range switches {
-			sw := sw
 			t.Cleanup(func() {
 				if err := sw.Stop(); err != nil {
 					t.Error(err)
@@ -842,22 +841,11 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 
 	b.ResetTimer()
 
-	numSuccess, numFailure := 0, 0
-
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		successChan := s1.Broadcast(Envelope{ChannelID: chID})
-		for s := range successChan {
-			if s {
-				numSuccess++
-			} else {
-				numFailure++
-			}
-		}
+		s1.Broadcast(Envelope{ChannelID: chID})
 	}
-
-	b.Logf("success: %v, failure: %v", numSuccess, numFailure)
 }
 
 func TestSwitchRemovalErr(t *testing.T) {

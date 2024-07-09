@@ -3,6 +3,7 @@ package log
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -91,7 +92,8 @@ func (l tmfmtLogger) Log(keyvals ...any) error {
 
 		// Realize stringers
 		if s, ok := keyvals[i+1].(fmt.Stringer); ok {
-			keyvals[i+1] = s.String()
+			//nolint:gosimple // avoid panic for nil val
+			keyvals[i+1] = fmt.Sprintf("%s", s)
 		}
 	}
 
@@ -119,7 +121,7 @@ KeyvalueLoop:
 		}
 
 		err := enc.EncodeKeyval(keyvals[i], keyvals[i+1])
-		if err == logfmt.ErrUnsupportedValueType {
+		if errors.Is(err, logfmt.ErrUnsupportedValueType) {
 			enc.EncodeKeyval(keyvals[i], fmt.Sprintf("%+v", keyvals[i+1])) //nolint:errcheck // no need to check error again
 		} else if err != nil {
 			return err

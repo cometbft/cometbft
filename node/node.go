@@ -16,14 +16,14 @@ import (
 
 	_ "net/http/pprof" //nolint: gosec
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	cfg "github.com/cometbft/cometbft/config"
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
 	"github.com/cometbft/cometbft/internal/evidence"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	"github.com/cometbft/cometbft/internal/service"
-	"github.com/cometbft/cometbft/internal/statesync"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/light"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
@@ -37,6 +37,7 @@ import (
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/state/txindex/null"
+	"github.com/cometbft/cometbft/statesync"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -66,8 +67,8 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
-	bcReactor         p2p.Reactor        // for block-syncing
-	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
+	bcReactor         p2p.Reactor    // for block-syncing
+	mempoolReactor    mempoolReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -90,6 +91,11 @@ type waitSyncP2PReactor interface {
 	p2p.Reactor
 	// required by RPC service
 	WaitSync() bool
+}
+
+type mempoolReactor interface {
+	waitSyncP2PReactor
+	TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, error)
 }
 
 // Option sets a parameter for the node.
@@ -181,7 +187,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if !blockStore.IsEmpty() {
-		return errors.New("blockstore not empty, trying to initialize non empty state")
+		return ErrNonEmptyBlockStore
 	}
 
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
@@ -203,7 +209,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	if !state.IsEmpty() {
-		return errors.New("state not empty, trying to initialize non empty state")
+		return ErrNonEmptyState
 	}
 
 	// The state store will use the DBKeyLayout set in config or already existing in the DB.
@@ -222,7 +228,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		}, logger.With("module", "light"),
 		config.Storage.ExperimentalKeyLayout)
 	if err != nil {
-		return fmt.Errorf("failed to set up light client state provider: %w", err)
+		return ErrLightClientStateProvider{Err: err}
 	}
 
 	state, err = stateProvider.State(ctx, height)
@@ -238,7 +244,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		if err := stateStore.Close(); err != nil {
 			logger.Error("failed to close statestore: %w", err)
 		}
-		return fmt.Errorf("the app hash returned by the light client does not match the provided appHash, expected %X, got %X", state.AppHash, appHash)
+		return ErrMismatchAppHash{Expected: appHash, Actual: state.AppHash}
 	}
 
 	commit, err := stateProvider.Commit(ctx, height)
@@ -261,7 +267,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	// needs to manually delete the state and blockstores and rerun the bootstrapping process.
 	err = stateStore.SetOfflineStateSyncHeight(state.LastBlockHeight)
 	if err != nil {
-		return fmt.Errorf("failed to set synced height: %w", err)
+		return ErrSetSyncHeight{Err: err}
 	}
 
 	return err
@@ -342,17 +348,18 @@ func NewNode(ctx context.Context,
 		// FIXME: we should start services inside OnStart
 		privValidator, err = createAndStartPrivValidatorSocketClient(config.PrivValidatorListenAddr, genDoc.ChainID, logger)
 		if err != nil {
-			return nil, fmt.Errorf("error with private validator socket client: %w", err)
+			return nil, ErrPrivValidatorSocketClient{Err: err}
 		}
 	}
 
 	pubKey, err := privValidator.GetPubKey()
 	if err != nil {
-		return nil, fmt.Errorf("can't get pubkey: %w", err)
+		return nil, ErrGetPubKey{Err: err}
 	}
+	localAddr := pubKey.Address()
 
 	// Determine whether we should attempt state sync.
-	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, pubKey)
+	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
 	if stateSync && state.LastBlockHeight > 0 {
 		logger.Info("Found local state with non-zero height, skipping state sync")
 		stateSync = false
@@ -377,7 +384,7 @@ func NewNode(ctx context.Context,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := !onlyValidatorIsUs(state, pubKey)
+	blockSync := !onlyValidatorIsUs(state, localAddr)
 	waitSync := stateSync || blockSync
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
@@ -399,7 +406,7 @@ func NewNode(ctx context.Context,
 		logger.With("module", "state"),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create pruner: %w", err)
+		return nil, ErrCreatePruner{Err: err}
 	}
 
 	// make block executor for consensus and blocksync reactors to execute blocks
@@ -422,9 +429,9 @@ func NewNode(ctx context.Context,
 		}
 	}
 	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
-		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
+		return nil, ErrCreateBlockSyncReactor{Err: err}
 	}
 
 	consensusReactor, consensusState := createConsensusReactor(
@@ -463,17 +470,17 @@ func NewNode(ctx context.Context,
 
 	err = sw.AddPersistentPeers(splitAndTrimEmpty(config.P2P.PersistentPeers, ",", " "))
 	if err != nil {
-		return nil, fmt.Errorf("could not add peers from persistent_peers field: %w", err)
+		return nil, ErrAddPersistentPeers{Err: err}
 	}
 
 	err = sw.AddUnconditionalPeerIDs(splitAndTrimEmpty(config.P2P.UnconditionalPeerIDs, ",", " "))
 	if err != nil {
-		return nil, fmt.Errorf("could not add peer ids from unconditional_peer_ids field: %w", err)
+		return nil, ErrAddUnconditionalPeerIDs{Err: err}
 	}
 
 	addrBook, err := createAddrBookAndSetOnSwitch(config, sw, p2pLogger, nodeKey)
 	if err != nil {
-		return nil, fmt.Errorf("could not create addrbook: %w", err)
+		return nil, ErrCreateAddrBook{Err: err}
 	}
 
 	// Optionally, start the pex reactor
@@ -584,25 +591,25 @@ func (n *Node) OnStart() error {
 	// Always connect to persistent peers
 	err = n.sw.DialPeersAsync(splitAndTrimEmpty(n.config.P2P.PersistentPeers, ",", " "))
 	if err != nil {
-		return fmt.Errorf("could not dial peers from persistent_peers field: %w", err)
+		return ErrDialPeers{Err: err}
 	}
 
 	// Run state sync
 	if n.stateSync {
 		bcR, ok := n.bcReactor.(blockSyncReactor)
 		if !ok {
-			return errors.New("this blocksync reactor does not support switching from state sync")
+			return ErrSwitchStateSync
 		}
 		err := startStateSync(n.stateSyncReactor, bcR, n.stateSyncProvider,
 			n.config.StateSync, n.stateStore, n.blockStore, n.stateSyncGenesis, n.config.Storage.ExperimentalKeyLayout)
 		if err != nil {
-			return fmt.Errorf("failed to start state sync: %w", err)
+			return ErrStartStateSync{Err: err}
 		}
 	}
 
 	// Start background pruning
 	if err := n.pruner.Start(); err != nil {
-		return fmt.Errorf("failed to start background pruning routine: %w", err)
+		return ErrStartPruning{Err: err}
 	}
 
 	return nil
@@ -621,10 +628,11 @@ func (n *Node) OnStop() {
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}
-	if err := n.indexerService.Stop(); err != nil {
-		n.Logger.Error("Error closing indexerService", "err", err)
+	if n.indexerService != nil {
+		if err := n.indexerService.Stop(); err != nil {
+			n.Logger.Error("Error closing indexerService", "err", err)
+		}
 	}
-
 	// now stop the reactors
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)
@@ -685,7 +693,7 @@ func (n *Node) OnStop() {
 func (n *Node) ConfigureRPC() (*rpccore.Environment, error) {
 	pubKey, err := n.privValidator.GetPubKey()
 	if pubKey == nil || err != nil {
-		return nil, fmt.Errorf("can't get pubkey: %w", err)
+		return nil, ErrGetPubKey{Err: err}
 	}
 	rpcCoreEnv := rpccore.Environment{
 		ProxyAppQuery:   n.proxyApp.Query(),
@@ -731,6 +739,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 	}
 
 	config := rpcserver.DefaultConfig()
+	config.MaxRequestBatchSize = n.config.RPC.MaxRequestBatchSize
 	config.MaxBodyBytes = n.config.RPC.MaxBodyBytes
 	config.MaxHeaderBytes = n.config.RPC.MaxHeaderBytes
 	config.MaxOpenConnections = n.config.RPC.MaxOpenConnections

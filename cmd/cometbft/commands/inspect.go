@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"context"
-	"os"
 	"os/signal"
 	"syscall"
 
@@ -45,15 +43,8 @@ func init() {
 }
 
 func runInspect(cmd *cobra.Command, _ []string) error {
-	ctx, cancel := context.WithCancel(cmd.Context())
+	ctx, cancel := signal.NotifyContext(cmd.Context(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
-	go func() {
-		<-c
-		cancel()
-	}()
 
 	blockStoreDB, err := cfg.DefaultDBProvider(&cfg.DBContext{ID: "blockstore", Config: config})
 	if err != nil {
@@ -73,7 +64,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
+	txIndexer, blockIndexer, _, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
 	if err != nil {
 		return err
 	}

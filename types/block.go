@@ -16,9 +16,9 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/bits"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
@@ -857,6 +857,15 @@ type Commit struct {
 	hash cmtbytes.HexBytes
 }
 
+// Clone creates a deep copy of this commit.
+func (commit *Commit) Clone() *Commit {
+	sigs := make([]CommitSig, len(commit.Signatures))
+	copy(sigs, commit.Signatures)
+	commCopy := *commit
+	commCopy.Signatures = sigs
+	return &commCopy
+}
+
 // GetVote converts the CommitSig for the given valIdx to a Vote. Commits do
 // not contain vote extensions, so the vote extension and vote extension
 // signature will not be present in the returned vote.
@@ -940,7 +949,7 @@ func (commit *Commit) MedianTime(validators *ValidatorSet) time.Time {
 		if commitSig.BlockIDFlag == BlockIDFlagAbsent {
 			continue
 		}
-		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)
+		_, validator := validators.GetByAddressMut(commitSig.ValidatorAddress)
 		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
 		if validator != nil {
 			totalVotingPower += validator.VotingPower
@@ -1207,12 +1216,12 @@ func (ec *ExtendedCommit) Size() int {
 // Implements VoteSetReader.
 func (ec *ExtendedCommit) BitArray() *bits.BitArray {
 	if ec.bitArray == nil {
-		ec.bitArray = bits.NewBitArray(len(ec.ExtendedSignatures))
-		for i, extCommitSig := range ec.ExtendedSignatures {
+		initialBitFn := func(i int) bool {
 			// TODO: need to check the BlockID otherwise we could be counting conflicts,
 			//       not just the one with +2/3 !
-			ec.bitArray.SetIndex(i, extCommitSig.BlockIDFlag != BlockIDFlagAbsent)
+			return ec.ExtendedSignatures[i].BlockIDFlag != BlockIDFlagAbsent
 		}
+		ec.bitArray = bits.NewBitArrayFromFn(len(ec.ExtendedSignatures), initialBitFn)
 	}
 	return ec.bitArray
 }

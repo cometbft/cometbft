@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	jsonrpcclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
@@ -280,6 +280,19 @@ func (c *baseRPCClient) broadcastTX(
 ) (*ctypes.ResultBroadcastTx, error) {
 	result := new(ctypes.ResultBroadcastTx)
 	_, err := c.caller.Call(ctx, route, map[string]any{"tx": tx}, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (c *baseRPCClient) UnconfirmedTx(
+	ctx context.Context,
+	hash []byte,
+) (*ctypes.ResultUnconfirmedTx, error) {
+	result := new(ctypes.ResultUnconfirmedTx)
+	params := map[string]any{"hash": hash}
+	_, err := c.caller.Call(ctx, "unconfirmed_tx", params, result)
 	if err != nil {
 		return nil, err
 	}

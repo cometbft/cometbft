@@ -3,6 +3,7 @@ package cometbft.types.v1;
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/types/v1";
 
+import "cometbft/crypto/v1/keys.proto";
 import "gogoproto/gogo.proto";
 
 // BlockIdFlag indicates which BlockID the signature is for
@@ -29,22 +30,18 @@ message ValidatorSet {
 
 // Validator represents a node participating in the consensus protocol.
 message Validator {
-  bytes  address           = 1;
-  int64  voting_power      = 3;
-  int64  proposer_priority = 4;
-  bytes  pub_key_bytes     = 5;
-  string pub_key_type      = 6;
-
-  reserved 2;  // pub_key
+  bytes  address                       = 1;
+  cometbft.crypto.v1.PublicKey pub_key = 2 [deprecated = true];
+  int64  voting_power                  = 3;
+  int64  proposer_priority             = 4;
+  bytes  pub_key_bytes                 = 5;
+  string pub_key_type                  = 6;
 }
 
 // SimpleValidator is a Validator, which is serialized and hashed in consensus.
 // Address is removed because it's redundant with the pubkey.
 // Proposer priority is removed because it changes every round.
 message SimpleValidator {
-  int64  voting_power  = 2;
-  bytes  pub_key_bytes = 3;
-  string pub_key_type  = 4;
-
-  reserved 1;  // pub_key
+  cometbft.crypto.v1.PublicKey pub_key       = 1;
+  int64                        voting_power  = 2;
 }

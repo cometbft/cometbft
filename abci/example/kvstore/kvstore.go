@@ -169,7 +169,11 @@ func (app *Application) PrepareProposal(ctx context.Context, req *types.PrepareP
 func (app *Application) formatTxs(ctx context.Context, blockData [][]byte) [][]byte {
 	txs := make([][]byte, 0, len(blockData))
 	for _, tx := range blockData {
-		if resp, err := app.CheckTx(ctx, &types.CheckTxRequest{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK}); err == nil && resp.Code == CodeTypeOK {
+		resp, err := app.CheckTx(ctx, &types.CheckTxRequest{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK})
+		if err != nil {
+			panic(fmt.Sprintln("formatTxs: CheckTx call had an unrecoverable error", err))
+		}
+		if resp.Code == CodeTypeOK {
 			txs = append(txs, bytes.Replace(tx, []byte(":"), []byte("="), 1))
 		}
 	}
@@ -181,8 +185,11 @@ func (app *Application) formatTxs(ctx context.Context, blockData [][]byte) [][]b
 func (app *Application) ProcessProposal(ctx context.Context, req *types.ProcessProposalRequest) (*types.ProcessProposalResponse, error) {
 	for _, tx := range req.Txs {
 		// As CheckTx is a full validity check we can simply reuse this
-		if resp, err := app.CheckTx(ctx, &types.CheckTxRequest{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK}); err != nil || resp.Code != CodeTypeOK {
-			//nolint:nilerr
+		resp, err := app.CheckTx(ctx, &types.CheckTxRequest{Tx: tx, Type: types.CHECK_TX_TYPE_CHECK})
+		if err != nil {
+			panic(fmt.Sprintln("ProcessProposal: CheckTx call had an unrecoverable error", err))
+		}
+		if resp.Code != CodeTypeOK {
 			return &types.ProcessProposalResponse{Status: types.PROCESS_PROPOSAL_STATUS_REJECT}, nil
 		}
 	}

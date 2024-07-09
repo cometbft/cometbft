@@ -8,7 +8,7 @@ import (
 	log "github.com/cometbft/cometbft/libs/log"
 	mock "github.com/stretchr/testify/mock"
 
-	query "github.com/cometbft/cometbft/internal/pubsub/query"
+	query "github.com/cometbft/cometbft/libs/pubsub/query"
 
 	txindex "github.com/cometbft/cometbft/state/txindex"
 

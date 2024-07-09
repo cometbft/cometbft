@@ -12,9 +12,9 @@ import (
 
 	"github.com/cometbft/cometbft/abci/types"
 	cmtnet "github.com/cometbft/cometbft/internal/net"
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // SocketServer is the server-side implementation of the TSP (Tendermint Socket Protocol)
@@ -144,7 +144,7 @@ func (s *SocketServer) acceptConnectionsRoutine() {
 func (s *SocketServer) waitForClose(closeConn chan error, connID int) {
 	err := <-closeConn
 	switch {
-	case err == io.EOF:
+	case errors.Is(err, io.EOF):
 		s.Logger.Error("Connection was closed by client")
 	case err != nil:
 		s.Logger.Error("Connection error", "err", err)
@@ -186,7 +186,7 @@ func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, resp
 		req := &types.Request{}
 		err := types.ReadMessage(bufReader, req)
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				closeConn <- err
 			} else {
 				closeConn <- fmt.Errorf("error reading message: %w", err)

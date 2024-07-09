@@ -4,8 +4,8 @@ import (
 	"io"
 
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -73,8 +73,7 @@ func (ss *SignerServer) servicePendingRequest() {
 	}
 
 	var res privvalproto.Message
-	{
-		// limit the scope of the lock
+	func() {
 		ss.handlerMtx.Lock()
 		defer ss.handlerMtx.Unlock()
 		res, err = ss.validationRequestHandler(ss.privVal, req, ss.chainID)
@@ -82,7 +81,7 @@ func (ss *SignerServer) servicePendingRequest() {
 			// only log the error; we'll reply with an error in res
 			ss.Logger.Error("SignerServer: handleMessage", "err", err)
 		}
-	}
+	}()
 
 	err = ss.endpoint.WriteMessage(res)
 	if err != nil {

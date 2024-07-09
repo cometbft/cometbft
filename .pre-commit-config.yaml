@@ -4,7 +4,7 @@
 repos:
   # golangci-lint
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.56.1
+    rev: v1.58.0
     hooks:
       - id: golangci-lint-full
         args: [--timeout, 10m] # for CI

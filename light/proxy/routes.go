@@ -37,6 +37,7 @@ func RPCRoutes(c *lrpc.Client) map[string]*rpcserver.RPCFunc {
 		"dump_consensus_state": rpcserver.NewRPCFunc(makeDumpConsensusStateFunc(c), ""),
 		"consensus_state":      rpcserver.NewRPCFunc(makeConsensusStateFunc(c), ""),
 		"consensus_params":     rpcserver.NewRPCFunc(makeConsensusParamsFunc(c), "height", rpcserver.Cacheable("height")),
+		"unconfirmed_tx":       rpcserver.NewRPCFunc(makeUnconfirmedTxFunc(c), "hash"),
 		"unconfirmed_txs":      rpcserver.NewRPCFunc(makeUnconfirmedTxsFunc(c), "limit"),
 		"num_unconfirmed_txs":  rpcserver.NewRPCFunc(makeNumUnconfirmedTxsFunc(c), ""),
 
@@ -228,6 +229,14 @@ type rpcConsensusParamsFunc func(ctx *rpctypes.Context, height *int64) (*ctypes.
 func makeConsensusParamsFunc(c *lrpc.Client) rpcConsensusParamsFunc {
 	return func(ctx *rpctypes.Context, height *int64) (*ctypes.ResultConsensusParams, error) {
 		return c.ConsensusParams(ctx.Context(), height)
+	}
+}
+
+type rpcUnconfirmedTxFunc func(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error)
+
+func makeUnconfirmedTxFunc(c *lrpc.Client) rpcUnconfirmedTxFunc {
+	return func(ctx *rpctypes.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+		return c.UnconfirmedTx(ctx.Context(), hash)
 	}
 }
 

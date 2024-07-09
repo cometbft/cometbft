@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/internal/service"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	"github.com/cometbft/cometbft/libs/service"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
@@ -198,6 +198,10 @@ func (c *Client) BroadcastTxAsync(ctx context.Context, tx types.Tx) (*ctypes.Res
 
 func (c *Client) BroadcastTxSync(ctx context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return c.next.BroadcastTxSync(ctx, tx)
+}
+
+func (c *Client) UnconfirmedTx(ctx context.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+	return c.next.UnconfirmedTx(ctx, hash)
 }
 
 func (c *Client) UnconfirmedTxs(ctx context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {

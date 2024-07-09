@@ -2,6 +2,7 @@ package ed25519
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"crypto/subtle"
 	"errors"
 	"fmt"
@@ -153,9 +154,9 @@ func genPrivKey(rand io.Reader) PrivKey {
 // NOTE: secret should be the output of a KDF like bcrypt,
 // if it's derived from user input.
 func GenPrivKeyFromSecret(secret []byte) PrivKey {
-	seed := crypto.Sha256(secret) // Not Ripemd160 because we want 32 bytes.
+	seed := sha256.Sum256(secret) // Not Ripemd160 because we want 32 bytes.
 
-	return PrivKey(ed25519.NewKeyFromSeed(seed))
+	return PrivKey(ed25519.NewKeyFromSeed(seed[:]))
 }
 
 // -------------------------------------

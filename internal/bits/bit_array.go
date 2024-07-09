@@ -4,12 +4,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math/bits"
+	"math/rand"
 	"regexp"
 	"strings"
 	"sync"
 
 	cmtprotobits "github.com/cometbft/cometbft/api/cometbft/libs/bits/v1"
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
 
@@ -30,6 +30,26 @@ func NewBitArray(bits int) *BitArray {
 		Bits:  bits,
 		Elems: make([]uint64, (bits+63)/64),
 	}
+}
+
+// NewBitArrayFromFn returns a new bit array.
+// It returns nil if the number of bits is zero.
+// It initializes the `i`th bit to the value of `fn(i)`.
+func NewBitArrayFromFn(bits int, fn func(int) bool) *BitArray {
+	if bits <= 0 {
+		return nil
+	}
+	bA := &BitArray{
+		Bits:  bits,
+		Elems: make([]uint64, (bits+63)/64),
+	}
+	for i := 0; i < bits; i++ {
+		v := fn(i)
+		if v {
+			bA.Elems[i/64] |= (uint64(1) << uint(i%64))
+		}
+	}
+	return bA
 }
 
 // Size returns the number of bits in the bitarray.
@@ -241,8 +261,8 @@ func (bA *BitArray) IsFull() bool {
 
 // PickRandom returns a random index for a set bit in the bit array.
 // If there is no such value, it returns 0, false.
-// It uses the global randomness in `random.go` to get this index.
-func (bA *BitArray) PickRandom() (int, bool) {
+// It uses the provided randomness to get this index.
+func (bA *BitArray) PickRandom(r *rand.Rand) (int, bool) {
 	if bA == nil {
 		return 0, false
 	}
@@ -253,7 +273,7 @@ func (bA *BitArray) PickRandom() (int, bool) {
 		bA.mtx.Unlock()
 		return 0, false
 	}
-	index := bA.getNthTrueIndex(cmtrand.Intn(numTrueIndices))
+	index := bA.getNthTrueIndex(r.Intn(numTrueIndices))
 	bA.mtx.Unlock()
 	if index == -1 {
 		return 0, false

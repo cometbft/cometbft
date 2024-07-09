@@ -15,9 +15,9 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	idxutil "github.com/cometbft/cometbft/internal/indexer"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
-	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/state/indexer"
 	"github.com/cometbft/cometbft/types"
@@ -46,7 +46,7 @@ type BlockerIndexer struct {
 }
 type IndexerOption func(*BlockerIndexer)
 
-// WithCompaction sets the compaciton parameters.
+// WithCompaction sets the compaction parameters.
 func WithCompaction(compact bool, compactionInterval int64) IndexerOption {
 	return func(idx *BlockerIndexer) {
 		idx.compact = compact
@@ -374,6 +374,7 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 	// fetch matching heights
 	results = make([]int64, 0, len(filteredHeights))
 	resultMap := make(map[int64]struct{})
+FOR_LOOP:
 	for _, hBz := range filteredHeights {
 		h := int64FromBytes(hBz)
 
@@ -390,7 +391,7 @@ func (idx *BlockerIndexer) Search(ctx context.Context, q *query.Query) ([]int64,
 
 		select {
 		case <-ctx.Done():
-
+			break FOR_LOOP
 		default:
 		}
 	}
@@ -699,6 +700,7 @@ func (idx *BlockerIndexer) match(
 
 	// Remove/reduce matches in filteredHeights that were not found in this
 	// match (tmpHeights).
+FOR_LOOP:
 	for k, v := range filteredHeights {
 		tmpHeight := tmpHeights[k]
 		if tmpHeight == nil || !bytes.Equal(tmpHeight, v) {
@@ -706,7 +708,7 @@ func (idx *BlockerIndexer) match(
 
 			select {
 			case <-ctx.Done():
-
+				break FOR_LOOP
 			default:
 			}
 		}

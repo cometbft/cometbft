@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // NOTE: use defer to unlock mutex because Application might panic (e.g., in
@@ -61,7 +61,9 @@ func (app *localClient) CheckTxAsync(ctx context.Context, req *types.CheckTxRequ
 }
 
 func (app *localClient) callback(req *types.Request, res *types.Response) *ReqRes {
-	app.Callback(req, res)
+	if app.Callback != nil {
+		app.Callback(req, res)
+	}
 	rr := newLocalReqRes(req, res)
 	rr.callbackInvoked = true
 	return rr
@@ -70,6 +72,7 @@ func (app *localClient) callback(req *types.Request, res *types.Response) *ReqRe
 func newLocalReqRes(req *types.Request, res *types.Response) *ReqRes {
 	reqRes := NewReqRes(req)
 	reqRes.Response = res
+	reqRes.Done() // release waiters on response
 	return reqRes
 }
 

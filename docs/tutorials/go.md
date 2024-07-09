@@ -438,10 +438,13 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.F
     }
 
     return &abcitypes.FinalizeBlockResponse{
-        TxResults:        txs,
+        TxResults:      txs,
+        NextBlockDelay: 1 * time.Second,
     }, nil
 }
 ```
+
+`NextBlockDelay` is a delay between the time when the current block is committed and the next height is started. Normally you don't need to change the default value (1s). Please refer to the [spec](../../spec/abci/abci++_methods.md#finalizeblock) for more information.
 
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
@@ -549,10 +552,22 @@ func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abci
 }
 ```
 
+### 1.3.6 Handling errors
+
+Please note that in the method signature for the ABCI methods, there is a response and an error return, such as
+`(*abcitypes.[Method]Response, error)`. Some of the ABCI methods' responses might include a field that can return
+an error in the response, such as the `Code` field in the `CheckTxResponse`. The application can use the `Code`
+field to signal CometBFT that the transaction was rejected. Another example is `FinalizeBlockResponse`, which has a `TxResults` array field with each result containing a `Code` field that can be used by the application
+to signal that a transaction didn't execute properly. Or `QueryResponse`, which also includes
+a `Code` field to signal that a query to the application was unsuccessful or it could not find the information.
+
+The `error` return, as in `(*abcitypes.[Method]Response, error)`, can be used if there are unrecoverable errors.
+In these cases, the application should abort to prevent further unintended consequences.
+
 ## 1.4 Starting an application and a CometBFT instance
 
 Now that we have the basic functionality of our application in place, let's put
-it all together inside of our `main.go` file.
+it all together inside our `main.go` file.
 
 Change the contents of your `main.go` file to the following.
 
@@ -804,4 +819,4 @@ The events (`abcitypes.Event`) added in `FinalizeBlock` are indexed by CometBFT 
 
 ## Outro
 
-Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/cosmosnetwork) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.
+Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/interchain) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.

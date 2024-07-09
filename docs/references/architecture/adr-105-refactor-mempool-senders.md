@@ -5,10 +5,11 @@
 - 2023-07-19: Choose callbacks option and mark as accepted (@hvanz)
 - 2023-07-10: Add callback alternative (@hvanz)
 - 2023-06-26: Initial draft (@hvanz)
+- 2024-05-22: Reverted (@hvanz)
 
 ## Status
 
-Accepted
+Reverted
 
 ## Context
 
@@ -147,6 +148,11 @@ chances of concurrent accesses to the list of senders and it removes the
 transaction immediately, keeping the mempool and the list of senders better
 synchoronized.
 
+Update: We have decided to revert this change as it may cause in some cases that the transaction is
+sent back to the sender. Storing the sender in the reactor after storing the transaction in `CList`
+introduces a race condition resulting in the transaction having no sender during a very small window of
+time.
+
 ## Consequences
 
 The refactoring proposed here does not affect how users and other peers
@@ -166,6 +172,8 @@ stored internally.
 
 - If chosen, adding a channel and a goroutine for communicating that a
   transaction was removed may increase the concurrency complexity. 
+- Storing the sender separated from the transaction results in the transaction having no sender
+  during a brief period of time, allowing the transaction to be sent back to the sender.
 
 ### Neutral
 

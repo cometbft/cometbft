@@ -23,8 +23,8 @@ implementation.
 import (
 	"context"
 
-	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/service"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cometbft/cometbft/types"
 )
@@ -134,6 +134,7 @@ type EventsClient interface {
 
 // MempoolClient shows us data about current mempool state.
 type MempoolClient interface {
+	UnconfirmedTx(ctx context.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error)
 	UnconfirmedTxs(ctx context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error)
 	NumUnconfirmedTxs(ctx context.Context) (*ctypes.ResultUnconfirmedTxs, error)
 	CheckTx(ctx context.Context, tx types.Tx) (*ctypes.ResultCheckTx, error)

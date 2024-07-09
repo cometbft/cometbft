@@ -22,10 +22,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
@@ -232,7 +232,7 @@ func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// send a tx
-	reqRes, err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1))
+	reqRes, err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1), "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -631,9 +631,9 @@ func TestReactorWithDefaultTimeoutCommit(t *testing.T) {
 	n := 4
 	css, cleanup := randConsensusNet(t, n, "consensus_reactor_with_timeout_commit_test", newMockTickerFunc(false), newKVStore)
 	defer cleanup()
-	// override default TimeoutCommit == 0 for tests
+	// override default NextBlockDelay == 0 for tests
 	for i := 0; i < n; i++ {
-		css[i].config.TimeoutCommit = 1 * time.Second
+		css[i].state.NextBlockDelay = 1 * time.Second
 	}
 
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, n-1)
@@ -664,7 +664,7 @@ func waitForAndValidateBlock(
 
 		// optionally add transactions for the next block
 		for _, tx := range txs {
-			reqRes, err := assertMempool(css[j].txNotifier).CheckTx(tx)
+			reqRes, err := assertMempool(css[j].txNotifier).CheckTx(tx, "")
 			require.NoError(t, err)
 			require.False(t, reqRes.Response.GetCheckTx().IsErr())
 		}
@@ -802,7 +802,6 @@ func TestNewRoundStepMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := NewRoundStepMessage{
 				Height:          tc.messageHeight,
@@ -837,7 +836,6 @@ func TestNewRoundStepMessageValidateHeight(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := NewRoundStepMessage{
 				Height:          tc.messageHeight,
@@ -882,7 +880,6 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			msg := &NewValidBlockMessage{
 				Height: 1,
@@ -918,7 +915,6 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			msg := &ProposalPOLMessage{
 				Height:           1,
@@ -951,7 +947,6 @@ func TestBlockPartMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := BlockPartMessage{
 				Height: tc.messageHeight,
@@ -991,7 +986,6 @@ func TestHasVoteMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := HasVoteMessage{
 				Height: tc.messageHeight,
@@ -1036,7 +1030,6 @@ func TestVoteSetMaj23MessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := VoteSetMaj23Message{
 				Height:  tc.messageHeight,
@@ -1074,7 +1067,6 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			msg := &VoteSetBitsMessage{
 				Height:  1,

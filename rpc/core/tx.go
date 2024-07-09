@@ -1,7 +1,7 @@
 package core
 
 import (
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/cometbft/cometbft/state/txindex"
@@ -36,7 +36,9 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 	var proof types.TxProof
 	if prove {
 		block, _ := env.BlockStore.LoadBlock(r.Height)
-		proof = block.Data.Txs.Proof(int(r.Index))
+		if block != nil {
+			proof = block.Data.Txs.Proof(int(r.Index))
+		}
 	}
 
 	return &ctypes.ResultTx{
@@ -101,7 +103,9 @@ func (env *Environment) TxSearch(
 		var proof types.TxProof
 		if prove {
 			block, _ := env.BlockStore.LoadBlock(r.Height)
-			proof = block.Data.Txs.Proof(int(r.Index))
+			if block != nil {
+				proof = block.Data.Txs.Proof(int(r.Index))
+			}
 		}
 
 		apiResults = append(apiResults, &ctypes.ResultTx{

@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/internal/bits"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (
@@ -421,7 +421,7 @@ func (voteSet *VoteSet) GetByAddress(address []byte) *Vote {
 	}
 	voteSet.mtx.Lock()
 	defer voteSet.mtx.Unlock()
-	valIndex, val := voteSet.valSet.GetByAddress(address)
+	valIndex, val := voteSet.valSet.GetByAddressMut(address)
 	if val == nil {
 		panic("GetByAddress(address) returned nil")
 	}

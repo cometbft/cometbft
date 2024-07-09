@@ -18,8 +18,8 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/bytes"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/core"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"

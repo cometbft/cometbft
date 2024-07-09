@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	gogo "github.com/cosmos/gogoproto/types"
@@ -24,8 +25,8 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -39,6 +40,7 @@ const (
 	suffixVoteExtHeight string = "VoteExtensionsHeight"
 	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
+	txTTL               uint64 = 5 // height difference at which transactions should be invalid
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -52,6 +54,8 @@ type Application struct {
 	cfg             *Config
 	restoreSnapshot *abci.Snapshot
 	restoreChunks   [][]byte
+	// It's OK not to persist this, as it is not part of the state machine
+	seenTxs sync.Map // cmttypes.TxKey -> uint64
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -232,8 +236,8 @@ func (app *Application) InitChain(_ context.Context, req *abci.InitChainRequest)
 	// Get validators from genesis
 	if req.Validators != nil {
 		for _, val := range req.Validators {
-			val := val
-			if err := app.storeValidator(&val); err != nil {
+			validator := val
+			if err := app.storeValidator(&validator); err != nil {
 				return nil, err
 			}
 		}
@@ -268,6 +272,23 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		}, nil
 	}
 
+	txKey := cmttypes.Tx(req.Tx).Key()
+	stHeight, _ := app.state.Info()
+	if txHeight, ok := app.seenTxs.Load(txKey); ok {
+		if stHeight < txHeight.(uint64) {
+			panic(fmt.Sprintf("txHeight is less than current height; txHeight %v, height %v", txHeight, stHeight))
+		}
+		if stHeight > txHeight.(uint64)+txTTL {
+			app.seenTxs.Delete(txKey)
+			return &abci.CheckTxResponse{
+				Code: kvstore.CodeTypeExpired,
+				Log:  fmt.Sprintf("transaction expired; seen height %v, current height %v", txHeight, stHeight),
+			}, nil
+		}
+	} else {
+		app.seenTxs.Store(txKey, stHeight)
+	}
+
 	if app.cfg.CheckTxDelay != 0 {
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
@@ -294,6 +315,8 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 			panic(fmt.Errorf("detected a transaction with key %q; this key is reserved and should have been filtered out", prefixReservedKey))
 		}
 		app.state.Set(key, value)
+
+		app.seenTxs.Delete(cmttypes.Tx(tx).Key())
 
 		txs[i] = &abci.ExecTxResult{Code: kvstore.CodeTypeOK}
 	}
@@ -339,6 +362,7 @@ func (app *Application) FinalizeBlock(_ context.Context, req *abci.FinalizeBlock
 				},
 			},
 		},
+		NextBlockDelay: 1 * time.Second,
 	}, nil
 }
 

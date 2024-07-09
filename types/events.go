@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 )
 
 // Reserved event types (alphabetically sorted).

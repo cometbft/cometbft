@@ -160,7 +160,7 @@ func (m *Metrics) MarkVoteExtensionReceived(accepted bool) {
 
 func (m *Metrics) MarkVoteReceived(vt types.SignedMsgType, power, totalPower int64) {
 	p := float64(power) / float64(totalPower)
-	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
+	n := types.SignedMsgTypeToShortString(vt)
 	m.RoundVotingPowerPercent.With("vote_type", n).Add(p)
 }
 
@@ -169,17 +169,15 @@ func (m *Metrics) MarkRound(r int32, st time.Time) {
 	roundTime := cmttime.Since(st).Seconds()
 	m.RoundDurationSeconds.Observe(roundTime)
 
-	pvt := types.PrevoteType
-	pvn := strings.ToLower(strings.TrimPrefix(pvt.String(), "SIGNED_MSG_TYPE_"))
+	pvn := types.SignedMsgTypeToShortString(types.PrevoteType)
 	m.RoundVotingPowerPercent.With("vote_type", pvn).Set(0)
 
-	pct := types.PrecommitType
-	pcn := strings.ToLower(strings.TrimPrefix(pct.String(), "SIGNED_MSG_TYPE_"))
+	pcn := types.SignedMsgTypeToShortString(types.PrecommitType)
 	m.RoundVotingPowerPercent.With("vote_type", pcn).Set(0)
 }
 
 func (m *Metrics) MarkLateVote(vt types.SignedMsgType) {
-	n := strings.ToLower(strings.TrimPrefix(vt.String(), "SIGNED_MSG_TYPE_"))
+	n := types.SignedMsgTypeToShortString(vt)
 	m.LateVotes.With("vote_type", n).Add(1)
 }
 

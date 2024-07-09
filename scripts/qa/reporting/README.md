@@ -54,7 +54,7 @@ Plots include combined experiment plots and experiments as subplots.
 - `all_configs`: plots of all experiments, grouped by configuration (r,c).
 - `cXrY.png`: Independent plot of experiments of configuration (c=X,r=Y) as different curves.
 - `cXrY_merged.png`: Independent plot of experiments of configuration (c=X,r=Y) combined as single curve.
-- `e_ID.png`: independent plot with just experiment with id ID as a single curve.
+- `e_ID.png`: independent plot with just experiment with id=ID as a single curve.
 
 Example:
 ```bash

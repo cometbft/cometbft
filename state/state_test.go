@@ -24,6 +24,13 @@ import (
 // setupTestCase does setup common to all test cases.
 func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 	t.Helper()
+	tearDown, stateDB, state, _ := setupTestCaseWithStore(t)
+	return tearDown, stateDB, state
+}
+
+// setupTestCase does setup common to all test cases.
+func setupTestCaseWithStore(t *testing.T) (func(t *testing.T), dbm.DB, sm.State, sm.Store) {
+	t.Helper()
 	config := test.ResetTestRoot("state_")
 	dbType := dbm.BackendType(config.DBBackend)
 	stateDB, err := dbm.NewDB("state", dbType, config.DBDir())
@@ -41,7 +48,7 @@ func setupTestCase(t *testing.T) (func(t *testing.T), dbm.DB, sm.State) {
 		os.RemoveAll(config.RootDir)
 	}
 
-	return tearDown, stateDB, state
+	return tearDown, stateDB, state, stateStore
 }
 
 // TestStateCopy tests the correct copying behavior of State.
@@ -120,6 +127,8 @@ func TestFinalizeBlockResponsesSaveLoad1(t *testing.T) {
 	abciResponses.ValidatorUpdates = []abci.ValidatorUpdate{
 		abci.NewValidatorUpdate(ed25519.GenPrivKey().PubKey(), 10),
 	}
+
+	abciResponses.AppHash = make([]byte, 1)
 
 	err := stateStore.SaveFinalizeBlockResponse(block.Height, abciResponses)
 	require.NoError(t, err)
@@ -255,7 +264,7 @@ func TestValidatorSimpleSaveLoad(t *testing.T) {
 	assert.Equal(vp1.Hash(), state.NextValidators.Hash(), "expected next validator hashes to match")
 }
 
-// TestValidatorChangesSaveLoad tests saving and loading a validator set with changes.
+// TestOneValidatorChangesSaveLoad tests saving and loading a validator set with changes.
 func TestOneValidatorChangesSaveLoad(t *testing.T) {
 	tearDown, stateDB, state := setupTestCase(t)
 	defer tearDown(t)
@@ -524,7 +533,7 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	_, updatedVal2 := updatedState3.NextValidators.GetByAddress(val2PubKey.Address())
 
 	// 2. Scale
-	// old prios: v1(10):-38, v2(1):39
+	// old prios: cryptov1(10):-38, v2(1):39
 	wantVal1Prio = prevVal1.ProposerPriority
 	wantVal2Prio = prevVal2.ProposerPriority
 	// scale to diffMax = 22 = 2 * tvp, diff=39-(-38)=77
@@ -533,14 +542,14 @@ func TestProposerPriorityDoesNotGetResetToZero(t *testing.T) {
 	dist := wantVal2Prio - wantVal1Prio
 	// ratio := (dist + 2*totalPower - 1) / 2*totalPower = 98/22 = 4
 	ratio := (dist + 2*totalPower - 1) / (2 * totalPower)
-	// v1(10):-38/4, v2(1):39/4
+	// cryptov1(10):-38/4, v2(1):39/4
 	wantVal1Prio /= ratio // -9
 	wantVal2Prio /= ratio // 9
 
 	// 3. Center - noop
 	// 4. IncrementProposerPriority() ->
-	// v1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
-	// v1(10):1, v2(1):-1
+	// cryptov1(10):-9+10, v2(1):9+1 -> v2 proposer so subsract tvp(11)
+	// cryptov1(10):1, v2(1):-1
 	wantVal2Prio += updatedVal2.VotingPower // 10 -> prop
 	wantVal1Prio += updatedVal1.VotingPower // 1
 	wantVal2Prio -= totalPower              // -1
@@ -928,7 +937,7 @@ func TestStoreLoadValidatorsIncrementsProposerPriority(t *testing.T) {
 	assert.NotEqual(t, acc1, acc0, "expected ProposerPriority value to change between heights")
 }
 
-// TestValidatorChangesSaveLoad tests saving and loading a validator set with
+// TestManyValidatorChangesSaveLoad tests saving and loading a validator set with
 // changes.
 func TestManyValidatorChangesSaveLoad(t *testing.T) {
 	const valSetSize = 7
@@ -1080,7 +1089,6 @@ func TestStateProto(t *testing.T) {
 	}
 
 	for _, tt := range tc {
-		tt := tt
 		pbs, err := tt.state.ToProto()
 		if !tt.expPass1 {
 			require.Error(t, err)

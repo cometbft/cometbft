@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -63,7 +62,7 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 		// https://github.com/cometbft/cometbft/issues/1302
 		jsonBlob, err := os.ReadFile(config.GenesisFile())
 		if err != nil {
-			return ChecksummedGenesisDoc{}, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
+			return ChecksummedGenesisDoc{}, ErrorReadingGenesisDoc{Err: err}
 		}
 		incomingChecksum := tmhash.Sum(jsonBlob)
 		genDoc, err := types.GenesisDocFromJSON(jsonBlob)
@@ -83,7 +82,7 @@ type Provider func(*cfg.Config, log.Logger) (*Node, error)
 func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
-		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
+		return nil, ErrorLoadOrGenNodeKey{Err: err, NodeKeyFile: config.NodeKeyFile()}
 	}
 
 	return NewNode(context.Background(), config,
@@ -167,16 +166,20 @@ func createAndStartIndexerService(
 		txIndexer    txindex.TxIndexer
 		blockIndexer indexer.BlockIndexer
 	)
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, dbProvider, chainID)
+
+	txIndexer, blockIndexer, allIndexersDisabled, err := block.IndexerFromConfig(config, dbProvider, chainID)
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	if allIndexersDisabled {
+		return nil, txIndexer, blockIndexer, nil
 	}
 
 	txIndexer.SetLogger(logger.With("module", "txindex"))
 	blockIndexer.SetLogger(logger.With("module", "txindex"))
+
 	indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	indexerService.SetLogger(logger.With("module", "txindex"))
-
 	if err := indexerService.Start(); err != nil {
 		return nil, nil, nil, err
 	}
@@ -230,12 +233,12 @@ func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusL
 	}
 }
 
-func onlyValidatorIsUs(state sm.State, pubKey crypto.PubKey) bool {
+func onlyValidatorIsUs(state sm.State, localAddr crypto.Address) bool {
 	if state.Validators.Size() > 1 {
 		return false
 	}
-	addr, _ := state.Validators.GetByIndex(0)
-	return bytes.Equal(pubKey.Address(), addr)
+	valAddr, _ := state.Validators.GetByIndex(0)
+	return bytes.Equal(localAddr, valAddr)
 }
 
 // createMempoolAndMempoolReactor creates a mempool and a mempool reactor based on the config.
@@ -302,13 +305,14 @@ func createBlocksyncReactor(config *cfg.Config,
 	blockExec *sm.BlockExecutor,
 	blockStore *store.BlockStore,
 	blockSync bool,
+	localAddr crypto.Address,
 	logger log.Logger,
 	metrics *blocksync.Metrics,
 	offlineStateSyncHeight int64,
 ) (bcReactor p2p.Reactor, err error) {
 	switch config.BlockSync.Version {
 	case "v0":
-		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, metrics, offlineStateSyncHeight)
+		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, localAddr, metrics, offlineStateSyncHeight)
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:
@@ -579,7 +583,7 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
 	if err != nil {
-		return sm.State{}, nil, fmt.Errorf("error retrieving genesis doc hash: %w", err)
+		return sm.State{}, nil, ErrRetrieveGenesisDocHash{Err: err}
 	}
 	csGenDoc, err := genesisDocProvider()
 	if err != nil {
@@ -587,28 +591,28 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 	}
 
 	if err = csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
-		return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
+		return sm.State{}, nil, ErrGenesisDoc{Err: err}
 	}
 
 	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
 	if operatorGenesisHashHex != "" {
 		decodedOperatorGenesisHash, err := hex.DecodeString(operatorGenesisHashHex)
 		if err != nil {
-			return sm.State{}, nil, errors.New("genesis hash provided by operator cannot be decoded")
+			return sm.State{}, nil, ErrGenesisHashDecode
 		}
 		if !bytes.Equal(csGenDoc.Sha256Checksum, decodedOperatorGenesisHash) {
-			return sm.State{}, nil, errors.New("genesis doc hash in db does not match passed --genesis_hash value")
+			return sm.State{}, nil, ErrPassedGenesisHashMismatch
 		}
 	}
 
 	if len(genDocHash) == 0 {
 		// Save the genDoc hash in the store if it doesn't already exist for future verification
 		if err = stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
-			return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
+			return sm.State{}, nil, ErrSaveGenesisDocHash{Err: err}
 		}
 	} else {
 		if !bytes.Equal(genDocHash, csGenDoc.Sha256Checksum) {
-			return sm.State{}, nil, errors.New("genesis doc hash in db does not match loaded genesis doc")
+			return sm.State{}, nil, ErrLoadedGenesisDocHashMismatch
 		}
 	}
 

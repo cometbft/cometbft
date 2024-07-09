@@ -286,6 +286,19 @@ func (c *baseRPCClient) broadcastTX(
 	return result, nil
 }
 
+func (c *baseRPCClient) UnconfirmedTx(
+	ctx context.Context,
+	hash []byte,
+) (*ctypes.ResultUnconfirmedTx, error) {
+	result := new(ctypes.ResultUnconfirmedTx)
+	params := map[string]any{"hash": hash}
+	_, err := c.caller.Call(ctx, "unconfirmed_tx", params, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (c *baseRPCClient) UnconfirmedTxs(
 	ctx context.Context,
 	limit *int,

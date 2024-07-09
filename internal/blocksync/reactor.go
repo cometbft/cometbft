@@ -7,6 +7,7 @@ import (
 	"time"
 
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	sm "github.com/cometbft/cometbft/state"
@@ -61,6 +62,7 @@ type Reactor struct {
 	store         sm.BlockStore
 	pool          *BlockPool
 	blockSync     bool
+	localAddr     crypto.Address
 	poolRoutineWg sync.WaitGroup
 
 	requestsCh <-chan BlockRequest
@@ -73,7 +75,7 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
+	blockSync bool, localAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
 	storeHeight := store.Height()
 	if storeHeight == 0 {
@@ -109,6 +111,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		store:        store,
 		pool:         pool,
 		blockSync:    blockSync,
+		localAddr:    localAddr,
 		requestsCh:   requestsCh,
 		errorsCh:     errorsCh,
 		metrics:      metrics,
@@ -503,8 +506,17 @@ func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool
 	return missingExtension
 }
 
+func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
+	_, val := state.Validators.GetByAddress(bcR.localAddr)
+	if val == nil {
+		return false
+	}
+	total := state.Validators.TotalVotingPower()
+	return val.VotingPower >= total/3
+}
+
 func (bcR *Reactor) isCaughtUp(state sm.State, blocksSynced uint64, stateSynced bool) bool {
-	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp {
+	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp || bcR.localNodeBlocksTheChain(state) {
 		bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)
@@ -586,7 +598,7 @@ func (bcR *Reactor) processBlock(first, second *types.Block, firstParts *types.P
 
 	// TODO: same thing for app - but we would need a way to
 	// get the hash without persisting the state
-	state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
+	state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first, bcR.pool.MaxPeerHeight())
 	if err != nil {
 		// TODO This is bad, are we zombie?
 		panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))

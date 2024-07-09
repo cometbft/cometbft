@@ -22,7 +22,7 @@ var errNotAllowed = errors.New("not allowed with `nop` mempool")
 var _ Mempool = &NopMempool{}
 
 // CheckTx always returns an error.
-func (*NopMempool) CheckTx(types.Tx) (*abcicli.ReqRes, error) {
+func (*NopMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
 	return nil, errNotAllowed
 }
 
@@ -35,11 +35,16 @@ func (*NopMempool) ReapMaxBytesMaxGas(int64, int64) types.Txs { return nil }
 // ReapMaxTxs always returns nil.
 func (*NopMempool) ReapMaxTxs(int) types.Txs { return nil }
 
+// GetTxByHash always returns nil.
+func (*NopMempool) GetTxByHash([]byte) types.Tx { return nil }
+
 // Lock does nothing.
 func (*NopMempool) Lock() {}
 
 // Unlock does nothing.
 func (*NopMempool) Unlock() {}
+
+func (*NopMempool) PreUpdate() {}
 
 // Update does nothing.
 func (*NopMempool) Update(
@@ -65,9 +70,6 @@ func (*NopMempool) TxsAvailable() <-chan struct{} {
 
 // EnableTxsAvailable does nothing.
 func (*NopMempool) EnableTxsAvailable() {}
-
-// SetTxRemovedCallback does nothing.
-func (*NopMempool) SetTxRemovedCallback(func(txKey types.TxKey)) {}
 
 // Size always returns 0.
 func (*NopMempool) Size() int { return 0 }

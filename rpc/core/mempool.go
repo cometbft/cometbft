@@ -11,7 +11,10 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-var ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is catching up")
+var (
+	ErrEndpointClosedCatchingUp = errors.New("endpoint is closed while node is catching up")
+	ErrorEmptyTxHash            = errors.New("transaction hash cannot be empty")
+)
 
 // -----------------------------------------------------------------------------
 // NOTE: tx should be signed, but this is only checked at the app level (not by CometBFT!)
@@ -23,7 +26,7 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp
 	}
-	_, err := env.Mempool.CheckTx(tx)
+	_, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -39,16 +42,21 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	}
 
 	resCh := make(chan *abci.CheckTxResponse, 1)
-	reqRes, err := env.Mempool.CheckTx(tx)
+	reqRes, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		return nil, err
 	}
-	reqRes.SetCallback(func(_ *abci.Response) {
+	go func() {
+		// Wait for a response. The ABCI client guarantees that it will eventually call
+		// reqRes.Done(), even in the case of error.
+		reqRes.Wait()
 		select {
 		case <-ctx.Context().Done():
-		case resCh <- reqRes.Response.GetCheckTx():
+		default:
+			resCh <- reqRes.Response.GetCheckTx()
 		}
-	})
+	}()
+
 	select {
 	case <-ctx.Context().Done():
 		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
@@ -96,17 +104,22 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	// Broadcast tx and wait for CheckTx result
 	checkTxResCh := make(chan *abci.CheckTxResponse, 1)
-	reqRes, err := env.Mempool.CheckTx(tx)
+	reqRes, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
 		return nil, ErrTxBroadcast{Source: err, ErrReason: ErrCheckTxFailed}
 	}
-	reqRes.SetCallback(func(_ *abci.Response) {
+	go func() {
+		// Wait for a response. The ABCI client guarantees that it will eventually call
+		// reqRes.Done(), even in the case of error.
+		reqRes.Wait()
 		select {
 		case <-ctx.Context().Done():
-		case checkTxResCh <- reqRes.Response.GetCheckTx():
+		default:
+			checkTxResCh <- reqRes.Response.GetCheckTx()
 		}
-	})
+	}()
+
 	select {
 	case <-ctx.Context().Done():
 		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
@@ -153,6 +166,17 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 			}, err
 		}
 	}
+}
+
+// UnconfirmedTx gets unconfirmed transaction by hash.
+func (env *Environment) UnconfirmedTx(_ *rpctypes.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+	if len(hash) == 0 {
+		return nil, ErrorEmptyTxHash
+	}
+
+	return &ctypes.ResultUnconfirmedTx{
+		Tx: env.Mempool.GetTxByHash(hash),
+	}, nil
 }
 
 // UnconfirmedTxs gets unconfirmed transactions (maximum ?limit entries)

@@ -417,7 +417,10 @@ func (h *Handshaker) ReplayBlocks(
 			// but we'd have to allow the WAL to replay a block that wrote it's #ENDHEIGHT
 			h.logger.Info("Replay last block using real app")
 			state, err = h.replayBlock(state, storeBlockHeight, proxyApp.Consensus())
-			return state.AppHash, err
+			if err != nil {
+				return nil, err
+			}
+			return state.AppHash, nil
 
 		case appBlockHeight == storeBlockHeight:
 			// We ran Commit, but didn't save the state, so replayBlock with mock app.
@@ -435,7 +438,10 @@ func (h *Handshaker) ReplayBlocks(
 			mockApp := newMockProxyApp(finalizeBlockResponse)
 			h.logger.Info("Replay last block using mock app")
 			state, err = h.replayBlock(state, storeBlockHeight, mockApp)
-			return state.AppHash, err
+			if err != nil {
+				return nil, err
+			}
+			return state.AppHash, nil
 		}
 	}
 
@@ -485,7 +491,7 @@ func (h *Handshaker) replayBlocks(
 			assertAppHashEqualsOneFromBlock(appHash, block)
 		}
 
-		appHash, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, h.logger, h.stateStore, h.genDoc.InitialHeight)
+		appHash, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, h.logger, h.stateStore, h.genDoc.InitialHeight, storeBlockHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -516,7 +522,7 @@ func (h *Handshaker) replayBlock(state sm.State, height int64, proxyApp proxy.Ap
 	blockExec.SetEventBus(h.eventBus)
 
 	var err error
-	state, err = blockExec.ApplyBlock(state, meta.BlockID, block)
+	state, err = blockExec.ApplyBlock(state, meta.BlockID, block, block.Height)
 	if err != nil {
 		return sm.State{}, err
 	}

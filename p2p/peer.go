@@ -282,9 +282,6 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	}
 	res := sendFunc(chID, msgBytes)
 	if res {
-		p.metrics.PeerSendBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
-			Add(float64(len(msgBytes)))
 		p.metrics.MessageSendBytesTotal.
 			With("message_type", metricLabelValue).
 			Add(float64(len(msgBytes)))
@@ -314,15 +311,6 @@ func (p *peer) hasChannel(chID byte) bool {
 			return true
 		}
 	}
-	// NOTE: probably will want to remove this
-	// but could be helpful while the feature is new
-	p.Logger.Debug(
-		"Unknown channel for peer",
-		"channel",
-		chID,
-		"channels",
-		p.channels,
-	)
 	return false
 }
 
@@ -420,9 +408,6 @@ func createMConnection(
 				panic(fmt.Sprintf("unwrapping message: %v", err))
 			}
 		}
-		p.metrics.PeerReceiveBytesTotal.
-			With("peer_id", string(p.ID()), "chID", p.mlc.ChIDToMetricLabel(chID)).
-			Add(float64(len(msgBytes)))
 		p.metrics.MessageReceiveBytesTotal.
 			With("message_type", p.mlc.ValueToMetricLabel(msg)).
 			Add(float64(len(msgBytes)))

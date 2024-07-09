@@ -54,6 +54,7 @@ func TestApplyBlock(t *testing.T) {
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
+	mp.On("PreUpdate").Return()
 	mp.On("FlushAppConn", mock.Anything).Return(nil)
 	mp.On("Update",
 		mock.Anything,
@@ -70,7 +71,7 @@ func TestApplyBlock(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	state, err = blockExec.ApplyBlock(state, blockID, block)
+	state, err = blockExec.ApplyBlock(state, blockID, block, block.Height)
 	require.NoError(t, err)
 
 	// TODO check state and mempool
@@ -115,6 +116,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			mp := &mpmocks.Mempool{}
 			mp.On("Lock").Return()
 			mp.On("Unlock").Return()
+			mp.On("PreUpdate").Return()
 			mp.On("FlushAppConn", mock.Anything).Return(nil)
 			mp.On("Update",
 				mock.Anything,
@@ -143,7 +145,7 @@ func TestFinalizeBlockDecidedLastCommit(t *testing.T) {
 			bps, err := block.MakePartSet(testPartSize)
 			require.NoError(t, err)
 			blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
-			_, err = blockExec.ApplyBlock(state, blockID, block)
+			_, err = blockExec.ApplyBlock(state, blockID, block, block.Height)
 			require.NoError(t, err)
 			require.True(t, app.LastTime.After(baseTime))
 
@@ -221,7 +223,7 @@ func TestFinalizeBlockValidators(t *testing.T) {
 		// block for height 2
 		block := makeBlock(state, 2, lastCommit.ToCommit())
 
-		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1)
+		_, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, log.TestingLogger(), stateStore, 1, 2)
 		require.NoError(t, err, tc.desc)
 		require.True(t,
 			!tc.shouldHaveTime ||
@@ -330,6 +332,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
+	mp.On("PreUpdate").Return()
 	mp.On("FlushAppConn", mock.Anything).Return(nil)
 	mp.On("Update",
 		mock.Anything,
@@ -352,7 +355,7 @@ func TestFinalizeBlockMisbehavior(t *testing.T) {
 
 	blockID = types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	_, err = blockExec.ApplyBlock(state, blockID, block)
+	_, err = blockExec.ApplyBlock(state, blockID, block, block.Height)
 	require.NoError(t, err)
 
 	// TODO check state and mempool
@@ -577,6 +580,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
+	mp.On("PreUpdate").Return()
 	mp.On("FlushAppConn", mock.Anything).Return(nil)
 	mp.On("Update",
 		mock.Anything,
@@ -621,7 +625,7 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 		abci.NewValidatorUpdate(pubkey, 10),
 	}
 
-	state, err = blockExec.ApplyBlock(state, blockID, block)
+	state, err = blockExec.ApplyBlock(state, blockID, block, block.Height)
 	require.NoError(t, err)
 	// test new validator was added to NextValidators
 	if assert.Equal(t, state.Validators.Size()+1, state.NextValidators.Size()) {
@@ -683,7 +687,7 @@ func TestFinalizeBlockValidatorUpdatesResultingInEmptySet(t *testing.T) {
 		abci.NewValidatorUpdate(pk, 0),
 	}
 
-	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block) })
+	assert.NotPanics(t, func() { state, err = blockExec.ApplyBlock(state, blockID, block, block.Height) })
 	require.Error(t, err)
 	assert.NotEmpty(t, state.NextValidators.Validators)
 }
@@ -707,6 +711,7 @@ func TestEmptyPrepareProposal(t *testing.T) {
 	mp := &mpmocks.Mempool{}
 	mp.On("Lock").Return()
 	mp.On("Unlock").Return()
+	mp.On("PreUpdate").Return()
 	mp.On("FlushAppConn", mock.Anything).Return(nil)
 	mp.On("Update",
 		mock.Anything,

@@ -110,6 +110,10 @@ func (c *Local) BroadcastTxSync(_ context.Context, tx types.Tx) (*ctypes.ResultB
 	return c.env.BroadcastTxSync(c.ctx, tx)
 }
 
+func (c *Local) UnconfirmedTx(_ context.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+	return c.env.UnconfirmedTx(c.ctx, hash)
+}
+
 func (c *Local) UnconfirmedTxs(_ context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {
 	return c.env.UnconfirmedTxs(c.ctx, limit)
 }

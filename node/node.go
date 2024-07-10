@@ -16,6 +16,7 @@ import (
 
 	_ "net/http/pprof" //nolint: gosec
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	cfg "github.com/cometbft/cometbft/config"
 	bc "github.com/cometbft/cometbft/internal/blocksync"
 	cs "github.com/cometbft/cometbft/internal/consensus"
@@ -66,8 +67,8 @@ type Node struct {
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
 	pruner            *sm.Pruner
-	bcReactor         p2p.Reactor        // for block-syncing
-	mempoolReactor    waitSyncP2PReactor // for gossipping transactions
+	bcReactor         p2p.Reactor    // for block-syncing
+	mempoolReactor    mempoolReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -90,6 +91,11 @@ type waitSyncP2PReactor interface {
 	p2p.Reactor
 	// required by RPC service
 	WaitSync() bool
+}
+
+type mempoolReactor interface {
+	waitSyncP2PReactor
+	TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, error)
 }
 
 // Option sets a parameter for the node.
@@ -350,9 +356,10 @@ func NewNode(ctx context.Context,
 	if err != nil {
 		return nil, ErrGetPubKey{Err: err}
 	}
+	localAddr := pubKey.Address()
 
 	// Determine whether we should attempt state sync.
-	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, pubKey)
+	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
 	if stateSync && state.LastBlockHeight > 0 {
 		logger.Info("Found local state with non-zero height, skipping state sync")
 		stateSync = false
@@ -377,7 +384,7 @@ func NewNode(ctx context.Context,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := !onlyValidatorIsUs(state, pubKey)
+	blockSync := !onlyValidatorIsUs(state, localAddr)
 	waitSync := stateSync || blockSync
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
@@ -422,7 +429,7 @@ func NewNode(ctx context.Context,
 		}
 	}
 	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, ErrCreateBlockSyncReactor{Err: err}
 	}

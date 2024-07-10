@@ -72,7 +72,7 @@ func (se *signerEndpoint) SetConnection(newConnection net.Conn) {
 	se.conn = newConnection
 }
 
-// IsConnected indicates if there is an active connection.
+// DropConnection closes the current connection if it exists.
 func (se *signerEndpoint) DropConnection() {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()

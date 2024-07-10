@@ -137,6 +137,10 @@ type State struct {
 
 	// offline state sync height indicating to which height the node synced offline
 	offlineStateSyncHeight int64
+
+	// a buffer to store the concatenated proposal block parts (serialization format)
+	// should only be accessed under the cs.mtx lock
+	serializedBlockBuffer []byte
 }
 
 // StateOption sets an optional parameter on the State.
@@ -2079,6 +2083,27 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 	return nil
 }
 
+func (cs *State) readSerializedBlockFromBlockParts() ([]byte, error) {
+	// reuse a serialized block buffer from cs
+	var serializedBlockBuffer []byte
+	if len(cs.serializedBlockBuffer) < int(cs.ProposalBlockParts.ByteSize()) {
+		serializedBlockBuffer = make([]byte, cs.ProposalBlockParts.ByteSize())
+		cs.serializedBlockBuffer = serializedBlockBuffer
+	} else {
+		serializedBlockBuffer = cs.serializedBlockBuffer[:cs.ProposalBlockParts.ByteSize()]
+	}
+
+	n, err := io.ReadFull(cs.ProposalBlockParts.GetReader(), serializedBlockBuffer)
+	if err != nil {
+		return nil, err
+	}
+	// Consistency check, should be impossible to fail.
+	if n != len(serializedBlockBuffer) {
+		return nil, fmt.Errorf("unexpected error in reading block parts, expected to read %d bytes, read %d", len(serializedBlockBuffer), n)
+	}
+	return serializedBlockBuffer, nil
+}
+
 // NOTE: block is not necessarily valid.
 // Asynchronously triggers either enterPrevote (before we timeout of propose) or tryFinalizeCommit,
 // once we have the full block.
@@ -2138,7 +2163,7 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		)
 	}
 	if added && cs.ProposalBlockParts.IsComplete() {
-		bz, err := io.ReadAll(cs.ProposalBlockParts.GetReader())
+		bz, err := cs.readSerializedBlockFromBlockParts()
 		if err != nil {
 			return added, err
 		}

@@ -34,6 +34,10 @@ func (tx Tx) Key() TxKey {
 	return sha256.Sum256(tx)
 }
 
+func (txKey TxKey) ToHash() []byte {
+	return txKey[:]
+}
+
 // String returns the hex-encoded transaction as a string.
 func (tx Tx) String() string {
 	return fmt.Sprintf("Tx{%X}", []byte(tx))

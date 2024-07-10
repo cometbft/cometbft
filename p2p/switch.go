@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sync"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -173,7 +172,6 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 		sw.chDescs = append(sw.chDescs, chDesc)
 		sw.reactorsByCh[chID] = reactor
 		sw.msgTypeByChID[chID] = chDesc.MessageType
-		sw.mlc.RegisterChID(chID)
 	}
 	sw.reactors[name] = reactor
 	reactor.SetSwitch(sw)
@@ -267,35 +265,16 @@ func (sw *Switch) OnStop() {
 // Peers
 
 // Broadcast runs a go routine for each attempted send, which will block trying
-// to send for defaultSendTimeoutSeconds. Returns a channel which receives
-// success values for each attempted send (false if times out). Channel will be
-// closed once msg bytes are sent to all peers (or time out).
+// to send for defaultSendTimeoutSeconds.
 //
 // NOTE: Broadcast uses goroutines, so order of broadcast may not be preserved.
-func (sw *Switch) Broadcast(e Envelope) chan bool {
-	var wg sync.WaitGroup
-	successChan := make(chan bool, sw.peers.Size())
-
+func (sw *Switch) Broadcast(e Envelope) {
 	sw.peers.ForEach(func(p Peer) {
-		wg.Add(1) // Incrementing by one is safer.
 		go func(peer Peer) {
-			defer wg.Done()
-
 			success := peer.Send(e)
-			// For rare cases where PeerSet changes between a call to `peers.Size()` and `peers.ForEach()`.
-			select {
-			case successChan <- success:
-			default:
-			}
+			_ = success
 		}(p)
 	})
-
-	go func() {
-		wg.Wait()
-		close(successChan)
-	}()
-
-	return successChan
 }
 
 // TryBroadcast runs a go routine for each attempted send.

@@ -19,10 +19,10 @@ blockchain powered by [CometBFT](https://github.com/cometbft/cometbft) state mac
 - ExtendVote
 - VerifyVoteExtension
 - Commit
-
-
 - CheckTx
 - Query
+
+To follow this tutorial, please check the [Introduction to ABCI 2.0](../../../docs/tutorials/forum-application/1.abci-intro.md) document.
 
 > Many thanks to the original team for brainstorming and bringing forth this idea. Their original repo can be found [here](https://github.com/interchainio/forum)
 

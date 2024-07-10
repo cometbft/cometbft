@@ -50,12 +50,21 @@ func newMempoolWithAppAndConfigMock(
 ) (*CListMempool, cleanupFunc) {
 	appConnMem := client
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
-	err := appConnMem.Start()
-	if err != nil {
+	if err := appConnMem.Start(); err != nil {
 		panic(err)
 	}
 
-	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
+	appConnQuery := client
+	appConnQuery.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "query"))
+	if err := appConnQuery.Start(); err != nil {
+		panic(err)
+	}
+
+	lanesInfo, err := FetchLanesInfo(appConnQuery)
+	if err != nil {
+		panic(err)
+	}
+	mp := NewCListMempool(cfg.Mempool, appConnMem, lanesInfo, 0)
 	mp.SetLogger(log.TestingLogger())
 
 	return mp, func() { os.RemoveAll(cfg.RootDir) }
@@ -71,12 +80,21 @@ func newMempoolWithApp(cc proxy.ClientCreator) (*CListMempool, cleanupFunc) {
 func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CListMempool, cleanupFunc) {
 	appConnMem, _ := cc.NewABCIMempoolClient()
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
-	err := appConnMem.Start()
-	if err != nil {
+	if err := appConnMem.Start(); err != nil {
 		panic(err)
 	}
 
-	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
+	appConnQuery, _ := cc.NewABCIQueryClient()
+	appConnQuery.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "query"))
+	if err := appConnQuery.Start(); err != nil {
+		panic(err)
+	}
+
+	lanesInfo, err := FetchLanesInfo(appConnQuery)
+	if err != nil {
+		panic(err)
+	}
+	mp := NewCListMempool(cfg.Mempool, appConnMem, lanesInfo, 0)
 	mp.SetLogger(log.TestingLogger())
 
 	return mp, func() { os.RemoveAll(cfg.RootDir) }

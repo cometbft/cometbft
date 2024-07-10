@@ -484,12 +484,6 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 		Type:   vote.Type,
 		Index:  vote.ValidatorIndex,
 	}
-<<<<<<< HEAD
-	conR.Switch.Broadcast(p2p.Envelope{
-		ChannelID: StateChannel,
-		Message:   msg,
-	})
-=======
 
 	go func() {
 		conR.Switch.TryBroadcast(p2p.Envelope{
@@ -497,7 +491,6 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 			Message:   msg,
 		})
 	}()
->>>>>>> 55493e04e (perf(consensus): Use TrySend for hasVote/HasBlockPart messages (#3407))
 	/*
 		// TODO: Make this broadcast more selective.
 		for _, peer := range conR.Switch.Peers().Copy() {
@@ -529,19 +522,12 @@ func (conR *Reactor) broadcastHasProposalBlockPartMessage(partMsg *BlockPartMess
 		Round:  partMsg.Round,
 		Index:  int32(partMsg.Part.Index),
 	}
-<<<<<<< HEAD
-	conR.Switch.Broadcast(p2p.Envelope{
-		ChannelID: StateChannel,
-		Message:   msg,
-	})
-=======
 	go func() {
 		conR.Switch.TryBroadcast(p2p.Envelope{
 			ChannelID: StateChannel,
 			Message:   msg,
 		})
 	}()
->>>>>>> 55493e04e (perf(consensus): Use TrySend for hasVote/HasBlockPart messages (#3407))
 }
 
 func makeRoundStepMessage(rs *cstypes.RoundState) (nrsMsg *cmtcons.NewRoundStep) {

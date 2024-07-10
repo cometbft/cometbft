@@ -272,23 +272,15 @@ func (sw *Switch) OnStop() {
 // closed once msg bytes are sent to all peers (or time out).
 //
 // NOTE: Broadcast uses goroutines, so order of broadcast may not be preserved.
-<<<<<<< HEAD
 func (sw *Switch) Broadcast(e Envelope) chan bool {
-	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
-
 	var wg sync.WaitGroup
 	successChan := make(chan bool, sw.peers.Size())
 
-=======
-func (sw *Switch) Broadcast(e Envelope) {
->>>>>>> 55493e04e (perf(consensus): Use TrySend for hasVote/HasBlockPart messages (#3407))
 	sw.peers.ForEach(func(p Peer) {
 		wg.Add(1) // Incrementing by one is safer.
 		go func(peer Peer) {
-<<<<<<< HEAD
 			defer wg.Done()
-=======
->>>>>>> 55493e04e (perf(consensus): Use TrySend for hasVote/HasBlockPart messages (#3407))
+
 			success := peer.Send(e)
 			// For rare cases where PeerSet changes between a call to `peers.Size()` and `peers.ForEach()`.
 			select {

@@ -843,8 +843,7 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-<<<<<<< HEAD
-		successChan := s1.Broadcast(Envelope{ChannelID: chID})
+		successChan := sw.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
 		for s := range successChan {
 			if s {
 				numSuccess++
@@ -852,9 +851,9 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 				numFailure++
 			}
 		}
-=======
-		sw.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
 	}
+
+	b.Logf("success: %v, failure: %v", numSuccess, numFailure)
 }
 
 func BenchmarkSwitchTryBroadcast(b *testing.B) {
@@ -873,10 +872,7 @@ func BenchmarkSwitchTryBroadcast(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
 		sw.TryBroadcast(Envelope{ChannelID: chID, Message: chMsg})
->>>>>>> 55493e04e (perf(consensus): Use TrySend for hasVote/HasBlockPart messages (#3407))
 	}
-
-	b.Logf("success: %v, failure: %v", numSuccess, numFailure)
 }
 
 func TestSwitchRemovalErr(t *testing.T) {

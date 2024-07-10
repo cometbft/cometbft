@@ -173,7 +173,7 @@ func (app *ForumApp) InitChain(_ context.Context, req *abci.InitChainRequest) (*
 func (app *ForumApp) PrepareProposal(_ context.Context, req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
 	fmt.Println("Executing Application PrepareProposal")
 
-	// Get the curse words from the vote extensions
+	// Get the curse words from for all vote extensions received at the end of last height.
 	voteExtensionCurseWords := app.getWordsFromVe(req.LocalLastCommit.Votes)
 
 	curseWords := strings.Split(voteExtensionCurseWords, "|")

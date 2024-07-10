@@ -468,6 +468,7 @@ func newStateWithConfigAndBlockStore(
 	// Make Mempool
 	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyAppConnMem,
+		nil,
 		state.LastBlockHeight,
 		mempl.WithMetrics(memplMetrics),
 		mempl.WithPreCheck(sm.TxPreCheck(state)),

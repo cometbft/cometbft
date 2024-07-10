@@ -269,24 +269,9 @@ func (sw *Switch) OnStop() {
 // to send for defaultSendTimeoutSeconds.
 //
 // NOTE: Broadcast uses goroutines, so order of broadcast may not be preserved.
-<<<<<<< HEAD
-func (sw *Switch) Broadcast(e Envelope) chan bool {
-	var wg sync.WaitGroup
-	successChan := make(chan bool, sw.peers.Size())
-=======
 func (sw *Switch) Broadcast(e Envelope) {
-	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
->>>>>>> e731a3fdf (perf(p2p): Remove broadcast return channel (#3182))
-
 	sw.peers.ForEach(func(p Peer) {
 		go func(peer Peer) {
-<<<<<<< HEAD
-			defer wg.Done()
-
-=======
-			// TODO: We don't use the success value. Should most behavior
-			// really be TrySend?
->>>>>>> e731a3fdf (perf(p2p): Remove broadcast return channel (#3182))
 			success := peer.Send(e)
 			_ = success
 		}(p)

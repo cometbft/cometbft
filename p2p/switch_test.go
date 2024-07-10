@@ -841,18 +841,7 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-<<<<<<< HEAD
-		successChan := sw.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
-		for s := range successChan {
-			if s {
-				numSuccess++
-			} else {
-				numFailure++
-			}
-		}
-=======
-		s1.Broadcast(Envelope{ChannelID: chID})
->>>>>>> e731a3fdf (perf(p2p): Remove broadcast return channel (#3182))
+		sw.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
 	}
 }
 

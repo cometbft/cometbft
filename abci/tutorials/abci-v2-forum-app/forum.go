@@ -90,12 +90,12 @@ func main() {
 		logger,
 	)
 	if err != nil {
-		log.Printf("failed to create CometBFT node: %v", err)
+		log.Printf("failed to create CometBFT node")
 		defer os.Exit(1)
 	}
 
 	if err := node.Start(); err != nil {
-		log.Printf("failed to start CometBFT node: %v", err)
+		log.Printf("failed to start CometBFT node")
 		defer os.Exit(1)
 	}
 	defer func() {

@@ -174,6 +174,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	checkTxs(t, mp, 1)
 	iter := mp.NewIterator()
 	tx0 := <-iter.WaitNextCh()
+	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
 	require.Len(t, tx0.Tx(), 20, "Tx is longer than 20 bytes")
@@ -205,6 +206,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	}
 	for tcIndex, tt := range tests {
 		checkTxs(t, mp, tt.numTxsToCreate)
+		require.Equal(t, tt.numTxsToCreate, mp.Size())
 		got := mp.ReapMaxBytesMaxGas(tt.maxBytes, tt.maxGas)
 		require.Len(t, got, tt.expectedNumTxs, "Got %d txs, expected %d, tc #%d",
 			len(got), tt.expectedNumTxs, tcIndex)
@@ -318,7 +320,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(4)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1}, DefaultLanePriority: 1}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -729,11 +731,13 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
 
-	// tx0 should appear only once in mp.txs
+	// tx0 should appear only once in mp.lanes
 	found := 0
-	for e := mp.txs.Front(); e != nil; e = e.Next() {
-		if types.Tx.Key(e.Value.(*mempoolTx).tx) == types.Tx.Key(tx0) {
-			found++
+	for _, lane := range mp.sortedLanes {
+		for e := mp.lanes[lane].Front(); e != nil; e = e.Next() {
+			if types.Tx.Key(e.Value.(*mempoolTx).Tx()) == types.Tx.Key(tx0) {
+				found++
+			}
 		}
 	}
 	assert.Equal(t, 1, found)
@@ -965,7 +969,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
 	require.NotNil(t, mp.recheck.end)
-	require.Equal(t, mp.recheck.end, mp.txs.Back())
 	require.Equal(t, len(txs)-1, mp.Size()) // one invalid tx was removed
 	require.Equal(t, int32(2), mp.recheck.numPendingTxs.Load())
 

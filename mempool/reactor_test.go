@@ -59,7 +59,8 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	}
 
 	txs := checkTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, txs, reactors, checkTxsInOrder)
+	reapedTxs := reactors[0].mempool.ReapMaxTxs(len(txs))
+	waitForReactors(t, reapedTxs, reactors, checkTxsInOrder)
 }
 
 // regression test for https://github.com/tendermint/tendermint/issues/5408

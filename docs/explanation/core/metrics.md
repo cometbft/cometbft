@@ -55,18 +55,13 @@ The following metrics are available:
 | p2p\_message\_send\_bytes\_total           | Counter   | message\_type    | Number of bytes sent to all peers per message type                                                                                         |
 | p2p\_message\_receive\_bytes\_total        | Counter   | message\_type    | Number of bytes received from all peers per message type                                                                                   |
 | p2p\_peers                                 | Gauge     |                  | Number of peers node's connected to                                                                                                        |
-<<<<<<< HEAD
-| p2p\_peer\_receive\_bytes\_total           | Counter   | peer\_id, chID   | Number of bytes per channel received from a given peer                                                                                     |
-| p2p\_peer\_send\_bytes\_total              | Counter   | peer\_id, chID   | Number of bytes per channel sent to a given peer                                                                                           |
-=======
->>>>>>> a2decd8fd (feat(p2p)!: remove PeerReceiveBytesTotal (#3298))
 | p2p\_peer\_pending\_send\_bytes            | Gauge     | peer\_id         | Number of pending bytes to be sent to a given peer                                                                                         |
 | p2p\_num\_txs                              | Gauge     | peer\_id         | Number of transactions submitted by each peer\_id                                                                                          |
 | mempool\_size                              | Gauge     |                  | Number of uncommitted transactions                                                                                                         |
 | mempool\_tx\_size\_bytes                   | Histogram |                  | Transaction sizes in bytes                                                                                                                 |
 | mempool\_failed\_txs                       | Counter   |                  | Number of failed transactions                                                                                                              |
 | mempool\_recheck\_times                    | Counter   |                  | Number of transactions rechecked in the mempool                                                                                            |
-| state\_block\_processing\_time             | Histogram |                  | Time spent processing FinalizeBlock in ms                                                                                                 |
+| state\_block\_processing\_time             | Histogram |                  | Time spent processing FinalizeBlock in ms                                                                                                  |
 | state\_consensus\_param\_updates           | Counter   |                  | Number of consensus parameter updates returned by the application since process start                                                      |
 | state\_validator\_set\_updates             | Counter   |                  | Number of validator set updates returned by the application since process start                                                            |
 | statesync\_syncing                         | Gauge     |                  | Either 0 (not state syncing) or 1 (syncing)                                                                                                |

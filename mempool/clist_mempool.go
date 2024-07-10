@@ -80,7 +80,7 @@ func NewCListMempool(
 		config:       cfg,
 		proxyAppConn: proxyAppConn,
 		txs:          clist.New(),
-		recheck:      newRecheck(),
+		recheck:      &recheck{},
 		logger:       log.NewNopLogger(),
 		metrics:      NopMetrics(),
 	}
@@ -691,20 +691,18 @@ type recheck struct {
 	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
 }
 
-func newRecheck() *recheck {
-	return &recheck{
-		doneCh: make(chan struct{}, 1),
-	}
-}
-
 func (rc *recheck) init(first, last *clist.CElement) {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
 	rc.cursor = first
 	rc.end = last
+	rc.doneCh = make(chan struct{})
 	rc.numPendingTxs.Store(0)
 	rc.isRechecking.Store(true)
+	rc.recheckFull.Store(false)
+
+	rc.tryFinish()
 }
 
 // done returns true when there is no recheck response to process.
@@ -720,24 +718,15 @@ func (rc *recheck) setDone() {
 	rc.isRechecking.Store(false)
 }
 
-// setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.
-func (rc *recheck) setNextEntry() {
-	rc.cursor = rc.cursor.Next()
-}
-
 // tryFinish will check if the cursor is at the end of the list and notify the channel that
 // rechecking has finished. It returns true iff it's done rechecking.
 func (rc *recheck) tryFinish() bool {
-	if rc.cursor == rc.end {
+	if rc.cursor == nil || rc.cursor == rc.end {
 		// Reached end of the list without finding a matching tx.
 		rc.setDone()
 	}
 	if rc.done() {
-		// Notify that recheck has finished.
-		select {
-		case rc.doneCh <- struct{}{}:
-		default:
-		}
+		close(rc.doneCh) // notify channel that recheck has finished
 		return true
 	}
 	return false
@@ -745,14 +734,14 @@ func (rc *recheck) tryFinish() bool {
 
 // findNextEntryMatching searches for the next transaction matching the given transaction, which
 // corresponds to the recheck response to be processed next. Then it checks if it has reached the
-// end of the list, so it can finish rechecking.
+// end of the list, so it can set recheck as finished.
 //
 // The goal is to guarantee that transactions are rechecked in the order in which they are in the
 // mempool. Transactions whose recheck response arrive late or don't arrive at all are skipped and
 // not rechecked.
 func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 	found := false
-	for ; !rc.done(); rc.setNextEntry() {
+	for ; !rc.done(); rc.cursor = rc.cursor.Next() { // when cursor is the last one, Next returns nil
 		expectedTx := rc.cursor.Value.(*mempoolTx).tx
 		if bytes.Equal(*tx, expectedTx) {
 			// Found an entry in the list of txs to recheck that matches tx.
@@ -764,7 +753,7 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 
 	if !rc.tryFinish() {
 		// Not finished yet; set the cursor for processing the next recheck response.
-		rc.setNextEntry()
+		rc.cursor = rc.cursor.Next()
 	}
 	return found
 }

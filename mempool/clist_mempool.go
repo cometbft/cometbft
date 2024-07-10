@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -59,6 +60,9 @@ type CListMempool struct {
 	// Immutable fields, only set during initialization.
 	defaultLane types.Lane
 	sortedLanes []types.Lane // lanes sorted by priority
+
+	// Number of bytes per lane, for metrics.
+	laneBytes sync.Map // Lane -> *int64
 
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
@@ -175,6 +179,8 @@ func (mem *CListMempool) removeAllTxs(lane types.Lane) {
 		mem.txLanes.Delete(key)
 		return true
 	})
+
+	mem.laneBytes.Delete(lane)
 }
 
 // NOTE: not thread safe - should only be called once, on startup.
@@ -232,6 +238,14 @@ func (mem *CListMempool) Size() int {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) SizeBytes() int64 {
 	return mem.txsBytes.Load()
+}
+
+// Safe for concurrent use by multiple goroutines.
+func (mem *CListMempool) LaneBytes(lane types.Lane) int64 {
+	if v, ok := mem.laneBytes.Load(lane); ok {
+		return *(v.(*int64))
+	}
+	return -1
 }
 
 // Lock() must be help by the caller during execution.
@@ -376,10 +390,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		}
 		if mem.addTx(&memTx, sender, lane) {
 			mem.notifyTxsAvailable()
-
-			// update metrics
-			mem.metrics.Size.Set(float64(mem.Size()))
-			mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+			mem.updateSizeMetrics(lane)
 		}
 	}
 }
@@ -429,6 +440,8 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 	// Update size variables.
 	mem.txsBytes.Add(int64(len(tx)))
 	mem.numTxs.Add(1)
+	ptrBytes, _ := mem.laneBytes.LoadOrStore(lane, new(int64))
+	atomic.AddInt64(ptrBytes.(*int64), int64(len(tx)))
 
 	// Update metrics.
 	mem.metrics.TxSizeBytes.Observe(float64(len(tx)))
@@ -469,6 +482,8 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	tx := elem.Value.(*mempoolTx).tx
 	mem.txsBytes.Add(int64(-len(tx)))
 	mem.numTxs.Add(int64(-1))
+	ptrBytes, _ := mem.laneBytes.LoadOrStore(lane, new(int64))
+	atomic.AddInt64(ptrBytes.(*int64), int64(-len(tx)))
 
 	mem.logger.Debug(
 		"Removed transaction",
@@ -534,8 +549,11 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			} else {
 				// update metrics
-				mem.metrics.Size.Set(float64(mem.Size()))
-				mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+				if lane, err := mem.getLane(tx.Key()); err == nil {
+					mem.updateSizeMetrics(lane)
+				} else {
+					mem.logger.Error("Cannot update metrics", "err", err)
+				}
 			}
 			mem.tryRemoveFromCache(tx)
 		}
@@ -688,10 +706,21 @@ func (mem *CListMempool) Update(
 	}
 
 	// Update metrics
-	mem.metrics.Size.Set(float64(mem.Size()))
-	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+	for lane := range mem.lanes {
+		mem.updateSizeMetrics(lane)
+	}
 
 	return nil
+}
+
+// updateSizeMetrics updates the size-related metrics of a given lane.
+func (mem *CListMempool) updateSizeMetrics(lane types.Lane) {
+	label := strconv.FormatUint(uint64(lane), 10)
+	mem.metrics.Size.With("lane", label).Set(float64(mem.lanes[lane].Len()))
+	mem.metrics.SizeBytes.With("lane", label).Set(float64(mem.LaneBytes(lane)))
+	// TODO: do we want to keep the following redundant metrics? The total sizes can be computed from the other two.
+	mem.metrics.Size.Set(float64(mem.Size()))
+	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 }
 
 // recheckTxs sends all transactions in the mempool to the app for re-validation. When the function

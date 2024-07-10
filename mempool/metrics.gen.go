@@ -26,6 +26,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "size_bytes",
 			Help:      "Total size of the mempool in bytes.",
 		}, labels).With(labelsAndValues...),
+		LaneSize: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "lane_size",
+			Help:      "Number of uncommitted transactions in each lane.",
+		}, append(labels, "lane")).With(labelsAndValues...),
+		LaneBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "lane_bytes",
+			Help:      "Size of each lane in bytes.",
+		}, append(labels, "lane")).With(labelsAndValues...),
 		TxSizeBytes: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -71,6 +83,8 @@ func NopMetrics() *Metrics {
 	return &Metrics{
 		Size:                      discard.NewGauge(),
 		SizeBytes:                 discard.NewGauge(),
+		LaneSize:                  discard.NewGauge(),
+		LaneBytes:                 discard.NewGauge(),
 		TxSizeBytes:               discard.NewHistogram(),
 		FailedTxs:                 discard.NewCounter(),
 		RejectedTxs:               discard.NewCounter(),

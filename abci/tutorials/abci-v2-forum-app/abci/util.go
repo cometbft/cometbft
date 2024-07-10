@@ -48,9 +48,7 @@ func (app *ForumApp) updateValidator(v types.ValidatorUpdate) error {
 }
 
 func hasCurseWord(word string, curseWords string) bool {
-	// Define your list of curse words here
-	// For example:
-	return strings.Contains(curseWords, word)
+	return strings.Contains(curseWords, strings.ToLower(word))
 }
 
 const (

@@ -1,7 +1,7 @@
 ## Forum Application
 
 The **ABCI 2.0 Forum Application** is a demo application where users can come and post messages in a forum running on a
-blockchain powered by [CometBFT](https://github.com/cometbft/cometbft) state machine replication engine
+blockchain powered by [CometBFT](https://github.com/cometbft/cometbft) state machine replication engine.
 
 - **Users**
 

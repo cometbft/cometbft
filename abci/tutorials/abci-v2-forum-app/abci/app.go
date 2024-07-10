@@ -296,35 +296,36 @@ func (app *ForumApp) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockReq
 		msg, err := model.ParseMessage(tx)
 		i := idx + finishedBanTxIdx
 		if err != nil {
-			respTxs[i] = &abci.ExecTxResult{Code: CodeTypeEncodingError}
-		} else {
-			// Check if this sender already existed; if not, add the user too
-			err := UpdateOrSetUser(app.state.DB, msg.Sender, false, app.onGoingBlock)
-			if err != nil {
-				return nil, err
-			}
-			// Add the message for this sender
-			message, err := model.AppendToExistingMessages(app.state.DB, *msg)
-			if err != nil {
-				return nil, err
-			}
-			err = app.onGoingBlock.Set([]byte(msg.Sender+"msg"), []byte(message))
-			if err != nil {
-				return nil, err
-			}
-			chatHistory, err := model.AppendToChat(app.state.DB, *msg)
-			if err != nil {
-				return nil, err
-			}
-			// Append messages to chat history
-			err = app.onGoingBlock.Set([]byte("history"), []byte(chatHistory))
-			if err != nil {
-				return nil, err
-			}
-			// This adds the user to the DB, but the data is not committed nor persisted until Commit is called
-			respTxs[i] = &abci.ExecTxResult{Code: abci.CodeTypeOK}
-			app.state.Size++
+			// since we did this in ProcessProposal this should never happen here
+			return nil, err
 		}
+
+		// Check if this sender already existed; if not, add the user too
+		err = UpdateOrSetUser(app.state.DB, msg.Sender, false, app.onGoingBlock)
+		if err != nil {
+			return nil, err
+		}
+		// Add the message for this sender
+		message, err := model.AppendToExistingMessages(app.state.DB, *msg)
+		if err != nil {
+			return nil, err
+		}
+		err = app.onGoingBlock.Set([]byte(msg.Sender+"msg"), []byte(message))
+		if err != nil {
+			return nil, err
+		}
+		chatHistory, err := model.AppendToChat(app.state.DB, *msg)
+		if err != nil {
+			return nil, err
+		}
+		// Append messages to chat history
+		err = app.onGoingBlock.Set([]byte("history"), []byte(chatHistory))
+		if err != nil {
+			return nil, err
+		}
+		// This adds the user to the DB, but the data is not committed nor persisted until Commit is called
+		respTxs[i] = &abci.ExecTxResult{Code: abci.CodeTypeOK}
+		app.state.Size++
 	}
 	app.state.Height = req.Height
 

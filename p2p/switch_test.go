@@ -117,12 +117,10 @@ func initSwitchFunc(_ int, sw *Switch) *Switch {
 func TestSwitches(t *testing.T) {
 	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	t.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
+		if err := s2.Stop(); err != nil {
 			t.Error(err)
 		}
-	})
-	t.Cleanup(func() {
-		if err := s2.Stop(); err != nil {
+		if err := s1.Stop(); err != nil {
 			t.Error(err)
 		}
 	})
@@ -156,9 +154,11 @@ func TestSwitches(t *testing.T) {
 			},
 		},
 	}
+	// Test BroadcastAsync and TryBroadcast on different channels in parallel.
+	// We have no channel capacity concerns, as each broadcast is on a distinct channel
 	s1.BroadcastAsync(Envelope{ChannelID: byte(0x00), Message: ch0Msg})
 	s1.BroadcastAsync(Envelope{ChannelID: byte(0x01), Message: ch1Msg})
-	s1.BroadcastAsync(Envelope{ChannelID: byte(0x02), Message: ch2Msg})
+	s1.TryBroadcast(Envelope{ChannelID: byte(0x02), Message: ch2Msg})
 	assertMsgReceivedWithTimeout(t,
 		ch0Msg,
 		byte(0x00),
@@ -809,41 +809,57 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	assert.False(t, reactor.InitCalledBeforeRemoveFinished())
 }
 
-func BenchmarkSwitchBroadcast(b *testing.B) {
-	s1, s2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
-		// Make bar reactors of bar channels each
-		sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
-			{ID: byte(0x00), Priority: 10},
-			{ID: byte(0x01), Priority: 10},
-		}, false))
-		sw.AddReactor("bar", NewTestReactor([]*conn.ChannelDescriptor{
-			{ID: byte(0x02), Priority: 10},
-			{ID: byte(0x03), Priority: 10},
-		}, false))
-		return sw
-	})
-
-	b.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
-			b.Error(err)
-		}
-	})
-
+func makeSwitchForBenchmark(b *testing.B) *Switch {
+	b.Helper()
+	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	b.Cleanup(func() {
 		if err := s2.Stop(); err != nil {
 			b.Error(err)
 		}
+		if err := s1.Stop(); err != nil {
+			b.Error(err)
+		}
 	})
-
 	// Allow time for goroutines to boot up
 	time.Sleep(1 * time.Second)
+	return s1
+}
+
+func BenchmarkSwitchBroadcast(b *testing.B) {
+	sw := makeSwitchForBenchmark(b)
+	chMsg := &p2pproto.PexAddrs{
+		Addrs: []p2pproto.NetAddress{
+			{
+				ID: "1",
+			},
+		},
+	}
 
 	b.ResetTimer()
 
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		s1.BroadcastAsync(Envelope{ChannelID: chID})
+		sw.BroadcastAsync(Envelope{ChannelID: chID, Message: chMsg})
+	}
+}
+
+func BenchmarkSwitchTryBroadcast(b *testing.B) {
+	sw := makeSwitchForBenchmark(b)
+	chMsg := &p2pproto.PexAddrs{
+		Addrs: []p2pproto.NetAddress{
+			{
+				ID: "1",
+			},
+		},
+	}
+
+	b.ResetTimer()
+
+	// Send random message from foo channel to another
+	for i := 0; i < b.N; i++ {
+		chID := byte(i % 4)
+		sw.TryBroadcast(Envelope{ChannelID: chID, Message: chMsg})
 	}
 }
 

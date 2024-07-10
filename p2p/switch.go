@@ -308,10 +308,22 @@ func (sw *Switch) BroadcastAsync(e Envelope) {
 
 	sw.peers.ForEach(func(p Peer) {
 		go func(peer Peer) {
-			// TODO: We don't use the success value. Should most behavior
-			// really be TrySend?
 			success := peer.Send(e)
 			_ = success
+		}(p)
+	})
+}
+
+// TryBroadcast runs a go routine for each attempted send.
+// If the send queue of the destination channel and peer are full, the message
+// will not be sent. To make sure that messages are indeed sent to all
+// destination, use `Broadcast`.
+//
+// NOTE: TryBroadcast uses goroutines, so order of broadcast may not be preserved.
+func (sw *Switch) TryBroadcast(e Envelope) {
+	sw.peers.ForEach(func(p Peer) {
+		go func(peer Peer) {
+			peer.TrySend(e)
 		}(p)
 	})
 }

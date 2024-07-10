@@ -477,7 +477,7 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 	}
 
 	go func() {
-		conR.Switch.BroadcastAsync(p2p.Envelope{
+		conR.Switch.TryBroadcast(p2p.Envelope{
 			ChannelID: StateChannel,
 			Message:   msg,
 		})

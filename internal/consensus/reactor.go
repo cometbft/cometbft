@@ -352,11 +352,12 @@ func (conR *Reactor) Receive(e p2p.Envelope) {
 		case *VoteMessage:
 			cs := conR.conS
 			cs.mtx.RLock()
-			csHeight, csRound, valSize, lastCommitSize := cs.Height, cs.Round, cs.Validators.Size(), cs.LastCommit.Size()
+			height, round, valSize, lastCommitSize := cs.Height, cs.Round, cs.Validators.Size(), cs.LastCommit.Size()
 			cs.mtx.RUnlock()
-			ps.SetHasVoteFromPeer(msg.Vote, csHeight, valSize, lastCommitSize)
+			ps.SetHasVoteFromPeer(msg.Vote, height, valSize, lastCommitSize)
 
-			// if vote is late, and is not a precommit for the last block, mark it late and return.
+			// If a vote is late, and is not a precommit for the last block, mark it late and return.
+			// This mimics the logic of `State.addVote()` method.
 			isLate := msg.Vote.Height < csHeight || (msg.Vote.Height == csHeight && msg.Vote.Round < csRound)
 			if isLate {
 				notLastBlockPrecommit := msg.Vote.Type != types.PrecommitType || msg.Vote.Height != csHeight-1

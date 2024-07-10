@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/dgraph-io/badger/v4"
 
@@ -36,7 +35,6 @@ func loadState(db *model.DB) (AppState, error) {
 		return state, nil
 	}
 	err = json.Unmarshal(stateBytes, &state)
-	fmt.Println("ST:", state)
 	state.DB = db
 	if err != nil {
 		return state, err
@@ -50,7 +48,6 @@ func saveState(state *AppState) error {
 		return err
 	}
 	err = state.DB.Set([]byte(stateKey), stateBytes)
-	fmt.Println(state)
 	if err != nil {
 		return err
 	}

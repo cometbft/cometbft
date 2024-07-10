@@ -75,8 +75,7 @@ func UpdateOrSetUser(db *model.DB, uname string, toBan bool, txn *badger.Txn) er
 	}
 	userBytes, err := json.Marshal(u)
 	if err != nil {
-		fmt.Println("Error marshaling user")
-		return err
+		return fmt.Errorf("error marshaling user: %v", err)
 	}
 	return txn.Set([]byte(uname), userBytes)
 }

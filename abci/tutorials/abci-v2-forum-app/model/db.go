@@ -28,7 +28,6 @@ func (db *DB) Commit() error {
 }
 
 func NewDB(dbPath string) (*DB, error) {
-	fmt.Println("New DB")
 	// Open badger DB
 	opts := badger.DefaultOptions(dbPath)
 	db, err := badger.Open(opts)
@@ -91,10 +90,8 @@ func (db *DB) FindUserByName(name string) (*User, error) {
 		return err
 	})
 	if err != nil {
-		fmt.Println("Error in retrieving user: ", err)
-		return nil, err
+		return nil, fmt.Errorf("error in retrieving user: %v", err)
 	}
-
 	return user, nil
 }
 
@@ -116,8 +113,7 @@ func (db *DB) UpdateOrSetUser(uname string, toBan bool, txn *badger.Txn) error {
 	}
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		fmt.Println("Error marshaling user")
-		return err
+		return fmt.Errorf("error marshaling user: %v", err)
 	}
 	return txn.Set([]byte(user.Name), userBytes)
 }

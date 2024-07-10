@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/dgraph-io/badger/v4"
@@ -35,7 +34,6 @@ func TestFindUserByName(t *testing.T) {
 	println("User is defined")
 	for _, user := range users {
 		err := testDB.CreateUser(user)
-		fmt.Println(user.Name)
 		if err != nil {
 			t.Fatalf("Failed to create user: %v", err)
 		}

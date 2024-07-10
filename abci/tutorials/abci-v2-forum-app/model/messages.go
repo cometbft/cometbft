@@ -25,8 +25,7 @@ type MsgHistory struct {
 func AppendToChat(db *DB, message Message) (string, error) {
 	historyBytes, err := ViewDB(db.GetDB(), []byte("history"))
 	if err != nil {
-		fmt.Println("Error fetching history:", err)
-		return "", err
+		return "", fmt.Errorf("error fetching history: %v", err)
 	}
 	msgBytes := string(historyBytes)
 	msgBytes = msgBytes + "{sender:" + message.Sender + ",message:" + message.Message + "}"
@@ -36,15 +35,10 @@ func AppendToChat(db *DB, message Message) (string, error) {
 func FetchHistory(db *DB) (string, error) {
 	historyBytes, err := ViewDB(db.GetDB(), []byte("history"))
 	if err != nil {
-		fmt.Println("Error fetching history:", err)
-		return "", err
+		return "", fmt.Errorf("error fetching history: %v", err)
 	}
 	msgHistory := string(historyBytes)
-
-	if err != nil {
-		fmt.Println("error appending history: ", err)
-	}
-	return msgHistory, err
+	return msgHistory, nil
 }
 
 func AppendToExistingMessages(db *DB, message Message) (string, error) {

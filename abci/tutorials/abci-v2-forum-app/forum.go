@@ -119,5 +119,5 @@ func main() {
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
-	fmt.Println("Forum application stopped")
+	log.Println("Forum application stopped")
 }

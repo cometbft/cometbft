@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/dgraph-io/badger/v4"
@@ -13,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/abci/tutorials/abci-v2-forum-app/model"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -27,13 +29,13 @@ type ForumApp struct {
 	CurseWords         string
 	state              AppState
 	onGoingBlock       *badger.Txn
+	logger             log.Logger
 }
 
 func NewForumApp(dbDir string, appConfigPath string) (*ForumApp, error) {
 	db, err := model.NewDB(dbDir)
 	if err != nil {
-		fmt.Printf("Error initializing database: %s\n", err)
-		return nil, err
+		return nil, fmt.Errorf("error initializing database: %v", err)
 	}
 	cfg, err := LoadConfig(appConfigPath)
 	if err != nil {
@@ -47,10 +49,14 @@ func NewForumApp(dbDir string, appConfigPath string) (*ForumApp, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+
 	return &ForumApp{
 		state:              state,
 		valAddrToPubKeyMap: make(map[string]crypto.PublicKey),
 		CurseWords:         cfg.CurseWords,
+		logger:             logger,
 	}, nil
 }
 
@@ -82,7 +88,7 @@ func (app *ForumApp) Info(_ context.Context, _ *abci.InfoRequest) (*abci.InfoRes
 
 // Query the application state for specific information.
 func (app *ForumApp) Query(_ context.Context, query *abci.QueryRequest) (*abci.QueryResponse, error) {
-	fmt.Println("Executing Application Query")
+	app.logger.Info("Executing Application Query")
 
 	resp := abci.QueryResponse{Key: query.Data}
 
@@ -120,12 +126,12 @@ func (app *ForumApp) Query(_ context.Context, query *abci.QueryRequest) (*abci.Q
 // CheckTx handles validation of inbound transactions. If a transaction is not a valid message, or if a user
 // does not exist in the database or if a user is banned it returns an error.
 func (app *ForumApp) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci.CheckTxResponse, error) {
-	fmt.Println("Executing Application CheckTx")
+	app.logger.Info("Executing Application CheckTx")
 
 	// Parse the tx message
 	msg, err := model.ParseMessage(req.Tx)
 	if err != nil {
-		fmt.Printf("failed to parse transaction message req: %v\n", err)
+		app.logger.Error("CheckTx: failed to parse transaction message", "message", msg, "error", err)
 		return &abci.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Log: "Invalid transaction", Info: err.Error()}, nil
 	}
 
@@ -134,19 +140,19 @@ func (app *ForumApp) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci
 		return &abci.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Log: "Invalid transaction", Info: "Sender is missing"}, nil
 	}
 
-	fmt.Println("Searching for sender ... ", msg.Sender)
+	app.logger.Info("searching for sender", "sender", msg.Sender)
 	u, err := app.state.DB.FindUserByName(msg.Sender)
 
 	if err != nil {
 		if !errors.Is(err, badger.ErrKeyNotFound) {
-			fmt.Println("problem in check tx: ", string(req.Tx))
+			app.logger.Error("CheckTx: Error in check tx", "tx", string(req.Tx), "error", err)
 			return &abci.CheckTxResponse{Code: CodeTypeEncodingError, Log: "Invalid transaction", Info: err.Error()}, nil
 		}
-		fmt.Println("Not found user :", msg.Sender)
+		app.logger.Info("CheckTx: Sender not found", "sender", msg.Sender)
 	} else if u != nil && u.Banned {
 		return &abci.CheckTxResponse{Code: CodeTypeBanned, Log: "Invalid transaction", Info: "User is banned"}, nil
 	}
-	fmt.Println("Check tx success for ", msg.Message, " and ", msg.Sender)
+	app.logger.Info("CheckTx: success checking tx", "message", msg.Message, "sender", msg.Sender)
 	return &abci.CheckTxResponse{Code: CodeTypeOK, Log: "Valid transaction", Info: "Transaction validation succeeded"}, nil
 }
 
@@ -154,7 +160,8 @@ func (app *ForumApp) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci
 
 // InitChain initializes the blockchain with information sent from CometBFT such as validators or consensus parameters.
 func (app *ForumApp) InitChain(_ context.Context, req *abci.InitChainRequest) (*abci.InitChainResponse, error) {
-	fmt.Println("Executing Application InitChain")
+	app.logger.Info("Executing Application InitChain")
+
 	for _, v := range req.Validators {
 		err := app.updateValidator(v)
 		if err != nil {
@@ -171,7 +178,7 @@ func (app *ForumApp) InitChain(_ context.Context, req *abci.InitChainRequest) (*
 // PrepareProposal is used to prepare a proposal for the next block in the blockchain. The application can re-order, remove
 // or add transactions.
 func (app *ForumApp) PrepareProposal(_ context.Context, req *abci.PrepareProposalRequest) (*abci.PrepareProposalResponse, error) {
-	fmt.Println("Executing Application PrepareProposal")
+	app.logger.Info("Executing Application PrepareProposal")
 
 	// Get the curse words from for all vote extensions received at the end of last height.
 	voteExtensionCurseWords := app.getWordsFromVe(req.LocalLastCommit.Votes)
@@ -227,8 +234,9 @@ func (app *ForumApp) PrepareProposal(_ context.Context, req *abci.PrepareProposa
 }
 
 // ProcessProposal validates the proposed block and the transactions and return a status if it was accepted or rejected.
-func (*ForumApp) ProcessProposal(_ context.Context, req *abci.ProcessProposalRequest) (*abci.ProcessProposalResponse, error) {
-	fmt.Println("Executing Application ProcessProposal")
+func (app *ForumApp) ProcessProposal(_ context.Context, req *abci.ProcessProposalRequest) (*abci.ProcessProposalResponse, error) {
+	app.logger.Info("Executing Application ProcessProposal")
+
 	bannedUsers := make(map[string]struct{}, 0)
 
 	finishedBanTxIdx := len(req.Txs)
@@ -263,7 +271,7 @@ func (*ForumApp) ProcessProposal(_ context.Context, req *abci.ProcessProposalReq
 
 // FinalizeBlock Deliver the decided block to the Application.
 func (app *ForumApp) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockRequest) (*abci.FinalizeBlockResponse, error) {
-	fmt.Println("Executing Application FinalizeBlock")
+	app.logger.Info("Executing Application FinalizeBlock")
 
 	// Iterate over Tx in current block
 	app.onGoingBlock = app.state.DB.GetDB().NewTransaction(true)
@@ -335,7 +343,7 @@ func (app *ForumApp) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockReq
 
 // Commit the application state.
 func (app *ForumApp) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.CommitResponse, error) {
-	fmt.Println("Executing Application Commit")
+	app.logger.Info("Executing Application Commit")
 
 	if err := app.onGoingBlock.Commit(); err != nil {
 		return nil, err
@@ -349,7 +357,7 @@ func (app *ForumApp) Commit(_ context.Context, _ *abci.CommitRequest) (*abci.Com
 
 // ExtendVote returns curse words as vote extensions.
 func (app *ForumApp) ExtendVote(_ context.Context, _ *abci.ExtendVoteRequest) (*abci.ExtendVoteResponse, error) {
-	fmt.Println("Executing Application ExtendVote")
+	app.logger.Info("Executing Application ExtendVote")
 
 	return &abci.ExtendVoteResponse{VoteExtension: []byte(app.CurseWords)}, nil
 }
@@ -357,7 +365,7 @@ func (app *ForumApp) ExtendVote(_ context.Context, _ *abci.ExtendVoteRequest) (*
 // VerifyVoteExtension verifies the vote extensions and ensure they include the curse words
 // It will not be called for extensions generated by this validator.
 func (app *ForumApp) VerifyVoteExtension(_ context.Context, req *abci.VerifyVoteExtensionRequest) (*abci.VerifyVoteExtensionResponse, error) {
-	fmt.Println("Executing Application VerifyVoteExtension")
+	app.logger.Info("Executing Application VerifyVoteExtension")
 
 	if _, ok := app.valAddrToPubKeyMap[string(req.ValidatorAddress)]; !ok {
 		// we do not have a validator with this address mapped; this should never happen
@@ -392,7 +400,7 @@ func (app *ForumApp) getWordsFromVe(voteExtensions []abci.ExtendedVoteInfo) stri
 			}
 		}
 	}
-	fmt.Println("Processed vote extensions :", curseWordMap)
+	app.logger.Info("Processed vote extensions", "curse_words", curseWordMap)
 	majority := len(app.valAddrToPubKeyMap) / 3 // We define the majority to be at least 1/3 of the validators;
 
 	voteExtensionCurseWords := ""

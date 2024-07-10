@@ -279,14 +279,14 @@ func (app *ForumApp) FinalizeBlock(_ context.Context, req *abci.FinalizeBlockReq
 		banTx := new(model.BanTx)
 		err = json.Unmarshal(tx, &banTx)
 		if err != nil {
-			respTxs[i] = &abci.ExecTxResult{Code: CodeTypeEncodingError}
-		} else {
-			err := UpdateOrSetUser(app.state.DB, banTx.UserName, true, app.onGoingBlock)
-			if err != nil {
-				return nil, err
-			}
-			respTxs[i] = &abci.ExecTxResult{Code: CodeTypeOK}
+			// since we did this in ProcessProposal this should never happen here
+			return nil, err
 		}
+		err = UpdateOrSetUser(app.state.DB, banTx.UserName, true, app.onGoingBlock)
+		if err != nil {
+			return nil, err
+		}
+		respTxs[i] = &abci.ExecTxResult{Code: CodeTypeOK}
 	}
 
 	for idx, tx := range req.Txs[finishedBanTxIdx:] {

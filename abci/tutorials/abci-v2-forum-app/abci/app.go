@@ -140,14 +140,14 @@ func (app *ForumApp) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci
 	if err != nil {
 		if !errors.Is(err, badger.ErrKeyNotFound) {
 			fmt.Println("problem in check tx: ", string(req.Tx))
-			return &abci.CheckTxResponse{Code: CodeTypeEncodingError}, nil
+			return &abci.CheckTxResponse{Code: CodeTypeEncodingError, Log: "Invalid transaction", Info: err.Error()}, nil
 		}
 		fmt.Println("Not found user :", msg.Sender)
 	} else if u != nil && u.Banned {
-		return &abci.CheckTxResponse{Code: CodeTypeBanned, Log: "User is banned"}, nil
+		return &abci.CheckTxResponse{Code: CodeTypeBanned, Log: "Invalid transaction", Info: "User is banned"}, nil
 	}
 	fmt.Println("Check tx success for ", msg.Message, " and ", msg.Sender)
-	return &abci.CheckTxResponse{Code: CodeTypeOK}, nil
+	return &abci.CheckTxResponse{Code: CodeTypeOK, Log: "Valid transaction", Info: "Transaction validation succeeded"}, nil
 }
 
 // Consensus Connection

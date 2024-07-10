@@ -296,6 +296,7 @@ func TestCreateProposalBlock(t *testing.T) {
 	memplMetrics := mempl.NopMetrics()
 	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyApp.Mempool(),
+		nil,
 		state.LastBlockHeight,
 		mempl.WithMetrics(memplMetrics),
 		mempl.WithPreCheck(sm.TxPreCheck(state)),
@@ -396,6 +397,7 @@ func TestMaxProposalBlockSize(t *testing.T) {
 	memplMetrics := mempl.NopMetrics()
 	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyApp.Mempool(),
+		nil,
 		state.LastBlockHeight,
 		mempl.WithMetrics(memplMetrics),
 		mempl.WithPreCheck(sm.TxPreCheck(state)),

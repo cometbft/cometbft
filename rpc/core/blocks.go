@@ -195,6 +195,7 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 		FinalizeBlockEvents:   results.Events,
 		ValidatorUpdates:      results.ValidatorUpdates,
 		ConsensusParamUpdates: results.ConsensusParamUpdates,
+		AppHash:               results.AppHash,
 	}, nil
 }
 

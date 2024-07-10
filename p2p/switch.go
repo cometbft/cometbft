@@ -273,8 +273,6 @@ func (sw *Switch) OnStop() {
 //
 // NOTE: Broadcast uses goroutines, so order of broadcast may not be preserved.
 func (sw *Switch) Broadcast(e Envelope) chan bool {
-	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
-
 	var wg sync.WaitGroup
 	successChan := make(chan bool, sw.peers.Size())
 
@@ -282,6 +280,7 @@ func (sw *Switch) Broadcast(e Envelope) chan bool {
 		wg.Add(1) // Incrementing by one is safer.
 		go func(peer Peer) {
 			defer wg.Done()
+
 			success := peer.Send(e)
 			// For rare cases where PeerSet changes between a call to `peers.Size()` and `peers.ForEach()`.
 			select {
@@ -297,6 +296,18 @@ func (sw *Switch) Broadcast(e Envelope) chan bool {
 	}()
 
 	return successChan
+}
+
+// TryBroadcast runs a go routine for each attempted send.
+// If the send queue of the destination channel and peer are full, the message will not be sent. To make sure that messages are indeed sent to all destination, use `Broadcast`.
+//
+// NOTE: TryBroadcast uses goroutines, so order of broadcast may not be preserved.
+func (sw *Switch) TryBroadcast(e Envelope) {
+	sw.peers.ForEach(func(p Peer) {
+		go func(peer Peer) {
+			peer.TrySend(e)
+		}(p)
+	})
 }
 
 // NumPeers returns the count of outbound/inbound and outbound-dialing peers.

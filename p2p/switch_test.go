@@ -838,22 +838,11 @@ func BenchmarkSwitchBroadcast(b *testing.B) {
 
 	b.ResetTimer()
 
-	numSuccess, numFailure := 0, 0
-
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		successChan := sw.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
-		for s := range successChan {
-			if s {
-				numSuccess++
-			} else {
-				numFailure++
-			}
-		}
+		sw.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
 	}
-
-	b.Logf("success: %v, failure: %v", numSuccess, numFailure)
 }
 
 func BenchmarkSwitchTryBroadcast(b *testing.B) {

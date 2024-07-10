@@ -488,11 +488,7 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 	}
 
 	go func() {
-<<<<<<< HEAD
 		conR.Switch.TryBroadcast(p2p.Envelope{
-=======
-		conR.Switch.Broadcast(p2p.Envelope{
->>>>>>> 110817be4 (perf(consensus): Run broadcast routines out of process (#3180))
 			ChannelID: StateChannel,
 			Message:   msg,
 		})
@@ -529,11 +525,7 @@ func (conR *Reactor) broadcastHasProposalBlockPartMessage(partMsg *BlockPartMess
 		Index:  int32(partMsg.Part.Index),
 	}
 	go func() {
-<<<<<<< HEAD
 		conR.Switch.TryBroadcast(p2p.Envelope{
-=======
-		conR.Switch.Broadcast(p2p.Envelope{
->>>>>>> 110817be4 (perf(consensus): Run broadcast routines out of process (#3180))
 			ChannelID: StateChannel,
 			Message:   msg,
 		})

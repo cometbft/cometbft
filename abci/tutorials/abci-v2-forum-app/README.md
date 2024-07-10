@@ -7,7 +7,7 @@ blockchain powered by [CometBFT](https://github.com/cometbft/cometbft) state mac
 
    - Can post messages (by submitting transactions)
    - Can view all the message history (querying the blockchain)
-   - Banned if post messages contained curse words (curse words are tracked with vote extensions)
+   - Are banned if they post messages that contain curse words (curse words are tracked with vote extensions)
 
 ## ABCI 2.0
 

@@ -129,6 +129,11 @@ func (app *ForumApp) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci
 		return &abci.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Log: "Invalid transaction", Info: err.Error()}, nil
 	}
 
+	// Check for invalid sender
+	if len(msg.Sender) == 0 {
+		return &abci.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Log: "Invalid transaction", Info: "Sender is missing"}, nil
+	}
+
 	fmt.Println("Searching for sender ... ", msg.Sender)
 	u, err := app.state.DB.FindUserByName(msg.Sender)
 

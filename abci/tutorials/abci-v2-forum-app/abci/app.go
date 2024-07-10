@@ -384,7 +384,8 @@ func (app *ForumApp) VerifyVoteExtension(_ context.Context, req *abci.VerifyVote
 	return &abci.VerifyVoteExtensionResponse{Status: abci.VERIFY_VOTE_EXTENSION_STATUS_ACCEPT}, nil
 }
 
-// getWordsFromVE gets the curse words from the vote extensions.
+// getWordsFromVE gets the curse words from the vote extensions as one string, the words are concatenated using a '|'
+// this method also ensures there are no duplicate curse words in the final set returned.
 func (app *ForumApp) getWordsFromVe(voteExtensions []abci.ExtendedVoteInfo) string {
 	curseWordMap := make(map[string]int)
 	for _, vote := range voteExtensions {

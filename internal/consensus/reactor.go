@@ -492,7 +492,7 @@ func (conR *Reactor) broadcastHasVoteMessage(vote *types.Vote) {
 	}
 
 	go func() {
-		conR.Switch.Broadcast(p2p.Envelope{
+		conR.Switch.TryBroadcast(p2p.Envelope{
 			ChannelID: StateChannel,
 			Message:   msg,
 		})
@@ -529,7 +529,7 @@ func (conR *Reactor) broadcastHasProposalBlockPartMessage(partMsg *BlockPartMess
 		Index:  int32(partMsg.Part.Index),
 	}
 	go func() {
-		conR.Switch.Broadcast(p2p.Envelope{
+		conR.Switch.TryBroadcast(p2p.Envelope{
 			ChannelID: StateChannel,
 			Message:   msg,
 		})

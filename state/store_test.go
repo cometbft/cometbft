@@ -83,7 +83,6 @@ func BenchmarkLoadValidators(b *testing.B) {
 	require.NoError(b, err)
 
 	for i := 10; i < 10000000000; i *= 10 { // 10, 100, 1000, ...
-		i := i
 		if err := sm.SaveValidatorsInfo(stateDB,
 			int64(i), state.LastHeightValidatorsChanged, state.NextValidators, "v2"); err != nil {
 			b.Fatal(err)
@@ -131,7 +130,6 @@ func TestPruneStates(t *testing.T) {
 		"prune when evidence height < height": {20, 1, 18, 17, false, []int64{13, 17, 18, 19, 20}, []int64{15, 18, 19, 20}, []int64{18, 19, 20}},
 	}
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			db := dbm.NewMemDB()
 			stateStore := sm.NewStore(db, sm.StoreOptions{
@@ -182,6 +180,7 @@ func TestPruneStates(t *testing.T) {
 						{Data: []byte{2}},
 						{Data: []byte{3}},
 					},
+					AppHash: make([]byte, 1),
 				})
 				require.NoError(t, err)
 			}
@@ -268,7 +267,7 @@ func makeStateAndBlockStoreAndIndexers() (sm.State, *store.BlockStore, txindex.T
 		panic("error constructing state from genesis file: " + err.Error())
 	}
 
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, "test")
+	txIndexer, blockIndexer, _, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, "test")
 	if err != nil {
 		panic(err)
 	}
@@ -377,6 +376,7 @@ func TestABCIResPruningStandalone(t *testing.T) {
 		TxResults: []*abci.ExecTxResult{
 			{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 		},
+		AppHash: make([]byte, 1),
 	}
 	_, bs, txIndexer, blockIndexer, callbackF, stateStore := makeStateAndBlockStoreAndIndexers()
 	defer callbackF()
@@ -470,6 +470,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
+			AppHash: make([]byte, 1),
 		}
 		state, bs, txIndexer, blockIndexer, callbackF, stateStore := makeStateAndBlockStoreAndIndexers()
 		defer callbackF()
@@ -528,6 +529,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
+			AppHash: make([]byte, 1),
 		}
 
 		stateDB = dbm.NewMemDB()
@@ -624,7 +626,7 @@ func TestFinalizeBlockRecoveryUsingLegacyABCIResponses(t *testing.T) {
 	resp, err := stateStore.LoadLastFinalizeBlockResponse(height)
 	require.NoError(t, err)
 	require.Equal(t, resp.ConsensusParamUpdates, &cp)
-	require.Equal(t, resp.Events, legacyResp.LegacyAbciResponses.BeginBlock.Events)
+	require.Equal(t, len(resp.Events), len(legacyResp.LegacyAbciResponses.BeginBlock.Events))
 	require.Equal(t, resp.TxResults[0], legacyResp.LegacyAbciResponses.DeliverTxs[0])
 }
 

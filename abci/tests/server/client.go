@@ -17,7 +17,7 @@ func InitChain(ctx context.Context, client abcicli.Client) error {
 	for i := 0; i < total; i++ {
 		pubkey := cmtrand.Bytes(33)
 		power := cmtrand.Int()
-		vals[i] = types.UpdateValidator(pubkey, int64(power), "")
+		vals[i] = types.ValidatorUpdate{Power: int64(power), PubKeyType: "", PubKeyBytes: pubkey}
 	}
 	_, err := client.InitChain(ctx, &types.InitChainRequest{
 		Validators: vals,

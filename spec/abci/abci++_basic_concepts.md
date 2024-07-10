@@ -123,6 +123,8 @@ call sequences of these methods.
   update its state accordingly. Cryptographic commitments to the block and transaction results,
   returned via the corresponding parameters in `FinalizeBlockResponse`, are included in the header
   of the next block. CometBFT calls it when a new block is decided.
+  When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+  that at least one non-byzantine validator has run `ProcessProposal` on that block.
 
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the
@@ -391,24 +393,27 @@ enum MisbehaviorType {
 }
 ```
 
-## Errors
+## Returning Errors
 
 [&#8593; Back to Outline](#outline)
 
+Please note that the method signature for the ABCI methods includes a response and an error return, such as
+`(*abcitypes.[Method_Name]Response, error)`.
+
+### ABCI response error codes (e.g. `Code` and `Codespace`)
+
+Some of the ABCI methods' responses feature a field (e.g., the `Code` field) that can be used to return an error
+in the `[Method_Name]Response`. These fields play a significant role as they can return an error in the response, indicating
+to CometBFT that a problem has occurred during data processing, such as transaction validation or a query.
+
 The `Query` and `CheckTx` methods include a `Code` field in their `*Response`.
 Field `Code` is meant to contain an application-specific response code.
-A response code of `0` indicates no error.  Any other response code
-indicates to CometBFT that an error occurred.
+A response code of `0` indicates no error.  Any other response where the `Code` field is
+different from `0` indicates to CometBFT that an error occurred.
 
 These methods also return a `Codespace` string to CometBFT. This field is
 used to disambiguate `Code` values returned by different domains of the
 Application. The `Codespace` is a namespace for the `Code`.
-
-Methods `Echo`, `Info`, `Commit` and `InitChain` do not return errors.
-An error in any of these methods represents a critical issue that CometBFT
-has no reasonable way to handle. If there is an error in one
-of these methods, the Application must crash to ensure that the error is safely
-handled by an operator.
 
 Method `FinalizeBlock` is a special case. It contains a number of
 `Code` and `Codespace` fields as part of type `ExecTxResult`. Each of
@@ -422,7 +427,7 @@ The handling of non-zero response codes by CometBFT is described below.
 ### `CheckTx`
 
 When CometBFT receives a `CheckTxResponse` with a non-zero `Code`, the associated
-transaction will not be added to CometBFT's mempool or it will be removed if
+transaction will not be added to CometBFT's mempool, or it will be removed if
 it is already included.
 
 ### `ExecTxResult` (as part of `FinalizeBlock`)
@@ -436,3 +441,21 @@ part of a decided block, the `Code` does not influence consensus.
 
 When CometBFT receives a `QueryResponse` with a non-zero `Code`, this code is
 returned directly to the client that initiated the query.
+
+### ABCI methods' `error` return
+
+The `error` return, the second object returned in an ABCI method e.g., `(*abcitypes.[Method_Name]Response, error)`, is utilized in situations
+involving unrecoverable errors.
+
+All ABCI methods return errors. An error returned in any of these methods represents a critical issue that CometBFT
+has no reasonable way to handle. Therefore, if there is an error in one of these methods, CometBFT will crash
+to ensure that an operator safely handles the error: the application must be terminated to avoid any further unintended consequences.
+
+As a result, upon detecting an non-recoverable error condition, the application has the choice of either
+(a) crashing itself (e.g., a`panic` in the code detecting the unrecoverable condition), or
+(b) returning an error as the second return value in the ABCI method that detects the error condition,
+knowing that CometBFT will panic upon receiving the error.
+The choice between (a) and (b) is up to the application -- both are equivalent -- and depends on
+whether an application (e.g. running in a different process that CometBFT)
+prefers CometBFT to crash first.
+

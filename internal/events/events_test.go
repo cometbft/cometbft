@@ -350,7 +350,7 @@ func TestRemoveListener(t *testing.T) {
 	assert.Equal(t, count, sum2)
 }
 
-// TestAddAndRemoveListenersAsync sets up an EventSwitch, subscribes two
+// TestRemoveListenersAsync sets up an EventSwitch, subscribes two
 // listeners to three events, and fires a thousand integers for each event.
 // These two listeners serve as the baseline validation while other listeners
 // are randomly subscribed and unsubscribed.

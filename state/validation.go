@@ -54,7 +54,7 @@ func validateBlock(state State, block *types.Block) error {
 
 	// Validate app info
 	if !bytes.Equal(block.AppHash, state.AppHash) {
-		return fmt.Errorf("wrong Block.Header.AppHash.  Expected %X, got %v",
+		return fmt.Errorf("wrong Block.Header.AppHash.  Expected %X, got %v. Check ABCI app for non-determinism",
 			state.AppHash,
 			block.AppHash,
 		)

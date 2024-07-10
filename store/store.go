@@ -8,12 +8,13 @@ import (
 
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/go-kit/kit/metrics"
+	lru "github.com/hashicorp/golang-lru/v2"
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/internal/evidence"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -64,6 +65,11 @@ type BlockStore struct {
 	blocksDeleted      int64
 	compact            bool
 	compactionInterval int64
+
+	seenCommitCache          *lru.Cache[int64, *types.Commit]
+	blockCommitCache         *lru.Cache[int64, *types.Commit]
+	blockExtendedCommitCache *lru.Cache[int64, *types.ExtendedCommit]
+	blockPartCache           *lru.Cache[blockPartIndex, *types.Part]
 }
 
 type BlockStoreOption func(*BlockStore)
@@ -126,6 +132,7 @@ func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
 		db:      db,
 		metrics: NopMetrics(),
 	}
+	bStore.addCaches()
 
 	for _, option := range options {
 		option(bStore)
@@ -137,6 +144,27 @@ func NewBlockStore(db dbm.DB, options ...BlockStoreOption) *BlockStore {
 
 	addTimeSample(bStore.metrics.BlockStoreAccessDurationSeconds.With("method", "new_block_store"), start)()
 	return bStore
+}
+
+func (bs *BlockStore) addCaches() {
+	var err error
+	// err can only occur if the argument is non-positive, so is impossible in context.
+	bs.blockCommitCache, err = lru.New[int64, *types.Commit](100)
+	if err != nil {
+		panic(err)
+	}
+	bs.blockExtendedCommitCache, err = lru.New[int64, *types.ExtendedCommit](100)
+	if err != nil {
+		panic(err)
+	}
+	bs.seenCommitCache, err = lru.New[int64, *types.Commit](100)
+	if err != nil {
+		panic(err)
+	}
+	bs.blockPartCache, err = lru.New[blockPartIndex, *types.Part](500)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (bs *BlockStore) GetVersion() string {
@@ -247,10 +275,20 @@ func (bs *BlockStore) LoadBlockByHash(hash []byte) (*types.Block, *types.BlockMe
 	return bs.LoadBlock(height)
 }
 
+type blockPartIndex struct {
+	height int64
+	index  int
+}
+
 // LoadBlockPart returns the Part at the given index
 // from the block at the given height.
 // If no part is found for the given height and index, it returns nil.
+// The returned part should not be modified by the caller. Take a copy if you need to modify it.
 func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
+	part, ok := bs.blockPartCache.Get(blockPartIndex{height, index})
+	if ok {
+		return part
+	}
 	pbpart := new(cmtproto.Part)
 	start := time.Now()
 	bz, err := bs.db.Get(bs.dbKeyLayout.CalcBlockPartKey(height, index))
@@ -267,11 +305,11 @@ func (bs *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 	if err != nil {
 		panic(fmt.Errorf("unmarshal to cmtproto.Part failed: %w", err))
 	}
-	part, err := types.PartFromProto(pbpart)
+	part, err = types.PartFromProto(pbpart)
 	if err != nil {
 		panic(fmt.Sprintf("Error reading block part: %v", err))
 	}
-
+	bs.blockPartCache.Add(blockPartIndex{height, index}, part)
 	return part
 }
 
@@ -295,7 +333,7 @@ func (bs *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	if err != nil {
 		panic(fmt.Errorf("unmarshal to cmtproto.BlockMeta: %w", err))
 	}
-	blockMeta, err := types.BlockMetaFromProto(pbbm)
+	blockMeta, err := types.BlockMetaFromTrustedProto(pbbm)
 	if err != nil {
 		panic(cmterrors.ErrMsgFromProto{MessageName: "BlockMetadata", Err: err})
 	}
@@ -328,7 +366,14 @@ func (bs *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
 // This commit consists of the +2/3 and other Precommit-votes for block at `height`,
 // and it comes from the block.LastCommit for `height+1`.
 // If no commit is found for the given height, it returns nil.
+//
+// This return value should not be modified. If you need to modify it,
+// do bs.LoadBlockCommit(height).Clone().
 func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
+	comm, ok := bs.blockCommitCache.Get(height)
+	if ok {
+		return comm
+	}
 	pbc := new(cmtproto.Commit)
 
 	start := time.Now()
@@ -351,6 +396,7 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	if err != nil {
 		panic(cmterrors.ErrMsgToProto{MessageName: "Commit", Err: err})
 	}
+	bs.blockCommitCache.Add(height, commit)
 	return commit
 }
 
@@ -358,6 +404,10 @@ func (bs *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 // The extended commit is not guaranteed to contain the same +2/3 precommits data
 // as the commit in the block.
 func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommit {
+	comm, ok := bs.blockExtendedCommitCache.Get(height)
+	if ok {
+		return comm.Clone()
+	}
 	pbec := new(cmtproto.ExtendedCommit)
 
 	start := time.Now()
@@ -380,13 +430,18 @@ func (bs *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommi
 	if err != nil {
 		panic(fmt.Errorf("converting extended commit: %w", err))
 	}
-	return extCommit
+	bs.blockExtendedCommitCache.Add(height, extCommit)
+	return extCommit.Clone()
 }
 
 // LoadSeenCommit returns the locally seen Commit for the given height.
 // This is useful when we've seen a commit, but there has not yet been
 // a new block at `height + 1` that includes this commit in its block.LastCommit.
 func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
+	comm, ok := bs.seenCommitCache.Get(height)
+	if ok {
+		return comm.Clone()
+	}
 	pbc := new(cmtproto.Commit)
 	start := time.Now()
 	bz, err := bs.db.Get(bs.dbKeyLayout.CalcSeenCommitKey(height))
@@ -409,7 +464,8 @@ func (bs *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 	if err != nil {
 		panic(fmt.Errorf("converting seen commit: %w", err))
 	}
-	return commit
+	bs.seenCommitCache.Add(height, commit)
+	return commit.Clone()
 }
 
 // PruneBlocks removes block up to (but not including) a height. It returns the
@@ -474,14 +530,17 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 			if err := batch.Delete(bs.dbKeyLayout.CalcBlockCommitKey(h)); err != nil {
 				return 0, -1, err
 			}
+			bs.blockCommitCache.Remove(h)
 		}
 		if err := batch.Delete(bs.dbKeyLayout.CalcSeenCommitKey(h)); err != nil {
 			return 0, -1, err
 		}
+		bs.seenCommitCache.Remove(h)
 		for p := 0; p < int(meta.BlockID.PartSetHeader.Total); p++ {
 			if err := batch.Delete(bs.dbKeyLayout.CalcBlockPartKey(h, p)); err != nil {
 				return 0, -1, err
 			}
+			bs.blockPartCache.Remove(blockPartIndex{h, p})
 		}
 		pruned++
 
@@ -639,6 +698,7 @@ func (bs *BlockStore) saveBlockToBatch(
 	for i := 0; i < int(blockParts.Total()); i++ {
 		part := blockParts.GetPart(i)
 		bs.saveBlockPart(height, i, part, batch, saveBlockPartsToBatch)
+		bs.blockPartCache.Add(blockPartIndex{height, i}, part)
 	}
 
 	marshallTime := time.Now()

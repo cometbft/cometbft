@@ -6,9 +6,9 @@ import (
 	"time"
 
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
-	"github.com/cometbft/cometbft/internal/protoio"
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (
@@ -37,7 +37,7 @@ func (se *signerEndpoint) IsConnected() bool {
 	return se.isConnected()
 }
 
-// TryGetConnection retrieves a connection if it is already available.
+// GetAvailableConnection retrieves a connection if it is already available.
 func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.Conn) bool {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
@@ -51,7 +51,7 @@ func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.
 	return false
 }
 
-// TryGetConnection retrieves a connection if it is already available.
+// WaitConnection waits for the connection to be available.
 func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, maxWait time.Duration) error {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()
@@ -72,7 +72,7 @@ func (se *signerEndpoint) SetConnection(newConnection net.Conn) {
 	se.conn = newConnection
 }
 
-// IsConnected indicates if there is an active connection.
+// DropConnection closes the current connection if it exists.
 func (se *signerEndpoint) DropConnection() {
 	se.connMtx.Lock()
 	defer se.connMtx.Unlock()

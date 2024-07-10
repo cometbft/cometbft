@@ -19,14 +19,13 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcons "github.com/cometbft/cometbft/api/cometbft/consensus/v1"
 	cfg "github.com/cometbft/cometbft/config"
-	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/bits"
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmock "github.com/cometbft/cometbft/p2p/mock"
@@ -233,7 +232,7 @@ func TestReactorCreatesBlockWhenEmptyBlocksFalse(t *testing.T) {
 	defer stopConsensusNet(log.TestingLogger(), reactors, eventBuses)
 
 	// send a tx
-	reqRes, err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1))
+	reqRes, err := assertMempool(css[3].txNotifier).CheckTx(kvstore.NewTxFromID(1), "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -476,9 +475,7 @@ func TestReactorVotingPowerChange(t *testing.T) {
 	val1PubKey, err := css[0].privValidator.GetPubKey()
 	require.NoError(t, err)
 
-	val1PubKeyABCI, err := cryptoenc.PubKeyToProto(val1PubKey)
-	require.NoError(t, err)
-	updateValidatorTx := kvstore.MakeValSetChangeTx(val1PubKeyABCI, 25)
+	updateValidatorTx := updateValTx(val1PubKey, 25)
 	previousTotalVotingPower := css[0].GetRoundState().LastValidators.TotalVotingPower()
 
 	waitForAndValidateBlock(t, nVals, activeVals, blocksSubs, css, updateValidatorTx)
@@ -493,7 +490,7 @@ func TestReactorVotingPowerChange(t *testing.T) {
 			css[0].GetRoundState().LastValidators.TotalVotingPower())
 	}
 
-	updateValidatorTx = kvstore.MakeValSetChangeTx(val1PubKeyABCI, 2)
+	updateValidatorTx = updateValTx(val1PubKey, 2)
 	previousTotalVotingPower = css[0].GetRoundState().LastValidators.TotalVotingPower()
 
 	waitForAndValidateBlock(t, nVals, activeVals, blocksSubs, css, updateValidatorTx)
@@ -508,7 +505,7 @@ func TestReactorVotingPowerChange(t *testing.T) {
 			css[0].GetRoundState().LastValidators.TotalVotingPower())
 	}
 
-	updateValidatorTx = kvstore.MakeValSetChangeTx(val1PubKeyABCI, 26)
+	updateValidatorTx = updateValTx(val1PubKey, 26)
 	previousTotalVotingPower = css[0].GetRoundState().LastValidators.TotalVotingPower()
 
 	waitForAndValidateBlock(t, nVals, activeVals, blocksSubs, css, updateValidatorTx)
@@ -557,9 +554,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	t.Run("Testing adding one validator", func(t *testing.T) {
 		newValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
 		require.NoError(t, err)
-		valPubKey1ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey1)
-		require.NoError(t, err)
-		newValidatorTx1 := kvstore.MakeValSetChangeTx(valPubKey1ABCI, testMinPower)
+		newValidatorTx1 := updateValTx(newValidatorPubKey1, testMinPower)
 
 		// wait till everyone makes block 2
 		// ensure the commit includes all validators
@@ -585,9 +580,7 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	t.Run("Testing changing the voting power of one validator", func(t *testing.T) {
 		updateValidatorPubKey1, err := css[nVals].privValidator.GetPubKey()
 		require.NoError(t, err)
-		updatePubKey1ABCI, err := cryptoenc.PubKeyToProto(updateValidatorPubKey1)
-		require.NoError(t, err)
-		updateValidatorTx1 := kvstore.MakeValSetChangeTx(updatePubKey1ABCI, 25)
+		updateValidatorTx1 := updateValTx(updateValidatorPubKey1, 25)
 		previousTotalVotingPower := css[nVals].GetRoundState().LastValidators.TotalVotingPower()
 
 		waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css, updateValidatorTx1)
@@ -605,15 +598,11 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 
 	newValidatorPubKey2, err := css[nVals+1].privValidator.GetPubKey()
 	require.NoError(t, err)
-	newVal2ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey2)
-	require.NoError(t, err)
-	newValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, testMinPower)
+	newValidatorTx2 := updateValTx(newValidatorPubKey2, testMinPower)
 
 	newValidatorPubKey3, err := css[nVals+2].privValidator.GetPubKey()
 	require.NoError(t, err)
-	newVal3ABCI, err := cryptoenc.PubKeyToProto(newValidatorPubKey3)
-	require.NoError(t, err)
-	newValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, testMinPower)
+	newValidatorTx3 := updateValTx(newValidatorPubKey3, testMinPower)
 
 	t.Run("Testing adding two validators at once", func(t *testing.T) {
 		waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css, newValidatorTx2, newValidatorTx3)
@@ -625,8 +614,8 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	})
 
 	t.Run("Testing removing two validators at once", func(t *testing.T) {
-		removeValidatorTx2 := kvstore.MakeValSetChangeTx(newVal2ABCI, 0)
-		removeValidatorTx3 := kvstore.MakeValSetChangeTx(newVal3ABCI, 0)
+		removeValidatorTx2 := updateValTx(newValidatorPubKey2, 0)
+		removeValidatorTx3 := updateValTx(newValidatorPubKey3, 0)
 
 		waitForAndValidateBlock(t, nPeers, activeVals, blocksSubs, css, removeValidatorTx2, removeValidatorTx3)
 		waitForAndValidateBlockWithTx(t, nPeers, activeVals, blocksSubs, css, removeValidatorTx2, removeValidatorTx3)
@@ -637,14 +626,14 @@ func TestReactorValidatorSetChanges(t *testing.T) {
 	})
 }
 
-// Check we can make blocks with skip_timeout_commit=false.
-func TestReactorWithTimeoutCommit(t *testing.T) {
+// Check we can make blocks with timeout_commit=0.
+func TestReactorWithDefaultTimeoutCommit(t *testing.T) {
 	n := 4
 	css, cleanup := randConsensusNet(t, n, "consensus_reactor_with_timeout_commit_test", newMockTickerFunc(false), newKVStore)
 	defer cleanup()
-	// override default SkipTimeoutCommit == true for tests
+	// override default NextBlockDelay == 0 for tests
 	for i := 0; i < n; i++ {
-		css[i].config.SkipTimeoutCommit = false
+		css[i].state.NextBlockDelay = 1 * time.Second
 	}
 
 	reactors, blocksSubs, eventBuses := startConsensusNet(t, css, n-1)
@@ -675,7 +664,7 @@ func waitForAndValidateBlock(
 
 		// optionally add transactions for the next block
 		for _, tx := range txs {
-			reqRes, err := assertMempool(css[j].txNotifier).CheckTx(tx)
+			reqRes, err := assertMempool(css[j].txNotifier).CheckTx(tx, "")
 			require.NoError(t, err)
 			require.False(t, reqRes.Response.GetCheckTx().IsErr())
 		}
@@ -813,7 +802,6 @@ func TestNewRoundStepMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := NewRoundStepMessage{
 				Height:          tc.messageHeight,
@@ -848,7 +836,6 @@ func TestNewRoundStepMessageValidateHeight(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := NewRoundStepMessage{
 				Height:          tc.messageHeight,
@@ -893,7 +880,6 @@ func TestNewValidBlockMessageValidateBasic(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			msg := &NewValidBlockMessage{
 				Height: 1,
@@ -929,7 +915,6 @@ func TestProposalPOLMessageValidateBasic(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			msg := &ProposalPOLMessage{
 				Height:           1,
@@ -962,7 +947,6 @@ func TestBlockPartMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := BlockPartMessage{
 				Height: tc.messageHeight,
@@ -1002,7 +986,6 @@ func TestHasVoteMessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := HasVoteMessage{
 				Height: tc.messageHeight,
@@ -1047,7 +1030,6 @@ func TestVoteSetMaj23MessageValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			message := VoteSetMaj23Message{
 				Height:  tc.messageHeight,
@@ -1085,7 +1067,6 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		tc := tc
 		t.Run(fmt.Sprintf("#%d", i), func(t *testing.T) {
 			msg := &VoteSetBitsMessage{
 				Height:  1,

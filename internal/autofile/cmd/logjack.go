@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -78,7 +79,7 @@ func main() {
 				fmt.Fprintf(os.Stderr, "logjack stopped with error %v\n", headPath)
 				os.Exit(1)
 			}
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				os.Exit(0)
 			}
 			fmt.Println("logjack errored")

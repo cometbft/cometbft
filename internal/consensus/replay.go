@@ -127,7 +127,7 @@ func (cs *State) catchupReplay(csHeight int64) error {
 		endHeight = 0
 	}
 	gr, found, err = cs.wal.SearchForEndHeight(endHeight, &WALSearchOptions{IgnoreDataCorruptionErrors: true})
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		cs.Logger.Error("Replay: wal.group.Search returned EOF", "#ENDHEIGHT", endHeight)
 	} else if err != nil {
 		return err
@@ -146,7 +146,7 @@ LOOP:
 	for {
 		msg, err = dec.Decode()
 		switch {
-		case err == io.EOF:
+		case errors.Is(err, io.EOF):
 			break LOOP
 		case IsDataCorruptionError(err):
 			cs.Logger.Error("data has been corrupted in last height of consensus WAL", "err", err, "height", csHeight)
@@ -304,6 +304,10 @@ func (h *Handshaker) ReplayBlocks(
 	if appBlockHeight == 0 {
 		validators := make([]*types.Validator, len(h.genDoc.Validators))
 		for i, val := range h.genDoc.Validators {
+			// Ensure that the public key type is supported.
+			if _, ok := types.ABCIPubKeyTypesToNames[val.PubKey.Type()]; !ok {
+				return nil, fmt.Errorf("unsupported public key type %s (validator name: %s)", val.PubKey.Type(), val.Name)
+			}
 			validators[i] = types.NewValidator(val.PubKey, val.Power)
 		}
 		validatorSet := types.NewValidatorSet(validators)
@@ -413,7 +417,10 @@ func (h *Handshaker) ReplayBlocks(
 			// but we'd have to allow the WAL to replay a block that wrote it's #ENDHEIGHT
 			h.logger.Info("Replay last block using real app")
 			state, err = h.replayBlock(state, storeBlockHeight, proxyApp.Consensus())
-			return state.AppHash, err
+			if err != nil {
+				return nil, err
+			}
+			return state.AppHash, nil
 
 		case appBlockHeight == storeBlockHeight:
 			// We ran Commit, but didn't save the state, so replayBlock with mock app.
@@ -431,7 +438,10 @@ func (h *Handshaker) ReplayBlocks(
 			mockApp := newMockProxyApp(finalizeBlockResponse)
 			h.logger.Info("Replay last block using mock app")
 			state, err = h.replayBlock(state, storeBlockHeight, mockApp)
-			return state.AppHash, err
+			if err != nil {
+				return nil, err
+			}
+			return state.AppHash, nil
 		}
 	}
 
@@ -481,7 +491,7 @@ func (h *Handshaker) replayBlocks(
 			assertAppHashEqualsOneFromBlock(appHash, block)
 		}
 
-		appHash, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, h.logger, h.stateStore, h.genDoc.InitialHeight)
+		appHash, err = sm.ExecCommitBlock(proxyApp.Consensus(), block, h.logger, h.stateStore, h.genDoc.InitialHeight, storeBlockHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -512,7 +522,7 @@ func (h *Handshaker) replayBlock(state sm.State, height int64, proxyApp proxy.Ap
 	blockExec.SetEventBus(h.eventBus)
 
 	var err error
-	state, err = blockExec.ApplyBlock(state, meta.BlockID, block)
+	state, err = blockExec.ApplyBlock(state, meta.BlockID, block, block.Height)
 	if err != nil {
 		return sm.State{}, err
 	}

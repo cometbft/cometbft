@@ -139,14 +139,14 @@ func (v *Validator) ToProto() (*cmtproto.Validator, error) {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyToProto(v.PubKey)
-	if err != nil {
-		return nil, err
+	if v.PubKey == nil {
+		return nil, errors.New("nil pubkey")
 	}
 
 	vp := cmtproto.Validator{
 		Address:          v.Address,
-		PubKey:           pk,
+		PubKeyType:       v.PubKey.Type(),
+		PubKeyBytes:      v.PubKey.Bytes(),
 		VotingPower:      v.VotingPower,
 		ProposerPriority: v.ProposerPriority,
 	}
@@ -161,9 +161,12 @@ func ValidatorFromProto(vp *cmtproto.Validator) (*Validator, error) {
 		return nil, errors.New("nil validator")
 	}
 
-	pk, err := ce.PubKeyFromProto(vp.PubKey)
+	pk, err := ce.PubKeyFromTypeAndBytes(vp.PubKeyType, vp.PubKeyBytes)
 	if err != nil {
-		return nil, err
+		pk, err = ce.PubKeyFromProto(*vp.PubKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 	v := new(Validator)
 	v.Address = vp.GetAddress()

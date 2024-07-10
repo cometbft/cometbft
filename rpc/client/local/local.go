@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	nm "github.com/cometbft/cometbft/node"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/core"
@@ -108,6 +108,10 @@ func (c *Local) BroadcastTxAsync(_ context.Context, tx types.Tx) (*ctypes.Result
 
 func (c *Local) BroadcastTxSync(_ context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return c.env.BroadcastTxSync(c.ctx, tx)
+}
+
+func (c *Local) UnconfirmedTx(_ context.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+	return c.env.UnconfirmedTx(c.ctx, hash)
 }
 
 func (c *Local) UnconfirmedTxs(_ context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {

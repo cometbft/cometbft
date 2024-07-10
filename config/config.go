@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -72,6 +73,20 @@ var (
 
 	// taken from https://semver.org/
 	semverRegexp = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
+
+	// Don't forget to change proxy.DefaultClientCreator if you add new options here.
+	proxyAppList = []string{
+		"kvstore",
+		"kvstore_connsync",
+		"kvstore_unsync",
+		"persistent_kvstore",
+		"persistent_kvstore_connsync",
+		"persistent_kvstore_unsync",
+		"e2e",
+		"e2e_connsync",
+		"e2e_unsync",
+		"noop",
+	}
 )
 
 // Config defines the top level configuration for a CometBFT node.
@@ -176,8 +191,11 @@ func (cfg *Config) ValidateBasic() error {
 }
 
 // CheckDeprecated returns any deprecation warnings. These are printed to the operator on startup.
-func (*Config) CheckDeprecated() []string {
+func (cfg *Config) CheckDeprecated() []string {
 	var warnings []string
+	if cfg.Consensus.TimeoutCommit != 0 {
+		warnings = append(warnings, "[consensus.timeout_commit] is deprecated. Use `next_block_delay` in the ABCI `FinalizeBlockResponse`.")
+	}
 	return warnings
 }
 
@@ -292,7 +310,7 @@ func (cfg BaseConfig) PrivValidatorKeyFile() string {
 	return rootify(cfg.PrivValidatorKey, cfg.RootDir)
 }
 
-// PrivValidatorFile returns the full path to the priv_validator_state.json file.
+// PrivValidatorStateFile returns the full path to the priv_validator_state.json file.
 func (cfg BaseConfig) PrivValidatorStateFile() string {
 	return rootify(cfg.PrivValidatorState, cfg.RootDir)
 }
@@ -321,6 +339,58 @@ func (cfg BaseConfig) ValidateBasic() error {
 	default:
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
 	}
+
+	return cfg.validateProxyApp()
+}
+
+func (cfg BaseConfig) validateProxyApp() error {
+	if cfg.ProxyApp == "" {
+		return errors.New("proxy_app cannot be empty")
+	}
+
+	// proxy is a static application.
+	for _, proxyApp := range proxyAppList {
+		if cfg.ProxyApp == proxyApp {
+			return nil
+		}
+	}
+
+	// proxy is a network address.
+	parts := strings.SplitN(cfg.ProxyApp, "://", 2)
+	if len(parts) != 2 { // TCP address
+		_, err := net.ResolveTCPAddr("tcp", cfg.ProxyApp)
+		if err != nil {
+			return fmt.Errorf("failed to resolve TCP proxy_app %s: %w", cfg.ProxyApp, err)
+		}
+	} else { // other protocol
+		proto := parts[0]
+		address := parts[1]
+		switch proto {
+		case "tcp", "tcp4", "tcp6":
+			_, err := net.ResolveTCPAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve TCP proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		case "udp", "udp4", "udp6":
+			_, err := net.ResolveUDPAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve UDP proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		case "ip", "ip4", "ip6":
+			_, err := net.ResolveIPAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve IP proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		case "unix", "unixgram", "unixpacket":
+			_, err := net.ResolveUnixAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve UNIX proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		default:
+			return fmt.Errorf("invalid protocol in proxy_app: %s (expected one supported by net.Dial)", cfg.ProxyApp)
+		}
+	}
+
 	return nil
 }
 
@@ -396,6 +466,10 @@ type RPCConfig struct {
 	// See https://github.com/tendermint/tendermint/issues/3435
 	TimeoutBroadcastTxCommit time.Duration `mapstructure:"timeout_broadcast_tx_commit"`
 
+	// Maximum number of requests that can be sent in a batch
+	// https://www.jsonrpc.org/specification#batch
+	MaxRequestBatchSize int `mapstructure:"max_request_batch_size"`
+
 	// Maximum size of request body, in bytes
 	MaxBodyBytes int64 `mapstructure:"max_body_bytes"`
 
@@ -442,8 +516,9 @@ func DefaultRPCConfig() *RPCConfig {
 		TimeoutBroadcastTxCommit:  10 * time.Second,
 		WebSocketWriteBufferSize:  defaultSubscriptionBufferSize,
 
-		MaxBodyBytes:   int64(1000000), // 1MB
-		MaxHeaderBytes: 1 << 20,        // same as the net/http default
+		MaxRequestBatchSize: 10,             // maximum requests in a JSON-RPC batch request
+		MaxBodyBytes:        int64(1000000), // 1MB
+		MaxHeaderBytes:      1 << 20,        // same as the net/http default
 
 		TLSCertFile: "",
 		TLSKeyFile:  "",
@@ -481,6 +556,9 @@ func (cfg *RPCConfig) ValidateBasic() error {
 	}
 	if cfg.TimeoutBroadcastTxCommit < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_broadcast_tx_commit"}
+	}
+	if cfg.MaxRequestBatchSize < 0 {
+		return cmterrors.ErrNegativeField{Field: "max_request_batch_size"}
 	}
 	if cfg.MaxBodyBytes < 0 {
 		return cmterrors.ErrNegativeField{Field: "max_body_bytes"}
@@ -754,7 +832,7 @@ func DefaultP2PConfig() *P2PConfig {
 		MaxNumInboundPeers:           40,
 		MaxNumOutboundPeers:          10,
 		PersistentPeersMaxDialPeriod: 0 * time.Second,
-		FlushThrottleTimeout:         100 * time.Millisecond,
+		FlushThrottleTimeout:         10 * time.Millisecond,
 		MaxPacketMsgPayloadSize:      1024,    // 1 kB
 		SendRate:                     5120000, // 5 mB/s
 		RecvRate:                     5120000, // 5 mB/s
@@ -773,7 +851,6 @@ func DefaultP2PConfig() *P2PConfig {
 func TestP2PConfig() *P2PConfig {
 	cfg := DefaultP2PConfig()
 	cfg.ListenAddress = "tcp://127.0.0.1:36656"
-	cfg.FlushThrottleTimeout = 10 * time.Millisecond
 	cfg.AllowDuplicateIP = true
 	return cfg
 }
@@ -859,17 +936,17 @@ type MempoolConfig struct {
 	// mempool may become invalid. If this does not apply to your application,
 	// you can disable rechecking.
 	Recheck bool `mapstructure:"recheck"`
+	// RecheckTimeout is the time the application has during the rechecking process
+	// to return CheckTx responses, once all requests have been sent. Responses that
+	// arrive after the timeout expires are discarded. It only applies to
+	// non-local ABCI clients and when recheck is enabled.
+	RecheckTimeout time.Duration `mapstructure:"recheck_timeout"`
 	// Broadcast (default: true) defines whether the mempool should relay
 	// transactions to other peers. Setting this to false will stop the mempool
 	// from relaying transactions to other peers until they are included in a
 	// block. In other words, if Broadcast is disabled, only the peer you send
 	// the tx to will see it until it is included in a block.
 	Broadcast bool `mapstructure:"broadcast"`
-	// WalPath (default: "") configures the location of the Write Ahead Log
-	// (WAL) for the mempool. The WAL is disabled by default. To enable, set
-	// WalPath to where you want the WAL to be written (e.g.
-	// "data/mempool.wal").
-	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
 	// Maximum size in bytes of a single transaction accepted into the mempool.
@@ -904,10 +981,10 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
-		Type:      MempoolTypeFlood,
-		Recheck:   true,
-		Broadcast: true,
-		WalPath:   "",
+		Type:           MempoolTypeFlood,
+		Recheck:        true,
+		RecheckTimeout: 1000 * time.Millisecond,
+		Broadcast:      true,
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,
@@ -924,16 +1001,6 @@ func TestMempoolConfig() *MempoolConfig {
 	cfg := DefaultMempoolConfig()
 	cfg.CacheSize = 1000
 	return cfg
-}
-
-// WalDir returns the full path to the mempool's write-ahead log.
-func (cfg *MempoolConfig) WalDir() string {
-	return rootify(cfg.WalPath, cfg.RootDir)
-}
-
-// WalEnabled returns true if the WAL is enabled.
-func (cfg *MempoolConfig) WalEnabled() bool {
-	return cfg.WalPath != ""
 }
 
 // ValidateBasic performs basic validation (checking param bounds, etc.) and
@@ -1102,22 +1169,12 @@ type ConsensusConfig struct {
 	TimeoutPropose time.Duration `mapstructure:"timeout_propose"`
 	// How much timeout_propose increases with each round
 	TimeoutProposeDelta time.Duration `mapstructure:"timeout_propose_delta"`
-	// How long we wait after receiving +2/3 prevotes for “anything” (ie. not a single block or nil)
-	TimeoutPrevote time.Duration `mapstructure:"timeout_prevote"`
-	// How much the timeout_prevote increases with each round
-	TimeoutPrevoteDelta time.Duration `mapstructure:"timeout_prevote_delta"`
-	// How long we wait after receiving +2/3 precommits for “anything” (ie. not a single block or nil)
-	TimeoutPrecommit time.Duration `mapstructure:"timeout_precommit"`
-	// How much the timeout_precommit increases with each round
-	TimeoutPrecommitDelta time.Duration `mapstructure:"timeout_precommit_delta"`
-	// How long we wait after committing a block, before starting on the new
-	// height (this gives us a chance to receive some more precommits, even
-	// though we already have +2/3).
-	// NOTE: when modifying, make sure to update time_iota_ms genesis parameter
+	// How long we wait after receiving +2/3 prevotes/precommits for “anything” (ie. not a single block or nil)
+	TimeoutVote time.Duration `mapstructure:"timeout_vote"`
+	// How much the timeout_vote increases with each round
+	TimeoutVoteDelta time.Duration `mapstructure:"timeout_vote_delta"`
+	// Deprecated: use `next_block_delay` in the ABCI application's `FinalizeBlockResponse`.
 	TimeoutCommit time.Duration `mapstructure:"timeout_commit"`
-
-	// Make progress as soon as we have all the precommits (as if TimeoutCommit = 0)
-	SkipTimeoutCommit bool `mapstructure:"skip_timeout_commit"`
 
 	// EmptyBlocks mode and possible interval between empty blocks
 	CreateEmptyBlocks         bool          `mapstructure:"create_empty_blocks"`
@@ -1137,12 +1194,9 @@ func DefaultConsensusConfig() *ConsensusConfig {
 		WalPath:                          filepath.Join(DefaultDataDir, "cs.wal", "wal"),
 		TimeoutPropose:                   3000 * time.Millisecond,
 		TimeoutProposeDelta:              500 * time.Millisecond,
-		TimeoutPrevote:                   1000 * time.Millisecond,
-		TimeoutPrevoteDelta:              500 * time.Millisecond,
-		TimeoutPrecommit:                 1000 * time.Millisecond,
-		TimeoutPrecommitDelta:            500 * time.Millisecond,
+		TimeoutVote:                      1000 * time.Millisecond,
+		TimeoutVoteDelta:                 500 * time.Millisecond,
 		TimeoutCommit:                    1000 * time.Millisecond,
-		SkipTimeoutCommit:                false,
 		CreateEmptyBlocks:                true,
 		CreateEmptyBlocksInterval:        0 * time.Second,
 		PeerGossipSleepDuration:          100 * time.Millisecond,
@@ -1157,13 +1211,9 @@ func TestConsensusConfig() *ConsensusConfig {
 	cfg := DefaultConsensusConfig()
 	cfg.TimeoutPropose = 40 * time.Millisecond
 	cfg.TimeoutProposeDelta = 1 * time.Millisecond
-	cfg.TimeoutPrevote = 10 * time.Millisecond
-	cfg.TimeoutPrevoteDelta = 1 * time.Millisecond
-	cfg.TimeoutPrecommit = 10 * time.Millisecond
-	cfg.TimeoutPrecommitDelta = 1 * time.Millisecond
-	// NOTE: when modifying, make sure to update time_iota_ms (testGenesisFmt) in toml.go
-	cfg.TimeoutCommit = 10 * time.Millisecond
-	cfg.SkipTimeoutCommit = true
+	cfg.TimeoutVote = 10 * time.Millisecond
+	cfg.TimeoutVoteDelta = 1 * time.Millisecond
+	cfg.TimeoutCommit = 0
 	cfg.PeerGossipSleepDuration = 5 * time.Millisecond
 	cfg.PeerQueryMaj23SleepDuration = 250 * time.Millisecond
 	cfg.DoubleSignCheckHeight = int64(0)
@@ -1175,29 +1225,29 @@ func (cfg *ConsensusConfig) WaitForTxs() bool {
 	return !cfg.CreateEmptyBlocks || cfg.CreateEmptyBlocksInterval > 0
 }
 
+func timeoutTime(baseTimeout, timeoutDelta time.Duration, round int32) time.Duration {
+	timeout := baseTimeout.Nanoseconds() + timeoutDelta.Nanoseconds()*int64(round)
+	return time.Duration(timeout) * time.Nanosecond
+}
+
 // Propose returns the amount of time to wait for a proposal.
 func (cfg *ConsensusConfig) Propose(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutPropose.Nanoseconds()+cfg.TimeoutProposeDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutPropose, cfg.TimeoutProposeDelta, round)
 }
 
 // Prevote returns the amount of time to wait for straggler votes after receiving any +2/3 prevotes.
 func (cfg *ConsensusConfig) Prevote(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutPrevote.Nanoseconds()+cfg.TimeoutPrevoteDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutVote, cfg.TimeoutVoteDelta, round)
 }
 
 // Precommit returns the amount of time to wait for straggler votes after receiving any +2/3 precommits.
 func (cfg *ConsensusConfig) Precommit(round int32) time.Duration {
-	return time.Duration(
-		cfg.TimeoutPrecommit.Nanoseconds()+cfg.TimeoutPrecommitDelta.Nanoseconds()*int64(round),
-	) * time.Nanosecond
+	return timeoutTime(cfg.TimeoutVote, cfg.TimeoutVoteDelta, round)
 }
 
 // Commit returns the amount of time to wait for straggler votes after receiving +2/3 precommits
 // for a single block (ie. a commit).
+// Deprecated: use `next_block_delay` in the ABCI application's `FinalizeBlockResponse`.
 func (cfg *ConsensusConfig) Commit(t time.Time) time.Time {
 	return t.Add(cfg.TimeoutCommit)
 }
@@ -1224,17 +1274,11 @@ func (cfg *ConsensusConfig) ValidateBasic() error {
 	if cfg.TimeoutProposeDelta < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_propose_delta"}
 	}
-	if cfg.TimeoutPrevote < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_prevote"}
+	if cfg.TimeoutVote < 0 {
+		return cmterrors.ErrNegativeField{Field: "timeout_vote"}
 	}
-	if cfg.TimeoutPrevoteDelta < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_prevote_delta"}
-	}
-	if cfg.TimeoutPrecommit < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_precommit"}
-	}
-	if cfg.TimeoutPrecommitDelta < 0 {
-		return cmterrors.ErrNegativeField{Field: "timeout_precommit_delta"}
+	if cfg.TimeoutVoteDelta < 0 {
+		return cmterrors.ErrNegativeField{Field: "timeout_vote_delta"}
 	}
 	if cfg.TimeoutCommit < 0 {
 		return cmterrors.ErrNegativeField{Field: "timeout_commit"}

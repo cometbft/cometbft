@@ -77,7 +77,7 @@ message VersionParams {
   option (gogoproto.equal)    = true;
 
   // The ABCI application version.
-  // 
+  //
   // It was named app_version in CometBFT 0.34.
   uint64 app = 1;
 }
@@ -91,7 +91,7 @@ message HashedParams {
 }
 
 // SynchronyParams determine the validity of block timestamps.
-// 
+//
 // These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
 // For more information on the relationship of the synchrony parameters to
 // block timestamps validity, refer to the PBTS specification:
@@ -110,7 +110,7 @@ message SynchronyParams {
 // FeatureParams configure the height from which features of CometBFT are enabled.
 message FeatureParams {
   // First height during which vote extensions will be enabled.
-  // 
+  //
   // During the specified height, and for all subsequent heights, precommit
   // messages that do not contain valid extension data will be considered
   // invalid. Prior to this height, or when this height is set to 0, vote
@@ -129,7 +129,7 @@ message FeatureParams {
   // algorithm will be used to produce and validate block timestamps. Prior to
   // this height, or when this height is set to 0, the legacy BFT Time
   // algorithm is used to produce and validate timestamps.
-  // 
+  //
   // Cannot be set to heights lower or equal to the current blockchain height.
   google.protobuf.Int64Value pbts_enable_height = 2 [(gogoproto.nullable) = true];
 }

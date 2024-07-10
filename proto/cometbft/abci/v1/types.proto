@@ -1,12 +1,12 @@
 syntax = "proto3";
 package cometbft.abci.v1;
 
-import "cometbft/crypto/v1/keys.proto";
 import "cometbft/crypto/v1/proof.proto";
 import "cometbft/types/v1/params.proto";
 import "cometbft/types/v1/validator.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/abci/v1";
 
@@ -206,6 +206,8 @@ message FinalizeBlockRequest {
   bytes next_validators_hash = 7;
   // address of the public key of the original proposer of the block.
   bytes proposer_address = 8;
+  // If the node is syncing/replaying blocks - target height. If not, syncing_to == height.
+  int64 syncing_to_height = 9;
 }
 
 // ----------------------------------------
@@ -437,6 +439,12 @@ message FinalizeBlockResponse {
   // that execution of the transactions was deterministic.
   // It is up to the application to decide which algorithm to use.
   bytes app_hash = 5;
+  // delay between the time when this block is committed and the next height is started.
+  // previously `timeout_commit` in config.toml
+  google.protobuf.Duration next_block_delay = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdduration) = true
+  ];
 }
 
 // ----------------------------------------
@@ -516,8 +524,11 @@ message Validator {
 
 // ValidatorUpdate is a singular update to a validator set.
 message ValidatorUpdate {
-  cometbft.crypto.v1.PublicKey pub_key = 1 [(gogoproto.nullable) = false];
-  int64                        power   = 2;
+  int64  power   = 2;
+  bytes pub_key_bytes = 3;
+  string pub_key_type = 4;
+
+  reserved 1;  // pub_key
 }
 
 // VoteInfo contains the information about the vote.

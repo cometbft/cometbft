@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/cometbft/cometbft/internal/pubsub/query/syntax"
+	"github.com/cometbft/cometbft/libs/pubsub/query/syntax"
 	"github.com/cometbft/cometbft/types"
 )
 

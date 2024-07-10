@@ -4,7 +4,7 @@ import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	"github.com/cometbft/cometbft/abci/types"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	e2e "github.com/cometbft/cometbft/test/e2e/app"
 )
 
@@ -263,6 +263,7 @@ func (r *remoteClientCreator) newABCIClient() (abcicli.Client, error) {
 // "_connsync" variant (i.e. "kvstore_connsync", etc.), which attempts to
 // replicate the same concurrency model as the remote client.
 func DefaultClientCreator(addr, transport, dbDir string) ClientCreator {
+	// Don't forget to change BaseConfig#ValidateBasic if you add new options here.
 	switch addr {
 	case "kvstore":
 		return NewLocalClientCreator(kvstore.NewInMemoryApplication())

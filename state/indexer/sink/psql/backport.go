@@ -18,8 +18,8 @@ import (
 	"errors"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
 )
@@ -64,8 +64,8 @@ func (BackportTxIndexer) Get([]byte) (*abci.TxResult, error) {
 
 // Search is implemented to satisfy the TxIndexer interface, but it is not
 // supported by the psql event sink and reports an error for all inputs.
-func (BackportTxIndexer) Search(context.Context, *query.Query) ([]*abci.TxResult, error) {
-	return nil, errors.New("the TxIndexer.Search method is not supported")
+func (BackportTxIndexer) Search(context.Context, *query.Query, txindex.Pagination) ([]*abci.TxResult, int, error) {
+	return nil, 0, errors.New("the TxIndexer.Search method is not supported")
 }
 
 func (BackportTxIndexer) SetLogger(log.Logger) {}

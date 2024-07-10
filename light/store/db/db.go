@@ -5,7 +5,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light/store"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
@@ -120,7 +120,7 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 	return nil
 }
 
-// DeleteLightBlockAndValidatorSet deletes the LightBlock from
+// DeleteLightBlock deletes the LightBlock from
 // the db.
 //
 // Safe for concurrent use by multiple goroutines.

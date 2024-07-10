@@ -22,12 +22,14 @@ CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
 replicates it on many machines.
 
-It is a fork of [Tendermint Core][tm-core] and implements the Tendermint
-consensus algorithm.
+CometBFT is the canonical implementation of the Tendermint consensus algorithm and is a
+primary building block for the [Interchain Stack](https://interchain.io/). Historically,
+CometBFT originated as a fork of [Tendermint Core][tm-core] in early 2023
+(announcement [here][comet-announcement]) and since then it diverged significantly by adopting modern features such as [PBTS][pbts] or [ABCI v2][abci-v2].
 
 For protocol details, refer to the [CometBFT Specification](./spec/README.md).
 
-For detailed analysis of the consensus protocol, including safety and liveness
+For detailed analysis of the Tendermint consensus protocol, including safety and liveness
 proofs, read our paper, "[The latest gossip on BFT
 consensus](https://arxiv.org/abs/1807.04938)".
 
@@ -48,7 +50,7 @@ in order of preference:
 - [Create a new discussion on
   GitHub](https://github.com/cometbft/cometbft/discussions)
 - Reach out to us via [Telegram](https://t.me/CometBFT)
-- [Join the Cosmos Network Discord](https://discord.gg/cosmosnetwork) and
+- [Join the Cosmos Network Discord](https://discord.gg/interchain) and
   discuss in
   [`#cometbft`](https://discord.com/channels/669268347736686612/1069933855307472906)
 
@@ -180,7 +182,7 @@ maintains [cometbft.com](https://cometbft.com).
 [go-badge]: https://img.shields.io/badge/go-1.21-blue.svg
 [go-url]: https://github.com/moovweb/gvm
 [discord-badge]: https://img.shields.io/discord/669268347736686612.svg
-[discord-url]: https://discord.gg/cosmosnetwork
+[discord-url]: https://discord.gg/interchain
 [license-badge]: https://img.shields.io/github/license/cometbft/cometbft.svg
 [license-url]: https://github.com/cometbft/cometbft/blob/main/LICENSE
 [sg-badge]: https://sourcegraph.com/github.com/cometbft/cometbft/-/badge.svg
@@ -206,3 +208,6 @@ maintains [cometbft.com](https://cometbft.com).
 [lint-url-v038x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.38.x
 [lint-url-v1x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av1.x
 [tm-core]: https://github.com/tendermint/tendermint
+[pbts]: https://docs.cometbft.com/v1.0/explanation/core/proposer-based-timestamps
+[abci-v2]: https://docs.cometbft.com/v1.0/spec/abci/
+[comet-announcement]: https://informal.systems/blog/cosmos-meet-cometbft

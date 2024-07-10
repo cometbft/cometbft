@@ -216,6 +216,11 @@ type ResultBlockSearch struct {
 	TotalCount int            `json:"total_count"`
 }
 
+// Single mempool tx.
+type ResultUnconfirmedTx struct {
+	Tx types.Tx `json:"tx"`
+}
+
 // List of mempool txs.
 type ResultUnconfirmedTxs struct {
 	Count      int        `json:"n_txs"`

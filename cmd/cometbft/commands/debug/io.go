@@ -100,7 +100,7 @@ func copyFile(src, dest string) error {
 	return os.Chmod(dest, srcInfo.Mode())
 }
 
-// writeStateToFile pretty JSON encodes an object and writes it to file composed
+// writeStateJSONToFile pretty JSON encodes an object and writes it to file composed
 // of dir and filename. It returns an error upon failure to encode or write to
 // file.
 func writeStateJSONToFile(state any, dir, filename string) error {

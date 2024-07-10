@@ -20,3 +20,18 @@ func IsVoteTypeValid(t SignedMsgType) bool {
 		return false
 	}
 }
+
+var signedMsgTypeToShortName = map[SignedMsgType]string{
+	UnknownType:   "unknown",
+	PrevoteType:   "prevote",
+	PrecommitType: "precommit",
+	ProposalType:  "proposal",
+}
+
+// Returns a short lowercase descriptor for a signed message type.
+func SignedMsgTypeToShortString(t SignedMsgType) string {
+	if shortName, ok := signedMsgTypeToShortName[t]; ok {
+		return shortName
+	}
+	return "unknown"
+}

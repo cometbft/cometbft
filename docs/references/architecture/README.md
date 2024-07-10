@@ -42,7 +42,8 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
-- [ADR-113: Mempool Lanes](adr-113-mempool-lanes.md)
+- [ADR-113: Modular transaction hashing](adr-113-modular-transaction-hashing.md)
+- [ADR-118: Mempool Lanes](adr-118-mempool-lanes.md)
 
 ### Accepted
 
@@ -56,6 +57,8 @@ numbering our ADRs from 100 onwards.
 - [ADR-109: Reduce CometBFT Go API Surface Area](adr-109-reduce-go-api-surface.md)
 - [ADR-111: `nop` Mempool](adr-111-nop-mempool.md)
 - [ADR-112: Proposer-Based Timestamps](adr-112-proposer-based-timestamps.md)
+- [ADR-114: Partly Undo ADR 109](adr-114-undo-109.md)
+- [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
 
 ### Accepted but Not (Yet) Implemented
 

@@ -9,10 +9,10 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/internal/bits"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 var (
@@ -180,7 +180,6 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 	total := (uint32(len(data)) + partSize - 1) / partSize
 	parts := make([]*Part, total)
 	partsBytes := make([][]byte, total)
-	partsBitArray := bits.NewBitArray(int(total))
 	for i := uint32(0); i < total; i++ {
 		part := &Part{
 			Index: i,
@@ -188,13 +187,13 @@ func NewPartSetFromData(data []byte, partSize uint32) *PartSet {
 		}
 		parts[i] = part
 		partsBytes[i] = part.Bytes
-		partsBitArray.SetIndex(int(i), true)
 	}
 	// Compute merkle proofs
 	root, proofs := merkle.ProofsFromByteSlices(partsBytes)
 	for i := uint32(0); i < total; i++ {
 		parts[i].Proof = *proofs[i]
 	}
+	partsBitArray := bits.NewBitArrayFromFn(int(total), func(int) bool { return true })
 	return &PartSet{
 		total:         total,
 		hash:          root,

@@ -23,8 +23,7 @@ func TestReactorInvalidPrecommit(t *testing.T) {
 	css, cleanup := randConsensusNet(t, n, "consensus_reactor_test", newMockTickerFunc(true), newKVStore,
 		func(c *cfg.Config) {
 			c.Consensus.TimeoutPropose = 3000 * time.Millisecond
-			c.Consensus.TimeoutPrevote = 1000 * time.Millisecond
-			c.Consensus.TimeoutPrecommit = 1000 * time.Millisecond
+			c.Consensus.TimeoutVote = 1000 * time.Millisecond
 		})
 	defer cleanup()
 

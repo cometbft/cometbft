@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/pubsub/query"
 	"github.com/cometbft/cometbft/state/txindex"
 )
 
@@ -42,8 +42,8 @@ func (*TxIndex) Index(_ *abci.TxResult) error {
 	return nil
 }
 
-func (*TxIndex) Search(_ context.Context, _ *query.Query) ([]*abci.TxResult, error) {
-	return []*abci.TxResult{}, nil
+func (*TxIndex) Search(_ context.Context, _ *query.Query, _ txindex.Pagination) ([]*abci.TxResult, int, error) {
+	return []*abci.TxResult{}, 0, nil
 }
 
 func (*TxIndex) SetLogger(log.Logger) {

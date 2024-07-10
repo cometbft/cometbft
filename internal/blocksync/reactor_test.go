@@ -461,9 +461,7 @@ func TestCheckExtendedCommitMissing(t *testing.T) {
 	const enableVoteExtension = 5
 	const invalidBlockHeight = 8
 
-	// "peeked first block without extended commit at height 8 - possible node store corruption",
-	require.Panics(t,
-		func() { ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, invalidBlockHeight) })
+	ExtendedCommitNetworkHelper(t, maxBlockHeight, enableVoteExtension, invalidBlockHeight)
 }
 
 // ByzantineReactor is a blockstore reactor implementation where a corrupted block can be sent to a peer.

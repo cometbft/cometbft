@@ -23,7 +23,7 @@ type MsgHistory struct {
 }
 
 func AppendToChat(db *DB, message Message) (string, error) {
-	historyBytes, err := ViewDB(db.GetDB(), []byte("history"))
+	historyBytes, err := db.Get([]byte("history"))
 	if err != nil {
 		return "", fmt.Errorf("error fetching history: %w", err)
 	}

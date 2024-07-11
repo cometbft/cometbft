@@ -1,4 +1,4 @@
-package secp256k1_eth
+package secp256k1eth
 
 import (
 	"bytes"

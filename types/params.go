@@ -12,7 +12,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 )
 
@@ -29,13 +29,13 @@ const (
 	ABCIPubKeyTypeEd25519      = ed25519.KeyType
 	ABCIPubKeyTypeSecp256k1    = secp256k1.KeyType
 	ABCIPubKeyTypeBls12381     = bls12381.KeyType
-	ABCIPubKeyTypeSecp256k1Eth = secp256k1_eth.KeyType
+	ABCIPubKeyTypeSecp256k1Eth = secp256k1eth.KeyType
 )
 
 var ABCIPubKeyTypesToNames = map[string]string{
 	ABCIPubKeyTypeEd25519:      ed25519.PubKeyName,
 	ABCIPubKeyTypeSecp256k1:    secp256k1.PubKeyName,
-	ABCIPubKeyTypeSecp256k1Eth: secp256k1_eth.PubKeyName,
+	ABCIPubKeyTypeSecp256k1Eth: secp256k1eth.PubKeyName,
 }
 
 func init() {

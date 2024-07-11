@@ -8,7 +8,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/libs/json"
 )
 
@@ -69,7 +69,7 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 				Bls12381: k,
 			},
 		}
-	case secp256k1_eth.PubKey:
+	case secp256k1eth.PubKey:
 		kp = pc.PublicKey{
 			Sum: &pc.PublicKey_Secp256K1Eth{
 				Secp256K1Eth: k,
@@ -122,14 +122,14 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		copy(pk, k.Bls12381)
 		return pk, nil
 	case *pc.PublicKey_Secp256K1Eth:
-		if len(k.Secp256K1Eth) != secp256k1_eth.PubKeySize {
+		if len(k.Secp256K1Eth) != secp256k1eth.PubKeySize {
 			return nil, ErrInvalidKeyLen{
 				Key:  k,
 				Got:  len(k.Secp256K1Eth),
-				Want: secp256k1_eth.PubKeySize,
+				Want: secp256k1eth.PubKeySize,
 			}
 		}
-		pk := make(secp256k1_eth.PubKey, secp256k1_eth.PubKeySize)
+		pk := make(secp256k1eth.PubKey, secp256k1eth.PubKeySize)
 		copy(pk, k.Secp256K1Eth)
 		return pk, nil
 	default:
@@ -183,16 +183,16 @@ func PubKeyFromTypeAndBytes(pkType string, bytes []byte) (crypto.PubKey, error) 
 		pk := make(bls12381.PubKey, bls12381.PubKeySize)
 		copy(pk, bytes)
 		pubKey = pk
-	case secp256k1_eth.KeyType:
-		if len(bytes) != secp256k1_eth.PubKeySize {
+	case secp256k1eth.KeyType:
+		if len(bytes) != secp256k1eth.PubKeySize {
 			return nil, ErrInvalidKeyLen{
 				Key:  pkType,
 				Got:  len(bytes),
-				Want: secp256k1_eth.PubKeySize,
+				Want: secp256k1eth.PubKeySize,
 			}
 		}
 
-		pk := make(secp256k1_eth.PubKey, secp256k1_eth.PubKeySize)
+		pk := make(secp256k1eth.PubKey, secp256k1eth.PubKeySize)
 		copy(pk, bytes)
 		pubKey = pk
 	default:

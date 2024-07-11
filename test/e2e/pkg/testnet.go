@@ -22,7 +22,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/crypto/sr25519"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
@@ -255,7 +255,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Version:                 v,
 			Testnet:                 testnet,
 			PrivvalKey:              keyGen.Generate(manifest.KeyType),
-			NodeKey:                 keyGen.Generate("secp256k1_eth"),
+			NodeKey:                 keyGen.Generate("secp256k1eth"),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
 			RPCProxyPort:            ind.RPCPort,
@@ -734,7 +734,7 @@ func (n Node) ZoneIsSet() bool {
 	return len(n.Zone) > 0
 }
 
-// keyGenerator generates pseudorandom Secp256k1_eth keys based on a seed.
+// keyGenerator generates pseudorandom secp256k1eth keys based on a seed.
 type keyGenerator struct {
 	random *rand.Rand
 }
@@ -753,8 +753,8 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		panic(err) // this shouldn't happen
 	}
 	switch keyType {
-	case "", secp256k1_eth.KeyType: // TODO Deal with this
-		return secp256k1_eth.GenPrivKeySecp256k1(seed)
+	case "", secp256k1eth.KeyType: // TODO Deal with this
+		return secp256k1eth.GenPrivKeySecp256k1(seed)
 	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
 	case sr25519.KeyType:

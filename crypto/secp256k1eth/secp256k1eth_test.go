@@ -1,4 +1,4 @@
-package secp256k1_eth_test
+package secp256k1eth_test
 
 import (
 	"encoding/hex"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 )
 
 type keyData struct {
@@ -35,20 +35,20 @@ func TestPubKeySecp256k1EthAddress(t *testing.T) {
 		addrBbz, _, _ := base58.CheckDecode(d.addr)
 		addrB := crypto.Address(addrBbz)
 
-		priv := secp256k1_eth.PrivKey(privB)
+		priv := secp256k1eth.PrivKey(privB)
 
 		pubKey := priv.PubKey()
-		pubT, _ := pubKey.(secp256k1_eth.PubKey)
+		pubT, _ := pubKey.(secp256k1eth.PubKey)
 		pub := pubT
 		addr := pubKey.Address()
 
-		assert.Equal(t, pub, secp256k1_eth.PubKey(pubB), "Expected pub keys to match")
+		assert.Equal(t, pub, secp256k1eth.PubKey(pubB), "Expected pub keys to match")
 		assert.Equal(t, addr, addrB, "Expected addresses to match")
 	}
 }
 
 func TestSignAndValidateSecp256k1Eth(t *testing.T) {
-	privKey := secp256k1_eth.GenPrivKey()
+	privKey := secp256k1eth.GenPrivKey()
 	pubKey := privKey.PubKey()
 
 	msg := crypto.CRandBytes(128)
@@ -105,7 +105,7 @@ func TestGenPrivKeySecp256k1Eth(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// TODO Deal with this
-			gotPrivKey := secp256k1_eth.GenPrivKeySecp256k1(tt.secret)
+			gotPrivKey := secp256k1eth.GenPrivKeySecp256k1(tt.secret)
 			require.NotNil(t, gotPrivKey)
 			// interpret as a big.Int and make sure it is a valid field element:
 			fe := new(big.Int).SetBytes(gotPrivKey[:])

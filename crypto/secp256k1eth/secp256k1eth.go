@@ -1,4 +1,4 @@
-package secp256k1_eth
+package secp256k1eth
 
 import (
 	"bytes"
@@ -17,10 +17,10 @@ import (
 
 // -------------------------------------.
 const (
-	PrivKeyName = "cometbft/PrivKeySecp256k1Eth"
-	PubKeyName  = "cometbft/PubKeySecp256k1Eth"
+	PrivKeyName = "cometbft/PrivKeySecp256k1eth"
+	PubKeyName  = "cometbft/PubKeySecp256k1eth"
 
-	KeyType     = "secp256k1_eth"
+	KeyType     = "secp256k1eth"
 	PrivKeySize = 32
 )
 

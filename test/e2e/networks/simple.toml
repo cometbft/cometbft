@@ -1,4 +1,4 @@
-key_type = "secp256k1_eth"
+key_type = "secp256k1eth"
 
 [node.validator00]
 [node.validator01]

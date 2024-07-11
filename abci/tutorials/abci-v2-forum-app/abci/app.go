@@ -35,7 +35,7 @@ type ForumApp struct {
 func NewForumApp(dbDir string, appConfigPath string) (*ForumApp, error) {
 	db, err := model.NewDB(dbDir)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing database: %v", err)
+		return nil, fmt.Errorf("error initializing database: %w", err)
 	}
 	cfg, err := LoadConfig(appConfigPath)
 	if err != nil {
@@ -52,9 +52,24 @@ func NewForumApp(dbDir string, appConfigPath string) (*ForumApp, error) {
 
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
+	// Reading the validators from the DB because CometBFT expects the application to have them in memory
+	valMap := make(map[string]crypto.PublicKey)
+	validators, err := state.DB.GetValidators()
+	if err != nil {
+		return nil, fmt.Errorf("can't load validators: %w", err)
+	}
+	for _, v := range validators {
+		pubKey, err := cryptoencoding.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
+		if err != nil {
+			return nil, fmt.Errorf("can't decode public key: %w", err)
+		}
+
+		valMap[string(pubKey.Address())] = pubKey
+	}
+
 	return &ForumApp{
 		state:              state,
-		valAddrToPubKeyMap: make(map[string]crypto.PublicKey),
+		valAddrToPubKeyMap: valMap,
 		CurseWords:         cfg.CurseWords,
 		logger:             logger,
 	}, nil
@@ -62,21 +77,6 @@ func NewForumApp(dbDir string, appConfigPath string) (*ForumApp, error) {
 
 // Info return application information.
 func (app *ForumApp) Info(_ context.Context, _ *abci.InfoRequest) (*abci.InfoResponse, error) {
-	// Reading the validators from the DB because CometBFT expects the application to have them in memory
-	if len(app.valAddrToPubKeyMap) == 0 && app.state.Height > 0 {
-		validators, err := app.getValidators()
-		if err != nil {
-			return nil, err
-		}
-		for _, v := range validators {
-			pubKey, err := cryptoencoding.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
-			if err != nil {
-				return nil, fmt.Errorf("can't decode public key: %w", err)
-			}
-
-			app.valAddrToPubKeyMap[string(pubKey.Address())] = pubKey
-		}
-	}
 	return &abci.InfoResponse{
 		Version:         version.ABCIVersion,
 		AppVersion:      ApplicationVersion,
@@ -198,7 +198,7 @@ func (app *ForumApp) PrepareProposal(_ context.Context, req *abci.PrepareProposa
 		msg, err := model.ParseMessage(tx)
 		if err != nil {
 			// this should never happen since the tx should have been validated by CheckTx
-			return nil, fmt.Errorf("failed to marshal tx in PrepareProposal: %v", err)
+			return nil, fmt.Errorf("failed to marshal tx in PrepareProposal: %w", err)
 		}
 		// Adding the curse words from vote extensions too
 		if !hasCurseWord(msg.Message, voteExtensionCurseWords) {
@@ -212,7 +212,7 @@ func (app *ForumApp) PrepareProposal(_ context.Context, req *abci.PrepareProposa
 		resultBytes, err := json.Marshal(banTx)
 		if err != nil {
 			// this should never happen since the ban tx should have been validated by CheckTx
-			return nil, fmt.Errorf("failed to marshal ban tx in PrepareProposal: %v", err)
+			return nil, fmt.Errorf("failed to marshal ban tx in PrepareProposal: %w", err)
 		}
 		finalProposal = append(finalProposal, resultBytes)
 	}
@@ -224,7 +224,7 @@ func (app *ForumApp) PrepareProposal(_ context.Context, req *abci.PrepareProposa
 		msg, err := model.ParseMessage(tx)
 		if err != nil {
 			// this should never happen since the tx should have been validated by CheckTx
-			return nil, fmt.Errorf("failed to marshal tx in PrepareProposal: %v", err)
+			return nil, fmt.Errorf("failed to marshal tx in PrepareProposal: %w", err)
 		}
 		// If the user is banned then include this transaction in the final proposal
 		if _, ok := bannedUsersString[msg.Sender]; !ok {

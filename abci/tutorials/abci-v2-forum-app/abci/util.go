@@ -19,15 +19,6 @@ func isBanTx(tx []byte) bool {
 	return strings.Contains(string(tx), "username")
 }
 
-func (app *ForumApp) getValidators() ([]types.ValidatorUpdate, error) {
-	var err error
-	validators, err := app.state.DB.GetValidators()
-	if err != nil {
-		return nil, err
-	}
-	return validators, nil
-}
-
 func (app *ForumApp) updateValidator(v types.ValidatorUpdate) error {
 	pubKey, err := cryptoencoding.PubKeyFromTypeAndBytes(v.PubKeyType, v.PubKeyBytes)
 	if err != nil {
@@ -75,7 +66,7 @@ func UpdateOrSetUser(db *model.DB, uname string, toBan bool, txn *badger.Txn) er
 	}
 	userBytes, err := json.Marshal(u)
 	if err != nil {
-		return fmt.Errorf("error marshaling user: %v", err)
+		return fmt.Errorf("error marshaling user: %w", err)
 	}
 	return txn.Set([]byte(uname), userBytes)
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/dgraph-io/badger/v4"
 
@@ -90,7 +89,7 @@ func (db *DB) FindUserByName(name string) (*User, error) {
 		return err
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error in retrieving user: %v", err)
+		return nil, fmt.Errorf("error in retrieving user: %w", err)
 	}
 	return user, nil
 }
@@ -113,7 +112,7 @@ func (db *DB) UpdateOrSetUser(uname string, toBan bool, txn *badger.Txn) error {
 	}
 	userBytes, err := json.Marshal(user)
 	if err != nil {
-		return fmt.Errorf("error marshaling user: %v", err)
+		return fmt.Errorf("error marshaling user: %w", err)
 	}
 	return txn.Set([]byte(user.Name), userBytes)
 }

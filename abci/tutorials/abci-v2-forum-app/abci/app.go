@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/dgraph-io/badger/v4"
@@ -32,7 +31,7 @@ type ForumApp struct {
 	logger             log.Logger
 }
 
-func NewForumApp(dbDir string, appConfigPath string) (*ForumApp, error) {
+func NewForumApp(dbDir string, appConfigPath string, logger log.Logger) (*ForumApp, error) {
 	db, err := model.NewDB(dbDir)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing database: %w", err)
@@ -49,8 +48,6 @@ func NewForumApp(dbDir string, appConfigPath string) (*ForumApp, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
 	// Reading the validators from the DB because CometBFT expects the application to have them in memory
 	valMap := make(map[string]crypto.PublicKey)

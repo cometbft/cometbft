@@ -16,9 +16,19 @@ import (
 	"github.com/cometbft/cometbft/state/txindex/null"
 )
 
-// EventSinksFromConfig constructs a slice of indexer.EventSink using the provided
+// IndexerFromConfig constructs a slice of indexer.EventSink using the provided
 // configuration.
 func IndexerFromConfig(cfg *config.Config, dbProvider config.DBProvider, chainID string) (
+	txIdx txindex.TxIndexer, blockIdx indexer.BlockIndexer, err error,
+) {
+	txidx, blkidx, _, err := IndexerFromConfigWithDisabledIndexers(cfg, dbProvider, chainID)
+	return txidx, blkidx, err
+}
+
+// IndexerFromConfigWithDisabledIndexers constructs a slice of indexer.EventSink using the provided
+// configuration. If all indexers are disabled in the configuration, it returns null indexers.
+// Otherwise, it creates the appropriate indexers based on the configuration.
+func IndexerFromConfigWithDisabledIndexers(cfg *config.Config, dbProvider config.DBProvider, chainID string) (
 	txIdx txindex.TxIndexer, blockIdx indexer.BlockIndexer, allIndexersDisabled bool, err error,
 ) {
 	switch cfg.TxIndex.Indexer {

@@ -82,7 +82,7 @@ func NewFromConfig(cfg *config.Config) (*Inspector, error) {
 	if err != nil {
 		return nil, err
 	}
-	txidx, blkidx, _, err := block.IndexerFromConfig(cfg, config.DefaultDBProvider, genDoc.ChainID)
+	txidx, blkidx, err := block.IndexerFromConfig(cfg, config.DefaultDBProvider, genDoc.ChainID)
 	if err != nil {
 		return nil, err
 	}

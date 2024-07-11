@@ -150,7 +150,7 @@ func createAndStartIndexerService(
 		blockIndexer indexer.BlockIndexer
 	)
 
-	txIndexer, blockIndexer, allIndexersDisabled, err := block.IndexerFromConfig(config, dbProvider, chainID)
+	txIndexer, blockIndexer, allIndexersDisabled, err := block.IndexerFromConfigWithDisabledIndexers(config, dbProvider, chainID)
 	if err != nil {
 		return nil, nil, nil, err
 	}

@@ -81,7 +81,7 @@ func DeduplicateCurseWords(inWords string) string {
 		if deduplicatedWords == "" {
 			deduplicatedWords = word
 		} else {
-			deduplicatedWords = deduplicatedWords + "|" + word
+			deduplicatedWords += "|" + word
 		}
 	}
 	return deduplicatedWords

@@ -27,9 +27,9 @@ func TestFindUserByName(t *testing.T) {
 	// Create some test users
 	println("User being created")
 	users := []*model.User{
-		{Name: "user1", PubKey: []byte("pubkey1"), Moderator: false, Banned: false},
-		{Name: "user2", PubKey: []byte("pubkey2"), Moderator: false, Banned: false},
-		{Name: "user3", PubKey: []byte("pubkey3"), Moderator: false, Banned: false},
+		{Name: "user1", Moderator: false, Banned: false},
+		{Name: "user2", Moderator: false, Banned: false},
+		{Name: "user3", Moderator: false, Banned: false},
 	}
 	println("User is defined")
 	for _, user := range users {

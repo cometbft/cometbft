@@ -25,7 +25,6 @@ func TestCreateUser(t *testing.T) {
 	// Create a new user
 	user := &model.User{
 		Name:      "testuser",
-		PubKey:    []byte("testpubkey"),
 		Moderator: false,
 		Banned:    false,
 	}

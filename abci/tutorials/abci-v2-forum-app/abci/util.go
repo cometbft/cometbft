@@ -11,7 +11,6 @@ import (
 
 	"github.com/cometbft/cometbft/abci/tutorials/abci-v2-forum-app/model"
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoencoding "github.com/cometbft/cometbft/crypto/encoding"
 )
 
@@ -55,7 +54,6 @@ func UpdateOrSetUser(db *model.DB, uname string, toBan bool, txn *badger.Txn) er
 	if errors.Is(err, badger.ErrKeyNotFound) {
 		u = new(model.User)
 		u.Name = uname
-		u.PubKey = ed25519.GenPrivKey().PubKey().Bytes()
 		u.Banned = toBan
 	} else {
 		if err != nil {

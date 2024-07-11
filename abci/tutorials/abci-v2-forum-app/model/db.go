@@ -9,7 +9,6 @@ import (
 	"github.com/dgraph-io/badger/v4"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto/ed25519"
 )
 
 type DB struct {
@@ -100,7 +99,6 @@ func (db *DB) UpdateOrSetUser(uname string, toBan bool, txn *badger.Txn) error {
 	if errors.Is(err, badger.ErrKeyNotFound) {
 		u := new(User)
 		u.Name = uname
-		u.PubKey = ed25519.GenPrivKey().PubKey().Bytes()
 		u.Banned = toBan
 		user = u
 	} else {

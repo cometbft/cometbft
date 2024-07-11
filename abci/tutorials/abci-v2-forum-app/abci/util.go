@@ -59,7 +59,7 @@ func UpdateOrSetUser(db *model.DB, uname string, toBan bool, txn *badger.Txn) er
 		u.Banned = toBan
 	} else {
 		if err != nil {
-			err = errors.New("not able to process user")
+			return errors.New("not able to process user")
 			return err
 		}
 		u.Banned = toBan

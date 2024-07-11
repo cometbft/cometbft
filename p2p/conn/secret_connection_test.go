@@ -3,6 +3,7 @@ package conn
 import (
 	"bufio"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -49,9 +50,9 @@ type privKeyWithNilPubKey struct {
 
 func (pk privKeyWithNilPubKey) Bytes() []byte                   { return pk.orig.Bytes() }
 func (pk privKeyWithNilPubKey) Sign(msg []byte) ([]byte, error) { return pk.orig.Sign(msg) }
-func (pk privKeyWithNilPubKey) PubKey() crypto.PubKey           { return nil }
+func (privKeyWithNilPubKey) PubKey() crypto.PubKey              { return nil }
 func (pk privKeyWithNilPubKey) Equals(pk2 crypto.PrivKey) bool  { return pk.orig.Equals(pk2) }
-func (pk privKeyWithNilPubKey) Type() string                    { return "privKeyWithNilPubKey" }
+func (privKeyWithNilPubKey) Type() string                       { return "privKeyWithNilPubKey" }
 
 func TestSecretConnectionHandshake(t *testing.T) {
 	fooSecConn, barSecConn := makeSecretConnPair(t)
@@ -120,7 +121,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 
 	// A helper that will run with (fooConn, fooWrites, fooReads) and vice versa
 	genNodeRunner := func(nodeConn kvstoreConn, nodeWrites []string, nodeReads *[]string) async.Task {
-		return func(_ int) (interface{}, bool, error) {
+		return func(_ int) (any, bool, error) {
 			// Initiate cryptographic private key and secret connection through nodeConn.
 			nodePrvKey := ed25519.GenPrivKey()
 			nodeSecretConn, err := MakeSecretConnection(nodeConn, nodePrvKey)
@@ -130,7 +131,7 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 			}
 			// In parallel, handle some reads and writes.
 			trs, ok := async.Parallel(
-				func(_ int) (interface{}, bool, error) {
+				func(_ int) (any, bool, error) {
 					// Node writes:
 					for _, nodeWrite := range nodeWrites {
 						n, err := nodeSecretConn.Write([]byte(nodeWrite))
@@ -150,12 +151,12 @@ func TestSecretConnectionReadWrite(t *testing.T) {
 					}
 					return nil, false, nil
 				},
-				func(_ int) (interface{}, bool, error) {
+				func(_ int) (any, bool, error) {
 					// Node reads:
 					readBuffer := make([]byte, dataMaxSize)
 					for {
 						n, err := nodeSecretConn.Read(readBuffer)
-						if err == io.EOF {
+						if errors.Is(err, io.EOF) {
 							if err := nodeConn.PipeReader.Close(); err != nil {
 								t.Error(err)
 								return nil, true, err
@@ -346,7 +347,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 
 	// Make connections from both sides in parallel.
 	trs, ok := async.Parallel(
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			fooSecConn, err = MakeSecretConnection(fooConn, fooPrvKey)
 			if err != nil {
 				tb.Errorf("failed to establish SecretConnection for foo: %v", err)
@@ -361,7 +362,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 			}
 			return nil, false, nil
 		},
-		func(_ int) (val interface{}, abort bool, err error) {
+		func(_ int) (val any, abort bool, err error) {
 			barSecConn, err = MakeSecretConnection(barConn, barPrvKey)
 			if barSecConn == nil {
 				tb.Errorf("failed to establish SecretConnection for bar: %v", err)
@@ -408,7 +409,7 @@ func BenchmarkWriteSecretConnection(b *testing.B) {
 		readBuffer := make([]byte, dataMaxSize)
 		for {
 			_, err := barSecConn.Read(readBuffer)
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return
 			} else if err != nil {
 				b.Errorf("failed to read from barSecConn: %v", err)
@@ -467,7 +468,7 @@ func BenchmarkReadSecretConnection(b *testing.B) {
 		readBuffer := make([]byte, dataMaxSize)
 		_, err := barSecConn.Read(readBuffer)
 
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return
 		} else if err != nil {
 			b.Fatalf("Failed to read from barSecConn: %v", err)

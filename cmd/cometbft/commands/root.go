@@ -69,7 +69,7 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 var RootCmd = &cobra.Command{
 	Use:   "cometbft",
 	Short: "BFT state machine replication for applications in any programming languages",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
+	PersistentPreRunE: func(cmd *cobra.Command, _ []string) (err error) {
 		if cmd.Name() == VersionCmd.Name() {
 			return nil
 		}

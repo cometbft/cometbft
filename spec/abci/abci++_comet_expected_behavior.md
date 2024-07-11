@@ -28,18 +28,18 @@ what will happen during a block height _h_ in these frequent, benign conditions:
 
 However, the Application logic must be ready to cope with any possible run of the consensus algorithm for a given
 height, including bad periods (byzantine proposers, network being asynchronous).
-In these cases, the sequence of calls to ABCI++ methods may not be so straightforward, but
+In these cases, the sequence of calls to ABCI methods may not be so straightforward, but
 the Application should still be able to handle them, e.g., without crashing.
 The purpose of this section is to define what these sequences look like in a precise way.
 
 As mentioned in the [Basic Concepts](./abci%2B%2B_basic_concepts.md) section, CometBFT
-acts as a client of ABCI++ and the Application acts as a server. Thus, it is up to CometBFT to
-determine when and in which order the different ABCI++ methods will be called. A well-written
+acts as a client of ABCI and the Application acts as a server. Thus, it is up to CometBFT to
+determine when and in which order the different ABCI methods will be called. A well-written
 Application design should consider _any_ of these possible sequences.
 
 The following grammar, written in case-sensitive Augmented Backus–Naur form (ABNF, specified
 in [IETF rfc7405](https://datatracker.ietf.org/doc/html/rfc7405)), specifies all possible
-sequences of calls to ABCI++, taken by a **correct process**, across all heights from the genesis block,
+sequences of calls to ABCI, taken by a **correct process**, across all heights from the genesis block,
 including recovery runs, from the point of view of the Application.
 
 ```abnf
@@ -157,6 +157,9 @@ did not store any state CometBFT calls `InitChain`. After this, CometBFT enters 
   `FinalizeBlock`, followed by a call to `Commit`. In each round, the sequence of method calls
   depends on whether the local process is the proposer or not. Note that, if a height contains zero
   rounds, this means the process is replaying an already decided value (catch-up mode).
+  When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+  that at least one non-byzantine validator has run `ProcessProposal` on that block.
+
 
 >```abnf
 >consensus-height    = *consensus-round finalize-block commit
@@ -164,7 +167,7 @@ did not store any state CometBFT calls `InitChain`. After this, CometBFT enters 
 >```
 
 * For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`.
-  A successful execution of `PrepareProposal` implies in a proposal block being (i)signed and (ii)stored
+  A successful execution of `PrepareProposal` results in a proposal block being (i) signed and (ii) stored
   (e.g., in stable storage).
 
   A crash during this step will direct how the node proceeds the next time it is executed, for the same round, after restarted.
@@ -187,7 +190,10 @@ did not store any state CometBFT calls `InitChain`. After this, CometBFT enters 
 >```
 
 * Also for every round, if the local process is _not_ the proposer of the current round, CometBFT
-  will call `ProcessProposal` at most once. At most one call to `ExtendVote` may occur only after
+  will call `ProcessProposal` at most once.
+  Under certain conditions, CometBFT may not call `ProcessProposal` in a round;
+  see [this section](./abci++_example_scenarios.md#scenario-3) for an example.
+  At most one call to `ExtendVote` may occur only after
   `ProcessProposal` is called. A number of calls to `VerifyVoteExtension` can occur in any order
   with respect to `ProcessProposal` and `ExtendVote` throughout the round. The reasons are the same
   as above, namely, the process running slightly late in the current round, or votes from future
@@ -197,7 +203,7 @@ did not store any state CometBFT calls `InitChain`. After this, CometBFT enters 
 >non-proposer        = *got-vote [process-proposal] [extend]
 >```
 
-* Finally, the grammar describes all its terminal symbols, which denote the different ABCI++ method calls that
+* Finally, the grammar describes all its terminal symbols, which denote the different ABCI method calls that
   may appear in a sequence.
 
 >```abnf
@@ -213,12 +219,12 @@ did not store any state CometBFT calls `InitChain`. After this, CometBFT enters 
 >commit              = %s"<Commit>"
 >```
 
-## Adapting existing Applications that use ABCI
+## Adapting existing Applications that use legacy ABCI
 
-In some cases, an existing Application using the legacy ABCI may need to be adapted to work with ABCI++
-with as minimal changes as possible. In this case, of course, ABCI++ will not provide any advantage with respect
-to the existing implementation, but will keep the same guarantees already provided by ABCI.
-Here is how ABCI++ methods should be implemented.
+In some cases, an existing Application using the legacy ABCI may need to be adapted to work with new version of ABCI
+with as minimal changes as possible. In this case, of course, new ABCI versions will not provide any advantage with respect
+to the legacy ABCI implementation, but will keep the same guarantees.
+Here is how ABCI methods should be implemented.
 
 First of all, all the methods that did not change from ABCI 0.17.0 to ABCI 2.0, namely `Echo`, `Flush`, `Info`, `InitChain`,
 `Query`, `CheckTx`, `ListSnapshots`, `LoadSnapshotChunk`, `OfferSnapshot`, and `ApplySnapshotChunk`, do not need
@@ -226,12 +232,17 @@ to undergo any changes in their implementation.
 
 As for the new methods:
 
+Introduced in ABCI 1.0:
+
 * `PrepareProposal` must create a list of [transactions](./abci++_methods.md#prepareproposal)
   by copying over the transaction list passed in `PrepareProposalRequest.txs`, in the same order.
   The Application must check whether the size of all transactions exceeds the byte limit
   (`PrepareProposalRequest.max_tx_bytes`). If so, the Application must remove transactions at the
   end of the list until the total byte size is at or below the limit.
 * `ProcessProposal` must set `ProcessProposalResponse.status` to _accept_ and return.
+
+Introduced in ABCI 2.0:
+
 * `ExtendVote` is to set `ExtendVoteResponse.extension` to an empty byte array and return.
 * `VerifyVoteExtension` must set `VerifyVoteExtensionResponse.accept` to _true_ if the extension is
   an empty byte array and _false_ otherwise, then return.
@@ -240,7 +251,7 @@ As for the new methods:
   wrap the legacy `DeliverTx` logic in a loop that executes one transaction iteration per
   transaction in `FinalizeBlockRequest.tx`.
 
-Finally, `Commit`, which is kept in ABCI++, no longer returns the `AppHash`. It is now up to
+Finally, `Commit`, which is kept in ABCI 2.0, no longer returns the `AppHash`. It is now up to
 `FinalizeBlock` to do so. Thus, a slight refactoring of the old `Commit` implementation will be
 needed to move the return of `AppHash` to `FinalizeBlock`.
 

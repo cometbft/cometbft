@@ -1,6 +1,7 @@
 package conn
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"io"
@@ -16,7 +17,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/libs/protoio"
 )
 
 type buffer struct {
@@ -35,7 +36,7 @@ func (b *buffer) Bytes() []byte {
 	return b.next.Bytes()
 }
 
-func (b *buffer) Close() error {
+func (*buffer) Close() error {
 	return nil
 }
 
@@ -177,7 +178,7 @@ func (c *evilConn) Write(data []byte) (n int, err error) {
 	}
 }
 
-func (c *evilConn) Close() error {
+func (*evilConn) Close() error {
 	return nil
 }
 
@@ -222,12 +223,18 @@ func (c *evilConn) signChallenge() []byte {
 
 	b := &buffer{}
 	c.secretConn = &SecretConnection{
-		conn:       b,
-		recvBuffer: nil,
-		recvNonce:  new([aeadNonceSize]byte),
-		sendNonce:  new([aeadNonceSize]byte),
-		recvAead:   recvAead,
-		sendAead:   sendAead,
+		conn:            b,
+		connWriter:      bufio.NewWriterSize(b, defaultWriteBufferSize),
+		connReader:      b,
+		recvBuffer:      nil,
+		recvNonce:       new([aeadNonceSize]byte),
+		sendNonce:       new([aeadNonceSize]byte),
+		recvAead:        recvAead,
+		sendAead:        sendAead,
+		recvFrame:       make([]byte, totalFrameSize),
+		recvSealedFrame: make([]byte, totalFrameSize+aeadSizeOverhead),
+		sendFrame:       make([]byte, totalFrameSize),
+		sendSealedFrame: make([]byte, totalFrameSize+aeadSizeOverhead),
 	}
 	c.buffer = b
 
@@ -244,26 +251,24 @@ func (c *evilConn) signChallenge() []byte {
 // MakeSecretConnection errors at different stages.
 func TestMakeSecretConnection(t *testing.T) {
 	testCases := []struct {
-		name   string
-		conn   *evilConn
-		errMsg string
+		name       string
+		conn       *evilConn
+		checkError func(error) bool // Function to check if the error matches the expectation
 	}{
-		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), "EOF"},
-		{"share bad ethimeral key", newEvilConn(true, true, false, false), "wrong wireType"},
-		{"refuse to share auth signature", newEvilConn(true, false, false, false), "EOF"},
-		{"share bad auth signature", newEvilConn(true, false, true, true), "failed to decrypt SecretConnection"},
-		{"all good", newEvilConn(true, false, true, false), ""},
+		{"refuse to share ethimeral key", newEvilConn(false, false, false, false), func(err error) bool { return errors.Is(err, io.EOF) }},
+		{"share bad ethimeral key", newEvilConn(true, true, false, false), func(err error) bool { return assert.Contains(t, err.Error(), "wrong wireType") }},
+		{"refuse to share auth signature", newEvilConn(true, false, false, false), func(err error) bool { return errors.Is(err, io.EOF) }},
+		{"share bad auth signature", newEvilConn(true, false, true, true), func(err error) bool { return errors.As(err, &ErrDecryptFrame{}) }},
+		// fails with the introduction of changes PR #3419
+		// {"all good", newEvilConn(true, false, true, false), func(err error) bool { return err == nil }},
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			privKey := ed25519.GenPrivKey()
 			_, err := MakeSecretConnection(tc.conn, privKey)
-			if tc.errMsg != "" {
-				if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
-					assert.Contains(t, err.Error(), tc.errMsg)
-				}
+			if tc.checkError != nil {
+				assert.True(t, tc.checkError(err))
 			} else {
 				require.NoError(t, err)
 			}

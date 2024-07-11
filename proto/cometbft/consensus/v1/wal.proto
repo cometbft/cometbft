@@ -14,6 +14,7 @@ import "google/protobuf/timestamp.proto";
 message MsgInfo {
   Message msg     = 1 [(gogoproto.nullable) = false];
   string  peer_id = 2 [(gogoproto.customname) = "PeerID"];
+  google.protobuf.Timestamp receive_time = 3 [(gogoproto.stdtime) = true, (gogoproto.nullable) = true];
 }
 
 // TimeoutInfo internally generated messages which may update the state

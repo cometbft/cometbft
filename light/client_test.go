@@ -68,15 +68,15 @@ var (
 
 func TestValidateTrustOptions(t *testing.T) {
 	testCases := []struct {
-		err bool
-		to  light.TrustOptions
+		expErr error
+		to     light.TrustOptions
 	}{
 		{
-			false,
+			nil,
 			trustOptions,
 		},
 		{
-			true,
+			light.ErrNegativeOrZeroPeriod,
 			light.TrustOptions{
 				Period: -1 * time.Hour,
 				Height: 1,
@@ -84,7 +84,7 @@ func TestValidateTrustOptions(t *testing.T) {
 			},
 		},
 		{
-			true,
+			light.ErrNegativeOrZeroHeight,
 			light.TrustOptions{
 				Period: 1 * time.Hour,
 				Height: 0,
@@ -92,7 +92,7 @@ func TestValidateTrustOptions(t *testing.T) {
 			},
 		},
 		{
-			true,
+			light.ErrInvalidHashSize{32, 14},
 			light.TrustOptions{
 				Period: 1 * time.Hour,
 				Height: 1,
@@ -103,9 +103,10 @@ func TestValidateTrustOptions(t *testing.T) {
 
 	for _, tc := range testCases {
 		err := tc.to.ValidateBasic()
-		if tc.err {
-			require.Error(t, err)
-		} else {
+		switch {
+		case tc.expErr != nil && assert.Error(t, err): //nolint:testifylint // require.Error doesn't work with the logic here
+			assert.Equal(t, tc.expErr, err)
+		default:
 			require.NoError(t, err)
 		}
 	}
@@ -214,7 +215,6 @@ func TestClient_SequentialVerification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := light.NewClient(
 				ctx,
@@ -339,7 +339,6 @@ func TestClient_SkippingVerification(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			c, err := light.NewClient(
 				ctx,

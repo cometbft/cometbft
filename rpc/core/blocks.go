@@ -1,16 +1,14 @@
 package core
 
 import (
-	"errors"
-	"fmt"
 	"sort"
 
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
-	blockidxnull "github.com/cometbft/cometbft/internal/state/indexer/block/null"
 	"github.com/cometbft/cometbft/libs/bytes"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	blockidxnull "github.com/cometbft/cometbft/state/indexer/block/null"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -56,10 +54,10 @@ func (env *Environment) BlockchainInfo(
 // error if either min or max are negative or min > max
 // if 0, use blockstore base for min, latest block height for max
 // enforce limit.
-func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
+func filterMinMax(base, height, min, max, limit int64) (minHeight, maxHeight int64, err error) {
 	// filter negatives
 	if min < 0 || max < 0 {
-		return min, max, errors.New("heights must be non-negative")
+		return min, max, ErrNegativeHeight
 	}
 
 	// adjust for default values
@@ -81,7 +79,7 @@ func filterMinMax(base, height, min, max, limit int64) (int64, int64, error) {
 	min = cmtmath.MaxInt64(min, max-limit+1)
 
 	if min > max {
-		return min, max, fmt.Errorf("min height %d can't be greater than max height %d", min, max)
+		return min, max, ErrHeightMinGTMax{Min: min, Max: max}
 	}
 	return min, max, nil
 }
@@ -195,6 +193,7 @@ func (env *Environment) BlockResults(_ *rpctypes.Context, heightPtr *int64) (*ct
 		FinalizeBlockEvents:   results.Events,
 		ValidatorUpdates:      results.ValidatorUpdates,
 		ConsensusParamUpdates: results.ConsensusParamUpdates,
+		AppHash:               results.AppHash,
 	}, nil
 }
 
@@ -208,7 +207,7 @@ func (env *Environment) BlockSearch(
 ) (*ctypes.ResultBlockSearch, error) {
 	// skip if block indexing is disabled
 	if _, ok := env.BlockIndexer.(*blockidxnull.BlockerIndexer); ok {
-		return nil, errors.New("block indexing is disabled")
+		return nil, ErrBlockIndexing
 	}
 
 	q, err := cmtquery.New(query)
@@ -223,14 +222,14 @@ func (env *Environment) BlockSearch(
 
 	// sort results (must be done before pagination)
 	switch orderBy {
-	case "desc", "":
+	case Descending, "":
 		sort.Slice(results, func(i, j int) bool { return results[i] > results[j] })
 
-	case "asc":
+	case Ascending:
 		sort.Slice(results, func(i, j int) bool { return results[i] < results[j] })
 
 	default:
-		return nil, errors.New("expected order_by to be either `asc` or `desc` or empty")
+		return nil, ErrInvalidOrderBy{orderBy}
 	}
 
 	// paginate results

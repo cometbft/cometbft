@@ -22,5 +22,5 @@ The default Grafana username and password is `admin`/`admin`. You will only need
 pre-loaded dashboards can be viewed without a password.
 
 Data from Grafana and Prometheus end up in the `data-grafana` and `data-prometheus` folders on your host machine.
-This allows you to stop and and restart the servers without data loss. The folders are excluded from Git.
+This allows you to stop and restart the servers without data loss. The folders are excluded from Git.
 

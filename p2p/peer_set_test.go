@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 // mockPeer for testing the PeerSet.
@@ -18,22 +18,22 @@ type mockPeer struct {
 	id ID
 }
 
-func (mp *mockPeer) FlushStop()               { mp.Stop() } //nolint:errcheck // ignore error
-func (mp *mockPeer) TrySend(Envelope) bool    { return true }
-func (mp *mockPeer) Send(Envelope) bool       { return true }
-func (mp *mockPeer) NodeInfo() NodeInfo       { return DefaultNodeInfo{} }
-func (mp *mockPeer) Status() ConnectionStatus { return ConnectionStatus{} }
-func (mp *mockPeer) ID() ID                   { return mp.id }
-func (mp *mockPeer) IsOutbound() bool         { return false }
-func (mp *mockPeer) IsPersistent() bool       { return true }
-func (mp *mockPeer) Get(s string) interface{} { return s }
-func (mp *mockPeer) Set(string, interface{})  {}
-func (mp *mockPeer) RemoteIP() net.IP         { return mp.ip }
-func (mp *mockPeer) SocketAddr() *NetAddress  { return nil }
-func (mp *mockPeer) RemoteAddr() net.Addr     { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
-func (mp *mockPeer) CloseConn() error         { return nil }
-func (mp *mockPeer) SetRemovalFailed()        {}
-func (mp *mockPeer) GetRemovalFailed() bool   { return false }
+func (mp *mockPeer) FlushStop()            { mp.Stop() } //nolint:errcheck // ignore error
+func (*mockPeer) TrySend(Envelope) bool    { return true }
+func (*mockPeer) Send(Envelope) bool       { return true }
+func (*mockPeer) NodeInfo() NodeInfo       { return DefaultNodeInfo{} }
+func (*mockPeer) Status() ConnectionStatus { return ConnectionStatus{} }
+func (mp *mockPeer) ID() ID                { return mp.id }
+func (*mockPeer) IsOutbound() bool         { return false }
+func (*mockPeer) IsPersistent() bool       { return true }
+func (*mockPeer) Get(s string) any         { return s }
+func (*mockPeer) Set(string, any)          {}
+func (mp *mockPeer) RemoteIP() net.IP      { return mp.ip }
+func (*mockPeer) SocketAddr() *NetAddress  { return nil }
+func (mp *mockPeer) RemoteAddr() net.Addr  { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
+func (*mockPeer) CloseConn() error         { return nil }
+func (*mockPeer) SetRemovalFailed()        {}
+func (*mockPeer) GetRemovalFailed() bool   { return false }
 
 // Returns a mock peer.
 func newMockPeer(ip net.IP) *mockPeer {
@@ -96,8 +96,8 @@ func TestPeerSetAddRemoveMany(t *testing.T) {
 	peerSet := NewPeerSet()
 
 	peers := []Peer{}
-	N := 100
-	for i := 0; i < N; i++ {
+	n := 100
+	for i := 0; i < n; i++ {
 		peer := newMockPeer(net.IP{127, 0, 0, byte(i)})
 		if err := peerSet.Add(peer); err != nil {
 			t.Errorf("failed to add new peer")

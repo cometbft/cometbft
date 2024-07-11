@@ -2,19 +2,14 @@ package db
 
 import (
 	"encoding/binary"
-	"fmt"
-	"regexp"
-	"strconv"
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/light/store"
 	"github.com/cometbft/cometbft/types"
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
-
-var sizeKey = []byte("size")
 
 type dbs struct {
 	db     dbm.DB
@@ -22,18 +17,70 @@ type dbs struct {
 
 	mtx  cmtsync.RWMutex
 	size uint16
+
+	dbKeyLayout LightStoreKeyLayout
+}
+
+func isEmpty(db dbm.DB) bool {
+	iter, err := db.Iterator(nil, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	defer iter.Close()
+	for ; iter.Valid(); iter.Next() {
+		return false
+	}
+	return true
+}
+
+func setDBKeyLayout(db dbm.DB, lightStore *dbs, dbKeyLayoutVersion string) {
+	if !isEmpty(db) {
+		var version []byte
+		var err error
+		if version, err = lightStore.db.Get([]byte("version")); err != nil {
+			// WARN: This is because currently cometBFT DB does not return an error if the key does not exist
+			// If this behavior changes we need to account for that.
+			panic(err)
+		}
+		if len(version) != 0 {
+			dbKeyLayoutVersion = string(version)
+		}
+	}
+
+	switch dbKeyLayoutVersion {
+	case "v1", "":
+		lightStore.dbKeyLayout = &v1LegacyLayout{}
+		dbKeyLayoutVersion = "v1"
+	case "v2":
+		lightStore.dbKeyLayout = &v2Layout{}
+	default:
+		panic("unknown key layout version")
+	}
+
+	if err := lightStore.db.SetSync([]byte("version"), []byte(dbKeyLayoutVersion)); err != nil {
+		panic(err)
+	}
 }
 
 // New returns a Store that wraps any DB (with an optional prefix in case you
 // want to use one DB with many light clients).
 func New(db dbm.DB, prefix string) store.Store {
+	return NewWithDBVersion(db, prefix, "")
+}
+
+func NewWithDBVersion(db dbm.DB, prefix string, dbKeyVersion string) store.Store {
+	dbStore := &dbs{db: db, prefix: prefix}
+
+	setDBKeyLayout(db, dbStore, dbKeyVersion)
+
 	size := uint16(0)
-	bz, err := db.Get(sizeKey)
+	bz, err := db.Get(dbStore.dbKeyLayout.SizeKey(prefix))
 	if err == nil && len(bz) > 0 {
 		size = unmarshalSize(bz)
 	}
-
-	return &dbs{db: db, prefix: prefix, size: size}
+	dbStore.size = size
+	return dbStore
 }
 
 // SaveLightBlock persists LightBlock to the db.
@@ -51,7 +98,7 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 
 	lbBz, err := lbpb.Marshal()
 	if err != nil {
-		return fmt.Errorf("marshaling LightBlock: %w", err)
+		return store.ErrMarshalBlock{Err: err}
 	}
 
 	s.mtx.Lock()
@@ -60,20 +107,20 @@ func (s *dbs) SaveLightBlock(lb *types.LightBlock) error {
 	b := s.db.NewBatch()
 	defer b.Close()
 	if err = b.Set(s.lbKey(lb.Height), lbBz); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
-	if err = b.Set(sizeKey, marshalSize(s.size+1)); err != nil {
-		return err
+	if err = b.Set(s.dbKeyLayout.SizeKey(s.prefix), marshalSize(s.size+1)); err != nil {
+		return store.ErrStore{Err: err}
 	}
 	if err = b.WriteSync(); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	s.size++
 
 	return nil
 }
 
-// DeleteLightBlockAndValidatorSet deletes the LightBlock from
+// DeleteLightBlock deletes the LightBlock from
 // the db.
 //
 // Safe for concurrent use by multiple goroutines.
@@ -88,13 +135,13 @@ func (s *dbs) DeleteLightBlock(height int64) error {
 	b := s.db.NewBatch()
 	defer b.Close()
 	if err := b.Delete(s.lbKey(height)); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
-	if err := b.Set(sizeKey, marshalSize(s.size-1)); err != nil {
-		return err
+	if err := b.Set(s.dbKeyLayout.SizeKey(s.prefix), marshalSize(s.size-1)); err != nil {
+		return store.ErrStore{Err: err}
 	}
 	if err := b.WriteSync(); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	s.size--
 
@@ -120,12 +167,12 @@ func (s *dbs) LightBlock(height int64) (*types.LightBlock, error) {
 	var lbpb cmtproto.LightBlock
 	err = lbpb.Unmarshal(bz)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal error: %w", err)
+		return nil, store.ErrUnmarshal{Err: err}
 	}
 
 	lightBlock, err := types.LightBlockFromProto(&lbpb)
 	if err != nil {
-		return nil, fmt.Errorf("proto conversion error: %w", err)
+		return nil, store.ErrProtoConversion{Err: err}
 	}
 
 	return lightBlock, err
@@ -134,7 +181,7 @@ func (s *dbs) LightBlock(height int64) (*types.LightBlock, error) {
 // LastLightBlockHeight returns the last LightBlock height stored.
 //
 // Safe for concurrent use by multiple goroutines.
-func (s *dbs) LastLightBlockHeight() (int64, error) {
+func (s *dbs) LastLightBlockHeight() (height int64, err error) {
 	itr, err := s.db.ReverseIterator(
 		s.lbKey(1),
 		append(s.lbKey(1<<63-1), byte(0x00)),
@@ -146,20 +193,24 @@ func (s *dbs) LastLightBlockHeight() (int64, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		height, ok := parseLbKey(key)
-		if ok {
+		height, err = s.dbKeyLayout.ParseLBKey(key, s.prefix)
+		if err == nil {
 			return height, nil
 		}
 		itr.Next()
 	}
 
-	return -1, itr.Error()
+	if itr.Error() != nil {
+		err = itr.Error()
+	}
+
+	return -1, err
 }
 
 // FirstLightBlockHeight returns the first LightBlock height stored.
 //
 // Safe for concurrent use by multiple goroutines.
-func (s *dbs) FirstLightBlockHeight() (int64, error) {
+func (s *dbs) FirstLightBlockHeight() (height int64, err error) {
 	itr, err := s.db.Iterator(
 		s.lbKey(1),
 		append(s.lbKey(1<<63-1), byte(0x00)),
@@ -171,14 +222,16 @@ func (s *dbs) FirstLightBlockHeight() (int64, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		height, ok := parseLbKey(key)
-		if ok {
+		height, err = s.dbKeyLayout.ParseLBKey(key, s.prefix)
+		if err == nil {
 			return height, nil
 		}
 		itr.Next()
 	}
-
-	return -1, itr.Error()
+	if itr.Error() != nil {
+		err = itr.Error()
+	}
+	return -1, err
 }
 
 // LightBlockBefore iterates over light blocks until it finds a block before
@@ -201,14 +254,14 @@ func (s *dbs) LightBlockBefore(height int64) (*types.LightBlock, error) {
 
 	for itr.Valid() {
 		key := itr.Key()
-		existingHeight, ok := parseLbKey(key)
-		if ok {
+		existingHeight, err := s.dbKeyLayout.ParseLBKey(key, s.prefix)
+		if err == nil {
 			return s.LightBlock(existingHeight)
 		}
 		itr.Next()
 	}
 	if err = itr.Error(); err != nil {
-		return nil, err
+		return nil, store.ErrStore{Err: err}
 	}
 
 	return nil, store.ErrLightBlockNotFound
@@ -235,7 +288,7 @@ func (s *dbs) Prune(size uint16) error {
 		append(s.lbKey(1<<63-1), byte(0x00)),
 	)
 	if err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 	defer itr.Close()
 
@@ -245,10 +298,10 @@ func (s *dbs) Prune(size uint16) error {
 	pruned := 0
 	for itr.Valid() && numToPrune > 0 {
 		key := itr.Key()
-		height, ok := parseLbKey(key)
-		if ok {
+		height, err := s.dbKeyLayout.ParseLBKey(key, s.prefix)
+		if err == nil {
 			if err = b.Delete(s.lbKey(height)); err != nil {
-				return err
+				return store.ErrStore{Err: err}
 			}
 		}
 		itr.Next()
@@ -256,12 +309,12 @@ func (s *dbs) Prune(size uint16) error {
 		pruned++
 	}
 	if err = itr.Error(); err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 
 	err = b.WriteSync()
 	if err != nil {
-		return err
+		return store.ErrStore{Err: err}
 	}
 
 	// 3) Update size.
@@ -270,8 +323,8 @@ func (s *dbs) Prune(size uint16) error {
 
 	s.size -= uint16(pruned)
 
-	if wErr := s.db.SetSync(sizeKey, marshalSize(s.size)); wErr != nil {
-		return fmt.Errorf("failed to persist size: %w", wErr)
+	if wErr := s.db.SetSync(s.dbKeyLayout.SizeKey(s.prefix), marshalSize(s.size)); wErr != nil {
+		return store.ErrStore{Err: wErr}
 	}
 
 	return nil
@@ -287,33 +340,7 @@ func (s *dbs) Size() uint16 {
 }
 
 func (s *dbs) lbKey(height int64) []byte {
-	return []byte(fmt.Sprintf("lb/%s/%020d", s.prefix, height))
-}
-
-var keyPattern = regexp.MustCompile(`^(lb)/([^/]*)/([0-9]+)$`)
-
-func parseKey(key []byte) (part string, prefix string, height int64, ok bool) {
-	submatch := keyPattern.FindSubmatch(key)
-	if submatch == nil {
-		return "", "", 0, false
-	}
-	part = string(submatch[1])
-	prefix = string(submatch[2])
-	height, err := strconv.ParseInt(string(submatch[3]), 10, 64)
-	if err != nil {
-		return "", "", 0, false
-	}
-	ok = true // good!
-	return
-}
-
-func parseLbKey(key []byte) (height int64, ok bool) {
-	var part string
-	part, _, height, ok = parseKey(key)
-	if part != "lb" {
-		return 0, false
-	}
-	return
+	return s.dbKeyLayout.LBKey(height, s.prefix)
 }
 
 func marshalSize(size uint16) []byte {

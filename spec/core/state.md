@@ -66,8 +66,9 @@ where
 
 ```go
 type ValidatorUpdate struct {
-	PubKey crypto.PublicKey `protobuf:"bytes,1,opt,name=pub_key,json=pubKey,proto3" json:"pub_key"`
-	Power  int64            `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
+	Power       int64  `protobuf:"varint,2,opt,name=power,proto3" json:"power,omitempty"`
+	PubKeyBytes []byte `protobuf:"bytes,3,opt,name=pub_key_bytes,json=pubKeyBytes,proto3" json:"pub_key_bytes,omitempty"`
+	PubKeyType  string `protobuf:"bytes,4,opt,name=pub_key_type,json=pubKeyType,proto3" json:"pub_key_type,omitempty"`
 }
 ```
 

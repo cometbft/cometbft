@@ -32,8 +32,8 @@ title: Methods
     | Name          | Type   | Description                            | Field Number |
     |---------------|--------|----------------------------------------|--------------|
     | version       | string | The CometBFT software semantic version | 1            |
-    | block_version | uint64 | The CometBFT Block Protocol version    | 2            |
-    | p2p_version   | uint64 | The CometBFT P2P Protocol version      | 3            |
+    | block_version | uint64 | The CometBFT Block version             | 2            |
+    | p2p_version   | uint64 | The CometBFT P2P version               | 3            |
     | abci_version  | string | The CometBFT ABCI semantic version     | 4            |
 
 * **Response**:
@@ -42,7 +42,7 @@ title: Methods
     |---------------------|--------|-----------------------------------------------------|--------------|---------------|
     | data                | string | Some arbitrary information                          | 1            | N/A           |
     | version             | string | The application software semantic version           | 2            | N/A           |
-    | app_version         | uint64 | The application protocol version                    | 3            | N/A           |
+    | app_version         | uint64 | The application version                             | 3            | N/A           |
     | last_block_height   | int64  | Latest height for which the app persisted its state | 4            | N/A           |
     | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            | N/A           |
 
@@ -161,9 +161,6 @@ title: Methods
 
 * **Request**:
 
-    | Name   | Type  | Description                        | Field Number |
-    |--------|-------|------------------------------------|--------------|
-
     Commit signals the application to persist application state. It takes no parameters.
 
 * **Response**:
@@ -184,9 +181,6 @@ title: Methods
 ### ListSnapshots
 
 * **Request**:
-
-    | Name | Type | Description | Field Number |
-    |------|------|-------------|--------------|
 
     Empty request asking the application for a list of snapshots.
 
@@ -316,7 +310,7 @@ title: Methods
     | local_last_commit    | [ExtendedCommitInfo](#extendedcommitinfo)       | Info about the last commit, obtained locally from CometBFT's data structures.                 | 3            |
     | misbehavior          | repeated [Misbehavior](#misbehavior)            | List of information about validators that misbehaved.                                         | 4            |
     | height               | int64                                           | The height of the block that will be proposed.                                                | 5            |
-    | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the block that that will be proposed.                                            | 6            |
+    | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the block that will be proposed.                                            | 6            |
     | next_validators_hash | bytes                                           | Merkle root of the next validator set.                                                        | 7            |
     | proposer_address     | bytes                                           | [Address](../core/data_structures.md#address) of the validator that is creating the proposal. | 8            |
 
@@ -373,10 +367,6 @@ title: Methods
       `FinalizeBlockResponse`.
     * CometBFT does NOT provide any additional validity checks (such as checking for duplicate
       transactions).
-      <!--
-      As a sanity check, CometBFT will check the returned parameters for validity if the Application modified them.
-      In particular, `PrepareProposalResponse.txs` will be deemed invalid if there are duplicate transactions in the list.
-       -->
     * If CometBFT fails to validate the `PrepareProposalResponse`, CometBFT will assume the
       Application is faulty and crash.
     * The implementation of `PrepareProposal` MAY be non-deterministic.
@@ -508,7 +498,7 @@ When a node _p_ enters consensus round _r_, height _h_, in which _q_ is the prop
 
     | Name           | Type  | Description                                           | Field Number | Deterministic |
     |----------------|-------|-------------------------------------------------------|--------------|---------------|
-    | vote_extension | bytes | Information signed by by CometBFT. Can have 0 length. | 1            | No            |
+    | vote_extension | bytes | Information signed by CometBFT. Can have 0 length. | 1            | No            |
 
 * **Usage**:
     * `ExtendVoteResponse.vote_extension` is application-generated information that will be signed
@@ -621,21 +611,23 @@ without calling `VerifyVoteExtension` to verify it.
     | time                 | [google.protobuf.Timestamp][protobuf-timestamp] | Timestamp of the finalized block.                                                         | 6            |
     | next_validators_hash | bytes                                           | Merkle root of the next validator set.                                                    | 7            |
     | proposer_address     | bytes                                           | [Address](../core/data_structures.md#address) of the validator that created the proposal. | 8            |
+    | syncing_to_height    | int64                                           | If the node is syncing/replaying blocks then syncing_to_height == target height. If not, syncing_to_height == height.    | 9            |  
 
 * **Response**:
 
-    | Name                    | Type                                              | Description                                                                      | Field Number | Deterministic |
-    |-------------------------|---------------------------------------------------|----------------------------------------------------------------------------------|--------------|---------------|
-    | events                  | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing                                             | 1            | No            |
-    | tx_results              | repeated [ExecTxResult](#exectxresult)            | List of structures containing the data resulting from executing the transactions | 2            | Yes           |
-    | validator_updates       | repeated [ValidatorUpdate](#validatorupdate)      | Changes to validator set (set voting power to 0 to remove).                      | 3            | Yes           |
-    | consensus_param_updates | [ConsensusParams](#consensusparams)               | Changes to gas, size, and other consensus-related parameters.                    | 4            | Yes           |
-    | app_hash                | bytes                                             | The Merkle root hash of the application state.                                   | 5            | Yes           |
+    | Name                    | Type                                              | Description                                                                         | Field Number | Deterministic |
+    |-------------------------|---------------------------------------------------|-------------------------------------------------------------------------------------|--------------|---------------|
+    | events                  | repeated [Event](abci++_basic_concepts.md#events) | Type & Key-Value events for indexing                                                | 1            | No            |
+    | tx_results              | repeated [ExecTxResult](#exectxresult)            | List of structures containing the data resulting from executing the transactions    | 2            | Yes           |
+    | validator_updates       | repeated [ValidatorUpdate](#validatorupdate)      | Changes to validator set (set voting power to 0 to remove).                         | 3            | Yes           |
+    | consensus_param_updates | [ConsensusParams](#consensusparams)               | Changes to gas, size, and other consensus-related parameters.                       | 4            | Yes           |
+    | app_hash                | bytes                                             | The Merkle root hash of the application state.                                      | 5            | Yes           |
+    | next_block_delay        | [google.protobuf.Duration][protobuf-duration]     | Delay between the time when this block is committed and the next height is started. | 6            | No            |
 
 * **Usage**:
     * Contains the fields of the newly decided block.
     * This method is equivalent to the call sequence `BeginBlock`, [`DeliverTx`],
-      and `EndBlock` in the previous version of ABCI.
+      and `EndBlock` in ABCI 1.0.
     * The height and time values match the values from the header of the proposed block.
     * The Application can use `FinalizeBlockRequest.decided_last_commit` and `FinalizeBlockRequest.misbehavior`
       to determine rewards and punishments for the validators.
@@ -671,6 +663,20 @@ without calling `VerifyVoteExtension` to verify it.
       making the Application's state evolve in the context of state machine replication.
     * Currently, CometBFT will fill up all fields in `FinalizeBlockRequest`, even if they were
       already passed on to the Application via `PrepareProposalRequest` or `ProcessProposalRequest`.
+    * When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+      that at least one non-byzantine validator has run `ProcessProposal` on that block.
+    * `FinalizeBlockResponse.next_block_delay` - how long CometBFT waits after
+      committing a block, before starting on the new height (this gives the
+      proposer a chance to receive some more precommits, even though it
+      already has +2/3). Set to 0 if you want a proposer to make progress as
+      soon as it has all the precommits. Previously `timeout_commit` in
+      CometBFT config. **Set to constant 1s to preserve the old (v0.34 - v1.0) behavior**.
+    * `FinalizeBlockResponse.next_block_delay` is a non-deterministic field.
+      This means that each node MAY provide a different value, which is
+      supposed to depend on how long things are taking at the local node. It's
+      reasonable to use real --wallclock-- time and mandate for the nodes to have
+      synchronized clocks (NTP, or other; PBTS also requires this) for the
+      variable delay to work properly.
 
 #### When does CometBFT call `FinalizeBlock`?
 
@@ -697,7 +703,7 @@ then _p_ decides block _v_ and finalizes consensus for height _h_ in the followi
 10. _p_'s CometBFT unlocks the mempool &mdash; newly received transactions can now be checked.
 11. _p_ starts consensus for height _h+1_, round 0
 
-## Data Types existing in ABCI
+## Data Types (exist before ABCI 2.0)
 
 Most of the data structures used in ABCI are shared [common data structures](../core/data_structures.md). In certain cases, ABCI uses different data structures which are documented here:
 
@@ -721,13 +727,14 @@ Most of the data structures used in ABCI are shared [common data structures](../
 
 * **Fields**:
 
-    | Name    | Type                                             | Description                   | Field Number | Deterministic |
-    |---------|--------------------------------------------------|-------------------------------|--------------|---------------|
-    | pub_key | [Public Key](../core/data_structures.md#pub_key) | Public key of the validator   | 1            | Yes           |
-    | power   | int64                                            | Voting power of the validator | 2            | Yes           |
+    | Name          | Type                                             | Description                                         | Field Number | Deterministic |
+    |---------------|--------------------------------------------------|-----------------------------------------------------|--------------|---------------|
+    | power         | int64                                            | Voting power                                        | 2            | Yes           |
+    | pub_key_type  | string                                           | Public key's type (e.g. "tendermint/PubKeyEd25519") | 3            | Yes           |
+    | pub_key_bytes | bytes                                            | Public key's bytes                                  | 4            | Yes           |
 
 * **Usage**:
-    * Validator identified by PubKey
+    * Validator identified by PubKeyType and PubKeyBytes
     * Used to tell CometBFT to update the validator set
 
 ### Misbehavior
@@ -759,11 +766,13 @@ Most of the data structures used in ABCI are shared [common data structures](../
 * **Fields**:
 
     | Name      | Type                                                          | Description                                                                  | Field Number | Deterministic |
-    |-----------|---------------------------------------------------------------|------------------------------------------------------------------------------|--------------|---------------|
+    | --------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------ | ------------- |
     | block     | [BlockParams](../core/data_structures.md#blockparams)         | Parameters limiting the size of a block and time between consecutive blocks. | 1            | Yes           |
     | evidence  | [EvidenceParams](../core/data_structures.md#evidenceparams)   | Parameters limiting the validity of evidence of byzantine behaviour.         | 2            | Yes           |
     | validator | [ValidatorParams](../core/data_structures.md#validatorparams) | Parameters limiting the types of public keys validators can use.             | 3            | Yes           |
     | version   | [VersionsParams](../core/data_structures.md#versionparams)    | The ABCI application version.                                                | 4            | Yes           |
+    | abci      | [ABCIParams](../core/data_structures.md#abciparams)           | ABCI-related parameters.                                                     | 5            | Yes           |
+    | synchrony | [SynchronyParams](../core/data_structures.md#synchronyparams) | Parameters determining the validity bounds of a proposal timestamp.          | 6            | Yes           |
 
 ### ProofOps
 
@@ -801,7 +810,7 @@ Most of the data structures used in ABCI are shared [common data structures](../
     `Metadata`). Chunks may be retrieved from all nodes that have the same snapshot.
     * When sent across the network, a snapshot message can be at most 4 MB.
 
-## Data types introduced or modified in ABCI++
+## Data types introduced or modified in ABCI 2.0
 
 ### VoteInfo
 
@@ -840,6 +849,12 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                          | Commit round. Reflects the round at which the block proposer decided in the previous height. | 1            |
     | votes | repeated [VoteInfo](#voteinfo) | List of validators' addresses in the last validator set with their voting information.       | 2            |
 
+* **Notes**
+  * The `VoteInfo` in `votes` are ordered by the voting power of the validators (descending order, highest to lowest voting power).
+  * CometBFT guarantees the `votes` ordering through its logic to update the validator set in which, in the end, the  validators are sorted (descending) by their voting power.
+  * The ordering is also persisted when a validator set is saved in the store.
+  * The validator set is loaded from the store when building the `CommitInfo`, ensuring order is maintained from the persisted validator set.
+
 ### ExtendedCommitInfo
 
 * **Fields**:
@@ -848,6 +863,12 @@ Most of the data structures used in ABCI are shared [common data structures](../
     |-------|------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|--------------|
     | round | int32                                          | Commit round. Reflects the round at which the block proposer decided in the previous height.                      | 1            |
     | votes | repeated [ExtendedVoteInfo](#extendedvoteinfo) | List of validators' addresses in the last validator set with their voting information, including vote extensions. | 2            |
+
+* **Notes**
+    * The `ExtendedVoteInfo` in `votes` are ordered by the voting power of the validators (descending order, highest to lowest voting power).
+    * CometBFT guarantees the `votes` ordering through its logic to update the validator set in which, in the end, the validators are sorted (descending) by their voting power.
+    * The ordering is also persisted when a validator set is saved in the store.
+    * The validator set is loaded from the store when building the `ExtendedCommitInfo`, ensuring order is maintained from the persisted validator set.
 
 ### ExecTxResult
 
@@ -897,4 +918,5 @@ enum VerifyStatus {
         * If `Status` is `ACCEPT`, the consensus algorithm will accept the vote as valid.
         * If `Status` is `REJECT`, the consensus algorithm will reject the vote as invalid.
 
-[protobuf-timestamp]: https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#google.protobuf.Timestamp
+[protobuf-timestamp]: https://protobuf.dev/reference/protobuf/google.protobuf/#timestamp
+[protobuf-duration]: https://protobuf.dev/reference/protobuf/google.protobuf/#duration

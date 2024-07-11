@@ -9,7 +9,7 @@ import (
 	"math/big"
 
 	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
-	ethCrypto "github.com/ethereum/go-ethereum/crypto" //nolint:depguard
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/cometbft/cometbft/crypto"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -42,12 +42,12 @@ func (privKey PrivKey) Bytes() []byte {
 // PubKey performs the point-scalar multiplication from the privKey on the
 // generator point to get the pubkey.
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	privateObject, err := ethCrypto.ToECDSA(privKey)
+	privateObject, err := ethcrypto.ToECDSA(privKey)
 	if err != nil {
 		panic(err)
 	}
 
-	pk := ethCrypto.FromECDSAPub(&privateObject.PublicKey)
+	pk := ethcrypto.FromECDSAPub(&privateObject.PublicKey)
 	return PubKey(pk)
 }
 
@@ -60,7 +60,7 @@ func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
 	return false
 }
 
-func (privKey PrivKey) Type() string {
+func (PrivKey) Type() string {
 	return KeyType
 }
 
@@ -129,15 +129,15 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 // Sign creates an ECDSA signature on curve Secp256k1, using SHA256 on the msg.
 // The returned signature will be of the form R || S || V (in lower-S form).
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	privateObject, err := ethCrypto.ToECDSA(privKey)
+	privateObject, err := ethcrypto.ToECDSA(privKey)
 	if err != nil {
 		return nil, err
 	}
 
-	return ethCrypto.Sign(ethCrypto.Keccak256(msg), privateObject)
+	return ethcrypto.Sign(ethcrypto.Keccak256(msg), privateObject)
 }
 
-//-------------------------------------
+// -------------------------------------
 
 var _ crypto.PubKey = PubKey{}
 
@@ -160,7 +160,7 @@ func (pubKey PubKey) Address() crypto.Address {
 	if len(pubKey) != PubKeySize {
 		panic(fmt.Sprintf("length of pubkey is incorrect %d != %d", len(pubKey), PubKeySize))
 	}
-	return crypto.Address(ethCrypto.Keccak256(pubKey[1:])[12:])
+	return crypto.Address(ethcrypto.Keccak256(pubKey[1:])[12:])
 }
 
 // Bytes returns the pubkey marshaled with amino encoding.
@@ -179,7 +179,7 @@ func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return false
 }
 
-func (pubKey PubKey) Type() string {
+func (PubKey) Type() string {
 	return KeyType
 }
 
@@ -190,6 +190,6 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 		return false
 	}
 
-	hash := ethCrypto.Keccak256(msg)
-	return ethCrypto.VerifySignature(pubKey, hash, sigStr[:64])
+	hash := ethcrypto.Keccak256(msg)
+	return ethcrypto.VerifySignature(pubKey, hash, sigStr[:64])
 }

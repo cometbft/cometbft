@@ -102,7 +102,7 @@ BLS signatures have already gained traction within several popular projects.
 Gossip could be updated to aggregate vote signatures during a consensus round.
 This appears to be of frankly little utility. Creating an aggregated signature
 incurs overhead, so frequently re-aggregating may incur a significant
-overhead. How costly this is is still subject to further investigation and
+overhead. How costly this is still subject to further investigation and
 performance testing.
 
 Even if vote signatures were aggregated before gossip, each validator would still
@@ -232,7 +232,7 @@ instead of the full list of multi-signatures as we have them now.
 Aggregation requires a specific signature algorithm, and our legacy signing schemes
 cannot be aggregated. In practice, this means that aggregated signatures could
 be created for a subset of validators using BLS signatures, and validators
-with other key types (such as Ed25519) would still have to be be separately
+with other key types (such as Ed25519) would still have to be separately
 propagated in blocks and votes.
 
 #### Many HSMs do not support aggregated signatures

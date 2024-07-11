@@ -134,11 +134,12 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 			}
 		}()
 	}
+FOR_LOOP:
 	for i := 0; i < testnet.LoadTxBatchSize; i++ {
 		select {
 		case genCh <- struct{}{}:
 		case <-ctx.Done():
-			break
+			break FOR_LOOP
 		}
 	}
 	close(genCh)

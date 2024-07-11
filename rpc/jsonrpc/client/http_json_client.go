@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"strings"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 
 var endsWithPortPattern = regexp.MustCompile(`:[0-9]+$`)
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // Parsed URL structure.
 type parsedURL struct {
@@ -116,20 +116,20 @@ func (u parsedURL) GetTrimmedURL() string {
 	return u.Scheme + "://" + u.GetTrimmedHostWithPath()
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // HTTPClient is a common interface for JSON-RPC HTTP clients.
 type HTTPClient interface {
 	// Call calls the given method with the params and returns a result.
-	Call(ctx context.Context, method string, params map[string]interface{}, result interface{}) (interface{}, error)
+	Call(ctx context.Context, method string, params map[string]any, result any) (any, error)
 }
 
 // Caller implementers can facilitate calling the JSON-RPC endpoint.
 type Caller interface {
-	Call(ctx context.Context, method string, params map[string]interface{}, result interface{}) (interface{}, error)
+	Call(ctx context.Context, method string, params map[string]any, result any) (any, error)
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // Client is a JSON-RPC client, which sends POST HTTP requests to the
 // remote server.
@@ -177,7 +177,7 @@ func NewWithHTTPClient(remote string, client *http.Client) (*Client, error) {
 
 	parsedURL, err := newParsedURL(remote)
 	if err != nil {
-		return nil, fmt.Errorf("invalid remote %s: %s", remote, err)
+		return nil, ErrInvalidAddress{Addr: remote, Source: err}
 	}
 
 	parsedURL.SetDefaultSchemeHTTP()
@@ -201,25 +201,25 @@ func NewWithHTTPClient(remote string, client *http.Client) (*Client, error) {
 func (c *Client) Call(
 	ctx context.Context,
 	method string,
-	params map[string]interface{},
-	result interface{},
-) (interface{}, error) {
+	params map[string]any,
+	result any,
+) (any, error) {
 	id := c.nextRequestID()
 
 	request, err := types.MapToRequest(id, method, params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode params: %w", err)
+		return nil, ErrEncodingParams{Source: err}
 	}
 
 	requestBytes, err := json.Marshal(request)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return nil, ErrMarshalRequest{Source: err}
 	}
 
 	requestBuf := bytes.NewBuffer(requestBytes)
 	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, c.address, requestBuf)
 	if err != nil {
-		return nil, fmt.Errorf("request failed: %w", err)
+		return nil, ErrCreateRequest{Source: err}
 	}
 
 	httpRequest.Header.Set("Content-Type", "application/json")
@@ -230,18 +230,18 @@ func (c *Client) Call(
 
 	httpResponse, err := c.client.Do(httpRequest)
 	if err != nil {
-		return nil, fmt.Errorf("post failed: %w", err)
+		return nil, ErrFailedRequest{Source: err}
 	}
 	defer httpResponse.Body.Close()
 
 	responseBytes, err := io.ReadAll(httpResponse.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%s. Failed to read response body: %w", getHTTPRespErrPrefix(httpResponse), err)
+		return nil, ErrReadResponse{Source: err, Description: getHTTPRespErrPrefix(httpResponse)}
 	}
 
 	res, err := unmarshalResponseBytes(responseBytes, id, result)
 	if err != nil {
-		return nil, fmt.Errorf("%s. %w", getHTTPRespErrPrefix(httpResponse), err)
+		return nil, ErrUnmarshalResponse{Source: err, Description: getHTTPRespErrPrefix(httpResponse)}
 	}
 	return res, nil
 }
@@ -262,9 +262,9 @@ func (c *Client) NewRequestBatch() *RequestBatch {
 	}
 }
 
-func (c *Client) sendBatch(ctx context.Context, requests []*jsonRPCBufferedRequest) ([]interface{}, error) {
+func (c *Client) sendBatch(ctx context.Context, requests []*jsonRPCBufferedRequest) ([]any, error) {
 	reqs := make([]types.RPCRequest, 0, len(requests))
-	results := make([]interface{}, 0, len(requests))
+	results := make([]any, 0, len(requests))
 	for _, req := range requests {
 		reqs = append(reqs, req.request)
 		results = append(results, req.result)
@@ -316,13 +316,13 @@ func (c *Client) nextRequestID() types.JSONRPCIntID {
 	return types.JSONRPCIntID(id)
 }
 
-//------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------
 
 // jsonRPCBufferedRequest encapsulates a single buffered request, as well as its
 // anticipated response structure.
 type jsonRPCBufferedRequest struct {
 	request types.RPCRequest
-	result  interface{} // The result will be deserialized into this object.
+	result  any // The result will be deserialized into this object.
 }
 
 // RequestBatch allows us to buffer multiple request/response structures
@@ -364,7 +364,7 @@ func (b *RequestBatch) clear() int {
 // Send will attempt to send the current batch of enqueued requests, and then
 // will clear out the requests once done. On success, this returns the
 // deserialized list of results from each of the enqueued requests.
-func (b *RequestBatch) Send(ctx context.Context) ([]interface{}, error) {
+func (b *RequestBatch) Send(ctx context.Context) ([]any, error) {
 	b.mtx.Lock()
 	defer func() {
 		b.clear()
@@ -378,9 +378,9 @@ func (b *RequestBatch) Send(ctx context.Context) ([]interface{}, error) {
 func (b *RequestBatch) Call(
 	_ context.Context,
 	method string,
-	params map[string]interface{},
-	result interface{},
-) (interface{}, error) {
+	params map[string]any,
+	result any,
+) (any, error) {
 	id := b.client.nextRequestID()
 	request, err := types.MapToRequest(id, method, params)
 	if err != nil {
@@ -390,7 +390,7 @@ func (b *RequestBatch) Call(
 	return result, nil
 }
 
-//-------------------------------------------------------------
+// -------------------------------------------------------------
 
 // MakeHTTPDialer creates an HTTP client dialer based on the given URL.
 func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), error) {
@@ -407,7 +407,7 @@ func MakeHTTPDialer(remoteAddr string) (func(string, string) (net.Conn, error), 
 		protocol = protoTCP
 	}
 
-	dialFn := func(proto, addr string) (net.Conn, error) {
+	dialFn := func(_, _ string) (net.Conn, error) {
 		return net.Dial(protocol, u.GetDialAddress())
 	}
 

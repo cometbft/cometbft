@@ -10,12 +10,13 @@ import (
 
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
+	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cometbft/cometbft/version"
 )
 
 func TestLightBlockValidateBasic(t *testing.T) {
 	header := makeRandHeader()
-	commit := randCommit(time.Now())
+	commit := randCommit(cmttime.Now())
 	vals, _ := RandValidatorSet(5, 1)
 	header.Height = commit.Height
 	header.LastBlockID = commit.BlockID
@@ -40,7 +41,7 @@ func TestLightBlockValidateBasic(t *testing.T) {
 		{"valid light block", sh, vals, false},
 		{"hashes don't match", sh, vals2, true},
 		{"invalid validator set", sh, vals3, true},
-		{"invalid signed header", &SignedHeader{Header: &header, Commit: randCommit(time.Now())}, vals, true},
+		{"invalid signed header", &SignedHeader{Header: &header, Commit: randCommit(cmttime.Now())}, vals, true},
 	}
 
 	for _, tc := range testCases {
@@ -59,7 +60,7 @@ func TestLightBlockValidateBasic(t *testing.T) {
 
 func TestLightBlockProtobuf(t *testing.T) {
 	header := makeRandHeader()
-	commit := randCommit(time.Now())
+	commit := randCommit(cmttime.Now())
 	vals, _ := RandValidatorSet(5, 1)
 	header.Height = commit.Height
 	header.LastBlockID = commit.BlockID
@@ -110,7 +111,7 @@ func TestLightBlockProtobuf(t *testing.T) {
 }
 
 func TestSignedHeaderValidateBasic(t *testing.T) {
-	commit := randCommit(time.Now())
+	commit := randCommit(cmttime.Now())
 	chainID := "𠜎"
 	timestamp := time.Date(math.MaxInt64, 0, 0, 0, 0, 0, math.MaxInt64, time.UTC)
 	h := Header{
@@ -146,7 +147,6 @@ func TestSignedHeaderValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			sh := SignedHeader{
 				Header: tc.shHeader,

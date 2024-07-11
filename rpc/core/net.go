@@ -18,7 +18,11 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
 		nodeInfo, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)
 		if !ok {
-			err = fmt.Errorf("peer %v has the invalid node info type: %T ", peer.ID(), peer.NodeInfo())
+			err = ErrInvalidNodeType{
+				PeerID:   string(peer.ID()),
+				Expected: fmt.Sprintf("%T", p2p.DefaultNodeInfo{}),
+				Actual:   fmt.Sprintf("%T", peer.NodeInfo()),
+			}
 			return
 		}
 		peers = append(peers, ctypes.Peer{
@@ -102,7 +106,7 @@ func (env *Environment) UnsafeDialPeers(
 // More: https://docs.cometbft.com/main/rpc/#/Info/genesis
 func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error) {
 	if len(env.genChunks) > 1 {
-		return nil, errors.New("genesis response is large, please use the genesis_chunked API instead")
+		return nil, ErrGenesisRespSize
 	}
 
 	return &ctypes.ResultGenesis{Genesis: env.GenDoc}, nil
@@ -110,17 +114,17 @@ func (env *Environment) Genesis(*rpctypes.Context) (*ctypes.ResultGenesis, error
 
 func (env *Environment) GenesisChunked(_ *rpctypes.Context, chunk uint) (*ctypes.ResultGenesisChunk, error) {
 	if env.genChunks == nil {
-		return nil, errors.New("service configuration error, genesis chunks are not initialized")
+		return nil, ErrServiceConfig{ErrChunkNotInitialized}
 	}
 
 	if len(env.genChunks) == 0 {
-		return nil, errors.New("service configuration error, there are no chunks")
+		return nil, ErrServiceConfig{ErrNoChunks}
 	}
 
 	id := int(chunk)
 
 	if id > len(env.genChunks)-1 {
-		return nil, fmt.Errorf("there are %d chunks, %d is invalid", len(env.genChunks)-1, id)
+		return nil, ErrInvalidChunkID{id, len(env.genChunks) - 1}
 	}
 
 	return &ctypes.ResultGenesisChunk{

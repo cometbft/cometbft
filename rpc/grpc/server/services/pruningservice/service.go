@@ -1,7 +1,7 @@
 package pruningservice
 
 import (
-	context "context"
+	"context"
 	"fmt"
 	"math"
 
@@ -10,8 +10,8 @@ import (
 
 	pbsvc "github.com/cometbft/cometbft/api/cometbft/services/pruning/v1"
 	"github.com/cometbft/cometbft/internal/rpctrace"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
+	sm "github.com/cometbft/cometbft/state"
 )
 
 type pruningServiceServer struct {

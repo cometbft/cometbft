@@ -2016,7 +2016,7 @@ Using a default centering column instead}%
 
 
 
-% creates a vertical rule that extends from the bottom to the top a a cell
+% creates a vertical rule that extends from the bottom to the top a cell
 % Provided in case other packages redefine \vline some other way.
 % usage: \IEEEeqnarrayvrule[rule thickness]
 % If no argument is provided, \arrayrulewidth will be used for the rule thickness. 
@@ -2504,7 +2504,7 @@ $$\@ignoretrue}
     \@IEEEappendtoksA{&}%
     \advance\@IEEEeqncolcnt by 1\relax% update the col count
     \repeat
-    % this number of &'s will take us the the isolation column
+    % this number of &'s will take us the isolation column
     \fi
     % execute the &'s
     \the\@IEEEtrantmptoksA%
@@ -4290,7 +4290,7 @@ between column types.}%
 \@IEEEtrantmpdimenB=0.005\@IEEEtrantmpdimenA%
 \multiply\@IEEEtrantmpdimenB by \@IEEEtrantmpcountA%
 % \@IEEEPARstartfont is globally set to the calculated font of the big letter
-% We need to carry this out of the local calculation area to to create the
+% We need to carry this out of the local calculation area to create the
 % big letter.
 \global\font\@IEEEPARstartfont\@IEEEPARstartFONTNAME\space at \@IEEEtrantmpdimenB%
 % Now set \@IEEEtrantmpdimenA to the width of the big letter

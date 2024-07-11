@@ -10,7 +10,7 @@ import (
 	"math"
 	"time"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // Monitor monitors and limits the transfer rate of a data stream.
@@ -47,6 +47,7 @@ type Monitor struct {
 // The default values for sampleRate and windowSize (if <= 0) are 100ms and 1s,
 // respectively.
 func New(sampleRate, windowSize time.Duration) *Monitor {
+	ensureClockRunning()
 	if sampleRate = clockRound(sampleRate); sampleRate <= 0 {
 		sampleRate = 5 * clockRate
 	}
@@ -221,7 +222,7 @@ func (m *Monitor) SetTransferSize(bytes int64) {
 // sample is done.
 func (m *Monitor) update(n int) (now time.Duration) {
 	if !m.active {
-		return
+		return now
 	}
 	if now = clock(); n > 0 {
 		m.tLast = now
@@ -243,7 +244,7 @@ func (m *Monitor) update(n int) (now time.Duration) {
 		}
 		m.reset(now)
 	}
-	return
+	return now
 }
 
 // reset clears the current sample state in preparation for the next sample.

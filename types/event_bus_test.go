@@ -11,8 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 func TestEventBusPublishEventTx(t *testing.T) {
@@ -312,7 +313,7 @@ func TestEventBusPublishEventNewEvidence(t *testing.T) {
 		}
 	})
 
-	ev, err := NewMockDuplicateVoteEvidence(1, time.Now(), "test-chain-id")
+	ev, err := NewMockDuplicateVoteEvidence(1, cmttime.Now(), "test-chain-id")
 	require.NoError(t, err)
 
 	query := "tm.event='NewEvidence'"
@@ -429,7 +430,6 @@ func BenchmarkEventBus(b *testing.B) {
 	}
 
 	for _, bm := range benchmarks {
-		bm := bm
 		b.Run(bm.name, func(b *testing.B) {
 			benchmarkEventBus(b, bm.numClients, bm.randQueries, bm.randEvents)
 		})
@@ -439,7 +439,7 @@ func BenchmarkEventBus(b *testing.B) {
 func benchmarkEventBus(b *testing.B, numClients int, randQueries bool, randEvents bool) {
 	b.Helper()
 	// for random* functions
-	rnd := rand.New(rand.NewSource(time.Now().Unix()))
+	rnd := rand.New(rand.NewSource(cmttime.Now().Unix()))
 
 	eventBus := NewEventBusWithBufferCapacity(0) // set buffer capacity to 0 so we are not testing cache
 	err := eventBus.Start()

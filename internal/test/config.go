@@ -46,11 +46,15 @@ var testGenesisFmt = `{
   "genesis_time": "2018-10-10T08:20:13.695936996Z",
   "chain_id": "%s",
   "initial_height": "1",
-	"consensus_params": {
+  "consensus_params": {
 		"block": {
 			"max_bytes": "22020096",
 			"max_gas": "-1",
 			"time_iota_ms": "10"
+		},
+		"synchrony": {
+			"message_delay": "500000000",
+			"precision": "10000000"
 		},
 		"evidence": {
 			"max_age_num_blocks": "100000",
@@ -65,8 +69,12 @@ var testGenesisFmt = `{
 		"abci": {
 			"vote_extensions_enable_height": "0"
 		},
-		"version": {}
-	},
+		"version": {},
+		"feature": {
+			"vote_extensions_enable_height": "0",
+			"pbts_enable_height": "1"
+		}
+  },
   "validators": [
     {
       "pub_key": {

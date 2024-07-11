@@ -7,10 +7,11 @@ import (
 	"time"
 
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/store"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -61,6 +62,7 @@ type Reactor struct {
 	store         sm.BlockStore
 	pool          *BlockPool
 	blockSync     bool
+	localAddr     crypto.Address
 	poolRoutineWg sync.WaitGroup
 
 	requestsCh <-chan BlockRequest
@@ -73,7 +75,7 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
+	blockSync bool, localAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
 	storeHeight := store.Height()
 	if storeHeight == 0 {
@@ -89,7 +91,10 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
 			storeHeight))
 	}
-	requestsCh := make(chan BlockRequest, maxTotalRequesters)
+
+	// It's okay to block since sendRequest is called from a separate goroutine
+	// (bpRequester#requestRoutine; 1 per each peer).
+	requestsCh := make(chan BlockRequest)
 
 	const capacity = 1000                      // must be bigger than peers count
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
@@ -106,6 +111,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		store:        store,
 		pool:         pool,
 		blockSync:    blockSync,
+		localAddr:    localAddr,
 		requestsCh:   requestsCh,
 		errorsCh:     errorsCh,
 		metrics:      metrics,
@@ -165,7 +171,7 @@ func (bcR *Reactor) OnStop() {
 }
 
 // GetChannels implements Reactor.
-func (bcR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
+func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 	return []*p2p.ChannelDescriptor{
 		{
 			ID:                  BlocksyncChannel,
@@ -194,7 +200,7 @@ func (bcR *Reactor) AddPeer(peer p2p.Peer) {
 }
 
 // RemovePeer implements Reactor by removing peer from the pool.
-func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ interface{}) {
+func (bcR *Reactor) RemovePeer(peer p2p.Peer, _ any) {
 	bcR.pool.RemovePeer(peer.ID())
 }
 
@@ -216,7 +222,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 		return false
 	}
 	var extCommit *types.ExtendedCommit
-	if state.ConsensusParams.ABCI.VoteExtensionsEnabled(msg.Height) {
+	if state.ConsensusParams.Feature.VoteExtensionsEnabled(msg.Height) {
 		extCommit = bcR.store.LoadBlockExtendedCommit(msg.Height)
 		if extCommit == nil {
 			bcR.Logger.Error("found block in store with no extended commit", "block", block)
@@ -240,7 +246,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 }
 
 // Receive implements Reactor by handling 4 types of messages (look below).
-func (bcR *Reactor) Receive(e p2p.Envelope) {
+func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a test
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)
@@ -273,7 +279,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "err", err)
+			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
 		}
 	case *bcproto.StatusRequest:
 		// Send peer our state.
@@ -289,6 +295,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
 	case *bcproto.NoBlockResponse:
 		bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
+		bcR.pool.RedoRequestFrom(msg.Height, e.Src.ID())
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
@@ -300,11 +307,15 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	bcR.metrics.Syncing.Set(1)
 	defer bcR.metrics.Syncing.Set(0)
 
-	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
-	defer trySyncTicker.Stop()
+	var (
+		blocksSynced = uint64(0)
+		state        = bcR.initialState
+		lastHundred  = time.Now()
+		lastRate     = 0.0
+		didProcessCh = make(chan struct{}, 1)
+	)
 
-	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
-	defer statusUpdateTicker.Stop()
+	go bcR.handleBlockRequestsRoutine()
 
 	if bcR.switchToConsensusMs == 0 {
 		bcR.switchToConsensusMs = switchToConsensusIntervalSeconds * 1000
@@ -312,110 +323,26 @@ func (bcR *Reactor) poolRoutine(stateSynced bool) {
 	switchToConsensusTicker := time.NewTicker(time.Duration(bcR.switchToConsensusMs) * time.Millisecond)
 	defer switchToConsensusTicker.Stop()
 
-	blocksSynced := uint64(0)
-
-	chainID := bcR.initialState.ChainID
-	state := bcR.initialState
-
-	lastHundred := time.Now()
-	lastRate := 0.0
-
-	didProcessCh := make(chan struct{}, 1)
+	trySyncTicker := time.NewTicker(trySyncIntervalMS * time.Millisecond)
+	defer trySyncTicker.Stop()
 
 	initialCommitHasExtensions := (bcR.initialState.LastBlockHeight > 0 && bcR.store.LoadBlockExtendedCommit(bcR.initialState.LastBlockHeight) != nil)
-
-	go func() {
-		for {
-			select {
-			case <-bcR.Quit():
-				return
-			case <-bcR.pool.Quit():
-				return
-			case request := <-bcR.requestsCh:
-				peer := bcR.Switch.Peers().Get(request.PeerID)
-				if peer == nil {
-					continue
-				}
-				queued := peer.TrySend(p2p.Envelope{
-					ChannelID: BlocksyncChannel,
-					Message:   &bcproto.BlockRequest{Height: request.Height},
-				})
-				if !queued {
-					bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
-				}
-			case err := <-bcR.errorsCh:
-				peer := bcR.Switch.Peers().Get(err.peerID)
-				if peer != nil {
-					bcR.Switch.StopPeerForError(peer, err)
-				}
-
-			case <-statusUpdateTicker.C:
-				// ask for status updates
-				go bcR.BroadcastStatusRequest()
-			}
-		}
-	}()
 
 FOR_LOOP:
 	for {
 		select {
 		case <-switchToConsensusTicker.C:
-			height, numPending, lenRequesters := bcR.pool.GetStatus()
 			outbound, inbound, _ := bcR.Switch.NumPeers()
-			bcR.Logger.Debug("Consensus ticker", "numPending", numPending, "total", lenRequesters,
-				"outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
+			bcR.Logger.Debug("Consensus ticker", "outbound", outbound, "inbound", inbound, "lastHeight", state.LastBlockHeight)
 
-			// The "if" statement below is a bit confusing, so here is a breakdown
-			// of its logic and purpose:
-			//
-			// If we are at genesis (no block in the chain), we don't need VoteExtensions
-			// because the first block's LastCommit is empty anyway.
-			//
-			// If VoteExtensions were disabled for the previous height then we don't need
-			// VoteExtensions.
-			//
-			// If we have sync'd at least one block, then we are guaranteed to have extensions
-			// if we need them by the logic inside loop FOR_LOOP: it requires that the blocks
-			// it fetches have extensions if extensions were enabled during the height.
-			//
-			// If we already had extensions for the initial height (e.g. we are recovering),
-			// then we are guaranteed to have extensions for the last block (if required) even
-			// if we did not blocksync any block.
-			//
-			missingExtension := true
-			if state.LastBlockHeight == 0 ||
-				!state.ConsensusParams.ABCI.VoteExtensionsEnabled(state.LastBlockHeight) ||
-				blocksSynced > 0 ||
-				initialCommitHasExtensions {
-				missingExtension = false
+			if !initialCommitHasExtensions {
+				// If require extensions, but since we don't have them yet, then we cannot switch to consensus yet.
+				if bcR.isMissingExtension(state, blocksSynced) {
+					continue FOR_LOOP
+				}
 			}
 
-			// If require extensions, but since we don't have them yet, then we cannot switch to consensus yet.
-			if missingExtension {
-				bcR.Logger.Info(
-					"no extended commit yet",
-					"height", height,
-					"last_block_height", state.LastBlockHeight,
-					"initial_height", state.InitialHeight,
-					"max_peer_height", bcR.pool.MaxPeerHeight(),
-				)
-				continue FOR_LOOP
-			}
-			if bcR.pool.IsCaughtUp() {
-				bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
-				if err := bcR.pool.Stop(); err != nil {
-					bcR.Logger.Error("Error stopping pool", "err", err)
-				}
-				if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
-					memR.EnableInOutTxs()
-				}
-				if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
-					conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
-				}
-				// else {
-				// should only happen during testing
-				// }
-
+			if bcR.isCaughtUp(state, blocksSynced, stateSynced) {
 				break FOR_LOOP
 			}
 
@@ -450,10 +377,6 @@ FOR_LOOP:
 				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
 			}
-			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				// See https://github.com/tendermint/tendermint/pull/8433#discussion_r866790631
-				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
-			}
 
 			// Before priming didProcessCh for another check on the next
 			// iteration, break the loop if the BlockPool or the Reactor itself
@@ -472,74 +395,18 @@ FOR_LOOP:
 					"err", err.Error())
 				break FOR_LOOP
 			}
-			firstPartSetHeader := firstParts.Header()
-			firstID := types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
-			// Finally, verify the first block using the second's commit
-			// NOTE: we can probably make this more efficient, but note that calling
-			// first.Hash() doesn't verify the tx contents, so MakePartSet() is
-			// currently necessary.
-			// TODO(sergio): Should we also validate against the extended commit?
-			err = state.Validators.VerifyCommitLight(
-				chainID, firstID, first.Height, second.LastCommit)
 
-			if err == nil {
-				// validate the block before we persist it
-				err = bcR.blockExec.ValidateBlock(state, first)
-			}
-			if err == nil {
-				// if vote extensions were required at this height, ensure they exist.
-				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-					err = extCommit.EnsureExtensions(true)
-				} else if extCommit != nil {
-					err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-				}
-			}
-			if err != nil {
-				bcR.Logger.Error("Error in validation", "err", err)
-				peerID := bcR.pool.RedoRequest(first.Height)
-				peer := bcR.Switch.Peers().Get(peerID)
-				if peer != nil {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
-				}
-				peerID2 := bcR.pool.RedoRequest(second.Height)
-				peer2 := bcR.Switch.Peers().Get(peerID2)
-				if peer2 != nil && peer2 != peer {
-					// NOTE: we've already removed the peer's request, but we
-					// still need to clean up the rest.
-					bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: err})
-				}
+			if state, err = bcR.processBlock(first, second, firstParts, state, extCommit); err != nil {
+				bcR.Logger.Error("Invalid block", "height", first.Height, "err", err)
 				continue FOR_LOOP
 			}
 
-			bcR.pool.PopRequest()
-
-			// TODO: batch saves so we dont persist to disk every block
-			if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
-			} else {
-				// We use LastCommit here instead of extCommit. extCommit is not
-				// guaranteed to be populated by the peer if extensions are not enabled.
-				// Currently, the peer should provide an extCommit even if the vote extension data are absent
-				// but this may change so using second.LastCommit is safer.
-				bcR.store.SaveBlock(first, firstParts, second.LastCommit)
-			}
-
-			// TODO: same thing for app - but we would need a way to
-			// get the hash without persisting the state
-			state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
-			if err != nil {
-				// TODO This is bad, are we zombie?
-				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
-			}
-			bcR.metrics.recordBlockMetrics(first)
 			blocksSynced++
 
 			if blocksSynced%100 == 0 {
+				_, height, maxPeerHeight := bcR.pool.IsCaughtUp()
 				lastRate = 0.9*lastRate + 0.1*(100/time.Since(lastHundred).Seconds())
-				bcR.Logger.Info("Block Sync Rate", "height", bcR.pool.height,
-					"max_peer_height", bcR.pool.MaxPeerHeight(), "blocks/s", lastRate)
+				bcR.Logger.Info("Block Sync Rate", "height", height, "max_peer_height", maxPeerHeight, "blocks/s", lastRate)
 				lastHundred = time.Now()
 			}
 
@@ -559,4 +426,185 @@ func (bcR *Reactor) BroadcastStatusRequest() {
 		ChannelID: BlocksyncChannel,
 		Message:   &bcproto.StatusRequest{},
 	})
+}
+
+func (bcR *Reactor) handleBlockRequest(request BlockRequest) {
+	peer := bcR.Switch.Peers().Get(request.PeerID)
+	if peer == nil {
+		return
+	}
+	queued := peer.TrySend(p2p.Envelope{
+		ChannelID: BlocksyncChannel,
+		Message:   &bcproto.BlockRequest{Height: request.Height},
+	})
+	if !queued {
+		bcR.Logger.Debug("Send queue is full, drop block request", "peer", peer.ID(), "height", request.Height)
+	}
+}
+
+func (bcR *Reactor) handleBlockRequestsRoutine() {
+	statusUpdateTicker := time.NewTicker(statusUpdateIntervalSeconds * time.Second)
+	defer statusUpdateTicker.Stop()
+
+	for {
+		select {
+		case <-bcR.Quit():
+			return
+		case <-bcR.pool.Quit():
+			return
+		case request := <-bcR.requestsCh:
+			bcR.handleBlockRequest(request)
+		case err := <-bcR.errorsCh:
+			peer := bcR.Switch.Peers().Get(err.peerID)
+			if peer != nil {
+				bcR.Switch.StopPeerForError(peer, err)
+			}
+		case <-statusUpdateTicker.C:
+			// ask for status updates
+			go bcR.BroadcastStatusRequest()
+		}
+	}
+}
+
+func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool {
+	// The "if" statement below is a bit confusing, so here is a breakdown
+	// of its logic and purpose:
+	//
+	// If we are at genesis (no block in the chain), we don't need VoteExtensions
+	// because the first block's LastCommit is empty anyway.
+	//
+	// If VoteExtensions were disabled for the previous height then we don't need
+	// VoteExtensions.
+	//
+	// If we have sync'd at least one block, then we are guaranteed to have extensions
+	// if we need them by the logic inside loop FOR_LOOP: it requires that the blocks
+	// it fetches have extensions if extensions were enabled during the height.
+	//
+	// If we already had extensions for the initial height (e.g. we are recovering),
+	// then we are guaranteed to have extensions for the last block (if required) even
+	// if we did not blocksync any block.
+	//
+	missingExtension := true
+	voteExtensionsDisabled := state.LastBlockHeight > 0 && !state.ConsensusParams.Feature.VoteExtensionsEnabled(state.LastBlockHeight)
+	if state.LastBlockHeight == 0 || voteExtensionsDisabled || blocksSynced > 0 {
+		missingExtension = false
+	}
+
+	if missingExtension {
+		bcR.Logger.Info(
+			"no extended commit yet",
+			"last_block_height", state.LastBlockHeight,
+			"vote_extensions_disabled", voteExtensionsDisabled,
+			"blocks_synced", blocksSynced,
+		)
+	}
+
+	return missingExtension
+}
+
+func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
+	_, val := state.Validators.GetByAddress(bcR.localAddr)
+	if val == nil {
+		return false
+	}
+	total := state.Validators.TotalVotingPower()
+	return val.VotingPower >= total/3
+}
+
+func (bcR *Reactor) isCaughtUp(state sm.State, blocksSynced uint64, stateSynced bool) bool {
+	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp || bcR.localNodeBlocksTheChain(state) {
+		bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
+		if err := bcR.pool.Stop(); err != nil {
+			bcR.Logger.Error("Error stopping pool", "err", err)
+		}
+		if memR, ok := bcR.Switch.Reactor("MEMPOOL").(mempoolReactor); ok {
+			memR.EnableInOutTxs()
+		}
+		if conR, ok := bcR.Switch.Reactor("CONSENSUS").(consensusReactor); ok {
+			conR.SwitchToConsensus(state, blocksSynced > 0 || stateSynced)
+		}
+		// else {
+		// should only happen during testing
+		// }
+		return true
+	}
+	return false
+}
+
+func (bcR *Reactor) processBlock(first, second *types.Block, firstParts *types.PartSet, state sm.State, extCommit *types.ExtendedCommit) (sm.State, error) {
+	var (
+		chainID            = bcR.initialState.ChainID
+		firstPartSetHeader = firstParts.Header()
+		firstID            = types.BlockID{Hash: first.Hash(), PartSetHeader: firstPartSetHeader}
+	)
+
+	// Finally, verify the first block using the second's commit
+	// NOTE: we can probably make this more efficient, but note that calling
+	// first.Hash() doesn't verify the tx contents, so MakePartSet() is
+	// currently necessary.
+	// TODO(sergio): Should we also validate against the extended commit?
+	err := state.Validators.VerifyCommitLight(
+		chainID, firstID, first.Height, second.LastCommit)
+
+	if err == nil {
+		// validate the block before we persist it
+		err = bcR.blockExec.ValidateBlock(state, first)
+	}
+
+	presentExtCommit := extCommit != nil
+	extensionsEnabled := state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height)
+	if presentExtCommit != extensionsEnabled {
+		err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
+			"(height %d, non-nil extended commit %t, extensions enabled %t)",
+			first.Height, presentExtCommit, extensionsEnabled,
+		)
+	}
+	if err == nil && extensionsEnabled {
+		// if vote extensions were required at this height, ensure they exist.
+		err = extCommit.EnsureExtensions(true)
+	}
+
+	if err != nil {
+		peerID := bcR.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
+		peer := bcR.Switch.Peers().Get(peerID)
+		if peer != nil {
+			// NOTE: we've already removed the peer's request, but we
+			// still need to clean up the rest.
+			bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
+		}
+		peerID2 := bcR.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
+		peer2 := bcR.Switch.Peers().Get(peerID2)
+		if peer2 != nil && peer2 != peer {
+			// NOTE: we've already removed the peer's request, but we
+			// still need to clean up the rest.
+			bcR.Switch.StopPeerForError(peer2, ErrReactorValidation{Err: err})
+		}
+		return state, err
+	}
+
+	// SUCCESS. Pop the block from the pool.
+	bcR.pool.PopRequest()
+
+	// TODO: batch saves so we dont persist to disk every block
+	if extensionsEnabled {
+		bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
+	} else {
+		// We use LastCommit here instead of extCommit. extCommit is not
+		// guaranteed to be populated by the peer if extensions are not enabled.
+		// Currently, the peer should provide an extCommit even if the vote extension data are absent
+		// but this may change so using second.LastCommit is safer.
+		bcR.store.SaveBlock(first, firstParts, second.LastCommit)
+	}
+
+	// TODO: same thing for app - but we would need a way to
+	// get the hash without persisting the state
+	state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first, bcR.pool.MaxPeerHeight())
+	if err != nil {
+		// TODO This is bad, are we zombie?
+		panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))
+	}
+
+	bcR.metrics.recordBlockMetrics(first)
+
+	return state, nil
 }

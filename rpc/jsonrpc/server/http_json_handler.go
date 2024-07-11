@@ -12,7 +12,7 @@ import (
 
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 // HTTP + JSON handler
@@ -31,7 +31,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			return
 		}
 
-		// if its an empty request (like from a browser), just display a list of
+		// if it's an empty request (like from a browser), just display a list of
 		// functions
 		if len(b) == 0 {
 			writeListOfEndpoints(w, r, funcMap)
@@ -61,9 +61,8 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 		// 2. Any RPC request doesn't allow to be cached.
 		// 3. Any RPC request has the height argument and the value is 0 (the default).
 		cache := true
-		for _, request := range requests {
-			request := request
-
+		for _, req := range requests {
+			request := req
 			// A Notification is a Request object without an "id" member.
 			// The Server MUST NOT reply to a Notification, including those that are within a batch request.
 			if request.ID == nil {

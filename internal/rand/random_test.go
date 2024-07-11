@@ -87,6 +87,24 @@ func TestRngConcurrencySafety(_ *testing.T) {
 	wg.Wait()
 }
 
+// Makes a new stdlib random instance 100 times concurrently.
+// Ensures that it is concurrent safe to create rand instances, and call independent rand
+// sources in parallel.
+func TestStdlibRngConcurrencySafety(_ *testing.T) {
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r := NewStdlibRand()
+			_ = r.Uint64()
+			<-time.After(time.Millisecond * time.Duration(Intn(100)))
+			_ = r.Perm(3)
+		}()
+	}
+	wg.Wait()
+}
+
 func BenchmarkRandBytes10B(b *testing.B) {
 	benchmarkRandBytes(b, 10)
 }

@@ -142,7 +142,10 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
 	}
 	if testnet.VoteExtensionsUpdateHeight == -1 {
-		genesis.ConsensusParams.ABCI.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
+		genesis.ConsensusParams.Feature.VoteExtensionsEnableHeight = testnet.VoteExtensionsEnableHeight
+	}
+	if testnet.PbtsUpdateHeight == -1 {
+		genesis.ConsensusParams.Feature.PbtsEnableHeight = testnet.PbtsEnableHeight
 	}
 	for validator, power := range testnet.Validators {
 		genesis.Validators = append(genesis.Validators, types.GenesisValidator{
@@ -209,8 +212,11 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	case e2e.ProtocolGRPC:
 		cfg.ProxyApp = AppAddressTCP
 		cfg.ABCI = "grpc"
-	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
-		cfg.ProxyApp = ""
+	case e2e.ProtocolBuiltin:
+		cfg.ProxyApp = "e2e"
+		cfg.ABCI = ""
+	case e2e.ProtocolBuiltinConnSync:
+		cfg.ProxyApp = "e2e_connsync"
 		cfg.ABCI = ""
 	default:
 		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)
@@ -282,12 +288,31 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.Instrumentation.Prometheus = true
 	}
 
+	if node.ExperimentalKeyLayout != "" {
+		cfg.Storage.ExperimentalKeyLayout = node.ExperimentalKeyLayout
+	}
+
+	if node.Compact {
+		cfg.Storage.Compact = node.Compact
+	}
+
+	if node.DiscardABCIResponses {
+		cfg.Storage.DiscardABCIResponses = node.DiscardABCIResponses
+	}
+
+	if node.Indexer != "" {
+		cfg.TxIndex.Indexer = node.Indexer
+	}
+
+	if node.CompactionInterval != 0 && node.Compact {
+		cfg.Storage.CompactionInterval = node.CompactionInterval
+	}
 	return cfg, nil
 }
 
 // MakeAppConfig generates an ABCI application config for a node.
 func MakeAppConfig(node *e2e.Node) ([]byte, error) {
-	cfg := map[string]interface{}{
+	cfg := map[string]any{
 		"chain_id":                      node.Testnet.Name,
 		"dir":                           "data/app",
 		"listen":                        AppAddressUNIX,
@@ -306,6 +331,8 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"vote_extensions_enable_height": node.Testnet.VoteExtensionsEnableHeight,
 		"vote_extensions_update_height": node.Testnet.VoteExtensionsUpdateHeight,
 		"abci_requests_logging_enabled": node.Testnet.ABCITestsEnabled,
+		"pbts_enable_height":            node.Testnet.PbtsEnableHeight,
+		"pbts_update_height":            node.Testnet.PbtsUpdateHeight,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

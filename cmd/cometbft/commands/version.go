@@ -13,7 +13,7 @@ import (
 var VersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version info",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		cmtVersion := version.CMTSemVer
 		if version.CMTGitCommitHash != "" {
 			cmtVersion += "+" + version.CMTGitCommitHash

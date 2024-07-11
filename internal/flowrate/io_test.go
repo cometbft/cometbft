@@ -89,7 +89,6 @@ func TestReader(t *testing.T) {
 		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false},
 	}
 	for i, s := range status {
-		s := s
 		if !statusesAreEqual(&s, &want[i]) {
 			t.Errorf("r.Status(%v)\nexpected: %v\ngot     : %v", i, want[i], s)
 		}
@@ -121,7 +120,7 @@ func TestWriter(t *testing.T) {
 
 	// Subtest to verify that the Writer implements the Limiter interface
 	t.Run("implements limiter interface", func(t *testing.T) {
-		_, ok := interface{}(w).(Limiter)
+		_, ok := any(w).(Limiter)
 		if !ok {
 			t.Fatalf("Expected Writer to implement Limiter interface")
 		}
@@ -194,7 +193,7 @@ func TestWriter(t *testing.T) {
 // `time.Sleep` has ended).
 func statusesAreEqual(s1 *Status, s2 *Status) bool {
 	if s1.Active == s2.Active &&
-		s1.Start == s2.Start &&
+		s1.Start.Equal(s2.Start) &&
 		durationsAreEqual(s1.Duration, s2.Duration) &&
 		durationsAreEqual(s1.Idle, s2.Idle) &&
 		s1.Bytes == s2.Bytes &&

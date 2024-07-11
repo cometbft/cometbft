@@ -22,8 +22,8 @@ import (
 	p2pproto "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -65,9 +65,9 @@ func (tr *TestReactor) GetChannels() []*conn.ChannelDescriptor {
 	return tr.channels
 }
 
-func (tr *TestReactor) AddPeer(Peer) {}
+func (*TestReactor) AddPeer(Peer) {}
 
-func (tr *TestReactor) RemovePeer(Peer, interface{}) {}
+func (*TestReactor) RemovePeer(Peer, any) {}
 
 func (tr *TestReactor) Receive(e Envelope) {
 	if tr.logMessages {
@@ -85,7 +85,7 @@ func (tr *TestReactor) getMsgs(chID byte) []PeerMessage {
 	return tr.msgsReceived[chID]
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // convenience method for creating two switches connected to each other.
 // XXX: note this uses net.Pipe and not a proper TCP conn.
@@ -117,12 +117,10 @@ func initSwitchFunc(_ int, sw *Switch) *Switch {
 func TestSwitches(t *testing.T) {
 	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	t.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
+		if err := s2.Stop(); err != nil {
 			t.Error(err)
 		}
-	})
-	t.Cleanup(func() {
-		if err := s2.Stop(); err != nil {
+		if err := s1.Stop(); err != nil {
 			t.Error(err)
 		}
 	})
@@ -156,9 +154,11 @@ func TestSwitches(t *testing.T) {
 			},
 		},
 	}
+	// Test broadcast and TryBroadcast on different channels in parallel.
+	// We have no channel capacity concerns, as each broadcast is on a distinct channel
 	s1.Broadcast(Envelope{ChannelID: byte(0x00), Message: ch0Msg})
 	s1.Broadcast(Envelope{ChannelID: byte(0x01), Message: ch1Msg})
-	s1.Broadcast(Envelope{ChannelID: byte(0x02), Message: ch2Msg})
+	s1.TryBroadcast(Envelope{ChannelID: byte(0x02), Message: ch2Msg})
 	assertMsgReceivedWithTimeout(t,
 		ch0Msg,
 		byte(0x00),
@@ -584,7 +584,6 @@ func TestSwitchFullConnectivity(t *testing.T) {
 	switches := MakeConnectedSwitches(cfg, 3, initSwitchFunc, Connect2Switches)
 	defer func() {
 		for _, sw := range switches {
-			sw := sw
 			t.Cleanup(func() {
 				if err := sw.Stop(); err != nil {
 					t.Error(err)
@@ -695,7 +694,7 @@ type errorTransport struct {
 	acceptErr error
 }
 
-func (et errorTransport) NetAddress() NetAddress {
+func (errorTransport) NetAddress() NetAddress {
 	panic("not implemented")
 }
 
@@ -748,7 +747,7 @@ type mockReactor struct {
 	initCalledBeforeRemoveFinished uint32
 }
 
-func (r *mockReactor) RemovePeer(Peer, interface{}) {
+func (r *mockReactor) RemovePeer(Peer, any) {
 	atomic.StoreUint32(&r.removePeerInProgress, 1)
 	defer atomic.StoreUint32(&r.removePeerInProgress, 0)
 	time.Sleep(100 * time.Millisecond)
@@ -773,7 +772,7 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	reactor.BaseReactor = NewBaseReactor("mockReactor", reactor)
 
 	// make switch
-	sw := MakeSwitch(cfg, 1, func(i int, sw *Switch) *Switch {
+	sw := MakeSwitch(cfg, 1, func(_ int, sw *Switch) *Switch {
 		sw.AddReactor("mock", reactor)
 		return sw
 	})
@@ -811,53 +810,58 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 	assert.False(t, reactor.InitCalledBeforeRemoveFinished())
 }
 
-func BenchmarkSwitchBroadcast(b *testing.B) {
-	s1, s2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {
-		// Make bar reactors of bar channels each
-		sw.AddReactor("foo", NewTestReactor([]*conn.ChannelDescriptor{
-			{ID: byte(0x00), Priority: 10},
-			{ID: byte(0x01), Priority: 10},
-		}, false))
-		sw.AddReactor("bar", NewTestReactor([]*conn.ChannelDescriptor{
-			{ID: byte(0x02), Priority: 10},
-			{ID: byte(0x03), Priority: 10},
-		}, false))
-		return sw
-	})
-
-	b.Cleanup(func() {
-		if err := s1.Stop(); err != nil {
-			b.Error(err)
-		}
-	})
-
+func makeSwitchForBenchmark(b *testing.B) *Switch {
+	b.Helper()
+	s1, s2 := MakeSwitchPair(initSwitchFunc)
 	b.Cleanup(func() {
 		if err := s2.Stop(); err != nil {
 			b.Error(err)
 		}
+		if err := s1.Stop(); err != nil {
+			b.Error(err)
+		}
 	})
-
 	// Allow time for goroutines to boot up
 	time.Sleep(1 * time.Second)
+	return s1
+}
+
+func BenchmarkSwitchBroadcast(b *testing.B) {
+	sw := makeSwitchForBenchmark(b)
+	chMsg := &p2pproto.PexAddrs{
+		Addrs: []p2pproto.NetAddress{
+			{
+				ID: "1",
+			},
+		},
+	}
 
 	b.ResetTimer()
-
-	numSuccess, numFailure := 0, 0
 
 	// Send random message from foo channel to another
 	for i := 0; i < b.N; i++ {
 		chID := byte(i % 4)
-		successChan := s1.Broadcast(Envelope{ChannelID: chID})
-		for s := range successChan {
-			if s {
-				numSuccess++
-			} else {
-				numFailure++
-			}
-		}
+		sw.Broadcast(Envelope{ChannelID: chID, Message: chMsg})
+	}
+}
+
+func BenchmarkSwitchTryBroadcast(b *testing.B) {
+	sw := makeSwitchForBenchmark(b)
+	chMsg := &p2pproto.PexAddrs{
+		Addrs: []p2pproto.NetAddress{
+			{
+				ID: "1",
+			},
+		},
 	}
 
-	b.Logf("success: %v, failure: %v", numSuccess, numFailure)
+	b.ResetTimer()
+
+	// Send random message from foo channel to another
+	for i := 0; i < b.N; i++ {
+		chID := byte(i % 4)
+		sw.TryBroadcast(Envelope{ChannelID: chID, Message: chMsg})
+	}
 }
 
 func TestSwitchRemovalErr(t *testing.T) {

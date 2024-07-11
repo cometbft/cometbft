@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	"github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 const (
@@ -36,11 +36,18 @@ type Client interface {
 	// with the exception of `CheckTxAsync` which we maintain
 	// for the v0 mempool. We should explore refactoring the
 	// mempool to remove this vestige behavior.
+	//
+	// SetResponseCallback is not used anymore. The callback was invoked only by the mempool on
+	// CheckTx responses, only during rechecking. Now the responses are handled by the callback of
+	// the *ReqRes struct returned by CheckTxAsync. This callback is more flexible as it allows to
+	// pass other information such as the sender.
+	//
+	// Deprecated: Do not use.
 	SetResponseCallback(cb Callback)
 	CheckTxAsync(ctx context.Context, req *types.CheckTxRequest) (*ReqRes, error)
 }
 
-//----------------------------------------
+// ----------------------------------------
 
 // NewClient returns a new ABCI client of the specified transport type.
 // It returns an error if the transport is not "socket" or "grpc".
@@ -53,7 +60,7 @@ func NewClient(addr, transport string, mustConnect bool) (client Client, err err
 	default:
 		err = ErrUnknownAbciTransport{Transport: transport}
 	}
-	return
+	return client, err
 }
 
 type Callback func(*types.Request, *types.Response)
@@ -85,7 +92,7 @@ func NewReqRes(req *types.Request) *ReqRes {
 	}
 }
 
-// Sets sets the callback. If reqRes is already done, it will call the cb
+// SetCallback sets the callback. If reqRes is already done, it will call the cb
 // immediately. Note, reqRes.cb should not change if reqRes.done and only one
 // callback is supported.
 func (r *ReqRes) SetCallback(cb func(res *types.Response)) {
@@ -107,7 +114,7 @@ func (r *ReqRes) InvokeCallback() {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	if r.cb != nil {
+	if r.cb != nil && r.Response != nil {
 		r.cb(r.Response)
 	}
 	r.callbackInvoked = true
@@ -128,5 +135,5 @@ func (r *ReqRes) GetCallback() func(*types.Response) {
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
-	return
+	return wg
 }

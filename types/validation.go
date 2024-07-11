@@ -13,7 +13,9 @@ import (
 const batchVerifyThreshold = 2
 
 func shouldBatchVerify(vals *ValidatorSet, commit *Commit) bool {
-	return len(commit.Signatures) >= batchVerifyThreshold && batch.SupportsBatchVerifier(vals.GetProposer().PubKey)
+	return len(commit.Signatures) >= batchVerifyThreshold &&
+		batch.SupportsBatchVerifier(vals.GetProposer().PubKey) &&
+		vals.AllKeysHaveSameType()
 }
 
 // VerifyCommit verifies +2/3 of the set had signed the given commit.
@@ -101,7 +103,7 @@ func verifyCommitLightInternal(
 	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
 
 	// count all the remaining signatures
-	count := func(c CommitSig) bool { return true }
+	count := func(_ CommitSig) bool { return true }
 
 	// attempt to batch verify
 	if shouldBatchVerify(vals, commit) {
@@ -115,13 +117,15 @@ func verifyCommitLightInternal(
 }
 
 // VerifyCommitLightTrusting verifies that trustLevel of the validator set signed
-// this commit.
+// this commit. "Trusting" means that we trust the validator set to be correct.
 //
 // NOTE the given validators do not necessarily correspond to the validator set
 // for this commit, but there may be some intersection.
 //
 // This method is primarily used by the light client and does NOT check all the
 // signatures.
+//
+// CONTRACT: must run ValidateBasic() on commit before verifying.
 func VerifyCommitLightTrusting(
 	chainID string,
 	vals *ValidatorSet,
@@ -132,12 +136,14 @@ func VerifyCommitLightTrusting(
 }
 
 // VerifyCommitLightTrustingAllSignatures verifies that trustLevel of the validator
-// set signed this commit.
+// set signed this commit. "Trusting" means that we trust the validator set to be correct.
 //
 // NOTE the given validators do not necessarily correspond to the validator set
 // for this commit, but there may be some intersection.
 //
 // This method DOES check all the signatures.
+//
+// CONTRACT: must run ValidateBasic() on commit before verifying.
 func VerifyCommitLightTrustingAllSignatures(
 	chainID string,
 	vals *ValidatorSet,
@@ -176,7 +182,7 @@ func verifyCommitLightTrustingInternal(
 	ignore := func(c CommitSig) bool { return c.BlockIDFlag != BlockIDFlagCommit }
 
 	// count all the remaining signatures
-	count := func(c CommitSig) bool { return true }
+	count := func(_ CommitSig) bool { return true }
 
 	// attempt to batch verify commit. As the validator set doesn't necessarily
 	// correspond with the validator set that signed the block we need to look
@@ -247,7 +253,7 @@ func verifyCommitBatch(
 		if lookUpByIndex {
 			val = vals.Validators[idx]
 		} else {
-			valIdx, val = vals.GetByAddress(commitSig.ValidatorAddress)
+			valIdx, val = vals.GetByAddressMut(commitSig.ValidatorAddress)
 
 			// if the signature doesn't belong to anyone in the validator set
 			// then we just skip over it

@@ -16,7 +16,7 @@ import (
 
 const testCh = 0x01
 
-//------------------------------------------------
+// ------------------------------------------------
 
 type mockNodeInfo struct {
 	addr *NetAddress
@@ -24,8 +24,8 @@ type mockNodeInfo struct {
 
 func (ni mockNodeInfo) ID() ID                           { return ni.addr.ID }
 func (ni mockNodeInfo) NetAddress() (*NetAddress, error) { return ni.addr, nil }
-func (ni mockNodeInfo) Validate() error                  { return nil }
-func (ni mockNodeInfo) CompatibleWith(NodeInfo) error    { return nil }
+func (mockNodeInfo) Validate() error                     { return nil }
+func (mockNodeInfo) CompatibleWith(NodeInfo) error       { return nil }
 
 func AddPeerToSwitchPeerSet(sw *Switch, peer Peer) {
 	sw.peers.Add(peer) //nolint:errcheck // ignore error
@@ -63,10 +63,10 @@ func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
 			break
 		}
 	}
-	return
+	return addr, netAddr
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // Connects switches via arbitrary net.Conn. Used for testing.
 
 const TestHost = "localhost"
@@ -126,7 +126,7 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	<-doneCh
 }
 
-// ConnectStartSwitches will connect switches c and j via net.Pipe().
+// ConnectStarSwitches will connect switches c and j via net.Pipe().
 func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 	// Blocks until a connection is established.
 	// NOTE: caller ensures i and j is within bounds.
@@ -283,7 +283,7 @@ func testPeerConn(
 	return newPeerConn(outbound, persistent, conn, socketAddr), nil
 }
 
-//----------------------------------------------------------------
+// ----------------------------------------------------------------
 // rand node info
 
 func testNodeInfo(id ID, name string) NodeInfo {
@@ -331,7 +331,7 @@ func (book *AddrBookMock) OurAddress(addr *NetAddress) bool {
 	_, ok := book.OurAddrs[addr.String()]
 	return ok
 }
-func (book *AddrBookMock) MarkGood(ID) {}
+func (*AddrBookMock) MarkGood(ID) {}
 func (book *AddrBookMock) HasAddress(addr *NetAddress) bool {
 	_, ok := book.Addrs[addr.String()]
 	return ok
@@ -340,7 +340,7 @@ func (book *AddrBookMock) HasAddress(addr *NetAddress) bool {
 func (book *AddrBookMock) RemoveAddress(addr *NetAddress) {
 	delete(book.Addrs, addr.String())
 }
-func (book *AddrBookMock) Save() {}
+func (*AddrBookMock) Save() {}
 func (book *AddrBookMock) AddPrivateIDs(addrs []string) {
 	for _, addr := range addrs {
 		book.PrivateAddrs[addr] = struct{}{}

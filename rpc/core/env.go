@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"time"
 
+	abcicli "github.com/cometbft/cometbft/abci/client"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
-	sm "github.com/cometbft/cometbft/internal/state"
-	"github.com/cometbft/cometbft/internal/state/indexer"
-	"github.com/cometbft/cometbft/internal/state/txindex"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/log"
 	mempl "github.com/cometbft/cometbft/mempool"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
+	sm "github.com/cometbft/cometbft/state"
+	"github.com/cometbft/cometbft/state/indexer"
+	"github.com/cometbft/cometbft/state/txindex"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -32,7 +33,6 @@ const (
 	genesisChunkSize = 16 * 1024 * 1024 // 16
 )
 
-//----------------------------------------------
 // These interfaces are used by RPC and must be thread safe
 
 type Consensus interface {
@@ -62,7 +62,11 @@ type syncReactor interface {
 	WaitSync() bool
 }
 
-// ----------------------------------------------
+type mempoolReactor interface {
+	syncReactor
+	TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, error)
+}
+
 // Environment contains objects and interfaces used by the RPC. It is expected
 // to be setup once during startup.
 type Environment struct {
@@ -76,7 +80,7 @@ type Environment struct {
 	EvidencePool     sm.EvidencePool
 	ConsensusState   Consensus
 	ConsensusReactor syncReactor
-	MempoolReactor   syncReactor
+	MempoolReactor   mempoolReactor
 	P2PPeers         peers
 	P2PTransport     transport
 
@@ -95,8 +99,6 @@ type Environment struct {
 	// cache of chunked genesis data.
 	genChunks []string
 }
-
-//----------------------------------------------
 
 func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	if perPage < 1 {
@@ -119,7 +121,7 @@ func validatePage(pagePtr *int, perPage, totalCount int) (int, error) {
 	return page, nil
 }
 
-func (env *Environment) validatePerPage(perPagePtr *int) int {
+func (*Environment) validatePerPage(perPagePtr *int) int {
 	if perPagePtr == nil { // no per_page parameter
 		return defaultPerPage
 	}

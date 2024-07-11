@@ -64,7 +64,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 	for tcIndex, tc := range tests {
 		for i := 0; i < tc.numTxsToCreate; i++ {
 			tx := kvstore.NewTx(strconv.Itoa(i), "value")
-			reqRes, err := mp.CheckTx(tx)
+			reqRes, err := mp.CheckTx(tx, "")
 			require.NoError(t, err)
 			require.False(t, reqRes.Response.GetCheckTx().IsErr())
 		}
@@ -79,7 +79,7 @@ func TestCacheAfterUpdate(t *testing.T) {
 
 		for _, v := range tc.reAddIndices {
 			tx := kvstore.NewTx(strconv.Itoa(v), "value")
-			reqRes, err := mp.CheckTx(tx)
+			reqRes, err := mp.CheckTx(tx, "")
 			if err == nil {
 				require.False(t, reqRes.Response.GetCheckTx().IsErr())
 			}

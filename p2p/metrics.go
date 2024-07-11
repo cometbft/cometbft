@@ -26,10 +26,6 @@ var valueToLabelRegexp = regexp.MustCompile(`\*?(\w+)\.(.*)`)
 type Metrics struct {
 	// Number of peers.
 	Peers metrics.Gauge
-	// Number of bytes received from a given peer.
-	PeerReceiveBytesTotal metrics.Counter `metrics_labels:"peer_id,chID"`
-	// Number of bytes sent to a given peer.
-	PeerSendBytesTotal metrics.Counter `metrics_labels:"peer_id,chID"`
 	// Pending bytes to be sent to a given peer.
 	PeerPendingSendBytes metrics.Gauge `metrics_labels:"peer_id"`
 	// Number of transactions submitted by each peer.
@@ -49,7 +45,7 @@ type metricsLabelCache struct {
 // type that is passed in.
 // This method uses a map on the Metrics struct so that each label name only needs
 // to be produced once to prevent expensive string operations.
-func (m *metricsLabelCache) ValueToMetricLabel(i interface{}) string {
+func (m *metricsLabelCache) ValueToMetricLabel(i any) string {
 	t := reflect.TypeOf(i)
 	m.mtx.RLock()
 

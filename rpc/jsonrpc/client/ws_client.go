@@ -14,10 +14,10 @@ import (
 	metrics "github.com/rcrowley/go-metrics"
 
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 const (
@@ -114,12 +114,11 @@ func NewWS(remoteAddr, endpoint string, options ...func(*WSClient)) (*WSClient, 
 	}
 
 	c := &WSClient{
-		Address:              parsedURL.GetTrimmedHostWithPath(),
-		Username:             username,
-		Password:             password,
-		Dialer:               dialFn,
-		Endpoint:             endpoint,
-		PingPongLatencyTimer: metrics.NewTimer(),
+		Address:  parsedURL.GetTrimmedHostWithPath(),
+		Username: username,
+		Password: password,
+		Dialer:   dialFn,
+		Endpoint: endpoint,
 
 		maxReconnectAttempts: defaultMaxReconnectAttempts,
 		readWait:             defaultReadWait,
@@ -190,6 +189,7 @@ func (c *WSClient) OnStart() error {
 	}
 
 	c.ResponsesCh = make(chan types.RPCResponse)
+	c.PingPongLatencyTimer = metrics.NewTimer()
 
 	c.send = make(chan types.RPCRequest)
 	// 1 additional error may come from the read/write
@@ -247,7 +247,7 @@ func (c *WSClient) Send(ctx context.Context, request types.RPCRequest) error {
 }
 
 // Call enqueues a call request onto the Send queue. Requests are JSON encoded.
-func (c *WSClient) Call(ctx context.Context, method string, params map[string]interface{}) error {
+func (c *WSClient) Call(ctx context.Context, method string, params map[string]any) error {
 	request, err := types.MapToRequest(c.nextRequestID(), method, params)
 	if err != nil {
 		return err
@@ -256,8 +256,8 @@ func (c *WSClient) Call(ctx context.Context, method string, params map[string]in
 }
 
 // CallWithArrayParams enqueues a call request onto the Send queue. Params are
-// in a form of array (e.g. []interface{}{"abcd"}). Requests are JSON encoded.
-func (c *WSClient) CallWithArrayParams(ctx context.Context, method string, params []interface{}) error {
+// in a form of array (e.g. []any{"abcd"}). Requests are JSON encoded.
+func (c *WSClient) CallWithArrayParams(ctx context.Context, method string, params []any) error {
 	request, err := types.ArrayToRequest(c.nextRequestID(), method, params)
 	if err != nil {
 		return err
@@ -472,6 +472,7 @@ func (c *WSClient) readRoutine() {
 		// ignore error; it will trigger in tests
 		// likely because it's closing an already closed connection
 		// }
+		c.PingPongLatencyTimer.Stop()
 		c.wg.Done()
 	}()
 
@@ -548,20 +549,20 @@ func (c *WSClient) readRoutine() {
 // Subscribe to a query. Note the server must have a "subscribe" route
 // defined.
 func (c *WSClient) Subscribe(ctx context.Context, query string) error {
-	params := map[string]interface{}{"query": query}
+	params := map[string]any{"query": query}
 	return c.Call(ctx, "subscribe", params)
 }
 
 // Unsubscribe from a query. Note the server must have a "unsubscribe" route
 // defined.
 func (c *WSClient) Unsubscribe(ctx context.Context, query string) error {
-	params := map[string]interface{}{"query": query}
+	params := map[string]any{"query": query}
 	return c.Call(ctx, "unsubscribe", params)
 }
 
 // UnsubscribeAll from all. Note the server must have a "unsubscribe_all" route
 // defined.
 func (c *WSClient) UnsubscribeAll(ctx context.Context) error {
-	params := map[string]interface{}{}
+	params := map[string]any{}
 	return c.Call(ctx, "unsubscribe_all", params)
 }

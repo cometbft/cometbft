@@ -52,7 +52,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 		"p2p.laddr",
 		config.P2P.ListenAddress,
 		"node listen address. (0.0.0.0:0 means any interface, any port)")
-	cmd.Flags().String("p2p.external-address", config.P2P.ExternalAddress, "ip:port address to advertise to peers for them to dial")
+	cmd.Flags().String("p2p.external_address", config.P2P.ExternalAddress, "ip:port address to advertise to peers for them to dial")
 	cmd.Flags().String("p2p.seeds", config.P2P.Seeds, "comma-delimited ID@host:port seed nodes")
 	cmd.Flags().String("p2p.persistent_peers", config.P2P.PersistentPeers, "comma-delimited ID@host:port persistent peers")
 	cmd.Flags().String("p2p.unconditional_peer_ids",
@@ -75,7 +75,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 	cmd.Flags().String(
 		"db_backend",
 		config.DBBackend,
-		"database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb")
+		"database backend: goleveldb | rocksdb | badgerdb | pebbledb")
 	cmd.Flags().String(
 		"db_dir",
 		config.DBPath,
@@ -89,7 +89,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 		Use:     "start",
 		Aliases: []string{"node", "run"},
 		Short:   "Run the CometBFT node",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if len(genesisHash) != 0 {
 				config.Storage.GenesisHash = hex.EncodeToString(genesisHash)
 			}

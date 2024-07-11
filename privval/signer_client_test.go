@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	privvalproto "github.com/cometbft/cometbft/api/cometbft/privval/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
@@ -68,7 +67,6 @@ func TestSignerClose(t *testing.T) {
 
 func TestSignerPing(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -87,7 +85,6 @@ func TestSignerPing(t *testing.T) {
 
 func TestSignerGetPubKey(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -137,7 +134,6 @@ func TestSignerProposal(t *testing.T) {
 			Timestamp: ts,
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -181,7 +177,6 @@ func TestSignerVote(t *testing.T) {
 			ValidatorIndex:   1,
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -227,7 +222,6 @@ func TestSignerVoteResetDeadline(t *testing.T) {
 			ValidatorIndex:   1,
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -285,7 +279,6 @@ func TestSignerVoteKeepAlive(t *testing.T) {
 			ValidatorIndex:   1,
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -321,7 +314,6 @@ func TestSignerSignProposalErrors(t *testing.T) {
 		tc.signerServer.privVal = types.NewErroringMockPV()
 		tc.mockPV = types.NewErroringMockPV()
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -376,7 +368,6 @@ func TestSignerSignVoteErrors(t *testing.T) {
 		tc.signerServer.privVal = types.NewErroringMockPV()
 		tc.mockPV = types.NewErroringMockPV()
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -406,11 +397,11 @@ func brokenHandler(_ types.PrivValidator, request privvalproto.Message, _ string
 	switch r := request.Sum.(type) {
 	// This is broken and will answer most requests with a pubkey response
 	case *privvalproto.Message_PubKeyRequest:
-		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
+		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
 	case *privvalproto.Message_SignVoteRequest:
-		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
+		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
 	case *privvalproto.Message_SignProposalRequest:
-		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKey: cryptoproto.PublicKey{}, Error: nil})
+		res = mustWrapMsg(&privvalproto.PubKeyResponse{PubKeyType: "", PubKeyBytes: []byte{}, Error: nil})
 	case *privvalproto.Message_PingRequest:
 		err, res = nil, mustWrapMsg(&privvalproto.PingResponse{})
 	default:
@@ -427,7 +418,6 @@ func TestSignerUnexpectedResponse(t *testing.T) {
 
 		tc.signerServer.SetRequestHandler(brokenHandler)
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -474,7 +464,6 @@ func TestSignerVoteExtension(t *testing.T) {
 			Extension:        []byte("world"),
 		}
 
-		tc := tc
 		t.Cleanup(func() {
 			if err := tc.signerServer.Stop(); err != nil {
 				t.Error(err)
@@ -491,5 +480,28 @@ func TestSignerVoteExtension(t *testing.T) {
 
 		assert.Equal(t, want.Signature, have.Signature)
 		assert.Equal(t, want.ExtensionSignature, have.ExtensionSignature)
+	}
+}
+
+func TestSignerSignBytes(t *testing.T) {
+	for _, tc := range getSignerTestCases(t) {
+		t.Cleanup(func() {
+			if err := tc.signerServer.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+		t.Cleanup(func() {
+			if err := tc.signerClient.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		bytes := cmtrand.Bytes(32)
+		signature, err := tc.signerClient.SignBytes(bytes)
+		require.NoError(t, err)
+
+		pubKey, err := tc.mockPV.GetPubKey()
+		require.NoError(t, err)
+		require.True(t, pubKey.VerifySignature(bytes, signature))
 	}
 }

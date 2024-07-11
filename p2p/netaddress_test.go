@@ -110,7 +110,6 @@ func TestNewNetAddressString(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			addr, err := NewNetAddressString(tc.addr)
 			if tc.correct {
@@ -118,7 +117,7 @@ func TestNewNetAddressString(t *testing.T) {
 					assert.Equal(t, tc.expected, addr.String())
 				}
 			} else {
-				require.Error(t, err, tc.addr)
+				require.ErrorAs(t, err, &ErrNetAddressInvalid{Addr: addr.String(), Err: err})
 			}
 		})
 	}

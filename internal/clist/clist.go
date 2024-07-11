@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"sync"
 
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // MaxLength is the max allowed number of elements a linked list is
@@ -51,7 +51,7 @@ type CElement struct {
 	nextWaitCh chan struct{}
 	removed    bool
 
-	Value interface{} // immutable
+	Value any // immutable
 }
 
 // Blocking implementation of Next().
@@ -211,7 +211,7 @@ func (e *CElement) SetRemoved() {
 	e.mtx.Unlock()
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 // CList represents a linked list.
 // The zero value for CList is an empty list ready to use.
@@ -313,7 +313,7 @@ func (l *CList) WaitChan() <-chan struct{} {
 }
 
 // Panics if list grows beyond its max length.
-func (l *CList) PushBack(v interface{}) *CElement {
+func (l *CList) PushBack(v any) *CElement {
 	l.mtx.Lock()
 
 	// Construct a new element
@@ -353,7 +353,7 @@ func (l *CList) PushBack(v interface{}) *CElement {
 
 // CONTRACT: Caller must call e.DetachPrev() and/or e.DetachNext() to avoid memory leaks.
 // NOTE: As per the contract of CList, removed elements cannot be added back.
-func (l *CList) Remove(e *CElement) interface{} {
+func (l *CList) Remove(e *CElement) any {
 	l.mtx.Lock()
 
 	prev := e.Prev()
@@ -403,5 +403,5 @@ func (l *CList) Remove(e *CElement) interface{} {
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)
-	return
+	return wg
 }

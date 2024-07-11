@@ -6,7 +6,6 @@ package p2p
 
 import (
 	"encoding/hex"
-	"errors"
 	"flag"
 	"fmt"
 	"net"
@@ -71,7 +70,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	addrWithoutProtocol := removeProtocolIfDefined(addr)
 	spl := strings.Split(addrWithoutProtocol, "@")
 	if len(spl) != 2 {
-		return nil, ErrNetAddressNoID{addr}
+		return nil, ErrNetAddressInvalid{Addr: addr, Err: ErrNetAddressNoID{addr}}
 	}
 
 	// get ID
@@ -89,7 +88,7 @@ func NewNetAddressString(addr string) (*NetAddress, error) {
 	if len(host) == 0 {
 		return nil, ErrNetAddressInvalid{
 			addrWithoutProtocol,
-			errors.New("host is empty"),
+			ErrEmptyHost,
 		}
 	}
 
@@ -141,10 +140,11 @@ func NewNetAddressIPPort(ip net.IP, port uint16) *NetAddress {
 func NetAddressFromProto(pb tmp2p.NetAddress) (*NetAddress, error) {
 	ip := net.ParseIP(pb.IP)
 	if ip == nil {
-		return nil, fmt.Errorf("invalid IP address %v", pb.IP)
+		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: ErrInvalidIP}
 	}
+
 	if pb.Port >= 1<<16 {
-		return nil, fmt.Errorf("invalid port number %v", pb.Port)
+		return nil, ErrNetAddressInvalid{Addr: pb.IP, Err: ErrInvalidPort{pb.Port}}
 	}
 	return &NetAddress{
 		ID:   ID(pb.ID),
@@ -188,7 +188,7 @@ func (na *NetAddress) ToProto() tmp2p.NetAddress {
 
 // Equals reports whether na and other are the same addresses,
 // including their ID, IP, and Port.
-func (na *NetAddress) Equals(other interface{}) bool {
+func (na *NetAddress) Equals(other any) bool {
 	if o, ok := other.(*NetAddress); ok {
 		return na.String() == o.String()
 	}
@@ -196,7 +196,7 @@ func (na *NetAddress) Equals(other interface{}) bool {
 }
 
 // Same returns true is na has the same non-empty ID or DialString as other.
-func (na *NetAddress) Same(other interface{}) bool {
+func (na *NetAddress) Same(other any) bool {
 	if o, ok := other.(*NetAddress); ok {
 		if na.DialString() == o.DialString() {
 			return true
@@ -264,14 +264,14 @@ func (na *NetAddress) Routable() bool {
 // address or one that matches the RFC3849 documentation address format.
 func (na *NetAddress) Valid() error {
 	if err := validateID(na.ID); err != nil {
-		return fmt.Errorf("invalid ID: %w", err)
+		return ErrInvalidPeerID{na.ID, err}
 	}
 
 	if na.IP == nil {
-		return errors.New("no IP")
+		return ErrNoIP
 	}
 	if na.IP.IsUnspecified() || na.RFC3849() || na.IP.Equal(net.IPv4bcast) {
-		return errors.New("invalid IP")
+		return ErrNetAddressInvalid{na.IP.String(), ErrInvalidIP}
 	}
 	return nil
 }
@@ -290,7 +290,7 @@ func (na *NetAddress) Local() bool {
 // ReachabilityTo checks whenever o can be reached from na.
 func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 	const (
-		Unreachable = 0
+		unreachable = 0
 		Default     = iota
 		Teredo
 		Ipv6Weak
@@ -299,7 +299,7 @@ func (na *NetAddress) ReachabilityTo(o *NetAddress) int {
 	)
 	switch {
 	case !na.Routable():
-		return Unreachable
+		return unreachable
 	case na.RFC4380():
 		switch {
 		case !o.Routable():
@@ -408,14 +408,14 @@ func removeProtocolIfDefined(addr string) string {
 
 func validateID(id ID) error {
 	if len(id) == 0 {
-		return errors.New("no ID")
+		return ErrNoIP
 	}
 	idBytes, err := hex.DecodeString(string(id))
 	if err != nil {
 		return err
 	}
 	if len(idBytes) != IDByteLength {
-		return fmt.Errorf("invalid hex length - got %d, expected %d", len(idBytes), IDByteLength)
+		return ErrInvalidPeerIDLength{Got: len(idBytes), Expected: IDByteLength}
 	}
 	return nil
 }

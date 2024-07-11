@@ -6,52 +6,55 @@ title: Requirements for the Application
 # Requirements for the Application
 
 - [Requirements for the Application](#requirements-for-the-application)
-    - [Formal Requirements](#formal-requirements)
-        - [Consensus Connection Requirements](#consensus-connection-requirements)
-        - [Mempool Connection Requirements](#mempool-connection-requirements)
-    - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
-        - [Connection State](#connection-state)
-            - [Concurrency](#concurrency)
-            - [FinalizeBlock](#finalizeblock)
-            - [Commit](#commit)
-            - [Candidate States](#candidate-states)
-        - [States and ABCI++ Connections](#states-and-abci-connections)
-            - [Consensus Connection](#consensus-connection)
-            - [Mempool Connection](#mempool-connection)
-                - [Replay Protection](#replay-protection)
-            - [Info/Query Connection](#infoquery-connection)
-            - [Snapshot Connection](#snapshot-connection)
-        - [Transaction Results](#transaction-results)
-            - [Gas](#gas)
-            - [Specifics of `CheckTxResponse`](#specifics-of-checktxresponse)
-            - [Specifics of `ExecTxResult`](#specifics-of-exectxresult)
-        - [Updating the Validator Set](#updating-the-validator-set)
-        - [Consensus Parameters](#consensus-parameters)
-            - [List of Parameters](#list-of-parameters)
-                - [BlockParams.MaxBytes](#blockparamsmaxbytes)
-                - [BlockParams.MaxGas](#blockparamsmaxgas)
-                - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
-                - [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
-                - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-                - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
-                - [VersionParams.App](#versionparamsapp)
-                - [ABCIParams.VoteExtensionsEnableHeight](#abciparamsvoteextensionsenableheight)
-            - [Updating Consensus Parameters](#updating-consensus-parameters)
-                - [`InitChain`](#initchain)
-                - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
-        - [`Query`](#query)
-            - [Query Proofs](#query-proofs)
-            - [Peer Filtering](#peer-filtering)
-            - [Paths](#paths)
-        - [Crash Recovery](#crash-recovery)
-        - [State Sync](#state-sync)
-            - [Taking Snapshots](#taking-snapshots)
-            - [Bootstrapping a Node](#bootstrapping-a-node)
-                - [Snapshot Discovery](#snapshot-discovery)
-                - [Snapshot Restoration](#snapshot-restoration)
-                - [Snapshot Verification](#snapshot-verification)
-                - [Transition to Consensus](#transition-to-consensus)
-    - [Application configuration required to switch to ABCI 2.0](#application-configuration-required-to-switch-to-abci-20)
+  - [Formal Requirements](#formal-requirements)
+    - [Consensus Connection Requirements](#consensus-connection-requirements)
+    - [Mempool Connection Requirements](#mempool-connection-requirements)
+  - [Managing the Application state and related topics](#managing-the-application-state-and-related-topics)
+    - [Connection State](#connection-state)
+      - [Concurrency](#concurrency)
+      - [FinalizeBlock](#finalizeblock)
+      - [Commit](#commit)
+      - [Candidate States](#candidate-states)
+    - [States and ABCI Connections](#states-and-abci-connections)
+      - [Consensus Connection](#consensus-connection)
+      - [Mempool Connection](#mempool-connection)
+        - [Replay Protection](#replay-protection)
+      - [Info/Query Connection](#infoquery-connection)
+      - [Snapshot Connection](#snapshot-connection)
+    - [Transaction Results](#transaction-results)
+      - [Gas](#gas)
+      - [Specifics of `CheckTxResponse`](#specifics-of-checktxresponse)
+      - [Specifics of `ExecTxResult`](#specifics-of-exectxresult)
+    - [Updating the Validator Set](#updating-the-validator-set)
+    - [Consensus Parameters](#consensus-parameters)
+      - [List of Parameters](#list-of-parameters)
+        - [BlockParams.MaxBytes](#blockparamsmaxbytes)
+        - [BlockParams.MaxGas](#blockparamsmaxgas)
+        - [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
+        - [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
+        - [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
+        - [FeatureParams.PbtsEnableHeight](#featureparamspbtsenableheight)
+        - [FeatureParams.VoteExtensionsEnableHeight](#featureparamsvoteextensionsenableheight)
+        - [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
+        - [VersionParams.App](#versionparamsapp)
+        - [SynchronyParams.Precision](#synchronyparamsprecision)
+        - [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
+      - [Updating Consensus Parameters](#updating-consensus-parameters)
+        - [`InitChain`](#initchain)
+        - [`FinalizeBlock`, `PrepareProposal`/`ProcessProposal`](#finalizeblock-prepareproposalprocessproposal)
+    - [`Query`](#query)
+      - [Query Proofs](#query-proofs)
+      - [Peer Filtering](#peer-filtering)
+      - [Paths](#paths)
+    - [Crash Recovery](#crash-recovery)
+    - [State Sync](#state-sync)
+      - [Taking Snapshots](#taking-snapshots)
+      - [Bootstrapping a Node](#bootstrapping-a-node)
+        - [Snapshot Discovery](#snapshot-discovery)
+        - [Snapshot Restoration](#snapshot-restoration)
+        - [Snapshot Verification](#snapshot-verification)
+        - [Transition to Consensus](#transition-to-consensus)
+  - [Application configuration required to switch to ABCI 2.0](#application-configuration-required-to-switch-to-abci-20)
 
 ## Formal Requirements
 
@@ -250,7 +253,7 @@ In contrast, the value of *b* MUST be the same across all processes.
 
 ### Connection State
 
-CometBFT maintains four concurrent ABCI++ connections, namely
+CometBFT maintains four concurrent ABCI connections, namely
 [Consensus Connection](#consensus-connection),
 [Mempool Connection](#mempool-connection),
 [Info/Query Connection](#infoquery-connection), and
@@ -260,7 +263,7 @@ the state for each connection, which are synchronized upon `Commit` calls.
 
 #### Concurrency
 
-In principle, each of the four ABCI++ connections operates concurrently with one
+In principle, each of the four ABCI connections operates concurrently with one
 another. This means applications need to ensure access to state is
 thread safe. Both the
 [default in-process ABCI client](https://github.com/cometbft/cometbft/blob/main/abci/client/local_client.go#L13)
@@ -273,20 +276,6 @@ ABCI messages from all connections are received in sequence, one at a
 time.
 
 The existence of this global mutex means Go application developers can get thread safety for application state by routing all reads and writes through the ABCI system. Thus it may be unsafe to expose application state directly to an RPC interface, and unless explicit measures are taken, all queries should be routed through the ABCI Query method.
-
-<!--
-This is no longer the case starting from v0.36.0: the global locks have been removed and it is
-up to the Application to synchronize access to its state when handling
-ABCI++ methods on all connections.
- -->
-
-<!--
- TODO CHeck with Sergio whether this is still the case
- -->
-<!--
-Nevertheless, as all ABCI calls are now synchronous, ABCI messages using the same connection are
-still received in sequence.
- -->
 
 #### FinalizeBlock
 
@@ -309,7 +298,9 @@ will be received on the mempool connection during this processing step, providin
 update all four
 connection states to the latest committed state at the same time.
 
-When `Commit` returns, CometBFT unlocks the mempool.
+CometBFT unlocks the mempool after it has finished updating for the new block,
+which occurs asynchronously from `Commit`.
+See [Mempool Update](../mempool/mempool.md) for more information on what the `update` task does.
 
 WARNING: if the ABCI app logic processing the `Commit` message sends a
 `/broadcast_tx_sync` or `/broadcast_tx` and waits for the response
@@ -363,7 +354,7 @@ to bound memory usage. As a general rule, the Application should be ready to dis
 before `FinalizeBlock`, even if one of them might end up corresponding to the
 decided block and thus have to be reexecuted upon `FinalizeBlock`.
 
-### States and ABCI++ Connections
+### States and ABCI Connections
 
 #### Consensus Connection
 
@@ -404,7 +395,7 @@ Since the transaction cannot be guaranteed to be checked against the exact same 
 will be executed as part of a (potential) decided block, `CheckTx` shouldn't check *everything*
 that affects the transaction's validity, in particular those checks whose validity may depend on
 transaction ordering. `CheckTx` is weak because a Byzantine node need not care about `CheckTx`;
-it can propose a block full of invalid transactions if it wants. The mechanism ABCI++ has
+it can propose a block full of invalid transactions if it wants. The mechanism ABCI, from version 1.0, has
 in place for dealing with such behavior is `ProcessProposal`.
 
 ##### Replay Protection
@@ -592,25 +583,19 @@ all full nodes have the same value at a given height.
 
 #### List of Parameters
 
-These are the current consensus parameters (as of v0.37.x):
+These are the current consensus parameters (as of v1.0.x):
 
-1. [BlockParams.MaxBytes](#blockparamsmaxbytes)
-2. [BlockParams.MaxGas](#blockparamsmaxgas)
-3. [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
-4. [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
-5. [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
-6. [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
-7. [VersionParams.App](#versionparamsapp)
-<!--
- 6. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
-7. [SynchronyParams.Precision](#synchronyparamsprecision)
-8. [TimeoutParams.Propose](#timeoutparamspropose)
-9. [TimeoutParams.ProposeDelta](#timeoutparamsproposedelta)
-10. [TimeoutParams.Vote](#timeoutparamsvote)
-11. [TimeoutParams.VoteDelta](#timeoutparamsvotedelta)
-12. [TimeoutParams.Commit](#timeoutparamscommit)
-13. [TimeoutParams.BypassCommitTimeout](#timeoutparamsbypasscommittimeout)
--->
+1.  [BlockParams.MaxBytes](#blockparamsmaxbytes)
+2.  [BlockParams.MaxGas](#blockparamsmaxgas)
+3.  [EvidenceParams.MaxAgeDuration](#evidenceparamsmaxageduration)
+4.  [EvidenceParams.MaxAgeNumBlocks](#evidenceparamsmaxagenumblocks)
+5.  [EvidenceParams.MaxBytes](#evidenceparamsmaxbytes)
+6.  [FeatureParams.PbtsEnableHeight](#featureparamspbtsenableheight)
+7.  [FeatureParams.VoteExtensionsEnableHeight](#featureparamsvoteextensionsenableheight)
+8.  [ValidatorParams.PubKeyTypes](#validatorparamspubkeytypes)
+9.  [VersionParams.App](#versionparamsapp)
+10. [SynchronyParams.Precision](#synchronyparamsprecision)
+11. [SynchronyParams.MessageDelay](#synchronyparamsmessagedelay)
 
 ##### BlockParams.MaxBytes
 
@@ -691,97 +676,26 @@ a block minus its overhead ( ~ `BlockParams.MaxBytes`).
 
 Must have `MaxBytes > 0`.
 
-##### ValidatorParams.PubKeyTypes
+##### FeatureParams.PbtsEnableHeight
 
-The parameter restricts the type of keys validators can use. The parameter uses ABCI pubkey naming, not Amino names.
+Height at which Proposer-Based Timestamps (PBTS) will be enabled.
 
-##### VersionParams.App
+From the specified height, and for all subsequent heights, the PBTS
+algorithm will be used to produce and validate block timestamps. Prior to
+this height, or when this height is set to 0, the legacy BFT Time
+algorithm is used to produce and validate timestamps.
 
-This is the version of the ABCI application.
-<!--
-##### SynchronyParams.MessageDelay
+PBTS cannot be disabled once it is enabled.
 
-This sets a bound on how long a proposal message may take to reach all
-validators on a network and still be considered valid.
+Cannot be set to heights lower or equal to the current blockchain height.
 
-This parameter is part of the
-[proposer-based timestamps](../consensus/proposer-based-timestamp)
-(PBTS) algorithm.
+Must have `PbtsEnableHeight > [Current height]`
 
-
-##### SynchronyParams.Precision
-
-This sets a bound on how skewed a proposer's clock may be from any validator
-on the network while still producing valid proposals.
-
-This parameter is part of the
-[proposer-based timestamps](../consensus/proposer-based-timestamp)
-(PBTS) algorithm.
-
-
-##### TimeoutParams.Propose
-
-Timeout in ms of the propose step of the consensus algorithm.
-This value is the initial timeout at every height (round 0).
-
-The value in subsequent rounds is modified by parameter `ProposeDelta`.
-When a new height is started, the `Propose` timeout value is reset to this
-parameter.
-
-If a node waiting for a proposal message does not receive one matching its
-current height and round before this timeout, the node will issue a
-`nil` prevote for the round and advance to the next step.
-
-##### TimeoutParams.ProposeDelta
-
-Increment in ms to be added to the `Propose` timeout every time the
-consensus algorithm advances one round in a given height.
-
-When a new height is started, the `Propose` timeout value is reset.
-
-##### TimeoutParams.Vote
-
-Timeout in ms of the prevote and precommit steps of the consensus
-algorithm.
-This value is the initial timeout at every height (round 0).
-
-The value in subsequent rounds is modified by parameter `VoteDelta`.
-When a new height is started, the `Vote` timeout value is reset to this
-parameter.
-
-The `Vote` timeout does not begin until a quorum of votes has been received.
-Once a quorum of votes has been seen and this timeout elapses, Tendermint will
-proceed to the next step of the consensus algorithm. If Tendermint receives
-all of the remaining votes before the end of the timeout, it will proceed
-to the next step immediately.
-
-##### TimeoutParams.VoteDelta
-
-Increment in ms to be added to the `Vote` timeout every time the
-consensus algorithm advances one round in a given height.
-
-When a new height is started, the `Vote` timeout value is reset.
-
-##### TimeoutParams.Commit
-
-This configures how long the consensus algorithm will wait after receiving a quorum of
-precommits before beginning consensus for the next height. This can be
-used to allow slow precommits to arrive for inclusion in the next height
-before progressing.
-
-##### TimeoutParams.BypassCommitTimeout
-
-This configures the node to proceed immediately to the next height once the
-node has received all precommits for a block, forgoing the remaining commit timeout.
-Setting this parameter to `false` (the default) causes Tendermint to wait
-for the full commit timeout configured in `TimeoutParams.Commit`.
--->
-
-##### ABCIParams.VoteExtensionsEnableHeight
+##### FeatureParams.VoteExtensionsEnableHeight
 
 This parameter is either 0 or a positive height at which vote extensions
 become mandatory. If the value is zero (which is the default), vote
-extensions are not required. Otherwise, at all heights greater than the
+extensions are not expected. Otherwise, at all heights greater than the
 configured height `H` vote extensions must be present (even if empty).
 When the configured height `H` is reached, `PrepareProposal` will not
 include vote extensions yet, but `ExtendVote` and `VerifyVoteExtension` will
@@ -795,6 +709,32 @@ include the vote extensions from height `H`. For all heights after `H`
 
 Must always be set to a future height, 0, or the same height that was previously set.
 Once the chain's height reaches the value set, it cannot be changed to a different value.
+
+##### ValidatorParams.PubKeyTypes
+
+The parameter restricts the type of keys validators can use. The parameter uses ABCI pubkey naming, not Amino names.
+
+##### VersionParams.App
+
+This is the version of the ABCI application.
+
+##### SynchronyParams.Precision
+
+This sets a bound on how skewed a proposer's clock may be from any validator
+on the network while still producing valid proposals.
+
+This parameter is used by the
+[Proposer-Based Timestamps (PBTS)](../consensus/proposer-based-timestamp/README.md)
+algorithm.
+
+##### SynchronyParams.MessageDelay
+
+This sets a bound on how long a proposal message may take to reach all
+validators on a network and still be considered valid.
+
+This parameter is used by the
+[Proposer-Based Timestamps (PBTS)](../consensus/proposer-based-timestamp/README.md)
+algorithm.
 
 #### Updating Consensus Parameters
 

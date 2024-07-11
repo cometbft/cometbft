@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"testing"
 
-	underlyingSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
+	underlyingsecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,7 +75,7 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 		// This function creates a private and public key in the underlying libraries format.
 		// The private key is basically calling new(big.Int).SetBytes(pk), which removes leading zero bytes
 		// TODO Deal with this
-		priv, _ := underlyingSecp256k1.PrivKeyFromBytes(privKeyBytes[:])
+		priv, _ := underlyingsecp256k1.PrivKeyFromBytes(privKeyBytes[:])
 		// this takes the bytes returned by `(big int).Bytes()`, and if the length is less than 32 bytes,
 		// pads the bytes from the left with zero bytes. Therefore these two functions composed
 		// result in the identity function on privKeyBytes, hence the following equality check
@@ -86,8 +86,8 @@ func TestSecp256k1LoadPrivkeyAndSerializeIsIdentity(t *testing.T) {
 }
 
 func TestGenPrivKeySecp256k1Eth(t *testing.T) {
-	// curve order N
-	N := underlyingSecp256k1.S256().N
+	// curve order n
+	n := underlyingsecp256k1.S256().N
 	tests := []struct {
 		name   string
 		secret []byte
@@ -103,14 +103,13 @@ func TestGenPrivKeySecp256k1Eth(t *testing.T) {
 		{"another seed used in cosmos tests #3", []byte("")},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			// TODO Deal with this
 			gotPrivKey := secp256k1_eth.GenPrivKeySecp256k1(tt.secret)
 			require.NotNil(t, gotPrivKey)
 			// interpret as a big.Int and make sure it is a valid field element:
 			fe := new(big.Int).SetBytes(gotPrivKey[:])
-			require.Less(t, fe.Cmp(N), 0)
+			require.Less(t, fe.Cmp(n), 0)
 			require.Greater(t, fe.Sign(), 0)
 		})
 	}

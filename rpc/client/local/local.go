@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	cmtpubsub "github.com/cometbft/cometbft/internal/pubsub"
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
 	"github.com/cometbft/cometbft/libs/bytes"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	nm "github.com/cometbft/cometbft/node"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/core"
@@ -60,6 +60,18 @@ func New(node *nm.Node) *Local {
 
 var _ rpcclient.Client = (*Local)(nil)
 
+type ErrParseQuery struct {
+	Source error
+}
+
+func (e ErrParseQuery) Error() string {
+	return fmt.Sprintf("failed to parse query: %v", e.Source)
+}
+
+func (e ErrParseQuery) Unwrap() error {
+	return e.Source
+}
+
 // SetLogger allows to set a logger on the client.
 func (c *Local) SetLogger(l log.Logger) {
 	c.Logger = l
@@ -96,6 +108,10 @@ func (c *Local) BroadcastTxAsync(_ context.Context, tx types.Tx) (*ctypes.Result
 
 func (c *Local) BroadcastTxSync(_ context.Context, tx types.Tx) (*ctypes.ResultBroadcastTx, error) {
 	return c.env.BroadcastTxSync(c.ctx, tx)
+}
+
+func (c *Local) UnconfirmedTx(_ context.Context, hash []byte) (*ctypes.ResultUnconfirmedTx, error) {
+	return c.env.UnconfirmedTx(c.ctx, hash)
 }
 
 func (c *Local) UnconfirmedTxs(_ context.Context, limit *int) (*ctypes.ResultUnconfirmedTxs, error) {
@@ -220,7 +236,7 @@ func (c *Local) Subscribe(
 ) (out <-chan ctypes.ResultEvent, err error) {
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse query: %w", err)
+		return nil, ErrParseQuery{Source: err}
 	}
 
 	outCap := 1
@@ -235,7 +251,7 @@ func (c *Local) Subscribe(
 		sub, err = c.EventBus.SubscribeUnbuffered(ctx, subscriber, q)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to subscribe: %w", err)
+		return nil, rpcclient.ErrSubscribe{Source: err}
 	}
 
 	outc := make(chan ctypes.ResultEvent, outCap)
@@ -300,7 +316,7 @@ func (c *Local) resubscribe(subscriber string, q cmtpubsub.Query) types.Subscrip
 func (c *Local) Unsubscribe(ctx context.Context, subscriber, query string) error {
 	q, err := cmtquery.New(query)
 	if err != nil {
-		return fmt.Errorf("failed to parse query: %w", err)
+		return ErrParseQuery{Source: err}
 	}
 	return c.EventBus.Unsubscribe(ctx, subscriber, q)
 }

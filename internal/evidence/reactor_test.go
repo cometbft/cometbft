@@ -20,10 +20,10 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
-	sm "github.com/cometbft/cometbft/internal/state"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
+	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -38,14 +38,14 @@ var (
 // evidence pools.
 func TestReactorBroadcastEvidence(t *testing.T) {
 	config := cfg.TestConfig()
-	N := 7
+	n := 7
 
 	// create statedb for everyone
-	stateDBs := make([]sm.Store, N)
+	stateDBs := make([]sm.Store, n)
 	val := types.NewMockPV()
 	// we need validators saved for heights at least as high as we have evidence for
 	height := int64(numEvidence) + 10
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		stateDBs[i] = initializeValidatorState(val, height)
 	}
 
@@ -207,7 +207,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	// i.e. broadcastEvidenceRoutine finishes when peer is stopped
 	defer leaktest.CheckTimeout(t, 10*time.Second)()
 
-	p.On("Send", mock.MatchedBy(func(i interface{}) bool {
+	p.On("Send", mock.MatchedBy(func(i any) bool {
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == evidence.EvidenceChannel
 	})).Return(false)
@@ -228,7 +228,7 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 // evidenceLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
 func evidenceLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...interface{}) term.FgBgColor {
+	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
@@ -242,14 +242,14 @@ func evidenceLogger() log.Logger {
 func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) ([]*evidence.Reactor,
 	[]*evidence.Pool,
 ) {
-	N := len(stateStores)
+	n := len(stateStores)
 
-	reactors := make([]*evidence.Reactor, N)
-	pools := make([]*evidence.Pool, N)
+	reactors := make([]*evidence.Reactor, n)
+	pools := make([]*evidence.Pool, n)
 	logger := evidenceLogger()
 	evidenceTime := time.Date(2019, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	for i := 0; i < N; i++ {
+	for i := 0; i < n; i++ {
 		evidenceDB := dbm.NewMemDB()
 		blockStore := &mocks.BlockStore{}
 		blockStore.On("LoadBlockMeta", mock.AnythingOfType("int64")).Return(
@@ -264,7 +264,7 @@ func makeAndConnectReactorsAndPools(config *cfg.Config, stateStores []sm.Store) 
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
 
-	p2p.MakeConnectedSwitches(config.P2P, N, func(i int, s *p2p.Switch) *p2p.Switch {
+	p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("EVIDENCE", reactors[i])
 		return s
 	}, p2p.Connect2Switches)
@@ -400,8 +400,6 @@ func TestEvidenceVectors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
-
 		evi := make([]cmtproto.Evidence, len(tc.evidenceList))
 		for i := 0; i < len(tc.evidenceList); i++ {
 			ev, err := types.EvidenceToProto(tc.evidenceList[i])

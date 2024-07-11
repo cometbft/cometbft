@@ -46,14 +46,14 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 	if len(p) > 0 {
 		n, err = r.IO(r.Reader.Read(p))
 	}
-	return
+	return n, err
 }
 
 // SetLimit changes the transfer rate limit to new bytes per second and returns
 // the previous setting.
 func (r *Reader) SetLimit(new int64) (old int64) {
 	old, r.limit = r.limit, new
-	return
+	return old
 }
 
 // SetBlocking changes the blocking behavior and returns the previous setting. A
@@ -61,7 +61,7 @@ func (r *Reader) SetLimit(new int64) (old int64) {
 // may be read at this time due to the rate limit.
 func (r *Reader) SetBlocking(new bool) (old bool) {
 	old, r.block = r.block, new
-	return
+	return old
 }
 
 // Close closes the underlying reader if it implements the io.Closer interface.
@@ -104,14 +104,14 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 		p = p[c:]
 		n += c
 	}
-	return
+	return n, err
 }
 
 // SetLimit changes the transfer rate limit to new bytes per second and returns
 // the previous setting.
 func (w *Writer) SetLimit(new int64) (old int64) {
 	old, w.limit = w.limit, new
-	return
+	return old
 }
 
 // SetBlocking changes the blocking behavior and returns the previous setting. A
@@ -119,7 +119,7 @@ func (w *Writer) SetLimit(new int64) (old int64) {
 // may be written at this time due to the rate limit.
 func (w *Writer) SetBlocking(new bool) (old bool) {
 	old, w.block = w.block, new
-	return
+	return old
 }
 
 // Close closes the underlying writer if it implements the io.Closer interface.

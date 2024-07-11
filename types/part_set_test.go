@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"io"
 	"testing"
 
@@ -110,11 +111,10 @@ func TestPartSetHeaderValidateBasic(t *testing.T) {
 		malleatePartSetHeader func(*PartSetHeader)
 		expectErr             bool
 	}{
-		{"Good PartSet", func(psHeader *PartSetHeader) {}, false},
+		{"Good PartSet", func(_ *PartSetHeader) {}, false},
 		{"Invalid Hash", func(psHeader *PartSetHeader) { psHeader.Hash = make([]byte, 1) }, true},
 	}
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			data := cmtrand.Bytes(testPartSize * 100)
 			ps := NewPartSetFromData(data, testPartSize)
@@ -131,7 +131,7 @@ func TestPartValidateBasic(t *testing.T) {
 		malleatePart func(*Part)
 		expectErr    bool
 	}{
-		{"Good Part", func(pt *Part) {}, false},
+		{"Good Part", func(_ *Part) {}, false},
 		{"Too big part", func(pt *Part) { pt.Bytes = make([]byte, BlockPartSizeBytes+1) }, true},
 		{"Good small last part", func(pt *Part) {
 			pt.Index = 1
@@ -153,7 +153,6 @@ func TestPartValidateBasic(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			data := cmtrand.Bytes(testPartSize * 100)
 			ps := NewPartSetFromData(data, testPartSize)
@@ -219,5 +218,17 @@ func TestPartProtoBuf(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.ps1, p, tc.msg)
 		}
+	}
+}
+
+func BenchmarkMakePartSet(b *testing.B) {
+	for nParts := 1; nParts <= 5; nParts++ {
+		b.Run(fmt.Sprintf("nParts=%d", nParts), func(b *testing.B) {
+			data := cmtrand.Bytes(testPartSize * nParts)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				NewPartSetFromData(data, testPartSize)
+			}
+		})
 	}
 }

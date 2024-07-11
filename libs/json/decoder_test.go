@@ -21,7 +21,7 @@ func TestUnmarshal(t *testing.T) {
 
 	testcases := map[string]struct {
 		json  string
-		value interface{}
+		value any
 		err   bool
 	}{
 		"bool true":           {"true", true, false},
@@ -131,7 +131,6 @@ func TestUnmarshal(t *testing.T) {
 		"invalid type":     {`"foo"`, Struct{}, true},
 	}
 	for name, tc := range testcases {
-		tc := tc
 		t.Run(name, func(t *testing.T) {
 			// Create a target variable as a pointer to the zero value of the tc.value type,
 			// and wrap it in an empty interface. Decode into that interface.

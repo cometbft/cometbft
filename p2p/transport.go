@@ -11,7 +11,7 @@ import (
 
 	tmp2p "github.com/cometbft/cometbft/api/cometbft/p2p/v1"
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -43,7 +43,7 @@ type accept struct {
 // TODO(xla): Refactor out with more static Reactor setup and PeerBehaviour.
 type peerConfig struct {
 	chDescs     []*conn.ChannelDescriptor
-	onPeerError func(Peer, interface{})
+	onPeerError func(Peer, any)
 	outbound    bool
 	// isPersistent allows you to set a function, which, given socket address
 	// (for outbound peers) OR self-reported address (for inbound peers), tells

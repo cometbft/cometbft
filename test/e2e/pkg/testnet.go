@@ -23,6 +23,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
@@ -67,8 +68,8 @@ const (
 	PerturbationRestart    Perturbation = "restart"
 	PerturbationUpgrade    Perturbation = "upgrade"
 
-	EvidenceAgeHeight int64         = 7
-	EvidenceAgeTime   time.Duration = 500 * time.Millisecond
+	EvidenceAgeHeight int64         = 14
+	EvidenceAgeTime   time.Duration = 1500 * time.Millisecond
 )
 
 // Testnet represents a single testnet.
@@ -106,6 +107,8 @@ type Testnet struct {
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
 	ABCITestsEnabled                                     bool
 	DefaultZone                                          string
+	PbtsEnableHeight                                     int64
+	PbtsUpdateHeight                                     int64
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -138,6 +141,12 @@ type Node struct {
 	Prometheus              bool
 	PrometheusProxyPort     uint32
 	Zone                    ZoneID
+	ExperimentalKeyLayout   string
+	Compact                 bool
+	CompactionInterval      int64
+	DiscardABCIResponses    bool
+	Indexer                 string
+	ClockSkew               time.Duration
 }
 
 // LoadTestnet loads a testnet from a manifest file. The testnet files are
@@ -201,6 +210,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 		ABCITestsEnabled: manifest.ABCITestsEnabled,
 		DefaultZone:      manifest.DefaultZone,
+		PbtsEnableHeight: manifest.PbtsEnableHeight,
+		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
 	}
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
@@ -265,6 +276,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
 			Zone:                    ZoneID(nodeManifest.Zone),
+			ExperimentalKeyLayout:   nodeManifest.ExperimentalKeyLayout,
+			Compact:                 nodeManifest.Compact,
+			CompactionInterval:      nodeManifest.CompactionInterval,
+			DiscardABCIResponses:    nodeManifest.DiscardABCIResponses,
+			Indexer:                 nodeManifest.Indexer,
+			ClockSkew:               nodeManifest.ClockSkew,
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -420,6 +437,33 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
+	if t.PbtsEnableHeight < 0 {
+		return fmt.Errorf("value of PbtsEnableHeight must be positive, or 0 (disable); "+
+			"enable height %d", t.PbtsEnableHeight)
+	}
+	if t.PbtsUpdateHeight > 0 && t.PbtsUpdateHeight < t.InitialHeight {
+		return fmt.Errorf("a value of PbtsUpdateHeight greater than 0 "+
+			"must not be less than InitialHeight; "+
+			"update height %d, initial height %d",
+			t.PbtsUpdateHeight, t.InitialHeight,
+		)
+	}
+	if t.PbtsEnableHeight > 0 {
+		if t.PbtsEnableHeight < t.InitialHeight {
+			return fmt.Errorf("a value of PbtsEnableHeight greater than 0 "+
+				"must not be less than InitialHeight; "+
+				"enable height %d, initial height %d",
+				t.PbtsEnableHeight, t.InitialHeight,
+			)
+		}
+		if t.PbtsEnableHeight <= t.PbtsUpdateHeight {
+			return fmt.Errorf("a value of PbtsEnableHeight greater than 0 "+
+				"must be greater than PbtsUpdateHeight; "+
+				"update height %d, enable height %d",
+				t.PbtsUpdateHeight, t.PbtsEnableHeight,
+			)
+		}
+	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
@@ -428,7 +472,7 @@ func (t Testnet) Validate() error {
 	return nil
 }
 
-func (t Testnet) validateZones(nodes []*Node) error {
+func (Testnet) validateZones(nodes []*Node) error {
 	zoneMatrix, err := loadZoneLatenciesMatrix()
 	if err != nil {
 		return err
@@ -497,7 +541,7 @@ func (n Node) Validate(testnet Testnet) error {
 		return fmt.Errorf("invalid block sync setting %q", n.BlockSyncVersion)
 	}
 	switch n.Database {
-	case "goleveldb", "cleveldb", "boltdb", "rocksdb", "badgerdb", "pebbledb":
+	case "goleveldb", "rocksdb", "badgerdb", "pebbledb":
 	default:
 		return fmt.Errorf("invalid database setting %q", n.Database)
 	}
@@ -508,6 +552,9 @@ func (n Node) Validate(testnet Testnet) error {
 	}
 	if n.Mode == ModeLight && n.ABCIProtocol != ProtocolBuiltin && n.ABCIProtocol != ProtocolBuiltinConnSync {
 		return errors.New("light client must use builtin protocol")
+	}
+	if n.Mode != ModeFull && n.Mode != ModeValidator && n.ClockSkew != 0 {
+		return errors.New("clock skew configuration only supported on full nodes")
 	}
 	switch n.PrivvalProtocol {
 	case ProtocolFile, ProtocolUNIX, ProtocolTCP:
@@ -710,6 +757,8 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		return secp256k1_eth.GenPrivKeySecp256k1(seed)
 	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
+	case sr25519.KeyType:
+		return sr25519.GenPrivKeyFromSecret(seed)
 	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:

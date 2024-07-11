@@ -13,11 +13,11 @@ import (
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/internal/evidence"
 	"github.com/cometbft/cometbft/internal/evidence/mocks"
-	sm "github.com/cometbft/cometbft/internal/state"
-	smmocks "github.com/cometbft/cometbft/internal/state/mocks"
-	"github.com/cometbft/cometbft/internal/store"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
+	sm "github.com/cometbft/cometbft/state"
+	smmocks "github.com/cometbft/cometbft/state/mocks"
+	"github.com/cometbft/cometbft/store"
 	"github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -50,7 +50,11 @@ func TestEvidencePoolBasic(t *testing.T) {
 	stateStore.On("LoadValidators", mock.AnythingOfType("int64")).Return(valSet, nil)
 	stateStore.On("Load").Return(createState(height+1, valSet), nil)
 
-	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
+	require.Panics(t, func() { _, _ = evidence.NewPool(evidenceDB, stateStore, blockStore, evidence.WithDBKeyLayout("2")) }, "failed to create tore")
+
+	pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore, evidence.WithDBKeyLayout("v2"))
+	require.NoError(t, err)
+
 	require.NoError(t, err)
 	pool.SetLogger(log.TestingLogger())
 
@@ -132,7 +136,6 @@ func TestAddExpiredEvidence(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.evDescription, func(t *testing.T) {
 			ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(tc.evHeight, tc.evTime, val, evidenceChainID)
 			require.NoError(t, err)

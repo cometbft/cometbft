@@ -91,7 +91,7 @@ returned channel, which is closed when all operations are completed.
 >   part of the `Peer.Send(Envelope)` helper method, that is, once per
 >   connected peer.
 > - The return value of the broadcast method is not considered by any of the
->   standard reactors that employ the method. One of the reasons is that is is
+>   standard reactors that employ the method. One of the reasons is that is
 >   not possible to associate each of the boolean outputs added to the
 >   returned channel to a peer.
 

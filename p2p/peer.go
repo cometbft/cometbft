@@ -9,8 +9,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/cometbft/cometbft/internal/cmap"
-	"github.com/cometbft/cometbft/internal/service"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtconn "github.com/cometbft/cometbft/p2p/conn"
 	"github.com/cometbft/cometbft/types"
 )
@@ -40,20 +40,20 @@ type Peer interface {
 	Send(e Envelope) bool
 	TrySend(e Envelope) bool
 
-	Set(key string, value interface{})
-	Get(key string) interface{}
+	Set(key string, value any)
+	Get(key string) any
 
 	SetRemovalFailed()
 	GetRemovalFailed() bool
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 // peerConn contains the raw connection and its config.
 type peerConn struct {
 	outbound   bool
 	persistent bool
-	conn       net.Conn // source connection
+	conn       net.Conn // Source connection
 
 	socketAddr *NetAddress
 
@@ -136,7 +136,7 @@ func newPeer(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
-	onPeerError func(Peer, interface{}),
+	onPeerError func(Peer, any),
 	mlc *metricsLabelCache,
 	options ...PeerOption,
 ) *peer {
@@ -175,7 +175,7 @@ func (p *peer) String() string {
 	return fmt.Sprintf("Peer{%v %v in}", p.mconn, p.ID())
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // Implements service.Service
 
 // SetLogger implements BaseService.
@@ -213,7 +213,7 @@ func (p *peer) OnStop() {
 	}
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // Implements Peer
 
 // ID returns the peer's ID - the hex encoded hash of its pubkey.
@@ -282,12 +282,9 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	}
 	res := sendFunc(chID, msgBytes)
 	if res {
-		labels := []string{
-			"peer_id", string(p.ID()),
-			"chID", fmt.Sprintf("%#x", chID),
-		}
-		p.metrics.PeerSendBytesTotal.With(labels...).Add(float64(len(msgBytes)))
-		p.metrics.MessageSendBytesTotal.With("message_type", metricLabelValue).Add(float64(len(msgBytes)))
+		p.metrics.MessageSendBytesTotal.
+			With("message_type", metricLabelValue).
+			Add(float64(len(msgBytes)))
 	}
 	return res
 }
@@ -295,14 +292,14 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 // Get the data for a given key.
 //
 // thread safe.
-func (p *peer) Get(key string) interface{} {
+func (p *peer) Get(key string) any {
 	return p.Data.Get(key)
 }
 
 // Set sets the data for the given key.
 //
 // thread safe.
-func (p *peer) Set(key string, data interface{}) {
+func (p *peer) Set(key string, data any) {
 	p.Data.Set(key, data)
 }
 
@@ -314,15 +311,6 @@ func (p *peer) hasChannel(chID byte) bool {
 			return true
 		}
 	}
-	// NOTE: probably will want to remove this
-	// but could be helpful while the feature is new
-	p.Logger.Debug(
-		"Unknown channel for peer",
-		"channel",
-		chID,
-		"channels",
-		p.channels,
-	)
 	return false
 }
 
@@ -339,7 +327,7 @@ func (p *peer) GetRemovalFailed() bool {
 	return p.removalAttemptFailed
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 // methods only used for testing
 // TODO: can we remove these?
 
@@ -361,7 +349,7 @@ func (p *peer) CanSend(chID byte) bool {
 	return p.mconn.CanSend(chID)
 }
 
-//---------------------------------------------------
+// ---------------------------------------------------
 
 func PeerMetrics(metrics *Metrics) PeerOption {
 	return func(p *peer) {
@@ -389,7 +377,7 @@ func (p *peer) metricsReporter() {
 	}
 }
 
-//------------------------------------------------------------------
+// ------------------------------------------------------------------
 // helper funcs
 
 func createMConnection(
@@ -398,7 +386,7 @@ func createMConnection(
 	reactorsByCh map[byte]Reactor,
 	msgTypeByChID map[byte]proto.Message,
 	chDescs []*cmtconn.ChannelDescriptor,
-	onPeerError func(Peer, interface{}),
+	onPeerError func(Peer, any),
 	config cmtconn.MConnConfig,
 ) *cmtconn.MConnection {
 	onReceive := func(chID byte, msgBytes []byte) {
@@ -414,18 +402,15 @@ func createMConnection(
 		if err != nil {
 			panic(fmt.Sprintf("unmarshaling message: %v into type: %s", err, reflect.TypeOf(mt)))
 		}
-		labels := []string{
-			"peer_id", string(p.ID()),
-			"chID", fmt.Sprintf("%#x", chID),
-		}
 		if w, ok := msg.(types.Unwrapper); ok {
 			msg, err = w.Unwrap()
 			if err != nil {
 				panic(fmt.Sprintf("unwrapping message: %v", err))
 			}
 		}
-		p.metrics.PeerReceiveBytesTotal.With(labels...).Add(float64(len(msgBytes)))
-		p.metrics.MessageReceiveBytesTotal.With("message_type", p.mlc.ValueToMetricLabel(msg)).Add(float64(len(msgBytes)))
+		p.metrics.MessageReceiveBytesTotal.
+			With("message_type", p.mlc.ValueToMetricLabel(msg)).
+			Add(float64(len(msgBytes)))
 		reactor.Receive(Envelope{
 			ChannelID: chID,
 			Src:       p,
@@ -433,7 +418,7 @@ func createMConnection(
 		})
 	}
 
-	onError := func(r interface{}) {
+	onError := func(r any) {
 		onPeerError(p, r)
 	}
 

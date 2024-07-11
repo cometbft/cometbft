@@ -36,12 +36,12 @@ func MakeExtCommit(blockID BlockID, height int64, round int32,
 		}
 	}
 
-	var enableHeight int64
+	p := DefaultFeatureParams()
 	if extEnabled {
-		enableHeight = height
+		p.VoteExtensionsEnableHeight = height
 	}
 
-	return voteSet.MakeExtendedCommit(ABCIParams{VoteExtensionsEnableHeight: enableHeight}), nil
+	return voteSet.MakeExtendedCommit(p), nil
 }
 
 func signAddVote(privVal PrivValidator, vote *Vote, voteSet *VoteSet) (bool, error) {
@@ -62,7 +62,7 @@ func MakeVote(
 	round int32,
 	step SignedMsgType,
 	blockID BlockID,
-	time time.Time,
+	votetime time.Time,
 ) (*Vote, error) {
 	pubKey, err := val.GetPubKey()
 	if err != nil {
@@ -76,7 +76,7 @@ func MakeVote(
 		Round:            round,
 		Type:             step,
 		BlockID:          blockID,
-		Timestamp:        time,
+		Timestamp:        votetime,
 	}
 
 	extensionsEnabled := step == PrecommitType

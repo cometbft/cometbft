@@ -20,7 +20,7 @@ import (
 var (
 	// testnetCombinations defines global testnet options, where we generate a
 	// separate testnet for each combination (Cartesian product) of options.
-	testnetCombinations = map[string][]interface{}{
+	testnetCombinations = map[string][]any{
 		"topology":      {"single", "quad", "large"},
 		"initialHeight": {0, 1000},
 		"initialState": {
@@ -34,7 +34,7 @@ var (
 	}
 
 	// The following specify randomly chosen values for testnet nodes.
-	nodeDatabases = uniformChoice{"goleveldb", "cleveldb", "rocksdb", "boltdb", "badgerdb", "pebbledb"}
+	nodeDatabases = uniformChoice{"goleveldb", "rocksdb", "badgerdb", "pebbledb"}
 	ipv6          = uniformChoice{false, true}
 	// FIXME: grpc disabled due to https://github.com/tendermint/tendermint/issues/5439
 	nodeABCIProtocols     = uniformChoice{"unix", "tcp", "builtin", "builtin_connsync"} // "grpc"
@@ -49,7 +49,7 @@ var (
 		4 * int(e2e.EvidenceAgeHeight),
 	}
 	nodeEnableCompanionPruning = uniformChoice{true, false}
-	evidence                   = uniformChoice{0, 1, 10}
+	evidence                   = uniformChoice{0, 1, 10, 20, 200}
 	abciDelays                 = uniformChoice{"none", "small", "large"}
 	nodePerturbations          = probSetChoice{
 		"disconnect": 0.1,
@@ -61,10 +61,13 @@ var (
 	lightNodePerturbations = probSetChoice{
 		"upgrade": 0.3,
 	}
-	voteExtensionUpdateHeight = uniformChoice{int64(-1), int64(0), int64(1)} // -1: genesis, 0: InitChain, 1: (use offset)
-	voteExtensionEnabled      = weightedChoice{true: 3, false: 1}
-	voteExtensionHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
-	voteExtensionSize         = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
+	voteExtensionsUpdateHeight = uniformChoice{int64(-1), int64(0), int64(1)} // -1: genesis, 0: InitChain, 1: (use offset)
+	voteExtensionEnabled       = weightedChoice{true: 3, false: 1}
+	voteExtensionsHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
+	voteExtensionSize          = uniformChoice{uint(128), uint(512), uint(2048), uint(8192)} // TODO: define the right values depending on experiment results.
+	pbtsUpdateHeight           = uniformChoice{int64(-1), int64(0), int64(1)}                // -1: genesis, 0: InitChain, 1: (use offset)
+	pbtsEnabled                = weightedChoice{true: 3, false: 1}
+	pbtsHeightOffset           = uniformChoice{int64(0), int64(10), int64(100)}
 )
 
 type generateConfig struct {
@@ -123,7 +126,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
@@ -151,17 +154,27 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		manifest.VoteExtensionDelay = 100 * time.Millisecond
 		manifest.FinalizeBlockDelay = 500 * time.Millisecond
 	}
-	manifest.VoteExtensionsUpdateHeight = voteExtensionUpdateHeight.Choose(r).(int64)
+	manifest.VoteExtensionsUpdateHeight = voteExtensionsUpdateHeight.Choose(r).(int64)
 	if manifest.VoteExtensionsUpdateHeight == 1 {
-		manifest.VoteExtensionsUpdateHeight = manifest.InitialHeight + voteExtensionHeightOffset.Choose(r).(int64)
+		manifest.VoteExtensionsUpdateHeight = manifest.InitialHeight + voteExtensionsHeightOffset.Choose(r).(int64)
 	}
 	if voteExtensionEnabled.Choose(r).(bool) {
 		baseHeight := max(manifest.VoteExtensionsUpdateHeight+1, manifest.InitialHeight)
-		manifest.VoteExtensionsEnableHeight = baseHeight + voteExtensionHeightOffset.Choose(r).(int64)
+		manifest.VoteExtensionsEnableHeight = baseHeight + voteExtensionsHeightOffset.Choose(r).(int64)
 	}
 
 	manifest.VoteExtensionSize = voteExtensionSize.Choose(r).(uint)
 
+	manifest.PbtsUpdateHeight = pbtsUpdateHeight.Choose(r).(int64)
+	if manifest.PbtsUpdateHeight == 1 {
+		manifest.PbtsUpdateHeight = manifest.InitialHeight + pbtsHeightOffset.Choose(r).(int64)
+	}
+	if pbtsEnabled.Choose(r).(bool) {
+		baseHeight := max(manifest.PbtsUpdateHeight+1, manifest.InitialHeight)
+		manifest.PbtsEnableHeight = baseHeight + pbtsHeightOffset.Choose(r).(int64)
+	}
+
+	// TODO: Add skew config
 	var numSeeds, numValidators, numFulls, numLightClients int
 	switch opt["topology"].(string) {
 	case "single":
@@ -189,6 +202,7 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 	// the initial validator set, and validator set updates for delayed nodes.
 	nextStartAt := manifest.InitialHeight + 5
 	quorum := numValidators*2/3 + 1
+	var totalWeight int64
 	for i := 1; i <= numValidators; i++ {
 		startAt := int64(0)
 		if i > quorum {
@@ -196,16 +210,34 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 			nextStartAt += 5
 		}
 		name := fmt.Sprintf("validator%02d", i)
-		manifest.Nodes[name] = generateNode(
-			r, e2e.ModeValidator, startAt, i <= 2)
+		manifest.Nodes[name] = generateNode(r, e2e.ModeValidator, startAt, i <= 2)
 
+		weight := int64(30 + r.Intn(71))
 		if startAt == 0 {
-			(*manifest.Validators)[name] = int64(30 + r.Intn(71))
+			(*manifest.Validators)[name] = weight
 		} else {
-			manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)] = map[string]int64{
-				name: int64(30 + r.Intn(71)),
-			}
+			manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)] = map[string]int64{name: weight}
 		}
+		totalWeight += weight
+	}
+
+	// Add clock skew only to processes that accumulate less than 1/3 of voting power.
+	var accWeight int64
+	for i := 1; i <= numValidators; i++ {
+		name := fmt.Sprintf("validator%02d", i)
+		startAt := manifest.Nodes[name].StartAt
+		var weight int64
+		if startAt == 0 {
+			weight = (*manifest.Validators)[name]
+		} else {
+			weight = manifest.ValidatorUpdates[strconv.FormatInt(startAt+5, 10)][name]
+		}
+
+		if accWeight > totalWeight*2/3 {
+			// Interval: [-500ms, 59s500ms)
+			manifest.Nodes[name].ClockSkew = time.Duration(int64(r.Float64()*float64(time.Minute))) - 500*time.Millisecond
+		}
+		accWeight += weight
 	}
 
 	// Move validators to InitChain if specified.

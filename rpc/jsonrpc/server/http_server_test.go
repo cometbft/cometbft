@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 type sampleResult struct {
@@ -30,7 +30,7 @@ func TestMaxOpenConnections(t *testing.T) {
 	// Start the server.
 	var open int32
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		if n := atomic.AddInt32(&open, 1); n > int32(max) {
 			t.Errorf("%d open connections, want <= %d", n, max)
 		}
@@ -76,7 +76,7 @@ func TestServeTLS(t *testing.T) {
 	defer ln.Close()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "some body")
 	})
 
@@ -119,7 +119,7 @@ func TestWriteRPCResponseHTTP(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
-	assert.Equal(t, "public, max-age=86400", resp.Header.Get("Cache-control"))
+	assert.Equal(t, "public, max-age=86400", resp.Header.Get("Cache-Control"))
 	assert.Equal(t, `{"jsonrpc":"2.0","id":-1,"result":{"value":"hello"}}`, string(body))
 
 	// multiple arguments

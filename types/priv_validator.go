@@ -24,6 +24,9 @@ type PrivValidator interface {
 
 	// SignProposal signs a canonical representation of the proposal.
 	SignProposal(chainID string, proposal *cmtproto.Proposal) error
+
+	// SignBytes signs an arbitrary array of bytes.
+	SignBytes(bytes []byte) ([]byte, error)
 }
 
 type PrivValidatorsByAddress []PrivValidator
@@ -49,7 +52,7 @@ func (pvs PrivValidatorsByAddress) Swap(i, j int) {
 	pvs[i], pvs[j] = pvs[j], pvs[i]
 }
 
-//----------------------------------------
+// ----------------------------------------
 // MockPV
 
 // MockPV implements PrivValidator without any safety or persistence.
@@ -123,6 +126,11 @@ func (pv MockPV) SignProposal(chainID string, proposal *cmtproto.Proposal) error
 	return nil
 }
 
+// SignBytes implements PrivValidator.
+func (pv MockPV) SignBytes(bytes []byte) ([]byte, error) {
+	return pv.PrivKey.Sign(bytes)
+}
+
 func (pv MockPV) ExtractIntoValidator(votingPower int64) *Validator {
 	pubKey, _ := pv.GetPubKey()
 	return &Validator{
@@ -139,7 +147,7 @@ func (pv MockPV) String() string {
 }
 
 // XXX: Implement.
-func (pv MockPV) DisableChecks() {
+func (MockPV) DisableChecks() {
 	// Currently this does nothing,
 	// as MockPV has no safety checks at all.
 }
@@ -151,12 +159,12 @@ type ErroringMockPV struct {
 var ErroringMockPVErr = errors.New("erroringMockPV always returns an error")
 
 // SignVote implements PrivValidator.
-func (pv *ErroringMockPV) SignVote(string, *cmtproto.Vote, bool) error {
+func (*ErroringMockPV) SignVote(string, *cmtproto.Vote, bool) error {
 	return ErroringMockPVErr
 }
 
 // SignProposal implements PrivValidator.
-func (pv *ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
+func (*ErroringMockPV) SignProposal(string, *cmtproto.Proposal) error {
 	return ErroringMockPVErr
 }
 

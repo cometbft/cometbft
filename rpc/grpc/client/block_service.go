@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cosmos/gogoproto/grpc"
 
@@ -94,7 +93,7 @@ func (c *blockServiceClient) GetLatestHeight(ctx context.Context, opts ...GetLat
 
 	latestHeightClient, err := c.client.GetLatestHeight(ctx, &req)
 	if err != nil {
-		return nil, fmt.Errorf("error getting a stream for the latest height: %w", err)
+		return nil, ErrStreamSetup{Source: err}
 	}
 
 	cfg := &getLatestHeightConfig{}
@@ -108,7 +107,7 @@ func (c *blockServiceClient) GetLatestHeight(ctx context.Context, opts ...GetLat
 		for {
 			response, err := client.Recv()
 			if err != nil {
-				res := LatestHeightResult{Error: fmt.Errorf("error receiving the latest height from a stream: %w", err)}
+				res := LatestHeightResult{Error: ErrStreamReceive{Source: err}}
 				select {
 				case <-ctx.Done():
 				case resultCh <- res:

@@ -7,10 +7,7 @@ order: 4
 ## Database
 
 By default, CometBFT uses the `syndtr/goleveldb` package for its in-process
-key-value database. If you want maximal performance, it may be best to install
-the real C-implementation of LevelDB and compile CometBFT to use that using
-`make build COMETBFT_BUILD_OPTIONS=cleveldb`. See the [install
-instructions](../introduction/install.md) for details.
+key-value database.
 
 CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
 
@@ -346,15 +343,6 @@ Setting this to false will stop the mempool from relaying transactions
 to other peers until they are included in a block. It means only the
 peer you send the tx to will see it until it is included in a block.
 
-- `consensus.skip_timeout_commit`
-
-We want `skip_timeout_commit=false` when there is economics on the line
-because proposers should wait to hear for more votes. But if you don't
-care about that and want the fastest consensus, you can skip it. It will
-be kept false by default for public deployments (e.g. [Cosmos
-Hub](https://hub.cosmos.network/)) while for enterprise
-applications, setting it to true is not a problem.
-
 - `consensus.peer_gossip_sleep_duration`
 
 You can try to reduce the time your node sleeps before checking if
@@ -362,8 +350,14 @@ there's something to send its peers.
 
 - `consensus.timeout_commit`
 
-You can also try lowering `timeout_commit` (time we sleep before
-proposing the next block).
+We want `timeout_commit` to be greater than zero when there is economics on the line
+because proposers should wait to hear for more votes. But if you don't
+care about that and want the fastest consensus, you can skip it. It will
+be kept `1s` by default for public deployments (e.g. [Cosmos
+Hub](https://hub.cosmos.network/)) while for enterprise
+applications, setting it to `0` is not a problem.
+
+You can try lowering it though.
 
 - `p2p.addr_book_strict`
 

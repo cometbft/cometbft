@@ -13,13 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/libs/log"
-	types "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
 
 func testMux() *http.ServeMux {
 	funcMap := map[string]*RPCFunc{
-		"c":     NewRPCFunc(func(ctx *types.Context, s string, i int) (string, error) { return "foo", nil }, "s,i"),
-		"block": NewRPCFunc(func(ctx *types.Context, h int) (string, error) { return "block", nil }, "height", Cacheable("height")),
+		"c":     NewRPCFunc(func(_ *types.Context, _ string, _ int) (string, error) { return "foo", nil }, "s,i"),
+		"block": NewRPCFunc(func(_ *types.Context, _ int) (string, error) { return "block", nil }, "height", Cacheable("height")),
 	}
 	mux := http.NewServeMux()
 	buf := new(bytes.Buffer)
@@ -39,7 +39,7 @@ func TestRPCParams(t *testing.T) {
 	tests := []struct {
 		payload    string
 		wantErr    string
-		expectedID interface{}
+		expectedID any
 	}{
 		// bad
 		{`{"jsonrpc": "2.0", "id": "0"}`, "Method not found", types.JSONRPCStringID("0")},
@@ -92,7 +92,7 @@ func TestJSONRPCID(t *testing.T) {
 	tests := []struct {
 		payload    string
 		wantErr    bool
-		expectedID interface{}
+		expectedID any
 	}{
 		// good id
 		{`{"jsonrpc": "2.0", "method": "c", "id": "0", "params": ["a", "10"]}`, false, types.JSONRPCStringID("0")},
@@ -238,7 +238,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "public, max-age=86400", res.Header.Get("Cache-control"))
+	require.Equal(t, "public, max-age=86400", res.Header.Get("Cache-Control"))
 
 	_, err := io.ReadAll(res.Body)
 	res.Body.Close()
@@ -253,7 +253,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "", res.Header.Get("Cache-control"))
+	require.Equal(t, "", res.Header.Get("Cache-Control"))
 
 	_, err = io.ReadAll(res.Body)
 
@@ -269,7 +269,7 @@ func TestRPCResponseCache(t *testing.T) {
 
 	// Always expecting back a JSONRPCResponse
 	require.True(t, statusOK(res.StatusCode), "should always return 2XX")
-	require.Equal(t, "", res.Header.Get("Cache-control"))
+	require.Equal(t, "", res.Header.Get("Cache-Control"))
 
 	_, err = io.ReadAll(res.Body)
 

@@ -1,7 +1,7 @@
 package p2p
 
 import (
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -36,14 +36,14 @@ type Reactor interface {
 
 	// RemovePeer is called by the switch when the peer is stopped (due to error
 	// or other reason).
-	RemovePeer(peer Peer, reason interface{})
+	RemovePeer(peer Peer, reason any)
 
 	// Receive is called by the switch when an envelope is received from any connected
 	// peer on any of the channels registered by the reactor
 	Receive(e Envelope)
 }
 
-//--------------------------------------
+// --------------------------------------
 
 type BaseReactor struct {
 	service.BaseService // Provides Start, Stop, .Quit
@@ -62,6 +62,6 @@ func (br *BaseReactor) SetSwitch(sw *Switch) {
 }
 func (*BaseReactor) GetChannels() []*conn.ChannelDescriptor { return nil }
 func (*BaseReactor) AddPeer(Peer)                           {}
-func (*BaseReactor) RemovePeer(Peer, interface{})           {}
+func (*BaseReactor) RemovePeer(Peer, any)                   {}
 func (*BaseReactor) Receive(Envelope)                       {}
 func (*BaseReactor) InitPeer(peer Peer) Peer                { return peer }

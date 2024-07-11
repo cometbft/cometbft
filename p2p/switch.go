@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"sync"
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -12,7 +11,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/cmap"
 	"github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 	"github.com/cometbft/cometbft/p2p/conn"
 )
 
@@ -45,7 +44,7 @@ func MConnConfig(cfg *config.P2PConfig) conn.MConnConfig {
 	return mConfig
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // An AddrBook represents an address book from the pex package, which is used
 // to store peer addresses.
@@ -64,7 +63,7 @@ type AddrBook interface {
 // fully setup.
 type PeerFilterFunc func(IPeerSet, Peer) error
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // Switch handles peer connections and exposes an API to receive incoming messages
 // on `Reactors`.  Each `Reactor` is responsible for handling incoming messages of one
@@ -158,7 +157,7 @@ func WithMetrics(metrics *Metrics) SwitchOption {
 	return func(sw *Switch) { sw.metrics = metrics }
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Switch setup
 
 // AddReactor adds the given reactor to the switch.
@@ -227,7 +226,7 @@ func (sw *Switch) SetNodeKey(nodeKey *NodeKey) {
 	sw.nodeKey = nodeKey
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Service start/stop
 
 // OnStart implements BaseService. It starts all the reactors and peers.
@@ -236,7 +235,7 @@ func (sw *Switch) OnStart() error {
 	for _, reactor := range sw.reactors {
 		err := reactor.Start()
 		if err != nil {
-			return fmt.Errorf("failed to start %v: %w", reactor, err)
+			return ErrStart{reactor, err}
 		}
 	}
 
@@ -262,40 +261,32 @@ func (sw *Switch) OnStop() {
 	}
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Peers
 
 // Broadcast runs a go routine for each attempted send, which will block trying
-// to send for defaultSendTimeoutSeconds. Returns a channel which receives
-// success values for each attempted send (false if times out). Channel will be
-// closed once msg bytes are sent to all peers (or time out).
+// to send for defaultSendTimeoutSeconds.
 //
 // NOTE: Broadcast uses goroutines, so order of broadcast may not be preserved.
-func (sw *Switch) Broadcast(e Envelope) chan bool {
-	sw.Logger.Debug("Broadcast", "channel", e.ChannelID)
-
-	var wg sync.WaitGroup
-	successChan := make(chan bool, sw.peers.Size())
-
+func (sw *Switch) Broadcast(e Envelope) {
 	sw.peers.ForEach(func(p Peer) {
-		wg.Add(1) // Incrementing by one is safer.
 		go func(peer Peer) {
-			defer wg.Done()
 			success := peer.Send(e)
-			// For rare cases where PeerSet changes between a call to `peers.Size()` and `peers.ForEach()`.
-			select {
-			case successChan <- success:
-			default:
-			}
+			_ = success
 		}(p)
 	})
+}
 
-	go func() {
-		wg.Wait()
-		close(successChan)
-	}()
-
-	return successChan
+// TryBroadcast runs a go routine for each attempted send.
+// If the send queue of the destination channel and peer are full, the message will not be sent. To make sure that messages are indeed sent to all destination, use `Broadcast`.
+//
+// NOTE: TryBroadcast uses goroutines, so order of broadcast may not be preserved.
+func (sw *Switch) TryBroadcast(e Envelope) {
+	sw.peers.ForEach(func(p Peer) {
+		go func(peer Peer) {
+			peer.TrySend(e)
+		}(p)
+	})
 }
 
 // NumPeers returns the count of outbound/inbound and outbound-dialing peers.
@@ -309,7 +300,7 @@ func (sw *Switch) NumPeers() (outbound, inbound, dialing int) {
 		}
 	})
 	dialing = sw.dialing.Size()
-	return
+	return outbound, inbound, dialing
 }
 
 func (sw *Switch) IsPeerUnconditional(id ID) bool {
@@ -330,7 +321,7 @@ func (sw *Switch) Peers() IPeerSet {
 // StopPeerForError disconnects from a peer due to external error.
 // If the peer is persistent, it will attempt to reconnect.
 // TODO: make record depending on reason.
-func (sw *Switch) StopPeerForError(peer Peer, reason interface{}) {
+func (sw *Switch) StopPeerForError(peer Peer, reason any) {
 	if !peer.IsRunning() {
 		return
 	}
@@ -362,7 +353,7 @@ func (sw *Switch) StopPeerGracefully(peer Peer) {
 	sw.stopAndRemovePeer(peer, nil)
 }
 
-func (sw *Switch) stopAndRemovePeer(peer Peer, reason interface{}) {
+func (sw *Switch) stopAndRemovePeer(peer Peer, reason any) {
 	// Returning early if the peer is already stopped prevents data races because
 	// this function may be called from multiple places at once.
 	if err := peer.Stop(); err != nil {
@@ -459,7 +450,7 @@ func (sw *Switch) MarkPeerAsGood(peer Peer) {
 	}
 }
 
-//---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 // Dialing
 
 type privateAddr interface {
@@ -484,7 +475,7 @@ func (sw *Switch) DialPeersAsync(peers []string) error {
 	}
 	// return first non-ErrNetAddressLookup error
 	for _, err := range errs {
-		if _, ok := err.(ErrNetAddressLookup); ok {
+		if errors.As(err, &ErrNetAddressLookup{}) {
 			continue
 		}
 		return err
@@ -587,7 +578,7 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 	}
 	// return first non-ErrNetAddressLookup error
 	for _, err := range errs {
-		if _, ok := err.(ErrNetAddressLookup); ok {
+		if errors.As(err, &ErrNetAddressLookup{}) {
 			continue
 		}
 		return err
@@ -598,11 +589,12 @@ func (sw *Switch) AddPersistentPeers(addrs []string) error {
 
 func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 	sw.Logger.Info("Adding unconditional peer ids", "ids", ids)
-	for i, id := range ids {
+	for _, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return fmt.Errorf("wrong ID #%d: %w", i, err)
+			return ErrInvalidPeerID{ID: ID(id), Source: err}
 		}
+
 		sw.unconditionalPeerIDs[ID(id)] = struct{}{}
 	}
 	return nil
@@ -610,11 +602,12 @@ func (sw *Switch) AddUnconditionalPeerIDs(ids []string) error {
 
 func (sw *Switch) AddPrivatePeerIDs(ids []string) error {
 	validIDs := make([]string, 0, len(ids))
-	for i, id := range ids {
+	for _, id := range ids {
 		err := validateID(ID(id))
 		if err != nil {
-			return fmt.Errorf("wrong ID #%d: %w", i, err)
+			return ErrInvalidPeerID{ID: ID(id), Source: err}
 		}
+
 		validIDs = append(validIDs, id)
 	}
 

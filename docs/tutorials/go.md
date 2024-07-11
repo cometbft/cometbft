@@ -40,24 +40,40 @@ guarantees as two processes would be communicating via established binary protoc
 CometBFT will not have access to application's state.
 This is the approach followed in this tutorial.
 
-## 1.1 Installing Go
+## 1.0 Installing Go
 
-Verify that you have the latest version of Go installed (refer to the [official guide for installing Go](https://golang.org/doc/install)):
+Verify that you have the latest version of Go installed (refer to the [official guide for installing Go](https://golang.org/doc/install)), you should see an output similar to this one (the `go version` might be a slight different depending on the Go you have installed and the computer platform):
 
 ```bash
 $ go version
-go version go1.21.1 darwin/amd64
+go version go1.22.2 darwin/amd64
+```
+
+## 1.1 Installing CometBFT
+
+Let's install `CometBFT` locally by running the following command:
+
+```bash
+go install github.com/cometbft/cometbft/cmd/cometbft@v1.0
+```
+
+Test the installation:
+
+```bash
+$ cometbft version
+v1.0.0
 ```
 
 ## 1.2 Creating a new Go project
 
-We'll start by creating a new Go project.
+We'll start by creating a new Go project and moving into the new directory:
 
 ```bash
 mkdir kvstore
+cd kvstore
 ```
 
-Inside the example directory, create a `main.go` file with the following content:
+Inside the `kvstore` directory, create a `main.go` file with the following content:
 
 ```go
 package main
@@ -71,21 +87,48 @@ func main() {
 }
 ```
 
-When run, this should print "Hello, CometBFT" to the standard output.
+Run the following command:
 
 ```bash
-cd kvstore
-$ go run main.go
+go run main.go
+```
+
+This should print "Hello, CometBFT" to the standard output.
+
+```bash
 Hello, CometBFT
 ```
 
 We are going to use [Go modules](https://github.com/golang/go/wiki/Modules) for
 dependency management, so let's start by including a dependency on the latest version of
-CometBFT, `v0.38.0` in this example.
+CometBFT, `v1.0` in this example.
+
+Run the commands below to create the go module file (`go.mod`)
 
 ```bash
 go mod init kvstore
-go get github.com/cometbft/cometbft@v0.38.0
+````
+
+This should an output similar to this.
+
+**NOTE**: No need to run `go mod tidy` at this time, just ignore it for now.
+```bash
+go: creating new go.mod: module kvstore
+go: to add module requirements and sums:
+	go mod tidy
+```
+
+Now, lets add `cometbft` as a dependency to our project. Run the `go get` command below:
+
+```bash
+go get github.com/cometbft/cometbft@v1.0
+```
+
+**NOTE**: This will add the latest release in the `v1.0` line, so you might a different patch release e.g. `v1.0.0`
+or `v1.0.1`
+
+```bash
+go: added github.com/cometbft/cometbft v1.0.0
 ```
 
 After running the above commands you will see two generated files, `go.mod` and `go.sum`.
@@ -94,19 +137,10 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-go 1.21.1
+go 1.22.2
 
-require (
-github.com/cometbft/cometbft v0.38.0
-)
-```
 
-XXX: CometBFT `v0.38.0` uses a slightly outdated `gogoproto` library, which
-may fail to compile with newer Go versions. To avoid any compilation errors,
-upgrade `gogoproto` manually:
-
-```bash
-go get github.com/cosmos/gogoproto@v1.4.11
+require github.com/cometbft/cometbft v1.0.0 // indirect
 ```
 
 As you write the kvstore application, you can rebuild the binary by
@@ -117,16 +151,32 @@ go get
 go build
 ```
 
+At this point, if you ran the `go build` command above, you should see four files in the directory:
+
+```bash
+$ ls
+go.mod	go.sum	kvstore	main.go
+```
+
+The `kvstore` file is the executable generated. You can run it again to ensure everything still works:
+
+```bash
+$ ./kvstore
+Hello, CometBFT
+```
+
 ## 1.3 Writing a CometBFT application
 
+Now, let's start adding some logic to our application.
+
 CometBFT communicates with the application through the Application
-BlockChain Interface (ABCI). The messages exchanged through the interface are
+BlockChain Interface (`ABCI`). The messages exchanged through the interface are
 defined in the ABCI [protobuf
 file](https://github.com/cometbft/cometbft/blob/main/proto/cometbft/abci/v1/types.proto).
 
 We begin by creating the basic scaffolding for an ABCI application by
 creating a new type, `KVStoreApplication`, which implements the
-methods defined by the `abcitypes.Application` interface.
+methods defined by the [abcitypes.Application](https://github.com/cometbft/cometbft/blob/main/abci/types/application.go) interface.
 
 Create a file called `app.go` with the following contents:
 
@@ -155,7 +205,7 @@ func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.QueryRequ
 }
 
 func (app *KVStoreApplication) CheckTx(_ context.Context, check *abcitypes.CheckTxRequest) (*abcitypes.CheckTxResponse, error) {
-    return &abcitypes.CheckTxResponse{Code: code}, nil
+    return &abcitypes.CheckTxResponse{Code: 0}, nil
 }
 
 func (app *KVStoreApplication) InitChain(_ context.Context, chain *abcitypes.InitChainRequest) (*abcitypes.InitChainResponse, error) {
@@ -191,8 +241,7 @@ func (app *KVStoreApplication) LoadSnapshotChunk(_ context.Context, chunk *abcit
 }
 
 func (app *KVStoreApplication) ApplySnapshotChunk(_ context.Context, chunk *abcitypes.ApplySnapshotChunkRequest) (*abcitypes.ApplySnapshotChunkResponse, error) {
-
-    return &abcitypes.ApplySnapshotChunkResponse{Result: abcitypes.ApplySnapshotChunkResponse_ACCEPT}, nil
+	return &abcitypes.ApplySnapshotChunkResponse{Result: abcitypes.APPLY_SNAPSHOT_CHUNK_RESULT_ACCEPT}, nil
 }
 
 func (app KVStoreApplication) ExtendVote(_ context.Context, extend *abcitypes.ExtendVoteRequest) (*abcitypes.ExtendVoteResponse, error) {
@@ -208,7 +257,7 @@ The types used here are defined in the CometBFT library and were added as a depe
 to the project when you ran `go get`. If your IDE is not recognizing the types, go ahead and run the command again.
 
 ```bash
-go get github.com/cometbft/cometbft@v0.38.0
+go get github.com/cometbft/cometbft@v1.0
 ```
 
 Now go back to the `main.go` and modify the `main` function so it matches the following,
@@ -237,7 +286,7 @@ a fast embedded key-value store.
 
 First, add Badger as a dependency of your go module using the `go get` command:
 
-`go get github.com/dgraph-io/badger/v3`
+`go get github.com/dgraph-io/badger/v4`
 
 Next, let's update the application and its constructor to receive a handle to the database, as follows:
 
@@ -260,9 +309,10 @@ is completed. Don't worry about it for now, we'll get to that later.
 Next, update the `import` stanza at the top to include the Badger library:
 
 ```go
-import(
-    "github.com/dgraph-io/badger/v3"
+import (
+    "context"
     abcitypes "github.com/cometbft/cometbft/abci/types"
+    "github.com/dgraph-io/badger/v4"
 )
 ```
 
@@ -316,16 +366,17 @@ its validation checks. The specific value of the code is meaningless to CometBFT
 Non-zero codes are logged by CometBFT so applications can provide more specific
 information on why the transaction was rejected.
 
-Note that `CheckTx` does not execute the transaction, it only verifies that that the transaction could be executed. We do not know yet if the rest of the network has agreed to accept this transaction into a block.
+Note that `CheckTx` does not execute the transaction, it only verifies that the transaction could be executed. We do
+not know yet if the rest of the network has agreed to accept this transaction into a block.
 
 Finally, make sure to add the bytes package to the `import` stanza at the top of `app.go`:
 
 ```go
-import(
+import (
     "bytes"
-
-    "github.com/dgraph-io/badger/v3"
+    "context"
     abcitypes "github.com/cometbft/cometbft/abci/types"
+    "github.com/dgraph-io/badger/v4"
 )
 ```
 
@@ -341,7 +392,7 @@ Providing a single `FinalizeBlock` method to signal the finalization of a block 
 
 The `FinalizeBlock` method executes the block, including any necessary transaction processing and state updates, and returns a `FinalizeBlockResponse` object which contains any necessary information about the executed block.
 
-**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The state change is actually committed in a later stage i.e. in `commit` phase.
+**Note:** `FinalizeBlock` only prepares the update to be made and does not change the state of the application. The state change is actually committed in a later stage, in the `Commit` phase.
 
 Note that, to implement these calls in our application we're going to make use of Badger's transaction mechanism. We will always refer to these as Badger transactions, not to confuse them with the transactions included in the blocks delivered by CometBFT, the _application transactions_.
 
@@ -369,15 +420,31 @@ func (app *KVStoreApplication) FinalizeBlock(_ context.Context, req *abcitypes.F
             }
             log.Printf("Successfully added key %s with value %s", key, value)
 
-            txs[i] = &abcitypes.ExecTxResult{}
+            // Add an event for the transaction execution.
+			// Multiple events can be emitted for a transaction, but we are adding only one event
+            txs[i] = &abcitypes.ExecTxResult{
+                Code: 0,
+                Events: []abcitypes.Event{
+                    {
+                        Type: "app",
+                        Attributes: []abcitypes.EventAttribute{
+                            {Key: "key", Value: string(key), Index: true},
+                            {Key: "value", Value: string(value), Index: true},
+                        },
+					},
+				},
+            }
         }
     }
 
     return &abcitypes.FinalizeBlockResponse{
-        TxResults:        txs,
+        TxResults:      txs,
+        NextBlockDelay: 1 * time.Second,
     }, nil
 }
 ```
+
+`NextBlockDelay` is a delay between the time when the current block is committed and the next height is started. Normally you don't need to change the default value (1s). Please refer to the [spec](../../spec/abci/abci++_methods.md#finalizeblock) for more information.
 
 Transactions are not guaranteed to be valid when they are delivered to an application, even if they were valid when they were proposed.
 
@@ -396,15 +463,16 @@ func (app KVStoreApplication) Commit(_ context.Context, commit *abcitypes.Commit
 }
 ```
 
-Finally, make sure to add the log library to the `import` stanza as well:
+Finally, make sure to add the `log` and `errors` libraries to the `import` stanza as well:
 
 ```go
 import (
     "bytes"
-    "log"
-
-    "github.com/dgraph-io/badger/v3"
+    "context"
+	"errors"
     abcitypes "github.com/cometbft/cometbft/abci/types"
+    "github.com/dgraph-io/badger/v4"
+    "log"
 )
 ```
 
@@ -425,7 +493,7 @@ func (app *KVStoreApplication) Query(_ context.Context, req *abcitypes.QueryRequ
     dbErr := app.db.View(func(txn *badger.Txn) error {
         item, err := txn.Get(req.Data)
         if err != nil {
-            if err != badger.ErrKeyNotFound {
+            if !errors.Is(err, badger.ErrKeyNotFound) {
                 return err
             }
             resp.Log = "key does not exist"
@@ -484,10 +552,22 @@ func (app *KVStoreApplication) ProcessProposal(_ context.Context, proposal *abci
 }
 ```
 
+### 1.3.6 Handling errors
+
+Please note that in the method signature for the ABCI methods, there is a response and an error return, such as
+`(*abcitypes.[Method]Response, error)`. Some of the ABCI methods' responses might include a field that can return
+an error in the response, such as the `Code` field in the `CheckTxResponse`. The application can use the `Code`
+field to signal CometBFT that the transaction was rejected. Another example is `FinalizeBlockResponse`, which has a `TxResults` array field with each result containing a `Code` field that can be used by the application
+to signal that a transaction didn't execute properly. Or `QueryResponse`, which also includes
+a `Code` field to signal that a query to the application was unsuccessful or it could not find the information.
+
+The `error` return, as in `(*abcitypes.[Method]Response, error)`, can be used if there are unrecoverable errors.
+In these cases, the application should abort to prevent further unintended consequences.
+
 ## 1.4 Starting an application and a CometBFT instance
 
 Now that we have the basic functionality of our application in place, let's put
-it all together inside of our `main.go` file.
+it all together inside our `main.go` file.
 
 Change the contents of your `main.go` file to the following.
 
@@ -504,7 +584,7 @@ import (
     "path/filepath"
     "syscall"
 
-    "github.com/dgraph-io/badger/v3"
+    "github.com/dgraph-io/badger/v4"
     cmtlog "github.com/cometbft/cometbft/libs/log"
 )
 
@@ -591,16 +671,30 @@ signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 <-c
 ```
 
+Try again to build the code to ensure it is all good so far:
+
+```bash
+go build
+```
+
+If there are no errors, everything worked well so far. But if you get some errors about `missing go.sum entry for module ...`,
+you can try to fix them by running the commands below:
+
+```bash
+go mod tidy
+go build
+```
+
 ## 1.5 Initializing and Running
 
 Our application is almost ready to run, but first we'll need to populate the CometBFT configuration files.
 The following command will create a `cometbft-home` directory in your project and add a basic set of configuration files in `cometbft-home/config/`.
-For more information on what these files contain see [the configuration documentation](https://github.com/cometbft/cometbft/blob/v0.38.x/docs/core/configuration.md).
+For more information on what these files contain see [the configuration documentation](https://docs.cometbft.com/v1.0/explanation/core/configuration).
 
 From the root of your project, run:
 
 ```bash
-go run github.com/cometbft/cometbft/cmd/cometbft@v0.38.0 init --home /tmp/cometbft-home
+cometbft init --home /tmp/cometbft-home
 ```
 
 You should see an output similar to the following:
@@ -634,11 +728,14 @@ I[2023-04-25|17:01:28.726] Waiting for new connection...
 ```
 
 Then we need to start CometBFT service and point it to our application.
-Open a new terminal window and cd to the same folder where the app is running.
+
+Open a new terminal window and cd into the same folder where the app is running (this is important because when you run the `kvstore` command above
+a file will be created `example.sock` and you need to run `cometbft` in the same folder so that they can communicate via sockets)
+
 Then execute the following command:
 
 ```bash
-go run github.com/cometbft/cometbft/cmd/cometbft@v0.38.0 node --home /tmp/cometbft-home --proxy_app=unix://example.sock
+cometbft node --home /tmp/cometbft-home --proxy_app=unix://example.sock
 ```
 
 This should start the full node and connect to our ABCI application, which will be
@@ -678,6 +775,10 @@ curl -s 'localhost:26657/broadcast_tx_commit?tx="cometbft=rocks"'
 If everything went well, you should see a response indicating which height the
 transaction was included in the blockchain.
 
+```bash
+{"jsonrpc":"2.0","id":-1,"result":{"check_tx":{"code":0,"data":null,"log":"","info":"","gas_wanted":"0","gas_used":"0","events":[],"codespace":""},"tx_result":{"code":0,"data":null,"log":"","info":"","gas_wanted":"0","gas_used":"0","events":[{"type":"app","attributes":[{"key":"key","value":"cometbft","index":true},{"key":"value","value":"rocks","index":true}]}],"codespace":""},"hash":"71276C4844CE72F6C6C868541D10923259F5F8DA5716B230555B36AD309D6FD1","height":"64"}}
+```
+
 Finally, let's make sure that transaction really was persisted by the application.
 Run the following command:
 
@@ -702,9 +803,20 @@ The response contains a `base64` encoded representation of the data we submitted
 To get the original value out of this data, we can use the `base64` command line utility:
 
 ```bash
-echo "cm9ja3M=" | base64 -d
+$ echo "Y29tZXRiZnQ=" | base64 -d
+cometbft
+$ echo "cm9ja3M=" | base64 -d
+rocks
 ```
+
+If you want to search for txs, you can leverage `CometBFT` kv indexer by using the `/tx_search` RPC endpoint:
+
+```bash
+curl "localhost:26657/tx_search?query=\"app.key='cometbft'\""
+```
+
+The events (`abcitypes.Event`) added in `FinalizeBlock` are indexed by CometBFT (assuming the `kv` indexer is enabled in the CometBFT's configuration).
 
 ## Outro
 
-Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/cosmosnetwork) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.
+Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/interchain) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.

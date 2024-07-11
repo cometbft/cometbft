@@ -18,7 +18,7 @@ import (
 	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
-// Evidence represents any provable malicious activity by a validator.
+// Evidence represents any provable misbehavior committed by a validator.
 // Verification logic for each evidence is part of the evidence module.
 type Evidence interface {
 	ABCI() []abci.Misbehavior // forms individual evidence to be sent to the application
@@ -30,7 +30,7 @@ type Evidence interface {
 	ValidateBasic() error     // basic consistency check
 }
 
-//--------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------
 
 // DuplicateVoteEvidence contains evidence of a single validator signing two conflicting votes.
 type DuplicateVoteEvidence struct {
@@ -200,7 +200,7 @@ func DuplicateVoteEvidenceFromProto(pb *cmtproto.DuplicateVoteEvidence) (*Duplic
 	return dve, dve.ValidateBasic()
 }
 
-//------------------------------------ LIGHT EVIDENCE --------------------------------------
+// ------------------------------------ LIGHT EVIDENCE --------------------------------------
 
 // LightClientAttackEvidence is a generalized evidence that captures all forms of known attacks on
 // a light client such that a full node can verify, propose and commit the evidence on-chain for
@@ -442,7 +442,7 @@ func LightClientAttackEvidenceFromProto(lpb *cmtproto.LightClientAttackEvidence)
 	return l, l.ValidateBasic()
 }
 
-//------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------
 
 // EvidenceList is a list of Evidence. Evidences is not a word.
 type EvidenceList []Evidence
@@ -489,7 +489,7 @@ func (evl EvidenceList) ToABCI() []abci.Misbehavior {
 	return el
 }
 
-//------------------------------------------ PROTO --------------------------------------
+// ------------------------------------------ PROTO --------------------------------------
 
 // EvidenceToProto is a generalized function for encoding evidence that conforms to the
 // evidence interface to protobuf.
@@ -545,7 +545,7 @@ func init() {
 	cmtjson.RegisterType(&LightClientAttackEvidence{}, "tendermint/LightClientAttackEvidence")
 }
 
-//-------------------------------------------- ERRORS --------------------------------------
+// -------------------------------------------- ERRORS --------------------------------------
 
 // ErrInvalidEvidence wraps a piece of evidence and the error denoting how or why it is invalid.
 type ErrInvalidEvidence struct {
@@ -579,7 +579,7 @@ func (err *ErrEvidenceOverflow) Error() string {
 	return fmt.Sprintf("Too much evidence: Max %d, got %d", err.Max, err.Got)
 }
 
-//-------------------------------------------- MOCKING --------------------------------------
+// -------------------------------------------- MOCKING --------------------------------------
 
 // unstable - use only for testing
 

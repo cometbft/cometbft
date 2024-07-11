@@ -1,16 +1,17 @@
 package core
 
 import (
-	"errors"
-	"fmt"
-	"sort"
-
-	cmtquery "github.com/cometbft/cometbft/internal/pubsub/query"
-	"github.com/cometbft/cometbft/internal/state/txindex/null"
-	cmtmath "github.com/cometbft/cometbft/libs/math"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	"github.com/cometbft/cometbft/state/txindex"
+	"github.com/cometbft/cometbft/state/txindex/null"
 	"github.com/cometbft/cometbft/types"
+)
+
+const (
+	Ascending  = "asc"
+	Descending = "desc"
 )
 
 // Tx allows you to query the transaction results. `nil` could mean the
@@ -20,7 +21,7 @@ import (
 func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctypes.ResultTx, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, errors.New("transaction indexing is disabled")
+		return nil, ErrTxIndexingDisabled
 	}
 
 	r, err := env.TxIndexer.Get(hash)
@@ -29,13 +30,15 @@ func (env *Environment) Tx(_ *rpctypes.Context, hash []byte, prove bool) (*ctype
 	}
 
 	if r == nil {
-		return nil, fmt.Errorf("tx (%X) not found", hash)
+		return nil, ErrTxNotFound{hash}
 	}
 
 	var proof types.TxProof
 	if prove {
 		block, _ := env.BlockStore.LoadBlock(r.Height)
-		proof = block.Data.Txs.Proof(int(r.Index))
+		if block != nil {
+			proof = block.Data.Txs.Proof(int(r.Index))
+		}
 	}
 
 	return &ctypes.ResultTx{
@@ -60,9 +63,14 @@ func (env *Environment) TxSearch(
 ) (*ctypes.ResultTxSearch, error) {
 	// if index is disabled, return error
 	if _, ok := env.TxIndexer.(*null.TxIndex); ok {
-		return nil, errors.New("transaction indexing is disabled")
+		return nil, ErrTxIndexingDisabled
 	} else if len(query) > maxQueryLength {
-		return nil, errors.New("maximum query length exceeded")
+		return nil, ErrQueryLength{len(query), maxQueryLength}
+	}
+
+	// if orderBy is not "asc", "desc", or blank, return error
+	if orderBy != "" && orderBy != Ascending && orderBy != Descending {
+		return nil, ErrInvalidOrderBy{orderBy}
 	}
 
 	q, err := cmtquery.New(query)
@@ -70,51 +78,34 @@ func (env *Environment) TxSearch(
 		return nil, err
 	}
 
-	results, err := env.TxIndexer.Search(ctx.Context(), q)
-	if err != nil {
-		return nil, err
-	}
-
-	// sort results (must be done before pagination)
-	switch orderBy {
-	case "desc":
-		sort.Slice(results, func(i, j int) bool {
-			if results[i].Height == results[j].Height {
-				return results[i].Index > results[j].Index
-			}
-			return results[i].Height > results[j].Height
-		})
-	case "asc", "":
-		sort.Slice(results, func(i, j int) bool {
-			if results[i].Height == results[j].Height {
-				return results[i].Index < results[j].Index
-			}
-			return results[i].Height < results[j].Height
-		})
-	default:
-		return nil, errors.New("expected order_by to be either `asc` or `desc` or empty")
-	}
-
-	// paginate results
-	totalCount := len(results)
+	// Validate number of results per page
 	perPage := env.validatePerPage(perPagePtr)
+	if pagePtr == nil {
+		// Default to page 1 if not specified
+		pagePtr = new(int)
+		*pagePtr = 1
+	}
 
-	page, err := validatePage(pagePtr, perPage, totalCount)
+	pagSettings := txindex.Pagination{
+		OrderDesc:   orderBy == Descending,
+		IsPaginated: true,
+		Page:        *pagePtr,
+		PerPage:     perPage,
+	}
+
+	results, totalCount, err := env.TxIndexer.Search(ctx.Context(), q, pagSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	skipCount := validateSkipCount(page, perPage)
-	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
-
-	apiResults := make([]*ctypes.ResultTx, 0, pageSize)
-	for i := skipCount; i < skipCount+pageSize; i++ {
-		r := results[i]
-
+	apiResults := make([]*ctypes.ResultTx, 0, len(results))
+	for _, r := range results {
 		var proof types.TxProof
 		if prove {
 			block, _ := env.BlockStore.LoadBlock(r.Height)
-			proof = block.Data.Txs.Proof(int(r.Index))
+			if block != nil {
+				proof = block.Data.Txs.Proof(int(r.Index))
+			}
 		}
 
 		apiResults = append(apiResults, &ctypes.ResultTx{

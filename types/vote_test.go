@@ -13,7 +13,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/internal/protoio"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
@@ -284,8 +284,7 @@ func TestIsVoteTypeValid(t *testing.T) {
 	}
 
 	for _, tt := range tc {
-		tt := tt
-		t.Run(tt.name, func(st *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			if rs := IsVoteTypeValid(tt.in); rs != tt.out {
 				t.Errorf("got unexpected Vote type. Expected:\n%v\nGot:\n%v", rs, tt.out)
 			}
@@ -344,7 +343,7 @@ func TestValidVotes(t *testing.T) {
 		vote         *Vote
 		malleateVote func(*Vote)
 	}{
-		{"good prevote", examplePrevote(), func(v *Vote) {}},
+		{"good prevote", examplePrevote(), func(_ *Vote) {}},
 		{"good precommit without vote extension", examplePrecommit(), func(v *Vote) { v.Extension = nil }},
 		{"good precommit with vote extension", examplePrecommit(), func(v *Vote) { v.Extension = []byte("extension") }},
 	}

@@ -49,7 +49,7 @@ var RootCmd = &cobra.Command{
 	Use:   "abci-cli",
 	Short: "the ABCI CLI tool wraps an ABCI client",
 	Long:  "the ABCI CLI tool wraps an ABCI client and is used for testing ABCI servers",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		switch cmd.Use {
 		case "kvstore", "version", "help [command]":
 			return nil
@@ -232,7 +232,7 @@ var versionCmd = &cobra.Command{
 	Short: "print ABCI console version",
 	Long:  "print ABCI console version",
 	Args:  cobra.ExactArgs(0),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		fmt.Println(version.Version)
 		return nil
 	},
@@ -291,7 +291,7 @@ func persistentArgs(line []byte) []string {
 	return args
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 func compose(fs []func() error) error {
 	if len(fs) == 0 {
@@ -367,7 +367,7 @@ LOOP:
 		switch {
 		case more:
 			return errors.New("input line is too long")
-		case err == io.EOF:
+		case errors.Is(err, io.EOF):
 			break LOOP
 		case len(line) == 0:
 			continue
@@ -731,7 +731,7 @@ func cmdKVStore(*cobra.Command, []string) error {
 	select {}
 }
 
-//--------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 
 func printResponse(cmd *cobra.Command, args []string, rsps ...response) {
 	if flagVerbose {

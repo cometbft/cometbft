@@ -13,10 +13,10 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1_eth"
 	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/internal/protoio"
 	"github.com/cometbft/cometbft/internal/tempfile"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
+	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
@@ -41,7 +41,7 @@ func voteToStep(vote *cmtproto.Vote) int8 {
 	}
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 // FilePVKey stores the immutable part of PrivValidator.
 type FilePVKey struct {
@@ -69,7 +69,7 @@ func (pvKey FilePVKey) Save() {
 	}
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 // FilePVLastSignState stores the mutable part of PrivValidator.
 type FilePVLastSignState struct {
@@ -154,7 +154,7 @@ func (lss *FilePVLastSignState) Save() {
 	}
 }
 
-//-------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 
 // FilePV implements PrivValidator using data persisted to disk
 // to prevent double signing.
@@ -182,8 +182,7 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 	}
 }
 
-// GenFilePV generates a new validator with randomly generated private key
-// and sets the filePaths, but does not call Save().
+// GenFilePV calls NewFilePV with a random ed25519 private key.
 func GenFilePV(keyFilePath, stateFilePath string) *FilePV {
 	// TODO Deal with this, TOP PRIO
 	return NewFilePV(secp256k1_eth.GenPrivKey(), keyFilePath, stateFilePath)
@@ -283,6 +282,11 @@ func (pv *FilePV) SignProposal(chainID string, proposal *cmtproto.Proposal) erro
 	return nil
 }
 
+// SignBytes signs the given bytes. Implements PrivValidator.
+func (pv *FilePV) SignBytes(bytes []byte) ([]byte, error) {
+	return pv.Key.PrivKey.Sign(bytes)
+}
+
 // Save persists the FilePV to disk.
 func (pv *FilePV) Save() {
 	pv.Key.Save()
@@ -307,7 +311,7 @@ func (pv *FilePV) String() string {
 	)
 }
 
-//------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------
 
 // signVote checks if the vote is good to sign and sets the vote signature.
 // It may need to set the timestamp as well if the vote is otherwise the same as
@@ -430,7 +434,7 @@ func (pv *FilePV) saveSigned(height int64, round int32, step int8,
 	pv.LastSignState.Save()
 }
 
-//-----------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------
 
 // Returns the timestamp from the lastSignBytes.
 // Returns true if the only difference in the votes is their timestamp.

@@ -3,8 +3,8 @@ package proxy
 import (
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	cmtos "github.com/cometbft/cometbft/internal/os"
-	"github.com/cometbft/cometbft/internal/service"
 	cmtlog "github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 const (

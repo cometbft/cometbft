@@ -10,11 +10,13 @@ linters:
     - cyclop
     - deadcode
     - dupword
-    - errname
     - errorlint
+    - errname
+    - err113
     - exhaustive
     - exhaustivestruct
     - exhaustruct
+    - execinquery
     - forbidigo
     - forcetypeassert
     - funlen
@@ -23,15 +25,16 @@ linters:
     - gocognit
     - gocyclo
     - godox
-    - goerr113
     - golint
     - gomnd
     - ifshort
     - interfacebloat
+    - intrange
     - interfacer
     - ireturn
     - lll
     - maintidx
+    - mnd
     - maligned
     - nestif
     - nilnil
@@ -39,7 +42,6 @@ linters:
     - nonamedreturns
     - nosnakecase
     - predeclared
-    - revive
     - scopelint
     - structcheck
     - tagliatelle
@@ -96,12 +98,15 @@ linters-settings:
           - github.com/cosmos
           - github.com/btcsuite/btcd/btcec/v2
           - github.com/BurntSushi/toml
+          - github.com/dgraph-io/badger/v4
+          - github.com/ethereum/go-ethereum/crypto
           - github.com/go-git/go-git/v5
           - github.com/go-kit
           - github.com/go-logfmt/logfmt
           - github.com/gofrs/uuid
           - github.com/google
           - github.com/gorilla/websocket
+          - github.com/hashicorp/golang-lru/v2
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
           - github.com/Masterminds/semver/v3
@@ -124,6 +129,7 @@ linters-settings:
           - github.com/cometbft
           - github.com/adlio/schema
           - github.com/btcsuite/btcd
+          - github.com/dgraph-io/badger/v4
           - github.com/fortytw2/leaktest
           - github.com/go-kit
           - github.com/google/uuid
@@ -135,3 +141,47 @@ linters-settings:
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify
+
+  revive:
+    enable-all-rules: true
+    rules:
+      - name: max-public-structs
+        disabled: true
+      - name: cognitive-complexity
+        disabled: true
+      - name: argument-limit
+        disabled: true
+      - name: cyclomatic
+        disabled: true
+      - name: deep-exit
+        disabled: true
+      - name: file-header
+        disabled: true
+      - name: function-length
+        disabled: true
+      - name: function-result-limit
+        disabled: true
+      - name: line-length-limit
+        disabled: true
+      - name: flag-parameter
+        disabled: true
+      - name: add-constant
+        disabled: true
+      - name: empty-lines
+        disabled: true
+      - name: import-shadowing
+        disabled: true
+      - name: modifies-value-receiver
+        disabled: true
+      - name: confusing-naming
+        disabled: true
+      - name: defer
+        disabled: true
+      - name: unchecked-type-assertion
+        disabled: true
+      - name: unhandled-error
+        disabled: true
+        arguments:
+          - "fmt.Printf"
+          - "fmt.Print"
+          - "fmt.Println"

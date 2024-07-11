@@ -14,6 +14,7 @@ message PublicKey {
   oneof sum {
     bytes ed25519       = 1;
     bytes secp256k1     = 2;
-    bytes secp256k1_eth = 3;
+    bytes bls12381      = 3;
+    bytes secp256k1_eth = 4;
   }
 }

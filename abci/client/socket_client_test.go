@@ -15,7 +15,7 @@ import (
 	"github.com/cometbft/cometbft/abci/server"
 	"github.com/cometbft/cometbft/abci/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	"github.com/cometbft/cometbft/internal/service"
+	"github.com/cometbft/cometbft/libs/service"
 )
 
 func TestCalls(t *testing.T) {
@@ -163,7 +163,7 @@ func (slowApp) CheckTx(context.Context, *types.CheckTxRequest) (*types.CheckTxRe
 	return &types.CheckTxResponse{}, nil
 }
 
-// TestCallbackInvokedWhenSetLaet ensures that the callback is invoked when
+// TestCallbackInvokedWhenSetLate ensures that the callback is invoked when
 // set after the client completes the call into the app. Currently this
 // test relies on the callback being allowed to be invoked twice if set multiple
 // times, once when set early and once when set late.

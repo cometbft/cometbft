@@ -27,7 +27,6 @@ func Test_genPrivKey(t *testing.T) {
 		{"valid because 0 < 1 < N", validOne, false},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldPanic {
 				require.Panics(t, func() {
@@ -62,9 +61,9 @@ func TestSignatureVerificationAndRejectUpperS(t *testing.T) {
 		require.True(t, pub.VerifySignature(msg, sigStr))
 
 		// malleate:
-		var S256 secp256k1.ModNScalar
-		S256.SetByteSlice(secp256k1.S256().N.Bytes())
-		s.Negate().Add(&S256)
+		var s256 secp256k1.ModNScalar
+		s256.SetByteSlice(secp256k1.S256().N.Bytes())
+		s.Negate().Add(&s256)
 		require.True(t, s.IsOverHalfOrder())
 
 		rBytes := r.Bytes()

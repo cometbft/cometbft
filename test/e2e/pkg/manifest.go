@@ -52,7 +52,7 @@ type Manifest struct {
 	DisablePexReactor bool `toml:"disable_pex"`
 
 	// KeyType sets the curve that will be used by validators.
-	// Options are ed25519 & secp256k1
+	// Options are ed25519, secp256k1 and sr25519.
 	KeyType string `toml:"key_type"`
 
 	// Evidence indicates the amount of evidence that will be injected into the
@@ -124,6 +124,17 @@ type Manifest struct {
 	// Default geographical zone ID for simulating latencies, assigned to nodes that don't have a
 	// specific zone assigned.
 	DefaultZone string `toml:"default_zone"`
+
+	// PbtsEnableHeight configures the first height during which
+	// the chain will start using Proposer-Based Timestamps (PBTS)
+	// to create and validate new blocks.
+	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
+
+	// PbtsUpdateHeight configures the height at which consensus
+	// param PbtsEnableHeight will be set.
+	// -1 denotes it is set at genesis.
+	// 0 denotes it is set at InitChain.
+	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 }
 
 // ManifestNode represents a node in a testnet manifest.
@@ -149,8 +160,8 @@ type ManifestNode struct {
 	// this relates to the providers the light client is connected to.
 	PersistentPeers []string `toml:"persistent_peers"`
 
-	// Database specifies the database backend: "goleveldb", "cleveldb",
-	// "rocksdb", "boltdb", "pebbledb" or "badgerdb". Defaults to goleveldb.
+	// Database specifies the database backend: "goleveldb", "rocksdb",
+	// "pebbledb" or "badgerdb". Defaults to "goleveldb".
 	Database string `toml:"database"`
 
 	// PrivvalProtocol specifies the protocol used to sign consensus messages:
@@ -207,6 +218,24 @@ type ManifestNode struct {
 
 	// Geographical zone ID for simulating latencies.
 	Zone string `toml:"zone"`
+
+	// ExperimentalKeyLayout sets the key representation in the DB
+	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`
+
+	// Compact triggers compaction on the DB after pruning
+	Compact bool `toml:"compact"`
+
+	// CompactionInterval sets the number of blocks at which we trigger compaction
+	CompactionInterval int64 `toml:"compaction_interval"`
+
+	// DiscardABCIResponses disables abci rsponses
+	DiscardABCIResponses bool `toml:"discard_abci_responses"`
+
+	// Indexer sets the indexer, default kv
+	Indexer string `toml:"indexer"`
+
+	// Simulated clock skew for this node
+	ClockSkew time.Duration `toml:"clock_skew"`
 }
 
 // Save saves the testnet manifest to a file.

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -11,12 +12,14 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-	"github.com/cometbft/cometbft/internal/protoio"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	"github.com/cometbft/cometbft/libs/protoio"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 var (
 	testProposal *Proposal
+	testBlockID  BlockID
 	pbp          *cmtproto.Proposal
 )
 
@@ -25,13 +28,16 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	testBlockID = BlockID{
+		Hash:          []byte("--June_15_2020_amino_was_removed"),
+		PartSetHeader: PartSetHeader{Total: 111, Hash: []byte("--June_15_2020_amino_was_removed")},
+	}
 	testProposal = &Proposal{
-		Height: 12345,
-		Round:  23456,
-		BlockID: BlockID{
-			Hash:          []byte("--June_15_2020_amino_was_removed"),
-			PartSetHeader: PartSetHeader{Total: 111, Hash: []byte("--June_15_2020_amino_was_removed")},
-		},
+		Type:      ProposalType,
+		Height:    12345,
+		Round:     23456,
+		BlockID:   testBlockID,
 		POLRound:  -1,
 		Timestamp: stamp,
 	}
@@ -62,8 +68,8 @@ func TestProposalVerifySignature(t *testing.T) {
 	require.NoError(t, err)
 
 	prop := NewProposal(
-		4, 2, 2,
-		BlockID{cmtrand.Bytes(tmhash.Size), PartSetHeader{777, cmtrand.Bytes(tmhash.Size)}})
+		4, 2, 1,
+		BlockID{cmtrand.Bytes(tmhash.Size), PartSetHeader{777, cmtrand.Bytes(tmhash.Size)}}, cmttime.Now())
 	p := prop.ToProto()
 	signBytes := ProposalSignBytes("test_chain_id", p)
 
@@ -126,48 +132,71 @@ func BenchmarkProposalVerifySignature(b *testing.B) {
 
 func TestProposalValidateBasic(t *testing.T) {
 	privVal := NewMockPV()
+	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
+	location, err := time.LoadLocation("CET")
+	require.NoError(t, err)
+
 	testCases := []struct {
 		testName         string
 		malleateProposal func(*Proposal)
 		expectErr        bool
 	}{
-		{"Good Proposal", func(p *Proposal) {}, false},
+		{"Good Proposal", func(*Proposal) {}, false},
+		{"Test Proposal", func(p *Proposal) {
+			p.Type = testProposal.Type
+			p.Height = testProposal.Height
+			p.Round = testProposal.Round
+			p.BlockID = testProposal.BlockID
+			p.POLRound = testProposal.POLRound
+			p.Timestamp = testProposal.Timestamp
+		}, false},
 		{"Invalid Type", func(p *Proposal) { p.Type = PrecommitType }, true},
 		{"Invalid Height", func(p *Proposal) { p.Height = -1 }, true},
+		{"Zero Height", func(p *Proposal) { p.Height = 0 }, true},
 		{"Invalid Round", func(p *Proposal) { p.Round = -1 }, true},
 		{"Invalid POLRound", func(p *Proposal) { p.POLRound = -2 }, true},
+		{"POLRound == Round", func(p *Proposal) { p.POLRound = p.Round }, true},
 		{"Invalid BlockId", func(p *Proposal) {
 			p.BlockID = BlockID{[]byte{1, 2, 3}, PartSetHeader{111, []byte("blockparts")}}
 		}, true},
 		{"Invalid Signature", func(p *Proposal) {
 			p.Signature = make([]byte, 0)
 		}, true},
+		{"Small Signature", func(p *Proposal) {
+			p.Signature = make([]byte, MaxSignatureSize-1)
+		}, false},
 		{"Too big Signature", func(p *Proposal) {
 			p.Signature = make([]byte, MaxSignatureSize+1)
 		}, true},
+		{"Non canonical time", func(p *Proposal) {
+			p.Timestamp = time.Now().In(location)
+		}, true},
+		{"Not rounded time", func(p *Proposal) {
+			p.Timestamp = time.Now()
+		}, true},
 	}
-	blockID := makeBlockID(tmhash.Sum([]byte("blockhash")), math.MaxInt32, tmhash.Sum([]byte("partshash")))
-
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.testName, func(t *testing.T) {
 			prop := NewProposal(
-				4, 2, 2,
-				blockID)
+				4, 2, 1,
+				blockID, cmttime.Now())
 			p := prop.ToProto()
 			err := privVal.SignProposal("test_chain_id", p)
 			prop.Signature = p.Signature
 			require.NoError(t, err)
+
 			tc.malleateProposal(prop)
-			assert.Equal(t, tc.expectErr, prop.ValidateBasic() != nil, "Validate Basic had an unexpected result")
+			err = prop.ValidateBasic()
+			errMessage := fmt.Sprintf("Validate Basic had an unexpected error: %v", err)
+			assert.Equal(t, tc.expectErr, prop.ValidateBasic() != nil, errMessage)
 		})
 	}
 }
 
 func TestProposalProtoBuf(t *testing.T) {
-	proposal := NewProposal(1, 2, 3, makeBlockID([]byte("hash"), 2, []byte("part_set_hash")))
+	proposal := NewProposal(1, 2, 1, makeBlockID([]byte("hash"), 2, []byte("part_set_hash")), cmttime.Now())
 	proposal.Signature = []byte("sig")
-	proposal2 := NewProposal(1, 2, 3, BlockID{})
+	proposal2 := NewProposal(1, 2, 1, BlockID{}, cmttime.Now())
 
 	testCases := []struct {
 		msg     string
@@ -189,5 +218,71 @@ func TestProposalProtoBuf(t *testing.T) {
 		} else {
 			require.Error(t, err)
 		}
+	}
+}
+
+func TestProposalIsTimely(t *testing.T) {
+	timestamp, err := time.Parse(time.RFC3339, "2019-03-13T23:00:00Z")
+	sp := SynchronyParams{
+		Precision:    time.Nanosecond,
+		MessageDelay: 2 * time.Nanosecond,
+	}
+	require.NoError(t, err)
+	testCases := []struct {
+		name                string
+		proposalHeight      int64
+		proposalTimestamp   time.Time
+		proposalReceiveTime time.Time
+		expectTimely        bool
+	}{
+		// Timely requirements:
+		// proposalReceiveTime >= proposalTimestamp - PRECISION
+		// proposalReceiveTime <= proposalTimestamp + MSGDELAY + PRECISION
+		{
+			name:                "timestamp in the past",
+			proposalHeight:      2,
+			proposalTimestamp:   timestamp,
+			proposalReceiveTime: timestamp.Add(sp.Precision + sp.MessageDelay),
+			expectTimely:        true,
+		},
+		{
+			name:                "timestamp far in the past",
+			proposalHeight:      2,
+			proposalTimestamp:   timestamp,
+			proposalReceiveTime: timestamp.Add(sp.Precision + sp.MessageDelay + 1),
+			expectTimely:        false,
+		},
+		{
+			name:                "timestamp in the future",
+			proposalHeight:      2,
+			proposalTimestamp:   timestamp.Add(sp.Precision),
+			proposalReceiveTime: timestamp,
+			expectTimely:        true,
+		},
+		{
+			name:                "timestamp far in the future",
+			proposalHeight:      2,
+			proposalTimestamp:   timestamp.Add(sp.Precision + 1),
+			proposalReceiveTime: timestamp,
+			expectTimely:        false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			p := Proposal{
+				Type:      ProposalType,
+				Height:    testCase.proposalHeight,
+				Timestamp: testCase.proposalTimestamp,
+				Round:     0,
+				POLRound:  -1,
+				BlockID:   testBlockID,
+				Signature: []byte{1},
+			}
+			require.NoError(t, p.ValidateBasic())
+
+			ti := p.IsTimely(testCase.proposalReceiveTime, sp)
+			assert.Equal(t, testCase.expectTimely, ti)
+		})
 	}
 }

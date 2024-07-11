@@ -74,7 +74,7 @@ from the mempool, so this would be a pretty straightforward change.
 
 ### What value may be added to Tendermint by introducing transaction replacement?
 
-Transaction replacement would would enable applications to aggregate or disaggregate transactions.
+Transaction replacement would enable applications to aggregate or disaggregate transactions.
 
 For aggregation, a set of transactions that all related work, such as transferring
 tokens between the same two accounts, could be replaced with a single transaction,
@@ -132,7 +132,7 @@ Malicious nodes will be granted a new vector for censoring transactions.
 There is no guarantee that a replaced transactions is actually executed at all.
 A malicious node could censor a transaction by simply listing it as replaced.
 Honest nodes seeing the replacement would flush the transaction from their mempool
-and not execute or propose it it in later blocks.
+and not execute or propose it in later blocks.
 
 ### Transaction tracking implementations
 

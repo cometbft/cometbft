@@ -53,7 +53,7 @@ func TestNodeKeySaveAs(t *testing.T) {
 	assert.FileExists(t, filePath)
 }
 
-//----------------------------------------------------------
+// ----------------------------------------------------------
 
 func padBytes(bz []byte) []byte {
 	targetBytes := 20

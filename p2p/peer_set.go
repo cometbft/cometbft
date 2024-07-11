@@ -4,7 +4,7 @@ import (
 	"net"
 
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // IPeerSet has a (immutable) subset of the methods of PeerSet.
@@ -25,7 +25,7 @@ type IPeerSet interface {
 	Random() Peer
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // PeerSet is a special thread-safe structure for keeping a table of peers.
 type PeerSet struct {

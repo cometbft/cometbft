@@ -304,7 +304,7 @@ _each_ block. We could easily save the value and the height at which the value
 was updated and construct each block using the data that existed at the time.
 
 This document does not make any specific recommendations around storage since
-that is likely to change with upcoming improvements to to the database infrastructure.
+that is likely to change with upcoming improvements to the database infrastructure.
 However, it's important to note that removing fields from the block for the
 purposes of 'saving space' may not be that meaningful. We should instead focus
 our attention of removing fields from the block that are no longer needed

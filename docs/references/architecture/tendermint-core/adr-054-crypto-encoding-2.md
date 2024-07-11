@@ -14,7 +14,7 @@ Currently amino encodes keys as `<PrefixBytes> <Length> <ByteArray>`.
 ## Decision
 
 Previously Tendermint defined all the key types for use in Tendermint and the Cosmos-SDK. Going forward the Cosmos-SDK will define its own protobuf type for keys. This will allow Tendermint to only define the keys that are being used in the codebase (ed25519).
-There is the the opportunity to only define the usage of ed25519 (`bytes`) and not have it be a `oneof`, but this would mean that the `oneof` work is only being postponed to a later date. When using the `oneof` protobuf type we will have to manually switch over the possible key types and then pass them to the interface which is needed.
+There is the opportunity to only define the usage of ed25519 (`bytes`) and not have it be a `oneof`, but this would mean that the `oneof` work is only being postponed to a later date. When using the `oneof` protobuf type we will have to manually switch over the possible key types and then pass them to the interface which is needed.
 
 The approach that will be taken to minimize headaches for users is one where all encoding of keys will shift to protobuf and where amino encoding is relied on, there will be custom marshal and unmarshal functions.
 

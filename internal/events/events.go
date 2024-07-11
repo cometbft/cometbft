@@ -4,8 +4,8 @@ package events
 import (
 	"fmt"
 
-	"github.com/cometbft/cometbft/internal/service"
-	cmtsync "github.com/cometbft/cometbft/internal/sync"
+	"github.com/cometbft/cometbft/libs/service"
+	cmtsync "github.com/cometbft/cometbft/libs/sync"
 )
 
 // ErrListenerWasRemoved is returned by AddEvent if the listener was removed.
@@ -20,7 +20,7 @@ func (e ErrListenerWasRemoved) Error() string {
 
 // EventData is a generic event data can be typed and registered with
 // tendermint/go-amino via concrete implementation of this interface.
-type EventData interface{}
+type EventData any
 
 // Eventable is the interface reactors and other modules must export to become
 // eventable.
@@ -68,11 +68,11 @@ func NewEventSwitch() EventSwitch {
 	return evsw
 }
 
-func (evsw *eventSwitch) OnStart() error {
+func (*eventSwitch) OnStart() error {
 	return nil
 }
 
-func (evsw *eventSwitch) OnStop() {}
+func (*eventSwitch) OnStop() {}
 
 func (evsw *eventSwitch) AddListenerForEvent(listenerID, event string, cb EventCallback) error {
 	// Get/Create eventCell and listener.
@@ -158,7 +158,7 @@ func (evsw *eventSwitch) FireEvent(event string, data EventData) {
 	eventCell.FireEvent(data)
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 // eventCell handles keeping track of listener callbacks for a given event.
 type eventCell struct {
@@ -199,7 +199,7 @@ func (cell *eventCell) FireEvent(data EventData) {
 	}
 }
 
-//-----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 type EventCallback func(data EventData)
 

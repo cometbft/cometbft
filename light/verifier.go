@@ -38,7 +38,7 @@ func VerifyNonAdjacent(
 	trustLevel cmtmath.Fraction,
 ) error {
 	if untrustedHeader.Height == trustedHeader.Height+1 {
-		return errors.New("headers must be non adjacent in height")
+		return ErrHeaderHeightAdjacent
 	}
 
 	if HeaderExpired(trustedHeader, trustingPeriod, now) {
@@ -97,7 +97,7 @@ func VerifyAdjacent(
 	maxClockDrift time.Duration,
 ) error {
 	if untrustedHeader.Height != trustedHeader.Height+1 {
-		return errors.New("headers must be adjacent in height")
+		return ErrHeaderHeightNotAdjacent
 	}
 
 	if HeaderExpired(trustedHeader, trustingPeriod, now) {
@@ -113,11 +113,7 @@ func VerifyAdjacent(
 
 	// Check the validator hashes are the same
 	if !bytes.Equal(untrustedHeader.ValidatorsHash, trustedHeader.NextValidatorsHash) {
-		err := fmt.Errorf("expected old header next validators (%X) to match those from new header (%X)",
-			trustedHeader.NextValidatorsHash,
-			untrustedHeader.ValidatorsHash,
-		)
-		return err
+		return ErrValidatorHashMismatch{TrustedHash: trustedHeader.NextValidatorsHash, ValidatorHash: untrustedHeader.ValidatorsHash}
 	}
 
 	// Ensure that +2/3 of new validators signed correctly.
@@ -156,34 +152,23 @@ func verifyNewHeaderAndVals(
 	maxClockDrift time.Duration,
 ) error {
 	if err := untrustedHeader.ValidateBasic(trustedHeader.ChainID); err != nil {
-		return fmt.Errorf("untrustedHeader.ValidateBasic failed: %w", err)
+		return ErrHeaderValidateBasic{Err: err}
 	}
 
 	if untrustedHeader.Height <= trustedHeader.Height {
-		return fmt.Errorf("expected new header height %d to be greater than one of old header %d",
-			untrustedHeader.Height,
-			trustedHeader.Height)
+		return ErrHeaderHeightNotMonotonic{GotHeight: untrustedHeader.Height, OldHeight: trustedHeader.Height}
 	}
 
 	if !untrustedHeader.Time.After(trustedHeader.Time) {
-		return fmt.Errorf("expected new header time %v to be after old header time %v",
-			untrustedHeader.Time,
-			trustedHeader.Time)
+		return ErrHeaderTimeNotMonotonic{GotTime: untrustedHeader.Time, OldTime: trustedHeader.Time}
 	}
 
 	if !untrustedHeader.Time.Before(now.Add(maxClockDrift)) {
-		return fmt.Errorf("new header has a time from the future %v (now: %v; max clock drift: %v)",
-			untrustedHeader.Time,
-			now,
-			maxClockDrift)
+		return ErrHeaderTimeExceedMaxClockDrift{Ti: untrustedHeader.Time, Now: now, Drift: maxClockDrift}
 	}
 
 	if !bytes.Equal(untrustedHeader.ValidatorsHash, untrustedVals.Hash()) {
-		return fmt.Errorf("expected new header validators (%X) to match those that were supplied (%X) at height %d",
-			untrustedHeader.ValidatorsHash,
-			untrustedVals.Hash(),
-			untrustedHeader.Height,
-		)
+		return ErrValidatorsMismatch{HeaderHash: untrustedHeader.ValidatorsHash, ValidatorsHash: untrustedVals.Hash(), Height: untrustedHeader.Height}
 	}
 
 	return nil
@@ -196,7 +181,7 @@ func ValidateTrustLevel(lvl cmtmath.Fraction) error {
 	if lvl.Numerator*3 < lvl.Denominator || // < 1/3
 		lvl.Numerator > lvl.Denominator || // > 1
 		lvl.Denominator == 0 {
-		return fmt.Errorf("trustLevel must be within [1/3, 1], given %v", lvl)
+		return ErrInvalidTrustLevel{Level: lvl}
 	}
 	return nil
 }

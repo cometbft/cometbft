@@ -42,20 +42,29 @@ numbering our ADRs from 100 onwards.
 
 ### Proposed
 
-- [ADR-103: Protobuf definition versioning](adr-103-proto-versioning.md)
-- [ADR-105: Refactor list of senders in mempool](adr-105-refactor-mempool-senders.md)
+- [ADR-113: Modular transaction hashing](adr-113-modular-transaction-hashing.md)
+- [ADR-118: Mempool Lanes](adr-118-mempool-lanes.md)
 
 ### Accepted
 
 - [ADR-101: Data companion pull API](adr-101-data-companion-pull-api.md)
+- [ADR-102: RPC Companion](adr-102-rpc-companion.md)
+- [ADR-103: Protobuf definition versioning](adr-103-proto-versioning.md)
 - [ADR-104: State sync from local snapshot](adr-104-out-of-band-state-sync.md)
+- [ADR-105: Refactor list of senders in mempool](adr-105-refactor-mempool-senders.md)
+- [ADR-106: gRPC API](adr-106-grpc-api)
 - [ADR-107: Rename protobuf versions of 0.x releases to pre-v1 betas](adr-107-betaize-proto-versions.md)
 - [ADR-109: Reduce CometBFT Go API Surface Area](adr-109-reduce-go-api-surface.md)
 - [ADR-111: `nop` Mempool](adr-111-nop-mempool.md)
+- [ADR-112: Proposer-Based Timestamps](adr-112-proposer-based-timestamps.md)
+- [ADR-114: Partly Undo ADR 109](adr-114-undo-109.md)
+- [ADR-115: Predictable Block Times](adr-115-predictable-block-times.md)
 
-### Implemented
+### Accepted but Not (Yet) Implemented
 
-- [ADR-108: E2E tests for CometBFT's behaviour in respect to ABCI 1.0.](adr-108-e2e-abci++.md)
+- [ADR-102: RPC Companion](adr-102-rpc-companion.md)
+- [ADR-104: State sync from local snapshot](adr-104-out-of-band-state-sync.md)
+- [ADR-105: Refactor list of senders in mempool](adr-105-refactor-mempool-senders.md)
 
 ### Deprecated
 

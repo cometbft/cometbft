@@ -149,16 +149,20 @@ func createAndStartIndexerService(
 		txIndexer    txindex.TxIndexer
 		blockIndexer indexer.BlockIndexer
 	)
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, dbProvider, chainID)
+
+	txIndexer, blockIndexer, allIndexersDisabled, err := block.IndexerFromConfigWithDisabledIndexers(config, dbProvider, chainID)
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	if allIndexersDisabled {
+		return nil, txIndexer, blockIndexer, nil
 	}
 
 	txIndexer.SetLogger(logger.With("module", "txindex"))
 	blockIndexer.SetLogger(logger.With("module", "txindex"))
+
 	indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	indexerService.SetLogger(logger.With("module", "txindex"))
-
 	if err := indexerService.Start(); err != nil {
 		return nil, nil, nil, err
 	}

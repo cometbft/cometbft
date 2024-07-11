@@ -183,6 +183,18 @@ func PubKeyFromTypeAndBytes(pkType string, bytes []byte) (crypto.PubKey, error) 
 		pk := make(bls12381.PubKey, bls12381.PubKeySize)
 		copy(pk, bytes)
 		pubKey = pk
+	case secp256k1_eth.KeyType:
+		if len(bytes) != secp256k1_eth.PubKeySize {
+			return nil, ErrInvalidKeyLen{
+				Key:  pkType,
+				Got:  len(bytes),
+				Want: secp256k1_eth.PubKeySize,
+			}
+		}
+
+		pk := make(secp256k1_eth.PubKey, secp256k1_eth.PubKeySize)
+		copy(pk, bytes)
+		pubKey = pk
 	default:
 		return nil, ErrUnsupportedKey{Key: pkType}
 	}

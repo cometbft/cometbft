@@ -408,7 +408,7 @@ func (app *ForumApp) getWordsFromVe(voteExtensions []abci.ExtendedVoteInfo) stri
 			if voteExtensionCurseWords == "" {
 				voteExtensionCurseWords = word
 			} else {
-				voteExtensionCurseWords = voteExtensionCurseWords + "|" + word
+				voteExtensionCurseWords += "|" + word
 			}
 		}
 	}

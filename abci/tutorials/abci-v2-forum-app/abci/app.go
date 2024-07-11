@@ -137,6 +137,7 @@ func (app *ForumApp) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci
 
 	// Check for invalid sender
 	if len(msg.Sender) == 0 {
+		app.logger.Info("CheckTx: failed to parse transaction message", "message", msg, "error", "Sender is missing")
 		return &abci.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Log: "Invalid transaction", Info: "Sender is missing"}, nil
 	}
 

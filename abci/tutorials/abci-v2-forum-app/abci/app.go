@@ -38,8 +38,7 @@ func NewForumApp(dbDir string, appConfigPath string, logger log.Logger) (*ForumA
 	}
 	cfg, err := LoadConfig(appConfigPath)
 	if err != nil {
-		cfg = new(Config)
-		cfg.CurseWords = "bad"
+		return nil, fmt.Errorf("error loading config file: %w", err)
 	}
 
 	cfg.CurseWords = DeduplicateCurseWords(cfg.CurseWords)

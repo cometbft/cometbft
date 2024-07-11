@@ -47,22 +47,19 @@ func main() {
 	logger := cmtlog.NewTMLogger(cmtlog.NewSyncWriter(os.Stdout))
 	logger, err := cmtflags.ParseLogLevel(config.LogLevel, logger, cfg.DefaultLogLevel)
 	if err != nil {
-		log.Printf("failed to parse log level: %v", err)
-		defer os.Exit(1)
+		panic(fmt.Errorf("failed to parse log level: %w", err))
 	}
 
 	dbPath := filepath.Join(homeDir, "forum-db")
 	appConfigPath := "app.toml"
 	app, err := abci.NewForumApp(dbPath, appConfigPath, logger)
 	if err != nil {
-		log.Printf("failed to create Forum Application: %v\n", err)
-		defer os.Exit(1)
+		panic(fmt.Errorf("failed to create Forum Application: %w", err))
 	}
 
 	nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
 	if err != nil {
-		log.Printf("failed to load node key: %v", err)
-		defer os.Exit(1)
+		panic(fmt.Errorf("failed to load node key: %w", err))
 	}
 
 	pv := privval.LoadFilePV(
@@ -81,19 +78,19 @@ func main() {
 		nm.DefaultMetricsProvider(config.Instrumentation),
 		logger,
 	)
-	if err != nil {
-		log.Printf("failed to create CometBFT node")
-		defer os.Exit(1)
-	}
 
-	if err := node.Start(); err != nil {
-		log.Printf("failed to start CometBFT node")
-		defer os.Exit(1)
-	}
 	defer func() {
 		_ = node.Stop()
 		node.Wait()
 	}()
+
+	if err != nil {
+		panic(fmt.Errorf("failed to create CometBFT node: %w", err))
+	}
+
+	if err := node.Start(); err != nil {
+		panic(fmt.Errorf("failed to start CometBFT node: %w", err))
+	}
 
 	httpAddr := "127.0.0.1:8080"
 
@@ -103,8 +100,7 @@ func main() {
 	}
 
 	if err := server.ListenAndServe(); err != nil {
-		log.Printf("failed to start HTTP server: %v", err)
-		defer os.Exit(1)
+		panic(fmt.Errorf("failed to start HTTP server: %w", err))
 	}
 
 	sigCh := make(chan os.Signal, 1)

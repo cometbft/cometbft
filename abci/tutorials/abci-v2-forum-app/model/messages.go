@@ -35,7 +35,7 @@ func AppendToChat(db *DB, message Message) (string, error) {
 func FetchHistory(db *DB) (string, error) {
 	historyBytes, err := ViewDB(db.GetDB(), []byte("history"))
 	if err != nil {
-		return "", fmt.Errorf("error fetching history: %v", err)
+		return "", fmt.Errorf("error fetching history: %w", err)
 	}
 	msgHistory := string(historyBytes)
 	return msgHistory, nil

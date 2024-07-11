@@ -14,7 +14,6 @@ import (
 
 func TestTxFilter(t *testing.T) {
 	genDoc := randomGenesisDoc()
-	// TODO Deal with this
 	genDoc.ConsensusParams.Block.MaxBytes = 3000
 	genDoc.ConsensusParams.Evidence.MaxBytes = 1500
 

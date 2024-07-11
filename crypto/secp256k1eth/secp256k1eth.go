@@ -16,13 +16,6 @@ import (
 )
 
 // -------------------------------------.
-const (
-	PrivKeyName = "cometbft/PrivKeySecp256k1eth"
-	PubKeyName  = "cometbft/PubKeySecp256k1eth"
-
-	KeyType     = "secp256k1eth"
-	PrivKeySize = 32
-)
 
 func init() {
 	cmtjson.RegisterType(PubKey{}, PubKeyName)
@@ -141,15 +134,6 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 
 var _ crypto.PubKey = PubKey{}
 
-// PubKeySize, in Ethereum format, is comprised of 65 bytes for two field elements (x and y)
-// and a prefix byte.
-// Only uncompressed public keys are supported, so the the prefix byte is always set
-// to 0x04 to indicate "uncompressed".
-const PubKeySize = 65
-
-// SigSize is the size of the ECDSA signature.
-const SigSize = 65
-
 // PubKey implements crypto.PubKey.
 // It is the uncompressed form of the pubkey. The first byte is prefixed with 0x04.
 // This prefix is followed with the (x,y)-coordinates.
@@ -186,7 +170,7 @@ func (PubKey) Type() string {
 // VerifySignature verifies a signature of the form R || S || V.
 // It rejects signatures which are not in lower-S form.
 func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
-	if len(sigStr) != SigSize {
+	if len(sigStr) != SignatureLength {
 		return false
 	}
 

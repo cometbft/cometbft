@@ -19,12 +19,19 @@ type mempoolTx struct {
 	senders sync.Map
 }
 
-// Height returns the height for this transaction.
+func (memTx *mempoolTx) Tx() types.Tx {
+	return memTx.tx
+}
+
 func (memTx *mempoolTx) Height() int64 {
 	return atomic.LoadInt64(&memTx.height)
 }
 
-func (memTx *mempoolTx) isSender(peerID p2p.ID) bool {
+func (memTx *mempoolTx) GasWanted() int64 {
+	return memTx.gasWanted
+}
+
+func (memTx *mempoolTx) IsSender(peerID p2p.ID) bool {
 	_, ok := memTx.senders.Load(peerID)
 	return ok
 }

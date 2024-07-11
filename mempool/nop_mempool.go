@@ -109,5 +109,10 @@ func (*NopMempoolReactor) RemovePeer(p2p.Peer, any) {}
 // Receive does nothing.
 func (*NopMempoolReactor) Receive(p2p.Envelope) {}
 
+// TryAddTx does nothing.
+func (*NopMempoolReactor) TryAddTx(_ types.Tx, _ p2p.Peer) (*abcicli.ReqRes, error) {
+	return nil, nil
+}
+
 // SetSwitch does nothing.
 func (*NopMempoolReactor) SetSwitch(*p2p.Switch) {}

@@ -64,7 +64,7 @@ func (db *DB) CreateUser(user *User) error {
 	err = db.db.Update(func(txn *badger.Txn) error {
 		userBytes, err := json.Marshal(user)
 		if err != nil {
-			return errors.New("failed to marshal user to JSON")
+			return fmt.Errorf("failed to marshal user to JSON: %w", err)
 		}
 		err = txn.Set([]byte(user.Name), userBytes)
 		if err != nil {

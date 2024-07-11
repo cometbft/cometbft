@@ -14,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"
 )
@@ -26,6 +27,7 @@ var (
 const (
 	ValidatorPrefix        = "val="
 	AppVersion      uint64 = 1
+	defaultLane     string = "default"
 )
 
 var _ types.Application = (*Application)(nil)
@@ -48,14 +50,33 @@ type Application struct {
 	// If true, the app will generate block events in BeginBlock. Used to test the event indexer
 	// Should be false by default to avoid generating too much data.
 	genBlockEvents bool
+
+	lanes          map[string]uint32
+	lanePriorities []uint32
 }
 
 // NewApplication creates an instance of the kvstore from the provided database.
 func NewApplication(db dbm.DB) *Application {
+	// Map from lane name to its priority. Priority 0 is reserved.
+	lanes := map[string]uint32{
+		"val":       1, // lane for validator updates
+		"foo":       3, // lane 2
+		defaultLane: 7,
+		"bar":       9, // lane 3
+	}
+
+	// List of lane priorities
+	priorities := make([]uint32, 0, len(lanes))
+	for _, p := range lanes {
+		priorities = append(priorities, p)
+	}
+
 	return &Application{
 		logger:             log.NewNopLogger(),
 		state:              loadState(db),
 		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
+		lanes:              lanes,
+		lanePriorities:     priorities,
 	}
 }
 
@@ -97,11 +118,13 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 	}
 
 	return &types.InfoResponse{
-		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
-		Version:          version.ABCIVersion,
-		AppVersion:       AppVersion,
-		LastBlockHeight:  app.state.Height,
-		LastBlockAppHash: app.state.Hash(),
+		Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
+		Version:             version.ABCIVersion,
+		AppVersion:          AppVersion,
+		LastBlockHeight:     app.state.Height,
+		LastBlockAppHash:    app.state.Hash(),
+		LanePriorities:      app.lanePriorities,
+		DefaultLanePriority: app.lanes[defaultLane],
 	}, nil
 }
 
@@ -126,18 +149,30 @@ func (app *Application) InitChain(_ context.Context, req *types.InitChainRequest
 // - Contains one and only one `=`
 // - `=` is not the first or last byte.
 // - if key is `val` that the validator update transaction is also valid.
-func (*Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
+func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
 		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
 			//nolint:nilerr
-			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
+			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Lane: app.lanes["val"]}, nil
 		}
 	} else if !isValidTx(req.Tx) {
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 	}
 
-	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
+	// Assign a lane to the transaction deterministically.
+	var lane uint32
+	txHash := tmhash.Sum(req.Tx)
+	switch {
+	case txHash[0] == 0 && txHash[1] == 0:
+		lane = app.lanes["foo"]
+	case txHash[0] == 0:
+		lane = app.lanes["bar"]
+	default:
+		lane = app.lanes[defaultLane]
+	}
+
+	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 
 // Tx must have a format like key:value or key=value. That is:

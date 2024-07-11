@@ -128,7 +128,7 @@ func (app *ForumApp) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*abci
 	// Parse the tx message
 	msg, err := model.ParseMessage(req.Tx)
 	if err != nil {
-		app.logger.Error("CheckTx: failed to parse transaction message", "message", msg, "error", err)
+		app.logger.Info("CheckTx: failed to parse transaction message", "message", msg, "error", err)
 		return &abci.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Log: "Invalid transaction", Info: err.Error()}, nil
 	}
 

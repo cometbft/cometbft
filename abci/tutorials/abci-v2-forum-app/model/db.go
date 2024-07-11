@@ -184,5 +184,5 @@ func (db *DB) GetValidators() (validators []types.ValidatorUpdate, err error) {
 }
 
 func isValidatorTx(tx []byte) bool {
-	return strings.HasPrefix(string(tx), "val")
+	return bytes.HasPrefix(tx, []byte("val"))
 }

@@ -266,11 +266,6 @@ func (p *peer) TrySend(e Envelope) bool {
 }
 
 func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bool) bool {
-	if !p.IsRunning() {
-		return false
-	} else if !p.hasChannel(chID) {
-		return false
-	}
 	metricLabelValue := p.mlc.ValueToMetricLabel(msg)
 	if w, ok := msg.(types.Wrapper); ok {
 		msg = w.Wrap()

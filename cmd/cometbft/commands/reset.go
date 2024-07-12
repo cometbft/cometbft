@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -23,7 +24,7 @@ var ResetAllCmd = &cobra.Command{
 }
 
 func init() {
-	ResetAllCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, "private key type")
+	ResetAllCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", listKeyTypes()))
 }
 
 var keepAddrBook bool

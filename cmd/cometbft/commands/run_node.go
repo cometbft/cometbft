@@ -3,6 +3,7 @@ package commands
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -18,27 +19,45 @@ import (
 var (
 	genesisHash []byte
 	keyType     string
+	keyTypes    map[string]func() (crypto.PrivKey, error)
 )
 
+func init() {
+	keyTypes = map[string]func() (crypto.PrivKey, error){
+		ed25519.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
+			return ed25519.GenPrivKey(), nil
+		},
+		secp256k1.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
+			return secp256k1.GenPrivKey(), nil
+		},
+		sr25519.KeyType: func() (crypto.PrivKey, error) { //nolint: unparam
+			return sr25519.GenPrivKey(), nil
+		},
+		bls12381.KeyType: func() (crypto.PrivKey, error) {
+			pk, err := bls12381.GenPrivKey()
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate BLS key: %w", err)
+			}
+			return pk, nil
+		},
+	}
+}
+
 func genPrivKey(keyType string) (crypto.PrivKey, error) {
-	var pk crypto.PrivKey
-	switch keyType {
-	case ed25519.KeyType:
-		pk = ed25519.GenPrivKey()
-	case secp256k1.KeyType:
-		pk = secp256k1.GenPrivKey()
-	case sr25519.KeyType:
-		pk = sr25519.GenPrivKey()
-	case bls12381.KeyType:
-		var err error
-		pk, err = bls12381.GenPrivKey()
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate BLS key: %w", err)
-		}
-	default:
+	genF, ok := keyTypes[keyType]
+	if !ok {
 		return nil, fmt.Errorf("unsupported key type: %s", keyType)
 	}
-	return pk, nil
+	return genF()
+}
+
+func listKeyTypes() string {
+	keyTypesS := make([]string, 0, len(keyTypes))
+	for k := range keyTypes {
+		keyTypesS = append(keyTypesS, fmt.Sprintf("%q", k))
+	}
+	keyTypes := strings.Join(keyTypesS, ", ")
+	return keyTypes
 }
 
 // AddNodeFlags exposes some common configuration options on the command-line
@@ -109,7 +128,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 		"db_dir",
 		config.DBPath,
 		"database directory")
-	cmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, "private key type")
+	cmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", listKeyTypes()))
 }
 
 // NewRunNodeCmd returns the command that allows the CLI to start a node.

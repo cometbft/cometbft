@@ -5,9 +5,11 @@ package bls12381
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 
 	"github.com/cometbft/cometbft/crypto"
 	bls12381 "github.com/cosmos/crypto/curves/bls12381"
+	blst "github.com/supranational/blst/bindings/go"
 
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -37,7 +39,20 @@ var _ crypto.PrivKey = &PrivKey{}
 
 type PrivKey []byte
 
-// NewPrivateKeyFromBytes build a new key from the given bytes.
+// NewPrivateKeyFromBytes generates a new random key using `secret` for the seed
+// TODO simplify once `github.com/cosmos/crypto/` has `GenPrivKeyFromSeed`
+func GenPrivKeyFromSecret(secret []byte) (PrivKey, error) {
+	seed := sha256.Sum256(secret) // We need 32 bytes
+
+	// Defensive check: have we generated a valid secret key?
+	secretKey := blst.KeyGen(seed[:]).Serialize()
+	if bls12381.IsZero(secretKey) {
+		return nil, errors.New("generated secret key is zero")
+	}
+	return secretKey, nil
+}
+
+// NewPrivateKeyFromBytes builds a new key from the given bytes.
 func NewPrivateKeyFromBytes(bz []byte) (PrivKey, error) {
 	secretKey, err := bls12381.SecretKeyFromBytes(bz)
 	if err != nil {

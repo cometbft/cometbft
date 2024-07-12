@@ -1,5 +1,3 @@
-key_type = "bls12_381"
-
 [node.validator00]
 [node.validator01]
 [node.validator02]

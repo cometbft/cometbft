@@ -93,7 +93,7 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
-	if memR.config.Broadcast {
+	if memR.config.Broadcast && peer.HasChannel(MempoolChannel) {
 		go func() {
 			// Always forward transactions to unconditional peers.
 			if !memR.Switch.IsPeerUnconditional(peer.ID()) {

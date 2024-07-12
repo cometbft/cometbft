@@ -8,7 +8,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"net"
@@ -25,8 +24,6 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/internal/async"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
@@ -182,11 +179,10 @@ func MakeSecretConnection(conn io.ReadWriteCloser, locPrivKey crypto.PrivKey) (*
 	}
 
 	remPubKey, remSignature := authSigMsg.Key, authSigMsg.Sig
-	switch remPubKey.(type) {
-	case ed25519.PubKey, secp256k1.PubKey, secp256k1eth.PubKey:
-	default:
+	// Usage in your function
+	if _, ok := remPubKey.(ed25519.PubKey); !ok {
 		return nil, ErrUnexpectedPubKeyType{
-			Expected: fmt.Sprintf("%s/%s/%s", ed25519.KeyType, secp256k1.KeyType, secp256k1eth.KeyType),
+			Expected: ed25519.KeyType,
 			Got:      remPubKey.Type(),
 		}
 	}

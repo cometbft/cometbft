@@ -188,6 +188,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		ValidatorUpdates:                 map[int64]map[*Node]int64{},
 		Nodes:                            []*Node{},
 		DisablePexReactor:                manifest.DisablePexReactor,
+		KeyType:                          manifest.KeyType,
 		Evidence:                         manifest.Evidence,
 		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
@@ -213,11 +214,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		PbtsEnableHeight: manifest.PbtsEnableHeight,
 		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
 	}
-	if len(manifest.KeyType) != 0 {
-		testnet.KeyType = manifest.KeyType
-	}
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
+	}
+	if testnet.KeyType == "" {
+		testnet.KeyType = ed25519.KeyType
 	}
 	if testnet.ABCIProtocol == "" {
 		testnet.ABCIProtocol = string(ProtocolBuiltin)
@@ -254,8 +255,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Name:                    name,
 			Version:                 v,
 			Testnet:                 testnet,
-			PrivvalKey:              keyGen.Generate(manifest.KeyType),
-			NodeKey:                 keyGen.Generate("secp256k1eth"),
+			PrivvalKey:              keyGen.Generate(testnet.KeyType),
+			NodeKey:                 keyGen.Generate(ed25519.KeyType),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
 			RPCProxyPort:            ind.RPCPort,
@@ -753,14 +754,14 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		panic(err) // this shouldn't happen
 	}
 	switch keyType {
-	case "", secp256k1eth.KeyType: // TODO Deal with this
-		return secp256k1eth.GenPrivKeySecp256k1(seed)
 	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
 	case sr25519.KeyType:
 		return sr25519.GenPrivKeyFromSecret(seed)
 	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
+	case secp256k1eth.KeyType:
+		return secp256k1eth.GenPrivKeySecp256k1(seed)
 	default:
 		panic("KeyType not supported") // should not make it this far
 	}

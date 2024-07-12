@@ -90,7 +90,7 @@ func genPrivKey(rand io.Reader) PrivKey {
 	}
 
 	// crypto.CRandBytes is guaranteed to be 32 bytes long, so it can be
-	// casted to PrivKey.
+	// cast to PrivKey.
 	return PrivKey(privKeyBytes[:])
 }
 

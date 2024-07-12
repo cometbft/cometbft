@@ -260,3 +260,19 @@ func (e ErrorLoadOrGenNodeKey) Error() string {
 func (e ErrorLoadOrGenNodeKey) Unwrap() error {
 	return e.Err
 }
+
+// ErrorLoadOrGenNodeKey is returned when the node fails to load or generate node key.
+type ErrorLoadOrGenFilePV struct {
+	Err       error
+	KeyFile   string
+	StateFile string
+}
+
+func (e ErrorLoadOrGenFilePV) Error() string {
+	return fmt.Sprintf("failed to load or gen file priv val; "+
+		"key file %s, state file %s : %v", e.KeyFile, e.StateFile, e.Err)
+}
+
+func (e ErrorLoadOrGenFilePV) Unwrap() error {
+	return e.Err
+}

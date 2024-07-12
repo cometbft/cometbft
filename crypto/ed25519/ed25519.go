@@ -135,18 +135,18 @@ func (PrivKey) Type() string {
 // GenPrivKey generates a new ed25519 private key.
 // It uses OS randomness in conjunction with the current global random seed
 // in cometbft/libs/rand to generate the private key.
-func GenPrivKey() (PrivKey, error) {
+func GenPrivKey() PrivKey {
 	return genPrivKey(crypto.CReader())
 }
 
 // genPrivKey generates a new ed25519 private key using the provided reader.
-func genPrivKey(rand io.Reader) (PrivKey, error) {
+func genPrivKey(rand io.Reader) PrivKey {
 	_, priv, err := ed25519.GenerateKey(rand)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	return PrivKey(priv), nil
+	return PrivKey(priv)
 }
 
 // GenPrivKeyFromSecret hashes the secret with SHA2, and uses

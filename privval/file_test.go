@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -19,7 +20,7 @@ import (
 )
 
 func TestGenLoadValidator(t *testing.T) {
-	privVal, tempKeyFileName, tempStateFileName := newTestFilePV(t)
+	privVal, tempKeyFileName, tempStateFileName := newTestFilePV(t, nil) // TODO test with all key types
 
 	height := int64(100)
 	privVal.LastSignState.Height = height
@@ -32,7 +33,7 @@ func TestGenLoadValidator(t *testing.T) {
 }
 
 func TestResetValidator(t *testing.T) {
-	privVal, _, tempStateFileName := newTestFilePV(t)
+	privVal, _, tempStateFileName := newTestFilePV(t, nil) // TODO test with all key types
 	emptyState := FilePVLastSignState{filePath: tempStateFileName}
 
 	// new priv val has empty state
@@ -64,17 +65,17 @@ func TestLoadOrGenValidator(t *testing.T) {
 	require.NoError(t, err)
 
 	tempKeyFilePath := tempKeyFile.Name()
-	if err := os.Remove(tempKeyFilePath); err != nil {
-		t.Error(err)
-	}
+	err = os.Remove(tempKeyFilePath)
+	require.NoError(t, err)
 	tempStateFilePath := tempStateFile.Name()
-	if err := os.Remove(tempStateFilePath); err != nil {
-		t.Error(err)
-	}
+	err = os.Remove(tempStateFilePath)
+	require.NoError(t, err)
 
-	privVal := LoadOrGenFilePV(tempKeyFilePath, tempStateFilePath)
+	privVal, err := LoadOrGenFilePV(tempKeyFilePath, tempStateFilePath, nil) // TODO extend for all key types
+	require.NoError(t, err)
 	addr := privVal.GetAddress()
-	privVal = LoadOrGenFilePV(tempKeyFilePath, tempStateFilePath)
+	privVal, err = LoadOrGenFilePV(tempKeyFilePath, tempStateFilePath, nil)
+	require.NoError(t, err)
 	assert.Equal(addr, privVal.GetAddress(), "expected privval addr to be the same")
 }
 
@@ -145,7 +146,7 @@ func TestUnmarshalValidatorKey(t *testing.T) {
 func TestSignVote(t *testing.T) {
 	assert := assert.New(t)
 
-	privVal, _, _ := newTestFilePV(t)
+	privVal, _, _ := newTestFilePV(t, nil) // TODO test with all key types
 
 	randbytes := cmtrand.Bytes(tmhash.Size)
 	randbytes2 := cmtrand.Bytes(tmhash.Size)
@@ -197,7 +198,7 @@ func TestSignVote(t *testing.T) {
 func TestSignProposal(t *testing.T) {
 	assert := assert.New(t)
 
-	privVal, _, _ := newTestFilePV(t)
+	privVal, _, _ := newTestFilePV(t, nil) // TODO test with all key types
 
 	randbytes := cmtrand.Bytes(tmhash.Size)
 	randbytes2 := cmtrand.Bytes(tmhash.Size)
@@ -244,7 +245,7 @@ func TestSignProposal(t *testing.T) {
 }
 
 func TestSignBytes(t *testing.T) {
-	privVal, _, _ := newTestFilePV(t)
+	privVal, _, _ := newTestFilePV(t, nil) // TODO test with all key types
 	testBytes := []byte("test bytes for signing")
 
 	// Sign the test bytes
@@ -263,7 +264,8 @@ func TestDifferByTimestamp(t *testing.T) {
 	tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
 	require.NoError(t, err)
 
-	privVal := GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
+	privVal, err := GenFilePV(tempKeyFile.Name(), tempStateFile.Name(), nil)
+	require.NoError(t, err)
 	randbytes := cmtrand.Bytes(tmhash.Size)
 	block1 := types.BlockID{Hash: randbytes, PartSetHeader: types.PartSetHeader{Total: 5, Hash: randbytes}}
 	height, round := int64(10), int32(1)
@@ -322,7 +324,7 @@ func TestDifferByTimestamp(t *testing.T) {
 }
 
 func TestVoteExtensionsAreSignedIfSignExtensionIsTrue(t *testing.T) {
-	privVal, _, _ := newTestFilePV(t)
+	privVal, _, _ := newTestFilePV(t, nil)
 	pubKey, err := privVal.GetPubKey()
 	require.NoError(t, err)
 
@@ -380,7 +382,7 @@ func TestVoteExtensionsAreSignedIfSignExtensionIsTrue(t *testing.T) {
 }
 
 func TestVoteExtensionsAreNotSignedIfSignExtensionIsFalse(t *testing.T) {
-	privVal, _, _ := newTestFilePV(t)
+	privVal, _, _ := newTestFilePV(t, nil)
 
 	block := types.BlockID{
 		Hash:          cmtrand.Bytes(tmhash.Size),
@@ -422,14 +424,15 @@ func newProposal(height int64, round int32, blockID types.BlockID) *types.Propos
 	}
 }
 
-func newTestFilePV(t *testing.T) (*FilePV, string, string) {
+func newTestFilePV(t *testing.T, keyGenF func() (crypto.PrivKey, error)) (*FilePV, string, string) {
 	t.Helper()
 	tempKeyFile, err := os.CreateTemp(t.TempDir(), "priv_validator_key_")
 	require.NoError(t, err)
 	tempStateFile, err := os.CreateTemp(t.TempDir(), "priv_validator_state_")
 	require.NoError(t, err)
 
-	privVal := GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
+	privVal, err := GenFilePV(tempKeyFile.Name(), tempStateFile.Name(), keyGenF)
+	require.NoError(t, err)
 
 	return privVal, tempKeyFile.Name(), tempStateFile.Name()
 }

@@ -6,6 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
@@ -18,6 +20,10 @@ var ResetAllCmd = &cobra.Command{
 	Aliases: []string{"unsafe_reset_all"},
 	Short:   "(unsafe) Remove all the data and WAL, reset this node's validator to genesis state",
 	RunE:    resetAllCmd,
+}
+
+func init() {
+	ResetAllCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, "private key type")
 }
 
 var keepAddrBook bool
@@ -74,8 +80,7 @@ func resetPrivValidator(cmd *cobra.Command, _ []string) (err error) {
 		return err
 	}
 
-	resetFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), logger)
-	return nil
+	return resetFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), logger)
 }
 
 // resetAll removes address book files plus all data, and resets the privValdiator data.
@@ -97,8 +102,7 @@ func resetAll(dbDir, addrBookFile, privValKeyFile, privValStateFile string, logg
 	}
 
 	// recreate the dbDir since the privVal state needs to live there
-	resetFilePV(privValKeyFile, privValStateFile, logger)
-	return nil
+	return resetFilePV(privValKeyFile, privValStateFile, logger)
 }
 
 // resetState removes address book files plus all databases.
@@ -155,7 +159,7 @@ func resetState(dbDir string, logger log.Logger) error {
 	return nil
 }
 
-func resetFilePV(privValKeyFile, privValStateFile string, logger log.Logger) {
+func resetFilePV(privValKeyFile, privValStateFile string, logger log.Logger) error {
 	if _, err := os.Stat(privValKeyFile); err == nil {
 		pv := privval.LoadFilePVEmptyState(privValKeyFile, privValStateFile)
 		pv.Reset()
@@ -165,7 +169,13 @@ func resetFilePV(privValKeyFile, privValStateFile string, logger log.Logger) {
 			"stateFile", privValStateFile,
 		)
 	} else {
-		pv := privval.GenFilePV(privValKeyFile, privValStateFile)
+		keyGenF := func() (crypto.PrivKey, error) {
+			return genPrivKey(keyType)
+		}
+		pv, err := privval.GenFilePV(privValKeyFile, privValStateFile, keyGenF)
+		if err != nil {
+			return err
+		}
 		pv.Save()
 		logger.Info(
 			"Generated private validator file",
@@ -173,6 +183,7 @@ func resetFilePV(privValKeyFile, privValStateFile string, logger log.Logger) {
 			"stateFile", privValStateFile,
 		)
 	}
+	return nil
 }
 
 func removeAddrBook(addrBookFile string, logger log.Logger) {

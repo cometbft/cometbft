@@ -13,22 +13,18 @@ import (
 
 func BenchmarkKeyGeneration(b *testing.B) {
 	benchmarkKeygenWrapper := func(reader io.Reader) crypto.PrivKey {
-		key, err := genPrivKey(reader)
-		require.NoError(b, err)
-		return key
+		return genPrivKey(reader)
 	}
 	benchmarking.BenchmarkKeyGeneration(b, benchmarkKeygenWrapper)
 }
 
 func BenchmarkSigning(b *testing.B) {
-	priv, err := GenPrivKey()
-	require.NoError(b, err)
+	priv := GenPrivKey()
 	benchmarking.BenchmarkSigning(b, priv)
 }
 
 func BenchmarkVerification(b *testing.B) {
-	priv, err := GenPrivKey()
-	require.NoError(b, err)
+	priv := GenPrivKey()
 	benchmarking.BenchmarkVerification(b, priv)
 }
 
@@ -42,8 +38,7 @@ func BenchmarkVerifyBatch(b *testing.B) {
 			pubs := make([]crypto.PubKey, 0, sigsCount)
 			sigs := make([][]byte, 0, sigsCount)
 			for i := 0; i < sigsCount; i++ {
-				priv, err := GenPrivKey()
-				require.NoError(b, err)
+				priv := GenPrivKey()
 				sig, _ := priv.Sign(msg)
 				pubs = append(pubs, priv.PubKey().(PubKey))
 				sigs = append(sigs, sig)

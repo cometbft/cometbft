@@ -6,11 +6,40 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/bls12381"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	nm "github.com/cometbft/cometbft/node"
 )
 
-var genesisHash []byte
+var (
+	genesisHash []byte
+	keyType     string
+)
+
+func genPrivKey(keyType string) (crypto.PrivKey, error) {
+	var pk crypto.PrivKey
+	switch keyType {
+	case ed25519.KeyType:
+		pk = ed25519.GenPrivKey()
+	case secp256k1.KeyType:
+		pk = secp256k1.GenPrivKey()
+	case sr25519.KeyType:
+		pk = sr25519.GenPrivKey()
+	case bls12381.KeyType:
+		var err error
+		pk, err = bls12381.GenPrivKey()
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate BLS key: %w", err)
+		}
+	default:
+		return nil, fmt.Errorf("unsupported key type: %s", keyType)
+	}
+	return pk, nil
+}
 
 // AddNodeFlags exposes some common configuration options on the command-line
 // These are exposed for convenience of commands embedding a CometBFT node.
@@ -80,6 +109,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 		"db_dir",
 		config.DBPath,
 		"database directory")
+	cmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, "private key type")
 }
 
 // NewRunNodeCmd returns the command that allows the CLI to start a node.
@@ -94,7 +124,10 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 				config.Storage.GenesisHash = hex.EncodeToString(genesisHash)
 			}
 
-			n, err := nodeProvider(config, logger)
+			keyGenF := func() (crypto.PrivKey, error) {
+				return genPrivKey(keyType)
+			}
+			n, err := nodeProvider(config, logger, keyGenF)
 			if err != nil {
 				return fmt.Errorf("failed to create node: %w", err)
 			}

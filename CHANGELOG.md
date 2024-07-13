@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v0.37.9
+
+*July 13, 2024*
+
+This release contains a few minor bug fixes and performance improvements.
+
+### BUG FIXES
+
+- `[p2p]` Node respects configured `max_num_outbound_peers` limit when dialing
+  peers provided by a seed node
+  ([\#486](https://github.com/cometbft/cometbft/issues/486))
+- `[blocksync]` Do not stay in blocksync if the node's validator voting power
+  is high enough to block the chain while it is not online
+  ([\#3406](https://github.com/cometbft/cometbft/pull/3406))
+
+### IMPROVEMENTS
+
+- `[p2p/conn]` Remove the usage of a synchronous pool of buffers in secret connection, storing instead the buffer in the connection struct. This reduces the synchronization primitive usage, speeding up the code.
+  ([\#3403](https://github.com/cometbft/cometbft/issues/3403))
+
 ## v0.37.8
 
 *July 1, 2024*
@@ -11,8 +31,8 @@ includes a minor fix to the RPC endpoints `/tx` and `/tx_search`.
 ### BREAKING CHANGES
 
 - `[mempool]` Revert adding the method `PreUpdate()` to the `Mempool` interface, recently introduced
-  in the previous patch release (v0.37.7). Its logic is now moved into the `Lock` method. With this change,
-  the `Mempool` interface is the same as in v0.37.6.
+  in the previous patch release (`v0.37.7`). Its logic is now moved into the `Lock` method. With this change,
+  the `Mempool` interface is the same as in `v0.37.6`.
   ([\#3363](https://github.com/cometbft/cometbft/pull/3363))
 
 ### BUG FIXES

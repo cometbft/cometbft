@@ -43,7 +43,7 @@ func TestNodeStartStop(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), nil) // TODO: all key types
 	require.NoError(t, err)
 	err = n.Start()
 	require.NoError(t, err)
@@ -120,7 +120,7 @@ func TestNodeDelayedStart(t *testing.T) {
 	now := cmttime.Now()
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), nil) // TODO all key types
 	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
 	require.NoError(t, err)
 
@@ -251,6 +251,8 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
+
+// TODO: test file priv with all key types
 
 // testFreeAddr claims a free port so we don't block on listener being ready.
 func testFreeAddr(t *testing.T) string {

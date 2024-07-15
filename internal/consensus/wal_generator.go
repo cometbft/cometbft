@@ -51,7 +51,7 @@ func WALGenerateNBlocks(t *testing.T, wr io.Writer, numBlocks int, config *cfg.C
 		DiscardABCIResponses: false,
 	})
 	state, err := sm.MakeGenesisState(genDoc)
-	require.NoError(t, err)
+	require.NoError(t, err, "failed to make genesis state")
 	state.Version.Consensus.App = kvstore.AppVersion
 	err = stateStore.Save(state)
 	require.NoError(t, err)

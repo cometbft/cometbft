@@ -2,7 +2,7 @@
 
 ## v0.37.9
 
-*July 13, 2024*
+*July 15, 2024*
 
 This release contains a few minor bug fixes and performance improvements.
 

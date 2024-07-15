@@ -48,6 +48,28 @@ func TestGenesisBad(t *testing.T) {
 				`},"power":"10","name":""}` +
 				`]}`,
 		),
+		// unsupported validator pubkey type
+		[]byte(
+			`{
+				"genesis_time": "0001-01-01T00:00:00Z",
+				"chain_id": "test-chain-QDKdJr",
+				"initial_height": "1000",
+				"validators": [{
+					"pub_key":{"type":"tendermint/PubKeyEd25519","value":"AT/+aaL1eB0477Mud9JMm8Sh8BIvOYlPGC9KkIUmFaE="},
+					"power":"10",
+					"name":""
+				}],
+				"app_hash":"",
+				"app_state":{"account_owner": "Bob"},
+				"consensus_params": {
+					"synchrony":  {"precision": "1", "message_delay": "10"},
+					"validator": {"pub_key_types":["secp256k1"]},
+					"block": {"max_bytes": "100"},
+					"evidence": {"max_age_num_blocks": "100", "max_age_duration": "10"},
+					"feature": {"vote_extension_enable_height": "0", "pbts_enable_height": "0"}
+				}
+			}`,
+		),
 	}
 
 	for _, testCase := range testCases {

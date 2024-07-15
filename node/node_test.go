@@ -599,6 +599,7 @@ func TestNodeNewNodeGenesisHashMismatch(t *testing.T) {
 	require.NoError(t, err)
 
 	pv, err = privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
+	require.NoError(t, err)
 	_, err = NewNode(
 		context.Background(),
 		config,

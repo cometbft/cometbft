@@ -25,6 +25,8 @@ var ResetAllCmd = &cobra.Command{
 
 func init() {
 	ResetAllCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", listKeyTypes()))
+	ResetAllCmd.Flags().BoolVar(&keepAddrBook, "keep-addr-book", false, "keep the address book intact")
+	ResetPrivValidatorCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", listKeyTypes()))
 }
 
 var keepAddrBook bool
@@ -42,10 +44,6 @@ var ResetStateCmd = &cobra.Command{
 
 		return resetState(config.DBDir(), logger)
 	},
-}
-
-func init() {
-	ResetAllCmd.Flags().BoolVar(&keepAddrBook, "keep-addr-book", false, "keep the address book intact")
 }
 
 // ResetPrivValidatorCmd resets the private validator files.

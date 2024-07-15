@@ -208,7 +208,12 @@ func TestReactorBroadcastEvidenceMemoryLeak(t *testing.T) {
 	// i.e. broadcastEvidenceRoutine finishes when peer is stopped
 	defer leaktest.CheckTimeout(t, 10*time.Second)()
 
+<<<<<<< HEAD:evidence/reactor_test.go
 	p.On("Send", mock.MatchedBy(func(i interface{}) bool {
+=======
+	p.On("HasChannel", evidence.EvidenceChannel).Maybe().Return(true)
+	p.On("Send", mock.MatchedBy(func(i any) bool {
+>>>>>>> b47d18ea4 (feat(p2p): render `HasChannel(chID)` is a public `p2p.Peer` method (#3510)):internal/evidence/reactor_test.go
 		e, ok := i.(p2p.Envelope)
 		return ok && e.ChannelID == evidence.EvidenceChannel
 	})).Return(false)

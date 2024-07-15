@@ -67,6 +67,24 @@ func (_m *Peer) GetRemovalFailed() bool {
 	return r0
 }
 
+// HasChannel provides a mock function with given fields: chID
+func (_m *Peer) HasChannel(chID byte) bool {
+	ret := _m.Called(chID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for HasChannel")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(byte) bool); ok {
+		r0 = rf(chID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // ID provides a mock function with given fields:
 func (_m *Peer) ID() p2p.ID {
 	ret := _m.Called()

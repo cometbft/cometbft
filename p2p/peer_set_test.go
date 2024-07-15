@@ -18,6 +18,7 @@ type mockPeer struct {
 	id ID
 }
 
+<<<<<<< HEAD
 func (mp *mockPeer) FlushStop()               { mp.Stop() } //nolint:errcheck // ignore error
 func (mp *mockPeer) TrySend(Envelope) bool    { return true }
 func (mp *mockPeer) Send(Envelope) bool       { return true }
@@ -34,6 +35,25 @@ func (mp *mockPeer) RemoteAddr() net.Addr     { return &net.TCPAddr{IP: mp.ip, P
 func (mp *mockPeer) CloseConn() error         { return nil }
 func (mp *mockPeer) SetRemovalFailed()        {}
 func (mp *mockPeer) GetRemovalFailed() bool   { return false }
+=======
+func (mp *mockPeer) FlushStop()            { mp.Stop() } //nolint:errcheck // ignore error
+func (*mockPeer) HasChannel(byte) bool     { return true }
+func (*mockPeer) TrySend(Envelope) bool    { return true }
+func (*mockPeer) Send(Envelope) bool       { return true }
+func (*mockPeer) NodeInfo() NodeInfo       { return DefaultNodeInfo{} }
+func (*mockPeer) Status() ConnectionStatus { return ConnectionStatus{} }
+func (mp *mockPeer) ID() ID                { return mp.id }
+func (*mockPeer) IsOutbound() bool         { return false }
+func (*mockPeer) IsPersistent() bool       { return true }
+func (*mockPeer) Get(s string) any         { return s }
+func (*mockPeer) Set(string, any)          {}
+func (mp *mockPeer) RemoteIP() net.IP      { return mp.ip }
+func (*mockPeer) SocketAddr() *NetAddress  { return nil }
+func (mp *mockPeer) RemoteAddr() net.Addr  { return &net.TCPAddr{IP: mp.ip, Port: 8800} }
+func (*mockPeer) CloseConn() error         { return nil }
+func (*mockPeer) SetRemovalFailed()        {}
+func (*mockPeer) GetRemovalFailed() bool   { return false }
+>>>>>>> b47d18ea4 (feat(p2p): render `HasChannel(chID)` is a public `p2p.Peer` method (#3510))
 
 // Returns a mock peer
 func newMockPeer(ip net.IP) *mockPeer {

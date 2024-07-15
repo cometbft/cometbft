@@ -538,6 +538,14 @@ func (conR *Reactor) getRoundState() *cstypes.RoundState {
 
 func (conR *Reactor) gossipDataRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
+<<<<<<< HEAD:consensus/reactor.go
+=======
+	if !peer.HasChannel(DataChannel) {
+		logger.Info("Peer does not implement DataChannel.")
+		return
+	}
+	rng := cmtrand.NewStdlibRand()
+>>>>>>> b47d18ea4 (feat(p2p): render `HasChannel(chID)` is a public `p2p.Peer` method (#3510)):internal/consensus/reactor.go
 
 OUTER_LOOP:
 	for {
@@ -697,6 +705,14 @@ func (conR *Reactor) gossipDataForCatchup(logger log.Logger, rs *cstypes.RoundSt
 
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
+<<<<<<< HEAD:consensus/reactor.go
+=======
+	if !peer.HasChannel(VoteChannel) {
+		logger.Info("Peer does not implement VoteChannel.")
+		return
+	}
+	rng := cmtrand.NewStdlibRand()
+>>>>>>> b47d18ea4 (feat(p2p): render `HasChannel(chID)` is a public `p2p.Peer` method (#3510)):internal/consensus/reactor.go
 
 	// Simple hack to throttle logs upon sleep.
 	sleeping := 0

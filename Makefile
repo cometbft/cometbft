@@ -347,17 +347,6 @@ NUM_SPLIT ?= 4
 $(BUILDDIR):
 	mkdir -p $@
 
-# The format statement filters out all packages that don't have tests.
-# Note we need to check for both in-package tests (.TestGoFiles) and
-# out-of-package tests (.XTestGoFiles).
-$(BUILDDIR)/packages.txt:$(GO_TEST_FILES) $(BUILDDIR)
-	go list -f "{{ if (or .TestGoFiles .XTestGoFiles) }}{{ .ImportPath }}{{ end }}" ./... | sort > $@
-
-split-test-packages:$(BUILDDIR)/packages.txt
-	split -d -n l/$(NUM_SPLIT) $< $<.
-test-group-%:split-test-packages
-	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out
-
 #? help: Get more info on make commands.
 help: Makefile
 	@echo " Choose a command run in comebft:"

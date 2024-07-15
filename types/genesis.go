@@ -113,7 +113,7 @@ func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	genDoc := GenesisDoc{}
 	err := cmtjson.Unmarshal(jsonBlob, &genDoc)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid json for GenesisDoc: %s", err)
 	}
 
 	if err := genDoc.ValidateAndComplete(); err != nil {

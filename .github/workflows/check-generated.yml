@@ -54,7 +54,6 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      
       - name: "Check protobuf generated code"
         run: |
           set -euo pipefail

@@ -7,6 +7,7 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	kt "github.com/cometbft/cometbft/internal/keytypes"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/p2p"
@@ -23,7 +24,7 @@ var InitFilesCmd = &cobra.Command{
 }
 
 func init() {
-	InitFilesCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", listKeyTypes()))
+	InitFilesCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", kt.ListSupportedKeyTypes()))
 }
 
 func initFiles(*cobra.Command, []string) error {

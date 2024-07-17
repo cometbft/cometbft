@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/libs/log"
@@ -168,10 +167,7 @@ func resetFilePV(privValKeyFile, privValStateFile string, logger log.Logger) err
 			"stateFile", privValStateFile,
 		)
 	} else {
-		keyGenF := func() (crypto.PrivKey, error) {
-			return genPrivKey(keyType)
-		}
-		pv, err := privval.GenFilePV(privValKeyFile, privValStateFile, keyGenF)
+		pv, err := privval.GenFilePV(privValKeyFile, privValStateFile, genPrivKeyFromFlag)
 		if err != nil {
 			return err
 		}

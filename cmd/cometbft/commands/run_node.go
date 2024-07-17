@@ -43,6 +43,10 @@ func init() {
 	}
 }
 
+func genPrivKeyFromFlag() (crypto.PrivKey, error) {
+	return genPrivKey(keyType)
+}
+
 func genPrivKey(keyType string) (crypto.PrivKey, error) {
 	genF, ok := keyTypes[keyType]
 	if !ok {
@@ -143,10 +147,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 				config.Storage.GenesisHash = hex.EncodeToString(genesisHash)
 			}
 
-			keyGenF := func() (crypto.PrivKey, error) {
-				return genPrivKey(keyType)
-			}
-			n, err := nodeProvider(config, logger, keyGenF)
+			n, err := nodeProvider(config, logger, genPrivKeyFromFlag)
 			if err != nil {
 				return fmt.Errorf("failed to create node: %w", err)
 			}

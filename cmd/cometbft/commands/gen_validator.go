@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/privval"
@@ -26,10 +25,7 @@ func init() {
 }
 
 func genValidator(*cobra.Command, []string) error {
-	keyGenF := func() (crypto.PrivKey, error) {
-		return genPrivKey(keyType)
-	}
-	pv, err := privval.GenFilePV("", "", keyGenF)
+	pv, err := privval.GenFilePV("", "", genPrivKeyFromFlag)
 	if err != nil {
 		return fmt.Errorf("cannot generate file pv: %w", err)
 	}

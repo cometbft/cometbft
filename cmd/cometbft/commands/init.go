@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 
 	cfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -41,11 +40,8 @@ func initFilesWithConfig(config *cfg.Config) error {
 		logger.Info("Found private validator", "keyFile", privValKeyFile,
 			"stateFile", privValStateFile)
 	} else {
-		keyGenF := func() (crypto.PrivKey, error) {
-			return genPrivKey(keyType)
-		}
 		var err error
-		pv, err = privval.GenFilePV(privValKeyFile, privValStateFile, keyGenF)
+		pv, err = privval.GenFilePV(privValKeyFile, privValStateFile, genPrivKeyFromFlag)
 		if err != nil {
 			return fmt.Errorf("can't generate file pv: %w", err)
 		}

@@ -90,7 +90,7 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(msg) > MaxMsgLen {
+	if len(msg) < MaxMsgLen {
 		hash := sha256.Sum256(msg)
 		sig := secretKey.Sign(hash[:])
 		return sig.Marshal(), nil
@@ -133,7 +133,7 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 		return false
 	}
 
-	if len(msg) > MaxMsgLen {
+	if len(msg) < MaxMsgLen {
 		hash := sha256.Sum256(msg)
 		msg = hash[:]
 	}

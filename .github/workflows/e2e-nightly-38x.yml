@@ -28,9 +28,6 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-
-      
-
       - name: Capture git repo info
         id: git-info
         run: |

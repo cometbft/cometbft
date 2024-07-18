@@ -20,7 +20,7 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 	_, stateDB, err := initDBs(cfg, config.DefaultDBProvider)
 	require.NoErrorf(t, err, "state DB setup: %s", err)
 
-	genDocProviderFunc := func(Sha256Checksum []byte) GenesisDocProvider {
+	genDocProviderFunc := func(sha256Checksum []byte) GenesisDocProvider {
 
 		return func() (ChecksummedGenesisDoc, error) {
 			genDocJSON, err := os.ReadFile(cfg.GenesisFile())
@@ -37,7 +37,7 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 
 			checksummedGenesisDoc := ChecksummedGenesisDoc{
 				GenesisDoc:     genDoc,
-				Sha256Checksum: Sha256Checksum,
+				Sha256Checksum: sha256Checksum,
 			}
 
 			return checksummedGenesisDoc, nil

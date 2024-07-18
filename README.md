@@ -6,9 +6,10 @@
 [![Version][version-badge]][version-url]
 [![API Reference][api-badge]][api-url]
 [![Go version][go-badge]][go-url]
-[![Discord chat][discord-badge]][discord-url]
 [![License][license-badge]][license-url]
 [![Sourcegraph][sg-badge]][sg-url]
+
+[![Discord chat][discord-badge]][discord-url]
 
 | Branch  | Tests                                          | Linting                                     |
 |---------|------------------------------------------------|---------------------------------------------|
@@ -32,6 +33,8 @@ For protocol details, refer to the [CometBFT Specification](./spec/README.md).
 For detailed analysis of the Tendermint consensus protocol, including safety and liveness
 proofs, read our paper, "[The latest gossip on BFT
 consensus](https://arxiv.org/abs/1807.04938)".
+
+For general links, including communications and announcements: [![Linktree][linktree-badge] linktr.ee/cometbft][linktree-url]
 
 ## Documentation
 
@@ -177,7 +180,7 @@ maintains [cometbft.com](https://cometbft.com).
 [Blockchain]: https://en.wikipedia.org/wiki/Blockchain
 [version-badge]: https://img.shields.io/github/v/release/cometbft/cometbft.svg
 [version-url]: https://github.com/cometbft/cometbft/releases/latest
-[api-badge]: https://camo.githubusercontent.com/915b7be44ada53c290eb157634330494ebe3e30a/68747470733a2f2f676f646f632e6f72672f6769746875622e636f6d2f676f6c616e672f6764646f3f7374617475732e737667
+[api-badge]: https://pkg.go.dev/badge/github.com/cometbft/cometbft.svg
 [api-url]: https://pkg.go.dev/github.com/cometbft/cometbft
 [go-badge]: https://img.shields.io/badge/go-1.21-blue.svg
 [go-url]: https://github.com/moovweb/gvm
@@ -211,3 +214,5 @@ maintains [cometbft.com](https://cometbft.com).
 [pbts]: https://docs.cometbft.com/v1.0/explanation/core/proposer-based-timestamps
 [abci-v2]: https://docs.cometbft.com/v1.0/spec/abci/
 [comet-announcement]: https://informal.systems/blog/cosmos-meet-cometbft
+[linktree-url]: https://linktr.ee/cometbft
+[linktree-badge]: https://www.google.com/s2/favicons?domain=https://linktr.ee/

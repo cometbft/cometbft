@@ -11,7 +11,7 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/tempfile"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
@@ -184,7 +184,8 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 
 // GenFilePV calls NewFilePV with a random ed25519 private key.
 func GenFilePV(keyFilePath, stateFilePath string) *FilePV {
-	return NewFilePV(ed25519.GenPrivKey(), keyFilePath, stateFilePath)
+	// TODO Deal with this, TOP PRIO
+	return NewFilePV(secp256k1eth.GenPrivKey(), keyFilePath, stateFilePath)
 }
 
 // LoadFilePV loads a FilePV from the filePaths.  The FilePV handles double

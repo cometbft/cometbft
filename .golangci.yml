@@ -99,6 +99,7 @@ linters-settings:
           - github.com/btcsuite/btcd/btcec/v2
           - github.com/BurntSushi/toml
           - github.com/dgraph-io/badger/v4
+          - github.com/ethereum/go-ethereum/crypto
           - github.com/go-git/go-git/v5
           - github.com/go-kit
           - github.com/go-logfmt/logfmt

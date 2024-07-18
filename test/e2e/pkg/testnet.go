@@ -22,6 +22,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/crypto/sr25519"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
@@ -187,6 +188,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		ValidatorUpdates:                 map[int64]map[*Node]int64{},
 		Nodes:                            []*Node{},
 		DisablePexReactor:                manifest.DisablePexReactor,
+		KeyType:                          manifest.KeyType,
 		Evidence:                         manifest.Evidence,
 		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
@@ -212,11 +214,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		PbtsEnableHeight: manifest.PbtsEnableHeight,
 		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
 	}
-	if len(manifest.KeyType) != 0 {
-		testnet.KeyType = manifest.KeyType
-	}
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
+	}
+	if testnet.KeyType == "" {
+		testnet.KeyType = ed25519.KeyType
 	}
 	if testnet.ABCIProtocol == "" {
 		testnet.ABCIProtocol = string(ProtocolBuiltin)
@@ -253,8 +255,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			Name:                    name,
 			Version:                 v,
 			Testnet:                 testnet,
-			PrivvalKey:              keyGen.Generate(manifest.KeyType),
-			NodeKey:                 keyGen.Generate("ed25519"),
+			PrivvalKey:              keyGen.Generate(testnet.KeyType),
+			NodeKey:                 keyGen.Generate(ed25519.KeyType),
 			InternalIP:              ind.IPAddress,
 			ExternalIP:              extIP,
 			RPCProxyPort:            ind.RPCPort,
@@ -733,7 +735,7 @@ func (n Node) ZoneIsSet() bool {
 	return len(n.Zone) > 0
 }
 
-// keyGenerator generates pseudorandom Ed25519 keys based on a seed.
+// keyGenerator generates pseudorandom secp256k1eth keys based on a seed.
 type keyGenerator struct {
 	random *rand.Rand
 }
@@ -752,12 +754,14 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		panic(err) // this shouldn't happen
 	}
 	switch keyType {
-	case "secp256k1":
+	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
-	case "sr25519":
+	case sr25519.KeyType:
 		return sr25519.GenPrivKeyFromSecret(seed)
-	case "", "ed25519":
+	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
+	case secp256k1eth.KeyType:
+		return secp256k1eth.GenPrivKeySecp256k1(seed)
 	default:
 		panic("KeyType not supported") // should not make it this far
 	}

@@ -51,6 +51,7 @@ func TestGenesisBad(t *testing.T) {
 		// unsupported validator pubkey type
 		[]byte(
 			`{
+				"chain_id": "test-chain-QDKdJr",
 				"validators": [{
 					"pub_key":{"type":"tendermint/PubKeyEd25519","value":"AT/+aaL1eB0477Mud9JMm8Sh8BIvOYlPGC9KkIUmFaE="},
 					"power":"10",
@@ -59,15 +60,17 @@ func TestGenesisBad(t *testing.T) {
 				"consensus_params": {
 					"validator": {"pub_key_types":["secp256k1"]},
 					"block": {"max_bytes": "100"},
-					"evidence": {"max_age_num_blocks": "100", "max_age_duration": "10"},
+					"evidence": {"max_age_num_blocks": "100", "max_age_duration": "10"}
 				}
 			}`,
 		),
 	}
 
-	for _, testCase := range testCases {
+	for i, testCase := range testCases {
 		_, err := GenesisDocFromJSON(testCase)
-		require.Error(t, err, "expected error for empty genDoc json")
+		t.Log(err)
+		formatStr := "test case %i: expected error for invalid genesis doc"
+		require.Error(t, err, formatStr, i)
 	}
 }
 

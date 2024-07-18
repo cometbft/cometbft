@@ -22,7 +22,7 @@ var GenValidatorCmd = &cobra.Command{
 }
 
 func init() {
-	GenValidatorCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", kt.ListSupportedKeyTypes()))
+	GenValidatorCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", kt.SupportedKeyTypesStr()))
 }
 
 func genValidator(*cobra.Command, []string) error {

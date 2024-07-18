@@ -24,7 +24,7 @@ var InitFilesCmd = &cobra.Command{
 }
 
 func init() {
-	InitFilesCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", kt.ListSupportedKeyTypes()))
+	InitFilesCmd.Flags().StringVarP(&keyType, "key-type", "k", ed25519.KeyType, fmt.Sprintf("private key type (one of %s)", kt.SupportedKeyTypesStr()))
 }
 
 func initFiles(*cobra.Command, []string) error {

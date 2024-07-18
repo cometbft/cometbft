@@ -18,9 +18,11 @@ import (
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/evidence"
+	kt "github.com/cometbft/cometbft/internal/keytypes"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
@@ -43,7 +45,7 @@ func TestNodeStartStop(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil) // TODO: all key types
+	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
 	require.NoError(t, err)
 	err = n.Start()
 	require.NoError(t, err)
@@ -120,9 +122,9 @@ func TestNodeDelayedStart(t *testing.T) {
 	now := cmttime.Now()
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil) // TODO all key types
-	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
+	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
 	require.NoError(t, err)
+	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
 
 	err = n.Start()
 	require.NoError(t, err)
@@ -252,7 +254,21 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
 
-// TODO: test file priv with all key types
+func TestNodeSetFilePrivVal(t *testing.T) {
+	for _, keyType := range kt.ListSupportedKeyTypes() {
+		t.Run(keyType, func(t *testing.T) {
+			config := test.ResetTestRootWithChainIDNoOverwritePrivval("node_priv_val_file_test_"+keyType, "test_chain_"+keyType)
+			defer os.RemoveAll(config.RootDir)
+
+			keyGenF := func() (crypto.PrivKey, error) {
+				return kt.GenPrivKey(keyType)
+			}
+			n, err := DefaultNewNode(config, log.TestingLogger(), keyGenF)
+			require.NoError(t, err)
+			assert.IsType(t, &privval.FilePV{}, n.PrivValidator())
+		})
+	}
+}
 
 // testFreeAddr claims a free port so we don't block on listener being ready.
 func testFreeAddr(t *testing.T) string {

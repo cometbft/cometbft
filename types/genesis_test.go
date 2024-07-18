@@ -68,7 +68,6 @@ func TestGenesisBad(t *testing.T) {
 
 	for i, testCase := range testCases {
 		_, err := GenesisDocFromJSON(testCase)
-		t.Log(err)
 		formatStr := "test case %i: expected error for invalid genesis doc"
 		require.Error(t, err, formatStr, i)
 	}

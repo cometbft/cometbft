@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -86,6 +87,7 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 		return err
 	}
 
+	acceptedPubKeyTypes := genDoc.ConsensusParams.Validator.PubKeyTypes
 	for i, v := range genDoc.Validators {
 		if v.Power == 0 {
 			return fmt.Errorf("the genesis file cannot contain validators with no voting power: %v", v)
@@ -95,6 +97,11 @@ func (genDoc *GenesisDoc) ValidateAndComplete() error {
 		}
 		if len(v.Address) == 0 {
 			genDoc.Validators[i].Address = v.PubKey.Address()
+		}
+
+		if !slices.Contains(acceptedPubKeyTypes, v.PubKey.Type()) {
+			formatStr := "validator %v uses an unsupported pubkey type: %q"
+			return fmt.Errorf(formatStr, v, v.PubKey.Type())
 		}
 	}
 
@@ -113,7 +120,7 @@ func GenesisDocFromJSON(jsonBlob []byte) (*GenesisDoc, error) {
 	genDoc := GenesisDoc{}
 	err := cmtjson.Unmarshal(jsonBlob, &genDoc)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid json for GenesisDoc: %s", err)
 	}
 
 	if err := genDoc.ValidateAndComplete(); err != nil {

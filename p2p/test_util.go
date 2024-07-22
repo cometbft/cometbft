@@ -41,6 +41,7 @@ func CreateRandomPeer(outbound bool) Peer {
 		nodeInfo: mockNodeInfo{netAddr},
 		mconn:    &conn.MConnection{},
 		metrics:  NopMetrics(),
+		mlc:      newMetricsLabelCache(),
 	}
 	p.SetLogger(log.TestingLogger().With("peer", addr))
 	return p
@@ -126,7 +127,7 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	<-doneCh
 }
 
-// ConnectStartSwitches will connect switches c and j via net.Pipe().
+// ConnectStarSwitches will connect switches c and j via net.Pipe().
 func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 	// Blocks until a connection is established.
 	// NOTE: caller ensures i and j is within bounds.

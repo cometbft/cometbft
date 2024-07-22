@@ -222,7 +222,7 @@ cometbft/
 
 Node's configuration file should include the name of the `CryptoProvider` to be loaded at startup. Also, the startup logic will need to be changed from creating a validator to loading a `CryptoProvider`
 
-Not: It's important to note that during the migration path, both configurations (priv validators and crypto providers) will coexist. This means that if a `CryptoProvider` ID is passed in the configuration, the loader will give priority to that config and load the corresponding provider. However, if the provider ID is nil, it will load the priv validators as it always has. This approach ensures a smooth transition and maintains backward compatibility while allowing for the gradual adoption of the new `CryptoProvider` system.
+*Note:* It's important to note that during the migration path, both configurations (priv validators and crypto providers) will coexist. This means that if a `CryptoProvider` ID is passed in the configuration, the loader will give priority to that config and load the corresponding provider. However, if the provider ID is nil, it will load the priv validators as it always has. This approach ensures a smooth transition and maintains backward compatibility while allowing for the gradual adoption of the new `CryptoProvider` system.
 
 ## Consequences
 

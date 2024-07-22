@@ -632,12 +632,17 @@ type TxInfo struct {
 }
 
 func (*TxIndex) setTmpHashes(tmpHeights map[string]TxInfo, key, value []byte, height int64) {
+	// value comes from cometbft-db Iterator interface Value() API.
+	// Therefore, we must make a copy before storing references to it.
+	valueCp := make([]byte, len(value))
+	copy(valueCp, value)
+
 	eventSeq := extractEventSeqFromKey(key)
 	txInfo := TxInfo{
-		TxBytes: value,
+		TxBytes: valueCp,
 		Height:  height,
 	}
-	tmpHeights[string(value)+eventSeq] = txInfo
+	tmpHeights[string(valueCp)+eventSeq] = txInfo
 }
 
 // match returns all matching txs by hash that meet a given condition and start

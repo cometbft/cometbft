@@ -94,6 +94,7 @@ func TestReactorConcurrency(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
+			reactors[0].mempool.PreUpdate()
 			reactors[0].mempool.Lock()
 			defer reactors[0].mempool.Unlock()
 
@@ -107,6 +108,7 @@ func TestReactorConcurrency(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
+			reactors[1].mempool.PreUpdate()
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
@@ -144,8 +146,9 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 
 	// the second peer sends all the transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
 	for _, tx := range txs {
-		_, err := reactors[0].mempool.CheckTx(tx, secondNodeID)
+		_, err := reactors[0].TryAddTx(tx, secondNode)
 		require.NoError(t, err)
 	}
 
@@ -174,7 +177,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which has the max size
 	// => ensure it's received by the second reactor.
 	tx1 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes)
-	reqRes, err := reactors[0].mempool.CheckTx(tx1, "")
+	reqRes, err := reactors[0].TryAddTx(tx1, nil)
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInOrder)
@@ -185,7 +188,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which is beyond the max size
 	// => ensure it's not sent
 	tx2 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes + 1)
-	reqRes, err = reactors[0].mempool.CheckTx(tx2, "")
+	reqRes, err = reactors[0].TryAddTx(tx2, nil)
 	require.Error(t, err)
 	require.Nil(t, reqRes)
 }
@@ -258,11 +261,10 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 
 	// Deliver the same sequence of transactions from multiple sources, in parallel.
 	txs := newUniqueTxs(200)
-	mp := reactors[0].mempool
 	for i := 0; i < 3; i++ {
 		go func() {
 			for _, tx := range txs {
-				_, _ = mp.CheckTx(tx, "")
+				_, _ = reactors[0].TryAddTx(tx, nil)
 			}
 		}()
 	}
@@ -295,7 +297,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(100)
-	callCheckTx(t, reactors[0].mempool, txs)
+	tryAddTxs(t, reactors[0], txs)
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
@@ -345,7 +347,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(100)
-	callCheckTx(t, reactors[0].mempool, txs)
+	tryAddTxs(t, reactors[0], txs)
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
@@ -388,7 +390,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 	}
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(5)
-	callCheckTx(t, reactors[0].mempool, txs)
+	tryAddTxs(t, reactors[0], txs)
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
@@ -540,6 +542,16 @@ func ensureNoTxs(t *testing.T, reactor *Reactor, timeout time.Duration) {
 	t.Helper()
 	time.Sleep(timeout) // wait for the txs in all mempools
 	assert.Zero(t, reactor.mempool.Size())
+}
+
+// Try to add a list of transactions to the mempool of a given reactor.
+func tryAddTxs(t *testing.T, reactor *Reactor, txs types.Txs) {
+	t.Helper()
+	for _, tx := range txs {
+		rr, err := reactor.TryAddTx(tx, nil)
+		require.Nil(t, err)
+		rr.Wait()
+	}
 }
 
 func TestMempoolVectors(t *testing.T) {

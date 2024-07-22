@@ -26,7 +26,7 @@ versioning:
 
 ### Building CometBFT
 
-The minimum Go version has been bumped to [v1.21][go121].
+The minimum Go version has been bumped to [v1.22][go122].
 
 ### Proposer-Based Timestamps
 
@@ -91,17 +91,10 @@ into the `internal` directory:
 - `libs/net`
 - `libs/os`
 - `libs/progressbar`
-- `libs/protoio`
-- `libs/pubsub`
 - `libs/rand`
-- `libs/service`
 - `libs/strings`
-- `libs/sync`
 - `libs/tempfile`
 - `libs/timer`
-- `state`
-- `statesync`
-- `store`
 
 If you rely on any of these packages and would like us to make them public
 again, please [log an issue on
@@ -142,12 +135,12 @@ The `Mempool` interface was modified on `CheckTx`. Note that this interface is
 meant for internal use only, so you should be aware of these changes only if you
 happen to call these methods directly.
 
-`CheckTx`'s signature changed from 
-`CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error` to 
+`CheckTx`'s signature changed from
+`CheckTx(tx types.Tx, cb func(*abci.ResponseCheckTx), txInfo TxInfo) error` to
 `CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error)`.
 The method used to take a callback function `cb` to be applied to the
-ABCI `CheckTx` response and a `TxInfo` structure containing a sender. 
-Now the sender ID is passed directly and `CheckTx` returns the ABCI response 
+ABCI `CheckTx` response and a `TxInfo` structure containing a sender.
+Now the sender ID is passed directly and `CheckTx` returns the ABCI response
 of type `*abcicli.ReqRes`, on which one can apply any callback manually.
 For example:
 ```golang
@@ -156,7 +149,7 @@ reqRes, err := CheckTx(tx, sender)
 cb(reqRes.Response.GetCheckTx())
 ```
 
-The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to 
+The `*abcicli.ReqRes` structure that `CheckTx` returns has a callback to
 process the response already set (namely, the function `handleCheckTxResponse`).
 The callback will be invoked internally when the response is ready. We need only 
 to wait for it; for example:
@@ -405,5 +398,5 @@ please see the [Tendermint Core upgrading instructions][tmupgrade].
 [discussions]: https://github.com/cometbft/cometbft/discussions
 [tmupgrade]: https://github.com/tendermint/tendermint/blob/35581cf54ec436b8c37fabb43fdaa3f48339a170/UPGRADING.md
 [go120]: https://go.dev/blog/go1.20
-[go121]: https://go.dev/blog/go1.21
+[go122]: https://go.dev/blog/go1.22
 [pbts-spec]: ./spec/consensus/proposer-based-timestamp/README.md

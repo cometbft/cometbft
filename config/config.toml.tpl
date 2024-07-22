@@ -347,12 +347,6 @@ recheck_timeout = "{{ .Mempool.RecheckTimeout }}"
 # the tx to will see it until it is included in a block.
 broadcast = {{ .Mempool.Broadcast }}
 
-# wal_dir (default: "") configures the location of the Write Ahead Log
-# (WAL) for the mempool. The WAL is disabled by default. To enable, set
-# wal_dir to where you want the WAL to be written (e.g.
-# "data/mempool.wal").
-wal_dir = "{{ js .Mempool.WalPath }}"
-
 # Maximum number of transactions in the mempool
 size = {{ .Mempool.Size }}
 

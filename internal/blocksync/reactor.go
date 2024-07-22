@@ -7,6 +7,7 @@ import (
 	"time"
 
 	bcproto "github.com/cometbft/cometbft/api/cometbft/blocksync/v1"
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	sm "github.com/cometbft/cometbft/state"
@@ -61,6 +62,7 @@ type Reactor struct {
 	store         sm.BlockStore
 	pool          *BlockPool
 	blockSync     bool
+	localAddr     crypto.Address
 	poolRoutineWg sync.WaitGroup
 
 	requestsCh <-chan BlockRequest
@@ -73,7 +75,7 @@ type Reactor struct {
 
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
-	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
+	blockSync bool, localAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
 	storeHeight := store.Height()
 	if storeHeight == 0 {
@@ -109,6 +111,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		store:        store,
 		pool:         pool,
 		blockSync:    blockSync,
+		localAddr:    localAddr,
 		requestsCh:   requestsCh,
 		errorsCh:     errorsCh,
 		metrics:      metrics,
@@ -243,7 +246,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 }
 
 // Receive implements Reactor by handling 4 types of messages (look below).
-func (bcR *Reactor) Receive(e p2p.Envelope) {
+func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a test
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)
@@ -374,10 +377,6 @@ FOR_LOOP:
 				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
 			}
-			if extCommit == nil && state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
-				// See https://github.com/tendermint/tendermint/pull/8433#discussion_r866790631
-				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
-			}
 
 			// Before priming didProcessCh for another check on the next
 			// iteration, break the loop if the BlockPool or the Reactor itself
@@ -503,8 +502,17 @@ func (bcR *Reactor) isMissingExtension(state sm.State, blocksSynced uint64) bool
 	return missingExtension
 }
 
+func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
+	_, val := state.Validators.GetByAddress(bcR.localAddr)
+	if val == nil {
+		return false
+	}
+	total := state.Validators.TotalVotingPower()
+	return val.VotingPower >= total/3
+}
+
 func (bcR *Reactor) isCaughtUp(state sm.State, blocksSynced uint64, stateSynced bool) bool {
-	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp {
+	if isCaughtUp, height, _ := bcR.pool.IsCaughtUp(); isCaughtUp || bcR.localNodeBlocksTheChain(state) {
 		bcR.Logger.Info("Time to switch to consensus mode!", "height", height)
 		if err := bcR.pool.Stop(); err != nil {
 			bcR.Logger.Error("Error stopping pool", "err", err)
@@ -543,13 +551,17 @@ func (bcR *Reactor) processBlock(first, second *types.Block, firstParts *types.P
 		err = bcR.blockExec.ValidateBlock(state, first)
 	}
 
-	if err == nil {
+	presentExtCommit := extCommit != nil
+	extensionsEnabled := state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height)
+	if presentExtCommit != extensionsEnabled {
+		err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
+			"(height %d, non-nil extended commit %t, extensions enabled %t)",
+			first.Height, presentExtCommit, extensionsEnabled,
+		)
+	}
+	if err == nil && extensionsEnabled {
 		// if vote extensions were required at this height, ensure they exist.
-		if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
-			err = extCommit.EnsureExtensions(true)
-		} else if extCommit != nil {
-			err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-		}
+		err = extCommit.EnsureExtensions(true)
 	}
 
 	if err != nil {
@@ -574,7 +586,7 @@ func (bcR *Reactor) processBlock(first, second *types.Block, firstParts *types.P
 	bcR.pool.PopRequest()
 
 	// TODO: batch saves so we dont persist to disk every block
-	if state.ConsensusParams.Feature.VoteExtensionsEnabled(first.Height) {
+	if extensionsEnabled {
 		bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
 	} else {
 		// We use LastCommit here instead of extCommit. extCommit is not

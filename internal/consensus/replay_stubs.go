@@ -20,6 +20,7 @@ var _ mempl.Mempool = emptyMempool{}
 
 func (emptyMempool) Lock()            {}
 func (emptyMempool) Unlock()          {}
+func (emptyMempool) PreUpdate()       {}
 func (emptyMempool) Size() int        { return 0 }
 func (emptyMempool) SizeBytes() int64 { return 0 }
 func (emptyMempool) CheckTx(types.Tx, p2p.ID) (*abcicli.ReqRes, error) {
@@ -56,7 +57,7 @@ func (emptyMempool) InitWAL() error { return nil }
 func (emptyMempool) CloseWAL()      {}
 
 // -----------------------------------------------------------------------------
-// mockProxyApp uses ABCIResponses to give the right results.
+// newMockProxyApp uses ABCIResponses to give the right results.
 //
 // Useful because we don't want to call Commit() twice for the same block on
 // the real app.

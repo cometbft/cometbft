@@ -52,8 +52,6 @@ const (
 	pub
 	unsub
 	shutdown
-
-	bufferedCmdsCap = 100
 )
 
 var (
@@ -98,8 +96,6 @@ type Server struct {
 	cmds    chan cmd
 	cmdsCap int
 
-	bufferedCmds chan cmd
-
 	// check if we have subscription before
 	// subscribing or unsubscribing
 	mtx           cmtsync.RWMutex
@@ -124,7 +120,6 @@ func NewServer(options ...Option) *Server {
 
 	// if BufferCapacity option was not set, the channel is unbuffered
 	s.cmds = make(chan cmd, s.cmdsCap)
-	s.bufferedCmds = make(chan cmd, bufferedCmdsCap)
 
 	return s
 }
@@ -293,20 +288,6 @@ func (s *Server) PublishWithEvents(ctx context.Context, msg any, events map[stri
 	}
 }
 
-func (s *Server) PublishWithEventsNonBlocked(ctx context.Context, msg any, events map[string][]string) error {
-	select {
-	case s.cmds <- cmd{op: pub, msg: msg, events: events}:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-s.Quit():
-		return nil
-	default:
-		s.bufferedCmds <- cmd{op: pub, msg: msg, events: events}
-		return nil
-	}
-}
-
 // OnStop implements Service.OnStop by shutting down the server.
 func (s *Server) OnStop() {
 	s.cmds <- cmd{op: shutdown}
@@ -333,7 +314,6 @@ func (s *Server) OnStart() error {
 		subscriptions: make(map[string]map[string]*Subscription),
 		queries:       make(map[string]*queryPlusRefCount),
 	})
-	go s.loopBuffered()
 	return nil
 }
 
@@ -362,12 +342,6 @@ loop:
 				s.Logger.Error("Error querying for events", "err", err)
 			}
 		}
-	}
-}
-
-func (s *Server) loopBuffered() {
-	for cmd := range s.bufferedCmds {
-		s.cmds <- cmd
 	}
 }
 

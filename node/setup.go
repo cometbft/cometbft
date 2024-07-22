@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	_ "net/http/pprof" //nolint: gosec,gci // securely exposed on separate, optional port
@@ -258,11 +259,26 @@ func createMempoolAndMempoolReactor(
 			mempl.WithPostCheck(sm.TxPostCheck(state)),
 		}
 		if config.Mempool.PublishEventPendingTx {
+			pendingTxLock := new(sync.Mutex)
+			pendingTxs := make([][]byte, 0)
 			options = append(options, mempl.WithNewTxCallback(func(tx types.Tx) {
-				_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
-					Tx: tx,
-				})
+				pendingTxLock.Lock()
+				defer pendingTxLock.Unlock()
+				pendingTxs = append(pendingTxs, tx)
 			}))
+			go func() {
+				for {
+					pendingTxLock.Lock()
+					txs := pendingTxs
+					pendingTxs = make([][]byte, 0)
+					pendingTxLock.Unlock()
+					for _, tx := range txs {
+						_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
+							Tx: tx,
+						})
+					}
+				}
+			}()
 		}
 		mp := mempl.NewCListMempool(
 			config.Mempool,

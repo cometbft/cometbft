@@ -172,7 +172,7 @@ func (b *EventBus) PublishEventValidBlock(data EventDataRoundState) error {
 func (b *EventBus) PublishEventPendingTx(data EventDataPendingTx) error {
 	// no explicit deadline for publishing events
 	ctx := context.Background()
-	return b.pubsub.PublishWithEventsNonBlocked(ctx, data, map[string][]string{
+	return b.pubsub.PublishWithEvents(ctx, data, map[string][]string{
 		EventTypeKey: {EventPendingTx},
 		TxHashKey:    {fmt.Sprintf("%X", Tx(data.Tx).Hash())},
 	})

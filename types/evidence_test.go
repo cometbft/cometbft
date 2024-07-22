@@ -309,7 +309,7 @@ func TestEvidenceProto(t *testing.T) {
 	}
 }
 
-// Test that the new JSON tags are picked up correctly, see issue #3528
+// Test that the new JSON tags are picked up correctly, see issue #3528.
 func TestDuplicateVoteEvidenceJSON(t *testing.T) {
 	var evidence DuplicateVoteEvidence
 	js, err := cmtjson.Marshal(evidence)

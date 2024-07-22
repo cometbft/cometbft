@@ -864,9 +864,6 @@ func (txi *TxIndex) matchRange(
 
 LOOP:
 	for ; it.Valid(); it.Next() {
-		// TODO: We need to make a function for getting it.Key() as a byte slice with no copies.
-		// It currently copies the source data (which can change on a subsequent .Next() call) but that
-		// is not an issue for us.
 		key := it.Key()
 		if !isTagKey(key) {
 			continue

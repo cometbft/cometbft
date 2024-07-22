@@ -382,7 +382,7 @@ keep-invalid-txs-in-cache = {{ .Mempool.KeepInvalidTxsInCache }}
 experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
 experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
 
-# ExperimentalPublishEventPendingTx indicates whether the publishing of a new transaction to the mempool is enabled.
+# ExperimentalPublishEventPendingTx enables publishing a `PendingTx` event when a new transaction is added to the mempool.
 # Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
 # Use this feature with caution and consider the impact on transaction processing performance.
 experimental_publish_event_pending_tx = {{ .Mempool.ExperimentalPublishEventPendingTx }}

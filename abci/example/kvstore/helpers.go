@@ -41,7 +41,7 @@ func InitKVStore(ctx context.Context, app *Application) error {
 	return err
 }
 
-// NewTx create a new transaction.
+// NewTx creates a new transaction.
 func NewTx(key, value string) []byte {
 	return []byte(strings.Join([]string{key, value}, "="))
 }

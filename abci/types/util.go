@@ -23,7 +23,7 @@ func (v ValidatorUpdates) Len() int {
 	return len(v)
 }
 
-// Less doesn't distinguish the same validator with different power.
+// XXX: doesn't distinguish same validator with different power.
 func (v ValidatorUpdates) Less(i, j int) bool {
 	return strings.Compare(v[i].PubKeyType, v[j].PubKeyType) <= 0 && bytes.Compare(v[i].PubKeyBytes, v[j].PubKeyBytes) <= 0
 }

@@ -38,9 +38,9 @@ type DuplicateVoteEvidence struct {
 	VoteB *Vote `json:"vote_b"`
 
 	// abci specific information
-	TotalVotingPower int64
-	ValidatorPower   int64
-	Timestamp        time.Time
+	TotalVotingPower int64     `json:"total_voting_power"`
+	ValidatorPower   int64     `json:"validator_power"`
+	Timestamp        time.Time `json:"timestamp"`
 }
 
 var _ Evidence = &DuplicateVoteEvidence{}

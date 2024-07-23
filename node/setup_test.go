@@ -53,10 +53,8 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 			cfg.Storage.GenesisHash,
 			nil,
 		)
-		require.Error(t, err)
-		require.ErrorAs(t, err, &ErrSaveGenesisDocHash{})
 
-		wantErr := "failed to save genesis doc hash to db: value cannot be nil"
+		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 0"
 		assert.EqualError(t, err, wantErr)
 	})
 
@@ -69,6 +67,8 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 			cfg.Storage.GenesisHash,
 			nil,
 		)
-		assert.Error(t, err)
+
+		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 14"
+		assert.EqualError(t, err, wantErr)
 	})
 }

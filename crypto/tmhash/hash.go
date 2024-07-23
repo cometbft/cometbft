@@ -2,6 +2,7 @@ package tmhash
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"hash"
 	"regexp"
@@ -53,7 +54,7 @@ func ValidateSHA256(hashStr string) error {
 	}
 
 	if !match {
-		return fmt.Errorf("contains non-hexadecimal characters")
+		return errors.New("contains non-hexadecimal characters")
 	}
 
 	return nil

@@ -142,6 +142,18 @@ func ToRequestValidateOracleVotes(req *RequestValidateOracleVotes) *Request {
 	}
 }
 
+func ToRequestDoesOracleResultExist(req *RequestDoesOracleResultExist) *Request {
+	return &Request{
+		Value: &Request_DoesOracleResultExist{req},
+	}
+}
+
+func ToRequestDoesSubAccountBelongToVal(req *RequestDoesSubAccountBelongToVal) *Request {
+	return &Request{
+		Value: &Request_DoesSubAccountBelongToVal{req},
+	}
+}
+
 //----------------------------------------
 
 func ToResponseException(errStr string) *Response {

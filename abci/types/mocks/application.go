@@ -92,6 +92,84 @@ func (_m *Application) Commit(_a0 context.Context, _a1 *types.RequestCommit) (*t
 	return r0, r1
 }
 
+// CreateOracleResultTx provides a mock function with given fields: _a0, _a1
+func (_m *Application) CreateOracleResultTx(_a0 context.Context, _a1 *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *types.ResponseCreateOracleResultTx
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCreateOracleResultTx) *types.ResponseCreateOracleResultTx); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseCreateOracleResultTx)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestCreateOracleResultTx) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// DoesOracleResultExist provides a mock function with given fields: _a0, _a1
+func (_m *Application) DoesOracleResultExist(_a0 context.Context, _a1 *types.RequestDoesOracleResultExist) (*types.ResponseDoesOracleResultExist, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *types.ResponseDoesOracleResultExist
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestDoesOracleResultExist) (*types.ResponseDoesOracleResultExist, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestDoesOracleResultExist) *types.ResponseDoesOracleResultExist); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseDoesOracleResultExist)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestDoesOracleResultExist) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// DoesSubAccountBelongToVal provides a mock function with given fields: _a0, _a1
+func (_m *Application) DoesSubAccountBelongToVal(_a0 context.Context, _a1 *types.RequestDoesSubAccountBelongToVal) (*types.ResponseDoesSubAccountBelongToVal, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *types.ResponseDoesSubAccountBelongToVal
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestDoesSubAccountBelongToVal) (*types.ResponseDoesSubAccountBelongToVal, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestDoesSubAccountBelongToVal) *types.ResponseDoesSubAccountBelongToVal); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseDoesSubAccountBelongToVal)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestDoesSubAccountBelongToVal) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ExtendVote provides a mock function with given fields: _a0, _a1
 func (_m *Application) ExtendVote(_a0 context.Context, _a1 *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
 	ret := _m.Called(_a0, _a1)
@@ -110,6 +188,32 @@ func (_m *Application) ExtendVote(_a0 context.Context, _a1 *types.RequestExtendV
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestExtendVote) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchOracleVotes provides a mock function with given fields: _a0, _a1
+func (_m *Application) FetchOracleVotes(_a0 context.Context, _a1 *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *types.ResponseFetchOracleVotes
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleVotes) *types.ResponseFetchOracleVotes); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseFetchOracleVotes)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestFetchOracleVotes) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
@@ -274,32 +378,6 @@ func (_m *Application) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOffe
 	return r0, r1
 }
 
-// FetchOracleVotes provides a mock function with given fields: _a0, _a1
-func (_m *Application) FetchOracleVotes(_a0 context.Context, _a1 *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error) {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 *types.ResponseFetchOracleVotes
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error)); ok {
-		return rf(_a0, _a1)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFetchOracleVotes) *types.ResponseFetchOracleVotes); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponseFetchOracleVotes)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestFetchOracleVotes) error); ok {
-		r1 = rf(_a0, _a1)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // PrepareProposal provides a mock function with given fields: _a0, _a1
 func (_m *Application) PrepareProposal(_a0 context.Context, _a1 *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
 	ret := _m.Called(_a0, _a1)
@@ -370,32 +448,6 @@ func (_m *Application) Query(_a0 context.Context, _a1 *types.RequestQuery) (*typ
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestQuery) error); ok {
-		r1 = rf(_a0, _a1)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// CreateOracleResultTx provides a mock function with given fields: _a0, _a1
-func (_m *Application) CreateOracleResultTx(_a0 context.Context, _a1 *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error) {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 *types.ResponseCreateOracleResultTx
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error)); ok {
-		return rf(_a0, _a1)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCreateOracleResultTx) *types.ResponseCreateOracleResultTx); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponseCreateOracleResultTx)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestCreateOracleResultTx) error); ok {
 		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)

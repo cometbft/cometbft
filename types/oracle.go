@@ -5,8 +5,8 @@ import (
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 )
 
-func OracleVoteSignBytes(vote *oracleproto.GossipedVotes) []byte {
-	pb := CanonicalizeOracleVote(vote)
+func OracleVoteSignBytes(chainID string, vote *oracleproto.GossipedVotes) []byte {
+	pb := CanonicalizeOracleVote(chainID, vote)
 	bz, err := protoio.MarshalDelimited(&pb)
 	if err != nil {
 		panic(err)
@@ -15,10 +15,11 @@ func OracleVoteSignBytes(vote *oracleproto.GossipedVotes) []byte {
 	return bz
 }
 
-func CanonicalizeOracleVote(vote *oracleproto.GossipedVotes) oracleproto.CanonicalGossipedVotes {
+func CanonicalizeOracleVote(chainID string, vote *oracleproto.GossipedVotes) oracleproto.CanonicalGossipedVotes {
 	return oracleproto.CanonicalGossipedVotes{
-		Validator:       vote.Validator,
+		PubKey:          vote.PubKey,
 		Votes:           vote.Votes,
 		SignedTimestamp: vote.SignedTimestamp,
+		ChainId:         chainID,
 	}
 }

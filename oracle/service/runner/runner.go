@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/cometbft/cometbft/oracle/service/types"
+	"github.com/cometbft/cometbft/oracle/service/utils"
 
 	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cs "github.com/cometbft/cometbft/consensus"
@@ -52,36 +53,43 @@ func ProcessSignVoteQueue(oracleInfo *types.OracleInfo, consensusState *cs.State
 
 	// batch sign the new votes, along with existing votes in gossipVoteBuffer, if any
 	// append new batch into unsignedVotesBuffer, need to mutex lock as it will clash with concurrent pruning
-	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
+	oracleInfo.UnsignedVoteBuffer.Lock()
 	oracleInfo.UnsignedVoteBuffer.Buffer = append(oracleInfo.UnsignedVoteBuffer.Buffer, votes...)
 
 	unsignedVotes := []*oracleproto.Vote{}
 	unsignedVotes = append(unsignedVotes, oracleInfo.UnsignedVoteBuffer.Buffer...)
 
-	oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
+	oracleInfo.UnsignedVoteBuffer.Unlock()
 
 	// sort the votes so that we can rebuild it in a deterministic order, when uncompressing
 	SortOracleVotes(unsignedVotes)
 
 	// batch sign the entire unsignedVoteBuffer and add to gossipBuffer
 	newGossipVote := &oracleproto.GossipedVotes{
-		Validator:       oracleInfo.PubKey.Address(),
+		PubKey:          oracleInfo.PubKey.Bytes(),
 		SignedTimestamp: time.Now().Unix(),
 		Votes:           unsignedVotes,
 	}
 
+	// set sigPrefix based on account type and sign type
+	sigPrefix, err := utils.FormSignaturePrefix(oracleInfo.Config.EnableSubAccountSigning, oracleInfo.PubKey.Type())
+	if err != nil {
+		log.Errorf("processSignVoteQueue: unable to form sig prefix: %v", err)
+		return
+	}
+
 	// signing of vote should append the signature field of gossipVote
-	if err := oracleInfo.PrivValidator.SignOracleVote("", newGossipVote); err != nil {
-		log.Errorf("processSignVoteQueue: error signing oracle votes")
+	if err := oracleInfo.PrivValidator.SignOracleVote(consensusState.GetState().ChainID, newGossipVote, sigPrefix); err != nil {
+		log.Errorf("processSignVoteQueue: error signing oracle votes: %v", err)
 		return
 	}
 
 	// need to mutex lock as it will clash with concurrent gossip
 	preLockTime := time.Now().UnixMilli()
-	oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+	oracleInfo.GossipVoteBuffer.Lock()
 	address := oracleInfo.PubKey.Address().String()
 	oracleInfo.GossipVoteBuffer.Buffer[address] = newGossipVote
-	oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+	oracleInfo.GossipVoteBuffer.Unlock()
 	postLockTime := time.Now().UnixMilli()
 	diff := postLockTime - preLockTime
 	if diff > 100 {
@@ -123,7 +131,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 				latestAllowableTimestamp = oracleInfo.BlockTimestamps[0]
 			}
 
-			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Lock()
+			oracleInfo.UnsignedVoteBuffer.Lock()
 			newVotes := []*oracleproto.Vote{}
 			unsignedVoteBuffer := oracleInfo.UnsignedVoteBuffer.Buffer
 			visitedVoteMap := make(map[string]struct{})
@@ -137,15 +145,25 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 
 				visitedVoteMap[key] = struct{}{}
 
+				// also prune votes for a given oracle id and timestamp, that have already been committed as results on chain
+				res, err := oracleInfo.ProxyApp.DoesOracleResultExist(context.Background(), &abcitypes.RequestDoesOracleResultExist{Key: key})
+				if err != nil {
+					log.Warnf("PruneVoteBuffers: unable to check if oracle result exist for vote: %v: %v", vote, err)
+				}
+
+				if res.DoesExist {
+					continue
+				}
+
 				if vote.Timestamp >= latestAllowableTimestamp {
 					newVotes = append(newVotes, vote)
 				}
 			}
 			oracleInfo.UnsignedVoteBuffer.Buffer = newVotes
-			oracleInfo.UnsignedVoteBuffer.UpdateMtx.Unlock()
+			oracleInfo.UnsignedVoteBuffer.Unlock()
 
 			preLockTime := time.Now().UnixMilli()
-			oracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+			oracleInfo.GossipVoteBuffer.Lock()
 			gossipBuffer := oracleInfo.GossipVoteBuffer.Buffer
 
 			// prune gossipedVotes that are older than the latestAllowableTimestamp, which is the max(earliest block timestamp collected, current time - maxOracleGossipAge)
@@ -155,7 +173,7 @@ func PruneVoteBuffers(oracleInfo *types.OracleInfo, consensusState *cs.State) {
 				}
 			}
 			oracleInfo.GossipVoteBuffer.Buffer = gossipBuffer
-			oracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+			oracleInfo.GossipVoteBuffer.Unlock()
 			postLockTime := time.Now().UnixMilli()
 			diff := postLockTime - preLockTime
 			if diff > 100 {

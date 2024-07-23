@@ -1,20 +1,28 @@
 package oracle
 
 import (
+	"bytes"
+	"context"
 	"encoding/hex"
 	"fmt"
 	"math"
 	"time"
+
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/proxy"
 
 	"github.com/cometbft/cometbft/crypto"
 
+	abcitypes "github.com/cometbft/cometbft/abci/types"
 	cs "github.com/cometbft/cometbft/consensus"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/oracle/service/runner"
 	oracletypes "github.com/cometbft/cometbft/oracle/service/types"
+	"github.com/cometbft/cometbft/oracle/service/utils"
 	"github.com/cometbft/cometbft/p2p"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	"github.com/cometbft/cometbft/types"
@@ -124,26 +132,72 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 	oracleR.Logger.Debug("Receive", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 	switch msg := e.Message.(type) {
 	case *oracleproto.GossipedVotes:
-		// verify sig of incoming gossip vote, throw if verification fails
-		_, val := oracleR.ConsensusState.Validators.GetByAddress(msg.Validator)
-		if val == nil {
-			logrus.Debugf("validator: %v not found in validator set, skipping gossip", hex.EncodeToString(msg.Validator))
+		// get account and sign type of oracle votes
+		accountType, signType, err := utils.GetAccountSignTypeFromSignature(msg.Signature)
+		if err != nil {
+			logrus.Errorf("unable to get account and sign type from signature: %v", msg.Signature)
 			return
 		}
-		pubKey := val.PubKey
+		var pubKey crypto.PubKey
+
+		// get pubkey based on sign type
+		if bytes.Equal(signType, oracletypes.Ed25519SignType) {
+			pubKey = ed25519.PubKey(msg.PubKey)
+		} else if bytes.Equal(signType, oracletypes.Sr25519SignType) {
+			pubKey = sr25519.PubKey(msg.PubKey)
+		} else if bytes.Equal(signType, oracletypes.Secp256k1SignType) {
+			pubKey = secp256k1.PubKey(msg.PubKey)
+		} else {
+			logrus.Errorf("unsupported sign type for validator with pubkey: %v, skipping gossip", hex.EncodeToString(msg.PubKey))
+			return
+		}
 
 		// skip if its own buffer
 		if oracleR.OracleInfo.PubKey.Equals(pubKey) {
 			return
 		}
 
-		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(msg), msg.Signature); !success {
-			logrus.Errorf("failed signature verification for validator: %v, skipping gossip", val.Address)
+		// check if signer is main account or subaccount
+		if bytes.Equal(accountType, oracletypes.MainAccountSigPrefix) {
+			// is main account, verify if oracle votes are from validator
+			isVal := oracleR.ConsensusState.Validators.HasAddress(pubKey.Address())
+			if !isVal {
+				logrus.Debugf("validator: %v not found in validator set, skipping gossip", pubKey.Address().String())
+				return
+			}
+
+		} else if bytes.Equal(accountType, oracletypes.SubAccountSigPrefix) {
+			// is subaccount, verify if the corresponding main account is a validator
+			res, err := oracleR.OracleInfo.ProxyApp.DoesSubAccountBelongToVal(context.Background(), &abcitypes.RequestDoesSubAccountBelongToVal{Address: pubKey.Address()})
+
+			if err != nil {
+				logrus.Warnf("unable to check if subaccount: %v belongs to validator: %v", pubKey.Address().String(), err)
+				return
+			}
+
+			if !res.BelongsToVal {
+				logrus.Debugf("subaccount: %v does not belong to a validator, skipping gossip", pubKey.Address().String())
+				return
+			}
+
+		} else {
+			logrus.Errorf("unsupported account type for validator with pubkey: %v, skipping gossip", hex.EncodeToString(msg.PubKey))
+			return
+		}
+
+		// verify sig of incoming gossip vote, throw if verification fails
+		// signature starts from index 2 onwards due to the account and sign type prefix bytes
+		signatureWithoutPrefix, err := utils.GetSignatureWithoutPrefix(msg.Signature)
+		if err != nil {
+			logrus.Errorf("unable to get signature without prefix, invalid signature: %v", msg.Signature)
+		}
+		if success := pubKey.VerifySignature(types.OracleVoteSignBytes(oracleR.ConsensusState.GetState().ChainID, msg), signatureWithoutPrefix); !success {
+			logrus.Errorf("failed signature verification for validator: %v, skipping gossip", pubKey.Address().String())
 			return
 		}
 
 		preLockTime := time.Now().UnixMilli()
-		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Lock()
+		oracleR.OracleInfo.GossipVoteBuffer.Lock()
 		currentGossipVote, ok := oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()]
 
 		if !ok {
@@ -158,7 +212,7 @@ func (oracleR *Reactor) Receive(e p2p.Envelope) {
 				oracleR.OracleInfo.GossipVoteBuffer.Buffer[pubKey.Address().String()] = msg
 			}
 		}
-		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.Unlock()
+		oracleR.OracleInfo.GossipVoteBuffer.Unlock()
 		postLockTime := time.Now().UnixMilli()
 		diff := postLockTime - preLockTime
 		if diff > 100 {
@@ -215,7 +269,7 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 		}
 
 		preLockTime := time.Now().UnixMilli()
-		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RLock()
+		oracleR.OracleInfo.GossipVoteBuffer.RLock()
 		votes := []*oracleproto.GossipedVotes{}
 		for _, gossipVote := range oracleR.OracleInfo.GossipVoteBuffer.Buffer {
 			// stop sending gossip votes that have passed the maxGossipVoteAge
@@ -225,7 +279,7 @@ func (oracleR *Reactor) broadcastVoteRoutine(peer p2p.Peer) {
 
 			votes = append(votes, gossipVote)
 		}
-		oracleR.OracleInfo.GossipVoteBuffer.UpdateMtx.RUnlock()
+		oracleR.OracleInfo.GossipVoteBuffer.RUnlock()
 		postLockTime := time.Now().UnixMilli()
 		diff := postLockTime - preLockTime
 		if diff > 100 {

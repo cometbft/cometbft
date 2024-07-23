@@ -61,6 +61,7 @@ message SignedProposalResponse {
 message SignOracleVoteRequest {
   tendermint.oracle.GossipedVotes vote     = 1;
   string                chain_id = 2;
+  bytes signature_prefix = 3;
 }
 
 // SignedOracleVoteResponse is a response containing a signed vote or an error

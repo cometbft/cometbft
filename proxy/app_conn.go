@@ -27,6 +27,8 @@ type AppConnConsensus interface {
 	CreateOracleResultTx(context.Context, *types.RequestCreateOracleResultTx) (*types.ResponseCreateOracleResultTx, error)
 	FetchOracleVotes(context.Context, *types.RequestFetchOracleVotes) (*types.ResponseFetchOracleVotes, error)
 	ValidateOracleVotes(context.Context, *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error)
+	DoesOracleResultExist(context.Context, *types.RequestDoesOracleResultExist) (*types.ResponseDoesOracleResultExist, error)
+	DoesSubAccountBelongToVal(context.Context, *types.RequestDoesSubAccountBelongToVal) (*types.ResponseDoesSubAccountBelongToVal, error)
 }
 
 type AppConnMempool interface {
@@ -125,6 +127,16 @@ func (app *appConnConsensus) FetchOracleVotes(ctx context.Context, req *types.Re
 func (app *appConnConsensus) ValidateOracleVotes(ctx context.Context, req *types.RequestValidateOracleVotes) (*types.ResponseValidateOracleVotes, error) {
 	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
 	return app.appConn.ValidateOracleVotes(ctx, req)
+}
+
+func (app *appConnConsensus) DoesOracleResultExist(ctx context.Context, req *types.RequestDoesOracleResultExist) (*types.ResponseDoesOracleResultExist, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
+	return app.appConn.DoesOracleResultExist(ctx, req)
+}
+
+func (app *appConnConsensus) DoesSubAccountBelongToVal(ctx context.Context, req *types.RequestDoesSubAccountBelongToVal) (*types.ResponseDoesSubAccountBelongToVal, error) {
+	defer addTimeSample(app.metrics.MethodTimingSeconds.With("method", "commit", "type", "sync"))()
+	return app.appConn.DoesSubAccountBelongToVal(ctx, req)
 }
 
 //------------------------------------------------

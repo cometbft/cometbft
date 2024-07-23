@@ -278,8 +278,8 @@ func (pv *FilePV) SignProposal(chainID string, proposal *cmtproto.Proposal) erro
 
 // SignOracleVote signs a canonical representation of the vote, along with the
 // chainID. Implements PrivValidator.
-func (pv *FilePV) SignOracleVote(chainID string, vote *oracleproto.GossipedVotes) error {
-	if err := pv.signOracleVote(vote); err != nil {
+func (pv *FilePV) SignOracleVote(chainID string, vote *oracleproto.GossipedVotes, sigPrefix []byte) error {
+	if err := pv.signOracleVote(chainID, vote, sigPrefix); err != nil {
 		return fmt.Errorf("error signing vote: %v", err)
 	}
 	return nil
@@ -309,12 +309,13 @@ func (pv *FilePV) String() string {
 	)
 }
 
-func (pv *FilePV) signOracleVote(vote *oracleproto.GossipedVotes) error {
-	signBytes := types.OracleVoteSignBytes(vote)
+func (pv *FilePV) signOracleVote(chainID string, vote *oracleproto.GossipedVotes, sigPrefix []byte) error {
+	signBytes := types.OracleVoteSignBytes(chainID, vote)
 	sig, err := pv.Key.PrivKey.Sign(signBytes)
 	if err != nil {
 		return err
 	}
+	sig = append(sigPrefix, sig...)
 	vote.Signature = sig
 
 	return nil

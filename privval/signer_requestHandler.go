@@ -67,9 +67,17 @@ func DefaultValidationRequestHandler(
 		}
 
 	case *privvalproto.Message_SignOracleVoteRequest:
-		vote := r.SignOracleVoteRequest.Vote
+		if r.SignOracleVoteRequest.ChainId != chainID {
+			res = mustWrapMsg(&privvalproto.SignedOracleVoteResponse{
+				Vote: oracleproto.GossipedVotes{}, Error: &privvalproto.RemoteSignerError{
+					Code: 0, Description: "unable to sign oracle votes"}})
+			return res, fmt.Errorf("want chainID: %s, got chainID: %s", r.SignOracleVoteRequest.GetChainId(), chainID)
+		}
 
-		err = privVal.SignOracleVote("", vote)
+		vote := r.SignOracleVoteRequest.Vote
+		sigPrefix := r.SignOracleVoteRequest.SignaturePrefix
+
+		err = privVal.SignOracleVote(chainID, vote, sigPrefix)
 		if err != nil {
 			res = mustWrapMsg(&privvalproto.SignedOracleVoteResponse{
 				Vote: oracleproto.GossipedVotes{}, Error: &privvalproto.RemoteSignerError{Code: 0, Description: err.Error()}})

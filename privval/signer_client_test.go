@@ -11,6 +11,7 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
+	"github.com/cometbft/cometbft/oracle/service/utils"
 	cryptoproto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	oracleproto "github.com/cometbft/cometbft/proto/tendermint/oracle"
 	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
@@ -201,9 +202,15 @@ func TestSignerVote(t *testing.T) {
 
 func TestSignerOracleVote(t *testing.T) {
 	for _, tc := range getSignerTestCases(t) {
-		valAddr := cmtrand.Bytes(crypto.AddressSize)
+		// test get pubkey
+		pvPubKey, err := tc.mockPV.GetPubKey()
+		require.NoError(t, err)
+
+		scPubKey, err := tc.signerClient.GetPubKey()
+		require.NoError(t, err)
+
 		want := &oracleproto.GossipedVotes{
-			Validator:       valAddr,
+			PubKey:          pvPubKey.Bytes(),
 			SignedTimestamp: 2,
 			Votes: []*oracleproto.Vote{
 				{
@@ -216,7 +223,7 @@ func TestSignerOracleVote(t *testing.T) {
 		}
 
 		have := &oracleproto.GossipedVotes{
-			Validator:       valAddr,
+			PubKey:          scPubKey.Bytes(),
 			SignedTimestamp: 2,
 			Votes: []*oracleproto.Vote{
 				{
@@ -240,21 +247,20 @@ func TestSignerOracleVote(t *testing.T) {
 			}
 		})
 
-		require.NoError(t, tc.mockPV.SignOracleVote("", want))
-		require.NoError(t, tc.signerClient.SignOracleVote("", have))
+		sigPrefix, err := utils.FormSignaturePrefix(false, "ed25519")
+		assert.Equal(t, err, nil)
+
+		require.NoError(t, tc.mockPV.SignOracleVote(tc.chainID, want, sigPrefix))
+		require.NoError(t, tc.signerClient.SignOracleVote(tc.chainID, have, sigPrefix))
 
 		assert.Equal(t, want.Signature, have.Signature)
 
-		// test get pubkey
-		pvPubKey, err := tc.mockPV.GetPubKey()
-		require.NoError(t, err)
-
-		scPubKey, err := tc.signerClient.GetPubKey()
-		require.NoError(t, err)
+		signatureWithoutPrefix, err := utils.GetSignatureWithoutPrefix(have.Signature)
+		assert.Equal(t, err, nil)
 
 		// test verify sig with pv and signing client signatures
-		require.True(t, pvPubKey.VerifySignature(types.OracleVoteSignBytes(want), want.Signature))
-		require.True(t, scPubKey.VerifySignature(types.OracleVoteSignBytes(have), have.Signature))
+		require.True(t, pvPubKey.VerifySignature(types.OracleVoteSignBytes(tc.chainID, want), signatureWithoutPrefix))
+		require.True(t, scPubKey.VerifySignature(types.OracleVoteSignBytes(tc.chainID, have), signatureWithoutPrefix))
 	}
 }
 

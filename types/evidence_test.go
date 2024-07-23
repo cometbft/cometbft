@@ -10,9 +10,15 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+<<<<<<< HEAD
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
+=======
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	cmttime "github.com/cometbft/cometbft/types/time"
+>>>>>>> fbca5acef (fix(types): Add missing JSON tags to `DuplicateVoteEvidence` and `LightClientAttackEvidence` types (#3543))
 	"github.com/cometbft/cometbft/version"
 )
 
@@ -328,4 +334,24 @@ func TestEvidenceProto(t *testing.T) {
 			require.Equal(t, tt.evidence, evi, tt.testName)
 		})
 	}
+}
+
+// Test that the new JSON tags are picked up correctly, see issue #3528.
+func TestDuplicateVoteEvidenceJSON(t *testing.T) {
+	var evidence DuplicateVoteEvidence
+	js, err := cmtjson.Marshal(evidence)
+	require.NoError(t, err)
+
+	wantJSON := `{"type":"tendermint/DuplicateVoteEvidence","value":{"vote_a":null,"vote_b":null,"total_voting_power":"0","validator_power":"0","timestamp":"0001-01-01T00:00:00Z"}}`
+	assert.Equal(t, wantJSON, string(js))
+}
+
+// Test that the new JSON tags are picked up correctly, see issue #3528.
+func TestLightClientAttackEvidenceJSON(t *testing.T) {
+	var evidence LightClientAttackEvidence
+	js, err := cmtjson.Marshal(evidence)
+	require.NoError(t, err)
+
+	wantJSON := `{"type":"tendermint/LightClientAttackEvidence","value":{"conflicting_block":null,"common_height":"0","byzantine_validators":null,"total_voting_power":"0","timestamp":"0001-01-01T00:00:00Z"}}`
+	assert.Equal(t, wantJSON, string(js))
 }

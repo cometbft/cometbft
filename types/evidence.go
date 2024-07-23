@@ -211,7 +211,7 @@ type LightClientAttackEvidence struct {
 	ConflictingBlock *LightBlock `json:"conflicting_block"`
 	CommonHeight     int64       `json:"common_height"`
 
-	// abci specific information
+	// ABCI specific information
 
 	// validators in the validator set that misbehaved in creating the conflicting
 	// block

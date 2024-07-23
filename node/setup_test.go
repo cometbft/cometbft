@@ -5,12 +5,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/types"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
@@ -21,7 +22,6 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 	require.NoErrorf(t, err, "state DB setup: %s", err)
 
 	genDocProviderFunc := func(sha256Checksum []byte) GenesisDocProvider {
-
 		return func() (ChecksummedGenesisDoc, error) {
 			genDocJSON, err := os.ReadFile(cfg.GenesisFile())
 			if err != nil {

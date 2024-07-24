@@ -55,7 +55,7 @@ test:
 
 test_race:
 	@echo "--> Running go test --race"
-	@go test -p 1 -race $(PACKAGES)
+	@go test -p 1 -race $(PACKAGES) -tags bls12381
 .PHONY: test_race
 
 test_deadlock:

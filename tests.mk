@@ -63,6 +63,14 @@ test_deadlock:
 	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381
 .PHONY: test_deadlock
 
+# Implements test splitting and running. This is pulled directly from
+# the github action workflows for better local reproducibility.
+
+GO_TEST_FILES != find $(CURDIR) -name "*_test.go"
+
+# default to four splits by default
+NUM_SPLIT ?= 4
+
 # The format statement filters out all packages that don't have tests.
 # Note we need to check for both in-package tests (.TestGoFiles) and
 # out-of-package tests (.XTestGoFiles).

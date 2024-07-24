@@ -10,15 +10,10 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/tmhash"
-<<<<<<< HEAD
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
-=======
-	cmtrand "github.com/cometbft/cometbft/internal/rand"
-	cmtjson "github.com/cometbft/cometbft/libs/json"
-	cmttime "github.com/cometbft/cometbft/types/time"
->>>>>>> fbca5acef (fix(types): Add missing JSON tags to `DuplicateVoteEvidence` and `LightClientAttackEvidence` types (#3543))
 	"github.com/cometbft/cometbft/version"
 )
 

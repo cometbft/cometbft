@@ -66,7 +66,7 @@ test_deadlock:
 # Implements test splitting and running. This is pulled directly from
 # the github action workflows for better local reproducibility.
 
-GO_TEST_FILES != find $(CURDIR) -name "*_test.go"
+GO_TEST_FILES := $(shell find $(CURDIR) -name "*_test.go")
 
 # default to four splits by default
 NUM_SPLIT ?= 4

@@ -78,7 +78,7 @@ $(BUILDDIR)/packages.txt:$(GO_TEST_FILES) $(BUILDDIR)
 	go list -f "{{ if (or .TestGoFiles .XTestGoFiles) }}{{ .ImportPath }}{{ end }}" ./... | sort > $@
 
 split-test-packages:$(BUILDDIR)/packages.txt
-	split -d -n l/$(NUM_SPLIT) $< $<.
+	split -d -l $$(( $(shell wc -l < $<) / $(NUM_SPLIT) )) $< $<.
 
 # Used by the GitHub CI, in order to run tests in parallel
 test-group-%:split-test-packages

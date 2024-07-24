@@ -95,5 +95,4 @@ func TestValidSHA256String(t *testing.T) {
 			assert.EqualError(t, err, tt.wantErr, "test %d", i)
 		})
 	}
-
 }

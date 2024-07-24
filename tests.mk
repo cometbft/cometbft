@@ -60,7 +60,7 @@ test_race:
 
 test_deadlock:
 	@echo "--> Running go test with deadlock support"
-	@go test -p 1 -v  $(PACKAGES) -tags deadlock,bls12381
+	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381
 .PHONY: test_deadlock
 
 # The format statement filters out all packages that don't have tests.
@@ -71,5 +71,7 @@ $(BUILDDIR)/packages.txt:$(GO_TEST_FILES) $(BUILDDIR)
 
 split-test-packages:$(BUILDDIR)/packages.txt
 	split -d -n l/$(NUM_SPLIT) $< $<.
+
+# Used, in special, by the GitHub CI, in order to run tests in parallel 
 test-group-%:split-test-packages
 	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out

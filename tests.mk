@@ -72,6 +72,6 @@ $(BUILDDIR)/packages.txt:$(GO_TEST_FILES) $(BUILDDIR)
 split-test-packages:$(BUILDDIR)/packages.txt
 	split -d -n l/$(NUM_SPLIT) $< $<.
 
-# Used, in special, by the GitHub CI, in order to run tests in parallel 
+# Used by the GitHub CI, in order to run tests in parallel
 test-group-%:split-test-packages
 	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out

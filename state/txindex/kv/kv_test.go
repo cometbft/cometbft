@@ -922,3 +922,29 @@ func setDiff(bigger [][]byte, smaller [][]byte) [][]byte {
 	}
 	return diff
 }
+
+func TestExtractEventSeqFromKey(t *testing.T) {
+	testCases := []struct {
+		str      string
+		expected string
+	}{
+		{
+			"0/0/0/1234$es$0",
+			"0",
+		},
+		{
+			"0/0/0/1234$es$1234",
+			"1234",
+		},
+		{
+			"0/0/0/1234",
+			"0",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.expected, func(t *testing.T) {
+			assert.Equal(t, extractEventSeqFromKey([]byte(tc.str)), tc.expected)
+		})
+	}
+}

@@ -284,7 +284,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a t
 	case *bcproto.BlockRequest:
 		bcR.respondToPeer(msg, e.Src)
 	case *bcproto.BlockResponse:
-		go func() { bcR.handlePeerResponse(msg, e.Src) }()
+		go bcR.handlePeerResponse(msg, e.Src)
 	case *bcproto.StatusRequest:
 		// Send peer our state.
 		e.Src.TrySend(p2p.Envelope{

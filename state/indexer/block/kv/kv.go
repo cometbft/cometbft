@@ -491,7 +491,7 @@ LOOP:
 
 		select {
 		case <-ctx.Done():
-
+			break LOOP
 		default:
 		}
 	}

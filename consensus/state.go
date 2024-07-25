@@ -1767,8 +1767,9 @@ func (cs *State) finalizeCommit(height int64) {
 	stateCopy := cs.state.Copy()
 
 	// Execute and commit the block, update and save the state, and update the mempool.
-	// NOTE The block.AppHash wont reflect these txs until the next block.
-	stateCopy, err := cs.blockExec.ApplyBlock(
+	// We use apply verified block here because we have verified the block in this function already.
+	// NOTE The block.AppHash won't reflect these txs until the next block.
+	stateCopy, err := cs.blockExec.ApplyVerifiedBlock(
 		stateCopy,
 		types.BlockID{
 			Hash:          block.Hash(),

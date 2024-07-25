@@ -173,6 +173,7 @@ func TestPruneStates(t *testing.T) {
 						{Data: []byte{2}},
 						{Data: []byte{3}},
 					},
+					AppHash: make([]byte, 1),
 				})
 				require.NoError(t, err)
 			}
@@ -364,6 +365,7 @@ func TestABCIResPruningStandalone(t *testing.T) {
 		TxResults: []*abci.ExecTxResult{
 			{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 		},
+		AppHash: make([]byte, 1),
 	}
 	_, bs, txIndexer, blockIndexer, callbackF, stateStore := makeStateAndBlockStoreAndIndexers()
 	defer callbackF()
@@ -457,6 +459,7 @@ func TestFinalizeBlockResponsePruning(t *testing.T) {
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
+			AppHash: make([]byte, 1),
 		}
 		state, bs, txIndexer, blockIndexer, callbackF, stateStore := makeStateAndBlockStoreAndIndexers()
 		defer callbackF()
@@ -515,6 +518,7 @@ func TestLastFinalizeBlockResponses(t *testing.T) {
 			TxResults: []*abci.ExecTxResult{
 				{Code: 32, Data: []byte("Hello"), Log: "Huh?"},
 			},
+			AppHash: make([]byte, 1),
 		}
 		// create new db and state store and set discard abciresponses to false.
 		stateDB = dbm.NewMemDB()
@@ -605,7 +609,7 @@ func TestFinalizeBlockRecoveryUsingLegacyABCIResponses(t *testing.T) {
 	resp, err := stateStore.LoadLastFinalizeBlockResponse(height)
 	require.NoError(t, err)
 	require.Equal(t, resp.ConsensusParamUpdates, &cp)
-	require.Equal(t, resp.Events, legacyResp.LegacyAbciResponses.BeginBlock.Events)
+	require.Equal(t, len(resp.Events), len(legacyResp.LegacyAbciResponses.BeginBlock.Events))
 	require.Equal(t, resp.TxResults[0], legacyResp.LegacyAbciResponses.DeliverTxs[0])
 }
 

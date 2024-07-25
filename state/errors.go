@@ -70,6 +70,15 @@ type (
 		Height int64
 		Err    error
 	}
+
+	ErrABCIResponseResponseUnmarshalForHeight struct {
+		Height int64
+	}
+
+	ErrABCIResponseCorruptedOrSpecChangeForHeight struct {
+		Err    error
+		Height int64
+	}
 )
 
 func (e ErrUnknownBlock) Error() string {
@@ -159,3 +168,15 @@ var (
 	ErrPrunerCannotLowerRetainHeight      = errors.New("cannot set a height lower than previously requested - heights might have already been pruned")
 	ErrInvalidRetainHeight                = errors.New("retain height cannot be less or equal than 0")
 )
+
+func (e ErrABCIResponseResponseUnmarshalForHeight) Error() string {
+	return fmt.Sprintf("could not decode results for height %d", e.Height)
+}
+
+func (e ErrABCIResponseCorruptedOrSpecChangeForHeight) Error() string {
+	return fmt.Sprintf("failed to unmarshall FinalizeBlockResponse (also tried as legacy ABCI response) for height %d", e.Height)
+}
+
+func (e ErrABCIResponseCorruptedOrSpecChangeForHeight) Unwrap() error {
+	return e.Err
+}

@@ -123,6 +123,8 @@ call sequences of these methods.
   update its state accordingly. Cryptographic commitments to the block and transaction results,
   returned via the corresponding parameters in `ResponseFinalizeBlock`, are included in the header
   of the next block. CometBFT calls it when a new block is decided.
+  When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+  that at least one non-byzantine validator has run `ProcessProposal` on that block.
 
 - [**Commit:**](./abci++_methods.md#commit) Instructs the Application to persist its
   state. It is a fundamental part of CometBFT's crash-recovery mechanism that ensures the

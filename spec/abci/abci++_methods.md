@@ -32,8 +32,8 @@ title: Methods
     | Name          | Type   | Description                            | Field Number |
     |---------------|--------|----------------------------------------|--------------|
     | version       | string | The CometBFT software semantic version | 1            |
-    | block_version | uint64 | The CometBFT Block Protocol version    | 2            |
-    | p2p_version   | uint64 | The CometBFT P2P Protocol version      | 3            |
+    | block_version | uint64 | The CometBFT Block version             | 2            |
+    | p2p_version   | uint64 | The CometBFT P2P version               | 3            |
     | abci_version  | string | The CometBFT ABCI semantic version     | 4            |
 
 * **Response**:
@@ -42,7 +42,7 @@ title: Methods
     |---------------------|--------|-----------------------------------------------------|--------------|---------------|
     | data                | string | Some arbitrary information                          | 1            | N/A           |
     | version             | string | The application software semantic version           | 2            | N/A           |
-    | app_version         | uint64 | The application protocol version                    | 3            | N/A           |
+    | app_version         | uint64 | The application version                             | 3            | N/A           |
     | last_block_height   | int64  | Latest height for which the app persisted its state | 4            | N/A           |
     | last_block_app_hash | bytes  | Latest AppHash returned by `FinalizeBlock`          | 5            | N/A           |
 
@@ -630,7 +630,7 @@ without calling `RequestVerifyVoteExtension` to verify it.
 * **Usage**:
     * Contains the fields of the newly decided block.
     * This method is equivalent to the call sequence `BeginBlock`, [`DeliverTx`],
-      and `EndBlock` in the previous version of ABCI.
+      and `EndBlock` in ABCI 1.0.
     * The height and time values match the values from the header of the proposed block.
     * The Application can use `RequestFinalizeBlock.decided_last_commit` and `RequestFinalizeBlock.misbehavior`
       to determine rewards and punishments for the validators.
@@ -666,6 +666,8 @@ without calling `RequestVerifyVoteExtension` to verify it.
       making the Application's state evolve in the context of state machine replication.
     * Currently, CometBFT will fill up all fields in `RequestFinalizeBlock`, even if they were
       already passed on to the Application via `RequestPrepareProposal` or `RequestProcessProposal`.
+    * When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+      that at least one non-byzantine validator has run `ProcessProposal` on that block.
 
 #### When does CometBFT call `FinalizeBlock`?
 
@@ -835,6 +837,12 @@ Most of the data structures used in ABCI are shared [common data structures](../
     | round | int32                          | Commit round. Reflects the round at which the block proposer decided in the previous height. | 1            |
     | votes | repeated [VoteInfo](#voteinfo) | List of validators' addresses in the last validator set with their voting information.       | 2            |
 
+* **Notes**
+  * The `VoteInfo` in `votes` are ordered by the voting power of the validators (descending order, highest to lowest voting power).
+  * CometBFT guarantees the `votes` ordering through its logic to update the validator set in which, in the end, the  validators are sorted (descending) by their voting power.
+  * The ordering is also persisted when a validator set is saved in the store.
+  * The validator set is loaded from the store when building the `CommitInfo`, ensuring order is maintained from the persisted validator set.
+
 ### ExtendedCommitInfo
 
 * **Fields**:
@@ -843,6 +851,12 @@ Most of the data structures used in ABCI are shared [common data structures](../
     |-------|------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|--------------|
     | round | int32                                          | Commit round. Reflects the round at which the block proposer decided in the previous height.                      | 1            |
     | votes | repeated [ExtendedVoteInfo](#extendedvoteinfo) | List of validators' addresses in the last validator set with their voting information, including vote extensions. | 2            |
+
+* **Notes**
+    * The `ExtendedVoteInfo` in `votes` are ordered by the voting power of the validators (descending order, highest to lowest voting power).
+    * CometBFT guarantees the `votes` ordering through its logic to update the validator set in which, in the end, the validators are sorted (descending) by their voting power.
+    * The ordering is also persisted when a validator set is saved in the store.
+    * The validator set is loaded from the store when building the `ExtendedCommitInfo`, ensuring order is maintained from the persisted validator set.
 
 ### ExecTxResult
 

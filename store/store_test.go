@@ -35,15 +35,22 @@ import (
 // make an extended commit with a single vote containing just the height and a
 // timestamp
 func makeTestExtCommit(height int64, timestamp time.Time) *types.ExtendedCommit {
-	extCommitSigs := []types.ExtendedCommitSig{{
-		CommitSig: types.CommitSig{
-			BlockIDFlag:      types.BlockIDFlagCommit,
-			ValidatorAddress: cmtrand.Bytes(crypto.AddressSize),
-			Timestamp:        timestamp,
-			Signature:        []byte("Signature"),
-		},
-		ExtensionSignature: []byte("ExtensionSignature"),
-	}}
+	return makeTestExtCommitWithNumSigs(height, timestamp, 1)
+}
+
+func makeTestExtCommitWithNumSigs(height int64, timestamp time.Time, numSigs int) *types.ExtendedCommit {
+	extCommitSigs := []types.ExtendedCommitSig{}
+	for i := 0; i < numSigs; i++ {
+		extCommitSigs = append(extCommitSigs, types.ExtendedCommitSig{
+			CommitSig: types.CommitSig{
+				BlockIDFlag:      types.BlockIDFlagCommit,
+				ValidatorAddress: cmtrand.Bytes(crypto.AddressSize),
+				Timestamp:        timestamp,
+				Signature:        cmtrand.Bytes(64),
+			},
+			ExtensionSignature: []byte("ExtensionSignature"),
+		})
+	}
 	return &types.ExtendedCommit{
 		Height: height,
 		BlockID: types.BlockID{

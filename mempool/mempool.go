@@ -52,6 +52,8 @@ type Mempool interface {
 
 	// Lock locks the mempool. The consensus must be able to hold lock to safely
 	// update.
+	// Before acquiring the lock, it signals the mempool that a new update is coming.
+	// If the mempool is still rechecking at this point, it should be considered full.
 	Lock()
 
 	// Unlock unlocks the mempool.

@@ -34,7 +34,7 @@ func TestBlockMeta_ToProto(t *testing.T) {
 		t.Run(tt.testName, func(t *testing.T) {
 			pb := tt.bm.ToProto()
 
-			bm, err := BlockMetaFromProto(pb)
+			bm, err := BlockMetaFromTrustedProto(pb)
 
 			if !tt.expErr {
 				require.NoError(t, err, tt.testName)

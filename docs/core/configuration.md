@@ -189,6 +189,16 @@ experimental_close_on_slow_client = false
 # See https://github.com/tendermint/tendermint/issues/3435
 timeout_broadcast_tx_commit = "10s"
 
+# Maximum number of requests that can be sent in a JSON-RPC batch request.
+# Possible values: number greater than 0.
+# If the number of requests sent in a JSON-RPC batch exceed the maximum batch
+# size configured, an error will be returned.
+# The default value is set to `10`, which will limit the number of requests
+# to 10 requests per a JSON-RPC batch request.
+# If you don't want to enforce a maximum number of requests for a batch
+# request set this value to `0`.
+max_request_batch_size = 10
+
 # Maximum size of request body, in bytes
 max_body_bytes = 1000000
 

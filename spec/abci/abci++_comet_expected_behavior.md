@@ -150,6 +150,9 @@ Let us now examine the grammar line by line, providing further details.
   `FinalizeBlock`, followed by a call to `Commit`. In each round, the sequence of method calls
   depends on whether the local process is the proposer or not. Note that, if a height contains zero
   rounds, this means the process is replaying an already decided value (catch-up mode).
+  When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+  that at least one non-byzantine validator has run `ProcessProposal` on that block.
+
 
 >```abnf
 >consensus-height    = *consensus-round decide commit
@@ -157,7 +160,7 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`.
-  A successful execution of `PrepareProposal` implies in a proposal block being (i)signed and (ii)stored
+  A successful execution of `PrepareProposal` results in a proposal block being (i) signed and (ii) stored
   (e.g., in stable storage).
 
   A crash during this step will direct how the node proceeds the next time it is executed, for the same round, after restarted.
@@ -180,7 +183,10 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * Also for every round, if the local process is _not_ the proposer of the current round, CometBFT
-  will call `ProcessProposal` at most once. At most one call to `ExtendVote` may occur only after
+  will call `ProcessProposal` at most once.
+  Under certain conditions, CometBFT may not call `ProcessProposal` in a round;
+  see [this section](./abci++_example_scenarios.md#scenario-3) for an example.
+  At most one call to `ExtendVote` may occur only after
   `ProcessProposal` is called. A number of calls to `VerifyVoteExtension` can occur in any order
   with respect to `ProcessProposal` and `ExtendVote` throughout the round. The reasons are the same
   as above, namely, the process running slightly late in the current round, or votes from future

@@ -707,4 +707,4 @@ echo "cm9ja3M=" | base64 -d
 
 ## Outro
 
-Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/cosmosnetwork) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.
+Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/interchain) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.

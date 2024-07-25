@@ -55,6 +55,8 @@ type ValidatorSet struct {
 
 	// cached (unexported)
 	totalVotingPower int64
+	// true if all validators have the same type of public key or if the set is empty.
+	allKeysHaveSameType bool
 }
 
 // NewValidatorSet initializes a ValidatorSet by copying over the values from
@@ -68,7 +70,9 @@ type ValidatorSet struct {
 // MaxVotesCount - commits by a validator set larger than this will fail
 // validation.
 func NewValidatorSet(valz []*Validator) *ValidatorSet {
-	vals := &ValidatorSet{}
+	vals := &ValidatorSet{
+		allKeysHaveSameType: true,
+	}
 	err := vals.updateWithChangeSet(valz, false)
 	if err != nil {
 		panic(fmt.Sprintf("Cannot create validator set: %v", err))
@@ -248,9 +252,10 @@ func validatorListCopy(valsList []*Validator) []*Validator {
 // Copy each validator into a new ValidatorSet.
 func (vals *ValidatorSet) Copy() *ValidatorSet {
 	return &ValidatorSet{
-		Validators:       validatorListCopy(vals.Validators),
-		Proposer:         vals.Proposer,
-		totalVotingPower: vals.totalVotingPower,
+		Validators:          validatorListCopy(vals.Validators),
+		Proposer:            vals.Proposer,
+		totalVotingPower:    vals.totalVotingPower,
+		allKeysHaveSameType: vals.allKeysHaveSameType,
 	}
 }
 
@@ -627,6 +632,9 @@ func (vals *ValidatorSet) updateWithChangeSet(changes []*Validator, allowDeletes
 	vals.applyUpdates(updates)
 	vals.applyRemovals(deletes)
 
+	// Should go after additions.
+	vals.checkAllKeysHaveSameType()
+
 	vals.updateTotalVotingPower() // will panic if total voting power > MaxTotalVotingPower
 
 	// Scale and center.
@@ -721,7 +729,37 @@ func (vals *ValidatorSet) findPreviousProposer() *Validator {
 	return previousProposer
 }
 
-//-----------------
+func (vals *ValidatorSet) checkAllKeysHaveSameType() {
+	if vals.Size() == 0 {
+		vals.allKeysHaveSameType = true
+		return
+	}
+
+	firstKeyType := ""
+	for _, val := range vals.Validators {
+		if firstKeyType == "" {
+			// XXX: Should only be the case in tests.
+			if val.PubKey == nil {
+				continue
+			}
+			firstKeyType = val.PubKey.Type()
+		}
+		if val.PubKey.Type() != firstKeyType {
+			vals.allKeysHaveSameType = false
+			return
+		}
+	}
+
+	vals.allKeysHaveSameType = true
+}
+
+// AllKeysHaveSameType returns true if all validators have the same type of
+// public key or if the set is empty.
+func (vals *ValidatorSet) AllKeysHaveSameType() bool {
+	return vals.allKeysHaveSameType
+}
+
+// -----------------
 
 // IsErrNotEnoughVotingPowerSigned returns true if err is
 // ErrNotEnoughVotingPowerSigned.
@@ -853,6 +891,7 @@ func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 		valsProto[i] = v
 	}
 	vals.Validators = valsProto
+	vals.checkAllKeysHaveSameType()
 
 	p, err := ValidatorFromProto(vp.GetProposer())
 	if err != nil {
@@ -889,6 +928,7 @@ func ValidatorSetFromExistingValidators(valz []*Validator) (*ValidatorSet, error
 	vals := &ValidatorSet{
 		Validators: valz,
 	}
+	vals.checkAllKeysHaveSameType()
 	vals.Proposer = vals.findPreviousProposer()
 	vals.updateTotalVotingPower()
 	sort.Sort(ValidatorsByVotingPower(vals.Validators))

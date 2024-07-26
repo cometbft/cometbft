@@ -285,21 +285,18 @@ func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
 		defer peer.Stop() //nolint:errcheck // ignore for tests
 
 		knownAddrs = append(knownAddrs, addr)
-		t.Log("Created peer", id, addr)
 	}
 
 	// 2. Create seed node which knows about the previous peers
 	seed := testCreateSeed(dir, id, knownAddrs, knownAddrs)
 	require.NoError(t, seed.Start())
 	defer seed.Stop() //nolint:errcheck // ignore for tests
-	t.Log("Created seed", id, seed.NetAddress())
 
 	// 3. Create a node with only seed configured.
 	id++
 	node := testCreatePeerWithSeed(dir, id, seed)
 	require.NoError(t, node.Start())
 	defer node.Stop() //nolint:errcheck // ignore for tests
-	t.Log("Created node", id, node.NetAddress())
 
 	// 4. Check that the node connects to seed immediately
 	assertPeersWithTimeout(t, []*p2p.Switch{node}, 3*time.Second, 1)

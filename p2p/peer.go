@@ -17,7 +17,9 @@ import (
 
 //go:generate ../scripts/mockery_generate.sh Peer
 
-const metricsTickerDuration = 10 * time.Second
+// Same as the default Prometheus scrape interval in order to not lose
+// granularity.
+const metricsTickerDuration = 1 * time.Second
 
 // Peer is an interface representing a peer connected on a reactor.
 type Peer interface {

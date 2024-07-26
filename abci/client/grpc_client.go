@@ -151,8 +151,8 @@ func (cli *grpcClient) Error() error {
 	return cli.err
 }
 
-// Set listener for all responses
-// NOTE: callback may get internally generated flush responses.
+// SetResponseCallback sets a listener for all responses.
+// NOTE: The callback may receive internally generated flush responses.
 func (cli *grpcClient) SetResponseCallback(resCb Callback) {
 	cli.mtx.Lock()
 	cli.resCb = resCb

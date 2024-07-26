@@ -39,8 +39,9 @@ type Peer interface {
 	Status() cmtconn.ConnectionStatus
 	SocketAddr() *NetAddress // actual address of the socket
 
-	Send(e Envelope) bool
-	TrySend(e Envelope) bool
+	HasChannel(chID byte) bool // Does the peer implement this channel?
+	Send(e Envelope) bool      // Send a message to the peer, blocking version
+	TrySend(e Envelope) bool   // Send a message to the peer, non-blocking version
 
 	Set(key string, value any)
 	Get(key string) any
@@ -115,7 +116,7 @@ type peer struct {
 
 	// peer's node info and the channel it knows about
 	// channels = nodeInfo.Channels
-	// cached to avoid copying nodeInfo in hasChannel
+	// cached to avoid copying nodeInfo in HasChannel
 	nodeInfo NodeInfo
 	channels []byte
 
@@ -269,7 +270,7 @@ func (p *peer) TrySend(e Envelope) bool {
 func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bool) bool {
 	if !p.IsRunning() {
 		return false
-	} else if !p.hasChannel(chID) {
+	} else if !p.HasChannel(chID) {
 		return false
 	}
 	msgType := getMsgType(msg)
@@ -302,9 +303,8 @@ func (p *peer) Set(key string, data any) {
 	p.Data.Set(key, data)
 }
 
-// hasChannel returns true if the peer reported
-// knowing about the given chID.
-func (p *peer) hasChannel(chID byte) bool {
+// HasChannel returns whether the peer reported implementing this channel.
+func (p *peer) HasChannel(chID byte) bool {
 	for _, ch := range p.channels {
 		if ch == chID {
 			return true

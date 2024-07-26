@@ -108,12 +108,8 @@ ifeq (linux/riscv64,$(findstring linux/riscv64,$(TARGETPLATFORM)))
 	GOARCH=riscv64
 endif
 
-<<<<<<< HEAD
-all: check build test install
-=======
 #? all: Run target build, test and install
 all: build test install
->>>>>>> 574482339 (fix(ci): run `make all` error 'No rule to make target 'check'' (#3530))
 .PHONY: all
 
 include tests.mk

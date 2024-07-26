@@ -1,5 +1,5 @@
 ---
-order: 2
+order: 4
 ---
 
 # Creating a built-in application in Go

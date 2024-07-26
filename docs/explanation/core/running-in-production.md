@@ -389,6 +389,14 @@ applications, setting it to `0` is not a problem.
 
 You can try lowering it though.
 
+**Notice** that the `timeout_commit` configuration flag was deprecated in v1.0.
+It is now up to the application to return a `next_block_delay` value upon
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+to define how long CometBFT should wait from when it has
+committed a block until it actually starts the next height.
+Notice that this delay includes the time it takes for CometBFT and the
+application to process the committed block.
+
 - `p2p.addr_book_strict`
 
 By default, CometBFT checks whenever a peer's address is routable before

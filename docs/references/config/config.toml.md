@@ -1764,8 +1764,16 @@ The `timeout_commit` is not a required component of the consensus algorithm,
 meaning that there are no liveness implications if it is set to `0s`.
 But it may have implications in the way the application rewards validators.
 
+Notice also that the minimum interval defined with `timeout_commit` includes
+the time that both CometBFT and the application take to process the committed block.
+
 Setting `timeout_commit` to `0s` means that the node will start the next height
 as soon as it gathers all the mandatory +2/3 precommits for a block.
+
+**Notice** that the `timeout_commit` configuration flag is **deprecated** from v1.0.
+It is now up to the application to return a `next_block_delay` value upon
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+to define how long CometBFT should wait before starting the next height.
 
 ### consensus.skip_timeout_commit
 
@@ -2280,3 +2288,8 @@ a proposal from another validator and prevote `nil` due to him starting
 `timeout_propose` earlier. I.e., if Bob's `timeout_commit` is too low comparing
 to other validators, then he might miss some proposals and get slashed for
 inactivity.
+
+**Notice** that the `timeout_commit` configuration flag is **deprecated** from v1.0.
+It is now up to the application to return a `next_block_delay` value upon
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+to define how long CometBFT should wait before starting the next height.

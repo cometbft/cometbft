@@ -108,7 +108,8 @@ ifeq (linux/riscv64,$(findstring linux/riscv64,$(TARGETPLATFORM)))
 	GOARCH=riscv64
 endif
 
-all: check build test install
+#? all: Run target build, test and install
+all: build test install
 .PHONY: all
 
 include tests.mk

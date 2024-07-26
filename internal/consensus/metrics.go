@@ -81,7 +81,7 @@ type Metrics struct {
 	// was relevant to the block the node is trying to gather or not.
 	BlockGossipPartsReceived metrics.Counter `metrics_labels:"matches_current"`
 
-	// QuroumPrevoteMessageDelay is the interval in seconds between the proposal
+	// QuorumPrevoteDelay is the interval in seconds between the proposal
 	// timestamp and the timestamp of the earliest prevote that achieved a quorum
 	// during the prevote step.
 	//
@@ -110,7 +110,7 @@ type Metrics struct {
 	// either 'accepted' or 'rejected'.
 	ProposalReceiveCount metrics.Counter `metrics_labels:"status"`
 
-	// ProposalCreationCount is the total number of proposals created by this node
+	// ProposalCreateCount is the total number of proposals created by this node
 	// since process start.
 	// The metric is annotated by the status of the proposal from the application,
 	// either 'accepted' or 'rejected'.

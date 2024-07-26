@@ -6,6 +6,6 @@ const (
 	CodeTypeEncodingError   uint32 = 1
 	CodeTypeInvalidTxFormat uint32 = 2
 	CodeTypeUnauthorized    uint32 = 3
-	CodeTypeExecuted        uint32 = 5
+	CodeTypeExecuted        uint32 = 4
 	CodeTypeExpired         uint32 = 5
 )

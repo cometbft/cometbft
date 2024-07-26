@@ -1,5 +1,5 @@
 ---
-order: 3
+order: 6
 ---
 
 # Creating an application in Go

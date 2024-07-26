@@ -2,7 +2,7 @@
 order: 1
 parent:
   title: Forum Application Tutorial
-  order: 4
+  order: 8
 ---
 
 # ABCI 2.0 Forum Application Tutorial

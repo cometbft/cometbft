@@ -340,12 +340,7 @@ LOOP:
 
 		select {
 		case <-ctx.Done():
-<<<<<<< HEAD
-			break
-
-=======
 			break LOOP
->>>>>>> 79da036b7 (fix(indexer): Ineffective or missing break statements in kv package. (#3557))
 		default:
 		}
 	}
@@ -378,12 +373,7 @@ FOR_LOOP:
 
 			select {
 			case <-ctx.Done():
-<<<<<<< HEAD
-				break
-
-=======
 				break FOR_LOOP
->>>>>>> 79da036b7 (fix(indexer): Ineffective or missing break statements in kv package. (#3557))
 			default:
 			}
 		}

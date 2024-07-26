@@ -490,7 +490,7 @@ LOOP:
 
 		select {
 		case <-ctx.Done():
-
+			break LOOP
 		default:
 		}
 	}
@@ -512,6 +512,7 @@ LOOP:
 
 	// Remove/reduce matches in filteredHashes that were not found in this
 	// match (tmpHashes).
+FOR_LOOP:
 	for k, v := range filteredHeights {
 		tmpHeight := tmpHeights[k]
 
@@ -522,7 +523,7 @@ LOOP:
 
 			select {
 			case <-ctx.Done():
-
+				break FOR_LOOP
 			default:
 			}
 		}
@@ -607,6 +608,7 @@ func (idx *BlockerIndexer) match(
 		}
 		defer it.Close()
 
+	LOOP_EXISTS:
 		for ; it.Valid(); it.Next() {
 			keyHeight, err := parseHeightFromEventKey(it.Key())
 			if err != nil {
@@ -626,7 +628,7 @@ func (idx *BlockerIndexer) match(
 
 			select {
 			case <-ctx.Done():
-				break
+				break LOOP_EXISTS
 
 			default:
 			}
@@ -648,6 +650,7 @@ func (idx *BlockerIndexer) match(
 		}
 		defer it.Close()
 
+	LOOP_CONTAINS:
 		for ; it.Valid(); it.Next() {
 			eventValue, err := parseValueFromEventKey(it.Key())
 			if err != nil {
@@ -673,7 +676,7 @@ func (idx *BlockerIndexer) match(
 
 			select {
 			case <-ctx.Done():
-				break
+				break LOOP_CONTAINS
 
 			default:
 			}

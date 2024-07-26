@@ -494,13 +494,8 @@ func (app *Application) getValidators() (validators []types.ValidatorUpdate) {
 	}
 	for ; itr.Valid(); itr.Next() {
 		if isValidatorTx(itr.Key()) {
-			var (
-				validator       = new(types.ValidatorUpdate)
-				value           = itr.Value()
-				valueWorkingCpy = make([]byte, len(value))
-			)
-			copy(valueWorkingCpy, value)
-			err := types.ReadMessage(bytes.NewBuffer(valueWorkingCpy), validator)
+			validator := new(types.ValidatorUpdate)
+			err := types.ReadMessage(bytes.NewBuffer(itr.Value()), validator)
 			if err != nil {
 				panic(err)
 			}

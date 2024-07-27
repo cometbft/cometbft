@@ -480,7 +480,7 @@ func (pool *BlockPool) makeNextRequester(nextHeight int64) {
 	}
 }
 
-// thread-safe
+// thread-safe.
 func (pool *BlockPool) sendRequest(height int64, peerID p2p.ID) {
 	if !pool.IsRunning() {
 		return
@@ -488,7 +488,7 @@ func (pool *BlockPool) sendRequest(height int64, peerID p2p.ID) {
 	pool.requestsCh <- BlockRequest{height, peerID}
 }
 
-// thread-safe
+// thread-safe.
 func (pool *BlockPool) sendError(err error, peerID p2p.ID) {
 	if !pool.IsRunning() {
 		return

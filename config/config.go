@@ -976,6 +976,11 @@ type MempoolConfig struct {
 	// performance results using the default P2P configuration.
 	ExperimentalMaxGossipConnectionsToPersistentPeers    int `mapstructure:"experimental_max_gossip_connections_to_persistent_peers"`
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers int `mapstructure:"experimental_max_gossip_connections_to_non_persistent_peers"`
+
+	// ExperimentalPublishEventPendingTx enables publishing a `PendingTx` event when a new transaction is added to the mempool.
+	// Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
+	// Use this feature with caution and consider the impact on transaction processing performance.
+	ExperimentalPublishEventPendingTx bool `mapstructure:"experimental_publish_event_pending_tx"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.

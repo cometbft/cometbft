@@ -34,6 +34,7 @@ type CListMempool struct {
 	// notify listeners (ie. consensus) when txs are available
 	notifiedTxsAvailable atomic.Bool
 	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
+	onNewTx              func(types.Tx)
 
 	config *config.MempoolConfig
 
@@ -166,6 +167,12 @@ func WithPostCheck(f PostCheckFunc) CListMempoolOption {
 // WithMetrics sets the metrics.
 func WithMetrics(metrics *Metrics) CListMempoolOption {
 	return func(mem *CListMempool) { mem.metrics = metrics }
+}
+
+// WithNewTxCallback sets a callback function to be executed when a new transaction is added to the mempool.
+// The callback function will receive the newly added transaction as a parameter.
+func WithNewTxCallback(cb func(types.Tx)) CListMempoolOption {
+	return func(mem *CListMempool) { mem.onNewTx = cb }
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -350,7 +357,9 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		}
 		if mem.addTx(&memTx, sender) {
 			mem.notifyTxsAvailable()
-
+			if mem.onNewTx != nil {
+				mem.onNewTx(tx)
+			}
 			// update metrics
 			mem.metrics.Size.Set(float64(mem.Size()))
 			mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))

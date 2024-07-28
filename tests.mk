@@ -47,22 +47,39 @@ test_release:
 	@go test -tags release $(PACKAGES)
 .PHONY: test_release
 
-test100:
-	@for i in {1..100}; do make test; done
-.PHONY: test100
-
 ### go tests
 test:
 	@echo "--> Running go test"
-	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381
+	@go test -p 1 $(PACKAGES) -tags bls12381
 .PHONY: test
 
 test_race:
 	@echo "--> Running go test --race"
-	@go test -p 1 -v -race $(PACKAGES)
+	@go test -p 1 -race $(PACKAGES) -tags bls12381
 .PHONY: test_race
 
 test_deadlock:
-	@echo "--> Running go test --deadlock"
-	@go test -p 1 -v  $(PACKAGES) -tags deadlock
-.PHONY: test_race
+	@echo "--> Running go test with deadlock support"
+	@go test -p 1 $(PACKAGES) -tags deadlock,bls12381
+.PHONY: test_deadlock
+
+# Implements test splitting and running. This is pulled directly from
+# the github action workflows for better local reproducibility.
+
+GO_TEST_FILES := $(shell find $(CURDIR) -name "*_test.go")
+
+# default to four splits by default
+NUM_SPLIT ?= 4
+
+# The format statement filters out all packages that don't have tests.
+# Note we need to check for both in-package tests (.TestGoFiles) and
+# out-of-package tests (.XTestGoFiles).
+$(BUILDDIR)/packages.txt:$(GO_TEST_FILES) $(BUILDDIR)
+	go list -f "{{ if (or .TestGoFiles .XTestGoFiles) }}{{ .ImportPath }}{{ end }}" ./... | sort > $@
+
+split-test-packages:$(BUILDDIR)/packages.txt
+	split -d -n l/$(NUM_SPLIT) $< $<.
+
+# Used by the GitHub CI, in order to run tests in parallel
+test-group-%:split-test-packages
+	cat $(BUILDDIR)/packages.txt.$* | xargs go test -mod=readonly -timeout=400s -race -coverprofile=$(BUILDDIR)/$*.profile.out

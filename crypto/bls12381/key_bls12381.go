@@ -41,18 +41,27 @@ type PrivKey []byte
 func GenPrivKeyFromSecret(secret []byte) (PrivKey, error) {
 	seed := sha256.Sum256(secret) // We need 32 bytes
 	secretKey, err := bls12381.GenPrivKeyFromSeed(seed)
+	if err != nil {
+		return nil, err
+	}
 	return PrivKey(secretKey.Marshal()), err
 }
 
 // NewPrivateKeyFromBytes builds a new key from the given bytes.
 func NewPrivateKeyFromBytes(bz []byte) (PrivKey, error) {
 	secretKey, err := bls12381.SecretKeyFromBytes(bz)
+	if err != nil {
+		return nil, err
+	}
 	return secretKey.Marshal(), err
 }
 
 // GenPrivKey generates a new key.
 func GenPrivKey() (PrivKey, error) {
 	secretKey, err := bls12381.RandKey()
+	if err != nil {
+		return nil, err
+	}
 	return PrivKey(secretKey.Marshal()), err
 }
 
@@ -90,12 +99,16 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(msg) < MaxMsgLen {
-		hash := sha256.Sum256(msg)
-		sig := secretKey.Sign(hash[:])
-		return sig.Marshal(), nil
+	// VerifySignature expects a fixed size message
+	// https://pkg.go.dev/github.com/cosmos/crypto@v0.1.2/curves/bls12381#VerifySignature
+	var fixedSizeMsg [32]byte
+	if len(msg) > MaxMsgLen {
+		fixedSizeMsg = sha256.Sum256(msg)
+	} else {
+		copy(fixedSizeMsg[:], msg)
 	}
-	sig := secretKey.Sign(msg)
+
+	sig := secretKey.Sign(fixedSizeMsg[:])
 	return sig.Marshal(), nil
 }
 
@@ -133,12 +146,16 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 		return false
 	}
 
-	if len(msg) < MaxMsgLen {
-		hash := sha256.Sum256(msg)
-		msg = hash[:]
+	// VerifySignature expects a fixed size message
+	// https://pkg.go.dev/github.com/cosmos/crypto@v0.1.2/curves/bls12381#VerifySignature
+	var fixedSizeMsg [32]byte
+	if len(msg) > MaxMsgLen {
+		fixedSizeMsg = sha256.Sum256(msg)
+	} else {
+		copy(fixedSizeMsg[:], msg)
 	}
 
-	ok, err := bls12381.VerifySignature(sig, [MaxMsgLen]byte(msg[:MaxMsgLen]), pubK)
+	ok, err := bls12381.VerifySignature(sig, fixedSizeMsg, pubK)
 	if err != nil { // bad signature
 		return false
 	}

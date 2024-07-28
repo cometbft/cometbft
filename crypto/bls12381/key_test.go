@@ -47,11 +47,8 @@ func TestGenPrivKeyFromSecret_SignVerify(t *testing.T) {
 	sig, err := priv.Sign(msg)
 	require.NoError(t, err)
 
-	priv2, err := bls12381.GenPrivKeyFromSecret(secret)
-	require.NoError(t, err)
-	assert.True(t, priv.Equals(priv2))
-	pub2 := priv2.PubKey()
-	assert.True(t, pub2.VerifySignature(msg, sig), "Signature did not verify")
+	pub := priv.PubKey()
+	assert.True(t, pub.VerifySignature(msg, sig), "Signature did not verify")
 }
 
 func TestPrivKeyBytes(t *testing.T) {

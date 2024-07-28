@@ -44,7 +44,7 @@ func GenPrivKeyFromSecret(secret []byte) (PrivKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return PrivKey(secretKey.Marshal()), err
+	return PrivKey(secretKey.Marshal()), nil
 }
 
 // NewPrivateKeyFromBytes builds a new key from the given bytes.
@@ -53,7 +53,7 @@ func NewPrivateKeyFromBytes(bz []byte) (PrivKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return secretKey.Marshal(), err
+	return secretKey.Marshal(), nil
 }
 
 // GenPrivKey generates a new key.
@@ -62,7 +62,7 @@ func GenPrivKey() (PrivKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return PrivKey(secretKey.Marshal()), err
+	return PrivKey(secretKey.Marshal()), nil
 }
 
 // Bytes returns the byte representation of the Key.

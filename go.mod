@@ -43,8 +43,9 @@ require (
 	github.com/cometbft/cometbft-db v0.12.0
 	github.com/cometbft/cometbft-load-test v0.1.0
 	github.com/cometbft/cometbft/api v1.0.0-rc.1
-	github.com/cosmos/crypto v0.1.1
+	github.com/cosmos/crypto v0.1.2
 	github.com/cosmos/gogoproto v1.5.0
+	github.com/dgraph-io/badger/v4 v4.2.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/gofrs/uuid v4.4.0+incompatible
@@ -76,7 +77,6 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/docker/cli v24.0.7+incompatible // indirect

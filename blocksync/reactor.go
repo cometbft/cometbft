@@ -248,8 +248,33 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 	})
 }
 
+func (bcR *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
+	bi, err := types.BlockFromProto(msg.Block)
+	if err != nil {
+		bcR.Logger.Error("Peer sent us invalid block", "peer", src, "msg", msg, "err", err)
+		bcR.Switch.StopPeerForError(src, err)
+		return
+	}
+	var extCommit *types.ExtendedCommit
+	if msg.ExtCommit != nil {
+		var err error
+		extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
+		if err != nil {
+			bcR.Logger.Error("failed to convert extended commit from proto",
+				"peer", src,
+				"err", err)
+			bcR.Switch.StopPeerForError(src, err)
+			return
+		}
+	}
+
+	if err := bcR.pool.AddBlock(src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
+		bcR.Logger.Error("failed to add block", "peer", src, "err", err)
+	}
+}
+
 // Receive implements Reactor by handling 4 types of messages (look below).
-func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a test
+func (bcR *Reactor) Receive(e p2p.Envelope) {
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)
@@ -262,28 +287,7 @@ func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a t
 	case *bcproto.BlockRequest:
 		bcR.respondToPeer(msg, e.Src)
 	case *bcproto.BlockResponse:
-		bi, err := types.BlockFromProto(msg.Block)
-		if err != nil {
-			bcR.Logger.Error("Peer sent us invalid block", "peer", e.Src, "msg", e.Message, "err", err)
-			bcR.Switch.StopPeerForError(e.Src, err)
-			return
-		}
-		var extCommit *types.ExtendedCommit
-		if msg.ExtCommit != nil {
-			var err error
-			extCommit, err = types.ExtendedCommitFromProto(msg.ExtCommit)
-			if err != nil {
-				bcR.Logger.Error("failed to convert extended commit from proto",
-					"peer", e.Src,
-					"err", err)
-				bcR.Switch.StopPeerForError(e.Src, err)
-				return
-			}
-		}
-
-		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
-		}
+		go bcR.handlePeerResponse(msg, e.Src)
 	case *bcproto.StatusRequest:
 		// Send peer our state.
 		e.Src.TrySend(p2p.Envelope{

@@ -207,11 +207,11 @@ Implementations of crypto providers (previously `Privval` implementations) shoul
 ```plaintext
 cometbft/
 ├── privval/
-│   ├── providers/
-│   │   ├── file_provider.go
-│   │   ├── signer_provider.go
-│   │   ├── retry_signer_provider.go
-│   │   ├── mock_provider.go
+│   ├── provider/
+│   │   ├── file.go
+│   │   ├── signer.go
+│   │   ├── retry_signer.go
+│   │   ├── mock.go
 ├── types/
 │   ├── priv_validator.go
 ```

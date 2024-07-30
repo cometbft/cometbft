@@ -26,6 +26,26 @@ func registerFlagsRootCmd(cmd *cobra.Command) {
 	cmd.PersistentFlags().String("log_level", config.LogLevel, "log level")
 }
 
+func ConfigHome(cmd *cobra.Command) (string, error) {
+	var home string
+	switch {
+	case os.Getenv("CMTHOME") != "":
+		home = os.Getenv("CMTHOME")
+	case os.Getenv("TMHOME") != "":
+		// XXX: Deprecated.
+		home = os.Getenv("TMHOME")
+	default:
+		var err error
+		// Default: $HOME/.cometbft
+		home, err = cmd.Flags().GetString(cli.HomeFlag)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return home, nil
+}
+
 // ParseConfig retrieves the default environment configuration,
 // sets up the CometBFT root and ensures that the root exists.
 func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
@@ -35,21 +55,13 @@ func ParseConfig(cmd *cobra.Command) (*cfg.Config, error) {
 		return nil, err
 	}
 
-	var home string
-	switch {
-	case os.Getenv("CMTHOME") != "":
-		home = os.Getenv("CMTHOME")
-	case os.Getenv("TMHOME") != "":
-		// XXX: Deprecated.
-		home = os.Getenv("TMHOME")
+	if os.Getenv("TMHOME") != "" {
 		logger.Error("Deprecated environment variable TMHOME identified. CMTHOME should be used instead.")
-	default:
-		home, err = cmd.Flags().GetString(cli.HomeFlag)
-		if err != nil {
-			return nil, err
-		}
 	}
-
+	home, err := ConfigHome(cmd)
+	if err != nil {
+		return nil, err
+	}
 	conf.RootDir = home
 
 	conf.SetRoot(conf.RootDir)

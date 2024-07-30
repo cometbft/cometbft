@@ -41,7 +41,6 @@ func CreateRandomPeer(outbound bool) Peer {
 		nodeInfo: mockNodeInfo{netAddr},
 		mconn:    &conn.MConnection{},
 		metrics:  NopMetrics(),
-		mlc:      newMetricsLabelCache(),
 	}
 	p.SetLogger(log.TestingLogger().With("peer", addr))
 	return p
@@ -186,7 +185,6 @@ func (sw *Switch) addPeerWithConnection(conn net.Conn) error {
 		sw.msgTypeByChID,
 		sw.chDescs,
 		sw.StopPeerForError,
-		sw.mlc,
 	)
 
 	if err = sw.addPeer(p); err != nil {

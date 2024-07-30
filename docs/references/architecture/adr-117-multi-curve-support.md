@@ -18,6 +18,25 @@ We will be extensively referencing concepts like CryptoProviders in this ADR. Pl
 
 The introduction of multi-curve support, by implementing the `CryptoProvider` interface and its components, in the CometBFT cryptographic package offers significant advantages. By not being restricted to a single cryptographic curve, developers can choose the most appropriate curve based on security, performance, and compatibility requirements. This flexibility enhances the application's ability to adapt to evolving security standards and optimizes performance for specific use cases, helping to future-proof the codebase's cryptographic capabilities.
 
+For readability purposes, here's an extract of **adr-001-crypto-provider** that defines the `CryptoProvider` interface:
+
+```go
+// CryptoProvider aggregates the functionalities of signing, verifying, and hashing, and provides metadata.
+type CryptoProvider interface {
+    // GetSigner returns an instance of Signer.
+    GetSigner() Signer
+
+    // GetVerifier returns an instance of Verifier.
+    GetVerifier() Verifier
+
+    // GetHasher returns an instance of Hasher.
+    GetHasher() Hasher
+
+    // Metadata returns metadata for the crypto provider.
+    Metadata() ProviderMetadata
+}
+```
+
 ## Decision
 
 We will:

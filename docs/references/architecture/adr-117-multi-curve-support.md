@@ -146,17 +146,11 @@ Below is an example of how `CryptoProviderPV` would look like. Note that in this
 // CryptoProviderPV is the implementation of PrivValidator using CryptoProvider's methods
 type CryptoProviderPV struct {
     provider CryptoProvider
-    pubKey   PubKey
 }
 
 // NewCryptoProviderPV creates a new instance of CryptoProviderPV
-func NewCryptoProviderPV(provider CryptoProvider, pk PubKey) (*CryptoProviderPV, error) {
-    return &CryptoProviderPV{provider: provider, pubKey: pubKey}, nil
-}
-
-// GetPubKey returns the public key of the validator
-func (pv *CryptoProviderPV) GetPubKey() (PubKey, error) {
-    return pv.pubKey, nil
+func NewCryptoProviderPV(provider CryptoProvider) (*CryptoProviderPV, error) {
+    return &CryptoProviderPV{provider: provider}, nil
 }
 
 // SignVote signs a canonical representation of the vote. If signExtension is true, it also signs the vote extension.

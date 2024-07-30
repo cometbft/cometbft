@@ -616,10 +616,10 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	jsonBlob, err := os.ReadFile(config.GenesisFile())
 	require.NoError(t, err)
 
+	// Set the cli params variable to the correct hash
 	incomingChecksum := tmhash.Sum(jsonBlob)
-	// Set genesis flag value to incorrect hash
-
 	cliParams := NonPersistentCliParams{GenesisHash: incomingChecksum}
+
 	_, err = NewNodeWithCliParams(
 		context.Background(),
 		config,
@@ -651,8 +651,8 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	flagHash := tmhash.Sum(f)
 
 	// Set genesis flag value to incorrect hash
-
 	cliParams := NonPersistentCliParams{GenesisHash: flagHash}
+
 	_, err = NewNodeWithCliParams(
 		context.Background(),
 		config,

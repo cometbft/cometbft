@@ -42,7 +42,7 @@ func TestNodeStartStop(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), NonPersistentCliParams{})
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 	err = n.Start()
 	require.NoError(t, err)
@@ -105,7 +105,7 @@ func TestCompanionInitialHeightSetup(t *testing.T) {
 	config.Storage.Pruning.DataCompanion.Enabled = true
 	config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight = 1
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), NonPersistentCliParams{})
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 
 	companionRetainHeight, err := n.stateStore.GetCompanionBlockRetainHeight()
@@ -119,7 +119,7 @@ func TestNodeDelayedStart(t *testing.T) {
 	now := cmttime.Now()
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), NonPersistentCliParams{})
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
 	require.NoError(t, err)
 
@@ -136,7 +136,7 @@ func TestNodeSetAppVersion(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), NonPersistentCliParams{})
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 
 	// default config uses the kvstore app
@@ -160,7 +160,7 @@ func TestPprofServer(t *testing.T) {
 	_, err := http.Get("http://" + config.RPC.PprofListenAddress) //nolint: bodyclose
 	require.Error(t, err)
 
-	n, err := DefaultNewNode(config, log.TestingLogger(), NonPersistentCliParams{})
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 	require.NoError(t, n.Start())
 	defer func() {
@@ -202,7 +202,7 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 	}()
 	defer signerServer.Stop() //nolint:errcheck // ignore for tests
 
-	n, err := DefaultNewNode(config, log.TestingLogger(), NonPersistentCliParams{})
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
@@ -215,7 +215,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
-	_, err := DefaultNewNode(config, log.TestingLogger(), NonPersistentCliParams{})
+	_, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.ErrorAs(t, err, &ErrPrivValidatorSocketClient{})
 }
 
@@ -246,7 +246,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 	}()
 	defer pvsc.Stop() //nolint:errcheck // ignore for tests
 
-	n, err := DefaultNewNode(config, log.TestingLogger(), NonPersistentCliParams{})
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
@@ -618,7 +618,7 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 
 	// Set the cli params variable to the correct hash
 	incomingChecksum := tmhash.Sum(jsonBlob)
-	cliParams := NonPersistentCliParams{GenesisHash: incomingChecksum}
+	cliParams := CliParams{GenesisHash: incomingChecksum}
 
 	_, err = NewNodeWithCliParams(
 		context.Background(),
@@ -651,7 +651,7 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	flagHash := tmhash.Sum(f)
 
 	// Set genesis flag value to incorrect hash
-	cliParams := NonPersistentCliParams{GenesisHash: flagHash}
+	cliParams := CliParams{GenesisHash: flagHash}
 
 	_, err = NewNodeWithCliParams(
 		context.Background(),

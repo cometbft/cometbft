@@ -297,7 +297,7 @@ func NewNode(ctx context.Context,
 		dbProvider,
 		metricsProvider,
 		logger,
-		NonPersistentCliParams{},
+		CliParams{},
 		options...)
 }
 
@@ -314,7 +314,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	dbProvider cfg.DBProvider,
 	metricsProvider MetricsProvider,
 	logger log.Logger,
-	cliParams NonPersistentCliParams,
+	cliParams CliParams,
 	options ...Option,
 ) (*Node, error) {
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)

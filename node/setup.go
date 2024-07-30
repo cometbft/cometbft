@@ -52,7 +52,7 @@ type ChecksummedGenesisDoc struct {
 // This parameters should not be stored or persisted in the config file.
 // This can then be further extended to include additional flags without further
 // API breaking changes.
-type NonPersistentCliParams struct {
+type CliParams struct {
 	// SHA-256 hash of the genesis file provided via the command line.
 	// This hash is used is compared against the computed hash of the
 	// actual genesis file or the hash stored in the database.
@@ -87,12 +87,12 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 }
 
 // Provider takes a config and a logger and returns a ready to go Node.
-type Provider func(*cfg.Config, log.Logger, NonPersistentCliParams) (*Node, error)
+type Provider func(*cfg.Config, log.Logger, CliParams) (*Node, error)
 
 // DefaultNewNode returns a CometBFT node with default settings for the
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
 // It implements NodeProvider.
-func DefaultNewNode(config *cfg.Config, logger log.Logger, cliParams NonPersistentCliParams) (*Node, error) {
+func DefaultNewNode(config *cfg.Config, logger log.Logger, cliParams CliParams) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return nil, ErrorLoadOrGenNodeKey{Err: err, NodeKeyFile: config.NodeKeyFile()}

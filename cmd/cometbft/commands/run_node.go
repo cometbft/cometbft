@@ -9,7 +9,7 @@ import (
 	nm "github.com/cometbft/cometbft/node"
 )
 
-var cliParams nm.NonPersistentCliParams
+var cliParams nm.CliParams
 
 // AddNodeFlags exposes some common configuration options on the command-line
 // These are exposed for convenience of commands embedding a CometBFT node.

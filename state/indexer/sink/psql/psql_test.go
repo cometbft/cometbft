@@ -142,7 +142,8 @@ func TestMain(m *testing.M) {
 
 func TestIndexing(t *testing.T) {
 	t.Run("IndexBlockEvents", func(t *testing.T) {
-		indexer := &EventSink{store: testDB(), chainID: chainID}
+		indexer, err := NewEventSink("", chainID, WithStore(testDB()))
+		require.Nil(t, err, "event sink creation")
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents()))
 
 		verifyBlock(t, 1)
@@ -156,14 +157,15 @@ func TestIndexing(t *testing.T) {
 			return v != nil, err
 		})
 
-		require.NoError(t, verifyTimeStamp(tableBlocks))
+		require.NoError(t, verifyTimeStamp(defaultTableBlocks))
 
 		// Attempting to reindex the same events should gracefully succeed.
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents()))
 	})
 
 	t.Run("IndexTxEvents", func(t *testing.T) {
-		indexer := &EventSink{store: testDB(), chainID: chainID}
+		indexer, err := NewEventSink("", chainID, WithStore(testDB()))
+		require.Nil(t, err, "event sink creation")
 
 		txResult := txResultWithEvents([]abci.Event{
 			makeIndexedEvent("account.number", "1"),
@@ -184,7 +186,7 @@ func TestIndexing(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, txResult, txr)
 
-		require.NoError(t, verifyTimeStamp(tableTxResults))
+		require.NoError(t, verifyTimeStamp(defaultTableTxResults))
 		require.NoError(t, verifyTimeStamp(viewTxEvents))
 
 		verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
@@ -202,11 +204,12 @@ func TestIndexing(t *testing.T) {
 	})
 
 	t.Run("IndexerService", func(t *testing.T) {
-		indexer := &EventSink{store: testDB(), chainID: chainID}
+		indexer, err := NewEventSink("", chainID, WithStore(testDB()))
+		require.Nil(t, err, "event sink creation")
 
 		// event bus
 		eventBus := types.NewEventBus()
-		err := eventBus.Start()
+		err = eventBus.Start()
 		require.NoError(t, err)
 		t.Cleanup(func() {
 			if err := eventBus.Stop(); err != nil {
@@ -318,7 +321,7 @@ func loadTxResult(hash []byte) (*abci.TxResult, error) {
 	hashString := fmt.Sprintf("%X", hash)
 	var resultData []byte
 	if err := testDB().QueryRow(`
-SELECT tx_result FROM `+tableTxResults+` WHERE tx_hash = $1;
+SELECT tx_result FROM `+defaultTableTxResults+` WHERE tx_hash = $1;
 `, hashString).Scan(&resultData); err != nil {
 		return nil, fmt.Errorf("lookup transaction for hash %q failed: %v", hashString, err)
 	}
@@ -343,7 +346,7 @@ func verifyBlock(t *testing.T, height int64) {
 	t.Helper()
 	// Check that the blocks table contains an entry for this height.
 	if err := testDB().QueryRow(`
-SELECT height FROM `+tableBlocks+` WHERE height = $1;
+SELECT height FROM `+defaultTableBlocks+` WHERE height = $1;
 `, height).Err(); errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("No block found for height=%d", height)
 	} else if err != nil {

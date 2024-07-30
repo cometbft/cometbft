@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -10,7 +9,7 @@ import (
 	nm "github.com/cometbft/cometbft/node"
 )
 
-var genesisHash []byte
+var cliParams nm.NonPersistentCliParams
 
 // AddNodeFlags exposes some common configuration options on the command-line
 // These are exposed for convenience of commands embedding a CometBFT node.
@@ -26,7 +25,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 
 	// node flags
 	cmd.Flags().BytesHexVar(
-		&genesisHash,
+		&cliParams.GenesisHash,
 		"genesis_hash",
 		[]byte{},
 		"optional SHA-256 hash of the genesis file")
@@ -90,11 +89,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 		Aliases: []string{"node", "run"},
 		Short:   "Run the CometBFT node",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if len(genesisHash) != 0 {
-				config.Storage.GenesisHash = hex.EncodeToString(genesisHash)
-			}
-
-			n, err := nodeProvider(config, logger)
+			n, err := nodeProvider(config, logger, cliParams)
 			if err != nil {
 				return fmt.Errorf("failed to create node: %w", err)
 			}

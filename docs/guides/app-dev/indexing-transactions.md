@@ -151,10 +151,10 @@ Example:
 ```toml
 [tx-index]
 psql-conn = "your connection string"
-table_blocks = "comet_blocks"
-table_tx_results = "comet_tx_results"
-table_events = "comet_events"
-table_attributes = "comet_attributes"
+table_blocks = "cometbft_blocks"
+table_tx_results = "cometbft_tx_results"
+table_events = "cometbft_events"
+table_attributes = "cometbft_attributes"
 ```
 
 ## Default Indexes

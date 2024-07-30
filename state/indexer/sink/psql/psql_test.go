@@ -146,8 +146,8 @@ func TestIndexing(t *testing.T) {
 		require.Nil(t, err, "event sink creation")
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents()))
 
-		verifyBlock(t, 1)
-		verifyBlock(t, 2)
+		verifyBlock(t, indexer, 1)
+		verifyBlock(t, indexer, 2)
 
 		verifyNotImplemented(t, "hasBlock", func() (bool, error) { return indexer.HasBlock(1) })
 		verifyNotImplemented(t, "hasBlock", func() (bool, error) { return indexer.HasBlock(2) })
@@ -157,7 +157,7 @@ func TestIndexing(t *testing.T) {
 			return v != nil, err
 		})
 
-		require.NoError(t, verifyTimeStamp(defaultTableBlocks))
+		require.NoError(t, verifyTimeStamp(indexer.tableBlocks))
 
 		// Attempting to reindex the same events should gracefully succeed.
 		require.NoError(t, indexer.IndexBlockEvents(newTestBlockEvents()))
@@ -182,11 +182,11 @@ func TestIndexing(t *testing.T) {
 		})
 		require.NoError(t, indexer.IndexTxEvents([]*abci.TxResult{txResult}))
 
-		txr, err := loadTxResult(types.Tx(txResult.Tx).Hash())
+		txr, err := loadTxResult(indexer, types.Tx(txResult.Tx).Hash())
 		require.NoError(t, err)
 		assert.Equal(t, txResult, txr)
 
-		require.NoError(t, verifyTimeStamp(defaultTableTxResults))
+		require.NoError(t, verifyTimeStamp(indexer.tableTxResults))
 		require.NoError(t, verifyTimeStamp(viewTxEvents))
 
 		verifyNotImplemented(t, "getTxByHash", func() (bool, error) {
@@ -317,11 +317,11 @@ func txResultWithEvents(events []abci.Event) *abci.TxResult {
 	}
 }
 
-func loadTxResult(hash []byte) (*abci.TxResult, error) {
+func loadTxResult(indexer *EventSink, hash []byte) (*abci.TxResult, error) {
 	hashString := fmt.Sprintf("%X", hash)
 	var resultData []byte
-	if err := testDB().QueryRow(`
-SELECT tx_result FROM `+defaultTableTxResults+` WHERE tx_hash = $1;
+	if err := indexer.store.QueryRow(`
+SELECT tx_result FROM `+indexer.tableTxResults+` WHERE tx_hash = $1;
 `, hashString).Scan(&resultData); err != nil {
 		return nil, fmt.Errorf("lookup transaction for hash %q failed: %v", hashString, err)
 	}
@@ -342,11 +342,11 @@ SELECT DISTINCT %[1]s.created_at
 `, tableName), time.Now().Add(-2*time.Second)).Err()
 }
 
-func verifyBlock(t *testing.T, height int64) {
+func verifyBlock(t *testing.T, indexer *EventSink, height int64) {
 	t.Helper()
 	// Check that the blocks table contains an entry for this height.
-	if err := testDB().QueryRow(`
-SELECT height FROM `+defaultTableBlocks+` WHERE height = $1;
+	if err := indexer.store.QueryRow(`
+SELECT height FROM `+indexer.tableBlocks+` WHERE height = $1;
 `, height).Err(); errors.Is(err, sql.ErrNoRows) {
 		t.Errorf("No block found for height=%d", height)
 	} else if err != nil {
@@ -354,7 +354,7 @@ SELECT height FROM `+defaultTableBlocks+` WHERE height = $1;
 	}
 
 	// Verify the presence of begin_block and end_block events.
-	if err := testDB().QueryRow(`
+	if err := indexer.store.QueryRow(`
 SELECT type, height, chain_id FROM `+viewBlockEvents+`
   WHERE height = $1 AND type = $2 AND chain_id = $3;
 `, height, eventTypeFinalizeBlock, chainID).Err(); errors.Is(err, sql.ErrNoRows) {

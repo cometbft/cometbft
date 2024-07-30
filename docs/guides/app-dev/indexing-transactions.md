@@ -142,6 +142,21 @@ Example:
 psql ... -f state/indexer/sink/psql/schema.sql
 ```
 
+Table names are configurable should there be name collisions with existing databases. 
+The defaults are `blocks`, `tx_results`, `events`, and `attributes`. Should these be modified, 
+the `state/indexer/sink/psql/schema.sql` will also need to be adjusted to match so that the correct 
+schemas and table relations are created.
+
+Example:
+```toml
+[tx-index]
+psql-conn = "your connection string"
+table_blocks = "comet_blocks"
+table_tx_results = "comet_tx_results"
+table_events = "comet_events"
+table_attributes = "comet_attributes"
+```
+
 ## Default Indexes
 
 The CometBFT tx and block event indexer indexes a few select reserved events

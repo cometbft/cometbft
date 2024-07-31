@@ -734,15 +734,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 		return errors.New("dial err (peerConfig.DialFail == true)")
 	}
 
-	p, err := sw.transport.Dial(*addr, &peerConfig{
-		chDescs:       sw.chDescs,
-		onPeerError:   sw.StopPeerForError,
-		isPersistent:  sw.IsPeerPersistent,
-		reactorsByCh:  sw.reactorsByCh,
-		msgTypeByChID: sw.msgTypeByChID,
-		metrics:       sw.metrics,
-		mlc:           sw.mlc,
-	})
+	p, err := sw.transport.Dial(*addr, sw.peerConfig)
 	if err != nil {
 		if e, ok := err.(ErrRejected); ok {
 			if e.IsSelf() {

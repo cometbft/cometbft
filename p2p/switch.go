@@ -813,8 +813,7 @@ func (sw *Switch) addPeer(p Peer) error {
 	// Start the peer's send/recv routines.
 	// Must start it before adding it to the peer set
 	// to prevent Start and Stop from being called concurrently.
-	err := p.Start()
-	if err != nil {
+	if err := p.Start(); err != nil {
 		// Should never happen
 		sw.Logger.Error("Error starting peer", "err", err, "peer", p)
 		return err

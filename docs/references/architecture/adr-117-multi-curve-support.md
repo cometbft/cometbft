@@ -237,6 +237,11 @@ Node's configuration file should include the name of the `CryptoProvider` to be 
 
 *Note:* It's important to note that during the migration path, both configurations (priv validators and crypto providers) will coexist. This means that if a `CryptoProvider` ID is passed in the configuration, the loader will give priority to that config and load the corresponding provider. However, if the provider ID is nil, it will load the priv validators as it always has. This approach ensures a smooth transition and maintains backward compatibility while allowing for the gradual adoption of the new `CryptoProvider` system.
 
+##### `PrivValidator`  users
+
+Every piece of code that makes use of the `PrivValidator` interface should not suffer from changes or require any adaptation. This is because the new `CryptoProviderPV` will implement the same `PrivValidator` interface, ensuring backward compatibility. The internal refactoring to use `CryptoProvider` will be encapsulated within the new implementation, allowing for a seamless transition without affecting the wider codebase that relies on `PrivValidator`.
+
+
 ## Consequences
 
 ### Positive

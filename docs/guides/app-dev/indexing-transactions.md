@@ -142,10 +142,8 @@ Example:
 psql ... -f state/indexer/sink/psql/schema.sql
 ```
 
-Table names are configurable should there be name collisions with existing databases. 
-The defaults are `blocks`, `tx_results`, `events`, and `attributes`. Should these be modified, 
-the `state/indexer/sink/psql/schema.sql` will also need to be adjusted to match so that the correct 
-schemas and table relations are created.
+The schema file adopts standard table names: `blocks`, `tx_results`, `events`, and `attributes`.
+In order to adopt customizable table names, the user should adapt the schema file **and** configure CometBFT's indexer to employ the appropriate table names.
 
 Example:
 ```toml

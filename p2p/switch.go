@@ -83,6 +83,8 @@ type Switch struct {
 	nodeInfo      NodeInfo // our node info
 	nodeKey       *NodeKey // our node privkey
 	addrBook      AddrBook
+	peerConfig    *peerConfig
+
 	// peers addresses with whom we'll maintain constant connection
 	persistentPeersAddrs []*NetAddress
 	unconditionalPeerIDs map[ID]struct{}
@@ -93,10 +95,6 @@ type Switch struct {
 	peerFilters   []PeerFilterFunc
 
 	rng *rand.Rand // seed for randomizing dial times and orders
-
-	metrics    *Metrics
-	mlc        *metricsLabelCache
-	peerConfig *peerConfig
 }
 
 // NetAddress returns the address the switch is listening on.
@@ -117,18 +115,13 @@ func NewSwitch(
 	sw := &Switch{
 		config:               cfg,
 		reactors:             make(map[string]Reactor),
-		chDescs:              make([]*conn.ChannelDescriptor, 0),
-		reactorsByCh:         make(map[byte]Reactor),
-		msgTypeByChID:        make(map[byte]proto.Message),
 		peers:                NewPeerSet(),
 		dialing:              cmap.NewCMap(),
 		reconnecting:         cmap.NewCMap(),
-		metrics:              NopMetrics(),
 		transport:            transport,
 		filterTimeout:        defaultFilterTimeout,
 		persistentPeersAddrs: make([]*NetAddress, 0),
 		unconditionalPeerIDs: make(map[ID]struct{}),
-		mlc:                  newMetricsLabelCache(),
 	}
 
 	// Ensure we have a completely undeterministic PRNG.
@@ -141,12 +134,12 @@ func NewSwitch(
 	}
 
 	sw.peerConfig = &peerConfig{
-		chDescs:       sw.chDescs,
+		chDescs:       make([]*conn.ChannelDescriptor, 0),
 		onPeerError:   sw.StopPeerForError,
-		reactorsByCh:  sw.reactorsByCh,
-		msgTypeByChID: sw.msgTypeByChID,
-		metrics:       sw.metrics,
-		mlc:           sw.mlc,
+		reactorsByCh:  make(map[byte]Reactor),
+		msgTypeByChID: make(map[byte]proto.Message),
+		metrics:       NopMetrics(),
+		mlc:           newMetricsLabelCache(),
 		isPersistent:  sw.IsPeerPersistent,
 	}
 
@@ -165,7 +158,7 @@ func SwitchPeerFilters(filters ...PeerFilterFunc) SwitchOption {
 
 // WithMetrics sets the metrics.
 func WithMetrics(metrics *Metrics) SwitchOption {
-	return func(sw *Switch) { sw.metrics = metrics }
+	return func(sw *Switch) { sw.peerConfig.metrics = metrics }
 }
 
 // ---------------------------------------------------------------------
@@ -388,7 +381,7 @@ func (sw *Switch) stopAndRemovePeer(peer Peer, reason any) {
 		return
 	}
 
-	sw.metrics.Peers.Add(float64(-1))
+	sw.peerConfig.metrics.Peers.Add(float64(-1))
 }
 
 // reconnectToPeer tries to reconnect to the addr, first repeatedly
@@ -838,7 +831,7 @@ func (sw *Switch) addPeer(p Peer) error {
 		}
 		return err
 	}
-	sw.metrics.Peers.Add(float64(1))
+	sw.peerConfig.metrics.Peers.Add(float64(1))
 
 	// Start all the reactor protocols on the peer.
 	for _, reactor := range sw.reactors {

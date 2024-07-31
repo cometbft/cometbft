@@ -63,10 +63,10 @@ type Transport interface {
 	NetAddress() NetAddress
 
 	// Accept returns a newly connected Peer.
-	Accept(config peerConfig) (Peer, error)
+	Accept(config *peerConfig) (Peer, error)
 
 	// Dial connects to the Peer for the address.
-	Dial(addr NetAddress, config peerConfig) (Peer, error)
+	Dial(addr NetAddress, config *peerConfig) (Peer, error)
 
 	// Cleanup any resources associated with Peer.
 	Cleanup(peer Peer)
@@ -192,7 +192,7 @@ func (mt *MultiplexTransport) NetAddress() NetAddress {
 }
 
 // Accept implements Transport.
-func (mt *MultiplexTransport) Accept(cfg peerConfig) (Peer, error) {
+func (mt *MultiplexTransport) Accept(cfg *peerConfig) (Peer, error) {
 	select {
 	// This case should never have any side-effectful/blocking operations to
 	// ensure that quality peers are ready to be used.
@@ -212,7 +212,7 @@ func (mt *MultiplexTransport) Accept(cfg peerConfig) (Peer, error) {
 // Dial implements Transport.
 func (mt *MultiplexTransport) Dial(
 	addr NetAddress,
-	cfg peerConfig,
+	cfg *peerConfig,
 ) (Peer, error) {
 	c, err := addr.DialTimeout(mt.dialTimeout)
 	if err != nil {
@@ -500,7 +500,7 @@ func (mt *MultiplexTransport) upgrade(
 func (mt *MultiplexTransport) wrapPeer(
 	c net.Conn,
 	ni NodeInfo,
-	cfg peerConfig,
+	cfg *peerConfig,
 	socketAddr *NetAddress,
 ) Peer {
 	persistent := false

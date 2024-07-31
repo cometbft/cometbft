@@ -94,8 +94,9 @@ type Switch struct {
 
 	rng *rand.Rand // seed for randomizing dial times and orders
 
-	metrics *Metrics
-	mlc     *metricsLabelCache
+	metrics    *Metrics
+	mlc        *metricsLabelCache
+	peerConfig *peerConfig
 }
 
 // NetAddress returns the address the switch is listening on.
@@ -137,6 +138,16 @@ func NewSwitch(
 
 	for _, option := range options {
 		option(sw)
+	}
+
+	sw.peerConfig = &peerConfig{
+		chDescs:       sw.chDescs,
+		onPeerError:   sw.StopPeerForError,
+		reactorsByCh:  sw.reactorsByCh,
+		msgTypeByChID: sw.msgTypeByChID,
+		metrics:       sw.metrics,
+		mlc:           sw.mlc,
+		isPersistent:  sw.IsPeerPersistent,
 	}
 
 	return sw
@@ -627,15 +638,7 @@ func (sw *Switch) IsPeerPersistent(na *NetAddress) bool {
 
 func (sw *Switch) acceptRoutine() {
 	for {
-		p, err := sw.transport.Accept(peerConfig{
-			chDescs:       sw.chDescs,
-			onPeerError:   sw.StopPeerForError,
-			reactorsByCh:  sw.reactorsByCh,
-			msgTypeByChID: sw.msgTypeByChID,
-			metrics:       sw.metrics,
-			mlc:           sw.mlc,
-			isPersistent:  sw.IsPeerPersistent,
-		})
+		p, err := sw.transport.Accept(sw.peerConfig)
 		if err != nil {
 			switch err := err.(type) {
 			case ErrRejected:
@@ -731,7 +734,7 @@ func (sw *Switch) addOutboundPeerWithConfig(
 		return errors.New("dial err (peerConfig.DialFail == true)")
 	}
 
-	p, err := sw.transport.Dial(*addr, peerConfig{
+	p, err := sw.transport.Dial(*addr, &peerConfig{
 		chDescs:       sw.chDescs,
 		onPeerError:   sw.StopPeerForError,
 		isPersistent:  sw.IsPeerPersistent,

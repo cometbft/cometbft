@@ -258,7 +258,7 @@ func TestSwitchPeerFilter(t *testing.T) {
 	rp.Start()
 	t.Cleanup(rp.Stop)
 
-	p, err := sw.transport.Dial(*rp.Addr(), peerConfig{
+	p, err := sw.transport.Dial(*rp.Addr(), &peerConfig{
 		chDescs:      sw.chDescs,
 		onPeerError:  sw.StopPeerForError,
 		isPersistent: sw.IsPeerPersistent,
@@ -307,7 +307,7 @@ func TestSwitchPeerFilterTimeout(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	p, err := sw.transport.Dial(*rp.Addr(), peerConfig{
+	p, err := sw.transport.Dial(*rp.Addr(), &peerConfig{
 		chDescs:      sw.chDescs,
 		onPeerError:  sw.StopPeerForError,
 		isPersistent: sw.IsPeerPersistent,
@@ -338,7 +338,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	p, err := sw.transport.Dial(*rp.Addr(), peerConfig{
+	p, err := sw.transport.Dial(*rp.Addr(), &peerConfig{
 		chDescs:      sw.chDescs,
 		onPeerError:  sw.StopPeerForError,
 		isPersistent: sw.IsPeerPersistent,
@@ -389,7 +389,7 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 	rp.Start()
 	defer rp.Stop()
 
-	p, err := sw.transport.Dial(*rp.Addr(), peerConfig{
+	p, err := sw.transport.Dial(*rp.Addr(), &peerConfig{
 		chDescs:      sw.chDescs,
 		onPeerError:  sw.StopPeerForError,
 		isPersistent: sw.IsPeerPersistent,
@@ -698,11 +698,11 @@ func (errorTransport) NetAddress() NetAddress {
 	panic("not implemented")
 }
 
-func (et errorTransport) Accept(peerConfig) (Peer, error) {
+func (et errorTransport) Accept(*peerConfig) (Peer, error) {
 	return nil, et.acceptErr
 }
 
-func (errorTransport) Dial(NetAddress, peerConfig) (Peer, error) {
+func (errorTransport) Dial(NetAddress, *peerConfig) (Peer, error) {
 	panic("not implemented")
 }
 

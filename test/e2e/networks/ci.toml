@@ -74,7 +74,7 @@ key_type = "sr25519"
 [node.validator05]
 start_at = 1005 # Becomes part of the validator set at 1010
 persistent_peers = ["validator01", "full01"]
-database = "cleveldb"
+database = "rocksdb"
 privval_protocol = "tcp"
 perturb = ["kill", "pause", "disconnect", "restart"]
 

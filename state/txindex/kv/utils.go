@@ -128,7 +128,10 @@ func getKeys(indexer *TxIndex) [][]byte {
 		panic(err)
 	}
 	for ; itr.Valid(); itr.Next() {
-		keys = append(keys, itr.Key())
+		key := make([]byte, len(itr.Key()))
+		copy(key, itr.Key())
+
+		keys = append(keys, key)
 	}
 	return keys
 }

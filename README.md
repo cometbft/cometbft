@@ -65,13 +65,13 @@ Please see [SECURITY.md](./SECURITY.md).
 
 ## Minimum requirements
 
-| CometBFT version | Requirement | Version        | Tested with |
-|------------------|-------------|----------------|-------------|
-| main             | Go version  | 1.22 or higher | 1.22.5      |
-| v1.x             | Go version  | 1.22 or higher | 1.22        |
-| v0.38.x          | Go version  | 1.21 or higher | 1.22        |
-| v0.37.x          | Go version  | 1.20 or higher | 1.22        |
-| v0.34.x          | Go version  | 1.20 or higher | 1.20        |
+| CometBFT version | Requirement | Version        | Tested with  |
+|------------------|-------------|----------------|--------------|
+| main             | Go version  | 1.22 or higher | up to 1.22.5 |
+| v1.x             | Go version  | 1.22 or higher | up to 1.22   |
+| v0.38.x          | Go version  | 1.21 or higher | up to 1.22   |
+| v0.37.x          | Go version  | 1.20 or higher | up to 1.22   |
+| v0.34.x          | Go version  | 1.20 or higher | up to 1.20   |
 
 ### Install
 

@@ -109,7 +109,21 @@ func (r *EventAttribute) MarshalJSON() ([]byte, error) {
 
 func (r *EventAttribute) UnmarshalJSON(b []byte) error {
 	reader := bytes.NewBuffer(b)
-	return jsonpbUnmarshaller.Unmarshal(reader, r)
+	err := jsonpbUnmarshaller.Unmarshal(reader, r)
+	if err == nil {
+		return nil
+	}
+
+	t := V047EventAttribute{}
+	reader = bytes.NewBuffer(b)
+	err = jsonpbUnmarshaller.Unmarshal(reader, &t)
+	if err != nil {
+		return err
+	}
+
+	r.Key = []byte(t.Key)
+	r.Value = []byte(t.Value)
+	return nil
 }
 
 // Some compile time assertions to ensure we don't

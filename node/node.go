@@ -283,12 +283,6 @@ func NewNode(ctx context.Context,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
-<<<<<<< HEAD
-	if config.BaseConfig.DBBackend == "boltdb" || config.BaseConfig.DBBackend == "cleveldb" {
-		logger.Info("WARNING: BoltDB and GoLevelDB are deprecated and will be removed in a future release. Please switch to a different backend.")
-	}
-
-=======
 	return NewNodeWithCliParams(ctx,
 		config,
 		privValidator,
@@ -318,7 +312,10 @@ func NewNodeWithCliParams(ctx context.Context,
 	cliParams CliParams,
 	options ...Option,
 ) (*Node, error) {
->>>>>>> 11c5b2599 (refactor(config/node)!: Remove genesisHash from config (#3595))
+	if config.BaseConfig.DBBackend == "boltdb" || config.BaseConfig.DBBackend == "cleveldb" {
+		logger.Info("WARNING: BoltDB and GoLevelDB are deprecated and will be removed in a future release. Please switch to a different backend.")
+	}
+
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err

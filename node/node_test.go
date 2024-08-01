@@ -215,13 +215,8 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
-<<<<<<< HEAD
-	_, err := DefaultNewNode(config, log.TestingLogger())
-	require.Error(t, err)
-=======
 	_, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
-	require.ErrorAs(t, err, &ErrPrivValidatorSocketClient{})
->>>>>>> 11c5b2599 (refactor(config/node)!: Remove genesisHash from config (#3595))
+	require.Error(t, err)
 }
 
 func TestNodeSetPrivValIPC(t *testing.T) {
@@ -682,68 +677,6 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	require.False(t, genHashMismatch)
 }
 
-<<<<<<< HEAD
-=======
-func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
-	config := test.ResetTestRoot(t.Name())
-	config.DBBackend = string(dbm.GoLevelDBBackend)
-
-	_, stateDB, err := initDBs(config, cfg.DefaultDBProvider)
-	require.NoErrorf(t, err, "state DB setup: %s", err)
-
-	genDocProviderFunc := func(sha256Checksum []byte) GenesisDocProvider {
-		return func() (ChecksummedGenesisDoc, error) {
-			genDocJSON, err := os.ReadFile(config.GenesisFile())
-			if err != nil {
-				formatStr := "reading genesis file: %s"
-				return ChecksummedGenesisDoc{}, fmt.Errorf(formatStr, err)
-			}
-
-			genDoc, err := types.GenesisDocFromJSON(genDocJSON)
-			if err != nil {
-				formatStr := "parsing genesis file: %s"
-				return ChecksummedGenesisDoc{}, fmt.Errorf(formatStr, err)
-			}
-
-			checksummedGenesisDoc := ChecksummedGenesisDoc{
-				GenesisDoc:     genDoc,
-				Sha256Checksum: sha256Checksum,
-			}
-
-			return checksummedGenesisDoc, nil
-		}
-	}
-
-	t.Run("NilGenesisChecksum", func(t *testing.T) {
-		genDocProvider := genDocProviderFunc(nil)
-
-		_, _, err = LoadStateFromDBOrGenesisDocProviderWithConfig(
-			stateDB,
-			genDocProvider,
-			"",
-			nil,
-		)
-
-		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 0"
-		assert.EqualError(t, err, wantErr)
-	})
-
-	t.Run("ShorterGenesisChecksum", func(t *testing.T) {
-		genDocProvider := genDocProviderFunc([]byte("shorter"))
-
-		_, _, err = LoadStateFromDBOrGenesisDocProviderWithConfig(
-			stateDB,
-			genDocProvider,
-			"",
-			nil,
-		)
-
-		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 14"
-		assert.EqualError(t, err, wantErr)
-	})
-}
-
->>>>>>> 11c5b2599 (refactor(config/node)!: Remove genesisHash from config (#3595))
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 	privVals := make([]types.PrivValidator, nVals)
 	vals := make([]types.GenesisValidator, nVals)

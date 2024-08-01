@@ -2047,18 +2047,6 @@ initial_block_results_retain_height = 0
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-### storage.pruning.data_companion.genesis_hash
-Hash of the Genesis file, passed to CometBFT via the command line.
-```toml
-genesis_hash = ""
-```
-
-| Value type          | string             |
-|:--------------------|:-------------------|
-| **Possible values** | hex-encoded number |
-|                     | `""`               |
-
-If this hash mismatches the hash that CometBFT computes on the genesis file, the node is not able to boot.
 
 ## Transaction indexer
 Transaction indexer settings.

@@ -523,11 +523,6 @@ compact = {{ .Storage.Compact }}
 # large multiple of your retain height as it might occur bigger overheads.
 compaction_interval = "{{ .Storage.CompactionInterval }}"
 
-# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
-# If this hash mismatches the hash that CometBFT computes on the genesis file,
-# the node is not able to boot.
-genesis_hash = "{{ .Storage.GenesisHash }}"
-
 [storage.pruning]
 
 # The time period between automated background pruning operations.

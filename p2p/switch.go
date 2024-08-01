@@ -139,7 +139,6 @@ func NewSwitch(
 		reactorsByCh:  make(map[byte]Reactor),
 		msgTypeByChID: make(map[byte]proto.Message),
 		metrics:       NopMetrics(),
-		mlc:           newMetricsLabelCache(),
 		isPersistent:  sw.IsPeerPersistent,
 	}
 

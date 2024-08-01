@@ -976,6 +976,11 @@ type MempoolConfig struct {
 	// performance results using the default P2P configuration.
 	ExperimentalMaxGossipConnectionsToPersistentPeers    int `mapstructure:"experimental_max_gossip_connections_to_persistent_peers"`
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers int `mapstructure:"experimental_max_gossip_connections_to_non_persistent_peers"`
+
+	// ExperimentalPublishEventPendingTx enables publishing a `PendingTx` event when a new transaction is added to the mempool.
+	// Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
+	// Use this feature with caution and consider the impact on transaction processing performance.
+	ExperimentalPublishEventPendingTx bool `mapstructure:"experimental_publish_event_pending_tx"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
@@ -1325,13 +1330,6 @@ type StorageConfig struct {
 	// large multiple of your retain height as it might occur bigger overheads.
 	// 1000 by default.
 	CompactionInterval int64 `mapstructure:"compaction_interval"`
-	// Hex representation of the hash of the genesis file.
-	// This is an optional parameter set when an operator provides
-	// a hash via the command line.
-	// It is used to verify the hash of the actual genesis file.
-	// Note that if the provided has does not match the hash of the genesis file
-	// the node will report an error and not boot.
-	GenesisHash string `mapstructure:"genesis_hash"`
 
 	// The representation of keys in the database.
 	// The current representation of keys in Comet's stores is considered to be v1
@@ -1349,7 +1347,6 @@ func DefaultStorageConfig() *StorageConfig {
 		Pruning:               DefaultPruningConfig(),
 		Compact:               false,
 		CompactionInterval:    1000,
-		GenesisHash:           "",
 		ExperimentalKeyLayout: "v1",
 	}
 }
@@ -1360,7 +1357,6 @@ func TestStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
 		Pruning:              TestPruningConfig(),
-		GenesisHash:          "",
 	}
 }
 

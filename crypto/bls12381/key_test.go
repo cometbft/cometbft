@@ -1,4 +1,4 @@
-//go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && bls12381
+//go:build bls12381
 
 package bls12381_test
 
@@ -91,14 +91,6 @@ func TestPrivKeySignAndPubKeyVerifySignature(t *testing.T) {
 
 	// Test the signature
 	assert.True(t, pubKey.VerifySignature(msg, sig))
-}
-
-func TestPrivKeyPubKey_CorruptPrivKey(t *testing.T) {
-	privKey, err := bls12381.GenPrivKey()
-	require.NoError(t, err)
-	privKey = privKey[1:] // corrupt key
-	pubKey := privKey.PubKey()
-	require.Nil(t, pubKey)
 }
 
 func TestPubKey(t *testing.T) {

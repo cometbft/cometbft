@@ -77,18 +77,18 @@ func GenPrivKey() (*PrivKey, error) {
 }
 
 // Bytes returns the byte representation of the Key.
-func (privKey *PrivKey) Bytes() []byte {
+func (privKey PrivKey) Bytes() []byte {
 	return privKey.sk.Serialize()
 }
 
 // PubKey returns the private key's public key. If the privkey is not valid
 // it returns a nil value.
-func (privKey *PrivKey) PubKey() crypto.PubKey {
+func (privKey PrivKey) PubKey() crypto.PubKey {
 	return &PubKey{pk: new(blstPublicKey).From(privKey.sk)}
 }
 
 // Equals returns true if two keys are equal and false otherwise.
-func (privKey *PrivKey) Equals(other crypto.PrivKey) bool {
+func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
 	return privKey.Type() == other.Type() && bytes.Equal(privKey.Bytes(), other.Bytes())
 }
 
@@ -99,7 +99,7 @@ func (PrivKey) Type() string {
 
 // Sign signs the given byte array. If msg is larger than
 // MaxMsgLen, SHA256 sum will be signed instead of the raw bytes.
-func (privKey *PrivKey) Sign(msg []byte) ([]byte, error) {
+func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	if len(msg) > MaxMsgLen {
 		hash := sha256.Sum256(msg)
 		signature := new(blstSignature).Sign(privKey.sk, hash[:], dstMinSig)
@@ -129,15 +129,24 @@ type PubKey struct {
 	pk *blstPublicKey
 }
 
+// NewPublicKeyFromBytes returns a new public key from the given bytes.
+func NewPublicKeyFromBytes(bz []byte) (*PubKey, error) {
+	pk := new(blstPublicKey).Deserialize(bz)
+	if pk == nil {
+		return nil, ErrDeserialization
+	}
+	return &PubKey{pk: pk}, nil
+}
+
 // Address returns the address of the key.
 //
 // The function will panic if the public key is invalid.
-func (pubKey *PubKey) Address() crypto.Address {
+func (pubKey PubKey) Address() crypto.Address {
 	return crypto.Address(tmhash.SumTruncated(pubKey.pk.Serialize()))
 }
 
 // VerifySignature verifies the given signature.
-func (pubKey *PubKey) VerifySignature(msg, sig []byte) bool {
+func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 	signature := new(blstSignature).Uncompress(sig)
 	if signature == nil {
 		return false
@@ -158,7 +167,7 @@ func (pubKey *PubKey) VerifySignature(msg, sig []byte) bool {
 }
 
 // Bytes returns the byte format.
-func (pubKey *PubKey) Bytes() []byte {
+func (pubKey PubKey) Bytes() []byte {
 	return pubKey.pk.Serialize()
 }
 
@@ -168,6 +177,6 @@ func (PubKey) Type() string {
 }
 
 // Equals returns true if the other's type is the same and their bytes are deeply equal.
-func (pubKey *PubKey) Equals(other crypto.PubKey) bool {
+func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return pubKey.Type() == other.Type() && bytes.Equal(pubKey.Bytes(), other.Bytes())
 }

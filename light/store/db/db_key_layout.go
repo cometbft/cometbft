@@ -10,6 +10,8 @@ import (
 )
 
 type LightStoreKeyLayout interface {
+	// Implementations of ParseLBKey should create a copy of the key parameter,
+	// rather than modify it in place.
 	ParseLBKey(key []byte, storePrefix string) (height int64, err error)
 	LBKey(height int64, prefix string) []byte
 	SizeKey(prefix string) []byte

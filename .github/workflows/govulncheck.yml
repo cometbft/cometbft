@@ -20,11 +20,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-<<<<<<< HEAD
-          go-version: "1.22"
-=======
           go-version: ${{ env.GO_VERSION }}
->>>>>>> f6b00b991 (chore: update cometbft Go version to 1.22.5 (#3527))
           check-latest: true
       - uses: technote-space/get-diff-action@v6
         with:

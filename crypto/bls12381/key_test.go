@@ -15,10 +15,12 @@ import (
 func TestNewPrivateKeyFromBytes(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 
 	privKeyBytes := privKey.Bytes()
 	privKey2, err := bls12381.NewPrivateKeyFromBytes(privKeyBytes)
 	require.NoError(t, err)
+	defer privKey2.Zeroize()
 
 	assert.True(t, privKey.Equals(privKey2))
 
@@ -29,16 +31,19 @@ func TestNewPrivateKeyFromBytes(t *testing.T) {
 func TestGenPrivateKey(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 	assert.NotNil(t, privKey)
 }
 
 func TestPrivKeyBytes(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 
 	privKeyBytes := privKey.Bytes()
 	privKey2, err := bls12381.NewPrivateKeyFromBytes(privKeyBytes)
 	require.NoError(t, err)
+	defer privKey2.Zeroize()
 
 	assert.True(t, privKey.Equals(privKey2))
 }
@@ -53,8 +58,10 @@ func TestPrivKeyPubKey(t *testing.T) {
 func TestPrivKeyEquals(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 	privKey2, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey2.Zeroize()
 
 	assert.True(t, privKey.Equals(privKey))
 	assert.False(t, privKey.Equals(privKey2))
@@ -63,6 +70,7 @@ func TestPrivKeyEquals(t *testing.T) {
 func TestPrivKeyType(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 
 	assert.Equal(t, "bls12_381", privKey.Type())
 }
@@ -70,6 +78,7 @@ func TestPrivKeyType(t *testing.T) {
 func TestPrivKeySignAndPubKeyVerifySignature(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 	pubKey := privKey.PubKey()
 
 	msg := crypto.CRandBytes(32)
@@ -96,6 +105,7 @@ func TestPrivKeySignAndPubKeyVerifySignature(t *testing.T) {
 func TestPubKey(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 	pubKey := privKey.PubKey()
 	assert.NotNil(t, pubKey)
 }
@@ -103,6 +113,7 @@ func TestPubKey(t *testing.T) {
 func TestPubKeyEquals(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 	pubKey := privKey.PubKey()
 	pubKey2 := privKey.PubKey()
 
@@ -113,6 +124,7 @@ func TestPubKeyEquals(t *testing.T) {
 func TestPubKeyType(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
+	defer privKey.Zeroize()
 	pubKey := privKey.PubKey()
 
 	assert.Equal(t, "bls12_381", pubKey.Type())

@@ -129,3 +129,18 @@ func TestPubKeyType(t *testing.T) {
 
 	assert.Equal(t, "bls12_381", pubKey.Type())
 }
+
+func TestConst(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	defer privKey.Zeroize()
+	assert.Equal(t, bls12381.PrivKeySize, len(privKey.Bytes()))
+
+	pubKey := privKey.PubKey()
+	assert.Equal(t, bls12381.PubKeySize, len(pubKey.Bytes()))
+
+	msg := crypto.CRandBytes(32)
+	sig, err := privKey.Sign(msg)
+	require.NoError(t, err)
+	assert.Equal(t, bls12381.SignatureLength, len(sig))
+}

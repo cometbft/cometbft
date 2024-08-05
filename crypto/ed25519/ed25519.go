@@ -1,12 +1,6 @@
 package ed25519
 
 import (
-<<<<<<< HEAD
-	"bytes"
-	"crypto/subtle"
-=======
-	"crypto/sha256"
->>>>>>> bfa7aa85d (feat(crypto)!: remove PubKey#Equals and PrivKey#Equals (#3606))
 	"errors"
 	"fmt"
 	"io"

@@ -1,7 +1,6 @@
 module github.com/cometbft/cometbft
 
-go 1.22.2
-
+go 1.22
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adlio/schema v1.3.6
@@ -54,7 +53,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.2
 	github.com/supranational/blst v0.3.12
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.8.0
 	golang.org/x/text v0.16.0
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.34.2

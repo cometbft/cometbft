@@ -130,21 +130,21 @@ services:
 // ExecCompose runs a Docker Compose command for a testnet.
 func ExecCompose(ctx context.Context, dir string, args ...string) error {
 	return exec.Command(ctx, append(
-		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
 		args...)...)
 }
 
 // ExecCompose runs a Docker Compose command for a testnet and returns the command's output.
 func ExecComposeOutput(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	return exec.CommandOutput(ctx, append(
-		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
 		args...)...)
 }
 
 // ExecComposeVerbose runs a Docker Compose command for a testnet and displays its output.
 func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
 	return exec.CommandVerbose(ctx, append(
-		[]string{"docker-compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
 		args...)...)
 }
 

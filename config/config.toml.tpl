@@ -382,6 +382,11 @@ keep-invalid-txs-in-cache = {{ .Mempool.KeepInvalidTxsInCache }}
 experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
 experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
 
+# ExperimentalPublishEventPendingTx enables publishing a `PendingTx` event when a new transaction is added to the mempool.
+# Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
+# Use this feature with caution and consider the impact on transaction processing performance.
+experimental_publish_event_pending_tx = {{ .Mempool.ExperimentalPublishEventPendingTx }}
+
 #######################################################
 ###         State Sync Configuration Options        ###
 #######################################################
@@ -498,11 +503,6 @@ compact = {{ .Storage.Compact }}
 # it is too much of an overhead to try compaction every block. But it should also not be a very
 # large multiple of your retain height as it might occur bigger overheads.
 compaction_interval = "{{ .Storage.CompactionInterval }}"
-
-# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
-# If this hash mismatches the hash that CometBFT computes on the genesis file,
-# the node is not able to boot.
-genesis_hash = "{{ .Storage.GenesisHash }}"
 
 [storage.pruning]
 

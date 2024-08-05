@@ -48,6 +48,19 @@ type ChecksummedGenesisDoc struct {
 	Sha256Checksum []byte
 }
 
+// Introduced to store parameters passed via cli and needed to start the node.
+// This parameters should not be stored or persisted in the config file.
+// This can then be further extended to include additional flags without further
+// API breaking changes.
+type CliParams struct {
+	// SHA-256 hash of the genesis file provided via the command line.
+	// This hash is used is compared against the computed hash of the
+	// actual genesis file or the hash stored in the database.
+	// If there is a mismatch between the hash provided via cli and the
+	// hash of the genesis file or the hash in the DB, the node will not boot.
+	GenesisHash []byte
+}
+
 // GenesisDocProvider returns a GenesisDoc together with its SHA256 checksum.
 // It allows the GenesisDoc to be pulled from sources other than the
 // filesystem, for instance from a distributed key-value store cluster.
@@ -74,18 +87,18 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 }
 
 // Provider takes a config and a logger and returns a ready to go Node.
-type Provider func(*cfg.Config, log.Logger) (*Node, error)
+type Provider func(*cfg.Config, log.Logger, CliParams) (*Node, error)
 
 // DefaultNewNode returns a CometBFT node with default settings for the
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
-// It implements NodeProvider.
-func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
+// It implements Provider.
+func DefaultNewNode(config *cfg.Config, logger log.Logger, cliParams CliParams) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return nil, ErrorLoadOrGenNodeKey{Err: err, NodeKeyFile: config.NodeKeyFile()}
 	}
 
-	return NewNode(context.Background(), config,
+	return NewNodeWithCliParams(context.Background(), config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
@@ -93,6 +106,7 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
+		cliParams,
 	)
 }
 
@@ -246,6 +260,7 @@ func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
 	state sm.State,
+	eventBus *types.EventBus,
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
@@ -254,13 +269,23 @@ func createMempoolAndMempoolReactor(
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
 		logger = logger.With("module", "mempool")
+		options := []mempl.CListMempoolOption{
+			mempl.WithMetrics(memplMetrics),
+			mempl.WithPreCheck(sm.TxPreCheck(state)),
+			mempl.WithPostCheck(sm.TxPostCheck(state)),
+		}
+		if config.Mempool.ExperimentalPublishEventPendingTx {
+			options = append(options, mempl.WithNewTxCallback(func(tx types.Tx) {
+				_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
+					Tx: tx,
+				})
+			}))
+		}
 		mp := mempl.NewCListMempool(
 			config.Mempool,
 			proxyApp.Mempool(),
 			state.LastBlockHeight,
-			mempl.WithMetrics(memplMetrics),
-			mempl.WithPreCheck(sm.TxPreCheck(state)),
-			mempl.WithPostCheck(sm.TxPostCheck(state)),
+			options...,
 		)
 		mp.SetLogger(logger)
 		reactor := mempl.NewReactor(
@@ -592,6 +617,12 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 
 	if err = csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
 		return sm.State{}, nil, ErrGenesisDoc{Err: err}
+	}
+
+	checkSumStr := hex.EncodeToString(csGenDoc.Sha256Checksum)
+	if err := tmhash.ValidateSHA256(checkSumStr); err != nil {
+		const formatStr = "invalid genesis doc SHA256 checksum: %s"
+		return sm.State{}, nil, fmt.Errorf(formatStr, err)
 	}
 
 	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator

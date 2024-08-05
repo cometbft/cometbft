@@ -666,14 +666,17 @@ without calling `VerifyVoteExtension` to verify it.
     * When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
       that at least one non-byzantine validator has run `ProcessProposal` on that block.
     * `FinalizeBlockResponse.next_block_delay` - how long CometBFT waits after
-      committing a block, before starting on the new height (this gives the
-      proposer a chance to receive some more precommits, even though it
-      already has +2/3). Set to 0 if you want a proposer to make progress as
-      soon as it has all the precommits. Previously `timeout_commit` in
-      CometBFT config. **Set to constant 1s to preserve the old (v0.34 - v1.0) behavior**.
+      committing a block, before starting the next height. This includes the
+      time the application and CometBFT take for processing the committed block.
+      In CometBFT terms, this interval gives the proposer a chance to receive
+      some more precommits, even though it already has the required 2/3+.
+      - Set to 0 if you want a proposer to make progress as soon as it has all
+        the precommits and the block is processed by the application. 
+      - Previously `timeout_commit` in CometBFT config.
+        **Set to constant 1s to preserve the old (v0.34 - v1.0) behavior**.
     * `FinalizeBlockResponse.next_block_delay` is a non-deterministic field.
       This means that each node MAY provide a different value, which is
-      supposed to depend on how long things are taking at the local node. It's
+      supposed to depend on how long processing is taking at the local node. It's
       reasonable to use real --wallclock-- time and mandate for the nodes to have
       synchronized clocks (NTP, or other; PBTS also requires this) for the
       variable delay to work properly.

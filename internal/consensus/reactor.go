@@ -589,6 +589,10 @@ func (conR *Reactor) getRoundState() *cstypes.RoundState {
 
 func (conR *Reactor) gossipDataRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
+	if !peer.HasChannel(DataChannel) {
+		logger.Info("Peer does not implement DataChannel.")
+		return
+	}
 	rng := cmtrand.NewStdlibRand()
 
 OUTER_LOOP:
@@ -645,6 +649,10 @@ OUTER_LOOP:
 
 func (conR *Reactor) gossipVotesRoutine(peer p2p.Peer, ps *PeerState) {
 	logger := conR.Logger.With("peer", peer)
+	if !peer.HasChannel(VoteChannel) {
+		logger.Info("Peer does not implement VoteChannel.")
+		return
+	}
 	rng := cmtrand.NewStdlibRand()
 
 	// Simple hack to throttle logs upon sleep.

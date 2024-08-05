@@ -363,7 +363,7 @@ func (app *Application) Commit(context.Context, *types.CommitRequest) (*types.Co
 	return resp, nil
 }
 
-// Returns an associated value or nil if missing.
+// Query returns an associated value or nil if missing.
 func (app *Application) Query(_ context.Context, reqQuery *types.QueryRequest) (*types.QueryResponse, error) {
 	resQuery := &types.QueryResponse{}
 

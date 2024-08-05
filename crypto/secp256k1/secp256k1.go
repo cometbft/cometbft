@@ -1,9 +1,7 @@
 package secp256k1
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"crypto/subtle"
 	"fmt"
 	"io"
 	"math/big"
@@ -48,15 +46,6 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	pk := pubkeyObject.SerializeCompressed()
 
 	return PubKey(pk)
-}
-
-// Equals - you probably don't need to use this.
-// Runs in constant time based on length of the keys.
-func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	if otherSecp, ok := other.(PrivKey); ok {
-		return subtle.ConstantTimeCompare(privKey[:], otherSecp[:]) == 1
-	}
-	return false
 }
 
 func (PrivKey) Type() string {
@@ -175,13 +164,6 @@ func (pubKey PubKey) Bytes() []byte {
 
 func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeySecp256k1{%X}", []byte(pubKey))
-}
-
-func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	if otherSecp, ok := other.(PubKey); ok {
-		return bytes.Equal(pubKey[:], otherSecp[:])
-	}
-	return false
 }
 
 func (PubKey) Type() string {

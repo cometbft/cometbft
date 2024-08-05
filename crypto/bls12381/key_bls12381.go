@@ -3,7 +3,6 @@
 package bls12381
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
@@ -85,11 +84,6 @@ func (privKey PrivKey) Bytes() []byte {
 // it returns a nil value.
 func (privKey PrivKey) PubKey() crypto.PubKey {
 	return &PubKey{pk: new(blstPublicKey).From(privKey.sk)}
-}
-
-// Equals returns true if two keys are equal and false otherwise.
-func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	return privKey.Type() == other.Type() && bytes.Equal(privKey.Bytes(), other.Bytes())
 }
 
 // Type returns the type.
@@ -174,9 +168,4 @@ func (pubKey PubKey) Bytes() []byte {
 // Type returns the key's type.
 func (PubKey) Type() string {
 	return KeyType
-}
-
-// Equals returns true if the other's type is the same and their bytes are deeply equal.
-func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	return pubKey.Type() == other.Type() && bytes.Equal(pubKey.Bytes(), other.Bytes())
 }

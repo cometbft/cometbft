@@ -2087,6 +2087,18 @@ psql-conn = ""
 | **Possible values** | `"postgresql://<user>:<password>@<host>:<port>/<db>?<opts>"` |
 |                     | `""`                                                         |
 
+### tx_index.table_*
+Table names used by the PostgreSQL-backed indexer.
+
+This setting is optional and only applies when `indexer`  is set to `psql`.
+
+| Field         | default value               |
+|:--------------------|:---------------------|
+| `"table_blocks"` | `"blocks"`     |
+| `"table_tx_results"` | `"tx_results"` |
+| `"table_events"`    | `"events"`     |
+| `"table_attributes"` | `"table_attributes"` |
+
 ## Prometheus Instrumentation
 An extensive amount of Prometheus metrics are built into CometBFT.
 

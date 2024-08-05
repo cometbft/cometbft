@@ -1,11 +1,10 @@
-// crypto is a customized/convenience cryptography package for supporting
-// CometBFT.
-
+// crypto is a customized/convenience cryptography package for CometBFT.
+//
 // It wraps select functionality of equivalent functions in the
 // Go standard library, for easy usage with our libraries.
-
+//
 // Keys:
-
+//
 // All key generation functions return an instance of the PrivKey interface
 // which implements methods:
 //
@@ -33,5 +32,3 @@
 //		Type() string
 //	}
 package crypto
-
-// TODO: Add more docs in here

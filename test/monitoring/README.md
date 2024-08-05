@@ -3,7 +3,7 @@ Prometheus and Grafana server for localnet.
 
 # How to run
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 This will start both Prometheus and Grafana.
 
@@ -22,5 +22,9 @@ The default Grafana username and password is `admin`/`admin`. You will only need
 pre-loaded dashboards can be viewed without a password.
 
 Data from Grafana and Prometheus end up in the `data-grafana` and `data-prometheus` folders on your host machine.
+<<<<<<< HEAD
 This allows you to stop and and restart the servers without data loss. The folders are excluded from Git.
 
+=======
+This allows you to stop and restart the servers without data loss. The folders are excluded from Git.
+>>>>>>> 144bc9c54 (fix(e2e): replace docker-compose w/ docker compose (#3614))

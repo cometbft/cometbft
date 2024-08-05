@@ -2066,14 +2066,16 @@ psql-conn = ""
 |                     | `""`                                                         |
 
 ### tx_index.table_*
-The PostgreSQL table name configurations.
+Table names used by the PostgreSQL-backed indexer.
 
-| Value type          | string               |
+This setting is optional and only applies when `indexer`  is set to `psql`.
+
+| Field         | default value               |
 |:--------------------|:---------------------|
-| **Possible values** | `"table_blocks"`     |
-|                     | `"table_tx_results"` |
-|                     | `"table_events"`     |
-|                     | `"table_attributes"` |
+| `"table_blocks"` | `"blocks"`     |
+| `"table_tx_results"` | `"tx_results"` |
+| `"table_events"`    | `"events"`     |
+| `"table_attributes"` | `"table_attributes"` |
 
 ## Prometheus Instrumentation
 An extensive amount of Prometheus metrics are built into CometBFT.

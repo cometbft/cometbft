@@ -50,11 +50,6 @@ func (PrivKey) PubKey() crypto.PubKey {
 	panic("bls12_381 is disabled")
 }
 
-// Equals always panics.
-func (PrivKey) Equals(crypto.PrivKey) bool {
-	panic("bls12_381 is disabled")
-}
-
 // Type returns the key's type.
 func (PrivKey) Type() string {
 	return KeyType
@@ -97,9 +92,4 @@ func (PubKey) Bytes() []byte {
 // Type returns the key's type.
 func (PubKey) Type() string {
 	return KeyType
-}
-
-// Equals always panics.
-func (PubKey) Equals(crypto.PubKey) bool {
-	panic("bls12_381 is disabled")
 }

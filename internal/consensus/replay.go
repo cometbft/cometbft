@@ -239,11 +239,14 @@ func (h *Handshaker) NBlocks() int {
 }
 
 // TODO: retry the handshake/replay if it fails ?
-func (h *Handshaker) Handshake(ctx context.Context, proxyApp proxy.AppConns) error {
+func (h *Handshaker) Handshake(ctx context.Context, res *abci.InfoResponse, proxyApp proxy.AppConns) error {
 	// Handshake is done via ABCI Info on the query conn.
-	res, err := proxyApp.Query().Info(ctx, proxy.InfoRequest)
-	if err != nil {
-		return fmt.Errorf("error calling Info: %v", err)
+	if res == nil {
+		var err error
+		res, err = proxyApp.Query().Info(ctx, proxy.InfoRequest)
+		if err != nil {
+			return fmt.Errorf("error calling Info: %v", err)
+		}
 	}
 
 	blockHeight := res.LastBlockHeight
@@ -265,7 +268,7 @@ func (h *Handshaker) Handshake(ctx context.Context, proxyApp proxy.AppConns) err
 	}
 
 	// Replay blocks up to the latest in the blockstore.
-	appHash, err = h.ReplayBlocks(ctx, h.initialState, appHash, blockHeight, proxyApp)
+	appHash, err := h.ReplayBlocks(ctx, h.initialState, appHash, blockHeight, proxyApp)
 	if err != nil {
 		return fmt.Errorf("error on replay: %v", err)
 	}

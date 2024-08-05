@@ -59,8 +59,12 @@ func newMempoolWithAppAndConfigMock(
 	if err := appConnQuery.Start(); err != nil {
 		panic(err)
 	}
+	appInfoRes, err := appConnQuery.Info(context.TODO(), proxy.InfoRequest)
+	if err != nil {
+		panic(err)
+	}
 
-	lanesInfo, err := FetchLanesInfo(appConnQuery)
+	lanesInfo, err := FetchLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
 	if err != nil {
 		panic(err)
 	}
@@ -89,8 +93,11 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	if err := appConnQuery.Start(); err != nil {
 		panic(err)
 	}
-
-	lanesInfo, err := FetchLanesInfo(appConnQuery)
+	appInfoRes, err := appConnQuery.Info(context.TODO(), proxy.InfoRequest)
+	if err != nil {
+		panic(err)
+	}
+	lanesInfo, err := FetchLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
 	if err != nil {
 		panic(err)
 	}

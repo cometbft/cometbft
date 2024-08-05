@@ -1,12 +1,10 @@
 package mempool
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"slices"
 
-	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -16,18 +14,13 @@ type LanesInfo struct {
 }
 
 // Query app info to return the required information to initialize lanes.
-func FetchLanesInfo(proxyApp proxy.AppConnQuery) (*LanesInfo, error) {
-	res, err := proxyApp.Info(context.TODO(), proxy.InfoRequest)
-	if err != nil {
-		return nil, fmt.Errorf("error calling Info: %v", err)
-	}
-
-	lanes := make([]types.Lane, len(res.LanePriorities))
-	for i, l := range res.LanePriorities {
+func FetchLanesInfo(lanePriorities []uint32, defLane types.Lane) (*LanesInfo, error) {
+	lanes := make([]types.Lane, len(lanePriorities))
+	for i, l := range lanePriorities {
 		lanes[i] = types.Lane(l)
 	}
-	info := LanesInfo{lanes: lanes, defaultLane: types.Lane(res.DefaultLanePriority)}
-	if err = info.validate(); err != nil {
+	info := LanesInfo{lanes: lanes, defaultLane: defLane}
+	if err := info.validate(); err != nil {
 		return nil, fmt.Errorf("invalid lane info: %v, info: %v", err, info)
 	}
 

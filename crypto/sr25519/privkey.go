@@ -79,15 +79,6 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	return PubKey(b)
 }
 
-// Equals - you probably don't need to use this.
-// Runs in constant time based on length of the keys.
-func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	if otherSr, ok := other.(PrivKey); ok {
-		return privKey.msk.Equal(&otherSr.msk)
-	}
-	return false
-}
-
 func (PrivKey) Type() string {
 	return KeyType
 }

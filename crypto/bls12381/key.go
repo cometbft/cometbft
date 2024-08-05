@@ -1,4 +1,4 @@
-//go:build !(((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && bls12381)
+//go:build !bls12381
 
 package bls12381
 
@@ -65,6 +65,11 @@ func (PrivKey) Sign([]byte) ([]byte, error) {
 	panic("bls12_381 is disabled")
 }
 
+// Zeroize always panics.
+func (PrivKey) Zeroize() {
+	panic("bls12_381 is disabled")
+}
+
 // ===============================================================================================
 // Public Key
 // ===============================================================================================
@@ -78,6 +83,11 @@ var _ crypto.PubKey = &PubKey{}
 
 // PubKey represents a BLS private key noop when blst is not set as a build flag and cgo is disabled.
 type PubKey []byte
+
+// NewPublicKeyFromBytes returns ErrDisabled.
+func NewPublicKeyFromBytes([]byte) (*PubKey, error) {
+	return nil, ErrDisabled
+}
 
 // Address always panics.
 func (PubKey) Address() crypto.Address {

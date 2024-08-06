@@ -74,7 +74,8 @@ func startNewStateAndWaitForBlock(
 	t.Helper()
 	logger := log.TestingLogger()
 	state, _ := stateStore.LoadFromDBOrGenesisFile(consensusReplayConfig.GenesisFile())
-	privValidator := loadPrivValidator(consensusReplayConfig)
+	privValidator, err := loadPrivValidator(consensusReplayConfig)
+	require.NoError(t, err)
 	cs := newStateWithConfigAndBlockStore(
 		consensusReplayConfig,
 		state,
@@ -87,7 +88,7 @@ func startNewStateAndWaitForBlock(
 	bytes, _ := os.ReadFile(cs.config.WalFile())
 	t.Logf("====== WAL: \n\r%X\n", bytes)
 
-	err := cs.Start()
+	err = cs.Start()
 	require.NoError(t, err)
 	defer func() {
 		if err := cs.Stop(); err != nil {
@@ -180,7 +181,8 @@ LOOP:
 		})
 		state, err := sm.MakeGenesisStateFromFile(consensusReplayConfig.GenesisFile())
 		require.NoError(t, err)
-		privValidator := loadPrivValidator(consensusReplayConfig)
+		privValidator, err := loadPrivValidator(consensusReplayConfig)
+		require.NoError(t, err)
 		cs := newStateWithConfigAndBlockStore(
 			consensusReplayConfig,
 			state,

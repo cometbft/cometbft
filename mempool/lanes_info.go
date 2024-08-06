@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/cometbft/cometbft/types"
@@ -10,38 +9,6 @@ import (
 type LanesInfo struct {
 	lanes       []types.Lane
 	defaultLane types.Lane
-}
-
-type ErrEmptyLanesDefaultLaneSet struct {
-	Info LanesInfo
-}
-
-func (e ErrEmptyLanesDefaultLaneSet) Error() string {
-	return fmt.Sprintf("invalid lane info:if list of lanes is empty, then defaultLane should be 0, but %v given; info %v", e.Info.defaultLane, e.Info)
-}
-
-type ErrBadDefaultLaneNonEmptyLaneList struct {
-	Info LanesInfo
-}
-
-func (e ErrBadDefaultLaneNonEmptyLaneList) Error() string {
-	return fmt.Sprintf("invalid lane info:default lane cannot be 0 if list of lanes is non empty; info: %v", e.Info)
-}
-
-type ErrDefaultLaneNotInList struct {
-	Info LanesInfo
-}
-
-func (e ErrDefaultLaneNotInList) Error() string {
-	return fmt.Sprintf("invalid lane info:list of lanes does not contain default lane; info %v", e.Info)
-}
-
-type ErrRepeatedLanes struct {
-	Info LanesInfo
-}
-
-func (e ErrRepeatedLanes) Error() string {
-	return fmt.Sprintf("list of lanes cannot have repeated values; info %v", e.Info)
 }
 
 // Query app info to return the required information to initialize lanes.

@@ -3,6 +3,7 @@ package cometbft.services.node.v1;
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/services/node/v1";
 
+import "gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
 // GetStatusRequest is an empty message sent in a call to GetStatus.
@@ -46,7 +47,10 @@ message SyncInfo {
   bytes earliest_block_hash = 5;
   bytes earliest_app_hash = 6;
   int64 earliest_block_height = 7;
-  google.protobuf.Timestamp earliest_block_time = 8;
+  google.protobuf.Timestamp earliest_block_time = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime) = true
+  ];
 
   bool catching_up = 9;
 }

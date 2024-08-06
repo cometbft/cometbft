@@ -295,7 +295,7 @@ func TestMempoolUpdate(t *testing.T) {
 func TestMempoolLanesValidation(t *testing.T) {
 	appInfo := abci.InfoResponse{}
 
-	_, err := FetchLanesInfo(appInfo.LanePriorities, types.Lane(appInfo.DefaultLanePriority))
+	_, err := FetchLanesInfo([]uint32{}, types.Lane(0))
 	require.NoError(t, err)
 
 	_, err = FetchLanesInfo(appInfo.LanePriorities, types.Lane(1))

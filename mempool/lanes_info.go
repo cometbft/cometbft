@@ -30,17 +30,22 @@ func (info *LanesInfo) validate() error {
 	if len(info.lanes) == 0 && info.defaultLane == 0 {
 		return nil
 	}
-	// Lane 0 is reserved for when there are no lanes or for invalid txs; it should not be used for the default lane.
+
+	// Default lane is set but empty lane list
 	if len(info.lanes) == 0 && info.defaultLane != 0 {
 		return ErrEmptyLanesDefaultLaneSet{
 			Info: *info,
 		}
 	}
+
+	// Lane 0 is reserved for when there are no lanes or for invalid txs; it should not be used for the default lane.
 	if info.defaultLane == 0 && len(info.lanes) != 0 {
 		return ErrBadDefaultLaneNonEmptyLaneList{
 			Info: *info,
 		}
 	}
+
+	// The default lane is not contained in the list of lanes
 	if !slices.Contains(info.lanes, info.defaultLane) {
 		return ErrDefaultLaneNotInList{
 			Info: *info,

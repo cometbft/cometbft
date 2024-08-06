@@ -1,0 +1,17 @@
+syntax = "proto3";
+package cometbft.services.node.v1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/services/node/v1";
+
+import "cometbft/services/node/v1/node.proto";
+
+// NodeService provides information about the node providing the gRPC interface.
+service NodeService {
+
+  // GetStatus queries the node current status, including node info, public key,
+  // latest block hash, app hash, block height and time.
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+
+  // GetHealth queries the node's health.
+  rpc GetHealth(GetHealthRequest) returns (GetHealthResponse);
+}

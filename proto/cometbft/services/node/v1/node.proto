@@ -1,0 +1,69 @@
+syntax = "proto3";
+package cometbft.services.node.v1;
+
+option go_package = "github.com/cometbft/cometbft/api/cometbft/services/node/v1";
+
+// GetStatusRequest is an empty message sent in a call to GetStatus.
+// The GetStatus rpc call requires no parameter.
+message GetStatusRequest {}
+
+// NodeInfo contains basic information about the node.
+message NodeInfo {
+  message ProtocolVersion {
+    uint64 p2p = 1;
+    uint64 block = 2;
+    uint64 app = 3;
+  }
+
+  message NodeInfoOther {
+    string tx_index = 1;
+    string rpc_address = 2;
+  }
+
+  ProtocolVersion protocol_version = 1;
+  string id = 2;
+  string listen_addr = 3;
+  string network = 4;
+  string version = 5;
+  bytes channels = 6;
+  string moniker = 7;
+  NodeInfoOther other = 8;
+}
+
+// SyncInfo contains information about the current syncing state of the node.
+message SyncInfo {
+  bytes latest_block_hash = 1;
+  bytes latest_app_hash = 2;
+  int64 latest_block_height = 3;
+  google.protobuf.Timestamp latest_block_time = 4;
+
+  bytes earliest_block_hash = 5;
+  bytes earliest_app_hash = 6;
+  int64 earliest_block_height = 7;
+  google.protobuf.Timestamp earliest_block_time = 8;
+
+  bool catching_up = 9;
+}
+
+// ValidatorInfo contains information about the node's validator.
+message ValidatorInfo {
+  bytes address = 1;
+  int64 voting_power = 2;
+}
+
+// GetStatusResponse is what the gRPC endpoint GetStatus returns in response to
+// a request.
+// It contains information about the current state of the node.
+message GetStatusResponse {
+  NodeInfo node_info = 1;
+  SyncInfo sync_info = 2;
+  ValidatorInfo validator_info = 3;
+}
+
+// GetHealthRequest is an empty message sent in a call to GetStatus.
+// The GetHealth rpc call requires no parameter.
+message GetHealthRequest {}
+
+// GetHealthResponse is what the gRPC endpoint GetHealth returns in response to
+// a request.
+message GetHealthResponse {}

@@ -34,6 +34,7 @@ func TestPubKeyToFromProto(t *testing.T) {
 	if bls12381.Enabled {
 		privKey, err := bls12381.GenPrivKey()
 		require.NoError(t, err)
+		defer privKey.Zeroize()
 		pk = privKey.PubKey()
 		proto, err := PubKeyToProto(pk)
 		require.NoError(t, err)

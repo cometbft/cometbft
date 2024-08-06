@@ -3,7 +3,6 @@ package node
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -43,7 +42,7 @@ func TestNodeStartStop(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger())
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 	err = n.Start()
 	require.NoError(t, err)
@@ -106,7 +105,7 @@ func TestCompanionInitialHeightSetup(t *testing.T) {
 	config.Storage.Pruning.DataCompanion.Enabled = true
 	config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight = 1
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger())
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 
 	companionRetainHeight, err := n.stateStore.GetCompanionBlockRetainHeight()
@@ -120,7 +119,7 @@ func TestNodeDelayedStart(t *testing.T) {
 	now := cmttime.Now()
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger())
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
 	require.NoError(t, err)
 
@@ -137,7 +136,7 @@ func TestNodeSetAppVersion(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger())
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 
 	// default config uses the kvstore app
@@ -161,7 +160,7 @@ func TestPprofServer(t *testing.T) {
 	_, err := http.Get("http://" + config.RPC.PprofListenAddress) //nolint: bodyclose
 	require.Error(t, err)
 
-	n, err := DefaultNewNode(config, log.TestingLogger())
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 	require.NoError(t, n.Start())
 	defer func() {
@@ -203,7 +202,7 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 	}()
 	defer signerServer.Stop() //nolint:errcheck // ignore for tests
 
-	n, err := DefaultNewNode(config, log.TestingLogger())
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
@@ -216,7 +215,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
-	_, err := DefaultNewNode(config, log.TestingLogger())
+	_, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.ErrorAs(t, err, &ErrPrivValidatorSocketClient{})
 }
 
@@ -247,7 +246,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 	}()
 	defer pvsc.Stop() //nolint:errcheck // ignore for tests
 
-	n, err := DefaultNewNode(config, log.TestingLogger())
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
 	require.NoError(t, err)
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
@@ -617,10 +616,11 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	jsonBlob, err := os.ReadFile(config.GenesisFile())
 	require.NoError(t, err)
 
+	// Set the cli params variable to the correct hash
 	incomingChecksum := tmhash.Sum(jsonBlob)
-	// Set genesis flag value to incorrect hash
-	config.Storage.GenesisHash = hex.EncodeToString(incomingChecksum)
-	_, err = NewNode(
+	cliParams := CliParams{GenesisHash: incomingChecksum}
+
+	_, err = NewNodeWithCliParams(
 		context.Background(),
 		config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
@@ -630,6 +630,7 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
+		cliParams,
 	)
 	require.NoError(t, err)
 }
@@ -650,9 +651,9 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	flagHash := tmhash.Sum(f)
 
 	// Set genesis flag value to incorrect hash
-	config.Storage.GenesisHash = hex.EncodeToString(flagHash)
+	cliParams := CliParams{GenesisHash: flagHash}
 
-	_, err = NewNode(
+	_, err = NewNodeWithCliParams(
 		context.Background(),
 		config,
 		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
@@ -662,6 +663,7 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
+		cliParams,
 	)
 	require.ErrorIs(t, err, ErrPassedGenesisHashMismatch, "NewNode should error when genesis flag value is incorrectly set")
 
@@ -710,7 +712,7 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 		_, _, err = LoadStateFromDBOrGenesisDocProviderWithConfig(
 			stateDB,
 			genDocProvider,
-			config.Storage.GenesisHash,
+			"",
 			nil,
 		)
 
@@ -724,7 +726,7 @@ func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
 		_, _, err = LoadStateFromDBOrGenesisDocProviderWithConfig(
 			stateDB,
 			genDocProvider,
-			config.Storage.GenesisHash,
+			"",
 			nil,
 		)
 

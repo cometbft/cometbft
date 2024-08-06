@@ -2,6 +2,7 @@ package conn
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"flag"
@@ -51,7 +52,6 @@ type privKeyWithNilPubKey struct {
 func (pk privKeyWithNilPubKey) Bytes() []byte                   { return pk.orig.Bytes() }
 func (pk privKeyWithNilPubKey) Sign(msg []byte) ([]byte, error) { return pk.orig.Sign(msg) }
 func (privKeyWithNilPubKey) PubKey() crypto.PubKey              { return nil }
-func (pk privKeyWithNilPubKey) Equals(pk2 crypto.PrivKey) bool  { return pk.orig.Equals(pk2) }
 func (privKeyWithNilPubKey) Type() string                       { return "privKeyWithNilPubKey" }
 
 func TestSecretConnectionHandshake(t *testing.T) {
@@ -354,7 +354,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 				return nil, true, err
 			}
 			remotePubBytes := fooSecConn.RemotePubKey()
-			if !remotePubBytes.Equals(barPubKey) {
+			if !bytes.Equal(remotePubBytes.Bytes(), barPubKey.Bytes()) {
 				err = fmt.Errorf("unexpected fooSecConn.RemotePubKey.  Expected %v, got %v",
 					barPubKey, fooSecConn.RemotePubKey())
 				tb.Error(err)
@@ -369,7 +369,7 @@ func makeSecretConnPair(tb testing.TB) (fooSecConn, barSecConn *SecretConnection
 				return nil, true, err
 			}
 			remotePubBytes := barSecConn.RemotePubKey()
-			if !remotePubBytes.Equals(fooPubKey) {
+			if !bytes.Equal(remotePubBytes.Bytes(), fooPubKey.Bytes()) {
 				err = fmt.Errorf("unexpected barSecConn.RemotePubKey.  Expected %v, got %v",
 					fooPubKey, barSecConn.RemotePubKey())
 				tb.Error(err)

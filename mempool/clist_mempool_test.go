@@ -292,7 +292,7 @@ func TestMempoolUpdate(t *testing.T) {
 	}
 }
 
-func TestMempoolLanesValidation(t *testing.T) {
+func TestMempoolFetchLanesInfo(t *testing.T) {
 	appInfo := abci.InfoResponse{}
 
 	_, err := FetchLanesInfo([]uint32{}, types.Lane(0))

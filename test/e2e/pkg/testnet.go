@@ -759,7 +759,7 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 	case sr25519.KeyType:
 		return sr25519.GenPrivKeyFromSecret(seed)
 	case bls12381.KeyType:
-		pk, err := bls12381.GenPrivKeyFromSecret(seed)
+		pk, err := bls12381.GenPrivKey()
 		if err != nil {
 			panic(fmt.Sprintf("unrecoverable error when generating key; key type %s, err %v", bls12381.KeyType, err))
 		}

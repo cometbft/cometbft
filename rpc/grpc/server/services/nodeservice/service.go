@@ -4,14 +4,15 @@ import (
 	"context"
 	"reflect"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	nodesvc "github.com/cometbft/cometbft/api/cometbft/services/node/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type SyncStatusChecker interface {

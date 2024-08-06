@@ -25,6 +25,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -41,6 +42,7 @@ const (
 	suffixPbtsHeight    string = "PbtsHeight"
 	suffixInitialHeight string = "InitialHeight"
 	txTTL               uint64 = 5 // height difference at which transactions should be invalid
+	defaultLane         string = "default"
 )
 
 // Application is an ABCI application for use by end-to-end tests. It is a
@@ -56,6 +58,9 @@ type Application struct {
 	restoreChunks   [][]byte
 	// It's OK not to persist this, as it is not part of the state machine
 	seenTxs sync.Map // cmttypes.TxKey -> uint64
+
+	lanes          map[string]uint32
+	lanePriorities []uint32
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -157,11 +162,26 @@ func NewApplication(cfg *Config) (*Application, error) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	logger.Info("Application started!")
 
+	// Map from lane name to its priority. Priority 0 is reserved.
+	lanes := map[string]uint32{
+		"foo":       1, // lane 1
+		"bar":       4, // lane 2
+		defaultLane: 9, // default lane
+	}
+
+	// List of lane priorities
+	priorities := make([]uint32, 0, len(lanes))
+	for _, p := range lanes {
+		priorities = append(priorities, p)
+	}
+
 	return &Application{
-		logger:    logger,
-		state:     state,
-		snapshots: snapshots,
-		cfg:       cfg,
+		logger:         logger,
+		state:          state,
+		snapshots:      snapshots,
+		cfg:            cfg,
+		lanes:          lanes,
+		lanePriorities: priorities,
 	}, nil
 }
 
@@ -174,10 +194,12 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 
 	height, hash := app.state.Info()
 	return &abci.InfoResponse{
-		Version:          version.ABCIVersion,
-		AppVersion:       appVersion,
-		LastBlockHeight:  int64(height),
-		LastBlockAppHash: hash,
+		Version:             version.ABCIVersion,
+		AppVersion:          appVersion,
+		LastBlockHeight:     int64(height),
+		LastBlockAppHash:    hash,
+		LanePriorities:      app.lanePriorities,
+		DefaultLanePriority: app.lanes[defaultLane],
 	}, nil
 }
 
@@ -293,7 +315,19 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
-	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
+	// Assign a lane to the transaction deterministically.
+	var lane uint32
+	txHash := tmhash.Sum(req.Tx)
+	switch {
+	case txHash[0] == 0 && txHash[1] == 0 && txHash[2] == 0 && txHash[3] == 0:
+		lane = app.lanes["foo"]
+	case txHash[0] == 0:
+		lane = app.lanes["bar"]
+	default:
+		lane = app.lanes[defaultLane]
+	}
+
+	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 
 // FinalizeBlock implements ABCI.

@@ -88,19 +88,37 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 }
 
 // Provider takes a config and a logger and returns a ready to go Node.
-type Provider func(*cfg.Config, log.Logger, CliParams) (*Node, error)
+type Provider func(*cfg.Config, log.Logger, CliParams, func() (crypto.PrivKey, error)) (*Node, error)
 
 // DefaultNewNode returns a CometBFT node with default settings for the
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
 // It implements Provider.
-func DefaultNewNode(config *cfg.Config, logger log.Logger, cliParams CliParams) (*Node, error) {
+func DefaultNewNode(
+	config *cfg.Config,
+	logger log.Logger,
+	cliParams CliParams,
+	keyGenF func() (crypto.PrivKey, error),
+) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
 	}
 
+	pv, err := privval.LoadOrGenFilePV(
+		config.PrivValidatorKeyFile(),
+		config.PrivValidatorStateFile(),
+		keyGenF,
+	)
+	if err != nil {
+		return nil, ErrorLoadOrGenFilePV{
+			Err:       err,
+			KeyFile:   config.PrivValidatorKeyFile(),
+			StateFile: config.PrivValidatorStateFile(),
+		}
+	}
+
 	return NewNodeWithCliParams(context.Background(), config,
-		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+		pv,
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
 		DefaultGenesisDocProviderFunc(config),

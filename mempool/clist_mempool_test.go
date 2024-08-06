@@ -299,16 +299,16 @@ func TestMempoolLanesValidation(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = FetchLanesInfo(appInfo.LanePriorities, types.Lane(1))
-	require.ErrorAs(t, err, &ErrEmptyLaneDefaultPrioSet{})
+	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
 	_, err = FetchLanesInfo([]uint32{1}, types.Lane(0))
-	require.ErrorAs(t, err, &ErrBadDefaultPrioNonEmptyLaneList{})
+	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
 
 	_, err = FetchLanesInfo([]uint32{1, 3, 4}, types.Lane(5))
 	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
 
 	_, err = FetchLanesInfo([]uint32{1, 3, 4, 4}, types.Lane(4))
-	require.ErrorAs(t, err, &ErrRepeatedPriorities{})
+	require.ErrorAs(t, err, &ErrRepeatedLanes{})
 }
 
 // Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection

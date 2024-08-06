@@ -262,7 +262,7 @@ func TestSwitchPeerFilter(t *testing.T) {
 		chDescs:      sw.chDescs,
 		onPeerError:  sw.StopPeerForError,
 		isPersistent: sw.IsPeerPersistent,
-		reactorsByCh: sw.reactorsByCh,
+		reactorsByCh: sw.peerConfig.reactorsByCh,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -311,7 +311,7 @@ func TestSwitchPeerFilterTimeout(t *testing.T) {
 		chDescs:      sw.chDescs,
 		onPeerError:  sw.StopPeerForError,
 		isPersistent: sw.IsPeerPersistent,
-		reactorsByCh: sw.reactorsByCh,
+		reactorsByCh: sw.peerConfig.reactorsByCh,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -342,7 +342,7 @@ func TestSwitchPeerFilterDuplicate(t *testing.T) {
 		chDescs:      sw.chDescs,
 		onPeerError:  sw.StopPeerForError,
 		isPersistent: sw.IsPeerPersistent,
-		reactorsByCh: sw.reactorsByCh,
+		reactorsByCh: sw.peerConfig.reactorsByCh,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -393,7 +393,7 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 		chDescs:      sw.chDescs,
 		onPeerError:  sw.StopPeerForError,
 		isPersistent: sw.IsPeerPersistent,
-		reactorsByCh: sw.reactorsByCh,
+		reactorsByCh: sw.peerConfig.reactorsByCh,
 	})
 	require.NoError(err)
 

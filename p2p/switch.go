@@ -72,18 +72,16 @@ type PeerFilterFunc func(IPeerSet, Peer) error
 type Switch struct {
 	service.BaseService
 
-	config        *config.P2PConfig
-	reactors      map[string]Reactor
-	chDescs       []*conn.ChannelDescriptor
-	reactorsByCh  map[byte]Reactor
-	msgTypeByChID map[byte]proto.Message
-	peers         *PeerSet
-	dialing       *cmap.CMap
-	reconnecting  *cmap.CMap
-	nodeInfo      NodeInfo // our node info
-	nodeKey       *NodeKey // our node privkey
-	addrBook      AddrBook
-	peerConfig    *peerConfig
+	config       *config.P2PConfig
+	reactors     map[string]Reactor
+	chDescs      []*conn.ChannelDescriptor
+	peers        *PeerSet
+	dialing      *cmap.CMap
+	reconnecting *cmap.CMap
+	nodeInfo     NodeInfo // our node info
+	nodeKey      *NodeKey // our node privkey
+	addrBook     AddrBook
+	peerConfig   *peerConfig
 
 	// peers addresses with whom we'll maintain constant connection
 	persistentPeersAddrs []*NetAddress
@@ -129,17 +127,17 @@ func NewSwitch(
 
 	sw.BaseService = *service.NewBaseService(nil, "P2P Switch", sw)
 
-	for _, option := range options {
-		option(sw)
-	}
-
 	sw.peerConfig = &peerConfig{
 		chDescs:       make([]*conn.ChannelDescriptor, 0),
-		onPeerError:   sw.StopPeerForError,
 		reactorsByCh:  make(map[byte]Reactor),
 		msgTypeByChID: make(map[byte]proto.Message),
 		metrics:       NopMetrics(),
 		isPersistent:  sw.IsPeerPersistent,
+		onPeerError:   sw.StopPeerForError,
+	}
+
+	for _, option := range options {
+		option(sw)
 	}
 
 	return sw
@@ -169,12 +167,12 @@ func (sw *Switch) AddReactor(name string, reactor Reactor) Reactor {
 	for _, chDesc := range reactor.GetChannels() {
 		chID := chDesc.ID
 		// No two reactors can share the same channel.
-		if sw.reactorsByCh[chID] != nil {
-			panic(fmt.Sprintf("Channel %X has multiple reactors %v & %v", chID, sw.reactorsByCh[chID], reactor))
+		if sw.peerConfig.reactorsByCh[chID] != nil {
+			panic(fmt.Sprintf("Channel %X has multiple reactors %v & %v", chID, sw.peerConfig.reactorsByCh[chID], reactor))
 		}
 		sw.chDescs = append(sw.chDescs, chDesc)
-		sw.reactorsByCh[chID] = reactor
-		sw.msgTypeByChID[chID] = chDesc.MessageType
+		sw.peerConfig.reactorsByCh[chID] = reactor
+		sw.peerConfig.msgTypeByChID[chID] = chDesc.MessageType
 	}
 	sw.reactors[name] = reactor
 	reactor.SetSwitch(sw)
@@ -192,8 +190,8 @@ func (sw *Switch) RemoveReactor(name string, reactor Reactor) {
 				break
 			}
 		}
-		delete(sw.reactorsByCh, chDesc.ID)
-		delete(sw.msgTypeByChID, chDesc.ID)
+		delete(sw.peerConfig.reactorsByCh, chDesc.ID)
+		delete(sw.peerConfig.msgTypeByChID, chDesc.ID)
 	}
 	delete(sw.reactors, name)
 	reactor.SetSwitch(nil)

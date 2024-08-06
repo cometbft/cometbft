@@ -190,3 +190,6 @@ func ComputeProtoSizeForTxs(txs []Tx) int64 {
 	pdData := data.ToProto()
 	return int64(pdData.Size())
 }
+
+// A lane is defined by its priority.
+type Lane uint32

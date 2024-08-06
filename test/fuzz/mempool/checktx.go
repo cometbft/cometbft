@@ -20,7 +20,7 @@ func init() {
 
 	cfg := config.DefaultMempoolConfig()
 	cfg.Broadcast = false
-	mempool = mempl.NewCListMempool(cfg, appConnMem, 0)
+	mempool = mempl.NewCListMempool(cfg, appConnMem, nil, 0)
 }
 
 func Fuzz(data []byte) int {

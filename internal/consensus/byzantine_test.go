@@ -73,6 +73,7 @@ func TestByzantinePrevoteEquivocation(t *testing.T) {
 		// Make Mempool
 		mempool := mempl.NewCListMempool(config.Mempool,
 			proxyAppConnMem,
+			nil,
 			state.LastBlockHeight,
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)))

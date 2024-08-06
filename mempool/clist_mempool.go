@@ -73,6 +73,7 @@ type CListMempoolOption func(*CListMempool)
 func NewCListMempool(
 	cfg *config.MempoolConfig,
 	proxyAppConn proxy.AppConnMempool,
+	_ *LanesInfo,
 	height int64,
 	options ...CListMempoolOption,
 ) *CListMempool {

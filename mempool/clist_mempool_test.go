@@ -50,12 +50,25 @@ func newMempoolWithAppAndConfigMock(
 ) (*CListMempool, cleanupFunc) {
 	appConnMem := client
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
-	err := appConnMem.Start()
+	if err := appConnMem.Start(); err != nil {
+		panic(err)
+	}
+
+	appConnQuery := client
+	appConnQuery.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "query"))
+	if err := appConnQuery.Start(); err != nil {
+		panic(err)
+	}
+	appInfoRes, err := appConnQuery.Info(context.TODO(), proxy.InfoRequest)
 	if err != nil {
 		panic(err)
 	}
 
-	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
+	lanesInfo, err := FetchLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
+	if err != nil {
+		panic(err)
+	}
+	mp := NewCListMempool(cfg.Mempool, appConnMem, lanesInfo, 0)
 	mp.SetLogger(log.TestingLogger())
 
 	return mp, func() { os.RemoveAll(cfg.RootDir) }
@@ -71,12 +84,24 @@ func newMempoolWithApp(cc proxy.ClientCreator) (*CListMempool, cleanupFunc) {
 func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CListMempool, cleanupFunc) {
 	appConnMem, _ := cc.NewABCIMempoolClient()
 	appConnMem.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "mempool"))
-	err := appConnMem.Start()
-	if err != nil {
+	if err := appConnMem.Start(); err != nil {
 		panic(err)
 	}
 
-	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
+	appConnQuery, _ := cc.NewABCIQueryClient()
+	appConnQuery.SetLogger(log.TestingLogger().With("module", "abci-client", "connection", "query"))
+	if err := appConnQuery.Start(); err != nil {
+		panic(err)
+	}
+	appInfoRes, err := appConnQuery.Info(context.TODO(), proxy.InfoRequest)
+	if err != nil {
+		panic(err)
+	}
+	lanesInfo, err := FetchLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
+	if err != nil {
+		panic(err)
+	}
+	mp := NewCListMempool(cfg.Mempool, appConnMem, lanesInfo, 0)
 	mp.SetLogger(log.TestingLogger())
 
 	return mp, func() { os.RemoveAll(cfg.RootDir) }
@@ -267,6 +292,25 @@ func TestMempoolUpdate(t *testing.T) {
 	}
 }
 
+func TestMempoolFetchLanesInfo(t *testing.T) {
+	appInfo := abci.InfoResponse{}
+
+	_, err := FetchLanesInfo([]uint32{}, types.Lane(0))
+	require.NoError(t, err)
+
+	_, err = FetchLanesInfo(appInfo.LanePriorities, types.Lane(1))
+	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
+
+	_, err = FetchLanesInfo([]uint32{1}, types.Lane(0))
+	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
+
+	_, err = FetchLanesInfo([]uint32{1, 3, 4}, types.Lane(5))
+	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
+
+	_, err = FetchLanesInfo([]uint32{1, 3, 4, 4}, types.Lane(4))
+	require.ErrorAs(t, err, &ErrRepeatedLanes{})
+}
+
 // Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection
 // to the app.
 func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
@@ -274,6 +318,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(4)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -800,6 +845,7 @@ func TestMempoolSyncCheckTxReturnError(t *testing.T) {
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1}, DefaultLanePriority: 1}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -824,6 +870,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1}, DefaultLanePriority: 1}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -865,6 +912,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(4)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1}, DefaultLanePriority: 1}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()

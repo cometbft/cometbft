@@ -21,6 +21,6 @@ generator:
 	go build -o build/generator ./generator
 
 runner:
-	go build -o build/runner ./runner
+	go build -tags bls12381 -o build/runner ./runner
 
 .PHONY: all node docker generator runner

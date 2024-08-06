@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/cometbft/cometbft/crypto/ed25519"
 
+	"github.com/cometbft/cometbft/crypto/bls12381"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 	"github.com/go-git/go-git/v5"
@@ -64,6 +66,7 @@ var (
 	voteExtensionUpdateHeight = uniformChoice{int64(-1), int64(0), int64(1)} // -1: genesis, 0: InitChain, 1: (use offset)
 	voteExtensionEnabled      = weightedChoice{true: 3, false: 1}
 	voteExtensionHeightOffset = uniformChoice{int64(0), int64(10), int64(100)}
+	keyType                   = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType}
 )
 
 type generateConfig struct {
@@ -131,11 +134,11 @@ func generateTestnet(r *rand.Rand, opt map[string]interface{}, upgradeVersion st
 		InitialState:     opt["initialState"].(map[string]string),
 		Validators:       &map[string]int64{},
 		ValidatorUpdates: map[string]map[string]int64{},
+		KeyType:          keyType.Choose(r).(string),
 		Evidence:         evidence.Choose(r).(int),
 		Nodes:            map[string]*e2e.ManifestNode{},
 		UpgradeVersion:   upgradeVersion,
 		Prometheus:       prometheus,
-		KeyType:          ed25519.KeyType,
 	}
 
 	switch abciDelays.Choose(r).(string) {

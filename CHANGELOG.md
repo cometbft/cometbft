@@ -8,6 +8,9 @@
 
 ### IMPROVEMENTS
 
+- `[e2e]` add support for testing different keytypes, including BLS
+  ([\#3513](https://github.com/cometbft/cometbft/pull/3513))
+
 ### FEATURES
 
 - `[crypto]` Add support for BLS12-381 keys. Since the implementation needs

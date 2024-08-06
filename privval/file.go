@@ -182,13 +182,8 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 	}
 }
 
-<<<<<<< HEAD
 // GenFilePV generates a new validator with randomly generated private key
 // and sets the filePaths, but does not call Save().
-func GenFilePV(keyFilePath, stateFilePath string) *FilePV {
-	return NewFilePV(ed25519.GenPrivKey(), keyFilePath, stateFilePath)
-=======
-// GenFilePV calls NewFilePV with a random ed25519 private key.
 func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey, error)) (*FilePV, error) {
 	if keyGen == nil {
 		keyGen = func() (crypto.PrivKey, error) {
@@ -200,7 +195,6 @@ func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey,
 		return nil, err
 	}
 	return NewFilePV(key, keyFilePath, stateFilePath), nil
->>>>>>> bd06fecb6 (feat(privval)!: add flag `key-type` to all relevant CometBFT commands and thread it through the code (#3517))
 }
 
 // LoadFilePV loads a FilePV from the filePaths.  The FilePV handles double

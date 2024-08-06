@@ -218,13 +218,8 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
-<<<<<<< HEAD
-	_, err := DefaultNewNode(config, log.TestingLogger(), CliParams{})
-	require.Error(t, err)
-=======
 	_, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
 	require.ErrorAs(t, err, &ErrPrivValidatorSocketClient{})
->>>>>>> bd06fecb6 (feat(privval)!: add flag `key-type` to all relevant CometBFT commands and thread it through the code (#3517))
 }
 
 func TestNodeSetPrivValIPC(t *testing.T) {

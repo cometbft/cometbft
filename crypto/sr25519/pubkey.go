@@ -1,7 +1,6 @@
 package sr25519
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/oasisprotocol/curve25519-voi/primitives/sr25519"
@@ -34,16 +33,6 @@ func (pubKey PubKey) Address() crypto.Address {
 // Bytes returns the byte representation of the PubKey.
 func (pubKey PubKey) Bytes() []byte {
 	return []byte(pubKey)
-}
-
-// Equals - checks that two public keys are the same time
-// Runs in constant time based on length of the keys.
-func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	if otherSr, ok := other.(PubKey); ok {
-		return bytes.Equal(pubKey[:], otherSr[:])
-	}
-
-	return false
 }
 
 func (pubKey PubKey) VerifySignature(msg []byte, sigBytes []byte) bool {

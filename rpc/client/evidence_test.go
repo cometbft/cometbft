@@ -112,11 +112,10 @@ func makeEvidences(
 }
 
 func TestBroadcastEvidence_DuplicateVoteEvidence(t *testing.T) {
-	var (
-		config  = rpctest.GetConfig()
-		chainID = test.DefaultTestChainID
-		pv      = privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile())
-	)
+	config := rpctest.GetConfig()
+	chainID := test.DefaultTestChainID
+	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
+	require.NoError(t, err)
 
 	for i, c := range GetClients() {
 		evidenceHeight := int64(1)

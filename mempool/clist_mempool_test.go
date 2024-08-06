@@ -292,6 +292,25 @@ func TestMempoolUpdate(t *testing.T) {
 	}
 }
 
+func TestMempoolLanesValidation(t *testing.T) {
+	appInfo := abci.InfoResponse{}
+
+	_, err := FetchLanesInfo(appInfo.LanePriorities, types.Lane(appInfo.DefaultLanePriority))
+	require.NoError(t, err)
+
+	_, err = FetchLanesInfo(appInfo.LanePriorities, types.Lane(1))
+	require.ErrorAs(t, err, &ErrEmptyLaneDefaultPrioSet{})
+
+	_, err = FetchLanesInfo([]uint32{1}, types.Lane(0))
+	require.ErrorAs(t, err, &ErrBadDefaultPrioNonEmptyLaneList{})
+
+	_, err = FetchLanesInfo([]uint32{1, 3, 4}, types.Lane(5))
+	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
+
+	_, err = FetchLanesInfo([]uint32{1, 3, 4, 4}, types.Lane(4))
+	require.ErrorAs(t, err, &ErrRepeatedPriorities{})
+}
+
 // Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection
 // to the app.
 func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
@@ -299,7 +318,7 @@ func TestMempoolUpdateDoesNotPanicWhenApplicationMissedTx(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(4)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1}, DefaultLanePriority: 1}, nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()

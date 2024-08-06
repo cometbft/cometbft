@@ -4,9 +4,9 @@ const (
 	// PrivKeySize defines the length of the PrivKey byte array.
 	PrivKeySize = 32
 	// PubKeySize defines the length of the PubKey byte array.
-	PubKeySize = 96
+	PubKeySize = 192
 	// SignatureLength defines the byte length of a BLS signature.
-	SignatureLength = 96
+	SignatureLength = 48
 	// KeyType is the string constant for the BLS12-381 algorithm.
 	KeyType = "bls12_381"
 	// MaxMsgLen defines the maximum length of the message bytes as passed to Sign.

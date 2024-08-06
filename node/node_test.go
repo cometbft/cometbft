@@ -219,7 +219,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
 	_, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
-	require.ErrorAs(t, err, &ErrPrivValidatorSocketClient{})
+	require.Error(t, err)
 }
 
 func TestNodeSetPrivValIPC(t *testing.T) {

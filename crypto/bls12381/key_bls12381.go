@@ -28,10 +28,8 @@ var (
 
 // For minimal-pubkey-size operations.
 type (
-	blstPublicKey          = blst.P1Affine
-	blstSignature          = blst.P2Affine
-	blstAggregateSignature = blst.P1Aggregate
-	blstAggregatePublicKey = blst.P2Aggregate
+	blstPublicKey = blst.P1Affine
+	blstSignature = blst.P2Affine
 )
 
 // -------------------------------------.

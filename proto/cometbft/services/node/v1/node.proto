@@ -3,18 +3,24 @@ package cometbft.services.node.v1;
 
 option go_package = "github.com/cometbft/cometbft/api/cometbft/services/node/v1";
 
+import "google/protobuf/timestamp.proto";
+
 // GetStatusRequest is an empty message sent in a call to GetStatus.
 // The GetStatus rpc call requires no parameter.
 message GetStatusRequest {}
 
 // NodeInfo contains basic information about the node.
 message NodeInfo {
+
+  // ProtocolVersion contains the protocol versions for the software running on
+  // the node.
   message ProtocolVersion {
     uint64 p2p = 1;
     uint64 block = 2;
     uint64 app = 3;
   }
 
+  // NodeInfoOther contains miscellaneous application-specific data.
   message NodeInfoOther {
     string tx_index = 1;
     string rpc_address = 2;

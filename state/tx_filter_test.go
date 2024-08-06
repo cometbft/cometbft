@@ -25,8 +25,8 @@ func TestTxFilter(t *testing.T) {
 		tx    types.Tx
 		isErr bool
 	}{
-		{types.Tx(cmtrand.Bytes(2122)), false},
-		{types.Tx(cmtrand.Bytes(2123)), true},
+		{types.Tx(cmtrand.Bytes(2155)), false},
+		{types.Tx(cmtrand.Bytes(2156)), true},
 		{types.Tx(cmtrand.Bytes(3000)), true},
 	}
 

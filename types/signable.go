@@ -8,8 +8,11 @@ import (
 
 // MaxSignatureSize is a maximum allowed signature size for the Proposal
 // and Vote.
-// XXX: secp256k1 does not have Size nor MaxSize defined.
-var MaxSignatureSize = cmtmath.MaxInt(ed25519.SignatureSize, cmtmath.MaxInt(bls12381.SignatureLength, 64))
+// XXX: secp256k1 does not have max signature size defined.
+var MaxSignatureSize = cmtmath.MaxInt(
+	ed25519.SignatureSize,
+	bls12381.SignatureLength,
+)
 
 // Signable is an interface for all signable things.
 // It typically removes signatures before serializing.

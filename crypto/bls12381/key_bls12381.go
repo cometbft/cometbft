@@ -27,10 +27,10 @@ var (
 	dstMinSig = []byte("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_")
 )
 
-// For minimal-pubkey-size operations.
+// For minimal-signature-size operations.
 type (
-	blstPublicKey          = blst.P1Affine
-	blstSignature          = blst.P2Affine
+	blstPublicKey          = blst.P2Affine
+	blstSignature          = blst.P1Affine
 	blstAggregateSignature = blst.P1Aggregate
 	blstAggregatePublicKey = blst.P2Aggregate
 )

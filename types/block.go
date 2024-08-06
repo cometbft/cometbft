@@ -593,9 +593,13 @@ const (
 	// MaxCommitOverheadBytes is the max size of commit without any commitSigs -> 82 for BlockID, 8 for Height, 4 for Round.
 	MaxCommitOverheadBytes int64 = 94
 
-	// MaxCommitSigBytes is the commit sig size is made up of 96 bytes for the signature, 20 bytes for the address,
-	// 1 byte for the flag and 14 bytes for the timestamp.
-	MaxCommitSigBytes int64 = 131 + 10 // where's the 10 from?
+	// 4 bytes for field tags + 1 byte for signature LEN + 1 byte for
+	// validator address LEN + 1 byte for timestamp LEN.
+	maxCommitSigProtoEncOverhead = 4 + 1 + 1 + 1 + 3 // 3 ???
+	// MaxCommitSigBytes is the max commit sig size is made up of MaxSignatureSize (64) bytes for the
+	// signature, 20 bytes for the address, 1 byte for the flag and 14 bytes for
+	// the timestamp.
+	MaxCommitSigBytes = 99 + maxCommitSigProtoEncOverhead
 )
 
 // CommitSig is a part of the Vote included in a Commit.
@@ -607,10 +611,10 @@ type CommitSig struct {
 }
 
 func MaxCommitBytes(valCount int) int64 {
-	// protoEncodingOverhead represents the overhead in bytes when encoding a protocol buffer message.
-	const protoEncodingOverhead int64 = 3
+	// 1 byte field tag + 1 byte LEN
+	const protoRepeatedFieldLenOverhead int64 = 2
 	// From the repeated commit sig field
-	return MaxCommitOverheadBytes + ((MaxCommitSigBytes + protoEncodingOverhead) * int64(valCount))
+	return MaxCommitOverheadBytes + ((MaxCommitSigBytes + protoRepeatedFieldLenOverhead) * int64(valCount))
 }
 
 // NewCommitSigAbsent returns new CommitSig with BlockIDFlagAbsent. Other

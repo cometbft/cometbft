@@ -3,7 +3,6 @@ package node
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"fmt"
 	"net"
 	"net/http"
@@ -45,7 +44,7 @@ func TestNodeStartStop(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
 	require.NoError(t, err)
 	err = n.Start()
 	require.NoError(t, err)
@@ -108,7 +107,7 @@ func TestCompanionInitialHeightSetup(t *testing.T) {
 	config.Storage.Pruning.DataCompanion.Enabled = true
 	config.Storage.Pruning.DataCompanion.InitialBlockRetainHeight = 1
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
 	require.NoError(t, err)
 
 	companionRetainHeight, err := n.stateStore.GetCompanionBlockRetainHeight()
@@ -122,7 +121,8 @@ func TestNodeDelayedStart(t *testing.T) {
 	now := cmttime.Now()
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
+	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
 	require.NoError(t, err)
 	n.GenesisDoc().GenesisTime = now.Add(2 * time.Second)
 
@@ -139,7 +139,7 @@ func TestNodeSetAppVersion(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 
 	// create & start node
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
 	require.NoError(t, err)
 
 	// default config uses the kvstore app
@@ -163,7 +163,7 @@ func TestPprofServer(t *testing.T) {
 	_, err := http.Get("http://" + config.RPC.PprofListenAddress) //nolint: bodyclose
 	require.Error(t, err)
 
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
 	require.NoError(t, err)
 	require.NoError(t, n.Start())
 	defer func() {
@@ -205,7 +205,7 @@ func TestNodeSetPrivValTCP(t *testing.T) {
 	}()
 	defer signerServer.Stop() //nolint:errcheck // ignore for tests
 
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
 	require.NoError(t, err)
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
@@ -218,7 +218,7 @@ func TestPrivValidatorListenAddrNoProtocol(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.BaseConfig.PrivValidatorListenAddr = addrNoPrefix
 
-	_, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	_, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
 	require.ErrorAs(t, err, &ErrPrivValidatorSocketClient{})
 }
 
@@ -249,7 +249,7 @@ func TestNodeSetPrivValIPC(t *testing.T) {
 	}()
 	defer pvsc.Stop() //nolint:errcheck // ignore for tests
 
-	n, err := DefaultNewNode(config, log.TestingLogger(), nil)
+	n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, nil)
 	require.NoError(t, err)
 	assert.IsType(t, &privval.RetrySignerClient{}, n.PrivValidator())
 }
@@ -263,7 +263,7 @@ func TestNodeSetFilePrivVal(t *testing.T) {
 			keyGenF := func() (crypto.PrivKey, error) {
 				return kt.GenPrivKey(keyType)
 			}
-			n, err := DefaultNewNode(config, log.TestingLogger(), keyGenF)
+			n, err := DefaultNewNode(config, log.TestingLogger(), CliParams{}, keyGenF)
 			require.NoError(t, err)
 			assert.IsType(t, &privval.FilePV{}, n.PrivValidator())
 		})
@@ -643,12 +643,13 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 	jsonBlob, err := os.ReadFile(config.GenesisFile())
 	require.NoError(t, err)
 
+	// Set the cli params variable to the correct hash
 	incomingChecksum := tmhash.Sum(jsonBlob)
-	// Set genesis flag value to incorrect hash
-	config.Storage.GenesisHash = hex.EncodeToString(incomingChecksum)
+	cliParams := CliParams{GenesisHash: incomingChecksum}
 	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
 	require.NoError(t, err)
-	_, err = NewNode(
+
+	_, err = NewNodeWithCliParams(
 		context.Background(),
 		config,
 		pv,
@@ -658,6 +659,7 @@ func TestNodeGenesisHashFlagMatch(t *testing.T) {
 		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
+		cliParams,
 	)
 	require.NoError(t, err)
 }
@@ -678,11 +680,11 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 	flagHash := tmhash.Sum(f)
 
 	// Set genesis flag value to incorrect hash
-	config.Storage.GenesisHash = hex.EncodeToString(flagHash)
+	cliParams := CliParams{GenesisHash: flagHash}
 
 	pv, err := privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile(), nil)
 	require.NoError(t, err)
-	_, err = NewNode(
+	_, err = NewNodeWithCliParams(
 		context.Background(),
 		config,
 		pv,
@@ -692,6 +694,7 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		log.TestingLogger(),
+		cliParams,
 	)
 	require.ErrorIs(t, err, ErrPassedGenesisHashMismatch, "NewNode should error when genesis flag value is incorrectly set")
 
@@ -702,6 +705,65 @@ func TestNodeGenesisHashFlagMismatch(t *testing.T) {
 
 	genHashMismatch := bytes.Equal(genHash, flagHash)
 	require.False(t, genHashMismatch)
+}
+
+func TestLoadStateFromDBOrGenesisDocProviderWithConfig(t *testing.T) {
+	config := test.ResetTestRoot(t.Name())
+	config.DBBackend = string(dbm.GoLevelDBBackend)
+
+	_, stateDB, err := initDBs(config, cfg.DefaultDBProvider)
+	require.NoErrorf(t, err, "state DB setup: %s", err)
+
+	genDocProviderFunc := func(sha256Checksum []byte) GenesisDocProvider {
+		return func() (ChecksummedGenesisDoc, error) {
+			genDocJSON, err := os.ReadFile(config.GenesisFile())
+			if err != nil {
+				formatStr := "reading genesis file: %s"
+				return ChecksummedGenesisDoc{}, fmt.Errorf(formatStr, err)
+			}
+
+			genDoc, err := types.GenesisDocFromJSON(genDocJSON)
+			if err != nil {
+				formatStr := "parsing genesis file: %s"
+				return ChecksummedGenesisDoc{}, fmt.Errorf(formatStr, err)
+			}
+
+			checksummedGenesisDoc := ChecksummedGenesisDoc{
+				GenesisDoc:     genDoc,
+				Sha256Checksum: sha256Checksum,
+			}
+
+			return checksummedGenesisDoc, nil
+		}
+	}
+
+	t.Run("NilGenesisChecksum", func(t *testing.T) {
+		genDocProvider := genDocProviderFunc(nil)
+
+		_, _, err = LoadStateFromDBOrGenesisDocProviderWithConfig(
+			stateDB,
+			genDocProvider,
+			"",
+			nil,
+		)
+
+		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 0"
+		assert.EqualError(t, err, wantErr)
+	})
+
+	t.Run("ShorterGenesisChecksum", func(t *testing.T) {
+		genDocProvider := genDocProviderFunc([]byte("shorter"))
+
+		_, _, err = LoadStateFromDBOrGenesisDocProviderWithConfig(
+			stateDB,
+			genDocProvider,
+			"",
+			nil,
+		)
+
+		wantErr := "invalid genesis doc SHA256 checksum: expected 64 characters, but have 14"
+		assert.EqualError(t, err, wantErr)
+	})
 }
 
 func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {

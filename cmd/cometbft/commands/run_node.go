@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"encoding/hex"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -14,8 +13,8 @@ import (
 )
 
 var (
-	genesisHash []byte
-	keyType     string
+	cliParams nm.CliParams
+	keyType   string
 )
 
 func genPrivKeyFromFlag() (crypto.PrivKey, error) {
@@ -36,7 +35,7 @@ func AddNodeFlags(cmd *cobra.Command) {
 
 	// node flags
 	cmd.Flags().BytesHexVar(
-		&genesisHash,
+		&cliParams.GenesisHash,
 		"genesis_hash",
 		[]byte{},
 		"optional SHA-256 hash of the genesis file")
@@ -101,11 +100,7 @@ func NewRunNodeCmd(nodeProvider nm.Provider) *cobra.Command {
 		Aliases: []string{"node", "run"},
 		Short:   "Run the CometBFT node",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if len(genesisHash) != 0 {
-				config.Storage.GenesisHash = hex.EncodeToString(genesisHash)
-			}
-
-			n, err := nodeProvider(config, logger, genPrivKeyFromFlag)
+			n, err := nodeProvider(config, logger, cliParams, genPrivKeyFromFlag)
 			if err != nil {
 				return fmt.Errorf("failed to create node: %w", err)
 			}

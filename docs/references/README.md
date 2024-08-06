@@ -3,7 +3,7 @@ order: 4
 title: CometBFT Reference Documentation
 description: References
 parent:
-    order: 1
+    order: 4
 ---
 
 # Reference Documentation

@@ -434,7 +434,7 @@ func setupChainWithChangingValidators(t *testing.T, name string, nBlocks int) (*
 			cssPubKey, err := css[cssIdx].privValidator.GetPubKey()
 			require.NoError(t, err)
 
-			if vsPubKey.Equals(cssPubKey) {
+			if vsPubKey.Type() == cssPubKey.Type() && bytes.Equal(vsPubKey.Bytes(), cssPubKey.Bytes()) {
 				return i
 			}
 		}

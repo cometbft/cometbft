@@ -61,7 +61,9 @@ message SyncInfo {
 // ValidatorInfo contains information about the node's validator.
 message ValidatorInfo {
   bytes address = 1;
-  int64 voting_power = 2;
+  bytes pub_key_bytes = 2;
+  string pub_key_type = 3;
+  int64 voting_power = 4;
 }
 
 // GetStatusResponse is what the gRPC endpoint GetStatus returns in response to

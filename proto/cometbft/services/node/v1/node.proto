@@ -42,7 +42,10 @@ message SyncInfo {
   bytes latest_block_hash = 1;
   bytes latest_app_hash = 2;
   int64 latest_block_height = 3;
-  google.protobuf.Timestamp latest_block_time = 4;
+  google.protobuf.Timestamp latest_block_time = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.stdtime) = true
+  ];
 
   bytes earliest_block_hash = 5;
   bytes earliest_app_hash = 6;

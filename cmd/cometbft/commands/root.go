@@ -91,6 +91,10 @@ var RootCmd = &cobra.Command{
 			return err
 		}
 
+		for _, possibleMisconfiguration := range config.PossibleMisconfigurations() {
+			logger.Warn(possibleMisconfiguration)
+		}
+
 		if config.LogFormat == cfg.LogFormatJSON {
 			logger = log.NewTMJSONLogger(log.NewSyncWriter(os.Stdout))
 		}

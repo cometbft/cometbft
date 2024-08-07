@@ -163,7 +163,7 @@ func (s *server) collectSyncInfo() (*nodesvc.SyncInfo, error) {
 func (s *server) collectLocalValidatorInfo() (*nodesvc.ValidatorInfo, error) {
 	power, err := localValidatorVotingPower(s.nodeEnv)
 	if err != nil {
-		return nil, errors.New("unknown node validator's voting power")
+		return nil, fmt.Errorf("unknown node validator's voting power: %s", err)
 	}
 
 	pubKey := s.nodeEnv.PubKey

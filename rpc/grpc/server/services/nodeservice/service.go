@@ -31,7 +31,6 @@ func New(l log.Logger, env *core.Environment) nodesvc.NodeServiceServer {
 // GetStatus is the gRPC endpoint serving requests for the node current status.
 // The request object isn't used in the current implementation, and the function
 // doesn't expect clients to provide any data in it.
-// TODO: refactor into smaller functions.
 func (s *server) GetStatus(
 	ctx context.Context,
 	_ *nodesvc.GetStatusRequest,
@@ -78,6 +77,16 @@ func (s *server) GetStatus(
 	}
 
 	return resp, nil
+}
+
+// GetHealth is the gRPC endpoint serving requests for the node current health.
+// The request object isn't used in the current implementation, and the function
+// doesn't expect clients to provide any data in it.
+func (*server) GetHealth(
+	_ context.Context,
+	_ *nodesvc.GetHealthRequest,
+) (*nodesvc.GetHealthResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "not implemented")
 }
 
 // collectNodeInfo collects and returns the node's basic information.
@@ -184,11 +193,4 @@ func localValidatorVotingPower(nodeEnv *core.Environment) (int64, error) {
 	}
 
 	return validator.VotingPower, nil
-}
-
-func (*server) GetHealth(
-	_ context.Context,
-	_ *nodesvc.GetHealthRequest,
-) (*nodesvc.GetHealthResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")
 }

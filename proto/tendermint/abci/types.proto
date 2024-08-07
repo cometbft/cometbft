@@ -325,13 +325,6 @@ message EventAttribute {
   bool   index = 3;  // nondeterministic
 }
 
-// EventAttribute is a single key-value pair, associated with an event.
-message V047EventAttribute {
-  string key   = 1;
-  string value = 2;
-  bool   index = 3;  // nondeterministic
-}
-
 // TxResult contains results of executing the transaction.
 //
 // One usage is indexing transaction results.
@@ -341,6 +334,7 @@ message TxResult {
   bytes             tx     = 3;
   ResponseDeliverTx result = 4 [(gogoproto.nullable) = false];
 }
+
 
 //----------------------------------------
 // Blockchain Types

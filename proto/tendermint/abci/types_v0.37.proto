@@ -1,0 +1,69 @@
+syntax = "proto3";
+package tendermint.abci;
+
+option go_package = "github.com/tendermint/tendermint/abci/types";
+
+// For more information on gogo.proto, see:
+// https://github.com/gogo/protobuf/blob/master/extensions.md
+import "tendermint/crypto/proof.proto";
+import "tendermint/types/types.proto";
+import "tendermint/crypto/keys.proto";
+import "tendermint/types/params.proto";
+import "tendermint/abci/types.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+
+
+message CustomEvent {
+  string                  type       = 1;
+  repeated V047EventAttribute attributes = 2 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag)  = "attributes,omitempty"
+  ];
+}
+
+// EventAttribute is a single key-value pair, associated with an event.
+message V047EventAttribute {
+  string key   = 1;
+  string value = 2;
+  bool   index = 3;  // nondeterministic
+}
+
+
+message CustomResponseDeliverTx {
+  uint32         code       = 1;
+  bytes          data       = 2;
+  string         log        = 3;  // nondeterministic
+  string         info       = 4;  // nondeterministic
+  int64          gas_wanted = 5 [json_name = "gas_wanted"];
+  int64          gas_used   = 6 [json_name = "gas_used"];
+  repeated CustomEvent events     = 7 [
+    (gogoproto.nullable) = false,
+    (gogoproto.jsontag)  = "events,omitempty"
+  ];  // nondeterministic
+  string codespace = 8;
+}
+
+
+message CustomResponseBeginBlock {
+  repeated CustomEvent events = 1
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+}
+
+
+message CustomResponseEndBlock {
+  repeated ValidatorUpdate validator_updates       = 1 [(gogoproto.nullable) = false];
+  ConsensusParams          consensus_param_updates = 2;
+  repeated CustomEvent           events                  = 3
+      [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+}
+
+
+// One usage is indexing transaction results.
+message CustomTxResult {
+  int64             height = 1;
+  uint32            index  = 2;
+  bytes             tx     = 3;
+  CustomResponseDeliverTx result = 4 [(gogoproto.nullable) = false];
+}

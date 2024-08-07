@@ -46,16 +46,29 @@ type TMEventData interface {
 }
 
 func init() {
-	cmtjson.RegisterType(EventDataNewBlock{}, "tendermint/event/NewBlock")
+	cmtjson.RegisterType(EventCustomDataNewBlock{}, "tendermint/event/NewBlock")
 	cmtjson.RegisterType(EventDataNewBlockHeader{}, "tendermint/event/NewBlockHeader")
 	cmtjson.RegisterType(EventDataNewEvidence{}, "tendermint/event/NewEvidence")
-	cmtjson.RegisterType(EventDataTx{}, "tendermint/event/Tx")
+	cmtjson.RegisterType(EventCustomDataTx{}, "tendermint/event/Tx")
 	cmtjson.RegisterType(EventDataRoundState{}, "tendermint/event/RoundState")
 	cmtjson.RegisterType(EventDataNewRound{}, "tendermint/event/NewRound")
 	cmtjson.RegisterType(EventDataCompleteProposal{}, "tendermint/event/CompleteProposal")
 	cmtjson.RegisterType(EventDataVote{}, "tendermint/event/Vote")
 	cmtjson.RegisterType(EventDataValidatorSetUpdates{}, "tendermint/event/ValidatorSetUpdates")
 	cmtjson.RegisterType(EventDataString(""), "tendermint/event/ProposalString")
+}
+
+/* -- custom structs to support cosmos-sdk v0.47.x/CometBFT v0.37.x events -- */
+type EventCustomDataNewBlock struct {
+	Block *Block `json:"block"`
+
+	ResultBeginBlock abci.CustomResponseBeginBlock `json:"result_begin_block"`
+	ResultEndBlock   abci.CustomResponseEndBlock   `json:"result_end_block"`
+}
+
+// All txs fire EventDataTx
+type EventCustomDataTx struct {
+	abci.CustomTxResult
 }
 
 // Most event messages are basic types (a block, a transaction)

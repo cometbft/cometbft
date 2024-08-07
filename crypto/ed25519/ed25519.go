@@ -1,9 +1,7 @@
 package ed25519
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"crypto/subtle"
 	"errors"
 	"fmt"
 	"io"
@@ -118,16 +116,6 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	return PubKey(pubkeyBytes)
 }
 
-// Equals - you probably don't need to use this.
-// Runs in constant time based on length of the keys.
-func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	if otherEd, ok := other.(PrivKey); ok {
-		return subtle.ConstantTimeCompare(privKey[:], otherEd[:]) == 1
-	}
-
-	return false
-}
-
 func (PrivKey) Type() string {
 	return KeyType
 }
@@ -194,14 +182,6 @@ func (pubKey PubKey) String() string {
 
 func (PubKey) Type() string {
 	return KeyType
-}
-
-func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	if otherEd, ok := other.(PubKey); ok {
-		return bytes.Equal(pubKey[:], otherEd[:])
-	}
-
-	return false
 }
 
 // -------------------------------------

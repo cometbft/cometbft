@@ -2,46 +2,28 @@ package nodeservice
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	nodesvc "github.com/cometbft/cometbft/api/cometbft/services/node/v1"
-	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
-	"github.com/cometbft/cometbft/state"
-	"github.com/cometbft/cometbft/store"
+	"github.com/cometbft/cometbft/rpc/core"
 )
 
-type SyncStatusChecker interface {
-	// WaitSync returns true if the node is waiting for state/block sync.
-	WaitSync() bool
-}
-
 type server struct {
-	logger          log.Logger
-	info            p2p.NodeInfo
-	blkStore        state.BlockStore
-	syncChecker     SyncStatusChecker
-	validatorPubKey crypto.PubKey
+	log     log.Logger
+	nodeEnv *core.Environment
 }
 
 // New returns a gRPC server serving request for information about a CometBFT node.
-func New(
-	l log.Logger,
-	info p2p.NodeInfo,
-	store *store.BlockStore,
-	syncChecker SyncStatusChecker,
-	vPubKey crypto.PubKey,
-) nodesvc.NodeServiceServer {
+func New(l log.Logger, env *core.Environment) nodesvc.NodeServiceServer {
 	return &server{
-		logger:          l.With("service", "NodeService"),
-		info:            info,
-		blkStore:        store,
-		syncChecker:     syncChecker,
-		validatorPubKey: vPubKey,
+		log:     l.With("service", "NodeService"),
+		nodeEnv: env,
 	}
 }
 
@@ -53,7 +35,7 @@ func (s *server) GetStatus(
 	ctx context.Context,
 	_ *nodesvc.GetStatusRequest,
 ) (*nodesvc.GetStatusResponse, error) {
-	l := s.logger.With("endpoint", "GetStatus")
+	l := s.log.With("endpoint", "GetStatus")
 
 	if ctx.Err() != nil {
 		err := ctx.Err()
@@ -64,7 +46,7 @@ func (s *server) GetStatus(
 		return nil, status.Errorf(codes.Canceled, formatStr, err)
 	}
 
-	info, ok := s.info.(p2p.DefaultNodeInfo)
+	info, ok := s.nodeEnv.P2PTransport.NodeInfo().(p2p.DefaultNodeInfo)
 	if !ok {
 		// this should never happen.
 		// p2p.DefaultNodeInfo is the only concrete type implementing the
@@ -72,7 +54,7 @@ func (s *server) GetStatus(
 		// We do this check to be good citizens in case something changes in the p2p
 		// package.
 		errMsg := "p2p.NodeInfo concrete type != p2p.DefaultNodeInfo"
-		l.Error(errMsg, "type", reflect.TypeOf(s.info).String())
+		l.Error(errMsg, "type", reflect.TypeOf(info).String())
 
 		errMsg = "node's basic information unavailable"
 		return nil, status.Error(codes.Internal, errMsg)
@@ -97,9 +79,10 @@ func (s *server) GetStatus(
 	}
 
 	syncInfo := &nodesvc.SyncInfo{}
+	blkStore := s.nodeEnv.BlockStore
 
 	// load the metadata of the oldest block that this node stores.
-	if blkMeta := s.blkStore.LoadBaseMeta(); blkMeta != nil {
+	if blkMeta := blkStore.LoadBaseMeta(); blkMeta != nil {
 		syncInfo.EarliestAppHash = blkMeta.Header.AppHash
 		syncInfo.EarliestBlockHash = blkMeta.BlockID.Hash
 		syncInfo.EarliestBlockHeight = blkMeta.Header.Height
@@ -107,21 +90,57 @@ func (s *server) GetStatus(
 	}
 
 	// now load the metadata of the latest block that this node stores.
-	lastKnownHeight := s.blkStore.Height()
-	if blkMeta := s.blkStore.LoadBlockMeta(lastKnownHeight); blkMeta != nil {
+	blkHeight := blkStore.Height()
+	if blkMeta := blkStore.LoadBlockMeta(blkHeight); blkMeta != nil {
 		syncInfo.LatestAppHash = blkMeta.Header.AppHash
 		syncInfo.LatestBlockHash = blkMeta.BlockID.Hash
 		syncInfo.LatestBlockTime = blkMeta.Header.Time
 	}
-	syncInfo.LatestBlockHeight = lastKnownHeight
-	syncInfo.CatchingUp = s.syncChecker.WaitSync()
+	syncInfo.LatestBlockHeight = blkHeight
+	syncInfo.CatchingUp = s.nodeEnv.ConsensusReactor.WaitSync()
+
+	power, err := localValidatorVotingPower(blkHeight, s.nodeEnv)
+	if err != nil {
+		errMsg := "unknown node validator's voting power"
+		l.Error(errMsg, "err", err)
+		return nil, status.Errorf(codes.Internal, "%s: %s", errMsg, err)
+	}
+
+	pubKey := s.nodeEnv.PubKey
+	validatorInfo := &nodesvc.ValidatorInfo{
+		Address:     pubKey.Address(),
+		PubKeyBytes: pubKey.Bytes(),
+		PubKeyType:  pubKey.Type(),
+		VotingPower: power,
+	}
 
 	resp := &nodesvc.GetStatusResponse{
-		NodeInfo: nodeInfo,
-		SyncInfo: syncInfo,
+		NodeInfo:      nodeInfo,
+		SyncInfo:      syncInfo,
+		ValidatorInfo: validatorInfo,
 	}
 
 	return resp, nil
+}
+
+// localValidatorVotingPower returns the voting power of the node's local validator.
+func localValidatorVotingPower(
+	blkHeight int64,
+	nodeEnv *core.Environment,
+) (int64, error) {
+	validatorSet, err := nodeEnv.StateStore.LoadValidators(blkHeight)
+	if err != nil {
+		return 0, fmt.Errorf("validator set unavailable: %s", err)
+	}
+
+	validatorAddr := nodeEnv.PubKey.Address()
+	_, validator := validatorSet.GetByAddress(validatorAddr)
+	if validator == nil {
+		formatStr := "node's validator (addr: %s) isn't in the validator set"
+		return 0, fmt.Errorf(formatStr, validatorAddr)
+	}
+
+	return validator.VotingPower, nil
 }
 
 func (*server) GetHealth(

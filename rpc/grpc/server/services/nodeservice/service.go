@@ -2,6 +2,7 @@ package nodeservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -54,28 +55,15 @@ func (s *server) GetStatus(
 		return nil, status.Error(codes.Internal, clientErrMSg)
 	}
 
-	syncInfo := &nodesvc.SyncInfo{}
-	blkStore := s.nodeEnv.BlockStore
+	syncInfo, err := s.collectSyncInfo()
+	if err != nil {
+		l.Error(err.Error(), "err", err)
 
-	// load the metadata of the oldest block that this node stores.
-	if blkMeta := blkStore.LoadBaseMeta(); blkMeta != nil {
-		syncInfo.EarliestAppHash = blkMeta.Header.AppHash
-		syncInfo.EarliestBlockHash = blkMeta.BlockID.Hash
-		syncInfo.EarliestBlockHeight = blkMeta.Header.Height
-		syncInfo.EarliestBlockTime = blkMeta.Header.Time
+		clientErrMSg := "node's syncing state information unavailable"
+		return nil, status.Error(codes.Internal, clientErrMSg)
 	}
 
-	// now load the metadata of the latest block that this node stores.
-	blkHeight := blkStore.Height()
-	if blkMeta := blkStore.LoadBlockMeta(blkHeight); blkMeta != nil {
-		syncInfo.LatestAppHash = blkMeta.Header.AppHash
-		syncInfo.LatestBlockHash = blkMeta.BlockID.Hash
-		syncInfo.LatestBlockTime = blkMeta.Header.Time
-	}
-	syncInfo.LatestBlockHeight = blkHeight
-	syncInfo.CatchingUp = s.nodeEnv.ConsensusReactor.WaitSync()
-
-	power, err := localValidatorVotingPower(blkHeight, s.nodeEnv)
+	power, err := localValidatorVotingPower(s.nodeEnv.BlockStore.Height(), s.nodeEnv)
 	if err != nil {
 		errMsg := "unknown node validator's voting power"
 		l.Error(errMsg, "err", err)
@@ -134,6 +122,39 @@ func (s *server) collectNodeInfo() (*nodesvc.NodeInfo, error) {
 	}
 
 	return nodeInfo, nil
+}
+
+// collectSyncInfo collects and returns the node's syncing state information.
+func (s *server) collectSyncInfo() (*nodesvc.SyncInfo, error) {
+	var (
+		blkStore  = s.nodeEnv.BlockStore
+		blkHeight = blkStore.Height()
+		syncInfo  = &nodesvc.SyncInfo{
+			LatestBlockHeight: blkHeight,
+			CatchingUp:        s.nodeEnv.ConsensusReactor.WaitSync(),
+		}
+	)
+
+	// load the metadata of the oldest block that this node stores.
+	blkMeta := blkStore.LoadBaseMeta()
+	if blkMeta == nil {
+		return nil, errors.New("node's base block metadata unavailable")
+	}
+	syncInfo.EarliestAppHash = blkMeta.Header.AppHash
+	syncInfo.EarliestBlockHash = blkMeta.BlockID.Hash
+	syncInfo.EarliestBlockHeight = blkMeta.Header.Height
+	syncInfo.EarliestBlockTime = blkMeta.Header.Time
+
+	// now load the metadata of the latest block that this node stores.
+	blkMeta = blkStore.LoadBlockMeta(blkHeight)
+	if blkMeta == nil {
+		return nil, errors.New("node's latest block metadata unavailable")
+	}
+	syncInfo.LatestAppHash = blkMeta.Header.AppHash
+	syncInfo.LatestBlockHash = blkMeta.BlockID.Hash
+	syncInfo.LatestBlockTime = blkMeta.Header.Time
+
+	return syncInfo, nil
 }
 
 // localValidatorVotingPower returns the voting power of the node's local validator.

@@ -618,6 +618,9 @@ type GRPCConfig struct {
 	// If no height is provided, the block results of the latest height are returned
 	BlockResultsService *GRPCBlockResultsServiceConfig `mapstructure:"block_results_service"`
 
+	// NodeService provides information about the node providing the gRPC interface.
+	NodeService *GRPCNodeServiceConfig `mapstructure:"node_service"`
+
 	// The "privileged" section provides configuration for the gRPC server
 	// dedicated to privileged clients.
 	Privileged *GRPCPrivilegedConfig `mapstructure:"privileged"`
@@ -629,6 +632,7 @@ func DefaultGRPCConfig() *GRPCConfig {
 		VersionService:      DefaultGRPCVersionServiceConfig(),
 		BlockService:        DefaultGRPCBlockServiceConfig(),
 		BlockResultsService: DefaultGRPCBlockResultsServiceConfig(),
+		NodeService:         DefaultGRPCNodeServiceConfig(),
 		Privileged:          DefaultGRPCPrivilegedConfig(),
 	}
 }
@@ -639,6 +643,7 @@ func TestGRPCConfig() *GRPCConfig {
 		VersionService:      TestGRPCVersionServiceConfig(),
 		BlockService:        TestGRPCBlockServiceConfig(),
 		BlockResultsService: DefaultGRPCBlockResultsServiceConfig(),
+		NodeService:         TestGRPCNodeServiceConfig(),
 		Privileged:          TestGRPCPrivilegedConfig(),
 	}
 }
@@ -694,6 +699,22 @@ func DefaultGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
 
 func TestGRPCBlockServiceConfig() *GRPCBlockServiceConfig {
 	return &GRPCBlockServiceConfig{
+		Enabled: true,
+	}
+}
+
+type GRPCNodeServiceConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+func DefaultGRPCNodeServiceConfig() *GRPCNodeServiceConfig {
+	return &GRPCNodeServiceConfig{
+		Enabled: true,
+	}
+}
+
+func TestGRPCNodeServiceConfig() *GRPCNodeServiceConfig {
+	return &GRPCNodeServiceConfig{
 		Enabled: true,
 	}
 }

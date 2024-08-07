@@ -46,36 +46,12 @@ func (s *server) GetStatus(
 		return nil, status.Errorf(codes.Canceled, formatStr, err)
 	}
 
-	info, ok := s.nodeEnv.P2PTransport.NodeInfo().(p2p.DefaultNodeInfo)
-	if !ok {
-		// this should never happen.
-		// p2p.DefaultNodeInfo is the only concrete type implementing the
-		// p2p.NodeInfo interface.
-		// We do this check to be good citizens in case something changes in the p2p
-		// package.
-		errMsg := "p2p.NodeInfo concrete type != p2p.DefaultNodeInfo"
-		l.Error(errMsg, "type", reflect.TypeOf(info).String())
+	nodeInfo, err := s.collectNodeInfo()
+	if err != nil {
+		l.Error(err.Error(), "err", err)
 
-		errMsg = "node's basic information unavailable"
-		return nil, status.Error(codes.Internal, errMsg)
-	}
-
-	nodeInfo := &nodesvc.NodeInfo{
-		ProtocolVersion: &nodesvc.NodeInfo_ProtocolVersion{
-			App:   info.ProtocolVersion.App,
-			Block: info.ProtocolVersion.Block,
-			P2P:   info.ProtocolVersion.P2P,
-		},
-		Id:         string(info.DefaultNodeID),
-		ListenAddr: info.ListenAddr,
-		Network:    info.Network,
-		Version:    info.Version,
-		Channels:   info.Channels,
-		Moniker:    info.Moniker,
-		Other: &nodesvc.NodeInfo_NodeInfoOther{
-			TxIndex:    info.Other.TxIndex,
-			RpcAddress: info.Other.RPCAddress,
-		},
+		clientErrMSg := "node's basic information unavailable"
+		return nil, status.Error(codes.Internal, clientErrMSg)
 	}
 
 	syncInfo := &nodesvc.SyncInfo{}
@@ -121,6 +97,43 @@ func (s *server) GetStatus(
 	}
 
 	return resp, nil
+}
+
+// collectNodeInfo collects and returns the node's basic information.
+func (s *server) collectNodeInfo() (*nodesvc.NodeInfo, error) {
+	info, ok := s.nodeEnv.P2PTransport.NodeInfo().(p2p.DefaultNodeInfo)
+	if !ok {
+		// this should never happen with the current implementation.
+		// p2p.DefaultNodeInfo is the only concrete type implementing the
+		// p2p.NodeInfo interface.
+		// We do this check to be good citizens in case something changes in the p2p
+		// package.
+		var (
+			formatStr      = "p2p.NodeInfo concrete type != p2p.DefaultNodeInfo: %s"
+			unexpectedType = reflect.TypeOf(info).String()
+		)
+		return nil, fmt.Errorf(formatStr, unexpectedType)
+	}
+
+	nodeInfo := &nodesvc.NodeInfo{
+		ProtocolVersion: &nodesvc.NodeInfo_ProtocolVersion{
+			App:   info.ProtocolVersion.App,
+			Block: info.ProtocolVersion.Block,
+			P2P:   info.ProtocolVersion.P2P,
+		},
+		Id:         string(info.DefaultNodeID),
+		ListenAddr: info.ListenAddr,
+		Network:    info.Network,
+		Version:    info.Version,
+		Channels:   info.Channels,
+		Moniker:    info.Moniker,
+		Other: &nodesvc.NodeInfo_NodeInfoOther{
+			TxIndex:    info.Other.TxIndex,
+			RpcAddress: info.Other.RPCAddress,
+		},
+	}
+
+	return nodeInfo, nil
 }
 
 // localValidatorVotingPower returns the voting power of the node's local validator.

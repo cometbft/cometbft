@@ -46,10 +46,16 @@ type TMEventData interface {
 }
 
 func init() {
+	// register v047 structs for amino encoding
 	cmtjson.RegisterType(EventCustomDataNewBlock{}, "tendermint/event/NewBlock")
+	cmtjson.RegisterType(EventCustomDataTx{}, "tendermint/event/Tx")
+
+	// keep old event types for backwards compatibility
+	cmtjson.RegisterType(EventDataTx{}, "tendermint/event/old/Tx")
+	cmtjson.RegisterType(EventDataNewBlock{}, "tendermint/event/old/NewBlock")
+	/* ----------------------------------------------------------------------- */
 	cmtjson.RegisterType(EventDataNewBlockHeader{}, "tendermint/event/NewBlockHeader")
 	cmtjson.RegisterType(EventDataNewEvidence{}, "tendermint/event/NewEvidence")
-	cmtjson.RegisterType(EventCustomDataTx{}, "tendermint/event/Tx")
 	cmtjson.RegisterType(EventDataRoundState{}, "tendermint/event/RoundState")
 	cmtjson.RegisterType(EventDataNewRound{}, "tendermint/event/NewRound")
 	cmtjson.RegisterType(EventDataCompleteProposal{}, "tendermint/event/CompleteProposal")

@@ -731,6 +731,19 @@ enabled = true
 
 If [`grpc.laddr`](#grpcladdr) is empty, this setting is ignored and the service is not enabled.
 
+### grpc.node_service.enabled
+The gRPC node service returns information about the node providing the gRPC interface.
+```toml
+enabled = true
+```
+
+| Value type          | boolean |
+|:--------------------|:--------|
+| **Possible values** | `true`  |
+|                     | `false` |
+
+If [`grpc.laddr`](#grpcladdr) is empty, this setting is ignored and the service is not enabled.
+
 ### grpc.privileged.laddr
 Configuration for privileged gRPC endpoints, which should **never** be exposed to the public internet.
 ```toml

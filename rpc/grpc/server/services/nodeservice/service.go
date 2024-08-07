@@ -15,12 +15,15 @@ import (
 	"github.com/cometbft/cometbft/rpc/core"
 )
 
+// server implements nodesvc.NodeServiceServer.
+// The node service is a gRPC endpoint serving requests for information about
+// the CometBFT node provinding the gRPC interface.
 type server struct {
 	log     log.Logger
 	nodeEnv *core.Environment
 }
 
-// New returns a gRPC server serving request for information about a CometBFT node.
+// New returns a gRPC server serving requests for information about a CometBFT node.
 func New(l log.Logger, env *core.Environment) nodesvc.NodeServiceServer {
 	return &server{
 		log:     l.With("service", "NodeService"),
@@ -29,6 +32,8 @@ func New(l log.Logger, env *core.Environment) nodesvc.NodeServiceServer {
 }
 
 // GetStatus is the gRPC endpoint serving requests for the node current status.
+// This includes the node's basic info, such as public key, latest block hash, app
+// hash, block height, and time.
 // The request object isn't used in the current implementation, and the function
 // doesn't expect clients to provide any data in it.
 func (s *server) GetStatus(

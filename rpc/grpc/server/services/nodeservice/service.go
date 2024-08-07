@@ -63,19 +63,12 @@ func (s *server) GetStatus(
 		return nil, status.Error(codes.Internal, clientErrMSg)
 	}
 
-	power, err := localValidatorVotingPower(s.nodeEnv.BlockStore.Height(), s.nodeEnv)
+	validatorInfo, err := s.collectLocalValidatorInfo()
 	if err != nil {
-		errMsg := "unknown node validator's voting power"
-		l.Error(errMsg, "err", err)
-		return nil, status.Errorf(codes.Internal, "%s: %s", errMsg, err)
-	}
+		l.Error(err.Error(), "err", err)
 
-	pubKey := s.nodeEnv.PubKey
-	validatorInfo := &nodesvc.ValidatorInfo{
-		Address:     pubKey.Address(),
-		PubKeyBytes: pubKey.Bytes(),
-		PubKeyType:  pubKey.Type(),
-		VotingPower: power,
+		clientErrMSg := "node's local validator information unavailable"
+		return nil, status.Error(codes.Internal, clientErrMSg)
 	}
 
 	resp := &nodesvc.GetStatusResponse{
@@ -157,11 +150,27 @@ func (s *server) collectSyncInfo() (*nodesvc.SyncInfo, error) {
 	return syncInfo, nil
 }
 
+// collectLocalValidatorInfo returns the node's local validator's information.
+func (s *server) collectLocalValidatorInfo() (*nodesvc.ValidatorInfo, error) {
+	power, err := localValidatorVotingPower(s.nodeEnv)
+	if err != nil {
+		return nil, errors.New("unknown node validator's voting power")
+	}
+
+	pubKey := s.nodeEnv.PubKey
+	validatorInfo := &nodesvc.ValidatorInfo{
+		Address:     pubKey.Address(),
+		PubKeyBytes: pubKey.Bytes(),
+		PubKeyType:  pubKey.Type(),
+		VotingPower: power,
+	}
+
+	return validatorInfo, nil
+}
+
 // localValidatorVotingPower returns the voting power of the node's local validator.
-func localValidatorVotingPower(
-	blkHeight int64,
-	nodeEnv *core.Environment,
-) (int64, error) {
+func localValidatorVotingPower(nodeEnv *core.Environment) (int64, error) {
+	blkHeight := nodeEnv.BlockStore.Height()
 	validatorSet, err := nodeEnv.StateStore.LoadValidators(blkHeight)
 	if err != nil {
 		return 0, fmt.Errorf("validator set unavailable: %s", err)

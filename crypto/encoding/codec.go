@@ -57,14 +57,14 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 				Secp256K1: k,
 			},
 		}
-	case bls12381.PubKey:
+	case *bls12381.PubKey:
 		if !bls12381.Enabled {
 			return kp, ErrUnsupportedKey{Key: k}
 		}
 
 		kp = pc.PublicKey{
 			Sum: &pc.PublicKey_Bls12381{
-				Bls12381: k,
+				Bls12381: k.Bytes(),
 			},
 		}
 	default:
@@ -110,9 +110,7 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 				Want: bls12381.PubKeySize,
 			}
 		}
-		pk := make(bls12381.PubKey, bls12381.PubKeySize)
-		copy(pk, k.Bls12381)
-		return pk, nil
+		return bls12381.NewPublicKeyFromBytes(k.Bls12381)
 	default:
 		return nil, ErrUnsupportedKey{Key: k}
 	}
@@ -161,9 +159,7 @@ func PubKeyFromTypeAndBytes(pkType string, bytes []byte) (crypto.PubKey, error) 
 			}
 		}
 
-		pk := make(bls12381.PubKey, bls12381.PubKeySize)
-		copy(pk, bytes)
-		pubKey = pk
+		return bls12381.NewPublicKeyFromBytes(bytes)
 	default:
 		return nil, ErrUnsupportedKey{Key: pkType}
 	}

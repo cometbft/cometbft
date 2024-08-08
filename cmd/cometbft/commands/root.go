@@ -92,7 +92,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		for _, possibleMisconfiguration := range config.PossibleMisconfigurations() {
-			logger.Warn(possibleMisconfiguration)
+			logger.Info(possibleMisconfiguration)
 		}
 
 		if config.LogFormat == cfg.LogFormatJSON {

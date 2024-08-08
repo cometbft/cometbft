@@ -22,6 +22,7 @@ type Client interface {
 	VersionServiceClient
 	BlockServiceClient
 	BlockResultsServiceClient
+	NodeServiceClient
 
 	// Close the connection to the server. Any subsequent requests will fail.
 	Close() error
@@ -34,6 +35,7 @@ type clientBuilder struct {
 	versionServiceEnabled      bool
 	blockServiceEnabled        bool
 	blockResultsServiceEnabled bool
+	nodeServiceEnabled         bool
 }
 
 func newClientBuilder() *clientBuilder {
@@ -43,6 +45,7 @@ func newClientBuilder() *clientBuilder {
 		versionServiceEnabled:      true,
 		blockServiceEnabled:        true,
 		blockResultsServiceEnabled: true,
+		nodeServiceEnabled:         true,
 	}
 }
 
@@ -56,6 +59,7 @@ type client struct {
 	VersionServiceClient
 	BlockServiceClient
 	BlockResultsServiceClient
+	NodeServiceClient
 }
 
 // Close implements Client.
@@ -91,6 +95,17 @@ func WithVersionServiceEnabled(enabled bool) Option {
 func WithBlockServiceEnabled(enabled bool) Option {
 	return func(b *clientBuilder) {
 		b.blockServiceEnabled = enabled
+	}
+}
+
+// WithNodeServiceEnabled allows control of whether or not to create a
+// client for interacting with the node service of a CometBFT node.
+//
+// If disabled and the client attempts to access the node service API, the
+// client will panic.
+func WithNodeServiceEnabled(enabled bool) Option {
+	return func(b *clientBuilder) {
+		b.nodeServiceEnabled = enabled
 	}
 }
 
@@ -133,10 +148,15 @@ func New(_ context.Context, addr string, opts ...Option) (Client, error) {
 	if builder.blockResultsServiceEnabled {
 		blockResultServiceClient = newBlockResultsServiceClient(conn)
 	}
+	nodeServiceClient := newDisabledNodeServiceClient()
+	if builder.nodeServiceEnabled {
+		nodeServiceClient = newNodeServiceClient(conn)
+	}
 	return &client{
 		conn:                      conn,
 		VersionServiceClient:      versionServiceClient,
 		BlockServiceClient:        blockServiceClient,
 		BlockResultsServiceClient: blockResultServiceClient,
+		NodeServiceClient:         nodeServiceClient,
 	}, nil
 }

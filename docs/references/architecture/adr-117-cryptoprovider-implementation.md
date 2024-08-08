@@ -1,22 +1,28 @@
-# ADR 117: Cryptography: Multi curve support
+# ADR 117: Implementing CryptoProvider for PrivValidator
 
 ## Change log
 
-* July 1st 2024: Initial proposal (Zondax AG: @raynaudoe @juliantoledano @jleni @educlerici-zondax @lucaslopezf)
+* 2024-07-01: Initial proposal (Zondax AG: @raynaudoe @juliantoledano @jleni @educlerici-zondax @lucaslopezf)
+* 2024-08-08: ADR title changed. Update proposal (Zondax AG: @raynaudoe @juliantoledano @jleni @educlerici-zondax @lucaslopezf)
 
 ## Status
 
-DRAFT
+Proposed
 
 ## Abstract
 
-This ADR proposes the implementation of [ADR-001-crypto-provider](https://github.com/cosmos/crypto/blob/main/docs/architecture/adr-001-crypto-provider.md). By refactoring the current `PrivValidator` implementations and replacing them with `CryptoProvider`s, we will allow for "pluggable cryptography" that enables a more modular design and future-proofs crypto tools.
+This ADR proposes the implementation of [ADR-001-crypto-provider](https://github.com/cosmos/crypto/blob/main/docs/architecture/adr-001-crypto-provider.md) within CometBFT's existing PrivValidator framework. The primary goal is to refactor the current `PrivValidator` implementations by replacing them with `CryptoProvider`-based implementations. This change will maintain the existing PrivValidator logic while allowing for multiple implementations through the CryptoProvider interface.
 
-We will be extensively referencing concepts like CryptoProviders in this ADR. Please check the full ADR describing them [here](https://github.com/cosmos/crypto/blob/main/docs/architecture/adr-001-crypto-provider.md#crypto-provider).
+This approach enables "pluggable cryptography" that offers a more modular design and future-proofs the crypto tools. The implementation will preserve the existing multi-curve support while providing a more flexible and extensible architecture for cryptographic operations.
+
+This ADR extensively references concepts like `CryptoProvider`.
+Please check the full ADR describing them [here](https://github.com/cosmos/crypto/blob/main/docs/architecture/adr-001-crypto-provider.md#crypto-provider).
 
 ## Context
 
-The introduction of multi-curve support, by implementing the `CryptoProvider` interface and its components, in the CometBFT cryptographic package offers significant advantages. By not being restricted to a single cryptographic curve, developers can choose the most appropriate curve based on security, performance, and compatibility requirements. This flexibility enhances the application's ability to adapt to evolving security standards and optimizes performance for specific use cases, helping to future-proof the codebase's cryptographic capabilities.
+The introduction of the `CryptoProvider` interface into the CometBFT cryptographic package offers several benefits. By using the `CryptoProvider` interface, the existing `PrivValidator` logic can be kept while allowing for multiple implementations of `PrivValidator` through the `CryptoProvider` interface. This means that different cryptographic methods can be plugged in without changing the core logic of `PrivValidator`.
+
+This flexibility makes it easier to adapt to new security standards and improves performance for different use cases. For example, if a new, more secure signing method is developed, it can be implemented as a new `CryptoProvider` and used by `PrivValidator` without needing to rewrite existing code. This helps to keep the cryptographic code up-to-date and more secure.
 
 For readability purposes, here's an extract of **adr-001-crypto-provider** that defines the `CryptoProvider` interface:
 
@@ -210,7 +216,7 @@ Alternatives:
 
 * *Low impact / minimal dependencies*: The corresponding `CryptoProvider` can be directly stored on disk in a dedicated directory in an encoding format of choice (text, JSON)
 
-* *Greater impact / better security*: Use cosmos-sdk's [Keyring](https://github.com/cosmos/cosmos-sdk/blob/439f2f9d5b5884bc9df4b58d702555330549a898/crypto/keyring/keyring). to manage `CryptoProvider` along with its private keys. This specifically applies to the `FilePV` implementation, which could store its private keys through `Keyring` instead of a file in the filesystem. This approach will require decoupling the `Keyring` package from the cosmos-sdk, which could be cumbersome.
+* *Greater impact / better security*: Use cosmos-sdk's [Keyring](https://github.com/cosmos/cosmos-sdk/blob/8bfcf554275c1efbb42666cc8510d2da139b67fa/client/v2/autocli/keyring/interface.go#L11-L23). to manage `CryptoProvider` along with its private keys. This specifically applies to the `FilePV` implementation, which could store its private keys through `Keyring` instead of a file in the filesystem. This approach will require decoupling the `Keyring` package from the cosmos-sdk, which could be cumbersome.
 
 
 #### Directories reorganization

@@ -21,7 +21,7 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/sr25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/internal/async"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
@@ -278,7 +278,7 @@ func TestNonEd25519Pubkey(t *testing.T) {
 	defer fooConn.Close()
 	defer barConn.Close()
 	fooPrvKey := ed25519.GenPrivKey()
-	barPrvKey := sr25519.GenPrivKey()
+	barPrvKey := secp256k1.GenPrivKey()
 
 	go MakeSecretConnection(fooConn, fooPrvKey) //nolint:errcheck // ignore for tests
 

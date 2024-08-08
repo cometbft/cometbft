@@ -273,7 +273,7 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 			return fmt.Errorf("marshaling tx_result: %w", err)
 		}
 		// Index the hash of the underlying transaction as a hex string.
-		txHash := fmt.Sprintf("%X", types.Tx(txr.Tx).Hash())
+		txHash := types.Tx(txr.Tx).Hash().String()
 		// Generate random ID for this tx_result and insert a record for it
 		txID := randomBigserial()
 		txrInserts = append(txrInserts, []any{txID, blockIDs[i], txr.Index, ts, txHash, resultData})

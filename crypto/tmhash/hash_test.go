@@ -96,3 +96,25 @@ func TestValidSHA256String(t *testing.T) {
 		})
 	}
 }
+
+func TestSumMany(t *testing.T) {
+	data1 := []byte("hello")
+	data2 := []byte("world")
+	data3 := []byte("!")
+
+	// Test SumMany
+	result := tmhash.SumMany(data1, data2, data3)
+
+	// Compute expected hash
+	h := sha256.New()
+	h.Write(data1)
+	h.Write(data2)
+	h.Write(data3)
+	expected := h.Sum(nil)
+
+	assert.Equal(t, expected, result, "SumMany result should match manual hash computation")
+
+	// Test with single input
+	singleResult := tmhash.SumMany(data1)
+	assert.Equal(t, tmhash.Sum(data1), singleResult, "SumMany with single input should match Sum")
+}

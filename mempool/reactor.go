@@ -257,7 +257,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// reduces the mempool size and the recheck-tx rate of the receiving
 		// node. See [RFC 103] for an analysis on this optimization.
 		//
-		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
+		// [RFC 103]: https://github.com/CometBFT/cometbft/blob/main/docs/references/rfc/rfc-103-incoming-txs-when-catching-up.md
 		for {
 			if peerState.GetHeight()+1 >= entry.Height() {
 				break

@@ -156,6 +156,47 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
 }
 
+// Test that a lagging peer does not receive txs.
+func TestMempoolReactorSendLaggingPeer(t *testing.T) {
+	config := cfg.TestConfig()
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				require.NoError(t, err)
+			}
+		}
+	}()
+
+	peerID0 := reactors[0].Switch.NodeInfo().ID()
+	peerID1 := reactors[1].Switch.NodeInfo().ID()
+
+	// First reactor is at height 10 and knows that its peer is lagging at height 1.
+	reactors[0].mempool.height.Store(10)
+	reactors[0].Switch.Peers().Get(peerID1).Set(types.PeerStateKey, peerState{1})
+
+	// Second reactor is lagging at height 1 and knows that its peer is at height 10.
+	reactors[1].mempool.height.Store(1)
+	reactors[1].Switch.Peers().Get(peerID0).Set(types.PeerStateKey, peerState{10})
+
+	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
+	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
+	time.Sleep(5 * PeerCatchupSleepIntervalMS * time.Millisecond)
+	require.Zero(t, reactors[1].mempool.Size())
+
+	// Now the second reactor advances to height 9, who should receive all txs.
+	reactors[1].mempool.height.Store(9)
+	reactors[0].Switch.Peers().Get(peerID1).Set(types.PeerStateKey, peerState{9})
+	waitForReactors(t, txs1, reactors, checkTxsInOrder)
+	require.Equal(t, reactors[1].mempool.Size(), len(txs1))
+
+	// Add a bunch of txs to first reactor. The second reactor should receive them all.
+	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
+	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
+	require.Equal(t, reactors[1].mempool.Size(), len(txs1)+len(txs2))
+}
+
 func TestReactor_MaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 

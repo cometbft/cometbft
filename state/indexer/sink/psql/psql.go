@@ -4,7 +4,6 @@ package psql
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strconv"
@@ -274,7 +273,7 @@ func (es *EventSink) IndexTxEvents(txrs []*abci.TxResult) error {
 			return fmt.Errorf("marshaling tx_result: %w", err)
 		}
 		// Index the hash of the underlying transaction as a hex string.
-		txHash := hex.EncodeToString(types.Tx(txr.Tx).Hash())
+		txHash := fmt.Sprintf("%X", types.Tx(txr.Tx).Hash())
 		// Generate random ID for this tx_result and insert a record for it
 		txID := randomBigserial()
 		txrInserts = append(txrInserts, []any{txID, blockIDs[i], txr.Index, ts, txHash, resultData})

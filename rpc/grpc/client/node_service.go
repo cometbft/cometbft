@@ -39,9 +39,9 @@ type NodeServiceClient interface {
 	GetHealth(ctx context.Context) error
 }
 
-// nodeServiceClient implements NodeStatusChecker.
+// nodeServiceClient is the gRPC client for the NodeService gRPC endpoint.
+// nodeServiceClient implements NodeServiceClient.
 type nodeServiceClient struct {
-	// client is the NodeService gRPC client.
 	client nodesvc.NodeServiceClient
 }
 
@@ -54,7 +54,7 @@ func newNodeServiceClient(conn grpc.ClientConn) NodeServiceClient {
 }
 
 // GetStatus is the gRPC endpoint serving requests for the node current status.
-// Implements the NodeStatusChecker interface.
+// Implements the NodeServiceClient interface.
 func (c *nodeServiceClient) GetStatus(ctx context.Context) (*NodeStatus, error) {
 	resp, err := c.client.GetStatus(ctx, &nodesvc.GetStatusRequest{})
 	if err != nil {
@@ -108,24 +108,33 @@ func (c *nodeServiceClient) GetStatus(ctx context.Context) (*NodeStatus, error) 
 }
 
 // GetHealth is the gRPC endpoint serving requests for the node current health.
-// Implements the NodeStatusChecker interface.
+// Implements the NodeServiceClient interface.
 func (*nodeServiceClient) GetHealth(context.Context) error {
 	return errors.New("uninmplemented")
 }
 
-// TODO: add docs for this type.
+// disabledNodeServiceClient is a NodeServiceClient that panics when used.
+// We use it when we don't create a NodeService gRPC client, thus making the
+// NodeService API unavailable to users.
+// It implements the NodeServiceClient interface.
 type disabledNodeServiceClient struct{}
 
+// newDisabledNodeServiceClient returns a disabled NodeService gRPC client that
+// panics if the client uses it.
 func newDisabledNodeServiceClient() NodeServiceClient {
 	return &disabledNodeServiceClient{}
 }
 
 const nodeSvcPanicMsg = "node service client is disabled"
 
+// GetStatus panics if called, because the node service client is disabled.
+// Implements the NodeServiceClient interface.
 func (*disabledNodeServiceClient) GetStatus(context.Context) (*NodeStatus, error) {
 	panic(nodeSvcPanicMsg)
 }
 
+// GetHealth panics if called, because the node service client is disabled.
+// Implements the NodeServiceClient interface.
 func (*disabledNodeServiceClient) GetHealth(context.Context) error {
 	panic(nodeSvcPanicMsg)
 }

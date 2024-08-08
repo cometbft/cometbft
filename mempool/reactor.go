@@ -258,9 +258,17 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// node. See [RFC 103] for an analysis on this optimization.
 		//
 		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
-		if peerState.GetHeight() < entry.Height()-1 {
-			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-			continue
+		for {
+			if peerState.GetHeight()+1 >= entry.Height() {
+				break
+			}
+			select {
+			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
+			}
 		}
 
 		// NOTE: Transaction batching was disabled due to

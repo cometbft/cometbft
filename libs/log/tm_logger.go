@@ -33,8 +33,6 @@ func NewTMLogger(w io.Writer) Logger {
 		switch keyvals[1].(kitlevel.Value).String() {
 		case "debug":
 			return term.FgBgColor{Fg: term.DarkGray}
-		case "warn":
-			return term.FgBgColor{Fg: term.Yellow}
 		case "error":
 			return term.FgBgColor{Fg: term.Red}
 		default:
@@ -64,16 +62,6 @@ func (l *tmLogger) Info(msg string, keyvals ...any) {
 // Debug logs a message at level Debug.
 func (l *tmLogger) Debug(msg string, keyvals ...any) {
 	lWithLevel := kitlevel.Debug(l.srcLogger)
-
-	if err := kitlog.With(lWithLevel, msgKey, msg).Log(keyvals...); err != nil {
-		errLogger := kitlevel.Error(l.srcLogger)
-		kitlog.With(errLogger, msgKey, msg).Log("err", err) //nolint:errcheck // no need to check error again
-	}
-}
-
-// Warn logs a message at level Warn.
-func (l *tmLogger) Warn(msg string, keyvals ...interface{}) {
-	lWithLevel := kitlevel.Warn(l.srcLogger)
 
 	if err := kitlog.With(lWithLevel, msgKey, msg).Log(keyvals...); err != nil {
 		errLogger := kitlevel.Error(l.srcLogger)

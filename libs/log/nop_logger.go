@@ -10,7 +10,6 @@ func NewNopLogger() Logger { return &nopLogger{} }
 
 func (nopLogger) Info(string, ...any)  {}
 func (nopLogger) Debug(string, ...any) {}
-func (nopLogger) Warn(string, ...any)  {}
 func (nopLogger) Error(string, ...any) {}
 
 func (l *nopLogger) With(...any) Logger {

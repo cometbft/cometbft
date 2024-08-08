@@ -90,7 +90,7 @@ func (e ErrInvalidKey) Error() string {
 	return fmt.Sprintf("merkle: invalid key error: %v", e.Err)
 }
 
-// KeyPathToKeys Decode a path to a list of keys. Path must begin with `/`.
+// KeyPathToKeys decodes a path to a list of keys. Path must begin with `/`.
 // Each key must use a known encoding.
 func KeyPathToKeys(path string) (keys [][]byte, err error) {
 	if path == "" || path[0] != '/' {

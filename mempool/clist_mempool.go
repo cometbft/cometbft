@@ -377,16 +377,23 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 func (mem *CListMempool) isFull(txSize int) error {
 	memSize := mem.Size()
 	txsBytes := mem.SizeBytes()
+<<<<<<< HEAD
 	recheckFull := mem.recheck.consideredFull()
 
 	if memSize >= mem.config.Size || int64(txSize)+txsBytes > mem.config.MaxTxsBytes || recheckFull {
+=======
+	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) {
+>>>>>>> 987fa8373 (feat(mempool): add error ErrRecheckFull (#3654))
 		return ErrMempoolIsFull{
 			NumTxs:      memSize,
 			MaxTxs:      mem.config.Size,
 			TxsBytes:    txsBytes,
 			MaxTxsBytes: mem.config.MaxTxsBytes,
-			RecheckFull: recheckFull,
 		}
+	}
+
+	if mem.recheck.consideredFull() {
+		return ErrRecheckFull
 	}
 
 	return nil

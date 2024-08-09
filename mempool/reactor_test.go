@@ -176,18 +176,15 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
 	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
-	time.Sleep(5 * PeerCatchupSleepIntervalMS * time.Millisecond)
-	require.Zero(t, reactors[1].mempool.Size())
+	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
-	// Now the second reactor advances to height 9, who should receive all txs.
+	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
 	waitForReactors(t, txs1, reactors, checkTxsInOrder)
-	require.Equal(t, reactors[1].mempool.Size(), len(txs1))
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
 	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
 	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
-	require.Equal(t, reactors[1].mempool.Size(), len(txs1)+len(txs2))
 }
 
 func TestReactor_MaxTxBytes(t *testing.T) {

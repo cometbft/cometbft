@@ -204,7 +204,7 @@ func (cfg *Config) CheckDeprecated() []string {
 func (cfg *Config) PossibleMisconfigurations() []string {
 	res := []string{}
 	for _, elem := range cfg.StateSync.PossibleMisconfigurations() {
-		res = append(res, "[statesync] section: %s"+elem)
+		res = append(res, "[statesync] section: "+elem)
 	}
 	return res
 }

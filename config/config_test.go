@@ -221,3 +221,25 @@ func TestInstrumentationConfigValidateBasic(t *testing.T) {
 	cfg.MaxOpenConnections = -1
 	require.Error(t, cfg.ValidateBasic())
 }
+
+func TestConfigPossibleMisconfigurations(t *testing.T) {
+	cfg := config.DefaultConfig()
+	require.Len(t, cfg.PossibleMisconfigurations(), 0)
+	// providing rpc_servers while enable = false is a possible misconfiguration
+	cfg.StateSync.RPCServers = []string{"first_rpc"}
+	require.Equal(t, []string{"[statesync] section: rpc_servers specified but enable = false"}, cfg.PossibleMisconfigurations())
+	// enabling statesync deletes possible misconfiguration
+	cfg.StateSync.Enable = true
+	require.Len(t, cfg.PossibleMisconfigurations(), 0)
+}
+
+func TestStateSyncPossibleMisconfigurations(t *testing.T) {
+	cfg := config.DefaultStateSyncConfig()
+	require.Len(t, cfg.PossibleMisconfigurations(), 0)
+	// providing rpc_servers while enable = false is a possible misconfiguration
+	cfg.RPCServers = []string{"first_rpc"}
+	require.Equal(t, []string{"rpc_servers specified but enable = false"}, cfg.PossibleMisconfigurations())
+	// enabling statesync deletes possible misconfiguration
+	cfg.Enable = true
+	require.Len(t, cfg.PossibleMisconfigurations(), 0)
+}

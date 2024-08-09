@@ -199,6 +199,16 @@ func (cfg *Config) CheckDeprecated() []string {
 	return warnings
 }
 
+// PossibleMisconfigurations returns a list of possible conflicting entries that
+// may lead to unexpected behavior.
+func (cfg *Config) PossibleMisconfigurations() []string {
+	res := []string{}
+	for _, elem := range cfg.StateSync.PossibleMisconfigurations() {
+		res = append(res, "[statesync] section: "+elem)
+	}
+	return res
+}
+
 // -----------------------------------------------------------------------------
 // BaseConfig
 
@@ -1126,6 +1136,15 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+// PossibleMisconfigurations returns a list of possible conflicting entries that
+// may lead to unexpected behavior.
+func (cfg *StateSyncConfig) PossibleMisconfigurations() []string {
+	if !cfg.Enable && len(cfg.RPCServers) != 0 {
+		return []string{"rpc_servers specified but enable = false"}
+	}
+	return []string{}
 }
 
 // -----------------------------------------------------------------------------

@@ -28,10 +28,8 @@ var (
 
 // For minimal-signature-size operations.
 type (
-	blstPublicKey          = blst.P2Affine
-	blstSignature          = blst.P1Affine
-	blstAggregateSignature = blst.P1Aggregate
-	blstAggregatePublicKey = blst.P2Aggregate
+	blstPublicKey = blst.P2Affine
+	blstSignature = blst.P1Affine
 )
 
 // -------------------------------------.

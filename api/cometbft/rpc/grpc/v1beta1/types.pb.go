@@ -339,6 +339,7 @@ func _BroadcastAPI_BroadcastTx_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+var BroadcastAPI_serviceDesc = _BroadcastAPI_serviceDesc
 var _BroadcastAPI_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.rpc.grpc.v1beta1.BroadcastAPI",
 	HandlerType: (*BroadcastAPIServer)(nil),

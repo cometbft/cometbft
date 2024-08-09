@@ -15,7 +15,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/sr25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
@@ -1633,7 +1633,7 @@ func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {
 			sameType: true,
 		},
 		{
-			vals:     NewValidatorSet([]*Validator{randValidator(100), NewValidator(sr25519.GenPrivKey().PubKey(), 200)}),
+			vals:     NewValidatorSet([]*Validator{randValidator(100), NewValidator(secp256k1.GenPrivKey().PubKey(), 200)}),
 			sameType: false,
 		},
 	}

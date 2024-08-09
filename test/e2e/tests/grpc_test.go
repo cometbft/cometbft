@@ -214,6 +214,31 @@ func TestGRPC_BlockIndexerRetainHeight(t *testing.T) {
 	})
 }
 
+func TestGRPC_GetStatus(t *testing.T) {
+	testFullNodesOrValidators(t, 0, func(t *testing.T, node e2e.Node) {
+		t.Helper()
+
+		ctx, ctxCancel := context.WithTimeout(context.Background(), time.Minute)
+		defer ctxCancel()
+
+		gRPCClient, err := node.GRPCClient(ctx)
+		require.NoError(t, err)
+		defer gRPCClient.Close()
+
+		status, err := gRPCClient.GetStatus(ctx)
+		require.NoError(t, err)
+		require.NotNil(t, status)
+	})
+}
+
+// func expNodeStatus(t *testing.T, node e2e.Node) (*client.NodeStatus, error) {
+// 	t.Helper()
+
+// 	status := &client.NodeStatus{}
+
+// 	return status, nil
+// }
+
 // This method returns the latest height retrieved from the GRPC Block Service invoking the
 // GetLatestHeight, which returns a channel that receives the latest height. Once a height is
 // received in the channel, return that height.

@@ -151,6 +151,7 @@ func _NodeService_GetHealth_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+var NodeService_serviceDesc = _NodeService_serviceDesc
 var _NodeService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.services.node.v1.NodeService",
 	HandlerType: (*NodeServiceServer)(nil),

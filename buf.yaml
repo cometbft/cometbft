@@ -1,3 +1,4 @@
+version: v2
 build:
   roots:
     - proto

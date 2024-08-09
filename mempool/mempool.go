@@ -84,6 +84,10 @@ type Mempool interface {
 	// Flush removes all transactions from the mempool and caches.
 	Flush()
 
+	// Contains returns true iff the transaction, identified by its key, is in
+	// the mempool.
+	Contains(txKey types.TxKey) bool
+
 	// TxsAvailable returns a channel which fires once for every height, and only
 	// when transactions are available in the mempool.
 	//

@@ -642,6 +642,7 @@ func _ABCIService_FinalizeBlock_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+var ABCIService_serviceDesc = _ABCIService_serviceDesc
 var _ABCIService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.abci.v1.ABCIService",
 	HandlerType: (*ABCIServiceServer)(nil),

@@ -1,6 +1,10 @@
 module github.com/cometbft/cometbft
 
+<<<<<<< HEAD
 go 1.23.1
+=======
+go 1.22
+>>>>>>> a33b8acd (fix(privval): re-enable some vote extension-related sanity checks when signing a vote (#3649))
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -41,8 +45,20 @@ require (
 require github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 
 require (
+<<<<<<< HEAD
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/go-git/go-git/v5 v5.13.1
+=======
+	github.com/Masterminds/semver/v3 v3.2.1
+	github.com/btcsuite/btcd/btcec/v2 v2.3.3
+	github.com/btcsuite/btcd/btcutil v1.1.5
+	github.com/cometbft/cometbft-db v0.13.0
+	github.com/cometbft/cometbft-load-test v0.1.0
+	github.com/cometbft/cometbft/api v1.0.0-rc.1
+	github.com/cosmos/gogoproto v1.6.0
+	github.com/dgraph-io/badger/v4 v4.2.0
+	github.com/go-git/go-git/v5 v5.12.0
+>>>>>>> a33b8acd (fix(privval): re-enable some vote extension-related sanity checks when signing a vote (#3649))
 	github.com/goccmack/goutil v1.2.3
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7

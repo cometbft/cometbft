@@ -203,21 +203,6 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}
 
-	var peerState PeerState
-	// Wait until the peer's state is ready. We initialize it in the consensus reactor, but when we
-	// add the peer in Switch, the order in which we call reactors#AddPeer is different every time
-	// due to us using a map. Sometimes other reactors will be initialized before the consensus
-	// reactor. We should wait a few milliseconds and retry. We assume the pointer to the state is
-	// set once and never unset.
-	for {
-		if ps, ok := peer.Get(types.PeerStateKey).(PeerState); ok {
-			peerState = ps
-			break
-		}
-		// Peer does not have a state yet.
-		time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-	}
-
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
@@ -240,6 +225,18 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			}
 		}
 
+		// Make sure the peer is up to date.
+		peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
+		if !ok {
+			// Peer does not have a state yet. We set it in the consensus reactor, but
+			// when we add peer in Switch, the order we call reactors#AddPeer is
+			// different every time due to us using a map. Sometimes other reactors
+			// will be initialized before the consensus reactor. We should wait a few
+			// milliseconds and retry.
+			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+			continue
+		}
+
 		// If we suspect that the peer is lagging behind, at least by more than
 		// one block, we don't send the transaction immediately. This code
 		// reduces the mempool size and the recheck-tx rate of the receiving
@@ -255,15 +252,18 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !memTx.isSender(peer.ID()) {
-			success := peer.Send(p2p.Envelope{
-				ChannelID: MempoolChannel,
-				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
-			})
-			if !success {
-				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-				continue
-			}
+		// Do not send this transaction if we receive it from peer.
+		if memTx.isSender(peer.ID()) {
+			continue
+		}
+
+		success := peer.Send(p2p.Envelope{
+			ChannelID: MempoolChannel,
+			Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
+		})
+		if !success {
+			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
+			continue
 		}
 
 		select {

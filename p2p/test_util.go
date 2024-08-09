@@ -181,8 +181,8 @@ func (sw *Switch) addPeerWithConnection(conn net.Conn) error {
 		pc,
 		MConnConfig(sw.config),
 		ni,
-		sw.reactorsByCh,
-		sw.msgTypeByChID,
+		sw.peerConfig.reactorsByCh,
+		sw.peerConfig.msgTypeByChID,
 		sw.chDescs,
 		sw.StopPeerForError,
 	)
@@ -236,7 +236,7 @@ func MakeSwitch(
 	sw.SetNodeKey(&nodeKey)
 
 	ni := nodeInfo.(DefaultNodeInfo)
-	for ch := range sw.reactorsByCh {
+	for ch := range sw.peerConfig.reactorsByCh {
 		ni.Channels = append(ni.Channels, ch)
 	}
 	nodeInfo = ni

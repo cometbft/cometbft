@@ -549,7 +549,7 @@ The public key currently supports three types:
 
 - `ed25519`
 - `secp256k1`
-- `sr25519`
+- `bls12381`
 
 Structure `ValidatorUpdate` also contains an `ìnt64` field denoting the validator's new power.
 Applications must ensure that

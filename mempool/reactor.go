@@ -203,6 +203,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}
 
+<<<<<<< HEAD
 	var peerState PeerState
 	// Wait until the peer's state is ready. We initialize it in the consensus reactor, but when we
 	// add the peer in Switch, the order in which we call reactors#AddPeer is different every time
@@ -218,6 +219,10 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 	}
 
+=======
+	iter := memR.mempool.NewIterator()
+	var entry Entry
+>>>>>>> 1ac883258 (fix(mempool): tx is skipped when sending to a lagging peer or sending fails (#3647))
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
@@ -245,24 +250,61 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// reduces the mempool size and the recheck-tx rate of the receiving
 		// node. See [RFC 103] for an analysis on this optimization.
 		//
+<<<<<<< HEAD
 		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
 		memTx := next.Value.(*mempoolTx)
 		if peerState.GetHeight() < memTx.Height()-1 {
 			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
 			continue
+=======
+		// [RFC 103]: https://github.com/CometBFT/cometbft/blob/main/docs/references/rfc/rfc-103-incoming-txs-when-catching-up.md
+		for {
+			// Make sure the peer's state is up to date. The peer may not have a
+			// state yet. We set it in the consensus reactor, but when we add
+			// peer in Switch, the order we call reactors#AddPeer is different
+			// every time due to us using a map. Sometimes other reactors will
+			// be initialized before the consensus reactor. We should wait a few
+			// milliseconds and retry.
+			peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
+			if ok && peerState.GetHeight()+1 >= entry.Height() {
+				break
+			}
+			select {
+			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
+			}
+>>>>>>> 1ac883258 (fix(mempool): tx is skipped when sending to a lagging peer or sending fails (#3647))
 		}
 
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
+<<<<<<< HEAD
 		if !memTx.isSender(peer.ID()) {
+=======
+		// Do not send this transaction if we receive it from peer.
+		if entry.IsSender(peer.ID()) {
+			continue
+		}
+
+		for {
+>>>>>>> 1ac883258 (fix(mempool): tx is skipped when sending to a lagging peer or sending fails (#3647))
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{memTx.tx}},
 			})
-			if !success {
-				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-				continue
+			if success {
+				break
+			}
+			select {
+			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
 			}
 		}
 

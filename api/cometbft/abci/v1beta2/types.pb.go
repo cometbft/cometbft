@@ -2700,6 +2700,7 @@ func _ABCIApplication_ProcessProposal_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+var ABCIApplication_serviceDesc = _ABCIApplication_serviceDesc
 var _ABCIApplication_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.abci.v1beta2.ABCIApplication",
 	HandlerType: (*ABCIApplicationServer)(nil),

@@ -116,6 +116,7 @@ func _VersionService_GetVersion_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+var VersionService_serviceDesc = _VersionService_serviceDesc
 var _VersionService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.services.version.v1.VersionService",
 	HandlerType: (*VersionServiceServer)(nil),

@@ -1,5 +1,3 @@
-version: v3
-
 build:
   roots:
     - proto

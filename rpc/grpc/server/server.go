@@ -9,11 +9,14 @@ import (
 
 	pbblocksvc "github.com/cometbft/cometbft/api/cometbft/services/block/v1"
 	brs "github.com/cometbft/cometbft/api/cometbft/services/block_results/v1"
+	nodesvc "github.com/cometbft/cometbft/api/cometbft/services/node/v1"
 	pbversionsvc "github.com/cometbft/cometbft/api/cometbft/services/version/v1"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/rpc/core"
 	grpcerr "github.com/cometbft/cometbft/rpc/grpc/errors"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockresultservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/blockservice"
+	"github.com/cometbft/cometbft/rpc/grpc/server/services/nodeservice"
 	"github.com/cometbft/cometbft/rpc/grpc/server/services/versionservice"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/store"
@@ -28,6 +31,7 @@ type serverBuilder struct {
 	listener            net.Listener
 	versionService      pbversionsvc.VersionServiceServer
 	blockService        pbblocksvc.BlockServiceServer
+	nodeService         nodesvc.NodeServiceServer
 	blockResultsService brs.BlockResultsServiceServer
 	logger              log.Logger
 	grpcOpts            []grpc.ServerOption
@@ -74,6 +78,13 @@ func WithBlockResultsService(bs *store.BlockStore, ss sm.Store, logger log.Logge
 	}
 }
 
+// WithNodeService enables the node service on the CometBFT gRPC server.
+func WithNodeService(l log.Logger, env *core.Environment) Option {
+	return func(b *serverBuilder) {
+		b.nodeService = nodeservice.New(l, env)
+	}
+}
+
 // WithLogger enables logging using the given logger. If not specified, the
 // gRPC server does not log anything.
 func WithLogger(logger log.Logger) Option {
@@ -113,6 +124,11 @@ func Serve(listener net.Listener, opts ...Option) error {
 		brs.RegisterBlockResultsServiceServer(server, b.blockResultsService)
 		b.logger.Debug("Registered block results service")
 	}
+	if b.nodeService != nil {
+		nodesvc.RegisterNodeServiceServer(server, b.nodeService)
+		b.logger.Debug("Registered node service")
+	}
+
 	b.logger.Info("serve", "msg", fmt.Sprintf("Starting gRPC server on %s", listener.Addr()))
 	return server.Serve(b.listener)
 }

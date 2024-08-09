@@ -222,6 +222,11 @@ enabled = {{ .GRPC.BlockService.Enabled }}
 [grpc.block_results_service]
 enabled = {{ .GRPC.BlockResultsService.Enabled }}
 
+# The gRPC node service provides information about the node providing the gRPC
+# interface.
+[grpc.node_service]
+enabled = {{ .GRPC.NodeService.Enabled }}
+
 #
 # Configuration for privileged gRPC endpoints, which should **never** be exposed
 # to the public internet.

@@ -21,7 +21,7 @@ func (e ErrUnsupportedKey) Error() string {
 	return fmt.Sprintf("encoding: unsupported key %v", e.Key)
 }
 
-// InvalidKeyLen describes an error resulting from the use of a key with
+// ErrInvalidKeyLen describes an error resulting from the use of a key with
 // an invalid length in [PubKeyFromProto].
 type ErrInvalidKeyLen struct {
 	Key       any

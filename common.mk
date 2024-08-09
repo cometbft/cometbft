@@ -30,15 +30,27 @@ ifeq (clock_skew,$(findstring clock_skew,$(COMETBFT_BUILD_OPTIONS)))
 endif
 
 # handle cleveldb
+<<<<<<< HEAD
 ifeq (cleveldb,$(findstring cleveldb,$(COMETBFT_BUILD_OPTIONS)))
   CGO_ENABLED=1
   BUILD_TAGS += cleveldb
 endif
+=======
+ ifeq (cleveldb,$(findstring cleveldb,$(COMETBFT_BUILD_OPTIONS)))
+   CGO_ENABLED=1
+   BUILD_TAGS += cleveldb
+ endif
+>>>>>>> 76809d58c (chore: update cometbft-db dependency (#3661))
 
 # handle badgerdb
 ifeq (badgerdb,$(findstring badgerdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += badgerdb
 endif
+
+# handle boltdb
+ ifeq (boltdb,$(findstring boltdb,$(COMETBFT_BUILD_OPTIONS)))
+   BUILD_TAGS += boltdb
+ endif
 
 # handle rocksdb
 ifeq (rocksdb,$(findstring rocksdb,$(COMETBFT_BUILD_OPTIONS)))

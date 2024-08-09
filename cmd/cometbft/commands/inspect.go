@@ -38,8 +38,16 @@ func init() {
 		String("rpc.laddr",
 			config.RPC.ListenAddress, "RPC listenener address. Port required")
 	InspectCmd.Flags().
+<<<<<<< HEAD
 		String("db-backend",
 			config.DBBackend, "database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb")
+=======
+		String(
+			"db-backend",
+			config.DBBackend,
+			"database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb",
+		)
+>>>>>>> 76809d58c (chore: update cometbft-db dependency (#3661))
 	InspectCmd.Flags().
 		String("db-dir", config.DBPath, "database directory")
 }

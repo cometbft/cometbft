@@ -4010,6 +4010,7 @@ func _ABCIApplication_ApplySnapshotChunk_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+var ABCIApplication_serviceDesc = _ABCIApplication_serviceDesc
 var _ABCIApplication_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.abci.v1beta1.ABCIApplication",
 	HandlerType: (*ABCIApplicationServer)(nil),

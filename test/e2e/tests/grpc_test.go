@@ -231,14 +231,6 @@ func TestGRPC_GetStatus(t *testing.T) {
 	})
 }
 
-// func expNodeStatus(t *testing.T, node e2e.Node) (*client.NodeStatus, error) {
-// 	t.Helper()
-
-// 	status := &client.NodeStatus{}
-
-// 	return status, nil
-// }
-
 // This method returns the latest height retrieved from the GRPC Block Service invoking the
 // GetLatestHeight, which returns a channel that receives the latest height. Once a height is
 // received in the channel, return that height.

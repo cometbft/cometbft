@@ -131,7 +131,7 @@ The CometBFT team tests rely on the GoLevelDB implementation. All other implemen
 a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.
 
-`boltdb` and `cleveldb` are deprecated and will be removed in a future release.
+**NOTE**: `boltdb` and `cleveldb` are deprecated and will be removed in a future release.
 
 ### db_dir
 The directory path where the database is stored.

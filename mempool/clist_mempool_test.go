@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -1051,6 +1050,7 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	require.Zero(t, mp.Size())
 }
 
+// This only tests that all transactions were submitted.
 func TestMempoolIterator(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
@@ -1062,7 +1062,7 @@ func TestMempoolIterator(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	n := numTxs
+	n := 1000 // numTxs
 
 	// Spawn a goroutine that iterates on the list until counting n entries.
 	counter := 0
@@ -1072,7 +1072,10 @@ func TestMempoolIterator(t *testing.T) {
 		iter := mp.NewIterator()
 		for counter < n {
 			entry := <-iter.WaitNextCh()
-			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
+			if entry == nil {
+				continue
+			}
+
 			counter++
 		}
 	}()

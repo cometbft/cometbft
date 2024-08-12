@@ -208,7 +208,7 @@ func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-	txs := checkTxs(t, reactors[0].mempool, numTxs)
+	txs := checkTxs(t, reactors[0].mempool, 20)
 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
 	// Remove some txs from the mempool of the first reactor.
@@ -221,8 +221,8 @@ func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	reactors[0].mempool.Unlock()
 	require.Equal(t, len(txsLeft), reactors[0].mempool.Size())
 
-	// Now we know that the second reactor has advanced to height 9, so it
-	// should receive all txs except those that were removed.
+	// Now we know that the second reactor is not lagging, so it should receive
+	// all txs except those that were removed.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
 	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
 }

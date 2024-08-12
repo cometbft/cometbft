@@ -91,7 +91,7 @@ func (*server) GetHealth(
 	_ context.Context,
 	_ *nodesvc.GetHealthRequest,
 ) (*nodesvc.GetHealthResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+	return &nodesvc.GetHealthResponse{}, nil
 }
 
 // collectNodeInfo collects and returns the node's basic information.

@@ -82,6 +82,8 @@ make install
 
 ## Compile with CLevelDB support
 
+**NOTE**: `cleveldb` is deprecated and will be removed in a future release.
+
 Install [LevelDB](https://github.com/google/leveldb) (minimum version is 1.7).
 
 Install LevelDB with snappy (optionally). Below are commands for Ubuntu:

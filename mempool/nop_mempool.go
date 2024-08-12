@@ -63,7 +63,7 @@ func (*NopMempool) FlushAppConn() error { return nil }
 // Flush does nothing.
 func (*NopMempool) Flush() {}
 
-// RemoveTxByKey always returns false.
+// Contains always returns false.
 func (*NopMempool) Contains(types.TxKey) bool { return false }
 
 // TxsAvailable always returns nil.

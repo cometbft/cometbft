@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## v0.37.10
+
+*August 12, 2024*
+
+This release contains a few minor bug fixes and performance improvements.
+
+### BUG FIXES
+
+- `[types]` Added missing JSON tags to `DuplicateVoteEvidence` and `LightClientAttackEvidence`
+  types ([\#3528](https://github.com/cometbft/cometbft/issues/3528))
+
+### IMPROVEMENTS
+
+- `[indexer]` Fixed ineffective select break statements; they now
+  point to their enclosing for loop label to exit
+  ([\#3544](https://github.com/cometbft/cometbft/issues/3544))
+
 ## v0.37.9
 
 *July 16, 2024*

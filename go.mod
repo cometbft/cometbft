@@ -51,7 +51,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/pelletier/go-toml/v2 v2.2.2
-	github.com/supranational/blst v0.3.12
+	github.com/supranational/blst v0.3.13
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/sync v0.8.0
 	golang.org/x/text v0.17.0

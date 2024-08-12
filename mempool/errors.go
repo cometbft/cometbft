@@ -89,7 +89,7 @@ type ErrEmptyLanesDefaultLaneSet struct {
 }
 
 func (e ErrEmptyLanesDefaultLaneSet) Error() string {
-	return fmt.Sprintf("invalid lane info:if list of lanes is empty, then defaultLane should be 0, but %v given; info %v", e.Info.defaultLane, e.Info)
+	return fmt.Sprintf("invalid lane info: if list of lanes is empty, then defaultLane must be 0, but %v given; info %v", e.Info.defaultLane, e.Info)
 }
 
 type ErrBadDefaultLaneNonEmptyLaneList struct {
@@ -97,7 +97,7 @@ type ErrBadDefaultLaneNonEmptyLaneList struct {
 }
 
 func (e ErrBadDefaultLaneNonEmptyLaneList) Error() string {
-	return fmt.Sprintf("invalid lane info:default lane cannot be 0 if list of lanes is non empty; info: %v", e.Info)
+	return fmt.Sprintf("invalid lane info: default lane cannot be 0 if list of lanes is non empty; info: %v", e.Info)
 }
 
 type ErrDefaultLaneNotInList struct {
@@ -105,7 +105,7 @@ type ErrDefaultLaneNotInList struct {
 }
 
 func (e ErrDefaultLaneNotInList) Error() string {
-	return fmt.Sprintf("invalid lane info:list of lanes does not contain default lane; info %v", e.Info)
+	return fmt.Sprintf("invalid lane info: list of lanes does not contain default lane; info %v", e.Info)
 }
 
 type ErrRepeatedLanes struct {

@@ -405,7 +405,7 @@ func NewNodeWithCliParams(ctx context.Context,
 
 	appInfoResponse, err := proxyApp.Query().Info(ctx, proxy.InfoRequest)
 	if err != nil {
-		return nil, fmt.Errorf("error calling Info: %v", err)
+		return nil, fmt.Errorf("error calling ABCI Info method: %v", err)
 	}
 	if !stateSync {
 		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, appInfoResponse, proxyApp, consensusLogger); err != nil {

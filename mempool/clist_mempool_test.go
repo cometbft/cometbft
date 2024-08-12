@@ -293,12 +293,10 @@ func TestMempoolUpdate(t *testing.T) {
 }
 
 func TestMempoolFetchLanesInfo(t *testing.T) {
-	appInfo := abci.InfoResponse{}
-
 	_, err := FetchLanesInfo([]uint32{}, types.Lane(0))
 	require.NoError(t, err)
 
-	_, err = FetchLanesInfo(appInfo.LanePriorities, types.Lane(1))
+	_, err = FetchLanesInfo([]uint32{}, types.Lane(1))
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
 	_, err = FetchLanesInfo([]uint32{1}, types.Lane(0))

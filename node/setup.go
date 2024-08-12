@@ -272,7 +272,7 @@ func createMempoolAndMempoolReactor(
 	case cfg.MempoolTypeFlood, "":
 		lanesInfo, err := mempl.FetchLanesInfo(appInfoResponse.LanePriorities, types.Lane(appInfoResponse.DefaultLanePriority))
 		if err != nil {
-			panic(fmt.Sprintf("Could not get lanes info from app: %s", err))
+			panic(fmt.Sprintf("could not get lanes info from app: %s", err))
 		}
 
 		logger = logger.With("module", "mempool")

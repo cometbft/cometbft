@@ -103,11 +103,6 @@ func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) 
 	return nil, false
 }
 
-func (mem *CListMempool) InMempool(txKey types.TxKey) bool {
-	_, ok := mem.getCElement(txKey)
-	return ok
-}
-
 func (mem *CListMempool) addToCache(tx types.Tx) bool {
 	return mem.cache.Push(tx)
 }
@@ -212,6 +207,11 @@ func (mem *CListMempool) Flush() {
 	mem.cache.Reset()
 
 	mem.removeAllTxs()
+}
+
+func (mem *CListMempool) Contains(txKey types.TxKey) bool {
+	_, ok := mem.getCElement(txKey)
+	return ok
 }
 
 // TxsFront returns the first transaction in the ordered list for peer

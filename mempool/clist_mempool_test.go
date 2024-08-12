@@ -843,7 +843,7 @@ func TestMempoolSyncCheckTxReturnError(t *testing.T) {
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1}, DefaultLanePriority: 1}, nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -868,7 +868,7 @@ func TestMempoolSyncRecheckTxReturnError(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1}, DefaultLanePriority: 1}, nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -910,7 +910,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(4)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1}, DefaultLanePriority: 1}, nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()

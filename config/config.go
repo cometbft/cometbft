@@ -199,6 +199,16 @@ func (cfg *Config) CheckDeprecated() []string {
 	return warnings
 }
 
+// PossibleMisconfigurations returns a list of possible conflicting entries that
+// may lead to unexpected behavior.
+func (cfg *Config) PossibleMisconfigurations() []string {
+	res := []string{}
+	for _, elem := range cfg.StateSync.PossibleMisconfigurations() {
+		res = append(res, "[statesync] section: "+elem)
+	}
+	return res
+}
+
 // -----------------------------------------------------------------------------
 // BaseConfig
 
@@ -219,11 +229,20 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | rocksdb | badgerdb | pebbledb
+	// Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
 	// * goleveldb (github.com/syndtr/goleveldb)
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
+	// * cleveldb (uses levigo wrapper)
+	//   - DEPRECATED
+	//   - requires gcc
+	//   - use cleveldb build tag (go build -tags cleveldb)
+	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
+	//   - DEPRECATED
+	//   - EXPERIMENTAL
+	//   - stable
+	//   - use boltdb build tag (go build -tags boltdb)
 	// * rocksdb (uses github.com/linxGnu/grocksdb)
 	//   - EXPERIMENTAL
 	//   - requires gcc
@@ -1147,6 +1166,15 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+// PossibleMisconfigurations returns a list of possible conflicting entries that
+// may lead to unexpected behavior.
+func (cfg *StateSyncConfig) PossibleMisconfigurations() []string {
+	if !cfg.Enable && len(cfg.RPCServers) != 0 {
+		return []string{"rpc_servers specified but enable = false"}
+	}
+	return []string{}
 }
 
 // -----------------------------------------------------------------------------

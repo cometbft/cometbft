@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/cosmos/gogoproto/grpc"
@@ -109,8 +108,15 @@ func (c *nodeServiceClient) GetStatus(ctx context.Context) (*NodeStatus, error) 
 
 // GetHealth is the gRPC endpoint serving requests for the node current health.
 // Implements the NodeServiceClient interface.
-func (*nodeServiceClient) GetHealth(context.Context) error {
-	return errors.New("uninmplemented")
+// GetHealth serves as a ping to check if the node is responsive. A successful
+// call (i.e., no error) indicates the node is responsive; the response itself
+// is empty.
+func (c *nodeServiceClient) GetHealth(ctx context.Context) error {
+	_, err := c.client.GetHealth(ctx, &nodesvc.GetHealthRequest{})
+	if err != nil {
+		return fmt.Errorf("gRPC call returned: %s", err)
+	}
+	return nil
 }
 
 // disabledNodeServiceClient is a NodeServiceClient that panics when used.

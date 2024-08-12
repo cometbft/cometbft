@@ -138,6 +138,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	genesis.ConsensusParams.Validator.PubKeyTypes = []string{testnet.KeyType}
 	if testnet.BlockMaxBytes != 0 {
 		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
 	}
@@ -212,8 +213,11 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	case e2e.ProtocolGRPC:
 		cfg.ProxyApp = AppAddressTCP
 		cfg.ABCI = "grpc"
-	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
-		cfg.ProxyApp = ""
+	case e2e.ProtocolBuiltin:
+		cfg.ProxyApp = "e2e"
+		cfg.ABCI = ""
+	case e2e.ProtocolBuiltinConnSync:
+		cfg.ProxyApp = "e2e_connsync"
 		cfg.ABCI = ""
 	default:
 		return nil, fmt.Errorf("unexpected ABCI protocol setting %q", node.ABCIProtocol)

@@ -8,17 +8,25 @@ on:
   push:
     branches:
       - main
-      - release/**
+      - v0.3[478].x
+      - v[1-9][0-9]?.x
 
 jobs:
   e2e-test:
+    # Run two parallel jobs: for `ci.toml`, and for the regression manifests
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ['networks/ci', 'networks_regressions/*']
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - uses: actions/checkout@v4
+      - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
+
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
-      - uses: actions/checkout@v4
+          go-version: ${{ env.GO_VERSION }}
       - uses: technote-space/get-diff-action@v6
         with:
           PATTERNS: |
@@ -28,11 +36,10 @@ jobs:
 
       - name: Build
         working-directory: test/e2e
-        # Run two make jobs in parallel, since we can't run steps in parallel.
         run: make -j2 docker runner
         if: "env.GIT_DIFF != ''"
 
-      - name: Run CI testnet
+      - name: Run "${{ matrix.group }}"" testnet
         working-directory: test/e2e
-        run: ./run-multiple.sh networks/ci.toml
+        run: ./run-multiple.sh ${{ matrix.group }}.toml
         if: "env.GIT_DIFF != ''"

@@ -1,8 +1,7 @@
 package ed25519
 
 import (
-	"bytes"
-	"crypto/subtle"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -117,16 +116,6 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	return PubKey(pubkeyBytes)
 }
 
-// Equals - you probably don't need to use this.
-// Runs in constant time based on length of the keys.
-func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	if otherEd, ok := other.(PrivKey); ok {
-		return subtle.ConstantTimeCompare(privKey[:], otherEd[:]) == 1
-	}
-
-	return false
-}
-
 func (PrivKey) Type() string {
 	return KeyType
 }
@@ -153,9 +142,9 @@ func genPrivKey(rand io.Reader) PrivKey {
 // NOTE: secret should be the output of a KDF like bcrypt,
 // if it's derived from user input.
 func GenPrivKeyFromSecret(secret []byte) PrivKey {
-	seed := crypto.Sha256(secret) // Not Ripemd160 because we want 32 bytes.
+	seed := sha256.Sum256(secret) // Not Ripemd160 because we want 32 bytes.
 
-	return PrivKey(ed25519.NewKeyFromSeed(seed))
+	return PrivKey(ed25519.NewKeyFromSeed(seed[:]))
 }
 
 // -------------------------------------
@@ -193,14 +182,6 @@ func (pubKey PubKey) String() string {
 
 func (PubKey) Type() string {
 	return KeyType
-}
-
-func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	if otherEd, ok := other.(PubKey); ok {
-		return bytes.Equal(pubKey[:], otherEd[:])
-	}
-
-	return false
 }
 
 // -------------------------------------

@@ -1,9 +1,8 @@
 ---
-order: 1
+order: 3
 title: CometBFT Explained
-description: Explanation
 parent:
-    order: 1
+    order: 3
 ---
 
 # CometBFT Explained

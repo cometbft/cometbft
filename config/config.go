@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -72,6 +73,20 @@ var (
 
 	// taken from https://semver.org/
 	semverRegexp = regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
+
+	// Don't forget to change proxy.DefaultClientCreator if you add new options here.
+	proxyAppList = []string{
+		"kvstore",
+		"kvstore_connsync",
+		"kvstore_unsync",
+		"persistent_kvstore",
+		"persistent_kvstore_connsync",
+		"persistent_kvstore_unsync",
+		"e2e",
+		"e2e_connsync",
+		"e2e_unsync",
+		"noop",
+	}
 )
 
 // Config defines the top level configuration for a CometBFT node.
@@ -184,6 +199,16 @@ func (cfg *Config) CheckDeprecated() []string {
 	return warnings
 }
 
+// PossibleMisconfigurations returns a list of possible conflicting entries that
+// may lead to unexpected behavior.
+func (cfg *Config) PossibleMisconfigurations() []string {
+	res := []string{}
+	for _, elem := range cfg.StateSync.PossibleMisconfigurations() {
+		res = append(res, "[statesync] section: "+elem)
+	}
+	return res
+}
+
 // -----------------------------------------------------------------------------
 // BaseConfig
 
@@ -204,11 +229,20 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | rocksdb | badgerdb | pebbledb
+	// Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
 	// * goleveldb (github.com/syndtr/goleveldb)
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
+	// * cleveldb (uses levigo wrapper)
+	//   - DEPRECATED
+	//   - requires gcc
+	//   - use cleveldb build tag (go build -tags cleveldb)
+	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
+	//   - DEPRECATED
+	//   - EXPERIMENTAL
+	//   - stable
+	//   - use boltdb build tag (go build -tags boltdb)
 	// * rocksdb (uses github.com/linxGnu/grocksdb)
 	//   - EXPERIMENTAL
 	//   - requires gcc
@@ -324,6 +358,58 @@ func (cfg BaseConfig) ValidateBasic() error {
 	default:
 		return errors.New("unknown log_format (must be 'plain' or 'json')")
 	}
+
+	return cfg.validateProxyApp()
+}
+
+func (cfg BaseConfig) validateProxyApp() error {
+	if cfg.ProxyApp == "" {
+		return errors.New("proxy_app cannot be empty")
+	}
+
+	// proxy is a static application.
+	for _, proxyApp := range proxyAppList {
+		if cfg.ProxyApp == proxyApp {
+			return nil
+		}
+	}
+
+	// proxy is a network address.
+	parts := strings.SplitN(cfg.ProxyApp, "://", 2)
+	if len(parts) != 2 { // TCP address
+		_, err := net.ResolveTCPAddr("tcp", cfg.ProxyApp)
+		if err != nil {
+			return fmt.Errorf("failed to resolve TCP proxy_app %s: %w", cfg.ProxyApp, err)
+		}
+	} else { // other protocol
+		proto := parts[0]
+		address := parts[1]
+		switch proto {
+		case "tcp", "tcp4", "tcp6":
+			_, err := net.ResolveTCPAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve TCP proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		case "udp", "udp4", "udp6":
+			_, err := net.ResolveUDPAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve UDP proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		case "ip", "ip4", "ip6":
+			_, err := net.ResolveIPAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve IP proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		case "unix", "unixgram", "unixpacket":
+			_, err := net.ResolveUnixAddr(proto, address)
+			if err != nil {
+				return fmt.Errorf("failed to resolve UNIX proxy_app %s: %w", cfg.ProxyApp, err)
+			}
+		default:
+			return fmt.Errorf("invalid protocol in proxy_app: %s (expected one supported by net.Dial)", cfg.ProxyApp)
+		}
+	}
+
 	return nil
 }
 
@@ -880,11 +966,6 @@ type MempoolConfig struct {
 	// block. In other words, if Broadcast is disabled, only the peer you send
 	// the tx to will see it until it is included in a block.
 	Broadcast bool `mapstructure:"broadcast"`
-	// WalPath (default: "") configures the location of the Write Ahead Log
-	// (WAL) for the mempool. The WAL is disabled by default. To enable, set
-	// WalPath to where you want the WAL to be written (e.g.
-	// "data/mempool.wal").
-	WalPath string `mapstructure:"wal_dir"`
 	// Maximum number of transactions in the mempool
 	Size int `mapstructure:"size"`
 	// Maximum size in bytes of a single transaction accepted into the mempool.
@@ -914,6 +995,11 @@ type MempoolConfig struct {
 	// performance results using the default P2P configuration.
 	ExperimentalMaxGossipConnectionsToPersistentPeers    int `mapstructure:"experimental_max_gossip_connections_to_persistent_peers"`
 	ExperimentalMaxGossipConnectionsToNonPersistentPeers int `mapstructure:"experimental_max_gossip_connections_to_non_persistent_peers"`
+
+	// ExperimentalPublishEventPendingTx enables publishing a `PendingTx` event when a new transaction is added to the mempool.
+	// Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
+	// Use this feature with caution and consider the impact on transaction processing performance.
+	ExperimentalPublishEventPendingTx bool `mapstructure:"experimental_publish_event_pending_tx"`
 }
 
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool.
@@ -923,7 +1009,6 @@ func DefaultMempoolConfig() *MempoolConfig {
 		Recheck:        true,
 		RecheckTimeout: 1000 * time.Millisecond,
 		Broadcast:      true,
-		WalPath:        "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,
@@ -940,16 +1025,6 @@ func TestMempoolConfig() *MempoolConfig {
 	cfg := DefaultMempoolConfig()
 	cfg.CacheSize = 1000
 	return cfg
-}
-
-// WalDir returns the full path to the mempool's write-ahead log.
-func (cfg *MempoolConfig) WalDir() string {
-	return rootify(cfg.WalPath, cfg.RootDir)
-}
-
-// WalEnabled returns true if the WAL is enabled.
-func (cfg *MempoolConfig) WalEnabled() bool {
-	return cfg.WalPath != ""
 }
 
 // ValidateBasic performs basic validation (checking param bounds, etc.) and
@@ -1070,6 +1145,15 @@ func (cfg *StateSyncConfig) ValidateBasic() error {
 	}
 
 	return nil
+}
+
+// PossibleMisconfigurations returns a list of possible conflicting entries that
+// may lead to unexpected behavior.
+func (cfg *StateSyncConfig) PossibleMisconfigurations() []string {
+	if !cfg.Enable && len(cfg.RPCServers) != 0 {
+		return []string{"rpc_servers specified but enable = false"}
+	}
+	return []string{}
 }
 
 // -----------------------------------------------------------------------------
@@ -1274,13 +1358,6 @@ type StorageConfig struct {
 	// large multiple of your retain height as it might occur bigger overheads.
 	// 1000 by default.
 	CompactionInterval int64 `mapstructure:"compaction_interval"`
-	// Hex representation of the hash of the genesis file.
-	// This is an optional parameter set when an operator provides
-	// a hash via the command line.
-	// It is used to verify the hash of the actual genesis file.
-	// Note that if the provided has does not match the hash of the genesis file
-	// the node will report an error and not boot.
-	GenesisHash string `mapstructure:"genesis_hash"`
 
 	// The representation of keys in the database.
 	// The current representation of keys in Comet's stores is considered to be v1
@@ -1298,7 +1375,6 @@ func DefaultStorageConfig() *StorageConfig {
 		Pruning:               DefaultPruningConfig(),
 		Compact:               false,
 		CompactionInterval:    1000,
-		GenesisHash:           "",
 		ExperimentalKeyLayout: "v1",
 	}
 }
@@ -1309,7 +1385,6 @@ func TestStorageConfig() *StorageConfig {
 	return &StorageConfig{
 		DiscardABCIResponses: false,
 		Pruning:              TestPruningConfig(),
-		GenesisHash:          "",
 	}
 }
 
@@ -1349,6 +1424,15 @@ type TxIndexConfig struct {
 	// The PostgreSQL connection configuration, the connection format:
 	// postgresql://<user>:<password>@<host>:<port>/<db>?<opts>
 	PsqlConn string `mapstructure:"psql-conn"`
+
+	// The PostgreSQL table that stores indexed blocks.
+	TableBlocks string `mapstructure:"table_blocks"`
+	// The PostgreSQL table that stores indexed transaction results.
+	TableTxResults string `mapstructure:"table_tx_results"`
+	// The PostgreSQL table that stores indexed events.
+	TableEvents string `mapstructure:"table_events"`
+	// The PostgreSQL table that stores indexed attributes.
+	TableAttributes string `mapstructure:"table_attributes"`
 }
 
 // DefaultTxIndexConfig returns a default configuration for the transaction indexer.

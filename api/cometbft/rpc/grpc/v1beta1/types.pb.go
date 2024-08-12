@@ -28,7 +28,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// PingRequest is a request to confirm that the connection is alive.
+// RequestPing is a request to confirm that the connection is alive.
 type RequestPing struct {
 }
 
@@ -110,7 +110,7 @@ func (m *RequestBroadcastTx) GetTx() []byte {
 	return nil
 }
 
-// PingResponse is a response to confirm that the connection is alive.
+// ResponsePing is a response to confirm that the connection is alive.
 type ResponsePing struct {
 }
 
@@ -339,6 +339,7 @@ func _BroadcastAPI_BroadcastTx_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+var BroadcastAPI_serviceDesc = _BroadcastAPI_serviceDesc
 var _BroadcastAPI_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.rpc.grpc.v1beta1.BroadcastAPI",
 	HandlerType: (*BroadcastAPIServer)(nil),

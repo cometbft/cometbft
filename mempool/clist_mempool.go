@@ -20,6 +20,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+const noSender = p2p.ID("")
+
 // CListMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
 // CheckTx abci message before the transaction is added to the pool. The
@@ -32,6 +34,7 @@ type CListMempool struct {
 	// notify listeners (ie. consensus) when txs are available
 	notifiedTxsAvailable atomic.Bool
 	txsAvailable         chan struct{} // fires once for each height, when the mempool is not empty
+	onNewTx              func(types.Tx)
 
 	config *config.MempoolConfig
 
@@ -103,11 +106,6 @@ func (mem *CListMempool) getCElement(txKey types.TxKey) (*clist.CElement, bool) 
 	return nil, false
 }
 
-func (mem *CListMempool) InMempool(txKey types.TxKey) bool {
-	_, ok := mem.getCElement(txKey)
-	return ok
-}
-
 func (mem *CListMempool) addToCache(tx types.Tx) bool {
 	return mem.cache.Push(tx)
 }
@@ -166,6 +164,12 @@ func WithMetrics(metrics *Metrics) CListMempoolOption {
 	return func(mem *CListMempool) { mem.metrics = metrics }
 }
 
+// WithNewTxCallback sets a callback function to be executed when a new transaction is added to the mempool.
+// The callback function will receive the newly added transaction as a parameter.
+func WithNewTxCallback(cb func(types.Tx)) CListMempoolOption {
+	return func(mem *CListMempool) { mem.onNewTx = cb }
+}
+
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Lock() {
 	mem.updateMtx.Lock()
@@ -174,6 +178,13 @@ func (mem *CListMempool) Lock() {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Unlock() {
 	mem.updateMtx.Unlock()
+}
+
+// Safe for concurrent use by multiple goroutines.
+func (mem *CListMempool) PreUpdate() {
+	if mem.recheck.setRecheckFull() {
+		mem.logger.Debug("the state of recheckFull has flipped")
+	}
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -207,11 +218,18 @@ func (mem *CListMempool) Flush() {
 	mem.removeAllTxs()
 }
 
+func (mem *CListMempool) Contains(txKey types.TxKey) bool {
+	_, ok := mem.getCElement(txKey)
+	return ok
+}
+
 // TxsFront returns the first transaction in the ordered list for peer
 // goroutines to call .NextWait() on.
 // FIXME: leaking implementation details!
 //
 // Safe for concurrent use by multiple goroutines.
+//
+// Deprecated: Use CListIterator instead.
 func (mem *CListMempool) TxsFront() *clist.CElement {
 	return mem.txs.Front()
 }
@@ -221,6 +239,8 @@ func (mem *CListMempool) TxsFront() *clist.CElement {
 // element)
 //
 // Safe for concurrent use by multiple goroutines.
+//
+// Deprecated: Use CListIterator instead.
 func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
 	return mem.txs.WaitChan()
 }
@@ -258,7 +278,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 
 	if added := mem.addToCache(tx); !added {
 		mem.metrics.AlreadyReceivedTxs.Add(1)
-		if sender != "" {
+		if sender != noSender {
 			// Record a new sender for a tx we've already seen.
 			// Note it's possible a tx is still in the cache but no longer in the mempool
 			// (eg. after committing a block, txs are removed from mempool but not cache),
@@ -337,7 +357,9 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		}
 		if mem.addTx(&memTx, sender) {
 			mem.notifyTxsAvailable()
-
+			if mem.onNewTx != nil {
+				mem.onNewTx(tx)
+			}
 			// update metrics
 			mem.metrics.Size.Set(float64(mem.Size()))
 			mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
@@ -353,7 +375,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 
 	// Check if the transaction is already in the mempool.
 	if elem, ok := mem.getCElement(txKey); ok {
-		if sender != "" {
+		if sender != noSender {
 			// Update senders on existing entry.
 			memTx := elem.Value.(*mempoolTx)
 			if found := memTx.addSender(sender); found {
@@ -407,11 +429,8 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 }
 
 func (mem *CListMempool) isFull(txSize int) error {
-	var (
-		memSize  = mem.Size()
-		txsBytes = mem.SizeBytes()
-	)
-
+	memSize := mem.Size()
+	txsBytes := mem.SizeBytes()
 	if memSize >= mem.config.Size || uint64(txSize)+uint64(txsBytes) > uint64(mem.config.MaxTxsBytes) {
 		return ErrMempoolIsFull{
 			NumTxs:      memSize,
@@ -419,6 +438,10 @@ func (mem *CListMempool) isFull(txSize int) error {
 			TxsBytes:    txsBytes,
 			MaxTxsBytes: mem.config.MaxTxsBytes,
 		}
+	}
+
+	if mem.recheck.consideredFull() {
+		return ErrRecheckFull
 	}
 
 	return nil
@@ -673,6 +696,8 @@ type recheck struct {
 	end           *clist.CElement // last entry in the mempool to recheck
 	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
+	isRechecking  atomic.Bool     // true iff the rechecking process has begun and is not yet finished
+	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
 }
 
 func newRecheck() *recheck {
@@ -688,16 +713,20 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	rc.cursor = first
 	rc.end = last
 	rc.numPendingTxs.Store(0)
+	rc.isRechecking.Store(true)
 }
 
 // done returns true when there is no recheck response to process.
+// Safe for concurrent use by multiple goroutines.
 func (rc *recheck) done() bool {
-	return rc.cursor == nil
+	return !rc.isRechecking.Load()
 }
 
 // setDone registers that rechecking has finished.
 func (rc *recheck) setDone() {
 	rc.cursor = nil
+	rc.recheckFull.Store(false)
+	rc.isRechecking.Store(false)
 }
 
 // setNextEntry sets cursor to the next entry in the list. If there is no next, cursor will be nil.
@@ -752,4 +781,63 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 // doneRechecking returns the channel used to signal that rechecking has finished.
 func (rc *recheck) doneRechecking() <-chan struct{} {
 	return rc.doneCh
+}
+
+// setRecheckFull sets recheckFull to true if rechecking is still in progress. It returns true iff
+// the value of recheckFull has changed.
+func (rc *recheck) setRecheckFull() bool {
+	rechecking := !rc.done()
+	recheckFull := rc.recheckFull.Swap(rechecking)
+	return rechecking != recheckFull
+}
+
+// consideredFull returns true iff the mempool should be considered as full while rechecking is in
+// progress.
+func (rc *recheck) consideredFull() bool {
+	return rc.recheckFull.Load()
+}
+
+// CListIterator implements an Iterator that traverses the CList sequentially. When the current
+// entry is removed from the mempool, the iterator starts from the beginning of the CList. When it
+// reaches the end, it waits until a new entry is appended.
+type CListIterator struct {
+	txs    *clist.CList    // to wait on and retrieve the first entry
+	cursor *clist.CElement // pointer to the current entry in the list
+}
+
+func (mem *CListMempool) NewIterator() Iterator {
+	return &CListIterator{
+		txs: mem.txs,
+	}
+}
+
+// WaitNextCh returns a channel to wait for the next available entry. The channel will be explicitly
+// closed when the entry gets removed before it is added to the channel, or when reaching the end of
+// the list.
+//
+// Unsafe for concurrent use by multiple goroutines.
+func (iter *CListIterator) WaitNextCh() <-chan Entry {
+	ch := make(chan Entry)
+	// Spawn goroutine that waits for the next entry, saves it locally, and puts it in the channel.
+	go func() {
+		if iter.cursor == nil {
+			// We are at the beginning of the iteration or the saved entry got removed: wait until
+			// the list becomes not empty and select the first entry.
+			<-iter.txs.WaitChan()
+			// Note that Front can return nil.
+			iter.cursor = iter.txs.Front()
+		} else {
+			// Wait for the next entry after the current one.
+			<-iter.cursor.NextWaitChan()
+			// If the current entry is the last one or was removed, Next will return nil.
+			iter.cursor = iter.cursor.Next()
+		}
+		if iter.cursor != nil {
+			ch <- iter.cursor.Value.(Entry)
+		} else {
+			// Unblock the receiver (it will receive nil).
+			close(ch)
+		}
+	}()
+	return ch
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -49,6 +48,19 @@ type ChecksummedGenesisDoc struct {
 	Sha256Checksum []byte
 }
 
+// Introduced to store parameters passed via cli and needed to start the node.
+// This parameters should not be stored or persisted in the config file.
+// This can then be further extended to include additional flags without further
+// API breaking changes.
+type CliParams struct {
+	// SHA-256 hash of the genesis file provided via the command line.
+	// This hash is used is compared against the computed hash of the
+	// actual genesis file or the hash stored in the database.
+	// If there is a mismatch between the hash provided via cli and the
+	// hash of the genesis file or the hash in the DB, the node will not boot.
+	GenesisHash []byte
+}
+
 // GenesisDocProvider returns a GenesisDoc together with its SHA256 checksum.
 // It allows the GenesisDoc to be pulled from sources other than the
 // filesystem, for instance from a distributed key-value store cluster.
@@ -63,7 +75,7 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 		// https://github.com/cometbft/cometbft/issues/1302
 		jsonBlob, err := os.ReadFile(config.GenesisFile())
 		if err != nil {
-			return ChecksummedGenesisDoc{}, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
+			return ChecksummedGenesisDoc{}, ErrorReadingGenesisDoc{Err: err}
 		}
 		incomingChecksum := tmhash.Sum(jsonBlob)
 		genDoc, err := types.GenesisDocFromJSON(jsonBlob)
@@ -75,25 +87,44 @@ func DefaultGenesisDocProviderFunc(config *cfg.Config) GenesisDocProvider {
 }
 
 // Provider takes a config and a logger and returns a ready to go Node.
-type Provider func(*cfg.Config, log.Logger) (*Node, error)
+type Provider func(*cfg.Config, log.Logger, CliParams, func() (crypto.PrivKey, error)) (*Node, error)
 
 // DefaultNewNode returns a CometBFT node with default settings for the
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
-// It implements NodeProvider.
-func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
+// It implements Provider.
+func DefaultNewNode(
+	config *cfg.Config,
+	logger log.Logger,
+	cliParams CliParams,
+	keyGenF func() (crypto.PrivKey, error),
+) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
-		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
+		return nil, ErrorLoadOrGenNodeKey{Err: err, NodeKeyFile: config.NodeKeyFile()}
 	}
 
-	return NewNode(context.Background(), config,
-		privval.LoadOrGenFilePV(config.PrivValidatorKeyFile(), config.PrivValidatorStateFile()),
+	pv, err := privval.LoadOrGenFilePV(
+		config.PrivValidatorKeyFile(),
+		config.PrivValidatorStateFile(),
+		keyGenF,
+	)
+	if err != nil {
+		return nil, ErrorLoadOrGenFilePV{
+			Err:       err,
+			KeyFile:   config.PrivValidatorKeyFile(),
+			StateFile: config.PrivValidatorStateFile(),
+		}
+	}
+
+	return NewNodeWithCliParams(context.Background(), config,
+		pv,
 		nodeKey,
 		proxy.DefaultClientCreator(config.ProxyApp, config.ABCI, config.DBDir()),
 		DefaultGenesisDocProviderFunc(config),
 		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
+		cliParams,
 	)
 }
 
@@ -167,16 +198,20 @@ func createAndStartIndexerService(
 		txIndexer    txindex.TxIndexer
 		blockIndexer indexer.BlockIndexer
 	)
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, dbProvider, chainID)
+
+	txIndexer, blockIndexer, allIndexersDisabled, err := block.IndexerFromConfig(config, dbProvider, chainID)
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	if allIndexersDisabled {
+		return nil, txIndexer, blockIndexer, nil
 	}
 
 	txIndexer.SetLogger(logger.With("module", "txindex"))
 	blockIndexer.SetLogger(logger.With("module", "txindex"))
+
 	indexerService := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
 	indexerService.SetLogger(logger.With("module", "txindex"))
-
 	if err := indexerService.Start(); err != nil {
 		return nil, nil, nil, err
 	}
@@ -230,12 +265,12 @@ func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusL
 	}
 }
 
-func onlyValidatorIsUs(state sm.State, pubKey crypto.PubKey) bool {
+func onlyValidatorIsUs(state sm.State, localAddr crypto.Address) bool {
 	if state.Validators.Size() > 1 {
 		return false
 	}
-	addr, _ := state.Validators.GetByIndex(0)
-	return bytes.Equal(pubKey.Address(), addr)
+	valAddr, _ := state.Validators.GetByIndex(0)
+	return bytes.Equal(localAddr, valAddr)
 }
 
 // createMempoolAndMempoolReactor creates a mempool and a mempool reactor based on the config.
@@ -243,21 +278,32 @@ func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
 	state sm.State,
+	eventBus *types.EventBus,
 	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
-) (mempl.Mempool, waitSyncP2PReactor) {
+) (mempl.Mempool, mempoolReactor) {
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
 		logger = logger.With("module", "mempool")
+		options := []mempl.CListMempoolOption{
+			mempl.WithMetrics(memplMetrics),
+			mempl.WithPreCheck(sm.TxPreCheck(state)),
+			mempl.WithPostCheck(sm.TxPostCheck(state)),
+		}
+		if config.Mempool.ExperimentalPublishEventPendingTx {
+			options = append(options, mempl.WithNewTxCallback(func(tx types.Tx) {
+				_ = eventBus.PublishEventPendingTx(types.EventDataPendingTx{
+					Tx: tx,
+				})
+			}))
+		}
 		mp := mempl.NewCListMempool(
 			config.Mempool,
 			proxyApp.Mempool(),
 			state.LastBlockHeight,
-			mempl.WithMetrics(memplMetrics),
-			mempl.WithPreCheck(sm.TxPreCheck(state)),
-			mempl.WithPostCheck(sm.TxPostCheck(state)),
+			options...,
 		)
 		mp.SetLogger(logger)
 		reactor := mempl.NewReactor(
@@ -302,13 +348,14 @@ func createBlocksyncReactor(config *cfg.Config,
 	blockExec *sm.BlockExecutor,
 	blockStore *store.BlockStore,
 	blockSync bool,
+	localAddr crypto.Address,
 	logger log.Logger,
 	metrics *blocksync.Metrics,
 	offlineStateSyncHeight int64,
 ) (bcReactor p2p.Reactor, err error) {
 	switch config.BlockSync.Version {
 	case "v0":
-		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, metrics, offlineStateSyncHeight)
+		bcReactor = blocksync.NewReactor(state.Copy(), blockExec, blockStore, blockSync, localAddr, metrics, offlineStateSyncHeight)
 	case "v1", "v2":
 		return nil, fmt.Errorf("block sync version %s has been deprecated. Please use v0", config.BlockSync.Version)
 	default:
@@ -579,7 +626,7 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 	// Get genesis doc hash
 	genDocHash, err := stateDB.Get(genesisDocHashKey)
 	if err != nil {
-		return sm.State{}, nil, fmt.Errorf("error retrieving genesis doc hash: %w", err)
+		return sm.State{}, nil, ErrRetrieveGenesisDocHash{Err: err}
 	}
 	csGenDoc, err := genesisDocProvider()
 	if err != nil {
@@ -587,28 +634,34 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 	}
 
 	if err = csGenDoc.GenesisDoc.ValidateAndComplete(); err != nil {
-		return sm.State{}, nil, fmt.Errorf("error in genesis doc: %w", err)
+		return sm.State{}, nil, ErrGenesisDoc{Err: err}
+	}
+
+	checkSumStr := hex.EncodeToString(csGenDoc.Sha256Checksum)
+	if err := tmhash.ValidateSHA256(checkSumStr); err != nil {
+		const formatStr = "invalid genesis doc SHA256 checksum: %s"
+		return sm.State{}, nil, fmt.Errorf(formatStr, err)
 	}
 
 	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator
 	if operatorGenesisHashHex != "" {
 		decodedOperatorGenesisHash, err := hex.DecodeString(operatorGenesisHashHex)
 		if err != nil {
-			return sm.State{}, nil, errors.New("genesis hash provided by operator cannot be decoded")
+			return sm.State{}, nil, ErrGenesisHashDecode
 		}
 		if !bytes.Equal(csGenDoc.Sha256Checksum, decodedOperatorGenesisHash) {
-			return sm.State{}, nil, errors.New("genesis doc hash in db does not match passed --genesis_hash value")
+			return sm.State{}, nil, ErrPassedGenesisHashMismatch
 		}
 	}
 
 	if len(genDocHash) == 0 {
 		// Save the genDoc hash in the store if it doesn't already exist for future verification
 		if err = stateDB.SetSync(genesisDocHashKey, csGenDoc.Sha256Checksum); err != nil {
-			return sm.State{}, nil, fmt.Errorf("failed to save genesis doc hash to db: %w", err)
+			return sm.State{}, nil, ErrSaveGenesisDocHash{Err: err}
 		}
 	} else {
 		if !bytes.Equal(genDocHash, csGenDoc.Sha256Checksum) {
-			return sm.State{}, nil, errors.New("genesis doc hash in db does not match loaded genesis doc")
+			return sm.State{}, nil, ErrLoadedGenesisDocHashMismatch
 		}
 	}
 

@@ -25,6 +25,8 @@ func TestScanner(t *testing.T) {
 
 		// Tags
 		{`foo foo.bar`, []syntax.Token{syntax.TTag, syntax.TTag}},
+		{`foo foo-foo.bar`, []syntax.Token{syntax.TTag, syntax.TTag}},
+		{`foo foo._bar_bar`, []syntax.Token{syntax.TTag, syntax.TTag}},
 
 		// Strings (values)
 		{` '' x 'x' 'x y'`, []syntax.Token{syntax.TString, syntax.TTag, syntax.TString, syntax.TString}},
@@ -167,6 +169,8 @@ func TestParseValid(t *testing.T) {
 
 		{"hash='136E18F7E4C348B780CF873A0BF43922E5BAFA63'", true},
 		{"hash=136E18F7E4C348B780CF873A0BF43922E5BAFA63", false},
+
+		{"cosm-wasm.transfer_amount=100", true},
 	}
 
 	for _, test := range tests {

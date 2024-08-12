@@ -1,9 +1,7 @@
 package secp256k1
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"crypto/subtle"
 	"fmt"
 	"io"
 	"math/big"
@@ -48,15 +46,6 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	pk := pubkeyObject.SerializeCompressed()
 
 	return PubKey(pk)
-}
-
-// Equals - you probably don't need to use this.
-// Runs in constant time based on length of the keys.
-func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	if otherSecp, ok := other.(PrivKey); ok {
-		return subtle.ConstantTimeCompare(privKey[:], otherSecp[:]) == 1
-	}
-	return false
 }
 
 func (PrivKey) Type() string {
@@ -128,7 +117,8 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	priv, _ := secp256k1.PrivKeyFromBytes(privKey)
 
-	sig, err := ecdsa.SignCompact(priv, crypto.Sha256(msg), false)
+	sum := sha256.Sum256(msg)
+	sig, err := ecdsa.SignCompact(priv, sum[:], false)
 	if err != nil {
 		return nil, err
 	}
@@ -176,13 +166,6 @@ func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeySecp256k1{%X}", []byte(pubKey))
 }
 
-func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	if otherSecp, ok := other.(PubKey); ok {
-		return bytes.Equal(pubKey[:], otherSecp[:])
-	}
-	return false
-}
-
 func (PubKey) Type() string {
 	return KeyType
 }
@@ -213,7 +196,8 @@ func (pubKey PubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 		return false
 	}
 
-	return signature.Verify(crypto.Sha256(msg), pub)
+	sum := sha256.Sum256(msg)
+	return signature.Verify(sum[:], pub)
 }
 
 // Read Signature struct from R || S. Caller needs to ensure

@@ -122,7 +122,7 @@ type Store interface {
 	LoadValidators(height int64) (*types.ValidatorSet, error)
 	// LoadFinalizeBlockResponse loads the abciResponse for a given height
 	LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
-	// LoadLastABCIResponse loads the last abciResponse for a given height
+	// LoadLastFinalizeBlockResponse loads the last abciResponse for a given height
 	LoadLastFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error)
 	// LoadConsensusParams loads the consensus params for a given height
 	LoadConsensusParams(height int64) (types.ConsensusParams, error)
@@ -571,6 +571,7 @@ func (store dbStore) PruneABCIResponses(targetRetainHeight int64, forceCompact b
 	if store.DiscardABCIResponses {
 		return 0, 0, nil
 	}
+
 	defer addTimeSample(store.StoreOptions.Metrics.StoreAccessDurationSeconds.With("method", "prune_abci_responses"), time.Now())()
 	lastRetainHeight, err := store.getLastABCIResponsesRetainHeight()
 	if err != nil {
@@ -629,9 +630,10 @@ func TxResultsHash(txResults []*abci.ExecTxResult) []byte {
 	return types.NewResults(txResults).Hash()
 }
 
-// LoadFinalizeBlockResponse loads the DiscardABCIResponses for the given height from the
-// database. If the node has D set to true, ErrFinalizeBlockResponsesNotPersisted
-// is persisted. If not found, ErrNoABCIResponsesForHeight is returned.
+// LoadFinalizeBlockResponse loads FinalizeBlockResponse for the given height
+// from the database. If the node has DiscardABCIResponses set to true,
+// ErrFinalizeBlockResponsesNotPersisted is returned. If not found,
+// ErrNoABCIResponsesForHeight is returned.
 func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBlockResponse, error) {
 	if store.DiscardABCIResponses {
 		return nil, ErrFinalizeBlockResponsesNotPersisted
@@ -651,14 +653,22 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 
 	resp := new(abci.FinalizeBlockResponse)
 	err = resp.Unmarshal(buf)
-	if err != nil {
+	// Check for an error or if the resp.AppHash is nil if so
+	// this means the unmarshalling should be a LegacyABCIResponses
+	// Depending on a source message content (serialized as ABCIResponses)
+	// there are instances where it can be deserialized as a FinalizeBlockResponse
+	// without causing an error. But the values will not be deserialized properly
+	// and, it will contain zero values, and one of them is an AppHash == nil
+	// This can be verified in the /state/compatibility_test.go file
+	if err != nil || resp.AppHash == nil {
 		// The data might be of the legacy ABCI response type, so
 		// we try to unmarshal that
 		legacyResp := new(cmtstate.LegacyABCIResponses)
-		rerr := legacyResp.Unmarshal(buf)
-		if rerr != nil {
-			cmtos.Exit(fmt.Sprintf(`LoadFinalizeBlockResponse: Data has been corrupted or its spec has
-					changed: %v\n`, err))
+		if err := legacyResp.Unmarshal(buf); err != nil {
+			// only return an error, this method is only invoked through the `/block_results` not for state logic and
+			// some tests, so no need to exit cometbft if there's an error, just return it.
+			store.Logger.Error("failed in LoadFinalizeBlockResponse", "error", ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height, Err: err})
+			return nil, ErrABCIResponseCorruptedOrSpecChangeForHeight{Height: height, Err: err}
 		}
 		// The state store contains the old format. Migrate to
 		// the new FinalizeBlockResponse format. Note that the
@@ -668,10 +678,11 @@ func (store dbStore) LoadFinalizeBlockResponse(height int64) (*abci.FinalizeBloc
 
 	// TODO: ensure that buf is completely read.
 
+	// Otherwise return the FinalizeBlockResponse
 	return resp, nil
 }
 
-// LoadLastFinalizeBlockResponses loads the FinalizeBlockResponses from the most recent height.
+// LoadLastFinalizeBlockResponse loads the FinalizeBlockResponses from the most recent height.
 // The height parameter is used to ensure that the response corresponds to the latest height.
 // If not, an error is returned.
 //
@@ -749,7 +760,17 @@ func (store dbStore) SaveFinalizeBlockResponse(height int64, resp *abci.Finalize
 		if err := store.db.Delete(store.DBKeyLayout.CalcABCIResponsesKey(height - 1)); err != nil {
 			return err
 		}
+		// Compact the database to cleanup ^ responses.
+		//
+		// This is because PruneABCIResponses will not delete anything if
+		// DiscardABCIResponses is true, so we have to do it here.
+		if height%1000 == 0 {
+			if err := store.db.Compact(nil, nil); err != nil {
+				return err
+			}
+		}
 	}
+
 	if err := store.db.SetSync(store.DBKeyLayout.CalcABCIResponsesKey(height), bz); err != nil {
 		return err
 	}
@@ -1076,14 +1097,52 @@ func min(a int64, b int64) int64 {
 // responseFinalizeBlockFromLegacy is a convenience function that takes the old abci responses and morphs
 // it to the finalize block response. Note that the app hash is missing.
 func responseFinalizeBlockFromLegacy(legacyResp *cmtstate.LegacyABCIResponses) *abci.FinalizeBlockResponse {
-	return &abci.FinalizeBlockResponse{
-		TxResults:             legacyResp.DeliverTxs,
-		ValidatorUpdates:      legacyResp.EndBlock.ValidatorUpdates,
-		ConsensusParamUpdates: legacyResp.EndBlock.ConsensusParamUpdates,
-		Events:                append(legacyResp.BeginBlock.Events, legacyResp.EndBlock.Events...),
-		// NOTE: AppHash is missing in the response but will
-		// be caught and filled in consensus/replay.go
+	var response abci.FinalizeBlockResponse
+	events := make([]abci.Event, 0)
+
+	if legacyResp.DeliverTxs != nil {
+		response.TxResults = legacyResp.DeliverTxs
 	}
+
+	// Check for begin block and end block and only append events or assign values if they are not nil
+	if legacyResp.BeginBlock != nil {
+		if legacyResp.BeginBlock.Events != nil {
+			// Add BeginBlock attribute to BeginBlock events
+			for idx := range legacyResp.BeginBlock.Events {
+				legacyResp.BeginBlock.Events[idx].Attributes = append(legacyResp.BeginBlock.Events[idx].Attributes, abci.EventAttribute{
+					Key:   "mode",
+					Value: "BeginBlock",
+					Index: false,
+				})
+			}
+			events = append(events, legacyResp.BeginBlock.Events...)
+		}
+	}
+	if legacyResp.EndBlock != nil {
+		if legacyResp.EndBlock.ValidatorUpdates != nil {
+			response.ValidatorUpdates = legacyResp.EndBlock.ValidatorUpdates
+		}
+		if legacyResp.EndBlock.ConsensusParamUpdates != nil {
+			response.ConsensusParamUpdates = legacyResp.EndBlock.ConsensusParamUpdates
+		}
+		if legacyResp.EndBlock.Events != nil {
+			// Add EndBlock attribute to BeginBlock events
+			for idx := range legacyResp.EndBlock.Events {
+				legacyResp.EndBlock.Events[idx].Attributes = append(legacyResp.EndBlock.Events[idx].Attributes, abci.EventAttribute{
+					Key:   "mode",
+					Value: "EndBlock",
+					Index: false,
+				})
+			}
+			events = append(events, legacyResp.EndBlock.Events...)
+		}
+	}
+
+	response.Events = events
+
+	// NOTE: AppHash is missing in the response but will
+	// be caught and filled in consensus/replay.go
+	return &response
 }
 
 // ----- Util.

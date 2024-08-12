@@ -64,7 +64,9 @@ func (*Reactor) GetChannels() []*p2p.ChannelDescriptor {
 
 // AddPeer implements Reactor.
 func (evR *Reactor) AddPeer(peer p2p.Peer) {
-	go evR.broadcastEvidenceRoutine(peer)
+	if peer.HasChannel(EvidenceChannel) {
+		go evR.broadcastEvidenceRoutine(peer)
+	}
 }
 
 // Receive implements Reactor.
@@ -213,7 +215,7 @@ type PeerState interface {
 	GetHeight() int64
 }
 
-// encodemsg takes a array of evidence
+// evidenceListToProto takes an array of evidence
 // returns the byte encoding of the List Message.
 func evidenceListToProto(evis []types.Evidence) (*cmtproto.EvidenceList, error) {
 	evi := make([]cmtproto.Evidence, len(evis))

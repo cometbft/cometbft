@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -115,7 +116,7 @@ func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
 			}
 			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
 		}
-		rr.InvokeCallback()
+		rr.Wait()
 	}
 }
 
@@ -146,10 +147,11 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	checkTxs(t, mp, 1)
-	tx0 := mp.TxsFront().Value.(*mempoolTx)
-	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
+	iter := mp.NewIterator()
+	tx0 := <-iter.WaitNextCh()
+	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
-	require.Len(t, tx0.tx, 20, "Tx is longer than 20 bytes")
+	require.Len(t, tx0.Tx(), 20, "Tx is longer than 20 bytes")
 	mp.Flush()
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.
@@ -735,6 +737,7 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 		go func(h int) {
 			defer wg.Done()
 
+			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn()
 			require.NoError(t, err)
@@ -885,6 +888,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
 	require.Nil(t, mp.recheck.end)
+	require.False(t, mp.recheck.isRechecking.Load())
 	mockClient.AssertExpectations(t)
 
 	// For rechecking, there will be one call to CheckTxAsync per tx.
@@ -910,6 +914,7 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// mp.recheck.done() should be true only before and after calling recheckTxs.
 	mp.recheckTxs()
 	require.True(t, mp.recheck.done())
+	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
 	require.NotNil(t, mp.recheck.end)
 	require.Equal(t, mp.recheck.end, mp.txs.Back())
@@ -933,6 +938,7 @@ func TestMempoolRecheckRace(t *testing.T) {
 	}
 
 	// Update one transaction to force rechecking the rest.
+	mp.PreUpdate()
 	mp.Lock()
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
@@ -972,6 +978,7 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 				break
 			}
 			txs := mp.ReapMaxBytesMaxGas(100, -1)
+			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
 			require.NoError(t, err)
@@ -991,6 +998,44 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 
 	// All added transactions should have been removed from the mempool.
 	require.Zero(t, mp.Size())
+}
+
+func TestMempoolIterator(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	n := numTxs
+
+	// Spawn a goroutine that iterates on the list until counting n entries.
+	counter := 0
+	go func() {
+		defer wg.Done()
+
+		iter := mp.NewIterator()
+		for counter < n {
+			entry := <-iter.WaitNextCh()
+			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
+			counter++
+		}
+	}()
+
+	// Add n transactions with sequential ids.
+	for i := 0; i < n; i++ {
+		tx := kvstore.NewTxFromID(i)
+		rr, err := mp.CheckTx(tx, "")
+		require.NoError(t, err)
+		rr.Wait()
+	}
+
+	wg.Wait()
+	require.Equal(t, n, counter)
 }
 
 func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
@@ -1044,6 +1089,7 @@ func doCommit(t require.TestingT, mp Mempool, app abci.Application, txs types.Tx
 	}
 	_, e := app.FinalizeBlock(context.Background(), rfb)
 	require.NoError(t, e)
+	mp.PreUpdate()
 	mp.Lock()
 	e = mp.FlushAppConn()
 	require.NoError(t, e)

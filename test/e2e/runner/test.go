@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -10,8 +11,6 @@ import (
 
 // Test runs test cases under tests.
 func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
-	logger.Info("Running tests in ./tests/...")
-
 	err := os.Setenv("E2E_MANIFEST", testnet.File)
 	if err != nil {
 		return err
@@ -31,12 +30,21 @@ func Test(testnet *e2e.Testnet, ifd *e2e.InfrastructureData) error {
 		return err
 	}
 
-	cmd := []string{"go", "test", "-count", "1"}
+	cmd := []string{"go", "test", "-tags", "bls12381", "-count", "1"}
 	verbose := os.Getenv("VERBOSE")
 	if verbose == "1" {
 		cmd = append(cmd, "-v")
 	}
 	cmd = append(cmd, "./tests/...")
+
+	tests := "all tests"
+	runTest := os.Getenv("RUN_TEST")
+	if len(runTest) != 0 {
+		cmd = append(cmd, "-run", runTest)
+		tests = fmt.Sprintf("%q", runTest)
+	}
+
+	logger.Info(fmt.Sprintf("Running %s in ./tests/...", tests))
 
 	return exec.CommandVerbose(context.Background(), cmd...)
 }

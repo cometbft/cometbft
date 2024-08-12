@@ -21,11 +21,20 @@ proxy_app = "{{ .BaseConfig.ProxyApp }}"
 # A custom human readable name for this node
 moniker = "{{ .BaseConfig.Moniker }}"
 
-# Database backend: goleveldb | rocksdb | badgerdb | pebbledb
+# Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb
 # * goleveldb (github.com/syndtr/goleveldb)
 #   - UNMAINTAINED
 #   - stable
 #   - pure go
+# * cleveldb (uses levigo wrapper)
+#   - DEPRECATED
+#   - requires gcc
+#   - use cleveldb build tag (go build -tags cleveldb)
+# * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
+#   - DEPRECATED
+#   - EXPERIMENTAL
+#   - stable
+#   - use boltdb build tag (go build -tags boltdb)
 # * rocksdb (uses github.com/linxGnu/grocksdb)
 #   - EXPERIMENTAL
 #   - requires gcc
@@ -347,12 +356,6 @@ recheck_timeout = "{{ .Mempool.RecheckTimeout }}"
 # the tx to will see it until it is included in a block.
 broadcast = {{ .Mempool.Broadcast }}
 
-# wal_dir (default: "") configures the location of the Write Ahead Log
-# (WAL) for the mempool. The WAL is disabled by default. To enable, set
-# wal_dir to where you want the WAL to be written (e.g.
-# "data/mempool.wal").
-wal_dir = "{{ js .Mempool.WalPath }}"
-
 # Maximum number of transactions in the mempool
 size = {{ .Mempool.Size }}
 
@@ -387,6 +390,11 @@ keep-invalid-txs-in-cache = {{ .Mempool.KeepInvalidTxsInCache }}
 # performance results using the default P2P configuration.
 experimental_max_gossip_connections_to_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers }}
 experimental_max_gossip_connections_to_non_persistent_peers = {{ .Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers }}
+
+# ExperimentalPublishEventPendingTx enables publishing a `PendingTx` event when a new transaction is added to the mempool.
+# Note: Enabling this feature may introduce potential delays in transaction processing due to blocking behavior.
+# Use this feature with caution and consider the impact on transaction processing performance.
+experimental_publish_event_pending_tx = {{ .Mempool.ExperimentalPublishEventPendingTx }}
 
 #######################################################
 ###         State Sync Configuration Options        ###
@@ -504,11 +512,6 @@ compact = {{ .Storage.Compact }}
 # it is too much of an overhead to try compaction every block. But it should also not be a very
 # large multiple of your retain height as it might occur bigger overheads.
 compaction_interval = "{{ .Storage.CompactionInterval }}"
-
-# Hash of the Genesis file (as hex string), passed to CometBFT via the command line.
-# If this hash mismatches the hash that CometBFT computes on the genesis file,
-# the node is not able to boot.
-genesis_hash = "{{ .Storage.GenesisHash }}"
 
 [storage.pruning]
 

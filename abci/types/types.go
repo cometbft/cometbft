@@ -180,7 +180,7 @@ const (
 // Some compile time assertions to ensure we don't
 // have accidental runtime surprises later on.
 
-// jsonEncodingRoundTripper ensures that asserted
+// jsonRoundTripper ensures that asserted
 // interfaces implement both MarshalJSON and UnmarshalJSON.
 type jsonRoundTripper interface {
 	json.Marshaler
@@ -196,7 +196,7 @@ var (
 
 var _ jsonRoundTripper = (*EventAttribute)(nil)
 
-// constructs a copy of response that omits
+// DeterministicExecTxResult constructs a copy of the ExecTxResult response that omits
 // non-deterministic fields. The input response is not modified.
 func DeterministicExecTxResult(response *ExecTxResult) *ExecTxResult {
 	return &ExecTxResult{

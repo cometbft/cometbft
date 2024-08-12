@@ -126,7 +126,7 @@ func Connect2Switches(switches []*Switch, i, j int) {
 	<-doneCh
 }
 
-// ConnectStartSwitches will connect switches c and j via net.Pipe().
+// ConnectStarSwitches will connect switches c and j via net.Pipe().
 func ConnectStarSwitches(c int) func([]*Switch, int, int) {
 	// Blocks until a connection is established.
 	// NOTE: caller ensures i and j is within bounds.
@@ -185,7 +185,6 @@ func (sw *Switch) addPeerWithConnection(conn net.Conn) error {
 		sw.msgTypeByChID,
 		sw.chDescs,
 		sw.StopPeerForError,
-		sw.mlc,
 	)
 
 	if err = sw.addPeer(p); err != nil {

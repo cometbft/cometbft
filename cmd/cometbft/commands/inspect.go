@@ -36,8 +36,11 @@ func init() {
 		String("rpc.laddr",
 			config.RPC.ListenAddress, "RPC listenener address. Port required")
 	InspectCmd.Flags().
-		String("db-backend",
-			config.DBBackend, "database backend: goleveldb | rocksdb | badgerdb | pebbledb")
+		String(
+			"db-backend",
+			config.DBBackend,
+			"database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb",
+		)
 	InspectCmd.Flags().
 		String("db-dir", config.DBPath, "database directory")
 }
@@ -64,7 +67,7 @@ func runInspect(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	txIndexer, blockIndexer, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
+	txIndexer, blockIndexer, _, err := block.IndexerFromConfig(config, cfg.DefaultDBProvider, genDoc.ChainID)
 	if err != nil {
 		return err
 	}

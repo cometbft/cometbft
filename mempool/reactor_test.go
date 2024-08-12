@@ -94,6 +94,7 @@ func TestReactorConcurrency(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
+			reactors[0].mempool.PreUpdate()
 			reactors[0].mempool.Lock()
 			defer reactors[0].mempool.Unlock()
 
@@ -107,6 +108,7 @@ func TestReactorConcurrency(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
+			reactors[1].mempool.PreUpdate()
 			reactors[1].mempool.Lock()
 			defer reactors[1].mempool.Unlock()
 			err := reactors[1].mempool.Update(1, []types.Tx{}, make([]*abci.ExecTxResult, 0), nil, nil)
@@ -144,13 +146,85 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 
 	// the second peer sends all the transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
+	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
 	for _, tx := range txs {
-		_, err := reactors[0].mempool.CheckTx(tx, secondNodeID)
+		_, err := reactors[0].TryAddTx(tx, secondNode)
 		require.NoError(t, err)
 	}
 
 	// the second peer should not receive any transaction
 	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
+}
+
+// Test that a lagging peer does not receive txs.
+func TestMempoolReactorSendLaggingPeer(t *testing.T) {
+	config := cfg.TestConfig()
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				require.NoError(t, err)
+			}
+		}
+	}()
+
+	// First reactor is at height 10 and knows that its peer is lagging at height 1.
+	reactors[0].mempool.height.Store(10)
+	peerID := reactors[1].Switch.NodeInfo().ID()
+	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
+
+	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
+	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
+	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
+
+	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
+	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
+	waitForReactors(t, txs1, reactors, checkTxsInOrder)
+
+	// Add a bunch of txs to first reactor. The second reactor should receive them all.
+	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
+	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
+}
+
+// Test the scenario where a tx selected for being sent to a peer is removed
+// from the mempool before it is actually sent.
+func TestMempoolReactorSendRemovedTx(t *testing.T) {
+	config := cfg.TestConfig()
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				require.NoError(t, err)
+			}
+		}
+	}()
+
+	// First reactor is at height 10 and knows that its peer is lagging at height 1.
+	// We do this to hold sending transactions, giving us time to remove some of them.
+	reactors[0].mempool.height.Store(10)
+	peerID := reactors[1].Switch.NodeInfo().ID()
+	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
+
+	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
+	txs := checkTxs(t, reactors[0].mempool, 20)
+	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
+
+	// Remove some txs from the mempool of the first reactor.
+	txsToRemove := txs[:10]
+	txsLeft := txs[10:]
+	reactors[0].mempool.PreUpdate()
+	reactors[0].mempool.Lock()
+	err := reactors[0].mempool.Update(10, txsToRemove, abciResponses(len(txsToRemove), abci.CodeTypeOK), nil, nil)
+	require.NoError(t, err)
+	reactors[0].mempool.Unlock()
+	require.Equal(t, len(txsLeft), reactors[0].mempool.Size())
+
+	// Now we know that the second reactor is not lagging, so it should receive
+	// all txs except those that were removed.
+	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
+	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
 }
 
 func TestReactor_MaxTxBytes(t *testing.T) {
@@ -174,7 +248,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which has the max size
 	// => ensure it's received by the second reactor.
 	tx1 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes)
-	reqRes, err := reactors[0].mempool.CheckTx(tx1, "")
+	reqRes, err := reactors[0].TryAddTx(tx1, nil)
 	require.NoError(t, err)
 	require.False(t, reqRes.Response.GetCheckTx().IsErr())
 	waitForReactors(t, []types.Tx{tx1}, reactors, checkTxsInOrder)
@@ -185,7 +259,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	// Broadcast a tx, which is beyond the max size
 	// => ensure it's not sent
 	tx2 := kvstore.NewRandomTx(config.Mempool.MaxTxBytes + 1)
-	reqRes, err = reactors[0].mempool.CheckTx(tx2, "")
+	reqRes, err = reactors[0].TryAddTx(tx2, nil)
 	require.Error(t, err)
 	require.Nil(t, reqRes)
 }
@@ -258,11 +332,10 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 
 	// Deliver the same sequence of transactions from multiple sources, in parallel.
 	txs := newUniqueTxs(200)
-	mp := reactors[0].mempool
 	for i := 0; i < 3; i++ {
 		go func() {
 			for _, tx := range txs {
-				_, _ = mp.CheckTx(tx, "")
+				_, _ = reactors[0].TryAddTx(tx, nil)
 			}
 		}()
 	}
@@ -295,7 +368,7 @@ func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
 
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(100)
-	callCheckTx(t, reactors[0].mempool, txs)
+	tryAddTxs(t, reactors[0], txs)
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
@@ -345,7 +418,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(100)
-	callCheckTx(t, reactors[0].mempool, txs)
+	tryAddTxs(t, reactors[0], txs)
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
@@ -388,7 +461,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 	}
 	// Add a bunch transactions to the first reactor.
 	txs := newUniqueTxs(5)
-	callCheckTx(t, reactors[0].mempool, txs)
+	tryAddTxs(t, reactors[0], txs)
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
@@ -540,6 +613,16 @@ func ensureNoTxs(t *testing.T, reactor *Reactor, timeout time.Duration) {
 	t.Helper()
 	time.Sleep(timeout) // wait for the txs in all mempools
 	assert.Zero(t, reactor.mempool.Size())
+}
+
+// Try to add a list of transactions to the mempool of a given reactor.
+func tryAddTxs(t *testing.T, reactor *Reactor, txs types.Txs) {
+	t.Helper()
+	for _, tx := range txs {
+		rr, err := reactor.TryAddTx(tx, nil)
+		require.Nil(t, err)
+		rr.Wait()
+	}
 }
 
 func TestMempoolVectors(t *testing.T) {

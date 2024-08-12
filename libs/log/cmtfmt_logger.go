@@ -92,7 +92,8 @@ func (l tmfmtLogger) Log(keyvals ...any) error {
 
 		// Realize stringers
 		if s, ok := keyvals[i+1].(fmt.Stringer); ok {
-			keyvals[i+1] = s.String()
+			//nolint:gosimple // avoid panic for nil val
+			keyvals[i+1] = fmt.Sprintf("%s", s)
 		}
 	}
 

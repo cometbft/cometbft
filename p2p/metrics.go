@@ -26,10 +26,6 @@ var valueToLabelRegexp = regexp.MustCompile(`\*?(\w+)\.(.*)`)
 type Metrics struct {
 	// Number of peers.
 	Peers metrics.Gauge
-	// Number of bytes received from a given peer.
-	PeerReceiveBytesTotal metrics.Counter `metrics_labels:"peer_id,chID"`
-	// Number of bytes sent to a given peer.
-	PeerSendBytesTotal metrics.Counter `metrics_labels:"peer_id,chID"`
 	// Pending bytes to be sent to a given peer.
 	PeerPendingSendBytes metrics.Gauge `metrics_labels:"peer_id"`
 	// Number of transactions submitted by each peer.
@@ -40,51 +36,55 @@ type Metrics struct {
 	MessageSendBytesTotal metrics.Counter `metrics_labels:"message_type"`
 }
 
-type metricsLabelCache struct {
-	mtx               *sync.RWMutex
-	messageLabelNames map[reflect.Type]string
-	chIDLabelNames    map[byte]string
+type peerPendingMetricsCache struct {
+	mtx             sync.Mutex
+	perMessageCache map[reflect.Type]*peerPendingMetricsCacheEntry
 }
 
-// RegisterChID pre-allocates the metric label for a chID.
-// Labels are populated by the switch, before the p2p layer is started.
-func (m *metricsLabelCache) RegisterChID(chID byte) {
-	m.chIDLabelNames[chID] = fmt.Sprintf("%#x", chID)
+type peerPendingMetricsCacheEntry struct {
+	label            string
+	pendingSendBytes int
+	pendingRecvBytes int
 }
 
-// ChIDToMetricLabel returns the metric label for a chID.
-// No need for synchronization, as labels, once populated, never change.
-func (m *metricsLabelCache) ChIDToMetricLabel(chID byte) string {
-	return m.chIDLabelNames[chID]
-}
-
-// ValueToMetricLabel is a method that is used to produce a prometheus label value of the golang
-// type that is passed in.
-// This method uses a map on the Metrics struct so that each label name only needs
-// to be produced once to prevent expensive string operations.
-func (m *metricsLabelCache) ValueToMetricLabel(i any) string {
-	t := reflect.TypeOf(i)
-	m.mtx.RLock()
-
-	if s, ok := m.messageLabelNames[t]; ok {
-		m.mtx.RUnlock()
-		return s
+func newPeerPendingMetricsCache() *peerPendingMetricsCache {
+	return &peerPendingMetricsCache{
+		perMessageCache: make(map[reflect.Type]*peerPendingMetricsCacheEntry),
 	}
-	m.mtx.RUnlock()
+}
 
-	s := t.String()
+func (c *peerPendingMetricsCache) AddPendingSendBytes(msgType reflect.Type, addBytes int) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	if entry, ok := c.perMessageCache[msgType]; ok {
+		entry.pendingSendBytes += addBytes
+	} else {
+		c.perMessageCache[msgType] = &peerPendingMetricsCacheEntry{
+			label:            buildLabel(msgType),
+			pendingSendBytes: addBytes,
+		}
+	}
+}
+
+func (c *peerPendingMetricsCache) AddPendingRecvBytes(msgType reflect.Type, addBytes int) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	if entry, ok := c.perMessageCache[msgType]; ok {
+		entry.pendingRecvBytes += addBytes
+	} else {
+		c.perMessageCache[msgType] = &peerPendingMetricsCacheEntry{
+			label:            buildLabel(msgType),
+			pendingRecvBytes: addBytes,
+		}
+	}
+}
+
+func buildLabel(msgType reflect.Type) string {
+	s := msgType.String()
 	ss := valueToLabelRegexp.FindStringSubmatch(s)
-	l := fmt.Sprintf("%s_%s", ss[1], ss[2])
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-	m.messageLabelNames[t] = l
-	return l
+	return fmt.Sprintf("%s_%s", ss[1], ss[2])
 }
 
-func newMetricsLabelCache() *metricsLabelCache {
-	return &metricsLabelCache{
-		mtx:               &sync.RWMutex{},
-		messageLabelNames: map[reflect.Type]string{},
-		chIDLabelNames:    map[byte]string{},
-	}
+func getMsgType(i any) reflect.Type {
+	return reflect.TypeOf(i)
 }

@@ -50,6 +50,24 @@ func (_m *Mempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, error) 
 	return r0, r1
 }
 
+// Contains provides a mock function with given fields: txKey
+func (_m *Mempool) Contains(txKey types.TxKey) bool {
+	ret := _m.Called(txKey)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Contains")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(types.TxKey) bool); ok {
+		r0 = rf(txKey)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // EnableTxsAvailable provides a mock function with given fields:
 func (_m *Mempool) EnableTxsAvailable() {
 	_m.Called()
@@ -100,6 +118,11 @@ func (_m *Mempool) GetTxByHash(hash []byte) types.Tx {
 
 // Lock provides a mock function with given fields:
 func (_m *Mempool) Lock() {
+	_m.Called()
+}
+
+// PreUpdate provides a mock function with given fields:
+func (_m *Mempool) PreUpdate() {
 	_m.Called()
 }
 

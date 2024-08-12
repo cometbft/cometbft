@@ -115,6 +115,8 @@ db_backend = "goleveldb"
 | Value type          | string        | dependencies  | GitHub                                           |
 |:--------------------|:--------------|:--------------|:-------------------------------------------------|
 | **Possible values** | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
+|                     | `"cleveldb"`  | requires gcc  | [leveldb](https://github.com/google/leveldb)     |
+|                     | `"boltdb"`    | pure Golang   | [bbolt](https://github.com/etcd-io/bbolt)        |
 |                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
 |                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
 |                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
@@ -128,6 +130,8 @@ The RocksDB fork has API changes from the upstream RocksDB implementation. All o
 The CometBFT team tests rely on the GoLevelDB implementation. All other implementations are considered experimental from
 a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.
+
+**NOTE**: `boltdb` and `cleveldb` are deprecated and will be removed in a future release.
 
 ### db_dir
 The directory path where the database is stored.
@@ -825,6 +829,8 @@ seeds = ""
 
 The node will try to connect to any of the configured seed nodes when it needs
 addresses of potential peers to connect.
+If a node already has enough peer addresses in its address book, it may never
+need to dial the configured seed nodes.
 
 Example:
 ```toml
@@ -851,6 +857,16 @@ the configured [`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers)
 Moreover, if a connection to a persistent peer is lost, the node will attempt
 reconnecting to that peer.
 
+Attempts to reconnect to a node configured as a persistent peer are performed
+first with regular interval, with up to 20 connection attempts, then with
+exponential increasing intervals, with additional 10 connection attempts.
+The first phase uses a random interval of `5s` with up to `3s` of random jitter
+between attempts;
+in the second phase intervals are exponential with base of `3s`, also with a
+random random jitter up to `3s`.
+As a result, the node will attempt reconnecting to a persisting peer for a
+total interval of around 8 hours before giving up.
+
 Once connected to a persistent peer, the node will request addresses of
 potential peers.
 This means that when persistent peers are configured the node may not need to
@@ -860,6 +876,23 @@ Example:
 ```toml
 persistent_peers = "fedcba@11.22.33.44:26656,beefdead@55.66.77.88:20000"
 ```
+
+### p2p.persistent_peers_max_dial_period
+
+Maximum pause between successive attempts when dialing a persistent peer.
+
+```toml
+persistent_peers_max_dial_period = "0s"
+```
+
+| Value type          | string (duration) |
+|:--------------------|:------------------|
+| **Possible values** | &gt;= `"0s"`      |
+
+When set to `"0s"`, an exponential backoff is applied when re-dialing the
+persistent peer, in the same way the node does with ordinary peers.
+If it set to non-zero value, the configured value becomes the minimum interval
+between attempts to connect to a node configured as a persistent peer.
 
 ### p2p.addr_book_file
 
@@ -982,20 +1015,6 @@ Peers on this list also do not count towards the
 configured [`p2p.max_num_outbound_peers`](#p2pmax_num_outbound_peers) limit.
 
 Contrary to other settings, only the node ID has to be defined here, not the IP:port of the remote node.
-
-### p2p.persistent_peers_max_dial_period
-
-Maximum pause between successive attempts when dialing a persistent peer.
-
-```toml
-persistent_peers_max_dial_period = "0s"
-```
-
-| Value type          | string (duration) |
-|:--------------------|:------------------|
-| **Possible values** | &gt;= `"0s"`      |
-
-When set to `"0s"`, an exponential backoff is applied when re-dialing the persistent peer over and over.
 
 ### p2p.flush_throttle_timeout
 
@@ -1713,8 +1732,16 @@ The `timeout_commit` is not a required component of the consensus algorithm,
 meaning that there are no liveness implications if it is set to `0s`.
 But it may have implications in the way the application rewards validators.
 
+Notice also that the minimum interval defined with `timeout_commit` includes
+the time that both CometBFT and the application take to process the committed block.
+
 Setting `timeout_commit` to `0s` means that the node will start the next height
 as soon as it gathers all the mandatory +2/3 precommits for a block.
+
+**Notice** that the `timeout_commit` configuration flag is **deprecated** from v1.0.
+It is now up to the application to return a `next_block_delay` value upon
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+to define how long CometBFT should wait before starting the next height.
 
 ### consensus.double_sign_check_height
 
@@ -2002,18 +2029,6 @@ initial_block_results_retain_height = 0
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-### storage.pruning.data_companion.genesis_hash
-Hash of the Genesis file, passed to CometBFT via the command line.
-```toml
-genesis_hash = ""
-```
-
-| Value type          | string             |
-|:--------------------|:-------------------|
-| **Possible values** | hex-encoded number |
-|                     | `""`               |
-
-If this hash mismatches the hash that CometBFT computes on the genesis file, the node is not able to boot.
 
 ## Transaction indexer
 Transaction indexer settings.
@@ -2053,6 +2068,18 @@ psql-conn = ""
 |:--------------------|:-------------------------------------------------------------|
 | **Possible values** | `"postgresql://<user>:<password>@<host>:<port>/<db>?<opts>"` |
 |                     | `""`                                                         |
+
+### tx_index.table_*
+Table names used by the PostgreSQL-backed indexer.
+
+This setting is optional and only applies when `indexer`  is set to `psql`.
+
+| Field         | default value               |
+|:--------------------|:---------------------|
+| `"table_blocks"` | `"blocks"`     |
+| `"table_tx_results"` | `"tx_results"` |
+| `"table_events"`    | `"events"`     |
+| `"table_attributes"` | `"table_attributes"` |
 
 ## Prometheus Instrumentation
 An extensive amount of Prometheus metrics are built into CometBFT.
@@ -2214,3 +2241,8 @@ a proposal from another validator and prevote `nil` due to him starting
 `timeout_propose` earlier. I.e., if Bob's `timeout_commit` is too low comparing
 to other validators, then he might miss some proposals and get slashed for
 inactivity.
+
+**Notice** that the `timeout_commit` configuration flag is **deprecated** from v1.0.
+It is now up to the application to return a `next_block_delay` value upon
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+to define how long CometBFT should wait before starting the next height.

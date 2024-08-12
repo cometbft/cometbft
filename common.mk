@@ -29,10 +29,21 @@ ifeq (clock_skew,$(findstring clock_skew,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += clock_skew
 endif
 
+# handle cleveldb
+ ifeq (cleveldb,$(findstring cleveldb,$(COMETBFT_BUILD_OPTIONS)))
+   CGO_ENABLED=1
+   BUILD_TAGS += cleveldb
+ endif
+
 # handle badgerdb
 ifeq (badgerdb,$(findstring badgerdb,$(COMETBFT_BUILD_OPTIONS)))
   BUILD_TAGS += badgerdb
 endif
+
+# handle boltdb
+ ifeq (boltdb,$(findstring boltdb,$(COMETBFT_BUILD_OPTIONS)))
+   BUILD_TAGS += boltdb
+ endif
 
 # handle rocksdb
 ifeq (rocksdb,$(findstring rocksdb,$(COMETBFT_BUILD_OPTIONS)))

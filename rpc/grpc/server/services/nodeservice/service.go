@@ -87,10 +87,24 @@ func (s *server) GetStatus(
 // GetHealth is the gRPC endpoint serving requests for the node current health.
 // The request object isn't used in the current implementation, and the function
 // doesn't expect clients to provide any data in it.
-func (*server) GetHealth(
-	_ context.Context,
+// GetHealth serves as a ping to check if the node is responsive. A successful
+// call (i.e., no error) indicates the node is responsive; the response itself
+// is empty.
+func (s *server) GetHealth(
+	ctx context.Context,
 	_ *nodesvc.GetHealthRequest,
 ) (*nodesvc.GetHealthResponse, error) {
+	l := s.log.With("endpoint", "GetHealth")
+
+	if ctx.Err() != nil {
+		err := ctx.Err()
+
+		l.Error("exited early because of context cancellation", "err", err)
+
+		formatStr := "client canceled request: %s"
+		return nil, status.Errorf(codes.Canceled, formatStr, err)
+	}
+
 	return &nodesvc.GetHealthResponse{}, nil
 }
 

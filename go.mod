@@ -1,7 +1,6 @@
 module github.com/cometbft/cometbft
 
 go 1.22
-
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adlio/schema v1.3.6
@@ -55,7 +54,7 @@ require (
 	github.com/supranational/blst v0.3.12
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/sync v0.8.0
-	golang.org/x/text v0.16.0
+	golang.org/x/text v0.17.0
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.34.2
 )
@@ -104,6 +103,7 @@ require (
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
+	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
@@ -135,6 +135,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
+	go.etcd.io/bbolt v1.3.10 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect

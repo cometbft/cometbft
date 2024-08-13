@@ -899,17 +899,23 @@ func (iter *CListIterator) WaitNextCh() <-chan Entry {
 // valid if it is not empty or the number of accessed entries in the lane has not yet reached its
 // priority value.
 func (iter *CListIterator) PickLane() types.Lane {
-	// Loop until finding a valid lane.
+	// Loop until finding a valid lanes
+	// If the current lane is not valid, continue with the next lane with lower priority, in a
+	// round robin fashion.
+	lane := iter.mp.sortedLanes[iter.currentLaneIndex]
+
 	for {
-		// If the current lane is not valid, continue with the next lane with lower priority, in a
-		// round robin fashion.
-		lane := iter.mp.sortedLanes[iter.currentLaneIndex]
-		if iter.mp.lanes[lane].Len() == 0 || iter.counters[lane] >= uint32(lane) {
-			// Reset the counter only when the limit on the lane was reached.
-			if iter.counters[lane] >= uint32(lane) {
-				iter.counters[lane] = 0
-			}
+		if (iter.cursors[lane] != nil && iter.cursors[lane].Next() == nil) || iter.mp.lanes[lane].Len() == 0 {
 			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
+			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
+			continue
+		}
+
+		if iter.counters[lane] >= uint32(lane) {
+			// Reset the counter only when the limit on the lane was reached.
+			iter.counters[lane] = 0
+			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
+			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
 			continue
 		}
 		// TODO: if we detect that a higher-priority lane now has entries, do we preempt access to the current lane?
@@ -947,6 +953,8 @@ func (iter *CListIterator) Next() *clist.CElement {
 		iter.counters[lane]++
 	} else {
 		// The entry got removed or it was the last one in the lane.
+		// At the moment this should not happen - the loop in PickLane will loop forever until there
+		// is data in at least one lane
 		delete(iter.cursors, lane)
 	}
 

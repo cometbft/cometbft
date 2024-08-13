@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -24,7 +25,6 @@ import (
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/internal/clist"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -1052,87 +1052,77 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	require.Zero(t, mp.Size())
 }
 
-// Currently stores TXs in two lanes and should return
-// one tx interchangeably.
-// Test seems to reproduce the fact that the same transaction gets repeated.
-func TestMempoolIteratorLaneOrdering(t *testing.T) {
-	numLanes := 2
+// TODO automate the lane numbers so we can change the number of lanes
+// and increase the number of transactions.
+func TestMempoolIteratorExactOrder(t *testing.T) {
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
-	mockClient.On("Error").Return(nil).Times(10)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2}, DefaultLanePriority: 1}, nil)
+	mockClient.On("Error").Return(nil).Times(100)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2, 3}, DefaultLanePriority: 1}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
 
-	// Disable rechecking to simulate it manually later.
+	// Disable rechecking to make sure the recheck logic is not interferint.
 	mp.config.Recheck = false
-	n := 10
 
+	numLanes := 3
+	n := 11 // Number of transactions
+	// Transactions are ordered into lanes by their IDs
+	// This is the order in which they should appear following WRR
+	localSortedLanes := []int{2, 5, 8, 1, 4, 3, 11, 7, 10, 6, 9}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	counter := 0
-	localLanes := make(map[types.Lane]*clist.CList, numLanes)
-	for i := 0; i < numLanes; i++ {
-		localLanes[types.Lane(i+1)] = clist.New()
-	}
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-
-		currLane := (i % numLanes) + 1
-		localLanes[types.Lane(currLane)].PushBack(tx)
-		fmt.Println("Done iter ", i)
-	}
 	go func() {
 		defer wg.Done()
+		for mp.Size() < n {
+			time.Sleep(time.Second)
+		}
+		t.Log("Mempool full, starting to pick up transactions", mp.Size())
 
 		iter := mp.NewIterator()
+
+		counter := 0
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
 				continue
 			}
-
 			tx := entry.Tx()
-			fmt.Println(counter)
-			currLane := (counter % numLanes) + 1
-			currentCursor := localLanes[types.Lane(currLane)].Front() // localLanesCursors[types.Lane((counter%numLanes)+1)]
-			txLocal := currentCursor.Value.([]byte)
-			localLanes[types.Lane(currLane)].Remove(localLanes[types.Lane(currLane)].Front())
-			currentCursor.DetachPrev()
-			// localLanesCursors[types.Lane((counter%numLanes)+1)] = localLanes[types.Lane((counter%numLanes)+1)].Front().Next()
-			fmt.Println("tx:", tx.String(), "txLocal:", fmt.Sprintf("Tx{%X}", txLocal))
 
-			require.Equal(t, tx.String(), fmt.Sprintf("Tx{%X}", txLocal))
+			txLocal := kvstore.NewTxFromID(localSortedLanes[counter])
+
+			require.True(t, bytes.Equal(tx, txLocal))
 
 			counter++
 		}
 	}()
 
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		currLane := (i % numLanes) + 1
-		// localLanes[types.Lane(currLane)].PushBack(tx)
-		// fmt.Println("Done iter ", i)
-		reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, uint32(currLane))
-		require.NotNil(t, reqRes)
-		mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
-		rr, err := mp.CheckTx(tx, "")
-		if err != nil {
-			fmt.Println("Error is ", err)
+	// This was introduced because without a separate function
+	// we have to sleep to wait for all txs to get into the mempool.
+	// This way we loop in the function above until it is fool
+	// without arbitrary timeouts.
+	go func() {
+		for i := 1; i <= n; i++ {
+			tx := kvstore.NewTxFromID(i)
+
+			currLane := (i % numLanes) + 1
+			reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, uint32(currLane))
+			require.NotNil(t, reqRes)
+
+			mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
+			_, err := mp.CheckTx(tx, "")
+			require.NoError(t, err, err)
+			reqRes.InvokeCallback()
 		}
-		require.NoError(t, err, err)
-		reqRes.InvokeCallback()
-		fmt.Println("rr :", rr.Response.GetCheckTx())
-	}
+	}()
 
 	wg.Wait()
-	require.Equal(t, n, counter)
 }
 
 // This only tests that all transactions were submitted.
-func TestMempoolIteratorOrder(t *testing.T) {
+func TestMempoolIteratorCountOnly(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 
@@ -1143,7 +1133,7 @@ func TestMempoolIteratorOrder(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	n := 1000 // numTxs
+	n := numTxs
 
 	// Spawn a goroutine that iterates on the list until counting n entries.
 	counter := 0
@@ -1156,7 +1146,6 @@ func TestMempoolIteratorOrder(t *testing.T) {
 			if entry == nil {
 				continue
 			}
-
 			counter++
 		}
 	}()

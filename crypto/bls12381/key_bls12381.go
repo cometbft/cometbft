@@ -189,3 +189,22 @@ func (pubKey PubKey) Bytes() []byte {
 func (PubKey) Type() string {
 	return KeyType
 }
+
+// MarshalJSON marshals the public key to JSON.
+func (pubkey PubKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(pubkey.Bytes())
+}
+
+// UnmarshalJSON unmarshals the public key from JSON.
+func (pubkey *PubKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPublicKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	pubkey.pk = pk.pk
+	return nil
+}

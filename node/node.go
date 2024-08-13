@@ -317,10 +317,6 @@ func NewNodeWithCliParams(ctx context.Context,
 	cliParams CliParams,
 	options ...Option,
 ) (*Node, error) {
-	if config.BaseConfig.DBBackend == "boltdb" || config.BaseConfig.DBBackend == "cleveldb" {
-		logger.Info("WARNING: BoltDB and GoLevelDB are deprecated and will be removed in a future release. Please switch to a different backend.")
-	}
-
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err

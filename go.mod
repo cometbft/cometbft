@@ -10,7 +10,7 @@ require (
 	github.com/Workiva/go-datastructures v1.0.53
 	github.com/adlio/schema v1.3.3
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/go-kit/kit v0.12.0
+	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.5.1
 	github.com/gofrs/uuid v4.3.0+incompatible

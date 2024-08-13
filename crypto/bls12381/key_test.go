@@ -141,3 +141,30 @@ func TestConst(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, bls12381.SignatureLength, len(sig))
 }
+
+func TestPrivKey_MarshalJSON(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	defer privKey.Zeroize()
+
+	jsonBytes, err := privKey.MarshalJSON()
+	require.NoError(t, err)
+
+	privKey2 := new(bls12381.PrivKey)
+	err = privKey2.UnmarshalJSON(jsonBytes)
+	require.NoError(t, err)
+}
+
+func TestPubKey_MarshalJSON(t *testing.T) {
+	privKey, err := bls12381.GenPrivKey()
+	require.NoError(t, err)
+	defer privKey.Zeroize()
+	pubKey, _ := privKey.PubKey().(*bls12381.PubKey)
+
+	jsonBytes, err := pubKey.MarshalJSON()
+	require.NoError(t, err)
+
+	pubKey2 := new(bls12381.PubKey)
+	err = pubKey2.UnmarshalJSON(jsonBytes)
+	require.NoError(t, err)
+}

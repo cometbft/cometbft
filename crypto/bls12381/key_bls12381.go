@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 
 	blst "github.com/supranational/blst/bindings/go"
@@ -115,6 +116,25 @@ func (privKey *PrivKey) Zeroize() {
 	privKey.sk.Zeroize()
 }
 
+// MarshalJSON marshals the private key to JSON.
+func (privKey *PrivKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(privKey.Bytes())
+}
+
+// UnmarshalJSON unmarshals the private key from JSON.
+func (privKey *PrivKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPrivateKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	privKey.sk = pk.sk
+	return nil
+}
+
 // ===============================================================================================
 // Public Key
 // ===============================================================================================
@@ -179,4 +199,23 @@ func (PubKey) Type() string {
 // Equals returns true if the other's type is the same and their bytes are deeply equal.
 func (pubKey PubKey) Equals(other crypto.PubKey) bool {
 	return pubKey.Type() == other.Type() && bytes.Equal(pubKey.Bytes(), other.Bytes())
+}
+
+// MarshalJSON marshals the public key to JSON.
+func (pubkey PubKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(pubkey.Bytes())
+}
+
+// UnmarshalJSON unmarshals the public key from JSON.
+func (pubkey *PubKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPublicKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	pubkey.pk = pk.pk
+	return nil
 }

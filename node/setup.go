@@ -233,7 +233,7 @@ func doHandshake(
 	handshaker := cs.NewHandshaker(stateStore, state, blockStore, genDoc)
 	handshaker.SetLogger(consensusLogger)
 	handshaker.SetEventBus(eventBus)
-	if err := handshaker.HandshakeWithABCIRes(ctx, appInfoResponse, proxyApp); err != nil {
+	if err := handshaker.Handshake(ctx, appInfoResponse, proxyApp); err != nil {
 		return fmt.Errorf("error during handshake: %v", err)
 	}
 	return nil

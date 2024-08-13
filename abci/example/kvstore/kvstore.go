@@ -53,6 +53,8 @@ type Application struct {
 
 	lanes          map[string]uint32
 	lanePriorities []uint32
+
+	useLanes bool
 }
 
 // NewApplication creates an instance of the kvstore from the provided database.
@@ -77,7 +79,12 @@ func NewApplication(db dbm.DB) *Application {
 		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
 		lanes:              lanes,
 		lanePriorities:     priorities,
+		useLanes:           true,
 	}
+}
+
+func (app *Application) SetUseLanes(useL bool) {
+	app.useLanes = useL
 }
 
 // NewPersistentApplication creates a new application using the goleveldb database engine.
@@ -117,14 +124,23 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
+	if app.useLanes {
+		return &types.InfoResponse{
+			Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
+			Version:             version.ABCIVersion,
+			AppVersion:          AppVersion,
+			LastBlockHeight:     app.state.Height,
+			LastBlockAppHash:    app.state.Hash(),
+			LanePriorities:      app.lanePriorities,
+			DefaultLanePriority: app.lanes[defaultLane],
+		}, nil
+	}
 	return &types.InfoResponse{
-		Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
-		Version:             version.ABCIVersion,
-		AppVersion:          AppVersion,
-		LastBlockHeight:     app.state.Height,
-		LastBlockAppHash:    app.state.Hash(),
-		LanePriorities:      app.lanePriorities,
-		DefaultLanePriority: app.lanes[defaultLane],
+		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
+		Version:          version.ABCIVersion,
+		AppVersion:       AppVersion,
+		LastBlockHeight:  app.state.Height,
+		LastBlockAppHash: app.state.Hash(),
 	}, nil
 }
 
@@ -153,13 +169,18 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
 		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
-			//nolint:nilerr
-			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Lane: app.lanes["val"]}, nil
+			if app.useLanes {
+				return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Lane: app.lanes["val"]}, nil
+			}
+			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 		}
 	} else if !isValidTx(req.Tx) {
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 	}
 
+	if !app.useLanes {
+		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
+	}
 	// Assign a lane to the transaction deterministically.
 	var lane uint32
 	txHash := tmhash.Sum(req.Tx)

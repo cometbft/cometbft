@@ -93,7 +93,7 @@ func NewCListMempool(
 	mp.height.Store(height)
 
 	// Initialize lanes
-	if len(lanesInfo.lanes) == 0 {
+	if lanesInfo == nil || len(lanesInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
 		mp.lanes = make(map[types.Lane]*clist.CList, 1)
 		mp.defaultLane = types.Lane(1)

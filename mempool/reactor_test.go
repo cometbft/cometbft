@@ -466,6 +466,7 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 	logger := mempoolLogger()
 	for i := 0; i < n; i++ {
 		app := kvstore.NewInMemoryApplication()
+		app.SetUseLanes(false)
 		cc := proxy.NewLocalClientCreator(app)
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()

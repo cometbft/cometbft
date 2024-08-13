@@ -164,9 +164,9 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 	var lane uint32
 	txHash := tmhash.Sum(req.Tx)
 	switch {
-	case txHash[0] == 0 && txHash[1] == 0:
+	case txHash[0] == 1 && txHash[1] == 0:
 		lane = app.lanes["foo"]
-	case txHash[0] == 0:
+	case txHash[0] == 1:
 		lane = app.lanes["bar"]
 	default:
 		lane = app.lanes[defaultLane]

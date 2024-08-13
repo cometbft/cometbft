@@ -389,6 +389,7 @@ func _PruningService_GetBlockIndexerRetainHeight_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+var PruningService_serviceDesc = _PruningService_serviceDesc
 var _PruningService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.services.pruning.v1.PruningService",
 	HandlerType: (*PruningServiceServer)(nil),

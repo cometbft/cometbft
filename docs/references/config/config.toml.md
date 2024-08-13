@@ -115,6 +115,8 @@ db_backend = "goleveldb"
 | Value type          | string        | dependencies  | GitHub                                           |
 |:--------------------|:--------------|:--------------|:-------------------------------------------------|
 | **Possible values** | `"goleveldb"` | pure Golang   | [goleveldb](https://github.com/syndtr/goleveldb) |
+|                     | `"cleveldb"`  | requires gcc  | [leveldb](https://github.com/google/leveldb)     |
+|                     | `"boltdb"`    | pure Golang   | [bbolt](https://github.com/etcd-io/bbolt)        |
 |                     | `"rocksdb"`   | requires gcc  | [grocksdb](https://github.com/linxGnu/grocksdb)  |
 |                     | `"badgerdb"`  | pure Golang   | [badger](https://github.com/dgraph-io/badger)    |
 |                     | `"pebbledb"`  | pure Golang   | [pebble](https://github.com/cockroachdb/pebble)  |
@@ -128,6 +130,8 @@ The RocksDB fork has API changes from the upstream RocksDB implementation. All o
 The CometBFT team tests rely on the GoLevelDB implementation. All other implementations are considered experimental from
 a CometBFT perspective. The supported databases are part of the [cometbft-db](https://github.com/cometbft/cometbft-db) library
 that CometBFT uses as a common database interface to various databases.
+
+**NOTE**: `boltdb` and `cleveldb` are deprecated and will be removed in a future release.
 
 ### db_dir
 The directory path where the database is stored.
@@ -2064,6 +2068,18 @@ psql-conn = ""
 |:--------------------|:-------------------------------------------------------------|
 | **Possible values** | `"postgresql://<user>:<password>@<host>:<port>/<db>?<opts>"` |
 |                     | `""`                                                         |
+
+### tx_index.table_*
+Table names used by the PostgreSQL-backed indexer.
+
+This setting is optional and only applies when `indexer`  is set to `psql`.
+
+| Field         | default value               |
+|:--------------------|:---------------------|
+| `"table_blocks"` | `"blocks"`     |
+| `"table_tx_results"` | `"tx_results"` |
+| `"table_events"`    | `"events"`     |
+| `"table_attributes"` | `"table_attributes"` |
 
 ## Prometheus Instrumentation
 An extensive amount of Prometheus metrics are built into CometBFT.

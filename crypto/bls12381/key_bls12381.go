@@ -5,6 +5,7 @@ package bls12381
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 
 	blst "github.com/supranational/blst/bindings/go"
@@ -107,6 +108,25 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 // Zeroize clears the private key.
 func (privKey *PrivKey) Zeroize() {
 	privKey.sk.Zeroize()
+}
+
+// MarshalJSON marshals the private key to JSON.
+func (privKey *PrivKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(privKey.Bytes())
+}
+
+// UnmarshalJSON unmarshals the private key from JSON.
+func (privKey *PrivKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPrivateKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	privKey.sk = pk.sk
+	return nil
 }
 
 // ===============================================================================================

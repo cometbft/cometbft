@@ -93,7 +93,7 @@ func NewCListMempool(
 	mp.height.Store(height)
 
 	// Initialize lanes
-	if lanesInfo == nil {
+	if len(lanesInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
 		mp.lanes = make(map[types.Lane]*clist.CList, 1)
 		mp.defaultLane = types.Lane(1)
@@ -927,7 +927,6 @@ func (iter *CListIterator) PickLane() types.Lane {
 // was the case on the original code. Is this the best way to do it?
 func (iter *CListIterator) Next() *clist.CElement {
 	lane := iter.PickLane()
-
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
 	if cursor := iter.cursors[lane]; cursor != nil {

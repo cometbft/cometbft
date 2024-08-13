@@ -27,6 +27,13 @@ type NodeStatus struct {
 	ValidatorInfo *LocalValidatorInfo  // node's local validator info
 }
 
+// NodeHealth contains information about the health of the node providing the gRPC
+// interface.
+type NodeHealth struct {
+	// Code is the status code of the health check. 0 means healthy.
+	Code uint32
+}
+
 // NodeServiceClient exposes the functionalities that a client must implement to
 // query the NodeService gRPC endpoint.
 type NodeServiceClient interface {
@@ -35,7 +42,7 @@ type NodeServiceClient interface {
 	GetStatus(ctx context.Context) (*NodeStatus, error)
 
 	// GetHealth queries the node's health.
-	GetHealth(ctx context.Context) error
+	GetHealth(ctx context.Context) (*NodeHealth, error)
 }
 
 // nodeServiceClient is the gRPC client for the NodeService gRPC endpoint.
@@ -111,12 +118,17 @@ func (c *nodeServiceClient) GetStatus(ctx context.Context) (*NodeStatus, error) 
 // GetHealth serves as a ping to check if the node is responsive. A successful
 // call (i.e., no error) indicates the node is responsive; the response itself
 // is empty.
-func (c *nodeServiceClient) GetHealth(ctx context.Context) error {
-	_, err := c.client.GetHealth(ctx, &nodesvc.GetHealthRequest{})
+func (c *nodeServiceClient) GetHealth(ctx context.Context) (*NodeHealth, error) {
+	resp, err := c.client.GetHealth(ctx, &nodesvc.GetHealthRequest{})
 	if err != nil {
-		return fmt.Errorf("gRPC call returned: %s", err)
+		return nil, fmt.Errorf("gRPC call returned: %s", err)
 	}
-	return nil
+
+	hs := &NodeHealth{
+		Code: resp.Code,
+	}
+
+	return hs, nil
 }
 
 // disabledNodeServiceClient is a NodeServiceClient that panics when used.
@@ -141,6 +153,6 @@ func (*disabledNodeServiceClient) GetStatus(context.Context) (*NodeStatus, error
 
 // GetHealth panics if called, because the node service client is disabled.
 // Implements the NodeServiceClient interface.
-func (*disabledNodeServiceClient) GetHealth(context.Context) error {
+func (*disabledNodeServiceClient) GetHealth(context.Context) (*NodeHealth, error) {
 	panic(nodeSvcPanicMsg)
 }

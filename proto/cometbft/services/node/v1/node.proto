@@ -81,4 +81,7 @@ message GetHealthRequest {}
 
 // GetHealthResponse is what the gRPC endpoint GetHealth returns in response to
 // a request.
-message GetHealthResponse {}
+message GetHealthResponse {
+  // code 0 means the node is healthy.
+  uint32 Code = 1;
+}

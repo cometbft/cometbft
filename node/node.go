@@ -317,6 +317,10 @@ func NewNodeWithCliParams(ctx context.Context,
 	cliParams CliParams,
 	options ...Option,
 ) (*Node, error) {
+	if config.BaseConfig.DBBackend == "boltdb" || config.BaseConfig.DBBackend == "cleveldb" {
+		logger.Info("WARNING: BoltDB and GoLevelDB are deprecated and will be removed in a future release. Please switch to a different backend.")
+	}
+
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
@@ -405,7 +409,7 @@ func NewNodeWithCliParams(ctx context.Context,
 
 	appInfoResponse, err := proxyApp.Query().Info(ctx, proxy.InfoRequest)
 	if err != nil {
-		return nil, fmt.Errorf("error calling Info: %v", err)
+		return nil, fmt.Errorf("error calling ABCI Info method: %v", err)
 	}
 	if !stateSync {
 		if err := doHandshake(ctx, stateStore, state, blockStore, genDoc, eventBus, appInfoResponse, proxyApp, consensusLogger); err != nil {

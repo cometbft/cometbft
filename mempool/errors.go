@@ -11,8 +11,14 @@ var ErrTxNotFound = errors.New("transaction not found in mempool")
 // ErrTxInCache is returned to the client if we saw tx earlier.
 var ErrTxInCache = errors.New("tx already exists in cache")
 
+
 // ErrLaneNotFound is returned to the client when a lane is not found.
 var ErrLaneNotFound = errors.New("lane not found in mempool")
+
+// ErrRecheckFull is returned when checking if the mempool is full and
+// rechecking is still in progress after a new block was committed.
+var ErrRecheckFull = errors.New("mempool is still rechecking after a new committed block, so it is considered as full")
+
 
 // ErrTxTooLarge defines an error when a transaction is too big to be sent in a
 // message to other peers.
@@ -92,7 +98,7 @@ type ErrEmptyLanesDefaultLaneSet struct {
 }
 
 func (e ErrEmptyLanesDefaultLaneSet) Error() string {
-	return fmt.Sprintf("invalid lane info:if list of lanes is empty, then defaultLane should be 0, but %v given; info %v", e.Info.defaultLane, e.Info)
+	return fmt.Sprintf("invalid lane info: if list of lanes is empty, then defaultLane must be 0, but %v given; info %v", e.Info.defaultLane, e.Info)
 }
 
 type ErrBadDefaultLaneNonEmptyLaneList struct {
@@ -100,7 +106,7 @@ type ErrBadDefaultLaneNonEmptyLaneList struct {
 }
 
 func (e ErrBadDefaultLaneNonEmptyLaneList) Error() string {
-	return fmt.Sprintf("invalid lane info:default lane cannot be 0 if list of lanes is non empty; info: %v", e.Info)
+	return fmt.Sprintf("invalid lane info: default lane cannot be 0 if list of lanes is non empty; info: %v", e.Info)
 }
 
 type ErrDefaultLaneNotInList struct {
@@ -108,7 +114,7 @@ type ErrDefaultLaneNotInList struct {
 }
 
 func (e ErrDefaultLaneNotInList) Error() string {
-	return fmt.Sprintf("invalid lane info:list of lanes does not contain default lane; info %v", e.Info)
+	return fmt.Sprintf("invalid lane info: list of lanes does not contain default lane; info %v", e.Info)
 }
 
 type ErrRepeatedLanes struct {

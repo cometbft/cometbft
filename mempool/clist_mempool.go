@@ -109,6 +109,7 @@ func NewCListMempool(
 			mp.sortedLanes[i] = lane
 		}
 		slices.Sort(mp.sortedLanes)
+		slices.Reverse(mp.sortedLanes)
 	}
 
 	if cfg.CacheSize > 0 {

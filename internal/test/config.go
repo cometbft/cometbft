@@ -10,10 +10,18 @@ import (
 )
 
 func ResetTestRoot(testName string) *config.Config {
-	return ResetTestRootWithChainID(testName, "")
+	return resetTestRoot(testName, "", true)
 }
 
 func ResetTestRootWithChainID(testName string, chainID string) *config.Config {
+	return resetTestRoot(testName, chainID, true)
+}
+
+func ResetTestRootWithChainIDNoOverwritePrivval(testName string, chainID string) *config.Config {
+	return resetTestRoot(testName, chainID, false)
+}
+
+func resetTestRoot(testName string, chainID string, overwritePrivKey bool) *config.Config {
 	// create a unique, concurrency-safe test directory under os.TempDir()
 	rootDir, err := os.MkdirTemp("", fmt.Sprintf("%s-%s_", chainID, testName))
 	if err != nil {
@@ -34,8 +42,9 @@ func ResetTestRootWithChainID(testName string, chainID string) *config.Config {
 		testGenesis := fmt.Sprintf(testGenesisFmt, chainID)
 		cmtos.MustWriteFile(genesisFilePath, []byte(testGenesis), 0o644)
 	}
-	// we always overwrite the priv val
-	cmtos.MustWriteFile(privKeyFilePath, []byte(testPrivValidatorKey), 0o644)
+	if overwritePrivKey {
+		cmtos.MustWriteFile(privKeyFilePath, []byte(testPrivValidatorKey), 0o644)
+	}
 	cmtos.MustWriteFile(privStateFilePath, []byte(testPrivValidatorState), 0o644)
 
 	config := config.TestConfig().SetRoot(rootDir)

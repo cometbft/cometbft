@@ -52,7 +52,7 @@ type Manifest struct {
 	DisablePexReactor bool `toml:"disable_pex"`
 
 	// KeyType sets the curve that will be used by validators.
-	// Options are ed25519, secp256k1 and sr25519.
+	// Options are ed25519, secp256k1 and bls12381.
 	KeyType string `toml:"key_type"`
 
 	// Evidence indicates the amount of evidence that will be injected into the
@@ -161,7 +161,7 @@ type ManifestNode struct {
 	PersistentPeers []string `toml:"persistent_peers"`
 
 	// Database specifies the database backend: "goleveldb", "rocksdb",
-	// "pebbledb" or "badgerdb". Defaults to "goleveldb".
+	// "pebbledb", "cleveldb", "boltdb", or "badgerdb". Defaults to "goleveldb".
 	Database string `toml:"database"`
 
 	// PrivvalProtocol specifies the protocol used to sign consensus messages:

@@ -49,7 +49,7 @@ Secp256k1:
 
 Do NOT use these examples in production systems unless you are planning to give away your tokens.
 
-You can generate random Ed25519 keys with the `cometbft gen-validator` command.
+You can generate random keys with the `cometbft gen-validator` command.
 
 ## address
 The wallet address generated from the consensus public key.
@@ -64,11 +64,12 @@ The type of the key defined under [`pub_key.value`](#pub_keyvalue).
 |:--------------------|:---------------------------------------------------------|
 | **Possible values** | `"tendermint/PubKeyEd25519"`                             |
 |                     | `"tendermint/PubKeySecp256k1"`                           |
+|                     | `"tendermint/PubKeyBls12_381"`                           |
 
 The string values are derived from the asymmetric cryptographic implementations defined in the `crypto` package.
 
-CometBFT will always generate an Ed25519 key-pair for consensus key using the `cometbft init` or the
-`cometbft gen-validator` commands. Other types of encryption keys have to be created manually.
+CometBFT will generate an Ed25519 key-pair for consensus key by default when using the `cometbft init` or the
+`cometbft gen-validator` commands. Use `--key-type` or `-k` flag to create a consensus key of a different type.
 
 ## pub_key.value
 Base64-encoded bytes, the public key of an asymmetric encryption algorithm.
@@ -78,9 +79,11 @@ The type of encryption is defined in [pub_key.type](#pub_keytype).
 |:--------------------|:------------------------------------|
 | **Possible values** | base64-encoded Ed25519 public key   |
 |                     | base64-encoded Secp256k1 public key |
+|                     | base64-encoded BLS12-381 public key |
 
-CometBFT will always generate an Ed25519 key-pair for consensus key using the `cometbft init` or the
-`cometbft gen-validator` commands. Other types of encryption keys have to be created manually.
+CometBFT will generate an Ed25519 key-pair for consensus key by default when using the `cometbft init` or the
+`cometbft gen-validator` commands. Use `--key-type` or `-k` flag to create a consensus key of a different type.
+
 
 ## priv_key.type
 The type of the key defined under [`priv_key.value`](#priv_keyvalue).
@@ -89,11 +92,12 @@ The type of the key defined under [`priv_key.value`](#priv_keyvalue).
 |:--------------------|:---------------------------------------------------------|
 | **Possible values** | `"tendermint/PrivKeyEd25519"`                            |
 |                     | `"tendermint/PrivKeySecp256k1"`                          |
+|                     | `"tendermint/PrivKeyBls12_381"`                          |
 
 The string values are derived from the asymmetric cryptographic implementations defined in the `crypto` package.
 
-CometBFT will always generate an Ed25519 key-pair for consensus key using the `cometbft init` or the
-`cometbft gen-validator` commands. Other types of encryption keys have to be created manually.
+CometBFT will generate an Ed25519 key-pair for consensus key by default when using the `cometbft init` or the
+`cometbft gen-validator` commands. Use `--key-type` or `-k` flag to create a consensus key of a different type.
 
 ## priv_key.value
 Base64-encoded bytes, the private key of an asymmetric encryption algorithm.
@@ -103,8 +107,9 @@ The type of encryption is defined in [priv_key.type](#priv_keytype).
 |:--------------------|:----------------------------------------------------|
 | **Possible values** | base64-encoded Ed25519 private key **+ public key** |
 |                     | base64-encoded Secp256k1 private key                |
+|                     | base64-encoded BLS12-381 private key                |
 
-CometBFT will always generate an Ed25519 key-pair for consensus key using the `cometbft init` or the
-`cometbft gen-validator` commands. Other types of encryption keys have to be created manually.
+CometBFT will generate an Ed25519 key-pair for consensus key by default when using the `cometbft init` or the
+`cometbft gen-validator` commands. Use `--key-type` or `-k` flag to create a consensus key of a different type.
 
 The Ed25519 encryption implementation requires the public key concatenated in the value.

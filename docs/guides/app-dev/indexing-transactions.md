@@ -142,6 +142,19 @@ Example:
 psql ... -f state/indexer/sink/psql/schema.sql
 ```
 
+The schema file adopts standard table names: `blocks`, `tx_results`, `events`, and `attributes`.
+In order to adopt customizable table names, the user should adapt the schema file **and** configure CometBFT's indexer to employ the appropriate table names.
+
+Example:
+```toml
+[tx-index]
+psql-conn = "your connection string"
+table_blocks = "cometbft_blocks"
+table_tx_results = "cometbft_tx_results"
+table_events = "cometbft_events"
+table_attributes = "cometbft_attributes"
+```
+
 ## Default Indexes
 
 The CometBFT tx and block event indexer indexes a few select reserved events

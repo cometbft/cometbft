@@ -261,7 +261,6 @@ func (mem *CListMempool) Flush() {
 	mem.numTxs.Store(0)
 	mem.cache.Reset()
 
-
 	for lane := range mem.lanes {
 		mem.removeAllTxs(lane)
 	}
@@ -270,28 +269,6 @@ func (mem *CListMempool) Flush() {
 func (mem *CListMempool) Contains(txKey types.TxKey) bool {
 	_, ok := mem.getCElement(txKey)
 	return ok
-}
-
-// TxsFront returns the first transaction in the ordered list for peer
-// goroutines to call .NextWait() on.
-// FIXME: leaking implementation details!
-//
-// Safe for concurrent use by multiple goroutines.
-//
-// Deprecated: Use CListIterator instead.
-func (mem *CListMempool) TxsFront() *clist.CElement {
-	return mem.txs.Front()
-}
-
-// TxsWaitChan returns a channel to wait on transactions. It will be closed
-// once the mempool is not empty (ie. the internal `mem.txs` has at least one
-// element)
-//
-// Safe for concurrent use by multiple goroutines.
-//
-// Deprecated: Use CListIterator instead.
-func (mem *CListMempool) TxsWaitChan() <-chan struct{} {
-	return mem.txs.WaitChan()
 }
 
 // It blocks if we're waiting on Update() or Reap().

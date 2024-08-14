@@ -32,6 +32,7 @@ func init() {
 	}
 }
 
+// GenPrivKey generates a private key of the given type.
 func GenPrivKey(keyType string) (crypto.PrivKey, error) {
 	genF, ok := keyTypes[keyType]
 	if !ok {
@@ -40,6 +41,7 @@ func GenPrivKey(keyType string) (crypto.PrivKey, error) {
 	return genF()
 }
 
+// SupportedKeyTypesStr returns a string of supported key types.
 func SupportedKeyTypesStr() string {
 	keyTypesSlice := make([]string, 0, len(keyTypes))
 	for k := range keyTypes {
@@ -48,10 +50,17 @@ func SupportedKeyTypesStr() string {
 	return strings.Join(keyTypesSlice, ", ")
 }
 
+// ListSupportedKeyTypes returns a list of supported key types.
 func ListSupportedKeyTypes() []string {
 	keyTypesSlice := make([]string, 0, len(keyTypes))
 	for k := range keyTypes {
 		keyTypesSlice = append(keyTypesSlice, k)
 	}
 	return keyTypesSlice
+}
+
+// IsSupported returns true if the key type is supported.
+func IsSupported(keyType string) bool {
+	_, ok := keyTypes[keyType]
+	return ok
 }

@@ -97,7 +97,7 @@ func TestValidatorValidateBasic(t *testing.T) {
 		{
 			val: &Validator{
 				PubKey:  unsupportedPubKey{},
-				Address: nil,
+				Address: unsupportedPubKey{}.Address(),
 			},
 			err: true,
 			msg: ErrUnsupportedPubKeyType.Error(),

@@ -123,7 +123,9 @@ func ValidatorListString(vals []*Validator) string {
 func (v *Validator) Bytes() []byte {
 	pk, err := ce.PubKeyToProto(v.PubKey)
 	if err != nil {
-		panic(err)
+		// Unsupported key.
+		// Since this is used by the light client, we should not panic here.
+		return nil
 	}
 
 	pbv := cmtproto.SimpleValidator{

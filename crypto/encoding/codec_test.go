@@ -58,7 +58,7 @@ func TestPubKeyToFromProto(t *testing.T) {
 	// unsupported key type
 	_, err = PubKeyToProto(unsupportedPubKey{})
 	require.Error(t, err)
-	assert.Equal(t, ErrUnsupportedKey{KeyType: "encoding.unsupportedPubKey"}, err)
+	assert.Equal(t, ErrUnsupportedKey{KeyType: "unsupportedPubKey"}, err)
 }
 
 func TestPubKeyFromTypeAndBytes(t *testing.T) {

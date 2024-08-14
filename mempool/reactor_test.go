@@ -326,15 +326,9 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 // 		}
 // 	}
 
-<<<<<<< HEAD
-	// Add a bunch transactions to the first reactor.
-	txs := newUniqueTxs(100)
-	callCheckTx(t, reactors[0].mempool, txs)
-=======
 // 	// Add a bunch transactions to the first reactor.
 // 	txs := newUniqueTxs(100)
-// 	tryAddTxs(t, reactors[0], txs)
->>>>>>> c48bf49bc (fix(crypto/bls12381): correctly marshal private and public keys to JSON (#3691))
+// 	callCheckTx(t, reactors[0].mempool, txs)
 
 // 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 // 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
@@ -382,15 +376,9 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 // 	pCon1_2 := reactors[1].Switch.Peers().Copy()[1]
 // 	reactors[1].Switch.StopPeerGracefully(pCon1_2)
 
-<<<<<<< HEAD
-	// Add a bunch transactions to the first reactor.
-	txs := newUniqueTxs(100)
-	callCheckTx(t, reactors[0].mempool, txs)
-=======
-// 	// Add a bunch transactions to the first reactor.
-// 	txs := newUniqueTxs(100)
-// 	tryAddTxs(t, reactors[0], txs)
->>>>>>> c48bf49bc (fix(crypto/bls12381): correctly marshal private and public keys to JSON (#3691))
+//  // Add a bunch transactions to the first reactor.
+//  txs := newUniqueTxs(100)
+//  callCheckTx(t, reactors[0].mempool, txs)
 
 // 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 // 	// receive any tx. (The second reactor only sends transactions to the first reactor.)

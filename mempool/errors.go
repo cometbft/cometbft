@@ -87,3 +87,35 @@ func (e ErrFlushAppConn) Error() string {
 func (e ErrFlushAppConn) Unwrap() error {
 	return e.Err
 }
+
+type ErrEmptyLanesDefaultLaneSet struct {
+	Info LanesInfo
+}
+
+func (e ErrEmptyLanesDefaultLaneSet) Error() string {
+	return fmt.Sprintf("invalid lane info: if list of lanes is empty, then defaultLane must be 0, but %v given; info %v", e.Info.defaultLane, e.Info)
+}
+
+type ErrBadDefaultLaneNonEmptyLaneList struct {
+	Info LanesInfo
+}
+
+func (e ErrBadDefaultLaneNonEmptyLaneList) Error() string {
+	return fmt.Sprintf("invalid lane info: default lane cannot be 0 if list of lanes is non empty; info: %v", e.Info)
+}
+
+type ErrDefaultLaneNotInList struct {
+	Info LanesInfo
+}
+
+func (e ErrDefaultLaneNotInList) Error() string {
+	return fmt.Sprintf("invalid lane info: list of lanes does not contain default lane; info %v", e.Info)
+}
+
+type ErrRepeatedLanes struct {
+	Info LanesInfo
+}
+
+func (e ErrRepeatedLanes) Error() string {
+	return fmt.Sprintf("list of lanes cannot have repeated values; info %v", e.Info)
+}

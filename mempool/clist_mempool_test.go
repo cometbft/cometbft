@@ -808,6 +808,31 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 	}
 }
 
+func TestMempoolEmptyLanes(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_empty_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	go func() {
+		iter := mp.NewIterator()
+		require.Equal(t, 0, mp.Size())
+		entry := <-iter.WaitNextCh()
+
+		require.NotNil(t, entry)
+		tx := entry.Tx()
+
+		require.True(t, bytes.Equal(tx, kvstore.NewTxFromID(1)))
+	}()
+	time.Sleep(time.Second * 2)
+	tx := kvstore.NewTxFromID(1)
+	res := abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
+	mp.handleCheckTxResponse(tx, "")(res)
+	require.Equal(t, 1, mp.Size(), "pool size mismatch")
+}
+
 func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)

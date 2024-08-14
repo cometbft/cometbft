@@ -121,7 +121,8 @@ func ValidatorListString(vals []*Validator) string {
 // as its redundant with the pubkey. This also excludes ProposerPriority
 // which changes every round.
 //
-// If the public key is unsupported, it returns nil. Caller must handle `nil` as it would handle an error
+// If the public key is unsupported, it returns nil. Caller must handle `nil`
+// as it would handle an error.
 func (v *Validator) Bytes() []byte {
 	pk, err := ce.PubKeyToProto(v.PubKey)
 	if err != nil {

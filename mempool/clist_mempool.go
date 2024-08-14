@@ -145,7 +145,7 @@ func (mem *CListMempool) addSender(txKey types.TxKey, sender p2p.ID) error {
 	memTx := elem.Value.(*mempoolTx)
 	if found := memTx.addSender(sender); found {
 		// It should not be possible to receive twice a tx from the same sender.
-		return ErrTxAlreadySeen
+		return ErrTxAlreadyReceivedFromSender
 	}
 	return nil
 }

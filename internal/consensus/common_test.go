@@ -460,6 +460,14 @@ func newStateWithConfigAndBlockStore(
 	// one for mempool, one for consensus
 	mtx := new(cmtsync.Mutex)
 
+	// appResp, err := app.Info(context.Background(), proxy.InfoRequest)
+	// if err != nil {
+	// 	panic("error on info")
+	// }
+	// laneInfo, err := mempl.FetchLanesInfo(appResp.LanePriorities, types.Lane(appResp.DefaultLanePriority))
+	// if err != nil {
+	// 	panic("error parsing lanes ")
+	// }
 	proxyAppConnCon := proxy.NewAppConnConsensus(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 	proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 	// Make Mempool
@@ -1032,15 +1040,21 @@ func newPersistentKVStore() abci.Application {
 	if err != nil {
 		panic(err)
 	}
-	return kvstore.NewPersistentApplication(dir)
+	app := kvstore.NewPersistentApplication(dir)
+	app.SetUseLanes(false)
+	return app
 }
 
 func newKVStore() abci.Application {
-	return kvstore.NewInMemoryApplication()
+	app := kvstore.NewInMemoryApplication()
+	app.SetUseLanes(false)
+	return app
 }
 
 func newPersistentKVStoreWithPath(dbDir string) abci.Application {
-	return kvstore.NewPersistentApplication(dbDir)
+	app := kvstore.NewPersistentApplication(dbDir)
+	app.SetUseLanes(false)
+	return app
 }
 
 func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {

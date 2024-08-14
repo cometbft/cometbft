@@ -70,7 +70,12 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 			},
 		}
 	default:
-		return kp, ErrUnsupportedKey{KeyType: reflect.TypeOf(k).String()}
+		kt := reflect.TypeOf(k)
+		if kt == nil {
+			return kp, ErrUnsupportedKey{KeyType: "<nil>"}
+		} else {
+			return kp, ErrUnsupportedKey{KeyType: kt.String()}
+		}
 	}
 	return kp, nil
 }
@@ -116,7 +121,12 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 		}
 		return bls12381.NewPublicKeyFromBytes(k.Bls12381)
 	default:
-		return nil, ErrUnsupportedKey{KeyType: reflect.TypeOf(k).String()}
+		kt := reflect.TypeOf(k)
+		if kt == nil {
+			return nil, ErrUnsupportedKey{KeyType: "<nil>"}
+		} else {
+			return nil, ErrUnsupportedKey{KeyType: kt.String()}
+		}
 	}
 }
 

@@ -27,8 +27,7 @@ const noSender = p2p.ID("")
 // mempool uses a concurrent list structure for storing transactions that can
 // be efficiently accessed by multiple concurrent readers.
 type CListMempool struct {
-	height   atomic.Int64 // the last block Update()'d to
-	txsBytes atomic.Int64 // total size of mempool, in bytes
+	height atomic.Int64 // the last block Update()'d to
 
 	// notify listeners (ie. consensus) when txs are available
 	notifiedTxsAvailable atomic.Bool
@@ -49,9 +48,10 @@ type CListMempool struct {
 	recheck *recheck
 
 	// Data in `txs` and `txsMap` must to be kept in sync and updated atomically.
-	txsMtx cmtsync.RWMutex
-	txs    *clist.CList                    // concurrent linked-list of valid txs
-	txsMap map[types.TxKey]*clist.CElement // for quick access to txs
+	txsMtx   cmtsync.RWMutex
+	txs      *clist.CList                    // concurrent linked-list of valid txs
+	txsMap   map[types.TxKey]*clist.CElement // for quick access to txs
+	txsBytes int64                           // total size of mempool, in bytes
 
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
@@ -124,7 +124,7 @@ func (mem *CListMempool) removeAllTxs() {
 		e.DetachPrev()
 	}
 	mem.txsMap = make(map[types.TxKey]*clist.CElement)
-	mem.txsBytes.Store(0)
+	mem.txsBytes = 0
 }
 
 // addSender adds a peer ID to the list of senders on the entry corresponding to
@@ -209,7 +209,10 @@ func (mem *CListMempool) Size() int {
 
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) SizeBytes() int64 {
-	return mem.txsBytes.Load()
+	mem.txsMtx.RLock()
+	defer mem.txsMtx.RUnlock()
+
+	return mem.txsBytes
 }
 
 // Lock() must be help by the caller during execution.
@@ -406,7 +409,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) {
 	_ = memTx.addSender(sender)
 	e := mem.txs.PushBack(memTx)
 	mem.txsMap[tx.Key()] = e
-	mem.txsBytes.Add(int64(len(tx)))
+	mem.txsBytes += int64(len(tx))
 
 	mem.metrics.TxSizeBytes.Observe(float64(len(tx)))
 
@@ -435,7 +438,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	elem.DetachPrev()
 	delete(mem.txsMap, txKey)
 	tx := elem.Value.(*mempoolTx).tx
-	mem.txsBytes.Add(int64(-len(tx)))
+	mem.txsBytes -= int64(len(tx))
 	mem.logger.Debug("removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
 	return nil
 }

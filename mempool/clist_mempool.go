@@ -57,6 +57,11 @@ type CListMempool struct {
 	txsMap  sync.Map // TxKey -> *clist.CElement, for quick access to txs
 	txLanes sync.Map // TxKey -> Lane, for quick access to the lane of a given tx
 
+	addTxChMtx    cmtsync.RWMutex // Protects the fields below
+	addTxCh       chan struct{}   // Blocks until the next TX is added
+	addTxSeq      int64
+	addTxLaneSeqs map[types.Lane]int64
+
 	// Immutable fields, only set during initialization.
 	defaultLane types.Lane
 	sortedLanes []types.Lane // lanes sorted by priority
@@ -84,11 +89,13 @@ func NewCListMempool(
 	options ...CListMempoolOption,
 ) *CListMempool {
 	mp := &CListMempool{
-		config:       cfg,
-		proxyAppConn: proxyAppConn,
-		recheck:      &recheck{},
-		logger:       log.NewNopLogger(),
-		metrics:      NopMetrics(),
+		config:        cfg,
+		proxyAppConn:  proxyAppConn,
+		recheck:       &recheck{},
+		logger:        log.NewNopLogger(),
+		metrics:       NopMetrics(),
+		addTxCh:       make(chan struct{}),
+		addTxLaneSeqs: make(map[types.Lane]int64),
 	}
 	mp.height.Store(height)
 
@@ -433,9 +440,15 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 		return false
 	}
 
+	mem.addTxChMtx.Lock()
+	defer mem.addTxChMtx.Unlock()
+	mem.addTxSeq++
+	memTx.seq = mem.addTxSeq
+
 	// Add new transaction.
 	_ = memTx.addSender(sender)
 	e := txs.PushBack(memTx)
+	mem.addTxLaneSeqs[lane] = mem.addTxSeq
 
 	// Update auxiliary variables.
 	mem.txsMap.Store(txKey, e)
@@ -444,6 +457,8 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 	// Update size variables.
 	mem.txsBytes.Add(int64(len(tx)))
 	mem.numTxs.Add(1)
+	close(mem.addTxCh)
+	mem.addTxCh = make(chan struct{})
 
 	// Update metrics.
 	mem.metrics.TxSizeBytes.Observe(float64(len(tx)))
@@ -893,6 +908,7 @@ func (iter *CListIterator) WaitNextCh() <-chan Entry {
 		// Add the next entry to the channel if not nil.
 		if entry := iter.Next(); entry != nil {
 			ch <- entry.Value.(Entry)
+			close(ch)
 		} else {
 			// Unblock the receiver (it will receive nil).
 			close(ch)
@@ -910,10 +926,27 @@ func (iter *CListIterator) PickLane() types.Lane {
 	// round robin fashion.
 	lane := iter.mp.sortedLanes[iter.currentLaneIndex]
 
+	iter.mp.addTxChMtx.RLock()
+	defer iter.mp.addTxChMtx.RUnlock()
+
+	nIter := 0
 	for {
-		if (iter.cursors[lane] != nil && iter.cursors[lane].Next() == nil) || iter.mp.lanes[lane].Len() == 0 {
+		if iter.mp.lanes[lane].Len() == 0 ||
+			(iter.cursors[lane] != nil &&
+				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
 			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
 			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
+			nIter++
+			if nIter >= len(iter.mp.sortedLanes) {
+				ch := iter.mp.addTxCh
+				iter.mp.addTxChMtx.RUnlock()
+				iter.mp.logger.Info("YYY PickLane, bef block", "lane", lane)
+				<-ch
+				iter.mp.logger.Info("YYY PickLane, aft block", "lane", lane)
+				iter.mp.addTxChMtx.RLock()
+				nIter = 0
+			}
+			iter.mp.logger.Info("YYY PickLane, skipped lane 1", "lane", lane)
 			continue
 		}
 
@@ -922,9 +955,12 @@ func (iter *CListIterator) PickLane() types.Lane {
 			iter.counters[lane] = 0
 			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
 			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
+			nIter = 0
+			iter.mp.logger.Info("YYY PickLane, skipped lane 2", "lane", lane)
 			continue
 		}
 		// TODO: if we detect that a higher-priority lane now has entries, do we preempt access to the current lane?
+		iter.mp.logger.Info("YYY PickLane, returned lane", "lane", lane)
 		return lane
 	}
 }

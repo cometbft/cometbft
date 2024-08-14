@@ -238,8 +238,8 @@ func (h *Handshaker) NBlocks() int {
 	return h.nBlocks
 }
 
+// Handshake receives information from the app via ABCI Info on the query conn that is passed to the function.
 func (h *Handshaker) Handshake(ctx context.Context, res *abci.InfoResponse, proxyApp proxy.AppConns) error {
-	// Handshake is done via ABCI Info on the query conn.
 	if res == nil {
 		return errors.New("empty ABCI Info response passed to handshake")
 	}

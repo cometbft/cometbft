@@ -64,7 +64,7 @@ func newMempoolWithAppAndConfigMock(
 		panic(err)
 	}
 
-	lanesInfo, err := FetchLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
 	if err != nil {
 		panic(err)
 	}
@@ -97,7 +97,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	if err != nil {
 		panic(err)
 	}
-	lanesInfo, err := FetchLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
 	if err != nil {
 		panic(err)
 	}
@@ -292,20 +292,20 @@ func TestMempoolUpdate(t *testing.T) {
 	}
 }
 
-func TestMempoolFetchLanesInfo(t *testing.T) {
-	_, err := FetchLanesInfo([]uint32{}, types.Lane(0))
+func TestMempoolBuildLanesInfo(t *testing.T) {
+	_, err := BuildLanesInfo([]uint32{}, types.Lane(0))
 	require.NoError(t, err)
 
-	_, err = FetchLanesInfo([]uint32{}, types.Lane(1))
+	_, err = BuildLanesInfo([]uint32{}, types.Lane(1))
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
-	_, err = FetchLanesInfo([]uint32{1}, types.Lane(0))
+	_, err = BuildLanesInfo([]uint32{1}, types.Lane(0))
 	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
 
-	_, err = FetchLanesInfo([]uint32{1, 3, 4}, types.Lane(5))
+	_, err = BuildLanesInfo([]uint32{1, 3, 4}, types.Lane(5))
 	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
 
-	_, err = FetchLanesInfo([]uint32{1, 3, 4, 4}, types.Lane(4))
+	_, err = BuildLanesInfo([]uint32{1, 3, 4, 4}, types.Lane(4))
 	require.ErrorAs(t, err, &ErrRepeatedLanes{})
 }
 

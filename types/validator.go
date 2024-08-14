@@ -120,10 +120,15 @@ func ValidatorListString(vals []*Validator) string {
 // These are the bytes that gets hashed in consensus. It excludes address
 // as its redundant with the pubkey. This also excludes ProposerPriority
 // which changes every round.
+//
+// If the public key is unsupported, it returns nil. Caller must handle `nil`
+// as it would handle an error.
 func (v *Validator) Bytes() []byte {
 	pk, err := ce.PubKeyToProto(v.PubKey)
 	if err != nil {
-		panic(err)
+		// Unsupported key.
+		// Since this is used by the light client, we should not panic here.
+		return nil
 	}
 
 	pbv := cmtproto.SimpleValidator{

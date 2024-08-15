@@ -52,7 +52,7 @@ require (
 require (
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/btcsuite/btcd/btcec/v2 v2.2.1
-	github.com/btcsuite/btcd/btcutil v1.1.5
+	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.9.1
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang/protobuf v1.5.4

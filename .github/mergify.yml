@@ -1,10 +1,36 @@
 pull_request_rules:
-  - name: automatically merge backport (v0.38.x or less)
-    description: automatically merge backport if it passes tests and there are no conflicts (v0.38.x or less)
+  - name: automatically merge backport (v0.34.x)
+    description: automatically merge backport if it passes tests and there are no conflicts (v0.34.x)
     conditions:
+      - '-label=manual-backport'
+      - author=mergify[bot]
+      - head~=mergify/bp/
+      - base=v0.34.x
+      - check-success=check-mocks
+      - check-success=golangci-lint
+      - check-success=Super linter
+      - check-success=split-test-files
+      - check-success=cleanup-runs
+      - check-success=e2e-test
+      - check-success=check-proto
+      - check-success=Build
+      - check-success=tests (00)
+      - check-success=tests (01)
+      - check-success=tests (02)
+      - check-success=tests (03)
+      - check-success=test_abci_cli
+      - check-success=test_apps
+    actions:
+      merge:
+        method: merge
+  - name: automatically merge backport (v0.38.x and v0.37.x)
+    description: automatically merge backport if it passes tests and there are no conflicts (v0.38.x and v0.37.x)
+    conditions:
+      - '-label=manual-backport'
       - author=mergify[bot]
       - head~=mergify/bp/
       - '-base=v1.x'
+      - '-base=v0.34.x'
       - check-success=Build (arm, linux)
       - check-success=check
       - check-success=golangci-lint
@@ -23,6 +49,7 @@ pull_request_rules:
   - name: automatically merge backport (v1.x)
     description: automatically merge backport if it passes tests and there are no conflicts (v1.x)
     conditions:
+      - '-label=manual-backport'
       - author=mergify[bot]
       - head~=mergify/bp/
       - base=v1.x

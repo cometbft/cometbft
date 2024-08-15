@@ -6,6 +6,11 @@
 
 This release contains a few minor bug fixes and performance improvements.
 
+### BUG FIXES
+
+- `[types]` Added missing JSON tags to `DuplicateVoteEvidence` and `LightClientAttackEvidence`
+  types ([\#3528](https://github.com/cometbft/cometbft/issues/3528))
+
 ### IMPROVEMENTS
 
 - `[indexer]` Fixed ineffective select break statements; they now
@@ -238,7 +243,7 @@ gossip.
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 - `[config]` Add mempool parameters `experimental_max_gossip_connections_to_persistent_peers` and
   `experimental_max_gossip_connections_to_non_persistent_peers` for limiting the number of peers to
-  which the node gossip transactions.
+  which the node gossip transactions. 
   ([\#1558](https://github.com/cometbft/cometbft/pull/1558))
   ([\#1584](https://github.com/cometbft/cometbft/pull/1584))
 
@@ -468,3 +473,4 @@ Friendly reminder, we have a [bug bounty program](https://hackerone.com/cosmos).
 ## Previous changes
 
 For changes released before the creation of CometBFT, please refer to the Tendermint Core [CHANGELOG.md](https://github.com/tendermint/tendermint/blob/a9feb1c023e172b542c972605311af83b777855b/CHANGELOG.md).
+

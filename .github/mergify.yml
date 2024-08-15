@@ -4,6 +4,12 @@ pull_request_rules:
     conditions:
       - author=mergify[bot]
       - base~=^mergify/bp/
+      - check-success=Build
+      - check-success=Check generated code
+      - check-success=e2e
+      - check-success=Lint, format and check the code for typos
+      - check-success=Markdown Linter
+      - check-success=Protobuf Lint
       - check-success=Test
       - '!conflict'
     actions:
@@ -26,7 +32,7 @@ pull_request_rules:
     conditions:
       - '-draft'
     actions:
-      update: 
+      update:
   - name: backport patches to v0.38.x-experimental branch
     conditions:
       - base=v0.38.x
@@ -35,6 +41,8 @@ pull_request_rules:
       backport:
         branches:
           - v0.38.x-experimental
+        assignees:
+          - "{{ author }}"
   - name: backport patches to v1.x branch
     conditions:
       - base=main
@@ -43,6 +51,8 @@ pull_request_rules:
       backport:
         branches:
           - v1.x
+        assignees:
+          - "{{ author }}"
   - name: backport patches to v0.38.x branch
     conditions:
       - base=main
@@ -51,6 +61,8 @@ pull_request_rules:
       backport:
         branches:
           - v0.38.x
+        assignees:
+          - "{{ author }}"
   - name: backport patches to v0.37.x branch
     conditions:
       - base=main
@@ -59,6 +71,8 @@ pull_request_rules:
       backport:
         branches:
           - v0.37.x
+        assignees:
+          - "{{ author }}"
   - name: backport patches to v0.34.x branch
     conditions:
       - base=main
@@ -67,3 +81,5 @@ pull_request_rules:
       backport:
         branches:
           - v0.34.x
+        assignees:
+          - "{{ author }}"

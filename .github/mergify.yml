@@ -23,6 +23,7 @@ pull_request_rules:
     actions:
       merge:
         method: merge
+        strict: false
   - name: automatically merge backport (v0.38.x and v0.37.x)
     description: automatically merge backport if it passes tests and there are no conflicts (v0.38.x and v0.37.x)
     conditions:
@@ -46,6 +47,7 @@ pull_request_rules:
     actions:
       merge:
         method: merge
+        strict: false
   - name: automatically merge backport (v1.x)
     description: automatically merge backport if it passes tests and there are no conflicts (v1.x)
     conditions:
@@ -70,6 +72,7 @@ pull_request_rules:
     actions:
       merge:
         method: merge
+        strict: false
   - name: Attach backport-to-v0.38.x-experimental label to PR
     description: >-
       Assign backport-to-v0.38.x-experimental label to any PR targeting v0.38.x

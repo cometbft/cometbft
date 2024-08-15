@@ -265,52 +265,52 @@ func TestPEXReactorUsesSeedsIfNeeded(t *testing.T) {
 	assertPeersWithTimeout(t, []*p2p.Switch{peer}, 3*time.Second, 1)
 }
 
-// func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
-// 	// directory to store address books
-// 	dir, err := os.MkdirTemp("", "pex_reactor")
-// 	require.NoError(t, err)
-// 	defer os.RemoveAll(dir)
+func TestConnectionSpeedForPeerReceivedFromSeed(t *testing.T) {
+	// directory to store address books
+	dir, err := os.MkdirTemp("", "pex_reactor")
+	require.NoError(t, err)
+	defer os.RemoveAll(dir)
 
-// 	// Default is 10, we need one connection for the seed node.
-// 	cfg.MaxNumOutboundPeers = 2
+	// Default is 10, we need one connection for the seed node.
+	cfg.MaxNumOutboundPeers = 2
 
-// 	var id int
-// 	var knownAddrs []*p2p.NetAddress
+	var id int
+	var knownAddrs []*p2p.NetAddress
 
-// 	// 1. Create some peers
-// 	for id = 0; id < cfg.MaxNumOutboundPeers+1; id++ {
-// 		peer := testCreateDefaultPeer(dir, id)
-// 		require.NoError(t, peer.Start())
-// 		addr := peer.NetAddress()
-// 		defer peer.Stop() //nolint:errcheck // ignore for tests
+	// 1. Create some peers
+	for id = 0; id < cfg.MaxNumOutboundPeers+1; id++ {
+		peer := testCreateDefaultPeer(dir, id)
+		require.NoError(t, peer.Start())
+		addr := peer.NetAddress()
+		defer peer.Stop() //nolint:errcheck // ignore for tests
 
-// 		knownAddrs = append(knownAddrs, addr)
-// 	}
+		knownAddrs = append(knownAddrs, addr)
+	}
 
-// 	// 2. Create seed node which knows about the previous peers
-// 	seed := testCreateSeed(dir, id, knownAddrs, knownAddrs)
-// 	require.NoError(t, seed.Start())
-// 	defer seed.Stop() //nolint:errcheck // ignore for tests
+	// 2. Create seed node which knows about the previous peers
+	seed := testCreateSeed(dir, id, knownAddrs, knownAddrs)
+	require.NoError(t, seed.Start())
+	defer seed.Stop() //nolint:errcheck // ignore for tests
 
-// 	// 3. Create a node with only seed configured.
-// 	id++
-// 	node := testCreatePeerWithSeed(dir, id, seed)
-// 	require.NoError(t, node.Start())
-// 	defer node.Stop() //nolint:errcheck // ignore for tests
+	// 3. Create a node with only seed configured.
+	id++
+	node := testCreatePeerWithSeed(dir, id, seed)
+	require.NoError(t, node.Start())
+	defer node.Stop() //nolint:errcheck // ignore for tests
 
-// 	// 4. Check that the node connects to seed immediately
-// 	assertPeersWithTimeout(t, []*p2p.Switch{node}, 3*time.Second, 1)
+	// 4. Check that the node connects to seed immediately
+	assertPeersWithTimeout(t, []*p2p.Switch{node}, 3*time.Second, 1)
 
-// 	// 5. Check that the node connects to the peers reported by the seed node
-// 	assertPeersWithTimeout(t, []*p2p.Switch{node}, 10*time.Second, cfg.MaxNumOutboundPeers)
+	// 5. Check that the node connects to the peers reported by the seed node
+	assertPeersWithTimeout(t, []*p2p.Switch{node}, 10*time.Second, cfg.MaxNumOutboundPeers)
 
-// 	// 6. Assert that the configured maximum number of inbound/outbound peers
-// 	// are respected, see https://github.com/cometbft/cometbft/issues/486
-// 	outbound, inbound, dialing := node.NumPeers()
-// 	assert.LessOrEqual(t, inbound, cfg.MaxNumInboundPeers)
-// 	assert.LessOrEqual(t, outbound, cfg.MaxNumOutboundPeers)
-// 	assert.Zero(t, dialing)
-// }
+	// 6. Assert that the configured maximum number of inbound/outbound peers
+	// are respected, see https://github.com/cometbft/cometbft/issues/486
+	outbound, inbound, dialing := node.NumPeers()
+	assert.LessOrEqual(t, inbound, cfg.MaxNumInboundPeers)
+	assert.LessOrEqual(t, outbound, cfg.MaxNumOutboundPeers)
+	assert.Zero(t, dialing)
+}
 
 func TestPEXReactorSeedMode(t *testing.T) {
 	// directory to store address books

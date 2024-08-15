@@ -4,14 +4,19 @@ pull_request_rules:
     conditions:
       - author=mergify[bot]
       - base~=^mergify/bp/
-      - check-success=Build
-      - check-success=Check generated code
-      - check-success=e2e
-      - check-success=Lint, format and check the code for typos
-      - check-success=Markdown Linter
-      - check-success=Protobuf Lint
-      - check-success=Test
-      - '!conflict'
+      - check-success=Build (arm, linux)
+      - check-success=check
+      - check-success=golangci-lint
+      - check-success=e2e-test
+      - check-success=tests (00)
+      - check-success=tests (01)
+      - check-success=tests (02)
+      - check-success=tests (03)
+      - check-success=tests (04)
+      - check-success=tests (05)
+      - check-success=test_abci_cli
+      - check-success=test_apps
+      - '-conflict'
     actions:
       merge:
         method: merge

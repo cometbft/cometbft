@@ -1,4 +1,24 @@
 pull_request_rules:
+  - name: automatically merge backport
+    description: automatically merge backport if it passes tests and there are no conflicts
+    conditions:
+      - author=mergify[bot]
+      - base~=^mergify/bp/
+      - check-success=Test
+      - '!conflict'
+    actions:
+      merge:
+        method: merge
+  - name: Attach backport-to-v0.38.x-experimental label to PR
+    description: >-
+      Assign backport-to-v0.38.x-experimental label to any PR targeting v0.38.x
+      branch
+    conditions:
+      - base=v0.38.x
+    actions:
+      label:
+        toggle:
+          - backport-to-v0.38.x-experimental
   - name: Make sure PR are up to date before merging
     description: >-
       This automatically updates PRs when they are out-of-date with the base
@@ -6,7 +26,7 @@ pull_request_rules:
     conditions:
       - '-draft'
     actions:
-      update:
+      update: 
   - name: backport patches to v0.38.x-experimental branch
     conditions:
       - base=v0.38.x

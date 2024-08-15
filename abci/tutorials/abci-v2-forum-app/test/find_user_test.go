@@ -46,16 +46,10 @@ func TestFindUserByName(t *testing.T) {
 		t.Fatalf("Failed to find user by name: %v", err1)
 	}
 
-	if foundUser1 == nil {
-		t.Fatalf("User not found")
-	}
-
-	if foundUser1.Name != "user2" {
-		// t.Fatalf("Expected user2, but got %s", foundUser.Name)
-		println("Expected user2, but got %s", foundUser1.Name)
-	}
-
-	if foundUser1.Name == "user2" {
+	if foundUser1 != nil {
+		require.Equal(t, foundUser1.Name, "user2", "Expected user2, but got %s", foundUser1.Name)
 		println("Voila! User found")
+	} else {
+		t.Fatalf("User not found")
 	}
 }

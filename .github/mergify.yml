@@ -6,7 +6,7 @@ pull_request_rules:
     conditions:
       - '-draft'
     actions:
-      update: 
+      update:
   - name: backport patches to v0.38.x-experimental branch
     conditions:
       - base=v0.38.x

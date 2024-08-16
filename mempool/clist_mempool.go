@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -30,7 +29,6 @@ const noSender = p2p.ID("")
 // be efficiently accessed by multiple concurrent readers.
 type CListMempool struct {
 	height atomic.Int64 // the last block Update()'d to
-	numTxs atomic.Int64 // total number of txs in the mempool
 
 	// notify listeners (ie. consensus) when txs are available
 	notifiedTxsAvailable atomic.Bool
@@ -50,13 +48,13 @@ type CListMempool struct {
 	// Keeps track of the rechecking process.
 	recheck *recheck
 
-	// Data in `txs` and `txsMap` must to be kept in sync and updated atomically.
-	// Transactions stored in these fields MUST be kept in sync.
+	// Data in the following variables must to be kept in sync and updated atomically.
 	txsMtx   cmtsync.RWMutex
-	lanes    map[types.Lane]*clist.CList     // Each lane is a concurrent linked-list of (valid) txs
-	txsMap   map[types.TxKey]*clist.CElement // for quick access to txs
+	lanes    map[types.Lane]*clist.CList     // each lane is a linked-list of (valid) txs
+	txsMap   map[types.TxKey]*clist.CElement // for quick access to the mempool entry of a given tx
+	txLanes  map[types.TxKey]types.Lane      // for quick access to the lane of a given tx
 	txsBytes int64                           // total size of mempool, in bytes
-	txLanes  sync.Map                        // TxKey -> Lane, for quick access to the lane of a given tx
+	numTxs   int64                           // total number of txs in the mempool
 
 	addTxChMtx    cmtsync.RWMutex // Protects the fields below
 	addTxCh       chan struct{}   // Blocks until the next TX is added
@@ -93,6 +91,7 @@ func NewCListMempool(
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
 		txsMap:        make(map[types.TxKey]*clist.CElement),
+		txLanes:       make(map[types.TxKey]types.Lane),
 		recheck:       &recheck{},
 		logger:        log.NewNopLogger(),
 		metrics:       NopMetrics(),
@@ -135,13 +134,6 @@ func NewCListMempool(
 	return mp
 }
 
-func (mem *CListMempool) getLane(txKey types.TxKey) (types.Lane, error) {
-	if lane, ok := mem.txLanes.Load(txKey); ok {
-		return lane.(types.Lane), nil
-	}
-	return 0, ErrLaneNotFound
-}
-
 func (mem *CListMempool) addToCache(tx types.Tx) bool {
 	return mem.cache.Push(tx)
 }
@@ -168,12 +160,8 @@ func (mem *CListMempool) removeAllTxs(lane types.Lane) {
 		e.DetachPrev()
 	}
 	mem.txsMap = make(map[types.TxKey]*clist.CElement)
+	mem.txLanes = make(map[types.TxKey]types.Lane)
 	mem.txsBytes = 0
-
-	mem.txLanes.Range(func(key, _ any) bool {
-		mem.txLanes.Delete(key)
-		return true
-	})
 }
 
 // addSender adds a peer ID to the list of senders on the entry corresponding to
@@ -254,7 +242,10 @@ func (mem *CListMempool) PreUpdate() {
 // Size returns the total number of transactions in the mempool (that is, all lanes).
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) Size() int {
-	return int(mem.numTxs.Load())
+	mem.txsMtx.RLock()
+	defer mem.txsMtx.RUnlock()
+
+	return int(mem.numTxs)
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -281,7 +272,7 @@ func (mem *CListMempool) Flush() {
 	defer mem.updateMtx.RUnlock()
 
 	mem.txsBytes = 0
-	mem.numTxs.Store(0)
+	mem.numTxs = 0
 	mem.cache.Reset()
 
 	for lane := range mem.lanes {
@@ -466,11 +457,12 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 
 	// Update auxiliary variables.
 	mem.txsMap[txKey] = e
-	mem.txLanes.Store(txKey, lane)
+	mem.txLanes[txKey] = lane
 
 	// Update size variables.
 	mem.txsBytes += int64(len(tx))
-	mem.numTxs.Add(1)
+	mem.numTxs++
+
 	close(mem.addTxCh)
 	mem.addTxCh = make(chan struct{})
 
@@ -483,7 +475,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 		"lane", lane,
 		"lane size", mem.lanes[lane].Len(),
 		"height", mem.height.Load(),
-		"total", mem.Size(),
+		"total", mem.numTxs,
 	)
 
 	return true
@@ -502,22 +494,23 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		return ErrTxNotFound
 	}
 
-	// Remove tx from lane.
-	lane, err := mem.getLane(txKey)
-	if err != nil {
-		return err
+	lane, ok := mem.txLanes[txKey]
+	if !ok {
+		return ErrLaneNotFound
 	}
+
+	// Remove tx from lane.
 	mem.lanes[lane].Remove(elem)
 	elem.DetachPrev()
 
 	// Update auxiliary variables.
 	delete(mem.txsMap, txKey)
-	mem.txLanes.Delete(txKey)
+	delete(mem.txLanes, txKey)
 
 	// Update size variables.
 	tx := elem.Value.(*mempoolTx).tx
 	mem.txsBytes -= int64(len(tx))
-	mem.numTxs.Add(int64(-1))
+	mem.numTxs--
 
 	mem.logger.Debug(
 		"Removed transaction",
@@ -525,7 +518,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		"lane", lane,
 		"lane size", mem.lanes[lane].Len(),
 		"height", mem.height.Load(),
-		"total", mem.Size(),
+		"total", mem.numTxs,
 	)
 	return nil
 }

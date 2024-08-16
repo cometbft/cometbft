@@ -56,6 +56,17 @@ type PrivKey struct {
 	sk *blst.SecretKey
 }
 
+// GenPrivKeyFromSecret generates a new random key using `secret` for the seed
+func GenPrivKeyFromSecret(secret []byte) (*PrivKey, error) {
+	if len(secret) != 32 {
+		seed := sha256.Sum256(secret) // We need 32 bytes
+		secret = seed[:]
+	}
+
+	sk := blst.KeyGen(secret)
+	return &PrivKey{sk: sk}, nil
+}
+
 // NewPrivateKeyFromBytes build a new key from the given bytes.
 func NewPrivateKeyFromBytes(bz []byte) (*PrivKey, error) {
 	sk := new(blst.SecretKey).Deserialize(bz)
@@ -72,8 +83,7 @@ func GenPrivKey() (*PrivKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	sk := blst.KeyGen(ikm[:])
-	return &PrivKey{sk: sk}, nil
+	return GenPrivKeyFromSecret(ikm[:])
 }
 
 // Bytes returns the byte representation of the Key.
@@ -172,9 +182,6 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 		return false
 	}
 
-	// VerifySignature expects a fixed size message
-	// https://pkg.go.dev/github.com/cosmos/crypto@v0.1.2/curves/bls12381#VerifySignature
-	var fixedSizeMsg [32]byte
 	if len(msg) > MaxMsgLen {
 		hash := sha256.Sum256(msg)
 		return signature.Verify(false, pubKey.pk, false, hash[:], dstMinSig)

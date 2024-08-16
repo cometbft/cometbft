@@ -30,6 +30,11 @@ var _ crypto.PrivKey = &PrivKey{}
 // PrivKey represents a BLS private key noop when blst is not set as a build flag and cgo is disabled.
 type PrivKey []byte
 
+// GenPrivKeyFromSecret returns ErrDisabled.
+func GenPrivKeyFromSecret([]byte) (PrivKey, error) {
+	return nil, ErrDisabled
+}
+
 // NewPrivateKeyFromBytes returns ErrDisabled.
 func NewPrivateKeyFromBytes([]byte) (PrivKey, error) {
 	return nil, ErrDisabled

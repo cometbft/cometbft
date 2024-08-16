@@ -172,6 +172,9 @@ func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
 		return false
 	}
 
+	// VerifySignature expects a fixed size message
+	// https://pkg.go.dev/github.com/cosmos/crypto@v0.1.2/curves/bls12381#VerifySignature
+	var fixedSizeMsg [32]byte
 	if len(msg) > MaxMsgLen {
 		hash := sha256.Sum256(msg)
 		return signature.Verify(false, pubKey.pk, false, hash[:], dstMinSig)

@@ -94,7 +94,7 @@ func (privKey PrivKey) Bytes() []byte {
 // PubKey returns the private key's public key. If the privkey is not valid
 // it returns a nil value.
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	return &PubKey{pk: new(blstPublicKey).From(privKey.sk)}
+	return PubKey{pk: new(blstPublicKey).From(privKey.sk)}
 }
 
 // Type returns the type.

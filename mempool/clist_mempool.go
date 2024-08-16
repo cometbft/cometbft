@@ -751,11 +751,22 @@ func (mem *CListMempool) recheckTxs() {
 		return
 	}
 
+	var lastElement *clist.CElement
+	var firstElement *clist.CElement
+	for _, lane := range mem.sortedLanes {
+		if mem.lanes[lane].Len() != 0 {
+			lastElement = mem.lanes[lane].Back()
+		}
+		if firstElement == nil {
+			firstElement = mem.lanes[lane].Front()
+		}
+	}
+	mem.recheck.init(firstElement, lastElement)
 	// Recheck all transactions in each lane, sequentially.
 	// TODO: parallelize rechecking on lanes?
+LANE_FOR_LOOP:
 	for _, lane := range mem.sortedLanes {
 		mem.logger.Debug("recheck lane", "height", mem.height.Load(), "lane", lane, "num-txs", mem.lanes[lane].Len())
-		mem.recheck.init(mem.lanes[lane].Front(), mem.lanes[lane].Back())
 
 		// NOTE: handleCheckTxResponse may be called concurrently, but CheckTx cannot be executed concurrently
 		// because this function has the lock (via Update and Lock).
@@ -776,21 +787,32 @@ func (mem *CListMempool) recheckTxs() {
 
 		// Flush any pending asynchronous recheck requests to process.
 		mem.proxyAppConn.Flush(context.TODO())
-
-		// Give some time to finish processing the responses; then finish the rechecking process, even
-		// if not all txs were rechecked.
+		numlanes := len(mem.sortedLanes)
 		select {
-		case <-time.After(mem.config.RecheckTimeout):
-			mem.recheck.setDone()
-			mem.logger.Error("timed out waiting for recheck responses")
+		case <-time.After(mem.config.RecheckTimeout / time.Duration(numlanes+1)):
+			// mem.recheck.setDone()
+			continue LANE_FOR_LOOP
+			// mem.logger.Error("timed out waiting for recheck responses")
 		case <-mem.recheck.doneRechecking():
 		}
 
 		if n := mem.recheck.numPendingTxs.Load(); n > 0 {
 			mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
 		}
-
 		mem.logger.Debug("done rechecking lane", "height", mem.height.Load(), "lane", lane)
+	}
+	// Give some time to finish processing the responses; then finish the rechecking process, even
+	// if not all txs were rechecked.
+	numlanes := len(mem.sortedLanes)
+	select {
+	case <-time.After(mem.config.RecheckTimeout / time.Duration(numlanes+1)):
+		mem.recheck.setDone()
+		mem.logger.Error("timed out waiting for recheck responses")
+	case <-mem.recheck.doneRechecking():
+	}
+
+	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
+		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
 	}
 
 	mem.logger.Debug("done rechecking", "height", mem.height.Load())
@@ -820,9 +842,9 @@ func (rc *recheck) init(first, last *clist.CElement) {
 	rc.doneCh = make(chan struct{})
 	rc.numPendingTxs.Store(0)
 	rc.isRechecking.Store(true)
-	rc.recheckFull.Store(false)
+	// rc.recheckFull.Store(false)
 
-	rc.tryFinish()
+	// rc.tryFinish()
 }
 
 // done returns true when there is no recheck response to process.
@@ -861,7 +883,7 @@ func (rc *recheck) tryFinish() bool {
 // not rechecked.
 func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 	found := false
-	for ; !rc.done(); rc.cursor = rc.cursor.Next() { // when cursor is the last one, Next returns nil
+	for ; !rc.done() && rc.cursor != nil; rc.cursor = rc.cursor.Next() { // when cursor is the last one, Next returns nil
 		expectedTx := rc.cursor.Value.(*mempoolTx).tx
 		if bytes.Equal(*tx, expectedTx) {
 			// Found an entry in the list of txs to recheck that matches tx.

@@ -231,7 +231,7 @@ func TestReactor_MaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n, nil)
+	reactors, _ := makeAndConnectReactors(config, n, mempoolLogger("info"))
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -488,7 +488,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
-func mempoolLogger() *log.Logger {
+func mempoolLogger(level string) *log.Logger {
 	logger := log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
@@ -497,13 +497,21 @@ func mempoolLogger() *log.Logger {
 		}
 		return term.FgBgColor{}
 	})
+
+	// Customize log level
+	option, err := log.AllowLevel(level)
+	if err != nil {
+		panic(err)
+	}
+	logger = log.NewFilter(logger, option)
+
 	return &logger
 }
 
 // makeReactors creates n mempool reactors.
 func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
 	if logger == nil {
-		logger = mempoolLogger()
+		logger = mempoolLogger("debug")
 	}
 	reactors := make([]*Reactor, n)
 	for i := 0; i < n; i++ {

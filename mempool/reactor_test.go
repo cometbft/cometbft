@@ -499,8 +499,8 @@ func mempoolLogger() log.Logger {
 	})
 }
 
-// connect N mempool reactors through N switches.
-func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switch) {
+// makeReactors creates n mempool reactors.
+func makeReactors(config *cfg.Config, n int) []*Reactor {
 	reactors := make([]*Reactor, n)
 	logger := mempoolLogger()
 	for i := 0; i < n; i++ {
@@ -512,32 +512,28 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
 		reactors[i].SetLogger(logger.With("validator", i))
 	}
+	return reactors
+}
 
-	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
+// connectReactors connects the list of N reactors through N switches.
+func connectReactors(config *cfg.Config, reactors []*Reactor, connect func([]*p2p.Switch, int, int)) []*p2p.Switch {
+	switches := p2p.MakeConnectedSwitches(config.P2P, len(reactors), func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
-	}, p2p.Connect2Switches)
+	}, connect)
+	return switches
+}
+
+func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n)
+	switches := connectReactors(config, reactors, p2p.Connect2Switches)
 	return reactors, switches
 }
 
 // connect N mempool reactors through N switches as a star centered in c.
 func makeAndConnectReactorsStar(config *cfg.Config, c, n int) ([]*Reactor, []*p2p.Switch) {
-	reactors := make([]*Reactor, n)
-	logger := mempoolLogger()
-	for i := 0; i < n; i++ {
-		app := kvstore.NewInMemoryApplication()
-		cc := proxy.NewLocalClientCreator(app)
-		mempool, cleanup := newMempoolWithApp(cc)
-		defer cleanup()
-
-		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
-		reactors[i].SetLogger(logger.With("validator", i))
-	}
-
-	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
-		s.AddReactor("MEMPOOL", reactors[i])
-		return s
-	}, p2p.ConnectStarSwitches(c))
+	reactors := makeReactors(config, n)
+	switches := connectReactors(config, reactors, p2p.ConnectStarSwitches(c))
 	return reactors, switches
 }
 

@@ -229,20 +229,11 @@ type BaseConfig struct {
 	// A custom human readable name for this node
 	Moniker string `mapstructure:"moniker"`
 
-	// Database backend: goleveldb | cleveldb | boltdb | rocksdb | pebbledb
+	// Database backend: goleveldb | rocksdb | badgerdb | pebbledb
 	// * goleveldb (github.com/syndtr/goleveldb)
 	//   - UNMAINTAINED
 	//   - stable
 	//   - pure go
-	// * cleveldb (uses levigo wrapper)
-	//   - DEPRECATED
-	//   - requires gcc
-	//   - use cleveldb build tag (go build -tags cleveldb)
-	// * boltdb (uses etcd's fork of bolt - github.com/etcd-io/bbolt)
-	//   - DEPRECATED
-	//   - EXPERIMENTAL
-	//   - stable
-	//   - use boltdb build tag (go build -tags boltdb)
 	// * rocksdb (uses github.com/linxGnu/grocksdb)
 	//   - EXPERIMENTAL
 	//   - requires gcc

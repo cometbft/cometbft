@@ -274,6 +274,12 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 
 		for {
+			// The entry may have been removed from the mempool since it was
+			// chosen at the beginning of the loop. Skip it if that's the case.
+			if !memR.mempool.Contains(entry.Tx().Key()) {
+				break
+			}
+
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},

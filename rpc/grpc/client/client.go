@@ -94,6 +94,17 @@ func WithBlockServiceEnabled(enabled bool) Option {
 	}
 }
 
+// WithBlockResultsServiceEnabled allows control of whether or not to create a
+// client for interacting with the block results service of a CometBFT node.
+//
+// If disabled and the client attempts to access the block results service API, the
+// client will panic.
+func WithBlockResultsServiceEnabled(enabled bool) Option {
+	return func(b *clientBuilder) {
+		b.blockResultsServiceEnabled = enabled
+	}
+}
+
 // WithGRPCDialOption allows passing lower-level gRPC dial options through to
 // the gRPC dialer when creating the client.
 func WithGRPCDialOption(opt ggrpc.DialOption) Option {

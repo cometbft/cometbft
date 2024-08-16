@@ -158,7 +158,7 @@ func TestPubKey_MarshalJSON(t *testing.T) {
 	privKey, err := bls12381.GenPrivKey()
 	require.NoError(t, err)
 	defer privKey.Zeroize()
-	pubKey, _ := privKey.PubKey().(*bls12381.PubKey)
+	pubKey, _ := privKey.PubKey().(bls12381.PubKey)
 
 	jsonBytes, err := pubKey.MarshalJSON()
 	require.NoError(t, err)

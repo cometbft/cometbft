@@ -14,6 +14,10 @@ var ErrTxInCache = errors.New("tx already exists in cache")
 // ErrLaneNotFound is returned to the client when a lane is not found.
 var ErrLaneNotFound = errors.New("lane not found in mempool")
 
+// ErrTxAlreadyReceivedFromSender is returned if when processing a tx already
+// received from the same sender.
+var ErrTxAlreadyReceivedFromSender = errors.New("tx already received from the same sender")
+
 // ErrRecheckFull is returned when checking if the mempool is full and
 // rechecking is still in progress after a new block was committed.
 var ErrRecheckFull = errors.New("mempool is still rechecking after a new committed block, so it is considered as full")

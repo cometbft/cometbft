@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/cometbft/cometbft/crypto"
 )
 
 func TestValidatorProtoBuf(t *testing.T) {
@@ -38,6 +40,13 @@ func TestValidatorProtoBuf(t *testing.T) {
 		}
 	}
 }
+
+type unsupportedPubKey struct{}
+
+func (unsupportedPubKey) Address() crypto.Address             { return nil }
+func (unsupportedPubKey) Bytes() []byte                       { return nil }
+func (unsupportedPubKey) VerifySignature([]byte, []byte) bool { return false }
+func (unsupportedPubKey) Type() string                        { return "unsupportedPubKey" }
 
 func TestValidatorValidateBasic(t *testing.T) {
 	priv := NewMockPV()
@@ -84,6 +93,14 @@ func TestValidatorValidateBasic(t *testing.T) {
 			},
 			err: true,
 			msg: fmt.Sprintf("validator address is incorrectly derived from pubkey. Exp: %v, got 61", pubKey.Address()),
+		},
+		{
+			val: &Validator{
+				PubKey:  unsupportedPubKey{},
+				Address: unsupportedPubKey{}.Address(),
+			},
+			err: true,
+			msg: ErrUnsupportedPubKeyType.Error(),
 		},
 	}
 

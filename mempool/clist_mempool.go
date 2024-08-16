@@ -467,6 +467,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 		"Added transaction",
 		"tx", tx.Hash(),
 		"lane", lane,
+		"lane size", mem.lanes[lane].Len(),
 		"height", mem.height.Load(),
 		"total", mem.Size(),
 	)

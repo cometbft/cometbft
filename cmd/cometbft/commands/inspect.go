@@ -39,7 +39,7 @@ func init() {
 		String(
 			"db-backend",
 			config.DBBackend,
-			"database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb | pebbledb",
+			"database backend: goleveldb | rocksdb | badgerdb | pebbledb",
 		)
 	InspectCmd.Flags().
 		String("db-dir", config.DBPath, "database directory")

@@ -11,8 +11,9 @@ type LanesInfo struct {
 	defaultLane types.Lane
 }
 
-// Query app info to return the required information to initialize lanes.
-func FetchLanesInfo(laneList []uint32, defLane types.Lane) (*LanesInfo, error) {
+// BuildLanesInfo builds the information required to initialize
+// lanes given the data queried from the app.
+func BuildLanesInfo(laneList []uint32, defLane types.Lane) (*LanesInfo, error) {
 	lanes := make([]types.Lane, len(laneList))
 	for i, l := range laneList {
 		lanes[i] = types.Lane(l)

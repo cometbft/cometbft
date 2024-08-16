@@ -227,7 +227,7 @@ func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
 }
 
-func TestReactor_MaxTxBytes(t *testing.T) {
+func TestMempoolReactorMaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 
 	const n = 2

@@ -505,6 +505,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		"Removed transaction",
 		"tx", tx.Hash(),
 		"lane", lane,
+		"lane size", mem.lanes[lane].Len(),
 		"height", mem.height.Load(),
 		"total", mem.Size(),
 	)

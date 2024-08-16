@@ -934,19 +934,20 @@ func (iter *CListIterator) PickLane() types.Lane {
 		if iter.mp.lanes[lane].Len() == 0 ||
 			(iter.cursors[lane] != nil &&
 				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
+			prevLane := lane
 			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
 			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
 			nIter++
 			if nIter >= len(iter.mp.sortedLanes) {
 				ch := iter.mp.addTxCh
 				iter.mp.addTxChMtx.RUnlock()
-				iter.mp.logger.Info("YYY PickLane, bef block", "lane", lane)
+				iter.mp.logger.Info("YYY PickLane, bef block", "lane", lane, "prevLane", prevLane)
 				<-ch
-				iter.mp.logger.Info("YYY PickLane, aft block", "lane", lane)
+				iter.mp.logger.Info("YYY PickLane, aft block", "lane", lane, "prevLane", prevLane)
 				iter.mp.addTxChMtx.RLock()
 				nIter = 0
 			}
-			iter.mp.logger.Info("YYY PickLane, skipped lane 1", "lane", lane)
+			iter.mp.logger.Info("YYY PickLane, skipped lane 1", "prevLane", prevLane, "lane", lane)
 			continue
 		}
 
@@ -954,9 +955,10 @@ func (iter *CListIterator) PickLane() types.Lane {
 			// Reset the counter only when the limit on the lane was reached.
 			iter.counters[lane] = 0
 			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
+			prevLane := lane
 			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
 			nIter = 0
-			iter.mp.logger.Info("YYY PickLane, skipped lane 2", "lane", lane)
+			iter.mp.logger.Info("YYY PickLane, skipped lane 2", "lane", prevLane, "new Lane ", lane)
 			continue
 		}
 		// TODO: if we detect that a higher-priority lane now has entries, do we preempt access to the current lane?

@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -806,6 +807,101 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 
 		wg.Wait()
 	}
+}
+
+// We have two iterators fetching transactions that
+// then get removed.
+func TestMempoolIteratorRace(t *testing.T) {
+	mockClient := new(abciclimocks.Client)
+	mockClient.On("Start").Return(nil)
+	mockClient.On("SetLogger", mock.Anything)
+	mockClient.On("Error").Return(nil).Times(100)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2, 3}, DefaultLanePriority: 1}, nil)
+
+	mp, cleanup := newMempoolWithAppMock(mockClient)
+	defer cleanup()
+
+	// Disable rechecking to make sure the recheck logic is not interferint.
+	mp.config.Recheck = false
+
+	numLanes := 3
+	n := int64(100) // Number of transactions
+
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	var counter atomic.Int64
+	go func() {
+		// Wait for at least some transactions to get into the mempool
+		for mp.Size() < int(n) {
+			time.Sleep(time.Second)
+		}
+		fmt.Println("mempool height ", mp.height.Load())
+
+		go func() {
+			defer wg.Done()
+
+			for counter.Load() < n {
+				iter := mp.NewIterator()
+				entry := <-iter.WaitNextCh()
+				if entry == nil {
+					continue
+				}
+				tx := entry.Tx()
+
+				txs := []types.Tx{tx}
+
+				resp := abciResponses(1, 0)
+				err := mp.Update(1, txs, resp, nil, nil)
+
+				require.NoError(t, err, tx)
+				counter.Add(1)
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+
+			for counter.Load() < n {
+				iter := mp.NewIterator()
+				entry := <-iter.WaitNextCh()
+				if entry == nil {
+					continue
+				}
+				tx := entry.Tx()
+
+				txs := []types.Tx{tx}
+				resp := abciResponses(1, 0)
+				err := mp.Update(1, txs, resp, nil, nil)
+
+				require.NoError(t, err)
+				counter.Add(1)
+			}
+		}()
+	}()
+
+	// This was introduced because without a separate function
+	// we have to sleep to wait for all txs to get into the mempool.
+	// This way we loop in the function above until it is fool
+	// without arbitrary timeouts.
+	go func() {
+		for i := 1; i <= int(n); i++ {
+			tx := kvstore.NewTxFromID(i)
+
+			currLane := (i % numLanes) + 1
+			reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, uint32(currLane))
+			require.NotNil(t, reqRes)
+
+			mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
+			_, err := mp.CheckTx(tx, "")
+			require.NoError(t, err, err)
+			reqRes.InvokeCallback()
+		}
+	}()
+
+	wg.Wait()
+	// require.Equal(t, mp.Size(), 0)
+	require.Equal(t, counter.Load(), n)
 }
 
 func TestMempoolEmptyLanes(t *testing.T) {

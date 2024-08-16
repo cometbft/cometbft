@@ -436,7 +436,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 	// Get lane's clist.
 	txs, ok := mem.lanes[lane]
 	if !ok {
-		mem.logger.Error("Lane does not exist", "tx", log.NewLazySprintf("%v", tx.Hash()), "lane", lane)
+		mem.logger.Error("Lane does not exist, not adding TX", "tx", log.NewLazySprintf("%v", tx.Hash()), "lane", lane)
 		return false
 	}
 

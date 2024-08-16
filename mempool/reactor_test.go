@@ -528,11 +528,14 @@ func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
 
 // connectReactors connects the list of N reactors through N switches.
 func connectReactors(config *cfg.Config, reactors []*Reactor, connect func([]*p2p.Switch, int, int)) []*p2p.Switch {
-	switches := p2p.MakeConnectedSwitches(config.P2P, len(reactors), func(i int, s *p2p.Switch) *p2p.Switch {
+	switches := p2p.MakeSwitches(config.P2P, len(reactors), func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
-	}, connect)
-	return switches
+	})
+	for _, s := range switches {
+		s.SetLogger(log.NewNopLogger())
+	}
+	return p2p.StartAndConnectSwitches(switches, connect)
 }
 
 func makeAndConnectReactors(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {

@@ -44,6 +44,7 @@ require (
 )
 
 require (
+<<<<<<< HEAD
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/btcsuite/btcd/btcec/v2 v2.2.1
 	github.com/btcsuite/btcd/btcutil v1.1.2
@@ -51,6 +52,20 @@ require (
 	github.com/cosmos/gogoproto v1.4.1
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang/protobuf v1.5.3
+=======
+	github.com/Masterminds/semver/v3 v3.2.1
+	github.com/btcsuite/btcd/btcec/v2 v2.3.4
+	github.com/btcsuite/btcd/btcutil v1.1.6
+	github.com/cometbft/cometbft-db v0.14.0
+	github.com/cometbft/cometbft-load-test v0.1.0
+	github.com/cometbft/cometbft/api v1.0.0-rc.1
+	github.com/cosmos/gogoproto v1.7.0
+	github.com/dgraph-io/badger/v4 v4.2.0
+	github.com/go-git/go-git/v5 v5.12.0
+	github.com/goccmack/goutil v1.2.3
+	github.com/gofrs/uuid v4.4.0+incompatible
+	github.com/google/uuid v1.6.0
+>>>>>>> 17abb8006 (build(crypto/secp256k1): Update `btcec/v2` to v2.3.4 (#3728))
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/vektra/mockery/v2 v2.14.0
 	golang.org/x/sync v0.5.0

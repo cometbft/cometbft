@@ -118,10 +118,7 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	priv, _ := secp256k1.PrivKeyFromBytes(privKey)
 
 	sum := sha256.Sum256(msg)
-	sig, err := ecdsa.SignCompact(priv, sum[:], false)
-	if err != nil {
-		return nil, err
-	}
+	sig := ecdsa.SignCompact(priv, sum[:], false)
 
 	// remove the first byte which is compactSigRecoveryCode
 	return sig[1:], nil

@@ -6,11 +6,10 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	grpc1 "github.com/cosmos/gogoproto/grpc"
-	proto "github.com/cosmos/gogoproto/proto"
-	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/gogo/protobuf/types"
+	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
 	crypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 	types1 "github.com/tendermint/tendermint/proto/tendermint/types"
 	grpc "google.golang.org/grpc"
@@ -3434,10 +3433,10 @@ type ABCIApplicationClient interface {
 }
 
 type aBCIApplicationClient struct {
-	cc grpc1.ClientConn
+	cc *grpc.ClientConn
 }
 
-func NewABCIApplicationClient(cc grpc1.ClientConn) ABCIApplicationClient {
+func NewABCIApplicationClient(cc *grpc.ClientConn) ABCIApplicationClient {
 	return &aBCIApplicationClient{cc}
 }
 
@@ -3645,7 +3644,7 @@ func (*UnimplementedABCIApplicationServer) ApplySnapshotChunk(ctx context.Contex
 	return nil, status.Errorf(codes.Unimplemented, "method ApplySnapshotChunk not implemented")
 }
 
-func RegisterABCIApplicationServer(s grpc1.Server, srv ABCIApplicationServer) {
+func RegisterABCIApplicationServer(s *grpc.Server, srv ABCIApplicationServer) {
 	s.RegisterService(&_ABCIApplication_serviceDesc, srv)
 }
 
@@ -3919,7 +3918,6 @@ func _ABCIApplication_ApplySnapshotChunk_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-var ABCIApplication_serviceDesc = _ABCIApplication_serviceDesc
 var _ABCIApplication_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "tendermint.abci.ABCIApplication",
 	HandlerType: (*ABCIApplicationServer)(nil),
@@ -4531,7 +4529,7 @@ func (m *RequestInitChain) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	n17, err17 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Time, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Time):])
+	n17, err17 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Time, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Time):])
 	if err17 != nil {
 		return 0, err17
 	}
@@ -6501,7 +6499,7 @@ func (m *Evidence) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x28
 	}
-	n49, err49 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.Time, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Time):])
+	n49, err49 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Time, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Time):])
 	if err49 != nil {
 		return 0, err49
 	}
@@ -6851,7 +6849,7 @@ func (m *RequestInitChain) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Time)
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Time)
 	n += 1 + l + sovTypes(uint64(l))
 	l = len(m.ChainId)
 	if l > 0 {
@@ -7776,7 +7774,7 @@ func (m *Evidence) Size() (n int) {
 	if m.Height != 0 {
 		n += 1 + sovTypes(uint64(m.Height))
 	}
-	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.Time)
+	l = github_com_gogo_protobuf_types.SizeOfStdTime(m.Time)
 	n += 1 + l + sovTypes(uint64(l))
 	if m.TotalVotingPower != 0 {
 		n += 1 + sovTypes(uint64(m.TotalVotingPower))
@@ -8815,7 +8813,7 @@ func (m *RequestInitChain) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Time, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Time, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -14267,7 +14265,7 @@ func (m *Evidence) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.Time, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_gogo_protobuf_types.StdTimeUnmarshal(&m.Time, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

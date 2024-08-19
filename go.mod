@@ -54,6 +54,7 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.1
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.9.1
+	github.com/cosmos/gogoproto v1.7.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang/protobuf v1.5.4
 	github.com/vektra/mockery/v2 v2.14.0

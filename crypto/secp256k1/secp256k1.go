@@ -117,10 +117,15 @@ func GenPrivKeySecp256k1(secret []byte) PrivKey {
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 	priv, _ := secp256k1.PrivKeyFromBytes(privKey)
 
+<<<<<<< HEAD
 	sig, err := ecdsa.SignCompact(priv, crypto.Sha256(msg), false)
 	if err != nil {
 		return nil, err
 	}
+=======
+	sum := sha256.Sum256(msg)
+	sig := ecdsa.SignCompact(priv, sum[:], false)
+>>>>>>> 17abb8006 (build(crypto/secp256k1): Update `btcec/v2` to v2.3.4 (#3728))
 
 	// remove the first byte which is compactSigRecoveryCode
 	return sig[1:], nil

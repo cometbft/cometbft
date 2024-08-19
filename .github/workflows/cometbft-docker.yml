@@ -51,7 +51,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Publish to Docker Hub
+<<<<<<< HEAD
         uses: docker/build-push-action@v6.4.1
+=======
+        uses: docker/build-push-action@v6.7.0
+>>>>>>> 56821a94c (build(deps): Bump docker/build-push-action from 6.6.1 to 6.7.0 (#3750))
         with:
           context: .
           file: ./DOCKER/Dockerfile

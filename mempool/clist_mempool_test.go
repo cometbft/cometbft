@@ -899,8 +899,8 @@ func TestMempoolIteratorRace(t *testing.T) {
 	}()
 
 	wg.Wait()
-	// require.Equal(t, mp.Size(), 0)
-	// require.Equal(t, counter.Load(), n)
+
+	require.Equal(t, counter.Load(), n+1)
 }
 
 func TestMempoolEmptyLanes(t *testing.T) {
@@ -1280,9 +1280,11 @@ func TestMempoolIteratorCountOnly(t *testing.T) {
 	require.Equal(t, n, counter)
 }
 
-// This only tests that all transactions were submitted.
-func TestMempoolIterator(t *testing.T) {
+// Without lanes transactions should be returned as they were
+// submitted - increasing tx IDs.
+func TestMempoolIteratorNoLanes(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
+	app.SetUseLanes(false)
 	cc := proxy.NewLocalClientCreator(app)
 
 	cfg := test.ResetTestRoot("mempool_test")
@@ -1305,6 +1307,7 @@ func TestMempoolIterator(t *testing.T) {
 			if entry == nil {
 				continue
 			}
+			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
 
 			counter++
 		}

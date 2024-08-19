@@ -46,6 +46,7 @@ type Peer interface {
 	HasChannel(chID byte) bool // Does the peer implement this channel?
 	Send(e Envelope) bool      // Send a message to the peer, blocking version
 	TrySend(e Envelope) bool   // Send a message to the peer, non-blocking version
+	TrySendMarshalled(e MarshalledEnvelope) bool
 
 	Set(key string, value any)
 	Get(key string) any
@@ -273,12 +274,11 @@ func (p *peer) TrySend(e Envelope) bool {
 	return p.send(e.ChannelID, e.Message, p.mconn.TrySend)
 }
 
+func (p *peer) TrySendMarshalled(e MarshalledEnvelope) bool {
+	return p.sendMarshalled(e.ChannelID, getMsgType(e.Message), e.MarshalledMessage, p.mconn.TrySend)
+}
+
 func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bool) bool {
-	if !p.IsRunning() {
-		return false
-	} else if !p.HasChannel(chID) {
-		return false
-	}
 	msgType := getMsgType(msg)
 	if w, ok := msg.(types.Wrapper); ok {
 		msg = w.Wrap()
@@ -286,6 +286,15 @@ func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bo
 	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
 		p.Logger.Error("marshaling message to send", "error", err)
+		return false
+	}
+	return p.sendMarshalled(chID, msgType, msgBytes, sendFunc)
+}
+
+func (p *peer) sendMarshalled(chID byte, msgType reflect.Type, msgBytes []byte, sendFunc func(byte, []byte) bool) bool {
+	if !p.IsRunning() {
+		return false
+	} else if !p.HasChannel(chID) {
 		return false
 	}
 	res := sendFunc(chID, msgBytes)

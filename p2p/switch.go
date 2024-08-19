@@ -286,10 +286,22 @@ func (sw *Switch) Broadcast(e Envelope) {
 //
 // NOTE: TryBroadcast uses goroutines, so order of broadcast may not be preserved.
 func (sw *Switch) TryBroadcast(e Envelope) {
-	sw.peers.ForEach(func(p Peer) {
-		go func(peer Peer) {
-			peer.TrySend(e)
-		}(p)
+	sw.Logger.Debug("TryBroadcast", "channel", e.ChannelID)
+
+	marshalMsg := e.Message
+	if wrapper, ok := e.Message.(Wrapper); ok {
+		marshalMsg = wrapper.Wrap()
+	}
+	marshalledMsg, err := proto.Marshal(marshalMsg)
+	if err != nil {
+		return
+	}
+	marshalledEnvelope := MarshalledEnvelope{
+		Envelope:          e,
+		MarshalledMessage: marshalledMsg,
+	}
+	sw.peers.ForEach(func(peer Peer) {
+		peer.TrySendMarshalled(marshalledEnvelope)
 	})
 }
 

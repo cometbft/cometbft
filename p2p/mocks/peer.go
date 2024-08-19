@@ -459,6 +459,24 @@ func (_m *Peer) TrySend(e p2p.Envelope) bool {
 	return r0
 }
 
+// TrySendMarshalled provides a mock function with given fields: e
+func (_m *Peer) TrySendMarshalled(e p2p.MarshalledEnvelope) bool {
+	ret := _m.Called(e)
+
+	if len(ret) == 0 {
+		panic("no return value specified for TrySendMarshalled")
+	}
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(p2p.MarshalledEnvelope) bool); ok {
+		r0 = rf(e)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
 // NewPeer creates a new instance of Peer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewPeer(t interface {

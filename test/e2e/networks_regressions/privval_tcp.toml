@@ -1,0 +1,129 @@
+ipv6 = false
+initial_height = 0
+disable_pex = false
+key_type = ""
+evidence = 0
+abci_protocol = "tcp"
+prepare_proposal_delay = "200ms"
+process_proposal_delay = "200ms"
+check_tx_delay = "20ms"
+vote_extension_delay = "100ms"
+finalize_block_delay = "500ms"
+upgrade_version = ""
+load_tx_size_bytes = 0
+load_tx_batch_size = 0
+load_tx_connections = 0
+load_max_txs = 0
+prometheus = true
+block_max_bytes = 0
+vote_extension_size = 2048
+vote_extensions_enable_height = 11
+vote_extensions_update_height = 0
+peer_gossip_intraloop_sleep_duration = "0s"
+experimental_max_gossip_connections_to_persistent_peers = 0
+experimental_max_gossip_connections_to_non_persistent_peers = 0
+abci_tests_enabled = false
+default_zone = ""
+pbts_enable_height = 1
+pbts_update_height = 0
+
+[initial_state]
+
+[validators]
+
+[validator_update]
+[validator_update.0]
+validator01 = 58
+validator02 = 48
+validator03 = 64
+[validator_update.10]
+validator04 = 72
+
+[node]
+[node.validator01]
+mode = "validator"
+version = ""
+database = "rocksdb"
+privval_protocol = "file"
+start_at = 0
+block_sync_version = "v0"
+state_sync = false
+persist_interval = 0
+snapshot_interval = 3
+retain_blocks = 0
+enable_companion_pruning = false
+perturb = []
+send_no_load = false
+zone = ""
+experimental_db_key_layout = ""
+compact = false
+compaction_interval = 0
+discard_abci_responses = false
+indexer = ""
+clock_skew = "0s"
+[node.validator02]
+mode = "validator"
+version = ""
+persistent_peers = ["validator01"]
+database = "badgerdb"
+privval_protocol = "unix"
+start_at = 0
+block_sync_version = "v0"
+state_sync = false
+persist_interval = 5
+snapshot_interval = 3
+retain_blocks = 0
+enable_companion_pruning = false
+perturb = []
+send_no_load = false
+zone = ""
+experimental_db_key_layout = ""
+compact = false
+compaction_interval = 0
+discard_abci_responses = false
+indexer = ""
+clock_skew = "0s"
+[node.validator03]
+mode = "validator"
+version = ""
+persistent_peers = ["validator01"]
+database = "pebbledb"
+privval_protocol = "file"
+start_at = 0
+block_sync_version = "v0"
+state_sync = false
+persist_interval = 1
+snapshot_interval = 3
+retain_blocks = 0
+enable_companion_pruning = false
+perturb = []
+send_no_load = false
+zone = ""
+experimental_db_key_layout = ""
+compact = false
+compaction_interval = 0
+discard_abci_responses = false
+indexer = ""
+clock_skew = "0s"
+[node.validator04]
+mode = "validator"
+version = ""
+persistent_peers = ["validator02"]
+database = "goleveldb"
+privval_protocol = "tcp"
+start_at = 5
+block_sync_version = "v0"
+state_sync = true
+persist_interval = 1
+snapshot_interval = 3
+retain_blocks = 56
+enable_companion_pruning = true
+perturb = ["upgrade"]
+send_no_load = false
+zone = ""
+experimental_db_key_layout = ""
+compact = false
+compaction_interval = 0
+discard_abci_responses = false
+indexer = ""
+clock_skew = "56.483940201s"

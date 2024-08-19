@@ -71,26 +71,44 @@ func CreateRoutableAddr() (addr string, netAddr *NetAddress) {
 
 const TestHost = "localhost"
 
-// MakeConnectedSwitches returns n switches, connected according to the connect func.
-// If connect==Connect2Switches, the switches will be fully connected.
-// initSwitch defines how the i'th switch should be initialized (ie. with what reactors).
-// NOTE: panics if any switch fails to start.
+// MakeConnectedSwitches returns n switches, initialized according to the
+// initSwitch function, and connected according to the connect function.
 func MakeConnectedSwitches(cfg *config.P2PConfig,
 	n int,
 	initSwitch func(int, *Switch) *Switch,
 	connect func([]*Switch, int, int),
 ) []*Switch {
+	switches := MakeSwitches(cfg, n, initSwitch)
+	return StartAndConnectSwitches(switches, connect)
+}
+
+// MakeSwitches returns n switches.
+// initSwitch defines how the i'th switch should be initialized (ie. with what reactors).
+func MakeSwitches(
+	cfg *config.P2PConfig,
+	n int,
+	initSwitch func(int, *Switch) *Switch,
+) []*Switch {
 	switches := make([]*Switch, n)
 	for i := 0; i < n; i++ {
 		switches[i] = MakeSwitch(cfg, i, initSwitch)
 	}
+	return switches
+}
 
+// StartAndConnectSwitches connects the switches according to the connect function.
+// If connect==Connect2Switches, the switches will be fully connected.
+// NOTE: panics if any switch fails to start.
+func StartAndConnectSwitches(
+	switches []*Switch,
+	connect func([]*Switch, int, int),
+) []*Switch {
 	if err := StartSwitches(switches); err != nil {
 		panic(err)
 	}
 
-	for i := 0; i < n; i++ {
-		for j := i + 1; j < n; j++ {
+	for i := 0; i < len(switches); i++ {
+		for j := i + 1; j < len(switches); j++ {
 			connect(switches, i, j)
 		}
 	}

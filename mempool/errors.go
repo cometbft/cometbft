@@ -11,9 +11,6 @@ var ErrTxNotFound = errors.New("transaction not found in mempool")
 // ErrTxInCache is returned to the client if we saw tx earlier.
 var ErrTxInCache = errors.New("tx already exists in cache")
 
-// ErrLaneNotFound is returned to the client when a lane is not found.
-var ErrLaneNotFound = errors.New("lane not found in mempool")
-
 // ErrTxAlreadyReceivedFromSender is returned if when processing a tx already
 // received from the same sender.
 var ErrTxAlreadyReceivedFromSender = errors.New("tx already received from the same sender")

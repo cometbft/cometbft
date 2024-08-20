@@ -1,7 +1,6 @@
 module github.com/tendermint/tendermint
 
 go 1.21.13
-
 toolchain go1.22.6
 
 require (
@@ -49,7 +48,7 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.2
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.9.3
-	github.com/cometbft/cometbft-load-test v0.2.0
+	github.com/cometbft/cometbft-load-test v0.3.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang/protobuf v1.5.4
 	golang.org/x/sync v0.8.0

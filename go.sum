@@ -76,8 +76,8 @@ github.com/cloudflare/circl v1.3.9 h1:QFrlgFYf2Qpi8bSpVPK1HBvWpx16v/1TZivyo7pGuB
 github.com/cloudflare/circl v1.3.9/go.mod h1:PDRU+oXvdD7KCtgKxW95M5Z8BpSCJXQORiZFnBQS5QU=
 github.com/cometbft/cometbft-db v0.9.3 h1:zwuzvrCe0WCsKsJzaCZG/1ybHrG2hG8EDtAPJoKrR+g=
 github.com/cometbft/cometbft-db v0.9.3/go.mod h1:G1Jef20ggpjsPDgg0KOsDMjFDIL1lFlgQ6kHDvyIGlQ=
-github.com/cometbft/cometbft-load-test v0.2.0 h1:jVtM9KZXEXK0RNam7W87RcmwTsxV0BqU1zM2AB4wvuw=
-github.com/cometbft/cometbft-load-test v0.2.0/go.mod h1:etJ6rx3s0WmbkawqFQbORj5DulwF2V8VHl+Pa3o1DSU=
+github.com/cometbft/cometbft-load-test v0.3.0 h1:z6iZZvFwhci29ca/EZQaWh/d92NLe8bK4eBvFyv2EKY=
+github.com/cometbft/cometbft-load-test v0.3.0/go.mod h1:zKrQpRm3Ay5+RfeRTNWoLniFJNIPnw9JPEM1wuWS3TA=
 github.com/containerd/continuity v0.4.3 h1:6HVkalIp+2u1ZLH1J/pYX2oBVXlJZvh1X1A7bEZ9Su8=
 github.com/containerd/continuity v0.4.3/go.mod h1:F6PTNCKepoxEaXLQp3wDAjygEnImnZ/7o4JzpodfroQ=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=

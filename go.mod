@@ -1,8 +1,8 @@
 module github.com/tendermint/tendermint
 
-go 1.22
+go 1.21
 
-toolchain go1.23.0
+toolchain go1.22.6
 
 require (
 	github.com/BurntSushi/toml v1.2.1
@@ -49,7 +49,7 @@ require (
 	github.com/btcsuite/btcd/btcec/v2 v2.2.1
 	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/cometbft/cometbft-db v0.9.1
-	github.com/creachadair/taskgroup v0.9.1
+	github.com/creachadair/taskgroup v0.8.1
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	golang.org/x/sync v0.6.0

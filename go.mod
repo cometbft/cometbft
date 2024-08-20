@@ -12,7 +12,7 @@ require (
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
-	github.com/go-logfmt/logfmt v0.5.1
+	github.com/go-logfmt/logfmt v0.6.0
 	github.com/gofrs/uuid v4.3.1+incompatible
 	github.com/google/orderedcode v0.0.1
 	github.com/gorilla/websocket v1.5.3

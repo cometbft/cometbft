@@ -10,7 +10,7 @@ require (
 	github.com/go-kit/kit v0.12.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.4
 	github.com/golangci/golangci-lint v1.52.0
 	github.com/google/orderedcode v0.0.1
 	github.com/gorilla/websocket v1.5.0
@@ -53,7 +53,7 @@ require (
 	github.com/vektra/mockery/v2 v2.23.1
 	golang.org/x/sync v0.5.0
 	gonum.org/v1/gonum v0.12.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (

@@ -130,64 +130,6 @@ func ValidateConsensusParams(params cmtproto.ConsensusParams) error {
 	return nil
 }
 
-<<<<<<< HEAD
-=======
-// ValidateUpdate validates the updated VoteExtensionsEnableHeight.
-// | r | params...EnableHeight | updated...EnableHeight | result (nil == pass)
-// | 1 | *                     | (nil)                  | nil
-// | 2 | *                     | < 0                    | VoteExtensionsEnableHeight must be positive
-// | 3 | <=0                   | 0                      | nil
-// | 4 | > 0; <=height         | 0                      | vote extensions cannot be disabled once enabled
-// | 5 | > 0; > height         | 0                      | nil (disable a previous proposal)
-// | 6 | *                     | <=height               | vote extensions cannot be updated to a past height
-// | 7 | <=0                   | > height (*)           | nil
-// | 8 | (> 0) <=height        | > height (*)           | vote extensions cannot be modified once enabled
-// | 9 | (> 0) > height        | > height (*)           | nil.
-func (params ConsensusParams) ValidateUpdate(updated *cmtproto.ConsensusParams, h int64) error {
-	// 1
-	if updated == nil || updated.Abci == nil {
-		return nil
-	}
-	// 2
-	if updated.Abci.VoteExtensionsEnableHeight < 0 {
-		return errors.New("VoteExtensionsEnableHeight must be positive")
-	}
-	// 3
-	if params.ABCI.VoteExtensionsEnableHeight <= 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
-		return nil
-	}
-	// 4 & 5
-	if params.ABCI.VoteExtensionsEnableHeight > 0 && updated.Abci.VoteExtensionsEnableHeight == 0 {
-		// 4
-		if params.ABCI.VoteExtensionsEnableHeight <= h {
-			return fmt.Errorf("vote extensions cannot be disabled once enabled"+
-				"old enable height: %d, current height %d",
-				params.ABCI.VoteExtensionsEnableHeight, h)
-		}
-		// 5
-		return nil
-	}
-	// 6 (implicit: updated.Abci.VoteExtensionsEnableHeight > 0)
-	if updated.Abci.VoteExtensionsEnableHeight <= h {
-		return fmt.Errorf("vote extensions cannot be updated to a past or current height, "+
-			"enable height: %d, current height %d",
-			updated.Abci.VoteExtensionsEnableHeight, h)
-	}
-	// 7 (implicit: updated.Abci.VoteExtensionsEnableHeight > h)
-	if params.ABCI.VoteExtensionsEnableHeight <= 0 {
-		return nil
-	}
-	// 8 (implicit: params.ABCI.VoteExtensionsEnableHeight > 0 && updated.Abci.VoteExtensionsEnableHeight > h)
-	if params.ABCI.VoteExtensionsEnableHeight <= h {
-		return fmt.Errorf("vote extensions cannot be modified once enabled"+
-			"enable height: %d, current height %d",
-			params.ABCI.VoteExtensionsEnableHeight, h)
-	}
-	// 9 (implicit: params.ABCI.VoteExtensionsEnableHeight > h && updated.Abci.VoteExtensionsEnableHeight > h)
-	return nil
-}
-
->>>>>>> 2bbb5c109 (misc(tools)!: remove `tools` package (#2046))
 // Hash returns a hash of a subset of the parameters to store in the block header.
 // Only the Block.MaxBytes and Block.MaxGas are included in the hash.
 // This allows the ConsensusParams to evolve more without breaking the block

@@ -34,6 +34,8 @@ type Metrics struct {
 	MessageReceiveBytesTotal metrics.Counter `metrics_labels:"message_type"`
 	// Number of bytes of each message type sent.
 	MessageSendBytesTotal metrics.Counter `metrics_labels:"message_type"`
+	// Average delay for sending messages to a peer in a channel.
+	MessageSendDelaySeconds metrics.Gauge `metrics_labels:"peer_id, channel_id"`
 }
 
 type peerPendingMetricsCache struct {

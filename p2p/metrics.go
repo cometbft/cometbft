@@ -55,7 +55,6 @@ type peerPendingMetricsCacheEntry struct {
 }
 
 type peerPendingDelayMetrics struct {
-	chID      byte
 	count     int
 	sendDelay time.Duration
 }
@@ -102,7 +101,6 @@ func (c *peerPendingMetricsCache) AddPendingMessageSendDelay(chID byte, delay ti
 		entry.sendDelay += delay
 	} else {
 		c.perChannelChache[chID] = &peerPendingDelayMetrics{
-			chID:      chID,
 			count:     1,
 			sendDelay: delay,
 		}

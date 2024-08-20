@@ -388,6 +388,12 @@ func (p *peer) metricsReporter() {
 						entry.pendingRecvBytes = 0
 					}
 				}
+				for _, entry := range p.pendingMetrics.perChannelChache {
+					p.metrics.MessageSendDelaySeconds.
+						With("peer_id", string(p.ID())).
+						With("channel_id", string(entry.chID)).
+						Set(entry.sendDelay.Seconds() / float64(entry.count))
+				}
 			}()
 
 		case <-p.Quit():

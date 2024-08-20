@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/go-kit/kit/metrics"
 )
@@ -41,6 +42,8 @@ type Metrics struct {
 type peerPendingMetricsCache struct {
 	mtx             sync.Mutex
 	perMessageCache map[reflect.Type]*peerPendingMetricsCacheEntry
+
+	perChannelChache map[byte]*peerPendingDelayMetrics
 }
 
 type peerPendingMetricsCacheEntry struct {
@@ -49,9 +52,17 @@ type peerPendingMetricsCacheEntry struct {
 	pendingRecvBytes int
 }
 
+type peerPendingDelayMetrics struct {
+	chID      byte
+	count     int
+	sendDelay time.Duration
+}
+
 func newPeerPendingMetricsCache() *peerPendingMetricsCache {
 	return &peerPendingMetricsCache{
 		perMessageCache: make(map[reflect.Type]*peerPendingMetricsCacheEntry),
+
+		perChannelChache: make(map[byte]*peerPendingDelayMetrics),
 	}
 }
 
@@ -77,6 +88,21 @@ func (c *peerPendingMetricsCache) AddPendingRecvBytes(msgType reflect.Type, addB
 		c.perMessageCache[msgType] = &peerPendingMetricsCacheEntry{
 			label:            buildLabel(msgType),
 			pendingRecvBytes: addBytes,
+		}
+	}
+}
+
+func (c *peerPendingMetricsCache) AddPendingMessageSendDelay(chID byte, delay time.Duration) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	if entry, ok := c.perChannelChache[chID]; ok {
+		entry.count++
+		entry.sendDelay += delay
+	} else {
+		c.perChannelChache[chID] = &peerPendingDelayMetrics{
+			chID:      chID,
+			count:     1,
+			sendDelay: delay,
 		}
 	}
 }

@@ -44,8 +44,7 @@ type Metrics struct {
 type peerPendingMetricsCache struct {
 	mtx             sync.Mutex
 	perMessageCache map[reflect.Type]*peerPendingMetricsCacheEntry
-
-	perChannelChache map[byte]*peerPendingDelayMetrics
+	perChannelCache map[byte]*peerPendingDelayMetrics
 }
 
 type peerPendingMetricsCacheEntry struct {
@@ -62,8 +61,7 @@ type peerPendingDelayMetrics struct {
 func newPeerPendingMetricsCache() *peerPendingMetricsCache {
 	return &peerPendingMetricsCache{
 		perMessageCache: make(map[reflect.Type]*peerPendingMetricsCacheEntry),
-
-		perChannelChache: make(map[byte]*peerPendingDelayMetrics),
+		perChannelCache: make(map[byte]*peerPendingDelayMetrics),
 	}
 }
 
@@ -96,11 +94,11 @@ func (c *peerPendingMetricsCache) AddPendingRecvBytes(msgType reflect.Type, addB
 func (c *peerPendingMetricsCache) AddPendingMessageSendDelay(chID byte, delay time.Duration) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
-	if entry, ok := c.perChannelChache[chID]; ok {
+	if entry, ok := c.perChannelCache[chID]; ok {
 		entry.count++
 		entry.sendDelay += delay
 	} else {
-		c.perChannelChache[chID] = &peerPendingDelayMetrics{
+		c.perChannelCache[chID] = &peerPendingDelayMetrics{
 			count:     1,
 			sendDelay: delay,
 		}

@@ -405,7 +405,7 @@ func (p *peer) metricsReporter() {
 						entry.pendingRecvBytes = 0
 					}
 				}
-				for chID, entry := range p.pendingMetrics.perChannelChache {
+				for chID, entry := range p.pendingMetrics.perChannelCache {
 					p.metrics.MessageAverageSendDelay.
 						With("peer_id", string(p.ID())).
 						With("channel_id", string(chID)).

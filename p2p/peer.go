@@ -267,7 +267,14 @@ func (p *peer) Send(e Envelope) bool {
 //
 // thread safe.
 func (p *peer) TrySend(e Envelope) bool {
-	return p.send(e.ChannelID, e.Message, p.mconn.TrySend)
+	start := time.Now()
+	res := p.send(e.ChannelID, e.Message, p.mconn.TrySend)
+	if res {
+		p.pendingMetrics.AddPendingMessageSendDelay(e.ChannelID, time.Since(start))
+	} else { // 10 seconds is the maximum sending delay for the Send() method
+		p.pendingMetrics.AddPendingMessageSendDelay(e.ChannelID, 10*time.Second)
+	}
+	return res
 }
 
 func (p *peer) send(chID byte, msg proto.Message, sendFunc func(byte, []byte) bool) bool {

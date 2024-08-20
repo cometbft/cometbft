@@ -57,7 +57,8 @@ require (
 	google.golang.org/protobuf v1.34.2
 )
 
-// Force tendermint and adlio to use the new version.
+// Force adlio/schema to use the newer version of runc.
+// TODO: Remove once adlio/schema is updated.
 require github.com/opencontainers/runc v1.2.0-rc.2 // indirect
 
 require (

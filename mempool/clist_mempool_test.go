@@ -261,21 +261,22 @@ func TestMempoolAddTxLane(t *testing.T) {
 	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
 	defer cleanup()
 
-	cases := []struct {
-		txID int
-		lane types.Lane
-	}{{0, 7}, {1, 3}, {2, 3}, {3, 1}, {4, 3}, {5, 3}, {6, 1}, {7, 3}, {8, 3}, {9, 1}, {10, 3}, {11, 7}, {12, 1}}
-
-	for _, tc := range cases {
-		tx := kvstore.NewTxFromID(tc.txID)
-		expectedLane := tc.lane
-
+	for i := 0; i < 100; i++ {
+		tx := kvstore.NewTxFromID(i)
 		rr, err := mp.CheckTx(tx, noSender)
 		require.NoError(t, err)
 		rr.Wait()
 
-		txLane := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx).lane
-		require.Equal(t, expectedLane, txLane, "id %x", tx)
+		// Check that the lane stored in the mempool entry is the same as the
+		// one assigned by the application.
+		lane := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx).lane
+		expectedLane := 3
+		if i%11 == 0 {
+			expectedLane = 7
+		} else if i%3 == 0 {
+			expectedLane = 1
+		}
+		require.Equal(t, types.Lane(expectedLane), lane, "id %x", tx)
 	}
 }
 

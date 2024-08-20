@@ -258,7 +258,16 @@ func (p *peer) Status() cmtconn.ConnectionStatus {
 func (p *peer) Send(e Envelope) bool {
 	start := time.Now()
 	res := p.send(e.ChannelID, e.Message, p.mconn.Send)
-	p.pendingMetrics.AddPendingMessageSendDelay(e.ChannelID, time.Since(start))
+	duration := time.Since(start)
+	// We are using two metrics here, to decide which provides best insights.
+	// The first caches the duration for multiple messages, producing an
+	// average of the sending delay over an interval (1s by default).
+	// The second just sets the latest observed sending delay, a snapshot.
+	p.pendingMetrics.AddPendingMessageSendDelay(e.ChannelID, duration)
+	p.metrics.MessageSendDelay.
+		With("peer_id", string(p.ID())).
+		With("channel_id", string(e.ChannelID)).
+		Set(duration.Seconds())
 	return res
 }
 
@@ -269,11 +278,16 @@ func (p *peer) Send(e Envelope) bool {
 func (p *peer) TrySend(e Envelope) bool {
 	start := time.Now()
 	res := p.send(e.ChannelID, e.Message, p.mconn.TrySend)
-	if res {
-		p.pendingMetrics.AddPendingMessageSendDelay(e.ChannelID, time.Since(start))
-	} else { // 10 seconds is the maximum sending delay for the Send() method
-		p.pendingMetrics.AddPendingMessageSendDelay(e.ChannelID, 10*time.Second)
+	duration := time.Since(start)
+	if !res {
+		// 10 seconds is the maximum sending delay for the Send() method
+		duration = 10 * time.Second
 	}
+	p.pendingMetrics.AddPendingMessageSendDelay(e.ChannelID, duration)
+	p.metrics.MessageSendDelay.
+		With("peer_id", string(p.ID())).
+		With("channel_id", string(e.ChannelID)).
+		Set(duration.Seconds())
 	return res
 }
 
@@ -399,7 +413,7 @@ func (p *peer) metricsReporter() {
 					}
 				}
 				for _, entry := range p.pendingMetrics.perChannelChache {
-					p.metrics.MessageSendDelaySeconds.
+					p.metrics.MessageAverageSendDelay.
 						With("peer_id", string(p.ID())).
 						With("channel_id", string(entry.chID)).
 						Set(entry.sendDelay.Seconds() / float64(entry.count))

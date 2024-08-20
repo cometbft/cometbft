@@ -68,7 +68,7 @@ require (
 >>>>>>> 17abb8006 (build(crypto/secp256k1): Update `btcec/v2` to v2.3.4 (#3728))
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/vektra/mockery/v2 v2.14.0
-	golang.org/x/sync v0.5.0
+	golang.org/x/sync v0.8.0
 	gonum.org/v1/gonum v0.8.2
 	google.golang.org/protobuf v1.31.0
 )

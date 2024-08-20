@@ -254,6 +254,31 @@ func TestMempoolFilters(t *testing.T) {
 	}
 }
 
+func TestMempoolAddTxLane(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	cases := []struct {
+		txID int
+		lane types.Lane
+	}{{0, 7}, {1, 3}, {2, 3}, {3, 1}, {4, 3}, {5, 3}, {6, 1}, {7, 3}, {8, 3}, {9, 1}, {10, 3}, {11, 7}, {12, 1}}
+
+	for _, tc := range cases {
+		tx := kvstore.NewTxFromID(tc.txID)
+		expectedLane := tc.lane
+
+		rr, err := mp.CheckTx(tx, noSender)
+		require.NoError(t, err)
+		rr.Wait()
+
+		txLane := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx).lane
+		require.Equal(t, expectedLane, txLane, "id %x", tx)
+	}
+}
+
 func TestMempoolUpdate(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)

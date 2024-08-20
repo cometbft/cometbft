@@ -52,7 +52,6 @@ type CListMempool struct {
 	txsMtx   cmtsync.RWMutex
 	lanes    map[types.Lane]*clist.CList     // each lane is a linked-list of (valid) txs
 	txsMap   map[types.TxKey]*clist.CElement // for quick access to the mempool entry of a given tx
-	txLanes  map[types.TxKey]types.Lane      // for quick access to the lane of a given tx
 	txsBytes int64                           // total size of mempool, in bytes
 	numTxs   int64                           // total number of txs in the mempool
 
@@ -91,7 +90,6 @@ func NewCListMempool(
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
 		txsMap:        make(map[types.TxKey]*clist.CElement),
-		txLanes:       make(map[types.TxKey]types.Lane),
 		recheck:       &recheck{},
 		logger:        log.NewNopLogger(),
 		metrics:       NopMetrics(),
@@ -160,7 +158,6 @@ func (mem *CListMempool) removeAllTxs(lane types.Lane) {
 		e.DetachPrev()
 	}
 	mem.txsMap = make(map[types.TxKey]*clist.CElement)
-	mem.txLanes = make(map[types.TxKey]types.Lane)
 	mem.txsBytes = 0
 }
 
@@ -453,12 +450,12 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 
 	// Add new transaction.
 	_ = memTx.addSender(sender)
+	memTx.lane = lane
 	e := txs.PushBack(memTx)
 	mem.addTxLaneSeqs[lane] = mem.addTxSeq
 
 	// Update auxiliary variables.
 	mem.txsMap[txKey] = e
-	mem.txLanes[txKey] = lane
 
 	// Update size variables.
 	mem.txsBytes += int64(len(tx))
@@ -495,29 +492,24 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		return ErrTxNotFound
 	}
 
-	lane, ok := mem.txLanes[txKey]
-	if !ok {
-		return ErrLaneNotFound
-	}
+	memTx := elem.Value.(*mempoolTx)
 
 	// Remove tx from lane.
-	mem.lanes[lane].Remove(elem)
+	mem.lanes[memTx.lane].Remove(elem)
 	elem.DetachPrev()
 
 	// Update auxiliary variables.
 	delete(mem.txsMap, txKey)
-	delete(mem.txLanes, txKey)
 
 	// Update size variables.
-	tx := elem.Value.(*mempoolTx).tx
-	mem.txsBytes -= int64(len(tx))
+	mem.txsBytes -= int64(len(memTx.tx))
 	mem.numTxs--
 
 	mem.logger.Debug(
 		"Removed transaction",
-		"tx", tx.Hash(),
-		"lane", lane,
-		"lane size", mem.lanes[lane].Len(),
+		"tx", memTx.tx.Hash(),
+		"lane", memTx.lane,
+		"lane size", mem.lanes[memTx.lane].Len(),
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)

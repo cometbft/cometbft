@@ -13,7 +13,7 @@ require (
 	github.com/gofrs/uuid v4.3.0+incompatible
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/google/orderedcode v0.0.1
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/gtank/merlin v0.1.1
 	github.com/informalsystems/tm-load-test v1.3.0

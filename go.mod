@@ -5,7 +5,7 @@ go 1.21.13
 toolchain go1.22.6
 
 require (
-	github.com/BurntSushi/toml v1.2.1
+	github.com/BurntSushi/toml v1.4.0
 	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/Workiva/go-datastructures v1.0.54
 	github.com/adlio/schema v1.3.6

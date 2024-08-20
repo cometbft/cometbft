@@ -25,7 +25,6 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -162,11 +161,12 @@ func NewApplication(cfg *Config) (*Application, error) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	logger.Info("Application started!")
 
-	// Map from lane name to its priority. Priority 0 is reserved.
+	// Map from lane name to its priority. Priority 0 is reserved. The higher
+	// the value, the higher the priority.
 	lanes := map[string]uint32{
-		"foo":       1, // lane 1
-		"bar":       4, // lane 2
-		defaultLane: 9, // default lane
+		"foo":       9,
+		"bar":       4,
+		defaultLane: 1,
 	}
 
 	// List of lane priorities
@@ -315,19 +315,31 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
-	// Assign a lane to the transaction deterministically.
-	var lane uint32
-	txHash := tmhash.Sum(req.Tx)
-	switch {
-	case txHash[0] == 0 && txHash[1] == 0 && txHash[2] == 0 && txHash[3] == 0:
-		lane = app.lanes["foo"]
-	case txHash[0] == 0:
-		lane = app.lanes["bar"]
-	default:
-		lane = app.lanes[defaultLane]
-	}
+	lane := app.assignLane(req.Tx)
 
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+}
+
+// assignLane deterministically computes a lane for the given tx.
+func (app *Application) assignLane(tx []byte) uint32 {
+	key, _, err := parseTx(tx)
+	if err != nil {
+		return app.lanes[defaultLane]
+	}
+
+	keyInt, err := strconv.Atoi(key)
+	if err != nil {
+		return app.lanes[defaultLane]
+	}
+
+	switch {
+	case keyInt%11 == 0:
+		return app.lanes["foo"] // priority 7
+	case keyInt%3 == 0:
+		return app.lanes["bar"] // priority 1
+	default:
+		return app.lanes[defaultLane] // priority 3
+	}
 }
 
 // FinalizeBlock implements ABCI.

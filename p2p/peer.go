@@ -256,7 +256,10 @@ func (p *peer) Status() cmtconn.ConnectionStatus {
 //
 // thread safe.
 func (p *peer) Send(e Envelope) bool {
-	return p.send(e.ChannelID, e.Message, p.mconn.Send)
+	start := time.Now()
+	res := p.send(e.ChannelID, e.Message, p.mconn.Send)
+	p.pendingMetrics.AddPendingMessageSendDelay(e.ChannelID, time.Since(start))
+	return res
 }
 
 // TrySend msg bytes to the channel identified by chID byte. Immediately returns

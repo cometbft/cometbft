@@ -6,7 +6,7 @@ FROM cometbft/cometbft-db-testing:v0.11.0
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb,pebbledb
+ENV COMETBFT_BUILD_OPTIONS badgerdb,boltdb,cleveldb,rocksdb
 WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)

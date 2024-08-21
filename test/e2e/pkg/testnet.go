@@ -89,6 +89,7 @@ type Testnet struct {
 	VoteExtensionDelay                                   time.Duration
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
+	LogLevel                                             string
 	Prometheus                                           bool
 	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
@@ -150,6 +151,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
+<<<<<<< HEAD
 		Name:                       filepath.Base(dir),
 		File:                       file,
 		Dir:                        dir,
@@ -175,6 +177,38 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		BlockMaxBytes:              manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
+=======
+		Name:                             filepath.Base(dir),
+		File:                             file,
+		Dir:                              dir,
+		IP:                               ipNet,
+		InitialHeight:                    1,
+		InitialState:                     manifest.InitialState,
+		Validators:                       map[*Node]int64{},
+		ValidatorUpdates:                 map[int64]map[*Node]int64{},
+		Nodes:                            []*Node{},
+		DisablePexReactor:                manifest.DisablePexReactor,
+		KeyType:                          manifest.KeyType,
+		Evidence:                         manifest.Evidence,
+		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
+		LoadTxConnections:                manifest.LoadTxConnections,
+		LoadMaxTxs:                       manifest.LoadMaxTxs,
+		ABCIProtocol:                     manifest.ABCIProtocol,
+		PrepareProposalDelay:             manifest.PrepareProposalDelay,
+		ProcessProposalDelay:             manifest.ProcessProposalDelay,
+		CheckTxDelay:                     manifest.CheckTxDelay,
+		VoteExtensionDelay:               manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
+		UpgradeVersion:                   manifest.UpgradeVersion,
+		LogLevel:                         manifest.LogLevel,
+		Prometheus:                       manifest.Prometheus,
+		BlockMaxBytes:                    manifest.BlockMaxBytes,
+		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
+		VoteExtensionSize:                manifest.VoteExtensionSize,
+		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+>>>>>>> 4cabea2d6 (feat(e2e): Allow setting `log_level` in manifest (#3819))
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}

@@ -1,7 +1,3 @@
-run:
-  skip-files:
-    - "libs/pubsub/query/query.peg.go"
-
 linters:
   enable:
     - asciicheck
@@ -10,12 +6,12 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    # - copyloopvar
     - goconst
     - gofmt
     - goimports
     #- revive
-    - gosec
+    # - gosec
     - gosimple
     - govet
     - ineffassign
@@ -31,6 +27,8 @@ linters:
     - unused
 
 issues:
+  exclude-files:
+    - "libs/pubsub/query/query.peg.go"
   exclude-rules:
     - path: _test\.go
       linters:

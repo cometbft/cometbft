@@ -269,15 +269,19 @@ func TestMempoolAddTxLane(t *testing.T) {
 
 		// Check that the lane stored in the mempool entry is the same as the
 		// one assigned by the application.
-		lane := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx).lane
-		expectedLane := 3
-		if i%11 == 0 {
-			expectedLane = 7
-		} else if i%3 == 0 {
-			expectedLane = 1
-		}
-		require.Equal(t, types.Lane(expectedLane), lane, "id %x", tx)
+		entry := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx)
+		require.Equal(t, kvstoreAssignLane(i), entry.lane, "id %x", tx)
 	}
+}
+
+func kvstoreAssignLane(key int) types.Lane {
+	lane := 3
+	if key%11 == 0 {
+		lane = 7
+	} else if key%3 == 0 {
+		lane = 1
+	}
+	return types.Lane(lane)
 }
 
 func TestMempoolUpdate(t *testing.T) {

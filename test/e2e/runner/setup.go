@@ -281,6 +281,10 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.P2P.PexReactor = false
 	}
 
+	if node.Testnet.LogLevel != "" {
+		cfg.LogLevel = node.Testnet.LogLevel
+	}
+
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true
 	}

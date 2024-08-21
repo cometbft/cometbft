@@ -31,7 +31,7 @@ func newServerBuilder(listener net.Listener) *serverBuilder {
 	}
 }
 
-// WithVersionService enables the version service on the CometBFT server.
+// WithPruningService enables the pruning service on the CometBFT server.
 func WithPruningService(pruner *sm.Pruner, logger log.Logger) Option {
 	return func(b *serverBuilder) {
 		b.pruningService = pruningservice.New(pruner, logger)

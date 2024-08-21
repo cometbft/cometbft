@@ -181,6 +181,14 @@ func (sl *SignerListenerEndpoint) serviceLoop() {
 	for {
 		select {
 		case <-sl.connectRequestCh:
+			// On start, listen timeouts can queue a duplicate connect request to queue
+			// while the first request connects.  Drop duplicate request.
+			if sl.IsConnected() {
+				sl.Logger.Error("SignerListener: Connected. Drop Listen Request")
+				continue
+			}
+
+			// Listen for remote signer
 			conn, err := sl.acceptNewConnection()
 			if err != nil {
 				sl.Logger.Error("SignerListener: Error accepting connection", "err", err)

@@ -25,9 +25,9 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/test/loadtime/payload"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -148,21 +148,10 @@ func DefaultConfig(dir string) *Config {
 	}
 }
 
-// NewApplication creates the application.
-func NewApplication(cfg *Config) (*Application, error) {
-	state, err := NewState(cfg.Dir, cfg.PersistInterval)
-	if err != nil {
-		return nil, err
-	}
-	snapshots, err := NewSnapshotStore(filepath.Join(cfg.Dir, "snapshots"))
-	if err != nil {
-		return nil, err
-	}
-
-	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
-	logger.Info("Application started!")
-
-	// Map from lane name to its priority. Priority 0 is reserved.
+// LaneDefinitions returns the (constant) values of lanes and their priorities.
+func LaneDefinitions() (map[string]uint32, []uint32) {
+	// Map from lane name to its priority. Priority 0 is reserved. The higher
+	// the value, the higher the priority.
 	lanes := map[string]uint32{
 		"foo":       1, // lane 1
 		"bar":       4, // lane 2
@@ -175,13 +164,31 @@ func NewApplication(cfg *Config) (*Application, error) {
 		priorities = append(priorities, p)
 	}
 
+	return lanes, priorities
+}
+
+// NewApplication creates the application.
+func NewApplication(cfg *Config) (*Application, error) {
+	state, err := NewState(cfg.Dir, cfg.PersistInterval)
+	if err != nil {
+		return nil, err
+	}
+	snapshots, err := NewSnapshotStore(filepath.Join(cfg.Dir, "snapshots"))
+	if err != nil {
+		return nil, err
+	}
+	lanes, lanePriorities := LaneDefinitions()
+
+	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+	logger.Info("Application started!")
+
 	return &Application{
 		logger:         logger,
 		state:          state,
 		snapshots:      snapshots,
 		cfg:            cfg,
 		lanes:          lanes,
-		lanePriorities: priorities,
+		lanePriorities: lanePriorities,
 	}, nil
 }
 
@@ -315,17 +322,12 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
-	// Assign a lane to the transaction deterministically.
-	var lane uint32
-	txHash := tmhash.Sum(req.Tx)
-	switch {
-	case txHash[0] == 0 && txHash[1] == 0 && txHash[2] == 0 && txHash[3] == 0:
-		lane = app.lanes["foo"]
-	case txHash[0] == 0:
-		lane = app.lanes["bar"]
-	default:
-		lane = app.lanes[defaultLane]
+	// Take the lane from the transaction's payload.
+	p, err := payload.FromBytes(req.Tx)
+	if err != nil {
+		return nil, err
 	}
+	lane := p.GetLane()
 
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }

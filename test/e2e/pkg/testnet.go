@@ -26,6 +26,7 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/test/e2e/app"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -108,6 +109,8 @@ type Testnet struct {
 	DefaultZone                                          string
 	PbtsEnableHeight                                     int64
 	PbtsUpdateHeight                                     int64
+	LanePriorities                                       []uint32
+	LanePrioritiesIndex                                  int
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -175,6 +178,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if err != nil {
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
 	}
+	_, lanePriorities := app.LaneDefinitions()
 
 	testnet := &Testnet{
 		Name:                             filepath.Base(dir),
@@ -212,6 +216,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		DefaultZone:      manifest.DefaultZone,
 		PbtsEnableHeight: manifest.PbtsEnableHeight,
 		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
+		LanePriorities:   lanePriorities,
 	}
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
@@ -646,6 +651,14 @@ func (t Testnet) HasPerturbations() bool {
 		}
 	}
 	return false
+}
+
+// NextLane returns the next element in the list of lanes iterating in
+// round-robin fashion.
+func (t *Testnet) NextLane() uint32 {
+	lane := t.LanePriorities[t.LanePrioritiesIndex]
+	t.LanePrioritiesIndex = (t.LanePrioritiesIndex + 1) % len(t.LanePriorities)
+	return lane
 }
 
 //go:embed templates/prometheus-yaml.tmpl

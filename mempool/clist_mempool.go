@@ -758,8 +758,8 @@ func (mem *CListMempool) Update(
 // updateSizeMetrics updates the size-related metrics of a given lane.
 func (mem *CListMempool) updateSizeMetrics(lane types.Lane) {
 	label := strconv.FormatUint(uint64(lane), 10)
-	mem.metrics.Size.With("lane", label).Set(float64(mem.lanes[lane].Len()))
-	mem.metrics.SizeBytes.With("lane", label).Set(float64(mem.LaneBytes(lane)))
+	mem.metrics.LaneSize.With("lane", label).Set(float64(mem.lanes[lane].Len()))
+	mem.metrics.LaneBytes.With("lane", label).Set(float64(mem.LaneBytes(lane)))
 	// TODO: do we want to keep the following redundant metrics? The total sizes can be computed from the other two.
 	mem.metrics.Size.Set(float64(mem.Size()))
 	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))

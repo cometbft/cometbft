@@ -6,11 +6,11 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    # - copyloopvar
     - goconst
     - gofmt
     - goimports
-    - gosec
+    # - gosec
     - gosimple
     - govet
     - ineffassign

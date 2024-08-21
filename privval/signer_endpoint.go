@@ -53,12 +53,14 @@ func (se *signerEndpoint) GetAvailableConnection(connectionAvailableCh chan net.
 
 // WaitConnection waits for the connection to be available.
 func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, maxWait time.Duration) error {
-	se.connMtx.Lock()
-	defer se.connMtx.Unlock()
-
+	// serviceLoop will deadlock if IsConnected() is called while WaitConnection() holds the mutex
 	select {
-	case se.conn = <-connectionAvailableCh:
-	case <-time.After(maxWait):
+	case conn := <-connectionAvailableCh:
+		// Lock only to modify se.conn
+		se.connMtx.Lock()
+		defer se.connMtx.Unlock()
+		se.conn = conn
+	case <-time.After(maxWait): // Do not lock mutex while waiting
 		return ErrConnectionTimeout
 	}
 

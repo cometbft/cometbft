@@ -66,8 +66,8 @@ func main() {
 	}
 	for _, r := range rs.List() {
 		if *oneline {
-			fmt.Printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-				r.ID, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min.Nanoseconds(), r.Max.Nanoseconds(), r.Avg.Nanoseconds(), r.StdDev.Nanoseconds(), rs.ErrorCount())
+			fmt.Printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+				r.ID, r.Lane, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min.Nanoseconds(), r.Max.Nanoseconds(), r.Avg.Nanoseconds(), r.StdDev.Nanoseconds(), rs.ErrorCount())
 		} else {
 			fmt.Printf(""+
 				"Experiment ID: %s\n\n"+
@@ -94,15 +94,16 @@ func toCSVRecords(rs []report.Report) [][]string {
 	}
 	res := make([][]string, total+1)
 
-	res[0] = []string{"experiment_id", "block_time", "duration_ns", "tx_hash", "connections", "rate", "size"}
+	res[0] = []string{"experiment_id", "block_time", "duration_ns", "tx_hash", "lane", "connections", "rate", "size"}
 	offset := 1
 	for _, r := range rs {
 		idStr := r.ID.String()
 		connStr := strconv.FormatInt(int64(r.Connections), 10)
 		rateStr := strconv.FormatInt(int64(r.Rate), 10)
 		sizeStr := strconv.FormatInt(int64(r.Size), 10)
+		lane := strconv.FormatInt(int64(r.Lane), 10)
 		for i, v := range r.All {
-			res[offset+i] = []string{idStr, strconv.FormatInt(v.BlockTime.UnixNano(), 10), strconv.FormatInt(int64(v.Duration), 10), fmt.Sprintf("%X", v.Hash), connStr, rateStr, sizeStr}
+			res[offset+i] = []string{idStr, strconv.FormatInt(v.BlockTime.UnixNano(), 10), strconv.FormatInt(int64(v.Duration), 10), fmt.Sprintf("%X", v.Hash), lane, connStr, rateStr, sizeStr}
 		}
 		offset += len(r.All)
 	}

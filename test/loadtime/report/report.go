@@ -36,6 +36,7 @@ type Report struct {
 	ID                      uuid.UUID
 	Rate, Connections, Size uint64
 	Max, Min, Avg, StdDev   time.Duration
+	Lane                    uint32
 
 	// NegativeCount is the number of negative durations encountered while
 	// reading the transaction data. A negative duration means that
@@ -71,7 +72,7 @@ func (rs *Reports) ErrorCount() int {
 	return rs.errorCount
 }
 
-func (rs *Reports) addDataPoint(id uuid.UUID, l time.Duration, bt time.Time, hash []byte, conns, rate, size uint64) {
+func (rs *Reports) addDataPoint(id uuid.UUID, lane uint32, l time.Duration, bt time.Time, hash []byte, conns, rate, size uint64) {
 	r, ok := rs.s[id]
 	if !ok {
 		r = Report{
@@ -81,6 +82,7 @@ func (rs *Reports) addDataPoint(id uuid.UUID, l time.Duration, bt time.Time, has
 			Connections: conns,
 			Rate:        rate,
 			Size:        size,
+			Lane:        lane,
 		}
 		rs.s[id] = r
 	}
@@ -130,6 +132,7 @@ func (rs *Reports) addError() {
 func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 	type payloadData struct {
 		id                      uuid.UUID
+		lane                    uint32
 		l                       time.Duration
 		bt                      time.Time
 		hash                    []byte
@@ -173,6 +176,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 					bt:          b.bt,
 					hash:        b.tx.Hash(),
 					id:          uuid.UUID(*idb),
+					lane:        p.GetLane(),
 					connections: p.GetConnections(),
 					rate:        p.GetRate(),
 					size:        p.GetSize(),
@@ -213,7 +217,7 @@ func GenerateFromBlockStore(s BlockStore) (*Reports, error) {
 			reports.addError()
 			continue
 		}
-		reports.addDataPoint(pd.id, pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
+		reports.addDataPoint(pd.id, pd.lane, pd.l, pd.bt, pd.hash, pd.connections, pd.rate, pd.size)
 	}
 	reports.calculateAll()
 	return reports, nil

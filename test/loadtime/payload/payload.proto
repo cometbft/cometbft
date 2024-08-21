@@ -14,5 +14,6 @@ message Payload {
   uint64                    size        = 3;
   google.protobuf.Timestamp time        = 4;
   bytes                     id          = 5;
-  bytes                     padding     = 6;
+  uint32                    lane        = 6;
+  bytes                     padding     = 7;
 }

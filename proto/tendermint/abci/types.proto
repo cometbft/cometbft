@@ -181,6 +181,7 @@ message ResponseInitChain {
   ConsensusParams          consensus_params = 1;
   repeated ValidatorUpdate validators       = 2 [(gogoproto.nullable) = false];
   bytes                    app_hash         = 3;
+  RollappConsensusParams   rollapp_consensus_params = 4;
 }
 
 message ResponseQuery {
@@ -238,6 +239,7 @@ message ResponseEndBlock {
   ConsensusParams          consensus_param_updates = 2;
   repeated Event           events                  = 3
       [(gogoproto.nullable) = false, (gogoproto.jsontag) = "events,omitempty"];
+  RollappConsensusParams   rollapp_consensus_param_updates = 4;
 }
 
 message ResponseCommit {
@@ -379,6 +381,11 @@ message Evidence {
   int64 total_voting_power = 5;
 }
 
+message RollappConsensusParams {
+  BlockParams block = 1;
+  string da = 2 ;
+  string commit = 3;
+}
 //----------------------------------------
 // State Sync Types
 

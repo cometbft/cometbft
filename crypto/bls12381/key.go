@@ -1,4 +1,4 @@
-//go:build !(((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && bls12381)
+//go:build !bls12381
 
 package bls12381
 
@@ -30,6 +30,11 @@ var _ crypto.PrivKey = &PrivKey{}
 // PrivKey represents a BLS private key noop when blst is not set as a build flag and cgo is disabled.
 type PrivKey []byte
 
+// GenPrivKeyFromSecret returns ErrDisabled.
+func GenPrivKeyFromSecret([]byte) (PrivKey, error) {
+	return nil, ErrDisabled
+}
+
 // NewPrivateKeyFromBytes returns ErrDisabled.
 func NewPrivateKeyFromBytes([]byte) (PrivKey, error) {
 	return nil, ErrDisabled
@@ -50,11 +55,6 @@ func (PrivKey) PubKey() crypto.PubKey {
 	panic("bls12_381 is disabled")
 }
 
-// Equals always panics.
-func (PrivKey) Equals(crypto.PrivKey) bool {
-	panic("bls12_381 is disabled")
-}
-
 // Type returns the key's type.
 func (PrivKey) Type() string {
 	return KeyType
@@ -62,6 +62,11 @@ func (PrivKey) Type() string {
 
 // Sign always panics.
 func (PrivKey) Sign([]byte) ([]byte, error) {
+	panic("bls12_381 is disabled")
+}
+
+// Zeroize always panics.
+func (PrivKey) Zeroize() {
 	panic("bls12_381 is disabled")
 }
 
@@ -78,6 +83,11 @@ var _ crypto.PubKey = &PubKey{}
 
 // PubKey represents a BLS private key noop when blst is not set as a build flag and cgo is disabled.
 type PubKey []byte
+
+// NewPublicKeyFromBytes returns ErrDisabled.
+func NewPublicKeyFromBytes([]byte) (*PubKey, error) {
+	return nil, ErrDisabled
+}
 
 // Address always panics.
 func (PubKey) Address() crypto.Address {
@@ -97,9 +107,4 @@ func (PubKey) Bytes() []byte {
 // Type returns the key's type.
 func (PubKey) Type() string {
 	return KeyType
-}
-
-// Equals always panics.
-func (PubKey) Equals(crypto.PubKey) bool {
-	panic("bls12_381 is disabled")
 }

@@ -356,7 +356,7 @@ func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
 				continue
 			}
 
-			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
+			compositeTag := event.Type + "." + attr.Key
 			if attr.GetIndex() {
 				zeroKey := keyForEvent(compositeTag, attr.Value, result, 0)
 				endKey := keyForEvent(compositeTag, attr.Value, result, math.MaxInt64)
@@ -390,7 +390,7 @@ func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Ba
 			}
 
 			// index if `index: true` is set
-			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
+			compositeTag := event.Type + "." + attr.Key
 			// ensure event does not conflict with a reserved prefix key
 			if compositeTag == types.TxHashKey || compositeTag == types.TxHeightKey {
 				return fmt.Errorf("event type and attribute key \"%s\" is reserved; please use a different key", compositeTag)
@@ -632,12 +632,17 @@ type TxInfo struct {
 }
 
 func (*TxIndex) setTmpHashes(tmpHeights map[string]TxInfo, key, value []byte, height int64) {
+	// value comes from cometbft-db Iterator interface Value() API.
+	// Therefore, we must make a copy before storing references to it.
+	valueCp := make([]byte, len(value))
+	copy(valueCp, value)
+
 	eventSeq := extractEventSeqFromKey(key)
 	txInfo := TxInfo{
-		TxBytes: value,
+		TxBytes: valueCp,
 		Height:  height,
 	}
-	tmpHeights[string(value)+eventSeq] = txInfo
+	tmpHeights[string(valueCp)+eventSeq] = txInfo
 }
 
 // match returns all matching txs by hash that meet a given condition and start
@@ -859,9 +864,6 @@ func (txi *TxIndex) matchRange(
 
 LOOP:
 	for ; it.Valid(); it.Next() {
-		// TODO: We need to make a function for getting it.Key() as a byte slice with no copies.
-		// It currently copies the source data (which can change on a subsequent .Next() call) but that
-		// is not an issue for us.
 		key := it.Key()
 		if !isTagKey(key) {
 			continue

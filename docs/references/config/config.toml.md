@@ -1728,8 +1728,16 @@ The `timeout_commit` is not a required component of the consensus algorithm,
 meaning that there are no liveness implications if it is set to `0s`.
 But it may have implications in the way the application rewards validators.
 
+Notice also that the minimum interval defined with `timeout_commit` includes
+the time that both CometBFT and the application take to process the committed block.
+
 Setting `timeout_commit` to `0s` means that the node will start the next height
 as soon as it gathers all the mandatory +2/3 precommits for a block.
+
+**Notice** that the `timeout_commit` configuration flag is **deprecated** from v1.0.
+It is now up to the application to return a `next_block_delay` value upon
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+to define how long CometBFT should wait before starting the next height.
 
 ### consensus.double_sign_check_height
 
@@ -2017,18 +2025,6 @@ initial_block_results_retain_height = 0
 |:--------------------|:--------|
 | **Possible values** | &gt;= 0 |
 
-### storage.pruning.data_companion.genesis_hash
-Hash of the Genesis file, passed to CometBFT via the command line.
-```toml
-genesis_hash = ""
-```
-
-| Value type          | string             |
-|:--------------------|:-------------------|
-| **Possible values** | hex-encoded number |
-|                     | `""`               |
-
-If this hash mismatches the hash that CometBFT computes on the genesis file, the node is not able to boot.
 
 ## Transaction indexer
 Transaction indexer settings.
@@ -2068,6 +2064,18 @@ psql-conn = ""
 |:--------------------|:-------------------------------------------------------------|
 | **Possible values** | `"postgresql://<user>:<password>@<host>:<port>/<db>?<opts>"` |
 |                     | `""`                                                         |
+
+### tx_index.table_*
+Table names used by the PostgreSQL-backed indexer.
+
+This setting is optional and only applies when `indexer`  is set to `psql`.
+
+| Field         | default value               |
+|:--------------------|:---------------------|
+| `"table_blocks"` | `"blocks"`     |
+| `"table_tx_results"` | `"tx_results"` |
+| `"table_events"`    | `"events"`     |
+| `"table_attributes"` | `"table_attributes"` |
 
 ## Prometheus Instrumentation
 An extensive amount of Prometheus metrics are built into CometBFT.
@@ -2229,3 +2237,8 @@ a proposal from another validator and prevote `nil` due to him starting
 `timeout_propose` earlier. I.e., if Bob's `timeout_commit` is too low comparing
 to other validators, then he might miss some proposals and get slashed for
 inactivity.
+
+**Notice** that the `timeout_commit` configuration flag is **deprecated** from v1.0.
+It is now up to the application to return a `next_block_delay` value upon
+[`FinalizeBlock`](https://github.com/cometbft/cometbft/blob/main/spec/abci/abci%2B%2B_methods.md#finalizeblock)
+to define how long CometBFT should wait before starting the next height.

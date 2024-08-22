@@ -137,8 +137,13 @@ func startNode(cfg *Config) error {
 		cmtcfg.Storage.ExperimentalKeyLayout = cfg.ExperimentalKeyLayout
 	}
 
+	// We hardcode ed25519 here because the priv validator files have already been set up in the setup step
+	pv, err := privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile(), nil)
+	if err != nil {
+		return err
+	}
 	n, err := node.NewNode(context.Background(), cmtcfg,
-		privval.LoadOrGenFilePV(cmtcfg.PrivValidatorKeyFile(), cmtcfg.PrivValidatorStateFile()),
+		pv,
 		nodeKey,
 		clientCreator,
 		node.DefaultGenesisDocProviderFunc(cmtcfg),

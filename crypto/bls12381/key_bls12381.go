@@ -1,14 +1,16 @@
-//go:build ((linux && amd64) || (linux && arm64) || (darwin && amd64) || (darwin && arm64) || (windows && amd64)) && bls12381
+//go:build bls12381
 
 package bls12381
 
 import (
-	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/json"
+	"errors"
+
+	blst "github.com/supranational/blst/bindings/go"
 
 	"github.com/cometbft/cometbft/crypto"
-	bls12381 "github.com/cosmos/crypto/curves/bls12381"
-
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
@@ -16,6 +18,21 @@ import (
 const (
 	// Enabled indicates if this curve is enabled.
 	Enabled = true
+)
+
+var (
+	// ErrDeserialization is returned when deserialization fails.
+	ErrDeserialization = errors.New("bls12381: deserialization error")
+
+	dstMinSig = []byte("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_")
+)
+
+// For minimal-signature-size operations.
+type (
+	blstPublicKey          = blst.P2Affine
+	blstSignature          = blst.P1Affine
+	blstAggregateSignature = blst.P1Aggregate
+	blstAggregatePublicKey = blst.P2Aggregate
 )
 
 // -------------------------------------.
@@ -35,42 +52,49 @@ func init() {
 
 var _ crypto.PrivKey = &PrivKey{}
 
-type PrivKey []byte
+type PrivKey struct {
+	sk *blst.SecretKey
+}
+
+// GenPrivKeyFromSecret generates a new random key using `secret` for the seed
+func GenPrivKeyFromSecret(secret []byte) (*PrivKey, error) {
+	if len(secret) != 32 {
+		seed := sha256.Sum256(secret) // We need 32 bytes
+		secret = seed[:]
+	}
+
+	sk := blst.KeyGen(secret)
+	return &PrivKey{sk: sk}, nil
+}
 
 // NewPrivateKeyFromBytes build a new key from the given bytes.
-func NewPrivateKeyFromBytes(bz []byte) (PrivKey, error) {
-	secretKey, err := bls12381.SecretKeyFromBytes(bz)
-	if err != nil {
-		return nil, err
+func NewPrivateKeyFromBytes(bz []byte) (*PrivKey, error) {
+	sk := new(blst.SecretKey).Deserialize(bz)
+	if sk == nil {
+		return nil, ErrDeserialization
 	}
-	return secretKey.Marshal(), nil
+	return &PrivKey{sk: sk}, nil
 }
 
 // GenPrivKey generates a new key.
-func GenPrivKey() (PrivKey, error) {
-	secretKey, err := bls12381.RandKey()
-	return PrivKey(secretKey.Marshal()), err
+func GenPrivKey() (*PrivKey, error) {
+	var ikm [32]byte
+	_, err := rand.Read(ikm[:])
+	if err != nil {
+		return nil, err
+	}
+	return GenPrivKeyFromSecret(ikm[:])
 }
 
 // Bytes returns the byte representation of the Key.
 func (privKey PrivKey) Bytes() []byte {
-	return privKey
+	return privKey.sk.Serialize()
 }
 
 // PubKey returns the private key's public key. If the privkey is not valid
 // it returns a nil value.
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	secretKey, err := bls12381.SecretKeyFromBytes(privKey)
-	if err != nil {
-		return nil
-	}
-
-	return PubKey(secretKey.PublicKey().Marshal())
-}
-
-// Equals returns true if two keys are equal and false otherwise.
-func (privKey PrivKey) Equals(other crypto.PrivKey) bool {
-	return privKey.Type() == other.Type() && bytes.Equal(privKey.Bytes(), other.Bytes())
+	return PubKey{pk: new(blstPublicKey).From(privKey.sk)}
 }
 
 // Type returns the type.
@@ -81,18 +105,38 @@ func (PrivKey) Type() string {
 // Sign signs the given byte array. If msg is larger than
 // MaxMsgLen, SHA256 sum will be signed instead of the raw bytes.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
-	secretKey, err := bls12381.SecretKeyFromBytes(privKey)
-	if err != nil {
-		return nil, err
-	}
-
 	if len(msg) > MaxMsgLen {
 		hash := sha256.Sum256(msg)
-		sig := secretKey.Sign(hash[:])
-		return sig.Marshal(), nil
+		signature := new(blstSignature).Sign(privKey.sk, hash[:], dstMinSig)
+		return signature.Compress(), nil
 	}
-	sig := secretKey.Sign(msg)
-	return sig.Marshal(), nil
+
+	signature := new(blstSignature).Sign(privKey.sk, msg, dstMinSig)
+	return signature.Compress(), nil
+}
+
+// Zeroize clears the private key.
+func (privKey *PrivKey) Zeroize() {
+	privKey.sk.Zeroize()
+}
+
+// MarshalJSON marshals the private key to JSON.
+func (privKey *PrivKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(privKey.Bytes())
+}
+
+// UnmarshalJSON unmarshals the private key from JSON.
+func (privKey *PrivKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPrivateKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	privKey.sk = pk.sk
+	return nil
 }
 
 // ===============================================================================================
@@ -105,46 +149,50 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 
 var _ crypto.PubKey = &PubKey{}
 
-type PubKey []byte
+type PubKey struct {
+	pk *blstPublicKey
+}
+
+// NewPublicKeyFromBytes returns a new public key from the given bytes.
+func NewPublicKeyFromBytes(bz []byte) (*PubKey, error) {
+	pk := new(blstPublicKey).Deserialize(bz)
+	if pk == nil {
+		return nil, ErrDeserialization
+	}
+	return &PubKey{pk: pk}, nil
+}
 
 // Address returns the address of the key.
 //
 // The function will panic if the public key is invalid.
 func (pubKey PubKey) Address() crypto.Address {
-	pk, _ := bls12381.PublicKeyFromBytes(pubKey)
-	if len(pk.Marshal()) != PubKeySize {
-		panic("pubkey is incorrect size")
-	}
-	return crypto.Address(tmhash.SumTruncated(pubKey))
+	return crypto.Address(tmhash.SumTruncated(pubKey.pk.Serialize()))
 }
 
 // VerifySignature verifies the given signature.
 func (pubKey PubKey) VerifySignature(msg, sig []byte) bool {
-	if len(sig) != SignatureLength {
+	signature := new(blstSignature).Uncompress(sig)
+	if signature == nil {
 		return false
 	}
 
-	pubK, err := bls12381.PublicKeyFromBytes(pubKey)
-	if err != nil { // invalid pubkey
+	// Group check signature. Do not check for infinity since an aggregated signature
+	// could be infinite.
+	if !signature.SigValidate(false) {
 		return false
 	}
 
 	if len(msg) > MaxMsgLen {
 		hash := sha256.Sum256(msg)
-		msg = hash[:]
+		return signature.Verify(false, pubKey.pk, false, hash[:], dstMinSig)
 	}
 
-	ok, err := bls12381.VerifySignature(sig, [MaxMsgLen]byte(msg[:MaxMsgLen]), pubK)
-	if err != nil { // bad signature
-		return false
-	}
-
-	return ok
+	return signature.Verify(false, pubKey.pk, false, msg, dstMinSig)
 }
 
 // Bytes returns the byte format.
 func (pubKey PubKey) Bytes() []byte {
-	return pubKey
+	return pubKey.pk.Serialize()
 }
 
 // Type returns the key's type.
@@ -152,7 +200,21 @@ func (PubKey) Type() string {
 	return KeyType
 }
 
-// Equals returns true if the other's type is the same and their bytes are deeply equal.
-func (pubKey PubKey) Equals(other crypto.PubKey) bool {
-	return pubKey.Type() == other.Type() && bytes.Equal(pubKey.Bytes(), other.Bytes())
+// MarshalJSON marshals the public key to JSON.
+func (pubkey PubKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(pubkey.Bytes())
+}
+
+// UnmarshalJSON unmarshals the public key from JSON.
+func (pubkey *PubKey) UnmarshalJSON(bz []byte) error {
+	var rawBytes []byte
+	if err := json.Unmarshal(bz, &rawBytes); err != nil {
+		return err
+	}
+	pk, err := NewPublicKeyFromBytes(rawBytes)
+	if err != nil {
+		return err
+	}
+	pubkey.pk = pk.pk
+	return nil
 }

@@ -115,6 +115,7 @@ func _BlockResultsService_GetBlockResults_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+var BlockResultsService_serviceDesc = _BlockResultsService_serviceDesc
 var _BlockResultsService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.services.block_results.v1.BlockResultsService",
 	HandlerType: (*BlockResultsServiceServer)(nil),

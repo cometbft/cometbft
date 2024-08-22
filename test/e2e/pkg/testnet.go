@@ -23,6 +23,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
@@ -653,12 +654,30 @@ func (t Testnet) HasPerturbations() bool {
 	return false
 }
 
-// NextLane returns the next element in the list of lanes iterating in
-// round-robin fashion.
+// weightedRandomIndex, given a list of weights, picks one of them randomly and
+// proportionally to its weight, and returns its index in the list.
+func weightedRandomIndex(weights []uint) int {
+	totalWeight := uint(0)
+	for _, w := range weights {
+		totalWeight += w
+	}
+	r := cmtrand.Int31n(int32(totalWeight))
+
+	// Return i when the random number falls in the i'th bucket.
+	cursor := uint(0)
+	for i := 0; i < len(weights); i++ {
+		cursor += weights[i]
+		if int32(cursor) >= r {
+			return i
+		}
+	}
+	return -1 // unreachable
+}
+
+// NextLane returns the next element in the list of lanes, according to a
+// predefined weight for each lane in the list.
 func (t *Testnet) NextLane() uint32 {
-	lane := t.LanePriorities[t.LanePrioritiesIndex]
-	t.LanePrioritiesIndex = (t.LanePrioritiesIndex + 1) % len(t.LanePriorities)
-	return lane
+	return t.LanePriorities[weightedRandomIndex([]uint{5, 25, 70})]
 }
 
 //go:embed templates/prometheus-yaml.tmpl

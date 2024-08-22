@@ -259,6 +259,10 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.LogLevel = node.Testnet.LogLevel
 	}
 
+	if node.Testnet.LogFormat != "" {
+		cfg.LogFormat = node.Testnet.LogFormat
+	}
+
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true
 	}

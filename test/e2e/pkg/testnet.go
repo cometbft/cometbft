@@ -90,6 +90,7 @@ type Testnet struct {
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
 	LogLevel                                             string
+	LogFormat                                            string
 	Prometheus                                           bool
 	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
@@ -173,6 +174,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
 		UpgradeVersion:             manifest.UpgradeVersion,
 		LogLevel:                   manifest.LogLevel,
+		LogFormat:                  manifest.LogFormat,
 		Prometheus:                 manifest.Prometheus,
 		BlockMaxBytes:              manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,

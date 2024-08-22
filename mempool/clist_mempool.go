@@ -315,7 +315,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 		Type: abci.CHECK_TX_TYPE_CHECK,
 	})
 	if err != nil {
-		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%X", tx.Hash()), err))
 	}
 	reqRes.SetCallback(mem.handleCheckTxResponse(tx, sender))
 
@@ -474,7 +474,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 		// Check whether the rechecking process has finished.
 		if mem.recheck.done() {
 			mem.logger.Error("rechecking has finished; discard late recheck response",
-				"tx", log.NewLazySprintf("%v", tx.Hash()))
+				"tx", log.NewLazySprintf("%X", tx.Hash()))
 			return
 		}
 		mem.metrics.RecheckTimes.Add(1)
@@ -680,7 +680,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})
 		if err != nil {
-			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%X", tx.Hash()), err))
 		}
 		resReq.SetCallback(mem.handleRecheckTxResponse(tx))
 	}

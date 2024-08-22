@@ -611,31 +611,34 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.Size())
-	for _, lane := range mem.sortedLanes {
-		for e := mem.lanes[lane].Front(); e != nil; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
-
-			txs = append(txs, memTx.tx)
-
-			dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.tx})
-
-			// Check total size requirement
-			if maxBytes > -1 && runningSize+dataSize > maxBytes {
-				return txs[:len(txs)-1]
-			}
-
-			runningSize += dataSize
-
-			// Check total gas requirement.
-			// If maxGas is negative, skip this check.
-			// Since newTotalGas < masGas, which
-			// must be non-negative, it follows that this won't overflow.
-			newTotalGas := totalGas + memTx.gasWanted
-			if maxGas > -1 && newTotalGas > maxGas {
-				return txs[:len(txs)-1]
-			}
-			totalGas = newTotalGas
+	iter := mem.NewReapIterator()
+	for {
+		elem := iter.Next()
+		if elem == nil {
+			break
 		}
+		memTx := elem.Value.(*mempoolTx)
+
+		txs = append(txs, memTx.tx)
+
+		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.tx})
+
+		// Check total size requirement
+		if maxBytes > -1 && runningSize+dataSize > maxBytes {
+			return txs[:len(txs)-1]
+		}
+
+		runningSize += dataSize
+
+		// Check total gas requirement.
+		// If maxGas is negative, skip this check.
+		// Since newTotalGas < masGas, which
+		// must be non-negative, it follows that this won't overflow.
+		newTotalGas := totalGas + memTx.gasWanted
+		if maxGas > -1 && newTotalGas > maxGas {
+			return txs[:len(txs)-1]
+		}
+		totalGas = newTotalGas
 	}
 	return txs
 }
@@ -650,11 +653,14 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	}
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max))
-	for _, lane := range mem.sortedLanes {
-		for e := mem.lanes[lane].Front(); e != nil && len(txs) <= max; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
-			txs = append(txs, memTx.tx)
+	iter := mem.NewReapIterator()
+	for len(txs) <= max {
+		elem := iter.Next()
+		if elem == nil {
+			break
 		}
+		memTx := elem.Value.(*mempoolTx)
+		txs = append(txs, memTx.tx)
 	}
 	return txs
 }
@@ -909,6 +915,60 @@ func (rc *recheck) setRecheckFull() bool {
 // progress.
 func (rc *recheck) consideredFull() bool {
 	return rc.recheckFull.Load()
+}
+
+// Lock must be held on mempool: it cannot be modified while iterating.
+type ReapIterator struct {
+	sortedLanes []types.Lane
+	laneIndex   int                            // current lane being iterated; index on sortedLanes
+	counters    map[types.Lane]int             // counters of consumed entries, for WRR algorithm
+	cursors     map[types.Lane]*clist.CElement // last accessed entries on each lane
+}
+
+func (mem *CListMempool) NewReapIterator() *ReapIterator {
+	// Set cursors at the beginning of each lane.
+	cursors := make(map[types.Lane]*clist.CElement, len(mem.sortedLanes))
+	for _, lane := range mem.sortedLanes {
+		cursors[lane] = mem.lanes[lane].Front()
+	}
+	return &ReapIterator{
+		sortedLanes: mem.sortedLanes,
+		counters:    make(map[types.Lane]int, len(mem.sortedLanes)),
+		cursors:     cursors,
+	}
+}
+
+func (iter *ReapIterator) nextLane() types.Lane {
+	iter.laneIndex = (iter.laneIndex + 1) % len(iter.sortedLanes)
+	return iter.sortedLanes[iter.laneIndex]
+}
+
+func (iter *ReapIterator) Next() *clist.CElement {
+	lane := iter.sortedLanes[iter.laneIndex]
+	numEmptyLanes := 0
+	for {
+		// Skip empty lane or if cursor is at end of lane
+		if iter.cursors[lane] == nil {
+			numEmptyLanes++
+			if numEmptyLanes >= len(iter.sortedLanes) {
+				return nil
+			}
+			lane = iter.nextLane()
+			continue
+		}
+		// Skip over-consumed lane.
+		if iter.counters[lane] >= int(lane) {
+			iter.counters[lane] = 0
+			numEmptyLanes = 0
+			lane = iter.nextLane()
+			continue
+		}
+		break
+	}
+	elem := iter.cursors[lane]
+	iter.cursors[lane] = iter.cursors[lane].Next()
+	iter.counters[lane]++
+	return elem
 }
 
 // CListIterator implements an Iterator that traverses the lanes with the classical Weighted Round

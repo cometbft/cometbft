@@ -91,6 +91,7 @@ type Testnet struct {
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
 	LoadMaxTxs                                           int
+	LaneWeights                                          []uint
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -198,6 +199,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
 		LoadTxConnections:                manifest.LoadTxConnections,
 		LoadMaxTxs:                       manifest.LoadMaxTxs,
+		LaneWeights:                      manifest.LaneWeights,
 		ABCIProtocol:                     manifest.ABCIProtocol,
 		PrepareProposalDelay:             manifest.PrepareProposalDelay,
 		ProcessProposalDelay:             manifest.ProcessProposalDelay,
@@ -239,6 +241,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
+	}
+	if len(testnet.LaneWeights) == 0 {
+		testnet.LaneWeights = make([]uint, len(testnet.LanePriorities))
+		for i := 0; i < len(testnet.LanePriorities); i++ {
+			testnet.LaneWeights[i] = 1
+		}
 	}
 
 	for _, name := range sortNodeNames(manifest) {
@@ -470,6 +478,12 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
+	if len(t.LaneWeights) != len(t.LanePriorities) {
+		return fmt.Errorf("number of lane_weights (%d) must be equal to "+
+			"the number of lanes defined by the app (%d)",
+			len(t.LaneWeights), len(t.LanePriorities),
+		)
+	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
@@ -677,7 +691,7 @@ func weightedRandomIndex(weights []uint) int {
 // NextLane returns the next element in the list of lanes, according to a
 // predefined weight for each lane in the list.
 func (t *Testnet) NextLane() uint32 {
-	return t.LanePriorities[weightedRandomIndex([]uint{5, 25, 70})]
+	return t.LanePriorities[weightedRandomIndex(t.LaneWeights)]
 }
 
 //go:embed templates/prometheus-yaml.tmpl

@@ -44,7 +44,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	// replace Connect2Switches (full mesh) with a func, which connects first
 	// reactor to others and nothing else, this test should also pass with >2 reactors.
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -68,7 +68,7 @@ func TestReactorConcurrency(t *testing.T) {
 	config.Mempool.Size = 5000
 	config.Mempool.CacheSize = 5000
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -127,7 +127,7 @@ func TestReactorConcurrency(t *testing.T) {
 func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -157,42 +157,42 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 }
 
 // Test that a lagging peer does not receive txs.
-// func TestMempoolReactorSendLaggingPeer(t *testing.T) {
-// 	config := cfg.TestConfig()
-// 	const n = 2
-// 	reactors, _ := makeAndConnectReactors(config, n)
-// 	defer func() {
-// 		for _, r := range reactors {
-// 			if err := r.Stop(); err != nil {
-// 				require.NoError(t, err)
-// 			}
-// 		}
-// 	}()
+func TestMempoolReactorSendLaggingPeer(t *testing.T) {
+	config := cfg.TestConfig()
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n, nil)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				require.NoError(t, err)
+			}
+		}
+	}()
 
-// 	// First reactor is at height 10 and knows that its peer is lagging at height 1.
-// 	reactors[0].mempool.height.Store(10)
-// 	peerID := reactors[1].Switch.NodeInfo().ID()
-// 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
+	// First reactor is at height 10 and knows that its peer is lagging at height 1.
+	reactors[0].mempool.height.Store(10)
+	peerID := reactors[1].Switch.NodeInfo().ID()
+	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
-// 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-// 	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
-// 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
+	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
+	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
+	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
-// 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
-// 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
-// 	waitForReactors(t, txs1, reactors, checkTxsInOrder)
+	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
+	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
+	waitForReactors(t, txs1, reactors, checkTxsInOrder)
 
-// 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
-// 	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
-// 	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
-// }
+	// Add a bunch of txs to first reactor. The second reactor should receive them all.
+	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
+	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
+}
 
 // Test the scenario where a tx selected for being sent to a peer is removed
 // from the mempool before it is actually sent.
 func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -227,11 +227,11 @@ func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
 }
 
-func TestReactor_MaxTxBytes(t *testing.T) {
+func TestMempoolReactorMaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, mempoolLogger("info"))
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -271,7 +271,7 @@ func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
 
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -296,7 +296,7 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 
 	config := cfg.TestConfig()
 	const n = 2
-	_, switches := makeAndConnectReactors(config, n)
+	_, switches := makeAndConnectReactors(config, n, nil)
 
 	// stop reactors
 	for _, s := range switches {
@@ -316,7 +316,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	t.Skip("FIFO is not supposed to be guaranteed and this is just used to evidence one of the cases where it does not happen. Hence we skip this test.")
 
 	config := cfg.TestConfig()
-	reactors, _ := makeAndConnectReactors(config, 4)
+	reactors, _ := makeAndConnectReactors(config, 4, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -349,45 +349,45 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 // Note: in this test we know which gossip connections are active or not because of how the p2p
 // functions are currently implemented, which affects the order in which peers are added to the
 // mempool reactor.
-// func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
-// 	config := cfg.TestConfig()
-// 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
-// 	reactors, _ := makeAndConnectReactors(config, 4)
-// 	defer func() {
-// 		for _, r := range reactors {
-// 			if err := r.Stop(); err != nil {
-// 				require.NoError(t, err)
-// 			}
-// 		}
-// 	}()
-// 	for _, r := range reactors {
-// 		for _, peer := range r.Switch.Peers().Copy() {
-// 			peer.Set(types.PeerStateKey, peerState{1})
-// 		}
-// 	}
+func TestMempoolReactorMaxActiveOutboundConnections(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
+	reactors, _ := makeAndConnectReactors(config, 4, nil)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				require.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().Copy() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
 
-// 	// Add a bunch transactions to the first reactor.
-// 	txs := newUniqueTxs(100)
-// 	tryAddTxs(t, reactors[0], txs)
+	// Add a bunch transactions to the first reactor.
+	txs := newUniqueTxs(100)
+	tryAddTxs(t, reactors[0], txs)
 
-// 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
-// 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-// 	checkTxsInMempool(t, txs, reactors[1], 0)
-// 	for _, r := range reactors[2:] {
-// 		require.Zero(t, r.mempool.Size())
-// 	}
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	checkTxsInMempool(t, txs, reactors[1], 0)
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
 
-// 	// Disconnect the second reactor from the first reactor.
-// 	firstPeer := reactors[0].Switch.Peers().Copy()[0]
-// 	reactors[0].Switch.StopPeerGracefully(firstPeer)
+	// Disconnect the second reactor from the first reactor.
+	firstPeer := reactors[0].Switch.Peers().Copy()[0]
+	reactors[0].Switch.StopPeerGracefully(firstPeer)
 
-// 	// Now the third reactor should start receiving transactions from the first reactor; the fourth
-// 	// reactor's mempool should still be empty.
-// 	checkTxsInMempool(t, txs, reactors[2], 0)
-// 	for _, r := range reactors[3:] {
-// 		require.Zero(t, r.mempool.Size())
-// 	}
-// }
+	// Now the third reactor should start receiving transactions from the first reactor; the fourth
+	// reactor's mempool should still be empty.
+	checkTxsInMempool(t, txs, reactors[2], 0)
+	for _, r := range reactors[3:] {
+		require.Zero(t, r.mempool.Size())
+	}
+}
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
 // transactions (only non-persistent peers).
@@ -395,47 +395,47 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 // Note: in this test we know which gossip connections are active or not because of how the p2p
 // functions are currently implemented, which affects the order in which peers are added to the
 // mempool reactor.
-// func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
-// 	config := cfg.TestConfig()
-// 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
-// 	reactors, _ := makeAndConnectReactors(config, 4)
-// 	defer func() {
-// 		for _, r := range reactors {
-// 			if err := r.Stop(); err != nil {
-// 				require.NoError(t, err)
-// 			}
-// 		}
-// 	}()
-// 	for _, r := range reactors {
-// 		for _, peer := range r.Switch.Peers().Copy() {
-// 			peer.Set(types.PeerStateKey, peerState{1})
-// 		}
-// 	}
+func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
+	config := cfg.TestConfig()
+	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
+	reactors, _ := makeAndConnectReactors(config, 4, nil)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				require.NoError(t, err)
+			}
+		}
+	}()
+	for _, r := range reactors {
+		for _, peer := range r.Switch.Peers().Copy() {
+			peer.Set(types.PeerStateKey, peerState{1})
+		}
+	}
 
-// 	// Disconnect the second reactor from the third reactor.
-// 	pCon1_2 := reactors[1].Switch.Peers().Copy()[1]
-// 	reactors[1].Switch.StopPeerGracefully(pCon1_2)
+	// Disconnect the second reactor from the third reactor.
+	pCon1_2 := reactors[1].Switch.Peers().Copy()[1]
+	reactors[1].Switch.StopPeerGracefully(pCon1_2)
 
-// 	// Add a bunch transactions to the first reactor.
-// 	txs := newUniqueTxs(100)
-// 	tryAddTxs(t, reactors[0], txs)
+	// Add a bunch transactions to the first reactor.
+	txs := newUniqueTxs(100)
+	tryAddTxs(t, reactors[0], txs)
 
-// 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
-// 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-// 	checkTxsInOrder(t, txs, reactors[1], 0)
-// 	for _, r := range reactors[2:] {
-// 		require.Zero(t, r.mempool.Size())
-// 	}
+	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
+	// receive any tx. (The second reactor only sends transactions to the first reactor.)
+	checkTxsInOrder(t, txs, reactors[1], 0)
+	for _, r := range reactors[2:] {
+		require.Zero(t, r.mempool.Size())
+	}
 
-// 	// Disconnect the second reactor from the first reactor.
-// 	pCon0_1 := reactors[0].Switch.Peers().Copy()[0]
-// 	reactors[0].Switch.StopPeerGracefully(pCon0_1)
+	// Disconnect the second reactor from the first reactor.
+	pCon0_1 := reactors[0].Switch.Peers().Copy()[0]
+	reactors[0].Switch.StopPeerGracefully(pCon0_1)
 
-// 	// Now the third reactor should start receiving transactions from the first reactor and
-// 	// the fourth reactor from the second
-// 	checkTxsInOrder(t, txs, reactors[2], 0)
-// 	checkTxsInOrder(t, txs, reactors[3], 0)
-// }
+	// Now the third reactor should start receiving transactions from the first reactor and
+	// the fourth reactor from the second
+	checkTxsInOrder(t, txs, reactors[2], 0)
+	checkTxsInOrder(t, txs, reactors[3], 0)
+}
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
 // transactions (only non-persistent peers) on a star shaped network.
@@ -446,7 +446,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
-	reactors, _ := makeAndConnectReactorsStar(config, 0, 4)
+	reactors, _ := makeAndConnectReactorsStar(config, 0, 4, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -488,8 +488,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
-func mempoolLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
+func mempoolLogger(level string) *log.Logger {
+	logger := log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
@@ -497,12 +497,23 @@ func mempoolLogger() log.Logger {
 		}
 		return term.FgBgColor{}
 	})
+
+	// Customize log level
+	option, err := log.AllowLevel(level)
+	if err != nil {
+		panic(err)
+	}
+	logger = log.NewFilter(logger, option)
+
+	return &logger
 }
 
-// connect N mempool reactors through N switches.
-func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switch) {
+// makeReactors creates n mempool reactors.
+func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
+	if logger == nil {
+		logger = mempoolLogger("debug")
+	}
 	reactors := make([]*Reactor, n)
-	logger := mempoolLogger()
 	for i := 0; i < n; i++ {
 		app := kvstore.NewInMemoryApplication()
 		cc := proxy.NewLocalClientCreator(app)
@@ -510,34 +521,33 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		defer cleanup()
 
 		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
-		reactors[i].SetLogger(logger.With("validator", i))
+		reactors[i].SetLogger((*logger).With("validator", i))
 	}
+	return reactors
+}
 
-	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
+// connectReactors connects the list of N reactors through N switches.
+func connectReactors(config *cfg.Config, reactors []*Reactor, connect func([]*p2p.Switch, int, int)) []*p2p.Switch {
+	switches := p2p.MakeSwitches(config.P2P, len(reactors), func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
-	}, p2p.Connect2Switches)
+	})
+	for _, s := range switches {
+		s.SetLogger(log.NewNopLogger())
+	}
+	return p2p.StartAndConnectSwitches(switches, connect)
+}
+
+func makeAndConnectReactors(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n, logger)
+	switches := connectReactors(config, reactors, p2p.Connect2Switches)
 	return reactors, switches
 }
 
 // connect N mempool reactors through N switches as a star centered in c.
-func makeAndConnectReactorsStar(config *cfg.Config, c, n int) ([]*Reactor, []*p2p.Switch) {
-	reactors := make([]*Reactor, n)
-	logger := mempoolLogger()
-	for i := 0; i < n; i++ {
-		app := kvstore.NewInMemoryApplication()
-		cc := proxy.NewLocalClientCreator(app)
-		mempool, cleanup := newMempoolWithApp(cc)
-		defer cleanup()
-
-		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
-		reactors[i].SetLogger(logger.With("validator", i))
-	}
-
-	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
-		s.AddReactor("MEMPOOL", reactors[i])
-		return s
-	}, p2p.ConnectStarSwitches(c))
+func makeAndConnectReactorsStar(config *cfg.Config, c, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n, logger)
+	switches := connectReactors(config, reactors, p2p.ConnectStarSwitches(c))
 	return reactors, switches
 }
 
@@ -585,14 +595,14 @@ func waitForNumTxsInMempool(numTxs int, mempool Mempool) {
 
 // Wait until all txs are in the mempool and check that the number of txs in the
 // mempool is as expected.
-// func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
-// 	t.Helper()
-// 	waitForNumTxsInMempool(len(txs), reactor.mempool)
+func checkTxsInMempool(t *testing.T, txs types.Txs, reactor *Reactor, _ int) {
+	t.Helper()
+	waitForNumTxsInMempool(len(txs), reactor.mempool)
 
-// 	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
-// 	require.Len(t, txs, len(reapedTxs))
-// 	require.Len(t, txs, reactor.mempool.Size())
-// }
+	reapedTxs := reactor.mempool.ReapMaxTxs(len(txs))
+	require.Len(t, txs, len(reapedTxs))
+	require.Len(t, txs, reactor.mempool.Size())
+}
 
 // Wait until all txs are in the mempool and check that they are in the same
 // order as given.

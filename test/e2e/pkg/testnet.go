@@ -484,6 +484,11 @@ func (t Testnet) Validate() error {
 			len(t.LaneWeights), len(t.LanePriorities),
 		)
 	}
+	for _, w := range t.LaneWeights {
+		if w <= 0 {
+			return fmt.Errorf("weight must be greater than 0: %v", w)
+		}
+	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)

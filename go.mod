@@ -64,7 +64,10 @@ require (
 	github.com/opencontainers/runc v1.2.0-rc.2 // indirect
 )
 
-replace github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240821083708-b13f967d7d05
+replace (
+	github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240821083708-b13f967d7d05
+	github.com/syndtr/goleveldb => github.com/informalsystems/goleveldb v0.0.0-20240822131052-81f30a6271b5
+)
 
 require (
 	dario.cat/mergo v1.0.1 // indirect

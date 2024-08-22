@@ -149,14 +149,14 @@ func DefaultConfig(dir string) *Config {
 	}
 }
 
-// LaneDefinitions returns the (constant) values of lanes and their priorities.
+// LaneDefinitions returns the (constant) list of lanes and their priorities.
 func LaneDefinitions() (map[string]uint32, []uint32) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
 	lanes := map[string]uint32{
-		"foo":       1, // lane 1
-		"bar":       4, // lane 2
-		defaultLane: 9, // default lane
+		"foo":       9,
+		"bar":       4,
+		defaultLane: 1,
 	}
 
 	// List of lane priorities

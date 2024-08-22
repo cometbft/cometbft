@@ -184,7 +184,7 @@ func (sl *SignerListenerEndpoint) serviceLoop() {
 			// On start, listen timeouts can queue a duplicate connect request to queue
 			// while the first request connects.  Drop duplicate request.
 			if sl.IsConnected() {
-				sl.Logger.Error("SignerListener: Connected. Drop Listen Request")
+				sl.Logger.Debug("SignerListener: Connected. Drop Listen Request")
 				continue
 			}
 

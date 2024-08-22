@@ -51,12 +51,8 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20220708102147-0a8a51822cae
 	github.com/vektra/mockery/v2 v2.23.1
-<<<<<<< HEAD
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	golang.org/x/sync v0.5.0
-=======
 	golang.org/x/sync v0.8.0
->>>>>>> 30143c6d9 (build(deps): Bump golang.org/x/crypto from 0.21.0 to 0.26.0 (#3803))
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/protobuf v1.31.0
 )

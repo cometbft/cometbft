@@ -152,7 +152,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-<<<<<<< HEAD
 		Name:                       filepath.Base(dir),
 		File:                       file,
 		Dir:                        dir,
@@ -175,46 +174,15 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
 		UpgradeVersion:             manifest.UpgradeVersion,
 		LogLevel:                   manifest.LogLevel,
+		LogFormat:                  manifest.LogFormat,
 		Prometheus:                 manifest.Prometheus,
 		BlockMaxBytes:              manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
-=======
-		Name:                             filepath.Base(dir),
-		File:                             file,
-		Dir:                              dir,
-		IP:                               ipNet,
-		InitialHeight:                    1,
-		InitialState:                     manifest.InitialState,
-		Validators:                       map[*Node]int64{},
-		ValidatorUpdates:                 map[int64]map[*Node]int64{},
-		Nodes:                            []*Node{},
-		DisablePexReactor:                manifest.DisablePexReactor,
-		KeyType:                          manifest.KeyType,
-		Evidence:                         manifest.Evidence,
-		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
-		LoadTxConnections:                manifest.LoadTxConnections,
-		LoadMaxTxs:                       manifest.LoadMaxTxs,
-		ABCIProtocol:                     manifest.ABCIProtocol,
-		PrepareProposalDelay:             manifest.PrepareProposalDelay,
-		ProcessProposalDelay:             manifest.ProcessProposalDelay,
-		CheckTxDelay:                     manifest.CheckTxDelay,
-		VoteExtensionDelay:               manifest.VoteExtensionDelay,
-		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
-		UpgradeVersion:                   manifest.UpgradeVersion,
-		LogLevel:                         manifest.LogLevel,
-		LogFormat:                        manifest.LogFormat,
-		Prometheus:                       manifest.Prometheus,
-		BlockMaxBytes:                    manifest.BlockMaxBytes,
-		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
-		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
-		VoteExtensionSize:                manifest.VoteExtensionSize,
-		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
->>>>>>> 27872a32a (feat(e2e): add `log_format` to e2e manifest (#3838))
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}
+
 	if len(manifest.KeyType) != 0 {
 		testnet.KeyType = manifest.KeyType
 	}

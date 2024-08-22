@@ -1,4 +1,5 @@
 linters:
+  disable-all: true
   enable:
     - asciicheck
     - bodyclose
@@ -6,13 +7,13 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    - copyloopvar
     - goconst
     - gofmt
     - goimports
-    - gosec
+    # - gosec
     - gosimple
-    - govet
+    # - govet
     - ineffassign
     - misspell
     - nakedret

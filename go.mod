@@ -41,13 +41,8 @@ require (
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.0
-<<<<<<< HEAD
-	github.com/btcsuite/btcd/btcec/v2 v2.3.2
-	github.com/btcsuite/btcd/btcutil v1.1.3
-=======
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/btcutil v1.1.6
->>>>>>> 01ee8c406 (build(crypto/secp256k1): Update `btcec/v2` to v2.3.4 (backport #3728) (#3758))
 	github.com/cometbft/cometbft-db v0.7.0
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/go-git/go-git/v5 v5.11.0

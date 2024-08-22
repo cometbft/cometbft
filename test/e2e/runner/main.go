@@ -1,12 +1,17 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -17,7 +22,11 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
-const randomSeed = 2308084734268
+const (
+	randomSeed            = 2308084734268
+	infraTypeDocker       = "docker"
+	infraTypeDigitalOcean = "digital-ocean"
+)
 
 var logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 
@@ -58,13 +67,13 @@ func NewCLI() *CLI {
 
 			var ifd e2e.InfrastructureData
 			switch inft {
-			case "docker":
+			case infraTypeDocker:
 				var err error
 				ifd, err = e2e.NewDockerInfrastructureData(m)
 				if err != nil {
 					return err
 				}
-			case "digital-ocean":
+			case infraTypeDigitalOcean:
 				p, err := cmd.Flags().GetString("infrastructure-data")
 				if err != nil {
 					return err
@@ -92,14 +101,14 @@ func NewCLI() *CLI {
 
 			cli.testnet = testnet
 			switch inft {
-			case "docker":
+			case infraTypeDocker:
 				cli.infp = &docker.Provider{
 					ProviderData: infra.ProviderData{
 						Testnet:            testnet,
 						InfrastructureData: ifd,
 					},
 				}
-			case "digital-ocean":
+			case infraTypeDigitalOcean:
 				cli.infp = &digitalocean.Provider{
 					ProviderData: infra.ProviderData{
 						Testnet:            testnet,
@@ -171,6 +180,88 @@ func NewCLI() *CLI {
 			if !cli.preserve {
 				if err := Cleanup(cli.testnet); err != nil {
 					return err
+				}
+			} else {
+				// TODO: Refactor and move this logic somewhere
+				// Only execute this when running a Docker provider
+				infraType, err := cmd.Flags().GetString("infrastructure-type")
+				if err != nil {
+					return err
+				}
+				if strings.ToLower(infraType) == infraTypeDocker {
+					logger.Info("saving e2e network execution information")
+					// Fetch and save the execution logs
+					now := time.Now()
+					timestamp := now.Format("20060102_150405")
+					executionFolder := filepath.Join("networks_executions", cli.testnet.Name, timestamp)
+					logFolder := filepath.Join(executionFolder, "logs")
+					if err := os.MkdirAll(logFolder, 0o755); err != nil {
+						logger.Error("error creating executions folder", "err", err.Error())
+						return err
+					}
+					for _, node := range cli.testnet.Nodes {
+						// Pause the container to capture the logs
+						_, err := docker.ExecComposeOutput(context.Background(), cli.testnet.Dir, "pause", node.Name)
+						if err != nil {
+							logger.Error("error pausing container", "node", node.Name, "err", err.Error())
+							return err
+						}
+						logger.Info("paused container to retrieve logs", "node", node.Name)
+
+						// Get the logs from the Docker container
+						data, err := docker.ExecComposeOutput(context.Background(), cli.testnet.Dir, "logs", node.Name)
+						if err != nil {
+							logger.Error("error getting logs from container", "node", node.Name, "err", err.Error())
+							return err
+						}
+						logger.Info("retrieved logs from container", "node", node.Name)
+
+						// Create a file to write the processed lines
+						logFile := filepath.Join(logFolder, node.Name+".log")
+						outputFile, err := os.Create(logFile)
+						if err != nil {
+							logger.Error("error creating log file", "file", logFile, "err", err.Error())
+							return err
+						}
+						defer outputFile.Close()
+
+						// Create a buffered writer for efficient writing
+						writer := bufio.NewWriter(outputFile)
+
+						// Create a new Scanner to read the data line by line
+						scanner := bufio.NewScanner(bytes.NewReader(data))
+
+						// Iterate over each line
+						for scanner.Scan() {
+							// Get the current line
+							line := scanner.Text()
+							// Split the log line by the first occurrence of '|'
+							parts := strings.SplitN(line, "|", 2)
+							// Check if the split was successful and there are at least two parts
+							if len(parts) == 2 {
+								strippedLine := strings.TrimSpace(parts[1])
+								// Write the stripped line to the file
+								_, err := writer.WriteString(strippedLine + "\n")
+								if err != nil {
+									logger.Error("error writing to log file", "file", logFile, "err", err.Error())
+									return err
+								}
+							}
+						}
+
+						if err := scanner.Err(); err != nil {
+							logger.Error("error scanning log file", "file", logFile, "err", err.Error())
+							return err
+						}
+
+						err = writer.Flush()
+						if err != nil {
+							logger.Error("error flushing log file", "file", logFile, "err", err.Error())
+							return err
+						}
+					}
+
+					logger.Info("finished saving execution information", "path", executionFolder)
 				}
 			}
 			return nil
@@ -292,7 +383,7 @@ func NewCLI() *CLI {
 			splitLogs, _ = cmd.Flags().GetBool("split")
 			if splitLogs {
 				for _, node := range cli.testnet.Nodes {
-					fmt.Println("Log for", node.Name)
+					logger.Info("log for ", node.Name)
 					err := docker.ExecComposeVerbose(context.Background(), cli.testnet.Dir, "logs", node.Name)
 					if err != nil {
 						return err

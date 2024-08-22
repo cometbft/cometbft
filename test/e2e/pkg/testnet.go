@@ -95,6 +95,7 @@ type Testnet struct {
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
 	LogLevel                                             string
+	LogFormat                                            string
 	Prometheus                                           bool
 	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
@@ -161,6 +162,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
+<<<<<<< HEAD
 		Name:                             filepath.Base(dir),
 		File:                             file,
 		Dir:                              dir,
@@ -188,6 +190,35 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
 		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
+=======
+		Name:                       filepath.Base(dir),
+		File:                       file,
+		Dir:                        dir,
+		IP:                         ipNet,
+		InitialHeight:              1,
+		InitialState:               manifest.InitialState,
+		Validators:                 map[*Node]int64{},
+		ValidatorUpdates:           map[int64]map[*Node]int64{},
+		Nodes:                      []*Node{},
+		Evidence:                   manifest.Evidence,
+		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
+		LoadTxBatchSize:            manifest.LoadTxBatchSize,
+		LoadTxConnections:          manifest.LoadTxConnections,
+		LoadMaxTxs:                 manifest.LoadMaxTxs,
+		ABCIProtocol:               manifest.ABCIProtocol,
+		PrepareProposalDelay:       manifest.PrepareProposalDelay,
+		ProcessProposalDelay:       manifest.ProcessProposalDelay,
+		CheckTxDelay:               manifest.CheckTxDelay,
+		VoteExtensionDelay:         manifest.VoteExtensionDelay,
+		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
+		UpgradeVersion:             manifest.UpgradeVersion,
+		LogLevel:                   manifest.LogLevel,
+		LogFormat:                  manifest.LogFormat,
+		Prometheus:                 manifest.Prometheus,
+		BlockMaxBytes:              manifest.BlockMaxBytes,
+		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
+		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
+>>>>>>> 12fa0fa13 (feat(e2e): add `log_format` to e2e manifest (backport #3838) (#3842))
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
 		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
 	}

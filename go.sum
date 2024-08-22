@@ -79,8 +79,8 @@ github.com/cometbft/cometbft-db v0.9.4 h1:diDOoT2Go1Zho9vtqAasYRILxQiDFL+p/e9Eo9
 github.com/cometbft/cometbft-db v0.9.4/go.mod h1:pNbuUhHPuMaM7/FUJUxLic1GrFq+vzazifH8+0Jot10=
 github.com/cometbft/cometbft-load-test v0.2.0 h1:jVtM9KZXEXK0RNam7W87RcmwTsxV0BqU1zM2AB4wvuw=
 github.com/cometbft/cometbft-load-test v0.2.0/go.mod h1:etJ6rx3s0WmbkawqFQbORj5DulwF2V8VHl+Pa3o1DSU=
-github.com/containerd/continuity v0.4.3 h1:6HVkalIp+2u1ZLH1J/pYX2oBVXlJZvh1X1A7bEZ9Su8=
-github.com/containerd/continuity v0.4.3/go.mod h1:F6PTNCKepoxEaXLQp3wDAjygEnImnZ/7o4JzpodfroQ=
+github.com/containerd/continuity v0.3.0 h1:nisirsYROK15TAMVukJOUyGJjz4BNQJBVsNvAXZJ/eg=
+github.com/containerd/continuity v0.3.0/go.mod h1:wJEAIwKOm/pBZuBd0JmeTvnLquTB1Ag8espWhkykbPM=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=
 github.com/coreos/go-etcd v2.0.0+incompatible/go.mod h1:Jez6KQU2B/sWsbdaef3ED8NzMklzPG4d5KIOhIy30Tk=
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=

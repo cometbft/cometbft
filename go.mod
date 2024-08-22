@@ -59,7 +59,10 @@ require (
 
 // Force adlio/schema to use the newer version of runc.
 // TODO: Remove once adlio/schema is updated.
-require github.com/opencontainers/runc v1.2.0-rc.2 // indirect
+require (
+	github.com/containerd/continuity v0.3.0 // indirect
+	github.com/opencontainers/runc v1.2.0-rc.2 // indirect
+)
 
 replace github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240821083708-b13f967d7d05
 
@@ -74,7 +77,6 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.3.9 // indirect
-	github.com/containerd/continuity v0.4.3 // indirect
 	github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d // indirect
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect

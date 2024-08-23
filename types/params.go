@@ -25,9 +25,12 @@ const (
 	// MaxBlockPartsCount is the maximum number of block parts.
 	MaxBlockPartsCount = (MaxBlockSizeBytes / BlockPartSizeBytes) + 1
 
-	ABCIPubKeyTypeEd25519   = ed25519.KeyType
 	ABCIPubKeyTypeSecp256k1 = secp256k1.KeyType
 	ABCIPubKeyTypeBls12381  = bls12381.KeyType
+)
+
+var (
+	ABCIPubKeyTypeEd25519 = ed25519.KeyType
 )
 
 var ABCIPubKeyTypesToNames = map[string]string{

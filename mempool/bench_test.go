@@ -5,7 +5,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -147,47 +146,34 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 
 // Test adding transactions while a concurrent routine reaps txs and updates the mempool, simulating
 // the consensus module, when using an async ABCI client.
-func BenchmarkMempoolConcurrentCheckTxAndUpdate(b *testing.B) {
-	// mp, cleanup := newMempoolWithAsyncConnection(t)
-	// defer cleanup()
-
-	maxHeight := 1000
-
-	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
-	app := kvstore.NewInMemoryApplication()
-
-	// Start server
-	server := abciserver.NewSocketServer(sockPath, app)
-	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
-	if err := server.Start(); err != nil {
-		b.Fatalf("Error starting socket server: %v", err.Error())
-	}
-
-	b.Cleanup(func() {
-		if err := server.Stop(); err != nil {
-			b.Error(err)
-		}
-	})
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
+func BenchmarkUpdateWithConcurrentCheckTx(b *testing.B) {
+	mp, cleanup := newMempoolWithAsyncConnection(b)
 	defer cleanup()
 
-	var wg sync.WaitGroup
+	numTxs := 1000
+	maxHeight := 1000
+	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	// A process that continuously reaps and update the mempool, simulating creation and committing
+	// Add some txs to mempool.
+	for i := 1; i <= numTxs; i++ {
+		rr, err := mp.CheckTx(kvstore.NewTxFromID(i), "")
+		require.NoError(b, err)
+		rr.Wait()
+	}
+
+	// A process that continuously reaps and updates the mempool, simulating creation and committing
 	// of blocks by the consensus module.
 	go func() {
 		defer wg.Done()
 
 		b.ResetTimer()
-		time.Sleep(50 * time.Millisecond) // wait a bit to have some txs in mempool before starting updating
 		for h := 1; h <= maxHeight; h++ {
 			if mp.Size() == 0 {
 				break
 			}
 			b.StartTimer()
-			txs := mp.ReapMaxBytesMaxGas(100, -1)
+			txs := mp.ReapMaxBytesMaxGas(1000, -1)
 			mp.PreUpdate()
 			mp.Lock()
 			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
@@ -195,13 +181,13 @@ func BenchmarkMempoolConcurrentCheckTxAndUpdate(b *testing.B) {
 			err = mp.Update(int64(h), txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
 			require.NoError(b, err)
 			mp.Unlock()
-			b.StartTimer()
+			b.StopTimer()
 		}
 	}()
 
-	// Concurrently, add transactions (one per height).
-	for h := 1; h <= maxHeight; h++ {
-		_, err := mp.CheckTx(kvstore.NewTxFromID(h), "")
+	// Concurrently, add more transactions.
+	for i := numTxs + 1; i <= numTxs; i++ {
+		_, err := mp.CheckTx(kvstore.NewTxFromID(i), "")
 		require.NoError(b, err)
 	}
 

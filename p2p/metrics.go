@@ -28,8 +28,6 @@ type Metrics struct {
 	Peers metrics.Gauge
 	// Pending bytes to be sent to a given peer.
 	PeerPendingSendBytes metrics.Gauge `metrics_labels:"peer_id"`
-	// Number of transactions submitted by each peer.
-	NumTxs metrics.Gauge `metrics_labels:"peer_id"`
 	// Number of bytes of each message type received.
 	MessageReceiveBytesTotal metrics.Counter `metrics_labels:"message_type"`
 	// Number of bytes of each message type sent.

@@ -112,7 +112,6 @@ type Testnet struct {
 	PbtsEnableHeight                                     int64
 	PbtsUpdateHeight                                     int64
 	LanePriorities                                       []uint32
-	LanePrioritiesIndex                                  int
 }
 
 // Node represents a CometBFT node in a testnet.

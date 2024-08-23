@@ -146,7 +146,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 
 		protoTxs := msg.GetTxs()
 		if len(protoTxs) == 0 {
-			memR.Logger.Error("received empty txs from peer", "src", e.Src)
+			memR.Logger.Error("Received empty Txs message from peer", "src", e.Src)
 			return
 		}
 
@@ -160,7 +160,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 			}
 		}
 	default:
-		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
 		return
 	}
@@ -169,7 +169,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 }
 
 func (memR *Reactor) EnableInOutTxs() {
-	memR.Logger.Info("enabling inbound and outbound transactions")
+	memR.Logger.Info("Enabling inbound and outbound transactions")
 	if !memR.waitSync.CompareAndSwap(true, false) {
 		return
 	}

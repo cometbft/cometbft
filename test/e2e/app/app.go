@@ -332,7 +332,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 func extractLane(value string) uint32 {
 	valueBytes, err := hex.DecodeString(value)
 	if err != nil {
-		return 0
+		panic("could not hex-decode tx value for extracting lane")
 	}
 	p := &payload.Payload{}
 	err = proto.Unmarshal(valueBytes, p)

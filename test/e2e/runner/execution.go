@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,8 +19,8 @@ func Save(testnet *e2e.Testnet) error {
 	// Fetch and save the execution logs
 	now := time.Now()
 	timestamp := now.Format("20060102_150405")
-	logFolder := filepath.Join("networks_executions", testnet.Name, timestamp)
-	if err := os.MkdirAll(logFolder, 0o755); err != nil {
+	executionFolder := filepath.Join("networks_executions", testnet.Name, timestamp)
+	if err := os.MkdirAll(executionFolder, 0o755); err != nil {
 		logger.Error("error saving execution", "msg", "error creating executions folder", "err", err.Error())
 		return err
 	}
@@ -39,7 +40,7 @@ func Save(testnet *e2e.Testnet) error {
 		}
 
 		// Create a file to write the processed lines
-		nodeFolder := filepath.Join(logFolder, node.Name)
+		nodeFolder := filepath.Join(executionFolder, node.Name)
 		if err := os.MkdirAll(nodeFolder, 0o755); err != nil {
 			logger.Error("error saving execution", "msg", "error creating node folder", "err", err.Error())
 			return err
@@ -87,9 +88,39 @@ func Save(testnet *e2e.Testnet) error {
 			logger.Error("error saving execution", "msg", "error flushing log file", "file", logFile, "err", err.Error())
 			return err
 		}
+
+		// Save manifest file
+		if err := copyFile(testnet.File, executionFolder); err != nil {
+			logger.Error("error saving execution", "msg", "error copying manifest file", "file", testnet.File, "err", err.Error())
+			return err
+		}
 	}
 
-	logger.Info("saved execution", "msg", "finished saving execution information", "path", logFolder)
+	logger.Info("saved execution", "msg", "finished saving execution information", "path", executionFolder)
 
+	return nil
+}
+
+// copyFile copies a file from a source to a destination location.
+func copyFile(source string, dest string) error {
+	sourceFile, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	// Create the destination file
+	manifestFile := filepath.Join(dest, "manifest.toml")
+	destFile, err := os.Create(manifestFile)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	// Copy the content from source file to destination file
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }

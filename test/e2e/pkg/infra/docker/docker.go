@@ -12,6 +12,8 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
+const ProviderName = "docker"
+
 var _ infra.Provider = (*Provider)(nil)
 
 // Provider implements a docker-compose backed infrastructure provider.

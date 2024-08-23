@@ -274,7 +274,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 				memTx := elem.Value.(*mempoolTx)
 				if found := memTx.addSender(sender); found {
 					// It should not be possible to receive twice a tx from the same sender.
-					mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", sender)
+					mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
 				}
 			}
 		}
@@ -336,25 +336,6 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			return
 		}
 
-<<<<<<< HEAD
-=======
-		// Check that tx is not already in the mempool. This can happen when the
-		// cache overflows. See https://github.com/cometbft/cometbft/pull/890.
-		txKey := tx.Key()
-		if mem.Contains(txKey) {
-			if err := mem.addSender(txKey, sender); err != nil {
-				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
-			}
-			mem.logger.Debug(
-				"Transaction already in mempool, not adding it again",
-				"tx", tx.Hash(),
-				"height", mem.height.Load(),
-				"total", mem.Size(),
-			)
-			return
-		}
-
->>>>>>> 2def4c74e (fix(mempool): Log tx hashes as hex instead of bytes (#3837))
 		// Add tx to mempool and notify that new txs are available.
 		memTx := mempoolTx{
 			height:    mem.height.Load(),
@@ -384,12 +365,12 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 			memTx := elem.Value.(*mempoolTx)
 			if found := memTx.addSender(sender); found {
 				// It should not be possible to receive twice a tx from the same sender.
-				mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", sender)
+				mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
 			}
 		}
 
 		mem.logger.Debug(
-			"transaction already in mempool, not adding it again",
+			"Transaction already in mempool, not adding it again",
 			"tx", tx.Hash(),
 			"height", mem.height.Load(),
 			"total", mem.Size(),
@@ -427,13 +408,8 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	elem.DetachPrev()
 	mem.txsMap.Delete(txKey)
 	tx := elem.Value.(*mempoolTx).tx
-<<<<<<< HEAD
 	mem.txsBytes.Add(int64(-len(tx)))
-	mem.logger.Debug("removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
-=======
-	mem.txsBytes -= int64(len(tx))
 	mem.logger.Debug("Removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
->>>>>>> 2def4c74e (fix(mempool): Log tx hashes as hex instead of bytes (#3837))
 	return nil
 }
 

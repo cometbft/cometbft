@@ -40,6 +40,7 @@ type SignerListenerEndpoint struct {
 	pingInterval    time.Duration
 
 	instanceMtx cmtsync.Mutex // Ensures instance public methods access, i.e. SendRequest
+	ivarMtx     cmtsync.Mutex // Ensures instance variable access, i.e. acceptFailCount
 }
 
 // NewSignerListenerEndpoint returns an instance of SignerListenerEndpoint.
@@ -160,12 +161,22 @@ func (sl *SignerListenerEndpoint) acceptNewConnection() (net.Conn, error) {
 	sl.Logger.Info("SignerListener: Listening for new connection")
 	conn, err := sl.listener.Accept()
 	if err != nil {
+		sl.ivarMtx.Lock()
 		sl.acceptFailCount++
+		sl.ivarMtx.Unlock()
 		return nil, err
 	}
 
+	sl.ivarMtx.Lock()
 	sl.acceptFailCount = 0
+	sl.ivarMtx.Unlock()
 	return conn, nil
+}
+
+func (sl *SignerListenerEndpoint) getAcceptFailCount() int {
+	sl.ivarMtx.Lock()
+	defer sl.ivarMtx.Unlock()
+	return sl.acceptFailCount
 }
 
 func (sl *SignerListenerEndpoint) triggerConnect() {
@@ -194,7 +205,7 @@ func (sl *SignerListenerEndpoint) serviceLoop() {
 			// Listen for remote signer
 			conn, err := sl.acceptNewConnection()
 			if err != nil {
-				sl.Logger.Error("SignerListener: Error accepting connection", "err", err, "acceptFailCount", sl.acceptFailCount)
+				sl.Logger.Error("SignerListener: Error accepting connection", "err", err, "acceptFailCount", sl.getAcceptFailCount())
 				sl.triggerConnect()
 				continue
 			}

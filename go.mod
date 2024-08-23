@@ -66,6 +66,8 @@ require (
 
 replace github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240821083708-b13f967d7d05
 
+replace github.com/spf13/afero v1.11.0 => github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e
+
 require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect

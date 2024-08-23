@@ -195,6 +195,7 @@ func (app *Application) assignLane(tx []byte) uint32 {
 		return app.lanes[defaultLane]
 	}
 
+// If the tx is of the form 2=2 we will assign it a lane. For any other type of transaction sent to the kvstore, it will go to the default lane.  
 	keyInt, err := strconv.Atoi(key)
 	if err != nil {
 		return app.lanes[defaultLane]

@@ -167,26 +167,21 @@ func (app *Application) InitChain(_ context.Context, req *types.InitChainRequest
 // - `=` is not the first or last byte.
 // - if key is `val` that the validator update transaction is also valid.
 func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*types.CheckTxResponse, error) {
-	code := CodeTypeOK
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
 		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
-			code = CodeTypeInvalidTxFormat
+			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil //nolint:nilerr // error is not nil but it returns nil
 		}
 	} else if !isValidTx(req.Tx) {
-		code = CodeTypeInvalidTxFormat
+		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 	}
 
 	if !app.useLanes {
-		return &types.CheckTxResponse{Code: code, GasWanted: 1}, nil
+		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
 
-	lane := uint32(0)
-	if code == CodeTypeOK {
-		lane = app.assignLane(req.Tx)
-	}
-
-	return &types.CheckTxResponse{Code: code, GasWanted: 1, Lane: lane}, nil
+	lane := app.assignLane(req.Tx)
+	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 
 // assignLane deterministically computes a lane for the given tx.

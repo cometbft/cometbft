@@ -1325,14 +1325,14 @@ func TestMempoolIteratorNoLanes(t *testing.T) {
 	require.Equal(t, n, counter)
 }
 
-func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
-	t.Helper()
+func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
+	tb.Helper()
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
-	server := newRemoteApp(t, sockPath, app)
-	t.Cleanup(func() {
+	server := newRemoteApp(tb, sockPath, app)
+	tb.Cleanup(func() {
 		if err := server.Stop(); err != nil {
-			t.Error(err)
+			tb.Error(err)
 		}
 	})
 	cfg := test.ResetTestRoot("mempool_test")
@@ -1340,16 +1340,16 @@ func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
 }
 
 // caller must close server.
-func newRemoteApp(t *testing.T, addr string, app abci.Application) service.Service {
-	t.Helper()
+func newRemoteApp(tb testing.TB, addr string, app abci.Application) service.Service {
+	tb.Helper()
 	_, err := abciclient.NewClient(addr, "socket", true)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	// Start server
 	server := abciserver.NewSocketServer(addr, app)
 	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
 	if err := server.Start(); err != nil {
-		t.Fatalf("Error starting socket server: %v", err.Error())
+		tb.Fatalf("Error starting socket server: %v", err.Error())
 	}
 
 	return server

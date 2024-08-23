@@ -88,6 +88,12 @@ type Manifest struct {
 	LoadTxConnections int `toml:"load_tx_connections"`
 	LoadMaxTxs        int `toml:"load_max_txs"`
 
+	// LogLevel specifies the log level to be set on all nodes.
+	LogLevel string `toml:"log_level"`
+
+	// LogFormat specifies the log format to be set on all nodes.
+	LogFormat string `toml:"log_format"`
+
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`

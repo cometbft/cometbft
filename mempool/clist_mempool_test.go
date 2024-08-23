@@ -254,6 +254,36 @@ func TestMempoolFilters(t *testing.T) {
 	}
 }
 
+func TestMempoolAddTxLane(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	for i := 0; i < 100; i++ {
+		tx := kvstore.NewTxFromID(i)
+		rr, err := mp.CheckTx(tx, noSender)
+		require.NoError(t, err)
+		rr.Wait()
+
+		// Check that the lane stored in the mempool entry is the same as the
+		// one assigned by the application.
+		entry := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx)
+		require.Equal(t, kvstoreAssignLane(i), entry.lane, "id %x", tx)
+	}
+}
+
+func kvstoreAssignLane(key int) types.Lane {
+	lane := 3
+	if key%11 == 0 {
+		lane = 7
+	} else if key%3 == 0 {
+		lane = 1
+	}
+	return types.Lane(lane)
+}
+
 func TestMempoolUpdate(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
@@ -1325,14 +1355,14 @@ func TestMempoolIteratorNoLanes(t *testing.T) {
 	require.Equal(t, n, counter)
 }
 
-func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
-	t.Helper()
+func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
+	tb.Helper()
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
-	server := newRemoteApp(t, sockPath, app)
-	t.Cleanup(func() {
+	server := newRemoteApp(tb, sockPath, app)
+	tb.Cleanup(func() {
 		if err := server.Stop(); err != nil {
-			t.Error(err)
+			tb.Error(err)
 		}
 	})
 	cfg := test.ResetTestRoot("mempool_test")
@@ -1340,16 +1370,16 @@ func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
 }
 
 // caller must close server.
-func newRemoteApp(t *testing.T, addr string, app abci.Application) service.Service {
-	t.Helper()
+func newRemoteApp(tb testing.TB, addr string, app abci.Application) service.Service {
+	tb.Helper()
 	_, err := abciclient.NewClient(addr, "socket", true)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	// Start server
 	server := abciserver.NewSocketServer(addr, app)
 	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
 	if err := server.Start(); err != nil {
-		t.Fatalf("Error starting socket server: %v", err.Error())
+		tb.Fatalf("Error starting socket server: %v", err.Error())
 	}
 
 	return server

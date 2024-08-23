@@ -34,9 +34,10 @@ type SignerListenerEndpoint struct {
 	connectRequestCh      chan struct{}
 	connectionAvailableCh chan net.Conn
 
-	timeoutAccept time.Duration
-	pingTimer     *time.Ticker
-	pingInterval  time.Duration
+	timeoutAccept   time.Duration
+	acceptFailCount int
+	pingTimer       *time.Ticker
+	pingInterval    time.Duration
 
 	instanceMtx cmtsync.Mutex // Ensures instance public methods access, i.e. SendRequest
 }
@@ -159,9 +160,11 @@ func (sl *SignerListenerEndpoint) acceptNewConnection() (net.Conn, error) {
 	sl.Logger.Info("SignerListener: Listening for new connection")
 	conn, err := sl.listener.Accept()
 	if err != nil {
+		sl.acceptFailCount++
 		return nil, err
 	}
 
+	sl.acceptFailCount = 0
 	return conn, nil
 }
 
@@ -191,7 +194,7 @@ func (sl *SignerListenerEndpoint) serviceLoop() {
 			// Listen for remote signer
 			conn, err := sl.acceptNewConnection()
 			if err != nil {
-				sl.Logger.Error("SignerListener: Error accepting connection", "err", err)
+				sl.Logger.Error("SignerListener: Error accepting connection", "err", err, "acceptFailCount", sl.acceptFailCount)
 				sl.triggerConnect()
 				continue
 			}

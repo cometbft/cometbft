@@ -57,9 +57,7 @@ func (se *signerEndpoint) WaitConnection(connectionAvailableCh chan net.Conn, ma
 	select {
 	case conn := <-connectionAvailableCh:
 		// Lock only to modify se.conn
-		se.connMtx.Lock()
-		se.conn = conn
-		se.connMtx.Unlock()
+		se.SetConnection(conn)
 	case <-time.After(maxWait): // Do not lock mutex while waiting
 		return ErrConnectionTimeout
 	}

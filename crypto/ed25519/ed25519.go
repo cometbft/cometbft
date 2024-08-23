@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/cometbft/cometbft/crypto/custom/indicator"
+
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519"
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519/extra/cache"
 
@@ -43,21 +45,28 @@ var (
 	cachingVerifier = cache.NewVerifier(cache.NewLRUCache(cacheSize))
 )
 
-const (
+var (
 	PrivKeyName = "tendermint/PrivKeyEd25519"
 	PubKeyName  = "tendermint/PubKeyEd25519"
 	// PubKeySize is the size, in bytes, of public keys as used in this package.
 	PubKeySize = 32
 	// PrivateKeySize is the size, in bytes, of private keys as used in this package.
 	PrivateKeySize = 64
+
+	KeyType = "ed25519"
+
+	customPrivKey       CustomPrivKey
+	customPubKey        CustomPubKey
+	customBatchVerifier CustomBatchVerifier
+)
+
+const (
 	// Size of an Edwards25519 signature. Namely the size of a compressed
 	// Edwards25519 point, and a field element. Both of which are 32 bytes.
 	SignatureSize = 64
 	// SeedSize is the size, in bytes, of private key seeds. These are the
 	// private key representations used by RFC 8032.
 	SeedSize = 32
-
-	KeyType = "ed25519"
 
 	// cacheSize is the number of public keys that will be cached in
 	// an expanded format for repeated signature verification.
@@ -69,8 +78,12 @@ const (
 )
 
 func init() {
-	cmtjson.RegisterType(PubKey{}, PubKeyName)
-	cmtjson.RegisterType(PrivKey{}, PrivKeyName)
+	if !indicator.IsCustomized() {
+		// Original ed25519 implementation for backwards compatibility.
+		cmtjson.RegisterType(PubKey{}, PubKeyName)
+		cmtjson.RegisterType(PrivKey{}, PrivKeyName)
+	}
+	indicator.FinishCustomize()
 }
 
 // PrivKey implements crypto.PrivKey.
@@ -78,6 +91,9 @@ type PrivKey []byte
 
 // Bytes returns the privkey byte format.
 func (privKey PrivKey) Bytes() []byte {
+	if indicator.IsCustomized() {
+		return customPrivKey.With(privKey).Bytes()
+	}
 	return []byte(privKey)
 }
 
@@ -89,6 +105,9 @@ func (privKey PrivKey) Bytes() []byte {
 // If these conditions aren't met, Sign will panic or produce an
 // incorrect signature.
 func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
+	if indicator.IsCustomized() {
+		return customPrivKey.With(privKey).Sign(msg)
+	}
 	signatureBytes := ed25519.Sign(ed25519.PrivateKey(privKey), msg)
 	return signatureBytes, nil
 }
@@ -97,6 +116,9 @@ func (privKey PrivKey) Sign(msg []byte) ([]byte, error) {
 //
 // Panics if the private key is not initialized.
 func (privKey PrivKey) PubKey() crypto.PubKey {
+	if indicator.IsCustomized() {
+		return customPrivKey.With(privKey).PubKey()
+	}
 	// If the latter 32 bytes of the privkey are all zero, privkey is not
 	// initialized.
 	initialized := false
@@ -116,7 +138,10 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	return PubKey(pubkeyBytes)
 }
 
-func (PrivKey) Type() string {
+func (privKey PrivKey) Type() string {
+	if indicator.IsCustomized() {
+		return customPrivKey.With(privKey).Type()
+	}
 	return KeyType
 }
 
@@ -124,6 +149,10 @@ func (PrivKey) Type() string {
 // It uses OS randomness in conjunction with the current global random seed
 // in cometbft/libs/rand to generate the private key.
 func GenPrivKey() PrivKey {
+	if indicator.IsCustomized() {
+		return customPrivKey.GenPrivKey()
+	}
+	// Original ed25519 PubKey implementation.
 	return genPrivKey(crypto.CReader())
 }
 
@@ -142,6 +171,9 @@ func genPrivKey(rand io.Reader) PrivKey {
 // NOTE: secret should be the output of a KDF like bcrypt,
 // if it's derived from user input.
 func GenPrivKeyFromSecret(secret []byte) PrivKey {
+	if indicator.IsCustomized() {
+		return customPrivKey.GenPrivKeyFromSecret(secret)
+	}
 	seed := sha256.Sum256(secret) // Not Ripemd160 because we want 32 bytes.
 
 	return PrivKey(ed25519.NewKeyFromSeed(seed[:]))
@@ -156,6 +188,9 @@ type PubKey []byte
 
 // Address is the SHA256-20 of the raw pubkey bytes.
 func (pubKey PubKey) Address() crypto.Address {
+	if indicator.IsCustomized() {
+		return customPubKey.With(pubKey).Address()
+	}
 	if len(pubKey) != PubKeySize {
 		panic("pubkey is incorrect size")
 	}
@@ -164,10 +199,16 @@ func (pubKey PubKey) Address() crypto.Address {
 
 // Bytes returns the PubKey byte format.
 func (pubKey PubKey) Bytes() []byte {
+	if indicator.IsCustomized() {
+		return customPubKey.With(pubKey).Bytes()
+	}
 	return []byte(pubKey)
 }
 
 func (pubKey PubKey) VerifySignature(msg []byte, sig []byte) bool {
+	if indicator.IsCustomized() {
+		return customPubKey.With(pubKey).VerifySignature(msg, sig)
+	}
 	// make sure we use the same algorithm to sign
 	if len(sig) != SignatureSize {
 		return false
@@ -177,10 +218,16 @@ func (pubKey PubKey) VerifySignature(msg []byte, sig []byte) bool {
 }
 
 func (pubKey PubKey) String() string {
+	if indicator.IsCustomized() {
+		customPubKey.With(pubKey).String()
+	}
 	return fmt.Sprintf("PubKeyEd25519{%X}", []byte(pubKey))
 }
 
-func (PubKey) Type() string {
+func (pubKey PubKey) Type() string {
+	if indicator.IsCustomized() {
+		return customPubKey.With(pubKey).Type()
+	}
 	return KeyType
 }
 
@@ -192,10 +239,16 @@ type BatchVerifier struct {
 }
 
 func NewBatchVerifier() crypto.BatchVerifier {
+	if indicator.IsCustomized() {
+		return customBatchVerifier
+	}
 	return &BatchVerifier{ed25519.NewBatchVerifier()}
 }
 
-func (b *BatchVerifier) Add(key crypto.PubKey, msg, signature []byte) error {
+func (b BatchVerifier) Add(key crypto.PubKey, msg, signature []byte) error {
+	if indicator.IsCustomized() {
+		return customBatchVerifier.With(b).Add(key, msg, signature)
+	}
 	pkEd, ok := key.(PubKey)
 	if !ok {
 		return ErrNotEd25519Key
@@ -217,6 +270,9 @@ func (b *BatchVerifier) Add(key crypto.PubKey, msg, signature []byte) error {
 	return nil
 }
 
-func (b *BatchVerifier) Verify() (bool, []bool) {
+func (b BatchVerifier) Verify() (bool, []bool) {
+	if indicator.IsCustomized() {
+		return customBatchVerifier.With(b).Verify()
+	}
 	return b.BatchVerifier.Verify(crypto.CReader())
 }

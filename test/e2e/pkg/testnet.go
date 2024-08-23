@@ -683,7 +683,7 @@ func weightedRandomIndex(weights []uint) int {
 
 	// Return i when the random number falls in the i'th bucket.
 	cursor := uint(0)
-	i, w := range weights {
+	for i, w := range weights {
 		cursor += w
 		if int32(cursor) >= r {
 			return i

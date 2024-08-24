@@ -29,6 +29,8 @@ var options = ed25519.CustomOptions{
 	PubKeySize:     PubKeySize,
 }
 
+var cache []cacheItem
+
 type MySecpPrivKey []byte
 
 func (MySecpPrivKey) Bytes() []byte {
@@ -127,7 +129,6 @@ func (MySecpPubKey) String() string {
 type MySecpBatchVerifier struct {
 	// The secp256p1 library used does not have a batch verifier, so we improvise.
 	ed25519.BatchVerifier
-	cache *[]cacheItem
 }
 
 type cacheItem struct {
@@ -136,18 +137,16 @@ type cacheItem struct {
 	signature []byte
 }
 
-func (v MySecpBatchVerifier) Add(key crypto.PubKey, message, signature []byte) error {
-	if v.cache == nil {
-		v.cache = &[]cacheItem{}
-	}
-	*v.cache = append(*v.cache, cacheItem{key, message, signature})
+func (MySecpBatchVerifier) Add(key crypto.PubKey, message, signature []byte) error {
+	c := cacheItem{key, message, signature}
+	cache = append(cache, c)
 	return nil
 }
 
-func (v MySecpBatchVerifier) Verify() (bool, []bool) {
-	results := make([]bool, len(*v.cache))
+func (MySecpBatchVerifier) Verify() (bool, []bool) {
+	results := make([]bool, len(cache))
 	finalresult := true
-	for index, item := range *v.cache {
+	for index, item := range cache {
 		results[index] = item.pubKey.VerifySignature(item.message, item.signature)
 		if !results[index] {
 			finalresult = false
@@ -156,9 +155,8 @@ func (v MySecpBatchVerifier) Verify() (bool, []bool) {
 	return finalresult, results
 }
 
-func (v MySecpBatchVerifier) With(batchVerifier ed25519.BatchVerifier) ed25519.CustomBatchVerifier {
+func (MySecpBatchVerifier) With(batchVerifier ed25519.BatchVerifier) ed25519.CustomBatchVerifier {
 	return MySecpBatchVerifier{
 		BatchVerifier: batchVerifier,
-		cache:         v.cache,
 	}
 }

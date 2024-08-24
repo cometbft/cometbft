@@ -7,6 +7,7 @@ import (
 
 	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
+
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 )
@@ -30,7 +31,7 @@ var options = ed25519.CustomOptions{
 
 type MySecpPrivKey []byte
 
-func (p MySecpPrivKey) Bytes() []byte {
+func (MySecpPrivKey) Bytes() []byte {
 	panic("implement me")
 }
 
@@ -49,7 +50,7 @@ func (p MySecpPrivKey) PubKey() crypto.PubKey {
 	return MySecpPubKey(pk)
 }
 
-func (p MySecpPrivKey) Type() string {
+func (MySecpPrivKey) Type() string {
 	return "mysecpprivkey"
 }
 
@@ -58,7 +59,7 @@ func (p *MySecpPrivKey) With(privKey ed25519.PrivKey) ed25519.CustomPrivKey {
 	return p
 }
 
-func (p MySecpPrivKey) GenPrivKey() ed25519.PrivKey {
+func (MySecpPrivKey) GenPrivKey() ed25519.PrivKey {
 	var privKeyBytes [PrivateKeySize]byte
 	d := new(big.Int)
 
@@ -80,13 +81,13 @@ func (p MySecpPrivKey) GenPrivKey() ed25519.PrivKey {
 	return privKeyBytes[:]
 }
 
-func (p MySecpPrivKey) GenPrivKeyFromSecret(secret []byte) ed25519.PrivKey {
+func (MySecpPrivKey) GenPrivKeyFromSecret(_ []byte) ed25519.PrivKey {
 	panic("implement me")
 }
 
 type MySecpPubKey []byte
 
-func (p MySecpPubKey) Address() crypto.Address {
+func (MySecpPubKey) Address() crypto.Address {
 	panic("implement me")
 }
 
@@ -111,52 +112,44 @@ func (p MySecpPubKey) VerifySignature(msg []byte, sigStr []byte) bool {
 	return signature.Verify(sum[:], pub)
 }
 
-func (p MySecpPubKey) Type() string {
+func (MySecpPubKey) Type() string {
 	panic("implement me")
 }
 
-func (p MySecpPubKey) With(pubKey ed25519.PubKey) ed25519.CustomPubKey {
+func (MySecpPubKey) With(_ ed25519.PubKey) ed25519.CustomPubKey {
 	panic("implement me")
 }
 
-func (p MySecpPubKey) String() string {
+func (MySecpPubKey) String() string {
 	panic("implement me")
 }
 
 type MySecpBatchVerifier struct {
 	// The secp256p1 library used does not have a batch verifier, so we improvise.
 	ed25519.BatchVerifier
-	initialized bool
-	cache       []struct {
-		pubKey    crypto.PubKey
-		message   []byte
-		signature []byte
-	}
+	cache *[]cacheItem
+}
+
+type cacheItem struct {
+	pubKey    crypto.PubKey
+	message   []byte
+	signature []byte
 }
 
 func (v MySecpBatchVerifier) Add(key crypto.PubKey, message, signature []byte) error {
-	if !v.initialized {
-		v.cache = []struct {
-			pubKey    crypto.PubKey
-			message   []byte
-			signature []byte
-		}{}
-		v.initialized = true
+	if v.cache == nil {
+		v.cache = &[]cacheItem{}
 	}
-	v.cache = append(v.cache, struct {
-		pubKey    crypto.PubKey
-		message   []byte
-		signature []byte
-	}{key, message, signature})
+	*v.cache = append(*v.cache, cacheItem{key, message, signature})
 	return nil
 }
 
 func (v MySecpBatchVerifier) Verify() (bool, []bool) {
-	results := make([]bool, len(v.cache))
+	results := make([]bool, len(*v.cache))
 	finalresult := true
-	for index, item := range v.cache {
+	for index, item := range *v.cache {
 		results[index] = item.pubKey.VerifySignature(item.message, item.signature)
-		if results[index] == false {
+		if !results[index] {
 			finalresult = false
 		}
 	}
@@ -166,7 +159,6 @@ func (v MySecpBatchVerifier) Verify() (bool, []bool) {
 func (v MySecpBatchVerifier) With(batchVerifier ed25519.BatchVerifier) ed25519.CustomBatchVerifier {
 	return MySecpBatchVerifier{
 		BatchVerifier: batchVerifier,
-		initialized:   v.initialized,
 		cache:         v.cache,
 	}
 }

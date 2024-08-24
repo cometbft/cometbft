@@ -4,19 +4,20 @@ import (
 	"crypto/sha256"
 	"encoding/asn1"
 	"encoding/base64"
-	"fmt"
+	"encoding/hex"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cometbft/cometbft/crypto"
 	_ "github.com/cometbft/cometbft/crypto/custom" // This ensures that RegisterCustomCrypto works.
+
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 )
 
-// Register custom crypto library
+// Register custom crypto library.
 func TestMain(m *testing.M) {
 	var myPrivKey MySecpPrivKey
 	var myPubKey MySecpPubKey
@@ -119,7 +120,7 @@ func TestProveCustomSecpCorrect(t *testing.T) {
 	require.NoError(t, err)
 
 	// We know that a deterministic signature of a hash of "Hello world" is this number.
-	assert.Equal(t, fmt.Sprintf("%x", myasnsignature), "3045022100bb63db53cb56989640dedd91bab680f8a57658b837e45381687a42e637fb81d4022075ca72b968d2ca04499423a0746d51e76e2b7a72b8a36acb3780b1ae71fa18b1")
+	assert.Equal(t, hex.EncodeToString(myasnsignature), "3045022100bb63db53cb56989640dedd91bab680f8a57658b837e45381687a42e637fb81d4022075ca72b968d2ca04499423a0746d51e76e2b7a72b8a36acb3780b1ae71fa18b1")
 
 	// Test signature using OpenSSL:
 	// ```

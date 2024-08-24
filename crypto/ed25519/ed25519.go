@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/cometbft/cometbft/crypto/custom/indicator"
-
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519"
 	"github.com/oasisprotocol/curve25519-voi/primitives/ed25519/extra/cache"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/custom/indicator"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 )
@@ -219,7 +218,7 @@ func (pubKey PubKey) VerifySignature(msg []byte, sig []byte) bool {
 
 func (pubKey PubKey) String() string {
 	if indicator.IsCustomized() {
-		customPubKey.With(pubKey).String()
+		return customPubKey.With(pubKey).String()
 	}
 	return fmt.Sprintf("PubKeyEd25519{%X}", []byte(pubKey))
 }

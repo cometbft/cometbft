@@ -20,12 +20,11 @@ func IsCustomized() bool {
 // This allows a modular crypto implementation without changing the current ed25519 implementation.
 // This function panics when called more than once or after the initialization (Golang `init`) of the ed25519 library.
 func SetCustomized() {
-	if !once {
-		customized = true
-		once = true
-	} else {
+	if once {
 		panic("cannot create custom crypto library after initialization")
 	}
+	customized = true
+	once = true
 }
 
 // FinishCustomize locks the customization flag and forbids changing it. It ensures that the flag is only changed up to

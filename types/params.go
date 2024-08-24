@@ -29,9 +29,7 @@ const (
 	ABCIPubKeyTypeBls12381  = bls12381.KeyType
 )
 
-var (
-	ABCIPubKeyTypeEd25519 = ed25519.KeyType
-)
+var ABCIPubKeyTypeEd25519 = ed25519.KeyType
 
 var ABCIPubKeyTypesToNames = map[string]string{
 	ABCIPubKeyTypeEd25519:   ed25519.PubKeyName,

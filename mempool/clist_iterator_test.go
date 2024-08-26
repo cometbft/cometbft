@@ -5,7 +5,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -125,36 +124,28 @@ func TestIteratorRace(t *testing.T) {
 	// Disable rechecking to make sure the recheck logic is not interferint.
 	mp.config.Recheck = false
 
-	numLanes := 3
-	n := int64(100) // Number of transactions
+	const numLanes = 3
+	const numTxs = 100
 
 	var wg sync.WaitGroup
-
 	wg.Add(2)
+
 	var counter atomic.Int64
 	go func() {
-		// Wait for at least some transactions to get into the mempool
-		for mp.Size() < int(n) {
-			time.Sleep(time.Second)
-		}
+		waitForNumTxsInMempool(numTxs, mp)
 		fmt.Println("mempool height ", mp.height.Load())
 
 		go func() {
 			defer wg.Done()
 
-			for counter.Load() < n {
+			for counter.Load() < int64(numTxs) {
 				iter := mp.NewBlockingWRRIterator()
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
 				}
 				tx := entry.Tx()
-
-				txs := []types.Tx{tx}
-
-				resp := abciResponses(1, 0)
-				err := mp.Update(1, txs, resp, nil, nil)
-
+				err := mp.Update(1, []types.Tx{tx}, abciResponses(1, 0), nil, nil)
 				require.NoError(t, err, tx)
 				counter.Add(1)
 			}
@@ -163,19 +154,15 @@ func TestIteratorRace(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			for counter.Load() < n {
+			for counter.Load() < int64(numTxs) {
 				iter := mp.NewBlockingWRRIterator()
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
 				}
 				tx := entry.Tx()
-
-				txs := []types.Tx{tx}
-				resp := abciResponses(1, 0)
-				err := mp.Update(1, txs, resp, nil, nil)
-
-				require.NoError(t, err)
+				err := mp.Update(1, []types.Tx{tx}, abciResponses(1, 0), nil, nil)
+				require.NoError(t, err, tx)
 				counter.Add(1)
 			}
 		}()
@@ -186,7 +173,7 @@ func TestIteratorRace(t *testing.T) {
 	// This way we loop in the function above until it is fool
 	// without arbitrary timeouts.
 	go func() {
-		for i := 1; i <= int(n); i++ {
+		for i := 1; i <= int(numTxs); i++ {
 			tx := kvstore.NewTxFromID(i)
 
 			currLane := (i % numLanes) + 1
@@ -202,7 +189,7 @@ func TestIteratorRace(t *testing.T) {
 
 	wg.Wait()
 
-	require.Equal(t, counter.Load(), n+1)
+	require.Equal(t, counter.Load(), int64(numTxs+1))
 }
 
 func TestIteratorEmptyLanes(t *testing.T) {
@@ -220,7 +207,7 @@ func TestIteratorEmptyLanes(t *testing.T) {
 		require.NotNil(t, entry)
 		require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(1))
 	}()
-	time.Sleep(time.Second * 2)
+
 	tx := kvstore.NewTxFromID(1)
 	res := abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
 	mp.handleCheckTxResponse(tx, "")(res)
@@ -238,7 +225,7 @@ func TestIteratorNoLanes(t *testing.T) {
 	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
 	defer cleanup()
 
-	n := numTxs
+	const n = numTxs
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -286,8 +273,8 @@ func TestIteratorExactOrder(t *testing.T) {
 	// Disable rechecking to make sure the recheck logic is not interferint.
 	mp.config.Recheck = false
 
-	numLanes := 3
-	n := 11 // Number of transactions
+	const numLanes = 3
+	const numTxs = 11
 	// Transactions are ordered into lanes by their IDs. This is the order in
 	// which they should appear following WRR
 	expectedTxIDs := []int{2, 5, 8, 1, 4, 3, 11, 7, 10, 6, 9}
@@ -296,11 +283,11 @@ func TestIteratorExactOrder(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		waitForNumTxsInMempool(n, mp)
+		waitForNumTxsInMempool(numTxs, mp)
 		t.Log("Mempool full, starting to pick up transactions", mp.Size())
 
 		iter := mp.NewBlockingWRRIterator()
-		for i := 0; i < n; i++ {
+		for i := 0; i < numTxs; i++ {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
 				continue
@@ -314,7 +301,7 @@ func TestIteratorExactOrder(t *testing.T) {
 	// This way we loop in the function above until it is fool
 	// without arbitrary timeouts.
 	go func() {
-		for i := 1; i <= n; i++ {
+		for i := 1; i <= numTxs; i++ {
 			tx := kvstore.NewTxFromID(i)
 
 			currLane := (i % numLanes) + 1
@@ -343,7 +330,7 @@ func TestIteratorCountOnly(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	n := numTxs
+	const n = numTxs
 
 	// Spawn a goroutine that iterates on the list until counting n entries.
 	counter := 0
@@ -378,7 +365,7 @@ func TestReapOrderMatchesGossipOrder(t *testing.T) {
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
-	n := 10
+	const n = 10
 
 	// Add a bunch of txs.
 	for i := 1; i <= n; i++ {

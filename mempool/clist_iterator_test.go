@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"

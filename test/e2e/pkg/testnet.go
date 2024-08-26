@@ -184,11 +184,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	// Pre-load hard-coded lane values from app.
 	_, lanePriorities := app.LaneDefinitions()
-	// Pre-calculate the sum of all lane weights.
-	sumWeights := uint(0)
-	for _, w := range manifest.LoadLaneWeights {
-		sumWeights += w
-	}
 
 	testnet := &Testnet{
 		Name:                             filepath.Base(dir),
@@ -230,7 +225,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		PbtsEnableHeight: manifest.PbtsEnableHeight,
 		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
 		lanePriorities:   lanePriorities,
-		sumWeights:       sumWeights,
 	}
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
@@ -254,10 +248,15 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
 	if len(testnet.LoadLaneWeights) == 0 {
+		// Assign same weight to all lanes.
 		testnet.LoadLaneWeights = make([]uint, len(testnet.lanePriorities))
 		for i := 0; i < len(testnet.lanePriorities); i++ {
 			testnet.LoadLaneWeights[i] = 1
 		}
+	}
+	// Pre-calculate the sum of all lane weights.
+	for _, w := range testnet.LoadLaneWeights {
+		testnet.sumWeights += w
 	}
 
 	for _, name := range sortNodeNames(manifest) {

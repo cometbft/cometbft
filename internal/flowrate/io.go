@@ -18,7 +18,6 @@ var ErrLimit = errors.New("flowrate: flow rate limit exceeded")
 type Limiter interface {
 	Done() int64
 	Status() Status
-	SetTransferSize(bytes int64)
 	SetLimit(new int64) (old int64)
 	SetBlocking(new bool) (old bool)
 }

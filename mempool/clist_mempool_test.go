@@ -966,7 +966,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// Check that recheck has not started.
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
-	require.Nil(t, mp.recheck.end)
 	require.False(t, mp.recheck.isRechecking.Load())
 	mockClient.AssertExpectations(t)
 
@@ -995,7 +994,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.True(t, mp.recheck.done())
 	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
-	require.NotNil(t, mp.recheck.end)
 	require.Equal(t, len(txs)-1, mp.Size()) // one invalid tx was removed
 	require.Equal(t, int32(2), mp.recheck.numPendingTxs.Load())
 

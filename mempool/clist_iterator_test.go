@@ -112,7 +112,7 @@ func TestIteratorNonBlockingOneLane(t *testing.T) {
 
 // We have two iterators fetching transactions that
 // then get removed.
-func TestMempoolIteratorRace(t *testing.T) {
+func TestIteratorRace(t *testing.T) {
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
@@ -205,7 +205,7 @@ func TestMempoolIteratorRace(t *testing.T) {
 	require.Equal(t, counter.Load(), n+1)
 }
 
-func TestMempoolEmptyLanes(t *testing.T) {
+func TestIteratorEmptyLanes(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 
@@ -227,9 +227,53 @@ func TestMempoolEmptyLanes(t *testing.T) {
 	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 }
 
+// Without lanes transactions should be returned as they were
+// submitted - increasing tx IDs.
+func TestIteratorNoLanes(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	app.SetUseLanes(false)
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	n := numTxs
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Spawn a goroutine that iterates on the list until counting n entries.
+	counter := 0
+	go func() {
+		defer wg.Done()
+
+		iter := mp.NewBlockingWRRIterator()
+		for counter < n {
+			entry := <-iter.WaitNextCh()
+			if entry == nil {
+				continue
+			}
+			require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(counter))
+			counter++
+		}
+	}()
+
+	// Add n transactions with sequential ids.
+	for i := 0; i < n; i++ {
+		tx := kvstore.NewTxFromID(i)
+		rr, err := mp.CheckTx(tx, "")
+		require.NoError(t, err)
+		rr.Wait()
+	}
+
+	wg.Wait()
+	require.Equal(t, n, counter)
+}
+
 // TODO automate the lane numbers so we can change the number of lanes
 // and increase the number of transactions.
-func TestMempoolIteratorExactOrder(t *testing.T) {
+func TestIteratorExactOrder(t *testing.T) {
 	mockClient := new(abciclimocks.Client)
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
@@ -288,7 +332,7 @@ func TestMempoolIteratorExactOrder(t *testing.T) {
 }
 
 // This only tests that all transactions were submitted.
-func TestMempoolIteratorCountOnly(t *testing.T) {
+func TestIteratorCountOnly(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 
@@ -312,50 +356,6 @@ func TestMempoolIteratorCountOnly(t *testing.T) {
 			if entry == nil {
 				continue
 			}
-			counter++
-		}
-	}()
-
-	// Add n transactions with sequential ids.
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err)
-		rr.Wait()
-	}
-
-	wg.Wait()
-	require.Equal(t, n, counter)
-}
-
-// Without lanes transactions should be returned as they were
-// submitted - increasing tx IDs.
-func TestMempoolIteratorNoLanes(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	app.SetUseLanes(false)
-	cc := proxy.NewLocalClientCreator(app)
-
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	n := 1000 // numTxs
-
-	// Spawn a goroutine that iterates on the list until counting n entries.
-	counter := 0
-	go func() {
-		defer wg.Done()
-
-		iter := mp.NewBlockingWRRIterator()
-		for counter < n {
-			entry := <-iter.WaitNextCh()
-			if entry == nil {
-				continue
-			}
-			require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(counter))
 			counter++
 		}
 	}()

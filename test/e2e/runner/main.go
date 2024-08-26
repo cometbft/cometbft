@@ -173,20 +173,24 @@ func NewCLI() *CLI {
 				// Only execute this when running a Docker provider
 				if cli.infp.GetInfrastructureData().Provider == docker.ProviderName {
 					if err := Save(cli.testnet); err != nil {
+						logger.Error("error saving execution", "msg", "error saving execution files", "err", err.Error())
 						return err
 					}
 				}
 			}
 
-			// Return the error from the test
-			if testError != nil {
-				return testError
-			}
-
+			// Clean up if preserve was not set
 			if !cli.preserve {
 				if err := Cleanup(cli.testnet); err != nil {
+					logger.Error("error cleaning up", "msg", "error removing docker container(s)", "err", err.Error())
 					return err
 				}
+			}
+
+			// Return the error from the test
+			if testError != nil {
+				logger.Error("tests failed", "msg", "error running tests", "err", testError.Error())
+				return testError
 			}
 
 			return nil
@@ -206,7 +210,7 @@ func NewCLI() *CLI {
 		"Preserves the running of the test net after tests are completed")
 
 	cli.root.Flags().BoolVarP(&cli.execution, "execution", "e", false,
-		"Saves logs, configs and results after tests are completed (only works when running with 'docker' infrastructure type)")
+		"Saves logs, configs and results after tests are completed. Only used if the 'infrastructure-type' is set to 'docker'")
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "setup",

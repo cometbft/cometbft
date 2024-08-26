@@ -612,15 +612,13 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	txs := make([]types.Tx, 0, mem.Size())
 	iter := mem.NewWRRIterator()
 	for {
-		elem := iter.Next()
-		if elem == nil {
+		memTx := iter.Next()
+		if memTx == nil {
 			break
 		}
-		memTx := elem.Value.(*mempoolTx)
+		txs = append(txs, memTx.Tx())
 
-		txs = append(txs, memTx.tx)
-
-		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.tx})
+		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.Tx()})
 
 		// Check total size requirement
 		if maxBytes > -1 && runningSize+dataSize > maxBytes {
@@ -633,7 +631,7 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 		// If maxGas is negative, skip this check.
 		// Since newTotalGas < masGas, which
 		// must be non-negative, it follows that this won't overflow.
-		newTotalGas := totalGas + memTx.gasWanted
+		newTotalGas := totalGas + memTx.GasWanted()
 		if maxGas > -1 && newTotalGas > maxGas {
 			return txs[:len(txs)-1]
 		}
@@ -654,12 +652,11 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max))
 	iter := mem.NewWRRIterator()
 	for len(txs) <= max {
-		elem := iter.Next()
-		if elem == nil {
+		memTx := iter.Next()
+		if memTx == nil {
 			break
 		}
-		memTx := elem.Value.(*mempoolTx)
-		txs = append(txs, memTx.tx)
+		txs = append(txs, memTx.Tx())
 	}
 	return txs
 }
@@ -931,7 +928,7 @@ func (mem *CListMempool) NewWRRIterator() *NonBlockingWRRIterator {
 	}
 }
 
-func (iter *NonBlockingWRRIterator) Next() *clist.CElement {
+func (iter *NonBlockingWRRIterator) Next() Entry {
 	lane := iter.sortedLanes[iter.laneIndex]
 	numEmptyLanes := 0
 	for {
@@ -956,7 +953,8 @@ func (iter *NonBlockingWRRIterator) Next() *clist.CElement {
 	elem := iter.cursors[lane]
 	iter.cursors[lane] = iter.cursors[lane].Next()
 	iter.counters[lane]++
-	return elem
+	// elem is not nil
+	return elem.Value.(*mempoolTx)
 }
 
 // BlockingWRRIterator implements an blocking version of the WRR iterator. When no

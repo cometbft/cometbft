@@ -173,8 +173,8 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	checkTxs(t, mp, 1)
-	iter := mp.NewBlockingWRRIterator()
-	tx0 := <-iter.WaitNextCh()
+	iter := mp.NewWRRIterator()
+	tx0 := iter.Next()
 	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long

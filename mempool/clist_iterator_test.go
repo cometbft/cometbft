@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
-	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -45,14 +44,14 @@ func TestIteratorNonBlocking(t *testing.T) {
 		15,
 	}
 
-	var next *clist.CElement
+	var next Entry
 	counter := 0
 
 	// Check that txs are picked by the iterator in the expected order.
 	for _, id := range expectedOrder {
 		next = iter.Next()
 		require.NotNil(t, next)
-		require.Equal(t, types.Tx(kvstore.NewTxFromID(id)), next.Value.(*mempoolTx).Tx(), "id=%v", id)
+		require.Equal(t, types.Tx(kvstore.NewTxFromID(id)), next.Tx(), "id=%v", id)
 		counter++
 	}
 
@@ -89,14 +88,14 @@ func TestIteratorNonBlockingOneLane(t *testing.T) {
 	iter := mp.NewWRRIterator()
 	expectedOrder := []int{0, 11, 22, 33, 44, 55, 66, 77, 88, 99}
 
-	var next *clist.CElement
+	var next Entry
 	counter := 0
 
 	// Check that txs are picked by the iterator in the expected order.
 	for _, id := range expectedOrder {
 		next = iter.Next()
 		require.NotNil(t, next)
-		require.Equal(t, types.Tx(kvstore.NewTxFromID(id)), next.Value.(*mempoolTx).Tx(), "id=%v", id)
+		require.Equal(t, types.Tx(kvstore.NewTxFromID(id)), next.Tx(), "id=%v", id)
 		counter++
 	}
 

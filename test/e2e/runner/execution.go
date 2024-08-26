@@ -40,22 +40,31 @@ func Save(testnet *e2e.Testnet) error {
 		}
 
 		// Create a file to write the processed lines
-		nodeFolder := filepath.Join(executionFolder, node.Name)
+		nodeFolder := filepath.Join(executionFolder, "nodes", node.Name)
 		if err := os.MkdirAll(nodeFolder, 0o755); err != nil {
 			logger.Error("error saving execution", "msg", "error creating node folder", "err", err.Error())
 			return err
 		}
 
+		// Create file to save docker logs
 		logFile := filepath.Join(nodeFolder, "docker.log")
-		outputFile, err := os.Create(logFile)
+		dockerLog, err := os.Create(logFile)
 		if err != nil {
 			logger.Error("error saving execution", "msg", "error creating log file", "file", logFile, "err", err.Error())
 			return err
 		}
-		defer outputFile.Close()
+		defer dockerLog.Close()
 
-		// Create a buffered writer for efficient writing
-		writer := bufio.NewWriter(outputFile)
+		// Create file to save only docker error logs
+		logErrorFile := filepath.Join(nodeFolder, "docker-errors.log")
+		dockerErrorLog, err := os.Create(logErrorFile)
+		if err != nil {
+			logger.Error("error saving execution", "msg", "error creating error log file", "file", logErrorFile, "err", err.Error())
+			return err
+		}
+
+		writer := bufio.NewWriter(dockerLog)
+		writerErr := bufio.NewWriter(dockerErrorLog)
 
 		// Create a new Scanner to read the data line by line
 		scanner := bufio.NewScanner(bytes.NewReader(data))
@@ -69,23 +78,41 @@ func Save(testnet *e2e.Testnet) error {
 			// Check if the split was successful and there are at least two parts
 			if len(parts) == 2 {
 				strippedLine := strings.TrimSpace(parts[1])
-				// Write the stripped line to the file
+
+				// Write the stripped line to the docker log file
 				_, err := writer.WriteString(strippedLine + "\n")
 				if err != nil {
 					logger.Error("error saving execution", "msg", "error writing to log file", "file", logFile, "err", err.Error())
 					return err
 				}
+
+				// If the line is for an error, write the stripped line to the docker log error file
+				if strings.HasPrefix(strippedLine, "E[") {
+					_, err := writerErr.WriteString(strippedLine + "\n")
+					if err != nil {
+						logger.Error("error saving execution", "msg", "error writing to error log file", "file", logErrorFile, "err", err.Error())
+						return err
+					}
+				}
 			}
 		}
 
 		if err := scanner.Err(); err != nil {
-			logger.Error("error saving execution", "msg", "error scanning log file", "file", logFile, "err", err.Error())
+			logger.Error("error saving execution", "msg", "error scanning docker log data", "err", err.Error())
 			return err
 		}
 
+		// Flush docker log file
 		err = writer.Flush()
 		if err != nil {
 			logger.Error("error saving execution", "msg", "error flushing log file", "file", logFile, "err", err.Error())
+			return err
+		}
+
+		// Flush docker error log file
+		err = writerErr.Flush()
+		if err != nil {
+			logger.Error("error saving execution", "msg", "error flushing error log file", "file", logErrorFile, "err", err.Error())
 			return err
 		}
 

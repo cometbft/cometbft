@@ -232,7 +232,7 @@ func (mem *CListMempool) Unlock() {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
 	if mem.recheck.setRecheckFull() {
-		mem.logger.Debug("the state of recheckFull has flipped")
+		mem.logger.Debug("The state of recheckFull has flipped")
 	}
 }
 
@@ -337,7 +337,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 		Type: abci.CHECK_TX_TYPE_CHECK,
 	})
 	if err != nil {
-		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%X", tx.Hash()), err))
 	}
 	reqRes.SetCallback(mem.handleCheckTxResponse(tx, sender))
 
@@ -368,7 +368,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		if res.Code != abci.CodeTypeOK || postCheckErr != nil {
 			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
-				"rejected invalid transaction",
+				"Rejected invalid transaction",
 				"tx", tx.Hash(),
 				"res", res,
 				"err", postCheckErr,
@@ -398,7 +398,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
 			}
 			mem.logger.Debug(
-				"transaction already in mempool, not adding it again",
+				"Transaction already in mempool, not adding it again",
 				"tx", tx.Hash(),
 				"lane", lane,
 				"height", mem.height.Load(),
@@ -546,8 +546,8 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 
 		// Check whether the rechecking process has finished.
 		if mem.recheck.done() {
-			mem.logger.Error("rechecking has finished; discard late recheck response",
-				"tx", log.NewLazySprintf("%v", tx.Hash()))
+			mem.logger.Error("Rechecking has finished; discard late recheck response",
+				"tx", log.NewLazySprintf("%X", tx.Hash()))
 			return
 		}
 		mem.metrics.RecheckTimes.Add(1)
@@ -566,7 +566,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 		// If tx is invalid, remove it from the mempool and the cache.
 		if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+			mem.logger.Debug("Tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
 			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			} else {
@@ -737,7 +737,7 @@ func (mem *CListMempool) Update(
 // recheckTxs sends all transactions in the mempool to the app for re-validation. When the function
 // returns, all recheck responses from the app have been processed.
 func (mem *CListMempool) recheckTxs() {
-	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
+	mem.logger.Debug("Recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
 
 	if mem.Size() <= 0 {
 		return
@@ -799,12 +799,12 @@ LANE_FOR_LOOP:
 	select {
 	case <-time.After(mem.config.RecheckTimeout / time.Duration(numlanes+1)):
 		mem.recheck.setDone()
-		mem.logger.Error("timed out waiting for recheck responses")
+		mem.logger.Error("Timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
 	}
 
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
-		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
+		mem.logger.Error("Not all txs were rechecked", "not-rechecked", n)
 	}
 
 	mem.logger.Debug("done rechecking", "height", mem.height.Load())

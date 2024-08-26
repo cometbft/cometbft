@@ -1008,7 +1008,7 @@ func TestPrepareProposalErrorOnPrepareProposalError(t *testing.T) {
 	mp.AssertExpectations(t)
 }
 
-// TestCreateProposalBlockPanicOnAbsentVoteExtensions ensures that the CreateProposalBlock
+// TestCreateProposalAbsentVoteExtensions ensures that the CreateProposalBlock
 // call correctly panics when the vote extension data is missing from the extended commit
 // data that the method receives.
 func TestCreateProposalAbsentVoteExtensions(t *testing.T) {

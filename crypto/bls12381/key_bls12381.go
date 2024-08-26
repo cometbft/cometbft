@@ -56,6 +56,17 @@ type PrivKey struct {
 	sk *blst.SecretKey
 }
 
+// GenPrivKeyFromSecret generates a new random key using `secret` for the seed
+func GenPrivKeyFromSecret(secret []byte) (*PrivKey, error) {
+	if len(secret) != 32 {
+		seed := sha256.Sum256(secret) // We need 32 bytes
+		secret = seed[:]
+	}
+
+	sk := blst.KeyGen(secret)
+	return &PrivKey{sk: sk}, nil
+}
+
 // NewPrivateKeyFromBytes build a new key from the given bytes.
 func NewPrivateKeyFromBytes(bz []byte) (*PrivKey, error) {
 	sk := new(blst.SecretKey).Deserialize(bz)
@@ -72,8 +83,7 @@ func GenPrivKey() (*PrivKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	sk := blst.KeyGen(ikm[:])
-	return &PrivKey{sk: sk}, nil
+	return GenPrivKeyFromSecret(ikm[:])
 }
 
 // Bytes returns the byte representation of the Key.
@@ -84,7 +94,7 @@ func (privKey PrivKey) Bytes() []byte {
 // PubKey returns the private key's public key. If the privkey is not valid
 // it returns a nil value.
 func (privKey PrivKey) PubKey() crypto.PubKey {
-	return &PubKey{pk: new(blstPublicKey).From(privKey.sk)}
+	return PubKey{pk: new(blstPublicKey).From(privKey.sk)}
 }
 
 // Type returns the type.

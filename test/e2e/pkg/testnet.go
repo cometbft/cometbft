@@ -23,9 +23,11 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
+	"github.com/cometbft/cometbft/test/e2e/app"
 	"github.com/cometbft/cometbft/types"
 )
 
@@ -89,6 +91,7 @@ type Testnet struct {
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
 	LoadMaxTxs                                           int
+	LoadLaneWeights                                      []uint
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -110,6 +113,8 @@ type Testnet struct {
 	DefaultZone                                          string
 	PbtsEnableHeight                                     int64
 	PbtsUpdateHeight                                     int64
+	lanePriorities                                       []uint32
+	sumWeights                                           uint
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -177,6 +182,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if err != nil {
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
 	}
+	// Pre-load hard-coded lane values from app.
+	_, lanePriorities := app.LaneDefinitions()
 
 	testnet := &Testnet{
 		Name:                             filepath.Base(dir),
@@ -195,6 +202,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
 		LoadTxConnections:                manifest.LoadTxConnections,
 		LoadMaxTxs:                       manifest.LoadMaxTxs,
+		LoadLaneWeights:                  manifest.LoadLaneWeights,
 		ABCIProtocol:                     manifest.ABCIProtocol,
 		PrepareProposalDelay:             manifest.PrepareProposalDelay,
 		ProcessProposalDelay:             manifest.ProcessProposalDelay,
@@ -216,6 +224,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		DefaultZone:      manifest.DefaultZone,
 		PbtsEnableHeight: manifest.PbtsEnableHeight,
 		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
+		lanePriorities:   lanePriorities,
 	}
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
@@ -237,6 +246,17 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
+	}
+	if len(testnet.LoadLaneWeights) == 0 {
+		// Assign same weight to all lanes.
+		testnet.LoadLaneWeights = make([]uint, len(testnet.lanePriorities))
+		for i := 0; i < len(testnet.lanePriorities); i++ {
+			testnet.LoadLaneWeights[i] = 1
+		}
+	}
+	// Pre-calculate the sum of all lane weights.
+	for _, w := range testnet.LoadLaneWeights {
+		testnet.sumWeights += w
 	}
 
 	for _, name := range sortNodeNames(manifest) {
@@ -468,6 +488,17 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
+	if len(t.LoadLaneWeights) != len(t.lanePriorities) {
+		return fmt.Errorf("number of lane weights (%d) must be equal to "+
+			"the number of lanes defined by the app (%d)",
+			len(t.LoadLaneWeights), len(t.lanePriorities),
+		)
+	}
+	for _, w := range t.LoadLaneWeights {
+		if w <= 0 {
+			return fmt.Errorf("weight must be greater than 0: %v", w)
+		}
+	}
 	for _, node := range t.Nodes {
 		if err := node.Validate(t); err != nil {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
@@ -650,6 +681,29 @@ func (t Testnet) HasPerturbations() bool {
 		}
 	}
 	return false
+}
+
+// weightedRandomIndex, given a list of weights and the sum of all weights, it
+// picks one of them randomly and proportionally to its weight, and returns its
+// index in the list.
+func weightedRandomIndex(weights []uint, sumWeights uint) int {
+	r := cmtrand.Int31n(int32(sumWeights))
+
+	// Return i when the random number falls in the i'th bucket.
+	cursor := uint(0)
+	for i, w := range weights {
+		cursor += w
+		if int32(cursor) >= r {
+			return i
+		}
+	}
+	return -1 // unreachable
+}
+
+// NextLane returns the next element in the list of lanes, according to a
+// predefined weight for each lane in the list.
+func (t *Testnet) NextLane() uint32 {
+	return t.lanePriorities[weightedRandomIndex(t.LoadLaneWeights, t.sumWeights)]
 }
 
 //go:embed templates/prometheus-yaml.tmpl

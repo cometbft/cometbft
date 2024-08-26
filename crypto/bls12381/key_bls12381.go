@@ -28,10 +28,13 @@ var (
 	dstMinSig = []byte("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_")
 )
 
-// For minimal-signature-size operations.
+// For minimal-pubkey-size operations.
+//
+// Changing this to 'minimal-signature-size' would render CometBFT not Ethereum
+// compatible.
 type (
-	blstPublicKey          = blst.P2Affine
-	blstSignature          = blst.P1Affine
+	blstPublicKey          = blst.P1Affine
+	blstSignature          = blst.P2Affine
 	blstAggregateSignature = blst.P1Aggregate
 	blstAggregatePublicKey = blst.P2Aggregate
 )

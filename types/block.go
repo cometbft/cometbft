@@ -596,10 +596,10 @@ const (
 	// 4 bytes for field tags + 1 byte for signature LEN + 1 byte for
 	// validator address LEN + 1 byte for timestamp LEN.
 	maxCommitSigProtoEncOverhead = 4 + 1 + 1 + 1 + 3 // 3 ???
-	// MaxCommitSigBytes is the max commit sig size is made up of MaxSignatureSize (64) bytes for the
+	// MaxCommitSigBytes is the max commit sig size is made up of MaxSignatureSize (96) bytes for the
 	// signature, 20 bytes for the address, 1 byte for the flag and 14 bytes for
 	// the timestamp.
-	MaxCommitSigBytes = 99 + maxCommitSigProtoEncOverhead
+	MaxCommitSigBytes = 131 + maxCommitSigProtoEncOverhead
 )
 
 // CommitSig is a part of the Vote included in a Commit.
@@ -611,8 +611,8 @@ type CommitSig struct {
 }
 
 func MaxCommitBytes(valCount int) int64 {
-	// 1 byte field tag + 1 byte LEN
-	const protoRepeatedFieldLenOverhead int64 = 2
+	// 1 byte field tag + 1 byte LEN + 1 byte ???
+	const protoRepeatedFieldLenOverhead int64 = 3
 	// From the repeated commit sig field
 	return MaxCommitOverheadBytes + ((MaxCommitSigBytes + protoRepeatedFieldLenOverhead) * int64(valCount))
 }

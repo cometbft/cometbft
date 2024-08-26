@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -10,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -173,8 +171,8 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	checkTxs(t, mp, 1)
-	iter := mp.NewIterator()
-	tx0 := <-iter.WaitNextCh()
+	iter := mp.NewWRRIterator()
+	tx0 := iter.Next()
 	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
@@ -838,126 +836,6 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 	}
 }
 
-// We have two iterators fetching transactions that
-// then get removed.
-func TestMempoolIteratorRace(t *testing.T) {
-	mockClient := new(abciclimocks.Client)
-	mockClient.On("Start").Return(nil)
-	mockClient.On("SetLogger", mock.Anything)
-	mockClient.On("Error").Return(nil).Times(100)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2, 3}, DefaultLanePriority: 1}, nil)
-
-	mp, cleanup := newMempoolWithAppMock(mockClient)
-	defer cleanup()
-
-	// Disable rechecking to make sure the recheck logic is not interferint.
-	mp.config.Recheck = false
-
-	numLanes := 3
-	n := int64(100) // Number of transactions
-
-	var wg sync.WaitGroup
-
-	wg.Add(2)
-	var counter atomic.Int64
-	go func() {
-		// Wait for at least some transactions to get into the mempool
-		for mp.Size() < int(n) {
-			time.Sleep(time.Second)
-		}
-		fmt.Println("mempool height ", mp.height.Load())
-
-		go func() {
-			defer wg.Done()
-
-			for counter.Load() < n {
-				iter := mp.NewIterator()
-				entry := <-iter.WaitNextCh()
-				if entry == nil {
-					continue
-				}
-				tx := entry.Tx()
-
-				txs := []types.Tx{tx}
-
-				resp := abciResponses(1, 0)
-				err := mp.Update(1, txs, resp, nil, nil)
-
-				require.NoError(t, err, tx)
-				counter.Add(1)
-			}
-		}()
-
-		go func() {
-			defer wg.Done()
-
-			for counter.Load() < n {
-				iter := mp.NewIterator()
-				entry := <-iter.WaitNextCh()
-				if entry == nil {
-					continue
-				}
-				tx := entry.Tx()
-
-				txs := []types.Tx{tx}
-				resp := abciResponses(1, 0)
-				err := mp.Update(1, txs, resp, nil, nil)
-
-				require.NoError(t, err)
-				counter.Add(1)
-			}
-		}()
-	}()
-
-	// This was introduced because without a separate function
-	// we have to sleep to wait for all txs to get into the mempool.
-	// This way we loop in the function above until it is fool
-	// without arbitrary timeouts.
-	go func() {
-		for i := 1; i <= int(n); i++ {
-			tx := kvstore.NewTxFromID(i)
-
-			currLane := (i % numLanes) + 1
-			reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, uint32(currLane))
-			require.NotNil(t, reqRes)
-
-			mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
-			_, err := mp.CheckTx(tx, "")
-			require.NoError(t, err, err)
-			reqRes.InvokeCallback()
-		}
-	}()
-
-	wg.Wait()
-
-	require.Equal(t, counter.Load(), n+1)
-}
-
-func TestMempoolEmptyLanes(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-
-	cfg := test.ResetTestRoot("mempool_empty_test")
-	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
-	defer cleanup()
-
-	go func() {
-		iter := mp.NewIterator()
-		require.Equal(t, 0, mp.Size())
-		entry := <-iter.WaitNextCh()
-
-		require.NotNil(t, entry)
-		tx := entry.Tx()
-
-		require.True(t, bytes.Equal(tx, kvstore.NewTxFromID(1)))
-	}()
-	time.Sleep(time.Second * 2)
-	tx := kvstore.NewTxFromID(1)
-	res := abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
-	mp.handleCheckTxResponse(tx, "")(res)
-	require.Equal(t, 1, mp.Size(), "pool size mismatch")
-}
-
 func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
@@ -1198,161 +1076,6 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 
 	// All added transactions should have been removed from the mempool.
 	require.Zero(t, mp.Size())
-}
-
-// TODO automate the lane numbers so we can change the number of lanes
-// and increase the number of transactions.
-func TestMempoolIteratorExactOrder(t *testing.T) {
-	mockClient := new(abciclimocks.Client)
-	mockClient.On("Start").Return(nil)
-	mockClient.On("SetLogger", mock.Anything)
-	mockClient.On("Error").Return(nil).Times(100)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2, 3}, DefaultLanePriority: 1}, nil)
-
-	mp, cleanup := newMempoolWithAppMock(mockClient)
-	defer cleanup()
-
-	// Disable rechecking to make sure the recheck logic is not interferint.
-	mp.config.Recheck = false
-
-	numLanes := 3
-	n := 11 // Number of transactions
-	// Transactions are ordered into lanes by their IDs
-	// This is the order in which they should appear following WRR
-	localSortedLanes := []int{2, 5, 8, 1, 4, 3, 11, 7, 10, 6, 9}
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for mp.Size() < n {
-			time.Sleep(time.Second)
-		}
-		t.Log("Mempool full, starting to pick up transactions", mp.Size())
-
-		iter := mp.NewIterator()
-
-		counter := 0
-		for counter < n {
-			entry := <-iter.WaitNextCh()
-			if entry == nil {
-				continue
-			}
-			tx := entry.Tx()
-
-			txLocal := kvstore.NewTxFromID(localSortedLanes[counter])
-
-			require.True(t, bytes.Equal(tx, txLocal))
-
-			counter++
-		}
-	}()
-
-	// This was introduced because without a separate function
-	// we have to sleep to wait for all txs to get into the mempool.
-	// This way we loop in the function above until it is fool
-	// without arbitrary timeouts.
-	go func() {
-		for i := 1; i <= n; i++ {
-			tx := kvstore.NewTxFromID(i)
-
-			currLane := (i % numLanes) + 1
-			reqRes := newReqResWithLanes(tx, abci.CodeTypeOK, abci.CHECK_TX_TYPE_CHECK, uint32(currLane))
-			require.NotNil(t, reqRes)
-
-			mockClient.On("CheckTxAsync", mock.Anything, mock.Anything).Return(reqRes, nil).Once()
-			_, err := mp.CheckTx(tx, "")
-			require.NoError(t, err, err)
-			reqRes.InvokeCallback()
-		}
-	}()
-
-	wg.Wait()
-}
-
-// This only tests that all transactions were submitted.
-func TestMempoolIteratorCountOnly(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	n := numTxs
-
-	// Spawn a goroutine that iterates on the list until counting n entries.
-	counter := 0
-	go func() {
-		defer wg.Done()
-
-		iter := mp.NewIterator()
-		for counter < n {
-			entry := <-iter.WaitNextCh()
-			if entry == nil {
-				continue
-			}
-			counter++
-		}
-	}()
-
-	// Add n transactions with sequential ids.
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err)
-		rr.Wait()
-	}
-
-	wg.Wait()
-	require.Equal(t, n, counter)
-}
-
-// Without lanes transactions should be returned as they were
-// submitted - increasing tx IDs.
-func TestMempoolIteratorNoLanes(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	app.SetUseLanes(false)
-	cc := proxy.NewLocalClientCreator(app)
-
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	n := 1000 // numTxs
-
-	// Spawn a goroutine that iterates on the list until counting n entries.
-	counter := 0
-	go func() {
-		defer wg.Done()
-
-		iter := mp.NewIterator()
-		for counter < n {
-			entry := <-iter.WaitNextCh()
-			if entry == nil {
-				continue
-			}
-			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
-
-			counter++
-		}
-	}()
-
-	// Add n transactions with sequential ids.
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err)
-		rr.Wait()
-	}
-
-	wg.Wait()
-	require.Equal(t, n, counter)
 }
 
 func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {

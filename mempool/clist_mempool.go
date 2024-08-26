@@ -64,6 +64,8 @@ type CListMempool struct {
 	defaultLane types.Lane
 	sortedLanes []types.Lane // lanes sorted by priority
 
+	reapIter *NonBlockingWRRIterator
+
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
 	cache TxCache
@@ -117,6 +119,8 @@ func NewCListMempool(
 		slices.Sort(mp.sortedLanes)
 		slices.Reverse(mp.sortedLanes)
 	}
+
+	mp.reapIter = mp.NewWRRIterator()
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache(cfg.CacheSize)
@@ -610,31 +614,32 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.Size())
-	for _, lane := range mem.sortedLanes {
-		for e := mem.lanes[lane].Front(); e != nil; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
-
-			txs = append(txs, memTx.tx)
-
-			dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.tx})
-
-			// Check total size requirement
-			if maxBytes > -1 && runningSize+dataSize > maxBytes {
-				return txs[:len(txs)-1]
-			}
-
-			runningSize += dataSize
-
-			// Check total gas requirement.
-			// If maxGas is negative, skip this check.
-			// Since newTotalGas < masGas, which
-			// must be non-negative, it follows that this won't overflow.
-			newTotalGas := totalGas + memTx.gasWanted
-			if maxGas > -1 && newTotalGas > maxGas {
-				return txs[:len(txs)-1]
-			}
-			totalGas = newTotalGas
+	mem.reapIter.Reset(mem.lanes)
+	for {
+		memTx := mem.reapIter.Next()
+		if memTx == nil {
+			break
 		}
+		txs = append(txs, memTx.Tx())
+
+		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.Tx()})
+
+		// Check total size requirement
+		if maxBytes > -1 && runningSize+dataSize > maxBytes {
+			return txs[:len(txs)-1]
+		}
+
+		runningSize += dataSize
+
+		// Check total gas requirement.
+		// If maxGas is negative, skip this check.
+		// Since newTotalGas < masGas, which
+		// must be non-negative, it follows that this won't overflow.
+		newTotalGas := totalGas + memTx.GasWanted()
+		if maxGas > -1 && newTotalGas > maxGas {
+			return txs[:len(txs)-1]
+		}
+		totalGas = newTotalGas
 	}
 	return txs
 }
@@ -649,11 +654,13 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	}
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max))
-	for _, lane := range mem.sortedLanes {
-		for e := mem.lanes[lane].Front(); e != nil && len(txs) <= max; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
-			txs = append(txs, memTx.tx)
+	mem.reapIter.Reset(mem.lanes)
+	for len(txs) <= max {
+		memTx := mem.reapIter.Next()
+		if memTx == nil {
+			break
 		}
+		txs = append(txs, memTx.Tx())
 	}
 	return txs
 }
@@ -888,20 +895,103 @@ func (rc *recheck) consideredFull() bool {
 	return rc.recheckFull.Load()
 }
 
-// CListIterator implements an Iterator that traverses the lanes with the classical Weighted Round
-// Robin (WRR) algorithm.
-type CListIterator struct {
-	mp               *CListMempool                  // to wait on and retrieve the first entry
-	currentLaneIndex int                            // current lane being iterated; index on mp.sortedLanes
-	counters         map[types.Lane]uint32          // counters of accessed entries for WRR algorithm
-	cursors          map[types.Lane]*clist.CElement // last accessed entries on each lane
+// WRRIterator is the base struct for implementing iterators that traverse lanes with
+// the classical Weighted Round Robin (WRR) algorithm.
+type WRRIterator struct {
+	sortedLanes []types.Lane
+	laneIndex   int                            // current lane being iterated; index on sortedLanes
+	counters    map[types.Lane]uint            // counters of consumed entries, for WRR algorithm
+	cursors     map[types.Lane]*clist.CElement // last accessed entries on each lane
 }
 
-func (mem *CListMempool) NewIterator() Iterator {
-	return &CListIterator{
-		mp:       mem,
-		counters: make(map[types.Lane]uint32, len(mem.sortedLanes)),
-		cursors:  make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
+func (iter *WRRIterator) nextLane() types.Lane {
+	iter.laneIndex = (iter.laneIndex + 1) % len(iter.sortedLanes)
+	return iter.sortedLanes[iter.laneIndex]
+}
+
+// Non-blocking version of the WRR iterator to be used for reaping and
+// rechecking transactions.
+//
+// Lock must be held on the mempool when iterating: the mempool cannot be
+// modified while iterating.
+type NonBlockingWRRIterator struct {
+	WRRIterator
+}
+
+func (mem *CListMempool) NewWRRIterator() *NonBlockingWRRIterator {
+	baseIter := WRRIterator{
+		sortedLanes: mem.sortedLanes,
+		counters:    make(map[types.Lane]uint, len(mem.lanes)),
+		cursors:     make(map[types.Lane]*clist.CElement, len(mem.lanes)),
+	}
+	iter := &NonBlockingWRRIterator{
+		WRRIterator: baseIter,
+	}
+	iter.Reset(mem.lanes)
+	return iter
+}
+
+// Reset must be called before every use of the iterator.
+func (iter *NonBlockingWRRIterator) Reset(lanes map[types.Lane]*clist.CList) {
+	iter.laneIndex = 0
+	for i := range iter.counters {
+		iter.counters[i] = 0
+	}
+	// Set cursors at the beginning of each lane.
+	for lane := range lanes {
+		iter.cursors[lane] = lanes[lane].Front()
+	}
+}
+
+// Next returns the next element according to the WRR algorithm.
+func (iter *NonBlockingWRRIterator) Next() Entry {
+	lane := iter.sortedLanes[iter.laneIndex]
+	numEmptyLanes := 0
+	for {
+		// Skip empty lane or if cursor is at end of lane.
+		if iter.cursors[lane] == nil {
+			numEmptyLanes++
+			if numEmptyLanes >= len(iter.sortedLanes) {
+				return nil
+			}
+			lane = iter.nextLane()
+			continue
+		}
+		// Skip over-consumed lane.
+		if iter.counters[lane] >= uint(lane) {
+			iter.counters[lane] = 0
+			numEmptyLanes = 0
+			lane = iter.nextLane()
+			continue
+		}
+		break
+	}
+	elem := iter.cursors[lane]
+	if elem == nil {
+		panic(fmt.Errorf("Iterator picked a nil entry on lane %d", lane))
+	}
+	iter.cursors[lane] = iter.cursors[lane].Next()
+	iter.counters[lane]++
+	return elem.Value.(*mempoolTx)
+}
+
+// BlockingWRRIterator implements a blocking version of the WRR iterator,
+// meaning that when no transaction is available, it will wait until a new one
+// is added to the mempool.
+type BlockingWRRIterator struct {
+	WRRIterator
+	mp *CListMempool
+}
+
+func (mem *CListMempool) NewBlockingWRRIterator() Iterator {
+	iter := WRRIterator{
+		sortedLanes: mem.sortedLanes,
+		counters:    make(map[types.Lane]uint, len(mem.sortedLanes)),
+		cursors:     make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
+	}
+	return &BlockingWRRIterator{
+		WRRIterator: iter,
+		mp:          mem,
 	}
 }
 
@@ -910,7 +1000,7 @@ func (mem *CListMempool) NewIterator() Iterator {
 // the list.
 //
 // Unsafe for concurrent use by multiple goroutines.
-func (iter *CListIterator) WaitNextCh() <-chan Entry {
+func (iter *BlockingWRRIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
 		// Add the next entry to the channel if not nil.
@@ -925,14 +1015,15 @@ func (iter *CListIterator) WaitNextCh() <-chan Entry {
 	return ch
 }
 
-// PickLane returns a _valid_ lane on which to iterate, according to the WRR algorithm. A lane is
-// valid if it is not empty or the number of accessed entries in the lane has not yet reached its
-// priority value.
-func (iter *CListIterator) PickLane() types.Lane {
+// PickLane returns a _valid_ lane on which to iterate, according to the WRR
+// algorithm. A lane is valid if it is not empty or it is not over-consumed,
+// meaning that the number of accessed entries in the lane has not yet reached
+// its priority value in the current WRR iteration.
+func (iter *BlockingWRRIterator) PickLane() types.Lane {
 	// Loop until finding a valid lanes
 	// If the current lane is not valid, continue with the next lane with lower priority, in a
 	// round robin fashion.
-	lane := iter.mp.sortedLanes[iter.currentLaneIndex]
+	lane := iter.sortedLanes[iter.laneIndex]
 
 	iter.mp.addTxChMtx.RLock()
 	defer iter.mp.addTxChMtx.RUnlock()
@@ -943,10 +1034,9 @@ func (iter *CListIterator) PickLane() types.Lane {
 			(iter.cursors[lane] != nil &&
 				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
 			prevLane := lane
-			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
-			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
+			lane = iter.nextLane()
 			nIter++
-			if nIter >= len(iter.mp.sortedLanes) {
+			if nIter >= len(iter.sortedLanes) {
 				ch := iter.mp.addTxCh
 				iter.mp.addTxChMtx.RUnlock()
 				iter.mp.logger.Info("YYY PickLane, bef block", "lane", lane, "prevLane", prevLane)
@@ -959,12 +1049,11 @@ func (iter *CListIterator) PickLane() types.Lane {
 			continue
 		}
 
-		if iter.counters[lane] >= uint32(lane) {
+		if iter.counters[lane] >= uint(lane) {
 			// Reset the counter only when the limit on the lane was reached.
 			iter.counters[lane] = 0
-			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
 			prevLane := lane
-			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
+			lane = iter.nextLane()
 			nIter = 0
 			iter.mp.logger.Info("YYY PickLane, skipped lane 2", "lane", prevLane, "new Lane ", lane)
 			continue
@@ -975,7 +1064,7 @@ func (iter *CListIterator) PickLane() types.Lane {
 	}
 }
 
-// Next implements the classical Weighted Round Robin (WRR) algorithm.
+// Next returns the next element according to the WRR algorithm.
 //
 // In classical WRR, the iterator cycles over the lanes. When a lane is selected, Next returns an
 // entry from the selected lane. On subsequent calls, Next will return the next entries from the
@@ -984,7 +1073,7 @@ func (iter *CListIterator) PickLane() types.Lane {
 //
 // TODO: Note that this code does not block waiting for an available entry on a CList or a CElement, as
 // was the case on the original code. Is this the best way to do it?
-func (iter *CListIterator) Next() *clist.CElement {
+func (iter *BlockingWRRIterator) Next() *clist.CElement {
 	lane := iter.PickLane()
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement

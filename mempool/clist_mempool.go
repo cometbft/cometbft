@@ -963,9 +963,11 @@ func (iter *NonBlockingWRRIterator) Next() Entry {
 		break
 	}
 	elem := iter.cursors[lane]
+	if elem == nil {
+		panic(fmt.Errorf("Iterator picked a nil entry on lane %d", lane))
+	}
 	iter.cursors[lane] = iter.cursors[lane].Next()
 	iter.counters[lane]++
-	// elem is not nil
 	return elem.Value.(*mempoolTx)
 }
 

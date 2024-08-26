@@ -909,9 +909,11 @@ func (iter *WRRIterator) nextLane() types.Lane {
 	return iter.sortedLanes[iter.laneIndex]
 }
 
-// Non-blocking version of a WRR iterator.
+// Non-blocking version of the WRR iterator to be used for reaping and
+// rechecking transactions.
 //
-// Lock must be held to update mempool: it cannot be modified while iterating.
+// Lock must be held on the mempool when iterating: the mempool cannot be
+// modified while iterating.
 type NonBlockingWRRIterator struct {
 	WRRIterator
 }
@@ -929,6 +931,7 @@ func (mem *CListMempool) NewWRRIterator() *NonBlockingWRRIterator {
 	return iter
 }
 
+// Reset must be called before every use of the iterator.
 func (iter *NonBlockingWRRIterator) Reset(lanes map[types.Lane]*clist.CList) {
 	iter.laneIndex = 0
 	for i := range iter.counters {
@@ -940,6 +943,7 @@ func (iter *NonBlockingWRRIterator) Reset(lanes map[types.Lane]*clist.CList) {
 	}
 }
 
+// Next returns the next element according to the WRR algorithm.
 func (iter *NonBlockingWRRIterator) Next() Entry {
 	lane := iter.sortedLanes[iter.laneIndex]
 	numEmptyLanes := 0
@@ -971,8 +975,9 @@ func (iter *NonBlockingWRRIterator) Next() Entry {
 	return elem.Value.(*mempoolTx)
 }
 
-// BlockingWRRIterator implements an blocking version of the WRR iterator. When no
-// transactions are available, it waits until a new one is added to the mempool.
+// BlockingWRRIterator implements a blocking version of the WRR iterator,
+// meaning that when no transaction is available, it will wait until a new one
+// is added to the mempool.
 type BlockingWRRIterator struct {
 	WRRIterator
 	mp *CListMempool
@@ -1010,9 +1015,10 @@ func (iter *BlockingWRRIterator) WaitNextCh() <-chan Entry {
 	return ch
 }
 
-// PickLane returns a _valid_ lane on which to iterate, according to the WRR algorithm. A lane is
-// valid if it is not empty or the number of accessed entries in the lane has not yet reached its
-// priority value.
+// PickLane returns a _valid_ lane on which to iterate, according to the WRR
+// algorithm. A lane is valid if it is not empty or it is not over-consumed,
+// meaning that the number of accessed entries in the lane has not yet reached
+// its priority value in the current WRR iteration.
 func (iter *BlockingWRRIterator) PickLane() types.Lane {
 	// Loop until finding a valid lanes
 	// If the current lane is not valid, continue with the next lane with lower priority, in a

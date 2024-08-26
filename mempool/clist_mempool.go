@@ -92,7 +92,6 @@ func NewCListMempool(
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
 		txsMap:        make(map[types.TxKey]*clist.CElement),
-		recheck:       &recheck{},
 		logger:        log.NewNopLogger(),
 		metrics:       NopMetrics(),
 		addTxCh:       make(chan struct{}),
@@ -121,6 +120,7 @@ func NewCListMempool(
 	}
 
 	mp.reapIter = mp.NewWRRIterator()
+	mp.recheck = newRecheck(mp.NewWRRIterator())
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache(cfg.CacheSize)
@@ -749,78 +749,84 @@ func (mem *CListMempool) recheckTxs() {
 		return
 	}
 
-	// Recheck all transactions in each lane, sequentially.
-	// TODO: parallelize rechecking on lanes?
-	for _, lane := range mem.sortedLanes {
-		mem.logger.Debug("Recheck lane", "height", mem.height.Load(), "lane", lane, "num-txs", mem.lanes[lane].Len())
-		mem.recheck.init(mem.lanes[lane].Front(), mem.lanes[lane].Back())
+	mem.recheck.init(mem.lanes)
+
+	iter := mem.NewWRRIterator()
+	for {
+		memTx := iter.Next()
+		if memTx == nil {
+			break
+		}
 
 		// NOTE: handleCheckTxResponse may be called concurrently, but CheckTx cannot be executed concurrently
 		// because this function has the lock (via Update and Lock).
-		for e := mem.lanes[lane].Front(); e != nil; e = e.Next() {
-			tx := e.Value.(*mempoolTx).tx
-			mem.recheck.numPendingTxs.Add(1)
+		mem.recheck.numPendingTxs.Add(1)
 
-			// Send CheckTx request to the app to re-validate transaction.
-			resReq, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
-				Tx:   tx,
-				Type: abci.CHECK_TX_TYPE_RECHECK,
-			})
-			if err != nil {
-				panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
-			}
-			resReq.SetCallback(mem.handleRecheckTxResponse(tx))
+		// Send CheckTx request to the app to re-validate transaction.
+		resReq, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
+			Tx:   memTx.Tx(),
+			Type: abci.CHECK_TX_TYPE_RECHECK,
+		})
+		if err != nil {
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", memTx.Tx().Hash()), err))
 		}
+		resReq.SetCallback(mem.handleRecheckTxResponse(memTx.Tx()))
+	}
 
-		// Flush any pending asynchronous recheck requests to process.
-		mem.proxyAppConn.Flush(context.TODO())
+	// Flush any pending asynchronous recheck requests to process.
+	mem.proxyAppConn.Flush(context.TODO())
 
-		// Give some time to finish processing the responses; then finish the rechecking process, even
-		// if not all txs were rechecked.
-		select {
-		case <-time.After(mem.config.RecheckTimeout):
-			mem.recheck.setDone()
-			mem.logger.Error("Timed out waiting for recheck responses")
-		case <-mem.recheck.doneRechecking():
-		}
+	// Give some time to finish processing the responses; then finish the rechecking process, even
+	// if not all txs were rechecked.
+	select {
+	case <-time.After(mem.config.RecheckTimeout):
+		mem.recheck.setDone()
+		mem.logger.Error("Timed out waiting for recheck responses")
+	case <-mem.recheck.doneRechecking():
+	}
 
-		if n := mem.recheck.numPendingTxs.Load(); n > 0 {
-			mem.logger.Error("Not all txs were rechecked", "not-rechecked", n)
-		}
-
-		mem.logger.Debug("Done rechecking lane", "height", mem.height.Load(), "lane", lane)
+	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
+		mem.logger.Error("Not all txs were rechecked", "not-rechecked", n)
 	}
 
 	mem.logger.Debug("Done rechecking", "height", mem.height.Load(), "num-txs", mem.Size())
 }
 
-// The cursor and end pointers define a dynamic list of transactions that could be rechecked. The
-// end pointer is fixed. When a recheck response for a transaction is received, cursor will point to
-// the entry in the mempool corresponding to that transaction, thus narrowing the list. Transactions
-// corresponding to entries between the old and current positions of cursor will be ignored for
-// rechecking. This is to guarantee that recheck responses are processed in the same sequential
-// order as they appear in the mempool.
+// The iterator advances cursor iterating over the list of transactions to
+// recheck. When a recheck response for a transaction is received, cursor will
+// point to the entry in the mempool corresponding to that transaction,
+// advancing the cursor, thus narrowing the list. Transactions corresponding to
+// entries between the old and current positions of cursor will be ignored for
+// rechecking. This is to guarantee that recheck responses are processed in the
+// same sequential order as they appear in the mempool.
 type recheck struct {
-	cursor        *clist.CElement // next expected recheck response
-	end           *clist.CElement // last entry in the mempool to recheck
-	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
-	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
-	isRechecking  atomic.Bool     // true iff the rechecking process has begun and is not yet finished
-	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
+	iter          *NonBlockingWRRIterator
+	cursor        Entry         // next expected recheck response
+	doneCh        chan struct{} // to signal that rechecking has finished successfully (for async app connections)
+	numPendingTxs atomic.Int32  // number of transactions still pending to recheck
+	isRechecking  atomic.Bool   // true iff the rechecking process has begun and is not yet finished
+	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided
 }
 
-func (rc *recheck) init(first, last *clist.CElement) {
+func newRecheck(iter *NonBlockingWRRIterator) *recheck {
+	r := recheck{}
+	r.iter = iter
+	return &r
+}
+
+func (rc *recheck) init(lanes map[types.Lane]*clist.CList) {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
-	rc.cursor = first
-	rc.end = last
-	rc.doneCh = make(chan struct{})
 	rc.numPendingTxs.Store(0)
+	rc.iter.Reset(lanes)
+	rc.cursor = rc.iter.Next()
+	if rc.cursor == nil {
+		return
+	}
+	rc.doneCh = make(chan struct{})
 	rc.isRechecking.Store(true)
 	rc.recheckFull.Store(false)
-
-	rc.tryFinish()
 }
 
 // done returns true when there is no recheck response to process.
@@ -836,20 +842,6 @@ func (rc *recheck) setDone() {
 	rc.isRechecking.Store(false)
 }
 
-// tryFinish will check if the cursor is at the end of the list and notify the channel that
-// rechecking has finished. It returns true iff it's done rechecking.
-func (rc *recheck) tryFinish() bool {
-	if rc.cursor == nil || rc.cursor == rc.end {
-		// Reached end of the list without finding a matching tx.
-		rc.setDone()
-	}
-	if rc.done() {
-		close(rc.doneCh) // notify channel that recheck has finished
-		return true
-	}
-	return false
-}
-
 // findNextEntryMatching searches for the next transaction matching the given transaction, which
 // corresponds to the recheck response to be processed next. Then it checks if it has reached the
 // end of the list, so it can set recheck as finished.
@@ -859,8 +851,9 @@ func (rc *recheck) tryFinish() bool {
 // not rechecked.
 func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 	found := false
-	for ; !rc.done(); rc.cursor = rc.cursor.Next() { // when cursor is the last one, Next returns nil
-		expectedTx := rc.cursor.Value.(*mempoolTx).tx
+	for rc.cursor != nil {
+		expectedTx := rc.cursor.Tx()
+		rc.cursor = rc.iter.Next()
 		if bytes.Equal(*tx, expectedTx) {
 			// Found an entry in the list of txs to recheck that matches tx.
 			found = true
@@ -869,9 +862,10 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 		}
 	}
 
-	if !rc.tryFinish() {
-		// Not finished yet; set the cursor for processing the next recheck response.
-		rc.cursor = rc.cursor.Next()
+	if rc.cursor == nil {
+		// Reached end of the list without finding a matching tx.
+		rc.setDone()
+		close(rc.doneCh) // notify channel that recheck has finished
 	}
 	return found
 }

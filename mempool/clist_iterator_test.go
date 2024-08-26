@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -101,4 +102,46 @@ func TestIteratorNonBlockingOneLane(t *testing.T) {
 
 	next = iter.Next()
 	require.Nil(t, next)
+}
+
+func TestReapOrderMatchesGossipOrder(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	n := 10
+
+	// Add a bunch of txs.
+	for i := 1; i <= n; i++ {
+		tx := kvstore.NewTxFromID(i)
+		rr, err := mp.CheckTx(tx, "")
+		require.NoError(t, err, err)
+		rr.Wait()
+	}
+	require.Equal(t, n, mp.Size())
+
+	gossipIter := mp.NewBlockingWRRIterator()
+	reapIter := mp.NewWRRIterator()
+
+	// Check that both iterators return the same entry as in the reaped txs.
+	txs := make([]types.Tx, n)
+	reapedTxs := mp.ReapMaxTxs(n)
+	for i, reapedTx := range reapedTxs {
+		entry := <-gossipIter.WaitNextCh()
+		// entry can be nil only when an entry is removed concurrently.
+		require.NotNil(t, entry)
+		gossipTx := entry.Tx()
+
+		reapTx := reapIter.Next().Tx()
+		txs[i] = reapTx
+
+		require.EqualValues(t, reapTx, gossipTx)
+		require.EqualValues(t, reapTx, reapedTx)
+	}
+	require.EqualValues(t, txs, reapedTxs)
+
+	err := mp.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
+	require.NoError(t, err)
+	require.Zero(t, mp.Size())
 }

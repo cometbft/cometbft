@@ -792,13 +792,12 @@ func (mem *CListMempool) recheckTxs() {
 	mem.logger.Debug("Done rechecking", "height", mem.height.Load(), "num-txs", mem.Size())
 }
 
-// The iterator advances cursor iterating over the list of transactions to
-// recheck. When a recheck response for a transaction is received, cursor will
-// point to the entry in the mempool corresponding to that transaction,
-// advancing the cursor, thus narrowing the list. Transactions corresponding to
-// entries between the old and current positions of cursor will be ignored for
-// rechecking. This is to guarantee that recheck responses are processed in the
-// same sequential order as they appear in the mempool.
+// When a recheck response for a transaction is received, cursor will point to
+// the entry in the mempool corresponding to that transaction, advancing the
+// cursor, thus narrowing the list of transactions to recheck. In case there are
+// entries between the previous and the current positions of cursor, they will
+// be ignored for rechecking. This is to guarantee that recheck responses are
+// processed in the same sequential order as they appear in the mempool.
 type recheck struct {
 	iter          *NonBlockingWRRIterator
 	cursor        Entry         // next expected recheck response
@@ -849,8 +848,7 @@ func (rc *recheck) setDone() {
 // The goal is to guarantee that transactions are rechecked in the order in which they are in the
 // mempool. Transactions whose recheck response arrive late or don't arrive at all are skipped and
 // not rechecked.
-func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
-	found := false
+func (rc *recheck) findNextEntryMatching(tx *types.Tx) (found bool) {
 	for rc.cursor != nil {
 		expectedTx := rc.cursor.Tx()
 		rc.cursor = rc.iter.Next()
@@ -862,8 +860,7 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 		}
 	}
 
-	if rc.cursor == nil {
-		// Reached end of the list without finding a matching tx.
+	if rc.cursor == nil { // reached end of list
 		rc.setDone()
 		close(rc.doneCh) // notify channel that recheck has finished
 	}

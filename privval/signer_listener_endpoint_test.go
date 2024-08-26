@@ -218,7 +218,7 @@ func TestDuplicateListenReject(t *testing.T) {
 		})
 
 		// after connect, there should not be more than 1 accept fail
-		assert.LessOrEqual(t, listenerEndpoint.getAcceptFailCount(), 1)
+		assert.LessOrEqual(t, listenerEndpoint.acceptFailCount.Load(), uint32(1))
 
 		// give the client some time to re-establish the conn to the remote signer
 		// should see sth like this in the logs:

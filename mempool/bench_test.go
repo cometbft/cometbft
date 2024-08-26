@@ -144,8 +144,6 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 	}
 }
 
-// Test adding transactions while a concurrent routine reaps txs and updates the mempool, simulating
-// the consensus module, when using an async ABCI client.
 func BenchmarkUpdateWithConcurrentCheckTx(b *testing.B) {
 	mp, cleanup := newMempoolWithAsyncConnection(b)
 	defer cleanup()
@@ -167,12 +165,11 @@ func BenchmarkUpdateWithConcurrentCheckTx(b *testing.B) {
 	go func() {
 		defer wg.Done()
 
-		b.ResetTimer()
 		for h := 1; h <= maxHeight; h++ {
 			if mp.Size() == 0 {
 				break
 			}
-			b.StartTimer()
+			// b.StartTimer()
 			txs := mp.ReapMaxBytesMaxGas(1000, -1)
 			mp.PreUpdate()
 			mp.Lock()
@@ -181,7 +178,7 @@ func BenchmarkUpdateWithConcurrentCheckTx(b *testing.B) {
 			err = mp.Update(int64(h), txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
 			require.NoError(b, err)
 			mp.Unlock()
-			b.StopTimer()
+			// b.StopTimer()
 		}
 	}()
 

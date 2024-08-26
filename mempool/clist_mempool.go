@@ -1024,33 +1024,26 @@ func (iter *BlockingWRRIterator) PickLane() types.Lane {
 		if iter.mp.lanes[lane].Len() == 0 ||
 			(iter.cursors[lane] != nil &&
 				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
-			prevLane := lane
 			lane = iter.nextLane()
 			nIter++
 			if nIter >= len(iter.sortedLanes) {
 				ch := iter.mp.addTxCh
 				iter.mp.addTxChMtx.RUnlock()
-				iter.mp.logger.Info("YYY PickLane, bef block", "lane", lane, "prevLane", prevLane)
 				<-ch
-				iter.mp.logger.Info("YYY PickLane, aft block", "lane", lane, "prevLane", prevLane)
 				iter.mp.addTxChMtx.RLock()
 				nIter = 0
 			}
-			iter.mp.logger.Info("YYY PickLane, skipped lane 1", "prevLane", prevLane, "lane", lane)
 			continue
 		}
 
 		if iter.counters[lane] >= uint(lane) {
 			// Reset the counter only when the limit on the lane was reached.
 			iter.counters[lane] = 0
-			prevLane := lane
 			lane = iter.nextLane()
 			nIter = 0
-			iter.mp.logger.Info("YYY PickLane, skipped lane 2", "lane", prevLane, "new Lane ", lane)
 			continue
 		}
 		// TODO: if we detect that a higher-priority lane now has entries, do we preempt access to the current lane?
-		iter.mp.logger.Info("YYY PickLane, returned lane", "lane", lane)
 		return lane
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -207,6 +208,7 @@ func TestIteratorEmptyLanes(t *testing.T) {
 		require.NotNil(t, entry)
 		require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(1))
 	}()
+	time.Sleep(100 * time.Millisecond)
 
 	tx := kvstore.NewTxFromID(1)
 	res := abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})

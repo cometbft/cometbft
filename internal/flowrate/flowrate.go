@@ -30,6 +30,8 @@ type Monitor struct {
 	sLast  time.Duration // Most recent sample time (stop time when inactive)
 	sRate  time.Duration // Sampling rate
 	tLast  time.Duration // Time of the most recent transfer of at least 1 byte
+
+	sleepTime time.Duration // Amount of time spend on time.Sleep() calls
 }
 
 // New creates a new flow control monitor. Instantaneous transfer rate is
@@ -114,6 +116,8 @@ type Status struct {
 	Duration time.Duration // Time period covered by the statistics
 	Idle     time.Duration // Time since the last transfer of at least 1 byte
 	Active   bool          // Flag indicating an active transfer
+
+	SleepTime time.Duration // Amount of time spend on time.Sleep() calls
 }
 
 // Status returns current transfer status information. The returned value
@@ -129,6 +133,10 @@ func (m *Monitor) Status() Status {
 		Bytes:    m.bytes,
 		Samples:  m.samples,
 		PeakRate: round(m.rPeak),
+	}
+	if m.sleepTime > 0 {
+		s.SleepTime = m.sleepTime
+		m.sleepTime = 0
 	}
 	if s.Duration > 0 {
 		rAvg := float64(s.Bytes) / s.Duration.Seconds()
@@ -167,8 +175,16 @@ func (m *Monitor) Limit(want int, rate int64, block bool) (n int) {
 
 	// If block == true, wait until m.sBytes < limit
 	if now := m.update(0); block {
+		var startTime time.Time
 		for m.sBytes >= limit && m.active {
+			if startTime.IsZero() {
+				startTime = time.Now()
+			}
 			now = m.waitNextSample(now)
+		}
+		// Compute the actual time spent in waitNextSample() calls
+		if !startTime.IsZero() {
+			m.sleepTime += time.Since(startTime)
 		}
 	}
 

@@ -81,12 +81,12 @@ func TestReader(t *testing.T) {
 
 	// Start, Bytes, Samples, InstRate, CurRate, AvgRate, PeakRate, Duration, Idle, Active
 	want := []Status{
-		{start, 0, 0, 0, 0, 0, 0, 0, 0, true},
-		{start, 10, 1, 100, 100, 100, 100, _100ms, 0, true},
-		{start, 20, 2, 100, 100, 100, 100, _200ms, _100ms, true},
-		{start, 20, 3, 0, 90, 67, 100, _300ms, _200ms, true},
-		{start, 20, 3, 0, 0, 67, 100, _300ms, 0, false},
-		{start, 20, 3, 0, 0, 67, 100, _300ms, 0, false},
+		{start, 0, 0, 0, 0, 0, 0, 0, 0, true, 0},
+		{start, 10, 1, 100, 100, 100, 100, _100ms, 0, true, 0},
+		{start, 20, 2, 100, 100, 100, 100, _200ms, _100ms, true, 0},
+		{start, 20, 3, 0, 90, 67, 100, _300ms, _200ms, true, 0},
+		{start, 20, 3, 0, 0, 67, 100, _300ms, 0, false, 0},
+		{start, 20, 3, 0, 0, 67, 100, _300ms, 0, false, 0},
 	}
 	for i, s := range status {
 		if !statusesAreEqual(&s, &want[i]) {
@@ -180,7 +180,8 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 		ratesAreEqual(s1.InstRate, s2.InstRate) &&
 		ratesAreEqual(s1.CurRate, s2.CurRate) &&
 		ratesAreEqual(s1.AvgRate, s2.AvgRate) &&
-		ratesAreEqual(s1.PeakRate, s2.PeakRate) {
+		ratesAreEqual(s1.PeakRate, s2.PeakRate) &&
+		durationsAreEqual(s1.SleepTime, s2.SleepTime) {
 		return true
 	}
 	return false

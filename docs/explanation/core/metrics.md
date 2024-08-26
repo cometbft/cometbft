@@ -56,6 +56,8 @@ The following metrics are available:
 | p2p\_message\_receive\_bytes\_total        | Counter   | message\_type      | Number of bytes received from all peers per message type                                                                               |
 | p2p\_peers                                 | Gauge     |                    | Number of peers node's connected to                                                                                                    |
 | p2p\_peer\_pending\_send\_bytes            | Gauge     | peer\_id           | Number of pending bytes to be sent to a given peer                                                                                     |
+| p2p\_recv\_rate\_limiter\_delay            | Counter   | peer\_id           | Time in seconds spent sleeping by the receive rate limiter, in seconds.                                                                |
+| p2p\_send\_rate\_limiter\_delay            | Counter   | peer\_id           | Time in seconds spent sleeping by the send rate limiter, in seconds.                                                                   |
 | mempool\_size                              | Gauge     |                    | Number of uncommitted transactions                                                                                                     |
 | mempool\_tx\_size\_bytes                   | Histogram |                    | Transaction sizes in bytes                                                                                                             |
 | mempool\_failed\_txs                       | Counter   |                    | Number of failed transactions                                                                                                          |

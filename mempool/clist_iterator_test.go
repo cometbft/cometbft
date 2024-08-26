@@ -12,7 +12,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-func TestReapIterator(t *testing.T) {
+func TestIteratorNonBlocking(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	cfg := test.ResetTestRoot("mempool_test")
@@ -29,7 +29,7 @@ func TestReapIterator(t *testing.T) {
 	}
 	require.Equal(t, n, mp.Size())
 
-	iter := mp.NewReapIterator()
+	iter := mp.NewWRRIterator()
 	expectedOrder := []int{
 		0, 11, 22, 33, 44, 55, 66, // lane 7
 		1, 2, 4, // lane 3
@@ -66,7 +66,7 @@ func TestReapIterator(t *testing.T) {
 	require.Equal(t, n, counter)
 }
 
-func TestReapIteratorOneLane(t *testing.T) {
+func TestIteratorNonBlockingOneLane(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
 	cfg := test.ResetTestRoot("mempool_test")
@@ -86,7 +86,7 @@ func TestReapIteratorOneLane(t *testing.T) {
 	}
 	require.Equal(t, 10, mp.Size())
 
-	iter := mp.NewReapIterator()
+	iter := mp.NewWRRIterator()
 	expectedOrder := []int{0, 11, 22, 33, 44, 55, 66, 77, 88, 99}
 
 	var next *clist.CElement

@@ -173,7 +173,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	checkTxs(t, mp, 1)
-	iter := mp.NewIterator()
+	iter := mp.NewBlockingWRRIterator()
 	tx0 := <-iter.WaitNextCh()
 	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
@@ -871,7 +871,7 @@ func TestMempoolIteratorRace(t *testing.T) {
 			defer wg.Done()
 
 			for counter.Load() < n {
-				iter := mp.NewIterator()
+				iter := mp.NewBlockingWRRIterator()
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
@@ -892,7 +892,7 @@ func TestMempoolIteratorRace(t *testing.T) {
 			defer wg.Done()
 
 			for counter.Load() < n {
-				iter := mp.NewIterator()
+				iter := mp.NewBlockingWRRIterator()
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
@@ -942,7 +942,7 @@ func TestMempoolEmptyLanes(t *testing.T) {
 	defer cleanup()
 
 	go func() {
-		iter := mp.NewIterator()
+		iter := mp.NewBlockingWRRIterator()
 		require.Equal(t, 0, mp.Size())
 		entry := <-iter.WaitNextCh()
 
@@ -1229,7 +1229,7 @@ func TestMempoolIteratorExactOrder(t *testing.T) {
 		}
 		t.Log("Mempool full, starting to pick up transactions", mp.Size())
 
-		iter := mp.NewIterator()
+		iter := mp.NewBlockingWRRIterator()
 
 		counter := 0
 		for counter < n {
@@ -1288,7 +1288,7 @@ func TestMempoolIteratorCountOnly(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		iter := mp.NewIterator()
+		iter := mp.NewBlockingWRRIterator()
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -1331,7 +1331,7 @@ func TestMempoolIteratorNoLanes(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		iter := mp.NewIterator()
+		iter := mp.NewBlockingWRRIterator()
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {

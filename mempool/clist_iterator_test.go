@@ -134,7 +134,6 @@ func TestIteratorRace(t *testing.T) {
 	var counter atomic.Int64
 	go func() {
 		waitForNumTxsInMempool(numTxs, mp)
-		fmt.Println("mempool height ", mp.height.Load())
 
 		go func() {
 			defer wg.Done()

@@ -64,6 +64,8 @@ type CListMempool struct {
 	defaultLane types.Lane
 	sortedLanes []types.Lane // lanes sorted by priority
 
+	reapIter *NonBlockingWRRIterator
+
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
 	cache TxCache
@@ -117,6 +119,8 @@ func NewCListMempool(
 		slices.Sort(mp.sortedLanes)
 		slices.Reverse(mp.sortedLanes)
 	}
+
+	mp.reapIter = mp.NewWRRIterator()
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache(cfg.CacheSize)
@@ -610,9 +614,9 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.Size())
-	iter := mem.NewWRRIterator()
+	mem.reapIter.Reset(mem.lanes)
 	for {
-		memTx := iter.Next()
+		memTx := mem.reapIter.Next()
 		if memTx == nil {
 			break
 		}
@@ -650,9 +654,9 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	}
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max))
-	iter := mem.NewWRRIterator()
+	mem.reapIter.Reset(mem.lanes)
 	for len(txs) <= max {
-		memTx := iter.Next()
+		memTx := mem.reapIter.Next()
 		if memTx == nil {
 			break
 		}
@@ -913,18 +917,26 @@ type NonBlockingWRRIterator struct {
 }
 
 func (mem *CListMempool) NewWRRIterator() *NonBlockingWRRIterator {
-	// Set cursors at the beginning of each lane.
-	cursors := make(map[types.Lane]*clist.CElement, len(mem.sortedLanes))
-	for _, lane := range mem.sortedLanes {
-		cursors[lane] = mem.lanes[lane].Front()
-	}
-	iter := WRRIterator{
+	baseIter := WRRIterator{
 		sortedLanes: mem.sortedLanes,
-		counters:    make(map[types.Lane]uint, len(mem.sortedLanes)),
-		cursors:     cursors,
+		counters:    make(map[types.Lane]uint, len(mem.lanes)),
+		cursors:     make(map[types.Lane]*clist.CElement, len(mem.lanes)),
 	}
-	return &NonBlockingWRRIterator{
-		WRRIterator: iter,
+	iter := &NonBlockingWRRIterator{
+		WRRIterator: baseIter,
+	}
+	iter.Reset(mem.lanes)
+	return iter
+}
+
+func (iter *NonBlockingWRRIterator) Reset(lanes map[types.Lane]*clist.CList) {
+	iter.laneIndex = 0
+	for i := range iter.counters {
+		iter.counters[i] = 0
+	}
+	// Set cursors at the beginning of each lane.
+	for lane := range lanes {
+		iter.cursors[lane] = lanes[lane].Front()
 	}
 }
 

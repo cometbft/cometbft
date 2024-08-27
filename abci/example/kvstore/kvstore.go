@@ -180,12 +180,16 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
 
-	lane := app.assignLane(req.Tx)
+  lane := app.assignLane(req.Tx)
 	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 
 // assignLane deterministically computes a lane for the given tx.
 func (app *Application) assignLane(tx []byte) uint32 {
+	if len(app.lanes) == 0 {
+		return 0
+	}
+
 	if isValidatorTx(tx) {
 		return app.lanes["val"] // priority 9
 	}

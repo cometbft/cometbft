@@ -2,9 +2,13 @@
 name: Check documentation ToC
 on:
   pull_request:
-    push:
-      branches:
-        - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   check:

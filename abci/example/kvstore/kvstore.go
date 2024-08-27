@@ -181,19 +181,43 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 	if !app.useLanes {
 		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
-	// Assign a lane to the transaction deterministically.
-	var lane uint32
-	txHash := tmhash.Sum(req.Tx)
-	switch {
-	case txHash[0] == 1 && txHash[1] == 0 && txHash[2] == 0:
-		lane = app.lanes["foo"]
-	case txHash[0] == 1 && txHash[1] == 1 && txHash[2] == 1:
-		lane = app.lanes["bar"]
-	default:
-		lane = app.lanes[defaultLane]
+
+   lane := app.assignLane(req.Tx)
+	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+}
+
+// assignLane deterministically computes a lane for the given tx.
+func (app *Application) assignLane(tx []byte) uint32 {
+	if len(app.lanes) == 0 {
+		return 0
 	}
 
-	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+	if isValidatorTx(tx) {
+		return app.lanes["val"] // priority 9
+	}
+
+	key, _, err := parseTx(tx)
+	if err != nil {
+		return app.lanes[defaultLane]
+	}
+
+	// If the transaction key is an integer (for example, a transaction of the
+	// form 2=2), we will assign a lane. Any other type of transaction will go
+	// to the default lane.
+	keyInt, err := strconv.Atoi(key)
+	if err != nil {
+		return app.lanes[defaultLane]
+	}
+
+	switch {
+	case keyInt%11 == 0:
+		return app.lanes["foo"] // priority 7
+	case keyInt%3 == 0:
+		return app.lanes["bar"] // priority 1
+	default:
+		return app.lanes[defaultLane] // priority 3
+	}
+
 }
 
 // Tx must have a format like key:value or key=value. That is:

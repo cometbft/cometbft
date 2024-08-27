@@ -2,12 +2,12 @@
 
 ## Context
 
-We are using raw `[]byte` for merkle proofs in `abci.ResponseQuery`. It makes hard to handle multilayer merkle proofs and general cases. Here, new interface `ProofOperator` is defined. The users can defines their own Merkle proof format and layer them easily. 
+We are using raw `[]byte` for merkle proofs in `abci.ResponseQuery`. It makes hard to handle multilayer merkle proofs and general cases. Here, new interface `ProofOperator` is defined. The users can defines their own Merkle proof format and layer them easily.
 
 Goals:
 - Layer Merkle proofs without decoding/reencoding
 - Provide general way to chain proofs
-- Make the proof format extensible, allowing thirdparty proof types
+- Make the proof format extensible, allowing third party proof types
 
 ## Decision
 
@@ -40,9 +40,9 @@ Implemented
 ### Positive
 
 - Layering becomes easier (no encoding/decoding at each step)
-- Thirdparty proof format is available
+- Third party proof format is available
 
-### Negative 
+### Negative
 
 - Larger size for abci.ResponseQuery
 - Unintuitive proof chaining(it is not clear what `Run()` is doing)

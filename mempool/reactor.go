@@ -225,12 +225,10 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			return
 		}
 
-		memR.Logger.Info("XXX before select")
 		select {
 		case entry = <-iter.WaitNextCh():
 			// If the entry we were looking at got garbage collected (removed), try again.
 			if entry == nil {
-				memR.Logger.Info("XXX entry is nil")
 				continue
 			}
 		case <-peer.Quit():

@@ -59,8 +59,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	}
 
 	txs := checkTxs(t, reactors[0].mempool, numTxs)
-	reapedTxs := reactors[0].mempool.ReapMaxTxs(len(txs))
-	waitForReactors(t, reapedTxs, reactors, checkTxsInOrder)
+	waitForReactors(t, txs, reactors, checkTxsInOrder)
 }
 
 // regression test for https://github.com/tendermint/tendermint/issues/5408
@@ -517,7 +516,6 @@ func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
 	reactors := make([]*Reactor, n)
 	for i := 0; i < n; i++ {
 		app := kvstore.NewInMemoryApplication()
-
 		cc := proxy.NewLocalClientCreator(app)
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()

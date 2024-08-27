@@ -42,7 +42,7 @@ def plot_all_experiments(release, csv):
         ax.grid(True)
 
         # Group by connection number and transaction rate
-        paramGroups = group.groupby(['connections','rate'])
+        paramGroups = group.groupby(['connections','rate', 'lane'])
         for (subKey) in paramGroups.groups.keys():
             subGroup = paramGroups.get_group(subKey)
             startTime = subGroup.block_time.min()

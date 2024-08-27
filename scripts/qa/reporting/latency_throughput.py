@@ -192,7 +192,7 @@ def compute_lane_stats(experiments):
             'throughput_rate': throughput_rate,
         })
 
-    # Sort stats for each number of connections in order of increasing
+    # Sort stats for each lane in an experiment in order of increasing
     # throughput rate, and then extract average latencies and throughput rates
     # as separate data series.
    

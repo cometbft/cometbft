@@ -41,7 +41,7 @@ func Kill() error {
 }
 
 func Exit(s string) {
-	fmt.Printf(s + "\n")
+	fmt.Println(s)
 	os.Exit(1)
 }
 

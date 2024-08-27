@@ -429,7 +429,7 @@ Those checks, have been mentioned in the user issues described at the beginning 
 - Proto checks
 - Receiving unknown messages via the mempool channel
 
-The previous code snippets do not incroporate these in peer banning. If we adopt those as valid reasons for banning, we should put the corresponding logic in place.
+The previous code snippets do not incorporate these in peer banning. If we adopt those as valid reasons for banning, we should put the corresponding logic in place.
 
 ### Impacted mempool functionalities
 

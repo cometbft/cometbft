@@ -2,17 +2,14 @@ package mempool
 
 import (
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
-	abci "github.com/cometbft/cometbft/abci/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -143,70 +140,4 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 		doCommit(b, mp, app, txs, int64(i))
 		assert.True(b, true)
 	}
-}
-
-// Test adding transactions while a concurrent routine reaps txs and updates the mempool, simulating
-// the consensus module, when using an async ABCI client.
-func BenchmarkMempoolConcurrentCheckTxAndUpdate(b *testing.B) {
-	// mp, cleanup := newMempoolWithAsyncConnection(t)
-	// defer cleanup()
-
-	maxHeight := 1000
-
-	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
-	app := kvstore.NewInMemoryApplication()
-
-	// Start server
-	server := abciserver.NewSocketServer(sockPath, app)
-	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
-	if err := server.Start(); err != nil {
-		b.Fatalf("Error starting socket server: %v", err.Error())
-	}
-
-	b.Cleanup(func() {
-		if err := server.Stop(); err != nil {
-			b.Error(err)
-		}
-	})
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	// A process that continuously reaps and update the mempool, simulating creation and committing
-	// of blocks by the consensus module.
-	go func() {
-		defer wg.Done()
-
-		b.ResetTimer()
-		time.Sleep(50 * time.Millisecond) // wait a bit to have some txs in mempool before starting updating
-		for h := 1; h <= maxHeight; h++ {
-			if mp.Size() == 0 {
-				break
-			}
-			b.StartTimer()
-			txs := mp.ReapMaxBytesMaxGas(100, -1)
-			mp.PreUpdate()
-			mp.Lock()
-			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
-			require.NoError(b, err)
-			err = mp.Update(int64(h), txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			require.NoError(b, err)
-			mp.Unlock()
-			b.StartTimer()
-		}
-	}()
-
-	// Concurrently, add transactions (one per height).
-	for h := 1; h <= maxHeight; h++ {
-		_, err := mp.CheckTx(kvstore.NewTxFromID(h), "")
-		require.NoError(b, err)
-	}
-
-	wg.Wait()
-
-	// All added transactions should have been removed from the mempool.
-	require.Zero(b, mp.Size())
 }

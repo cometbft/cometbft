@@ -446,7 +446,6 @@ func TestReactorRecordsVotesAndBlockParts(t *testing.T) {
 func TestReactorVotingPowerChange(t *testing.T) {
 	nVals := 4
 	logger := log.TestingLogger()
-
 	css, cleanup := randConsensusNet(
 		t,
 		nVals,

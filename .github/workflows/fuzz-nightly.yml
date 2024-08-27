@@ -9,6 +9,10 @@ on:
     paths:
       - "test/fuzz/**/*.go"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   fuzz-nightly-test:
     runs-on: ubuntu-latest

@@ -75,7 +75,6 @@ def process_input_files(input_files):
 
 
 def process_tx(experiments, tx):
-    print(tx)
     exp_id = tx['experiment_id']
     # Block time is nanoseconds from the epoch - convert to seconds
     block_time = float(tx['block_time']) / (10**9)
@@ -85,7 +84,6 @@ def process_tx(experiments, tx):
     rate = int(tx['rate'])
 
     lane = int(tx['lane'])
-    print(lane)
     if exp_id not in experiments:
         experiments[exp_id] = {
             'connections': connections,
@@ -175,7 +173,7 @@ def compute_experiments_stats(experiments):
         stats[l] = sorted(statsLane[l], key=lambda s: s['throughput_rate'])
         avg_latencies_lane[l] = []
         throughput_rates_lane[l] = []
-        for s in stats[l]:
+        for s in statsLane[l]:
             avg_latencies_lane[l].append(s['avg_latency'])
             throughput_rates_lane[l].append(s['throughput_rate'])
             logging.info('For %d connection(s): '

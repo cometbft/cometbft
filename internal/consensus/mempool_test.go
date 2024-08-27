@@ -30,7 +30,6 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
 	app := kvstore.NewInMemoryApplication()
-	app.SetUseLanes(false)
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
 	state.AppHash = resp.LastBlockAppHash
@@ -122,9 +121,7 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
-	app := kvstore.NewInMemoryApplication()
-	app.SetUseLanes(false)
-	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB)
+	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], kvstore.NewInMemoryApplication(), blockDB)
 	err := stateStore.Save(state)
 	require.NoError(t, err)
 	newBlockEventsCh := subscribe(cs.eventBus, types.EventQueryNewBlockEvents)

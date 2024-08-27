@@ -1284,7 +1284,7 @@ func TestMempoolIteratorCountOnly(t *testing.T) {
 // submitted - increasing tx IDs.
 func TestMempoolIteratorNoLanes(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
-	app.SetUseLanes(false)
+
 	cc := proxy.NewLocalClientCreator(app)
 
 	cfg := test.ResetTestRoot("mempool_test")

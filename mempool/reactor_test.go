@@ -517,7 +517,7 @@ func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
 	reactors := make([]*Reactor, n)
 	for i := 0; i < n; i++ {
 		app := kvstore.NewInMemoryApplication()
-		app.SetUseLanes(false)
+
 		cc := proxy.NewLocalClientCreator(app)
 		mempool, cleanup := newMempoolWithApp(cc)
 		defer cleanup()

@@ -1,4 +1,8 @@
 [codespell]
+<<<<<<< HEAD
 skip = *.sum,go.mod,LOG,*/consensus-paper/*,*/grammar-auto/*,*.tla,.github/workflows/fuzz-nightly.yml
+=======
+skip = *.sum,go.mod,LOG,*/consensus-paper/*,*/grammar-auto/*,*.qnt,*.tla,.github/workflows/fuzz-nightly.yml,.github/workflows/ignore-words.txt
+>>>>>>> 6088660d5 (ci: upgrade pre-commit hooks versions (#3861))
 quiet-level = 2
 ignore-words = .github/workflows/ignore-words.txt

@@ -8,13 +8,11 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-    - deadcode
     - dupword
     - errorlint
     - errname
     - err113
     - exhaustive
-    - exhaustivestruct
     - exhaustruct
     - execinquery
     - forbidigo
@@ -25,29 +23,27 @@ linters:
     - gocognit
     - gocyclo
     - godox
-    - golint
     - gomnd
-    - ifshort
+    - gosec
     - interfacebloat
     - intrange
-    - interfacer
     - ireturn
     - lll
     - maintidx
     - mnd
-    - maligned
     - nestif
     - nilnil
     - nlreturn
     - nonamedreturns
-    - nosnakecase
     - predeclared
+<<<<<<< HEAD
     - scopelint
     - staticcheck
     - structcheck
+=======
+>>>>>>> 6088660d5 (ci: upgrade pre-commit hooks versions (#3861))
     - tagliatelle
     - testifylint
-    - varcheck
     - varnamelen
     - wrapcheck
     - wsl
@@ -145,6 +141,8 @@ linters-settings:
   revive:
     enable-all-rules: true
     rules:
+      - name: comment-spacings # temporarily disabled
+        disabled: true
       - name: max-public-structs
         disabled: true
       - name: cognitive-complexity

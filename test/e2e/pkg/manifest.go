@@ -88,6 +88,16 @@ type Manifest struct {
 	LoadTxConnections int `toml:"load_tx_connections"`
 	LoadMaxTxs        int `toml:"load_max_txs"`
 
+	// Weight for each lane defined by the app. The transaction loader will
+	// assign lanes to generated transactions proportionally to their weights.
+	LoadLaneWeights []uint `toml:"load_lane_weights"`
+
+	// LogLevel specifies the log level to be set on all nodes.
+	LogLevel string `toml:"log_level"`
+
+	// LogFormat specifies the log format to be set on all nodes.
+	LogFormat string `toml:"log_format"`
+
 	// Enable or disable Prometheus metrics on all nodes.
 	// Defaults to false (disabled).
 	Prometheus bool `toml:"prometheus"`

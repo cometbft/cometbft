@@ -66,6 +66,8 @@ type CListMempool struct {
 	defaultLane types.Lane
 	sortedLanes []types.Lane // lanes sorted by priority
 
+	reapIter *NonBlockingWRRIterator
+
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
 	cache TxCache
@@ -120,6 +122,9 @@ func NewCListMempool(
 		slices.Sort(mp.sortedLanes)
 		slices.Reverse(mp.sortedLanes)
 	}
+
+	mp.reapIter = mp.NewWRRIterator()
+	mp.recheck = newRecheck(mp.NewWRRIterator())
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache(cfg.CacheSize)
@@ -236,7 +241,7 @@ func (mem *CListMempool) Unlock() {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
 	if mem.recheck.setRecheckFull() {
-		mem.logger.Debug("the state of recheckFull has flipped")
+		mem.logger.Debug("The state of recheckFull has flipped")
 	}
 }
 
@@ -282,7 +287,6 @@ func (mem *CListMempool) FlushAppConn() error {
 
 // XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
 func (mem *CListMempool) Flush() {
-	// TODO: Check that doing updateMtx.Lock is correct. We change it from updateMtx.RLock because of race conditions in the tests.
 	mem.updateMtx.Lock()
 	defer mem.updateMtx.Unlock()
 
@@ -354,7 +358,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 		Type: abci.CHECK_TX_TYPE_CHECK,
 	})
 	if err != nil {
-		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%X", tx.Hash()), err))
 	}
 	reqRes.SetCallback(mem.handleCheckTxResponse(tx, sender))
 
@@ -385,7 +389,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		if res.Code != abci.CodeTypeOK || postCheckErr != nil {
 			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
-				"rejected invalid transaction",
+				"Rejected invalid transaction",
 				"tx", tx.Hash(),
 				"res", res,
 				"err", postCheckErr,
@@ -415,7 +419,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
 			}
 			mem.logger.Debug(
-				"transaction already in mempool, not adding it again",
+				"Transaction already in mempool, not adding it again",
 				"tx", tx.Hash(),
 				"lane", lane,
 				"height", mem.height.Load(),
@@ -563,8 +567,8 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 
 		// Check whether the rechecking process has finished.
 		if mem.recheck.done() {
-			mem.logger.Error("rechecking has finished; discard late recheck response",
-				"tx", log.NewLazySprintf("%v", tx.Hash()))
+			mem.logger.Error("Rechecking has finished; discard late recheck response",
+				"tx", log.NewLazySprintf("%X", tx.Hash()))
 			return
 		}
 		mem.metrics.RecheckTimes.Add(1)
@@ -583,7 +587,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 		// If tx is invalid, remove it from the mempool and the cache.
 		if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+			mem.logger.Debug("Tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
 			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			} else {
@@ -631,31 +635,32 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.Size())
-	for _, lane := range mem.sortedLanes {
-		for e := mem.lanes[lane].Front(); e != nil; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
-
-			txs = append(txs, memTx.tx)
-
-			dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.tx})
-
-			// Check total size requirement
-			if maxBytes > -1 && runningSize+dataSize > maxBytes {
-				return txs[:len(txs)-1]
-			}
-
-			runningSize += dataSize
-
-			// Check total gas requirement.
-			// If maxGas is negative, skip this check.
-			// Since newTotalGas < masGas, which
-			// must be non-negative, it follows that this won't overflow.
-			newTotalGas := totalGas + memTx.gasWanted
-			if maxGas > -1 && newTotalGas > maxGas {
-				return txs[:len(txs)-1]
-			}
-			totalGas = newTotalGas
+	mem.reapIter.Reset(mem.lanes)
+	for {
+		memTx := mem.reapIter.Next()
+		if memTx == nil {
+			break
 		}
+		txs = append(txs, memTx.Tx())
+
+		dataSize := types.ComputeProtoSizeForTxs([]types.Tx{memTx.Tx()})
+
+		// Check total size requirement
+		if maxBytes > -1 && runningSize+dataSize > maxBytes {
+			return txs[:len(txs)-1]
+		}
+
+		runningSize += dataSize
+
+		// Check total gas requirement.
+		// If maxGas is negative, skip this check.
+		// Since newTotalGas < masGas, which
+		// must be non-negative, it follows that this won't overflow.
+		newTotalGas := totalGas + memTx.GasWanted()
+		if maxGas > -1 && newTotalGas > maxGas {
+			return txs[:len(txs)-1]
+		}
+		totalGas = newTotalGas
 	}
 	return txs
 }
@@ -670,11 +675,13 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	}
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max))
-	for _, lane := range mem.sortedLanes {
-		for e := mem.lanes[lane].Front(); e != nil && len(txs) <= max; e = e.Next() {
-			memTx := e.Value.(*mempoolTx)
-			txs = append(txs, memTx.tx)
+	mem.reapIter.Reset(mem.lanes)
+	for len(txs) <= max {
+		memTx := mem.reapIter.Next()
+		if memTx == nil {
+			break
 		}
+		txs = append(txs, memTx.Tx())
 	}
 	return txs
 }
@@ -768,106 +775,89 @@ func (mem *CListMempool) updateSizeMetrics(lane types.Lane) {
 // recheckTxs sends all transactions in the mempool to the app for re-validation. When the function
 // returns, all recheck responses from the app have been processed.
 func (mem *CListMempool) recheckTxs() {
-	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
+	mem.logger.Debug("Recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
 
 	if mem.Size() <= 0 {
 		return
 	}
 
-	var lastElement *clist.CElement
-	var firstElement *clist.CElement
-	for _, lane := range mem.sortedLanes {
-		if mem.lanes[lane].Len() != 0 {
-			lastElement = mem.lanes[lane].Back()
+	mem.recheck.init(mem.lanes)
+
+	iter := mem.NewWRRIterator()
+	for {
+		memTx := iter.Next()
+		if memTx == nil {
+			break
 		}
-		if firstElement == nil {
-			firstElement = mem.lanes[lane].Front()
-		}
-	}
-	mem.recheck.init(firstElement, lastElement)
-	// Recheck all transactions in each lane, sequentially.
-	// TODO: parallelize rechecking on lanes?
-LANE_FOR_LOOP:
-	for _, lane := range mem.sortedLanes {
-		mem.logger.Debug("recheck lane", "height", mem.height.Load(), "lane", lane, "num-txs", mem.lanes[lane].Len())
 
 		// NOTE: handleCheckTxResponse may be called concurrently, but CheckTx cannot be executed concurrently
 		// because this function has the lock (via Update and Lock).
-		for e := mem.lanes[lane].Front(); e != nil; e = e.Next() {
-			tx := e.Value.(*mempoolTx).tx
-			mem.recheck.numPendingTxs.Add(1)
+		mem.recheck.numPendingTxs.Add(1)
 
-			// Send CheckTx request to the app to re-validate transaction.
-			resReq, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
-				Tx:   tx,
-				Type: abci.CHECK_TX_TYPE_RECHECK,
-			})
-			if err != nil {
-				panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
-			}
-			resReq.SetCallback(mem.handleRecheckTxResponse(tx))
+		// Send CheckTx request to the app to re-validate transaction.
+		resReq, err := mem.proxyAppConn.CheckTxAsync(context.TODO(), &abci.CheckTxRequest{
+			Tx:   memTx.Tx(),
+			Type: abci.CHECK_TX_TYPE_RECHECK,
+		})
+		if err != nil {
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", memTx.Tx().Hash()), err))
 		}
-
-		// Flush any pending asynchronous recheck requests to process.
-		mem.proxyAppConn.Flush(context.TODO())
-		numlanes := len(mem.sortedLanes)
-		select {
-		case <-time.After(mem.config.RecheckTimeout / time.Duration(numlanes+1)):
-			// mem.recheck.setDone()
-			continue LANE_FOR_LOOP
-			// mem.logger.Error("timed out waiting for recheck responses")
-		case <-mem.recheck.doneRechecking():
-		}
-
-		if n := mem.recheck.numPendingTxs.Load(); n > 0 {
-			mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
-		}
-		mem.logger.Debug("done rechecking lane", "height", mem.height.Load(), "lane", lane)
+		resReq.SetCallback(mem.handleRecheckTxResponse(memTx.Tx()))
 	}
+
+	// Flush any pending asynchronous recheck requests to process.
+	mem.proxyAppConn.Flush(context.TODO())
+
 	// Give some time to finish processing the responses; then finish the rechecking process, even
 	// if not all txs were rechecked.
-	numlanes := len(mem.sortedLanes)
 	select {
-	case <-time.After(mem.config.RecheckTimeout / time.Duration(numlanes+1)):
+	case <-time.After(mem.config.RecheckTimeout):
 		mem.recheck.setDone()
-		mem.logger.Error("timed out waiting for recheck responses")
+		mem.logger.Error("Timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
 	}
 
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
-		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
+		mem.logger.Error("Not all txs were rechecked", "not-rechecked", n)
 	}
 
-	mem.logger.Debug("done rechecking", "height", mem.height.Load())
+	mem.logger.Debug("Done rechecking", "height", mem.height.Load(), "num-txs", mem.Size())
 }
 
-// The cursor and end pointers define a dynamic list of transactions that could be rechecked. The
-// end pointer is fixed. When a recheck response for a transaction is received, cursor will point to
-// the entry in the mempool corresponding to that transaction, thus narrowing the list. Transactions
-// corresponding to entries between the old and current positions of cursor will be ignored for
-// rechecking. This is to guarantee that recheck responses are processed in the same sequential
-// order as they appear in the mempool.
+// When a recheck response for a transaction is received, cursor will point to
+// the entry in the mempool corresponding to that transaction, advancing the
+// cursor, thus narrowing the list of transactions to recheck. In case there are
+// entries between the previous and the current positions of cursor, they will
+// be ignored for rechecking. This is to guarantee that recheck responses are
+// processed in the same sequential order as they appear in the mempool.
 type recheck struct {
-	cursor        *clist.CElement // next expected recheck response
-	end           *clist.CElement // last entry in the mempool to recheck
-	doneCh        chan struct{}   // to signal that rechecking has finished successfully (for async app connections)
-	numPendingTxs atomic.Int32    // number of transactions still pending to recheck
-	isRechecking  atomic.Bool     // true iff the rechecking process has begun and is not yet finished
-	recheckFull   atomic.Bool     // whether rechecking TXs cannot be completed before a new block is decided
+	iter          *NonBlockingWRRIterator
+	cursor        Entry         // next expected recheck response
+	doneCh        chan struct{} // to signal that rechecking has finished successfully (for async app connections)
+	numPendingTxs atomic.Int32  // number of transactions still pending to recheck
+	isRechecking  atomic.Bool   // true iff the rechecking process has begun and is not yet finished
+	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided
 }
 
-func (rc *recheck) init(first, last *clist.CElement) {
+func newRecheck(iter *NonBlockingWRRIterator) *recheck {
+	r := recheck{}
+	r.iter = iter
+	return &r
+}
+
+func (rc *recheck) init(lanes map[types.Lane]*clist.CList) {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
-	rc.cursor = first
-	rc.end = last
-	rc.doneCh = make(chan struct{})
 	rc.numPendingTxs.Store(0)
+	rc.iter.Reset(lanes)
+	rc.cursor = rc.iter.Next()
+	if rc.cursor == nil {
+		return
+	}
+	rc.doneCh = make(chan struct{})
 	rc.isRechecking.Store(true)
-	// rc.recheckFull.Store(false)
-
-	// rc.tryFinish()
+	rc.recheckFull.Store(false)
 }
 
 // done returns true when there is no recheck response to process.
@@ -883,20 +873,6 @@ func (rc *recheck) setDone() {
 	rc.isRechecking.Store(false)
 }
 
-// tryFinish will check if the cursor is at the end of the list and notify the channel that
-// rechecking has finished. It returns true iff it's done rechecking.
-func (rc *recheck) tryFinish() bool {
-	if rc.cursor == nil || rc.cursor == rc.end {
-		// Reached end of the list without finding a matching tx.
-		rc.setDone()
-	}
-	if rc.done() {
-		close(rc.doneCh) // notify channel that recheck has finished
-		return true
-	}
-	return false
-}
-
 // findNextEntryMatching searches for the next transaction matching the given transaction, which
 // corresponds to the recheck response to be processed next. Then it checks if it has reached the
 // end of the list, so it can set recheck as finished.
@@ -904,10 +880,10 @@ func (rc *recheck) tryFinish() bool {
 // The goal is to guarantee that transactions are rechecked in the order in which they are in the
 // mempool. Transactions whose recheck response arrive late or don't arrive at all are skipped and
 // not rechecked.
-func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
-	found := false
-	for ; !rc.done() && rc.cursor != nil; rc.cursor = rc.cursor.Next() { // when cursor is the last one, Next returns nil
-		expectedTx := rc.cursor.Value.(*mempoolTx).tx
+func (rc *recheck) findNextEntryMatching(tx *types.Tx) (found bool) {
+	for rc.cursor != nil {
+		expectedTx := rc.cursor.Tx()
+		rc.cursor = rc.iter.Next()
 		if bytes.Equal(*tx, expectedTx) {
 			// Found an entry in the list of txs to recheck that matches tx.
 			found = true
@@ -916,9 +892,9 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) bool {
 		}
 	}
 
-	if !rc.tryFinish() {
-		// Not finished yet; set the cursor for processing the next recheck response.
-		rc.cursor = rc.cursor.Next()
+	if rc.cursor == nil { // reached end of list
+		rc.setDone()
+		close(rc.doneCh) // notify channel that recheck has finished
 	}
 	return found
 }
@@ -942,20 +918,103 @@ func (rc *recheck) consideredFull() bool {
 	return rc.recheckFull.Load()
 }
 
-// CListIterator implements an Iterator that traverses the lanes with the classical Weighted Round
-// Robin (WRR) algorithm.
-type CListIterator struct {
-	mp               *CListMempool                  // to wait on and retrieve the first entry
-	currentLaneIndex int                            // current lane being iterated; index on mp.sortedLanes
-	counters         map[types.Lane]uint32          // counters of accessed entries for WRR algorithm
-	cursors          map[types.Lane]*clist.CElement // last accessed entries on each lane
+// WRRIterator is the base struct for implementing iterators that traverse lanes with
+// the classical Weighted Round Robin (WRR) algorithm.
+type WRRIterator struct {
+	sortedLanes []types.Lane
+	laneIndex   int                            // current lane being iterated; index on sortedLanes
+	counters    map[types.Lane]uint            // counters of consumed entries, for WRR algorithm
+	cursors     map[types.Lane]*clist.CElement // last accessed entries on each lane
 }
 
-func (mem *CListMempool) NewIterator() Iterator {
-	return &CListIterator{
-		mp:       mem,
-		counters: make(map[types.Lane]uint32, len(mem.sortedLanes)),
-		cursors:  make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
+func (iter *WRRIterator) nextLane() types.Lane {
+	iter.laneIndex = (iter.laneIndex + 1) % len(iter.sortedLanes)
+	return iter.sortedLanes[iter.laneIndex]
+}
+
+// Non-blocking version of the WRR iterator to be used for reaping and
+// rechecking transactions.
+//
+// Lock must be held on the mempool when iterating: the mempool cannot be
+// modified while iterating.
+type NonBlockingWRRIterator struct {
+	WRRIterator
+}
+
+func (mem *CListMempool) NewWRRIterator() *NonBlockingWRRIterator {
+	baseIter := WRRIterator{
+		sortedLanes: mem.sortedLanes,
+		counters:    make(map[types.Lane]uint, len(mem.lanes)),
+		cursors:     make(map[types.Lane]*clist.CElement, len(mem.lanes)),
+	}
+	iter := &NonBlockingWRRIterator{
+		WRRIterator: baseIter,
+	}
+	iter.Reset(mem.lanes)
+	return iter
+}
+
+// Reset must be called before every use of the iterator.
+func (iter *NonBlockingWRRIterator) Reset(lanes map[types.Lane]*clist.CList) {
+	iter.laneIndex = 0
+	for i := range iter.counters {
+		iter.counters[i] = 0
+	}
+	// Set cursors at the beginning of each lane.
+	for lane := range lanes {
+		iter.cursors[lane] = lanes[lane].Front()
+	}
+}
+
+// Next returns the next element according to the WRR algorithm.
+func (iter *NonBlockingWRRIterator) Next() Entry {
+	lane := iter.sortedLanes[iter.laneIndex]
+	numEmptyLanes := 0
+	for {
+		// Skip empty lane or if cursor is at end of lane.
+		if iter.cursors[lane] == nil {
+			numEmptyLanes++
+			if numEmptyLanes >= len(iter.sortedLanes) {
+				return nil
+			}
+			lane = iter.nextLane()
+			continue
+		}
+		// Skip over-consumed lane.
+		if iter.counters[lane] >= uint(lane) {
+			iter.counters[lane] = 0
+			numEmptyLanes = 0
+			lane = iter.nextLane()
+			continue
+		}
+		break
+	}
+	elem := iter.cursors[lane]
+	if elem == nil {
+		panic(fmt.Errorf("Iterator picked a nil entry on lane %d", lane))
+	}
+	iter.cursors[lane] = iter.cursors[lane].Next()
+	iter.counters[lane]++
+	return elem.Value.(*mempoolTx)
+}
+
+// BlockingWRRIterator implements a blocking version of the WRR iterator,
+// meaning that when no transaction is available, it will wait until a new one
+// is added to the mempool.
+type BlockingWRRIterator struct {
+	WRRIterator
+	mp *CListMempool
+}
+
+func (mem *CListMempool) NewBlockingWRRIterator() Iterator {
+	iter := WRRIterator{
+		sortedLanes: mem.sortedLanes,
+		counters:    make(map[types.Lane]uint, len(mem.sortedLanes)),
+		cursors:     make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
+	}
+	return &BlockingWRRIterator{
+		WRRIterator: iter,
+		mp:          mem,
 	}
 }
 
@@ -964,7 +1023,7 @@ func (mem *CListMempool) NewIterator() Iterator {
 // the list.
 //
 // Unsafe for concurrent use by multiple goroutines.
-func (iter *CListIterator) WaitNextCh() <-chan Entry {
+func (iter *BlockingWRRIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
 		// Add the next entry to the channel if not nil.
@@ -979,14 +1038,15 @@ func (iter *CListIterator) WaitNextCh() <-chan Entry {
 	return ch
 }
 
-// PickLane returns a _valid_ lane on which to iterate, according to the WRR algorithm. A lane is
-// valid if it is not empty or the number of accessed entries in the lane has not yet reached its
-// priority value.
-func (iter *CListIterator) PickLane() types.Lane {
+// PickLane returns a _valid_ lane on which to iterate, according to the WRR
+// algorithm. A lane is valid if it is not empty or it is not over-consumed,
+// meaning that the number of accessed entries in the lane has not yet reached
+// its priority value in the current WRR iteration.
+func (iter *BlockingWRRIterator) PickLane() types.Lane {
 	// Loop until finding a valid lanes
 	// If the current lane is not valid, continue with the next lane with lower priority, in a
 	// round robin fashion.
-	lane := iter.mp.sortedLanes[iter.currentLaneIndex]
+	lane := iter.sortedLanes[iter.laneIndex]
 
 	iter.mp.addTxChMtx.RLock()
 	defer iter.mp.addTxChMtx.RUnlock()
@@ -996,40 +1056,31 @@ func (iter *CListIterator) PickLane() types.Lane {
 		if iter.mp.lanes[lane].Len() == 0 ||
 			(iter.cursors[lane] != nil &&
 				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
-			prevLane := lane
-			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
-			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
+			lane = iter.nextLane()
 			nIter++
-			if nIter >= len(iter.mp.sortedLanes) {
+			if nIter >= len(iter.sortedLanes) {
 				ch := iter.mp.addTxCh
 				iter.mp.addTxChMtx.RUnlock()
-				iter.mp.logger.Info("YYY PickLane, bef block", "lane", lane, "prevLane", prevLane)
 				<-ch
-				iter.mp.logger.Info("YYY PickLane, aft block", "lane", lane, "prevLane", prevLane)
 				iter.mp.addTxChMtx.RLock()
 				nIter = 0
 			}
-			iter.mp.logger.Info("YYY PickLane, skipped lane 1", "prevLane", prevLane, "lane", lane)
 			continue
 		}
 
-		if iter.counters[lane] >= uint32(lane) {
+		if iter.counters[lane] >= uint(lane) {
 			// Reset the counter only when the limit on the lane was reached.
 			iter.counters[lane] = 0
-			iter.currentLaneIndex = (iter.currentLaneIndex + 1) % len(iter.mp.sortedLanes)
-			prevLane := lane
-			lane = iter.mp.sortedLanes[iter.currentLaneIndex]
+			lane = iter.nextLane()
 			nIter = 0
-			iter.mp.logger.Info("YYY PickLane, skipped lane 2", "lane", prevLane, "new Lane ", lane)
 			continue
 		}
 		// TODO: if we detect that a higher-priority lane now has entries, do we preempt access to the current lane?
-		iter.mp.logger.Info("YYY PickLane, returned lane", "lane", lane)
 		return lane
 	}
 }
 
-// Next implements the classical Weighted Round Robin (WRR) algorithm.
+// Next returns the next element according to the WRR algorithm.
 //
 // In classical WRR, the iterator cycles over the lanes. When a lane is selected, Next returns an
 // entry from the selected lane. On subsequent calls, Next will return the next entries from the
@@ -1038,7 +1089,7 @@ func (iter *CListIterator) PickLane() types.Lane {
 //
 // TODO: Note that this code does not block waiting for an available entry on a CList or a CElement, as
 // was the case on the original code. Is this the best way to do it?
-func (iter *CListIterator) Next() *clist.CElement {
+func (iter *BlockingWRRIterator) Next() *clist.CElement {
 	lane := iter.PickLane()
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/version"
 )
@@ -59,12 +59,13 @@ type Application struct {
 
 // NewApplication creates an instance of the kvstore from the provided database.
 func NewApplication(db dbm.DB) *Application {
-	// Map from lane name to its priority. Priority 0 is reserved.
+	// Map from lane name to its priority. Priority 0 is reserved. The higher
+	// the value, the higher the priority.
 	lanes := map[string]uint32{
-		"val":       1, // lane for validator updates
-		"foo":       3, // lane 2
-		defaultLane: 7,
-		"bar":       9, // lane 3
+		"val":       9, // for validator updates
+		"foo":       7,
+		defaultLane: 3,
+		"bar":       1,
 	}
 
 	// List of lane priorities
@@ -169,10 +170,7 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 	// If it is a validator update transaction, check that it is correctly formatted
 	if isValidatorTx(req.Tx) {
 		if _, _, _, err := parseValidatorTx(req.Tx); err != nil {
-			if app.useLanes {
-				return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat, Lane: app.lanes["val"]}, nil
-			}
-			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
+			return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil //nolint:nilerr // error is not nil but it returns nil
 		}
 	} else if !isValidTx(req.Tx) {
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
@@ -181,19 +179,54 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 	if !app.useLanes {
 		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
-	// Assign a lane to the transaction deterministically.
-	var lane uint32
-	txHash := tmhash.Sum(req.Tx)
-	switch {
-	case txHash[0] == 1 && txHash[1] == 0 && txHash[2] == 0:
-		lane = app.lanes["foo"]
-	case txHash[0] == 1 && txHash[1] == 1 && txHash[2] == 1:
-		lane = app.lanes["bar"]
-	default:
-		lane = app.lanes[defaultLane]
+
+  lane := app.assignLane(req.Tx)
+	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+}
+
+// assignLane deterministically computes a lane for the given tx.
+func (app *Application) assignLane(tx []byte) uint32 {
+	if len(app.lanes) == 0 {
+		return 0
 	}
 
-	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+	if isValidatorTx(tx) {
+		return app.lanes["val"] // priority 9
+	}
+
+	key, _, err := parseTx(tx)
+	if err != nil {
+		return app.lanes[defaultLane]
+	}
+
+	// If the transaction key is an integer (for example, a transaction of the
+	// form 2=2), we will assign a lane. Any other type of transaction will go
+	// to the default lane.
+	keyInt, err := strconv.Atoi(key)
+	if err != nil {
+		return app.lanes[defaultLane]
+	}
+
+	switch {
+	case keyInt%11 == 0:
+		return app.lanes["foo"] // priority 7
+	case keyInt%3 == 0:
+		return app.lanes["bar"] // priority 1
+	default:
+		return app.lanes[defaultLane] // priority 3
+	}
+}
+
+// parseTx parses a tx in 'key=value' format into a key and value.
+func parseTx(tx []byte) (key, value string, err error) {
+	parts := bytes.Split(tx, []byte("="))
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid tx format: %q", string(tx))
+	}
+	if len(parts[0]) == 0 {
+		return "", "", errors.New("key cannot be empty")
+	}
+	return string(parts[0]), string(parts[1]), nil
 }
 
 // Tx must have a format like key:value or key=value. That is:

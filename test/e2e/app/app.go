@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
 	gogo "github.com/cosmos/gogoproto/types"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
@@ -25,9 +26,9 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
-	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
+	"github.com/cometbft/cometbft/test/loadtime/payload"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -148,6 +149,25 @@ func DefaultConfig(dir string) *Config {
 	}
 }
 
+// LaneDefinitions returns the (constant) list of lanes and their priorities.
+func LaneDefinitions() (map[string]uint32, []uint32) {
+	// Map from lane name to its priority. Priority 0 is reserved. The higher
+	// the value, the higher the priority.
+	lanes := map[string]uint32{
+		"foo":       9,
+		"bar":       4,
+		defaultLane: 1,
+	}
+
+	// List of lane priorities
+	priorities := make([]uint32, 0, len(lanes))
+	for _, p := range lanes {
+		priorities = append(priorities, p)
+	}
+
+	return lanes, priorities
+}
+
 // NewApplication creates the application.
 func NewApplication(cfg *Config) (*Application, error) {
 	state, err := NewState(cfg.Dir, cfg.PersistInterval)
@@ -158,22 +178,10 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
+	lanes, lanePriorities := LaneDefinitions()
 
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	logger.Info("Application started!")
-
-	// Map from lane name to its priority. Priority 0 is reserved.
-	lanes := map[string]uint32{
-		"foo":       1, // lane 1
-		"bar":       4, // lane 2
-		defaultLane: 9, // default lane
-	}
-
-	// List of lane priorities
-	priorities := make([]uint32, 0, len(lanes))
-	for _, p := range lanes {
-		priorities = append(priorities, p)
-	}
 
 	return &Application{
 		logger:         logger,
@@ -181,7 +189,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 		snapshots:      snapshots,
 		cfg:            cfg,
 		lanes:          lanes,
-		lanePriorities: priorities,
+		lanePriorities: lanePriorities,
 	}, nil
 }
 
@@ -285,7 +293,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return nil, err
 	}
 
-	key, _, err := parseTx(req.Tx)
+	key, value, err := parseTx(req.Tx)
 	if err != nil || key == prefixReservedKey {
 		//nolint:nilerr
 		return &abci.CheckTxResponse{
@@ -315,19 +323,23 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
-	// Assign a lane to the transaction deterministically.
-	var lane uint32
-	txHash := tmhash.Sum(req.Tx)
-	switch {
-	case txHash[0] == 0 && txHash[1] == 0 && txHash[2] == 0 && txHash[3] == 0:
-		lane = app.lanes["foo"]
-	case txHash[0] == 0:
-		lane = app.lanes["bar"]
-	default:
-		lane = app.lanes[defaultLane]
-	}
+	lane := extractLane(value)
 
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+}
+
+// extractLane returns the lane field if value is a Payload, otherwise returns 0.
+func extractLane(value string) uint32 {
+	valueBytes, err := hex.DecodeString(value)
+	if err != nil {
+		panic("could not hex-decode tx value for extracting lane")
+	}
+	p := &payload.Payload{}
+	err = proto.Unmarshal(valueBytes, p)
+	if err != nil {
+		return 0
+	}
+	return p.GetLane()
 }
 
 // FinalizeBlock implements ABCI.

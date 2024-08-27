@@ -28,6 +28,7 @@ type DataPoint struct {
 	Duration  time.Duration
 	BlockTime time.Time
 	Hash      []byte
+	Lane      uint32
 }
 
 // Report contains the data calculated from reading the timestamped transactions
@@ -36,7 +37,6 @@ type Report struct {
 	ID                      uuid.UUID
 	Rate, Connections, Size uint64
 	Max, Min, Avg, StdDev   time.Duration
-	Lane                    uint32
 
 	// NegativeCount is the number of negative durations encountered while
 	// reading the transaction data. A negative duration means that
@@ -82,11 +82,10 @@ func (rs *Reports) addDataPoint(id uuid.UUID, lane uint32, l time.Duration, bt t
 			Connections: conns,
 			Rate:        rate,
 			Size:        size,
-			Lane:        lane,
 		}
 		rs.s[id] = r
 	}
-	r.All = append(r.All, DataPoint{Duration: l, BlockTime: bt, Hash: hash})
+	r.All = append(r.All, DataPoint{Duration: l, BlockTime: bt, Hash: hash, Lane: lane})
 	if l > r.Max {
 		r.Max = l
 	}

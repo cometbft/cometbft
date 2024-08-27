@@ -66,12 +66,11 @@ func main() {
 	}
 	for _, r := range rs.List() {
 		if *oneline {
-			fmt.Printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-				r.ID, r.Lane, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min.Nanoseconds(), r.Max.Nanoseconds(), r.Avg.Nanoseconds(), r.StdDev.Nanoseconds(), rs.ErrorCount())
+			fmt.Printf("%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+				r.ID, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min.Nanoseconds(), r.Max.Nanoseconds(), r.Avg.Nanoseconds(), r.StdDev.Nanoseconds(), rs.ErrorCount())
 		} else {
 			fmt.Printf(""+
 				"Experiment ID: %s\n\n"+
-				"\tLane: %d\n"+
 				"\tConnections: %d\n"+
 				"\tRate: %d\n"+
 				"\tSize: %d\n\n"+
@@ -80,7 +79,7 @@ func main() {
 				"\tMinimum Latency: %s\n"+
 				"\tMaximum Latency: %s\n"+
 				"\tAverage Latency: %s\n"+
-				"\tStandard Deviation: %s\n\n", r.ID, r.Lane, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min, r.Max, r.Avg, r.StdDev)
+				"\tStandard Deviation: %s\n\n", r.ID, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min, r.Max, r.Avg, r.StdDev)
 		}
 	}
 	if !*oneline {
@@ -102,9 +101,17 @@ func toCSVRecords(rs []report.Report) [][]string {
 		connStr := strconv.FormatInt(int64(r.Connections), 10)
 		rateStr := strconv.FormatInt(int64(r.Rate), 10)
 		sizeStr := strconv.FormatInt(int64(r.Size), 10)
-		lane := strconv.FormatInt(int64(r.Lane), 10)
 		for i, v := range r.All {
-			res[offset+i] = []string{idStr, strconv.FormatInt(v.BlockTime.UnixNano(), 10), strconv.FormatInt(int64(v.Duration), 10), fmt.Sprintf("%X", v.Hash), lane, connStr, rateStr, sizeStr}
+			res[offset+i] = []string{
+				idStr,
+				strconv.FormatInt(v.BlockTime.UnixNano(), 10),
+				strconv.FormatInt(int64(v.Duration), 10),
+				fmt.Sprintf("%X", v.Hash),
+				strconv.FormatInt(int64(v.Lane), 10),
+				connStr,
+				rateStr,
+				sizeStr,
+			}
 		}
 		offset += len(r.All)
 	}

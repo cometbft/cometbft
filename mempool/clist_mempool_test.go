@@ -77,7 +77,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	}
 
 	mp := NewCListMempool(cfg.Mempool, appConnMem, 0)
-	mp.SetLogger(log.TestingLogger())
+	mp.SetLogger(*mempoolLogger("info"))
 
 	return mp, func() { os.RemoveAll(cfg.RootDir) }
 }

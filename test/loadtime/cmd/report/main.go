@@ -71,6 +71,7 @@ func main() {
 		} else {
 			fmt.Printf(""+
 				"Experiment ID: %s\n\n"+
+				"\tLane: %d\n"+
 				"\tConnections: %d\n"+
 				"\tRate: %d\n"+
 				"\tSize: %d\n\n"+
@@ -79,7 +80,7 @@ func main() {
 				"\tMinimum Latency: %s\n"+
 				"\tMaximum Latency: %s\n"+
 				"\tAverage Latency: %s\n"+
-				"\tStandard Deviation: %s\n\n", r.ID, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min, r.Max, r.Avg, r.StdDev)
+				"\tStandard Deviation: %s\n\n", r.ID, r.Lane, r.Connections, r.Rate, r.Size, len(r.All), r.NegativeCount, r.Min, r.Max, r.Avg, r.StdDev)
 		}
 	}
 	if !*oneline {

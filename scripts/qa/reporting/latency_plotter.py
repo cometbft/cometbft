@@ -52,9 +52,9 @@ def plot_all_experiments(release, csv):
             localStartTime = tz.localize(datetime.fromtimestamp(startTime)).astimezone(pytz.utc)
             localEndTime  = tz.localize(datetime.fromtimestamp(endTime)).astimezone(pytz.utc)
             print('experiment', key ,'start', localStartTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'end', localEndTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'duration', endTime - startTime, "mean", mean)
-
-            (con,rate) = subKey
-            label = 'c='+str(con) + ' r='+ str(rate)
+            
+            (con,rate,lane) = subKey
+            label = 'c='+str(con) + ' r='+ str(rate) + ' l='+ str(lane)
             ax.axhline(y = mean, color = 'r', linestyle = '-', label="mean")
             ax.scatter(subGroup.block_time, subGroup.duration_ns, label=label)
         ax.legend()
@@ -72,8 +72,7 @@ def plot_all_experiments(release, csv):
 
 def plot_all_configs(release, csv):
     # Group by configuration
-    groups = csv.groupby(['connections','rate'])
-
+    groups = csv.groupby(['connections','rate', 'lane'])
     # number of rows and columns in the graph
     ncols = 2 if groups.ngroups > 1 else 1
     nrows = int( np.ceil(groups.ngroups / ncols)) if groups.ngroups > 1 else 1
@@ -86,14 +85,15 @@ def plot_all_configs(release, csv):
         ax.set_ylabel('latency (s)')
         ax.set_xlabel('experiment time (s)')
         ax.grid(True)
-        (con,rate) = key
-        label = 'c='+str(con) + ' r='+ str(rate)
+        (con,rate,lane) = key
+        label = 'c='+str(con) + ' r='+ str(rate)+ ' l='+ str(lane)
         ax.set_title(label)
 
+        
         # Group by experiment 
         paramGroups = group.groupby(['experiment_id'])
         for (subKey) in paramGroups.groups.keys():
-            subGroup = paramGroups.get_group((subKey,))
+            subGroup = paramGroups.get_group((subKey))
             startTime = subGroup.block_time.min()
             subGroupMod = subGroup.block_time.apply(lambda x: x - startTime)
             ax.scatter(subGroupMod, subGroup.duration_ns, label=label)
@@ -102,7 +102,7 @@ def plot_all_configs(release, csv):
 
         #Save individual axes
         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-        img_path = os.path.join(IMAGES_DIR, f'c{con}r{rate}.png')
+        img_path = os.path.join(IMAGES_DIR, f'c{con}r{rate}l{lane}.png')
         fig.savefig(img_path, bbox_inches=extent.expanded(1.4, 1.5))
 
     fig.suptitle(fig_title + ' - ' + release)
@@ -113,7 +113,7 @@ def plot_all_configs(release, csv):
 
 def plot_merged(release, csv):
     # Group by configuration
-    groups = csv.groupby(['connections','rate'])
+    groups = csv.groupby(['connections','rate','lane'])
 
     # number of rows and columns in the graph
     ncols = 2 if groups.ngroups > 1 else 1
@@ -127,22 +127,22 @@ def plot_merged(release, csv):
         ax.set_ylabel('latency (s)')
         ax.set_xlabel('experiment time (s)')
         ax.grid(True)
-        (con,rate) = key
-        label = 'c='+str(con) + ' r='+ str(rate)
+        (con,rate,lane) = key
+        label = 'c='+str(con) + ' r='+ str(rate) + ' l='+ str(lane)
         ax.set_title(label)
 
         # Group by experiment, but merge them as a single experiment
         paramGroups = group.groupby(['experiment_id'])
         for (subKey) in paramGroups.groups.keys():
-            subGroup = paramGroups.get_group((subKey,))
+            subGroup = paramGroups.get_group((subKey))
             startTime = subGroup.block_time.min()
             subGroupMod = subGroup.block_time.apply(lambda x: x - startTime)
             ax.scatter(subGroupMod, subGroup.duration_ns, marker='o',c='#1f77b4')
         
         # Save individual axes
         extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-        (con, rate) = key
-        img_path = os.path.join(IMAGES_DIR, f'c{con}r{rate}_merged.png')
+        (con, rate, lane) = key
+        img_path = os.path.join(IMAGES_DIR, f'c{con}r{rate}l{lane}_merged.png')
         fig.savefig(img_path, bbox_inches=extent)
 
     plt.show()

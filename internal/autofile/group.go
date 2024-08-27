@@ -146,7 +146,7 @@ func (g *Group) OnStart() error {
 func (g *Group) OnStop() {
 	g.ticker.Stop()
 	if err := g.FlushAndSync(); err != nil {
-		g.Logger.Error("Error flushin to disk", "err", err)
+		g.Logger.Error("Error flushing to disk", "err", err)
 	}
 }
 

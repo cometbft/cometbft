@@ -20,8 +20,8 @@ import numpy as np
 DEFAULT_TITLE = "CometBFT latency vs throughput"
 
 
-def plot_latency_vs_throughput(input_files, output_image, title=DEFAULT_TITLE):
-    avg_latencies, throughput_rates = process_input_files(input_files, )
+def plot_latency_vs_throughput(input_files, output_image, output_image_lane, title=DEFAULT_TITLE):
+    avg_latencies, throughput_rates, avg_latencies_lane, throughput_rates_lane = process_input_files(input_files, )
 
     fig, ax = plt.subplots()
 
@@ -38,6 +38,24 @@ def plot_latency_vs_throughput(input_files, output_image, title=DEFAULT_TITLE):
 
     plt.legend(loc='upper left')
     plt.savefig(output_image)
+
+    ig, ax = plt.subplots()
+
+    lanes = sorted(avg_latencies_lane.keys())
+    for l in lanes:
+        tr = np.array(throughput_rates_lane[l])
+        al = np.array(avg_latencies_lane[l])
+        label = '%d lane%s' % (l, '' if l == 1 else 's')
+        ax.plot(tr, al, 'o-', label=label)
+
+    ax.set_title(title)
+    ax.set_xlabel('Throughput rate (tx/s)')
+    ax.set_ylabel('Average transaction latency (s)')
+
+    plt.legend(loc='upper left')
+    plt.savefig('output_image_lane')
+
+
 
 
 def process_input_files(input_files):
@@ -57,6 +75,7 @@ def process_input_files(input_files):
 
 
 def process_tx(experiments, tx):
+    print(tx)
     exp_id = tx['experiment_id']
     # Block time is nanoseconds from the epoch - convert to seconds
     block_time = float(tx['block_time']) / (10**9)
@@ -65,10 +84,13 @@ def process_tx(experiments, tx):
     connections = int(tx['connections'])
     rate = int(tx['rate'])
 
+    lane = int(tx['lane'])
+    print(lane)
     if exp_id not in experiments:
         experiments[exp_id] = {
             'connections': connections,
             'rate': rate,
+            'lane': lane,
             'block_time_min': block_time,
             # We keep track of the latency associated with the minimum block
             # time to estimate the start time of the experiment
@@ -105,18 +127,25 @@ def compute_experiments_stats(experiments):
     """Compute average latency vs throughput rate statistics from the given
     experiments"""
     stats = {}
-
+    statsLane = {}
     # Compute average latency and throughput rate for each experiment
     for exp_id, exp in experiments.items():
         conns = exp['connections']
+        lane = exp['lane']
         avg_latency = exp['total_latencies'] / exp['tx_count']
         exp_start_time = exp['block_time_min'] - exp['block_time_min_duration']
         exp_duration = exp['block_time_max'] - exp_start_time
         throughput_rate = exp['tx_count'] / exp_duration
         if conns not in stats:
             stats[conns] = []
+        if lane not in statsLane:
+            statsLane[lane] = []
 
         stats[conns].append({
+            'avg_latency': avg_latency,
+            'throughput_rate': throughput_rate,
+        })
+        statsLane[lane].append({
             'avg_latency': avg_latency,
             'throughput_rate': throughput_rate,
         })
@@ -125,8 +154,12 @@ def compute_experiments_stats(experiments):
     # throughput rate, and then extract average latencies and throughput rates
     # as separate data series.
     conns = sorted(stats.keys())
+    lanesSorted = sorted(statsLane.keys())
     avg_latencies = {}
     throughput_rates = {}
+    avg_latencies_lane = {}
+    throughput_rates_lane = {}
+    
     for c in conns:
         stats[c] = sorted(stats[c], key=lambda s: s['throughput_rate'])
         avg_latencies[c] = []
@@ -138,8 +171,19 @@ def compute_experiments_stats(experiments):
                          'throughput rate = %.6f tx/s\t'
                          'average latency = %.6fs' %
                          (c, s['throughput_rate'], s['avg_latency']))
+    for l in lanesSorted:
+        stats[l] = sorted(statsLane[l], key=lambda s: s['throughput_rate'])
+        avg_latencies_lane[l] = []
+        throughput_rates_lane[l] = []
+        for s in stats[l]:
+            avg_latencies_lane[l].append(s['avg_latency'])
+            throughput_rates_lane[l].append(s['throughput_rate'])
+            logging.info('For %d connection(s): '
+                         'throughput rate = %.6f tx/s\t'
+                         'average latency = %.6fs' %
+                         (c, s['throughput_rate'], s['avg_latency']))
 
-    return (avg_latencies, throughput_rates)
+    return (avg_latencies, throughput_rates, avg_latencies_lane, throughput_rates_lane)
 
 
 if __name__ == "__main__":
@@ -153,6 +197,8 @@ if __name__ == "__main__":
                         help='Plot title')
     parser.add_argument('output_image',
                         help='Output image file (in PNG format)')
+    parser.add_argument('output_image_lane',
+                        help='Output image file lane (in PNG format)')                        
     parser.add_argument(
         'input_csv_file',
         nargs='+',
@@ -164,4 +210,4 @@ if __name__ == "__main__":
                         stream=sys.stdout,
                         level=logging.INFO)
     
-    plot_latency_vs_throughput(args.input_csv_file, args.output_image, title=args.title)
+    plot_latency_vs_throughput(args.input_csv_file, args.output_image, args.output_image_lane, title=args.title)

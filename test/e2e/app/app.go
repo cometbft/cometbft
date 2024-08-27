@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
 	gogo "github.com/cosmos/gogoproto/types"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
@@ -148,14 +149,14 @@ func DefaultConfig(dir string) *Config {
 	}
 }
 
-// LaneDefinitions returns the (constant) values of lanes and their priorities.
+// LaneDefinitions returns the (constant) list of lanes and their priorities.
 func LaneDefinitions() (map[string]uint32, []uint32) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
 	lanes := map[string]uint32{
-		"foo":       1, // lane 1
-		"bar":       4, // lane 2
-		defaultLane: 9, // default lane
+		"foo":       9,
+		"bar":       4,
+		defaultLane: 1,
 	}
 
 	// List of lane priorities
@@ -292,7 +293,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return nil, err
 	}
 
-	key, _, err := parseTx(req.Tx)
+	key, value, err := parseTx(req.Tx)
 	if err != nil || key == prefixReservedKey {
 		//nolint:nilerr
 		return &abci.CheckTxResponse{
@@ -322,14 +323,23 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
-	// Take the lane from the transaction's payload.
-	p, err := payload.FromBytes(req.Tx)
-	if err != nil {
-		return nil, err
-	}
-	lane := p.GetLane()
+	lane := extractLane(value)
 
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+}
+
+// extractLane returns the lane field if value is a Payload, otherwise returns 0.
+func extractLane(value string) uint32 {
+	valueBytes, err := hex.DecodeString(value)
+	if err != nil {
+		panic("could not hex-decode tx value for extracting lane")
+	}
+	p := &payload.Payload{}
+	err = proto.Unmarshal(valueBytes, p)
+	if err != nil {
+		return 0
+	}
+	return p.GetLane()
 }
 
 // FinalizeBlock implements ABCI.

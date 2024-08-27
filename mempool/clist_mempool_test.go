@@ -132,7 +132,7 @@ func NewRandomTxs(numTxs int, txLen int) types.Txs {
 
 // Generate a list of random transactions of a given size and call CheckTx on
 // each of them.
-func checkTxs(t *testing.T, mp Mempool, count int) types.Txs {
+func addRandomTxs(t *testing.T, mp Mempool, count int) types.Txs {
 	t.Helper()
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
@@ -146,7 +146,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	defer cleanup()
 
 	// Ensure gas calculation behaves as expected
-	checkTxs(t, mp, 1)
+	addRandomTxs(t, mp, 1)
 	iter := mp.NewIterator()
 	tx0 := <-iter.WaitNextCh()
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
@@ -179,7 +179,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 		{20, 20000, 30, 20},
 	}
 	for tcIndex, tt := range tests {
-		checkTxs(t, mp, tt.numTxsToCreate)
+		addRandomTxs(t, mp, tt.numTxsToCreate)
 		got := mp.ReapMaxBytesMaxGas(tt.maxBytes, tt.maxGas)
 		require.Len(t, got, tt.expectedNumTxs, "Got %d txs, expected %d, tc #%d",
 			len(got), tt.expectedNumTxs, tcIndex)
@@ -220,7 +220,7 @@ func TestMempoolFilters(t *testing.T) {
 	for tcIndex, tt := range tests {
 		err := mp.Update(1, emptyTxArr, abciResponses(len(emptyTxArr), abci.CodeTypeOK), tt.preFilter, tt.postFilter)
 		require.NoError(t, err)
-		checkTxs(t, mp, tt.numTxsToCreate)
+		addRandomTxs(t, mp, tt.numTxsToCreate)
 		require.Equal(t, tt.expectedNumTxs, mp.Size(), "mempool had the incorrect size, on test case %d", tcIndex)
 		mp.Flush()
 	}
@@ -382,7 +382,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable())
 
 	// send a bunch of txs, it should only fire once
-	txs := checkTxs(t, mp, 100)
+	txs := addRandomTxs(t, mp, 100)
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable())
 
@@ -397,7 +397,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable())
 
 	// send a bunch more txs. we already fired for this height so it shouldn't fire again
-	moreTxs := checkTxs(t, mp, 50)
+	moreTxs := addRandomTxs(t, mp, 50)
 	ensureNoFire(t, mp.TxsAvailable())
 
 	// now call update with all the txs. it should not fire as there are no txs left
@@ -408,7 +408,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable())
 
 	// send a bunch more txs, it should only fire once
-	checkTxs(t, mp, 100)
+	addRandomTxs(t, mp, 100)
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable())
 }

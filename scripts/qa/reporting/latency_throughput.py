@@ -45,7 +45,7 @@ def plot_latency_vs_throughput(input_files, output_image, output_image_lane, tit
     for l in lanes:
         tr = np.array(throughput_rates_lane[l])
         al = np.array(avg_latencies_lane[l])
-        label = '%d lane%s' % (l, '' if l == 1 else 's')
+        label = 'lane %d' % (l)
         ax.plot(tr, al, 'o-', label=label)
 
     ax.set_title(title)

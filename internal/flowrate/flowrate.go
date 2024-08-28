@@ -29,6 +29,8 @@ type Monitor struct {
 	sBytes int64         // Number of bytes transferred since sLast
 	sLast  time.Duration // Most recent sample time (stop time when inactive)
 	sRate  time.Duration // Sampling rate
+
+	tBytes int64         // Number of bytes expected in the current transfer
 	tLast  time.Duration // Time of the most recent transfer of at least 1 byte
 
 	sleepTime time.Duration // Amount of time spend on time.Sleep() calls
@@ -103,6 +105,9 @@ func (m *Monitor) Done() int64 {
 	return n
 }
 
+// timeRemLimit is the maximum Status.TimeRem value.
+const timeRemLimit = 999*time.Hour + 59*time.Minute + 59*time.Second
+
 // Status represents the current Monitor status. All transfer rates are in bytes
 // per second rounded to the nearest byte.
 type Status struct {
@@ -113,8 +118,11 @@ type Status struct {
 	CurRate  int64         // Current transfer rate (EMA of InstRate)
 	AvgRate  int64         // Average transfer rate (Bytes / Duration)
 	PeakRate int64         // Maximum instantaneous transfer rate
+	BytesRem int64         // Number of bytes remaining in the transfer
 	Duration time.Duration // Time period covered by the statistics
 	Idle     time.Duration // Time since the last transfer of at least 1 byte
+	TimeRem  time.Duration // Estimated time to completion
+	Progress Percent       // Overall transfer progress
 	Active   bool          // Flag indicating an active transfer
 
 	SleepTime time.Duration // Amount of time spend on time.Sleep() calls
@@ -133,6 +141,11 @@ func (m *Monitor) Status() Status {
 		Bytes:    m.bytes,
 		Samples:  m.samples,
 		PeakRate: round(m.rPeak),
+		BytesRem: m.tBytes - m.bytes,
+		Progress: percentOf(float64(m.bytes), float64(m.tBytes)),
+	}
+	if s.BytesRem < 0 {
+		s.BytesRem = 0
 	}
 	if m.sleepTime > 0 {
 		s.SleepTime = m.sleepTime
@@ -144,6 +157,15 @@ func (m *Monitor) Status() Status {
 		if s.Active {
 			s.InstRate = round(m.rSample)
 			s.CurRate = round(m.rEMA)
+			if s.BytesRem > 0 {
+				if tRate := 0.8*m.rEMA + 0.2*rAvg; tRate > 0 {
+					ns := float64(s.BytesRem) / tRate * 1e9
+					if ns > float64(timeRemLimit) {
+						ns = float64(timeRemLimit)
+					}
+					s.TimeRem = clockRound(time.Duration(ns))
+				}
+			}
 		}
 	}
 	m.mu.Unlock()
@@ -198,6 +220,17 @@ func (m *Monitor) Limit(want int, rate int64, block bool) (n int) {
 		limit = 0
 	}
 	return int(limit)
+}
+
+// SetTransferSize specifies the total size of the data transfer, which allows
+// the Monitor to calculate the overall progress and time to completion.
+func (m *Monitor) SetTransferSize(bytes int64) {
+	if bytes < 0 {
+		bytes = 0
+	}
+	m.mu.Lock()
+	m.tBytes = bytes
+	m.mu.Unlock()
 }
 
 // update accumulates the transferred byte count for the current sample until

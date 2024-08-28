@@ -79,14 +79,14 @@ func TestReader(t *testing.T) {
 	status[5] = nextStatus(r.Monitor) // Timeout
 	start = status[0].Start
 
-	// Start, Bytes, Samples, InstRate, CurRate, AvgRate, PeakRate, Duration, Idle, Active
+	// Active, Bytes, Samples, InstRate, CurRate, AvgRate, PeakRate, BytesRem, Start, Duration, Idle, TimeRem, Progress
 	want := []Status{
-		{start, 0, 0, 0, 0, 0, 0, 0, 0, true, 0},
-		{start, 10, 1, 100, 100, 100, 100, _100ms, 0, true, 0},
-		{start, 20, 2, 100, 100, 100, 100, _200ms, _100ms, true, 0},
-		{start, 20, 3, 0, 90, 67, 100, _300ms, _200ms, true, 0},
-		{start, 20, 3, 0, 0, 67, 100, _300ms, 0, false, 0},
-		{start, 20, 3, 0, 0, 67, 100, _300ms, 0, false, 0},
+		{start, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, 0},
+		{start, 10, 1, 100, 100, 100, 100, 0, _100ms, 0, 0, 0, true, 0},
+		{start, 20, 2, 100, 100, 100, 100, 0, _200ms, _100ms, 0, 0, true, 0},
+		{start, 20, 3, 0, 90, 67, 100, 0, _300ms, _200ms, 0, 0, true, 0},
+		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false, 0},
+		{start, 20, 3, 0, 0, 67, 100, 0, _300ms, 0, 0, 0, false, 0},
 	}
 	for i, s := range status {
 		if !statusesAreEqual(&s, &want[i]) {
@@ -106,6 +106,7 @@ func TestWriter(t *testing.T) {
 	const limit = 200
 	const writeSize = 20
 	const remainingSize = 80
+	const transferSize = 100
 
 	// Initialize a buffer with sequential bytes
 	b := make([]byte, bufferSize)
@@ -158,6 +159,26 @@ func TestWriter(t *testing.T) {
 		}
 	})
 
+	// Subtest for setting transfer size
+	t.Run("setting transfer size", func(t *testing.T) {
+		w.SetTransferSize(transferSize)
+		status := []Status{w.Status(), nextStatus(w.Monitor)}
+		start = status[0].Start
+
+		// Define expected statuses
+		want := []Status{
+			{start, remainingSize, 4, limit, limit, limit, limit, writeSize, _400ms, 0, _100ms, 80000, true, 0},
+			{start, bufferSize, 5, limit, limit, limit, limit, 0, _500ms, _100ms, 0, 100000, true, 0},
+		}
+
+		// Compare actual and expected statuses
+		for i, s := range status {
+			if !statusesAreEqual(&s, &want[i]) {
+				t.Errorf("w.Status(%v)\nexpected: %v\ngot     : %v\n", i, want[i], s)
+			}
+		}
+	})
+
 	// Subtest to verify that the written data matches the input
 	t.Run("written data matches input", func(t *testing.T) {
 		if !bytes.Equal(b, w.Writer.(*bytes.Buffer).Bytes()) {
@@ -181,6 +202,9 @@ func statusesAreEqual(s1 *Status, s2 *Status) bool {
 		ratesAreEqual(s1.CurRate, s2.CurRate) &&
 		ratesAreEqual(s1.AvgRate, s2.AvgRate) &&
 		ratesAreEqual(s1.PeakRate, s2.PeakRate) &&
+		s1.BytesRem == s2.BytesRem &&
+		durationsAreEqual(s1.TimeRem, s2.TimeRem) &&
+		s1.Progress == s2.Progress &&
 		durationsAreEqual(s1.SleepTime, s2.SleepTime) {
 		return true
 	}

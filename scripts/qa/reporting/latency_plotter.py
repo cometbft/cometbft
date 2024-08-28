@@ -42,8 +42,9 @@ def plot_all_experiments(release, csv):
         ax.grid(True)
 
         # Group by connection number and transaction rate
-        paramGroups = group.groupby(['connections','rate', 'lane'])
+        paramGroups = group.groupby(['connections','rate'])
         for (subKey) in paramGroups.groups.keys():
+            
             subGroup = paramGroups.get_group(subKey)
             startTime = subGroup.block_time.min()
             endTime = subGroup.block_time.max()
@@ -53,8 +54,8 @@ def plot_all_experiments(release, csv):
             localEndTime  = tz.localize(datetime.fromtimestamp(endTime)).astimezone(pytz.utc)
             print('experiment', key ,'start', localStartTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'end', localEndTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'duration', endTime - startTime, "mean", mean)
             
-            (con,rate,lane) = subKey
-            label = 'c='+str(con) + ' r='+ str(rate) + ' l='+ str(lane)
+            (con,rate) = subKey
+            label = 'c='+str(con) + ' r='+ str(rate)
             ax.axhline(y = mean, color = 'r', linestyle = '-', label="mean")
             ax.scatter(subGroup.block_time, subGroup.duration_ns, label=label)
         ax.legend()
@@ -68,6 +69,55 @@ def plot_all_experiments(release, csv):
 
     # Save the figure with subplots
     fig.savefig(os.path.join(IMAGES_DIR, 'all_experiments.png'))
+
+def plot_all_experiments_lane(release, csv):
+    # Group by experiment
+    groups = csv.groupby(['experiment_id'])
+
+    # number of rows and columns in the graph
+    ncols = 2 if groups.ngroups > 1 else 1
+    nrows = int( np.ceil(groups.ngroups / ncols)) if groups.ngroups > 1 else 1
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(6*ncols, 4*nrows), sharey=False)
+    fig.tight_layout(pad=5.0)
+    
+    # Plot experiments as subplots 
+    for (key,ax) in zip(groups.groups.keys(), [axes] if ncols == 1 else axes.flatten()):
+        group = groups.get_group(key)
+        ax.set_ylabel('latency (s)')
+        ax.set_xlabel('experiment timestamp (s)')
+        ax.set_title(key)
+        ax.grid(True)
+
+
+        # Group by connection number and transaction rate and lane
+        paramGroups = group.groupby(['connections','rate', 'lane'])
+
+        for (subKey) in paramGroups.groups.keys():
+            subGroup = paramGroups.get_group(subKey)
+            startTime = subGroup.block_time.min()
+            endTime = subGroup.block_time.max()
+            subGroup.block_time = subGroup.block_time.apply(lambda x: x - startTime )
+            mean = subGroup.duration_ns.mean()
+            localStartTime = tz.localize(datetime.fromtimestamp(startTime)).astimezone(pytz.utc)
+            localEndTime  = tz.localize(datetime.fromtimestamp(endTime)).astimezone(pytz.utc)
+            print('experiment', key ,'start', localStartTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'end', localEndTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'duration', endTime - startTime, "mean", mean)
+            
+            (con,rate,lane) = subKey
+            label = 'c='+str(con) + ' r='+ str(rate) +' l='+ str(lane)
+            ax.axhline(y = mean, color='r', linestyle = '-', label="mean_l"+str(lane))
+            ax.scatter(subGroup.block_time, subGroup.duration_ns, label=label)
+        ax.legend()
+
+        # Save individual axes
+        extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        img_path = os.path.join(IMAGES_DIR, f'e_{key}_lane.png')
+        fig.savefig(img_path, bbox_inches=extent.expanded(1.4, 1.5))
+
+    fig.suptitle(fig_title + ' - ' + release)
+
+    # Save the figure with subplots
+    fig.savefig(os.path.join(IMAGES_DIR, 'all_experiments_lane.png'))
+
 
 
 def plot_all_configs(release, csv):
@@ -167,5 +217,6 @@ if __name__ == "__main__":
         os.makedirs(IMAGES_DIR)
 
     plot_all_experiments(release, csv)
+    plot_all_experiments_lane(release, csv)
     plot_all_configs(release, csv)
     plot_merged(release, csv)

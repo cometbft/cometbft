@@ -265,21 +265,12 @@ func logNodeStartupInfo(state sm.State, pubKey crypto.PubKey, logger, consensusL
 	}
 }
 
-func onlyValidatorIsUs(state sm.State, localAddr crypto.Address) bool {
-	if state.Validators.Size() > 1 {
-		return false
-	}
-	valAddr, _ := state.Validators.GetByIndex(0)
-	return bytes.Equal(localAddr, valAddr)
-}
-
 // createMempoolAndMempoolReactor creates a mempool and a mempool reactor based on the config.
 func createMempoolAndMempoolReactor(
 	config *cfg.Config,
 	proxyApp proxy.AppConns,
 	state sm.State,
 	eventBus *types.EventBus,
-	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 ) (mempl.Mempool, mempoolReactor) {
@@ -309,7 +300,7 @@ func createMempoolAndMempoolReactor(
 		reactor := mempl.NewReactor(
 			config.Mempool,
 			mp,
-			waitSync,
+			true,
 		)
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
@@ -374,7 +365,6 @@ func createConsensusReactor(config *cfg.Config,
 	evidencePool *evidence.Pool,
 	privValidator types.PrivValidator,
 	csMetrics *cs.Metrics,
-	waitSync bool,
 	eventBus *types.EventBus,
 	consensusLogger log.Logger,
 	offlineStateSyncHeight int64,
@@ -393,7 +383,7 @@ func createConsensusReactor(config *cfg.Config,
 	if privValidator != nil {
 		consensusState.SetPrivValidator(privValidator)
 	}
-	consensusReactor := cs.NewReactor(consensusState, waitSync, cs.ReactorMetrics(csMetrics))
+	consensusReactor := cs.NewReactor(consensusState, true, cs.ReactorMetrics(csMetrics))
 	consensusReactor.SetLogger(consensusLogger)
 	// services which will be publishing and/or subscribing for messages (events)
 	// consensusReactor will set it on consensusState and blockExecutor

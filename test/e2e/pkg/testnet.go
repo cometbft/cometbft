@@ -693,7 +693,7 @@ func weightedRandomIndex(weights []uint, sumWeights uint) int {
 	cursor := uint(0)
 	for i, w := range weights {
 		cursor += w
-		if int32(cursor) >= r {
+		if int32(cursor) > r {
 			return i
 		}
 	}

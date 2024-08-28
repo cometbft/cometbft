@@ -91,6 +91,17 @@ func (txs Txs) hashList() [][]byte {
 // Txs is a slice of transactions. Sorting a Txs value orders the transactions
 // lexicographically.
 
+// Deprecated: Do not use.
+func (txs Txs) Len() int { return len(txs) }
+
+// Deprecated: Do not use.
+func (txs Txs) Swap(i, j int) { txs[i], txs[j] = txs[j], txs[i] }
+
+// Deprecated: Do not use.
+func (txs Txs) Less(i, j int) bool {
+	return bytes.Compare(txs[i], txs[j]) == -1
+}
+
 func ToTxs(txl [][]byte) Txs {
 	txs := make([]Tx, 0, len(txl))
 	for _, tx := range txl {

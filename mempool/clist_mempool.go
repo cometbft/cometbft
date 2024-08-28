@@ -470,6 +470,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 	// Add new transaction.
 	_ = memTx.addSender(sender)
 	memTx.lane = lane
+	memTx.timestamp = time.Now().UTC()
 	e := txs.PushBack(memTx)
 	mem.addTxLaneSeqs[lane] = mem.addTxSeq
 
@@ -513,6 +514,9 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	}
 
 	memTx := elem.Value.(*mempoolTx)
+
+	label := strconv.FormatUint(uint64(memTx.lane), 10)
+	mem.metrics.TxDuration.With("lane", label).Observe(float64(memTx.timestamp.Sub(time.Now().UTC())))
 
 	// Remove tx from lane.
 	mem.lanes[memTx.lane].Remove(elem)

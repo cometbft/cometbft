@@ -27,6 +27,9 @@ type Metrics struct {
 	// Size in bytes of each lane.
 	LaneBytes metrics.Gauge `metrics_labels:"lane"`
 
+	// Duration in ms of a transaction in mempool.
+	TxDuration metrics.Histogram `metrics_bucketsizes:"50,100,200,500,1000" metrics_labels:"lane"`
+
 	// Histogram of transaction sizes in bytes.
 	TxSizeBytes metrics.Histogram `metrics_bucketsizes:"1,3,7" metrics_buckettype:"exp"`
 

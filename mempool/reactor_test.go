@@ -58,7 +58,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 		}
 	}
 
-	txs := checkTxs(t, reactors[0].mempool, numTxs)
+	txs := addRandomTxs(t, reactors[0].mempool, numTxs)
 	waitForReactors(t, txs, reactors, checkTxsInOrder)
 }
 
@@ -90,7 +90,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update the whole mempool
-		txs := checkTxs(t, reactors[0].mempool, numTxs)
+		txs := addRandomTxs(t, reactors[0].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -104,7 +104,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update none
-		_ = checkTxs(t, reactors[1].mempool, numTxs)
+		_ = addRandomTxs(t, reactors[1].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -174,7 +174,7 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
+	txs1 := addRandomTxs(t, reactors[0].mempool, numTxs)
 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
@@ -182,10 +182,53 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	waitForReactors(t, txs1, reactors, checkTxsInOrder)
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
-	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
+	txs2 := addRandomTxs(t, reactors[0].mempool, numTxs)
 	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
 }
 
+<<<<<<< HEAD
+=======
+// Test the scenario where a tx selected for being sent to a peer is removed
+// from the mempool before it is actually sent.
+func TestMempoolReactorSendRemovedTx(t *testing.T) {
+	config := cfg.TestConfig()
+	const n = 2
+	reactors, _ := makeAndConnectReactors(config, n, nil)
+	defer func() {
+		for _, r := range reactors {
+			if err := r.Stop(); err != nil {
+				require.NoError(t, err)
+			}
+		}
+	}()
+
+	// First reactor is at height 10 and knows that its peer is lagging at height 1.
+	// We do this to hold sending transactions, giving us time to remove some of them.
+	reactors[0].mempool.height.Store(10)
+	peerID := reactors[1].Switch.NodeInfo().ID()
+	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
+
+	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
+	txs := addRandomTxs(t, reactors[0].mempool, 20)
+	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
+
+	// Remove some txs from the mempool of the first reactor.
+	txsToRemove := txs[:10]
+	txsLeft := txs[10:]
+	reactors[0].mempool.PreUpdate()
+	reactors[0].mempool.Lock()
+	err := reactors[0].mempool.Update(10, txsToRemove, abciResponses(len(txsToRemove), abci.CodeTypeOK), nil, nil)
+	require.NoError(t, err)
+	reactors[0].mempool.Unlock()
+	require.Equal(t, len(txsLeft), reactors[0].mempool.Size())
+
+	// Now we know that the second reactor is not lagging, so it should receive
+	// all txs except those that were removed.
+	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
+	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
+}
+
+>>>>>>> 27a460641 (test(mempool):  Add two `Update` benchmarks (#3873))
 func TestMempoolReactorMaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 

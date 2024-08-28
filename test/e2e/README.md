@@ -111,7 +111,7 @@ If you need to generate manifests with a specific `log_level` that will configur
 CometBFT's config file for each node, you can specify the level using the flags `-l` or `--log-level`.
 
 ```
-./build/generator -g 2 -d networks/nightly/ -l debug
+./build/generator -g 2 -d networks/nightly/ -l "*:debug,p2p:info"
 ```
 
 This will add the specified log level on each generated manifest (TOML file):

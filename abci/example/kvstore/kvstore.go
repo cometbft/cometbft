@@ -180,7 +180,7 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
 
-  lane := app.assignLane(req.Tx)
+	lane := app.assignLane(req.Tx)
 	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 

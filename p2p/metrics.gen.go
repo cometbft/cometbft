@@ -38,6 +38,18 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "message_send_bytes_total",
 			Help:      "Number of bytes of each message type sent.",
 		}, append(labels, "message_type")).With(labelsAndValues...),
+		RecvRateLimiterDelay: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "recv_rate_limiter_delay",
+			Help:      "Time in seconds spent sleeping by the receive rate limiter",
+		}, append(labels, "peer_id")).With(labelsAndValues...),
+		SendRateLimiterDelay: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "send_rate_limiter_delay",
+			Help:      "Time in seconds spent sleeping by the send rate limiter",
+		}, append(labels, "peer_id")).With(labelsAndValues...),
 	}
 }
 
@@ -47,5 +59,7 @@ func NopMetrics() *Metrics {
 		PeerPendingSendBytes:     discard.NewGauge(),
 		MessageReceiveBytesTotal: discard.NewCounter(),
 		MessageSendBytesTotal:    discard.NewCounter(),
+		RecvRateLimiterDelay:     discard.NewCounter(),
+		SendRateLimiterDelay:     discard.NewCounter(),
 	}
 }

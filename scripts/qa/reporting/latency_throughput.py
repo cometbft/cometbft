@@ -241,7 +241,6 @@ def compute_experiments_stats(experiments):
     conns = sorted(stats.keys())
     avg_latencies = {}
     throughput_rates = {}
-    
     for c in conns:
         stats[c] = sorted(stats[c], key=lambda s: s['throughput_rate'])
         avg_latencies[c] = []

@@ -44,7 +44,6 @@ def plot_all_experiments(release, csv):
         # Group by connection number and transaction rate
         paramGroups = group.groupby(['connections','rate'])
         for (subKey) in paramGroups.groups.keys():
-            
             subGroup = paramGroups.get_group(subKey)
             startTime = subGroup.block_time.min()
             endTime = subGroup.block_time.max()
@@ -53,7 +52,6 @@ def plot_all_experiments(release, csv):
             localStartTime = tz.localize(datetime.fromtimestamp(startTime)).astimezone(pytz.utc)
             localEndTime  = tz.localize(datetime.fromtimestamp(endTime)).astimezone(pytz.utc)
             print('experiment', key ,'start', localStartTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'end', localEndTime.strftime("%Y-%m-%dT%H:%M:%SZ"), 'duration', endTime - startTime, "mean", mean)
-            
             (con,rate) = subKey
             label = 'c='+str(con) + ' r='+ str(rate)
             ax.axhline(y = mean, color = 'r', linestyle = '-', label="mean")

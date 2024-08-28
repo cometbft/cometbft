@@ -12,7 +12,8 @@ import pandas as pd
 
 IMAGES_DIR = 'imgs'
 #fig_title = 'Vote Extensions Testnet'
-fig_title = 'Rotating Nodes Test'
+#fig_title = 'Rotating Nodes Test'
+fig_title = 'Experiment title goes here'
 
 def usage():
     print(f"Usage: {sys.argv[0]} release_name raw_csv_path")

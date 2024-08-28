@@ -109,7 +109,10 @@ message SynchronyParams {
 
 // FeatureParams configure the height from which features of CometBFT are enabled.
 message FeatureParams {
-  // First height during which vote extensions will be enabled.
+  // Height during which vote extensions will be enabled.
+  //
+  // A value of 0 means vote extensions are disabled. A value > 0 denotes
+  // the height at which vote extensions will be (or have been) enabled.
   //
   // During the specified height, and for all subsequent heights, precommit
   // messages that do not contain valid extension data will be considered
@@ -124,6 +127,9 @@ message FeatureParams {
   google.protobuf.Int64Value vote_extensions_enable_height = 1 [(gogoproto.nullable) = true];
 
   // Height at which Proposer-Based Timestamps (PBTS) will be enabled.
+  //
+  // A value of 0 means PBTS is disabled. A value > 0 denotes the height at
+  // which PBTS will be (or has been) enabled.
   //
   // From the specified height, and for all subsequent heights, the PBTS
   // algorithm will be used to produce and validate block timestamps. Prior to

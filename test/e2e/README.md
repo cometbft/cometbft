@@ -107,6 +107,19 @@ The generator generates this type of perturbation both on full nodes and on ligh
 Perturbations of type `upgrade` are a noop if the node's version matches the
 one in `upgrade_version`.
 
+If you need to generate manifests with a specific `log_level` that will configure the log level parameter in the
+CometBFT's config file for each node, you can specify the level using the flags `-l` or `--log-level`.
+
+```
+./build/generator -g 2 -d networks/nightly/ -l debug
+```
+
+This will add the specified log level on each generated manifest (TOML file):
+
+```toml
+log_level = "debug"
+```
+
 ## Test Stages
 
 The test runner has the following stages, which can also be executed explicitly by running `./build/runner -f <manifest> <stage>`:

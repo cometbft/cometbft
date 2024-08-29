@@ -234,7 +234,6 @@ func (blockExec *BlockExecutor) ApplyBlock(
 }
 
 func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, block *types.Block, syncingToHeight int64) (State, error) {
-	startTime := cmttime.Now().UnixNano()
 	abciResponse, err := blockExec.proxyApp.FinalizeBlock(context.TODO(), &abci.FinalizeBlockRequest{
 		Hash:               block.Hash(),
 		NextValidatorsHash: block.NextValidatorsHash,
@@ -246,8 +245,6 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		Txs:                block.Txs.ToSliceOfBytes(),
 		SyncingToHeight:    syncingToHeight,
 	})
-	endTime := cmttime.Now().UnixNano()
-	blockExec.metrics.BlockProcessingTime.Observe(float64(endTime-startTime) / 1000000)
 	if err != nil {
 		blockExec.logger.Error("Error in proxyAppConn.FinalizeBlock", "err", err)
 		return state, err

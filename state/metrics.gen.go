@@ -14,14 +14,6 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 		labels = append(labels, labelsAndValues[i])
 	}
 	return &Metrics{
-		BlockProcessingTime: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
-			Namespace: namespace,
-			Subsystem: MetricsSubsystem,
-			Name:      "block_processing_time",
-			Help:      "Time spent processing FinalizeBlock",
-
-			Buckets: stdprometheus.LinearBuckets(1, 10, 10),
-		}, labels).With(labelsAndValues...),
 		ConsensusParamUpdates: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -107,7 +99,6 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 func NopMetrics() *Metrics {
 	return &Metrics{
-		BlockProcessingTime:                    discard.NewHistogram(),
 		ConsensusParamUpdates:                  discard.NewCounter(),
 		ValidatorSetUpdates:                    discard.NewCounter(),
 		PruningServiceBlockRetainHeight:        discard.NewGauge(),

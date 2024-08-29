@@ -22,7 +22,7 @@ pull_request_rules:
       - check-success=test_apps
     actions:
       merge:
-        method: merge
+        method: squash
   - name: merge PR (v0.37.x and v0.38.x)
     description: merge PR if it passes tests and there are no conflicts (v0.37.x and v0.38.x)
     conditions:
@@ -45,7 +45,7 @@ pull_request_rules:
       - check-success=test_apps
     actions:
       merge:
-        method: merge
+        method: squash
   - name: merge PR (v1.x)
     description: merge PR if it passes tests and there are no conflicts (v1.x)
     conditions:
@@ -69,7 +69,7 @@ pull_request_rules:
       - check-success=check-proto
     actions:
       merge:
-        method: merge
+        method: squash
 
   - name: automatic approval for Dependabot pull requests
     conditions:
@@ -85,7 +85,7 @@ pull_request_rules:
       - label=automerge
     actions:
       merge:
-        method: merge
+        method: squash
 
   - name: Attach backport-to-v0.38.x-experimental label to PR
     description: >-

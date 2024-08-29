@@ -66,4 +66,7 @@ type Metrics struct {
 	// The duration of accesses to the state store labeled by which method
 	// was called on the store.
 	StoreAccessDurationSeconds metrics.Histogram `metrics_bucketsizes:"0.0002, 10, 5" metrics_buckettype:"exp" metrics_labels:"method"`
+
+	// The duration of event firing related to a new block
+	BlockEventsDurationSeconds metrics.Gauge
 }

@@ -334,7 +334,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 
 	// Events are fired after everything else.
 	// NOTE: if we crash between Commit and Save, events won't be fired during replay
-	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
+	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates, blockExec.metrics)
 
 	return state, nil
 }
@@ -713,7 +713,12 @@ func fireEvents(
 	blockID types.BlockID,
 	abciResponse *abci.FinalizeBlockResponse,
 	validatorUpdates []*types.Validator,
+	metrics *Metrics,
 ) {
+	defer func(start time.Time) {
+		metrics.BlockEventsDurationSeconds.Set(cmttime.Since(start).Seconds())
+	}(cmttime.Now())
+
 	if err := eventBus.PublishEventNewBlock(types.EventDataNewBlock{
 		Block:               block,
 		BlockID:             blockID,

@@ -2,14 +2,8 @@ package mempool
 
 import (
 	"crypto/sha256"
-<<<<<<< HEAD
 	"fmt"
-=======
-	"errors"
->>>>>>> c0a57150c (mempool: Fix the benchmarks (#934))
 	"math"
-
-	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/types"

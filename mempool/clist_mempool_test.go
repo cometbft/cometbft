@@ -3,18 +3,13 @@ package mempool
 import (
 	"context"
 	"encoding/binary"
-<<<<<<< HEAD
 	"errors"
 	"fmt"
-=======
->>>>>>> c0a57150c (mempool: Fix the benchmarks (#934))
 	mrand "math/rand"
 	"os"
 	"sync"
 	"testing"
 	"time"
-
-	"fmt"
 
 	"github.com/cosmos/gogoproto/proto"
 	gogotypes "github.com/cosmos/gogoproto/types"

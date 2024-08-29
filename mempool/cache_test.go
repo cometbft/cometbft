@@ -3,8 +3,9 @@ package mempool
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"fmt"
 	"testing"
+
+	"fmt"
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"

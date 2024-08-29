@@ -17,6 +17,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cmtversion "github.com/cometbft/cometbft/api/cometbft/version/v1"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/test"
@@ -620,7 +621,8 @@ func TestFinalizeBlockValidatorUpdates(t *testing.T) {
 	require.NoError(t, err)
 	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
 
-	pubkey := secp256k1eth.GenPrivKey().PubKey()
+	// TODO renamed from secp256k1eth
+	pubkey := ed25519.GenPrivKey().PubKey()
 	app.ValidatorUpdates = []abci.ValidatorUpdate{
 		abci.NewValidatorUpdate(pubkey, 10),
 	}

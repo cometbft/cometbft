@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	gogo "github.com/cosmos/gogoproto/types"
@@ -205,13 +206,17 @@ func DefaultSynchronyParams() SynchronyParams {
 	}
 }
 
-func IsValidPubkeyType(params ValidatorParams, pubkeyType string) bool {
-	for i := 0; i < len(params.PubKeyTypes); i++ {
-		if params.PubKeyTypes[i] == pubkeyType {
-			return true
+func IsValidPubkeyType(params ValidatorParams, pubkeyType string) (bool, string) {
+	nKeyTypes := len(params.PubKeyTypes)
+	suppTypes := make([]string, 0, nKeyTypes)
+	for i := 0; i < nKeyTypes; i++ {
+		k := params.PubKeyTypes[i]
+		if k == pubkeyType {
+			return true, ""
 		}
+		suppTypes = append(suppTypes, fmt.Sprintf("%q", k))
 	}
-	return false
+	return false, strings.Join(suppTypes, ", ")
 }
 
 // ValidateBasic validates the ConsensusParams to ensure **all** values are within their

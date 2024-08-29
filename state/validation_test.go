@@ -33,6 +33,8 @@ func TestValidateBlockHeader(t *testing.T) {
 	cp := test.ConsensusParams()
 	pbtsEnableHeight := validationTestsStopHeight / 2
 	cp.Feature.PbtsEnableHeight = pbtsEnableHeight
+	// TODO revert
+	cp.Validator.PubKeyTypes = []string{"ed25519"}
 
 	state, stateDB, privVals := makeStateWithParams(3, 1, cp, chainID)
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{

@@ -8,13 +8,11 @@ linters:
     - containedctx
     - contextcheck
     - cyclop
-    - deadcode
     - dupword
     - errorlint
     - errname
     - err113
     - exhaustive
-    - exhaustivestruct
     - exhaustruct
     - execinquery
     - forbidigo
@@ -25,28 +23,21 @@ linters:
     - gocognit
     - gocyclo
     - godox
-    - golint
     - gomnd
-    - ifshort
+    - gosec
     - interfacebloat
     - intrange
-    - interfacer
     - ireturn
     - lll
     - maintidx
     - mnd
-    - maligned
     - nestif
     - nilnil
     - nlreturn
     - nonamedreturns
-    - nosnakecase
     - predeclared
-    - scopelint
-    - structcheck
     - tagliatelle
     - testifylint
-    - varcheck
     - varnamelen
     - wrapcheck
     - wsl
@@ -94,8 +85,13 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
+          - github.com/BurntSushi/toml
+          - github.com/Masterminds/semver/v3
+          - github.com/btcsuite/btcd/btcec/v2
           - github.com/cometbft
           - github.com/cosmos
+          - github.com/creachadair/atomicfile
+          - github.com/creachadair/tomledit
           - github.com/btcsuite/btcd/btcec/v2
           - github.com/BurntSushi/toml
           - github.com/dgraph-io/badger/v4
@@ -109,9 +105,9 @@ linters-settings:
           - github.com/hashicorp/golang-lru/v2
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
-          - github.com/Masterminds/semver/v3
           - github.com/minio/highwayhash
           - github.com/oasisprotocol/curve25519-voi
+          - github.com/pelletier/go-toml/v2
           - github.com/pkg/errors
           - github.com/prometheus
           - github.com/rcrowley/go-metrics
@@ -145,6 +141,8 @@ linters-settings:
   revive:
     enable-all-rules: true
     rules:
+      - name: comment-spacings # temporarily disabled
+        disabled: true
       - name: max-public-structs
         disabled: true
       - name: cognitive-complexity

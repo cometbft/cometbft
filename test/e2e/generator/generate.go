@@ -13,6 +13,9 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 
+	"github.com/cometbft/cometbft/crypto/bls12381"
+	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/version"
 )
@@ -68,6 +71,7 @@ var (
 	pbtsUpdateHeight           = uniformChoice{int64(-1), int64(0), int64(1)}                // -1: genesis, 0: InitChain, 1: (use offset)
 	pbtsEnabled                = weightedChoice{true: 3, false: 1}
 	pbtsHeightOffset           = uniformChoice{int64(0), int64(10), int64(100)}
+	keyType                    = uniformChoice{ed25519.KeyType, secp256k1.KeyType, bls12381.KeyType}
 )
 
 type generateConfig struct {
@@ -75,6 +79,7 @@ type generateConfig struct {
 	outputDir    string
 	multiVersion string
 	prometheus   bool
+	logLevel     string
 }
 
 // Generate generates random testnets using the given RNG.
@@ -116,7 +121,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 	}
 	manifests := []e2e.Manifest{}
 	for _, opt := range combinations(testnetCombinations) {
-		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion, cfg.prometheus)
+		manifest, err := generateTestnet(cfg.randSource, opt, upgradeVersion, cfg.prometheus, cfg.logLevel)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +131,7 @@ func Generate(cfg *generateConfig) ([]e2e.Manifest, error) {
 }
 
 // generateTestnet generates a single testnet with the given options.
-func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, prometheus bool) (e2e.Manifest, error) {
+func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, prometheus bool, logLevel string) (e2e.Manifest, error) {
 	manifest := e2e.Manifest{
 		IPv6:             ipv6.Choose(r).(bool),
 		ABCIProtocol:     nodeABCIProtocols.Choose(r).(string),
@@ -134,10 +139,12 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		InitialState:     opt["initialState"].(map[string]string),
 		Validators:       &map[string]int64{},
 		ValidatorUpdates: map[string]map[string]int64{},
+		KeyType:          keyType.Choose(r).(string),
 		Evidence:         evidence.Choose(r).(int),
 		Nodes:            map[string]*e2e.ManifestNode{},
 		UpgradeVersion:   upgradeVersion,
 		Prometheus:       prometheus,
+		LogLevel:         logLevel,
 	}
 
 	switch abciDelays.Choose(r).(string) {

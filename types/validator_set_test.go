@@ -15,7 +15,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
-	"github.com/cometbft/cometbft/crypto/sr25519"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
@@ -331,7 +331,7 @@ func TestProposerSelection3(t *testing.T) {
 		got := vset.GetProposer().Address
 		expected := proposerOrder[j%4].Address
 		if !bytes.Equal(got, expected) {
-			t.Fatalf(fmt.Sprintf("vset.Proposer (%X) does not match expected proposer (%X) for (%d, %d)", got, expected, i, j))
+			t.Fatalf("vset.Proposer (%X) does not match expected proposer (%X) for (%d, %d)", got, expected, i, j)
 		}
 
 		// serialize, deserialize, check proposer
@@ -342,13 +342,11 @@ func TestProposerSelection3(t *testing.T) {
 		if i != 0 {
 			if !bytes.Equal(got, computed.Address) {
 				t.Fatalf(
-					fmt.Sprintf(
-						"vset.Proposer (%X) does not match computed proposer (%X) for (%d, %d)",
-						got,
-						computed.Address,
-						i,
-						j,
-					),
+					"vset.Proposer (%X) does not match computed proposer (%X) for (%d, %d)",
+					got,
+					computed.Address,
+					i,
+					j,
 				)
 			}
 		}
@@ -1633,7 +1631,7 @@ func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {
 			sameType: true,
 		},
 		{
-			vals:     NewValidatorSet([]*Validator{randValidator(100), NewValidator(sr25519.GenPrivKey().PubKey(), 200)}),
+			vals:     NewValidatorSet([]*Validator{randValidator(100), NewValidator(secp256k1.GenPrivKey().PubKey(), 200)}),
 			sameType: false,
 		},
 	}

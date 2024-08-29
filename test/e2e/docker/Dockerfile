@@ -1,7 +1,7 @@
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
-FROM cometbft/cometbft-db-testing:v0.12.0
+FROM cometbft/cometbft-db-testing:v0.14.0
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 
@@ -30,7 +30,7 @@ RUN cd test/e2e && make node && cp build/node /usr/bin/app
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-ENV GORACE "halt_on_error=1"
+ENV GORACE="halt_on_error=1"
 
 EXPOSE 26656 26657 26660 6060
 ENTRYPOINT ["/usr/bin/entrypoint"]

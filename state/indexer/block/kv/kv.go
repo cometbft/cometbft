@@ -116,7 +116,10 @@ func getKeys(indexer BlockerIndexer) [][]byte {
 		panic(err)
 	}
 	for ; itr.Valid(); itr.Next() {
-		keys = append(keys, itr.Key())
+		key := make([]byte, len(itr.Key()))
+		copy(key, itr.Key())
+
+		keys = append(keys, key)
 	}
 	return keys
 }
@@ -491,7 +494,7 @@ LOOP:
 
 		select {
 		case <-ctx.Done():
-
+			break LOOP
 		default:
 		}
 	}
@@ -513,6 +516,7 @@ LOOP:
 
 	// Remove/reduce matches in filteredHashes that were not found in this
 	// match (tmpHashes).
+FOR_LOOP:
 	for k, v := range filteredHeights {
 		tmpHeight := tmpHeights[k]
 
@@ -523,7 +527,7 @@ LOOP:
 
 			select {
 			case <-ctx.Done():
-
+				break FOR_LOOP
 			default:
 			}
 		}
@@ -536,8 +540,16 @@ func (*BlockerIndexer) setTmpHeights(tmpHeights map[string][]byte, it dbm.Iterat
 	// If we return attributes that occur within the same events, then store the event sequence in the
 	// result map as well
 	eventSeq, _ := parseEventSeqFromEventKey(it.Key())
-	retVal := it.Value()
-	tmpHeights[string(retVal)+strconv.FormatInt(eventSeq, 10)] = it.Value()
+
+	// value comes from cometbft-db Iterator interface Value() API.
+	// Therefore, we must make a copy before storing references to it.
+	var (
+		value   = it.Value()
+		valueCp = make([]byte, len(value))
+	)
+	copy(valueCp, value)
+
+	tmpHeights[string(valueCp)+strconv.FormatInt(eventSeq, 10)] = valueCp
 }
 
 // match returns all matching heights that meet a given query condition and start
@@ -608,6 +620,7 @@ func (idx *BlockerIndexer) match(
 		}
 		defer it.Close()
 
+	LOOP_EXISTS:
 		for ; it.Valid(); it.Next() {
 			keyHeight, err := parseHeightFromEventKey(it.Key())
 			if err != nil {
@@ -627,7 +640,7 @@ func (idx *BlockerIndexer) match(
 
 			select {
 			case <-ctx.Done():
-				break
+				break LOOP_EXISTS
 
 			default:
 			}
@@ -649,6 +662,7 @@ func (idx *BlockerIndexer) match(
 		}
 		defer it.Close()
 
+	LOOP_CONTAINS:
 		for ; it.Valid(); it.Next() {
 			eventValue, err := parseValueFromEventKey(it.Key())
 			if err != nil {
@@ -674,7 +688,7 @@ func (idx *BlockerIndexer) match(
 
 			select {
 			case <-ctx.Done():
-				break
+				break LOOP_CONTAINS
 
 			default:
 			}
@@ -733,7 +747,7 @@ func (idx *BlockerIndexer) indexEvents(batch dbm.Batch, events []abci.Event, hei
 			}
 
 			// index iff the event specified index:true and it's not a reserved event
-			compositeKey := fmt.Sprintf("%s.%s", event.Type, attr.Key)
+			compositeKey := event.Type + "." + attr.Key
 			if compositeKey == types.BlockHeightKey {
 				return fmt.Errorf("event type and attribute key \"%s\" is reserved; please use a different key", compositeKey)
 			}

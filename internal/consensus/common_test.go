@@ -504,13 +504,16 @@ func newStateWithConfigAndBlockStore(
 	return cs
 }
 
-func loadPrivValidator(config *cfg.Config) *privval.FilePV {
+func loadPrivValidator(config *cfg.Config) (*privval.FilePV, error) {
 	privValidatorKeyFile := config.PrivValidatorKeyFile()
 	ensureDir(filepath.Dir(privValidatorKeyFile))
 	privValidatorStateFile := config.PrivValidatorStateFile()
-	privValidator := privval.LoadOrGenFilePV(privValidatorKeyFile, privValidatorStateFile)
+	privValidator, err := privval.LoadOrGenFilePV(privValidatorKeyFile, privValidatorStateFile, nil)
+	if err != nil {
+		return nil, err
+	}
 	privValidator.Reset()
-	return privValidator
+	return privValidator, nil
 }
 
 func randState(nValidators int) (*State, []*validatorStub) {
@@ -871,7 +874,8 @@ func randConsensusNetWithPeers(
 			DiscardABCIResponses: false,
 		})
 		t.Cleanup(func() { _ = stateStore.Close() })
-		state, _ := stateStore.LoadFromDBOrGenesisDoc(genDoc)
+		state, err := stateStore.LoadFromDBOrGenesisDoc(genDoc)
+		require.NoError(t, err)
 		thisConfig := ResetConfig(fmt.Sprintf("%s_%d", testName, i))
 		configRootDirs = append(configRootDirs, thisConfig.RootDir)
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile())) // dir for wal
@@ -882,16 +886,7 @@ func randConsensusNetWithPeers(
 		if i < nValidators {
 			privVal = privVals[i]
 		} else {
-			tempKeyFile, err := os.CreateTemp("", "priv_validator_key_")
-			if err != nil {
-				panic(err)
-			}
-			tempStateFile, err := os.CreateTemp("", "priv_validator_state_")
-			if err != nil {
-				panic(err)
-			}
-
-			privVal = privval.GenFilePV(tempKeyFile.Name(), tempStateFile.Name())
+			privVal = types.NewMockPV()
 		}
 
 		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))
@@ -900,7 +895,7 @@ func randConsensusNetWithPeers(
 			// simulate handshake, receive app version. If don't do this, replay test will fail
 			state.Version.Consensus.App = kvstore.AppVersion
 		}
-		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
+		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
 		css[i] = newStateWithConfig(thisConfig, state, privVal, app)

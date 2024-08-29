@@ -138,6 +138,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 	genesis.ConsensusParams.Version.App = 1
 	genesis.ConsensusParams.Evidence.MaxAgeNumBlocks = e2e.EvidenceAgeHeight
 	genesis.ConsensusParams.Evidence.MaxAgeDuration = e2e.EvidenceAgeTime
+	genesis.ConsensusParams.Validator.PubKeyTypes = []string{testnet.KeyType}
 	if testnet.BlockMaxBytes != 0 {
 		genesis.ConsensusParams.Block.MaxBytes = testnet.BlockMaxBytes
 	}
@@ -282,6 +283,14 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	}
 	if node.Testnet.DisablePexReactor {
 		cfg.P2P.PexReactor = false
+	}
+
+	if node.Testnet.LogLevel != "" {
+		cfg.LogLevel = node.Testnet.LogLevel
+	}
+
+	if node.Testnet.LogFormat != "" {
+		cfg.LogFormat = node.Testnet.LogFormat
 	}
 
 	if node.Prometheus {

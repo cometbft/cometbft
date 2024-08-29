@@ -146,7 +146,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 
 		protoTxs := msg.GetTxs()
 		if len(protoTxs) == 0 {
-			memR.Logger.Error("received empty txs from peer", "src", e.Src)
+			memR.Logger.Error("Received empty Txs message from peer", "src", e.Src)
 			return
 		}
 
@@ -155,7 +155,7 @@ func (memR *Reactor) Receive(e p2p.Envelope) {
 		}
 
 	default:
-		memR.Logger.Error("unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
+		memR.Logger.Error("Unknown message type", "src", e.Src, "chId", e.ChannelID, "msg", e.Message)
 		memR.Switch.StopPeerForError(e.Src, fmt.Errorf("mempool cannot handle message of type: %T", e.Message))
 		return
 	}
@@ -174,10 +174,10 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 	reqRes, err := memR.mempool.CheckTx(tx, senderID)
 	switch {
 	case errors.Is(err, ErrTxInCache):
-		memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%v", tx.Hash()), "sender", senderID)
+		memR.Logger.Debug("Tx already exists in cache", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID)
 		return nil, err
 	case err != nil:
-		memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%v", tx.Hash()), "sender", senderID, "err", err)
+		memR.Logger.Info("Could not check tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", senderID, "err", err)
 		return nil, err
 	}
 
@@ -185,7 +185,7 @@ func (memR *Reactor) TryAddTx(tx types.Tx, sender p2p.Peer) (*abcicli.ReqRes, er
 }
 
 func (memR *Reactor) EnableInOutTxs() {
-	memR.Logger.Info("enabling inbound and outbound transactions")
+	memR.Logger.Info("Enabling inbound and outbound transactions")
 	if !memR.waitSync.CompareAndSwap(true, false) {
 		return
 	}
@@ -217,21 +217,6 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}
 
-	var peerState PeerState
-	// Wait until the peer's state is ready. We initialize it in the consensus reactor, but when we
-	// add the peer in Switch, the order in which we call reactors#AddPeer is different every time
-	// due to us using a map. Sometimes other reactors will be initialized before the consensus
-	// reactor. We should wait a few milliseconds and retry. We assume the pointer to the state is
-	// set once and never unset.
-	for {
-		if ps, ok := peer.Get(types.PeerStateKey).(PeerState); ok {
-			peerState = ps
-			break
-		}
-		// Peer does not have a state yet.
-		time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-	}
-
 	iter := memR.mempool.NewIterator()
 	var entry Entry
 	for {
@@ -257,23 +242,55 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		// reduces the mempool size and the recheck-tx rate of the receiving
 		// node. See [RFC 103] for an analysis on this optimization.
 		//
-		// [RFC 103]: https://github.com/cometbft/cometbft/pull/735
-		if peerState.GetHeight() < entry.Height()-1 {
-			time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-			continue
+		// [RFC 103]: https://github.com/CometBFT/cometbft/blob/main/docs/references/rfc/rfc-103-incoming-txs-when-catching-up.md
+		for {
+			// Make sure the peer's state is up to date. The peer may not have a
+			// state yet. We set it in the consensus reactor, but when we add
+			// peer in Switch, the order we call reactors#AddPeer is different
+			// every time due to us using a map. Sometimes other reactors will
+			// be initialized before the consensus reactor. We should wait a few
+			// milliseconds and retry.
+			peerState, ok := peer.Get(types.PeerStateKey).(PeerState)
+			if ok && peerState.GetHeight()+1 >= entry.Height() {
+				break
+			}
+			select {
+			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
+			}
 		}
 
 		// NOTE: Transaction batching was disabled due to
 		// https://github.com/tendermint/tendermint/issues/5796
 
-		if !entry.IsSender(peer.ID()) {
+		// Do not send this transaction if we receive it from peer.
+		if entry.IsSender(peer.ID()) {
+			continue
+		}
+
+		for {
+			// The entry may have been removed from the mempool since it was
+			// chosen at the beginning of the loop. Skip it if that's the case.
+			if !memR.mempool.Contains(entry.Tx().Key()) {
+				break
+			}
+
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
 			})
-			if !success {
-				time.Sleep(PeerCatchupSleepIntervalMS * time.Millisecond)
-				continue
+			if success {
+				break
+			}
+			select {
+			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
+			case <-peer.Quit():
+				return
+			case <-memR.Quit():
+				return
 			}
 		}
 	}

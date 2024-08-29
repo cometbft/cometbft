@@ -3,6 +3,7 @@ package node
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -213,7 +214,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 	}
 
 	// The state store will use the DBKeyLayout set in config or already existing in the DB.
-	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genProvider, config.Storage.GenesisHash)
+	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genProvider, "")
 	if err != nil {
 		return err
 	}
@@ -287,12 +288,45 @@ func NewNode(ctx context.Context,
 	logger log.Logger,
 	options ...Option,
 ) (*Node, error) {
+	return NewNodeWithCliParams(ctx,
+		config,
+		privValidator,
+		nodeKey,
+		clientCreator,
+		genesisDocProvider,
+		dbProvider,
+		metricsProvider,
+		logger,
+		CliParams{},
+		options...)
+}
+
+// NewNodeWithCliParams returns a new, ready to go, CometBFT node
+// where we check the hash of the provided genesis file against
+// a hash provided by the operator via cli.
+
+func NewNodeWithCliParams(ctx context.Context,
+	config *cfg.Config,
+	privValidator types.PrivValidator,
+	nodeKey *p2p.NodeKey,
+	clientCreator proxy.ClientCreator,
+	genesisDocProvider GenesisDocProvider,
+	dbProvider cfg.DBProvider,
+	metricsProvider MetricsProvider,
+	logger log.Logger,
+	cliParams CliParams,
+	options ...Option,
+) (*Node, error) {
 	blockStoreDB, stateDB, err := initDBs(config, dbProvider)
 	if err != nil {
 		return nil, err
 	}
 
-	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, config.Storage.GenesisHash)
+	var genesisHash string
+	if len(cliParams.GenesisHash) != 0 {
+		genesisHash = hex.EncodeToString(cliParams.GenesisHash)
+	}
+	state, genDoc, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genesisDocProvider, genesisHash)
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +423,7 @@ func NewNode(ctx context.Context,
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, waitSync, memplMetrics, logger)
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, waitSync, memplMetrics, logger)
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {

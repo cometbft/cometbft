@@ -11,7 +11,7 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/secp256k1eth"
+	"github.com/cometbft/cometbft/crypto/ed25519"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/tempfile"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
@@ -183,9 +183,19 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 }
 
 // GenFilePV calls NewFilePV with a random ed25519 private key.
-func GenFilePV(keyFilePath, stateFilePath string) *FilePV {
-	// TODO Deal with this, TOP PRIO
-	return NewFilePV(secp256k1eth.GenPrivKey(), keyFilePath, stateFilePath)
+func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey, error)) (*FilePV, error) {
+	// TODO Is this dealt with?
+	if keyGen == nil {
+		keyGen = func() (crypto.PrivKey, error) {
+			return ed25519.GenPrivKey(), nil
+			// TODO: try secp256k1eth.GenPrivKey()
+		}
+	}
+	key, err := keyGen()
+	if err != nil {
+		return nil, err
+	}
+	return NewFilePV(key, keyFilePath, stateFilePath), nil
 }
 
 // LoadFilePV loads a FilePV from the filePaths.  The FilePV handles double
@@ -241,15 +251,19 @@ func loadFilePV(keyFilePath, stateFilePath string, loadState bool) *FilePV {
 
 // LoadOrGenFilePV loads a FilePV from the given filePaths
 // or else generates a new one and saves it to the filePaths.
-func LoadOrGenFilePV(keyFilePath, stateFilePath string) *FilePV {
+func LoadOrGenFilePV(keyFilePath, stateFilePath string, keyGenF func() (crypto.PrivKey, error)) (*FilePV, error) {
 	var pv *FilePV
 	if cmtos.FileExists(keyFilePath) {
 		pv = LoadFilePV(keyFilePath, stateFilePath)
 	} else {
-		pv = GenFilePV(keyFilePath, stateFilePath)
+		var err error
+		pv, err = GenFilePV(keyFilePath, stateFilePath, keyGenF)
+		if err != nil {
+			return nil, err
+		}
 		pv.Save()
 	}
-	return pv
+	return pv, nil
 }
 
 // GetAddress returns the address of the validator.

@@ -3,7 +3,7 @@ order: 2
 title: CometBFT How-to Guides
 description: How-to Guides
 parent:
-    order: 1
+    order: 2
 ---
 
 # How-To Guides

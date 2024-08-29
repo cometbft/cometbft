@@ -20,10 +20,10 @@ import (
 	_ "embed"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/secp256k1eth"
-	"github.com/cometbft/cometbft/crypto/sr25519"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
@@ -97,6 +97,8 @@ type Testnet struct {
 	VoteExtensionDelay                                   time.Duration
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
+	LogLevel                                             string
+	LogFormat                                            string
 	Prometheus                                           bool
 	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
@@ -201,6 +203,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionDelay:               manifest.VoteExtensionDelay,
 		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
 		UpgradeVersion:                   manifest.UpgradeVersion,
+		LogLevel:                         manifest.LogLevel,
+		LogFormat:                        manifest.LogFormat,
 		Prometheus:                       manifest.Prometheus,
 		BlockMaxBytes:                    manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
@@ -756,8 +760,12 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 	switch keyType {
 	case secp256k1.KeyType:
 		return secp256k1.GenPrivKeySecp256k1(seed)
-	case sr25519.KeyType:
-		return sr25519.GenPrivKeyFromSecret(seed)
+	case bls12381.KeyType:
+		pk, err := bls12381.GenPrivKeyFromSecret(seed)
+		if err != nil {
+			panic(fmt.Sprintf("unrecoverable error when generating key; key type %s, err %v", bls12381.KeyType, err))
+		}
+		return pk
 	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
 	case secp256k1eth.KeyType:

@@ -157,16 +157,9 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	defer cleanup()
 
 	// Ensure gas calculation behaves as expected
-<<<<<<< HEAD
-	checkTxs(t, mp, 1)
+	addRandomTxs(t, mp, 1)
 	tx0 := mp.TxsFront().Value.(*mempoolTx)
 	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
-=======
-	addRandomTxs(t, mp, 1)
-	iter := mp.NewIterator()
-	tx0 := <-iter.WaitNextCh()
-	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
->>>>>>> 27a460641 (test(mempool):  Add two `Update` benchmarks (#3873))
 	// ensure each tx is 20 bytes long
 	require.Len(t, tx0.tx, 20, "Tx is longer than 20 bytes")
 	mp.Flush()
@@ -999,51 +992,8 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	require.Zero(t, mp.Size())
 }
 
-<<<<<<< HEAD
-func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
-	t.Helper()
-=======
-func TestMempoolIterator(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	n := numTxs
-
-	// Spawn a goroutine that iterates on the list until counting n entries.
-	counter := 0
-	go func() {
-		defer wg.Done()
-
-		iter := mp.NewIterator()
-		for counter < n {
-			entry := <-iter.WaitNextCh()
-			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
-			counter++
-		}
-	}()
-
-	// Add n transactions with sequential ids.
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err)
-		rr.Wait()
-	}
-
-	wg.Wait()
-	require.Equal(t, n, counter)
-}
-
 func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
 	tb.Helper()
->>>>>>> 27a460641 (test(mempool):  Add two `Update` benchmarks (#3873))
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
 	server := newRemoteApp(tb, sockPath, app)

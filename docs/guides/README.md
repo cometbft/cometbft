@@ -20,3 +20,4 @@ examples to help users acquire real-world experience while learning.
 - [Application Development](./app-dev/README.md)
 - [Tools](./tools/README.md)
 - [Running Networks](./networks/README.md)
+- [Migrations](./migrations/README.md)

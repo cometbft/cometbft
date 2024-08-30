@@ -7,7 +7,7 @@ import (
 	"github.com/cometbft/cometbft/internal/flowrate/xrate"
 )
 
-var DefaultImplementation = "legacy"
+var DefaultImplementation = "xrate"
 
 type Status = legacyimpl.Status
 

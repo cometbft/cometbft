@@ -33,18 +33,16 @@ func (m *Monitor) Limit(want int, maxRate int64, block bool) (n int) {
 	// Update rate limiter parameters, if needed
 	// XXX: this should never change after the first call
 	if maxRate != m.rate {
-		// fmt.Println("Limit set to", maxRate)
 		m.limiter.SetLimit(rate.Limit(maxRate))
 		m.rate = maxRate
 	}
 	if want > m.burst {
-		// fmt.Println("Burst set to", want)
 		m.limiter.SetBurst(want)
 		m.burst = want
 	}
 
 	var sleepTime time.Duration
-	for want < m.reserved && block {
+	for want > m.reserved && block {
 		tokens := want - m.reserved
 		// We cannot reserve more than m.limiter.Burst()
 		if tokens > m.burst {

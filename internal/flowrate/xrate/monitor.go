@@ -23,6 +23,10 @@ func (m *Monitor) Update(n int) int {
 	return n
 }
 
+func (m *Monitor) SetREMA(rEMA float64) {
+	// TODO:
+}
+
 func (m *Monitor) Status() legacyimpl.Status {
 	// TODO:
 	return legacyimpl.Status{}

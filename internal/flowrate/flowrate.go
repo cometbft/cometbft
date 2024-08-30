@@ -21,4 +21,8 @@ type FlowRate interface {
 
 	// Status returns current transfer status information.
 	Status() Status
+
+	// Hack to set the current rEMA.
+	// Used by block sync reactor.
+	SetREMA(rEMA float64)
 }

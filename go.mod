@@ -3,7 +3,7 @@ module github.com/cometbft/cometbft
 go 1.21
 
 require (
-	github.com/BurntSushi/toml v1.2.1
+	github.com/BurntSushi/toml v1.4.0
 	github.com/ChainSafe/go-schnorrkel v1.1.0
 	github.com/adlio/schema v1.3.3
 	github.com/fortytw2/leaktest v1.3.0

@@ -1,7 +1,6 @@
 module github.com/tendermint/tendermint
 
 go 1.21.13
-
 toolchain go1.22.6
 
 require (
@@ -53,7 +52,7 @@ require (
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang/protobuf v1.5.4
 	golang.org/x/sync v0.8.0
-	gonum.org/v1/gonum v0.8.2
+	gonum.org/v1/gonum v0.15.1
 	google.golang.org/protobuf v1.34.2
 )
 

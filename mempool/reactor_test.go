@@ -58,7 +58,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 		}
 	}
 
-	txs := checkTxs(t, reactors[0].mempool, numTxs)
+	txs := addRandomTxs(t, reactors[0].mempool, numTxs)
 	waitForReactors(t, txs, reactors, checkTxsInOrder)
 }
 
@@ -90,7 +90,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update the whole mempool
-		txs := checkTxs(t, reactors[0].mempool, numTxs)
+		txs := addRandomTxs(t, reactors[0].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -104,7 +104,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update none
-		_ = checkTxs(t, reactors[1].mempool, numTxs)
+		_ = addRandomTxs(t, reactors[1].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -174,7 +174,7 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
+	txs1 := addRandomTxs(t, reactors[0].mempool, numTxs)
 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
@@ -182,7 +182,7 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	waitForReactors(t, txs1, reactors, checkTxsInOrder)
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
-	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
+	txs2 := addRandomTxs(t, reactors[0].mempool, numTxs)
 	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
 }
 

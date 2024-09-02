@@ -1,19 +1,11 @@
 package mempool
 
 import (
-	"fmt"
+	"sync/atomic"
 	"testing"
 
-	"encoding/binary"
-	"sync/atomic"
-
 	"github.com/cometbft/cometbft/abci/example/kvstore"
-	abciserver "github.com/cometbft/cometbft/abci/server"
-	"github.com/cometbft/cometbft/internal/test"
-	"github.com/cometbft/cometbft/libs/log"
-	cmtrand "github.com/cometbft/cometbft/libs/rand"
 	"github.com/cometbft/cometbft/proxy"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,19 +15,12 @@ func BenchmarkReap(b *testing.B) {
 	mp, cleanup := newMempoolWithApp(cc)
 	defer cleanup()
 
-	mp.config.Size = 100_000_000 // so that the nmempool never saturates
+	mp.config.Size = 100_000_000 // so that the mempool never saturates
+	addTxs(b, mp, 0, 10000)
 
-	size := 10000
-	for i := 0; i < size; i++ {
-		tx := kvstore.NewTxFromID(i)
-		binary.BigEndian.PutUint64(tx, uint64(i))
-		if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
-			b.Fatal(err)
-		}
-	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		mp.ReapMaxBytesMaxGas(100000000, 10000000)
+		mp.ReapMaxBytesMaxGas(100_000_000, -1)
 	}
 }
 
@@ -46,16 +31,15 @@ func BenchmarkCheckTx(b *testing.B) {
 	defer cleanup()
 
 	mp.config.Size = 100_000_000
-
 	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		tx := kvstore.NewTxFromID(i)
 		b.StartTimer()
 
-		if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
-			b.Fatal(err)
-		}
+		err := mp.CheckTx(tx, nil, TxInfo{})
+		require.NoError(b, err, i)
 	}
 }
 
@@ -66,7 +50,6 @@ func BenchmarkParallelCheckTx(b *testing.B) {
 	defer cleanup()
 
 	mp.config.Size = 100_000_000
-
 	var txcnt uint64
 	next := func() uint64 {
 		return atomic.AddUint64(&txcnt, 1)
@@ -76,9 +59,8 @@ func BenchmarkParallelCheckTx(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			tx := kvstore.NewTxFromID(int(next()))
-			if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
-				b.Fatal(err)
-			}
+			err := mp.CheckTx(tx, nil, TxInfo{})
+			require.NoError(b, err, tx)
 		}
 	})
 }
@@ -95,54 +77,73 @@ func BenchmarkCheckDuplicateTx(b *testing.B) {
 	if err := mp.CheckTx(tx, nil, TxInfo{}); err != nil {
 		b.Fatal(err)
 	}
-	e := mp.FlushAppConn()
-	require.True(b, e == nil)
+	err := mp.FlushAppConn()
+	require.NoError(b, err)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := mp.CheckTx(tx, nil, TxInfo{}); err == nil {
-			b.Fatal("tx should be duplicate")
-		}
+		err := mp.CheckTx(tx, nil, TxInfo{})
+		require.ErrorAs(b, err, &ErrTxInCache, "tx should be duplicate")
+	}
+}
+
+func BenchmarkUpdate(b *testing.B) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	numTxs := 1000
+	b.ResetTimer()
+	for i := 1; i <= b.N; i++ {
+		b.StopTimer()
+		txs := addTxs(b, mp, i*numTxs, numTxs)
+		require.Equal(b, len(txs), mp.Size(), len(txs))
+		b.StartTimer()
+
+		doUpdate(b, mp, int64(i), txs)
+		require.Zero(b, mp.Size())
+	}
+}
+
+func BenchmarkUpdateAndRecheck(b *testing.B) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	numTxs := 1000
+	b.ResetTimer()
+	for i := 1; i <= b.N; i++ {
+		b.StopTimer()
+		mp.Flush()
+		txs := addTxs(b, mp, i*numTxs, numTxs)
+		require.Equal(b, len(txs), mp.Size(), len(txs))
+		b.StartTimer()
+
+		// Update a part of txs and recheck the rest.
+		doUpdate(b, mp, int64(i), txs[:numTxs/2])
 	}
 
 }
 
 func BenchmarkUpdateRemoteClient(b *testing.B) {
-	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
-	app := kvstore.NewInMemoryApplication()
-
-	// Start server
-	server := abciserver.NewSocketServer(sockPath, app)
-	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
-	if err := server.Start(); err != nil {
-		b.Fatalf("Error starting socket server: %v", err.Error())
-	}
-
-	b.Cleanup(func() {
-		if err := server.Stop(); err != nil {
-			b.Error(err)
-		}
-	})
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(proxy.NewRemoteClientCreator(sockPath, "socket", true), cfg)
+	mp, cleanup := newMempoolWithAsyncConnection(b)
 	defer cleanup()
 
 	b.ResetTimer()
 	for i := 1; i <= b.N; i++ {
-
+		b.StopTimer()
 		tx := kvstore.NewTxFromID(i)
+		err := mp.CheckTx(tx, nil, TxInfo{})
+		require.NoError(b, err)
+		err = mp.FlushAppConn()
+		require.NoError(b, err)
+		require.Equal(b, 1, mp.Size())
+		b.StartTimer()
 
-		e := mp.CheckTx(tx, nil, TxInfo{})
-		require.True(b, e == nil)
-
-		e = mp.FlushAppConn()
-		require.True(b, e == nil)
-
-		require.True(b, mp.Size() == 1)
-
-		var txs = mp.ReapMaxTxs(mp.Size())
-		doCommit(b, mp, app, txs, int64(i))
-		assert.True(b, true)
+		txs := mp.ReapMaxTxs(mp.Size())
+		doUpdate(b, mp, int64(i), txs)
 	}
 
 }

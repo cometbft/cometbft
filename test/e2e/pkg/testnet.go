@@ -208,9 +208,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if node.Version == "" {
 			node.Version = localVersion
 		}
-		if node.Database == "" {
-			node.Database = "goleveldb"
-		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
 		}
@@ -223,8 +220,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if node.Mode == ModeLight {
 			node.ABCIProtocol = ProtocolBuiltin
 		}
-		if nodeManifest.Database != "" {
-			node.Database = nodeManifest.Database
+		if node.Database == "" {
+			node.Database = "goleveldb"
 		}
 		if nodeManifest.PrivvalProtocolStr != "" {
 			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocolStr)

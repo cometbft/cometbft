@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -168,6 +170,26 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		}
 		genesis.AppState = appState
 	}
+
+	if len(testnet.Genesis) > 0 {
+		viper.Reset()
+		viper.SetConfigType("json")
+
+		for _, entry := range testnet.Genesis {
+			tokens := strings.Split(entry, " = ")
+			key, value := tokens[0], tokens[1]
+			logger.Debug("Applying Genesis config", key, value)
+			viper.Set(key, value)
+		}
+
+		err := viper.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
+			d.TagName = "json"
+		})
+		if err != nil {
+			return genesis, err
+		}
+	}
+
 	return genesis, genesis.ValidateAndComplete()
 }
 

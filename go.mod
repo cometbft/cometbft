@@ -4,7 +4,7 @@ go 1.21
 toolchain go1.22.6
 
 require (
-	github.com/BurntSushi/toml v1.2.1
+	github.com/BurntSushi/toml v1.4.0
 	github.com/adlio/schema v1.3.3
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/fortytw2/leaktest v1.3.0

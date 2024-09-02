@@ -32,7 +32,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.26.0
-	golang.org/x/net v0.26.0
+	golang.org/x/net v0.28.0
 	google.golang.org/grpc v1.62.1
 )
 
@@ -42,7 +42,7 @@ require (
 )
 
 require (
-	github.com/Masterminds/semver/v3 v3.2.0
+	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/btcutil v1.1.6
 	github.com/cometbft/cometbft-db v0.11.0

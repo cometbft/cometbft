@@ -48,7 +48,7 @@ have installed and the computer platform):
 
 ```bash
 $ go version
-go version go1.22.2 darwin/amd64
+go version go1.22.5 darwin/amd64
 
 ```
 
@@ -122,7 +122,7 @@ go: to add module requirements and sums:
 	go mod tidy
 ```
 
-go 1.22.2
+go 1.22.5
 Now, lets add `cometbft` as a dependency to our project. Run the `go get` command below:
 
 ```bash
@@ -143,7 +143,7 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-go 1.21.8
+go 1.22.5
 
 require github.com/cometbft/cometbft v1.0.0 // indirect
 ```

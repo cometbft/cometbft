@@ -460,14 +460,6 @@ func newStateWithConfigAndBlockStore(
 	// one for mempool, one for consensus
 	mtx := new(cmtsync.Mutex)
 
-	// appResp, err := app.Info(context.Background(), proxy.InfoRequest)
-	// if err != nil {
-	// 	panic("error on info")
-	// }
-	// laneInfo, err := mempl.FetchLanesInfo(appResp.LanePriorities, types.Lane(appResp.DefaultLanePriority))
-	// if err != nil {
-	// 	panic("error parsing lanes ")
-	// }
 	proxyAppConnCon := proxy.NewAppConnConsensus(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 	proxyAppConnMem := proxy.NewAppConnMempool(abcicli.NewLocalClient(mtx, app), proxy.NopMetrics())
 	// Make Mempool

@@ -171,6 +171,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		genesis.AppState = appState
 	}
 
+	// Customized genesis fields provided in the manifest
 	if len(testnet.Genesis) > 0 {
 		viper.Reset()
 		viper.SetConfigType("json")
@@ -182,6 +183,8 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 			viper.Set(key, value)
 		}
 
+		// We use viper because it leaves untouched keys that are not set.
+		// The GenesisDoc does not use the original `mapstructure` tag.
 		err := viper.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
 			d.TagName = "json"
 		})

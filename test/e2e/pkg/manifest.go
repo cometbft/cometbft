@@ -144,7 +144,7 @@ type Manifest struct {
 
 	// Config is a set of key-value config entries to write to CometBFT's
 	// configuration files for all nodes. The format is "key = value".
-	// Example: "p2p.send_rate = 512000.
+	// Example: "p2p.send_rate = 512000".
 	Config []string `toml:"config"`
 }
 
@@ -250,7 +250,7 @@ type ManifestNode struct {
 
 	// Config is a set of key-value config entries to write to CometBFT's
 	// configuration files for this node. The format is "key = value".
-	// Example: "p2p.send_rate = 512000.
+	// Example: "p2p.send_rate = 512000".
 	Config []string `toml:"config"`
 }
 

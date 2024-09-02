@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/spf13/viper"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -316,6 +317,19 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	if node.CompactionInterval != 0 && node.Compact {
 		cfg.Storage.CompactionInterval = node.CompactionInterval
 	}
+
+	// We currently need viper in order to parse config files.
+	viper.Reset()
+	for _, config_entry := range node.Config {
+		tokens := strings.Split(config_entry, " = ")
+		key, value := tokens[0], tokens[1]
+		logger.Debug("Applying Comet config", "node", node.Name, key, value)
+		viper.Set(key, value)
+	}
+	if err := viper.Unmarshal(cfg); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
 }
 

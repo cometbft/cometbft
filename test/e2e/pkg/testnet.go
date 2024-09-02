@@ -240,6 +240,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		} else if testnet.DefaultZone != "" {
 			node.Zone = ZoneID(testnet.DefaultZone)
 		}
+		// Configs are applied in order, so a local Config in Node
+		// should override a global config in Testnet.
+		if len(manifest.Config) > 0 {
+			node.Config = append(testnet.Config, node.Config...)
+		}
 
 		testnet.Nodes = append(testnet.Nodes, node)
 	}

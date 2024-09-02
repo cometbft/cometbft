@@ -240,7 +240,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	for _, name := range sortNodeNames(manifest) {
-		nodeManifest := manifest.Nodes[name]
+		nodeManifest := manifest.NodesMap[name]
 		ind, ok := ifd.Instances[name]
 		if !ok {
 			return nil, fmt.Errorf("information for node '%s' missing from infrastructure data", name)
@@ -325,7 +325,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 
 	// We do a second pass to set up seeds and persistent peers, which allows graph cycles.
 	for _, node := range testnet.Nodes {
-		nodeManifest, ok := manifest.Nodes[node.Name]
+		nodeManifest, ok := manifest.NodesMap[node.Name]
 		if !ok {
 			return nil, fmt.Errorf("failed to look up manifest for node %q", node.Name)
 		}
@@ -357,8 +357,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up genesis validators. If not specified explicitly, use all validator nodes.
-	if manifest.Validators != nil {
-		for validatorName, power := range *manifest.Validators {
+	if manifest.ValidatorsMap != nil {
+		for validatorName, power := range *manifest.ValidatorsMap {
 			validator := testnet.LookupNode(validatorName)
 			if validator == nil {
 				return nil, fmt.Errorf("unknown validator %q", validatorName)
@@ -374,7 +374,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	// Set up validator updates.
-	for heightStr, validators := range manifest.ValidatorUpdates {
+	for heightStr, validators := range manifest.ValidatorUpdatesMap {
 		height, err := strconv.Atoi(heightStr)
 		if err != nil {
 			return nil, fmt.Errorf("invalid validator update height %q: %w", height, err)

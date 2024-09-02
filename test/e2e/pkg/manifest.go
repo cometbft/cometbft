@@ -20,7 +20,7 @@ type Manifest struct {
 	// set in genesis. Defaults to nothing.
 	InitialState map[string]string `toml:"initial_state"`
 
-	// Validators is the initial validator set in genesis, given as node names
+	// ValidatorsMap is the initial validator set in genesis, given as node names
 	// and power:
 	//
 	// validators = { validator01 = 10; validator02 = 20; validator03 = 30 }
@@ -29,9 +29,9 @@ type Manifest struct {
 	// specifying an empty set will start with no validators in genesis, and
 	// the application must return the validator set in InitChain via the
 	// setting validator_update.0 (see below).
-	Validators *map[string]int64 `toml:"validators"`
+	ValidatorsMap *map[string]int64 `toml:"validators"`
 
-	// ValidatorUpdates is a map of heights to validator names and their power,
+	// ValidatorUpdatesMap is a map of heights to validator names and their power,
 	// and will be returned by the ABCI application. For example, the following
 	// changes the power of validator01 and validator02 at height 1000:
 	//
@@ -43,10 +43,10 @@ type Manifest struct {
 	// application returns the validator updates as-is, i.e. removing a
 	// validator must be done by returning it with power 0, and any validators
 	// not specified are not changed.
-	ValidatorUpdates map[string]map[string]int64 `toml:"validator_update"`
+	ValidatorUpdatesMap map[string]map[string]int64 `toml:"validator_update"`
 
-	// Nodes specifies the network nodes. At least one node must be given.
-	Nodes map[string]*ManifestNode `toml:"node"`
+	// NodesMap specifies the network nodes. At least one node must be given.
+	NodesMap map[string]*ManifestNode `toml:"node"`
 
 	// Disable the peer-exchange reactor on all nodes.
 	DisablePexReactor bool `toml:"disable_pex"`

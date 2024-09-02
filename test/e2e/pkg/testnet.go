@@ -72,44 +72,18 @@ const (
 )
 
 // Testnet represents a single testnet.
+// It includes all fields from the associated Manifest instance.
 type Testnet struct {
-	Name                                                 string
-	File                                                 string
-	Dir                                                  string
-	IP                                                   *net.IPNet
-	InitialHeight                                        int64
-	InitialState                                         map[string]string
-	Validators                                           map[*Node]int64
-	ValidatorUpdates                                     map[int64]map[*Node]int64
-	Nodes                                                []*Node
-	DisablePexReactor                                    bool
-	KeyType                                              string
-	Evidence                                             int
-	LoadTxSizeBytes                                      int
-	LoadTxBatchSize                                      int
-	LoadTxConnections                                    int
-	LoadMaxTxs                                           int
-	ABCIProtocol                                         string
-	PrepareProposalDelay                                 time.Duration
-	ProcessProposalDelay                                 time.Duration
-	CheckTxDelay                                         time.Duration
-	VoteExtensionDelay                                   time.Duration
-	FinalizeBlockDelay                                   time.Duration
-	UpgradeVersion                                       string
-	LogLevel                                             string
-	LogFormat                                            string
-	Prometheus                                           bool
-	BlockMaxBytes                                        int64
-	VoteExtensionsEnableHeight                           int64
-	VoteExtensionsUpdateHeight                           int64
-	VoteExtensionSize                                    uint
-	PeerGossipIntraloopSleepDuration                     time.Duration
-	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
-	ExperimentalMaxGossipConnectionsToNonPersistentPeers uint
-	ABCITestsEnabled                                     bool
-	DefaultZone                                          string
-	PbtsEnableHeight                                     int64
-	PbtsUpdateHeight                                     int64
+	Manifest
+
+	Name string
+	File string
+	Dir  string
+
+	IP               *net.IPNet
+	Validators       map[*Node]int64
+	ValidatorUpdates map[int64]map[*Node]int64
+	Nodes            []*Node
 }
 
 // Node represents a CometBFT node in a testnet.
@@ -179,46 +153,19 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	}
 
 	testnet := &Testnet{
-		Name:                             filepath.Base(dir),
-		File:                             file,
-		Dir:                              dir,
-		IP:                               ipNet,
-		InitialHeight:                    1,
-		InitialState:                     manifest.InitialState,
-		Validators:                       map[*Node]int64{},
-		ValidatorUpdates:                 map[int64]map[*Node]int64{},
-		Nodes:                            []*Node{},
-		DisablePexReactor:                manifest.DisablePexReactor,
-		KeyType:                          manifest.KeyType,
-		Evidence:                         manifest.Evidence,
-		LoadTxSizeBytes:                  manifest.LoadTxSizeBytes,
-		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
-		LoadTxConnections:                manifest.LoadTxConnections,
-		LoadMaxTxs:                       manifest.LoadMaxTxs,
-		ABCIProtocol:                     manifest.ABCIProtocol,
-		PrepareProposalDelay:             manifest.PrepareProposalDelay,
-		ProcessProposalDelay:             manifest.ProcessProposalDelay,
-		CheckTxDelay:                     manifest.CheckTxDelay,
-		VoteExtensionDelay:               manifest.VoteExtensionDelay,
-		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
-		UpgradeVersion:                   manifest.UpgradeVersion,
-		LogLevel:                         manifest.LogLevel,
-		LogFormat:                        manifest.LogFormat,
-		Prometheus:                       manifest.Prometheus,
-		BlockMaxBytes:                    manifest.BlockMaxBytes,
-		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
-		VoteExtensionsUpdateHeight:       manifest.VoteExtensionsUpdateHeight,
-		VoteExtensionSize:                manifest.VoteExtensionSize,
-		PeerGossipIntraloopSleepDuration: manifest.PeerGossipIntraloopSleepDuration,
-		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
-		ExperimentalMaxGossipConnectionsToNonPersistentPeers: manifest.ExperimentalMaxGossipConnectionsToNonPersistentPeers,
-		ABCITestsEnabled: manifest.ABCITestsEnabled,
-		DefaultZone:      manifest.DefaultZone,
-		PbtsEnableHeight: manifest.PbtsEnableHeight,
-		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
+		Manifest: manifest,
+
+		Name: filepath.Base(dir),
+		File: file,
+		Dir:  dir,
+
+		IP:               ipNet,
+		Validators:       map[*Node]int64{},
+		ValidatorUpdates: map[int64]map[*Node]int64{},
+		Nodes:            []*Node{},
 	}
-	if manifest.InitialHeight > 0 {
-		testnet.InitialHeight = manifest.InitialHeight
+	if testnet.InitialHeight == 0 {
+		testnet.InitialHeight = 1
 	}
 	if testnet.KeyType == "" {
 		testnet.KeyType = ed25519.KeyType

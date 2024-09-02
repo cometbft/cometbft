@@ -116,7 +116,8 @@ func (iter *BlockingWRRIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
 		// Add the next entry to the channel if not nil.
-		if entry := iter.Next(); entry != nil {
+		lane := iter.PickLane()
+		if entry := iter.Next(lane); entry != nil {
 			ch <- entry.Value.(Entry)
 			close(ch)
 		} else {
@@ -130,41 +131,44 @@ func (iter *BlockingWRRIterator) WaitNextCh() <-chan Entry {
 // PickLane returns a _valid_ lane on which to iterate, according to the WRR
 // algorithm. A lane is valid if it is not empty or it is not over-consumed,
 // meaning that the number of accessed entries in the lane has not yet reached
-// its priority value in the current WRR iteration.
+// its priority value in the current WRR iteration. It will block until a
+// transaction is available in any lane.
 func (iter *BlockingWRRIterator) PickLane() types.Lane {
-	// Loop until finding a valid lanes
-	// If the current lane is not valid, continue with the next lane with lower priority, in a
-	// round robin fashion.
+	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
 
 	iter.mp.addTxChMtx.RLock()
 	defer iter.mp.addTxChMtx.RUnlock()
 
-	nIter := 0
+	// Loop until finding a valid lane. If the current lane is not valid,
+	// continue with the next lower-priority lane, in a round robin fashion.
+	numEmptyLanes := 0
 	for {
+		// Skip empty lanes or lanes with their cursor pointing at their last entry.
 		if iter.mp.lanes[lane].Len() == 0 ||
 			(iter.cursors[lane] != nil &&
 				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
-			lane = iter.nextLane()
-			nIter++
-			if nIter >= len(iter.sortedLanes) {
+			numEmptyLanes++
+			if numEmptyLanes >= len(iter.sortedLanes) {
+				// There are no lanes with non-accessed entries. Wait until a new tx is added.
 				ch := iter.mp.addTxCh
 				iter.mp.addTxChMtx.RUnlock()
 				<-ch
 				iter.mp.addTxChMtx.RLock()
-				nIter = 0
+				numEmptyLanes = 0
 			}
+			lane = iter.nextLane()
 			continue
 		}
 
+		// Skip over-consumed lanes.
 		if iter.counters[lane] >= uint(lane) {
-			// Reset the counter only when the limit on the lane was reached.
 			iter.counters[lane] = 0
+			numEmptyLanes = 0
 			lane = iter.nextLane()
-			nIter = 0
 			continue
 		}
-		// TODO: if we detect that a higher-priority lane now has entries, do we preempt access to the current lane?
+
 		return lane
 	}
 }
@@ -175,11 +179,7 @@ func (iter *BlockingWRRIterator) PickLane() types.Lane {
 // entry from the selected lane. On subsequent calls, Next will return the next entries from the
 // same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
 // The next time, Next will select the successive lane with lower priority.
-//
-// TODO: Note that this code does not block waiting for an available entry on a CList or a CElement, as
-// was the case on the original code. Is this the best way to do it?
-func (iter *BlockingWRRIterator) Next() *clist.CElement {
-	lane := iter.PickLane()
+func (iter *BlockingWRRIterator) Next(lane types.Lane) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
 	if cursor := iter.cursors[lane]; cursor != nil {

@@ -394,6 +394,13 @@ func (t Testnet) Validate() error {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
 		}
 	}
+	for _, entry := range t.Genesis {
+		tokens := strings.Split(entry, " = ")
+		if len(tokens) != 2 {
+			return fmt.Errorf("invalid genesis entry: \"%s\", "+
+				"expected \"key = value\"", entry)
+		}
+	}
 	return nil
 }
 

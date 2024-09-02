@@ -273,7 +273,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	// set of random peers that start before themselves.
 	var seedNames, peerNames, lightProviders []string
 	for name, node := range manifest.NodesMap {
-		if node.Mode == string(e2e.ModeSeed) {
+		if node.ModeStr == string(e2e.ModeSeed) {
 			seedNames = append(seedNames, name)
 		} else {
 			// if the full node or validator is an ideal candidate, it is added as a light provider.
@@ -288,7 +288,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	for _, name := range seedNames {
 		for _, otherName := range seedNames {
 			if name != otherName {
-				manifest.NodesMap[name].Seeds = append(manifest.NodesMap[name].Seeds, otherName)
+				manifest.NodesMap[name].SeedsList = append(manifest.NodesMap[name].SeedsList, otherName)
 			}
 		}
 	}
@@ -306,9 +306,9 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 	})
 	for i, name := range peerNames {
 		if len(seedNames) > 0 && (i == 0 || r.Float64() >= 0.5) {
-			manifest.NodesMap[name].Seeds = uniformSetChoice(seedNames).Choose(r)
+			manifest.NodesMap[name].SeedsList = uniformSetChoice(seedNames).Choose(r)
 		} else if i > 0 {
-			manifest.NodesMap[name].PersistentPeers = uniformSetChoice(peerNames[:i]).Choose(r)
+			manifest.NodesMap[name].PersistentPeersList = uniformSetChoice(peerNames[:i]).Choose(r)
 		}
 	}
 
@@ -332,13 +332,13 @@ func generateNode(
 ) *e2e.ManifestNode {
 	node := e2e.ManifestNode{
 		Version:                nodeVersions.Choose(r).(string),
-		Mode:                   string(mode),
+		ModeStr:                string(mode),
 		StartAt:                startAt,
 		Database:               nodeDatabases.Choose(r).(string),
-		PrivvalProtocol:        nodePrivvalProtocols.Choose(r).(string),
+		PrivvalProtocolStr:     nodePrivvalProtocols.Choose(r).(string),
 		BlockSyncVersion:       nodeBlockSyncs.Choose(r).(string),
 		StateSync:              nodeStateSyncs.Choose(r).(bool) && startAt > 0,
-		PersistInterval:        ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
+		PersistIntervalPtr:     ptrUint64(uint64(nodePersistIntervals.Choose(r).(int))),
 		SnapshotInterval:       uint64(nodeSnapshotIntervals.Choose(r).(int)),
 		RetainBlocks:           uint64(nodeRetainBlocks.Choose(r).(int)),
 		EnableCompanionPruning: false,
@@ -354,19 +354,19 @@ func generateNode(
 
 	// If a node which does not persist state also does not retain blocks, randomly
 	// choose to either persist state or retain all blocks.
-	if node.PersistInterval != nil && *node.PersistInterval == 0 && node.RetainBlocks > 0 {
+	if node.PersistIntervalPtr != nil && *node.PersistIntervalPtr == 0 && node.RetainBlocks > 0 {
 		if r.Float64() > 0.5 {
 			node.RetainBlocks = 0
 		} else {
-			node.PersistInterval = ptrUint64(node.RetainBlocks)
+			node.PersistIntervalPtr = ptrUint64(node.RetainBlocks)
 		}
 	}
 
 	// If either PersistInterval or SnapshotInterval are greater than RetainBlocks,
 	// expand the block retention time.
 	if node.RetainBlocks > 0 {
-		if node.PersistInterval != nil && node.RetainBlocks < *node.PersistInterval {
-			node.RetainBlocks = *node.PersistInterval
+		if node.PersistIntervalPtr != nil && node.RetainBlocks < *node.PersistIntervalPtr {
+			node.RetainBlocks = *node.PersistIntervalPtr
 		}
 		if node.RetainBlocks < node.SnapshotInterval {
 			node.RetainBlocks = node.SnapshotInterval
@@ -384,13 +384,13 @@ func generateNode(
 
 func generateLightNode(r *rand.Rand, startAt int64, providers []string) *e2e.ManifestNode {
 	return &e2e.ManifestNode{
-		Mode:            string(e2e.ModeLight),
-		Version:         nodeVersions.Choose(r).(string),
-		StartAt:         startAt,
-		Database:        nodeDatabases.Choose(r).(string),
-		PersistInterval: ptrUint64(0),
-		PersistentPeers: providers,
-		Perturb:         lightNodePerturbations.Choose(r),
+		ModeStr:             string(e2e.ModeLight),
+		Version:             nodeVersions.Choose(r).(string),
+		StartAt:             startAt,
+		Database:            nodeDatabases.Choose(r).(string),
+		PersistIntervalPtr:  ptrUint64(0),
+		PersistentPeersList: providers,
+		Perturb:             lightNodePerturbations.Choose(r),
 	}
 }
 

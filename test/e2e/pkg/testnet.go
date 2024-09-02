@@ -87,9 +87,11 @@ type Testnet struct {
 }
 
 // Node represents a CometBFT node in a testnet.
+// It includes all fields from the associated ManifestNode instance.
 type Node struct {
+	ManifestNode
+
 	Name                    string
-	Version                 string
 	Testnet                 *Testnet
 	Mode                    Mode
 	PrivvalKey              crypto.PrivKey
@@ -99,29 +101,15 @@ type Node struct {
 	RPCProxyPort            uint32
 	GRPCProxyPort           uint32
 	GRPCPrivilegedProxyPort uint32
-	StartAt                 int64
-	BlockSyncVersion        string
-	StateSync               bool
-	Database                string
 	ABCIProtocol            Protocol
 	PrivvalProtocol         Protocol
 	PersistInterval         uint64
-	SnapshotInterval        uint64
-	RetainBlocks            uint64
-	EnableCompanionPruning  bool
 	Seeds                   []*Node
 	PersistentPeers         []*Node
 	Perturbations           []Perturbation
-	SendNoLoad              bool
 	Prometheus              bool
 	PrometheusProxyPort     uint32
 	Zone                    ZoneID
-	ExperimentalKeyLayout   string
-	Compact                 bool
-	CompactionInterval      int64
-	DiscardABCIResponses    bool
-	Indexer                 string
-	ClockSkew               time.Duration
 }
 
 // LoadTestnet loads a testnet from a manifest file. The testnet files are
@@ -196,15 +184,12 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if len(extIP) == 0 {
 			extIP = ind.IPAddress
 		}
-		v := nodeManifest.Version
-		if v == "" {
-			v = localVersion
-		}
 
 		node := &Node{
-			Name:                    name,
-			Version:                 v,
-			Testnet:                 testnet,
+			ManifestNode: *nodeManifest,
+			Name:         name,
+			Testnet:      testnet,
+
 			PrivvalKey:              keyGen.Generate(testnet.KeyType),
 			NodeKey:                 keyGen.Generate(ed25519.KeyType),
 			InternalIP:              ind.IPAddress,
@@ -213,26 +198,18 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 			GRPCProxyPort:           ind.GRPCPort,
 			GRPCPrivilegedProxyPort: ind.PrivilegedGRPCPort,
 			Mode:                    ModeValidator,
-			Database:                "goleveldb",
 			ABCIProtocol:            Protocol(testnet.ABCIProtocol),
 			PrivvalProtocol:         ProtocolFile,
-			StartAt:                 nodeManifest.StartAt,
-			BlockSyncVersion:        nodeManifest.BlockSyncVersion,
-			StateSync:               nodeManifest.StateSync,
 			PersistInterval:         1,
-			SnapshotInterval:        nodeManifest.SnapshotInterval,
-			RetainBlocks:            nodeManifest.RetainBlocks,
-			EnableCompanionPruning:  nodeManifest.EnableCompanionPruning,
 			Perturbations:           []Perturbation{},
-			SendNoLoad:              nodeManifest.SendNoLoad,
 			Prometheus:              testnet.Prometheus,
-			Zone:                    ZoneID(nodeManifest.Zone),
-			ExperimentalKeyLayout:   nodeManifest.ExperimentalKeyLayout,
-			Compact:                 nodeManifest.Compact,
-			CompactionInterval:      nodeManifest.CompactionInterval,
-			DiscardABCIResponses:    nodeManifest.DiscardABCIResponses,
-			Indexer:                 nodeManifest.Indexer,
-			ClockSkew:               nodeManifest.ClockSkew,
+			Zone:                    ZoneID(nodeManifest.ZoneStr),
+		}
+		if node.Version == "" {
+			node.Version = localVersion
+		}
+		if node.Database == "" {
+			node.Database = "goleveldb"
 		}
 		if node.StartAt == testnet.InitialHeight {
 			node.StartAt = 0 // normalize to 0 for initial nodes, since code expects this
@@ -240,8 +217,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if node.BlockSyncVersion == "" {
 			node.BlockSyncVersion = "v0"
 		}
-		if nodeManifest.Mode != "" {
-			node.Mode = Mode(nodeManifest.Mode)
+		if nodeManifest.ModeStr != "" {
+			node.Mode = Mode(nodeManifest.ModeStr)
 		}
 		if node.Mode == ModeLight {
 			node.ABCIProtocol = ProtocolBuiltin
@@ -249,11 +226,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if nodeManifest.Database != "" {
 			node.Database = nodeManifest.Database
 		}
-		if nodeManifest.PrivvalProtocol != "" {
-			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocol)
+		if nodeManifest.PrivvalProtocolStr != "" {
+			node.PrivvalProtocol = Protocol(nodeManifest.PrivvalProtocolStr)
 		}
-		if nodeManifest.PersistInterval != nil {
-			node.PersistInterval = *nodeManifest.PersistInterval
+		if nodeManifest.PersistIntervalPtr != nil {
+			node.PersistInterval = *nodeManifest.PersistIntervalPtr
 		}
 		if node.Prometheus {
 			node.PrometheusProxyPort = prometheusProxyPortGen.Next()
@@ -261,8 +238,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		for _, p := range nodeManifest.Perturb {
 			node.Perturbations = append(node.Perturbations, Perturbation(p))
 		}
-		if nodeManifest.Zone != "" {
-			node.Zone = ZoneID(nodeManifest.Zone)
+		if nodeManifest.ZoneStr != "" {
+			node.Zone = ZoneID(nodeManifest.ZoneStr)
 		} else if testnet.DefaultZone != "" {
 			node.Zone = ZoneID(testnet.DefaultZone)
 		}
@@ -276,14 +253,14 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		if !ok {
 			return nil, fmt.Errorf("failed to look up manifest for node %q", node.Name)
 		}
-		for _, seedName := range nodeManifest.Seeds {
+		for _, seedName := range nodeManifest.SeedsList {
 			seed := testnet.LookupNode(seedName)
 			if seed == nil {
 				return nil, fmt.Errorf("unknown seed %q for node %q", seedName, node.Name)
 			}
 			node.Seeds = append(node.Seeds, seed)
 		}
-		for _, peerName := range nodeManifest.PersistentPeers {
+		for _, peerName := range nodeManifest.PersistentPeersList {
 			peer := testnet.LookupNode(peerName)
 			if peer == nil {
 				return nil, fmt.Errorf("unknown persistent peer %q for node %q", peerName, node.Name)

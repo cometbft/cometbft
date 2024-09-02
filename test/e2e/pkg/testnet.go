@@ -399,6 +399,13 @@ func (t Testnet) Validate() error {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
 		}
 	}
+	for _, entry := range t.Config {
+		tokens := strings.Split(entry, " = ")
+		if len(tokens) != 2 {
+			return fmt.Errorf("invalid config entry: \"%s\", "+
+				"expected \"key = value\"", entry)
+		}
+	}
 	return nil
 }
 
@@ -526,7 +533,13 @@ func (n Node) Validate(testnet Testnet) error {
 			return fmt.Errorf("invalid perturbation %q", perturbation)
 		}
 	}
-
+	for _, entry := range n.Config {
+		tokens := strings.Split(entry, " = ")
+		if len(tokens) != 2 {
+			return fmt.Errorf("invalid config entry: \"%s\", "+
+				"expected \"key = value\"", entry)
+		}
+	}
 	return nil
 }
 

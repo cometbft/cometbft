@@ -1509,17 +1509,15 @@ trust_period = "168h0m0s"
 For Cosmos SDK-based chains, `statesync.trust_period` should usually be about 2/3rd of the unbonding period
 (about 2 weeks) during which they can be financially punished (slashed) for misbehavior.
 
-### statesync.discovery_time
-Time to spend discovering snapshots before initiating a restore.
+### statesync.max_discovery_time
+Time to spend discovering snapshots before switching to blocksync. If set to 0, state sync will be trying indefinitely.
 ```toml
-discovery_time = "15s"
+max_discovery_time = "2m"
 ```
 
-If `discovery_time` is &gt; 0 and  &lt; 5 seconds, its value will be overridden to 5 seconds.
+If `max_discovery_time` is zero, the node will keep trying to discover snapshots indefinitely.
 
-If `discovery_time` is zero, the node will not wait for replies once it has broadcast the "snapshot request" message to its peers. If no snapshot data is received, state sync will fail without retrying.
-
-If `discovery_time` is &gt;= 5 seconds, the node will broadcast the "snapshot request" message to its peers and then wait for `discovery_time`. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for `discovery_time`, and so on.
+If `max_discovery_time` is greater than zero, the node will broadcast the "snapshot request" message to its peers and then wait for 5 sec. If no snapshot data has been received after that period, the node will retry: it will broadcast the "snapshot request" message again and wait for 5s, and so on until `max_discovery_time` is reached, after which the node will switch to blocksync.
 
 ### statesync.temp_dir
 Temporary directory for state sync snapshot chunks.

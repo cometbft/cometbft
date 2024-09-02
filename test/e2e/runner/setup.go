@@ -224,7 +224,6 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	cfg.P2P.AddrBookStrict = false
 
 	cfg.DBBackend = node.Database
-	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
 	cfg.Consensus.PeerGossipIntraloopSleepDuration = node.Testnet.PeerGossipIntraloopSleepDuration
 	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
@@ -300,6 +299,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		if len(cfg.StateSync.RPCServers) < 2 {
 			return nil, errors.New("unable to find 2 suitable state sync RPC servers")
 		}
+		cfg.StateSync.MaxDiscoveryTime = 30 * time.Second
 	}
 
 	cfg.P2P.Seeds = ""

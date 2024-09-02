@@ -320,8 +320,8 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 
 	// We currently need viper in order to parse config files.
 	viper.Reset()
-	for _, config_entry := range node.Config {
-		tokens := strings.Split(config_entry, " = ")
+	for _, entry := range node.Config {
+		tokens := strings.Split(entry, " = ")
 		key, value := tokens[0], tokens[1]
 		logger.Debug("Applying Comet config", "node", node.Name, key, value)
 		viper.Set(key, value)

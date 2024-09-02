@@ -20,7 +20,7 @@ const workerPoolSize = 16
 
 // Load generates transactions against the network until the given context is
 // canceled.
-func Load(ctx context.Context, testnet *e2e.Testnet) error {
+func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	initialTimeout := 1 * time.Minute
 	stallTimeout := 30 * time.Second
 	chSuccess := make(chan struct{})
@@ -41,7 +41,7 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 		}
 
 		for w := 0; w < testnet.LoadTxConnections; w++ {
-			go loadProcess(ctx, txCh, chSuccess, chFailed, n)
+			go loadProcess(ctx, txCh, chSuccess, chFailed, n, useInternalIP)
 		}
 	}
 
@@ -148,13 +148,17 @@ FOR_LOOP:
 
 // loadProcess processes transactions by sending transactions received on the txCh
 // to the client.
-func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- struct{}, n *e2e.Node) {
+func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- struct{}, n *e2e.Node, useInternalIP bool) {
 	var client *rpchttp.HTTP
 	var err error
 	s := struct{}{}
 	for tx := range txCh {
 		if client == nil {
-			client, err = n.Client()
+			if useInternalIP {
+				client, err = n.ClientInternalIP()
+			} else {
+				client, err = n.Client()
+			}
 			if err != nil {
 				logger.Info("non-fatal error creating node client", "error", err)
 				continue

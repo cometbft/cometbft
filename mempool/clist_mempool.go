@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"slices"
+	"sort"
 	"sync/atomic"
 	"time"
 
@@ -62,7 +62,7 @@ type CListMempool struct {
 
 	// Immutable fields, only set during initialization.
 	defaultLane types.Lane
-	sortedLanes []types.Lane // lanes sorted by priority
+	sortedLanes []types.Lane // lanes sorted by priority, in descending order
 
 	reapIter *NonBlockingWRRIterator
 
@@ -102,23 +102,19 @@ func NewCListMempool(
 	// Initialize lanes
 	if lanesInfo == nil || len(lanesInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
-		mp.lanes = make(map[types.Lane]*clist.CList, 1)
-		mp.defaultLane = types.Lane(1)
-		mp.lanes[mp.defaultLane] = clist.New()
-		mp.sortedLanes = []types.Lane{mp.defaultLane}
-	} else {
-		numLanes := len(lanesInfo.lanes)
-		mp.lanes = make(map[types.Lane]*clist.CList, numLanes)
-		mp.defaultLane = lanesInfo.defaultLane
-		mp.sortedLanes = make([]types.Lane, numLanes)
-		for i, lane := range lanesInfo.lanes {
-			mp.lanes[lane] = clist.New()
-			mp.sortedLanes[i] = lane
-		}
-		slices.Sort(mp.sortedLanes)
-		slices.Reverse(mp.sortedLanes)
+		lanesInfo = &LanesInfo{defaultLane: 1, lanes: []types.Lane{1}}
 	}
-
+	numLanes := len(lanesInfo.lanes)
+	mp.lanes = make(map[types.Lane]*clist.CList, numLanes)
+	mp.defaultLane = lanesInfo.defaultLane
+	mp.sortedLanes = make([]types.Lane, numLanes)
+	for i, lane := range lanesInfo.lanes {
+		mp.lanes[lane] = clist.New()
+		mp.sortedLanes[i] = lane
+	}
+	sort.Slice(mp.sortedLanes, func(i, j int) bool {
+		return mp.sortedLanes[i] > mp.sortedLanes[j]
+	})
 	mp.reapIter = mp.NewWRRIterator()
 	mp.recheck = newRecheck(mp.NewWRRIterator())
 
@@ -132,7 +128,6 @@ func NewCListMempool(
 		option(mp)
 	}
 
-	mp.logger.Info("CListMempool created", "defaultLane", mp.defaultLane, "lanes", mp.sortedLanes)
 	return mp
 }
 

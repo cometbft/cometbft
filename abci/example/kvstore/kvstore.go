@@ -55,21 +55,12 @@ type Application struct {
 	lanePriorities []uint32
 }
 
-// NewApplication creates an instance of the kvstore from the provided database.
-func NewApplication(db dbm.DB) *Application {
-	// Map from lane name to its priority. Priority 0 is reserved. The higher
-	// the value, the higher the priority.
-	lanes := map[string]uint32{
-		"val":       9, // for validator updates
-		"foo":       7,
-		defaultLane: 3,
-		"bar":       1,
-	}
-
-	// List of lane priorities
-	priorities := make([]uint32, 0, len(lanes))
+// NewApplication creates an instance of the kvstore from the provided database,
+// with the given lanes and priorities.
+func NewApplication(db dbm.DB, lanes map[string]uint32) *Application {
+	lanePriorities := make([]uint32, 0, len(lanes))
 	for _, p := range lanes {
-		priorities = append(priorities, p)
+		lanePriorities = append(lanePriorities, p)
 	}
 
 	return &Application{
@@ -77,7 +68,7 @@ func NewApplication(db dbm.DB) *Application {
 		state:              loadState(db),
 		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
 		lanes:              lanes,
-		lanePriorities:     priorities,
+		lanePriorities:     lanePriorities,
 	}
 }
 
@@ -88,13 +79,28 @@ func NewPersistentApplication(dbDir string) *Application {
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}
-	return NewApplication(db)
+	return NewApplication(db, DefaultLanes())
 }
 
 // NewInMemoryApplication creates a new application from an in memory database.
 // Nothing will be persisted.
 func NewInMemoryApplication() *Application {
-	return NewApplication(dbm.NewMemDB())
+	return NewApplication(dbm.NewMemDB(), DefaultLanes())
+}
+
+func NewInMemoryApplicationWithoutLanes() *Application {
+	return NewApplication(dbm.NewMemDB(), nil)
+}
+
+// DefaultLanes returns a map from lane names to their priorities. Priority 0 is
+// reserved. The higher the value, the higher the priority.
+func DefaultLanes() map[string]uint32 {
+	return map[string]uint32{
+		"val":       9, // for validator updates
+		"foo":       7,
+		defaultLane: 3,
+		"bar":       1,
+	}
 }
 
 func (app *Application) SetGenBlockEvents() {
@@ -118,6 +124,11 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
+	var defaultLanePriority uint32
+	if len(app.lanes) > 0 {
+		defaultLanePriority = app.lanes[defaultLane]
+	}
+
 	return &types.InfoResponse{
 		Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
 		Version:             version.ABCIVersion,
@@ -125,7 +136,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		LastBlockHeight:     app.state.Height,
 		LastBlockAppHash:    app.state.Hash(),
 		LanePriorities:      app.lanePriorities,
-		DefaultLanePriority: app.lanes[defaultLane],
+		DefaultLanePriority: defaultLanePriority,
 	}, nil
 }
 

@@ -145,6 +145,11 @@ type Manifest struct {
 	// -1 denotes it is set at genesis.
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
+
+	// Used to disable lanes for testing behavior of
+	// networks that upgrade to a version of CometBFT
+	// that supports lanes but do not opt for using them.
+	DoNotUseLanes bool `toml:"no_lanes"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

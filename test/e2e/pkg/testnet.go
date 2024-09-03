@@ -91,6 +91,7 @@ type Testnet struct {
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
 	LoadMaxTxs                                           int
+	DoNotUseLanes                                        bool
 	LoadLaneWeights                                      []uint
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
@@ -202,6 +203,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
 		LoadTxConnections:                manifest.LoadTxConnections,
 		LoadMaxTxs:                       manifest.LoadMaxTxs,
+		DoNotUseLanes:                    manifest.DoNotUseLanes,
 		LoadLaneWeights:                  manifest.LoadLaneWeights,
 		ABCIProtocol:                     manifest.ABCIProtocol,
 		PrepareProposalDelay:             manifest.PrepareProposalDelay,
@@ -226,6 +228,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
 		lanePriorities:   lanePriorities,
 	}
+
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
 	}

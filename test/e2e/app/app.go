@@ -139,6 +139,11 @@ type Config struct {
 	// -1 denotes it is set at genesis.
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
+
+	// If true, disables the use of lanes by the application.
+	// Used to simulate networks that do not want to use lanes, running
+	// on top of CometBFT with lane support.
+	DoNotUseLanes bool `toml:"no_lanes"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -178,10 +183,18 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
-	lanes, lanePriorities := LaneDefinitions()
-
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	logger.Info("Application started!")
+	if cfg.DoNotUseLanes {
+		return &Application{
+			logger:    logger,
+			state:     state,
+			snapshots: snapshots,
+			cfg:       cfg,
+		}, nil
+	}
+
+	lanes, lanePriorities := LaneDefinitions()
 
 	return &Application{
 		logger:         logger,
@@ -201,6 +214,14 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 	}
 
 	height, hash := app.state.Info()
+	if app.cfg.DoNotUseLanes {
+		return &abci.InfoResponse{
+			Version:          version.ABCIVersion,
+			AppVersion:       appVersion,
+			LastBlockHeight:  int64(height),
+			LastBlockAppHash: hash,
+		}, nil
+	}
 	return &abci.InfoResponse{
 		Version:             version.ABCIVersion,
 		AppVersion:          appVersion,
@@ -323,6 +344,9 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
+	if app.cfg.DoNotUseLanes {
+		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
+	}
 	lane := extractLane(value)
 
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil

@@ -28,7 +28,8 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
-	app, resp, lanesInfo := newAppWithInfo(t)
+	app := kvstore.NewInMemoryApplication()
+	resp, lanesInfo := fetchAppInfo(t, app)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
@@ -50,7 +51,8 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 
 	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
 	state, privVals := randGenesisState(1, nil)
-	app, resp, lanesInfo := newAppWithInfo(t)
+	app := kvstore.NewInMemoryApplication()
+	resp, lanesInfo := fetchAppInfo(t, app)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 
@@ -69,7 +71,8 @@ func TestMempoolProgressInHigherRound(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
-	app, _, lanesInfo := newAppWithInfo(t)
+	app := kvstore.NewInMemoryApplication()
+	_, lanesInfo := fetchAppInfo(t, app)
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
 	height, round := cs.Height, cs.Round
@@ -117,7 +120,8 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
-	app, _, lanesInfo := newAppWithInfo(t)
+	app := kvstore.NewInMemoryApplication()
+	_, lanesInfo := fetchAppInfo(t, app)
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
 	err := stateStore.Save(state)
 	require.NoError(t, err)
@@ -141,9 +145,10 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 
 func TestMempoolRmBadTx(t *testing.T) {
 	state, privVals := randGenesisState(1, nil)
+	app := kvstore.NewInMemoryApplication()
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
-	app, _, lanesInfo := newAppWithInfo(t)
+	_, lanesInfo := fetchAppInfo(t, app)
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
 	err := stateStore.Save(state)
 	require.NoError(t, err)

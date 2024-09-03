@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## v0.38.11
+
+*August 12, 2024*
+
+This release fixes a panic in consensus where CometBFT would previously panic
+if there's no extension signature in non-nil Precommit EVEN IF vote extensions
+themselves are disabled.
+
+It also includes a few other bug fixes and performance improvements.
+
+### BUG FIXES
+
+- `[types]` Added missing JSON tags to `DuplicateVoteEvidence` and `LightClientAttackEvidence`
+  types ([\#3528](https://github.com/cometbft/cometbft/issues/3528))
+- `[types]` Only check IFF vote is a non-nil Precommit if extensionsEnabled
+  types ([\#3565](https://github.com/cometbft/cometbft/issues/3565))
+
+### IMPROVEMENTS
+
+- `[indexer]` Fixed ineffective select break statements; they now
+  point to their enclosing for loop label to exit
+  ([\#3544](https://github.com/cometbft/cometbft/issues/3544))
+
 ## v0.38.10
 
 *July 16, 2024*

@@ -98,8 +98,8 @@ func ensureFire(t *testing.T, ch <-chan struct{}, timeoutMS int) {
 	}
 }
 
-func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
-	txInfo := TxInfo{SenderID: 0}
+func callCheckTx(t *testing.T, mp Mempool, txs types.Txs, peerID uint16) {
+	txInfo := TxInfo{SenderID: peerID}
 	for i, tx := range txs {
 		if err := mp.CheckTx(tx, nil, txInfo); err != nil {
 			// Skip invalid txs.
@@ -113,21 +113,33 @@ func callCheckTx(t *testing.T, mp Mempool, txs types.Txs) {
 	}
 }
 
-func checkTxs(t *testing.T, mp Mempool, count int, peerID uint16) types.Txs {
-	txs := make(types.Txs, count)
-	txInfo := TxInfo{SenderID: peerID}
-	for i := 0; i < count; i++ {
-		txBytes := kvstore.NewRandomTx(20)
+// Generate a list of random transactions.
+func NewRandomTxs(numTxs int, txLen int) types.Txs {
+	txs := make(types.Txs, numTxs)
+	for i := 0; i < numTxs; i++ {
+		txBytes := kvstore.NewRandomTx(txLen)
 		txs[i] = txBytes
-		if err := mp.CheckTx(txBytes, nil, txInfo); err != nil {
-			// Skip invalid txs.
-			// TestMempoolFilters will fail otherwise. It asserts a number of txs
-			// returned.
-			if IsPreCheckError(err) {
-				continue
-			}
-			t.Fatalf("CheckTx failed: %v while checking #%d tx", err, i)
-		}
+	}
+	return txs
+}
+
+// Generate a list of random transactions of a given size and call CheckTx on
+// each of them.
+func addRandomTxs(t *testing.T, mp Mempool, count int, peerID uint16) []types.Tx {
+	t.Helper()
+	txs := NewRandomTxs(count, 20)
+	callCheckTx(t, mp, txs, peerID)
+	return txs
+}
+
+func addTxs(tb testing.TB, mp Mempool, first, num int) []types.Tx {
+	tb.Helper()
+	txs := make([]types.Tx, 0, num)
+	for i := first; i < num; i++ {
+		tx := kvstore.NewTxFromID(i)
+		err := mp.CheckTx(tx, nil, TxInfo{})
+		require.NoError(tb, err)
+		txs = append(txs, tx)
 	}
 	return txs
 }
@@ -139,7 +151,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	defer cleanup()
 
 	// Ensure gas calculation behaves as expected
-	checkTxs(t, mp, 1, UnknownPeerID)
+	addRandomTxs(t, mp, 1, UnknownPeerID)
 	tx0 := mp.TxsFront().Value.(*mempoolTx)
 	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
@@ -171,7 +183,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 		{20, 20000, 30, 20},
 	}
 	for tcIndex, tt := range tests {
-		checkTxs(t, mp, tt.numTxsToCreate, UnknownPeerID)
+		addRandomTxs(t, mp, tt.numTxsToCreate, UnknownPeerID)
 		got := mp.ReapMaxBytesMaxGas(tt.maxBytes, tt.maxGas)
 		assert.Equal(t, tt.expectedNumTxs, len(got), "Got %d txs, expected %d, tc #%d",
 			len(got), tt.expectedNumTxs, tcIndex)
@@ -212,7 +224,7 @@ func TestMempoolFilters(t *testing.T) {
 	for tcIndex, tt := range tests {
 		err := mp.Update(1, emptyTxArr, abciResponses(len(emptyTxArr), abci.CodeTypeOK), tt.preFilter, tt.postFilter)
 		require.NoError(t, err)
-		checkTxs(t, mp, tt.numTxsToCreate, UnknownPeerID)
+		addRandomTxs(t, mp, tt.numTxsToCreate, UnknownPeerID)
 		require.Equal(t, tt.expectedNumTxs, mp.Size(), "mempool had the incorrect size, on test case %d", tcIndex)
 		mp.Flush()
 	}
@@ -374,7 +386,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch of txs, it should only fire once
-	txs := checkTxs(t, mp, 100, UnknownPeerID)
+	txs := addRandomTxs(t, mp, 100, UnknownPeerID)
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
@@ -389,7 +401,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch more txs. we already fired for this height so it shouldnt fire again
-	moreTxs := checkTxs(t, mp, 50, UnknownPeerID)
+	moreTxs := addRandomTxs(t, mp, 50, UnknownPeerID)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// now call update with all the txs. it should not fire as there are no txs left
@@ -400,7 +412,7 @@ func TestTxsAvailable(t *testing.T) {
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 
 	// send a bunch more txs, it should only fire once
-	checkTxs(t, mp, 100, UnknownPeerID)
+	addRandomTxs(t, mp, 100, UnknownPeerID)
 	ensureFire(t, mp.TxsAvailable(), timeoutMS)
 	ensureNoFire(t, mp.TxsAvailable(), timeoutMS)
 }
@@ -734,12 +746,7 @@ func TestMempoolConcurrentUpdateAndReceiveCheckTxResponse(t *testing.T) {
 		go func(h int) {
 			defer wg.Done()
 
-			mp.Lock()
-			err := mp.FlushAppConn()
-			require.NoError(t, err)
-			err = mp.Update(int64(h), []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
-			mp.Unlock()
-			require.NoError(t, err)
+			doUpdate(t, mp, int64(h), []types.Tx{tx})
 			require.Equal(t, int64(h), mp.height.Load(), "height mismatch")
 		}(h)
 
@@ -934,12 +941,7 @@ func TestMempoolRecheckRace(t *testing.T) {
 	}
 
 	// Update one transaction to force rechecking the rest.
-	mp.Lock()
-	err = mp.FlushAppConn()
-	require.NoError(t, err)
-	err = mp.Update(1, txs[:1], abciResponses(1, abci.CodeTypeOK), nil, nil)
-	require.NoError(t, err)
-	mp.Unlock()
+	doUpdate(t, mp, 1, txs[:1])
 
 	// Recheck has finished
 	require.True(t, mp.recheck.done())
@@ -973,12 +975,7 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 				break
 			}
 			txs := mp.ReapMaxBytesMaxGas(100, -1)
-			mp.Lock()
-			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
-			require.NoError(t, err)
-			err = mp.Update(int64(h), txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			require.NoError(t, err)
-			mp.Unlock()
+			doUpdate(t, mp, int64(h), txs)
 		}
 	}()
 
@@ -994,14 +991,14 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	require.Zero(t, mp.Size())
 }
 
-func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
-	t.Helper()
+func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
+	tb.Helper()
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
-	_, server := newRemoteApp(t, sockPath, app)
-	t.Cleanup(func() {
+	_, server := newRemoteApp(tb, sockPath, app)
+	tb.Cleanup(func() {
 		if err := server.Stop(); err != nil {
-			t.Error(err)
+			tb.Error(err)
 		}
 	})
 	cfg := test.ResetTestRoot("mempool_test")
@@ -1009,16 +1006,16 @@ func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
 }
 
 // caller must close server.
-func newRemoteApp(t *testing.T, addr string, app abci.Application) (abciclient.Client, service.Service) {
-	t.Helper()
+func newRemoteApp(tb testing.TB, addr string, app abci.Application) (abciclient.Client, service.Service) {
+	tb.Helper()
 	clientCreator, err := abciclient.NewClient(addr, "socket", true)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	// Start server
 	server := abciserver.NewSocketServer(addr, app)
 	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
 	if err := server.Start(); err != nil {
-		t.Fatalf("Error starting socket server: %v", err.Error())
+		tb.Fatalf("Error starting socket server: %v", err.Error())
 	}
 
 	return clientCreator, server
@@ -1036,4 +1033,14 @@ func abciResponses(n int, code uint32) []*abci.ExecTxResult {
 		responses = append(responses, &abci.ExecTxResult{Code: code})
 	}
 	return responses
+}
+
+func doUpdate(tb testing.TB, mp Mempool, height int64, txs []types.Tx) {
+	tb.Helper()
+	mp.Lock()
+	err := mp.FlushAppConn()
+	require.NoError(tb, err)
+	err = mp.Update(height, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
+	require.NoError(tb, err)
+	mp.Unlock()
 }

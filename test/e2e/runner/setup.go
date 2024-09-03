@@ -275,6 +275,14 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
 	}
 
+	if node.Testnet.LogLevel != "" {
+		cfg.LogLevel = node.Testnet.LogLevel
+	}
+
+	if node.Testnet.LogFormat != "" {
+		cfg.LogFormat = node.Testnet.LogFormat
+	}
+
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true
 	}

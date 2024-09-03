@@ -38,11 +38,11 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "lane_bytes",
 			Help:      "Size in bytes of each lane.",
 		}, append(labels, "lane")).With(labelsAndValues...),
-		TxDuration: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
+		TxLifeSpan: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
-			Name:      "tx_duration",
-			Help:      "Duration in ms of a transaction in mempool.",
+			Name:      "tx_life_span",
+			Help:      "Duration in ms of a transaction in the mempool.",
 
 			Buckets: []float64{50, 100, 200, 500, 1000},
 		}, append(labels, "lane")).With(labelsAndValues...),
@@ -93,7 +93,7 @@ func NopMetrics() *Metrics {
 		SizeBytes:                 discard.NewGauge(),
 		LaneSize:                  discard.NewGauge(),
 		LaneBytes:                 discard.NewGauge(),
-		TxDuration:                discard.NewHistogram(),
+		TxLifeSpan:                discard.NewHistogram(),
 		TxSizeBytes:               discard.NewHistogram(),
 		FailedTxs:                 discard.NewCounter(),
 		RejectedTxs:               discard.NewCounter(),

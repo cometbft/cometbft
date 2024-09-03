@@ -511,7 +511,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	memTx := elem.Value.(*mempoolTx)
 
 	label := strconv.FormatUint(uint64(memTx.lane), 10)
-	mem.metrics.TxDuration.With("lane", label).Observe(float64(memTx.timestamp.Sub(time.Now().UTC())))
+	mem.metrics.TxLifeSpan.With("lane", label).Observe(float64(memTx.timestamp.Sub(time.Now().UTC())))
 
 	// Remove tx from lane.
 	mem.lanes[memTx.lane].Remove(elem)

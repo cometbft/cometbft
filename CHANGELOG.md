@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## v0.38.12
+
+*September 3, 2024*
+
+This release includes a security fix for the light client and is recommended
+for all users.
+
+### BUG FIXES
+
+- `[light]` Cross-check proposer priorities in retrieved validator sets
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+- `[privval]` Ignore duplicate privval listen when already connected ([\#3828](https://github.com/cometbft/cometbft/issues/3828)
+
+### DEPENDENCIES
+
+- `[crypto/secp256k1]` Adjust to breaking interface changes in
+  `btcec/v2` latest release, while avoiding breaking changes to
+  local CometBFT functions
+  ([\#3728](https://github.com/cometbft/cometbft/pull/3728))
+
+### IMPROVEMENTS
+
+- `[types]` Check that proposer is one of the validators in `ValidateBasic`
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+- `[e2e]` Add `log_level` option to manifest file
+  ([#3819](https://github.com/cometbft/cometbft/pull/3819)).
+- `[e2e]` Add `log_format` option to manifest file
+  ([#3836](https://github.com/cometbft/cometbft/issues/3836)).
+
 ## v0.38.11
 
 *August 12, 2024*
@@ -12,8 +41,6 @@ It also includes a few other bug fixes and performance improvements.
 
 ### BUG FIXES
 
-- `[types]` Added missing JSON tags to `DuplicateVoteEvidence` and `LightClientAttackEvidence`
-  types ([\#3528](https://github.com/cometbft/cometbft/issues/3528))
 - `[types]` Only check IFF vote is a non-nil Precommit if extensionsEnabled
   types ([\#3565](https://github.com/cometbft/cometbft/issues/3565))
 

@@ -82,6 +82,7 @@ func startNewStateAndWaitForBlock(
 		privValidator,
 		kvstore.NewInMemoryApplication(),
 		blockDB,
+		nil,
 	)
 	cs.SetLogger(logger)
 
@@ -189,6 +190,7 @@ LOOP:
 			privValidator,
 			kvstore.NewInMemoryApplication(),
 			blockDB,
+			nil,
 		)
 		cs.SetLogger(logger)
 

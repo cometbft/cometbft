@@ -1,6 +1,6 @@
 package basic
 
-import "github.com/go-kit/kit/metrics"
+import "github.com/cometbft/cometbft/internal/metrics"
 
 //go:generate go run ../../../../scripts/metricsgen -struct=Metrics
 

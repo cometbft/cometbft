@@ -31,13 +31,24 @@ Applications can use [state sync](state-sync.md) to help nodes bootstrap quickly
 ## Logging
 
 Default logging level (`log_level = "main:info,state:info,statesync:info,*:error"`) should suffice for
-normal operation mode. Read [this
-post](https://blog.cosmos.network/one-of-the-exciting-new-features-in-0-10-0-release-is-smart-log-level-flag-e2506b4ab756)
-for details on how to configure `log_level` config variable. Some of the
-modules can be found [here](how-to-read-logs.md#list-of-modules). If
-you're trying to debug CometBFT or asked to provide logs with debug
-logging level, you can do so by running CometBFT with
-`--log_level="*:debug"`.
+normal operation mode. It will log info messages from the `main`, `state` and
+`statesync` modules and error messages from all other modules.
+
+The format of the logging level is:
+
+```
+<module1>:<level>,<module2>:<level>,...,<moduleN>:<level>
+```
+
+Where `<moduleN>` is the module that generated the log message, `<level>` is
+one of the log levels: `info`, `error`, `debug` or `none`. Some of
+the modules can be found [here](how-to-read-logs.md#list-of-modules). Others
+could be observed by running CometBFT. `none` log level could be used
+to suppress messages from a particular module or all modules (`log_level =
+"state:info,*:none"` will only log info messages from the `state` module).
+
+If you're trying to debug CometBFT or asked to provide logs with debug logging
+level, you can do so by running CometBFT with `--log_level="*:debug"`.
 
 ## Write Ahead Logs (WAL)
 

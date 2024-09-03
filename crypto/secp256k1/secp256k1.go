@@ -33,13 +33,15 @@ var _ crypto.PrivKey = PrivKey{}
 // PrivKey implements PrivKey.
 type PrivKey []byte
 
-// Bytes marshalls the private key using amino encoding.
+// Bytes returns the privkey as bytes.
 func (privKey PrivKey) Bytes() []byte {
 	return []byte(privKey)
 }
 
 // PubKey performs the point-scalar multiplication from the privKey on the
 // generator point to get the pubkey.
+//
+// See secp256k1.PrivKeyFromBytes.
 func (privKey PrivKey) PubKey() crypto.PubKey {
 	_, pubkeyObject := secp256k1.PrivKeyFromBytes(privKey)
 
@@ -48,17 +50,19 @@ func (privKey PrivKey) PubKey() crypto.PubKey {
 	return PubKey(pk)
 }
 
+// Type returns the key type.
 func (PrivKey) Type() string {
 	return KeyType
 }
 
 // GenPrivKey generates a new ECDSA private key on curve secp256k1 private key.
 // It uses OS randomness to generate the private key.
+//
+// See crypto.CReader.
 func GenPrivKey() PrivKey {
 	return genPrivKey(crypto.CReader())
 }
 
-// genPrivKey generates a new secp256k1 private key using the provided reader.
 func genPrivKey(rand io.Reader) PrivKey {
 	var privKeyBytes [PrivKeySize]byte
 	d := new(big.Int)
@@ -139,22 +143,33 @@ const PubKeySize = 33
 // This prefix is followed with the x-coordinate.
 type PubKey []byte
 
-// Address returns a Bitcoin style addresses: RIPEMD160(SHA256(pubkey)).
+// Address returns a Bitcoin style address: RIPEMD160(SHA256(pubkey)).
 func (pubKey PubKey) Address() crypto.Address {
 	if len(pubKey) != PubKeySize {
 		panic("length of pubkey is incorrect")
 	}
 	hasherSHA256 := sha256.New()
-	_, _ = hasherSHA256.Write(pubKey) // does not error
+	_, err := hasherSHA256.Write(pubKey)
+	if err != nil {
+		panic(err)
+	}
 	sha := hasherSHA256.Sum(nil)
 
+	// Check if the size of the hash is what we expect.
+	if ripemd160.Size != crypto.AddressSize {
+		panic("ripemd160.Size != crypto.AddressSize")
+	}
+
 	hasherRIPEMD160 := ripemd160.New()
-	_, _ = hasherRIPEMD160.Write(sha) // does not error
+	_, err = hasherRIPEMD160.Write(sha)
+	if err != nil {
+		panic(err)
+	}
 
 	return crypto.Address(hasherRIPEMD160.Sum(nil))
 }
 
-// Bytes returns the pubkey marshaled with amino encoding.
+// Bytes returns the pubkey as bytes.
 func (pubKey PubKey) Bytes() []byte {
 	return []byte(pubKey)
 }
@@ -163,6 +178,7 @@ func (pubKey PubKey) String() string {
 	return fmt.Sprintf("PubKeySecp256k1{%X}", []byte(pubKey))
 }
 
+// Type returns the key type.
 func (PubKey) Type() string {
 	return KeyType
 }

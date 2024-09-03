@@ -1,15 +1,36 @@
 # CHANGELOG
 
+## v0.37.11
+
+*September 3, 2024*
+
+This release includes a security fix for the light client and is recommended
+for all users.
+
+### BUG FIXES
+
+- `[light]` Cross-check proposer priorities in retrieved validator sets
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+- `[privval]` Retry accepting a connection ([\#2047](https://github.com/cometbft/cometbft/pull/2047))
+- `[privval]` Ignore duplicate privval listen when already connected ([\#3828](https://github.com/cometbft/cometbft/issues/3828)
+
+### DEPENDENCIES
+
+- `[crypto/secp256k1]` Adjust to breaking interface changes in
+  `btcec/v2` latest release, while avoiding breaking changes to
+  local CometBFT functions
+  ([\#3728](https://github.com/cometbft/cometbft/pull/3728))
+
+### IMPROVEMENTS
+
+- `[types]` Check that proposer is one of the validators in `ValidateBasic`
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+
 ## v0.37.10
 
 *August 12, 2024*
 
 This release contains a few minor bug fixes and performance improvements.
-
-### BUG FIXES
-
-- `[types]` Added missing JSON tags to `DuplicateVoteEvidence` and `LightClientAttackEvidence`
-  types ([\#3528](https://github.com/cometbft/cometbft/issues/3528))
 
 ### IMPROVEMENTS
 

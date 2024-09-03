@@ -66,8 +66,6 @@ The address is the RIPEMD160 hash of the SHA256 hash of the raw 33-byte public k
 address = RIPEMD160(SHA256(pubkey))
 ```
 
-<<<<<<< HEAD
-=======
 RIPEMD160 checksum size is 20 bytes.
 
 The public key comprised of 32 bytes for one field element (the x-coordinate),
@@ -95,7 +93,6 @@ The first byte plus the two field elements:
    4788db786c8825d54dfdbe93e8462408ffb6e5d19703511c8fc8bf60af8f72d0_c47efb012b928018e99e892cfbfa7e8535de85169682346d66676e47da261498
 ```
 
->>>>>>> bab57cee0 (docs(crypto/secp256k1): fix Address docs (#3970))
 ## Other Common Types
 
 ### BitArray

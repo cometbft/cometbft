@@ -432,14 +432,13 @@ func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
 // -------------------------------------------------------------------------------
 // application
 
-func newAppWithInfo(t *testing.T) (*kvstore.Application, *abci.InfoResponse, *mempl.LanesInfo) {
+func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *mempl.LanesInfo) {
 	t.Helper()
-	app := kvstore.NewInMemoryApplication()
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
 	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, types.Lane(resp.DefaultLanePriority))
 	require.NoError(t, err)
-	return app, resp, lanesInfo
+	return resp, lanesInfo
 }
 
 // -------------------------------------------------------------------------------
@@ -853,11 +852,12 @@ func randConsensusNet(t *testing.T, nValidators int, testName string, tickerFunc
 		}
 		ensureDir(filepath.Dir(thisConfig.Consensus.WalFile())) // dir for wal
 		app := appFunc()
+		_, lanesInfo := fetchAppInfo(t, app)
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		_, err := app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
-		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB, nil)
+		css[i] = newStateWithConfigAndBlockStore(thisConfig, state, privVals[i], app, stateDB, lanesInfo)
 		css[i].SetTimeoutTicker(tickerFunc())
 		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
 	}

@@ -53,8 +53,6 @@ type Application struct {
 
 	lanes          map[string]uint32
 	lanePriorities []uint32
-
-	useLanes bool
 }
 
 // NewApplication creates an instance of the kvstore from the provided database,
@@ -141,7 +139,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 	}
 
 	var defaultLanePriority uint32
-	if len(app.lanes) > 0 {
+	if app.lanes != nil {
 		defaultLanePriority = app.lanes[defaultLane]
 	}
 
@@ -185,10 +183,6 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 		}
 	} else if !isValidTx(req.Tx) {
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
-	}
-
-	if !app.useLanes {
-		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
 
 	lane := app.assignLane(req.Tx)

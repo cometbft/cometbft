@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
@@ -11,6 +12,7 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 )
 
@@ -34,6 +36,9 @@ const (
 // resulting validator set exceeds MaxTotalVotingPower.
 var ErrTotalVotingPowerOverflow = fmt.Errorf("total voting power of resulting valset exceeds max %d",
 	MaxTotalVotingPower)
+
+// ErrProposerNotInVals is returned if the proposer is not in the validator set.
+var ErrProposerNotInVals = errors.New("proposer not in validator set")
 
 // ValidatorSet represent a set of *Validator at a given height.
 //
@@ -98,7 +103,13 @@ func (vals *ValidatorSet) ValidateBasic() error {
 		return fmt.Errorf("proposer failed validate basic, error: %w", err)
 	}
 
-	return nil
+	for _, val := range vals.Validators {
+		if bytes.Equal(val.Address, vals.Proposer.Address) {
+			return nil
+		}
+	}
+
+	return ErrProposerNotInVals
 }
 
 // IsNilOrEmpty returns true if validator set is nil or empty.
@@ -362,12 +373,31 @@ func (vals *ValidatorSet) findProposer() *Validator {
 
 // Hash returns the Merkle root hash build using validators (as leaves) in the
 // set.
+//
+// See merkle.HashFromByteSlices.
 func (vals *ValidatorSet) Hash() []byte {
 	bzs := make([][]byte, len(vals.Validators))
 	for i, val := range vals.Validators {
 		bzs[i] = val.Bytes()
 	}
 	return merkle.HashFromByteSlices(bzs)
+}
+
+// ProposerPriorityHash returns the tmhash of the proposer priorities.
+// Validator set must be sorted to get the same hash.
+// If the validator set is empty, nil is returned.
+func (vals *ValidatorSet) ProposerPriorityHash() []byte {
+	if len(vals.Validators) == 0 {
+		return nil
+	}
+
+	buf := make([]byte, binary.MaxVarintLen64*len(vals.Validators))
+	total := 0
+	for _, val := range vals.Validators {
+		n := binary.PutVarint(buf, val.ProposerPriority)
+		total += n
+	}
+	return tmhash.Sum(buf[:total])
 }
 
 // Iterate will run the given function over the set.

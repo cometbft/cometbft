@@ -1,7 +1,6 @@
 module github.com/cometbft/cometbft
 
-go 1.22.5
-
+go 1.22
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adlio/schema v1.3.6

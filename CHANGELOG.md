@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## v0.34.34
+
+*September 3, 2024*
+
+This release includes a security fix for the light client and is recommended
+for all users.
+
+### BUG FIXES
+
+- `[light]` Cross-check proposer priorities in retrieved validator sets
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+
+### FEATURES
+
+- `[tools]` Remove tools package
+  [\#3760](https://github.com/cometbft/cometbft/pull/3760)
+
+### IMPROVEMENTS
+
+- `[types]` Check that proposer is one of the validators in `ValidateBasic`
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+
 ## v0.34.33
 
 *April 26, 2024*

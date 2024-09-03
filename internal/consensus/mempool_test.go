@@ -28,8 +28,8 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	defer os.RemoveAll(config.RootDir)
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
-	app, lastBlockAppHash, lanesInfo := newAppWithInfo(t)
-	state.AppHash = lastBlockAppHash
+	app, resp, lanesInfo := newAppWithInfo(t)
+	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
 	height, round := cs.Height, cs.Round
@@ -50,8 +50,8 @@ func TestMempoolProgressAfterCreateEmptyBlocksInterval(t *testing.T) {
 
 	config.Consensus.CreateEmptyBlocksInterval = ensureTimeout
 	state, privVals := randGenesisState(1, nil)
-	app, lastBlockAppHash, lanesInfo := newAppWithInfo(t)
-	state.AppHash = lastBlockAppHash
+	app, resp, lanesInfo := newAppWithInfo(t)
+	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 
 	assertMempool(cs.txNotifier).EnableTxsAvailable()

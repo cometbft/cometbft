@@ -432,14 +432,14 @@ func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
 // -------------------------------------------------------------------------------
 // application
 
-func newAppWithInfo(t *testing.T) (*kvstore.Application, []byte, *mempl.LanesInfo) {
+func newAppWithInfo(t *testing.T) (*kvstore.Application, *abci.InfoResponse, *mempl.LanesInfo) {
 	t.Helper()
 	app := kvstore.NewInMemoryApplication()
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
 	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, types.Lane(resp.DefaultLanePriority))
 	require.NoError(t, err)
-	return app, resp.LastBlockAppHash, lanesInfo
+	return app, resp, lanesInfo
 }
 
 // -------------------------------------------------------------------------------

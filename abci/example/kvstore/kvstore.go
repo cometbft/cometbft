@@ -72,22 +72,36 @@ func NewApplication(db dbm.DB, lanes map[string]uint32) *Application {
 	}
 }
 
-// NewPersistentApplication creates a new application using the goleveldb database engine.
-func NewPersistentApplication(dbDir string) *Application {
+// newDB creates a DB engine for persisting the application state.
+func newDB(dbDir string) *dbm.GoLevelDB {
 	name := "kvstore"
 	db, err := dbm.NewGoLevelDB(name, dbDir)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}
-	return NewApplication(db, DefaultLanes())
+	return db
 }
 
-// NewInMemoryApplication creates a new application from an in memory database.
-// Nothing will be persisted.
+// NewPersistentApplication creates a new application using the goleveldb
+// database engine and default lanes.
+func NewPersistentApplication(dbDir string) *Application {
+	return NewApplication(newDB(dbDir), DefaultLanes())
+}
+
+// NewPersistentApplicationWithoutLanes creates a new application using the
+// goleveldb database engine and without lanes.
+func NewPersistentApplicationWithoutLanes(dbDir string) *Application {
+	return NewApplication(newDB(dbDir), nil)
+}
+
+// NewInMemoryApplication creates a new application from an in memory database
+// that uses default lanes. Nothing will be persisted.
 func NewInMemoryApplication() *Application {
 	return NewApplication(dbm.NewMemDB(), DefaultLanes())
 }
 
+// NewInMemoryApplication creates a new application from an in memory database
+// and without lanes. Nothing will be persisted.
 func NewInMemoryApplicationWithoutLanes() *Application {
 	return NewApplication(dbm.NewMemDB(), nil)
 }

@@ -90,12 +90,12 @@ func WithGRPCDialOption(opt ggrpc.DialOption) Option {
 // To connect to a gRPC server with TLS, use the WithGRPCDialOption option with
 // the appropriate gRPC credentials configuration. See
 // https://pkg.go.dev/google.golang.org/grpc#WithTransportCredentials
-func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
+func New(_ context.Context, addr string, opts ...Option) (Client, error) {
 	builder := newClientBuilder()
 	for _, opt := range opts {
 		opt(builder)
 	}
-	conn, err := ggrpc.DialContext(ctx, addr, builder.grpcOpts...)
+	conn, err := ggrpc.NewClient(addr, builder.grpcOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial %s: %w", addr, err)
 	}

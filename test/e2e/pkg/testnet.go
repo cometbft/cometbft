@@ -96,6 +96,8 @@ type Testnet struct {
 	VoteExtensionDelay                                   time.Duration
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
+	LogLevel                                             string
+	LogFormat                                            string
 	Prometheus                                           bool
 	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
@@ -199,6 +201,8 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionDelay:               manifest.VoteExtensionDelay,
 		FinalizeBlockDelay:               manifest.FinalizeBlockDelay,
 		UpgradeVersion:                   manifest.UpgradeVersion,
+		LogLevel:                         manifest.LogLevel,
+		LogFormat:                        manifest.LogFormat,
 		Prometheus:                       manifest.Prometheus,
 		BlockMaxBytes:                    manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight:       manifest.VoteExtensionsEnableHeight,
@@ -703,6 +707,13 @@ func (n Node) AddressRPC() string {
 func (n Node) Client() (*rpchttp.HTTP, error) {
 	//nolint:nosprintfhostport
 	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
+}
+
+// ClientInternalIP returns an RPC client using the node's internal IP.
+// This is useful for running the loader from inside a private DO network.
+func (n Node) ClientInternalIP() (*rpchttp.HTTP, error) {
+	//nolint:nosprintfhostport
+	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.InternalIP, n.RPCProxyPort))
 }
 
 // GRPCClient creates a gRPC client for the node.

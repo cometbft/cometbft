@@ -44,7 +44,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 	// replace Connect2Switches (full mesh) with a func, which connects first
 	// reactor to others and nothing else, this test should also pass with >2 reactors.
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -58,7 +58,7 @@ func TestReactorBroadcastTxsMessage(t *testing.T) {
 		}
 	}
 
-	txs := checkTxs(t, reactors[0].mempool, numTxs)
+	txs := addRandomTxs(t, reactors[0].mempool, numTxs)
 	waitForReactors(t, txs, reactors, checkTxsInOrder)
 }
 
@@ -68,7 +68,7 @@ func TestReactorConcurrency(t *testing.T) {
 	config.Mempool.Size = 5000
 	config.Mempool.CacheSize = 5000
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -90,7 +90,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update the whole mempool
-		txs := checkTxs(t, reactors[0].mempool, numTxs)
+		txs := addRandomTxs(t, reactors[0].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -104,7 +104,7 @@ func TestReactorConcurrency(t *testing.T) {
 
 		// 1. submit a bunch of txs
 		// 2. update none
-		_ = checkTxs(t, reactors[1].mempool, numTxs)
+		_ = addRandomTxs(t, reactors[1].mempool, numTxs)
 		go func() {
 			defer wg.Done()
 
@@ -127,7 +127,7 @@ func TestReactorConcurrency(t *testing.T) {
 func TestReactorNoBroadcastToSender(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -159,7 +159,7 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -174,7 +174,7 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
+	txs1 := addRandomTxs(t, reactors[0].mempool, numTxs)
 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
@@ -182,15 +182,15 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	waitForReactors(t, txs1, reactors, checkTxsInOrder)
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
-	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
+	txs2 := addRandomTxs(t, reactors[0].mempool, numTxs)
 	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
 }
 
-func TestReactor_MaxTxBytes(t *testing.T) {
+func TestMempoolReactorMaxTxBytes(t *testing.T) {
 	config := cfg.TestConfig()
 
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, mempoolLogger("info"))
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -230,7 +230,7 @@ func TestBroadcastTxForPeerStopsWhenPeerStops(t *testing.T) {
 
 	config := cfg.TestConfig()
 	const n = 2
-	reactors, _ := makeAndConnectReactors(config, n)
+	reactors, _ := makeAndConnectReactors(config, n, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -255,7 +255,7 @@ func TestBroadcastTxForPeerStopsWhenReactorStops(t *testing.T) {
 
 	config := cfg.TestConfig()
 	const n = 2
-	_, switches := makeAndConnectReactors(config, n)
+	_, switches := makeAndConnectReactors(config, n, nil)
 
 	// stop reactors
 	for _, s := range switches {
@@ -275,7 +275,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 	t.Skip("FIFO is not supposed to be guaranteed and this this is just used to evidence one of the cases where it does not happen. Hence we skip this test.")
 
 	config := cfg.TestConfig()
-	reactors, _ := makeAndConnectReactors(config, 4)
+	reactors, _ := makeAndConnectReactors(config, 4, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -406,7 +406,7 @@ func TestMempoolFIFOWithParallelCheckTx(t *testing.T) {
 func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 	config := cfg.TestConfig()
 	config.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = 1
-	reactors, _ := makeAndConnectReactorsStar(config, 0, 4)
+	reactors, _ := makeAndConnectReactorsStar(config, 0, 4, nil)
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -448,8 +448,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 // mempoolLogger is a TestingLogger which uses a different
 // color for each validator ("validator" key must exist).
-func mempoolLogger() log.Logger {
-	return log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
+func mempoolLogger(level string) *log.Logger {
+	logger := log.TestingLoggerWithColorFn(func(keyvals ...any) term.FgBgColor {
 		for i := 0; i < len(keyvals)-1; i += 2 {
 			if keyvals[i] == "validator" {
 				return term.FgBgColor{Fg: term.Color(uint8(keyvals[i+1].(int) + 1))}
@@ -457,12 +457,23 @@ func mempoolLogger() log.Logger {
 		}
 		return term.FgBgColor{}
 	})
+
+	// Customize log level
+	option, err := log.AllowLevel(level)
+	if err != nil {
+		panic(err)
+	}
+	logger = log.NewFilter(logger, option)
+
+	return &logger
 }
 
-// connect N mempool reactors through N switches.
-func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switch) {
+// makeReactors creates n mempool reactors.
+func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
+	if logger == nil {
+		logger = mempoolLogger("debug")
+	}
 	reactors := make([]*Reactor, n)
-	logger := mempoolLogger()
 	for i := 0; i < n; i++ {
 		app := kvstore.NewInMemoryApplication()
 		cc := proxy.NewLocalClientCreator(app)
@@ -470,34 +481,33 @@ func makeAndConnectReactors(config *cfg.Config, n int) ([]*Reactor, []*p2p.Switc
 		defer cleanup()
 
 		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
-		reactors[i].SetLogger(logger.With("validator", i))
+		reactors[i].SetLogger((*logger).With("validator", i))
 	}
+	return reactors
+}
 
-	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
+// connectReactors connects the list of N reactors through N switches.
+func connectReactors(config *cfg.Config, reactors []*Reactor, connect func([]*p2p.Switch, int, int)) []*p2p.Switch {
+	switches := p2p.MakeSwitches(config.P2P, len(reactors), func(i int, s *p2p.Switch) *p2p.Switch {
 		s.AddReactor("MEMPOOL", reactors[i])
 		return s
-	}, p2p.Connect2Switches)
+	})
+	for _, s := range switches {
+		s.SetLogger(log.NewNopLogger())
+	}
+	return p2p.StartAndConnectSwitches(switches, connect)
+}
+
+func makeAndConnectReactors(config *cfg.Config, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n, logger)
+	switches := connectReactors(config, reactors, p2p.Connect2Switches)
 	return reactors, switches
 }
 
 // connect N mempool reactors through N switches as a star centered in c.
-func makeAndConnectReactorsStar(config *cfg.Config, c, n int) ([]*Reactor, []*p2p.Switch) {
-	reactors := make([]*Reactor, n)
-	logger := mempoolLogger()
-	for i := 0; i < n; i++ {
-		app := kvstore.NewInMemoryApplication()
-		cc := proxy.NewLocalClientCreator(app)
-		mempool, cleanup := newMempoolWithApp(cc)
-		defer cleanup()
-
-		reactors[i] = NewReactor(config.Mempool, mempool, false) // so we dont start the consensus states
-		reactors[i].SetLogger(logger.With("validator", i))
-	}
-
-	switches := p2p.MakeConnectedSwitches(config.P2P, n, func(i int, s *p2p.Switch) *p2p.Switch {
-		s.AddReactor("MEMPOOL", reactors[i])
-		return s
-	}, p2p.ConnectStarSwitches(c))
+func makeAndConnectReactorsStar(config *cfg.Config, c, n int, logger *log.Logger) ([]*Reactor, []*p2p.Switch) {
+	reactors := makeReactors(config, n, logger)
+	switches := connectReactors(config, reactors, p2p.ConnectStarSwitches(c))
 	return reactors, switches
 }
 

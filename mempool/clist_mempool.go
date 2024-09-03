@@ -179,7 +179,7 @@ func (mem *CListMempool) Unlock() {
 // Safe for concurrent use by multiple goroutines.
 func (mem *CListMempool) PreUpdate() {
 	if mem.recheck.setRecheckFull() {
-		mem.logger.Debug("the state of recheckFull has flipped")
+		mem.logger.Debug("The state of recheckFull has flipped")
 	}
 }
 
@@ -205,8 +205,8 @@ func (mem *CListMempool) FlushAppConn() error {
 
 // XXX: Unsafe! Calling Flush may leave mempool in inconsistent state.
 func (mem *CListMempool) Flush() {
-	mem.updateMtx.RLock()
-	defer mem.updateMtx.RUnlock()
+	mem.updateMtx.Lock()
+	defer mem.updateMtx.Unlock()
 
 	mem.txsBytes.Store(0)
 	mem.cache.Reset()
@@ -274,7 +274,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 				memTx := elem.Value.(*mempoolTx)
 				if found := memTx.addSender(sender); found {
 					// It should not be possible to receive twice a tx from the same sender.
-					mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", sender)
+					mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
 				}
 			}
 		}
@@ -289,7 +289,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 		Type: abci.CHECK_TX_TYPE_CHECK,
 	})
 	if err != nil {
-		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
+		panic(fmt.Errorf("CheckTx request for tx %s failed: %w", log.NewLazySprintf("%X", tx.Hash()), err))
 	}
 	reqRes.SetCallback(mem.handleCheckTxResponse(tx, sender))
 
@@ -320,7 +320,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		if res.Code != abci.CodeTypeOK || postCheckErr != nil {
 			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
-				"rejected invalid transaction",
+				"Rejected invalid transaction",
 				"tx", tx.Hash(),
 				"res", res,
 				"err", postCheckErr,
@@ -365,12 +365,12 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 			memTx := elem.Value.(*mempoolTx)
 			if found := memTx.addSender(sender); found {
 				// It should not be possible to receive twice a tx from the same sender.
-				mem.logger.Error("tx already received from peer", "tx", tx.Hash(), "sender", sender)
+				mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
 			}
 		}
 
 		mem.logger.Debug(
-			"transaction already in mempool, not adding it again",
+			"Transaction already in mempool, not adding it again",
 			"tx", tx.Hash(),
 			"height", mem.height.Load(),
 			"total", mem.Size(),
@@ -386,7 +386,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 	mem.metrics.TxSizeBytes.Observe(float64(len(tx)))
 
 	mem.logger.Debug(
-		"added valid transaction",
+		"Added transaction",
 		"tx", tx.Hash(),
 		"height", mem.height.Load(),
 		"total", mem.Size(),
@@ -409,7 +409,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	mem.txsMap.Delete(txKey)
 	tx := elem.Value.(*mempoolTx).tx
 	mem.txsBytes.Add(int64(-len(tx)))
-	mem.logger.Debug("removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
+	mem.logger.Debug("Removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
 	return nil
 }
 
@@ -443,8 +443,8 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 
 		// Check whether the rechecking process has finished.
 		if mem.recheck.done() {
-			mem.logger.Error("rechecking has finished; discard late recheck response",
-				"tx", log.NewLazySprintf("%v", tx.Hash()))
+			mem.logger.Error("Rechecking has finished; discard late recheck response",
+				"tx", log.NewLazySprintf("%X", tx.Hash()))
 			return
 		}
 		mem.metrics.RecheckTimes.Add(1)
@@ -463,7 +463,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 		// If tx is invalid, remove it from the mempool and the cache.
 		if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+			mem.logger.Debug("Tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
 			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			} else {
@@ -619,7 +619,7 @@ func (mem *CListMempool) Update(
 // recheckTxs sends all transactions in the mempool to the app for re-validation. When the function
 // returns, all recheck responses from the app have been processed.
 func (mem *CListMempool) recheckTxs() {
-	mem.logger.Debug("recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
+	mem.logger.Debug("Recheck txs", "height", mem.height.Load(), "num-txs", mem.Size())
 
 	if mem.Size() <= 0 {
 		return
@@ -639,7 +639,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})
 		if err != nil {
-			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", tx.Hash()), err))
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%X", tx.Hash()), err))
 		}
 		resReq.SetCallback(mem.handleRecheckTxResponse(tx))
 	}
@@ -652,14 +652,14 @@ func (mem *CListMempool) recheckTxs() {
 	select {
 	case <-time.After(mem.config.RecheckTimeout):
 		mem.recheck.setDone()
-		mem.logger.Error("timed out waiting for recheck responses")
+		mem.logger.Error("Timed out waiting for recheck responses")
 	case <-mem.recheck.doneRechecking():
 	}
 
 	if n := mem.recheck.numPendingTxs.Load(); n > 0 {
-		mem.logger.Error("not all txs were rechecked", "not-rechecked", n)
+		mem.logger.Error("Not all txs were rechecked", "not-rechecked", n)
 	}
-	mem.logger.Debug("done rechecking txs", "height", mem.height.Load(), "num-txs", mem.Size())
+	mem.logger.Debug("Done rechecking txs", "height", mem.height.Load(), "num-txs", mem.Size())
 }
 
 // The cursor and end pointers define a dynamic list of transactions that could be rechecked. The

@@ -2739,7 +2739,6 @@ func repairWalFile(src, dst string) error {
 		}
 	}
 
-	//nolint:nilerr
 	return nil
 }
 

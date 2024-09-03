@@ -46,20 +46,25 @@ func init() {
 // returns ErrUnsupportedKey if the pubkey type is unsupported.
 func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 	var kp pc.PublicKey
-	switch k := k.(type) {
-	case ed25519.PubKey:
+
+	if k == nil {
+		return kp, ErrUnsupportedKey{KeyType: "<nil>"}
+	}
+
+	switch k.Type() {
+	case ed25519.KeyType:
 		kp = pc.PublicKey{
 			Sum: &pc.PublicKey_Ed25519{
-				Ed25519: k,
+				Ed25519: k.Bytes(),
 			},
 		}
-	case secp256k1.PubKey:
+	case secp256k1.KeyType:
 		kp = pc.PublicKey{
 			Sum: &pc.PublicKey_Secp256K1{
-				Secp256K1: k,
+				Secp256K1: k.Bytes(),
 			},
 		}
-	case *bls12381.PubKey, bls12381.PubKey:
+	case bls12381.KeyType:
 		if !bls12381.Enabled {
 			return kp, ErrUnsupportedKey{KeyType: bls12381.KeyType}
 		}
@@ -70,12 +75,7 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 			},
 		}
 	default:
-		kt := reflect.TypeOf(k)
-		if kt == nil {
-			return kp, ErrUnsupportedKey{KeyType: "<nil>"}
-		} else {
-			return kp, ErrUnsupportedKey{KeyType: kt.String()}
-		}
+		return kp, ErrUnsupportedKey{KeyType: k.Type()}
 	}
 	return kp, nil
 }

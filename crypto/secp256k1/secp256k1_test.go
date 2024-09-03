@@ -28,6 +28,17 @@ var secpDataTable = []keyData{
 	},
 }
 
+func TestPrivKey_Size(t *testing.T) {
+	privKey := secp256k1.GenPrivKey()
+	assert.Equal(t, secp256k1.PrivKeySize, len(privKey.Bytes()))
+}
+
+func TestPubKey_Size(t *testing.T) {
+	privKey := secp256k1.GenPrivKey()
+	pubKey := privKey.PubKey()
+	assert.Equal(t, secp256k1.PubKeySize, len(pubKey.Bytes()))
+}
+
 func TestPubKeySecp256k1Address(t *testing.T) {
 	for _, d := range secpDataTable {
 		privB, _ := hex.DecodeString(d.priv)

@@ -167,7 +167,7 @@ func TestValidatorSet_ProposerPriorityHash(t *testing.T) {
 	vset = randValidatorSet(3)
 	assert.NotNil(t, vset.ProposerPriorityHash())
 
-	// Marshalling and unmarshalling do not affect ProposerPriorityHash
+	// Marshaling and unmarshalling do not affect ProposerPriorityHash
 	bz, err := vset.ToProto()
 	assert.NoError(t, err)
 	vsetProto, err := ValidatorSetFromProto(bz)

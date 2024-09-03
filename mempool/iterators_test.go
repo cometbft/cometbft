@@ -218,7 +218,6 @@ func TestIteratorEmptyLanes(t *testing.T) {
 // submitted - increasing tx IDs.
 func TestIteratorNoLanes(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
-	app.SetUseLanes(false)
 	cc := proxy.NewLocalClientCreator(app)
 
 	cfg := test.ResetTestRoot("mempool_test")

@@ -911,6 +911,7 @@ func randConsensusNetWithPeers(
 		}
 
 		app := appFunc(path.Join(config.DBDir(), fmt.Sprintf("%s_%d", testName, i)))
+		_, lanesInfo := fetchAppInfo(t, app)
 		vals := types.TM2PB.ValidatorUpdates(state.Validators)
 		if _, ok := app.(*kvstore.Application); ok {
 			// simulate handshake, receive app version. If don't do this, replay test will fail
@@ -919,7 +920,7 @@ func randConsensusNetWithPeers(
 		_, err = app.InitChain(context.Background(), &abci.InitChainRequest{Validators: vals})
 		require.NoError(t, err)
 
-		css[i] = newStateWithConfig(thisConfig, state, privVal, app, nil)
+		css[i] = newStateWithConfig(thisConfig, state, privVal, app, lanesInfo)
 		css[i].SetTimeoutTicker(tickerFunc())
 		css[i].SetLogger(logger.With("validator", i, "module", "consensus"))
 	}
@@ -1047,18 +1048,15 @@ func newPersistentKVStore() abci.Application {
 	if err != nil {
 		panic(err)
 	}
-	app := kvstore.NewPersistentApplication(dir)
-	return app
+	return kvstore.NewPersistentApplication(dir)
 }
 
 func newKVStore() abci.Application {
-	app := kvstore.NewInMemoryApplication()
-	return app
+	return kvstore.NewInMemoryApplication()
 }
 
 func newPersistentKVStoreWithPath(dbDir string) abci.Application {
-	app := kvstore.NewPersistentApplication(dbDir)
-	return app
+	return kvstore.NewPersistentApplication(dbDir)
 }
 
 func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {

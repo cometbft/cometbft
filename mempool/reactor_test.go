@@ -181,11 +181,11 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 
 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
-	waitForReactors(t, txs1, reactors, checkTxsInOrder)
+	waitForReactors(t, txs1, reactors, checkTxsInMempool)
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
 	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
+	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInMempool)
 }
 
 // Test the scenario where a tx selected for being sent to a peer is removed
@@ -225,7 +225,7 @@ func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	// Now we know that the second reactor is not lagging, so it should receive
 	// all txs except those that were removed.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
-	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
+	waitForReactors(t, txsLeft, reactors, checkTxsInMempool)
 }
 
 func TestMempoolReactorMaxTxBytes(t *testing.T) {
@@ -423,7 +423,7 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
 	}
@@ -434,8 +434,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsNoDuplicate(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor and
 	// the fourth reactor from the second
-	checkTxsInOrder(t, txs, reactors[2], 0)
-	checkTxsInOrder(t, txs, reactors[3], 0)
+	checkTxsInMempool(t, txs, reactors[2], 0)
+	checkTxsInMempool(t, txs, reactors[3], 0)
 }
 
 // Test the experimental feature that limits the number of outgoing connections for gossiping
@@ -466,8 +466,8 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 	// Wait for all txs to be in the mempool of the second reactor; the other reactors should not
 	// receive any tx. (The second reactor only sends transactions to the first reactor.)
-	checkTxsInOrder(t, txs, reactors[0], 0)
-	checkTxsInOrder(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[0], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
 
 	for _, r := range reactors[2:] {
 		require.Zero(t, r.mempool.Size())
@@ -479,9 +479,9 @@ func TestMempoolReactorMaxActiveOutboundConnectionsStar(t *testing.T) {
 
 	// Now the third reactor should start receiving transactions from the first reactor; the fourth
 	// reactor's mempool should still be empty.
-	checkTxsInOrder(t, txs, reactors[0], 0)
-	checkTxsInOrder(t, txs, reactors[1], 0)
-	checkTxsInOrder(t, txs, reactors[2], 0)
+	checkTxsInMempool(t, txs, reactors[0], 0)
+	checkTxsInMempool(t, txs, reactors[1], 0)
+	checkTxsInMempool(t, txs, reactors[2], 0)
 	for _, r := range reactors[3:] {
 		require.Zero(t, r.mempool.Size())
 	}

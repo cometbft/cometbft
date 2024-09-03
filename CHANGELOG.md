@@ -10,7 +10,7 @@ for all users.
 ### BUG FIXES
 
 - `[light]` Cross-check proposer priorities in retrieved validator sets
-  ([\#ABC-0016](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
 
 ### FEATURES
 
@@ -20,7 +20,7 @@ for all users.
 ### IMPROVEMENTS
 
 - `[types]` Check that proposer is one of the validators in `ValidateBasic`
-  ([\#ABC-0016](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
+  ([\#ASA-2024-009](https://github.com/cometbft/cometbft/security/advisories/GHSA-g5xx-c4hv-9ccc))
 
 ## v0.34.33
 

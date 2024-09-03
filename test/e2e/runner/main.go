@@ -125,7 +125,7 @@ func NewCLI() *CLI {
 			ctx, loadCancel := context.WithCancel(context.Background())
 			defer loadCancel()
 			go func() {
-				err := Load(ctx, cli.testnet)
+				err := Load(ctx, cli.testnet, false)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Transaction load failed: %v", err.Error()))
 				}
@@ -237,13 +237,21 @@ func NewCLI() *CLI {
 		},
 	})
 
-	cli.root.AddCommand(&cobra.Command{
+	var useInternalIP bool
+	loadCmd := &cobra.Command{
 		Use:   "load",
-		Short: "Generates transaction load until the command is canceled",
-		RunE: func(_ *cobra.Command, _ []string) (err error) {
-			return Load(context.Background(), cli.testnet)
+		Short: "Generates transaction load until the command is canceled.",
+		RunE: func(cmd *cobra.Command, _ []string) (err error) {
+			useInternalIP, err = cmd.Flags().GetBool("internal-ip")
+			if err != nil {
+				return err
+			}
+			return Load(context.Background(), cli.testnet, useInternalIP)
 		},
-	})
+	}
+	loadCmd.PersistentFlags().BoolVar(&useInternalIP, "internal-ip", false,
+		"Use nodes' internal IP addresses when sending transaction load. For running from inside a DO private network.")
+	cli.root.AddCommand(loadCmd)
 
 	cli.root.AddCommand(&cobra.Command{
 		Use:   "evidence [amount]",
@@ -324,7 +332,7 @@ Does not run any perturbations.
 			ctx, loadCancel := context.WithCancel(cmd.Context())
 			defer loadCancel()
 			go func() {
-				err := Load(ctx, cli.testnet)
+				err := Load(ctx, cli.testnet, false)
 				if err != nil {
 					logger.Error(fmt.Sprintf("Transaction load errored: %v", err.Error()))
 				}

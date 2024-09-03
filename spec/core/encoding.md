@@ -59,10 +59,38 @@ CometBFT adopts [zip215](https://zips.z.cash/zip-0215) for verification of ed255
 
 #### Secp256k1
 
-The address is the first 20-bytes of the SHA256 hash of the raw 32-byte public key:
+The address is the RIPEMD160 hash of the SHA256 hash of the raw 33-byte public key:
+
 
 ```go
-address = SHA256(pubkey)[:20]
+address = RIPEMD160(SHA256(pubkey))
+```
+
+RIPEMD160 checksum size is 20 bytes.
+
+The public key comprised of 32 bytes for one field element (the x-coordinate),
+plus one byte for the parity of the y-coordinate. The first byte depends is a
+0x02 byte if the y-coordinate is the lexicographically largest of the two
+associated with the x-coordinate. Otherwise the first byte is a 0x03. This
+prefix is followed with the x-coordinate.
+
+Decoding the RPC response for a secp256k1 pubkey:
+
+```sh
+# "pub_key": {
+#     "type": "tendermint/PubKeySecp256k1",
+#     "value": "AkeI23hsiCXVTf2+k+hGJAj/tuXRlwNRHI/Iv2Cvj3LQ"
+# },
+
+$ echo AkeI23hsiCXVTf2+k+hGJAj/tuXRlwNRHI/Iv2Cvj3LQ | base64 -d | xxd -p -c 33
+024788db786c8825d54dfdbe93e8462408ffb6e5d19703511c8fc8bf60af8f72d0
+```
+
+The first byte plus the two field elements:
+
+```
+02_4788db786c8825d54dfdbe93e8462408ffb6e5d19703511c8fc8bf60af8f72d0
+   4788db786c8825d54dfdbe93e8462408ffb6e5d19703511c8fc8bf60af8f72d0_c47efb012b928018e99e892cfbfa7e8535de85169682346d66676e47da261498
 ```
 
 ## Other Common Types

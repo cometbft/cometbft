@@ -709,6 +709,13 @@ func (n Node) Client() (*rpchttp.HTTP, error) {
 	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.ExternalIP, n.RPCProxyPort))
 }
 
+// ClientInternalIP returns an RPC client using the node's internal IP.
+// This is useful for running the loader from inside a private DO network.
+func (n Node) ClientInternalIP() (*rpchttp.HTTP, error) {
+	//nolint:nosprintfhostport
+	return rpchttp.New(fmt.Sprintf("http://%s:%v/v1", n.InternalIP, n.RPCProxyPort))
+}
+
 // GRPCClient creates a gRPC client for the node.
 func (n Node) GRPCClient(ctx context.Context) (grpcclient.Client, error) {
 	return grpcclient.New(

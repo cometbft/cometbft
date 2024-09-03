@@ -1047,21 +1047,15 @@ func newPersistentKVStore() abci.Application {
 	if err != nil {
 		panic(err)
 	}
-	app := kvstore.NewPersistentApplication(dir)
-	app.SetUseLanes(false)
-	return app
+	return kvstore.NewPersistentApplication(dir)
 }
 
 func newKVStore() abci.Application {
-	app := kvstore.NewInMemoryApplication()
-	app.SetUseLanes(false)
-	return app
+	return kvstore.NewInMemoryApplication()
 }
 
 func newPersistentKVStoreWithPath(dbDir string) abci.Application {
-	app := kvstore.NewPersistentApplication(dbDir)
-	app.SetUseLanes(false)
-	return app
+	return kvstore.NewPersistentApplication(dbDir)
 }
 
 func signDataIsEqual(v1 *types.Vote, v2 *cmtproto.Vote) bool {

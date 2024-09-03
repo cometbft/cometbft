@@ -53,8 +53,6 @@ type Application struct {
 
 	lanes          map[string]uint32
 	lanePriorities []uint32
-
-	useLanes bool
 }
 
 // NewApplication creates an instance of the kvstore from the provided database,
@@ -71,12 +69,7 @@ func NewApplication(db dbm.DB, lanes map[string]uint32) *Application {
 		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
 		lanes:              lanes,
 		lanePriorities:     lanePriorities,
-		useLanes:           true,
 	}
-}
-
-func (app *Application) SetUseLanes(useL bool) {
-	app.useLanes = useL
 }
 
 // newDB creates a DB engine for persisting the application state.
@@ -145,28 +138,19 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
-	if app.useLanes {
-		var defaultLanePriority uint32
-		if len(app.lanes) > 0 {
-			defaultLanePriority = app.lanes[defaultLane]
-		}
-
-		return &types.InfoResponse{
-			Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
-			Version:             version.ABCIVersion,
-			AppVersion:          AppVersion,
-			LastBlockHeight:     app.state.Height,
-			LastBlockAppHash:    app.state.Hash(),
-			LanePriorities:      app.lanePriorities,
-			DefaultLanePriority: defaultLanePriority,
-		}, nil
+	var defaultLanePriority uint32
+	if len(app.lanes) > 0 {
+		defaultLanePriority = app.lanes[defaultLane]
 	}
+
 	return &types.InfoResponse{
-		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
-		Version:          version.ABCIVersion,
-		AppVersion:       AppVersion,
-		LastBlockHeight:  app.state.Height,
-		LastBlockAppHash: app.state.Hash(),
+		Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
+		Version:             version.ABCIVersion,
+		AppVersion:          AppVersion,
+		LastBlockHeight:     app.state.Height,
+		LastBlockAppHash:    app.state.Hash(),
+		LanePriorities:      app.lanePriorities,
+		DefaultLanePriority: defaultLanePriority,
 	}, nil
 }
 
@@ -199,10 +183,6 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 		}
 	} else if !isValidTx(req.Tx) {
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
-	}
-
-	if !app.useLanes {
-		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
 
 	lane := app.assignLane(req.Tx)

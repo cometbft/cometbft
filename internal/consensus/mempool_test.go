@@ -29,7 +29,6 @@ func TestMempoolNoProgressUntilTxsAvailable(t *testing.T) {
 	config.Consensus.CreateEmptyBlocks = false
 	state, privVals := randGenesisState(1, nil)
 	app, resp, lanesInfo := newAppWithInfo(t)
-	app.SetUseLanes(false)
 	state.AppHash = resp.LastBlockAppHash
 	cs := newStateWithConfig(config, state, privVals[0], app, lanesInfo)
 	assertMempool(cs.txNotifier).EnableTxsAvailable()
@@ -119,7 +118,6 @@ func TestMempoolTxConcurrentWithCommit(t *testing.T) {
 	blockDB := dbm.NewMemDB()
 	stateStore := sm.NewStore(blockDB, sm.StoreOptions{DiscardABCIResponses: false})
 	app, _, lanesInfo := newAppWithInfo(t)
-	app.SetUseLanes(false)
 	cs := newStateWithConfigAndBlockStore(config, state, privVals[0], app, blockDB, lanesInfo)
 	err := stateStore.Save(state)
 	require.NoError(t, err)

@@ -217,8 +217,7 @@ func TestIteratorEmptyLanes(t *testing.T) {
 // Without lanes transactions should be returned as they were
 // submitted - increasing tx IDs.
 func TestIteratorNoLanes(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	app.SetUseLanes(false)
+	app := kvstore.NewInMemoryApplicationWithoutLanes()
 	cc := proxy.NewLocalClientCreator(app)
 
 	cfg := test.ResetTestRoot("mempool_test")

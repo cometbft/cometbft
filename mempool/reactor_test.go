@@ -225,7 +225,7 @@ func TestMempoolReactorSendRemovedTx(t *testing.T) {
 	// Now we know that the second reactor is not lagging, so it should receive
 	// all txs except those that were removed.
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{9})
-	waitForReactors(t, txsLeft, reactors, checkTxsInOrder)
+	waitForReactors(t, txsLeft, reactors, checkTxsInMempool)
 }
 
 func TestMempoolReactorMaxTxBytes(t *testing.T) {

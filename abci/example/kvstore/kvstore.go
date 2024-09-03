@@ -53,25 +53,14 @@ type Application struct {
 
 	lanes          map[string]uint32
 	lanePriorities []uint32
-
-	useLanes bool
 }
 
-// NewApplication creates an instance of the kvstore from the provided database.
-func NewApplication(db dbm.DB) *Application {
-	// Map from lane name to its priority. Priority 0 is reserved. The higher
-	// the value, the higher the priority.
-	lanes := map[string]uint32{
-		"val":       9, // for validator updates
-		"foo":       7,
-		defaultLane: 3,
-		"bar":       1,
-	}
-
-	// List of lane priorities
-	priorities := make([]uint32, 0, len(lanes))
+// NewApplication creates an instance of the kvstore from the provided database,
+// with the given lanes and priorities.
+func NewApplication(db dbm.DB, lanes map[string]uint32) *Application {
+	lanePriorities := make([]uint32, 0, len(lanes))
 	for _, p := range lanes {
-		priorities = append(priorities, p)
+		lanePriorities = append(lanePriorities, p)
 	}
 
 	return &Application{
@@ -79,29 +68,53 @@ func NewApplication(db dbm.DB) *Application {
 		state:              loadState(db),
 		valAddrToPubKeyMap: make(map[string]crypto.PubKey),
 		lanes:              lanes,
-		lanePriorities:     priorities,
-		useLanes:           true,
+		lanePriorities:     lanePriorities,
 	}
 }
 
-func (app *Application) SetUseLanes(useL bool) {
-	app.useLanes = useL
-}
-
-// NewPersistentApplication creates a new application using the goleveldb database engine.
-func NewPersistentApplication(dbDir string) *Application {
+// newDB creates a DB engine for persisting the application state.
+func newDB(dbDir string) *dbm.GoLevelDB {
 	name := "kvstore"
 	db, err := dbm.NewGoLevelDB(name, dbDir)
 	if err != nil {
 		panic(fmt.Errorf("failed to create persistent app at %s: %w", dbDir, err))
 	}
-	return NewApplication(db)
+	return db
 }
 
-// NewInMemoryApplication creates a new application from an in memory database.
-// Nothing will be persisted.
+// NewPersistentApplication creates a new application using the goleveldb
+// database engine and default lanes.
+func NewPersistentApplication(dbDir string) *Application {
+	return NewApplication(newDB(dbDir), DefaultLanes())
+}
+
+// NewPersistentApplicationWithoutLanes creates a new application using the
+// goleveldb database engine and without lanes.
+func NewPersistentApplicationWithoutLanes(dbDir string) *Application {
+	return NewApplication(newDB(dbDir), nil)
+}
+
+// NewInMemoryApplication creates a new application from an in memory database
+// that uses default lanes. Nothing will be persisted.
 func NewInMemoryApplication() *Application {
-	return NewApplication(dbm.NewMemDB())
+	return NewApplication(dbm.NewMemDB(), DefaultLanes())
+}
+
+// NewInMemoryApplication creates a new application from an in memory database
+// and without lanes. Nothing will be persisted.
+func NewInMemoryApplicationWithoutLanes() *Application {
+	return NewApplication(dbm.NewMemDB(), nil)
+}
+
+// DefaultLanes returns a map from lane names to their priorities. Priority 0 is
+// reserved. The higher the value, the higher the priority.
+func DefaultLanes() map[string]uint32 {
+	return map[string]uint32{
+		"val":       9, // for validator updates
+		"foo":       7,
+		defaultLane: 3,
+		"bar":       1,
+	}
 }
 
 func (app *Application) SetGenBlockEvents() {
@@ -125,23 +138,19 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
-	if app.useLanes {
-		return &types.InfoResponse{
-			Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
-			Version:             version.ABCIVersion,
-			AppVersion:          AppVersion,
-			LastBlockHeight:     app.state.Height,
-			LastBlockAppHash:    app.state.Hash(),
-			LanePriorities:      app.lanePriorities,
-			DefaultLanePriority: app.lanes[defaultLane],
-		}, nil
+	var defaultLanePriority uint32
+	if app.lanes != nil {
+		defaultLanePriority = app.lanes[defaultLane]
 	}
+
 	return &types.InfoResponse{
-		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
-		Version:          version.ABCIVersion,
-		AppVersion:       AppVersion,
-		LastBlockHeight:  app.state.Height,
-		LastBlockAppHash: app.state.Hash(),
+		Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
+		Version:             version.ABCIVersion,
+		AppVersion:          AppVersion,
+		LastBlockHeight:     app.state.Height,
+		LastBlockAppHash:    app.state.Hash(),
+		LanePriorities:      app.lanePriorities,
+		DefaultLanePriority: defaultLanePriority,
 	}, nil
 }
 
@@ -176,11 +185,7 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 	}
 
-	if !app.useLanes {
-		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
-	}
-
-  lane := app.assignLane(req.Tx)
+	lane := app.assignLane(req.Tx)
 	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 

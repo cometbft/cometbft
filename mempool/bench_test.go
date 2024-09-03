@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -11,7 +10,6 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
-	abci "github.com/cometbft/cometbft/abci/types"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
@@ -142,54 +140,4 @@ func BenchmarkUpdateRemoteClient(b *testing.B) {
 		doCommit(b, mp, app, txs, int64(i))
 		assert.True(b, true)
 	}
-}
-
-func BenchmarkUpdateWithConcurrentCheckTx(b *testing.B) {
-	mp, cleanup := newMempoolWithAsyncConnection(b)
-	defer cleanup()
-
-	numTxs := 1000
-	maxHeight := 1000
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	// Add some txs to mempool.
-	for i := 1; i <= numTxs; i++ {
-		rr, err := mp.CheckTx(kvstore.NewTxFromID(i), "")
-		require.NoError(b, err)
-		rr.Wait()
-	}
-
-	// A process that continuously reaps and updates the mempool, simulating creation and committing
-	// of blocks by the consensus module.
-	go func() {
-		defer wg.Done()
-
-		for h := 1; h <= maxHeight; h++ {
-			if mp.Size() == 0 {
-				break
-			}
-			// b.StartTimer()
-			txs := mp.ReapMaxBytesMaxGas(1000, -1)
-			mp.PreUpdate()
-			mp.Lock()
-			err := mp.FlushAppConn() // needed to process the pending CheckTx requests and their callbacks
-			require.NoError(b, err)
-			err = mp.Update(int64(h), txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-			require.NoError(b, err)
-			mp.Unlock()
-			// b.StopTimer()
-		}
-	}()
-
-	// Concurrently, add more transactions.
-	for i := numTxs + 1; i <= numTxs; i++ {
-		_, err := mp.CheckTx(kvstore.NewTxFromID(i), "")
-		require.NoError(b, err)
-	}
-
-	wg.Wait()
-
-	// All added transactions should have been removed from the mempool.
-	require.Zero(b, mp.Size())
 }

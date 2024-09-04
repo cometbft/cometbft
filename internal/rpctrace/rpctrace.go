@@ -1,13 +1,10 @@
 package rpctrace
 
-import "github.com/gofrs/uuid"
+import "github.com/google/uuid"
 
 // New returns a randomly generated string which can be used to assist in
 // tracing RPC errors.
 func New() (string, error) {
-	id, err := uuid.NewV4()
-	if err != nil {
-		return "", err
-	}
+	id := uuid.New()
 	return id.String(), nil
 }

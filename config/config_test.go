@@ -115,21 +115,54 @@ func TestMempoolConfigValidateBasic(t *testing.T) {
 	cfg := config.TestMempoolConfig()
 	require.NoError(t, cfg.ValidateBasic())
 
-	fieldsToTest := []string{
-		"Size",
-		"MaxTxsBytes",
-		"CacheSize",
-		"MaxTxBytes",
-	}
-
-	for _, fieldName := range fieldsToTest {
-		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(-1)
-		require.Error(t, cfg.ValidateBasic())
-		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(0)
-	}
-
+	// tamper with type
 	reflect.ValueOf(cfg).Elem().FieldByName("Type").SetString("invalid")
 	require.Error(t, cfg.ValidateBasic())
+	reflect.ValueOf(cfg).Elem().FieldByName("Type").SetString(config.MempoolTypeFlood)
+
+	setFieldTo := func(fieldName string, value int64) {
+		reflect.ValueOf(cfg).Elem().FieldByName(fieldName).SetInt(value)
+	}
+
+	// tamper with numbers
+	fields2values := []struct {
+		Name             string
+		AllowedValues    []int64
+		DisallowedValues []int64
+	}{
+		{"Size", []int64{1}, []int64{-1, 0}},
+		{"MaxTxsBytes", []int64{1}, []int64{-1, 0}},
+		{"CacheSize", []int64{0, 1}, []int64{-1}},
+		{"MaxTxBytes", []int64{1}, []int64{-1, 0}},
+		{"ExperimentalMaxGossipConnectionsToPersistentPeers", []int64{0, 1}, []int64{-1}},
+		{"ExperimentalMaxGossipConnectionsToNonPersistentPeers", []int64{0, 1}, []int64{-1}},
+	}
+	for _, field := range fields2values {
+		for _, value := range field.AllowedValues {
+			setFieldTo(field.Name, value)
+			require.NoError(t, cfg.ValidateBasic())
+			setFieldTo(field.Name, 1) // reset
+		}
+
+		for _, value := range field.DisallowedValues {
+			setFieldTo(field.Name, value)
+			require.Error(t, cfg.ValidateBasic())
+			setFieldTo(field.Name, 1) // reset
+		}
+	}
+
+	// with noop mempool, zero values are allowed for the fields below
+	reflect.ValueOf(cfg).Elem().FieldByName("Type").SetString(config.MempoolTypeNop)
+	fieldNames := []string{
+		"Size",
+		"MaxTxsBytes",
+		"MaxTxBytes",
+	}
+	for _, name := range fieldNames {
+		setFieldTo(name, 0)
+		require.NoError(t, cfg.ValidateBasic())
+		setFieldTo(name, 1) // reset
+	}
 }
 
 func TestStateSyncConfigValidateBasic(t *testing.T) {

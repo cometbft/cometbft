@@ -64,8 +64,6 @@ type CListMempool struct {
 	defaultLane types.Lane
 	sortedLanes []types.Lane // lanes sorted by priority, in descending order
 
-	reapIter *NonBlockingWRRIterator
-
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
 	cache TxCache
@@ -115,7 +113,6 @@ func NewCListMempool(
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
 		return mp.sortedLanes[i] > mp.sortedLanes[j]
 	})
-	mp.reapIter = NewWRRIterator(mp)
 	mp.recheck = newRecheck(NewWRRIterator(mp))
 
 	if cfg.CacheSize > 0 {
@@ -609,9 +606,9 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.Size())
-	mem.reapIter.Reset(mem.lanes)
+	iter := NewWRRIterator(mem)
 	for {
-		memTx := mem.reapIter.Next()
+		memTx := iter.Next()
 		if memTx == nil {
 			break
 		}
@@ -649,9 +646,9 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	}
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max))
-	mem.reapIter.Reset(mem.lanes)
+	iter := NewWRRIterator(mem)
 	for len(txs) <= max {
-		memTx := mem.reapIter.Next()
+		memTx := iter.Next()
 		if memTx == nil {
 			break
 		}

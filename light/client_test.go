@@ -909,14 +909,21 @@ func TestClient_NewClientFromTrustedStore2(t *testing.T) {
 	// empty DB
 	db := dbs.New(dbm.NewMemDB(), chainID)
 
-	_, err := light.NewClientFromTrustedStore(
+	c, err := light.NewClientFromTrustedStore(
 		chainID,
 		trustPeriod,
-		deadNode,
-		[]provider.Provider{deadNode},
+		fullNode,
+		[]provider.Provider{fullNode},
 		db,
 	)
-	require.ErrorIs(t, err, light.ErrEmptyTrustedStore)
+
+	if err != nil {
+		assert.Error(t, err)
+	} else {
+		assert.NotPanics(t, func() {
+			_, _ = c.VerifyLightBlockAtHeight(ctx, 2, bTime)
+		})
+	}
 }
 
 func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {

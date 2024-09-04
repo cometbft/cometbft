@@ -49,7 +49,7 @@ type InstanceData struct {
 func sortNodeNames(m Manifest) []string {
 	// Set up nodes, in alphabetical order (IPs and ports get same order).
 	nodeNames := []string{}
-	for name := range m.Nodes {
+	for name := range m.NodesMap {
 		nodeNames = append(nodeNames, name)
 	}
 	sort.Strings(nodeNames)

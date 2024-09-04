@@ -150,6 +150,12 @@ type Manifest struct {
 	// networks that upgrade to a version of CometBFT
 	// that supports lanes but do not opt for using them.
 	DoNotUseLanes bool `toml:"no_lanes"`
+
+	// Optional custom definition of lanes to be used by the application
+	// If not used the application has a default set of lanes:
+	// {"foo"= 9,"bar"=4,"default"= 1}
+	// Note that the default key has to be present in your list of custom lanes.
+	Lanes map[string]uint32 `toml:"lanes"`
 }
 
 // ManifestNode represents a node in a testnet manifest.

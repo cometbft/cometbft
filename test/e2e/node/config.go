@@ -52,6 +52,8 @@ type Config struct {
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 
 	DoNotUseLanes bool `toml:"no_lanes"`
+
+	Lanes map[string]uint32 `toml:"lanes"`
 }
 
 // App extracts out the application specific configuration parameters.
@@ -75,6 +77,7 @@ func (cfg *Config) App() *app.Config {
 		PbtsEnableHeight:           cfg.PbtsEnableHeight,
 		PbtsUpdateHeight:           cfg.PbtsUpdateHeight,
 		DoNotUseLanes:              cfg.DoNotUseLanes,
+		Lanes:                      cfg.Lanes,
 	}
 }
 
@@ -85,6 +88,7 @@ func LoadConfig(file string) (*Config, error) {
 		Protocol:        "socket",
 		PersistInterval: 1,
 	}
+	fmt.Println(cfg)
 	_, err := toml.DecodeFile(file, &cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config from %q: %w", file, err)

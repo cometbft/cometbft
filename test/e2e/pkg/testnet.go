@@ -93,6 +93,7 @@ type Testnet struct {
 	LoadMaxTxs                                           int
 	DoNotUseLanes                                        bool
 	LoadLaneWeights                                      []uint
+	Lanes                                                map[string]uint32
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -184,8 +185,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
 	}
 	// Pre-load hard-coded lane values from app.
-	_, lanePriorities := app.LaneDefinitions()
-
+	_, lanePriorities := app.LaneDefinitions(manifest.Lanes)
 	testnet := &Testnet{
 		Name:                             filepath.Base(dir),
 		File:                             file,
@@ -205,6 +205,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadMaxTxs:                       manifest.LoadMaxTxs,
 		DoNotUseLanes:                    manifest.DoNotUseLanes,
 		LoadLaneWeights:                  manifest.LoadLaneWeights,
+		Lanes:                            manifest.Lanes,
 		ABCIProtocol:                     manifest.ABCIProtocol,
 		PrepareProposalDelay:             manifest.PrepareProposalDelay,
 		ProcessProposalDelay:             manifest.ProcessProposalDelay,

@@ -144,6 +144,12 @@ type Config struct {
 	// Used to simulate networks that do not want to use lanes, running
 	// on top of CometBFT with lane support.
 	DoNotUseLanes bool `toml:"no_lanes"`
+
+	// Optional custom definition of lanes to be used by the application
+	// If not used the application has a default set of lanes:
+	// {"foo"= 9,"bar"=4,"default"= 1}
+	// Note that the default key has to be present in your list of custom lanes.
+	Lanes map[string]uint32 `toml:"lanes"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -155,13 +161,15 @@ func DefaultConfig(dir string) *Config {
 }
 
 // LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions() (map[string]uint32, []uint32) {
+func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []uint32) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
-	lanes := map[string]uint32{
-		"foo":       9,
-		"bar":       4,
-		defaultLane: 1,
+	if len(lanes) == 0 {
+		lanes = map[string]uint32{
+			"foo":       9,
+			"bar":       4,
+			defaultLane: 1,
+		}
 	}
 
 	// List of lane priorities
@@ -194,8 +202,8 @@ func NewApplication(cfg *Config) (*Application, error) {
 		}, nil
 	}
 
-	lanes, lanePriorities := LaneDefinitions()
-
+	lanes, lanePriorities := LaneDefinitions(cfg.Lanes)
+	fmt.Println("APP Lane priorities", lanePriorities)
 	return &Application{
 		logger:         logger,
 		state:          state,
@@ -348,6 +356,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)
+	fmt.Println("LANE ", lane)
 
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }

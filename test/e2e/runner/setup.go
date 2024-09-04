@@ -343,6 +343,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"pbts_enable_height":            node.Testnet.PbtsEnableHeight,
 		"pbts_update_height":            node.Testnet.PbtsUpdateHeight,
 		"no_lanes":                      node.Testnet.DoNotUseLanes,
+		"lanes":                         node.Testnet.Lanes,
 	}
 	switch node.ABCIProtocol {
 	case e2e.ProtocolUNIX:

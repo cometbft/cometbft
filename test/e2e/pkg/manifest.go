@@ -141,6 +141,11 @@ type Manifest struct {
 	// -1 denotes it is set at genesis.
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
+
+	// Config is a set of key-value config entries to write to CometBFT's
+	// configuration files for all nodes. The format is "key = value".
+	// Example: "p2p.send_rate = 512000".
+	Config []string `toml:"config"`
 }
 
 // ManifestNode represents a node in a testnet manifest.
@@ -242,6 +247,11 @@ type ManifestNode struct {
 
 	// Simulated clock skew for this node
 	ClockSkew time.Duration `toml:"clock_skew"`
+
+	// Config is a set of key-value config entries to write to CometBFT's
+	// configuration files for this node. The format is "key = value".
+	// Example: "p2p.send_rate = 512000".
+	Config []string `toml:"config"`
 }
 
 // Save saves the testnet manifest to a file.

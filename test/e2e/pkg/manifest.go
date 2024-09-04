@@ -20,7 +20,7 @@ type Manifest struct {
 	// set in genesis. Defaults to nothing.
 	InitialState map[string]string `toml:"initial_state"`
 
-	// Validators is the initial validator set in genesis, given as node names
+	// ValidatorsMap is the initial validator set in genesis, given as node names
 	// and power:
 	//
 	// validators = { validator01 = 10; validator02 = 20; validator03 = 30 }
@@ -29,9 +29,9 @@ type Manifest struct {
 	// specifying an empty set will start with no validators in genesis, and
 	// the application must return the validator set in InitChain via the
 	// setting validator_update.0 (see below).
-	Validators *map[string]int64 `toml:"validators"`
+	ValidatorsMap *map[string]int64 `toml:"validators"`
 
-	// ValidatorUpdates is a map of heights to validator names and their power,
+	// ValidatorUpdatesMap is a map of heights to validator names and their power,
 	// and will be returned by the ABCI application. For example, the following
 	// changes the power of validator01 and validator02 at height 1000:
 	//
@@ -43,10 +43,10 @@ type Manifest struct {
 	// application returns the validator updates as-is, i.e. removing a
 	// validator must be done by returning it with power 0, and any validators
 	// not specified are not changed.
-	ValidatorUpdates map[string]map[string]int64 `toml:"validator_update"`
+	ValidatorUpdatesMap map[string]map[string]int64 `toml:"validator_update"`
 
-	// Nodes specifies the network nodes. At least one node must be given.
-	Nodes map[string]*ManifestNode `toml:"node"`
+	// NodesMap specifies the network nodes. At least one node must be given.
+	NodesMap map[string]*ManifestNode `toml:"node"`
 
 	// Disable the peer-exchange reactor on all nodes.
 	DisablePexReactor bool `toml:"disable_pex"`
@@ -145,10 +145,10 @@ type Manifest struct {
 
 // ManifestNode represents a node in a testnet manifest.
 type ManifestNode struct {
-	// Mode specifies the type of node: "validator", "full", "light" or "seed".
+	// ModeStr specifies the type of node: "validator", "full", "light" or "seed".
 	// Defaults to "validator". Full nodes do not get a signing key (a dummy key
 	// is generated), and seed nodes run in seed mode with the PEX reactor enabled.
-	Mode string `toml:"mode"`
+	ModeStr string `toml:"mode"`
 
 	// Version specifies which version of CometBFT this node is. Specifying different
 	// versions for different nodes allows for testing the interaction of different
@@ -157,24 +157,24 @@ type ManifestNode struct {
 	// on the machine where the test is being run.
 	Version string `toml:"version"`
 
-	// Seeds is the list of node names to use as P2P seed nodes. Defaults to none.
-	Seeds []string `toml:"seeds"`
+	// SeedsList is the list of node names to use as P2P seed nodes. Defaults to none.
+	SeedsList []string `toml:"seeds"`
 
-	// PersistentPeers is a list of node names to maintain persistent P2P
+	// PersistentPeersList is a list of node names to maintain persistent P2P
 	// connections to. If neither seeds nor persistent peers are specified,
 	// this defaults to all other nodes in the network. For light clients,
 	// this relates to the providers the light client is connected to.
-	PersistentPeers []string `toml:"persistent_peers"`
+	PersistentPeersList []string `toml:"persistent_peers"`
 
 	// Database specifies the database backend: "goleveldb", "rocksdb",
 	// "pebbledb" or "badgerdb". Defaults to "goleveldb".
 	Database string `toml:"database"`
 
-	// PrivvalProtocol specifies the protocol used to sign consensus messages:
+	// PrivvalProtocolStr specifies the protocol used to sign consensus messages:
 	// "file", "unix", or "tcp". Defaults to "file". For unix and tcp, the ABCI
 	// application will launch a remote signer client in a separate goroutine.
 	// Only nodes with mode=validator will actually make use of this.
-	PrivvalProtocol string `toml:"privval_protocol"`
+	PrivvalProtocolStr string `toml:"privval_protocol"`
 
 	// StartAt specifies the block height at which the node will be started. The
 	// runner will wait for the network to reach at least this block height.
@@ -190,10 +190,10 @@ type ManifestNode struct {
 	// StartAt set to an appropriate height where a snapshot is available.
 	StateSync bool `toml:"state_sync"`
 
-	// PersistInterval specifies the height interval at which the application
+	// PersistIntervalPtr specifies the height interval at which the application
 	// will persist state to disk. Defaults to 1 (every height), setting this to
 	// 0 disables state persistence.
-	PersistInterval *uint64 `toml:"persist_interval"`
+	PersistIntervalPtr *uint64 `toml:"persist_interval"`
 
 	// SnapshotInterval specifies the height interval at which the application
 	// will take state sync snapshots. Defaults to 0 (disabled).
@@ -223,7 +223,7 @@ type ManifestNode struct {
 	SendNoLoad bool `toml:"send_no_load"`
 
 	// Geographical zone ID for simulating latencies.
-	Zone string `toml:"zone"`
+	ZoneStr string `toml:"zone"`
 
 	// ExperimentalKeyLayout sets the key representation in the DB
 	ExperimentalKeyLayout string `toml:"experimental_db_key_layout"`

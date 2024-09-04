@@ -87,13 +87,17 @@ linters-settings:
           - $gostd
           - github.com/cometbft
           - github.com/cosmos
+<<<<<<< HEAD
           - github.com/btcsuite/btcd/btcec/v2
           - github.com/BurntSushi/toml
+=======
+          - github.com/creachadair/atomicfile
+          - github.com/creachadair/tomledit
+>>>>>>> 274941674 (chore(deps): replace gofrs/uuid with google/uuid (#3988))
           - github.com/dgraph-io/badger/v4
           - github.com/go-git/go-git/v5
           - github.com/go-kit
           - github.com/go-logfmt/logfmt
-          - github.com/gofrs/uuid
           - github.com/google
           - github.com/gorilla/websocket
           - github.com/hashicorp/golang-lru/v2

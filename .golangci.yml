@@ -85,21 +85,20 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
+          - github.com/BurntSushi/toml
+          - github.com/Masterminds/semver/v3
+          - github.com/btcsuite/btcd/btcec/v2
           - github.com/cometbft
           - github.com/cosmos
-          - github.com/btcsuite/btcd/btcec/v2
-          - github.com/BurntSushi/toml
           - github.com/dgraph-io/badger/v4
           - github.com/go-git/go-git/v5
           - github.com/go-kit
           - github.com/go-logfmt/logfmt
-          - github.com/gofrs/uuid
           - github.com/google
           - github.com/gorilla/websocket
           - github.com/hashicorp/golang-lru/v2
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
-          - github.com/Masterminds/semver/v3
           - github.com/minio/highwayhash
           - github.com/oasisprotocol/curve25519-voi
           - github.com/pkg/errors

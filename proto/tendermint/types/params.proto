@@ -79,12 +79,3 @@ message HashedParams {
   int64 block_max_gas   = 2;
 }
 
-message RollappConsensusParams {
-  Params params = 1 [(gogoproto.nullable) = false];
-}
-
-message Params {
-  BlockParams block = 1;
-  string da = 2 ;
-  string commit = 3 ;
-}

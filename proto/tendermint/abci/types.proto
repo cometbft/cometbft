@@ -384,7 +384,7 @@ message Evidence {
 message RollappConsensusParams {
   BlockParams block = 1;
   string da = 2 ;
-  string commit = 3;
+  string version = 3;
 }
 //----------------------------------------
 // State Sync Types

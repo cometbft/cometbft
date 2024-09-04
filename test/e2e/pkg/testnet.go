@@ -403,12 +403,14 @@ func (t Testnet) Validate() error {
 		tokens := strings.Split(entry, " = ")
 		if len(tokens) != 2 {
 			return fmt.Errorf("invalid genesis entry: \"%s\", "+
+				"expected \"key = value\"", entry)
+		}
+	}
 
 	for _, entry := range t.Config {
 		tokens := strings.Split(entry, " = ")
 		if len(tokens) != 2 {
 			return fmt.Errorf("invalid config entry: \"%s\", "+
-
 				"expected \"key = value\"", entry)
 		}
 	}

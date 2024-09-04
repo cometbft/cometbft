@@ -15,6 +15,11 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+<<<<<<< HEAD
+=======
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
+>>>>>>> 6c5cd3292 (feat(e2e): allow customizing genesis parameters on the manifest (#3969))
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -167,6 +172,29 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		}
 		genesis.AppState = appState
 	}
+
+	// Customized genesis fields provided in the manifest
+	if len(testnet.Genesis) > 0 {
+		viper.Reset()
+		viper.SetConfigType("json")
+
+		for _, entry := range testnet.Genesis {
+			tokens := strings.Split(entry, " = ")
+			key, value := tokens[0], tokens[1]
+			logger.Debug("Applying Genesis config", key, value)
+			viper.Set(key, value)
+		}
+
+		// We use viper because it leaves untouched keys that are not set.
+		// The GenesisDoc does not use the original `mapstructure` tag.
+		err := viper.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
+			d.TagName = "json"
+		})
+		if err != nil {
+			return genesis, err
+		}
+	}
+
 	return genesis, genesis.ValidateAndComplete()
 }
 

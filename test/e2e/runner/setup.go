@@ -341,6 +341,21 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	if node.CompactionInterval != 0 && node.Compact {
 		cfg.Storage.CompactionInterval = node.CompactionInterval
 	}
+
+	// We currently need viper in order to parse config files.
+	if len(node.Config) > 0 {
+		viper.Reset()
+		for _, entry := range node.Config {
+			tokens := strings.Split(entry, " = ")
+			key, value := tokens[0], tokens[1]
+			logger.Debug("Applying Comet config", "node", node.Name, key, value)
+			viper.Set(key, value)
+		}
+		if err := viper.Unmarshal(cfg); err != nil {
+			return nil, err
+		}
+	}
+
 	return cfg, nil
 }
 

@@ -240,6 +240,11 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		} else if testnet.DefaultZone != "" {
 			node.Zone = ZoneID(testnet.DefaultZone)
 		}
+		// Configs are applied in order, so a local Config in Node
+		// should override a global config in Testnet.
+		if len(manifest.Config) > 0 {
+			node.Config = append(testnet.Config, node.Config...)
+		}
 
 		testnet.Nodes = append(testnet.Nodes, node)
 	}
@@ -394,6 +399,13 @@ func (t Testnet) Validate() error {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
 		}
 	}
+	for _, entry := range t.Config {
+		tokens := strings.Split(entry, " = ")
+		if len(tokens) != 2 {
+			return fmt.Errorf("invalid config entry: \"%s\", "+
+				"expected \"key = value\"", entry)
+		}
+	}
 	return nil
 }
 
@@ -521,7 +533,13 @@ func (n Node) Validate(testnet Testnet) error {
 			return fmt.Errorf("invalid perturbation %q", perturbation)
 		}
 	}
-
+	for _, entry := range n.Config {
+		tokens := strings.Split(entry, " = ")
+		if len(tokens) != 2 {
+			return fmt.Errorf("invalid config entry: \"%s\", "+
+				"expected \"key = value\"", entry)
+		}
+	}
 	return nil
 }
 

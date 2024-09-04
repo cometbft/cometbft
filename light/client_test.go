@@ -917,9 +917,7 @@ func TestClient_NewClientFromTrustedStore2(t *testing.T) {
 		db,
 	)
 
-	if err != nil {
-		assert.Error(t, err)
-	} else {
+	if err == nil {
 		assert.NotPanics(t, func() {
 			_, _ = c.VerifyLightBlockAtHeight(ctx, 2, bTime)
 		})

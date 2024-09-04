@@ -195,11 +195,11 @@ func runProxy(_ *cobra.Command, args []string) error {
 			dbs.New(db, chainID),
 			options...,
 		)
-	}
-	if err != nil {
 		if errors.Is(err, light.ErrEmptyTrustedStore) {
 			logger.Error("Cannot start the light client from an empty trusted store. Please provide either an initialized trusted store, using the `--home-dir` flag, or trusted information to bootstrap the trusted store, via `--hash` and `--height` flags.")
 		}
+	}
+	if err != nil {
 		return err
 	}
 

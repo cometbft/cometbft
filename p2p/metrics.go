@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/cometbft/cometbft/internal/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 )
 
 const (

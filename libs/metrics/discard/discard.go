@@ -23,7 +23,7 @@
 // Package discard provides a no-op metrics backend.
 package discard
 
-import "github.com/cometbft/cometbft/internal/metrics"
+import "github.com/cometbft/cometbft/libs/metrics"
 
 type counter struct{}
 

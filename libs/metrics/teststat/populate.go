@@ -26,7 +26,7 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/cometbft/cometbft/internal/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 )
 
 // PopulateNormalHistogram makes a series of normal random observations into the

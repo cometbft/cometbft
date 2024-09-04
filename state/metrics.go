@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/cometbft/cometbft/internal/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 )
 
 const (

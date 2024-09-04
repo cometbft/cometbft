@@ -1,7 +1,7 @@
 package blocksync
 
 import (
-	"github.com/cometbft/cometbft/internal/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 	"github.com/cometbft/cometbft/types"
 )
 

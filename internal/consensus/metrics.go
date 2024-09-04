@@ -5,7 +5,7 @@ import (
 	"time"
 
 	cstypes "github.com/cometbft/cometbft/internal/consensus/types"
-	"github.com/cometbft/cometbft/internal/metrics"
+	"github.com/cometbft/cometbft/libs/metrics"
 	"github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 )

@@ -3,8 +3,8 @@
 package mempool
 
 import (
-	"github.com/cometbft/cometbft/internal/metrics/discard"
-	prometheus "github.com/cometbft/cometbft/internal/metrics/prometheus"
+	"github.com/cometbft/cometbft/libs/metrics/discard"
+	prometheus "github.com/cometbft/cometbft/libs/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 )
 

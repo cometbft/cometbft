@@ -29,8 +29,8 @@ package prometheus
 import (
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/cometbft/cometbft/internal/metrics"
-	"github.com/cometbft/cometbft/internal/metrics/lv"
+	"github.com/cometbft/cometbft/libs/metrics"
+	"github.com/cometbft/cometbft/libs/metrics/lv"
 )
 
 // Counter implements Counter, via a Prometheus CounterVec.

@@ -142,6 +142,11 @@ type Manifest struct {
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 
+	// Genesis is a set of key-value config entries to write to the
+	// produced genesis file. The format is "key = value".
+	// Example: "consensus_params.evidence.max_bytes = 1024".
+	Genesis []string `toml:"genesis"`
+
 	// Config is a set of key-value config entries to write to CometBFT's
 	// configuration files for all nodes. The format is "key = value".
 	// Example: "p2p.send_rate = 512000".

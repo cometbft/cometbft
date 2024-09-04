@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
@@ -168,6 +170,29 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		}
 		genesis.AppState = appState
 	}
+
+	// Customized genesis fields provided in the manifest
+	if len(testnet.Genesis) > 0 {
+		viper.Reset()
+		viper.SetConfigType("json")
+
+		for _, entry := range testnet.Genesis {
+			tokens := strings.Split(entry, " = ")
+			key, value := tokens[0], tokens[1]
+			logger.Debug("Applying Genesis config", key, value)
+			viper.Set(key, value)
+		}
+
+		// We use viper because it leaves untouched keys that are not set.
+		// The GenesisDoc does not use the original `mapstructure` tag.
+		err := viper.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
+			d.TagName = "json"
+		})
+		if err != nil {
+			return genesis, err
+		}
+	}
+
 	return genesis, genesis.ValidateAndComplete()
 }
 
@@ -289,6 +314,10 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 		cfg.LogLevel = node.Testnet.LogLevel
 	}
 
+	if node.Testnet.LogFormat != "" {
+		cfg.LogFormat = node.Testnet.LogFormat
+	}
+
 	if node.Prometheus {
 		cfg.Instrumentation.Prometheus = true
 	}
@@ -312,6 +341,21 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	if node.CompactionInterval != 0 && node.Compact {
 		cfg.Storage.CompactionInterval = node.CompactionInterval
 	}
+
+	// We currently need viper in order to parse config files.
+	if len(node.Config) > 0 {
+		viper.Reset()
+		for _, entry := range node.Config {
+			tokens := strings.Split(entry, " = ")
+			key, value := tokens[0], tokens[1]
+			logger.Debug("Applying Comet config", "node", node.Name, key, value)
+			viper.Set(key, value)
+		}
+		if err := viper.Unmarshal(cfg); err != nil {
+			return nil, err
+		}
+	}
+
 	return cfg, nil
 }
 

@@ -11,6 +11,10 @@ on:
       - v0.3[478].x
       - v[1-9][0-9]?.x
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   e2e-test:
     # Run two parallel jobs: for `ci.toml`, and for the regression manifests

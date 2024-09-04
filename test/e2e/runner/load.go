@@ -20,11 +20,11 @@ const workerPoolSize = 16
 
 // Load generates transactions against the network until the given context is
 // canceled.
-func Load(ctx context.Context, testnet *e2e.Testnet) error {
+func Load(ctx context.Context, testnet *e2e.Testnet, useInternalIP bool) error {
 	initialTimeout := 1 * time.Minute
 	stallTimeout := 30 * time.Second
 	chSuccess := make(chan struct{})
-	chFailed := make(chan struct{})
+	chFailed := make(chan error)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -41,12 +41,13 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 		}
 
 		for w := 0; w < testnet.LoadTxConnections; w++ {
-			go loadProcess(ctx, txCh, chSuccess, chFailed, n)
+			go loadProcess(ctx, txCh, chSuccess, chFailed, n, useInternalIP)
 		}
 	}
 
 	// Monitor successful and failed transactions, and abort on stalls.
 	success, failed := 0, 0
+	errorCounter := make(map[string]int)
 	timeout := initialTimeout
 	for {
 		rate := log.NewLazySprintf("%.1f", float64(success)/time.Since(started).Seconds())
@@ -55,8 +56,9 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 		case <-chSuccess:
 			success++
 			timeout = stallTimeout
-		case <-chFailed:
+		case err := <-chFailed:
 			failed++
+			errorCounter[err.Error()]++
 		case <-time.After(timeout):
 			return fmt.Errorf("unable to submit transactions for %v", timeout)
 		case <-ctx.Done():
@@ -72,6 +74,16 @@ func Load(ctx context.Context, testnet *e2e.Testnet) error {
 		if total%testnet.LoadTxBatchSize == 0 {
 			successRate := float64(success) / float64(total)
 			logger.Debug("load", "success", success, "failed", failed, "success/total", log.NewLazySprintf("%.2f", successRate), "tx/s", rate)
+			if len(errorCounter) > 0 {
+				for err, c := range errorCounter {
+					if c == 1 {
+						logger.Error("failed to send transaction", "err", err)
+					} else {
+						logger.Error("failed to send multiple transactions", "count", c, "err", err)
+					}
+				}
+				errorCounter = make(map[string]int)
+			}
 		}
 
 		// Check if reached max number of allowed transactions to send.
@@ -148,21 +160,24 @@ FOR_LOOP:
 
 // loadProcess processes transactions by sending transactions received on the txCh
 // to the client.
-func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- struct{}, n *e2e.Node) {
+func loadProcess(ctx context.Context, txCh <-chan types.Tx, chSuccess chan<- struct{}, chFailed chan<- error, n *e2e.Node, useInternalIP bool) {
 	var client *rpchttp.HTTP
 	var err error
 	s := struct{}{}
 	for tx := range txCh {
 		if client == nil {
-			client, err = n.Client()
+			if useInternalIP {
+				client, err = n.ClientInternalIP()
+			} else {
+				client, err = n.Client()
+			}
 			if err != nil {
 				logger.Info("non-fatal error creating node client", "error", err)
 				continue
 			}
 		}
 		if _, err = client.BroadcastTxSync(ctx, tx); err != nil {
-			logger.Error("failed to send transaction", "err", err)
-			chFailed <- s
+			chFailed <- err
 			continue
 		}
 		chSuccess <- s

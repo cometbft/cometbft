@@ -58,12 +58,12 @@ func (s *blockServiceServer) getBlock(height int64, logger log.Logger) (*ptypes.
 
 	block, blockMeta := s.store.LoadBlock(height)
 	if block == nil {
-		return nil, nil, status.Errorf(codes.NotFound, fmt.Sprintf("Block not found for height %d", height))
+		return nil, nil, status.Errorf(codes.NotFound, "Block not found for height %d", height)
 	}
 	bp, err := block.ToProto()
 	if err != nil {
 		logger.Error("Error attempting to convert block to its Protobuf representation", "err", err, "traceID", traceID)
-		return nil, nil, status.Errorf(codes.Internal, fmt.Sprintf("Failed to load block from store (see logs for trace ID: %s)", traceID))
+		return nil, nil, status.Errorf(codes.Internal, "Failed to load block from store (see logs for trace ID: %s)", traceID)
 	}
 
 	if blockMeta == nil {

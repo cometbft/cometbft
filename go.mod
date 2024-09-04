@@ -7,7 +7,7 @@ require (
 	github.com/ChainSafe/go-schnorrkel v1.1.0
 	github.com/adlio/schema v1.3.6
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/go-kit/kit v0.12.0
+	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/gofrs/uuid v4.4.0+incompatible

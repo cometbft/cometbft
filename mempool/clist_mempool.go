@@ -100,7 +100,7 @@ func NewCListMempool(
 	// Initialize lanes
 	if lanesInfo == nil || len(lanesInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
-		lanesInfo = &LanesInfo{defaultLane: 1, lanes: []types.Lane{1}}
+		lanesInfo = &LanesInfo{lanes: []types.Lane{1}, defaultLane: 1}
 	}
 	numLanes := len(lanesInfo.lanes)
 	mp.lanes = make(map[types.Lane]*clist.CList, numLanes)
@@ -403,12 +403,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		}
 
 		// Add tx to mempool and notify that new txs are available.
-		memTx := mempoolTx{
-			height:    mem.height.Load(),
-			gasWanted: res.GasWanted,
-			tx:        tx,
-		}
-		if mem.addTx(&memTx, sender, lane) {
+		if mem.addTx(tx, res.GasWanted, sender, lane) {
 			mem.notifyTxsAvailable()
 
 			if mem.onNewTx != nil {
@@ -424,12 +419,9 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane) bool {
+func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane types.Lane) bool {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
-
-	tx := memTx.tx
-	txKey := tx.Key()
 
 	// Get lane's clist.
 	txs, ok := mem.lanes[lane]
@@ -438,24 +430,29 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 		return false
 	}
 
+	// Increase sequence number.
 	mem.addTxChMtx.Lock()
 	defer mem.addTxChMtx.Unlock()
 	mem.addTxSeq++
-	memTx.seq = mem.addTxSeq
-
-	// Add new transaction.
-	_ = memTx.addSender(sender)
-	memTx.lane = lane
-	e := txs.PushBack(memTx)
 	mem.addTxLaneSeqs[lane] = mem.addTxSeq
 
-	// Update auxiliary variables.
-	mem.txsMap[txKey] = e
+	// Add new transaction.
+	memTx := &mempoolTx{
+		tx:        tx,
+		height:    mem.height.Load(),
+		gasWanted: gasWanted,
+		lane:      lane,
+		seq:       mem.addTxSeq,
+	}
+	_ = memTx.addSender(sender)
+	e := txs.PushBack(memTx)
 
-	// Update size variables.
+	// Update auxiliary variables.
+	mem.txsMap[tx.Key()] = e
 	mem.txsBytes += int64(len(tx))
 	mem.numTxs++
 
+	// Notify iterator there's a new transaction.
 	close(mem.addTxCh)
 	mem.addTxCh = make(chan struct{})
 
@@ -470,7 +467,6 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)
-
 	return true
 }
 
@@ -495,8 +491,6 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 
 	// Update auxiliary variables.
 	delete(mem.txsMap, txKey)
-
-	// Update size variables.
 	mem.txsBytes -= int64(len(memTx.tx))
 	mem.numTxs--
 

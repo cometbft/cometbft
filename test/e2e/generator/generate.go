@@ -319,12 +319,7 @@ func generateTestnet(r *rand.Rand, opt map[string]any, upgradeVersion string, pr
 		)
 	}
 
-	switch opt["no_lanes"] {
-	case false:
-		manifest.DoNotUseLanes = true
-	case true:
-		manifest.DoNotUseLanes = false
-	}
+	manifest.DoNotUseLanes = !opt["no_lanes"]
 
 	return manifest, nil
 }

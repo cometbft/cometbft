@@ -6,8 +6,7 @@ on:
       - go.mod
       - go.sum
       - Makefile
-    paths-ignore:
-      - "test/**"
+      - "!test/**"
   merge_group:
   push:
     paths:
@@ -15,8 +14,7 @@ on:
       - go.mod
       - go.sum
       - Makefile
-    paths-ignore:
-      - "test/**"
+      - "!test/**"
     branches:
       - main
 

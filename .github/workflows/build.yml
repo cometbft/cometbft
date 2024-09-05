@@ -9,8 +9,7 @@ on:
       - go.mod
       - go.sum
       - Makefile
-    paths-ignore:
-      - "test/**"
+      - "!test/**"
   merge_group:
   push:
     branches:
@@ -20,8 +19,7 @@ on:
       - go.mod
       - go.sum
       - Makefile
-    paths-ignore:
-      - "test/**"
+      - "!test/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

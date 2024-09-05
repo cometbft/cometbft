@@ -139,7 +139,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 	}
 
 	var defaultLanePriority uint32
-	if app.lanes != nil {
+	if len(app.lanes) > 0 {
 		defaultLanePriority = app.lanes[defaultLane]
 	}
 

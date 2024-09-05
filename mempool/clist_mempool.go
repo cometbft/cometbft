@@ -55,10 +55,10 @@ type CListMempool struct {
 	txsBytes int64                           // total size of mempool, in bytes
 	numTxs   int64                           // total number of txs in the mempool
 
-	addTxChMtx    cmtsync.RWMutex // Protects the fields below
-	addTxCh       chan struct{}   // Blocks until the next TX is added
-	addTxSeq      int64 // Helps detect is new TXs have been added to a given lane
-	addTxLaneSeqs map[types.Lane]int64  // Sequence of the last TX added to a given lane
+	addTxChMtx    cmtsync.RWMutex      // Protects the fields below
+	addTxCh       chan struct{}        // Blocks until the next TX is added
+	addTxSeq      int64                // Helps detect is new TXs have been added to a given lane
+	addTxLaneSeqs map[types.Lane]int64 // Sequence of the last TX added to a given lane
 
 	// Immutable fields, only set during initialization.
 	defaultLane types.Lane

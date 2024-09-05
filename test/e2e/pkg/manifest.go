@@ -90,6 +90,8 @@ type Manifest struct {
 
 	// Weight for each lane defined by the app. The transaction loader will
 	// assign lanes to generated transactions proportionally to their weights.
+	// Note that the lanes are sorted by priority in descending order, thus the
+	// first weight in the array will be the weight of the highest priority lane.
 	LoadLaneWeights []uint `toml:"load_lane_weights"`
 
 	// LogLevel specifies the log level to be set on all nodes.

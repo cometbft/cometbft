@@ -356,7 +356,6 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)
-
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 

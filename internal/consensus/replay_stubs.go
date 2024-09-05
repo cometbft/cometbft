@@ -47,6 +47,13 @@ func (emptyMempool) EnableTxsAvailable()           {}
 func (emptyMempool) TxsBytes() int64               { return 0 }
 func (emptyMempool) TxsFront() *clist.CElement     { return nil }
 func (emptyMempool) TxsWaitChan() <-chan struct{}  { return nil }
+func (emptyMempool) NewBlockingIterator() mempl.BlockingIterator {
+	return &mempl.BlockingWRRIterator{}
+}
+
+func (emptyMempool) NewNonBlockingIterator() mempl.NonBlockingIterator {
+	return &mempl.NonBlockingWRRIterator{}
+}
 
 // -----------------------------------------------------------------------------
 // newMockProxyApp uses ABCIResponses to give the right results.

@@ -104,6 +104,15 @@ type Mempool interface {
 
 	// SizeBytes returns the total size of all txs in the mempool.
 	SizeBytes() int64
+
+	// NewBlockingIterator returns an iterator on the mempool that blocks when
+	// there's no entry available. Entries may be added or removed from the
+	// mempool while iterating.
+	NewBlockingIterator() BlockingIterator
+
+	// NewNonBlockingIterator returns an iterator on the mempool that traverses
+	// all entries in certain order. The mempool cannot change while iterating.
+	NewNonBlockingIterator() NonBlockingIterator
 }
 
 // PreCheckFunc is an optional filter executed before CheckTx and rejects
@@ -170,7 +179,26 @@ type Entry interface {
 
 // An iterator is used to iterate through the mempool entries.
 // Multiple iterators should be allowed to run concurrently.
+//
+// Deprecated: renamed to BlockingIterator.
 type Iterator interface {
 	// WaitNextCh returns a channel on which to wait for the next available entry.
 	WaitNextCh() <-chan Entry
+}
+
+// A blocking iterator is used to iterate through the mempool entries. Entries
+// may be added or removed from the mempool while iterating. When no entry is
+// available in the mempool, it will wait until a new one is added. Multiple
+// iterators should be allowed to run concurrently.
+type BlockingIterator interface {
+	// WaitNextCh returns a channel on which to wait for the next available entry.
+	WaitNextCh() <-chan Entry
+}
+
+// A non-blocking iterator is used to iterate through the mempool entries. It
+// assumes that entries are not added or removed from the mempool while
+// iterating. Not concurrent safe.
+type NonBlockingIterator interface {
+	// WaitNextCh returns a channel on which to wait for the next available entry.
+	Next() Entry
 }

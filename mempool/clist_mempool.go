@@ -89,6 +89,7 @@ func NewCListMempool(
 	mp := &CListMempool{
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
+		recheck:       &recheck{},
 		txsMap:        make(map[types.TxKey]*clist.CElement),
 		logger:        log.NewNopLogger(),
 		metrics:       NopMetrics(),
@@ -113,7 +114,6 @@ func NewCListMempool(
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
 		return mp.sortedLanes[i] > mp.sortedLanes[j]
 	})
-	mp.recheck = newRecheck(NewWRRIterator(mp))
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache(cfg.CacheSize)
@@ -600,7 +600,7 @@ func (mem *CListMempool) ReapMaxBytesMaxGas(maxBytes, maxGas int64) types.Txs {
 	// size per tx, and set the initial capacity based off of that.
 	// txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max/mem.avgTxSize))
 	txs := make([]types.Tx, 0, mem.Size())
-	iter := NewWRRIterator(mem)
+	iter := mem.NewNonBlockingIterator()
 	for {
 		memTx := iter.Next()
 		if memTx == nil {
@@ -640,7 +640,7 @@ func (mem *CListMempool) ReapMaxTxs(max int) types.Txs {
 	}
 
 	txs := make([]types.Tx, 0, cmtmath.MinInt(mem.Size(), max))
-	iter := NewWRRIterator(mem)
+	iter := mem.NewNonBlockingIterator()
 	for len(txs) <= max {
 		memTx := iter.Next()
 		if memTx == nil {
@@ -660,6 +660,14 @@ func (mem *CListMempool) GetTxByHash(hash []byte) types.Tx {
 		return elem.Value.(*mempoolTx).tx
 	}
 	return nil
+}
+
+func (mem *CListMempool) NewBlockingIterator() BlockingIterator {
+	return NewBlockingWRRIterator(mem)
+}
+
+func (mem *CListMempool) NewNonBlockingIterator() NonBlockingIterator {
+	return NewNonBlockingWRRIterator(mem)
 }
 
 // Lock() must be help by the caller during execution.
@@ -735,9 +743,9 @@ func (mem *CListMempool) recheckTxs() {
 		return
 	}
 
-	mem.recheck.init(mem.lanes)
+	mem.recheck.init(mem.NewNonBlockingIterator())
 
-	iter := NewWRRIterator(mem)
+	iter := mem.NewNonBlockingIterator()
 	for {
 		memTx := iter.Next()
 		if memTx == nil {
@@ -785,7 +793,7 @@ func (mem *CListMempool) recheckTxs() {
 // be ignored for rechecking. This is to guarantee that recheck responses are
 // processed in the same sequential order as they appear in the mempool.
 type recheck struct {
-	iter          *NonBlockingWRRIterator
+	iter          NonBlockingIterator
 	cursor        Entry         // next expected recheck response
 	doneCh        chan struct{} // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32  // number of transactions still pending to recheck
@@ -793,18 +801,13 @@ type recheck struct {
 	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided
 }
 
-func newRecheck(iter *NonBlockingWRRIterator) *recheck {
-	r := recheck{}
-	r.iter = iter
-	return &r
-}
-
-func (rc *recheck) init(lanes map[types.Lane]*clist.CList) {
+// We reuse the recheck struct so certain fields have to be reset on every use.
+func (rc *recheck) init(iter NonBlockingIterator) {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
 	rc.numPendingTxs.Store(0)
-	rc.iter.Reset(lanes)
+	rc.iter = iter
 	rc.cursor = rc.iter.Next()
 	if rc.cursor == nil {
 		return

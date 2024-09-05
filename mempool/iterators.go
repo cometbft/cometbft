@@ -21,6 +21,8 @@ func (iter *WRRIterator) nextLane() types.Lane {
 	return iter.sortedLanes[iter.laneIndex]
 }
 
+var _ NonBlockingIterator = &NonBlockingWRRIterator{}
+
 // Non-blocking version of the WRR iterator to be used for reaping and
 // rechecking transactions.
 //
@@ -30,7 +32,7 @@ type NonBlockingWRRIterator struct {
 	WRRIterator
 }
 
-func NewWRRIterator(mem *CListMempool) *NonBlockingWRRIterator {
+func NewNonBlockingWRRIterator(mem *CListMempool) *NonBlockingWRRIterator {
 	baseIter := WRRIterator{
 		sortedLanes: mem.sortedLanes,
 		counters:    make(map[types.Lane]uint, len(mem.lanes)),
@@ -39,20 +41,11 @@ func NewWRRIterator(mem *CListMempool) *NonBlockingWRRIterator {
 	iter := &NonBlockingWRRIterator{
 		WRRIterator: baseIter,
 	}
-	iter.Reset(mem.lanes)
+	// Set each cursor at the beginning of its lane.
+	for lane := range mem.lanes {
+		iter.cursors[lane] = mem.lanes[lane].Front()
+	}
 	return iter
-}
-
-// Reset must be called before every use of the iterator.
-func (iter *NonBlockingWRRIterator) Reset(lanes map[types.Lane]*clist.CList) {
-	iter.laneIndex = 0
-	for i := range iter.counters {
-		iter.counters[i] = 0
-	}
-	// Set cursors at the beginning of each lane.
-	for lane := range lanes {
-		iter.cursors[lane] = lanes[lane].Front()
-	}
 }
 
 // Next returns the next element according to the WRR algorithm.
@@ -80,12 +73,14 @@ func (iter *NonBlockingWRRIterator) Next() Entry {
 	}
 	elem := iter.cursors[lane]
 	if elem == nil {
-		panic(fmt.Errorf("Iterator picked a nil entry on lane %d", lane))
+		panic(fmt.Errorf("iterator picked a nil entry on lane %d", lane))
 	}
 	iter.cursors[lane] = iter.cursors[lane].Next()
 	iter.counters[lane]++
 	return elem.Value.(*mempoolTx)
 }
+
+var _ BlockingIterator = &BlockingWRRIterator{}
 
 // BlockingWRRIterator implements a blocking version of the WRR iterator,
 // meaning that when no transaction is available, it will wait until a new one
@@ -96,7 +91,7 @@ type BlockingWRRIterator struct {
 	mp *CListMempool
 }
 
-func NewBlockingWRRIterator(mem *CListMempool) Iterator {
+func NewBlockingWRRIterator(mem *CListMempool) BlockingIterator {
 	iter := WRRIterator{
 		sortedLanes: mem.sortedLanes,
 		counters:    make(map[types.Lane]uint, len(mem.sortedLanes)),

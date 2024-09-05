@@ -217,7 +217,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}
 
-	iter := NewBlockingWRRIterator(memR.mempool)
+	iter := memR.mempool.NewBlockingIterator()
 	var entry Entry
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time

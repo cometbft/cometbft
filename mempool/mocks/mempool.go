@@ -121,6 +121,46 @@ func (_m *Mempool) Lock() {
 	_m.Called()
 }
 
+// NewBlockingIterator provides a mock function with given fields:
+func (_m *Mempool) NewBlockingIterator() mempool.BlockingIterator {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for NewBlockingIterator")
+	}
+
+	var r0 mempool.BlockingIterator
+	if rf, ok := ret.Get(0).(func() mempool.BlockingIterator); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(mempool.BlockingIterator)
+		}
+	}
+
+	return r0
+}
+
+// NewNonBlockingIterator provides a mock function with given fields:
+func (_m *Mempool) NewNonBlockingIterator() mempool.NonBlockingIterator {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for NewNonBlockingIterator")
+	}
+
+	var r0 mempool.NonBlockingIterator
+	if rf, ok := ret.Get(0).(func() mempool.NonBlockingIterator); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(mempool.NonBlockingIterator)
+		}
+	}
+
+	return r0
+}
+
 // PreUpdate provides a mock function with given fields:
 func (_m *Mempool) PreUpdate() {
 	_m.Called()

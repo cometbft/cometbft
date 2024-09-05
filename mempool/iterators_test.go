@@ -358,87 +358,59 @@ func TestIteratorCountOnly(t *testing.T) {
 	require.Equal(t, n, counter)
 }
 
-func TestReapOrderMatchesGossipOrder(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-	mp, cleanup := newMempoolWithApp(cc)
-	defer cleanup()
-
+func TestReapMatchesGossipOrder(t *testing.T) {
 	const n = 10
 
-	// Add a bunch of txs.
-	for i := 1; i <= n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err, err)
-		rr.Wait()
+	tests := map[string]struct {
+		app *kvstore.Application
+	}{
+		"test_lanes": {
+			app: kvstore.NewInMemoryApplication(),
+		},
+		"test_no_lanes": {
+			app: kvstore.NewInMemoryApplicationWithoutLanes(),
+		},
 	}
-	require.Equal(t, n, mp.Size())
 
-	gossipIter := NewBlockingWRRIterator(mp)
-	reapIter := NewWRRIterator(mp)
+	for test, config := range tests {
+		cc := proxy.NewLocalClientCreator(config.app)
+		mp, cleanup := newMempoolWithApp(cc)
+		defer cleanup()
+		// Add a bunch of txs.
+		for i := 1; i <= n; i++ {
+			tx := kvstore.NewTxFromID(i)
+			rr, err := mp.CheckTx(tx, "")
+			require.NoError(t, err, err)
+			rr.Wait()
+		}
 
-	// Check that both iterators return the same entry as in the reaped txs.
-	txs := make([]types.Tx, n)
-	reapedTxs := mp.ReapMaxTxs(n)
-	for i, reapedTx := range reapedTxs {
-		entry := <-gossipIter.WaitNextCh()
-		// entry can be nil only when an entry is removed concurrently.
-		require.NotNil(t, entry)
-		gossipTx := entry.Tx()
+		require.Equal(t, n, mp.Size())
 
-		reapTx := reapIter.Next().Tx()
-		txs[i] = reapTx
+		gossipIter := NewBlockingWRRIterator(mp)
+		reapIter := NewWRRIterator(mp)
 
-		require.EqualValues(t, reapTx, gossipTx)
-		require.EqualValues(t, reapTx, reapedTx)
+		// Check that both iterators return the same entry as in the reaped txs.
+		txs := make([]types.Tx, n)
+		reapedTxs := mp.ReapMaxTxs(n)
+		for i, reapedTx := range reapedTxs {
+			entry := <-gossipIter.WaitNextCh()
+			// entry can be nil only when an entry is removed concurrently.
+			require.NotNil(t, entry)
+			gossipTx := entry.Tx()
+
+			reapTx := reapIter.Next().Tx()
+			txs[i] = reapTx
+
+			require.EqualValues(t, reapTx, gossipTx)
+			require.EqualValues(t, reapTx, reapedTx)
+			if test == "test_no_lanes" {
+				require.EqualValues(t, reapTx, kvstore.NewTxFromID(i+1))
+			}
+		}
+		require.EqualValues(t, txs, reapedTxs)
+
+		err := mp.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
+		require.NoError(t, err)
+		require.Zero(t, mp.Size())
 	}
-	require.EqualValues(t, txs, reapedTxs)
-
-	err := mp.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-	require.NoError(t, err)
-	require.Zero(t, mp.Size())
-}
-
-func TestReapOrderMatchesGossipOrderNolanes(t *testing.T) {
-	app := kvstore.NewInMemoryApplicationWithoutLanes()
-	cc := proxy.NewLocalClientCreator(app)
-	mp, cleanup := newMempoolWithApp(cc)
-	defer cleanup()
-
-	const n = 10
-
-	// Add a bunch of txs.
-	for i := 1; i <= n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err, err)
-		rr.Wait()
-	}
-	require.Equal(t, n, mp.Size())
-
-	gossipIter := NewBlockingWRRIterator(mp)
-	reapIter := NewWRRIterator(mp)
-
-	// Check that both iterators return the same entry as in the reaped txs.
-	txs := make([]types.Tx, n)
-	reapedTxs := mp.ReapMaxTxs(n)
-	for i, reapedTx := range reapedTxs {
-		entry := <-gossipIter.WaitNextCh()
-		// entry can be nil only when an entry is removed concurrently.
-		require.NotNil(t, entry)
-		gossipTx := entry.Tx()
-
-		reapTx := reapIter.Next().Tx()
-		txs[i] = reapTx
-
-		require.EqualValues(t, reapTx, gossipTx)
-		require.EqualValues(t, reapTx, reapedTx)
-		require.EqualValues(t, reapTx, kvstore.NewTxFromID(i+1))
-	}
-	require.EqualValues(t, txs, reapedTxs)
-
-	err := mp.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-	require.NoError(t, err)
-	require.Zero(t, mp.Size())
 }

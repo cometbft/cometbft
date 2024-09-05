@@ -2200,6 +2200,7 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		}
 
 		cs.ProposalBlock = block
+		cs.ProposalBlockParts.Unlock()
 
 		// NOTE: it's possible to receive complete proposal blocks for future rounds without having the proposal
 		cs.Logger.Info("Received complete proposal block", "height", cs.ProposalBlock.Height, "hash", cs.ProposalBlock.Hash())
@@ -2207,7 +2208,6 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		if err := cs.eventBus.PublishEventCompleteProposal(cs.CompleteProposalEvent()); err != nil {
 			cs.Logger.Error("Failed publishing event complete proposal", "err", err)
 		}
-		cs.ProposalBlockParts.Unlock()
 	}
 	return added, nil
 }

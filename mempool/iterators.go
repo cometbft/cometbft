@@ -24,7 +24,7 @@ func (iter *WRRIterator) nextLane() types.Lane {
 // Non-blocking version of the WRR iterator to be used for reaping and
 // rechecking transactions.
 //
-// This iterator does not support changes on the underlying mempool once initialised (or `Reset`),
+// This iterator does not support changes on the underlying mempool once initialized (or `Reset`),
 // therefore the lock must be held on the mempool when iterating.
 type NonBlockingWRRIterator struct {
 	WRRIterator

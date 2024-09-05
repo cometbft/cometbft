@@ -203,7 +203,6 @@ func NewApplication(cfg *Config) (*Application, error) {
 	}
 
 	lanes, lanePriorities := LaneDefinitions(cfg.Lanes)
-	fmt.Println("APP Lane priorities", lanePriorities)
 	return &Application{
 		logger:         logger,
 		state:          state,
@@ -356,7 +355,6 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)
-	fmt.Println("LANE ", lane)
 
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }

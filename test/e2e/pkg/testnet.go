@@ -229,7 +229,6 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		PbtsUpdateHeight: manifest.PbtsUpdateHeight,
 		lanePriorities:   lanePriorities,
 	}
-
 	if manifest.InitialHeight > 0 {
 		testnet.InitialHeight = manifest.InitialHeight
 	}

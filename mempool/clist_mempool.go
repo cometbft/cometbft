@@ -434,7 +434,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID, lane types.Lane)
 	// Get lane's clist.
 	txs, ok := mem.lanes[lane]
 	if !ok {
-		mem.logger.Error("Lane does not exist, not adding TX", "tx", log.NewLazySprintf("%v", tx.Hash()), "lane", lane)
+		mem.logger.Error("Lane does not exist, not adding TX", "tx", log.NewLazySprintf("%X", tx.Hash()), "lane", lane)
 		return false
 	}
 
@@ -760,7 +760,7 @@ func (mem *CListMempool) recheckTxs() {
 			Type: abci.CHECK_TX_TYPE_RECHECK,
 		})
 		if err != nil {
-			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%v", memTx.Tx().Hash()), err))
+			panic(fmt.Errorf("(re-)CheckTx request for tx %s failed: %w", log.NewLazySprintf("%X", memTx.Tx().Hash()), err))
 		}
 		resReq.SetCallback(mem.handleRecheckTxResponse(memTx.Tx()))
 	}

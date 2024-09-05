@@ -24,8 +24,8 @@ func (iter *WRRIterator) nextLane() types.Lane {
 // Non-blocking version of the WRR iterator to be used for reaping and
 // rechecking transactions.
 //
-// Lock must be held on the mempool when iterating: the mempool cannot be
-// modified while iterating.
+// This iterator does not support changes on the underlying mempool once initialised (or `Reset`),
+// therefore the lock must be held on the mempool when iterating.
 type NonBlockingWRRIterator struct {
 	WRRIterator
 }
@@ -90,6 +90,7 @@ func (iter *NonBlockingWRRIterator) Next() Entry {
 // BlockingWRRIterator implements a blocking version of the WRR iterator,
 // meaning that when no transaction is available, it will wait until a new one
 // is added to the mempool.
+// Unlike `NonBlockingWRRIterator`, this iterator is expected to work with an evolving mempool.
 type BlockingWRRIterator struct {
 	WRRIterator
 	mp *CListMempool
@@ -119,11 +120,9 @@ func (iter *BlockingWRRIterator) WaitNextCh() <-chan Entry {
 		lane := iter.PickLane()
 		if entry := iter.Next(lane); entry != nil {
 			ch <- entry.Value.(Entry)
-			close(ch)
-		} else {
-			// Unblock the receiver (it will receive nil).
-			close(ch)
 		}
+		// Unblock the receiver (it may receive nil).
+		close(ch)
 	}()
 	return ch
 }

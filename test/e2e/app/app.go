@@ -309,6 +309,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 			panic(fmt.Sprintf("txHeight is less than current height; txHeight %v, height %v", txHeight, stHeight))
 		}
 		if stHeight > txHeight.(uint64)+txTTL {
+			app.logger.Debug("Application CheckTx", "msg", "transaction expired", "tx_hash", cmttypes.Tx.Hash(req.Tx), "seen_height", txHeight, "current_height", stHeight)
 			app.seenTxs.Delete(txKey)
 			return &abci.CheckTxResponse{
 				Code: kvstore.CodeTypeExpired,

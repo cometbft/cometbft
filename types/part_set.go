@@ -170,6 +170,11 @@ type PartSet struct {
 	// a count of the total size (in bytes). Used to ensure that the
 	// part set doesn't exceed the maximum block bytes
 	byteSize int64
+
+	// A simple workaround to prevent the consensus Reactor from reading
+	// from an incompleted, and therefore locked part set.
+	// Addresses: https://github.com/cometbft/cometbft/issues/1742
+	locked bool
 }
 
 // NewPartSetFromData returns an immutable, full PartSet from the data bytes.
@@ -327,6 +332,24 @@ func (ps *PartSet) GetReader() io.Reader {
 		panic("Cannot GetReader() on incomplete PartSet")
 	}
 	return NewPartSetReader(ps.parts)
+}
+
+func (ps *PartSet) Locked() bool {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	return ps.locked
+}
+
+func (ps *PartSet) Lock() {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	ps.locked = true
+}
+
+func (ps *PartSet) Unlock() {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	ps.locked = false
 }
 
 type PartSetReader struct {

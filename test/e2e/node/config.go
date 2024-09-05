@@ -51,7 +51,7 @@ type Config struct {
 	PbtsEnableHeight int64 `toml:"pbts_enable_height"`
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
 
-	DoNotUseLanes bool `toml:"no_lanes"`
+	NoLanes bool `toml:"no_lanes"`
 
 	Lanes map[string]uint32 `toml:"lanes"`
 }
@@ -76,7 +76,7 @@ func (cfg *Config) App() *app.Config {
 		ABCIRequestsLoggingEnabled: cfg.ABCIRequestsLoggingEnabled,
 		PbtsEnableHeight:           cfg.PbtsEnableHeight,
 		PbtsUpdateHeight:           cfg.PbtsUpdateHeight,
-		DoNotUseLanes:              cfg.DoNotUseLanes,
+		NoLanes:                    cfg.NoLanes,
 		Lanes:                      cfg.Lanes,
 	}
 }

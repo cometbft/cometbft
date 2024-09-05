@@ -91,7 +91,7 @@ type Testnet struct {
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
 	LoadMaxTxs                                           int
-	DoNotUseLanes                                        bool
+	NoLanes                                              bool
 	LoadLaneWeights                                      []uint
 	Lanes                                                map[string]uint32
 	ABCIProtocol                                         string
@@ -203,7 +203,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadTxBatchSize:                  manifest.LoadTxBatchSize,
 		LoadTxConnections:                manifest.LoadTxConnections,
 		LoadMaxTxs:                       manifest.LoadMaxTxs,
-		DoNotUseLanes:                    manifest.DoNotUseLanes,
+		NoLanes:                          manifest.NoLanes,
 		LoadLaneWeights:                  manifest.LoadLaneWeights,
 		Lanes:                            manifest.Lanes,
 		ABCIProtocol:                     manifest.ABCIProtocol,

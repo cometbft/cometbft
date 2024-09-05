@@ -342,7 +342,7 @@ func MakeAppConfig(node *e2e.Node) ([]byte, error) {
 		"abci_requests_logging_enabled": node.Testnet.ABCITestsEnabled,
 		"pbts_enable_height":            node.Testnet.PbtsEnableHeight,
 		"pbts_update_height":            node.Testnet.PbtsUpdateHeight,
-		"no_lanes":                      node.Testnet.DoNotUseLanes,
+		"no_lanes":                      node.Testnet.NoLanes,
 		"lanes":                         node.Testnet.Lanes,
 	}
 	switch node.ABCIProtocol {

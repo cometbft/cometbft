@@ -143,7 +143,7 @@ type Config struct {
 	// If true, disables the use of lanes by the application.
 	// Used to simulate networks that do not want to use lanes, running
 	// on top of CometBFT with lane support.
-	DoNotUseLanes bool `toml:"no_lanes"`
+	NoLanes bool `toml:"no_lanes"`
 
 	// Optional custom definition of lanes to be used by the application
 	// If not used the application has a default set of lanes:
@@ -193,7 +193,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 	}
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	logger.Info("Application started!")
-	if cfg.DoNotUseLanes {
+	if cfg.NoLanes {
 		return &Application{
 			logger:    logger,
 			state:     state,
@@ -221,7 +221,7 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 	}
 
 	height, hash := app.state.Info()
-	if app.cfg.DoNotUseLanes {
+	if app.cfg.NoLanes {
 		return &abci.InfoResponse{
 			Version:          version.ABCIVersion,
 			AppVersion:       appVersion,
@@ -351,7 +351,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
-	if app.cfg.DoNotUseLanes {
+	if app.cfg.NoLanes {
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)

@@ -149,7 +149,7 @@ type Manifest struct {
 	// Used to disable lanes for testing behavior of
 	// networks that upgrade to a version of CometBFT
 	// that supports lanes but do not opt for using them.
-	DoNotUseLanes bool `toml:"no_lanes"`
+	NoLanes bool `toml:"no_lanes"`
 
 	// Optional custom definition of lanes to be used by the application
 	// If not used the application has a default set of lanes:

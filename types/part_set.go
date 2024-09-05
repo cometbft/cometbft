@@ -171,8 +171,8 @@ type PartSet struct {
 	// part set doesn't exceed the maximum block bytes
 	byteSize int64
 
-	// A simple workaround to prevent the consensus Reactor from reading
-	// from an incompleted, and therefore locked part set.
+	// Workaround to prevent the consensus Reactor from reading from an
+	// incomplete part set when the node is the round's proposer.
 	// Addresses: https://github.com/cometbft/cometbft/issues/1742
 	locked bool
 }

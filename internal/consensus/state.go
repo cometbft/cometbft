@@ -2090,6 +2090,13 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 	// TODO: We can check if Proposal is for a different block as this is a sign of misbehavior!
 	if cs.ProposalBlockParts == nil {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(proposal.BlockID.PartSetHeader)
+
+		// If we are the proposer, lock the PartSet until we load all
+		// the block parts, that should come just after this Proposal.
+		// Addresses: https://github.com/cometbft/cometbft/issues/1742
+		if bytes.Equal(pubKey.Bytes(), cs.privValidatorPubKey.Bytes()) {
+			cs.ProposalBlockParts.Lock()
+		}
 	}
 
 	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", pubKey.Address())
@@ -2200,6 +2207,7 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		if err := cs.eventBus.PublishEventCompleteProposal(cs.CompleteProposalEvent()); err != nil {
 			cs.Logger.Error("Failed publishing event complete proposal", "err", err)
 		}
+		cs.ProposalBlockParts.Unlock()
 	}
 	return added, nil
 }

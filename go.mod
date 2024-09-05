@@ -1,6 +1,7 @@
 module github.com/cometbft/cometbft
 
-go 1.22
+go 1.22.5
+
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/adlio/schema v1.3.6
@@ -44,6 +45,7 @@ require (
 	github.com/cometbft/cometbft/api v1.0.0-rc.1
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/dgraph-io/badger/v4 v4.2.0
+	github.com/ethereum/go-ethereum v1.14.8
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/google/uuid v1.6.0
@@ -62,7 +64,7 @@ require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/DataDog/zstd v1.4.5 // indirect
-	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -93,12 +95,13 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/snappy v0.0.4 // indirect
+	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/flatbuffers v2.0.8+incompatible // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/holiman/uint256 v1.3.1 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
@@ -136,9 +139,7 @@ require (
 	go.etcd.io/bbolt v1.3.10 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
-	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

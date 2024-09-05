@@ -184,9 +184,11 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 
 // GenFilePV calls NewFilePV with a random ed25519 private key.
 func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey, error)) (*FilePV, error) {
+	// TODO Is this dealt with?
 	if keyGen == nil {
 		keyGen = func() (crypto.PrivKey, error) {
 			return ed25519.GenPrivKey(), nil
+			// TODO: try secp256k1eth.GenPrivKey()
 		}
 	}
 	key, err := keyGen()

@@ -23,6 +23,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/bls12381"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/secp256k1eth"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	grpcclient "github.com/cometbft/cometbft/rpc/grpc/client"
 	grpcprivileged "github.com/cometbft/cometbft/rpc/grpc/client/privileged"
@@ -692,7 +693,7 @@ func (n Node) ZoneIsSet() bool {
 	return len(n.Zone) > 0
 }
 
-// keyGenerator generates pseudorandom Ed25519 keys based on a seed.
+// keyGenerator generates pseudorandom secp256k1eth keys based on a seed.
 type keyGenerator struct {
 	random *rand.Rand
 }
@@ -721,6 +722,8 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 		return pk
 	case ed25519.KeyType:
 		return ed25519.GenPrivKeyFromSecret(seed)
+	case secp256k1eth.KeyType:
+		return secp256k1eth.GenPrivKeySecp256k1(seed)
 	default:
 		panic("KeyType not supported") // should not make it this far
 	}

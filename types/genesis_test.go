@@ -106,6 +106,10 @@ func TestBasicGenesisDoc(t *testing.T) {
 		ChainID:    "abc",
 		Validators: []GenesisValidator{{pubkey.Address(), pubkey, 10, "myval"}},
 	}
+	// TODO revert?
+	baseGenDoc.ConsensusParams = DefaultConsensusParams()
+	baseGenDoc.ConsensusParams.Validator.PubKeyTypes = []string{ABCIPubKeyTypeEd25519}
+
 	genDocBytes, err = cmtjson.Marshal(baseGenDoc)
 	require.NoError(t, err, "error marshaling genDoc")
 
@@ -177,12 +181,15 @@ func TestGenesisValidatorHash(t *testing.T) {
 
 func randomGenesisDoc() *GenesisDoc {
 	pubkey := ed25519.GenPrivKey().PubKey()
+	// TODO revert?
+	c := DefaultConsensusParams()
+	c.Validator.PubKeyTypes = []string{"ed25519"}
 	return &GenesisDoc{
 		GenesisTime:     cmttime.Now(),
 		ChainID:         "abc",
 		InitialHeight:   1000,
 		Validators:      []GenesisValidator{{pubkey.Address(), pubkey, 10, "myval"}},
-		ConsensusParams: DefaultConsensusParams(),
+		ConsensusParams: c,
 		AppHash:         []byte{1, 2, 3},
 	}
 }

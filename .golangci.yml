@@ -93,6 +93,7 @@ linters-settings:
           - github.com/creachadair/atomicfile
           - github.com/creachadair/tomledit
           - github.com/dgraph-io/badger/v4
+          - github.com/ethereum/go-ethereum/crypto
           - github.com/go-git/go-git/v5
           - github.com/go-kit
           - github.com/go-logfmt/logfmt

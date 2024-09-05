@@ -63,6 +63,7 @@ func TestPubKeyToFromProto(t *testing.T) {
 		_, err = PubKeyToProto(bls12381.PubKey{})
 		assert.Error(t, err)
 	}
+	// TODO secp ETH
 
 	// unsupported key type
 	_, err = PubKeyToProto(unsupportedPubKey{})
@@ -116,4 +117,5 @@ func TestPubKeyFromTypeAndBytes(t *testing.T) {
 		_, err = PubKeyFromTypeAndBytes(bls12381.KeyType, []byte{})
 		assert.Error(t, err)
 	}
+	// TODO secp ETH
 }

@@ -60,7 +60,7 @@ func QueryHeightsRange(id, from, to) ([]Height)
 
 > This function can be used if the relayer has no information about
 > the IBC component. This allows late-joining relayers to also
-> participate in fork dection and the generation in proof of
+> participate in fork detection and the generation in proof of
 > fork. Alternatively, we may also postulate that relayers are not
 > responsible to detect forks for heights before they started (and
 > subscribed to the transactions reporting fresh headers being

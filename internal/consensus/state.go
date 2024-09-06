@@ -2242,7 +2242,7 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 		// If the vote height is off, we'll just ignore it,
 		// But if it's a conflicting sig, add it to the cs.evpool.
 		// If it's otherwise invalid, punish peer.
-		//nolint: gocritic
+
 		if voteErr, ok := err.(*types.ErrVoteConflictingVotes); ok {
 			if cs.privValidatorPubKey == nil {
 				return false, ErrPubKeyIsNotSet
@@ -2268,19 +2268,14 @@ func (cs *State) tryAddVote(vote *types.Vote, peerID p2p.ID) (bool, error) {
 			)
 
 			return added, err
-		} else if errors.Is(err, types.ErrVoteNonDeterministicSignature) {
-			cs.Logger.Info("Vote has non-deterministic signature", "err", err)
-		} else if errors.Is(err, types.ErrInvalidVoteExtension) {
-			cs.Logger.Info("Vote has invalid extension")
-		} else {
-			// Either
-			// 1) bad peer OR
-			// 2) not a bad peer? this can also err sometimes with "Unexpected step" OR
-			// 3) tmkms use with multiple validators connecting to a single tmkms instance
-			// 		(https://github.com/tendermint/tendermint/issues/3839).
-			cs.Logger.Info("Failed attempting to add vote", "err", err)
-			return added, ErrAddingVote
 		}
+
+		// Either
+		// 1) bad peer OR
+		// 2) not a bad peer? this can also err sometimes with "Unexpected step" OR
+		// 3) tmkms use with multiple validators connecting to a single tmkms instance
+		// 		(https://github.com/tendermint/tendermint/issues/3839).
+		return added, ErrAddingVote{Err: err}
 	}
 
 	return added, nil

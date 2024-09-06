@@ -8,6 +8,39 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+<<<<<<< HEAD
+=======
+var (
+
+	// ErrFailedHeaderCrossReferencing is returned when the detector was not able to cross reference the header
+	// with any of the connected witnesses.
+	ErrFailedHeaderCrossReferencing = errors.New("all witnesses have either not responded, don't have the " +
+		"blocks or sent invalid blocks. You should look to change your witnesses " +
+		"or review the light client's logs for more information")
+	// ErrLightClientAttack is returned when the light client has detected an attempt
+	// to verify a false header and has sent the evidence to either a witness or primary.
+	ErrLightClientAttack = errors.New(`attempted attack detected.
+Light client received valid conflicting header from witness.
+Unable to verify header. Evidence has been sent to both providers.
+Check logs for full evidence and trace`)
+
+	// ErrNoWitnesses means that there are not enough witnesses connected to
+	// continue running the light client.
+	ErrNoWitnesses               = errors.New("no witnesses connected. please reset light client")
+	ErrNilOrSinglePrimaryTrace   = errors.New("nil or single block primary trace")
+	ErrHeaderHeightAdjacent      = errors.New("headers must be non adjacent in height")
+	ErrHeaderHeightNotAdjacent   = errors.New("headers must be adjacent in height")
+	ErrNegativeOrZeroPeriod      = errors.New("negative or zero period")
+	ErrNegativeHeight            = errors.New("negative height")
+	ErrNegativeOrZeroHeight      = errors.New("negative or zero height")
+	ErrInvalidBlockTime          = errors.New("expected traceblock to have a lesser time than the target block")
+	ErrRemoveStoredBlocksRefused = errors.New("refused to remove the stored light blocks despite hashes mismatch")
+	ErrNoHeadersExist            = errors.New("no headers exist")
+	ErrNilHeader                 = errors.New("nil header")
+	ErrEmptyTrustedStore         = errors.New("trusted store is empty")
+)
+
+>>>>>>> 18786e157 (fix(light): print an err if trusted store is empty (#4004))
 // ErrOldHeaderExpired means the old (trusted) header has expired according to
 // the given trustingPeriod and current time. If so, the light client must be
 // reset subjectively.

@@ -88,7 +88,7 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 
 			Buckets: stdprometheus.ExponentialBuckets(0.0002, 10, 5),
 		}, append(labels, "method")).With(labelsAndValues...),
-		BlockEventsDurationSeconds: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+		FireBlockEventsDelaySeconds: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "block_events_duration_seconds",
@@ -111,6 +111,6 @@ func NopMetrics() *Metrics {
 		TxIndexerBaseHeight:                    discard.NewGauge(),
 		BlockIndexerBaseHeight:                 discard.NewGauge(),
 		StoreAccessDurationSeconds:             discard.NewHistogram(),
-		BlockEventsDurationSeconds:             discard.NewGauge(),
+		FireBlockEventsDelaySeconds:             discard.NewGauge(),
 	}
 }

@@ -713,7 +713,7 @@ func fireEvents(
 	metrics *Metrics,
 ) {
 	defer func(start time.Time) {
-		metrics.BlockEventsDurationSeconds.Set(cmttime.Since(start).Seconds())
+		metrics.FireBlockEventsDelaySeconds.Set(cmttime.Since(start).Seconds())
 	}(cmttime.Now())
 
 	if err := eventBus.PublishEventNewBlock(types.EventDataNewBlock{

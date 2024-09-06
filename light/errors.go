@@ -8,6 +8,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+var ErrEmptyTrustedStore = errors.New("trusted store is empty")
+
 // ErrOldHeaderExpired means the old (trusted) header has expired according to
 // the given trustingPeriod and current time. If so, the light client must be
 // reset subjectively.

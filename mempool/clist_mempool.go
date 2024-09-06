@@ -113,7 +113,7 @@ func NewCListMempool(
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
 		return mp.sortedLanes[i] > mp.sortedLanes[j]
 	})
-	mp.recheck = newRecheck(NewNonBlockingIterator(mp))
+	mp.recheck = newRecheck(mp)
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache(cfg.CacheSize)
@@ -793,9 +793,9 @@ type recheck struct {
 	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided
 }
 
-func newRecheck(iter *NonBlockingIterator) *recheck {
+func newRecheck(mp *CListMempool) *recheck {
 	r := recheck{}
-	r.iter = iter
+	r.iter = NewNonBlockingIterator(mp)
 	return &r
 }
 

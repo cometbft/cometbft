@@ -30,13 +30,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "lane_size",
-			Help:      "Number of uncommitted transactions in each lane.",
+			Help:      "Number of uncommitted transactions per lane.",
 		}, append(labels, "lane")).With(labelsAndValues...),
 		LaneBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "lane_bytes",
-			Help:      "Size in bytes of each lane.",
+			Help:      "Number of used bytes per lane.",
 		}, append(labels, "lane")).With(labelsAndValues...),
 		TxLifeSpan: prometheus.NewHistogramFrom(stdprometheus.HistogramOpts{
 			Namespace: namespace,

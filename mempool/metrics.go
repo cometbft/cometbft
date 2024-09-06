@@ -21,10 +21,10 @@ type Metrics struct {
 	// Total size of the mempool in bytes.
 	SizeBytes metrics.Gauge
 
-	// Number of uncommitted transactions in each lane.
+	// Number of uncommitted transactions per lane.
 	LaneSize metrics.Gauge `metrics_labels:"lane"`
 
-	// Size in bytes of each lane.
+	// Number of used bytes per lane.
 	LaneBytes metrics.Gauge `metrics_labels:"lane"`
 
 	// TxLifeSpan measures the time each transaction has in the mempool, since

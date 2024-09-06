@@ -807,10 +807,11 @@ func (rc *recheck) init(mp *CListMempool) {
 	rc.iter = NewNonBlockingIterator(mp)
 
 	rc.cursor = rc.iter.Next()
+	rc.doneCh = make(chan struct{})
 	if rc.cursor == nil {
+		rc.setDone()
 		return
 	}
-	rc.doneCh = make(chan struct{})
 	rc.isRechecking.Store(true)
 	rc.recheckFull.Store(false)
 }
@@ -826,6 +827,7 @@ func (rc *recheck) setDone() {
 	rc.cursor = nil
 	rc.recheckFull.Store(false)
 	rc.isRechecking.Store(false)
+	close(rc.doneCh) // notify channel that recheck has finished
 }
 
 // findNextEntryMatching searches for the next transaction matching the given transaction, which
@@ -849,7 +851,6 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) (found bool) {
 
 	if rc.cursor == nil { // reached end of list
 		rc.setDone()
-		close(rc.doneCh) // notify channel that recheck has finished
 	}
 	return found
 }

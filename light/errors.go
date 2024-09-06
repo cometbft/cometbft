@@ -38,6 +38,7 @@ Check logs for full evidence and trace`)
 	ErrRemoveStoredBlocksRefused = errors.New("refused to remove the stored light blocks despite hashes mismatch")
 	ErrNoHeadersExist            = errors.New("no headers exist")
 	ErrNilHeader                 = errors.New("nil header")
+	ErrEmptyTrustedStore         = errors.New("trusted store is empty")
 )
 
 // ErrOldHeaderExpired means the old (trusted) header has expired according to

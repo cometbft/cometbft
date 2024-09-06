@@ -265,24 +265,13 @@ func (c *Client) restoreTrustedLightBlock() error {
 	if err != nil {
 		return fmt.Errorf("can't get last trusted light block height: %w", err)
 	}
-<<<<<<< HEAD
-
-	if lastHeight > 0 {
-		trustedBlock, err := c.trustedStore.LightBlock(lastHeight)
-		if err != nil {
-			return fmt.Errorf("can't get last trusted light block: %w", err)
-		}
-		c.latestTrustedBlock = trustedBlock
-		c.logger.Info("Restored trusted light block", "height", lastHeight)
-=======
 	if lastHeight == -1 {
 		return ErrEmptyTrustedStore
->>>>>>> 18786e157 (fix(light): print an err if trusted store is empty (#4004))
 	}
 
 	trustedBlock, err := c.trustedStore.LightBlock(lastHeight)
 	if err != nil {
-		return ErrGetTrustedBlock{Err: err}
+		return fmt.Errorf("can't get last trusted light block: %w", err)
 	}
 	c.latestTrustedBlock = trustedBlock
 	c.logger.Info("Restored trusted light block", "height", lastHeight)

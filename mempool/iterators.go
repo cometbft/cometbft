@@ -39,12 +39,12 @@ func NewNonBlockingIterator(mem *CListMempool) *NonBlockingIterator {
 	iter := &NonBlockingIterator{
 		WRRIterator: baseIter,
 	}
-	iter.Reset(mem.lanes)
+	iter.reset(mem.lanes)
 	return iter
 }
 
 // Reset must be called before every use of the iterator.
-func (iter *NonBlockingIterator) Reset(lanes map[types.Lane]*clist.CList) {
+func (iter *NonBlockingIterator) reset(lanes map[types.Lane]*clist.CList) {
 	iter.laneIndex = 0
 	for i := range iter.counters {
 		iter.counters[i] = 0

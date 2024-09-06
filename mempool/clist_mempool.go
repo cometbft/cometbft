@@ -735,7 +735,7 @@ func (mem *CListMempool) recheckTxs() {
 		return
 	}
 
-	mem.recheck.init(mem.lanes)
+	mem.recheck.init(mem)
 
 	iter := NewNonBlockingIterator(mem)
 	for {
@@ -799,12 +799,13 @@ func newRecheck(iter *NonBlockingIterator) *recheck {
 	return &r
 }
 
-func (rc *recheck) init(lanes map[types.Lane]*clist.CList) {
+func (rc *recheck) init(mp *CListMempool) {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
 	rc.numPendingTxs.Store(0)
-	rc.iter.Reset(lanes)
+	rc.iter = NewNonBlockingIterator(mp)
+
 	rc.cursor = rc.iter.Next()
 	if rc.cursor == nil {
 		return

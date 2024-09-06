@@ -921,6 +921,8 @@ func TestClient_NewClientFromEmptyTrustedStore(t *testing.T) {
 		assert.NotPanics(t, func() {
 			_, _ = c.VerifyLightBlockAtHeight(ctx, 2, bTime)
 		})
+	} else {
+		require.ErrorIs(t, err, light.ErrEmptyTrustedStore)
 	}
 }
 

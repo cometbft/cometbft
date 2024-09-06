@@ -26,17 +26,17 @@ func (iter *WRRIterator) nextLane() types.Lane {
 //
 // This iterator does not support changes on the underlying mempool once initialized (or `Reset`),
 // therefore the lock must be held on the mempool when iterating.
-type NonBlockingWRRIterator struct {
+type NonBlockingIterator struct {
 	WRRIterator
 }
 
-func NewWRRIterator(mem *CListMempool) *NonBlockingWRRIterator {
+func NewNonBlockingIterator(mem *CListMempool) *NonBlockingIterator {
 	baseIter := WRRIterator{
 		sortedLanes: mem.sortedLanes,
 		counters:    make(map[types.Lane]uint, len(mem.lanes)),
 		cursors:     make(map[types.Lane]*clist.CElement, len(mem.lanes)),
 	}
-	iter := &NonBlockingWRRIterator{
+	iter := &NonBlockingIterator{
 		WRRIterator: baseIter,
 	}
 	iter.Reset(mem.lanes)
@@ -44,7 +44,7 @@ func NewWRRIterator(mem *CListMempool) *NonBlockingWRRIterator {
 }
 
 // Reset must be called before every use of the iterator.
-func (iter *NonBlockingWRRIterator) Reset(lanes map[types.Lane]*clist.CList) {
+func (iter *NonBlockingIterator) Reset(lanes map[types.Lane]*clist.CList) {
 	iter.laneIndex = 0
 	for i := range iter.counters {
 		iter.counters[i] = 0
@@ -56,7 +56,7 @@ func (iter *NonBlockingWRRIterator) Reset(lanes map[types.Lane]*clist.CList) {
 }
 
 // Next returns the next element according to the WRR algorithm.
-func (iter *NonBlockingWRRIterator) Next() Entry {
+func (iter *NonBlockingIterator) Next() Entry {
 	lane := iter.sortedLanes[iter.laneIndex]
 	numEmptyLanes := 0
 	for {
@@ -87,22 +87,22 @@ func (iter *NonBlockingWRRIterator) Next() Entry {
 	return elem.Value.(*mempoolTx)
 }
 
-// BlockingWRRIterator implements a blocking version of the WRR iterator,
+// BlockingIterator implements a blocking version of the WRR iterator,
 // meaning that when no transaction is available, it will wait until a new one
 // is added to the mempool.
 // Unlike `NonBlockingWRRIterator`, this iterator is expected to work with an evolving mempool.
-type BlockingWRRIterator struct {
+type BlockingIterator struct {
 	WRRIterator
 	mp *CListMempool
 }
 
-func NewBlockingWRRIterator(mem *CListMempool) Iterator {
+func NewBlockingIterator(mem *CListMempool) Iterator {
 	iter := WRRIterator{
 		sortedLanes: mem.sortedLanes,
 		counters:    make(map[types.Lane]uint, len(mem.sortedLanes)),
 		cursors:     make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
 	}
-	return &BlockingWRRIterator{
+	return &BlockingIterator{
 		WRRIterator: iter,
 		mp:          mem,
 	}
@@ -113,7 +113,7 @@ func NewBlockingWRRIterator(mem *CListMempool) Iterator {
 // the list.
 //
 // Unsafe for concurrent use by multiple goroutines.
-func (iter *BlockingWRRIterator) WaitNextCh() <-chan Entry {
+func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
 		// Add the next entry to the channel if not nil.
@@ -132,7 +132,7 @@ func (iter *BlockingWRRIterator) WaitNextCh() <-chan Entry {
 // meaning that the number of accessed entries in the lane has not yet reached
 // its priority value in the current WRR iteration. It will block until a
 // transaction is available in any lane.
-func (iter *BlockingWRRIterator) PickLane() types.Lane {
+func (iter *BlockingIterator) PickLane() types.Lane {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
 
@@ -178,7 +178,7 @@ func (iter *BlockingWRRIterator) PickLane() types.Lane {
 // entry from the selected lane. On subsequent calls, Next will return the next entries from the
 // same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
 // The next time, Next will select the successive lane with lower priority.
-func (iter *BlockingWRRIterator) Next(lane types.Lane) *clist.CElement {
+func (iter *BlockingIterator) Next(lane types.Lane) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
 	if cursor := iter.cursors[lane]; cursor != nil {

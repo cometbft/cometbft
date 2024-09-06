@@ -183,7 +183,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	addRandomTxs(t, mp, 1)
-	iter := NewBlockingWRRIterator(mp)
+	iter := NewBlockingIterator(mp)
 	tx0 := <-iter.WaitNextCh()
 	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")

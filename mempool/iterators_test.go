@@ -34,7 +34,7 @@ func TestIteratorNonBlocking(t *testing.T) {
 	}
 	require.Equal(t, n, mp.Size())
 
-	iter := NewWRRIterator(mp)
+	iter := NewNonBlockingIterator(mp)
 	expectedOrder := []int{
 		0, 11, 22, 33, 44, 55, 66, // lane 7
 		1, 2, 4, // lane 3
@@ -91,7 +91,7 @@ func TestIteratorNonBlockingOneLane(t *testing.T) {
 	}
 	require.Equal(t, 10, mp.Size())
 
-	iter := NewWRRIterator(mp)
+	iter := NewNonBlockingIterator(mp)
 	expectedOrder := []int{0, 11, 22, 33, 44, 55, 66, 77, 88, 99}
 
 	var next Entry
@@ -138,7 +138,7 @@ func TestIteratorRace(t *testing.T) {
 			defer wg.Done()
 
 			for counter.Load() < int64(numTxs) {
-				iter := NewBlockingWRRIterator(mp)
+				iter := NewBlockingIterator(mp)
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
@@ -154,7 +154,7 @@ func TestIteratorRace(t *testing.T) {
 			defer wg.Done()
 
 			for counter.Load() < int64(numTxs) {
-				iter := NewBlockingWRRIterator(mp)
+				iter := NewBlockingIterator(mp)
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
@@ -200,7 +200,7 @@ func TestIteratorEmptyLanes(t *testing.T) {
 	defer cleanup()
 
 	go func() {
-		iter := NewBlockingWRRIterator(mp)
+		iter := NewBlockingIterator(mp)
 		require.Zero(t, mp.Size())
 		entry := <-iter.WaitNextCh()
 		require.NotNil(t, entry)
@@ -234,7 +234,7 @@ func TestIteratorNoLanes(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		iter := NewBlockingWRRIterator(mp)
+		iter := NewBlockingIterator(mp)
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -285,7 +285,7 @@ func TestIteratorExactOrder(t *testing.T) {
 		waitForNumTxsInMempool(numTxs, mp)
 		t.Log("Mempool full, starting to pick up transactions", mp.Size())
 
-		iter := NewBlockingWRRIterator(mp)
+		iter := NewBlockingIterator(mp)
 		for i := 0; i < numTxs; i++ {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -336,7 +336,7 @@ func TestIteratorCountOnly(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		iter := NewBlockingWRRIterator(mp)
+		iter := NewBlockingIterator(mp)
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -386,8 +386,8 @@ func TestReapMatchesGossipOrder(t *testing.T) {
 
 		require.Equal(t, n, mp.Size())
 
-		gossipIter := NewBlockingWRRIterator(mp)
-		reapIter := NewWRRIterator(mp)
+		gossipIter := NewBlockingIterator(mp)
+		reapIter := NewNonBlockingIterator(mp)
 
 		// Check that both iterators return the same entry as in the reaped txs.
 		txs := make([]types.Tx, n)

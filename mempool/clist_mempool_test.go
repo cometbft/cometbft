@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -184,8 +183,9 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	addRandomTxs(t, mp, 1)
-	iter := mp.NewIterator()
+	iter := NewBlockingIterator(mp)
 	tx0 := <-iter.WaitNextCh()
+	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
 	require.Len(t, tx0.Tx(), 20, "Tx is longer than 20 bytes")
@@ -217,6 +217,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	}
 	for tcIndex, tt := range tests {
 		addRandomTxs(t, mp, tt.numTxsToCreate)
+		require.Equal(t, tt.numTxsToCreate, mp.Size())
 		got := mp.ReapMaxBytesMaxGas(tt.maxBytes, tt.maxGas)
 		require.Len(t, got, tt.expectedNumTxs, "Got %d txs, expected %d, tc #%d",
 			len(got), tt.expectedNumTxs, tcIndex)
@@ -261,6 +262,36 @@ func TestMempoolFilters(t *testing.T) {
 		require.Equal(t, tt.expectedNumTxs, mp.Size(), "mempool had the incorrect size, on test case %d", tcIndex)
 		mp.Flush()
 	}
+}
+
+func TestMempoolAddTxLane(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	for i := 0; i < 100; i++ {
+		tx := kvstore.NewTxFromID(i)
+		rr, err := mp.CheckTx(tx, noSender)
+		require.NoError(t, err)
+		rr.Wait()
+
+		// Check that the lane stored in the mempool entry is the same as the
+		// one assigned by the application.
+		entry := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx)
+		require.Equal(t, kvstoreAssignLane(i), entry.lane, "id %x", tx)
+	}
+}
+
+func kvstoreAssignLane(key int) types.Lane {
+	lane := 3
+	if key%11 == 0 {
+		lane = 7
+	} else if key%3 == 0 {
+		lane = 1
+	}
+	return types.Lane(lane)
 }
 
 func TestMempoolUpdate(t *testing.T) {
@@ -739,11 +770,13 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	err = mp.FlushAppConn()
 	require.NoError(t, err)
 
-	// tx0 should appear only once in mp.txs
+	// tx0 should appear only once in mp.lanes
 	found := 0
-	for e := mp.txs.Front(); e != nil; e = e.Next() {
-		if types.Tx.Key(e.Value.(*mempoolTx).tx) == types.Tx.Key(tx0) {
-			found++
+	for _, lane := range mp.sortedLanes {
+		for e := mp.lanes[lane].Front(); e != nil; e = e.Next() {
+			if types.Tx.Key(e.Value.(*mempoolTx).Tx()) == types.Tx.Key(tx0) {
+				found++
+			}
 		}
 	}
 	assert.Equal(t, 1, found)
@@ -939,7 +972,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	// Check that recheck has not started.
 	require.True(t, mp.recheck.done())
 	require.Nil(t, mp.recheck.cursor)
-	require.Nil(t, mp.recheck.end)
 	require.False(t, mp.recheck.isRechecking.Load())
 	mockClient.AssertExpectations(t)
 
@@ -968,8 +1000,6 @@ func TestMempoolAsyncRecheckTxReturnError(t *testing.T) {
 	require.True(t, mp.recheck.done())
 	require.False(t, mp.recheck.isRechecking.Load())
 	require.Nil(t, mp.recheck.cursor)
-	require.NotNil(t, mp.recheck.end)
-	require.Equal(t, mp.recheck.end, mp.txs.Back())
 	require.Equal(t, len(txs)-1, mp.Size()) // one invalid tx was removed
 	require.Equal(t, int32(2), mp.recheck.numPendingTxs.Load())
 
@@ -1040,44 +1070,6 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	require.Zero(t, mp.Size())
 }
 
-func TestMempoolIterator(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
-	defer cleanup()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	n := numTxs
-
-	// Spawn a goroutine that iterates on the list until counting n entries.
-	counter := 0
-	go func() {
-		defer wg.Done()
-
-		iter := mp.NewIterator()
-		for counter < n {
-			entry := <-iter.WaitNextCh()
-			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
-			counter++
-		}
-	}()
-
-	// Add n transactions with sequential ids.
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err)
-		rr.Wait()
-	}
-
-	wg.Wait()
-	require.Equal(t, n, counter)
-}
-
 func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
 	tb.Helper()
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
@@ -1111,6 +1103,12 @@ func newRemoteApp(tb testing.TB, addr string, app abci.Application) service.Serv
 func newReqRes(tx types.Tx, code uint32, requestType abci.CheckTxType) *abciclient.ReqRes {
 	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
 	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code})
+	return reqRes
+}
+
+func newReqResWithLanes(tx types.Tx, code uint32, requestType abci.CheckTxType, lane uint32) *abciclient.ReqRes {
+	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
+	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code, Lane: lane})
 	return reqRes
 }
 

@@ -735,7 +735,7 @@ func (mem *CListMempool) recheckTxs() {
 		return
 	}
 
-	mem.recheck.init(mem)
+	mem.recheck.init()
 
 	iter := NewNonBlockingIterator(mem)
 	for {
@@ -790,21 +790,23 @@ type recheck struct {
 	doneCh        chan struct{} // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32  // number of transactions still pending to recheck
 	isRechecking  atomic.Bool   // true iff the rechecking process has begun and is not yet finished
-	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided
+	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided\
+	mem           *CListMempool
 }
 
 func newRecheck(mp *CListMempool) *recheck {
 	r := recheck{}
 	r.iter = NewNonBlockingIterator(mp)
+	r.mem = mp
 	return &r
 }
 
-func (rc *recheck) init(mp *CListMempool) {
+func (rc *recheck) init() {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
 	rc.numPendingTxs.Store(0)
-	rc.iter = NewNonBlockingIterator(mp)
+	rc.iter = NewNonBlockingIterator(rc.mem)
 
 	rc.cursor = rc.iter.Next()
 	rc.doneCh = make(chan struct{})

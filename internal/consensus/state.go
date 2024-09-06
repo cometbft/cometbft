@@ -2093,7 +2093,6 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 
 		// If we are the proposer, lock the PartSet until we load all
 		// the block parts, that should come just after this Proposal.
-		// Addresses: https://github.com/cometbft/cometbft/issues/1742
 		if bytes.Equal(pubKey.Bytes(), cs.privValidatorPubKey.Bytes()) {
 			cs.ProposalBlockParts.Lock()
 		}

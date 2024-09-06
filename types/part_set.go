@@ -173,7 +173,6 @@ type PartSet struct {
 
 	// Workaround to prevent the consensus Reactor from reading from an
 	// incomplete part set when the node is the round's proposer.
-	// Addresses: https://github.com/cometbft/cometbft/issues/1742
 	locked bool
 }
 

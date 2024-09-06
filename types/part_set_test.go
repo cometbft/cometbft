@@ -68,6 +68,8 @@ func TestBasicPartSet(t *testing.T) {
 	// Test locking
 	partSet2.Lock()
 	assert.True(t, partSet2.IsLocked())
+	partSet2.Lock()
+	assert.True(t, partSet2.IsLocked())
 	partSet2.Unlock()
 	assert.False(t, partSet2.IsLocked())
 	partSet2.Unlock()

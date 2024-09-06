@@ -274,6 +274,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 	txSize := len(tx)
 
 	if err := mem.isFull(txSize); err != nil {
+		mem.metrics.RejectedTxs.Add(1)
 		return nil, err
 	}
 
@@ -359,6 +360,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		if err := mem.isFull(len(tx)); err != nil {
 			mem.forceRemoveFromCache(tx) // mempool might have space later
 			mem.logger.Error(err.Error())
+			mem.metrics.RejectedTxs.Add(1)
 			return
 		}
 
@@ -375,6 +377,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 				"height", mem.height.Load(),
 				"total", mem.Size(),
 			)
+			mem.metrics.RejectedTxs.Add(1)
 			return
 		}
 
@@ -500,6 +503,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 				// update metrics
 				mem.metrics.Size.Set(float64(mem.Size()))
 				mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+				mem.metrics.EvictedTxs.Add(1)
 			}
 			mem.tryRemoveFromCache(tx)
 		}

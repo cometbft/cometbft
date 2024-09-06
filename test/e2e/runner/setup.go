@@ -176,9 +176,11 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		v := viper.New()
 		v.SetConfigType("json")
 
-		for _, entry := range testnet.Genesis {
-			tokens := strings.Split(entry, " = ")
-			key, value := tokens[0], tokens[1]
+		for _, field := range testnet.Genesis {
+			key, value, err := e2e.ParseKeyValueField("genesis", field)
+			if err != nil {
+				return genesis, err
+			}
 			logger.Debug("Applying Genesis config", key, value)
 			v.Set(key, value)
 		}
@@ -346,9 +348,11 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	// We currently need viper in order to parse config files.
 	if len(node.Config) > 0 {
 		v := viper.New()
-		for _, entry := range node.Config {
-			tokens := strings.Split(entry, " = ")
-			key, value := tokens[0], tokens[1]
+		for _, field := range node.Config {
+			key, value, err := e2e.ParseKeyValueField("config", field)
+			if err != nil {
+				return nil, err
+			}
 			logger.Debug("Applying Comet config", "node", node.Name, key, value)
 			v.Set(key, value)
 		}

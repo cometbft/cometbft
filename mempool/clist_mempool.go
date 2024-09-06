@@ -790,7 +790,7 @@ type recheck struct {
 	doneCh        chan struct{} // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32  // number of transactions still pending to recheck
 	isRechecking  atomic.Bool   // true iff the rechecking process has begun and is not yet finished
-	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided\
+	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided
 	mem           *CListMempool
 }
 

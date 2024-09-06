@@ -117,7 +117,7 @@ func NewCListMempool(
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
 		return mp.sortedLanes[i] > mp.sortedLanes[j]
 	})
-	mp.recheck = newRecheck(NewNonBlockingIterator(mp))
+	mp.recheck = newRecheck(mp)
 
 	if cfg.CacheSize > 0 {
 		mp.cache = NewLRUTxCache(cfg.CacheSize)
@@ -469,7 +469,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.numTxs++
 	mem.laneBytes[lane] += int64(len(tx))
 
-	// Notify iterator there's a new transaction.
+	// Notify iterators there's a new transaction.
 	close(mem.addTxCh)
 	mem.addTxCh = make(chan struct{})
 
@@ -770,7 +770,7 @@ func (mem *CListMempool) recheckTxs() {
 		return
 	}
 
-	mem.recheck.init(mem)
+	mem.recheck.init()
 
 	iter := NewNonBlockingIterator(mem)
 	for {
@@ -825,27 +825,30 @@ type recheck struct {
 	doneCh        chan struct{} // to signal that rechecking has finished successfully (for async app connections)
 	numPendingTxs atomic.Int32  // number of transactions still pending to recheck
 	isRechecking  atomic.Bool   // true iff the rechecking process has begun and is not yet finished
-	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided
+	recheckFull   atomic.Bool   // whether rechecking TXs cannot be completed before a new block is decided\
+	mem           *CListMempool
 }
 
-func newRecheck(iter *NonBlockingIterator) *recheck {
+func newRecheck(mp *CListMempool) *recheck {
 	r := recheck{}
-	r.iter = iter
+	r.iter = NewNonBlockingIterator(mp)
+	r.mem = mp
 	return &r
 }
 
-func (rc *recheck) init(mp *CListMempool) {
+func (rc *recheck) init() {
 	if !rc.done() {
 		panic("Having more than one rechecking process at a time is not possible.")
 	}
 	rc.numPendingTxs.Store(0)
-	rc.iter = NewNonBlockingIterator(mp)
+	rc.iter = NewNonBlockingIterator(rc.mem)
 
 	rc.cursor = rc.iter.Next()
+	rc.doneCh = make(chan struct{})
 	if rc.cursor == nil {
+		rc.setDone()
 		return
 	}
-	rc.doneCh = make(chan struct{})
 	rc.isRechecking.Store(true)
 	rc.recheckFull.Store(false)
 }
@@ -861,6 +864,7 @@ func (rc *recheck) setDone() {
 	rc.cursor = nil
 	rc.recheckFull.Store(false)
 	rc.isRechecking.Store(false)
+	close(rc.doneCh) // notify channel that recheck has finished
 }
 
 // findNextEntryMatching searches for the next transaction matching the given transaction, which
@@ -884,7 +888,6 @@ func (rc *recheck) findNextEntryMatching(tx *types.Tx) (found bool) {
 
 	if rc.cursor == nil { // reached end of list
 		rc.setDone()
-		close(rc.doneCh) // notify channel that recheck has finished
 	}
 	return found
 }

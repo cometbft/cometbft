@@ -452,7 +452,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.txsBytes += int64(len(tx))
 	mem.numTxs++
 
-	// Notify iterator there's a new transaction.
+	// Notify iterators there's a new transaction.
 	close(mem.addTxCh)
 	mem.addTxCh = make(chan struct{})
 

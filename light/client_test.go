@@ -905,6 +905,27 @@ func TestClient_NewClientFromTrustedStore(t *testing.T) {
 	assert.EqualValues(t, l1.Height, h.Height)
 }
 
+func TestClient_NewClientFromEmptyTrustedStore(t *testing.T) {
+	// empty DB
+	db := dbs.New(dbm.NewMemDB(), chainID)
+
+	c, err := light.NewClientFromTrustedStore(
+		chainID,
+		trustPeriod,
+		fullNode,
+		[]provider.Provider{fullNode},
+		db,
+	)
+
+	if err == nil {
+		assert.NotPanics(t, func() {
+			_, _ = c.VerifyLightBlockAtHeight(ctx, 2, bTime)
+		})
+	} else {
+		require.ErrorIs(t, err, light.ErrEmptyTrustedStore)
+	}
+}
+
 func TestClientRemovesWitnessIfItSendsUsIncorrectHeader(t *testing.T) {
 	// different headers hash then primary plus less than 1/3 signed (no fork)
 	badProvider1 := mockp.New(

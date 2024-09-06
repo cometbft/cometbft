@@ -17,6 +17,7 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
 const noSender = p2p.ID("")
@@ -665,6 +666,10 @@ func (mem *CListMempool) recheckTxs() {
 	if mem.Size() <= 0 {
 		return
 	}
+
+	defer func(start time.Time) {
+		mem.metrics.RecheckDurationSeconds.Set(cmttime.Since(start).Seconds())
+	}(cmttime.Now())
 
 	mem.recheck.init(mem.txs.Front(), mem.txs.Back())
 

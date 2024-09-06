@@ -905,7 +905,7 @@ func TestClient_NewClientFromTrustedStore(t *testing.T) {
 	assert.EqualValues(t, l1.Height, h.Height)
 }
 
-func TestClient_NewClientFromTrustedStore2(t *testing.T) {
+func TestClient_NewClientFromEmptyTrustedStore(t *testing.T) {
 	// empty DB
 	db := dbs.New(dbm.NewMemDB(), chainID)
 

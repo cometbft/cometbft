@@ -90,6 +90,8 @@ type Manifest struct {
 
 	// Weight for each lane defined by the app. The transaction loader will
 	// assign lanes to generated transactions proportionally to their weights.
+	// Note that the lanes are sorted by priority in descending order, thus the
+	// first weight in the array will be the weight of the highest priority lane.
 	LoadLaneWeights []uint `toml:"load_lane_weights"`
 
 	// LogLevel specifies the log level to be set on all nodes.
@@ -145,6 +147,17 @@ type Manifest struct {
 	// -1 denotes it is set at genesis.
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
+
+	// Used to disable lanes for testing behavior of
+	// networks that upgrade to a version of CometBFT
+	// that supports lanes but do not opt for using them.
+	NoLanes bool `toml:"no_lanes"`
+
+	// Optional custom definition of lanes to be used by the application
+	// If not used the application has a default set of lanes:
+	// {"foo"= 9,"bar"=4,"default"= 1}
+	// Note that the default key has to be present in your list of custom lanes.
+	Lanes map[string]uint32 `toml:"lanes"`
 
 	// Genesis is a set of key-value config entries to write to the
 	// produced genesis file. The format is "key = value".

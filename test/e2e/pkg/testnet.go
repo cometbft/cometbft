@@ -145,8 +145,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		return nil, fmt.Errorf("invalid IP network address %q: %w", ifd.Network, err)
 	}
 	// Pre-load hard-coded lane values from app.
-	_, lanePriorities := app.LaneDefinitions()
-
+	_, lanePriorities := app.LaneDefinitions(manifest.Lanes)
 	testnet := &Testnet{
 		Manifest: manifest,
 
@@ -182,15 +181,15 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 	if testnet.LoadTxSizeBytes == 0 {
 		testnet.LoadTxSizeBytes = defaultTxSizeBytes
 	}
-	if len(testnet.LoadLaneWeights) == 0 {
+	if len(testnet.Manifest.LoadLaneWeights) == 0 {
 		// Assign same weight to all lanes.
-		testnet.LoadLaneWeights = make([]uint, len(testnet.lanePriorities))
+		testnet.Manifest.LoadLaneWeights = make([]uint, len(testnet.lanePriorities))
 		for i := 0; i < len(testnet.lanePriorities); i++ {
-			testnet.LoadLaneWeights[i] = 1
+			testnet.Manifest.LoadLaneWeights[i] = 1
 		}
 	}
 	// Pre-calculate the sum of all lane weights.
-	for _, w := range testnet.LoadLaneWeights {
+	for _, w := range testnet.Manifest.LoadLaneWeights {
 		testnet.sumWeights += w
 	}
 
@@ -414,13 +413,13 @@ func (t Testnet) Validate() error {
 			)
 		}
 	}
-	if len(t.LoadLaneWeights) != len(t.lanePriorities) {
+	if len(t.Manifest.LoadLaneWeights) != len(t.lanePriorities) {
 		return fmt.Errorf("number of lane weights (%d) must be equal to "+
 			"the number of lanes defined by the app (%d)",
 			len(t.LoadLaneWeights), len(t.lanePriorities),
 		)
 	}
-	for _, w := range t.LoadLaneWeights {
+	for _, w := range t.Manifest.LoadLaneWeights {
 		if w <= 0 {
 			return fmt.Errorf("weight must be greater than 0: %v", w)
 		}
@@ -650,7 +649,7 @@ func weightedRandomIndex(weights []uint, sumWeights uint) int {
 // NextLane returns the next element in the list of lanes, according to a
 // predefined weight for each lane in the list.
 func (t *Testnet) NextLane() uint32 {
-	return t.lanePriorities[weightedRandomIndex(t.LoadLaneWeights, t.sumWeights)]
+	return t.lanePriorities[weightedRandomIndex(t.Manifest.LoadLaneWeights, t.sumWeights)]
 }
 
 //go:embed templates/prometheus-yaml.tmpl

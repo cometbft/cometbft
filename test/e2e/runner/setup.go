@@ -192,7 +192,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 			d.ErrorUnused = true
 		})
 		if err != nil {
-			return genesis, fmt.Errorf("Failed parsing 'genesis' field: %v", err)
+			return genesis, fmt.Errorf("failed parsing 'genesis' field: %v", err)
 		}
 	}
 
@@ -360,7 +360,7 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 			d.ErrorUnused = true
 		})
 		if err != nil {
-			return nil, fmt.Errorf("Failed parsing 'config' field of node %v: %v", node.Name, err)
+			return nil, fmt.Errorf("failed parsing 'config' field of node %v: %v", node.Name, err)
 		}
 	}
 

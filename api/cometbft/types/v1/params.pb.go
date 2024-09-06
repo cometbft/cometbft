@@ -473,7 +473,10 @@ func (m *SynchronyParams) GetMessageDelay() *time.Duration {
 
 // FeatureParams configure the height from which features of CometBFT are enabled.
 type FeatureParams struct {
-	// First height during which vote extensions will be enabled.
+	// Height during which vote extensions will be enabled.
+	//
+	// A value of 0 means vote extensions are disabled. A value > 0 denotes
+	// the height at which vote extensions will be (or have been) enabled.
 	//
 	// During the specified height, and for all subsequent heights, precommit
 	// messages that do not contain valid extension data will be considered
@@ -487,6 +490,9 @@ type FeatureParams struct {
 	// Cannot be set to heights lower or equal to the current blockchain height.
 	VoteExtensionsEnableHeight *types.Int64Value `protobuf:"bytes,1,opt,name=vote_extensions_enable_height,json=voteExtensionsEnableHeight,proto3" json:"vote_extensions_enable_height,omitempty"`
 	// Height at which Proposer-Based Timestamps (PBTS) will be enabled.
+	//
+	// A value of 0 means PBTS is disabled. A value > 0 denotes the height at
+	// which PBTS will be (or has been) enabled.
 	//
 	// From the specified height, and for all subsequent heights, the PBTS
 	// algorithm will be used to produce and validate block timestamps. Prior to

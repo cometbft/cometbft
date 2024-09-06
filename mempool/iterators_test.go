@@ -34,7 +34,7 @@ func TestIteratorNonBlocking(t *testing.T) {
 	}
 	require.Equal(t, n, mp.Size())
 
-	iter := NewWRRIterator(mp)
+	iter := NewNonBlockingIterator(mp)
 	expectedOrder := []int{
 		0, 11, 22, 33, 44, 55, 66, // lane 7
 		1, 2, 4, // lane 3
@@ -91,7 +91,7 @@ func TestIteratorNonBlockingOneLane(t *testing.T) {
 	}
 	require.Equal(t, 10, mp.Size())
 
-	iter := NewWRRIterator(mp)
+	iter := NewNonBlockingIterator(mp)
 	expectedOrder := []int{0, 11, 22, 33, 44, 55, 66, 77, 88, 99}
 
 	var next Entry
@@ -138,7 +138,7 @@ func TestIteratorRace(t *testing.T) {
 			defer wg.Done()
 
 			for counter.Load() < int64(numTxs) {
-				iter := NewBlockingWRRIterator(mp)
+				iter := NewBlockingIterator(mp)
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
@@ -154,7 +154,7 @@ func TestIteratorRace(t *testing.T) {
 			defer wg.Done()
 
 			for counter.Load() < int64(numTxs) {
-				iter := NewBlockingWRRIterator(mp)
+				iter := NewBlockingIterator(mp)
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
@@ -200,7 +200,7 @@ func TestIteratorEmptyLanes(t *testing.T) {
 	defer cleanup()
 
 	go func() {
-		iter := NewBlockingWRRIterator(mp)
+		iter := NewBlockingIterator(mp)
 		require.Zero(t, mp.Size())
 		entry := <-iter.WaitNextCh()
 		require.NotNil(t, entry)
@@ -234,7 +234,7 @@ func TestIteratorNoLanes(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		iter := NewBlockingWRRIterator(mp)
+		iter := NewBlockingIterator(mp)
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -285,7 +285,7 @@ func TestIteratorExactOrder(t *testing.T) {
 		waitForNumTxsInMempool(numTxs, mp)
 		t.Log("Mempool full, starting to pick up transactions", mp.Size())
 
-		iter := NewBlockingWRRIterator(mp)
+		iter := NewBlockingIterator(mp)
 		for i := 0; i < numTxs; i++ {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -336,7 +336,7 @@ func TestIteratorCountOnly(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		iter := NewBlockingWRRIterator(mp)
+		iter := NewBlockingIterator(mp)
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -358,44 +358,59 @@ func TestIteratorCountOnly(t *testing.T) {
 	require.Equal(t, n, counter)
 }
 
-func TestReapOrderMatchesGossipOrder(t *testing.T) {
-	app := kvstore.NewInMemoryApplication()
-	cc := proxy.NewLocalClientCreator(app)
-	mp, cleanup := newMempoolWithApp(cc)
-	defer cleanup()
-
+func TestReapMatchesGossipOrder(t *testing.T) {
 	const n = 10
 
-	// Add a bunch of txs.
-	for i := 1; i <= n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err, err)
-		rr.Wait()
+	tests := map[string]struct {
+		app *kvstore.Application
+	}{
+		"test_lanes": {
+			app: kvstore.NewInMemoryApplication(),
+		},
+		"test_no_lanes": {
+			app: kvstore.NewInMemoryApplicationWithoutLanes(),
+		},
 	}
-	require.Equal(t, n, mp.Size())
 
-	gossipIter := NewBlockingWRRIterator(mp)
-	reapIter := NewWRRIterator(mp)
+	for test, config := range tests {
+		cc := proxy.NewLocalClientCreator(config.app)
+		mp, cleanup := newMempoolWithApp(cc)
+		defer cleanup()
+		// Add a bunch of txs.
+		for i := 1; i <= n; i++ {
+			tx := kvstore.NewTxFromID(i)
+			rr, err := mp.CheckTx(tx, "")
+			require.NoError(t, err, err)
+			rr.Wait()
+		}
 
-	// Check that both iterators return the same entry as in the reaped txs.
-	txs := make([]types.Tx, n)
-	reapedTxs := mp.ReapMaxTxs(n)
-	for i, reapedTx := range reapedTxs {
-		entry := <-gossipIter.WaitNextCh()
-		// entry can be nil only when an entry is removed concurrently.
-		require.NotNil(t, entry)
-		gossipTx := entry.Tx()
+		require.Equal(t, n, mp.Size())
 
-		reapTx := reapIter.Next().Tx()
-		txs[i] = reapTx
+		gossipIter := NewBlockingIterator(mp)
+		reapIter := NewNonBlockingIterator(mp)
 
-		require.EqualValues(t, reapTx, gossipTx)
-		require.EqualValues(t, reapTx, reapedTx)
+		// Check that both iterators return the same entry as in the reaped txs.
+		txs := make([]types.Tx, n)
+		reapedTxs := mp.ReapMaxTxs(n)
+		for i, reapedTx := range reapedTxs {
+			entry := <-gossipIter.WaitNextCh()
+			// entry can be nil only when an entry is removed concurrently.
+			require.NotNil(t, entry)
+			gossipTx := entry.Tx()
+
+			reapTx := reapIter.Next().Tx()
+			txs[i] = reapTx
+
+			require.EqualValues(t, reapTx, gossipTx)
+			require.EqualValues(t, reapTx, reapedTx)
+			if test == "test_no_lanes" {
+				require.EqualValues(t, reapTx, kvstore.NewTxFromID(i+1))
+			}
+		}
+		require.EqualValues(t, txs, reapedTxs)
+
+		err := mp.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
+		require.NoError(t, err)
+		require.Zero(t, mp.Size())
 	}
-	require.EqualValues(t, txs, reapedTxs)
-
-	err := mp.Update(1, txs, abciResponses(len(txs), abci.CodeTypeOK), nil, nil)
-	require.NoError(t, err)
-	require.Zero(t, mp.Size())
 }

@@ -822,10 +822,10 @@ func parseCsv(csvString string) ([][]string, error) {
 	return records, nil
 }
 
-func ParseKeyValueField(name string, field string) (string, string, error) {
+func ParseKeyValueField(name string, field string) (key string, value string, err error) {
 	tokens := strings.Split(field, " = ")
 	if len(tokens) != 2 {
-		return "", "", fmt.Errorf("invalid '%s' field: \"%s\", "+
+		return key, value, fmt.Errorf("invalid '%s' field: \"%s\", "+
 			"expected \"key = value\"", name, field)
 	}
 	return tokens[0], tokens[1], nil

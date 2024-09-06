@@ -181,7 +181,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 			if err != nil {
 				return genesis, err
 			}
-			logger.Debug("Applying Genesis config", key, value)
+			logger.Debug("Applying 'genesis' field", key, value)
 			v.Set(key, value)
 		}
 
@@ -192,7 +192,7 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 			d.ErrorUnused = true
 		})
 		if err != nil {
-			return genesis, err
+			return genesis, fmt.Errorf("Failed parsing 'genesis' field: %v", err)
 		}
 	}
 
@@ -353,14 +353,14 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 			if err != nil {
 				return nil, err
 			}
-			logger.Debug("Applying Comet config", "node", node.Name, key, value)
+			logger.Debug("Applying 'config' field", "node", node.Name, key, value)
 			v.Set(key, value)
 		}
 		err := v.Unmarshal(cfg, func(d *mapstructure.DecoderConfig) {
 			d.ErrorUnused = true
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Failed parsing 'config' field of node %v: %v", node.Name, err)
 		}
 	}
 

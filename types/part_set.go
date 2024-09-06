@@ -334,7 +334,7 @@ func (ps *PartSet) GetReader() io.Reader {
 	return NewPartSetReader(ps.parts)
 }
 
-func (ps *PartSet) Locked() bool {
+func (ps *PartSet) IsLocked() bool {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 	return ps.locked

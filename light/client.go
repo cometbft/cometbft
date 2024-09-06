@@ -185,7 +185,7 @@ func NewClient(
 	}
 
 	c, err := NewClientFromTrustedStore(chainID, trustOptions.Period, primary, witnesses, trustedStore, options...)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrEmptyTrustedStore) {
 		return nil, err
 	}
 
@@ -203,7 +203,7 @@ func NewClient(
 		}
 	}
 
-	return c, err
+	return c, nil
 }
 
 // NewClientFromTrustedStore initializes existing client from the trusted store.
@@ -256,11 +256,7 @@ func NewClientFromTrustedStore(
 		return nil, err
 	}
 
-	if err := c.restoreTrustedLightBlock(); err != nil {
-		return nil, err
-	}
-
-	return c, nil
+	return c, c.restoreTrustedLightBlock()
 }
 
 // restoreTrustedLightBlock loads the latest trusted light block from the store.
@@ -269,16 +265,16 @@ func (c *Client) restoreTrustedLightBlock() error {
 	if err != nil {
 		return fmt.Errorf("can't get last trusted light block height: %w", err)
 	}
-
-	if lastHeight > 0 {
-		trustedBlock, err := c.trustedStore.LightBlock(lastHeight)
-		if err != nil {
-			return fmt.Errorf("can't get last trusted light block: %w", err)
-		}
-		c.latestTrustedBlock = trustedBlock
-		c.logger.Info("Restored trusted light block", "height", lastHeight)
+	if lastHeight == -1 {
+		return ErrEmptyTrustedStore
 	}
 
+	trustedBlock, err := c.trustedStore.LightBlock(lastHeight)
+	if err != nil {
+		return fmt.Errorf("can't get last trusted light block: %w", err)
+	}
+	c.latestTrustedBlock = trustedBlock
+	c.logger.Info("Restored trusted light block", "height", lastHeight)
 	return nil
 }
 
@@ -899,12 +895,7 @@ func (c *Client) cleanupAfter(height int64) error {
 	}
 
 	c.latestTrustedBlock = nil
-	err := c.restoreTrustedLightBlock()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return c.restoreTrustedLightBlock()
 }
 
 func (c *Client) updateTrustedLightBlock(l *types.LightBlock) error {

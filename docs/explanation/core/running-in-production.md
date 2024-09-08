@@ -20,7 +20,7 @@ CometBFT keeps multiple distinct databases in the `$CMTHOME/data`:
   used to temporarily store intermediate results during block processing.
 - `tx_index.db`: Indexes transactions and by tx hash and height. The tx results are indexed if they are added to the `FinalizeBlock` response in the application.
 
-> By default, CometBFT will only index transactions by their hash and height, if you want the result events to be indexed, see [indexing transactions](../../guides/app-dev/indexing-transactions.md#adding-events) for
+> By default, CometBFT will only index transactions by their hash and height, if you want the result events to be indexed, see [indexing transactions](../../guides/app-dev/indexing-transactions.md#adding-events) 
 for details.
 
 Applications can expose block pruning strategies to the node operator.
@@ -297,7 +297,7 @@ Both our `ed25519` and `secp256k1` implementations require constant time
 private keys on both `ed25519` and `secp256k1`. This doesn't exist in hardware
 on 32 bit x86 platforms ([source](https://bearssl.org/ctmul.html)), and it
 depends on the compiler to enforce that it is constant time. It's unclear at
-this point whenever the Golang compiler does this correctly for all
+this point whether the Golang compiler does this correctly for all
 implementations.
 
 **We do not support nor recommend running a validator on 32 bit architectures OR

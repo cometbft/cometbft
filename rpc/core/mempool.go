@@ -42,6 +42,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	}
 
 	resCh := make(chan *abci.CheckTxResponse, 1)
+	resErrCh := make(chan error, 1)
 	reqRes, err := env.MempoolReactor.TryAddTx(tx, nil)
 	if err != nil {
 		return nil, err
@@ -53,13 +54,19 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 		select {
 		case <-ctx.Context().Done():
 		default:
-			resCh <- reqRes.Response.GetCheckTx()
+			if reqRes.Error() != nil {
+				resErrCh <- err
+			} else {
+				resCh <- reqRes.Response.GetCheckTx()
+			}
 		}
 	}()
 
 	select {
 	case <-ctx.Context().Done():
 		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
+	case err := <-resErrCh:
+		return nil, ErrTxBroadcast{Source: ErrCheckTxFailed, ErrReason: err}
 	case res := <-resCh:
 		return &ctypes.ResultBroadcastTx{
 			Code:      res.Code,
@@ -104,6 +111,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	// Broadcast tx and wait for CheckTx result
 	checkTxResCh := make(chan *abci.CheckTxResponse, 1)
+	resErrCh := make(chan error, 1)
 	reqRes, err := env.MempoolReactor.TryAddTx(tx, nil)
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
@@ -116,13 +124,19 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		select {
 		case <-ctx.Context().Done():
 		default:
-			checkTxResCh <- reqRes.Response.GetCheckTx()
+			if reqRes.Error() != nil {
+				resErrCh <- err
+			} else {
+				checkTxResCh <- reqRes.Response.GetCheckTx()
+			}
 		}
 	}()
 
 	select {
 	case <-ctx.Context().Done():
 		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
+	case err := <-resErrCh:
+		return nil, ErrTxBroadcast{Source: ErrCheckTxFailed, ErrReason: err}
 	case checkTxRes := <-checkTxResCh:
 		if checkTxRes.Code != abci.CodeTypeOK {
 			return &ctypes.ResultBroadcastTxCommit{

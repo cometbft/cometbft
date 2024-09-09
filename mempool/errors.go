@@ -15,12 +15,16 @@ var ErrTxInCache = errors.New("tx already exists in cache")
 // mempool is invalid.
 var ErrInvalidTx = errors.New("tx is invalid")
 
-var ErrTxAlreadyInMempool = errors.New("transaction already in mempool, not adding it again")
+// ErrTxInMempool is returned when a transaction that is trying to be added to
+// the mempool is already there.
+var ErrTxInMempool = errors.New("transaction already in mempool, not adding it again")
 
 // ErrTxAlreadyReceivedFromSender is returned if when processing a tx already
 // received from the same sender.
 var ErrTxAlreadyReceivedFromSender = errors.New("tx already received from the same sender")
 
+// ErrLateRecheckResponse is returned when a CheckTx response arrives after the
+// rechecking process has finished.
 var ErrLateRecheckResponse = errors.New("rechecking has finished; discard late recheck response")
 
 // ErrRecheckFull is returned when checking if the mempool is full and

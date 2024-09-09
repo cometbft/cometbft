@@ -791,7 +791,7 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	// Receiving CheckTx response for a tx already in the pool should not notify of available txs
 	res = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
 	err = mp.handleCheckTxResponse(tx, "")(res)
-	require.NoError(t, err)
+	require.ErrorIs(t, ErrTxInMempool, err)
 	require.Equal(t, 1, mp.Size())
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Empty(t, mp.TxsAvailable())

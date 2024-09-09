@@ -377,8 +377,8 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			if err := mem.addSender(txKey, sender); err != nil {
 				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
 			}
-			mem.logger.Debug("Rejected tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "err", ErrTxAlreadyInMempool)
-			return ErrTxAlreadyInMempool
+			mem.logger.Debug("Reject tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "err", ErrTxInMempool)
+			return ErrTxInMempool
 		}
 
 		// Add tx to mempool and notify that new txs are available.

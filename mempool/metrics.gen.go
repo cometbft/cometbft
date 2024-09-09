@@ -18,13 +18,13 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "size",
-			Help:      "Number of uncommitted transactions in the mempool.",
+			Help:      "Number of uncommitted transactions in the mempool.  Deprecated: this value can be obtained as the sum of LaneSize.",
 		}, labels).With(labelsAndValues...),
 		SizeBytes: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "size_bytes",
-			Help:      "Total size of the mempool in bytes.",
+			Help:      "Total size of the mempool in bytes.  Deprecated: this value can be obtained as the sum of LaneBytes.",
 		}, labels).With(labelsAndValues...),
 		LaneSize: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
 			Namespace: namespace,

@@ -2065,8 +2065,8 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 
 	p := proposal.ToProto()
 	// Verify signature
-	proposerPubKey := cs.Validators.GetProposer().PubKey
-	if !proposerPubKey.VerifySignature(
+	proposer := cs.Validators.GetProposer()
+	if !proposer.PubKey.VerifySignature(
 		types.ProposalSignBytes(cs.state.ChainID, p), proposal.Signature,
 	) {
 		return ErrInvalidProposalSignature
@@ -2093,12 +2093,12 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 
 		// If we are the proposer, lock the PartSet until we load all
 		// the block parts, that should come just after this Proposal.
-		if bytes.Equal(proposerPubKey.Bytes(), cs.privValidatorPubKey.Bytes()) {
+		if bytes.Equal(proposer.Address, cs.privValidatorPubKey.Address()) {
 			cs.ProposalBlockParts.Lock()
 		}
 	}
 
-	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", proposerPubKey.Address())
+	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", proposer.Address)
 	return nil
 }
 

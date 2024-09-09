@@ -52,4 +52,7 @@ type Metrics struct {
 	// Number of connections being actively used for gossiping transactions
 	// (experimental feature).
 	ActiveOutboundConnections metrics.Gauge
+
+	// Cumulative time spent rechecking transactions
+	RecheckDurationSeconds metrics.Gauge
 }

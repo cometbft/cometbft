@@ -43,8 +43,9 @@ The CometBFT blockchain consists of a short list of data types:
     - [BlockParams](#blockparams)
     - [EvidenceParams](#evidenceparams)
     - [ValidatorParams](#validatorparams)
-    - [ABCIParams](#abciparams)
     - [VersionParams](#versionparams)
+    - [ABCIParams](#abciparams)
+    - [FeatureParams](#featureparams)
     - [SynchronyParams](#synchronyparams)
 
 
@@ -550,7 +551,7 @@ The `ABCIParams` type has been **deprecated** from CometBFT `v1.0`.
 From the configured height, and for all subsequent heights, the corresponding
 feature will be enabled.
 Cannot be set to heights lower or equal to the current blockchain height.
-A value of 0 indicates that the feature is disabled.
+A value of 0 (the default) indicates that the feature is disabled.
 
 ### SynchronyParams
 

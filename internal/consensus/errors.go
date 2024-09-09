@@ -18,11 +18,23 @@ var (
 var (
 	ErrInvalidProposalSignature   = errors.New("error invalid proposal signature")
 	ErrInvalidProposalPOLRound    = errors.New("error invalid proposal POL round")
-	ErrAddingVote                 = errors.New("error adding vote")
 	ErrSignatureFoundInPastBlocks = errors.New("found signature from the same key")
 	ErrPubKeyIsNotSet             = errors.New("pubkey is not set. Look for \"Can't get private validator pubkey\" errors")
 	ErrProposalTooManyParts       = errors.New("proposal block has too many parts")
 )
+
+// ErrAddingVote is returned when adding a vote fails.
+type ErrAddingVote struct {
+	Err error
+}
+
+func (e ErrAddingVote) Error() string {
+	return "error adding vote: " + e.Err.Error()
+}
+
+func (e ErrAddingVote) Unwrap() error {
+	return e.Err
+}
 
 type ErrConsensusMessageNotRecognized struct {
 	Message any

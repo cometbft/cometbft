@@ -182,6 +182,7 @@ func (x *blockServiceGetLatestHeightServer) Send(m *GetLatestHeightResponse) err
 	return x.ServerStream.SendMsg(m)
 }
 
+var BlockService_serviceDesc = _BlockService_serviceDesc
 var _BlockService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "cometbft.services.block.v1.BlockService",
 	HandlerType: (*BlockServiceServer)(nil),

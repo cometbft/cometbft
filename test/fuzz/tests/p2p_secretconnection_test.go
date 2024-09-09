@@ -99,7 +99,7 @@ func makeSecretConnPair() (fooSecConn, barSecConn *sc.SecretConnection) {
 				return nil, true, err
 			}
 			remotePubBytes := fooSecConn.RemotePubKey()
-			if !remotePubBytes.Equals(barPubKey) {
+			if !bytes.Equal(remotePubBytes.Bytes(), barPubKey.Bytes()) {
 				err = fmt.Errorf("unexpected fooSecConn.RemotePubKey.  Expected %v, got %v",
 					barPubKey, fooSecConn.RemotePubKey())
 				log.Print(err)
@@ -114,7 +114,7 @@ func makeSecretConnPair() (fooSecConn, barSecConn *sc.SecretConnection) {
 				return nil, true, err
 			}
 			remotePubBytes := barSecConn.RemotePubKey()
-			if !remotePubBytes.Equals(fooPubKey) {
+			if !bytes.Equal(remotePubBytes.Bytes(), fooPubKey.Bytes()) {
 				err = fmt.Errorf("unexpected barSecConn.RemotePubKey.  Expected %v, got %v",
 					fooPubKey, barSecConn.RemotePubKey())
 				log.Print(err)

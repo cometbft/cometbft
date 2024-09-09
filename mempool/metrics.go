@@ -24,8 +24,8 @@ type Metrics struct {
 	// Histogram of transaction sizes in bytes.
 	TxSizeBytes metrics.Histogram `metrics_bucketsizes:"1,3,7" metrics_buckettype:"exp"`
 
-	// FailedTxs defines the number of failed (invalid) transactions. These are
-	// transactions that failed to make it into the mempool because they are
+	// FailedTxs defines the number of failed transactions. These are
+	// transactions that failed to make it into the mempool because they were
 	// deemed invalid.
 	// metrics:Number of failed transactions.
 	FailedTxs metrics.Counter
@@ -37,7 +37,7 @@ type Metrics struct {
 	RejectedTxs metrics.Counter
 
 	// EvictedTxs defines the number of evicted transactions. These are valid
-	// transactions that passed CheckTx and existed in the mempool but later
+	// transactions that passed CheckTx and make it into the mempool but later
 	// became invalid.
 	// metrics:Number of evicted transactions.
 	EvictedTxs metrics.Counter

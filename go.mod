@@ -2,8 +2,6 @@ module github.com/tendermint/tendermint
 
 go 1.21.13
 
-toolchain go1.23.1
-
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/ChainSafe/go-schnorrkel v1.0.0

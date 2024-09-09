@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -443,7 +444,7 @@ func (h Header) ValidateBasic() error {
 // Returns nil if ValidatorHash is missing,
 // since a Header is not valid unless there is
 // a ValidatorsHash (corresponding to the validator set).
-func (h *Header) Hash() cmtbytes.HexBytes {
+func (h *Header) HashLegacy() cmtbytes.HexBytes {
 	if h == nil || len(h.ValidatorsHash) == 0 {
 		return nil
 	}
@@ -477,6 +478,68 @@ func (h *Header) Hash() cmtbytes.HexBytes {
 		cdcEncode(h.LastResultsHash),
 		cdcEncode(h.EvidenceHash),
 		cdcEncode(h.ProposerAddress),
+	})
+}
+
+// Hash returns the hash of the header.
+// It computes a Merkle tree from the header fields
+// ordered as they appear in the Header.
+// Returns nil if ValidatorHash is missing,
+// since a Header is not valid unless there is
+// a ValidatorsHash (corresponding to the validator set).
+func (h *Header) Hash() cmtbytes.HexBytes {
+	if h == nil || len(h.ValidatorsHash) == 0 {
+		return nil
+	}
+
+	var padded [32]byte
+	padI64 := func(x int64) []byte {
+		return big.NewInt(x).FillBytes(padded[:])
+	}
+	padU64 := func(x uint64) []byte {
+		return big.NewInt(0).SetUint64(x).FillBytes(padded[:])
+	}
+	padU32 := func(x uint32) []byte {
+		return big.NewInt(0).SetUint64(uint64(x)).FillBytes(padded[:])
+	}
+	padBytes := func(b []byte) []byte {
+		if len(b) > 31 {
+			panic("impossible: bytes must fit in F_r")
+		}
+		return big.NewInt(0).SetBytes(b).FillBytes(padded[:])
+	}
+	uncons := func(b []byte) []byte {
+		if len(b) == 0 {
+			b = make([]byte, 32)
+		}
+		head, tail := []byte{b[0]}, b[1:]
+		return merkle.MimcHashFromByteSlices([][]byte{
+			padBytes(head),
+			padBytes(tail),
+		})
+	}
+
+	return merkle.MimcHashFromByteSlices([][]byte{
+		padU64(h.Version.Block),
+		padU64(h.Version.App),
+		padBytes([]byte(h.ChainID)),
+		padI64(h.Height),
+		padI64(h.Time.Unix()),
+		padU64(uint64(h.Time.Nanosecond())),
+		// MiMC hash already
+		h.LastBlockID.Hash,
+		padU32(h.LastBlockID.PartSetHeader.Total),
+		uncons(h.LastBlockID.PartSetHeader.Hash),
+		uncons(h.LastCommitHash),
+		uncons(h.DataHash),
+		// MiMC hashes already
+		h.ValidatorsHash,
+		h.NextValidatorsHash,
+		uncons(h.ConsensusHash),
+		uncons(h.AppHash),
+		uncons(h.LastResultsHash),
+		uncons(h.EvidenceHash),
+		uncons(h.ProposerAddress),
 	})
 }
 

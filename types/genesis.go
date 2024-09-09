@@ -17,7 +17,8 @@ import (
 
 const (
 	// MaxChainIDLen is a maximum length of the chain ID.
-	MaxChainIDLen = 50
+	// This is specific to the Bn254 curve where we want it to fit the scalar field (32 bytes modulus).
+	MaxChainIDLen = 31
 )
 
 // ------------------------------------------------------------

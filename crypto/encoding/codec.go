@@ -7,6 +7,7 @@ import (
 	pc "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/bls12381"
+	"github.com/cometbft/cometbft/crypto/bn254"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/json"
@@ -120,6 +121,17 @@ func PubKeyFromProto(k pc.PublicKey) (crypto.PubKey, error) {
 			}
 		}
 		return bls12381.NewPublicKeyFromBytes(k.Bls12381)
+	case *pc.PublicKey_Bn254:
+		if len(k.Bn254) != bn254.PubKeySize {
+			return nil, ErrInvalidKeyLen{
+				Key:  k,
+				Got:  len(k.Bn254),
+				Want: bn254.PubKeySize,
+			}
+		}
+		pk := make(bn254.PubKey, bn254.PubKeySize)
+		copy(pk, k.Bn254)
+		return pk, nil
 	default:
 		kt := reflect.TypeOf(k)
 		if kt == nil {
@@ -174,6 +186,18 @@ func PubKeyFromTypeAndBytes(pkType string, bytes []byte) (crypto.PubKey, error) 
 		}
 
 		return bls12381.NewPublicKeyFromBytes(bytes)
+	case bn254.KeyType:
+		if len(bytes) != bn254.PubKeySize {
+			return nil, ErrInvalidKeyLen{
+				Key:  pkType,
+				Got:  len(bytes),
+				Want: bn254.PubKeySize,
+			}
+		}
+
+		pk := make(bn254.PubKey, bn254.PubKeySize)
+		copy(pk, bytes)
+		pubKey = pk
 	default:
 		return nil, ErrUnsupportedKey{KeyType: pkType}
 	}

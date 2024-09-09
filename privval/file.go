@@ -11,7 +11,7 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/ed25519"
+	"github.com/cometbft/cometbft/crypto/bn254"
 	cmtos "github.com/cometbft/cometbft/internal/os"
 	"github.com/cometbft/cometbft/internal/tempfile"
 	cmtbytes "github.com/cometbft/cometbft/libs/bytes"
@@ -184,17 +184,8 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 
 // GenFilePV generates a new validator with randomly generated private key
 // and sets the filePaths, but does not call Save().
-func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey, error)) (*FilePV, error) {
-	if keyGen == nil {
-		keyGen = func() (crypto.PrivKey, error) {
-			return ed25519.GenPrivKey(), nil
-		}
-	}
-	key, err := keyGen()
-	if err != nil {
-		return nil, err
-	}
-	return NewFilePV(key, keyFilePath, stateFilePath), nil
+func GenFilePV(keyFilePath, stateFilePath string) *FilePV {
+	return NewFilePV(bn254.GenPrivKey(), keyFilePath, stateFilePath)
 }
 
 // LoadFilePV loads a FilePV from the filePaths.  The FilePV handles double
@@ -370,11 +361,6 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote, signExtension bo
 	if sameHRS {
 		if bytes.Equal(signBytes, lss.SignBytes) {
 			vote.Signature = lss.Signature
-		} else if timestamp, ok := checkVotesOnlyDifferByTimestamp(lss.SignBytes, signBytes); ok {
-			// Compares the canonicalized votes (i.e. without vote extensions
-			// or vote extension signatures).
-			vote.Timestamp = timestamp
-			vote.Signature = lss.Signature
 		} else {
 			err = errors.New("conflicting data")
 		}
@@ -448,28 +434,6 @@ func (pv *FilePV) saveSigned(height int64, round int32, step int8,
 }
 
 // -----------------------------------------------------------------------------------------
-
-// Returns the timestamp from the lastSignBytes.
-// Returns true if the only difference in the votes is their timestamp.
-// Performs these checks on the canonical votes (excluding the vote extension
-// and vote extension signatures).
-func checkVotesOnlyDifferByTimestamp(lastSignBytes, newSignBytes []byte) (time.Time, bool) {
-	var lastVote, newVote cmtproto.CanonicalVote
-	if err := protoio.UnmarshalDelimited(lastSignBytes, &lastVote); err != nil {
-		panic(fmt.Sprintf("LastSignBytes cannot be unmarshalled into vote: %v", err))
-	}
-	if err := protoio.UnmarshalDelimited(newSignBytes, &newVote); err != nil {
-		panic(fmt.Sprintf("signBytes cannot be unmarshalled into vote: %v", err))
-	}
-
-	lastTime := lastVote.Timestamp
-	// set the times to the same value and check equality
-	now := cmttime.Now()
-	lastVote.Timestamp = now
-	newVote.Timestamp = now
-
-	return lastTime, proto.Equal(&newVote, &lastVote)
-}
 
 // returns the timestamp from the lastSignBytes.
 // returns true if the only difference in the proposals is their timestamp.

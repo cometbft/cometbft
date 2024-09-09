@@ -16,9 +16,13 @@ const (
 // see MetricsProvider for descriptions.
 type Metrics struct {
 	// Number of uncommitted transactions in the mempool.
+	//
+	// Deprecated: this value can be obtained as the sum of LaneSize.
 	Size metrics.Gauge
 
 	// Total size of the mempool in bytes.
+	//
+	// Deprecated: this value can be obtained as the sum of LaneBytes.
 	SizeBytes metrics.Gauge
 
 	// Number of uncommitted transactions per lane.

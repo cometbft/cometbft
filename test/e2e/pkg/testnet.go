@@ -537,10 +537,8 @@ func (n Node) Validate(testnet Testnet) error {
 		}
 	}
 	for _, entry := range n.Config {
-		tokens := strings.Split(entry, " = ")
-		if len(tokens) != 2 {
-			return fmt.Errorf("invalid config entry: \"%s\", "+
-				"expected \"key = value\"", entry)
+		if _, _, err := ParseKeyValueField("config", entry); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -2091,8 +2091,8 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 	if cs.ProposalBlockParts == nil {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(proposal.BlockID.PartSetHeader)
 
-		// If we are the proposer, lock the PartSet until we load all
-		// the block parts, that should come just after this Proposal.
+		// If we signed this Proposal, lock the PartSet until we load
+		// all the BlockParts that should come just after the Proposal.
 		if bytes.Equal(proposer.Address, cs.privValidatorPubKey.Address()) {
 			cs.ProposalBlockParts.Lock()
 		}

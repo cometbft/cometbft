@@ -266,6 +266,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 
 	if added := mem.addToCache(tx); !added {
 		mem.metrics.AlreadyReceivedTxs.Add(1)
+<<<<<<< HEAD
 		if sender != "" {
 			// Record a new sender for a tx we've already seen.
 			// Note it's possible a tx is still in the cache but no longer in the mempool
@@ -278,6 +279,14 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 					mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
 				}
 			}
+=======
+		// Record a new sender for a tx we've already seen.
+		// Note it's possible a tx is still in the cache but no longer in the mempool
+		// (eg. after committing a block, txs are removed from mempool but not cache),
+		// so we only record the sender for txs still in the mempool.
+		if err := mem.addSender(tx.Key(), sender); err != nil {
+			mem.logger.Error("Could not add sender to tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", sender, "err", err)
+>>>>>>> 1903da05f (fix(mempool): encode tx.Hash() as %X in logs (#4062))
 		}
 		// TODO: consider punishing peer for dups,
 		// its non-trivial since invalid txs can become valid,
@@ -322,7 +331,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
 				"Rejected invalid transaction",
-				"tx", tx.Hash(),
+				"tx", log.NewLazySprintf("%X", tx.Hash()),
 				"res", res,
 				"err", postCheckErr,
 			)
@@ -390,7 +399,7 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 
 	mem.logger.Debug(
 		"Added transaction",
-		"tx", tx.Hash(),
+		"tx", log.NewLazySprintf("%X", tx.Hash()),
 		"height", mem.height.Load(),
 		"total", mem.Size(),
 	)
@@ -411,8 +420,13 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	elem.DetachPrev()
 	mem.txsMap.Delete(txKey)
 	tx := elem.Value.(*mempoolTx).tx
+<<<<<<< HEAD
 	mem.txsBytes.Add(int64(-len(tx)))
 	mem.logger.Debug("Removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
+=======
+	mem.txsBytes -= int64(len(tx))
+	mem.logger.Debug("Removed transaction", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "total", mem.Size())
+>>>>>>> 1903da05f (fix(mempool): encode tx.Hash() as %X in logs (#4062))
 	return nil
 }
 
@@ -466,7 +480,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 		// If tx is invalid, remove it from the mempool and the cache.
 		if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("Tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+			mem.logger.Debug("Tx is no longer valid", "tx", log.NewLazySprintf("%X", tx.Hash()), "res", res, "postCheckErr", postCheckErr)
 			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			} else {
@@ -598,7 +612,7 @@ func (mem *CListMempool) Update(
 		// https://github.com/tendermint/tendermint/issues/3322.
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 			mem.logger.Debug("Committed transaction not in local mempool (not an error)",
-				"tx", tx.Hash(),
+				"tx", log.NewLazySprintf("%X", tx.Hash()),
 				"error", err.Error())
 		}
 	}

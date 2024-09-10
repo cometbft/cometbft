@@ -12,7 +12,7 @@ COPY test/e2e/pkg/latency/aws-latencies.csv /scripts/
 COPY test/e2e/pkg/latency/latency-setter.py /scripts/
 
 # Set up build directory /src/cometbft
-ENV COMETBFT_BUILD_OPTIONS badgerdb,rocksdb,pebbledb,clock_skew,bls12381
+ENV COMETBFT_BUILD_OPTIONS=badgerdb,rocksdb,pebbledb,clock_skew,bls12381
 WORKDIR /src/cometbft
 
 # Fetch dependencies separately (for layer caching)
@@ -30,7 +30,7 @@ RUN cd test/e2e && make node && cp build/node /usr/bin/app
 WORKDIR /cometbft
 VOLUME /cometbft
 ENV CMTHOME=/cometbft
-ENV GORACE "halt_on_error=1"
+ENV GORACE="halt_on_error=1"
 
 EXPOSE 26656 26657 26660 6060
 ENTRYPOINT ["/usr/bin/entrypoint"]

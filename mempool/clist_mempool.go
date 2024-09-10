@@ -485,7 +485,7 @@ func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.ResponseCheckTx) {
 
 	if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 		// Tx became invalidated due to newly committed block.
-		mem.logger.Debug("tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+		mem.logger.Debug("Tx is no longer valid", "tx", log.NewLazySprintf("%v",tx.Hash()), "res", res, "postCheckErr", postCheckErr)
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 			mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 		}

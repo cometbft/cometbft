@@ -61,7 +61,7 @@ looking for, see [our security policy](SECURITY.md).
 
 | Requirement | Notes             |
 |-------------|-------------------|
-| Go version  | Go 1.21 or higher |
+| Go version  | Go 1.22 or higher |
 
 ### Install
 

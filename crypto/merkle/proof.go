@@ -93,7 +93,7 @@ func (sp *Proof) Verify(rootHash []byte, leaf []byte) error {
 		}
 	}
 	hash := tmhash.New()
-	leafHash := leafHashOpt(hash, leaf)
+	leafHash := leafHash(hash, leaf)
 	if !bytes.Equal(sp.LeafHash, leafHash) {
 		return ErrInvalidHash{
 			Err: fmt.Errorf("leaf %x, want %x", sp.LeafHash, leafHash),
@@ -226,13 +226,13 @@ func computeHashFromAunts(hash hash.Hash, index, total int64, leafHash []byte, i
 				return nil, err
 			}
 
-			return innerHashOpt(hash, leftHash, innerHashes[len(innerHashes)-1]), nil
+			return innerHash(hash, leftHash, innerHashes[len(innerHashes)-1]), nil
 		}
 		rightHash, err := computeHashFromAunts(hash, index-numLeft, total-numLeft, leafHash, innerHashes[:len(innerHashes)-1])
 		if err != nil {
 			return nil, err
 		}
-		return innerHashOpt(hash, innerHashes[len(innerHashes)-1], rightHash), nil
+		return innerHash(hash, innerHashes[len(innerHashes)-1], rightHash), nil
 	}
 }
 
@@ -278,15 +278,15 @@ func trailsFromByteSlicesInternal(hash hash.Hash, items [][]byte) (trails []*Pro
 	// Recursive impl.
 	switch len(items) {
 	case 0:
-		return []*ProofNode{}, &ProofNode{emptyHash(), nil, nil, nil}
+		return []*ProofNode{}, &ProofNode{emptyHash(hash), nil, nil, nil}
 	case 1:
-		trail := &ProofNode{leafHashOpt(hash, items[0]), nil, nil, nil}
+		trail := &ProofNode{leafHash(hash, items[0]), nil, nil, nil}
 		return []*ProofNode{trail}, trail
 	default:
 		k := getSplitPoint(int64(len(items)))
 		lefts, leftRoot := trailsFromByteSlicesInternal(hash, items[:k])
 		rights, rightRoot := trailsFromByteSlicesInternal(hash, items[k:])
-		rootHash := innerHashOpt(hash, leftRoot.Hash, rightRoot.Hash)
+		rootHash := innerHash(hash, leftRoot.Hash, rightRoot.Hash)
 		root := &ProofNode{rootHash, nil, nil, nil}
 		leftRoot.Parent = root
 		leftRoot.Right = rightRoot

@@ -639,8 +639,7 @@ func LoadStateFromDBOrGenesisDocProviderWithConfig(
 
 	checkSumStr := hex.EncodeToString(csGenDoc.Sha256Checksum)
 	if err := tmhash.ValidateSHA256(checkSumStr); err != nil {
-		const formatStr = "invalid genesis doc SHA256 checksum: %s"
-		return sm.State{}, nil, fmt.Errorf(formatStr, err)
+		return sm.State{}, nil, fmt.Errorf("invalid genesis doc SHA256 checksum: %s", err)
 	}
 
 	// Validate that existing or recently saved genesis file hash matches optional --genesis_hash passed by operator

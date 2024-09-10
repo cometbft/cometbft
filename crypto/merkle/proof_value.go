@@ -11,6 +11,10 @@ import (
 
 const ProofOpValue = "simple:v"
 
+// ErrTooManyArgs is returned when the input to [ValueOp.Run] has length
+// exceeding 1.
+var ErrTooManyArgs = errors.New("merkle: len(args) > 1")
+
 // ValueOp takes a key and a single value as argument and
 // produces the root hash.  The corresponding tree structure is
 // the SimpleMap tree.  SimpleMap takes a Hasher, and currently
@@ -79,24 +83,20 @@ func (op ValueOp) String() string {
 	return fmt.Sprintf("ValueOp{%v}", op.GetKey())
 }
 
-// ErrTooManyArgs is returned when the input to [ValueOp.Run] has length
-// exceeding 1.
-var ErrTooManyArgs = errors.New("merkle: len(args) != 1")
-
 func (op ValueOp) Run(args [][]byte) ([][]byte, error) {
 	if len(args) != 1 {
 		return nil, ErrTooManyArgs
 	}
 	value := args[0]
-	hasher := tmhash.New()
-	hasher.Write(value)
-	vhash := hasher.Sum(nil)
+	h := tmhash.New()
+	h.Write(value)
+	vhash := h.Sum(nil)
 
 	bz := new(bytes.Buffer)
 	// Wrap <op.Key, vhash> to hash the KVPair.
 	encodeByteSlice(bz, op.key) //nolint: errcheck // does not error
 	encodeByteSlice(bz, vhash)  //nolint: errcheck // does not error
-	kvhash := leafHash(bz.Bytes())
+	kvhash := leafHash(h, bz.Bytes())
 
 	if !bytes.Equal(kvhash, op.Proof.LeafHash) {
 		return nil, ErrInvalidHash{

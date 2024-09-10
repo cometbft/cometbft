@@ -399,19 +399,14 @@ func (t Testnet) Validate() error {
 			return fmt.Errorf("invalid node %q: %w", node.Name, err)
 		}
 	}
-	for _, entry := range t.Genesis {
-		tokens := strings.Split(entry, " = ")
-		if len(tokens) != 2 {
-			return fmt.Errorf("invalid genesis entry: \"%s\", "+
-				"expected \"key = value\"", entry)
+	for _, field := range t.Genesis {
+		if _, _, err := ParseKeyValueField("genesis", field); err != nil {
+			return err
 		}
 	}
-
-	for _, entry := range t.Config {
-		tokens := strings.Split(entry, " = ")
-		if len(tokens) != 2 {
-			return fmt.Errorf("invalid config entry: \"%s\", "+
-				"expected \"key = value\"", entry)
+	for _, field := range t.Config {
+		if _, _, err := ParseKeyValueField("config", field); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -542,10 +537,8 @@ func (n Node) Validate(testnet Testnet) error {
 		}
 	}
 	for _, entry := range n.Config {
-		tokens := strings.Split(entry, " = ")
-		if len(tokens) != 2 {
-			return fmt.Errorf("invalid config entry: \"%s\", "+
-				"expected \"key = value\"", entry)
+		if _, _, err := ParseKeyValueField("config", entry); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -825,4 +818,13 @@ func parseCsv(csvString string) ([][]string, error) {
 	}
 
 	return records, nil
+}
+
+func ParseKeyValueField(name string, field string) (key string, value string, err error) {
+	tokens := strings.Split(field, "=")
+	if len(tokens) != 2 {
+		return key, value, fmt.Errorf("invalid '%s' field: \"%s\", "+
+			"expected \"key = value\"", name, field)
+	}
+	return strings.TrimSpace(tokens[0]), strings.TrimSpace(tokens[1]), nil
 }

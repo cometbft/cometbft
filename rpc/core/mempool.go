@@ -26,9 +26,12 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp
 	}
-	_, err := env.MempoolReactor.TryAddTx(tx, nil)
+	reqRes, err := env.MempoolReactor.TryAddTx(tx, nil)
 	if err != nil {
 		return nil, err
+	}
+	if reqRes.Error() != nil {
+		return nil, reqRes.Error()
 	}
 	return &ctypes.ResultBroadcastTx{Hash: tx.Hash()}, nil
 }

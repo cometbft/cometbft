@@ -1,6 +1,10 @@
 module github.com/cometbft/cometbft
 
+<<<<<<< HEAD
 go 1.21
+=======
+go 1.22
+>>>>>>> 0f713de8c (build(deps): Update cometbft-db to v0.9.5 (#4059))
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -32,9 +36,15 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
+<<<<<<< HEAD
 	golang.org/x/crypto v0.26.0
 	golang.org/x/net v0.28.0
 	google.golang.org/grpc v1.62.1
+=======
+	golang.org/x/crypto v0.27.0
+	golang.org/x/net v0.29.0
+	google.golang.org/grpc v1.66.1
+>>>>>>> 0f713de8c (build(deps): Update cometbft-db to v0.9.5 (#4059))
 )
 
 require (
@@ -44,6 +54,7 @@ require (
 )
 
 require (
+<<<<<<< HEAD
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/btcsuite/btcd/btcutil v1.1.2
@@ -53,6 +64,15 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/vektra/mockery/v2 v2.14.0
+=======
+	github.com/Masterminds/semver/v3 v3.3.0
+	github.com/btcsuite/btcd/btcec/v2 v2.2.2
+	github.com/btcsuite/btcd/btcutil v1.1.6
+	github.com/cometbft/cometbft-db v0.9.5
+	github.com/cometbft/cometbft-load-test v0.2.0
+	github.com/go-git/go-git/v5 v5.11.0
+	github.com/golang/protobuf v1.5.4
+>>>>>>> 0f713de8c (build(deps): Update cometbft-db to v0.9.5 (#4059))
 	golang.org/x/sync v0.8.0
 	gonum.org/v1/gonum v0.8.2
 	google.golang.org/protobuf v1.33.0
@@ -139,6 +159,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+<<<<<<< HEAD
 	github.com/golangci/check v0.0.0-20180506172741-cfe4005ccda2 // indirect
 	github.com/golangci/dupl v0.0.0-20180902072040-3e9179ac440a // indirect
 	github.com/golangci/go-misc v0.0.0-20220329215616-d24fe342adfe // indirect
@@ -157,6 +178,10 @@ require (
 	github.com/gostaticanalysis/nilerr v0.1.1 // indirect
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
+=======
+	github.com/google/btree v1.1.3 // indirect
+	github.com/gotestyourself/gotestyourself v1.4.0 // indirect
+>>>>>>> 0f713de8c (build(deps): Update cometbft-db to v0.9.5 (#4059))
 	github.com/gtank/ristretto255 v0.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -174,6 +199,7 @@ require (
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/julz/importas v0.1.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
+<<<<<<< HEAD
 	github.com/kisielk/errcheck v1.6.2 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.3 // indirect
@@ -186,6 +212,10 @@ require (
 	github.com/ldez/tagliatelle v0.3.1 // indirect
 	github.com/leonklingele/grouper v1.1.0 // indirect
 	github.com/lufeee/execinquery v1.2.1 // indirect
+=======
+	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/linxGnu/grocksdb v1.9.3 // indirect
+>>>>>>> 0f713de8c (build(deps): Update cometbft-db to v0.9.5 (#4059))
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/maratori/testableexamples v1.0.0 // indirect
 	github.com/maratori/testpackage v1.1.0 // indirect
@@ -266,6 +296,7 @@ require (
 	github.com/ultraware/whitespace v0.0.5 // indirect
 	github.com/uudashr/gocognit v1.0.6 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
+<<<<<<< HEAD
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	gitlab.com/bosi/decorder v0.2.3 // indirect
@@ -287,6 +318,14 @@ require (
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240314234333-6e1732d8331c // indirect
+=======
+	go.etcd.io/bbolt v1.3.11 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
+	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/text v0.18.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
+>>>>>>> 0f713de8c (build(deps): Update cometbft-db to v0.9.5 (#4059))
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

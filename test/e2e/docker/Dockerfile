@@ -1,7 +1,11 @@
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
+<<<<<<< HEAD
 FROM golang:1.21-bullseye
+=======
+FROM cometbft/cometbft-db-testing:v0.9.5
+>>>>>>> 0f713de8c (build(deps): Update cometbft-db to v0.9.5 (#4059))
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 RUN apt-get -qq install -y libleveldb-dev librocksdb-dev >/dev/null

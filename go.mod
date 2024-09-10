@@ -18,7 +18,6 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/libp2p/go-buffer-pool v0.1.0
 	github.com/minio/highwayhash v1.0.3
-	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.20.2
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
@@ -50,21 +49,21 @@ require (
 	github.com/cometbft/cometbft-load-test v0.2.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/golang/protobuf v1.5.4
+	github.com/ory/dockertest v3.3.5+incompatible
 	golang.org/x/sync v0.8.0
 	gonum.org/v1/gonum v0.15.0
 	google.golang.org/protobuf v1.34.2
 )
 
-// Force adlio/schema to use the newer version of runc.
-// TODO: Remove once adlio/schema is updated.
-require (
-	github.com/containerd/continuity v0.3.0 // indirect
-	github.com/opencontainers/runc v1.2.0-rc.2 // indirect
+// TODO: Remove once these libs are updated.
+require github.com/opencontainers/runc v1.2.0-rc.2 // indirect
+
+replace (
+	github.com/adlio/schema v1.3.6 => github.com/informalsystems/schema v0.0.0-20240910074420-6f3a29ec8110
+
+	github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240821083708-b13f967d7d05
+	github.com/spf13/afero v1.11.0 => github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e
 )
-
-replace github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240821083708-b13f967d7d05
-
-replace github.com/spf13/afero v1.11.0 => github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
@@ -77,6 +76,7 @@ require (
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.3.9 // indirect
+	github.com/containerd/continuity v0.4.3 // indirect
 	github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d // indirect
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -85,7 +85,6 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/docker/cli v27.0.3+incompatible // indirect
-	github.com/docker/docker v27.0.3+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -110,9 +109,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mimoo/StrobeGo v0.0.0-20220103164710-9a04d6ca976b // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/user v0.1.0 // indirect
-	github.com/moby/term v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect

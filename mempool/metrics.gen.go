@@ -66,6 +66,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "rejected_txs",
 			Help:      "Number of rejected transactions.",
 		}, labels).With(labelsAndValues...),
+		EvictedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "evicted_txs",
+			Help:      "Number of evicted transactions.",
+		}, labels).With(labelsAndValues...),
 		RecheckTimes: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
@@ -84,6 +90,12 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Name:      "active_outbound_connections",
 			Help:      "Number of connections being actively used for gossiping transactions (experimental feature).",
 		}, labels).With(labelsAndValues...),
+		RecheckDurationSeconds: prometheus.NewGaugeFrom(stdprometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: MetricsSubsystem,
+			Name:      "recheck_duration_seconds",
+			Help:      "Cumulative time spent rechecking transactions",
+		}, labels).With(labelsAndValues...),
 	}
 }
 
@@ -97,8 +109,10 @@ func NopMetrics() *Metrics {
 		TxSizeBytes:               discard.NewHistogram(),
 		FailedTxs:                 discard.NewCounter(),
 		RejectedTxs:               discard.NewCounter(),
+		EvictedTxs:                discard.NewCounter(),
 		RecheckTimes:              discard.NewCounter(),
 		AlreadyReceivedTxs:        discard.NewCounter(),
 		ActiveOutboundConnections: discard.NewGauge(),
+		RecheckDurationSeconds:    discard.NewGauge(),
 	}
 }

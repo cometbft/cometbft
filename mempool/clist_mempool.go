@@ -242,6 +242,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 	txSize := len(tx)
 
 	if err := mem.isFull(txSize); err != nil {
+		mem.metrics.RejectedTxs.Add(1)
 		return nil, err
 	}
 
@@ -333,9 +334,30 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		if err := mem.isFull(len(tx)); err != nil {
 			mem.forceRemoveFromCache(tx) // mempool might have space later
 			mem.logger.Error(err.Error())
+			mem.metrics.RejectedTxs.Add(1)
 			return
 		}
 
+<<<<<<< HEAD
+=======
+		// Check that tx is not already in the mempool. This can happen when the
+		// cache overflows. See https://github.com/cometbft/cometbft/pull/890.
+		txKey := tx.Key()
+		if mem.Contains(txKey) {
+			if err := mem.addSender(txKey, sender); err != nil {
+				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
+			}
+			mem.logger.Debug(
+				"Transaction already in mempool, not adding it again",
+				"tx", tx.Hash(),
+				"height", mem.height.Load(),
+				"total", mem.Size(),
+			)
+			mem.metrics.RejectedTxs.Add(1)
+			return
+		}
+
+>>>>>>> 5e4ab3c74 (feat(mempool/metrics): Add new `evicted_txs` metric and call unused `rejected_txs` (#4019))
 		// Add tx to mempool and notify that new txs are available.
 		memTx := mempoolTx{
 			height:    mem.height.Load(),
@@ -470,6 +492,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 				// update metrics
 				mem.metrics.Size.Set(float64(mem.Size()))
 				mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+				mem.metrics.EvictedTxs.Add(1)
 			}
 			mem.tryRemoveFromCache(tx)
 		}

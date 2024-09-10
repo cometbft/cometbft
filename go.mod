@@ -1,6 +1,6 @@
 module github.com/tendermint/tendermint
 
-go 1.22
+go 1.22.0
 
 require (
 	github.com/BurntSushi/toml v1.4.0
@@ -19,7 +19,7 @@ require (
 	github.com/libp2p/go-buffer-pool v0.1.0
 	github.com/minio/highwayhash v1.0.3
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.20.2
+	github.com/prometheus/client_golang v1.20.3
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/cors v1.11.1
 	github.com/sasha-s/go-deadlock v0.3.5
@@ -61,7 +61,7 @@ require github.com/opencontainers/runc v1.2.0-rc.2 // indirect
 replace (
 	github.com/adlio/schema v1.3.6 => github.com/informalsystems/schema v0.0.0-20240910074420-6f3a29ec8110
 
-	github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240821083708-b13f967d7d05
+	github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240910100206-37b6b26dc6fd
 	github.com/spf13/afero v1.11.0 => github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e
 )
 
@@ -118,7 +118,7 @@ require (
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.55.0 // indirect
+	github.com/prometheus/common v0.59.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/sagikazarmark/locafero v0.6.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
@@ -134,7 +134,7 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
+	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect

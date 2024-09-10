@@ -232,12 +232,8 @@ func (mem *CListMempool) CheckTx(
 	txSize := len(tx)
 
 	if err := mem.isFull(txSize); err != nil {
-<<<<<<< HEAD
-		return err
-=======
 		mem.metrics.RejectedTxs.Add(1)
-		return nil, err
->>>>>>> 5e4ab3c74 (feat(mempool/metrics): Add new `evicted_txs` metric and call unused `rejected_txs` (#4019))
+		return err
 	}
 
 	if txSize > mem.config.MaxTxBytes {
@@ -341,65 +337,7 @@ func (mem *CListMempool) reqResCb(
 				types.Tx(tx).Hash()))
 		}
 
-<<<<<<< HEAD
 		mem.resCbFirstTime(tx, txInfo, res)
-=======
-		var postCheckErr error
-		if mem.postCheck != nil {
-			postCheckErr = mem.postCheck(tx, res)
-		}
-
-		// If tx is invalid, remove it from the cache.
-		if res.Code != abci.CodeTypeOK || postCheckErr != nil {
-			mem.tryRemoveFromCache(tx)
-			mem.logger.Debug(
-				"Rejected invalid transaction",
-				"tx", tx.Hash(),
-				"res", res,
-				"err", postCheckErr,
-			)
-			mem.metrics.FailedTxs.Add(1)
-			return
-		}
-
-		// Check again that mempool isn't full, to reduce the chance of exceeding the limits.
-		if err := mem.isFull(len(tx)); err != nil {
-			mem.forceRemoveFromCache(tx) // mempool might have space later
-			mem.logger.Error(err.Error())
-			mem.metrics.RejectedTxs.Add(1)
-			return
-		}
-
-		// Check that tx is not already in the mempool. This can happen when the
-		// cache overflows. See https://github.com/cometbft/cometbft/pull/890.
-		txKey := tx.Key()
-		if mem.Contains(txKey) {
-			if err := mem.addSender(txKey, sender); err != nil {
-				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
-			}
-			mem.logger.Debug(
-				"Transaction already in mempool, not adding it again",
-				"tx", tx.Hash(),
-				"height", mem.height.Load(),
-				"total", mem.Size(),
-			)
-			mem.metrics.RejectedTxs.Add(1)
-			return
-		}
-
-		// Add tx to mempool and notify that new txs are available.
-		memTx := mempoolTx{
-			height:    mem.height.Load(),
-			gasWanted: res.GasWanted,
-			tx:        tx,
-		}
-		mem.addTx(&memTx, sender)
-		mem.notifyTxsAvailable()
-
-		if mem.onNewTx != nil {
-			mem.onNewTx(tx)
-		}
->>>>>>> 5e4ab3c74 (feat(mempool/metrics): Add new `evicted_txs` metric and call unused `rejected_txs` (#4019))
 
 		// update metrics
 		mem.metrics.Size.Set(float64(mem.Size()))
@@ -478,6 +416,7 @@ func (mem *CListMempool) resCbFirstTime(
 				// remove from cache (mempool might have a space later)
 				mem.cache.Remove(tx)
 				mem.logger.Error(err.Error())
+				mem.metrics.RejectedTxs.Add(1)
 				return
 			}
 
@@ -492,6 +431,7 @@ func (mem *CListMempool) resCbFirstTime(
 					"height", mem.height.Load(),
 					"total", mem.Size(),
 				)
+				mem.metrics.RejectedTxs.Add(1)
 				return
 			}
 
@@ -527,7 +467,6 @@ func (mem *CListMempool) resCbFirstTime(
 			}
 		}
 
-<<<<<<< HEAD
 	default:
 		// ignore other messages
 	}
@@ -557,21 +496,7 @@ func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.ResponseCheckTx) {
 		}
 		if !mem.config.KeepInvalidTxsInCache {
 			mem.cache.Remove(tx)
-=======
-		// If tx is invalid, remove it from the mempool and the cache.
-		if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
-			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("Tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
-			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
-				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
-			} else {
-				// update metrics
-				mem.metrics.Size.Set(float64(mem.Size()))
-				mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
-				mem.metrics.EvictedTxs.Add(1)
-			}
-			mem.tryRemoveFromCache(tx)
->>>>>>> 5e4ab3c74 (feat(mempool/metrics): Add new `evicted_txs` metric and call unused `rejected_txs` (#4019))
+			mem.metrics.EvictedTxs.Add(1)
 		}
 	}
 }

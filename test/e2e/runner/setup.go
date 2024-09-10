@@ -172,23 +172,26 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 
 	// Customized genesis fields provided in the manifest
 	if len(testnet.Genesis) > 0 {
-		viper.Reset()
-		viper.SetConfigType("json")
+		v := viper.New()
+		v.SetConfigType("json")
 
-		for _, entry := range testnet.Genesis {
-			tokens := strings.Split(entry, " = ")
-			key, value := tokens[0], tokens[1]
-			logger.Debug("Applying Genesis config", key, value)
-			viper.Set(key, value)
+		for _, field := range testnet.Genesis {
+			key, value, err := e2e.ParseKeyValueField("genesis", field)
+			if err != nil {
+				return genesis, err
+			}
+			logger.Debug("Applying 'genesis' field", key, value)
+			v.Set(key, value)
 		}
 
 		// We use viper because it leaves untouched keys that are not set.
 		// The GenesisDoc does not use the original `mapstructure` tag.
-		err := viper.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
+		err := v.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
 			d.TagName = "json"
+			d.ErrorUnused = true
 		})
 		if err != nil {
-			return genesis, err
+			return genesis, fmt.Errorf("failed parsing 'genesis' field: %v", err)
 		}
 	}
 
@@ -340,15 +343,20 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 
 	// We currently need viper in order to parse config files.
 	if len(node.Config) > 0 {
-		viper.Reset()
-		for _, entry := range node.Config {
-			tokens := strings.Split(entry, " = ")
-			key, value := tokens[0], tokens[1]
-			logger.Debug("Applying Comet config", "node", node.Name, key, value)
-			viper.Set(key, value)
+		v := viper.New()
+		for _, field := range node.Config {
+			key, value, err := e2e.ParseKeyValueField("config", field)
+			if err != nil {
+				return nil, err
+			}
+			logger.Debug("Applying 'config' field", "node", node.Name, key, value)
+			v.Set(key, value)
 		}
-		if err := viper.Unmarshal(cfg); err != nil {
-			return nil, err
+		err := v.Unmarshal(cfg, func(d *mapstructure.DecoderConfig) {
+			d.ErrorUnused = true
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed parsing 'config' field of node %v: %v", node.Name, err)
 		}
 	}
 

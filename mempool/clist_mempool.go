@@ -266,7 +266,6 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 
 	if added := mem.addToCache(tx); !added {
 		mem.metrics.AlreadyReceivedTxs.Add(1)
-<<<<<<< HEAD
 		if sender != "" {
 			// Record a new sender for a tx we've already seen.
 			// Note it's possible a tx is still in the cache but no longer in the mempool
@@ -276,17 +275,9 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 				memTx := elem.Value.(*mempoolTx)
 				if found := memTx.addSender(sender); found {
 					// It should not be possible to receive twice a tx from the same sender.
-					mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
+					mem.logger.Error("Tx already received from peer", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", sender)
 				}
 			}
-=======
-		// Record a new sender for a tx we've already seen.
-		// Note it's possible a tx is still in the cache but no longer in the mempool
-		// (eg. after committing a block, txs are removed from mempool but not cache),
-		// so we only record the sender for txs still in the mempool.
-		if err := mem.addSender(tx.Key(), sender); err != nil {
-			mem.logger.Error("Could not add sender to tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", sender, "err", err)
->>>>>>> 1903da05f (fix(mempool): encode tx.Hash() as %X in logs (#4062))
 		}
 		// TODO: consider punishing peer for dups,
 		// its non-trivial since invalid txs can become valid,
@@ -420,13 +411,8 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	elem.DetachPrev()
 	mem.txsMap.Delete(txKey)
 	tx := elem.Value.(*mempoolTx).tx
-<<<<<<< HEAD
 	mem.txsBytes.Add(int64(-len(tx)))
-	mem.logger.Debug("Removed transaction", "tx", tx.Hash(), "height", mem.height.Load(), "total", mem.Size())
-=======
-	mem.txsBytes -= int64(len(tx))
 	mem.logger.Debug("Removed transaction", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "total", mem.Size())
->>>>>>> 1903da05f (fix(mempool): encode tx.Hash() as %X in logs (#4062))
 	return nil
 }
 

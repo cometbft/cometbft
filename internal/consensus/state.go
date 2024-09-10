@@ -2065,8 +2065,8 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 
 	p := proposal.ToProto()
 	// Verify signature
-	pubKey := cs.Validators.GetProposer().PubKey
-	if !pubKey.VerifySignature(
+	proposer := cs.Validators.GetProposer()
+	if !proposer.PubKey.VerifySignature(
 		types.ProposalSignBytes(cs.state.ChainID, p), proposal.Signature,
 	) {
 		return ErrInvalidProposalSignature
@@ -2090,9 +2090,15 @@ func (cs *State) defaultSetProposal(proposal *types.Proposal, recvTime time.Time
 	// TODO: We can check if Proposal is for a different block as this is a sign of misbehavior!
 	if cs.ProposalBlockParts == nil {
 		cs.ProposalBlockParts = types.NewPartSetFromHeader(proposal.BlockID.PartSetHeader)
+
+		// If we signed this Proposal, lock the PartSet until we load
+		// all the BlockParts that should come just after the Proposal.
+		if bytes.Equal(proposer.Address, cs.privValidatorPubKey.Address()) {
+			cs.ProposalBlockParts.Lock()
+		}
 	}
 
-	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", pubKey.Address())
+	cs.Logger.Info("Received proposal", "proposal", proposal, "proposer", proposer.Address)
 	return nil
 }
 
@@ -2193,6 +2199,7 @@ func (cs *State) addProposalBlockPart(msg *BlockPartMessage, peerID p2p.ID) (add
 		}
 
 		cs.ProposalBlock = block
+		cs.ProposalBlockParts.Unlock()
 
 		// NOTE: it's possible to receive complete proposal blocks for future rounds without having the proposal
 		cs.Logger.Info("Received complete proposal block", "height", cs.ProposalBlock.Height, "hash", cs.ProposalBlock.Hash())

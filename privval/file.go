@@ -182,8 +182,7 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 	}
 }
 
-// GenFilePV generates a new validator with randomly generated private key
-// and sets the filePaths, but does not call Save().
+// GenFilePV calls NewFilePV with a random private key of one of the crypto libraries supported by CometBFT.
 func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey, error)) (*FilePV, error) {
 	if keyGen == nil {
 		keyGen = func() (crypto.PrivKey, error) {

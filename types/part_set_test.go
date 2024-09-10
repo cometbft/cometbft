@@ -29,6 +29,7 @@ func TestBasicPartSet(t *testing.T) {
 	assert.True(t, partSet.IsComplete())
 	assert.EqualValues(t, nParts, partSet.Count())
 	assert.EqualValues(t, testPartSize*nParts, partSet.ByteSize())
+	assert.False(t, partSet.IsLocked())
 
 	// Test adding parts to a new partSet.
 	partSet2 := NewPartSetFromHeader(partSet.Header())
@@ -55,6 +56,7 @@ func TestBasicPartSet(t *testing.T) {
 	assert.EqualValues(t, nParts, partSet2.Total())
 	assert.EqualValues(t, nParts*testPartSize, partSet.ByteSize())
 	assert.True(t, partSet2.IsComplete())
+	assert.False(t, partSet2.IsLocked())
 
 	// Reconstruct data, assert that they are equal.
 	data2Reader := partSet2.GetReader()
@@ -62,6 +64,16 @@ func TestBasicPartSet(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, data, data2)
+
+	// Test locking
+	partSet2.Lock()
+	assert.True(t, partSet2.IsLocked())
+	partSet2.Lock()
+	assert.True(t, partSet2.IsLocked())
+	partSet2.Unlock()
+	assert.False(t, partSet2.IsLocked())
+	partSet2.Unlock()
+	assert.False(t, partSet2.IsLocked())
 }
 
 func TestWrongProof(t *testing.T) {

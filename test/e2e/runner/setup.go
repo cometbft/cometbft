@@ -167,6 +167,35 @@ func MakeGenesis(testnet *e2e.Testnet) (types.GenesisDoc, error) {
 		}
 		genesis.AppState = appState
 	}
+<<<<<<< HEAD
+=======
+
+	// Customized genesis fields provided in the manifest
+	if len(testnet.Genesis) > 0 {
+		v := viper.New()
+		v.SetConfigType("json")
+
+		for _, field := range testnet.Genesis {
+			key, value, err := e2e.ParseKeyValueField("genesis", field)
+			if err != nil {
+				return genesis, err
+			}
+			logger.Debug("Applying 'genesis' field", key, value)
+			v.Set(key, value)
+		}
+
+		// We use viper because it leaves untouched keys that are not set.
+		// The GenesisDoc does not use the original `mapstructure` tag.
+		err := v.Unmarshal(&genesis, func(d *mapstructure.DecoderConfig) {
+			d.TagName = "json"
+			d.ErrorUnused = true
+		})
+		if err != nil {
+			return genesis, fmt.Errorf("failed parsing 'genesis' field: %v", err)
+		}
+	}
+
+>>>>>>> bff1667f0 (fix(e2e): viper errors with invalid `config` and `genesis` manifest keys (#4016))
 	return genesis, genesis.ValidateAndComplete()
 }
 
@@ -312,6 +341,29 @@ func MakeConfig(node *e2e.Node) (*config.Config, error) {
 	if node.CompactionInterval != 0 && node.Compact {
 		cfg.Storage.CompactionInterval = node.CompactionInterval
 	}
+<<<<<<< HEAD
+=======
+
+	// We currently need viper in order to parse config files.
+	if len(node.Config) > 0 {
+		v := viper.New()
+		for _, field := range node.Config {
+			key, value, err := e2e.ParseKeyValueField("config", field)
+			if err != nil {
+				return nil, err
+			}
+			logger.Debug("Applying 'config' field", "node", node.Name, key, value)
+			v.Set(key, value)
+		}
+		err := v.Unmarshal(cfg, func(d *mapstructure.DecoderConfig) {
+			d.ErrorUnused = true
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed parsing 'config' field of node %v: %v", node.Name, err)
+		}
+	}
+
+>>>>>>> bff1667f0 (fix(e2e): viper errors with invalid `config` and `genesis` manifest keys (#4016))
 	return cfg, nil
 }
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -50,11 +51,12 @@ type CListMempool struct {
 	recheck *recheck
 
 	// Data in the following variables must to be kept in sync and updated atomically.
-	txsMtx   cmtsync.RWMutex
-	lanes    map[types.Lane]*clist.CList     // each lane is a linked-list of (valid) txs
-	txsMap   map[types.TxKey]*clist.CElement // for quick access to the mempool entry of a given tx
-	txsBytes int64                           // total size of mempool, in bytes
-	numTxs   int64                           // total number of txs in the mempool
+	txsMtx    cmtsync.RWMutex
+	lanes     map[types.Lane]*clist.CList     // each lane is a linked-list of (valid) txs
+	txsMap    map[types.TxKey]*clist.CElement // for quick access to the mempool entry of a given tx
+	laneBytes map[types.Lane]int64            // number of bytes per lane (for metrics)
+	txsBytes  int64                           // total size of mempool, in bytes
+	numTxs    int64                           // total number of txs in the mempool
 
 	addTxChMtx    cmtsync.RWMutex      // Protects the fields below
 	addTxCh       chan struct{}        // Blocks until the next TX is added
@@ -91,6 +93,7 @@ func NewCListMempool(
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
 		txsMap:        make(map[types.TxKey]*clist.CElement),
+		laneBytes:     make(map[types.Lane]int64),
 		logger:        log.NewNopLogger(),
 		metrics:       NopMetrics(),
 		addTxCh:       make(chan struct{}),
@@ -155,6 +158,7 @@ func (mem *CListMempool) removeAllTxs(lane types.Lane) {
 		e.DetachPrev()
 	}
 	mem.txsMap = make(map[types.TxKey]*clist.CElement)
+	delete(mem.laneBytes, lane)
 	mem.txsBytes = 0
 }
 
@@ -248,6 +252,19 @@ func (mem *CListMempool) SizeBytes() int64 {
 	defer mem.txsMtx.RUnlock()
 
 	return mem.txsBytes
+}
+
+// LaneBytes returns the total number of bytes of all txs in a given lane.
+//
+// Safe for concurrent use by multiple goroutines.
+func (mem *CListMempool) LaneBytes(lane types.Lane) int64 {
+	mem.txsMtx.RLock()
+	defer mem.txsMtx.RUnlock()
+
+	if v, ok := mem.laneBytes[lane]; ok {
+		return v
+	}
+	return -1
 }
 
 // Lock() must be help by the caller during execution.
@@ -414,9 +431,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 				mem.onNewTx(tx)
 			}
 
-			// update metrics
-			mem.metrics.Size.Set(float64(mem.Size()))
-			mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+			mem.updateSizeMetrics(lane)
 		}
 	}
 }
@@ -455,6 +470,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.txsMap[tx.Key()] = e
 	mem.txsBytes += int64(len(tx))
 	mem.numTxs++
+	mem.laneBytes[lane] += int64(len(tx))
 
 	// Notify iterators there's a new transaction.
 	close(mem.addTxCh)
@@ -489,6 +505,9 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 
 	memTx := elem.Value.(*mempoolTx)
 
+	label := strconv.FormatUint(uint64(memTx.lane), 10)
+	mem.metrics.TxLifeSpan.With("lane", label).Observe(float64(memTx.timestamp.Sub(time.Now().UTC())))
+
 	// Remove tx from lane.
 	mem.lanes[memTx.lane].Remove(elem)
 	elem.DetachPrev()
@@ -497,6 +516,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 	delete(mem.txsMap, txKey)
 	mem.txsBytes -= int64(len(memTx.tx))
 	mem.numTxs--
+	mem.laneBytes[memTx.lane] -= int64(len(memTx.tx))
 
 	mem.logger.Debug(
 		"Removed transaction",
@@ -564,9 +584,12 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
 			} else {
 				// update metrics
-				mem.metrics.Size.Set(float64(mem.Size()))
-				mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 				mem.metrics.EvictedTxs.Add(1)
+				if elem, ok := mem.txsMap[tx.Key()]; ok {
+					mem.updateSizeMetrics(elem.Value.(*mempoolTx).lane)
+				} else {
+					mem.logger.Error("Cannot update metrics", "err", err)
+				}
 			}
 			mem.tryRemoveFromCache(tx)
 		}
@@ -725,10 +748,20 @@ func (mem *CListMempool) Update(
 	}
 
 	// Update metrics
-	mem.metrics.Size.Set(float64(mem.Size()))
-	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+	for lane := range mem.lanes {
+		mem.updateSizeMetrics(lane)
+	}
 
 	return nil
+}
+
+// updateSizeMetrics updates the size-related metrics of a given lane.
+func (mem *CListMempool) updateSizeMetrics(lane types.Lane) {
+	label := strconv.FormatUint(uint64(lane), 10)
+	mem.metrics.LaneSize.With("lane", label).Set(float64(mem.lanes[lane].Len()))
+	mem.metrics.LaneBytes.With("lane", label).Set(float64(mem.LaneBytes(lane)))
+	mem.metrics.Size.Set(float64(mem.Size()))
+	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 }
 
 // recheckTxs sends all transactions in the mempool to the app for re-validation. When the function

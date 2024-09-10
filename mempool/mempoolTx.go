@@ -3,6 +3,7 @@ package mempool
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/types"
@@ -15,6 +16,7 @@ type mempoolTx struct {
 	tx        types.Tx // validated by the application
 	lane      types.Lane
 	seq       int64
+	timestamp time.Time // time when entry was created
 
 	// ids of peers who've sent us this tx (as a map for quick lookups).
 	// senders: PeerID -> struct{}

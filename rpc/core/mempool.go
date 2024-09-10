@@ -55,7 +55,7 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 		case <-ctx.Context().Done():
 		default:
 			if reqRes.Error() != nil {
-				resErrCh <- err
+				resErrCh <- reqRes.Error()
 			} else {
 				resCh <- reqRes.Response.GetCheckTx()
 			}
@@ -125,7 +125,7 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 		case <-ctx.Context().Done():
 		default:
 			if reqRes.Error() != nil {
-				resErrCh <- err
+				resErrCh <- reqRes.Error()
 			} else {
 				checkTxResCh <- reqRes.Response.GetCheckTx()
 			}

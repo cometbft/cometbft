@@ -159,7 +159,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	addRandomTxs(t, mp, 1)
-	iter := mp.NewIterator()
+	iter := mp.NewIterator(context.Background())
 	tx0 := <-iter.WaitNextCh()
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
@@ -1012,7 +1012,7 @@ func TestMempoolIterator(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		iter := mp.NewIterator()
+		iter := mp.NewIterator(context.Background())
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))

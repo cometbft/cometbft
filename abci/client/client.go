@@ -126,6 +126,18 @@ func (r *ReqRes) Error() error {
 	return r.cbErr
 }
 
+// GetCallback returns the configured callback of the ReqRes object which may be
+// nil. Note, it is not safe to concurrently call this in cases where it is
+// marked done and SetCallback is called before calling GetCallback as that
+// will invoke the callback twice and create a potential race condition.
+//
+// ref: https://github.com/tendermint/tendermint/issues/5439
+func (r *ReqRes) GetCallback() func(*types.Response) error {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+	return r.cb
+}
+
 func waitGroup1() (wg *sync.WaitGroup) {
 	wg = &sync.WaitGroup{}
 	wg.Add(1)

@@ -95,7 +95,7 @@ func New(ctx context.Context, addr string, opts ...Option) (Client, error) {
 	for _, opt := range opts {
 		opt(builder)
 	}
-	conn, err := ggrpc.DialContext(ctx, addr, builder.grpcOpts...)
+	conn, err := ggrpc.NewClient(addr, builder.grpcOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial %s: %w", addr, err)
 	}

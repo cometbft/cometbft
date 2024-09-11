@@ -855,6 +855,8 @@ func (iter *CListIterator) WaitNextCh() <-chan Entry {
 			select {
 			case <-iter.txs.WaitChan():
 			case <-iter.ctx.Done():
+			   close(ch)
+			   return
 			}
 			// Note that Front can return nil.
 			iter.cursor = iter.txs.Front()
@@ -863,6 +865,8 @@ func (iter *CListIterator) WaitNextCh() <-chan Entry {
 			select {
 			case <-iter.cursor.NextWaitChan():
 			case <-iter.ctx.Done():
+			   close(ch)
+			   return
 			}
 			// If the current entry is the last one or was removed, Next will return nil.
 			iter.cursor = iter.cursor.Next()

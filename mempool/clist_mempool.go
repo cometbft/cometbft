@@ -264,7 +264,7 @@ func (mem *CListMempool) LaneBytes(lane types.Lane) int64 {
 	if v, ok := mem.laneBytes[lane]; ok {
 		return v
 	}
-	return -1
+	return 0
 }
 
 // Lock() must be help by the caller during execution.
@@ -391,18 +391,17 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			return
 		}
 
-		// Check again that mempool isn't full, to reduce the chance of exceeding the limits.
-		if err := mem.isFull(len(tx)); err != nil {
-			mem.forceRemoveFromCache(tx) // mempool might have space later
-			mem.logger.Error(err.Error())
-			mem.metrics.RejectedTxs.Add(1)
-			return
-		}
-
 		// If the app returned a (non-zero) lane, use it; otherwise use the default lane.
 		lane := mem.defaultLane
 		if l := types.Lane(res.Lane); l != 0 {
 			lane = l
+		}
+
+		if err := mem.isLaneFull(len(tx), lane); err != nil {
+			mem.forceRemoveFromCache(tx) // lane might have space later
+			mem.logger.Error(err.Error())
+			mem.metrics.RejectedTxs.Add(1)
+			return
 		}
 
 		// Check that tx is not already in the mempool. This can happen when the
@@ -538,6 +537,31 @@ func (mem *CListMempool) isFull(txSize int) error {
 			MaxTxs:      mem.config.Size,
 			TxsBytes:    txsBytes,
 			MaxTxsBytes: mem.config.MaxTxsBytes,
+		}
+	}
+
+	if mem.recheck.consideredFull() {
+		return ErrRecheckFull
+	}
+
+	return nil
+}
+
+func (mem *CListMempool) isLaneFull(txSize int, lane types.Lane) error {
+	laneTxs := mem.lanes[lane].Len()
+	laneBytes := mem.LaneBytes(lane)
+
+	// The mempool capacity is split evenly for all lanes.
+	laneTxsCapacity := mem.config.Size / len(mem.sortedLanes)
+	laneBytesCapacity := mem.config.MaxTxsBytes / int64(len(mem.sortedLanes))
+
+	if laneTxs > laneTxsCapacity || int64(txSize)+laneBytes > laneBytesCapacity {
+		return ErrLaneIsFull{
+			Lane:     lane,
+			NumTxs:   laneTxs,
+			MaxTxs:   laneTxsCapacity,
+			Bytes:    laneBytes,
+			MaxBytes: laneBytesCapacity,
 		}
 	}
 

@@ -19,6 +19,10 @@ type AppConnSnapshot struct {
 func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ApplySnapshotChunk")
+	}
+
 	var r0 *types.ResponseApplySnapshotChunk
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error)); ok {
@@ -45,6 +49,10 @@ func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *types.Re
 func (_m *AppConnSnapshot) Error() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -58,6 +66,10 @@ func (_m *AppConnSnapshot) Error() error {
 // ListSnapshots provides a mock function with given fields: _a0, _a1
 func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
 	ret := _m.Called(_a0, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListSnapshots")
+	}
 
 	var r0 *types.ResponseListSnapshots
 	var r1 error
@@ -85,6 +97,10 @@ func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *types.Request
 func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadSnapshotChunk")
+	}
+
 	var r0 *types.ResponseLoadSnapshotChunk
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error)); ok {
@@ -111,6 +127,10 @@ func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *types.Req
 func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for OfferSnapshot")
+	}
+
 	var r0 *types.ResponseOfferSnapshot
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error)); ok {
@@ -133,13 +153,12 @@ func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *types.Request
 	return r0, r1
 }
 
-type mockConstructorTestingTNewAppConnSnapshot interface {
+// NewAppConnSnapshot creates a new instance of AppConnSnapshot. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewAppConnSnapshot(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewAppConnSnapshot creates a new instance of AppConnSnapshot. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewAppConnSnapshot(t mockConstructorTestingTNewAppConnSnapshot) *AppConnSnapshot {
+}) *AppConnSnapshot {
 	mock := &AppConnSnapshot{}
 	mock.Mock.Test(t)
 

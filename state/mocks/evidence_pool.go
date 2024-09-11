@@ -18,6 +18,10 @@ type EvidencePool struct {
 func (_m *EvidencePool) AddEvidence(_a0 types.Evidence) error {
 	ret := _m.Called(_a0)
 
+	if len(ret) == 0 {
+		panic("no return value specified for AddEvidence")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(types.Evidence) error); ok {
 		r0 = rf(_a0)
@@ -32,6 +36,10 @@ func (_m *EvidencePool) AddEvidence(_a0 types.Evidence) error {
 func (_m *EvidencePool) CheckEvidence(_a0 types.EvidenceList) error {
 	ret := _m.Called(_a0)
 
+	if len(ret) == 0 {
+		panic("no return value specified for CheckEvidence")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(types.EvidenceList) error); ok {
 		r0 = rf(_a0)
@@ -45,6 +53,10 @@ func (_m *EvidencePool) CheckEvidence(_a0 types.EvidenceList) error {
 // PendingEvidence provides a mock function with given fields: maxBytes
 func (_m *EvidencePool) PendingEvidence(maxBytes int64) ([]types.Evidence, int64) {
 	ret := _m.Called(maxBytes)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PendingEvidence")
+	}
 
 	var r0 []types.Evidence
 	var r1 int64
@@ -73,13 +85,12 @@ func (_m *EvidencePool) Update(_a0 state.State, _a1 types.EvidenceList) {
 	_m.Called(_a0, _a1)
 }
 
-type mockConstructorTestingTNewEvidencePool interface {
+// NewEvidencePool creates a new instance of EvidencePool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewEvidencePool(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewEvidencePool creates a new instance of EvidencePool. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewEvidencePool(t mockConstructorTestingTNewEvidencePool) *EvidencePool {
+}) *EvidencePool {
 	mock := &EvidencePool{}
 	mock.Mock.Test(t)
 

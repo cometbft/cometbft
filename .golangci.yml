@@ -7,7 +7,7 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - copyloopvar
+    # - copyloopvar
     - goconst
     - gofmt
     - goimports

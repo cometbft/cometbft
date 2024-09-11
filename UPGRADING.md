@@ -2,7 +2,16 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
+<<<<<<< HEAD
 ## v0.38.0
+=======
+## v0.37.12
+
+It is recommended that CometBFT be built with Go v1.22+ since v1.21 is no longer
+supported.
+
+## v0.37.6
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 
 This release introduces state machine-breaking changes, as well as substantial changes
 on the ABCI interface and indexing. It therefore requires a

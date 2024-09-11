@@ -19,6 +19,7 @@ type AppConnConsensus struct {
 func (_m *AppConnConsensus) Commit(_a0 context.Context) (*types.ResponseCommit, error) {
 	ret := _m.Called(_a0)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseCommit
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context) (*types.ResponseCommit, error)); ok {
@@ -26,13 +27,110 @@ func (_m *AppConnConsensus) Commit(_a0 context.Context) (*types.ResponseCommit, 
 	}
 	if rf, ok := ret.Get(0).(func(context.Context) *types.ResponseCommit); ok {
 		r0 = rf(_a0)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for BeginBlockSync")
+	}
+
+	var r0 *types.ResponseBeginBlock
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestBeginBlock) (*types.ResponseBeginBlock, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestBeginBlock) *types.ResponseBeginBlock); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseBeginBlock)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(types.RequestBeginBlock) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// CommitSync provides a mock function with given fields:
+func (_m *AppConnConsensus) CommitSync() (*types.ResponseCommit, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for CommitSync")
+	}
+
+	var r0 *types.ResponseCommit
+	var r1 error
+	if rf, ok := ret.Get(0).(func() (*types.ResponseCommit, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() *types.ResponseCommit); ok {
+		r0 = rf()
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseCommit)
 		}
 	}
 
+<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+=======
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// DeliverTxAsync provides a mock function with given fields: _a0
+func (_m *AppConnConsensus) DeliverTxAsync(_a0 types.RequestDeliverTx) *abcicli.ReqRes {
+	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeliverTxAsync")
+	}
+
+	var r0 *abcicli.ReqRes
+	if rf, ok := ret.Get(0).(func(types.RequestDeliverTx) *abcicli.ReqRes); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*abcicli.ReqRes)
+		}
+	}
+
+	return r0
+}
+
+// EndBlockSync provides a mock function with given fields: _a0
+func (_m *AppConnConsensus) EndBlockSync(_a0 types.RequestEndBlock) (*types.ResponseEndBlock, error) {
+	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EndBlockSync")
+	}
+
+	var r0 *types.ResponseEndBlock
+	var r1 error
+	if rf, ok := ret.Get(0).(func(types.RequestEndBlock) (*types.ResponseEndBlock, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestEndBlock) *types.ResponseEndBlock); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.ResponseEndBlock)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(types.RequestEndBlock) error); ok {
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
@@ -44,6 +142,10 @@ func (_m *AppConnConsensus) Commit(_a0 context.Context) (*types.ResponseCommit, 
 // Error provides a mock function with given fields:
 func (_m *AppConnConsensus) Error() error {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -111,21 +213,38 @@ func (_m *AppConnConsensus) FinalizeBlock(_a0 context.Context, _a1 *types.Reques
 func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *types.RequestInitChain) (*types.ResponseInitChain, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for InitChainSync")
+	}
+
 	var r0 *types.ResponseInitChain
 	var r1 error
+<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInitChain) (*types.ResponseInitChain, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInitChain) *types.ResponseInitChain); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(0).(func(types.RequestInitChain) (*types.ResponseInitChain, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestInitChain) *types.ResponseInitChain); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseInitChain)
 		}
 	}
 
+<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestInitChain) error); ok {
 		r1 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(1).(func(types.RequestInitChain) error); ok {
+		r1 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -137,21 +256,38 @@ func (_m *AppConnConsensus) InitChain(_a0 context.Context, _a1 *types.RequestIni
 func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for PrepareProposalSync")
+	}
+
 	var r0 *types.ResponsePrepareProposal
 	var r1 error
+<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareProposal) *types.ResponsePrepareProposal); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(0).(func(types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestPrepareProposal) *types.ResponsePrepareProposal); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponsePrepareProposal)
 		}
 	}
 
+<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestPrepareProposal) error); ok {
 		r1 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(1).(func(types.RequestPrepareProposal) error); ok {
+		r1 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -163,21 +299,38 @@ func (_m *AppConnConsensus) PrepareProposal(_a0 context.Context, _a1 *types.Requ
 func (_m *AppConnConsensus) ProcessProposal(_a0 context.Context, _a1 *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ProcessProposalSync")
+	}
+
 	var r0 *types.ResponseProcessProposal
 	var r1 error
+<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestProcessProposal) (*types.ResponseProcessProposal, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestProcessProposal) *types.ResponseProcessProposal); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(0).(func(types.RequestProcessProposal) (*types.ResponseProcessProposal, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestProcessProposal) *types.ResponseProcessProposal); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseProcessProposal)
 		}
 	}
 
+<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestProcessProposal) error); ok {
 		r1 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(1).(func(types.RequestProcessProposal) error); ok {
+		r1 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -211,13 +364,12 @@ func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *types.
 	return r0, r1
 }
 
-type mockConstructorTestingTNewAppConnConsensus interface {
+// NewAppConnConsensus creates a new instance of AppConnConsensus. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewAppConnConsensus(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewAppConnConsensus creates a new instance of AppConnConsensus. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewAppConnConsensus(t mockConstructorTestingTNewAppConnConsensus) *AppConnConsensus {
+}) *AppConnConsensus {
 	mock := &AppConnConsensus{}
 	mock.Mock.Test(t)
 

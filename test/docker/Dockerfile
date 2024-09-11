@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 FROM golang:1.15
+=======
+FROM golang:1.22
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 
 # Grab deps (jq, hexdump, xxd, killall)
 RUN apt-get update && \

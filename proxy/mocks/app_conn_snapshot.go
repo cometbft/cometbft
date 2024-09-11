@@ -19,21 +19,38 @@ type AppConnSnapshot struct {
 func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ApplySnapshotChunkSync")
+	}
+
 	var r0 *types.ResponseApplySnapshotChunk
 	var r1 error
+<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestApplySnapshotChunk) *types.ResponseApplySnapshotChunk); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(0).(func(types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestApplySnapshotChunk) *types.ResponseApplySnapshotChunk); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseApplySnapshotChunk)
 		}
 	}
 
+<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestApplySnapshotChunk) error); ok {
 		r1 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(1).(func(types.RequestApplySnapshotChunk) error); ok {
+		r1 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -44,6 +61,10 @@ func (_m *AppConnSnapshot) ApplySnapshotChunk(_a0 context.Context, _a1 *types.Re
 // Error provides a mock function with given fields:
 func (_m *AppConnSnapshot) Error() error {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Error")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -59,21 +80,38 @@ func (_m *AppConnSnapshot) Error() error {
 func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for ListSnapshotsSync")
+	}
+
 	var r0 *types.ResponseListSnapshots
 	var r1 error
+<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestListSnapshots) (*types.ResponseListSnapshots, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestListSnapshots) *types.ResponseListSnapshots); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(0).(func(types.RequestListSnapshots) (*types.ResponseListSnapshots, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestListSnapshots) *types.ResponseListSnapshots); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseListSnapshots)
 		}
 	}
 
+<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestListSnapshots) error); ok {
 		r1 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(1).(func(types.RequestListSnapshots) error); ok {
+		r1 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -85,21 +123,38 @@ func (_m *AppConnSnapshot) ListSnapshots(_a0 context.Context, _a1 *types.Request
 func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadSnapshotChunkSync")
+	}
+
 	var r0 *types.ResponseLoadSnapshotChunk
 	var r1 error
+<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestLoadSnapshotChunk) *types.ResponseLoadSnapshotChunk); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(0).(func(types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestLoadSnapshotChunk) *types.ResponseLoadSnapshotChunk); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseLoadSnapshotChunk)
 		}
 	}
 
+<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestLoadSnapshotChunk) error); ok {
 		r1 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(1).(func(types.RequestLoadSnapshotChunk) error); ok {
+		r1 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -111,21 +166,38 @@ func (_m *AppConnSnapshot) LoadSnapshotChunk(_a0 context.Context, _a1 *types.Req
 func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
 	ret := _m.Called(_a0, _a1)
 
+	if len(ret) == 0 {
+		panic("no return value specified for OfferSnapshotSync")
+	}
+
 	var r0 *types.ResponseOfferSnapshot
 	var r1 error
+<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestOfferSnapshot) *types.ResponseOfferSnapshot); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(0).(func(types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(types.RequestOfferSnapshot) *types.ResponseOfferSnapshot); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseOfferSnapshot)
 		}
 	}
 
+<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestOfferSnapshot) error); ok {
 		r1 = rf(_a0, _a1)
+=======
+	if rf, ok := ret.Get(1).(func(types.RequestOfferSnapshot) error); ok {
+		r1 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -133,13 +205,12 @@ func (_m *AppConnSnapshot) OfferSnapshot(_a0 context.Context, _a1 *types.Request
 	return r0, r1
 }
 
-type mockConstructorTestingTNewAppConnSnapshot interface {
+// NewAppConnSnapshot creates a new instance of AppConnSnapshot. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewAppConnSnapshot(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewAppConnSnapshot creates a new instance of AppConnSnapshot. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewAppConnSnapshot(t mockConstructorTestingTNewAppConnSnapshot) *AppConnSnapshot {
+}) *AppConnSnapshot {
 	mock := &AppConnSnapshot{}
 	mock.Mock.Test(t)
 

@@ -18,6 +18,7 @@ type Application struct {
 func (_m *Application) ApplySnapshotChunk(_a0 context.Context, _a1 *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseApplySnapshotChunk
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error)); ok {
@@ -25,6 +26,15 @@ func (_m *Application) ApplySnapshotChunk(_a0 context.Context, _a1 *types.Reques
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestApplySnapshotChunk) *types.ResponseApplySnapshotChunk); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for ApplySnapshotChunk")
+	}
+
+	var r0 types.ResponseApplySnapshotChunk
+	if rf, ok := ret.Get(0).(func(types.RequestApplySnapshotChunk) types.ResponseApplySnapshotChunk); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseApplySnapshotChunk)
@@ -44,6 +54,7 @@ func (_m *Application) ApplySnapshotChunk(_a0 context.Context, _a1 *types.Reques
 func (_m *Application) CheckTx(_a0 context.Context, _a1 *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseCheckTx
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)); ok {
@@ -51,6 +62,15 @@ func (_m *Application) CheckTx(_a0 context.Context, _a1 *types.RequestCheckTx) (
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCheckTx) *types.ResponseCheckTx); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for BeginBlock")
+	}
+
+	var r0 types.ResponseBeginBlock
+	if rf, ok := ret.Get(0).(func(types.RequestBeginBlock) types.ResponseBeginBlock); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseCheckTx)
@@ -70,6 +90,7 @@ func (_m *Application) CheckTx(_a0 context.Context, _a1 *types.RequestCheckTx) (
 func (_m *Application) Commit(_a0 context.Context, _a1 *types.RequestCommit) (*types.ResponseCommit, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseCommit
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCommit) (*types.ResponseCommit, error)); ok {
@@ -77,6 +98,15 @@ func (_m *Application) Commit(_a0 context.Context, _a1 *types.RequestCommit) (*t
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCommit) *types.ResponseCommit); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for CheckTx")
+	}
+
+	var r0 types.ResponseCheckTx
+	if rf, ok := ret.Get(0).(func(types.RequestCheckTx) types.ResponseCheckTx); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseCommit)
@@ -96,6 +126,7 @@ func (_m *Application) Commit(_a0 context.Context, _a1 *types.RequestCommit) (*t
 func (_m *Application) ExtendVote(_a0 context.Context, _a1 *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseExtendVote
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestExtendVote) (*types.ResponseExtendVote, error)); ok {
@@ -103,6 +134,15 @@ func (_m *Application) ExtendVote(_a0 context.Context, _a1 *types.RequestExtendV
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestExtendVote) *types.ResponseExtendVote); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for Commit")
+	}
+
+	var r0 types.ResponseCommit
+	if rf, ok := ret.Get(0).(func() types.ResponseCommit); ok {
+		r0 = rf()
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseExtendVote)
@@ -122,6 +162,7 @@ func (_m *Application) ExtendVote(_a0 context.Context, _a1 *types.RequestExtendV
 func (_m *Application) FinalizeBlock(_a0 context.Context, _a1 *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseFinalizeBlock
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error)); ok {
@@ -129,6 +170,15 @@ func (_m *Application) FinalizeBlock(_a0 context.Context, _a1 *types.RequestFina
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFinalizeBlock) *types.ResponseFinalizeBlock); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for DeliverTx")
+	}
+
+	var r0 types.ResponseDeliverTx
+	if rf, ok := ret.Get(0).(func(types.RequestDeliverTx) types.ResponseDeliverTx); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseFinalizeBlock)
@@ -148,6 +198,7 @@ func (_m *Application) FinalizeBlock(_a0 context.Context, _a1 *types.RequestFina
 func (_m *Application) Info(_a0 context.Context, _a1 *types.RequestInfo) (*types.ResponseInfo, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseInfo
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInfo) (*types.ResponseInfo, error)); ok {
@@ -155,6 +206,15 @@ func (_m *Application) Info(_a0 context.Context, _a1 *types.RequestInfo) (*types
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInfo) *types.ResponseInfo); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for EndBlock")
+	}
+
+	var r0 types.ResponseEndBlock
+	if rf, ok := ret.Get(0).(func(types.RequestEndBlock) types.ResponseEndBlock); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseInfo)
@@ -174,6 +234,7 @@ func (_m *Application) Info(_a0 context.Context, _a1 *types.RequestInfo) (*types
 func (_m *Application) InitChain(_a0 context.Context, _a1 *types.RequestInitChain) (*types.ResponseInitChain, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseInitChain
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInitChain) (*types.ResponseInitChain, error)); ok {
@@ -181,6 +242,15 @@ func (_m *Application) InitChain(_a0 context.Context, _a1 *types.RequestInitChai
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInitChain) *types.ResponseInitChain); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for Info")
+	}
+
+	var r0 types.ResponseInfo
+	if rf, ok := ret.Get(0).(func(types.RequestInfo) types.ResponseInfo); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseInitChain)
@@ -200,6 +270,7 @@ func (_m *Application) InitChain(_a0 context.Context, _a1 *types.RequestInitChai
 func (_m *Application) ListSnapshots(_a0 context.Context, _a1 *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseListSnapshots
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestListSnapshots) (*types.ResponseListSnapshots, error)); ok {
@@ -207,6 +278,15 @@ func (_m *Application) ListSnapshots(_a0 context.Context, _a1 *types.RequestList
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestListSnapshots) *types.ResponseListSnapshots); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for InitChain")
+	}
+
+	var r0 types.ResponseInitChain
+	if rf, ok := ret.Get(0).(func(types.RequestInitChain) types.ResponseInitChain); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseListSnapshots)
@@ -226,6 +306,7 @@ func (_m *Application) ListSnapshots(_a0 context.Context, _a1 *types.RequestList
 func (_m *Application) LoadSnapshotChunk(_a0 context.Context, _a1 *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseLoadSnapshotChunk
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error)); ok {
@@ -233,6 +314,15 @@ func (_m *Application) LoadSnapshotChunk(_a0 context.Context, _a1 *types.Request
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestLoadSnapshotChunk) *types.ResponseLoadSnapshotChunk); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for ListSnapshots")
+	}
+
+	var r0 types.ResponseListSnapshots
+	if rf, ok := ret.Get(0).(func(types.RequestListSnapshots) types.ResponseListSnapshots); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseLoadSnapshotChunk)
@@ -252,6 +342,7 @@ func (_m *Application) LoadSnapshotChunk(_a0 context.Context, _a1 *types.Request
 func (_m *Application) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseOfferSnapshot
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error)); ok {
@@ -259,6 +350,15 @@ func (_m *Application) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOffe
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestOfferSnapshot) *types.ResponseOfferSnapshot); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for LoadSnapshotChunk")
+	}
+
+	var r0 types.ResponseLoadSnapshotChunk
+	if rf, ok := ret.Get(0).(func(types.RequestLoadSnapshotChunk) types.ResponseLoadSnapshotChunk); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseOfferSnapshot)
@@ -278,6 +378,7 @@ func (_m *Application) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOffe
 func (_m *Application) PrepareProposal(_a0 context.Context, _a1 *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponsePrepareProposal
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error)); ok {
@@ -285,6 +386,15 @@ func (_m *Application) PrepareProposal(_a0 context.Context, _a1 *types.RequestPr
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareProposal) *types.ResponsePrepareProposal); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for OfferSnapshot")
+	}
+
+	var r0 types.ResponseOfferSnapshot
+	if rf, ok := ret.Get(0).(func(types.RequestOfferSnapshot) types.ResponseOfferSnapshot); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponsePrepareProposal)
@@ -304,6 +414,7 @@ func (_m *Application) PrepareProposal(_a0 context.Context, _a1 *types.RequestPr
 func (_m *Application) ProcessProposal(_a0 context.Context, _a1 *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseProcessProposal
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestProcessProposal) (*types.ResponseProcessProposal, error)); ok {
@@ -311,6 +422,15 @@ func (_m *Application) ProcessProposal(_a0 context.Context, _a1 *types.RequestPr
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestProcessProposal) *types.ResponseProcessProposal); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for PrepareProposal")
+	}
+
+	var r0 types.ResponsePrepareProposal
+	if rf, ok := ret.Get(0).(func(types.RequestPrepareProposal) types.ResponsePrepareProposal); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseProcessProposal)
@@ -330,6 +450,7 @@ func (_m *Application) ProcessProposal(_a0 context.Context, _a1 *types.RequestPr
 func (_m *Application) Query(_a0 context.Context, _a1 *types.RequestQuery) (*types.ResponseQuery, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseQuery
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestQuery) (*types.ResponseQuery, error)); ok {
@@ -337,6 +458,15 @@ func (_m *Application) Query(_a0 context.Context, _a1 *types.RequestQuery) (*typ
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestQuery) *types.ResponseQuery); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for ProcessProposal")
+	}
+
+	var r0 types.ResponseProcessProposal
+	if rf, ok := ret.Get(0).(func(types.RequestProcessProposal) types.ResponseProcessProposal); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseQuery)
@@ -356,6 +486,7 @@ func (_m *Application) Query(_a0 context.Context, _a1 *types.RequestQuery) (*typ
 func (_m *Application) VerifyVoteExtension(_a0 context.Context, _a1 *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
 	ret := _m.Called(_a0, _a1)
 
+<<<<<<< HEAD
 	var r0 *types.ResponseVerifyVoteExtension
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error)); ok {
@@ -363,6 +494,15 @@ func (_m *Application) VerifyVoteExtension(_a0 context.Context, _a1 *types.Reque
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestVerifyVoteExtension) *types.ResponseVerifyVoteExtension); ok {
 		r0 = rf(_a0, _a1)
+=======
+	if len(ret) == 0 {
+		panic("no return value specified for Query")
+	}
+
+	var r0 types.ResponseQuery
+	if rf, ok := ret.Get(0).(func(types.RequestQuery) types.ResponseQuery); ok {
+		r0 = rf(_a0)
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseVerifyVoteExtension)
@@ -378,13 +518,12 @@ func (_m *Application) VerifyVoteExtension(_a0 context.Context, _a1 *types.Reque
 	return r0, r1
 }
 
-type mockConstructorTestingTNewApplication interface {
+// NewApplication creates a new instance of Application. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewApplication(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewApplication creates a new instance of Application. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewApplication(t mockConstructorTestingTNewApplication) *Application {
+}) *Application {
 	mock := &Application{}
 	mock.Mock.Test(t)
 

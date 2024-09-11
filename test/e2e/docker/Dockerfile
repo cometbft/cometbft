@@ -1,7 +1,11 @@
 # We need to build in a Linux environment to support C libraries, e.g. RocksDB.
 # We use Debian instead of Alpine, so that we can use binary database packages
 # instead of spending time compiling them.
+<<<<<<< HEAD
 FROM cometbft/cometbft-db-testing:v0.11.0
+=======
+FROM cometbft/cometbft-db-testing:v0.9.5
+>>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 
 RUN apt-get -qq update -y && apt-get -qq upgrade -y >/dev/null
 

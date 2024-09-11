@@ -2,6 +2,11 @@ module github.com/cometbft/cometbft
 
 go 1.21
 
+<<<<<<< HEAD
+=======
+toolchain go1.22.7
+
+>>>>>>> 0b065ca97 (chore: Bump go toolchain to `1.22.7` on `v0.38.x` (#4065))
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/ChainSafe/go-schnorrkel v1.1.0

@@ -418,7 +418,10 @@ func NewNodeWithCliParams(ctx context.Context,
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, memplMetrics, logger)
+	// As blocksync is always active, statesync is irrelevant here
+	waitSync := !state.Validators.ValidatorBlocksTheChain(localAddr)
+
+	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, waitSync, memplMetrics, logger)
 
 	evidenceReactor, evidencePool, err := createEvidenceReactor(config, dbProvider, stateStore, blockStore, logger)
 	if err != nil {
@@ -465,7 +468,7 @@ func NewNodeWithCliParams(ctx context.Context,
 
 	consensusReactor, consensusState := createConsensusReactor(
 		config, state, blockExec, blockStore, mempool, evidencePool,
-		privValidator, csMetrics, eventBus, consensusLogger, offlineStateSyncHeight,
+		privValidator, csMetrics, waitSync, eventBus, consensusLogger, offlineStateSyncHeight,
 	)
 
 	err = stateStore.SetOfflineStateSyncHeight(0)

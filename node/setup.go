@@ -271,6 +271,7 @@ func createMempoolAndMempoolReactor(
 	proxyApp proxy.AppConns,
 	state sm.State,
 	eventBus *types.EventBus,
+	waitSync bool,
 	memplMetrics *mempl.Metrics,
 	logger log.Logger,
 ) (mempl.Mempool, mempoolReactor) {
@@ -300,7 +301,7 @@ func createMempoolAndMempoolReactor(
 		reactor := mempl.NewReactor(
 			config.Mempool,
 			mp,
-			true,
+			waitSync,
 		)
 		if config.Consensus.WaitForTxs() {
 			mp.EnableTxsAvailable()
@@ -365,6 +366,7 @@ func createConsensusReactor(config *cfg.Config,
 	evidencePool *evidence.Pool,
 	privValidator types.PrivValidator,
 	csMetrics *cs.Metrics,
+	waitSync bool,
 	eventBus *types.EventBus,
 	consensusLogger log.Logger,
 	offlineStateSyncHeight int64,
@@ -383,7 +385,7 @@ func createConsensusReactor(config *cfg.Config,
 	if privValidator != nil {
 		consensusState.SetPrivValidator(privValidator)
 	}
-	consensusReactor := cs.NewReactor(consensusState, true, cs.ReactorMetrics(csMetrics))
+	consensusReactor := cs.NewReactor(consensusState, waitSync, cs.ReactorMetrics(csMetrics))
 	consensusReactor.SetLogger(consensusLogger)
 	// services which will be publishing and/or subscribing for messages (events)
 	// consensusReactor will set it on consensusState and blockExecutor

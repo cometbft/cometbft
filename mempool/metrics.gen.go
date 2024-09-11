@@ -38,19 +38,19 @@ func PrometheusMetrics(namespace string, labelsAndValues ...string) *Metrics {
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "failed_txs",
-			Help:      "Number of failed transactions.",
+			Help:      "FailedTxs defines the number of failed transactions. These are transactions that failed to make it into the mempool because they were deemed invalid. metrics:Number of failed transactions.",
 		}, labels).With(labelsAndValues...),
 		RejectedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "rejected_txs",
-			Help:      "Number of rejected transactions.",
+			Help:      "RejectedTxs defines the number of rejected transactions. These are transactions that failed to make it into the mempool due to resource limits, e.g. mempool is full. metrics:Number of rejected transactions.",
 		}, labels).With(labelsAndValues...),
 		EvictedTxs: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: MetricsSubsystem,
 			Name:      "evicted_txs",
-			Help:      "Number of evicted transactions.",
+			Help:      "EvictedTxs defines the number of evicted transactions. These are valid transactions that passed CheckTx and make it into the mempool but later became invalid. metrics:Number of evicted transactions.",
 		}, labels).With(labelsAndValues...),
 		RecheckTimes: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 			Namespace: namespace,

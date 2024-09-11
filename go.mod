@@ -55,7 +55,7 @@ require (
 	github.com/vektra/mockery/v2 v2.23.1
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/sync v0.8.0
-	gonum.org/v1/gonum v0.12.0
+	gonum.org/v1/gonum v0.15.1
 	google.golang.org/protobuf v1.34.2
 )
 
@@ -286,8 +286,12 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
+<<<<<<< HEAD
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230307190834-24139beb5833 // indirect
+=======
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
+>>>>>>> 538232126 (build(deps): Bump gonum.org/v1/gonum from 0.12.0 to 0.15.1 (#3910))
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/term v0.23.0 // indirect

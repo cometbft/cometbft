@@ -51,8 +51,8 @@ func (e ErrMempoolIsFull) Error() string {
 	)
 }
 
-// ErrLaneIsFull defines an error where CometBFT and the application cannot
-// handle that much load.
+// ErrLaneIsFull is returned when a lane has reached its full capacity (either
+// in number of txs or bytes).
 type ErrLaneIsFull struct {
 	Lane     types.Lane
 	NumTxs   int

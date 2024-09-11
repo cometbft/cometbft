@@ -418,7 +418,7 @@ func NewNodeWithCliParams(ctx context.Context,
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
-	// As blocksync is always active, statesync is irrelevant here
+	// Blocksync is always active, except if the local node blocks the chain
 	waitSync := !state.Validators.ValidatorBlocksTheChain(localAddr)
 
 	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, waitSync, memplMetrics, logger)
@@ -460,8 +460,9 @@ func NewNodeWithCliParams(ctx context.Context,
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
-	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
+	// Don't start block sync if we're doing a state sync first, or we are blocking the chain.
+	blockSync := !stateSync && !state.Validators.ValidatorBlocksTheChain(localAddr)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, ErrCreateBlockSyncReactor{Err: err}
 	}

@@ -139,6 +139,17 @@ type Config struct {
 	// -1 denotes it is set at genesis.
 	// 0 denotes it is set at InitChain.
 	PbtsUpdateHeight int64 `toml:"pbts_update_height"`
+
+	// If true, disables the use of lanes by the application.
+	// Used to simulate networks that do not want to use lanes, running
+	// on top of CometBFT with lane support.
+	NoLanes bool `toml:"no_lanes"`
+
+	// Optional custom definition of lanes to be used by the application
+	// If not used the application has a default set of lanes:
+	// {"foo"= 9,"bar"=4,"default"= 1}
+	// Note that the default key has to be present in your list of custom lanes.
+	Lanes map[string]uint32 `toml:"lanes"`
 }
 
 func DefaultConfig(dir string) *Config {
@@ -150,13 +161,15 @@ func DefaultConfig(dir string) *Config {
 }
 
 // LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions() (map[string]uint32, []uint32) {
+func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []uint32) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
-	lanes := map[string]uint32{
-		"foo":       9,
-		"bar":       4,
-		defaultLane: 1,
+	if len(lanes) == 0 {
+		lanes = map[string]uint32{
+			"foo":       9,
+			"bar":       4,
+			defaultLane: 1,
+		}
 	}
 
 	// List of lane priorities
@@ -178,11 +191,18 @@ func NewApplication(cfg *Config) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
-	lanes, lanePriorities := LaneDefinitions()
-
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	logger.Info("Application started!")
+	if cfg.NoLanes {
+		return &Application{
+			logger:    logger,
+			state:     state,
+			snapshots: snapshots,
+			cfg:       cfg,
+		}, nil
+	}
 
+	lanes, lanePriorities := LaneDefinitions(cfg.Lanes)
 	return &Application{
 		logger:         logger,
 		state:          state,
@@ -201,6 +221,14 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 	}
 
 	height, hash := app.state.Info()
+	if app.cfg.NoLanes {
+		return &abci.InfoResponse{
+			Version:          version.ABCIVersion,
+			AppVersion:       appVersion,
+			LastBlockHeight:  int64(height),
+			LastBlockAppHash: hash,
+		}, nil
+	}
 	return &abci.InfoResponse{
 		Version:             version.ABCIVersion,
 		AppVersion:          appVersion,
@@ -324,8 +352,10 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		time.Sleep(app.cfg.CheckTxDelay)
 	}
 
+	if app.cfg.NoLanes {
+		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
+	}
 	lane := extractLane(value)
-
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 

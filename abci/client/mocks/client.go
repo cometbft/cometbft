@@ -19,68 +19,25 @@ type Client struct {
 	mock.Mock
 }
 
-<<<<<<< HEAD
 // ApplySnapshotChunk provides a mock function with given fields: _a0, _a1
 func (_m *Client) ApplySnapshotChunk(_a0 context.Context, _a1 *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// ApplySnapshotChunkAsync provides a mock function with given fields: _a0
-func (_m *Client) ApplySnapshotChunkAsync(_a0 types.RequestApplySnapshotChunk) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ApplySnapshotChunkAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestApplySnapshotChunk) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// ApplySnapshotChunkSync provides a mock function with given fields: _a0
-func (_m *Client) ApplySnapshotChunkSync(_a0 types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error) {
-	ret := _m.Called(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for ApplySnapshotChunkSync")
-	}
 
 	var r0 *types.ResponseApplySnapshotChunk
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestApplySnapshotChunk) *types.ResponseApplySnapshotChunk); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestApplySnapshotChunk) (*types.ResponseApplySnapshotChunk, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestApplySnapshotChunk) *types.ResponseApplySnapshotChunk); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseApplySnapshotChunk)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestApplySnapshotChunk) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestApplySnapshotChunk) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -88,118 +45,25 @@ func (_m *Client) ApplySnapshotChunkSync(_a0 types.RequestApplySnapshotChunk) (*
 	return r0, r1
 }
 
-<<<<<<< HEAD
 // CheckTx provides a mock function with given fields: _a0, _a1
 func (_m *Client) CheckTx(_a0 context.Context, _a1 *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// BeginBlockAsync provides a mock function with given fields: _a0
-func (_m *Client) BeginBlockAsync(_a0 types.RequestBeginBlock) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for BeginBlockAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestBeginBlock) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// BeginBlockSync provides a mock function with given fields: _a0
-func (_m *Client) BeginBlockSync(_a0 types.RequestBeginBlock) (*types.ResponseBeginBlock, error) {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for BeginBlockSync")
-	}
-
-	var r0 *types.ResponseBeginBlock
-	var r1 error
-	if rf, ok := ret.Get(0).(func(types.RequestBeginBlock) (*types.ResponseBeginBlock, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestBeginBlock) *types.ResponseBeginBlock); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponseBeginBlock)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(types.RequestBeginBlock) error); ok {
-		r1 = rf(_a0)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// CheckTxAsync provides a mock function with given fields: _a0
-func (_m *Client) CheckTxAsync(_a0 types.RequestCheckTx) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CheckTxAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestCheckTx) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// CheckTxSync provides a mock function with given fields: _a0
-func (_m *Client) CheckTxSync(_a0 types.RequestCheckTx) (*types.ResponseCheckTx, error) {
-	ret := _m.Called(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for CheckTxSync")
-	}
 
 	var r0 *types.ResponseCheckTx
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCheckTx) *types.ResponseCheckTx); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestCheckTx) (*types.ResponseCheckTx, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestCheckTx) *types.ResponseCheckTx); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseCheckTx)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestCheckTx) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestCheckTx) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -210,10 +74,6 @@ func (_m *Client) CheckTxSync(_a0 types.RequestCheckTx) (*types.ResponseCheckTx,
 // CheckTxAsync provides a mock function with given fields: _a0, _a1
 func (_m *Client) CheckTxAsync(_a0 context.Context, _a1 *types.RequestCheckTx) (*abcicli.ReqRes, error) {
 	ret := _m.Called(_a0, _a1)
-
-	if len(ret) == 0 {
-		panic("no return value specified for CommitAsync")
-	}
 
 	var r0 *abcicli.ReqRes
 	var r1 error
@@ -241,38 +101,21 @@ func (_m *Client) CheckTxAsync(_a0 context.Context, _a1 *types.RequestCheckTx) (
 func (_m *Client) Commit(_a0 context.Context, _a1 *types.RequestCommit) (*types.ResponseCommit, error) {
 	ret := _m.Called(_a0, _a1)
 
-	if len(ret) == 0 {
-		panic("no return value specified for CommitSync")
-	}
-
 	var r0 *types.ResponseCommit
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCommit) (*types.ResponseCommit, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestCommit) *types.ResponseCommit); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func() (*types.ResponseCommit, error)); ok {
-		return rf()
-	}
-	if rf, ok := ret.Get(0).(func() *types.ResponseCommit); ok {
-		r0 = rf()
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseCommit)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestCommit) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -280,168 +123,25 @@ func (_m *Client) Commit(_a0 context.Context, _a1 *types.RequestCommit) (*types.
 	return r0, r1
 }
 
-<<<<<<< HEAD
 // Echo provides a mock function with given fields: _a0, _a1
 func (_m *Client) Echo(_a0 context.Context, _a1 string) (*types.ResponseEcho, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// DeliverTxAsync provides a mock function with given fields: _a0
-func (_m *Client) DeliverTxAsync(_a0 types.RequestDeliverTx) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeliverTxAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestDeliverTx) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// DeliverTxSync provides a mock function with given fields: _a0
-func (_m *Client) DeliverTxSync(_a0 types.RequestDeliverTx) (*types.ResponseDeliverTx, error) {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeliverTxSync")
-	}
-
-	var r0 *types.ResponseDeliverTx
-	var r1 error
-	if rf, ok := ret.Get(0).(func(types.RequestDeliverTx) (*types.ResponseDeliverTx, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestDeliverTx) *types.ResponseDeliverTx); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponseDeliverTx)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(types.RequestDeliverTx) error); ok {
-		r1 = rf(_a0)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// EchoAsync provides a mock function with given fields: msg
-func (_m *Client) EchoAsync(msg string) *abcicli.ReqRes {
-	ret := _m.Called(msg)
-
-	if len(ret) == 0 {
-		panic("no return value specified for EchoAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(string) *abcicli.ReqRes); ok {
-		r0 = rf(msg)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// EchoSync provides a mock function with given fields: msg
-func (_m *Client) EchoSync(msg string) (*types.ResponseEcho, error) {
-	ret := _m.Called(msg)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for EchoSync")
-	}
 
 	var r0 *types.ResponseEcho
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, string) (*types.ResponseEcho, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, string) *types.ResponseEcho); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(string) (*types.ResponseEcho, error)); ok {
-		return rf(msg)
-	}
-	if rf, ok := ret.Get(0).(func(string) *types.ResponseEcho); ok {
-		r0 = rf(msg)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseEcho)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(msg)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// EndBlockAsync provides a mock function with given fields: _a0
-func (_m *Client) EndBlockAsync(_a0 types.RequestEndBlock) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for EndBlockAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestEndBlock) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// EndBlockSync provides a mock function with given fields: _a0
-func (_m *Client) EndBlockSync(_a0 types.RequestEndBlock) (*types.ResponseEndBlock, error) {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for EndBlockSync")
-	}
-
-	var r0 *types.ResponseEndBlock
-	var r1 error
-	if rf, ok := ret.Get(0).(func(types.RequestEndBlock) (*types.ResponseEndBlock, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestEndBlock) *types.ResponseEndBlock); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponseEndBlock)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(types.RequestEndBlock) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -453,10 +153,6 @@ func (_m *Client) EndBlockSync(_a0 types.RequestEndBlock) (*types.ResponseEndBlo
 func (_m *Client) Error() error {
 	ret := _m.Called()
 
-	if len(ret) == 0 {
-		panic("no return value specified for Error")
-	}
-
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -467,7 +163,6 @@ func (_m *Client) Error() error {
 	return r0
 }
 
-<<<<<<< HEAD
 // ExtendVote provides a mock function with given fields: _a0, _a1
 func (_m *Client) ExtendVote(_a0 context.Context, _a1 *types.RequestExtendVote) (*types.ResponseExtendVote, error) {
 	ret := _m.Called(_a0, _a1)
@@ -487,89 +182,6 @@ func (_m *Client) ExtendVote(_a0 context.Context, _a1 *types.RequestExtendVote) 
 
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestExtendVote) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-// FlushAsync provides a mock function with given fields:
-func (_m *Client) FlushAsync() *abcicli.ReqRes {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for FlushAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func() *abcicli.ReqRes); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// FlushSync provides a mock function with given fields:
-func (_m *Client) FlushSync() error {
-	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for FlushSync")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func() error); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// InfoAsync provides a mock function with given fields: _a0
-func (_m *Client) InfoAsync(_a0 types.RequestInfo) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for InfoAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestInfo) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// InfoSync provides a mock function with given fields: _a0
-func (_m *Client) InfoSync(_a0 types.RequestInfo) (*types.ResponseInfo, error) {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for InfoSync")
-	}
-
-	var r0 *types.ResponseInfo
-	var r1 error
-	if rf, ok := ret.Get(0).(func(types.RequestInfo) (*types.ResponseInfo, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestInfo) *types.ResponseInfo); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.ResponseInfo)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(types.RequestInfo) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -581,7 +193,6 @@ func (_m *Client) InfoSync(_a0 types.RequestInfo) (*types.ResponseInfo, error) {
 func (_m *Client) FinalizeBlock(_a0 context.Context, _a1 *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error) {
 	ret := _m.Called(_a0, _a1)
 
-<<<<<<< HEAD
 	var r0 *types.ResponseFinalizeBlock
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFinalizeBlock) (*types.ResponseFinalizeBlock, error)); ok {
@@ -589,15 +200,6 @@ func (_m *Client) FinalizeBlock(_a0 context.Context, _a1 *types.RequestFinalizeB
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestFinalizeBlock) *types.ResponseFinalizeBlock); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if len(ret) == 0 {
-		panic("no return value specified for InitChainAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestInitChain) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseFinalizeBlock)
@@ -657,38 +259,21 @@ func (_m *Client) Info(_a0 context.Context, _a1 *types.RequestInfo) (*types.Resp
 func (_m *Client) InitChain(_a0 context.Context, _a1 *types.RequestInitChain) (*types.ResponseInitChain, error) {
 	ret := _m.Called(_a0, _a1)
 
-	if len(ret) == 0 {
-		panic("no return value specified for InitChainSync")
-	}
-
 	var r0 *types.ResponseInitChain
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInitChain) (*types.ResponseInitChain, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestInitChain) *types.ResponseInitChain); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestInitChain) (*types.ResponseInitChain, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestInitChain) *types.ResponseInitChain); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseInitChain)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestInitChain) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestInitChain) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -700,10 +285,6 @@ func (_m *Client) InitChain(_a0 context.Context, _a1 *types.RequestInitChain) (*
 func (_m *Client) IsRunning() bool {
 	ret := _m.Called()
 
-	if len(ret) == 0 {
-		panic("no return value specified for IsRunning")
-	}
-
 	var r0 bool
 	if rf, ok := ret.Get(0).(func() bool); ok {
 		r0 = rf()
@@ -714,68 +295,25 @@ func (_m *Client) IsRunning() bool {
 	return r0
 }
 
-<<<<<<< HEAD
 // ListSnapshots provides a mock function with given fields: _a0, _a1
 func (_m *Client) ListSnapshots(_a0 context.Context, _a1 *types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// ListSnapshotsAsync provides a mock function with given fields: _a0
-func (_m *Client) ListSnapshotsAsync(_a0 types.RequestListSnapshots) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListSnapshotsAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestListSnapshots) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// ListSnapshotsSync provides a mock function with given fields: _a0
-func (_m *Client) ListSnapshotsSync(_a0 types.RequestListSnapshots) (*types.ResponseListSnapshots, error) {
-	ret := _m.Called(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for ListSnapshotsSync")
-	}
 
 	var r0 *types.ResponseListSnapshots
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestListSnapshots) (*types.ResponseListSnapshots, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestListSnapshots) *types.ResponseListSnapshots); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestListSnapshots) (*types.ResponseListSnapshots, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestListSnapshots) *types.ResponseListSnapshots); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseListSnapshots)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestListSnapshots) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestListSnapshots) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -783,68 +321,25 @@ func (_m *Client) ListSnapshotsSync(_a0 types.RequestListSnapshots) (*types.Resp
 	return r0, r1
 }
 
-<<<<<<< HEAD
 // LoadSnapshotChunk provides a mock function with given fields: _a0, _a1
 func (_m *Client) LoadSnapshotChunk(_a0 context.Context, _a1 *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// LoadSnapshotChunkAsync provides a mock function with given fields: _a0
-func (_m *Client) LoadSnapshotChunkAsync(_a0 types.RequestLoadSnapshotChunk) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for LoadSnapshotChunkAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestLoadSnapshotChunk) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// LoadSnapshotChunkSync provides a mock function with given fields: _a0
-func (_m *Client) LoadSnapshotChunkSync(_a0 types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error) {
-	ret := _m.Called(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for LoadSnapshotChunkSync")
-	}
 
 	var r0 *types.ResponseLoadSnapshotChunk
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestLoadSnapshotChunk) *types.ResponseLoadSnapshotChunk); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestLoadSnapshotChunk) (*types.ResponseLoadSnapshotChunk, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestLoadSnapshotChunk) *types.ResponseLoadSnapshotChunk); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseLoadSnapshotChunk)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestLoadSnapshotChunk) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestLoadSnapshotChunk) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -852,68 +347,25 @@ func (_m *Client) LoadSnapshotChunkSync(_a0 types.RequestLoadSnapshotChunk) (*ty
 	return r0, r1
 }
 
-<<<<<<< HEAD
 // OfferSnapshot provides a mock function with given fields: _a0, _a1
 func (_m *Client) OfferSnapshot(_a0 context.Context, _a1 *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// OfferSnapshotAsync provides a mock function with given fields: _a0
-func (_m *Client) OfferSnapshotAsync(_a0 types.RequestOfferSnapshot) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for OfferSnapshotAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestOfferSnapshot) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// OfferSnapshotSync provides a mock function with given fields: _a0
-func (_m *Client) OfferSnapshotSync(_a0 types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error) {
-	ret := _m.Called(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for OfferSnapshotSync")
-	}
 
 	var r0 *types.ResponseOfferSnapshot
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestOfferSnapshot) *types.ResponseOfferSnapshot); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestOfferSnapshot) (*types.ResponseOfferSnapshot, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestOfferSnapshot) *types.ResponseOfferSnapshot); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseOfferSnapshot)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestOfferSnapshot) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestOfferSnapshot) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -924,10 +376,6 @@ func (_m *Client) OfferSnapshotSync(_a0 types.RequestOfferSnapshot) (*types.Resp
 // OnReset provides a mock function with given fields:
 func (_m *Client) OnReset() error {
 	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for OnReset")
-	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -942,10 +390,6 @@ func (_m *Client) OnReset() error {
 // OnStart provides a mock function with given fields:
 func (_m *Client) OnStart() error {
 	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for OnStart")
-	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -962,68 +406,25 @@ func (_m *Client) OnStop() {
 	_m.Called()
 }
 
-<<<<<<< HEAD
 // PrepareProposal provides a mock function with given fields: _a0, _a1
 func (_m *Client) PrepareProposal(_a0 context.Context, _a1 *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// PrepareProposalAsync provides a mock function with given fields: _a0
-func (_m *Client) PrepareProposalAsync(_a0 types.RequestPrepareProposal) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for PrepareProposalAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestPrepareProposal) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// PrepareProposalSync provides a mock function with given fields: _a0
-func (_m *Client) PrepareProposalSync(_a0 types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error) {
-	ret := _m.Called(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for PrepareProposalSync")
-	}
 
 	var r0 *types.ResponsePrepareProposal
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestPrepareProposal) *types.ResponsePrepareProposal); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestPrepareProposal) (*types.ResponsePrepareProposal, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestPrepareProposal) *types.ResponsePrepareProposal); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponsePrepareProposal)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestPrepareProposal) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestPrepareProposal) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1031,68 +432,25 @@ func (_m *Client) PrepareProposalSync(_a0 types.RequestPrepareProposal) (*types.
 	return r0, r1
 }
 
-<<<<<<< HEAD
 // ProcessProposal provides a mock function with given fields: _a0, _a1
 func (_m *Client) ProcessProposal(_a0 context.Context, _a1 *types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// ProcessProposalAsync provides a mock function with given fields: _a0
-func (_m *Client) ProcessProposalAsync(_a0 types.RequestProcessProposal) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for ProcessProposalAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestProcessProposal) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// ProcessProposalSync provides a mock function with given fields: _a0
-func (_m *Client) ProcessProposalSync(_a0 types.RequestProcessProposal) (*types.ResponseProcessProposal, error) {
-	ret := _m.Called(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for ProcessProposalSync")
-	}
 
 	var r0 *types.ResponseProcessProposal
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestProcessProposal) (*types.ResponseProcessProposal, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestProcessProposal) *types.ResponseProcessProposal); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestProcessProposal) (*types.ResponseProcessProposal, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestProcessProposal) *types.ResponseProcessProposal); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseProcessProposal)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestProcessProposal) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestProcessProposal) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1100,68 +458,25 @@ func (_m *Client) ProcessProposalSync(_a0 types.RequestProcessProposal) (*types.
 	return r0, r1
 }
 
-<<<<<<< HEAD
 // Query provides a mock function with given fields: _a0, _a1
 func (_m *Client) Query(_a0 context.Context, _a1 *types.RequestQuery) (*types.ResponseQuery, error) {
 	ret := _m.Called(_a0, _a1)
-=======
-// QueryAsync provides a mock function with given fields: _a0
-func (_m *Client) QueryAsync(_a0 types.RequestQuery) *abcicli.ReqRes {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for QueryAsync")
-	}
-
-	var r0 *abcicli.ReqRes
-	if rf, ok := ret.Get(0).(func(types.RequestQuery) *abcicli.ReqRes); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*abcicli.ReqRes)
-		}
-	}
-
-	return r0
-}
-
-// QuerySync provides a mock function with given fields: _a0
-func (_m *Client) QuerySync(_a0 types.RequestQuery) (*types.ResponseQuery, error) {
-	ret := _m.Called(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
-
-	if len(ret) == 0 {
-		panic("no return value specified for QuerySync")
-	}
 
 	var r0 *types.ResponseQuery
 	var r1 error
-<<<<<<< HEAD
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestQuery) (*types.ResponseQuery, error)); ok {
 		return rf(_a0, _a1)
 	}
 	if rf, ok := ret.Get(0).(func(context.Context, *types.RequestQuery) *types.ResponseQuery); ok {
 		r0 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(0).(func(types.RequestQuery) (*types.ResponseQuery, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(types.RequestQuery) *types.ResponseQuery); ok {
-		r0 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.ResponseQuery)
 		}
 	}
 
-<<<<<<< HEAD
 	if rf, ok := ret.Get(1).(func(context.Context, *types.RequestQuery) error); ok {
 		r1 = rf(_a0, _a1)
-=======
-	if rf, ok := ret.Get(1).(func(types.RequestQuery) error); ok {
-		r1 = rf(_a0)
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1172,10 +487,6 @@ func (_m *Client) QuerySync(_a0 types.RequestQuery) (*types.ResponseQuery, error
 // Quit provides a mock function with given fields:
 func (_m *Client) Quit() <-chan struct{} {
 	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for Quit")
-	}
 
 	var r0 <-chan struct{}
 	if rf, ok := ret.Get(0).(func() <-chan struct{}); ok {
@@ -1192,10 +503,6 @@ func (_m *Client) Quit() <-chan struct{} {
 // Reset provides a mock function with given fields:
 func (_m *Client) Reset() error {
 	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for Reset")
-	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -1221,10 +528,6 @@ func (_m *Client) SetResponseCallback(_a0 abcicli.Callback) {
 func (_m *Client) Start() error {
 	ret := _m.Called()
 
-	if len(ret) == 0 {
-		panic("no return value specified for Start")
-	}
-
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -1238,10 +541,6 @@ func (_m *Client) Start() error {
 // Stop provides a mock function with given fields:
 func (_m *Client) Stop() error {
 	ret := _m.Called()
-
-	if len(ret) == 0 {
-		panic("no return value specified for Stop")
-	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -1257,10 +556,6 @@ func (_m *Client) Stop() error {
 func (_m *Client) String() string {
 	ret := _m.Called()
 
-	if len(ret) == 0 {
-		panic("no return value specified for String")
-	}
-
 	var r0 string
 	if rf, ok := ret.Get(0).(func() string); ok {
 		r0 = rf()
@@ -1271,7 +566,6 @@ func (_m *Client) String() string {
 	return r0
 }
 
-<<<<<<< HEAD
 // VerifyVoteExtension provides a mock function with given fields: _a0, _a1
 func (_m *Client) VerifyVoteExtension(_a0 context.Context, _a1 *types.RequestVerifyVoteExtension) (*types.ResponseVerifyVoteExtension, error) {
 	ret := _m.Called(_a0, _a1)
@@ -1299,14 +593,12 @@ func (_m *Client) VerifyVoteExtension(_a0 context.Context, _a1 *types.RequestVer
 }
 
 type mockConstructorTestingTNewClient interface {
-=======
-// NewClient creates a new instance of Client. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewClient(t interface {
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	mock.TestingT
 	Cleanup(func())
-}) *Client {
+}
+
+// NewClient creates a new instance of Client. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+func NewClient(t mockConstructorTestingTNewClient) *Client {
 	mock := &Client{}
 	mock.Mock.Test(t)
 

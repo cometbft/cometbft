@@ -46,11 +46,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-<<<<<<< HEAD
-go version go1.21.1 darwin/amd64
-=======
 go version go1.22.7 darwin/amd64
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 ```
 
 ## 1.2 Creating a new Go project
@@ -98,11 +94,7 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-<<<<<<< HEAD
-go 1.21.1
-=======
 go 1.22
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 
 require (
 github.com/cometbft/cometbft v0.38.0

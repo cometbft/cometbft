@@ -169,11 +169,6 @@ func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 	// Grab the package name.
 	var pkgName string
 	var pkg *ast.Package //nolint:staticcheck
-<<<<<<< HEAD
-	// TODO(thane): Figure out a more readable way of implementing this.
-	//nolint:revive
-=======
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	for pkgName, pkg = range d {
 	}
 	td := TemplateData{

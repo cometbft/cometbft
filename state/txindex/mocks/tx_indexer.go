@@ -24,10 +24,6 @@ type TxIndexer struct {
 func (_m *TxIndexer) AddBatch(b *txindex.Batch) error {
 	ret := _m.Called(b)
 
-	if len(ret) == 0 {
-		panic("no return value specified for AddBatch")
-	}
-
 	var r0 error
 	if rf, ok := ret.Get(0).(func(*txindex.Batch) error); ok {
 		r0 = rf(b)
@@ -41,10 +37,6 @@ func (_m *TxIndexer) AddBatch(b *txindex.Batch) error {
 // Get provides a mock function with given fields: hash
 func (_m *TxIndexer) Get(hash []byte) (*types.TxResult, error) {
 	ret := _m.Called(hash)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Get")
-	}
 
 	var r0 *types.TxResult
 	var r1 error
@@ -72,10 +64,6 @@ func (_m *TxIndexer) Get(hash []byte) (*types.TxResult, error) {
 func (_m *TxIndexer) Index(result *types.TxResult) error {
 	ret := _m.Called(result)
 
-	if len(ret) == 0 {
-		panic("no return value specified for Index")
-	}
-
 	var r0 error
 	if rf, ok := ret.Get(0).(func(*types.TxResult) error); ok {
 		r0 = rf(result)
@@ -89,10 +77,6 @@ func (_m *TxIndexer) Index(result *types.TxResult) error {
 // Search provides a mock function with given fields: ctx, q
 func (_m *TxIndexer) Search(ctx context.Context, q *query.Query) ([]*types.TxResult, error) {
 	ret := _m.Called(ctx, q)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Search")
-	}
 
 	var r0 []*types.TxResult
 	var r1 error
@@ -116,21 +100,18 @@ func (_m *TxIndexer) Search(ctx context.Context, q *query.Query) ([]*types.TxRes
 	return r0, r1
 }
 
-<<<<<<< HEAD
 // SetLogger provides a mock function with given fields: l
 func (_m *TxIndexer) SetLogger(l log.Logger) {
 	_m.Called(l)
 }
 
 type mockConstructorTestingTNewTxIndexer interface {
-=======
-// NewTxIndexer creates a new instance of TxIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewTxIndexer(t interface {
->>>>>>> 3215ee16a (build(deps): Bump Go to 1.22 (backport #4059) (#4072))
 	mock.TestingT
 	Cleanup(func())
-}) *TxIndexer {
+}
+
+// NewTxIndexer creates a new instance of TxIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+func NewTxIndexer(t mockConstructorTestingTNewTxIndexer) *TxIndexer {
 	mock := &TxIndexer{}
 	mock.Mock.Test(t)
 

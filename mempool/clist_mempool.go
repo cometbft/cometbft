@@ -232,6 +232,7 @@ func (mem *CListMempool) CheckTx(
 	txSize := len(tx)
 
 	if err := mem.isFull(txSize); err != nil {
+		mem.metrics.RejectedTxs.Add(1)
 		return err
 	}
 
@@ -415,6 +416,7 @@ func (mem *CListMempool) resCbFirstTime(
 				// remove from cache (mempool might have a space later)
 				mem.cache.Remove(tx)
 				mem.logger.Error(err.Error())
+				mem.metrics.RejectedTxs.Add(1)
 				return
 			}
 
@@ -429,6 +431,7 @@ func (mem *CListMempool) resCbFirstTime(
 					"height", mem.height.Load(),
 					"total", mem.Size(),
 				)
+				mem.metrics.RejectedTxs.Add(1)
 				return
 			}
 
@@ -493,6 +496,7 @@ func (mem *CListMempool) resCbRecheck(tx types.Tx, res *abci.ResponseCheckTx) {
 		}
 		if !mem.config.KeepInvalidTxsInCache {
 			mem.cache.Remove(tx)
+			mem.metrics.EvictedTxs.Add(1)
 		}
 	}
 }

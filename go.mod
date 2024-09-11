@@ -45,7 +45,7 @@ require (
 	github.com/cometbft/cometbft/api v1.0.0-rc.1
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/dgraph-io/badger/v4 v4.2.0
-	github.com/consensys/gnark-crypto v0.0.0-00010101000000-000000000000
+	github.com/consensys/gnark-crypto v0.0.0
 	github.com/cosmos/crypto v0.0.0-20240309083813-82ed2537802e
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccmack/goutil v1.2.3

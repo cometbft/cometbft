@@ -822,7 +822,7 @@ func pickPartToSend(
 	rng *rand.Rand,
 ) (*types.Part, bool) {
 	// If peer has same part set header as us, send block parts
-	if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) {
+	if rs.ProposalBlockParts.HasHeader(prs.ProposalBlockPartSetHeader) && !rs.ProposalBlockParts.IsLocked() {
 		if index, ok := rs.ProposalBlockParts.BitArray().Sub(prs.ProposalBlockParts.Copy()).PickRandom(rng); ok {
 			part := rs.ProposalBlockParts.GetPart(index)
 			// If sending this part fails, restart the OUTER_LOOP (busy-waiting).

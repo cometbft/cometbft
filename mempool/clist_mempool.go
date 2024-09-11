@@ -790,12 +790,14 @@ func (rc *recheck) consideredFull() bool {
 // entry is removed from the mempool, the iterator starts from the beginning of the CList. When it
 // reaches the end, it waits until a new entry is appended.
 type CListIterator struct {
+	ctx    context.Context
 	txs    *clist.CList    // to wait on and retrieve the first entry
 	cursor *clist.CElement // pointer to the current entry in the list
 }
 
-func (mem *CListMempool) NewIterator() Iterator {
+func (mem *CListMempool) NewIterator(ctx context.Context) Iterator {
 	return &CListIterator{
+		ctx: ctx,
 		txs: mem.txs,
 	}
 }
@@ -812,21 +814,29 @@ func (iter *CListIterator) WaitNextCh() <-chan Entry {
 		if iter.cursor == nil {
 			// We are at the beginning of the iteration or the saved entry got removed: wait until
 			// the list becomes not empty and select the first entry.
-			<-iter.txs.WaitChan()
+			select {
+			case <-iter.txs.WaitChan():
+			case <-iter.ctx.Done():
+				close(ch)
+				return
+			}
 			// Note that Front can return nil.
 			iter.cursor = iter.txs.Front()
 		} else {
 			// Wait for the next entry after the current one.
-			<-iter.cursor.NextWaitChan()
+			select {
+			case <-iter.cursor.NextWaitChan():
+			case <-iter.ctx.Done():
+				close(ch)
+				return
+			}
 			// If the current entry is the last one or was removed, Next will return nil.
 			iter.cursor = iter.cursor.Next()
 		}
 		if iter.cursor != nil {
 			ch <- iter.cursor.Value.(Entry)
-		} else {
-			// Unblock the receiver (it will receive nil).
-			close(ch)
 		}
+		close(ch)
 	}()
 	return ch
 }

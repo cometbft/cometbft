@@ -224,7 +224,6 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			cancel()
 		case <-memR.Quit():
 			cancel()
-		case <-ctx.Done():
 		}
 	}()
 

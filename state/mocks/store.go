@@ -56,6 +56,10 @@ func (_m *Store) Close() error {
 func (_m *Store) GetABCIResRetainHeight() (int64, error) {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for GetABCIResRetainHeight")
+	}
+
 	var r0 int64
 	var r1 error
 	if rf, ok := ret.Get(0).(func() (int64, error)); ok {
@@ -80,6 +84,10 @@ func (_m *Store) GetABCIResRetainHeight() (int64, error) {
 func (_m *Store) GetApplicationRetainHeight() (int64, error) {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for GetApplicationRetainHeight")
+	}
+
 	var r0 int64
 	var r1 error
 	if rf, ok := ret.Get(0).(func() (int64, error)); ok {
@@ -103,6 +111,10 @@ func (_m *Store) GetApplicationRetainHeight() (int64, error) {
 // GetCompanionBlockRetainHeight provides a mock function with given fields:
 func (_m *Store) GetCompanionBlockRetainHeight() (int64, error) {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetCompanionBlockRetainHeight")
+	}
 
 	var r0 int64
 	var r1 error
@@ -358,6 +370,10 @@ func (_m *Store) LoadValidators(height int64) (*types.ValidatorSet, error) {
 func (_m *Store) PruneABCIResponses(targetRetainHeight int64) (int64, int64, error) {
 	ret := _m.Called(targetRetainHeight)
 
+	if len(ret) == 0 {
+		panic("no return value specified for PruneABCIResponses")
+	}
+
 	var r0 int64
 	var r1 int64
 	var r2 error
@@ -425,6 +441,10 @@ func (_m *Store) Save(_a0 state.State) error {
 func (_m *Store) SaveABCIResRetainHeight(height int64) error {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for SaveABCIResRetainHeight")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64) error); ok {
 		r0 = rf(height)
@@ -439,6 +459,10 @@ func (_m *Store) SaveABCIResRetainHeight(height int64) error {
 func (_m *Store) SaveApplicationRetainHeight(height int64) error {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for SaveApplicationRetainHeight")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64) error); ok {
 		r0 = rf(height)
@@ -452,6 +476,10 @@ func (_m *Store) SaveApplicationRetainHeight(height int64) error {
 // SaveCompanionBlockRetainHeight provides a mock function with given fields: height
 func (_m *Store) SaveCompanionBlockRetainHeight(height int64) error {
 	ret := _m.Called(height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SaveCompanionBlockRetainHeight")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64) error); ok {

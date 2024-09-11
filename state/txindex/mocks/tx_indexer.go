@@ -72,6 +72,10 @@ func (_m *TxIndexer) Get(hash []byte) (*types.TxResult, error) {
 func (_m *TxIndexer) GetRetainHeight() (int64, error) {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for GetRetainHeight")
+	}
+
 	var r0 int64
 	var r1 error
 	if rf, ok := ret.Get(0).(func() (int64, error)); ok {
@@ -113,6 +117,10 @@ func (_m *TxIndexer) Index(result *types.TxResult) error {
 // Prune provides a mock function with given fields: retainHeight
 func (_m *TxIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	ret := _m.Called(retainHeight)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Prune")
+	}
 
 	var r0 int64
 	var r1 int64
@@ -183,10 +191,13 @@ func (_m *TxIndexer) SetLogger(l log.Logger) {
 	_m.Called(l)
 }
 
-<<<<<<< HEAD
 // SetRetainHeight provides a mock function with given fields: retainHeight
 func (_m *TxIndexer) SetRetainHeight(retainHeight int64) error {
 	ret := _m.Called(retainHeight)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetRetainHeight")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64) error); ok {
@@ -198,12 +209,9 @@ func (_m *TxIndexer) SetRetainHeight(retainHeight int64) error {
 	return r0
 }
 
-type mockConstructorTestingTNewTxIndexer interface {
-=======
 // NewTxIndexer creates a new instance of TxIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewTxIndexer(t interface {
->>>>>>> 418f82ecb (misc(tools)!: remove `tools` package (backport #2046) (#2073))
 	mock.TestingT
 	Cleanup(func())
 }) *TxIndexer {

@@ -23,6 +23,10 @@ type BlockIndexer struct {
 func (_m *BlockIndexer) GetRetainHeight() (int64, error) {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for GetRetainHeight")
+	}
+
 	var r0 int64
 	var r1 error
 	if rf, ok := ret.Get(0).(func() (int64, error)); ok {
@@ -93,6 +97,10 @@ func (_m *BlockIndexer) Index(_a0 types.EventDataNewBlockEvents) error {
 func (_m *BlockIndexer) Prune(retainHeight int64) (int64, int64, error) {
 	ret := _m.Called(retainHeight)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Prune")
+	}
+
 	var r0 int64
 	var r1 int64
 	var r2 error
@@ -155,10 +163,13 @@ func (_m *BlockIndexer) SetLogger(l log.Logger) {
 	_m.Called(l)
 }
 
-<<<<<<< HEAD
 // SetRetainHeight provides a mock function with given fields: retainHeight
 func (_m *BlockIndexer) SetRetainHeight(retainHeight int64) error {
 	ret := _m.Called(retainHeight)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetRetainHeight")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64) error); ok {
@@ -170,12 +181,9 @@ func (_m *BlockIndexer) SetRetainHeight(retainHeight int64) error {
 	return r0
 }
 
-type mockConstructorTestingTNewBlockIndexer interface {
-=======
 // NewBlockIndexer creates a new instance of BlockIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewBlockIndexer(t interface {
->>>>>>> 418f82ecb (misc(tools)!: remove `tools` package (backport #2046) (#2073))
 	mock.TestingT
 	Cleanup(func())
 }) *BlockIndexer {

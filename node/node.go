@@ -393,7 +393,7 @@ func NewNodeWithCliParams(ctx context.Context,
 	localAddr := pubKey.Address()
 
 	// Determine whether we should attempt state sync.
-	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
+	stateSync := config.StateSync.Enable && !state.Validators.ValidatorBlocksTheChain(localAddr)
 	if stateSync && state.LastBlockHeight > 0 {
 		logger.Info("Found local state with non-zero height, skipping state sync")
 		stateSync = false
@@ -416,12 +416,10 @@ func NewNodeWithCliParams(ctx context.Context,
 		}
 	}
 
-	// Determine whether we should do block sync. This must happen after the handshake, since the
-	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := !onlyValidatorIsUs(state, localAddr)
-	waitSync := stateSync || blockSync
-
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
+
+	// Blocksync is always active, except if the local node blocks the chain
+	waitSync := !state.Validators.ValidatorBlocksTheChain(localAddr)
 
 	mempool, mempoolReactor := createMempoolAndMempoolReactor(config, proxyApp, state, eventBus, waitSync, memplMetrics, logger)
 
@@ -462,8 +460,9 @@ func NewNodeWithCliParams(ctx context.Context,
 			panic(fmt.Sprintf("failed to retrieve statesynced height from store %s; expected state store height to be %v", err, state.LastBlockHeight))
 		}
 	}
-	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
+	// Don't start block sync if we're doing a state sync first, or we are blocking the chain.
+	blockSync := !stateSync && !state.Validators.ValidatorBlocksTheChain(localAddr)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, ErrCreateBlockSyncReactor{Err: err}
 	}

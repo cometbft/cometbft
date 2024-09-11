@@ -33,6 +33,8 @@ const (
 )
 
 func TestWALTruncate(t *testing.T) {
+	const numBlocks = 60
+
 	walDir, err := os.MkdirTemp("", "wal")
 	require.NoError(t, err)
 	defer os.RemoveAll(walDir)
@@ -63,7 +65,7 @@ func TestWALTruncate(t *testing.T) {
 	// 60 block's size nearly 70K, greater than group's headBuf size(4096 * 10),
 	// when headBuf is full, truncate content will Flush to the file. at this
 	// time, RotateFile is called, truncate content exist in each file.
-	err = WALGenerateNBlocks(t, wal.Group(), 60, getConfig(t))
+	err = WALGenerateNBlocks(t, wal.Group(), numBlocks, getConfig(t))
 	require.NoError(t, err)
 
 	time.Sleep(1 * time.Millisecond) // wait groupCheckDuration, make sure RotateFile run

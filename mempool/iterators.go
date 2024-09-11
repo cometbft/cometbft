@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/cometbft/cometbft/internal/clist"
@@ -93,10 +94,11 @@ func (iter *NonBlockingIterator) Next() Entry {
 // Unlike `NonBlockingWRRIterator`, this iterator is expected to work with an evolving mempool.
 type BlockingIterator struct {
 	WRRIterator
-	mp *CListMempool
+	ctx context.Context
+	mp  *CListMempool
 }
 
-func NewBlockingIterator(mem *CListMempool) Iterator {
+func NewBlockingIterator(ctx context.Context, mem *CListMempool) Iterator {
 	iter := WRRIterator{
 		sortedLanes: mem.sortedLanes,
 		counters:    make(map[types.Lane]uint, len(mem.sortedLanes)),
@@ -104,6 +106,7 @@ func NewBlockingIterator(mem *CListMempool) Iterator {
 	}
 	return &BlockingIterator{
 		WRRIterator: iter,
+		ctx:         ctx,
 		mp:          mem,
 	}
 }
@@ -117,9 +120,10 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
 		// Add the next entry to the channel if not nil.
-		lane := iter.PickLane()
-		if entry := iter.Next(lane); entry != nil {
-			ch <- entry.Value.(Entry)
+		if lane := iter.PickLane(); lane != 0 {
+			if entry := iter.Next(lane); entry != nil {
+				ch <- entry.Value.(Entry)
+			}
 		}
 		// Unblock the receiver (it may receive nil).
 		close(ch)
@@ -152,7 +156,11 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 				// There are no lanes with non-accessed entries. Wait until a new tx is added.
 				ch := iter.mp.addTxCh
 				iter.mp.addTxChMtx.RUnlock()
-				<-ch
+				select {
+				case <-ch:
+				case <-iter.ctx.Done():
+					return 0
+				}
 				iter.mp.addTxChMtx.RLock()
 				numEmptyLanes = 0
 			}

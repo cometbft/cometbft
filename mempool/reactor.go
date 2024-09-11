@@ -217,7 +217,17 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}
 
-	iter := NewBlockingIterator(memR.mempool)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-peer.Quit():
+			cancel()
+		case <-memR.Quit():
+			cancel()
+		}
+	}()
+
+	iter := NewBlockingIterator(ctx, memR.mempool)
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {

@@ -376,7 +376,7 @@ func (vals *ValidatorSet) ValidatorBlocksTheChain(address []byte) bool {
 	if val == nil {
 		return false
 	}
-	return val.VotingPower >= vals.TotalVotingPower()/3
+	return val.VotingPower > (vals.TotalVotingPower()-1)/3
 }
 
 // Hash returns the Merkle root hash build using validators (as leaves) in the

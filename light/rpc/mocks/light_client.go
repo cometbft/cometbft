@@ -130,8 +130,7 @@ func (_m *LightClient) VerifyLightBlockAtHeight(ctx context.Context, height int6
 func NewLightClient(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *LightClient {
+}) *LightClient {
 	mock := &LightClient{}
 	mock.Mock.Test(t)
 

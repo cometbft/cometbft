@@ -126,8 +126,7 @@ func (_m *TxIndexer) SetLogger(l log.Logger) {
 func NewTxIndexer(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *TxIndexer {
+}) *TxIndexer {
 	mock := &TxIndexer{}
 	mock.Mock.Test(t)
 

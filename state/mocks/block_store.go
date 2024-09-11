@@ -334,8 +334,7 @@ func (_m *BlockStore) Size() int64 {
 func NewBlockStore(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *BlockStore {
+}) *BlockStore {
 	mock := &BlockStore{}
 	mock.Mock.Test(t)
 

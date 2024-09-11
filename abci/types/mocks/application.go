@@ -439,8 +439,7 @@ func (_m *Application) VerifyVoteExtension(_a0 context.Context, _a1 *types.Reque
 func NewApplication(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *Application {
+}) *Application {
 	mock := &Application{}
 	mock.Mock.Test(t)
 

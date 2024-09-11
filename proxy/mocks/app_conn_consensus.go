@@ -248,8 +248,7 @@ func (_m *AppConnConsensus) VerifyVoteExtension(_a0 context.Context, _a1 *types.
 func NewAppConnConsensus(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *AppConnConsensus {
+}) *AppConnConsensus {
 	mock := &AppConnConsensus{}
 	mock.Mock.Test(t)
 

@@ -90,8 +90,7 @@ func (_m *EvidencePool) Update(_a0 state.State, _a1 types.EvidenceList) {
 func NewEvidencePool(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *EvidencePool {
+}) *EvidencePool {
 	mock := &EvidencePool{}
 	mock.Mock.Test(t)
 

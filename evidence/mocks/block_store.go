@@ -75,8 +75,7 @@ func (_m *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 func NewBlockStore(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *BlockStore {
+}) *BlockStore {
 	mock := &BlockStore{}
 	mock.Mock.Test(t)
 

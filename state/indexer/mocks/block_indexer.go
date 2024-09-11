@@ -105,8 +105,7 @@ func (_m *BlockIndexer) SetLogger(l log.Logger) {
 func NewBlockIndexer(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *BlockIndexer {
+}) *BlockIndexer {
 	mock := &BlockIndexer{}
 	mock.Mock.Test(t)
 

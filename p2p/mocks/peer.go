@@ -438,8 +438,7 @@ func (_m *Peer) TrySend(_a0 p2p.Envelope) bool {
 func NewPeer(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *Peer {
+}) *Peer {
 	mock := &Peer{}
 	mock.Mock.Test(t)
 

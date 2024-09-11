@@ -359,8 +359,7 @@ func (_m *Store) SetOfflineStateSyncHeight(height int64) error {
 func NewStore(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *Store {
+}) *Store {
 	mock := &Store{}
 	mock.Mock.Test(t)
 

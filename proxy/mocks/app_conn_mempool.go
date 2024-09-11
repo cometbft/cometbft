@@ -123,8 +123,7 @@ func (_m *AppConnMempool) SetResponseCallback(_a0 abcicli.Callback) {
 func NewAppConnMempool(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *AppConnMempool {
+}) *AppConnMempool {
 	mock := &AppConnMempool{}
 	mock.Mock.Test(t)
 

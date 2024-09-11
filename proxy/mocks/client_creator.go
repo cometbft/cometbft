@@ -47,8 +47,7 @@ func (_m *ClientCreator) NewABCIClient() (abcicli.Client, error) {
 func NewClientCreator(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *ClientCreator {
+}) *ClientCreator {
 	mock := &ClientCreator{}
 	mock.Mock.Test(t)
 

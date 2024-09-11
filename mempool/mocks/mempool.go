@@ -209,8 +209,7 @@ func (_m *Mempool) Update(blockHeight int64, blockTxs types.Txs, deliverTxRespon
 func NewMempool(t interface {
 	mock.TestingT
 	Cleanup(func())
-},
-) *Mempool {
+}) *Mempool {
 	mock := &Mempool{}
 	mock.Mock.Test(t)
 

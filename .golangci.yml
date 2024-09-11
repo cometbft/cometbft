@@ -6,12 +6,11 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    # - copyloopvar
     - goconst
     - gofmt
     - goimports
-    - revive
-    - gosec
+    # - gosec
     - gosimple
     - govet
     - ineffassign
@@ -63,6 +62,7 @@ linters-settings:
           - github.com/google
           - github.com/gorilla/websocket
           - github.com/informalsystems/tm-load-test/pkg/loadtest
+          - github.com/hashicorp/golang-lru/v2
           - github.com/lib/pq
           - github.com/libp2p/go-buffer-pool
           - github.com/Masterminds/semver/v3

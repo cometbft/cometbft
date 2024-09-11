@@ -1,6 +1,7 @@
 package privval
 
 import (
+	"errors"
 	"net"
 	"testing"
 	"time"
@@ -145,6 +146,89 @@ func TestRetryConnToRemoteSigner(t *testing.T) {
 	}
 }
 
+func TestDuplicateListenReject(t *testing.T) {
+	for _, tc := range getDialerTestCases(t) {
+		var (
+			logger           = log.TestingLogger()
+			chainID          = cmtrand.Str(12)
+			mockPV           = types.NewMockPV()
+			endpointIsOpenCh = make(chan struct{})
+			thisConnTimeout  = testTimeoutReadWrite
+			listenerEndpoint = newSignerListenerEndpoint(logger, tc.addr, thisConnTimeout)
+		)
+		listenerEndpoint.timeoutAccept = defaultTimeoutAcceptSeconds / 2 * time.Second
+
+		dialerEndpoint := NewSignerDialerEndpoint(
+			logger,
+			tc.dialer,
+		)
+		SignerDialerEndpointTimeoutReadWrite(testTimeoutReadWrite)(dialerEndpoint)
+		SignerDialerEndpointConnRetries(10)(dialerEndpoint)
+
+		signerServer := NewSignerServer(dialerEndpoint, chainID, mockPV)
+
+		startListenerEndpointAsync(t, listenerEndpoint, endpointIsOpenCh)
+		t.Cleanup(func() {
+			if err := listenerEndpoint.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		require.NoError(t, signerServer.Start())
+		assert.True(t, signerServer.IsRunning())
+
+		<-endpointIsOpenCh
+		if err := signerServer.Stop(); err != nil {
+			t.Error(err)
+		}
+
+		dialerEndpoint2 := NewSignerDialerEndpoint(
+			logger,
+			tc.dialer,
+		)
+		signerServer2 := NewSignerServer(dialerEndpoint2, chainID, mockPV)
+
+		// let some pings pass
+		require.NoError(t, signerServer2.Start())
+		assert.True(t, signerServer2.IsRunning())
+
+		// wait for successful connection
+		for {
+			if listenerEndpoint.IsConnected() {
+				break
+			}
+		}
+
+		// simulate ensureConnection, bypass triggerConnect default drop with multiple messages
+		time.Sleep(100 * time.Millisecond)
+		listenerEndpoint.triggerConnect()
+		time.Sleep(100 * time.Millisecond)
+		listenerEndpoint.triggerConnect()
+		time.Sleep(100 * time.Millisecond)
+		listenerEndpoint.triggerConnect()
+
+		// simulate validator node running long enough for privval listen timeout multiple times
+		// up to 1 timeout error is possible due to timing differences
+		// Run 3 times longer than timeout to generate at least 2 accept errors
+		time.Sleep(3 * defaultTimeoutAcceptSeconds * time.Second)
+		t.Cleanup(func() {
+			if err := signerServer2.Stop(); err != nil {
+				t.Error(err)
+			}
+		})
+
+		// after connect, there should not be more than 1 accept fail
+		assert.LessOrEqual(t, listenerEndpoint.acceptFailCount.Load(), uint32(1))
+
+		// give the client some time to re-establish the conn to the remote signer
+		// should see sth like this in the logs:
+		//
+		// E[10016-01-10|17:12:46.128] Ping                                         err="remote signer timed out"
+		// I[10016-01-10|17:16:42.447] Re-created connection to remote signer       impl=SocketVal
+		time.Sleep(testTimeoutReadWrite * 2)
+	}
+}
+
 func newSignerListenerEndpoint(logger log.Logger, addr string, timeoutReadWrite time.Duration) *SignerListenerEndpoint {
 	proto, address := cmtnet.ProtocolAndAddress(addr)
 
@@ -212,4 +296,29 @@ func getMockEndpoints(
 	<-endpointIsOpenCh
 
 	return listenerEndpoint, dialerEndpoint
+}
+
+func TestSignerListenerEndpointServiceLoop(t *testing.T) {
+	listenerEndpoint := NewSignerListenerEndpoint(
+		log.TestingLogger(),
+		&testListener{initialErrs: 5},
+	)
+
+	require.NoError(t, listenerEndpoint.Start())
+	require.NoError(t, listenerEndpoint.WaitForConnection(time.Second))
+}
+
+type testListener struct {
+	net.Listener
+	initialErrs int
+}
+
+func (l *testListener) Accept() (net.Conn, error) {
+	if l.initialErrs > 0 {
+		l.initialErrs--
+
+		return nil, errors.New("accept error")
+	}
+
+	return nil, nil // Note this doesn't actually return a valid connection, it just doesn't error.
 }

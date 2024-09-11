@@ -55,13 +55,15 @@ seeds = ["seed01"]
 database = "badgerdb"
 privval_protocol = "unix"
 persist_interval = 3
-retain_blocks = 10
+retain_blocks = 20
 perturb = ["kill"]
+key_type = "secp256k1"
 
 [node.validator04]
 persistent_peers = ["validator01"]
 database = "rocksdb"
 perturb = ["pause"]
+key_type = "sr25519"
 
 [node.validator05]
 start_at = 1005 # Becomes part of the validator set at 1010
@@ -74,7 +76,7 @@ perturb = ["kill", "pause", "disconnect", "restart"]
 start_at = 1010
 mode = "full"
 persistent_peers = ["validator01", "validator02", "validator03", "validator04", "validator05"]
-retain_blocks = 10
+retain_blocks = 20
 perturb = ["restart"]
 
 [node.full02]

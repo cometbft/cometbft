@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	bcproto "github.com/cometbft/cometbft/proto/tendermint/blocksync"
@@ -56,6 +57,7 @@ type Reactor struct {
 	store         sm.BlockStore
 	pool          *BlockPool
 	blockSync     bool
+	localAddr     crypto.Address
 	poolRoutineWg sync.WaitGroup
 
 	requestsCh <-chan BlockRequest
@@ -69,6 +71,13 @@ type Reactor struct {
 // NewReactor returns new reactor instance.
 func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
 	blockSync bool, metrics *Metrics, offlineStateSyncHeight int64,
+) *Reactor {
+	return NewReactorWithAddr(state, blockExec, store, blockSync, nil, metrics, offlineStateSyncHeight)
+}
+
+// Function added to keep existing API.
+func NewReactorWithAddr(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockStore,
+	blockSync bool, localAddr crypto.Address, metrics *Metrics, offlineStateSyncHeight int64,
 ) *Reactor {
 
 	storeHeight := store.Height()
@@ -85,7 +94,10 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		panic(fmt.Sprintf("state (%v) and store (%v) height mismatch, stores were left in an inconsistent state", state.LastBlockHeight,
 			storeHeight))
 	}
-	requestsCh := make(chan BlockRequest, maxTotalRequesters)
+
+	// It's okay to block since sendRequest is called from a separate goroutine
+	// (bpRequester#requestRoutine; 1 per each peer).
+	requestsCh := make(chan BlockRequest)
 
 	const capacity = 1000                      // must be bigger than peers count
 	errorsCh := make(chan peerError, capacity) // so we don't block in #Receive#pool.AddBlock
@@ -102,6 +114,7 @@ func NewReactor(state sm.State, blockExec *sm.BlockExecutor, store *store.BlockS
 		store:        store,
 		pool:         pool,
 		blockSync:    blockSync,
+		localAddr:    localAddr,
 		requestsCh:   requestsCh,
 		errorsCh:     errorsCh,
 		metrics:      metrics,
@@ -236,7 +249,7 @@ func (bcR *Reactor) respondToPeer(msg *bcproto.BlockRequest, src p2p.Peer) (queu
 }
 
 // Receive implements Reactor by handling 4 types of messages (look below).
-func (bcR *Reactor) Receive(e p2p.Envelope) {
+func (bcR *Reactor) Receive(e p2p.Envelope) { //nolint: dupl // recreated in a test
 	if err := ValidateMsg(e.Message); err != nil {
 		bcR.Logger.Error("Peer sent us invalid msg", "peer", e.Src, "msg", e.Message, "err", err)
 		bcR.Switch.StopPeerForError(e.Src, err)
@@ -251,7 +264,8 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 	case *bcproto.BlockResponse:
 		bi, err := types.BlockFromProto(msg.Block)
 		if err != nil {
-			bcR.Logger.Error("Block content is invalid", "err", err)
+			bcR.Logger.Error("Peer sent us invalid block", "peer", e.Src, "msg", e.Message, "err", err)
+			bcR.Switch.StopPeerForError(e.Src, err)
 			return
 		}
 		var extCommit *types.ExtendedCommit
@@ -262,12 +276,13 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 				bcR.Logger.Error("failed to convert extended commit from proto",
 					"peer", e.Src,
 					"err", err)
+				bcR.Switch.StopPeerForError(e.Src, err)
 				return
 			}
 		}
 
 		if err := bcR.pool.AddBlock(e.Src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-			bcR.Logger.Error("failed to add block", "err", err)
+			bcR.Logger.Error("failed to add block", "peer", e.Src, "err", err)
 		}
 	case *bcproto.StatusRequest:
 		// Send peer our state.
@@ -283,9 +298,19 @@ func (bcR *Reactor) Receive(e p2p.Envelope) {
 		bcR.pool.SetPeerRange(e.Src.ID(), msg.Base, msg.Height)
 	case *bcproto.NoBlockResponse:
 		bcR.Logger.Debug("Peer does not have requested block", "peer", e.Src, "height", msg.Height)
+		bcR.pool.RedoRequestFrom(msg.Height, e.Src.ID())
 	default:
 		bcR.Logger.Error(fmt.Sprintf("Unknown message type %v", reflect.TypeOf(msg)))
 	}
+}
+
+func (bcR *Reactor) localNodeBlocksTheChain(state sm.State) bool {
+	_, val := state.Validators.GetByAddress(bcR.localAddr)
+	if val == nil {
+		return false
+	}
+	total := state.Validators.TotalVotingPower()
+	return val.VotingPower >= total/3
 }
 
 // Handle messages from the poolReactor telling the reactor what to do.
@@ -396,7 +421,7 @@ FOR_LOOP:
 				)
 				continue FOR_LOOP
 			}
-			if bcR.pool.IsCaughtUp() {
+			if bcR.pool.IsCaughtUp() || bcR.localNodeBlocksTheChain(state) {
 				bcR.Logger.Info("Time to switch to consensus reactor!", "height", height)
 				if err := bcR.pool.Stop(); err != nil {
 					bcR.Logger.Error("Error stopping pool", "err", err)
@@ -443,10 +468,6 @@ FOR_LOOP:
 				// Panicking because this is an obvious bug in the block pool, which is totally under our control
 				panic(fmt.Errorf("heights of first and second block are not consecutive; expected %d, got %d", state.LastBlockHeight, first.Height))
 			}
-			if extCommit == nil && state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-				// See https://github.com/tendermint/tendermint/pull/8433#discussion_r866790631
-				panic(fmt.Errorf("peeked first block without extended commit at height %d - possible node store corruption", first.Height))
-			}
 
 			// Before priming didProcessCh for another check on the next
 			// iteration, break the loop if the BlockPool or the Reactor itself
@@ -479,26 +500,28 @@ FOR_LOOP:
 				// validate the block before we persist it
 				err = bcR.blockExec.ValidateBlock(state, first)
 			}
-			if err == nil {
+			presentExtCommit := extCommit != nil
+			extensionsEnabled := state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height)
+			if presentExtCommit != extensionsEnabled {
+				err = fmt.Errorf("non-nil extended commit must be received iff vote extensions are enabled for its height "+
+					"(height %d, non-nil extended commit %t, extensions enabled %t)",
+					first.Height, presentExtCommit, extensionsEnabled,
+				)
+			}
+			if err == nil && extensionsEnabled {
 				// if vote extensions were required at this height, ensure they exist.
-				if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
-					err = extCommit.EnsureExtensions(true)
-				} else {
-					if extCommit != nil {
-						err = fmt.Errorf("received non-nil extCommit for height %d (extensions disabled)", first.Height)
-					}
-				}
+				err = extCommit.EnsureExtensions(true)
 			}
 			if err != nil {
 				bcR.Logger.Error("Error in validation", "err", err)
-				peerID := bcR.pool.RedoRequest(first.Height)
+				peerID := bcR.pool.RemovePeerAndRedoAllPeerRequests(first.Height)
 				peer := bcR.Switch.Peers().Get(peerID)
 				if peer != nil {
 					// NOTE: we've already removed the peer's request, but we
 					// still need to clean up the rest.
 					bcR.Switch.StopPeerForError(peer, ErrReactorValidation{Err: err})
 				}
-				peerID2 := bcR.pool.RedoRequest(second.Height)
+				peerID2 := bcR.pool.RemovePeerAndRedoAllPeerRequests(second.Height)
 				peer2 := bcR.Switch.Peers().Get(peerID2)
 				if peer2 != nil && peer2 != peer {
 					// NOTE: we've already removed the peer's request, but we
@@ -511,7 +534,7 @@ FOR_LOOP:
 			bcR.pool.PopRequest()
 
 			// TODO: batch saves so we dont persist to disk every block
-			if state.ConsensusParams.ABCI.VoteExtensionsEnabled(first.Height) {
+			if extensionsEnabled {
 				bcR.store.SaveBlockWithExtendedCommit(first, firstParts, extCommit)
 			} else {
 				// We use LastCommit here instead of extCommit. extCommit is not
@@ -523,7 +546,7 @@ FOR_LOOP:
 
 			// TODO: same thing for app - but we would need a way to
 			// get the hash without persisting the state
-			state, err = bcR.blockExec.ApplyBlock(state, firstID, first)
+			state, err = bcR.blockExec.ApplyVerifiedBlock(state, firstID, first)
 			if err != nil {
 				// TODO This is bad, are we zombie?
 				panic(fmt.Sprintf("Failed to process committed block (%d:%X): %v", first.Height, first.Hash(), err))

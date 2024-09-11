@@ -392,6 +392,10 @@ type RPCConfig struct {
 	// See https://github.com/tendermint/tendermint/issues/3435
 	TimeoutBroadcastTxCommit time.Duration `mapstructure:"timeout_broadcast_tx_commit"`
 
+	// Maximum number of requests that can be sent in a batch
+	// https://www.jsonrpc.org/specification#batch
+	MaxRequestBatchSize int `mapstructure:"max_request_batch_size"`
+
 	// Maximum size of request body, in bytes
 	MaxBodyBytes int64 `mapstructure:"max_body_bytes"`
 
@@ -440,8 +444,9 @@ func DefaultRPCConfig() *RPCConfig {
 		TimeoutBroadcastTxCommit:  10 * time.Second,
 		WebSocketWriteBufferSize:  defaultSubscriptionBufferSize,
 
-		MaxBodyBytes:   int64(1000000), // 1MB
-		MaxHeaderBytes: 1 << 20,        // same as the net/http default
+		MaxRequestBatchSize: 10,             // maximum requests in a JSON-RPC batch request
+		MaxBodyBytes:        int64(1000000), // 1MB
+		MaxHeaderBytes:      1 << 20,        // same as the net/http default
 
 		TLSCertFile: "",
 		TLSKeyFile:  "",
@@ -486,6 +491,9 @@ func (cfg *RPCConfig) ValidateBasic() error {
 	}
 	if cfg.TimeoutBroadcastTxCommit < 0 {
 		return errors.New("timeout_broadcast_tx_commit can't be negative")
+	}
+	if cfg.MaxRequestBatchSize < 0 {
+		return errors.New("max_request_batch_size can't be negative")
 	}
 	if cfg.MaxBodyBytes < 0 {
 		return errors.New("max_body_bytes can't be negative")
@@ -719,6 +727,16 @@ type MempoolConfig struct {
 	// mempool may become invalid. If this does not apply to your application,
 	// you can disable rechecking.
 	Recheck bool `mapstructure:"recheck"`
+	// RecheckTimeout is the time the application has during the rechecking process
+	// to return CheckTx responses, once all requests have been sent. Responses that
+	// arrive after the timeout expires are discarded. It only applies to
+	// non-local ABCI clients and when recheck is enabled.
+	//
+	// The ideal value will strongly depend on the application. It could roughly be estimated as the
+	// average size of the mempool multiplied by the average time it takes the application to validate one
+	// transaction. We consider that the ABCI application runs in the same location as the CometBFT binary
+	// so that the recheck duration is not affected by network delays when making requests and receiving responses.
+	RecheckTimeout time.Duration `mapstructure:"recheck_timeout"`
 	// Broadcast (default: true) defines whether the mempool should relay
 	// transactions to other peers. Setting this to false will stop the mempool
 	// from relaying transactions to other peers until they are included in a
@@ -768,10 +786,11 @@ type MempoolConfig struct {
 // DefaultMempoolConfig returns a default configuration for the CometBFT mempool
 func DefaultMempoolConfig() *MempoolConfig {
 	return &MempoolConfig{
-		Type:      MempoolTypeFlood,
-		Recheck:   true,
-		Broadcast: true,
-		WalPath:   "",
+		Type:           MempoolTypeFlood,
+		Recheck:        true,
+		RecheckTimeout: 1000 * time.Millisecond,
+		Broadcast:      true,
+		WalPath:        "",
 		// Each signature verification takes .5ms, Size reduced until we implement
 		// ABCI Recheck
 		Size:        5000,

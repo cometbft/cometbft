@@ -150,6 +150,9 @@ Let us now examine the grammar line by line, providing further details.
   `FinalizeBlock`, followed by a call to `Commit`. In each round, the sequence of method calls
   depends on whether the local process is the proposer or not. Note that, if a height contains zero
   rounds, this means the process is replaying an already decided value (catch-up mode).
+  When calling `FinalizeBlock` with a block, the consensus algorithm run by CometBFT guarantees
+  that at least one non-byzantine validator has run `ProcessProposal` on that block.
+
 
 >```abnf
 >consensus-height    = *consensus-round decide commit
@@ -157,7 +160,7 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * For every round, if the local process is the proposer of the current round, CometBFT calls `PrepareProposal`.
-  A successful execution of `PrepareProposal` implies in a proposal block being (i)signed and (ii)stored
+  A successful execution of `PrepareProposal` results in a proposal block being (i) signed and (ii) stored
   (e.g., in stable storage).
 
   A crash during this step will direct how the node proceeds the next time it is executed, for the same round, after restarted.
@@ -180,7 +183,10 @@ Let us now examine the grammar line by line, providing further details.
 >```
 
 * Also for every round, if the local process is _not_ the proposer of the current round, CometBFT
-  will call `ProcessProposal` at most once. At most one call to `ExtendVote` may occur only after
+  will call `ProcessProposal` at most once.
+  Under certain conditions, CometBFT may not call `ProcessProposal` in a round;
+  see [this section](./abci++_example_scenarios.md#scenario-3) for an example.
+  At most one call to `ExtendVote` may occur only after
   `ProcessProposal` is called. A number of calls to `VerifyVoteExtension` can occur in any order
   with respect to `ProcessProposal` and `ExtendVote` throughout the round. The reasons are the same
   as above, namely, the process running slightly late in the current round, or votes from future
@@ -260,15 +266,17 @@ historical commits and potential optimizations, are discussed in detail in [RFC-
 ## Handling upgrades to ABCI 2.0
 
 If applications upgrade to ABCI 2.0, CometBFT internally ensures that the [application setup](./abci%2B%2B_app_requirements.md#application-configuration-required-to-switch-to-abci-20) is reflected in its operation.
-CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( *h<sub>e</sub>*,),
+CometBFT retrieves from the application configuration the value of `VoteExtensionsEnableHeight`( _h<sub>e</sub>_,),
 the height at which vote extensions are required for consensus to proceed, and uses it to determine the data it stores and data it sends to a peer that is catching up.
 
-Namely, upon saving the block for a given height *h* in the block store at decision time
-* if *h ≥ h<sub>e</sub>*, the corresponding extended commit that was used to decide locally is saved as well
-* if *h < h<sub>e</sub>*, there are no changes to the data saved
+Namely, upon saving the block for a given height _h_ in the block store at decision time
 
-In the catch-up mechanism, when a node *f* realizes that another peer is at height *h<sub>p</sub>*, which is more than 2 heights behind,
-* if *h<sub>p</sub> ≥ h<sub>e</sub>*, *f* uses the extended commit to
+* if _h ≥ h<sub>e</sub>_, the corresponding extended commit that was used to decide locally is saved as well
+* if _h < h<sub>e</sub>_, there are no changes to the data saved
+
+In the catch-up mechanism, when a node _f_ realizes that another peer is at height _h<sub>p</sub>_, which is more than 2 heights behind height _h<sub>f</sub>_,
+
+* if _h<sub>p</sub> ≥ h<sub>e</sub>_, _f_ uses the extended commit to
       reconstruct the precommit votes with their corresponding extensions
-* if *h<sub>p</sub> < h<sub>e</sub>*, *f* uses the canonical commit to reconstruct the precommit votes,
+* if _h<sub>p</sub> < h<sub>e</sub>_, _f_ uses the canonical commit to reconstruct the precommit votes,
       as done for ABCI 1.0 and earlier.

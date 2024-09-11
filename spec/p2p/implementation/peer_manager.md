@@ -85,16 +85,9 @@ To avoid this delay, which can be particularly relevant when the node has no
 peers, a node immediately attempts to dial peer addresses when they are
 received from a peer that is locally configured as a seed node.
 
-> FIXME: The current logic was introduced in [#3762](https://github.com/tendermint/tendermint/pull/3762).
-> Although it fix the issue, the delay between receiving an address and dialing
-> the peer, it does not impose and limit on how many addresses are dialed in this
-> scenario.
-> So, all addresses received from a seed node are dialed, regardless of the
-> current number of outbound peers, the number of dialing routines, or the
-> `MaxNumOutboundPeers` parameter.
->
-> Issue [#9548](https://github.com/tendermint/tendermint/issues/9548) was
-> created to handle this situation.
+> This was implemented in a rough way, leading to inconsistencies described in
+> this [issue](https://github.com/cometbft/cometbft/issues/486),
+> fixed by this [PR](https://github.com/cometbft/cometbft/pull/3360).
 
 ### First round
 

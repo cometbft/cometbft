@@ -141,7 +141,16 @@ func StateProvider(stateProvider statesync.StateProvider) Option {
 // store are empty at the time the function is called.
 //
 // If the block store is not empty, the function returns an error.
-func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) (err error) {
+func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, height uint64, appHash []byte) error {
+	return BootstrapStateWithGenProvider(ctx, config, dbProvider, DefaultGenesisDocProviderFunc(config), height, appHash)
+}
+
+// BootstrapStateWithGenProvider synchronizes the stores with the application after state sync
+// has been performed offline. It is expected that the block store and state
+// store are empty at the time the function is called.
+//
+// If the block store is not empty, the function returns an error.
+func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbProvider cfg.DBProvider, genProvider GenesisDocProvider, height uint64, appHash []byte) (err error) {
 	logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 	if ctx == nil {
 		ctx = context.Background()
@@ -193,7 +202,7 @@ func BootstrapState(ctx context.Context, config *cfg.Config, dbProvider cfg.DBPr
 		return fmt.Errorf("state not empty, trying to initialize non empty state")
 	}
 
-	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, DefaultGenesisDocProviderFunc(config))
+	genState, _, err := LoadStateFromDBOrGenesisDocProvider(stateDB, genProvider)
 	if err != nil {
 		return err
 	}
@@ -335,9 +344,10 @@ func NewNodeWithContext(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("can't get pubkey: %w", err)
 	}
+	localAddr := pubKey.Address()
 
 	// Determine whether we should attempt state sync.
-	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, pubKey)
+	stateSync := config.StateSync.Enable && !onlyValidatorIsUs(state, localAddr)
 	if stateSync && state.LastBlockHeight > 0 {
 		logger.Info("Found local state with non-zero height, skipping state sync")
 		stateSync = false
@@ -362,7 +372,7 @@ func NewNodeWithContext(ctx context.Context,
 
 	// Determine whether we should do block sync. This must happen after the handshake, since the
 	// app may modify the validator set, specifying ourself as the only validator.
-	blockSync := !onlyValidatorIsUs(state, pubKey)
+	blockSync := !onlyValidatorIsUs(state, localAddr)
 
 	logNodeStartupInfo(state, pubKey, logger, consensusLogger)
 
@@ -392,7 +402,7 @@ func NewNodeWithContext(ctx context.Context,
 		}
 	}
 	// Don't start block sync if we're doing a state sync first.
-	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, logger, bsMetrics, offlineStateSyncHeight)
+	bcReactor, err := createBlocksyncReactor(config, state, blockExec, blockStore, blockSync && !stateSync, localAddr, logger, bsMetrics, offlineStateSyncHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create blocksync reactor: %w", err)
 	}
@@ -582,10 +592,11 @@ func (n *Node) OnStop() {
 	if err := n.eventBus.Stop(); err != nil {
 		n.Logger.Error("Error closing eventBus", "err", err)
 	}
-	if err := n.indexerService.Stop(); err != nil {
-		n.Logger.Error("Error closing indexerService", "err", err)
+	if n.indexerService != nil {
+		if err := n.indexerService.Stop(); err != nil {
+			n.Logger.Error("Error closing indexerService", "err", err)
+		}
 	}
-
 	// now stop the reactors
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)
@@ -691,6 +702,7 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 	}
 
 	config := rpcserver.DefaultConfig()
+	config.MaxRequestBatchSize = n.config.RPC.MaxRequestBatchSize
 	config.MaxBodyBytes = n.config.RPC.MaxBodyBytes
 	config.MaxHeaderBytes = n.config.RPC.MaxHeaderBytes
 	config.MaxOpenConnections = n.config.RPC.MaxOpenConnections

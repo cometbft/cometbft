@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/crypto/merkle"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
@@ -35,6 +37,9 @@ const (
 var ErrTotalVotingPowerOverflow = fmt.Errorf("total voting power of resulting valset exceeds max %d",
 	MaxTotalVotingPower)
 
+// ErrProposerNotInVals is returned if the proposer is not in the validator set.
+var ErrProposerNotInVals = errors.New("proposer not in validator set")
+
 // ValidatorSet represent a set of *Validator at a given height.
 //
 // The validators can be fetched by address or index.
@@ -55,6 +60,8 @@ type ValidatorSet struct {
 
 	// cached (unexported)
 	totalVotingPower int64
+	// true if all validators have the same type of public key or if the set is empty.
+	allKeysHaveSameType bool
 }
 
 // NewValidatorSet initializes a ValidatorSet by copying over the values from
@@ -68,7 +75,9 @@ type ValidatorSet struct {
 // MaxVotesCount - commits by a validator set larger than this will fail
 // validation.
 func NewValidatorSet(valz []*Validator) *ValidatorSet {
-	vals := &ValidatorSet{}
+	vals := &ValidatorSet{
+		allKeysHaveSameType: true,
+	}
 	err := vals.updateWithChangeSet(valz, false)
 	if err != nil {
 		panic(fmt.Sprintf("Cannot create validator set: %v", err))
@@ -94,7 +103,13 @@ func (vals *ValidatorSet) ValidateBasic() error {
 		return fmt.Errorf("proposer failed validate basic, error: %w", err)
 	}
 
-	return nil
+	for _, val := range vals.Validators {
+		if bytes.Equal(val.Address, vals.Proposer.Address) {
+			return nil
+		}
+	}
+
+	return ErrProposerNotInVals
 }
 
 // IsNilOrEmpty returns true if validator set is nil or empty.
@@ -248,9 +263,10 @@ func validatorListCopy(valsList []*Validator) []*Validator {
 // Copy each validator into a new ValidatorSet.
 func (vals *ValidatorSet) Copy() *ValidatorSet {
 	return &ValidatorSet{
-		Validators:       validatorListCopy(vals.Validators),
-		Proposer:         vals.Proposer,
-		totalVotingPower: vals.totalVotingPower,
+		Validators:          validatorListCopy(vals.Validators),
+		Proposer:            vals.Proposer,
+		totalVotingPower:    vals.totalVotingPower,
+		allKeysHaveSameType: vals.allKeysHaveSameType,
 	}
 }
 
@@ -344,12 +360,31 @@ func (vals *ValidatorSet) findProposer() *Validator {
 
 // Hash returns the Merkle root hash build using validators (as leaves) in the
 // set.
+//
+// See merkle.HashFromByteSlices.
 func (vals *ValidatorSet) Hash() []byte {
 	bzs := make([][]byte, len(vals.Validators))
 	for i, val := range vals.Validators {
 		bzs[i] = val.Bytes()
 	}
 	return merkle.HashFromByteSlices(bzs)
+}
+
+// ProposerPriorityHash returns the tmhash of the proposer priorities.
+// Validator set must be sorted to get the same hash.
+// If the validator set is empty, nil is returned.
+func (vals *ValidatorSet) ProposerPriorityHash() []byte {
+	if len(vals.Validators) == 0 {
+		return nil
+	}
+
+	buf := make([]byte, binary.MaxVarintLen64*len(vals.Validators))
+	total := 0
+	for _, val := range vals.Validators {
+		n := binary.PutVarint(buf, val.ProposerPriority)
+		total += n
+	}
+	return tmhash.Sum(buf[:total])
 }
 
 // Iterate will run the given function over the set.
@@ -627,6 +662,9 @@ func (vals *ValidatorSet) updateWithChangeSet(changes []*Validator, allowDeletes
 	vals.applyUpdates(updates)
 	vals.applyRemovals(deletes)
 
+	// Should go after additions.
+	vals.checkAllKeysHaveSameType()
+
 	vals.updateTotalVotingPower() // will panic if total voting power > MaxTotalVotingPower
 
 	// Scale and center.
@@ -721,7 +759,37 @@ func (vals *ValidatorSet) findPreviousProposer() *Validator {
 	return previousProposer
 }
 
-//-----------------
+func (vals *ValidatorSet) checkAllKeysHaveSameType() {
+	if vals.Size() == 0 {
+		vals.allKeysHaveSameType = true
+		return
+	}
+
+	firstKeyType := ""
+	for _, val := range vals.Validators {
+		if firstKeyType == "" {
+			// XXX: Should only be the case in tests.
+			if val.PubKey == nil {
+				continue
+			}
+			firstKeyType = val.PubKey.Type()
+		}
+		if val.PubKey.Type() != firstKeyType {
+			vals.allKeysHaveSameType = false
+			return
+		}
+	}
+
+	vals.allKeysHaveSameType = true
+}
+
+// AllKeysHaveSameType returns true if all validators have the same type of
+// public key or if the set is empty.
+func (vals *ValidatorSet) AllKeysHaveSameType() bool {
+	return vals.allKeysHaveSameType
+}
+
+// -----------------
 
 // IsErrNotEnoughVotingPowerSigned returns true if err is
 // ErrNotEnoughVotingPowerSigned.
@@ -853,6 +921,7 @@ func ValidatorSetFromProto(vp *cmtproto.ValidatorSet) (*ValidatorSet, error) {
 		valsProto[i] = v
 	}
 	vals.Validators = valsProto
+	vals.checkAllKeysHaveSameType()
 
 	p, err := ValidatorFromProto(vp.GetProposer())
 	if err != nil {
@@ -889,6 +958,7 @@ func ValidatorSetFromExistingValidators(valz []*Validator) (*ValidatorSet, error
 	vals := &ValidatorSet{
 		Validators: valz,
 	}
+	vals.checkAllKeysHaveSameType()
 	vals.Proposer = vals.findPreviousProposer()
 	vals.updateTotalVotingPower()
 	sort.Sort(ValidatorsByVotingPower(vals.Validators))

@@ -30,7 +30,7 @@ func makeJSONRPCHandler(funcMap map[string]*RPCFunc, logger log.Logger) http.Han
 			return
 		}
 
-		// if its an empty request (like from a browser), just display a list of
+		// if it's an empty request (like from a browser), just display a list of
 		// functions
 		if len(b) == 0 {
 			writeListOfEndpoints(w, r, funcMap)

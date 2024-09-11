@@ -17,7 +17,9 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/crypto/sr25519"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cometbft/cometbft/types"
 
 	_ "embed"
 )
@@ -59,8 +61,8 @@ const (
 	PerturbationRestart    Perturbation = "restart"
 	PerturbationUpgrade    Perturbation = "upgrade"
 
-	EvidenceAgeHeight int64         = 7
-	EvidenceAgeTime   time.Duration = 500 * time.Millisecond
+	EvidenceAgeHeight int64         = 14
+	EvidenceAgeTime   time.Duration = 1500 * time.Millisecond
 )
 
 // Testnet represents a single testnet.
@@ -79,6 +81,7 @@ type Testnet struct {
 	LoadTxSizeBytes                                      int
 	LoadTxBatchSize                                      int
 	LoadTxConnections                                    int
+	LoadMaxTxs                                           int
 	ABCIProtocol                                         string
 	PrepareProposalDelay                                 time.Duration
 	ProcessProposalDelay                                 time.Duration
@@ -86,7 +89,10 @@ type Testnet struct {
 	VoteExtensionDelay                                   time.Duration
 	FinalizeBlockDelay                                   time.Duration
 	UpgradeVersion                                       string
+	LogLevel                                             string
+	LogFormat                                            string
 	Prometheus                                           bool
+	BlockMaxBytes                                        int64
 	VoteExtensionsEnableHeight                           int64
 	VoteExtensionsUpdateHeight                           int64
 	ExperimentalMaxGossipConnectionsToPersistentPeers    uint
@@ -159,6 +165,7 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		LoadTxSizeBytes:            manifest.LoadTxSizeBytes,
 		LoadTxBatchSize:            manifest.LoadTxBatchSize,
 		LoadTxConnections:          manifest.LoadTxConnections,
+		LoadMaxTxs:                 manifest.LoadMaxTxs,
 		ABCIProtocol:               manifest.ABCIProtocol,
 		PrepareProposalDelay:       manifest.PrepareProposalDelay,
 		ProcessProposalDelay:       manifest.ProcessProposalDelay,
@@ -166,7 +173,10 @@ func NewTestnetFromManifest(manifest Manifest, file string, ifd InfrastructureDa
 		VoteExtensionDelay:         manifest.VoteExtensionDelay,
 		FinalizeBlockDelay:         manifest.FinalizeBlockDelay,
 		UpgradeVersion:             manifest.UpgradeVersion,
+		LogLevel:                   manifest.LogLevel,
+		LogFormat:                  manifest.LogFormat,
 		Prometheus:                 manifest.Prometheus,
+		BlockMaxBytes:              manifest.BlockMaxBytes,
 		VoteExtensionsEnableHeight: manifest.VoteExtensionsEnableHeight,
 		VoteExtensionsUpdateHeight: manifest.VoteExtensionsUpdateHeight,
 		ExperimentalMaxGossipConnectionsToPersistentPeers:    manifest.ExperimentalMaxGossipConnectionsToPersistentPeers,
@@ -342,6 +352,9 @@ func (t Testnet) Validate() error {
 	}
 	if len(t.Nodes) == 0 {
 		return errors.New("network has no nodes")
+	}
+	if t.BlockMaxBytes > types.MaxBlockSizeBytes {
+		return fmt.Errorf("value of BlockMaxBytes cannot be higher than %d", types.MaxBlockSizeBytes)
 	}
 	if t.VoteExtensionsUpdateHeight < -1 {
 		return fmt.Errorf("value of VoteExtensionsUpdateHeight must be positive, 0 (InitChain), "+
@@ -605,6 +618,8 @@ func (g *keyGenerator) Generate(keyType string) crypto.PrivKey {
 	switch keyType {
 	case "secp256k1":
 		return secp256k1.GenPrivKeySecp256k1(seed)
+	case "sr25519":
+		return sr25519.GenPrivKeyFromSecret(seed)
 	case "", "ed25519":
 		return ed25519.GenPrivKeyFromSecret(seed)
 	default:

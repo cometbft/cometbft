@@ -26,8 +26,9 @@ import (
 // Options helps with specifying some parameters for our RPC testing for greater
 // control.
 type Options struct {
-	suppressStdout bool
-	recreateConfig bool
+	suppressStdout  bool
+	recreateConfig  bool
+	maxReqBatchSize int
 }
 
 var (
@@ -163,6 +164,9 @@ func NewTendermint(app abci.Application, opts *Options) *nm.Node {
 		logger = log.NewTMLogger(log.NewSyncWriter(os.Stdout))
 		logger = log.NewFilter(logger, log.AllowError())
 	}
+	if opts.maxReqBatchSize > 0 {
+		config.RPC.MaxRequestBatchSize = opts.maxReqBatchSize
+	}
 	pvKeyFile := config.PrivValidatorKeyFile()
 	pvKeyStateFile := config.PrivValidatorStateFile()
 	pv := privval.LoadOrGenFilePV(pvKeyFile, pvKeyStateFile)
@@ -192,4 +196,9 @@ func SuppressStdout(o *Options) {
 // time, instead of treating it as a global singleton.
 func RecreateConfig(o *Options) {
 	o.recreateConfig = true
+}
+
+// MaxReqBatchSize is an option to limit the maximum number of requests per batch.
+func MaxReqBatchSize(o *Options) {
+	o.maxReqBatchSize = 2
 }

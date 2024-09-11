@@ -46,7 +46,7 @@ Verify that you have the latest version of Go installed (refer to the [official 
 
 ```bash
 $ go version
-go version go1.21.1 darwin/amd64
+go version go1.22.7 darwin/amd64
 ```
 
 ## 1.2 Creating a new Go project
@@ -94,7 +94,7 @@ The go.mod file should look similar to:
 ```go
 module kvstore
 
-go 1.21.1
+go 1.22
 
 require (
 github.com/cometbft/cometbft v0.38.0
@@ -707,4 +707,4 @@ echo "cm9ja3M=" | base64 -d
 
 ## Outro
 
-Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/cosmosnetwork) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.
+Hope you could run everything smoothly. If you have any difficulties running through this tutorial, reach out to us via [discord](https://discord.com/invite/interchain) or open a new [issue](https://github.com/cometbft/cometbft/issues/new/choose) on Github.

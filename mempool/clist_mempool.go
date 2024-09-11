@@ -254,17 +254,21 @@ func (mem *CListMempool) SizeBytes() int64 {
 	return mem.txsBytes
 }
 
-// LaneBytes returns the total number of bytes of all txs in a given lane.
+// LaneSizes returns, the number of transactions in the given lane and the total
+// number of bytes used by all transactions in the lane.
 //
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) LaneBytes(lane types.Lane) int64 {
+func (mem *CListMempool) LaneSizes(lane types.Lane) (numTxs int, bytes int64) {
 	mem.txsMtx.RLock()
 	defer mem.txsMtx.RUnlock()
 
-	if v, ok := mem.laneBytes[lane]; ok {
-		return v
+	bytes = mem.laneBytes[lane]
+
+	txs, ok := mem.lanes[lane]
+	if !ok {
+		return 0, bytes
 	}
-	return 0
+	return txs.Len(), bytes
 }
 
 // Lock() must be help by the caller during execution.
@@ -482,7 +486,6 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 		"Added transaction",
 		"tx", tx.Hash(),
 		"lane", lane,
-		"lane size", mem.lanes[lane].Len(),
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)
@@ -521,7 +524,6 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 		"Removed transaction",
 		"tx", memTx.tx.Hash(),
 		"lane", memTx.lane,
-		"lane size", mem.lanes[memTx.lane].Len(),
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)
@@ -548,8 +550,7 @@ func (mem *CListMempool) isFull(txSize int) error {
 }
 
 func (mem *CListMempool) isLaneFull(txSize int, lane types.Lane) error {
-	laneTxs := mem.lanes[lane].Len()
-	laneBytes := mem.LaneBytes(lane)
+	laneTxs, laneBytes := mem.LaneSizes(lane)
 
 	// The mempool capacity is split evenly for all lanes.
 	laneTxsCapacity := mem.config.Size / len(mem.sortedLanes)
@@ -781,9 +782,10 @@ func (mem *CListMempool) Update(
 
 // updateSizeMetrics updates the size-related metrics of a given lane.
 func (mem *CListMempool) updateSizeMetrics(lane types.Lane) {
+	laneTxs, laneBytes := mem.LaneSizes(lane)
 	label := strconv.FormatUint(uint64(lane), 10)
-	mem.metrics.LaneSize.With("lane", label).Set(float64(mem.lanes[lane].Len()))
-	mem.metrics.LaneBytes.With("lane", label).Set(float64(mem.LaneBytes(lane)))
+	mem.metrics.LaneSize.With("lane", label).Set(float64(laneTxs))
+	mem.metrics.LaneBytes.With("lane", label).Set(float64(laneBytes))
 	mem.metrics.Size.Set(float64(mem.Size()))
 	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 }

@@ -69,9 +69,9 @@ Please see [SECURITY.md](./SECURITY.md).
 |------------------|-------------|----------------|--------------|
 | main             | Go version  | 1.23 or higher | up to 1.23.1 |
 | v1.x             | Go version  | 1.23 or higher | up to 1.23.1 |
-| v0.38.x          | Go version  | 1.21 or higher | up to 1.22   |
-| v0.37.x          | Go version  | 1.20 or higher | up to 1.22   |
-| v0.34.x          | Go version  | 1.20 or higher | up to 1.20   |
+| v0.38.x          | Go version  | 1.22 or higher | up to 1.22   |
+| v0.37.x          | Go version  | 1.22 or higher | up to 1.22   |
+| v0.34.x          | Go version  | 1.22 or higher | up to 1.22   |
 
 ### Install
 

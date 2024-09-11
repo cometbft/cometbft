@@ -21,14 +21,21 @@ type BlockIndexer struct {
 func (_m *BlockIndexer) Has(height int64) (bool, error) {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Has")
+	}
+
 	var r0 bool
+	var r1 error
+	if rf, ok := ret.Get(0).(func(int64) (bool, error)); ok {
+		return rf(height)
+	}
 	if rf, ok := ret.Get(0).(func(int64) bool); ok {
 		r0 = rf(height)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(int64) error); ok {
 		r1 = rf(height)
 	} else {
@@ -41,6 +48,10 @@ func (_m *BlockIndexer) Has(height int64) (bool, error) {
 // Index provides a mock function with given fields: _a0
 func (_m *BlockIndexer) Index(_a0 types.EventDataNewBlockHeader) error {
 	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Index")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(types.EventDataNewBlockHeader) error); ok {
@@ -56,7 +67,15 @@ func (_m *BlockIndexer) Index(_a0 types.EventDataNewBlockHeader) error {
 func (_m *BlockIndexer) Search(ctx context.Context, q *query.Query) ([]int64, error) {
 	ret := _m.Called(ctx, q)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Search")
+	}
+
 	var r0 []int64
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *query.Query) ([]int64, error)); ok {
+		return rf(ctx, q)
+	}
 	if rf, ok := ret.Get(0).(func(context.Context, *query.Query) []int64); ok {
 		r0 = rf(ctx, q)
 	} else {
@@ -65,7 +84,6 @@ func (_m *BlockIndexer) Search(ctx context.Context, q *query.Query) ([]int64, er
 		}
 	}
 
-	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, *query.Query) error); ok {
 		r1 = rf(ctx, q)
 	} else {
@@ -75,13 +93,12 @@ func (_m *BlockIndexer) Search(ctx context.Context, q *query.Query) ([]int64, er
 	return r0, r1
 }
 
-type mockConstructorTestingTNewBlockIndexer interface {
+// NewBlockIndexer creates a new instance of BlockIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewBlockIndexer(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewBlockIndexer creates a new instance of BlockIndexer. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewBlockIndexer(t mockConstructorTestingTNewBlockIndexer) *BlockIndexer {
+}) *BlockIndexer {
 	mock := &BlockIndexer{}
 	mock.Mock.Test(t)
 

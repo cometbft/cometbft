@@ -183,16 +183,18 @@ func TestCallbackInvokedWhenSetLate(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
-	cb := func(_ *types.Response) {
+	cb := func(_ *types.Response) error {
 		close(done)
+		return nil
 	}
 	reqRes.SetCallback(cb)
 	app.wg.Done()
 	<-done
 
 	var called bool
-	cb = func(_ *types.Response) {
+	cb = func(_ *types.Response) error {
 		called = true
+		return nil
 	}
 	reqRes.SetCallback(cb)
 	require.True(t, called)
@@ -226,8 +228,9 @@ func TestCallbackInvokedWhenSetEarly(t *testing.T) {
 	require.NoError(t, err)
 
 	done := make(chan struct{})
-	cb := func(_ *types.Response) {
+	cb := func(_ *types.Response) error {
 		close(done)
+		return nil
 	}
 	reqRes.SetCallback(cb)
 	app.wg.Done()

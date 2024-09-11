@@ -20,6 +20,10 @@ type Store struct {
 func (_m *Store) Bootstrap(_a0 state.State) error {
 	ret := _m.Called(_a0)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Bootstrap")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(state.State) error); ok {
 		r0 = rf(_a0)
@@ -33,6 +37,10 @@ func (_m *Store) Bootstrap(_a0 state.State) error {
 // Close provides a mock function with given fields:
 func (_m *Store) Close() error {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Close")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -120,6 +128,10 @@ func (_m *Store) GetCompanionBlockRetainHeight() (int64, error) {
 func (_m *Store) GetOfflineStateSyncHeight() (int64, error) {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for GetOfflineStateSyncHeight")
+	}
+
 	var r0 int64
 	var r1 error
 	if rf, ok := ret.Get(0).(func() (int64, error)); ok {
@@ -143,6 +155,10 @@ func (_m *Store) GetOfflineStateSyncHeight() (int64, error) {
 // Load provides a mock function with given fields:
 func (_m *Store) Load() (state.State, error) {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Load")
+	}
 
 	var r0 state.State
 	var r1 error
@@ -168,6 +184,10 @@ func (_m *Store) Load() (state.State, error) {
 func (_m *Store) LoadConsensusParams(height int64) (types.ConsensusParams, error) {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadConsensusParams")
+	}
+
 	var r0 types.ConsensusParams
 	var r1 error
 	if rf, ok := ret.Get(0).(func(int64) (types.ConsensusParams, error)); ok {
@@ -191,6 +211,10 @@ func (_m *Store) LoadConsensusParams(height int64) (types.ConsensusParams, error
 // LoadFinalizeBlockResponse provides a mock function with given fields: height
 func (_m *Store) LoadFinalizeBlockResponse(height int64) (*abcitypes.ResponseFinalizeBlock, error) {
 	ret := _m.Called(height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadFinalizeBlockResponse")
+	}
 
 	var r0 *abcitypes.ResponseFinalizeBlock
 	var r1 error
@@ -218,6 +242,10 @@ func (_m *Store) LoadFinalizeBlockResponse(height int64) (*abcitypes.ResponseFin
 func (_m *Store) LoadFromDBOrGenesisDoc(doc *types.GenesisDoc) (state.State, error) {
 	ret := _m.Called(doc)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadFromDBOrGenesisDoc")
+	}
+
 	var r0 state.State
 	var r1 error
 	if rf, ok := ret.Get(0).(func(*types.GenesisDoc) (state.State, error)); ok {
@@ -242,6 +270,10 @@ func (_m *Store) LoadFromDBOrGenesisDoc(doc *types.GenesisDoc) (state.State, err
 func (_m *Store) LoadFromDBOrGenesisFile(filename string) (state.State, error) {
 	ret := _m.Called(filename)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadFromDBOrGenesisFile")
+	}
+
 	var r0 state.State
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string) (state.State, error)); ok {
@@ -265,6 +297,10 @@ func (_m *Store) LoadFromDBOrGenesisFile(filename string) (state.State, error) {
 // LoadLastFinalizeBlockResponse provides a mock function with given fields: height
 func (_m *Store) LoadLastFinalizeBlockResponse(height int64) (*abcitypes.ResponseFinalizeBlock, error) {
 	ret := _m.Called(height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadLastFinalizeBlockResponse")
+	}
 
 	var r0 *abcitypes.ResponseFinalizeBlock
 	var r1 error
@@ -291,6 +327,10 @@ func (_m *Store) LoadLastFinalizeBlockResponse(height int64) (*abcitypes.Respons
 // LoadValidators provides a mock function with given fields: height
 func (_m *Store) LoadValidators(height int64) (*types.ValidatorSet, error) {
 	ret := _m.Called(height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadValidators")
+	}
 
 	var r0 *types.ValidatorSet
 	var r1 error
@@ -349,6 +389,10 @@ func (_m *Store) PruneABCIResponses(targetRetainHeight int64) (int64, int64, err
 func (_m *Store) PruneStates(fromHeight int64, toHeight int64, evidenceThresholdHeight int64) error {
 	ret := _m.Called(fromHeight, toHeight, evidenceThresholdHeight)
 
+	if len(ret) == 0 {
+		panic("no return value specified for PruneStates")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64, int64, int64) error); ok {
 		r0 = rf(fromHeight, toHeight, evidenceThresholdHeight)
@@ -362,6 +406,10 @@ func (_m *Store) PruneStates(fromHeight int64, toHeight int64, evidenceThreshold
 // Save provides a mock function with given fields: _a0
 func (_m *Store) Save(_a0 state.State) error {
 	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Save")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(state.State) error); ok {
@@ -419,6 +467,10 @@ func (_m *Store) SaveCompanionBlockRetainHeight(height int64) error {
 func (_m *Store) SaveFinalizeBlockResponse(height int64, res *abcitypes.ResponseFinalizeBlock) error {
 	ret := _m.Called(height, res)
 
+	if len(ret) == 0 {
+		panic("no return value specified for SaveFinalizeBlockResponse")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64, *abcitypes.ResponseFinalizeBlock) error); ok {
 		r0 = rf(height, res)
@@ -433,6 +485,10 @@ func (_m *Store) SaveFinalizeBlockResponse(height int64, res *abcitypes.Response
 func (_m *Store) SetOfflineStateSyncHeight(height int64) error {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for SetOfflineStateSyncHeight")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(int64) error); ok {
 		r0 = rf(height)
@@ -443,13 +499,12 @@ func (_m *Store) SetOfflineStateSyncHeight(height int64) error {
 	return r0
 }
 
-type mockConstructorTestingTNewStore interface {
+// NewStore creates a new instance of Store. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewStore(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewStore creates a new instance of Store. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewStore(t mockConstructorTestingTNewStore) *Store {
+}) *Store {
 	mock := &Store{}
 	mock.Mock.Test(t)
 

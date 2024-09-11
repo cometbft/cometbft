@@ -18,6 +18,10 @@ type BlockStore struct {
 func (_m *BlockStore) Base() int64 {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Base")
+	}
+
 	var r0 int64
 	if rf, ok := ret.Get(0).(func() int64); ok {
 		r0 = rf()
@@ -31,6 +35,10 @@ func (_m *BlockStore) Base() int64 {
 // Close provides a mock function with given fields:
 func (_m *BlockStore) Close() error {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Close")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -46,6 +54,10 @@ func (_m *BlockStore) Close() error {
 func (_m *BlockStore) DeleteLatestBlock() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteLatestBlock")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -60,6 +72,10 @@ func (_m *BlockStore) DeleteLatestBlock() error {
 func (_m *BlockStore) Height() int64 {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Height")
+	}
+
 	var r0 int64
 	if rf, ok := ret.Get(0).(func() int64); ok {
 		r0 = rf()
@@ -73,6 +89,10 @@ func (_m *BlockStore) Height() int64 {
 // LoadBaseMeta provides a mock function with given fields:
 func (_m *BlockStore) LoadBaseMeta() *types.BlockMeta {
 	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBaseMeta")
+	}
 
 	var r0 *types.BlockMeta
 	if rf, ok := ret.Get(0).(func() *types.BlockMeta); ok {
@@ -90,6 +110,10 @@ func (_m *BlockStore) LoadBaseMeta() *types.BlockMeta {
 func (_m *BlockStore) LoadBlock(height int64) *types.Block {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlock")
+	}
+
 	var r0 *types.Block
 	if rf, ok := ret.Get(0).(func(int64) *types.Block); ok {
 		r0 = rf(height)
@@ -105,6 +129,10 @@ func (_m *BlockStore) LoadBlock(height int64) *types.Block {
 // LoadBlockByHash provides a mock function with given fields: hash
 func (_m *BlockStore) LoadBlockByHash(hash []byte) *types.Block {
 	ret := _m.Called(hash)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlockByHash")
+	}
 
 	var r0 *types.Block
 	if rf, ok := ret.Get(0).(func([]byte) *types.Block); ok {
@@ -122,6 +150,10 @@ func (_m *BlockStore) LoadBlockByHash(hash []byte) *types.Block {
 func (_m *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlockCommit")
+	}
+
 	var r0 *types.Commit
 	if rf, ok := ret.Get(0).(func(int64) *types.Commit); ok {
 		r0 = rf(height)
@@ -137,6 +169,10 @@ func (_m *BlockStore) LoadBlockCommit(height int64) *types.Commit {
 // LoadBlockExtendedCommit provides a mock function with given fields: height
 func (_m *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommit {
 	ret := _m.Called(height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlockExtendedCommit")
+	}
 
 	var r0 *types.ExtendedCommit
 	if rf, ok := ret.Get(0).(func(int64) *types.ExtendedCommit); ok {
@@ -154,6 +190,10 @@ func (_m *BlockStore) LoadBlockExtendedCommit(height int64) *types.ExtendedCommi
 func (_m *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlockMeta")
+	}
+
 	var r0 *types.BlockMeta
 	if rf, ok := ret.Get(0).(func(int64) *types.BlockMeta); ok {
 		r0 = rf(height)
@@ -169,6 +209,10 @@ func (_m *BlockStore) LoadBlockMeta(height int64) *types.BlockMeta {
 // LoadBlockMetaByHash provides a mock function with given fields: hash
 func (_m *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
 	ret := _m.Called(hash)
+
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlockMetaByHash")
+	}
 
 	var r0 *types.BlockMeta
 	if rf, ok := ret.Get(0).(func([]byte) *types.BlockMeta); ok {
@@ -186,6 +230,10 @@ func (_m *BlockStore) LoadBlockMetaByHash(hash []byte) *types.BlockMeta {
 func (_m *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 	ret := _m.Called(height, index)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadBlockPart")
+	}
+
 	var r0 *types.Part
 	if rf, ok := ret.Get(0).(func(int64, int) *types.Part); ok {
 		r0 = rf(height, index)
@@ -202,6 +250,10 @@ func (_m *BlockStore) LoadBlockPart(height int64, index int) *types.Part {
 func (_m *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 	ret := _m.Called(height)
 
+	if len(ret) == 0 {
+		panic("no return value specified for LoadSeenCommit")
+	}
+
 	var r0 *types.Commit
 	if rf, ok := ret.Get(0).(func(int64) *types.Commit); ok {
 		r0 = rf(height)
@@ -217,6 +269,10 @@ func (_m *BlockStore) LoadSeenCommit(height int64) *types.Commit {
 // PruneBlocks provides a mock function with given fields: height, _a1
 func (_m *BlockStore) PruneBlocks(height int64, _a1 state.State) (uint64, int64, error) {
 	ret := _m.Called(height, _a1)
+
+	if len(ret) == 0 {
+		panic("no return value specified for PruneBlocks")
+	}
 
 	var r0 uint64
 	var r1 int64
@@ -259,6 +315,10 @@ func (_m *BlockStore) SaveBlockWithExtendedCommit(block *types.Block, blockParts
 func (_m *BlockStore) Size() int64 {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Size")
+	}
+
 	var r0 int64
 	if rf, ok := ret.Get(0).(func() int64); ok {
 		r0 = rf()
@@ -269,13 +329,12 @@ func (_m *BlockStore) Size() int64 {
 	return r0
 }
 
-type mockConstructorTestingTNewBlockStore interface {
+// NewBlockStore creates a new instance of BlockStore. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewBlockStore(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewBlockStore creates a new instance of BlockStore. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewBlockStore(t mockConstructorTestingTNewBlockStore) *BlockStore {
+}) *BlockStore {
 	mock := &BlockStore{}
 	mock.Mock.Test(t)
 

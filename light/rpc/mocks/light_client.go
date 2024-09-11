@@ -21,6 +21,10 @@ type LightClient struct {
 func (_m *LightClient) ChainID() string {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for ChainID")
+	}
+
 	var r0 string
 	if rf, ok := ret.Get(0).(func() string); ok {
 		r0 = rf()
@@ -34,6 +38,10 @@ func (_m *LightClient) ChainID() string {
 // TrustedLightBlock provides a mock function with given fields: height
 func (_m *LightClient) TrustedLightBlock(height int64) (*types.LightBlock, error) {
 	ret := _m.Called(height)
+
+	if len(ret) == 0 {
+		panic("no return value specified for TrustedLightBlock")
+	}
 
 	var r0 *types.LightBlock
 	var r1 error
@@ -61,6 +69,10 @@ func (_m *LightClient) TrustedLightBlock(height int64) (*types.LightBlock, error
 func (_m *LightClient) Update(ctx context.Context, now time.Time) (*types.LightBlock, error) {
 	ret := _m.Called(ctx, now)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
 	var r0 *types.LightBlock
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, time.Time) (*types.LightBlock, error)); ok {
@@ -87,6 +99,10 @@ func (_m *LightClient) Update(ctx context.Context, now time.Time) (*types.LightB
 func (_m *LightClient) VerifyLightBlockAtHeight(ctx context.Context, height int64, now time.Time) (*types.LightBlock, error) {
 	ret := _m.Called(ctx, height, now)
 
+	if len(ret) == 0 {
+		panic("no return value specified for VerifyLightBlockAtHeight")
+	}
+
 	var r0 *types.LightBlock
 	var r1 error
 	if rf, ok := ret.Get(0).(func(context.Context, int64, time.Time) (*types.LightBlock, error)); ok {
@@ -109,13 +125,12 @@ func (_m *LightClient) VerifyLightBlockAtHeight(ctx context.Context, height int6
 	return r0, r1
 }
 
-type mockConstructorTestingTNewLightClient interface {
+// NewLightClient creates a new instance of LightClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
+// The first argument is typically a *testing.T value.
+func NewLightClient(t interface {
 	mock.TestingT
 	Cleanup(func())
-}
-
-// NewLightClient creates a new instance of LightClient. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-func NewLightClient(t mockConstructorTestingTNewLightClient) *LightClient {
+}) *LightClient {
 	mock := &LightClient{}
 	mock.Mock.Test(t)
 

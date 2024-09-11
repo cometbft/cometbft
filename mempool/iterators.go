@@ -116,28 +116,34 @@ func NewBlockingIterator(mem *CListMempool) Iterator {
 func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
+		// Pick a lane containing the next entry to access.
+		lane, ok := iter.PickLane()
+		if !ok {
+			// There are no transactions to take from any lane. Wait until a new
+			// transaction is added to the mempool.
+			lane = <-iter.mp.newTxCh()
+		}
+
 		// Add the next entry to the channel if not nil.
-		lane := iter.PickLane()
 		if entry := iter.Next(lane); entry != nil {
 			ch <- entry.Value.(Entry)
 		}
+
 		// Unblock the receiver (it may receive nil).
 		close(ch)
 	}()
 	return ch
 }
 
-// PickLane returns a _valid_ lane on which to iterate, according to the WRR
-// algorithm. A lane is valid if it is not empty or it is not over-consumed,
-// meaning that the number of accessed entries in the lane has not yet reached
-// its priority value in the current WRR iteration. It will block until a
-// transaction is available in any lane.
-func (iter *BlockingIterator) PickLane() types.Lane {
+// PickLane returns a _valid_ lane containing the next transaction to access
+// according to the WRR algorithm. A lane is valid if it is not empty or it is
+// not over-consumed, meaning that the number of accessed entries in the lane
+// has not yet reached its priority value in the current WRR iteration. It will
+// block until a transaction is available in any lane. It returns false if all
+// lanes are empty or don't have transactions that have not yet been accessed.
+func (iter *BlockingIterator) PickLane() (types.Lane, bool) {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
-
-	iter.mp.addTxChMtx.RLock()
-	defer iter.mp.addTxChMtx.RUnlock()
 
 	// Loop until finding a valid lane. If the current lane is not valid,
 	// continue with the next lower-priority lane, in a round robin fashion.
@@ -146,15 +152,11 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 		// Skip empty lanes or lanes with their cursor pointing at their last entry.
 		if iter.mp.lanes[lane].Len() == 0 ||
 			(iter.cursors[lane] != nil &&
-				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
+				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.latestSeq(lane)) {
 			numEmptyLanes++
 			if numEmptyLanes >= len(iter.sortedLanes) {
-				// There are no lanes with non-accessed entries. Wait until a new tx is added.
-				ch := iter.mp.addTxCh
-				iter.mp.addTxChMtx.RUnlock()
-				<-ch
-				iter.mp.addTxChMtx.RLock()
-				numEmptyLanes = 0
+				// There are no lanes with non-accessed entries.
+				return 0, false
 			}
 			lane = iter.nextLane()
 			continue
@@ -168,7 +170,7 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 			continue
 		}
 
-		return lane
+		return lane, true
 	}
 }
 

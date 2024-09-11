@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -57,11 +58,10 @@ type CListMempool struct {
 	laneBytes map[types.Lane]int64            // number of bytes per lane (for metrics)
 	txsBytes  int64                           // total size of mempool, in bytes
 	numTxs    int64                           // total number of txs in the mempool
+	addTxCh   chan types.Lane                 // blocks until the next tx is added
+	addTxSeq  int64                           // helps detect if new txs have been added to a given lane
 
-	addTxChMtx    cmtsync.RWMutex      // Protects the fields below
-	addTxCh       chan struct{}        // Blocks until the next TX is added
-	addTxSeq      int64                // Helps detect is new TXs have been added to a given lane
-	addTxLaneSeqs map[types.Lane]int64 // Sequence of the last TX added to a given lane
+	addTxLaneSeqs sync.Map // sequence of the last tx added to a given lane (types.Lane -> int64)
 
 	// Immutable fields, only set during initialization.
 	defaultLane types.Lane
@@ -90,14 +90,13 @@ func NewCListMempool(
 	options ...CListMempoolOption,
 ) *CListMempool {
 	mp := &CListMempool{
-		config:        cfg,
-		proxyAppConn:  proxyAppConn,
-		txsMap:        make(map[types.TxKey]*clist.CElement),
-		laneBytes:     make(map[types.Lane]int64),
-		logger:        log.NewNopLogger(),
-		metrics:       NopMetrics(),
-		addTxCh:       make(chan struct{}),
-		addTxLaneSeqs: make(map[types.Lane]int64),
+		config:       cfg,
+		proxyAppConn: proxyAppConn,
+		txsMap:       make(map[types.TxKey]*clist.CElement),
+		laneBytes:    make(map[types.Lane]int64),
+		logger:       log.NewNopLogger(),
+		metrics:      NopMetrics(),
+		addTxCh:      make(chan types.Lane),
 	}
 	mp.height.Store(height)
 
@@ -450,10 +449,8 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	}
 
 	// Increase sequence number.
-	mem.addTxChMtx.Lock()
-	defer mem.addTxChMtx.Unlock()
 	mem.addTxSeq++
-	mem.addTxLaneSeqs[lane] = mem.addTxSeq
+	mem.addTxLaneSeqs.Store(lane, mem.addTxSeq)
 
 	// Add new transaction.
 	memTx := &mempoolTx{
@@ -473,8 +470,12 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.laneBytes[lane] += int64(len(tx))
 
 	// Notify iterators there's a new transaction.
+	select {
+	case mem.addTxCh <- lane:
+	default:
+	}
 	close(mem.addTxCh)
-	mem.addTxCh = make(chan struct{})
+	mem.addTxCh = make(chan types.Lane)
 
 	// Update metrics.
 	mem.metrics.TxSizeBytes.Observe(float64(len(tx)))
@@ -612,6 +613,27 @@ func (mem *CListMempool) notifyTxsAvailable() {
 		default:
 		}
 	}
+}
+
+// newTxCh returns a channel to wait for the lane containing the last
+// transaction added to the mempool.
+func (mem *CListMempool) newTxCh() <-chan types.Lane {
+	mem.txsMtx.RLock()
+	ch := mem.addTxCh
+	mem.txsMtx.RUnlock()
+	return ch
+}
+
+// latestSeq returns the sequence number of the latest transaction added to the
+// given lane. Note that sequence numbers start from 1.
+//
+// Safe for concurrent use by multiple iterators.
+func (mem *CListMempool) latestSeq(lane types.Lane) int64 {
+	seq, ok := mem.addTxLaneSeqs.Load(lane)
+	if !ok {
+		return 0
+	}
+	return seq.(int64)
 }
 
 // Safe for concurrent use by multiple goroutines.

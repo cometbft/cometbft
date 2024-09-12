@@ -62,7 +62,10 @@ replace (
 	github.com/adlio/schema v1.3.6 => github.com/informalsystems/schema v0.0.0-20240910074420-6f3a29ec8110
 
 	github.com/go-kit/kit v0.13.0 => github.com/informalsystems/kit v0.0.0-20240910100206-37b6b26dc6fd
+
 	github.com/spf13/afero v1.11.0 => github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e
+
+	gonum.org/v1/gonum => gonum.org/v1/gonum v0.15.2-0.20240904063137-1ca563a018b6
 )
 
 require (

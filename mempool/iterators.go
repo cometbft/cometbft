@@ -118,11 +118,11 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	go func() {
 		// Pick a lane containing the next entry to access.
 		lane, ok := iter.pickLane()
-		if !ok {
-			// There are no transactions to take from any lane. Wait until a new
-			// transaction is added to the mempool.
+		for !ok {
+			// There are no transactions to take from any lane. Wait until at
+			// least one transaction is added to the mempool and try again.
 			<-iter.mp.addedTxCh()
-			lane = iter.mp.latestTxLane()
+			lane, ok = iter.pickLane()
 		}
 
 		// Add the next entry to the channel if not nil.

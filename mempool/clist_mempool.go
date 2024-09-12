@@ -500,16 +500,6 @@ func (mem *CListMempool) addedTxCh() <-chan struct{} {
 	return ch
 }
 
-// latestTxLane returns the lane where the latest transaction was added.
-//
-// Safe for concurrent use by multiple iterators.
-func (mem *CListMempool) latestTxLane() types.Lane {
-	mem.txsMtx.RLock()
-	lane := mem.addTxLane
-	mem.txsMtx.RUnlock()
-	return lane
-}
-
 // lastTxSeq returns the sequence number of the latest transaction added to the
 // given lane. Note that sequence numbers start from 1.
 //

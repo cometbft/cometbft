@@ -371,6 +371,14 @@ func (vals *ValidatorSet) findProposer() *Validator {
 	return proposer
 }
 
+func (vals *ValidatorSet) ValidatorBlocksTheChain(address []byte) bool {
+	_, val := vals.GetByAddress(address)
+	if val == nil {
+		return false
+	}
+	return val.VotingPower > (vals.TotalVotingPower()-1)/3
+}
+
 // Hash returns the Merkle root hash build using validators (as leaves) in the
 // set.
 //

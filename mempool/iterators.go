@@ -121,7 +121,8 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 		if !ok {
 			// There are no transactions to take from any lane. Wait until a new
 			// transaction is added to the mempool.
-			lane = <-iter.mp.newTxCh()
+			<-iter.mp.newTxCh()
+			lane = iter.mp.latestTxLane()
 		}
 
 		// Add the next entry to the channel if not nil.
@@ -152,7 +153,7 @@ func (iter *BlockingIterator) pickLane() (types.Lane, bool) {
 		// Skip empty lanes or lanes with their cursor pointing at their last entry.
 		if iter.mp.lanes[lane].Len() == 0 ||
 			(iter.cursors[lane] != nil &&
-				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.latestSeq(lane)) {
+				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.lastTxSeq(lane)) {
 			numEmptyLanes++
 			if numEmptyLanes >= len(iter.sortedLanes) {
 				// There are no lanes with non-accessed entries.
@@ -182,6 +183,10 @@ func (iter *BlockingIterator) pickLane() (types.Lane, bool) {
 // accessed or the lane is empty, where `lane` is the priority. The next time,
 // next will select the successive lane with lower priority.
 func (iter *BlockingIterator) next(lane types.Lane) *clist.CElement {
+	if lane == 0 {
+		panic("lane cannot be zero")
+	}
+
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
 	if cursor := iter.cursors[lane]; cursor != nil {

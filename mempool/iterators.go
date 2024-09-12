@@ -139,9 +139,9 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 // pickLane returns a _valid_ lane containing the next transaction to access
 // according to the WRR algorithm. A lane is valid if it is not empty or it is
 // not over-consumed, meaning that the number of accessed entries in the lane
-// has not yet reached its priority value in the current WRR iteration. It will
-// block until a transaction is available in any lane. It returns false if all
-// lanes are empty or don't have transactions that have not yet been accessed.
+// has not yet reached its priority value in the current WRR iteration. It
+// returns false if all lanes are empty or don't have transactions that have not
+// yet been accessed.
 func (iter *BlockingIterator) pickLane() (types.Lane, bool) {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]

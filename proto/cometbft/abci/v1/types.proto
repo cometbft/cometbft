@@ -251,6 +251,12 @@ message EchoResponse {
 // FlushResponse indicates that the write buffer was flushed.
 message FlushResponse {}
 
+// Lane identifies a lane for each transaction with a lane ID and its priority
+// Multiple lane IDs can have the same priority
+message Lane {
+  string id = 1;
+  uint32 prio = 2;
+}
 // InfoResponse contains the ABCI application version information.
 message InfoResponse {
   string data = 1;
@@ -261,8 +267,9 @@ message InfoResponse {
   int64 last_block_height   = 4;
   bytes last_block_app_hash = 5;
 
-  repeated uint32 lane_priorities = 6;
-  uint32 default_lane_priority = 7;
+  repeated Lane lane_info = 6; 
+
+  Lane default_lane = 7;
 }
 
 // InitChainResponse contains the ABCI application's hash and updates to the
@@ -307,7 +314,7 @@ message CheckTxResponse {
   reserved 9 to 11;
   reserved "sender", "priority", "mempool_error";
 
-  uint32 lane = 12;
+  Lane lane = 12;
 }
 
 // CommitResponse indicates how much blocks should CometBFT retain.

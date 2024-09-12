@@ -13,6 +13,7 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
@@ -138,19 +139,28 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
-	var defaultLanePriority uint32
+	defaultAppLane := new(v1.Lane)
 	if len(app.lanes) > 0 {
-		defaultLanePriority = app.lanes[defaultLane]
+		defaultAppLane.Id = "default"
+		defaultAppLane.Prio = app.lanes[defaultLane]
 	}
 
+	var laneInfo []*v1.Lane
+
+	for lane, prio := range app.lanes {
+		l := new(v1.Lane)
+		l.Id = lane
+		l.Prio = prio
+		laneInfo = append(laneInfo, l)
+	}
 	return &types.InfoResponse{
-		Data:                fmt.Sprintf("{\"size\":%v}", app.state.Size),
-		Version:             version.ABCIVersion,
-		AppVersion:          AppVersion,
-		LastBlockHeight:     app.state.Height,
-		LastBlockAppHash:    app.state.Hash(),
-		LanePriorities:      app.lanePriorities,
-		DefaultLanePriority: defaultLanePriority,
+		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
+		Version:          version.ABCIVersion,
+		AppVersion:       AppVersion,
+		LastBlockHeight:  app.state.Height,
+		LastBlockAppHash: app.state.Hash(),
+		LaneInfo:         laneInfo,
+		DefaultLane:      defaultAppLane,
 	}, nil
 }
 

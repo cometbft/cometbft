@@ -29,6 +29,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/test/loadtime/payload"
+	"github.com/cometbft/cometbft/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -60,7 +61,7 @@ type Application struct {
 	// It's OK not to persist this, as it is not part of the state machine
 	seenTxs sync.Map // cmttypes.TxKey -> uint64
 
-	lanes          map[string]uint32
+	lanesInfo      types.LaneInfo
 	lanePriorities []uint32
 }
 
@@ -161,7 +162,7 @@ func DefaultConfig(dir string) *Config {
 }
 
 // LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []uint32) {
+func LaneDefinitions(lanes map[string]uint32) (types.LaneInfo, []uint32) { //(map[string]uint32, []uint32) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
 	if len(lanes) == 0 {
@@ -171,6 +172,7 @@ func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []uint32) {
 			defaultLane: 1,
 		}
 	}
+	// return lanes
 
 	// List of lane priorities
 	priorities := make([]uint32, 0, len(lanes))
@@ -208,7 +210,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 		state:          state,
 		snapshots:      snapshots,
 		cfg:            cfg,
-		lanes:          lanes,
+		laneInfo:       lanes,
 		lanePriorities: lanePriorities,
 	}, nil
 }

@@ -489,11 +489,11 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	return true
 }
 
-// newTxCh returns a channel to wait until a new transaction is added to the
+// addedTxCh returns a channel to wait until a new transaction is added to the
 // mempool.
 //
 // Safe for concurrent use by multiple iterators.
-func (mem *CListMempool) newTxCh() <-chan struct{} {
+func (mem *CListMempool) addedTxCh() <-chan struct{} {
 	mem.txsMtx.RLock()
 	ch := mem.addTxCh
 	mem.txsMtx.RUnlock()

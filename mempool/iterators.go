@@ -121,7 +121,7 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 		if !ok {
 			// There are no transactions to take from any lane. Wait until a new
 			// transaction is added to the mempool.
-			<-iter.mp.newTxCh()
+			<-iter.mp.addedTxCh()
 			lane = iter.mp.latestTxLane()
 		}
 

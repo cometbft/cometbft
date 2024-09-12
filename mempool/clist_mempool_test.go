@@ -158,16 +158,10 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 	defer cleanup()
 
 	// Ensure gas calculation behaves as expected
-<<<<<<< HEAD
 	addRandomTxs(t, mp, 1)
-	tx0 := mp.TxsFront().Value.(*mempoolTx)
-	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
-=======
-	checkTxs(t, mp, 1)
 	iter := mp.NewIterator()
 	tx0 := <-iter.WaitNextCh()
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
->>>>>>> d4a82b7ef (refactor(mempool): Add `Iterator` to replace `TxsFront` and `TxsWaitChan` methods (#3459))
 	// ensure each tx is 20 bytes long
 	require.Len(t, tx0.Tx(), 20, "Tx is longer than 20 bytes")
 	mp.Flush()
@@ -1000,10 +994,6 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 	require.Zero(t, mp.Size())
 }
 
-<<<<<<< HEAD
-func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
-	tb.Helper()
-=======
 func TestMempoolIterator(t *testing.T) {
 	app := kvstore.NewInMemoryApplication()
 	cc := proxy.NewLocalClientCreator(app)
@@ -1042,9 +1032,8 @@ func TestMempoolIterator(t *testing.T) {
 	require.Equal(t, n, counter)
 }
 
-func newMempoolWithAsyncConnection(t *testing.T) (*CListMempool, cleanupFunc) {
-	t.Helper()
->>>>>>> d4a82b7ef (refactor(mempool): Add `Iterator` to replace `TxsFront` and `TxsWaitChan` methods (#3459))
+func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {
+	tb.Helper()
 	sockPath := fmt.Sprintf("unix:///tmp/echo_%v.sock", cmtrand.Str(6))
 	app := kvstore.NewInMemoryApplication()
 	server := newRemoteApp(tb, sockPath, app)

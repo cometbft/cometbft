@@ -8,7 +8,7 @@ import (
 
 	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
-	"golang.org/x/crypto/ripemd160" //nolint: staticcheck // necessary for Bitcoin address format
+	"golang.org/x/crypto/ripemd160" //nolint: gosec,staticcheck // necessary for Bitcoin address format
 
 	"github.com/cometbft/cometbft/crypto"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
@@ -160,7 +160,7 @@ func (pubKey PubKey) Address() crypto.Address {
 		panic("ripemd160.Size != crypto.AddressSize")
 	}
 
-	hasherRIPEMD160 := ripemd160.New()
+	hasherRIPEMD160 := ripemd160.New() // #nosec G406 // necessary for Bitcoin address format
 	_, err = hasherRIPEMD160.Write(sha)
 	if err != nil {
 		panic(err)

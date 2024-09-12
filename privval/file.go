@@ -184,8 +184,9 @@ func NewFilePV(privKey crypto.PrivKey, keyFilePath, stateFilePath string) *FileP
 
 // GenFilePV generates a new validator with randomly generated private key
 // and sets the filePaths, but does not call Save().
-func GenFilePV(keyFilePath, stateFilePath string) *FilePV {
-	return NewFilePV(bn254.GenPrivKey(), keyFilePath, stateFilePath)
+// TODO: Use keyGen if available
+func GenFilePV(keyFilePath, stateFilePath string, keyGen func() (crypto.PrivKey, error)) (*FilePV, error) {
+	return NewFilePV(bn254.GenPrivKey(), keyFilePath, stateFilePath), nil
 }
 
 // LoadFilePV loads a FilePV from the filePaths.  The FilePV handles double

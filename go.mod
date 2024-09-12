@@ -1,6 +1,8 @@
 module github.com/cometbft/cometbft
 
-go 1.22.2
+go 1.22.5
+
+toolchain go1.23.1
 
 replace github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20231016072529-15c0507b6578
 
@@ -43,10 +45,9 @@ require (
 	github.com/cometbft/cometbft-db v0.14.0
 	github.com/cometbft/cometbft-load-test v0.3.0
 	github.com/cometbft/cometbft/api v1.0.0-rc.1
+	github.com/consensys/gnark-crypto v0.12.1
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/dgraph-io/badger/v4 v4.2.0
-	github.com/consensys/gnark-crypto v0.12.1
-	github.com/cosmos/crypto v0.0.0-20240309083813-82ed2537802e
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/goccmack/goutil v1.2.3
 	github.com/google/uuid v1.6.0
@@ -69,8 +70,8 @@ require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/bits-and-blooms/bitset v1.7.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
 	github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce // indirect

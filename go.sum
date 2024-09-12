@@ -208,8 +208,6 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e h1:9c3ksQLcsdHEKWJVWXeNbx5+01piScUqxZ31mHIPm2A=
 github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e/go.mod h1:5jWa80nd9L/tkN0D4u5jZTmkSJTGrDf3s+b+VfV8kmE=
-github.com/informalsystems/gonum v0.0.0-20240904063137-1ca563a018b6 h1:PCK+WF7AnhL4bUMMv19H0ZQoVpqEBE3Zq7eaW0smopI=
-github.com/informalsystems/gonum v0.0.0-20240904063137-1ca563a018b6/go.mod h1:PKY3o0OhfPzTVRj2yeKCowBsd4MQ/nIBn3y45/LDOL0=
 github.com/informalsystems/kit v0.0.0-20240910100206-37b6b26dc6fd h1:UBuk/DQZsT4GK6O8W+goWEUHXNd2WrnH4C77DtPXgik=
 github.com/informalsystems/kit v0.0.0-20240910100206-37b6b26dc6fd/go.mod h1:kP3xP+umI/GpuM0I3cSuGXsD4g1BTyadhDMPMWV7WJc=
 github.com/informalsystems/schema v0.0.0-20240910074420-6f3a29ec8110 h1:UrwoOZLR7av/ZsDJHsBcUmuIeBDdDuLFHhBk41PwWQY=
@@ -487,6 +485,8 @@ golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8T
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
+gonum.org/v1/gonum v0.15.2-0.20240904063137-1ca563a018b6 h1:/8wREnmmIhSvVh2NRqLrL/E2ff1NXzrVIr3Kls4+UaM=
+gonum.org/v1/gonum v0.15.2-0.20240904063137-1ca563a018b6/go.mod h1:PKY3o0OhfPzTVRj2yeKCowBsd4MQ/nIBn3y45/LDOL0=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 h1:pPJltXNxVzT4pK9yD8vR9X75DaWYYmLGMsEvBfFQZzQ=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1/go.mod h1:UqMtugtsSgubUsoxbuAoiCXvqvErP7Gf0so0mK9tHxU=
 google.golang.org/grpc v1.66.1 h1:hO5qAXR19+/Z44hmvIM4dQFMSYX9XcWsByfoxutBpAM=

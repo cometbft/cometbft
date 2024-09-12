@@ -65,7 +65,7 @@ replace (
 
 	github.com/spf13/afero v1.11.0 => github.com/informalsystems/afero v0.0.0-20240822164725-478adf757a7e
 
-	gonum.org/v1/gonum => github.com/informalsystems/gonum v0.0.0-20240904063137-1ca563a018b6
+	gonum.org/v1/gonum => gonum.org/v1/gonum v0.15.2-0.20240904063137-1ca563a018b6
 )
 
 require (

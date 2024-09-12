@@ -74,8 +74,8 @@ Before continuing, we check if the new peer has the same ID as ourselves or
 an existing peer. If so, we disconnect.
 
 We also check the peer's address and public key against
-an optional whitelist which can be managed through the ABCI app -
-if the whitelist is enabled and the peer does not qualify, the connection is
+an optional allowlist which can be managed through the ABCI app -
+if the allowlist is enabled and the peer does not qualify, the connection is
 terminated.
 
 ### CometBFT Version Handshake

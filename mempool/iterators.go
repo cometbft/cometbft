@@ -117,7 +117,7 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
 		// Pick a lane containing the next entry to access.
-		lane, ok := iter.PickLane()
+		lane, ok := iter.pickLane()
 		if !ok {
 			// There are no transactions to take from any lane. Wait until a new
 			// transaction is added to the mempool.
@@ -125,23 +125,23 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 		}
 
 		// Add the next entry to the channel if not nil.
-		if entry := iter.Next(lane); entry != nil {
+		if entry := iter.next(lane); entry != nil {
 			ch <- entry.Value.(Entry)
 		}
 
-		// Unblock the receiver (it may receive nil).
+		// Unblock receiver if no entry was sent (it may receive nil).
 		close(ch)
 	}()
 	return ch
 }
 
-// PickLane returns a _valid_ lane containing the next transaction to access
+// pickLane returns a _valid_ lane containing the next transaction to access
 // according to the WRR algorithm. A lane is valid if it is not empty or it is
 // not over-consumed, meaning that the number of accessed entries in the lane
 // has not yet reached its priority value in the current WRR iteration. It will
 // block until a transaction is available in any lane. It returns false if all
 // lanes are empty or don't have transactions that have not yet been accessed.
-func (iter *BlockingIterator) PickLane() (types.Lane, bool) {
+func (iter *BlockingIterator) pickLane() (types.Lane, bool) {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
 
@@ -174,13 +174,14 @@ func (iter *BlockingIterator) PickLane() (types.Lane, bool) {
 	}
 }
 
-// Next returns the next element according to the WRR algorithm.
+// next returns the next entry on the given lane and updates to WRR variables.
 //
-// In classical WRR, the iterator cycles over the lanes. When a lane is selected, Next returns an
-// entry from the selected lane. On subsequent calls, Next will return the next entries from the
-// same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
-// The next time, Next will select the successive lane with lower priority.
-func (iter *BlockingIterator) Next(lane types.Lane) *clist.CElement {
+// In classical WRR, the iterator cycles over the lanes. When a lane is
+// selected, next returns an entry from the selected lane. On subsequent calls,
+// next will return the next entries from the same lane until `lane` entries are
+// accessed or the lane is empty, where `lane` is the priority. The next time,
+// next will select the successive lane with lower priority.
+func (iter *BlockingIterator) next(lane types.Lane) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
 	if cursor := iter.cursors[lane]; cursor != nil {

@@ -164,7 +164,7 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 		}
 
 		// Skip over-consumed lanes.
-		if lane < types.Lane(iter.roundCounter) {
+		if int(lane) < iter.roundCounter {
 			numEmptyLanes = 0
 			lane = iter.nextLane()
 			continue

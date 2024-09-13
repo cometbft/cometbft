@@ -1,18 +1,18 @@
 package mempool
 
 import (
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/types"
 )
 
 type LaneData struct {
 	lanes       map[string]uint32
-	defaultLane v1.Lane
+	defaultLane abci.Lane
 }
 
 // BuildLanesInfo builds the information required to initialize
 // lanes given the data queried from the app.
-func BuildLanesInfo(laneList map[string]uint32, defLane v1.Lane) (*LaneData, error) {
+func BuildLanesInfo(laneList map[string]uint32, defLane abci.Lane) (*LaneData, error) {
 	// lanes := make([]types.LaneID, len(laneList))
 	// for i, l := range laneList {
 	// 	lanes[i] = types.LaneID(l)

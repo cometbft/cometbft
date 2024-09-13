@@ -3,7 +3,7 @@ package mempool
 import (
 	"fmt"
 
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/types"
 )
@@ -11,13 +11,13 @@ import (
 // WRRIterator is the base struct for implementing iterators that traverse lanes with
 // the classical Weighted Round Robin (WRR) algorithm.
 type WRRIterator struct {
-	sortedLanes []v1.Lane
+	sortedLanes []abci.Lane
 	laneIndex   int                              // current lane being iterated; index on sortedLanes
 	counters    map[types.LaneID]uint            // counters of consumed entries, for WRR algorithm
 	cursors     map[types.LaneID]*clist.CElement // last accessed entries on each lane
 }
 
-func (iter *WRRIterator) nextLane() v1.Lane {
+func (iter *WRRIterator) nextLane() abci.Lane {
 	iter.laneIndex = (iter.laneIndex + 1) % len(iter.sortedLanes)
 	return iter.sortedLanes[iter.laneIndex]
 }
@@ -133,7 +133,7 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 // meaning that the number of accessed entries in the lane has not yet reached
 // its priority value in the current WRR iteration. It will block until a
 // transaction is available in any lane.
-func (iter *BlockingIterator) PickLane() v1.Lane {
+func (iter *BlockingIterator) PickLane() abci.Lane {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
 
@@ -181,7 +181,7 @@ func (iter *BlockingIterator) PickLane() v1.Lane {
 // entry from the selected lane. On subsequent calls, Next will return the next entries from the
 // same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
 // The next time, Next will select the successive lane with lower priority.
-func (iter *BlockingIterator) Next(lane v1.Lane) *clist.CElement {
+func (iter *BlockingIterator) Next(lane abci.Lane) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
 	laneID := types.LaneID(lane.Id)

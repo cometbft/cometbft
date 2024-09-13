@@ -23,7 +23,6 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	abci "github.com/cometbft/cometbft/abci/types"
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
@@ -66,7 +65,7 @@ func newMempoolWithAppAndConfigMock(
 
 	defLane := appInfoRes.DefaultLane
 	if defLane == nil {
-		defLane = new(v1.Lane)
+		defLane = new(abci.Lane)
 	}
 	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, *defLane)
 	if err != nil {
@@ -342,24 +341,24 @@ func TestMempoolUpdate(t *testing.T) {
 
 func TestMempoolBuildLanesInfo(t *testing.T) {
 	emptyMap := make(map[string]uint32)
-	_, err := BuildLanesInfo(emptyMap, v1.Lane{})
+	_, err := BuildLanesInfo(emptyMap, abci.Lane{})
 	require.NoError(t, err)
 
-	_, err = BuildLanesInfo(emptyMap, v1.Lane{Id: "1", Prio: 1})
+	_, err = BuildLanesInfo(emptyMap, abci.Lane{Id: "1", Prio: 1})
 
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
-	_, err = BuildLanesInfo(map[string]uint32{"1": 1}, v1.Lane{Id: "1", Prio: 0})
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1}, abci.Lane{Id: "1", Prio: 0})
 
 	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
 
-	_, err = BuildLanesInfo(emptyMap, v1.Lane{Id: "1", Prio: 1})
+	_, err = BuildLanesInfo(emptyMap, abci.Lane{Id: "1", Prio: 1})
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
-	_, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, v1.Lane{Id: "5", Prio: 5})
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, abci.Lane{Id: "5", Prio: 5})
 	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
 
-	// _, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, v1.Lane{Id: "4", Prio: 4})
+	// _, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, Lane{Id: "4", Prio: 4})
 	// require.ErrorAs(t, err, &ErrRepeatedLanes{})
 }
 
@@ -1119,7 +1118,7 @@ func newReqRes(tx types.Tx, code uint32, requestType abci.CheckTxType) *abciclie
 
 func newReqResWithLanes(tx types.Tx, code uint32, requestType abci.CheckTxType, lane uint32) *abciclient.ReqRes {
 	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
-	l := new(v1.Lane)
+	l := new(abci.Lane)
 	l.Id = strconv.FormatUint(uint64(lane), 10)
 	l.Prio = lane
 

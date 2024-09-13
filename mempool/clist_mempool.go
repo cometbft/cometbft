@@ -10,7 +10,6 @@ import (
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
@@ -64,8 +63,8 @@ type CListMempool struct {
 	addTxLaneSeqs map[types.LaneID]int64 // Sequence of the last TX added to a given lane
 
 	// Immutable fields, only set during initialization.
-	defaultLane v1.Lane
-	sortedLanes []v1.Lane // lanes sorted by priority, in descending order
+	defaultLane abci.Lane
+	sortedLanes []abci.Lane // lanes sorted by priority, in descending order
 
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
@@ -104,16 +103,16 @@ func NewCListMempool(
 	// Initialize lanes
 	if len(lanesInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
-		lanesInfo = &LaneData{lanes: map[string]uint32{"default": 1}, defaultLane: v1.Lane{Id: "default", Prio: 1}}
+		lanesInfo = &LaneData{lanes: map[string]uint32{"default": 1}, defaultLane: abci.Lane{Id: "default", Prio: 1}}
 	}
 	numLanes := len(lanesInfo.lanes)
 	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
 	mp.defaultLane = lanesInfo.defaultLane
-	mp.sortedLanes = make([]v1.Lane, numLanes)
+	mp.sortedLanes = make([]abci.Lane, numLanes)
 	i := 0
 	for laneID, lanePrio := range lanesInfo.lanes {
 		mp.lanes[types.LaneID(laneID)] = clist.New()
-		mp.sortedLanes[i] = v1.Lane{Id: laneID, Prio: lanePrio}
+		mp.sortedLanes[i] = abci.Lane{Id: laneID, Prio: lanePrio}
 		i++
 	}
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
@@ -442,7 +441,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane v1.Lane) bool {
+func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane abci.Lane) bool {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
 

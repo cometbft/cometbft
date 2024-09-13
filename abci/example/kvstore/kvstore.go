@@ -13,7 +13,6 @@ import (
 
 	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/abci/types"
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/log"
@@ -139,7 +138,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
-	defaultAppLane := new(v1.Lane)
+	defaultAppLane := new(types.Lane)
 	if len(app.lanes) > 0 {
 		defaultAppLane.Id = "default"
 		defaultAppLane.Prio = app.lanes[defaultLane]
@@ -195,8 +194,8 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 }
 
 // assignLane deterministically computes a lane for the given tx.
-func (app *Application) assignLane(tx []byte) *v1.Lane {
-	lane := new(v1.Lane)
+func (app *Application) assignLane(tx []byte) *types.Lane {
+	lane := new(types.Lane)
 	if isValidatorTx(tx) {
 		lane.Id = "val"
 		lane.Prio = app.lanes["val"]

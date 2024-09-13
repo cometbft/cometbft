@@ -12,7 +12,6 @@ import (
 	abciclimocks "github.com/cometbft/cometbft/abci/client/mocks"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -118,7 +117,7 @@ func TestIteratorRace(t *testing.T) {
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
 
-	defLane := new(v1.Lane)
+	defLane := new(abci.Lane)
 	defLane.Id = "1"
 	defLane.Prio = 1
 
@@ -271,7 +270,7 @@ func TestIteratorExactOrder(t *testing.T) {
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
 
-	defLane := new(v1.Lane)
+	defLane := new(abci.Lane)
 	defLane.Id = "1"
 	defLane.Prio = 1
 

@@ -22,7 +22,6 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
-	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -232,7 +231,7 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 		}, nil
 	}
 
-	defaultAppLane := new(v1.Lane)
+	defaultAppLane := new(abci.Lane)
 	if len(app.lanesInfo) > 0 {
 		defaultAppLane.Id = "default"
 		defaultAppLane.Prio = app.lanesInfo[defaultLane]
@@ -364,7 +363,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)
-	l := new(v1.Lane)
+	l := new(abci.Lane)
 	l.Id = strconv.Itoa(int(lane))
 	l.Prio = lane
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: l}, nil

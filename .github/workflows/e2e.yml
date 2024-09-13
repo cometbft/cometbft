@@ -4,12 +4,22 @@ name: e2e
 on:
   workflow_dispatch:  # allow running workflow manually
   pull_request:
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - Makefile
   merge_group:
   push:
     branches:
       - main
       - v0.3[478].x
       - v[1-9][0-9]?.x
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - Makefile
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -31,19 +41,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - uses: technote-space/get-diff-action@v6
-        with:
-          PATTERNS: |
-            **/**.go
-            go.mod
-            go.sum
 
       - name: Build
         working-directory: test/e2e
         run: make -j2 docker runner
-        if: "env.GIT_DIFF != ''"
 
       - name: Run "${{ matrix.group }}"" testnet
         working-directory: test/e2e
         run: ./run-multiple.sh ${{ matrix.group }}.toml
-        if: "env.GIT_DIFF != ''"

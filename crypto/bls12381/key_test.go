@@ -3,10 +3,13 @@
 package bls12381_test
 
 import (
+	"encoding/hex"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	blst "github.com/supranational/blst/bindings/go"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/bls12381"
@@ -166,4 +169,38 @@ func TestPubKey_MarshalJSON(t *testing.T) {
 	pubKey2 := new(bls12381.PubKey)
 	err = pubKey2.UnmarshalJSON(jsonBytes)
 	require.NoError(t, err)
+}
+
+func TestPubKey_NewPublicKeyFromBytes(t *testing.T) {
+	cs := map[string]string{
+		"NotInG1":   "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		"InfFalseB": "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+		"InfTrueB":  "c01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+	}
+
+	unmarshal := func(c string) ([]byte, error) {
+		type blstPublicKey = blst.P1Affine
+
+		bz, err := hex.DecodeString(c)
+		if err != nil {
+			return nil, err
+		}
+		pk := new(blstPublicKey).Uncompress(bz)
+		if pk == nil {
+			return nil, errors.New("could not unmarshal bytes into pubkey")
+		}
+		pkc := pk.Serialize()
+		if pkc == nil {
+			return nil, errors.New("could not serialize pubkey")
+		}
+		return pkc, nil
+	}
+
+	for name, c := range cs {
+		t.Run(name, func(t *testing.T) {
+			bz, err := unmarshal(c)
+			_, err = bls12381.NewPublicKeyFromBytes(bz)
+			assert.Error(t, err)
+		})
+	}
 }

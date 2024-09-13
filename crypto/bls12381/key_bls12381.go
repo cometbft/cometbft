@@ -23,6 +23,9 @@ const (
 var (
 	// ErrDeserialization is returned when deserialization fails.
 	ErrDeserialization = errors.New("bls12381: deserialization error")
+	// ErrInvalidPubKey is returned when the public key is infinite. It also
+	// includes a subgroup check.
+	ErrInfinitePubKey = errors.New("bls12381: pubkey is infinite")
 
 	dstMinSig = []byte("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_")
 )
@@ -161,6 +164,10 @@ func NewPublicKeyFromBytes(bz []byte) (*PubKey, error) {
 	pk := new(blstPublicKey).Deserialize(bz)
 	if pk == nil {
 		return nil, ErrDeserialization
+	}
+	// Subgroup and infinity check
+	if !pk.KeyValidate() {
+		return nil, ErrInfinitePubKey
 	}
 	return &PubKey{pk: pk}, nil
 }

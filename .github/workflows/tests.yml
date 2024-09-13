@@ -28,7 +28,6 @@ jobs:
               - '**/*.go'
               - 'Makefile'
               - 'go.*'
-              - '!test/**'  # Exclude changes in the test directory
 
       - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
       - uses: actions/setup-go@v5
@@ -38,5 +37,5 @@ jobs:
       - name: Run Go Tests
         if: steps.filter.outputs.code_changes == 'true'
         run: |
-          echo  $${{ steps.filter.outputs.code_changes }}
+          echo  ${{ steps.filter.outputs.code_changes }}
           make test-group-${{ matrix.part }} NUM_SPLIT=20

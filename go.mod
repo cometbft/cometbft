@@ -7,10 +7,6 @@ require (
 	github.com/adlio/schema v1.3.6
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/fortytw2/leaktest v1.3.0
-<<<<<<< HEAD
-	github.com/go-kit/kit v0.13.0
-=======
->>>>>>> 6f7d85e18 (feat(internal/metrics): copy metrics package from go-kit (#3989))
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/golang/protobuf v1.5.4 // indirect

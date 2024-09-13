@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	abciclimocks "github.com/cometbft/cometbft/abci/client/mocks"
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/proxy"
 	"github.com/cometbft/cometbft/types"
@@ -116,7 +118,18 @@ func TestIteratorRace(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2, 3}, DefaultLanePriority: 1}, nil)
+
+	lanePrios := make([]*v1.Lane, 3)
+	defLane := new(v1.Lane)
+	defLane.Id = "1"
+	defLane.Prio = 1
+	for i := uint32(0); i < 3; i++ {
+		lanePrios[i] = new(v1.Lane)
+		lanePrios[i].Id = strconv.FormatUint(uint64(i+1), 10)
+		lanePrios[i].Prio = i + 1
+	}
+
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LaneInfo: lanePrios, DefaultLane: defLane}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -264,7 +277,16 @@ func TestIteratorExactOrder(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: []uint32{1, 2, 3}, DefaultLanePriority: 1}, nil)
+	lanePrios := make([]*v1.Lane, 3)
+	defLane := new(v1.Lane)
+	defLane.Id = "1"
+	defLane.Prio = 1
+	for i := uint32(0); i < 3; i++ {
+		lanePrios[i] = new(v1.Lane)
+		lanePrios[i].Id = strconv.FormatUint(uint64(i+1), 10)
+		lanePrios[i].Prio = i + 1
+	}
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LaneInfo: lanePrios, DefaultLane: defLane}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()

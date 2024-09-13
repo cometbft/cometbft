@@ -1,64 +1,72 @@
 package mempool
 
 import (
-	"slices"
-
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/types"
 )
 
-type LanesInfo struct {
-	lanes       []types.Lane
-	defaultLane types.Lane
+type LaneData struct {
+	lanes       []*v1.Lane
+	defaultLane v1.Lane
 }
 
 // BuildLanesInfo builds the information required to initialize
 // lanes given the data queried from the app.
-func BuildLanesInfo(laneList []uint32, defLane types.Lane) (*LanesInfo, error) {
-	lanes := make([]types.Lane, len(laneList))
-	for i, l := range laneList {
-		lanes[i] = types.Lane(l)
-	}
-	info := LanesInfo{lanes: lanes, defaultLane: defLane}
-	if err := info.validate(); err != nil {
+func BuildLanesInfo(laneList []*v1.Lane, defLane v1.Lane) (*LaneData, error) {
+	// lanes := make([]types.LaneID, len(laneList))
+	// for i, l := range laneList {
+	// 	lanes[i] = types.LaneID(l)
+	// }
+	info := LaneData{lanes: laneList, defaultLane: defLane}
+	if err := validate(info); err != nil {
 		return nil, err
 	}
 
 	return &info, nil
 }
 
-func (info *LanesInfo) validate() error {
+func validate(info LaneData) error {
 	// If no lanes are provided the default priority is 0
-	if len(info.lanes) == 0 && info.defaultLane == 0 {
+	if len(info.lanes) == 0 && info.defaultLane.Prio == 0 && info.defaultLane.Id == "" {
+		info.defaultLane.Id = "default"
 		return nil
 	}
 
 	// Default lane is set but empty lane list
-	if len(info.lanes) == 0 && info.defaultLane != 0 {
+	if len(info.lanes) == 0 && info.defaultLane.Prio != 0 {
 		return ErrEmptyLanesDefaultLaneSet{
-			Info: *info,
+			Info: info,
 		}
 	}
 
 	// Lane 0 is reserved for when there are no lanes or for invalid txs; it should not be used for the default lane.
-	if info.defaultLane == 0 && len(info.lanes) != 0 {
+	if info.defaultLane.Prio == 0 && len(info.lanes) != 0 {
 		return ErrBadDefaultLaneNonEmptyLaneList{
-			Info: *info,
+			Info: info,
+		}
+	}
+
+	found := false
+	for _, l := range info.lanes {
+		if l.Id == info.defaultLane.Id && l.Prio == info.defaultLane.Prio {
+			found = true
+			break
 		}
 	}
 
 	// The default lane is not contained in the list of lanes
-	if !slices.Contains(info.lanes, info.defaultLane) {
+	if !found { ///slices.Contains(info.lanes, &info.defaultLane) {
 		return ErrDefaultLaneNotInList{
-			Info: *info,
+			Info: info,
 		}
 	}
-	lanesSet := make(map[types.Lane]struct{})
+	lanesSet := make(map[types.LaneID]struct{})
 	for _, lane := range info.lanes {
-		lanesSet[lane] = struct{}{}
+		lanesSet[types.LaneID(lane.Id)] = struct{}{}
 	}
 	if len(info.lanes) != len(lanesSet) {
 		return ErrRepeatedLanes{
-			Info: *info,
+			Info: info,
 		}
 	}
 	return nil

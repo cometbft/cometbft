@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strconv"
 	"sync/atomic"
 	"time"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
 	abci "github.com/cometbft/cometbft/abci/types"
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/libs/log"
@@ -52,20 +52,20 @@ type CListMempool struct {
 
 	// Data in the following variables must to be kept in sync and updated atomically.
 	txsMtx    cmtsync.RWMutex
-	lanes     map[types.Lane]*clist.CList     // each lane is a linked-list of (valid) txs
+	lanes     map[types.LaneID]*clist.CList   // each lane is a linked-list of (valid) txs
 	txsMap    map[types.TxKey]*clist.CElement // for quick access to the mempool entry of a given tx
-	laneBytes map[types.Lane]int64            // number of bytes per lane (for metrics)
+	laneBytes map[types.LaneID]int64          // number of bytes per lane (for metrics)
 	txsBytes  int64                           // total size of mempool, in bytes
 	numTxs    int64                           // total number of txs in the mempool
 
-	addTxChMtx    cmtsync.RWMutex      // Protects the fields below
-	addTxCh       chan struct{}        // Blocks until the next TX is added
-	addTxSeq      int64                // Helps detect is new TXs have been added to a given lane
-	addTxLaneSeqs map[types.Lane]int64 // Sequence of the last TX added to a given lane
+	addTxChMtx    cmtsync.RWMutex        // Protects the fields below
+	addTxCh       chan struct{}          // Blocks until the next TX is added
+	addTxSeq      int64                  // Helps detect is new TXs have been added to a given lane
+	addTxLaneSeqs map[types.LaneID]int64 // Sequence of the last TX added to a given lane
 
 	// Immutable fields, only set during initialization.
-	defaultLane types.Lane
-	sortedLanes []types.Lane // lanes sorted by priority, in descending order
+	defaultLane v1.Lane
+	sortedLanes []v1.Lane // lanes sorted by priority, in descending order
 
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
@@ -85,7 +85,7 @@ type CListMempoolOption func(*CListMempool)
 func NewCListMempool(
 	cfg *config.MempoolConfig,
 	proxyAppConn proxy.AppConnMempool,
-	lanesInfo *LanesInfo,
+	lanesInfo *LaneData,
 	height int64,
 	options ...CListMempoolOption,
 ) *CListMempool {
@@ -93,30 +93,37 @@ func NewCListMempool(
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
 		txsMap:        make(map[types.TxKey]*clist.CElement),
-		laneBytes:     make(map[types.Lane]int64),
+		laneBytes:     make(map[types.LaneID]int64),
 		logger:        log.NewNopLogger(),
 		metrics:       NopMetrics(),
 		addTxCh:       make(chan struct{}),
-		addTxLaneSeqs: make(map[types.Lane]int64),
+		addTxLaneSeqs: make(map[types.LaneID]int64),
 	}
 	mp.height.Store(height)
 
 	// Initialize lanes
-	if lanesInfo == nil || len(lanesInfo.lanes) == 0 {
+	if len(lanesInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
-		lanesInfo = &LanesInfo{lanes: []types.Lane{1}, defaultLane: 1}
+		defLane := new(v1.Lane)
+		defLane.Id = "default"
+		defLane.Prio = 1
+
+		lanesInfo = &LaneData{lanes: []*v1.Lane{defLane}, defaultLane: *defLane}
 	}
 	numLanes := len(lanesInfo.lanes)
-	mp.lanes = make(map[types.Lane]*clist.CList, numLanes)
+	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
 	mp.defaultLane = lanesInfo.defaultLane
-	mp.sortedLanes = make([]types.Lane, numLanes)
+	mp.sortedLanes = make([]v1.Lane, numLanes)
 	for i, lane := range lanesInfo.lanes {
-		mp.lanes[lane] = clist.New()
-		mp.sortedLanes[i] = lane
+		mp.lanes[types.LaneID(lane.Id)] = clist.New()
+		mp.sortedLanes[i] = *lane
 	}
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
-		return mp.sortedLanes[i] > mp.sortedLanes[j]
+		return mp.sortedLanes[i].Id > mp.sortedLanes[j].Id
 	})
+	// sort.Slice(mp.sortedLanes, func(i, j int) bool {
+	// 	return mp.sortedLanes[i] > mp.sortedLanes[j]
+	// })
 	mp.recheck = newRecheck(mp)
 
 	if cfg.CacheSize > 0 {
@@ -149,7 +156,7 @@ func (mem *CListMempool) tryRemoveFromCache(tx types.Tx) {
 	}
 }
 
-func (mem *CListMempool) removeAllTxs(lane types.Lane) {
+func (mem *CListMempool) removeAllTxs(lane types.LaneID) {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
 
@@ -257,7 +264,7 @@ func (mem *CListMempool) SizeBytes() int64 {
 // LaneBytes returns the total number of bytes of all txs in a given lane.
 //
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) LaneBytes(lane types.Lane) int64 {
+func (mem *CListMempool) LaneBytes(lane types.LaneID) int64 {
 	mem.txsMtx.RLock()
 	defer mem.txsMtx.RUnlock()
 
@@ -401,8 +408,10 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 		// If the app returned a (non-zero) lane, use it; otherwise use the default lane.
 		lane := mem.defaultLane
-		if l := types.Lane(res.Lane); l != 0 {
-			lane = l
+		if res.Lane != nil {
+			if l := types.LaneID(res.Lane.Id); l != "" {
+				lane = *res.Lane
+			}
 		}
 
 		// Check that tx is not already in the mempool. This can happen when the
@@ -431,19 +440,19 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 				mem.onNewTx(tx)
 			}
 
-			mem.updateSizeMetrics(lane)
+			mem.updateSizeMetrics(types.LaneID(lane.Id))
 		}
 	}
 }
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane types.Lane) bool {
+func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane v1.Lane) bool {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
 
 	// Get lane's clist.
-	txs, ok := mem.lanes[lane]
+	txs, ok := mem.lanes[types.LaneID(lane.Id)]
 	if !ok {
 		mem.logger.Error("Lane does not exist, not adding TX", "tx", log.NewLazySprintf("%X", tx.Hash()), "lane", lane)
 		return false
@@ -453,14 +462,14 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.addTxChMtx.Lock()
 	defer mem.addTxChMtx.Unlock()
 	mem.addTxSeq++
-	mem.addTxLaneSeqs[lane] = mem.addTxSeq
+	mem.addTxLaneSeqs[types.LaneID(lane.Id)] = mem.addTxSeq
 
 	// Add new transaction.
 	memTx := &mempoolTx{
 		tx:        tx,
 		height:    mem.height.Load(),
 		gasWanted: gasWanted,
-		lane:      lane,
+		lane:      lane.Id,
 		seq:       mem.addTxSeq,
 	}
 	_ = memTx.addSender(sender)
@@ -470,7 +479,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.txsMap[tx.Key()] = e
 	mem.txsBytes += int64(len(tx))
 	mem.numTxs++
-	mem.laneBytes[lane] += int64(len(tx))
+	mem.laneBytes[types.LaneID(lane.Id)] += int64(len(tx))
 
 	// Notify iterators there's a new transaction.
 	close(mem.addTxCh)
@@ -482,8 +491,9 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.logger.Debug(
 		"Added transaction",
 		"tx", tx.Hash(),
-		"lane", lane,
-		"lane size", mem.lanes[lane].Len(),
+		"lane", lane.Id,
+		"lane priority", lane.Prio,
+		"lane size", mem.lanes[types.LaneID(lane.Id)].Len(),
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)
@@ -505,24 +515,24 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 
 	memTx := elem.Value.(*mempoolTx)
 
-	label := strconv.FormatUint(uint64(memTx.lane), 10)
+	label := memTx.lane
 	mem.metrics.TxLifeSpan.With("lane", label).Observe(float64(memTx.timestamp.Sub(time.Now().UTC())))
 
 	// Remove tx from lane.
-	mem.lanes[memTx.lane].Remove(elem)
+	mem.lanes[types.LaneID(memTx.lane)].Remove(elem)
 	elem.DetachPrev()
 
 	// Update auxiliary variables.
 	delete(mem.txsMap, txKey)
 	mem.txsBytes -= int64(len(memTx.tx))
 	mem.numTxs--
-	mem.laneBytes[memTx.lane] -= int64(len(memTx.tx))
+	mem.laneBytes[types.LaneID(memTx.lane)] -= int64(len(memTx.tx))
 
 	mem.logger.Debug(
 		"Removed transaction",
 		"tx", memTx.tx.Hash(),
 		"lane", memTx.lane,
-		"lane size", mem.lanes[memTx.lane].Len(),
+		"lane size", mem.lanes[types.LaneID(memTx.lane)].Len(),
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)
@@ -586,7 +596,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 				// update metrics
 				mem.metrics.EvictedTxs.Add(1)
 				if elem, ok := mem.txsMap[tx.Key()]; ok {
-					mem.updateSizeMetrics(elem.Value.(*mempoolTx).lane)
+					mem.updateSizeMetrics(types.LaneID(elem.Value.(*mempoolTx).lane))
 				} else {
 					mem.logger.Error("Cannot update metrics", "err", err)
 				}
@@ -756,10 +766,10 @@ func (mem *CListMempool) Update(
 }
 
 // updateSizeMetrics updates the size-related metrics of a given lane.
-func (mem *CListMempool) updateSizeMetrics(lane types.Lane) {
-	label := strconv.FormatUint(uint64(lane), 10)
-	mem.metrics.LaneSize.With("lane", label).Set(float64(mem.lanes[lane].Len()))
-	mem.metrics.LaneBytes.With("lane", label).Set(float64(mem.LaneBytes(lane)))
+func (mem *CListMempool) updateSizeMetrics(laneID types.LaneID) {
+	label := string(laneID)
+	mem.metrics.LaneSize.With("lane", label).Set(float64(mem.lanes[laneID].Len()))
+	mem.metrics.LaneBytes.With("lane", label).Set(float64(mem.LaneBytes(laneID)))
 	mem.metrics.Size.Set(float64(mem.Size()))
 	mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
 }

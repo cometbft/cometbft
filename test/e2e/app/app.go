@@ -22,6 +22,7 @@ import (
 
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abci "github.com/cometbft/cometbft/abci/types"
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	cryptoproto "github.com/cometbft/cometbft/api/cometbft/crypto/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/crypto"
@@ -29,7 +30,6 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/libs/protoio"
 	"github.com/cometbft/cometbft/test/loadtime/payload"
-	"github.com/cometbft/cometbft/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	"github.com/cometbft/cometbft/version"
 )
@@ -61,7 +61,7 @@ type Application struct {
 	// It's OK not to persist this, as it is not part of the state machine
 	seenTxs sync.Map // cmttypes.TxKey -> uint64
 
-	lanesInfo      types.LaneInfo
+	lanesInfo      map[string]uint32 // types.LaneInfo
 	lanePriorities []uint32
 }
 
@@ -162,7 +162,7 @@ func DefaultConfig(dir string) *Config {
 }
 
 // LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions(lanes map[string]uint32) (types.LaneInfo, []uint32) { //(map[string]uint32, []uint32) {
+func LaneDefinitions(lanes map[string]uint32) (cmttypes.LaneInfo, []uint32) { // (map[string]uint32, []uint32) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
 	if len(lanes) == 0 {
@@ -210,7 +210,7 @@ func NewApplication(cfg *Config) (*Application, error) {
 		state:          state,
 		snapshots:      snapshots,
 		cfg:            cfg,
-		laneInfo:       lanes,
+		lanesInfo:      lanes,
 		lanePriorities: lanePriorities,
 	}, nil
 }
@@ -231,13 +231,30 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 			LastBlockAppHash: hash,
 		}, nil
 	}
+
+	defaultAppLane := new(v1.Lane)
+	if len(app.lanesInfo) > 0 {
+		defaultAppLane.Id = "default"
+		defaultAppLane.Prio = app.lanesInfo[defaultLane]
+	}
+
+	laneInfo := make([]*v1.Lane, len(app.lanesInfo))
+
+	i := 0
+	for lane, prio := range app.lanesInfo {
+		l := new(v1.Lane)
+		l.Id = lane
+		l.Prio = prio
+		laneInfo[i] = l
+		i++
+	}
 	return &abci.InfoResponse{
-		Version:             version.ABCIVersion,
-		AppVersion:          appVersion,
-		LastBlockHeight:     int64(height),
-		LastBlockAppHash:    hash,
-		LanePriorities:      app.lanePriorities,
-		DefaultLanePriority: app.lanes[defaultLane],
+		Version:          version.ABCIVersion,
+		AppVersion:       appVersion,
+		LastBlockHeight:  int64(height),
+		LastBlockAppHash: hash,
+		LaneInfo:         laneInfo,
+		DefaultLane:      defaultAppLane,
 	}, nil
 }
 
@@ -358,7 +375,10 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)
-	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+	l := new(v1.Lane)
+	l.Id = strconv.Itoa(int(lane))
+	l.Prio = lane
+	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: l}, nil
 }
 
 // extractLane returns the lane field if value is a Payload, otherwise returns 0.

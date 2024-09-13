@@ -3,6 +3,7 @@ package mempool
 import (
 	"fmt"
 
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/internal/clist"
 	"github.com/cometbft/cometbft/types"
 )
@@ -10,13 +11,13 @@ import (
 // WRRIterator is the base struct for implementing iterators that traverse lanes with
 // the classical Weighted Round Robin (WRR) algorithm.
 type WRRIterator struct {
-	sortedLanes []types.Lane
-	laneIndex   int                            // current lane being iterated; index on sortedLanes
-	counters    map[types.Lane]uint            // counters of consumed entries, for WRR algorithm
-	cursors     map[types.Lane]*clist.CElement // last accessed entries on each lane
+	sortedLanes []v1.Lane
+	laneIndex   int                              // current lane being iterated; index on sortedLanes
+	counters    map[types.LaneID]uint            // counters of consumed entries, for WRR algorithm
+	cursors     map[types.LaneID]*clist.CElement // last accessed entries on each lane
 }
 
-func (iter *WRRIterator) nextLane() types.Lane {
+func (iter *WRRIterator) nextLane() v1.Lane {
 	iter.laneIndex = (iter.laneIndex + 1) % len(iter.sortedLanes)
 	return iter.sortedLanes[iter.laneIndex]
 }
@@ -33,8 +34,8 @@ type NonBlockingIterator struct {
 func NewNonBlockingIterator(mem *CListMempool) *NonBlockingIterator {
 	baseIter := WRRIterator{
 		sortedLanes: mem.sortedLanes,
-		counters:    make(map[types.Lane]uint, len(mem.lanes)),
-		cursors:     make(map[types.Lane]*clist.CElement, len(mem.lanes)),
+		counters:    make(map[types.LaneID]uint, len(mem.lanes)),
+		cursors:     make(map[types.LaneID]*clist.CElement, len(mem.lanes)),
 	}
 	iter := &NonBlockingIterator{
 		WRRIterator: baseIter,
@@ -44,7 +45,7 @@ func NewNonBlockingIterator(mem *CListMempool) *NonBlockingIterator {
 }
 
 // Reset must be called before every use of the iterator.
-func (iter *NonBlockingIterator) reset(lanes map[types.Lane]*clist.CList) {
+func (iter *NonBlockingIterator) reset(lanes map[types.LaneID]*clist.CList) {
 	iter.laneIndex = 0
 	for i := range iter.counters {
 		iter.counters[i] = 0
@@ -61,7 +62,7 @@ func (iter *NonBlockingIterator) Next() Entry {
 	numEmptyLanes := 0
 	for {
 		// Skip empty lane or if cursor is at end of lane.
-		if iter.cursors[lane] == nil {
+		if iter.cursors[types.LaneID(lane.Id)] == nil {
 			numEmptyLanes++
 			if numEmptyLanes >= len(iter.sortedLanes) {
 				return nil
@@ -70,20 +71,20 @@ func (iter *NonBlockingIterator) Next() Entry {
 			continue
 		}
 		// Skip over-consumed lane.
-		if iter.counters[lane] >= uint(lane) {
-			iter.counters[lane] = 0
+		if iter.counters[types.LaneID(lane.Id)] >= uint(lane.Prio) {
+			iter.counters[types.LaneID(lane.Id)] = 0
 			numEmptyLanes = 0
 			lane = iter.nextLane()
 			continue
 		}
 		break
 	}
-	elem := iter.cursors[lane]
+	elem := iter.cursors[types.LaneID(lane.Id)]
 	if elem == nil {
-		panic(fmt.Errorf("Iterator picked a nil entry on lane %d", lane))
+		panic(fmt.Errorf("Iterator picked a nil entry on lane %s", lane.Id))
 	}
-	iter.cursors[lane] = iter.cursors[lane].Next()
-	iter.counters[lane]++
+	iter.cursors[types.LaneID(lane.Id)] = iter.cursors[types.LaneID(lane.Id)].Next()
+	iter.counters[types.LaneID(lane.Id)]++
 	return elem.Value.(*mempoolTx)
 }
 
@@ -99,8 +100,8 @@ type BlockingIterator struct {
 func NewBlockingIterator(mem *CListMempool) Iterator {
 	iter := WRRIterator{
 		sortedLanes: mem.sortedLanes,
-		counters:    make(map[types.Lane]uint, len(mem.sortedLanes)),
-		cursors:     make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
+		counters:    make(map[types.LaneID]uint, len(mem.sortedLanes)),
+		cursors:     make(map[types.LaneID]*clist.CElement, len(mem.sortedLanes)),
 	}
 	return &BlockingIterator{
 		WRRIterator: iter,
@@ -132,7 +133,7 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 // meaning that the number of accessed entries in the lane has not yet reached
 // its priority value in the current WRR iteration. It will block until a
 // transaction is available in any lane.
-func (iter *BlockingIterator) PickLane() types.Lane {
+func (iter *BlockingIterator) PickLane() v1.Lane {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
 
@@ -143,10 +144,12 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 	// continue with the next lower-priority lane, in a round robin fashion.
 	numEmptyLanes := 0
 	for {
+		laneID := types.LaneID(lane.Id)
+		fmt.Println("Picking lane ", laneID)
 		// Skip empty lanes or lanes with their cursor pointing at their last entry.
-		if iter.mp.lanes[lane].Len() == 0 ||
-			(iter.cursors[lane] != nil &&
-				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
+		if iter.mp.lanes[laneID].Len() == 0 ||
+			(iter.cursors[laneID] != nil &&
+				iter.cursors[laneID].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[laneID]) {
 			numEmptyLanes++
 			if numEmptyLanes >= len(iter.sortedLanes) {
 				// There are no lanes with non-accessed entries. Wait until a new tx is added.
@@ -161,8 +164,8 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 		}
 
 		// Skip over-consumed lanes.
-		if iter.counters[lane] >= uint(lane) {
-			iter.counters[lane] = 0
+		if iter.counters[laneID] >= uint(lane.Prio) {
+			iter.counters[laneID] = 0
 			numEmptyLanes = 0
 			lane = iter.nextLane()
 			continue
@@ -178,29 +181,30 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 // entry from the selected lane. On subsequent calls, Next will return the next entries from the
 // same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
 // The next time, Next will select the successive lane with lower priority.
-func (iter *BlockingIterator) Next(lane types.Lane) *clist.CElement {
+func (iter *BlockingIterator) Next(lane v1.Lane) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
-	if cursor := iter.cursors[lane]; cursor != nil {
+	laneID := types.LaneID(lane.Id)
+	if cursor := iter.cursors[laneID]; cursor != nil {
 		// If the current entry is the last one or was removed, Next will return nil.
 		// Note we don't need to wait until the next entry is available (with <-cursor.NextWaitChan()).
 		next = cursor.Next()
 	} else {
 		// We are at the beginning of the iteration or the saved entry got removed. Pick the first
 		// entry in the lane if it's available (don't wait for it); if not, Front will return nil.
-		next = iter.mp.lanes[lane].Front()
+		next = iter.mp.lanes[laneID].Front()
 	}
 
 	// Update auxiliary variables.
 	if next != nil {
 		// Save entry and increase the number of accessed transactions for this lane.
-		iter.cursors[lane] = next
-		iter.counters[lane]++
+		iter.cursors[laneID] = next
+		iter.counters[laneID]++
 	} else {
 		// The entry got removed or it was the last one in the lane.
 		// At the moment this should not happen - the loop in PickLane will loop forever until there
 		// is data in at least one lane
-		delete(iter.cursors, lane)
+		delete(iter.cursors, laneID)
 	}
 
 	return next

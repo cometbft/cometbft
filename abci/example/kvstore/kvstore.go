@@ -145,13 +145,14 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		defaultAppLane.Prio = app.lanes[defaultLane]
 	}
 
-	var laneInfo []*v1.Lane
-
+	laneInfo := make([]*v1.Lane, len(app.lanes))
+	i := 0
 	for lane, prio := range app.lanes {
 		l := new(v1.Lane)
 		l.Id = lane
 		l.Prio = prio
-		laneInfo = append(laneInfo, l)
+		laneInfo[i] = l
+		i++
 	}
 	return &types.InfoResponse{
 		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
@@ -195,23 +196,27 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 		return &types.CheckTxResponse{Code: CodeTypeInvalidTxFormat}, nil
 	}
 
+	if len(app.lanes) == 0 {
+		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
+	}
 	lane := app.assignLane(req.Tx)
 	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
 }
 
 // assignLane deterministically computes a lane for the given tx.
-func (app *Application) assignLane(tx []byte) uint32 {
-	if len(app.lanes) == 0 {
-		return 0
-	}
-
+func (app *Application) assignLane(tx []byte) *v1.Lane {
+	lane := new(v1.Lane)
 	if isValidatorTx(tx) {
-		return app.lanes["val"] // priority 9
+		lane.Id = "val"
+		lane.Prio = app.lanes["val"]
+		return lane // priority 9
 	}
+	lane.Id = "default"
+	lane.Prio = app.lanes["default"]
 
 	key, _, err := parseTx(tx)
 	if err != nil {
-		return app.lanes[defaultLane]
+		return lane
 	}
 
 	// If the transaction key is an integer (for example, a transaction of the
@@ -219,16 +224,20 @@ func (app *Application) assignLane(tx []byte) uint32 {
 	// to the default lane.
 	keyInt, err := strconv.Atoi(key)
 	if err != nil {
-		return app.lanes[defaultLane]
+		return lane
 	}
 
 	switch {
 	case keyInt%11 == 0:
-		return app.lanes["foo"] // priority 7
+		lane.Id = "foo"
+		lane.Prio = app.lanes["foo"] // priority 7
+		return lane
 	case keyInt%3 == 0:
-		return app.lanes["bar"] // priority 1
+		lane.Id = "bar"
+		lane.Prio = app.lanes["bar"]
+		return lane // priority 1
 	default:
-		return app.lanes[defaultLane] // priority 3
+		return lane // priority 3
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	"github.com/cometbft/cometbft/abci/example/kvstore"
 	abciserver "github.com/cometbft/cometbft/abci/server"
 	abci "github.com/cometbft/cometbft/abci/types"
+	v1 "github.com/cometbft/cometbft/api/cometbft/abci/v1"
 	"github.com/cometbft/cometbft/config"
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/internal/test"
@@ -63,7 +64,11 @@ func newMempoolWithAppAndConfigMock(
 		panic(err)
 	}
 
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
+	defLane := appInfoRes.DefaultLane
+	if defLane == nil {
+		defLane = new(v1.Lane)
+	}
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, *defLane)
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +101,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	if err != nil {
 		panic(err)
 	}
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.Lane(appInfoRes.DefaultLanePriority))
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, *appInfoRes.DefaultLane)
 	if err != nil {
 		panic(err)
 	}
@@ -280,18 +285,18 @@ func TestMempoolAddTxLane(t *testing.T) {
 		// Check that the lane stored in the mempool entry is the same as the
 		// one assigned by the application.
 		entry := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx)
-		require.Equal(t, kvstoreAssignLane(i), entry.lane, "id %x", tx)
+		require.Equal(t, kvstoreAssignLane(i), types.LaneID(entry.lane), "id %x", tx)
 	}
 }
 
-func kvstoreAssignLane(key int) types.Lane {
-	lane := 3
+func kvstoreAssignLane(key int) types.LaneID {
+	lane := "default" // 3
 	if key%11 == 0 {
-		lane = 7
+		lane = "foo" // 7
 	} else if key%3 == 0 {
-		lane = 1
+		lane = "bar" // 1
 	}
-	return types.Lane(lane)
+	return types.LaneID(lane) // fmt.Sprint(lane))
 }
 
 func TestMempoolUpdate(t *testing.T) {
@@ -336,19 +341,36 @@ func TestMempoolUpdate(t *testing.T) {
 }
 
 func TestMempoolBuildLanesInfo(t *testing.T) {
-	_, err := BuildLanesInfo([]uint32{}, types.Lane(0))
+	_, err := BuildLanesInfo([]*v1.Lane{}, v1.Lane{})
 	require.NoError(t, err)
 
-	_, err = BuildLanesInfo([]uint32{}, types.Lane(1))
+	_, err = BuildLanesInfo([]*v1.Lane{}, v1.Lane{Id: "1", Prio: 1})
+
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
-	_, err = BuildLanesInfo([]uint32{1}, types.Lane(0))
+	lane := new(v1.Lane)
+	lane.Id = "1"
+	lane.Prio = 1
+	_, err = BuildLanesInfo([]*v1.Lane{lane}, v1.Lane{Id: "1", Prio: 0})
+
 	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
 
-	_, err = BuildLanesInfo([]uint32{1, 3, 4}, types.Lane(5))
+	lane2 := new(v1.Lane)
+	lane2.Id = "3"
+	_, err = BuildLanesInfo([]*v1.Lane{}, v1.Lane{Id: "1", Prio: 1})
+	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
+	lane2.Prio = 3
+
+	lane3 := new(v1.Lane)
+	lane3.Id = "4"
+	lane3.Prio = 4
+	_, err = BuildLanesInfo([]*v1.Lane{lane, lane2, lane3}, v1.Lane{Id: "5", Prio: 5})
 	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
 
-	_, err = BuildLanesInfo([]uint32{1, 3, 4, 4}, types.Lane(4))
+	lane4 := new(v1.Lane)
+	lane4.Id = "4"
+	lane4.Prio = 4
+	_, err = BuildLanesInfo([]*v1.Lane{lane, lane2, lane3, lane4}, v1.Lane{Id: "4", Prio: 4})
 	require.ErrorAs(t, err, &ErrRepeatedLanes{})
 }
 
@@ -773,7 +795,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	// tx0 should appear only once in mp.lanes
 	found := 0
 	for _, lane := range mp.sortedLanes {
-		for e := mp.lanes[lane].Front(); e != nil; e = e.Next() {
+		for e := mp.lanes[types.LaneID(lane.Id)].Front(); e != nil; e = e.Next() {
 			if types.Tx.Key(e.Value.(*mempoolTx).Tx()) == types.Tx.Key(tx0) {
 				found++
 			}
@@ -1108,7 +1130,11 @@ func newReqRes(tx types.Tx, code uint32, requestType abci.CheckTxType) *abciclie
 
 func newReqResWithLanes(tx types.Tx, code uint32, requestType abci.CheckTxType, lane uint32) *abciclient.ReqRes {
 	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
-	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code, Lane: lane})
+	l := new(v1.Lane)
+	l.Id = strconv.FormatUint(uint64(lane), 10)
+	l.Prio = lane
+
+	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code, Lane: l})
 	return reqRes
 }
 

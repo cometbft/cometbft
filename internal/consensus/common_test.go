@@ -432,11 +432,11 @@ func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
 // -------------------------------------------------------------------------------
 // application
 
-func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *mempl.LanesInfo) {
+func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *mempl.LaneData) {
 	t.Helper()
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
-	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, types.Lane(resp.DefaultLanePriority))
+	lanesInfo, err := mempl.BuildLanesInfo(resp.LaneInfo, *resp.DefaultLane)
 	require.NoError(t, err)
 	return resp, lanesInfo
 }
@@ -454,7 +454,7 @@ func newStateWithConfig(
 	state sm.State,
 	pv types.PrivValidator,
 	app abci.Application,
-	lanesInfo *mempl.LanesInfo,
+	lanesInfo *mempl.LaneData,
 ) *State {
 	blockDB := dbm.NewMemDB()
 	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, lanesInfo)
@@ -466,7 +466,7 @@ func newStateWithConfigAndBlockStore(
 	pv types.PrivValidator,
 	app abci.Application,
 	blockDB dbm.DB,
-	lanesInfo *mempl.LanesInfo,
+	lanesInfo *mempl.LaneData,
 ) *State {
 	// Get BlockStore
 	blockStore := store.NewBlockStore(blockDB)

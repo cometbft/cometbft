@@ -49,7 +49,7 @@ func TestCounter(counter metrics.Counter, value func() float64) error {
 // FillCounter puts some deltas through the counter and returns the total value.
 func FillCounter(counter metrics.Counter) float64 {
 	a := rand.Perm(100)
-	n := rand.Intn(len(a))
+	n := rand.Intn(len(a)) //nolint:gosec
 
 	var want float64
 	for i := 0; i < n; i++ {
@@ -64,7 +64,7 @@ func FillCounter(counter metrics.Counter) float64 {
 // to check that the gauge has the correct final value.
 func TestGauge(gauge metrics.Gauge, value func() []float64) error {
 	a := rand.Perm(100)
-	n := rand.Intn(len(a))
+	n := rand.Intn(len(a)) //nolint:gosec
 
 	var want []float64
 	for i := 0; i < n; i++ {
@@ -103,7 +103,7 @@ func TestGauge(gauge metrics.Gauge, value func() []float64) error {
 // the quantiles func to checks that the histogram has computed the correct
 // quantiles within some tolerance.
 func TestHistogram(histogram metrics.Histogram, quantiles func() (p50, p90, p95, p99 float64), tolerance float64) error {
-	PopulateNormalHistogram(histogram, rand.Int())
+	PopulateNormalHistogram(histogram, rand.Int()) //nolint:gosec
 
 	want50, want90, want95, want99 := normalQuantiles()
 	have50, have90, have95, have99 := quantiles()

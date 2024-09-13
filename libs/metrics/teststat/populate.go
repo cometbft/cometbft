@@ -38,7 +38,7 @@ import (
 // most cases, you don't need to use this function, and can use TestHistogram
 // instead.
 func PopulateNormalHistogram(h metrics.Histogram, seed int) {
-	r := rand.New(rand.NewSource(int64(seed)))
+	r := rand.New(rand.NewSource(int64(seed))) //nolint:gosec
 	for i := 0; i < Count; i++ {
 		sample := r.NormFloat64()*float64(Stdev) + float64(Mean)
 		if sample < 0 {

@@ -24,7 +24,6 @@ linters:
     - gocyclo
     - godox
     - gomnd
-    - gosec
     - interfacebloat
     - intrange
     - ireturn
@@ -181,3 +180,6 @@ linters-settings:
           - "fmt.Printf"
           - "fmt.Print"
           - "fmt.Println"
+  gosec:
+    excludes:
+      - G115

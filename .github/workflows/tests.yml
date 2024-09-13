@@ -13,8 +13,9 @@ concurrency:
 jobs:
   tests:
     if: |
-      github.event.pull_request.changed_files > 0 &&
-      contains(steps.check_changes.outputs.modified_files, '**.go', 'go.*', 'Makefile', '!test/**')
+        contains(steps.check_changes.outputs.modified_files, '.go') ||
+        contains(steps.check_changes.outputs.modified_files, 'Makefile') ||
+        contains(steps.check_changes.outputs.modified_files, 'go.')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -22,6 +23,12 @@ jobs:
         part: ["00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
     steps:
       - uses: actions/checkout@v4
+
+      - id: check_changes
+        run: |
+          git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} > files.txt
+          echo "::set-output name=modified_files::$(cat files.txt)"
+
       - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
 
       - uses: actions/setup-go@v5

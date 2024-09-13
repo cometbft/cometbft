@@ -141,7 +141,7 @@ These are the alternatives known to date:
 
 ## Decision
 
-Implement as decribed in the [detailed design](#detailed-design) section.
+Implement as described in the [detailed design](#detailed-design) section.
 
 ## Detailed Design
 

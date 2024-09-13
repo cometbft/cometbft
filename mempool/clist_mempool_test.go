@@ -166,7 +166,7 @@ func addRandomTxs(t *testing.T, mp Mempool, count int) []types.Tx {
 func addTxs(tb testing.TB, mp Mempool, first, num int) []types.Tx {
 	tb.Helper()
 	txs := make([]types.Tx, 0, num)
-	for i := first; i < num; i++ {
+	for i := first; i < first+num; i++ {
 		tx := kvstore.NewTxFromID(i)
 		_, err := mp.CheckTx(tx, "")
 		require.NoError(tb, err)

@@ -414,3 +414,49 @@ func TestReapMatchesGossipOrder(t *testing.T) {
 		require.Zero(t, mp.Size())
 	}
 }
+
+func TestBlockingIteratorsConsumeAll(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+	mp, cleanup := newMempoolWithApp(cc)
+	defer cleanup()
+
+	const numTxs = 1000
+	const numIterators = 50
+
+	mp.Flush()
+	wg := sync.WaitGroup{}
+	wg.Add(numIterators)
+
+	// Concurrent iterators.
+	for j := 0; j < numIterators; j++ {
+		go func(j int) {
+			defer wg.Done()
+			iter := NewBlockingIterator(mp)
+			// Iterate until all txs added to the mempool are accessed.
+			for c := 0; c < numTxs; c++ {
+				if entry := <-iter.WaitNextCh(); entry == nil {
+					continue
+				}
+			}
+			t.Logf("iterator %d finished\n", j)
+		}(j)
+	}
+
+	// Add transactions.
+	txs := addTxs(t, mp, 0, numTxs)
+	require.Equal(t, numTxs, len(txs))
+	require.Equal(t, numTxs, mp.Size())
+
+	// Wait for all to complete.
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatalf("Timed out waiting for all iterators to finish")
+	}
+}

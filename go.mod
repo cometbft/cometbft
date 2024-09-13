@@ -17,8 +17,6 @@ require (
 	github.com/creachadair/tomledit v0.0.26
 	github.com/dgraph-io/badger/v4 v4.3.0
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/go-git/go-git/v5 v5.12.0
-	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/goccmack/goutil v1.2.3
@@ -55,6 +53,8 @@ require (
 	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 )
+
+require github.com/go-git/go-git/v5 v5.12.0
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

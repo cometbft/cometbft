@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/cosmos/gogoproto/proto"
-	"github.com/go-kit/kit/metrics"
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	dbm "github.com/cometbft/cometbft-db"
 	cmtstore "github.com/cometbft/cometbft/api/cometbft/store/v1"
 	cmtproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/cometbft/cometbft/internal/evidence"
+	"github.com/cometbft/cometbft/libs/metrics"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"

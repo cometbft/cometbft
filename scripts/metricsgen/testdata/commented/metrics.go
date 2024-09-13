@@ -1,6 +1,6 @@
 package commented
 
-import "github.com/go-kit/kit/metrics"
+import "github.com/cometbft/cometbft/libs/metrics"
 
 //go:generate go run ../../../../scripts/metricsgen -struct=Metrics
 

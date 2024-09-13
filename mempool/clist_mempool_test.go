@@ -341,37 +341,26 @@ func TestMempoolUpdate(t *testing.T) {
 }
 
 func TestMempoolBuildLanesInfo(t *testing.T) {
-	_, err := BuildLanesInfo([]*v1.Lane{}, v1.Lane{})
+	emptyMap := make(map[string]uint32)
+	_, err := BuildLanesInfo(emptyMap, v1.Lane{})
 	require.NoError(t, err)
 
-	_, err = BuildLanesInfo([]*v1.Lane{}, v1.Lane{Id: "1", Prio: 1})
+	_, err = BuildLanesInfo(emptyMap, v1.Lane{Id: "1", Prio: 1})
 
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
-	lane := new(v1.Lane)
-	lane.Id = "1"
-	lane.Prio = 1
-	_, err = BuildLanesInfo([]*v1.Lane{lane}, v1.Lane{Id: "1", Prio: 0})
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1}, v1.Lane{Id: "1", Prio: 0})
 
 	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
 
-	lane2 := new(v1.Lane)
-	lane2.Id = "3"
-	_, err = BuildLanesInfo([]*v1.Lane{}, v1.Lane{Id: "1", Prio: 1})
+	_, err = BuildLanesInfo(emptyMap, v1.Lane{Id: "1", Prio: 1})
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
-	lane2.Prio = 3
 
-	lane3 := new(v1.Lane)
-	lane3.Id = "4"
-	lane3.Prio = 4
-	_, err = BuildLanesInfo([]*v1.Lane{lane, lane2, lane3}, v1.Lane{Id: "5", Prio: 5})
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, v1.Lane{Id: "5", Prio: 5})
 	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
 
-	lane4 := new(v1.Lane)
-	lane4.Id = "4"
-	lane4.Prio = 4
-	_, err = BuildLanesInfo([]*v1.Lane{lane, lane2, lane3, lane4}, v1.Lane{Id: "4", Prio: 4})
-	require.ErrorAs(t, err, &ErrRepeatedLanes{})
+	// _, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, v1.Lane{Id: "4", Prio: 4})
+	// require.ErrorAs(t, err, &ErrRepeatedLanes{})
 }
 
 // Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection

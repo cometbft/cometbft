@@ -104,26 +104,21 @@ func NewCListMempool(
 	// Initialize lanes
 	if len(lanesInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
-		defLane := new(v1.Lane)
-		defLane.Id = "default"
-		defLane.Prio = 1
-
-		lanesInfo = &LaneData{lanes: []*v1.Lane{defLane}, defaultLane: *defLane}
+		lanesInfo = &LaneData{lanes: map[string]uint32{"default": 1}, defaultLane: v1.Lane{Id: "default", Prio: 1}}
 	}
 	numLanes := len(lanesInfo.lanes)
 	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
 	mp.defaultLane = lanesInfo.defaultLane
 	mp.sortedLanes = make([]v1.Lane, numLanes)
-	for i, lane := range lanesInfo.lanes {
-		mp.lanes[types.LaneID(lane.Id)] = clist.New()
-		mp.sortedLanes[i] = *lane
+	i := 0
+	for laneID, lanePrio := range lanesInfo.lanes {
+		mp.lanes[types.LaneID(laneID)] = clist.New()
+		mp.sortedLanes[i] = v1.Lane{Id: laneID, Prio: lanePrio}
+		i++
 	}
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
 		return mp.sortedLanes[i].Id > mp.sortedLanes[j].Id
 	})
-	// sort.Slice(mp.sortedLanes, func(i, j int) bool {
-	// 	return mp.sortedLanes[i] > mp.sortedLanes[j]
-	// })
 	mp.recheck = newRecheck(mp)
 
 	if cfg.CacheSize > 0 {

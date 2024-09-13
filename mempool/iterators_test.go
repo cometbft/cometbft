@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -119,17 +118,11 @@ func TestIteratorRace(t *testing.T) {
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
 
-	lanePrios := make([]*v1.Lane, 3)
 	defLane := new(v1.Lane)
 	defLane.Id = "1"
 	defLane.Prio = 1
-	for i := uint32(0); i < 3; i++ {
-		lanePrios[i] = new(v1.Lane)
-		lanePrios[i].Id = strconv.FormatUint(uint64(i+1), 10)
-		lanePrios[i].Prio = i + 1
-	}
 
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LaneInfo: lanePrios, DefaultLane: defLane}, nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LaneInfo: map[string]uint32{"1": 1, "2": 2, "3": 3}, DefaultLane: defLane}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -277,16 +270,12 @@ func TestIteratorExactOrder(t *testing.T) {
 	mockClient.On("Start").Return(nil)
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
-	lanePrios := make([]*v1.Lane, 3)
+
 	defLane := new(v1.Lane)
 	defLane.Id = "1"
 	defLane.Prio = 1
-	for i := uint32(0); i < 3; i++ {
-		lanePrios[i] = new(v1.Lane)
-		lanePrios[i].Id = strconv.FormatUint(uint64(i+1), 10)
-		lanePrios[i].Prio = i + 1
-	}
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LaneInfo: lanePrios, DefaultLane: defLane}, nil)
+
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LaneInfo: map[string]uint32{"1": 1, "2": 2, "3": 3}, DefaultLane: defLane}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()

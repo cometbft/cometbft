@@ -237,23 +237,12 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 		defaultAppLane.Id = "default"
 		defaultAppLane.Prio = app.lanesInfo[defaultLane]
 	}
-
-	laneInfo := make([]*v1.Lane, len(app.lanesInfo))
-
-	i := 0
-	for lane, prio := range app.lanesInfo {
-		l := new(v1.Lane)
-		l.Id = lane
-		l.Prio = prio
-		laneInfo[i] = l
-		i++
-	}
 	return &abci.InfoResponse{
 		Version:          version.ABCIVersion,
 		AppVersion:       appVersion,
 		LastBlockHeight:  int64(height),
 		LastBlockAppHash: hash,
-		LaneInfo:         laneInfo,
+		LaneInfo:         app.lanesInfo,
 		DefaultLane:      defaultAppLane,
 	}, nil
 }

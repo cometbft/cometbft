@@ -251,6 +251,8 @@ message EchoResponse {
 // FlushResponse indicates that the write buffer was flushed.
 message FlushResponse {}
 
+
+
 // Lane identifies a lane for each transaction with a lane ID and its priority
 // Multiple lane IDs can have the same priority
 message Lane {
@@ -267,7 +269,7 @@ message InfoResponse {
   int64 last_block_height   = 4;
   bytes last_block_app_hash = 5;
 
-  repeated Lane lane_info = 6; 
+  map<string, uint32> lane_info = 6;
 
   Lane default_lane = 7;
 }

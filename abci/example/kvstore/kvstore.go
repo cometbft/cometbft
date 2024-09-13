@@ -145,22 +145,13 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		defaultAppLane.Prio = app.lanes[defaultLane]
 	}
 
-	laneInfo := make([]*v1.Lane, len(app.lanes))
-	i := 0
-	for lane, prio := range app.lanes {
-		l := new(v1.Lane)
-		l.Id = lane
-		l.Prio = prio
-		laneInfo[i] = l
-		i++
-	}
 	return &types.InfoResponse{
 		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
 		Version:          version.ABCIVersion,
 		AppVersion:       AppVersion,
 		LastBlockHeight:  app.state.Height,
 		LastBlockAppHash: app.state.Hash(),
-		LaneInfo:         laneInfo,
+		LaneInfo:         app.lanes,
 		DefaultLane:      defaultAppLane,
 	}, nil
 }

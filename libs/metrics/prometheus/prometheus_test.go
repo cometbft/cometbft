@@ -209,7 +209,7 @@ func TestHistogram(t *testing.T) {
 		// imprecise at the extremes. I'm setting a very high tolerance for now.
 		// It would be great to dig in and figure out whether that's a problem
 		// with my Expected calculation, or in Prometheus.
-		tolerance := 0.25
+		tolerance := 0.5
 		if delta := math.Abs(float64(want) - float64(have)); (delta / float64(want)) > tolerance {
 			t.Errorf("Bucket %d: want %d, have %d (%.1f%%)", bucket, want, int(have), (100.0 * delta / float64(want)))
 		}

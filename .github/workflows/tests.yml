@@ -24,7 +24,7 @@ jobs:
         uses: dorny/paths-filter@v2
         with:
           filters: |
-            code_changes:
+            code:
               - '**/*.go'
               - 'Makefile'
               - 'go.*'
@@ -35,7 +35,6 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Run Go Tests
-        if: steps.filter.outputs.code_changes == 'true'
+        if: steps.filter.outputs.code == 'true'
         run: |
-          echo  ${{ steps.filter.outputs.code_changes }}
           make test-group-${{ matrix.part }} NUM_SPLIT=20

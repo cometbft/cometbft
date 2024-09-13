@@ -54,8 +54,6 @@ require (
 	google.golang.org/protobuf v1.34.2
 )
 
-require github.com/go-git/go-git/v5 v5.12.0
-
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect

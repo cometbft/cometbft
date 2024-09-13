@@ -11,17 +11,19 @@ import (
 // the Interleaved Weighted Round Robin (WRR) algorithm.
 // https://en.wikipedia.org/wiki/Weighted_round_robin
 type IWRRIterator struct {
-	sortedLanes  []types.Lane
-	laneIndex    int                            // current lane being iterated; index on sortedLanes
-	cursors      map[types.Lane]*clist.CElement // last accessed entries on each lane
-	roundCounter int                            // counts the rounds for IWRR
+	sortedLanes []types.Lane
+	laneIndex   int                            // current lane being iterated; index on sortedLanes
+	cursors     map[types.Lane]*clist.CElement // last accessed entries on each lane
+	round       int                            // counts the rounds for IWRR
 }
 
-func (iter *IWRRIterator) nextLane() types.Lane {
+// This function picks the next lane to fetch an item from.
+// If it was the last lane, it advances the round counter as well.
+func (iter *IWRRIterator) advanceIndexes() types.Lane {
 	if iter.laneIndex == len(iter.sortedLanes)-1 {
-		iter.roundCounter = (iter.roundCounter + 1) % (int(iter.sortedLanes[0]) + 1)
-		if iter.roundCounter == 0 {
-			iter.roundCounter++
+		iter.round = (iter.round + 1) % (int(iter.sortedLanes[0]) + 1)
+		if iter.round == 0 {
+			iter.round++
 		}
 	}
 	iter.laneIndex = (iter.laneIndex + 1) % len(iter.sortedLanes)
@@ -39,9 +41,9 @@ type NonBlockingIterator struct {
 
 func NewNonBlockingIterator(mem *CListMempool) *NonBlockingIterator {
 	baseIter := IWRRIterator{
-		sortedLanes:  mem.sortedLanes,
-		cursors:      make(map[types.Lane]*clist.CElement, len(mem.lanes)),
-		roundCounter: 1,
+		sortedLanes: mem.sortedLanes,
+		cursors:     make(map[types.Lane]*clist.CElement, len(mem.lanes)),
+		round:       1,
 	}
 	iter := &NonBlockingIterator{
 		IWRRIterator: baseIter,
@@ -53,7 +55,7 @@ func NewNonBlockingIterator(mem *CListMempool) *NonBlockingIterator {
 // Reset must be called before every use of the iterator.
 func (iter *NonBlockingIterator) reset(lanes map[types.Lane]*clist.CList) {
 	iter.laneIndex = 0
-	iter.roundCounter = 1
+	iter.round = 1
 	// Set cursors at the beginning of each lane.
 	for lane := range lanes {
 		iter.cursors[lane] = lanes[lane].Front()
@@ -72,13 +74,13 @@ func (iter *NonBlockingIterator) Next() Entry {
 			if numEmptyLanes >= len(iter.sortedLanes) {
 				return nil
 			}
-			lane = iter.nextLane()
+			lane = iter.advanceIndexes()
 			continue
 		}
 		// Skip over-consumed lane on current round.
-		if int(lane) < iter.roundCounter {
+		if int(lane) < iter.round {
 			numEmptyLanes = 0
-			lane = iter.nextLane()
+			lane = iter.advanceIndexes()
 			continue
 		}
 		break
@@ -88,7 +90,7 @@ func (iter *NonBlockingIterator) Next() Entry {
 		panic(fmt.Errorf("Iterator picked a nil entry on lane %d", lane))
 	}
 	iter.cursors[lane] = iter.cursors[lane].Next()
-	_ = iter.nextLane()
+	_ = iter.advanceIndexes()
 	return elem.Value.(*mempoolTx)
 }
 
@@ -103,9 +105,9 @@ type BlockingIterator struct {
 
 func NewBlockingIterator(mem *CListMempool) Iterator {
 	iter := IWRRIterator{
-		sortedLanes:  mem.sortedLanes,
-		cursors:      make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
-		roundCounter: 1,
+		sortedLanes: mem.sortedLanes,
+		cursors:     make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
+		round:       1,
 	}
 	return &BlockingIterator{
 		IWRRIterator: iter,
@@ -161,18 +163,18 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 				iter.mp.addTxChMtx.RLock()
 				numEmptyLanes = 0
 			}
-			lane = iter.nextLane()
+			lane = iter.advanceIndexes()
 			continue
 		}
 
 		// Skip over-consumed lanes.
-		if int(lane) < iter.roundCounter {
+		if int(lane) < iter.round {
 			numEmptyLanes = 0
-			lane = iter.nextLane()
+			lane = iter.advanceIndexes()
 			continue
 		}
 
-		_ = iter.nextLane()
+		_ = iter.advanceIndexes()
 		return lane
 	}
 }

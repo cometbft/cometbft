@@ -7,7 +7,10 @@ require (
 	github.com/adlio/schema v1.3.6
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/fortytw2/leaktest v1.3.0
+<<<<<<< HEAD
 	github.com/go-kit/kit v0.13.0
+=======
+>>>>>>> 6f7d85e18 (feat(internal/metrics): copy metrics package from go-kit (#3989))
 	github.com/go-kit/log v0.2.1
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/golang/protobuf v1.5.4 // indirect
@@ -54,6 +57,8 @@ require (
 	gonum.org/v1/gonum v0.15.1
 	google.golang.org/protobuf v1.34.2
 )
+
+require github.com/go-git/go-git/v5 v5.12.0
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

@@ -66,6 +66,7 @@ func (iter *NonBlockingIterator) Next() Entry {
 
 	lane := iter.sortedLanes[iter.laneIndex]
 	for {
+		// Skip empty lane or if cursor is at end of lane.
 		if iter.cursors[lane] == nil {
 			numEmptyLanes++
 			if numEmptyLanes >= len(iter.sortedLanes) {
@@ -74,7 +75,8 @@ func (iter *NonBlockingIterator) Next() Entry {
 			lane = iter.nextLane()
 			continue
 		}
-		if lane < types.Lane(iter.roundCounter) {
+		// Skip over-consumed lane on current round.
+		if int(lane) < iter.roundCounter {
 			numEmptyLanes = 0
 			lane = iter.nextLane()
 			continue

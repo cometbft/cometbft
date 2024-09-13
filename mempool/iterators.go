@@ -117,12 +117,12 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
 		// Pick a lane containing the next entry to access.
-		lane, ok := iter.pickLane()
-		for !ok {
+		lane, addTxCh := iter.pickLane()
+		for addTxCh != nil {
 			// There are no transactions to take from any lane. Wait until at
 			// least one transaction is added to the mempool and try again.
-			<-iter.mp.addedTxCh()
-			lane, ok = iter.pickLane()
+			<-addTxCh
+			lane, addTxCh = iter.pickLane()
 		}
 
 		// Add the next entry to the channel if not nil.
@@ -140,9 +140,9 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 // according to the WRR algorithm. A lane is valid if it is not empty or it is
 // not over-consumed, meaning that the number of accessed entries in the lane
 // has not yet reached its priority value in the current WRR iteration. It
-// returns false if all lanes are empty or don't have transactions that have not
-// yet been accessed.
-func (iter *BlockingIterator) pickLane() (types.Lane, bool) {
+// returns a channel to wait for new transactions if all lanes are empty or
+// don't have transactions that have not yet been accessed.
+func (iter *BlockingIterator) pickLane() (types.Lane, <-chan struct{}) {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
 
@@ -157,7 +157,7 @@ func (iter *BlockingIterator) pickLane() (types.Lane, bool) {
 			numEmptyLanes++
 			if numEmptyLanes >= len(iter.sortedLanes) {
 				// There are no lanes with non-accessed entries.
-				return 0, false
+				return 0, iter.mp.addedTxCh()
 			}
 			lane = iter.nextLane()
 			continue
@@ -171,7 +171,7 @@ func (iter *BlockingIterator) pickLane() (types.Lane, bool) {
 			continue
 		}
 
-		return lane, true
+		return lane, nil
 	}
 }
 

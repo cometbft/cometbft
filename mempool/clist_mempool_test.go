@@ -63,11 +63,7 @@ func newMempoolWithAppAndConfigMock(
 		panic(err)
 	}
 
-	defLane := appInfoRes.DefaultLane
-	if defLane == nil {
-		defLane = new(abci.Lane)
-	}
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, *defLane)
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, appInfoRes.DefaultLane)
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +96,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	if err != nil {
 		panic(err)
 	}
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, *appInfoRes.DefaultLane)
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, appInfoRes.DefaultLane)
 	if err != nil {
 		panic(err)
 	}
@@ -341,25 +337,19 @@ func TestMempoolUpdate(t *testing.T) {
 
 func TestMempoolBuildLanesInfo(t *testing.T) {
 	emptyMap := make(map[string]uint32)
-	_, err := BuildLanesInfo(emptyMap, abci.Lane{})
+	_, err := BuildLanesInfo(emptyMap, "")
 	require.NoError(t, err)
 
-	_, err = BuildLanesInfo(emptyMap, abci.Lane{Id: "1", Prio: 1})
+	_, err = BuildLanesInfo(emptyMap, "1")
 
 	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
 
-	_, err = BuildLanesInfo(map[string]uint32{"1": 1}, abci.Lane{Id: "1", Prio: 0})
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1}, "")
 
 	require.ErrorAs(t, err, &ErrBadDefaultLaneNonEmptyLaneList{})
 
-	_, err = BuildLanesInfo(emptyMap, abci.Lane{Id: "1", Prio: 1})
-	require.ErrorAs(t, err, &ErrEmptyLanesDefaultLaneSet{})
-
-	_, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, abci.Lane{Id: "5", Prio: 5})
+	_, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, "5")
 	require.ErrorAs(t, err, &ErrDefaultLaneNotInList{})
-
-	// _, err = BuildLanesInfo(map[string]uint32{"1": 1, "2": 2, "3": 3, "4": 4}, Lane{Id: "4", Prio: 4})
-	// require.ErrorAs(t, err, &ErrRepeatedLanes{})
 }
 
 // Test dropping CheckTx requests when rechecking transactions. It mocks an asynchronous connection

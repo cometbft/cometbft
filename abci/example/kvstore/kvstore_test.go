@@ -263,7 +263,7 @@ func TestClientAssignLane(t *testing.T) {
 	}
 
 	for idx, tc := range testCases {
-		require.Equal(t, tc.lane, kvstore.assignLane(tc.tx), idx)
+		require.Equal(t, tc.lane, kvstore.assignLane(tc.tx).Prio, idx)
 	}
 }
 

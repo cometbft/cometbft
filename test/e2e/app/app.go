@@ -231,10 +231,9 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 		}, nil
 	}
 
-	defaultAppLane := new(abci.Lane)
+	defaultAppLane := ""
 	if len(app.lanesInfo) > 0 {
-		defaultAppLane.Id = "default"
-		defaultAppLane.Prio = app.lanesInfo[defaultLane]
+		defaultAppLane = "default"
 	}
 	return &abci.InfoResponse{
 		Version:          version.ABCIVersion,

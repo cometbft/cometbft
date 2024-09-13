@@ -138,12 +138,10 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		}
 	}
 
-	defaultAppLane := new(types.Lane)
-	if len(app.lanes) > 0 {
-		defaultAppLane.Id = "default"
-		defaultAppLane.Prio = app.lanes[defaultLane]
+	defLane := ""
+	if len(app.lanes) != 0 {
+		defLane = "default"
 	}
-
 	return &types.InfoResponse{
 		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),
 		Version:          version.ABCIVersion,
@@ -151,7 +149,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		LastBlockHeight:  app.state.Height,
 		LastBlockAppHash: app.state.Hash(),
 		LaneInfo:         app.lanes,
-		DefaultLane:      defaultAppLane,
+		DefaultLane:      defLane,
 	}, nil
 }
 

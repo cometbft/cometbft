@@ -271,7 +271,7 @@ message InfoResponse {
 
   map<string, uint32> lane_info = 6;
 
-  Lane default_lane = 7;
+  string default_lane = 7;
 }
 
 // InitChainResponse contains the ABCI application's hash and updates to the

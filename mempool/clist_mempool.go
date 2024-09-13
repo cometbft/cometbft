@@ -101,13 +101,13 @@ func NewCListMempool(
 	mp.height.Store(height)
 
 	// Initialize lanes
-	if len(lanesInfo.lanes) == 0 {
+	if lanesInfo == nil || len(lanesInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
-		lanesInfo = &LaneData{lanes: map[string]uint32{"default": 1}, defaultLane: abci.Lane{Id: "default", Prio: 1}}
+		lanesInfo = &LaneData{lanes: map[string]uint32{"default": 1}, defaultLane: "default"}
 	}
 	numLanes := len(lanesInfo.lanes)
 	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
-	mp.defaultLane = lanesInfo.defaultLane
+	mp.defaultLane = abci.Lane{Id: lanesInfo.defaultLane, Prio: lanesInfo.lanes[lanesInfo.defaultLane]}
 	mp.sortedLanes = make([]abci.Lane, numLanes)
 	i := 0
 	for laneID, lanePrio := range lanesInfo.lanes {
@@ -402,10 +402,8 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 		// If the app returned a (non-zero) lane, use it; otherwise use the default lane.
 		lane := mem.defaultLane
-		if res.Lane != nil {
-			if l := types.LaneID(res.Lane.Id); l != "" {
-				lane = *res.Lane
-			}
+		if res.Lane != nil && res.Lane.Id != "" {
+			lane = *res.Lane
 		}
 
 		// Check that tx is not already in the mempool. This can happen when the
@@ -418,7 +416,8 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			mem.logger.Debug(
 				"Transaction already in mempool, not adding it again",
 				"tx", tx.Hash(),
-				"lane", lane,
+				"lane", lane.Id,
+				"lane priority", lane.Prio,
 				"height", mem.height.Load(),
 				"total", mem.Size(),
 			)
@@ -427,7 +426,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		}
 
 		// Add tx to mempool and notify that new txs are available.
-		if mem.addTx(tx, res.GasWanted, sender, lane) {
+		if mem.addTx(tx, res.GasWanted, sender, lane.Id) {
 			mem.notifyTxsAvailable()
 
 			if mem.onNewTx != nil {
@@ -441,12 +440,12 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane abci.Lane) bool {
+func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane string) bool {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
 
 	// Get lane's clist.
-	txs, ok := mem.lanes[types.LaneID(lane.Id)]
+	txs, ok := mem.lanes[types.LaneID(lane)]
 	if !ok {
 		mem.logger.Error("Lane does not exist, not adding TX", "tx", log.NewLazySprintf("%X", tx.Hash()), "lane", lane)
 		return false
@@ -456,14 +455,14 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.addTxChMtx.Lock()
 	defer mem.addTxChMtx.Unlock()
 	mem.addTxSeq++
-	mem.addTxLaneSeqs[types.LaneID(lane.Id)] = mem.addTxSeq
+	mem.addTxLaneSeqs[types.LaneID(lane)] = mem.addTxSeq
 
 	// Add new transaction.
 	memTx := &mempoolTx{
 		tx:        tx,
 		height:    mem.height.Load(),
 		gasWanted: gasWanted,
-		lane:      lane.Id,
+		lane:      lane,
 		seq:       mem.addTxSeq,
 	}
 	_ = memTx.addSender(sender)
@@ -473,7 +472,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.txsMap[tx.Key()] = e
 	mem.txsBytes += int64(len(tx))
 	mem.numTxs++
-	mem.laneBytes[types.LaneID(lane.Id)] += int64(len(tx))
+	mem.laneBytes[types.LaneID(lane)] += int64(len(tx))
 
 	// Notify iterators there's a new transaction.
 	close(mem.addTxCh)
@@ -485,9 +484,8 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.logger.Debug(
 		"Added transaction",
 		"tx", tx.Hash(),
-		"lane", lane.Id,
-		"lane priority", lane.Prio,
-		"lane size", mem.lanes[types.LaneID(lane.Id)].Len(),
+		"lane", lane,
+		"lane size", mem.lanes[types.LaneID(lane)].Len(),
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)

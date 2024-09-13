@@ -12,10 +12,6 @@ concurrency:
 
 jobs:
   tests:
-    if: |
-        contains(steps.check_changes.outputs.modified_files, '.go') ||
-        contains(steps.check_changes.outputs.modified_files, 'Makefile') ||
-        contains(steps.check_changes.outputs.modified_files, 'go.')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -30,11 +26,14 @@ jobs:
           echo "::set-output name=modified_files::$(cat files.txt)"
 
       - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
-
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Run Go Tests
+        if: |
+          contains(steps.check_changes.outputs.modified_files, '.go') ||
+          contains(steps.check_changes.outputs.modified_files, 'Makefile') ||
+          contains(steps.check_changes.outputs.modified_files, 'go.')
         run: |
           make test-group-${{ matrix.part }} NUM_SPLIT=20

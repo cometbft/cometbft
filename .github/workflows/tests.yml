@@ -1,20 +1,8 @@
 name: Test
 on:
   pull_request:
-    paths:
-      - "**.go"
-      - go.mod
-      - go.sum
-      - Makefile
-      - "!test/**"
   merge_group:
   push:
-    paths:
-      - "**.go"
-      - go.mod
-      - go.sum
-      - Makefile
-      - "!test/**"
     branches:
       - main
 
@@ -24,6 +12,9 @@ concurrency:
 
 jobs:
   tests:
+    if: |
+      github.event.pull_request.changed_files > 0 &&
+      contains(steps.check_changes.outputs.modified_files, '**.go', 'go.*', 'Makefile', '!test/**')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

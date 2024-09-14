@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/cometbft/cometbft/p2p"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 )
 
 func TestStatusIndexer(t *testing.T) {
@@ -15,17 +15,17 @@ func TestStatusIndexer(t *testing.T) {
 	status = &ResultStatus{}
 	assert.False(t, status.TxIndexEnabled())
 
-	status.NodeInfo = p2p.DefaultNodeInfo{}
+	status.NodeInfo = ni.DefaultNodeInfo{}
 	assert.False(t, status.TxIndexEnabled())
 
 	cases := []struct {
 		expected bool
-		other    p2p.DefaultNodeInfoOther
+		other    ni.DefaultNodeInfoOther
 	}{
-		{false, p2p.DefaultNodeInfoOther{}},
-		{false, p2p.DefaultNodeInfoOther{TxIndex: "aa"}},
-		{false, p2p.DefaultNodeInfoOther{TxIndex: "off"}},
-		{true, p2p.DefaultNodeInfoOther{TxIndex: "on"}},
+		{false, ni.DefaultNodeInfoOther{}},
+		{false, ni.DefaultNodeInfoOther{TxIndex: "aa"}},
+		{false, ni.DefaultNodeInfoOther{TxIndex: "off"}},
+		{true, ni.DefaultNodeInfoOther{TxIndex: "on"}},
 	}
 
 	for _, tc := range cases {

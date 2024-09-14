@@ -5,16 +5,17 @@ import (
 
 	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
+	"github.com/cometbft/cometbft/p2p/nodekey"
 )
 
 // IPeerSet has a (immutable) subset of the methods of PeerSet.
 type IPeerSet interface {
 	// Has returns true if the set contains the peer referred to by this key.
-	Has(key ID) bool
+	Has(key nodekey.ID) bool
 	// HasIP returns true if the set contains the peer referred to by this IP
 	HasIP(ip net.IP) bool
 	// Get returns the peer with the given key, or nil if not found.
-	Get(key ID) Peer
+	Get(key nodekey.ID) Peer
 	// Copy returns a copy of the peers list.
 	Copy() []Peer
 	// Size returns the number of peers in the PeerSet.
@@ -30,7 +31,7 @@ type IPeerSet interface {
 // PeerSet is a special thread-safe structure for keeping a table of peers.
 type PeerSet struct {
 	mtx    cmtsync.Mutex
-	lookup map[ID]*peerSetItem
+	lookup map[nodekey.ID]*peerSetItem
 	list   []Peer
 }
 
@@ -42,7 +43,7 @@ type peerSetItem struct {
 // NewPeerSet creates a new peerSet with a list of initial capacity of 256 items.
 func NewPeerSet() *PeerSet {
 	return &PeerSet{
-		lookup: make(map[ID]*peerSetItem),
+		lookup: make(map[nodekey.ID]*peerSetItem),
 		list:   make([]Peer, 0, 256),
 	}
 }
@@ -70,7 +71,7 @@ func (ps *PeerSet) Add(peer Peer) error {
 
 // Has returns true if the set contains the peer referred to by this
 // peerKey, otherwise false.
-func (ps *PeerSet) Has(peerKey ID) bool {
+func (ps *PeerSet) Has(peerKey nodekey.ID) bool {
 	ps.mtx.Lock()
 	_, ok := ps.lookup[peerKey]
 	ps.mtx.Unlock()
@@ -94,7 +95,7 @@ func (ps *PeerSet) HasIP(peerIP net.IP) bool {
 
 // Get looks up a peer by the provided peerKey. Returns nil if peer is not
 // found.
-func (ps *PeerSet) Get(peerKey ID) Peer {
+func (ps *PeerSet) Get(peerKey nodekey.ID) Peer {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 

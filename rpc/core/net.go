@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/cometbft/cometbft/p2p"
+	na "github.com/cometbft/cometbft/p2p/netaddress"
+	ni "github.com/cometbft/cometbft/p2p/nodeinfo"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	rpctypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 )
@@ -16,11 +18,11 @@ func (env *Environment) NetInfo(*rpctypes.Context) (*ctypes.ResultNetInfo, error
 	peers := make([]ctypes.Peer, 0)
 	var err error
 	env.P2PPeers.Peers().ForEach(func(peer p2p.Peer) {
-		nodeInfo, ok := peer.NodeInfo().(p2p.DefaultNodeInfo)
+		nodeInfo, ok := peer.NodeInfo().(ni.DefaultNodeInfo)
 		if !ok {
 			err = ErrInvalidNodeType{
 				PeerID:   string(peer.ID()),
-				Expected: fmt.Sprintf("%T", p2p.DefaultNodeInfo{}),
+				Expected: fmt.Sprintf("%T", ni.DefaultNodeInfo{}),
 				Actual:   fmt.Sprintf("%T", peer.NodeInfo()),
 			}
 			return
@@ -140,7 +142,7 @@ func getIDs(peers []string) ([]string, error) {
 	for _, peer := range peers {
 		spl := strings.Split(peer, "@")
 		if len(spl) != 2 {
-			return nil, p2p.ErrNetAddressNoID{Addr: peer}
+			return nil, na.ErrNetAddressNoID{Addr: peer}
 		}
 		ids = append(ids, spl[0])
 	}

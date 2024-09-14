@@ -54,7 +54,7 @@ stop-peer       = [peer-error] remove-peer
 on-start        = %s"OnStart()"
 on-stop         = %s"OnStop()"
 ; Reactor interface
-get-channels    = %s"GetChannels()"
+get-channels    = %s"StreamDescriptors()"
 set-switch      = %s"SetSwitch(*Switch)"
 init-peer       = %s"InitPeer(Peer)"
 add-peer        = %s"AddPeer(Peer)"
@@ -89,7 +89,7 @@ registration    = get-channels set-switch
 ```
 
 The p2p layer retrieves from the reactor a list of channels the reactor is
-responsible for, using the `GetChannels()` method.
+responsible for, using the `StreamDescriptors()` method.
 The reactor implementation should thereafter expect the delivery of every
 message received by the p2p layer in the informed channels.
 

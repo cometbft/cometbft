@@ -11,6 +11,7 @@
 - 2024-06-13: Technical design (@hvanz)
 - 2024-07-02: Updates based on reviewer's comments (@hvanz, @sergio-mena)
 - 2024-07-09: Updates based on reviewer's comments (@hvanz)
+- 2024-09-13: Added pre-confirmations section (@sergio-mena)
 
 ## Status
 

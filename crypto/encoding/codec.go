@@ -75,6 +75,12 @@ func PubKeyToProto(k crypto.PubKey) (pc.PublicKey, error) {
 				Bls12381: k.Bytes(),
 			},
 		}
+	case bn254.KeyType:
+		kp = pc.PublicKey{
+			Sum: &pc.PublicKey_Bn254{
+				Bn254: k.Bytes(),
+			},
+		}
 	default:
 		return kp, ErrUnsupportedKey{KeyType: k.Type()}
 	}

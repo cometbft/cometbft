@@ -172,16 +172,10 @@ func TestPubKey_MarshalJSON(t *testing.T) {
 }
 
 func TestPubKey_NewPublicKeyFromBytes(t *testing.T) {
-	cs := map[string]string{
-		"NotInG1":   "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-		"InfFalseB": "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-		"InfTrueB":  "c01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-	}
-
-	unmarshal := func(c string) ([]byte, error) {
+	unmarshal := func(s string) ([]byte, error) {
 		type blstPublicKey = blst.P1Affine
 
-		bz, err := hex.DecodeString(c)
+		bz, err := hex.DecodeString(s)
 		if err != nil {
 			return nil, err
 		}
@@ -196,9 +190,15 @@ func TestPubKey_NewPublicKeyFromBytes(t *testing.T) {
 		return pkc, nil
 	}
 
-	for name, c := range cs {
+	invalidPubKeys := map[string]string{
+		"NotInG1":   "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		"InfFalseB": "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+		"InfTrueB":  "c01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+	}
+
+	for name, pkStr := range invalidPubKeys {
 		t.Run(name, func(t *testing.T) {
-			bz, err := unmarshal(c)
+			bz, err := unmarshal(pkStr)
 			_, err = bls12381.NewPublicKeyFromBytes(bz)
 			assert.Error(t, err)
 		})

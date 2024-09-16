@@ -23,8 +23,8 @@ const (
 var (
 	// ErrDeserialization is returned when deserialization fails.
 	ErrDeserialization = errors.New("bls12381: deserialization error")
-	// ErrInfinitePubKey is returned when the public key is infinite. It is
-	// part of a more comprehensive subgroup check on the key.
+	// ErrInfinitePubKey is returned when the public key is infinite. It is part
+	// of a more comprehensive subgroup check on the key.
 	ErrInfinitePubKey = errors.New("bls12381: pubkey is infinite")
 
 	dstMinSig = []byte("BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_")

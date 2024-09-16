@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v0.34.35
+
+*September 16, 2024*
+
+This release bumps Go version to 1.22 and updates dependencies.
+
+### DEPENDENCIES
+
+- updated pkg gonum.org/v1/gonum to latest version unaffected by CVE-
+  2024-24792, CVE-2023-29407, CVE-2023-29408, and CVE-2022-41727
+  ([\#4045](https://github.com/cometbft/cometbft/pull/4045))
+- updated python module "requests" to latest version unaffected by CVE-2023-32681
+  and CVE-2024-35195 ([\#4053](https://github.com/cometbft/cometbft/pull/4053))
+- updated cometbft-db to v0.9.5
+  ([\#4059](https://github.com/cometbft/cometbft/pull/4059))
+
 ## v0.34.34
 
 *September 3, 2024*

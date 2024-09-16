@@ -124,8 +124,8 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
 		// Add the next entry to the channel if not nil.
-		lane := iter.PickLane()
-		if entry := iter.Next(lane); entry != nil {
+		lane := iter.pickLane()
+		if entry := iter.next(lane); entry != nil {
 			ch <- entry.Value.(Entry)
 		}
 		// Unblock the receiver (it may receive nil).
@@ -134,12 +134,12 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	return ch
 }
 
-// PickLane returns a _valid_ lane on which to iterate, according to the WRR
+// pickLane returns a _valid_ lane on which to iterate, according to the WRR
 // algorithm. A lane is valid if it is not empty or it is not over-consumed,
 // meaning that the number of accessed entries in the lane has not yet reached
 // its priority value in the current WRR iteration. It will block until a
 // transaction is available in any lane.
-func (iter *BlockingIterator) PickLane() types.Lane {
+func (iter *BlockingIterator) pickLane() types.Lane {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
 
@@ -179,13 +179,13 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 	}
 }
 
-// Next returns the next element according to the IWRR algorithm.
+// next returns the next element according to the IWRR algorithm.
 //
-// In classical WRR, the iterator cycles over the lanes. When a lane is selected, Next returns an
-// entry from the selected lane. On subsequent calls, Next will return the next entries from the
+// In classical WRR, the iterator cycles over the lanes. When a lane is selected, next returns an
+// entry from the selected lane. On subsequent calls, next will return the next entries from the
 // same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
-// The next time, Next will select the successive lane with lower priority.
-func (iter *BlockingIterator) Next(lane types.Lane) *clist.CElement {
+// The next time, next will select the successive lane with lower priority.
+func (iter *BlockingIterator) next(lane types.Lane) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
 	if cursor := iter.cursors[lane]; cursor != nil {

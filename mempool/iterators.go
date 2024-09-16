@@ -137,7 +137,12 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 			}
 			// There are no transactions to take from any lane. Wait until at
 			// least one is added to the mempool and try again.
-			<-addTxCh
+			select {
+			case <-addTxCh:
+			case <-iter.ctx.Done():
+				close(ch)
+				return
+			}
 		}
 		if elem := iter.next(lane); elem != nil {
 			ch <- elem.Value.(Entry)

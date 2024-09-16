@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -158,10 +159,11 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	addRandomTxs(t, mp, 1)
-	tx0 := mp.TxsFront().Value.(*mempoolTx)
-	require.Equal(t, tx0.gasWanted, int64(1), "transactions gas was set incorrectly")
+	iter := mp.NewIterator()
+	tx0 := <-iter.WaitNextCh()
+	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
 	// ensure each tx is 20 bytes long
-	require.Len(t, tx0.tx, 20, "Tx is longer than 20 bytes")
+	require.Len(t, tx0.Tx(), 20, "Tx is longer than 20 bytes")
 	mp.Flush()
 
 	// each table driven test creates numTxsToCreate txs with checkTx, and at the end clears all remaining txs.
@@ -990,6 +992,44 @@ func TestMempoolConcurrentCheckTxAndUpdate(t *testing.T) {
 
 	// All added transactions should have been removed from the mempool.
 	require.Zero(t, mp.Size())
+}
+
+func TestMempoolIterator(t *testing.T) {
+	app := kvstore.NewInMemoryApplication()
+	cc := proxy.NewLocalClientCreator(app)
+
+	cfg := test.ResetTestRoot("mempool_test")
+	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
+	defer cleanup()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	n := numTxs
+
+	// Spawn a goroutine that iterates on the list until counting n entries.
+	counter := 0
+	go func() {
+		defer wg.Done()
+
+		iter := mp.NewIterator()
+		for counter < n {
+			entry := <-iter.WaitNextCh()
+			require.True(t, bytes.Equal(kvstore.NewTxFromID(counter), entry.Tx()))
+			counter++
+		}
+	}()
+
+	// Add n transactions with sequential ids.
+	for i := 0; i < n; i++ {
+		tx := kvstore.NewTxFromID(i)
+		rr, err := mp.CheckTx(tx, "")
+		require.NoError(t, err)
+		rr.Wait()
+	}
+
+	wg.Wait()
+	require.Equal(t, n, counter)
 }
 
 func newMempoolWithAsyncConnection(tb testing.TB) (*CListMempool, cleanupFunc) {

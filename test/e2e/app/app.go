@@ -213,7 +213,6 @@ func NewApplication(cfg *Config) (*Application, error) {
 		snapshots: snapshots,
 		cfg:       cfg,
 		lanesInfo: lanes,
-		// lanePriorities: lanePriorities,
 	}, nil
 }
 

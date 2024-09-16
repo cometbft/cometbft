@@ -128,7 +128,6 @@ func createTxBatch(ctx context.Context, txCh chan<- types.Tx, testnet *e2e.Testn
 		go func() {
 			defer wg.Done()
 			for range genCh {
-				// lane := new(payload.Lane)
 				lane := testnet.NextLane()
 				tx, err := payload.NewBytes(&payload.Payload{
 					Id:          id,

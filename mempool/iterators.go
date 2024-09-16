@@ -1,6 +1,7 @@
 package mempool
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/cometbft/cometbft/internal/clist"
@@ -100,10 +101,12 @@ func (iter *NonBlockingIterator) Next() Entry {
 // Unlike `NonBlockingIterator`, this iterator is expected to work with an evolving mempool.
 type BlockingIterator struct {
 	IWRRIterator
-	mp *CListMempool
+	ctx  context.Context
+	mp   *CListMempool
+	name string // for debugging
 }
 
-func NewBlockingIterator(mem *CListMempool) Iterator {
+func NewBlockingIterator(ctx context.Context, mem *CListMempool, name string) Iterator {
 	iter := IWRRIterator{
 		sortedLanes: mem.sortedLanes,
 		cursors:     make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
@@ -111,7 +114,9 @@ func NewBlockingIterator(mem *CListMempool) Iterator {
 	}
 	return &BlockingIterator{
 		IWRRIterator: iter,
+		ctx:          ctx,
 		mp:           mem,
+		name:         name,
 	}
 }
 

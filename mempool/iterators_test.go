@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -36,20 +37,37 @@ func TestIteratorNonBlocking(t *testing.T) {
 
 	iter := NewNonBlockingIterator(mp)
 	expectedOrder := []int{
-		0, 11, 22, 33, 44, 55, 66, // lane 7
-		1, 2, 4, // lane 3
+		// round counter 1:
+		0, // lane 7
+		1, // lane 3
 		3, // lane 1
-		77, 88, 99,
-		5, 7, 8,
-		6,
-		10, 13, 14,
-		9,
-		16, 17, 19,
-		12,
-		20, 23, 25,
-		15,
+		// round counter 2:
+		11, // lane 7
+		2,  // lane 3
+		// round counter 3:
+		22, // lane 7
+		4,  // lane 3
+		// round counter 4 - 7:
+		33, 44, 55, 66, // lane 7
+		// round counter 1:
+		77, // lane 7
+		5,  // lane 3
+		6,  // lane 1
+		// round counter 2:
+		88, // lane 7
+		7,  // lane 3
+		// round counter 3:
+		99, // lane 7
+		8,  // lane 3
+		// round counter 4- 7 have nothing
+		// round counter 1:
+		10, // lane 3
+		9,  // lane 1
+		// round counter 2:
+		13, // lane 3
+		// round counter 3:
+		14, // lane 3
 	}
-
 	var next Entry
 	counter := 0
 
@@ -215,47 +233,66 @@ func TestIteratorEmptyLanes(t *testing.T) {
 	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 }
 
-// Without lanes transactions should be returned as they were
-// submitted - increasing tx IDs.
-func TestIteratorNoLanes(t *testing.T) {
-	app := kvstore.NewInMemoryApplicationWithoutLanes()
-	cc := proxy.NewLocalClientCreator(app)
+func TestBlockingIteratorsConsumeAllTxs(t *testing.T) {
+	const numTxs = 1000
+	const numIterators = 50
 
-	cfg := test.ResetTestRoot("mempool_test")
-	mp, cleanup := newMempoolWithAppAndConfig(cc, cfg)
-	defer cleanup()
-
-	const n = numTxs
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	// Spawn a goroutine that iterates on the list until counting n entries.
-	counter := 0
-	go func() {
-		defer wg.Done()
-
-		iter := NewBlockingIterator(mp)
-		for counter < n {
-			entry := <-iter.WaitNextCh()
-			if entry == nil {
-				continue
-			}
-			require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(counter))
-			counter++
-		}
-	}()
-
-	// Add n transactions with sequential ids.
-	for i := 0; i < n; i++ {
-		tx := kvstore.NewTxFromID(i)
-		rr, err := mp.CheckTx(tx, "")
-		require.NoError(t, err)
-		rr.Wait()
+	tests := map[string]struct {
+		app *kvstore.Application
+	}{
+		"lanes": {
+			app: kvstore.NewInMemoryApplication(),
+		},
+		"no_lanes": {
+			app: kvstore.NewInMemoryApplicationWithoutLanes(),
+		},
 	}
 
-	wg.Wait()
-	require.Equal(t, n, counter)
+	for test, config := range tests {
+		cc := proxy.NewLocalClientCreator(config.app)
+		mp, cleanup := newMempoolWithApp(cc)
+		defer cleanup()
+
+		wg := &sync.WaitGroup{}
+		wg.Add(numIterators)
+
+		// Start concurrent iterators.
+		for i := 0; i < numIterators; i++ {
+			go func(j int) {
+				defer wg.Done()
+
+				// Iterate until all txs added to the mempool are accessed.
+				iter := NewBlockingIterator(mp)
+				counter := 0
+				nilCounter := 0
+				for counter < numTxs {
+					entry := <-iter.WaitNextCh()
+					if entry == nil {
+						nilCounter++
+						continue
+					}
+					if test == "no_lanes" {
+						// Entries are accessed sequentially when there is only one lane.
+						expectedTx := kvstore.NewTxFromID(counter)
+						require.EqualValues(t, expectedTx, entry.Tx(), "i=%d, c=%d, tx=%v", i, counter, entry.Tx())
+					}
+					counter++
+				}
+				require.Equal(t, numTxs, counter)
+				assert.Zero(t, nilCounter, "got nil entries")
+				t.Logf("%s: iterator %d finished (nils=%d)\n", test, j, nilCounter)
+			}(i)
+		}
+
+		// Add transactions with sequential ids.
+		_ = addTxs(t, mp, 0, numTxs)
+		require.Equal(t, numTxs, mp.Size())
+
+		// Wait for all iterators to complete.
+		waitTimeout(wg, 5*time.Second, func() {}, func() {
+			t.Fatalf("Timed out waiting for all iterators to finish")
+		})
+	}
 }
 
 // TODO automate the lane numbers so we can change the number of lanes
@@ -271,14 +308,14 @@ func TestIteratorExactOrder(t *testing.T) {
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
 
-	// Disable rechecking to make sure the recheck logic is not interferint.
+	// Disable rechecking to make sure the recheck logic is not interfering.
 	mp.config.Recheck = false
 
 	const numLanes = 3
 	const numTxs = 11
 	// Transactions are ordered into lanes by their IDs. This is the order in
 	// which they should appear following WRR
-	expectedTxIDs := []int{2, 5, 8, 1, 4, 3, 11, 7, 10, 6, 9}
+	expectedTxIDs := []int{2, 1, 3, 5, 4, 8, 11, 7, 6, 10, 9}
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -361,7 +398,7 @@ func TestIteratorCountOnly(t *testing.T) {
 }
 
 func TestReapMatchesGossipOrder(t *testing.T) {
-	const n = 10
+	const n = 100
 
 	tests := map[string]struct {
 		app *kvstore.Application
@@ -402,7 +439,6 @@ func TestReapMatchesGossipOrder(t *testing.T) {
 
 			reapTx := reapIter.Next().Tx()
 			txs[i] = reapTx
-
 			require.EqualValues(t, reapTx, gossipTx)
 			require.EqualValues(t, reapTx, reapedTx)
 			if test == "test_no_lanes" {

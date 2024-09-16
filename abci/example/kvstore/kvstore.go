@@ -148,7 +148,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 		AppVersion:       AppVersion,
 		LastBlockHeight:  app.state.Height,
 		LastBlockAppHash: app.state.Hash(),
-		LaneInfo:         app.lanes,
+		LanePriorities:   app.lanes,
 		DefaultLane:      defLane,
 	}, nil
 }

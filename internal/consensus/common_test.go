@@ -436,7 +436,7 @@ func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *memp
 	t.Helper()
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
-	lanesInfo, err := mempl.BuildLanesInfo(resp.LaneInfo, resp.DefaultLane)
+	lanesInfo, err := mempl.BuildLanesInfo(resp.LanePriorities, resp.DefaultLane)
 	require.NoError(t, err)
 	return resp, lanesInfo
 }

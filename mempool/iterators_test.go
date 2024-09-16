@@ -135,7 +135,7 @@ func TestIteratorRace(t *testing.T) {
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
 
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LaneInfo: map[string]uint32{"1": 1, "2": 2, "3": 3}, DefaultLane: "1"}, nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: map[string]uint32{"1": 1, "2": 2, "3": 3}, DefaultLane: "1"}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()
@@ -303,7 +303,7 @@ func TestIteratorExactOrder(t *testing.T) {
 	mockClient.On("SetLogger", mock.Anything)
 	mockClient.On("Error").Return(nil).Times(100)
 
-	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LaneInfo: map[string]uint32{"1": 1, "2": 2, "3": 3}, DefaultLane: "1"}, nil)
+	mockClient.On("Info", mock.Anything, mock.Anything).Return(&abci.InfoResponse{LanePriorities: map[string]uint32{"1": 1, "2": 2, "3": 3}, DefaultLane: "1"}, nil)
 
 	mp, cleanup := newMempoolWithAppMock(mockClient)
 	defer cleanup()

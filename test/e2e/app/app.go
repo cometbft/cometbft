@@ -161,7 +161,7 @@ func DefaultConfig(dir string) *Config {
 }
 
 // LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions(lanes map[string]uint32) (cmttypes.LaneInfo, []payload.Lane) { // (map[string]uint32, []uint32) {
+func LaneDefinitions(lanes map[string]uint32) (cmttypes.LaneInfo, []payload.Lane) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
 	if len(lanes) == 0 {
@@ -171,7 +171,6 @@ func LaneDefinitions(lanes map[string]uint32) (cmttypes.LaneInfo, []payload.Lane
 			defaultLane: 1,
 		}
 	}
-	// return lanes
 
 	// List of lane priorities
 	priorities := make([]payload.Lane, 0, len(lanes))
@@ -242,7 +241,7 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 		AppVersion:       appVersion,
 		LastBlockHeight:  int64(height),
 		LastBlockAppHash: hash,
-		LaneInfo:         app.lanesInfo,
+		LanePriorities:   app.lanesInfo,
 		DefaultLane:      defaultAppLane,
 	}, nil
 }

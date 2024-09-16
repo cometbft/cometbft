@@ -63,7 +63,7 @@ func newMempoolWithAppAndConfigMock(
 		panic(err)
 	}
 
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, appInfoRes.DefaultLane)
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, appInfoRes.DefaultLane)
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +96,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	if err != nil {
 		panic(err)
 	}
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LaneInfo, appInfoRes.DefaultLane)
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, appInfoRes.DefaultLane)
 	if err != nil {
 		panic(err)
 	}

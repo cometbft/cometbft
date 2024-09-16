@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -60,8 +61,8 @@ type Application struct {
 	// It's OK not to persist this, as it is not part of the state machine
 	seenTxs sync.Map // cmttypes.TxKey -> uint64
 
-	lanesInfo      map[string]uint32 // types.LaneInfo
-	lanePriorities []uint32
+	lanesInfo map[string]uint32 // types.LaneInfo
+	// lanePriorities []uint32
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -161,7 +162,7 @@ func DefaultConfig(dir string) *Config {
 }
 
 // LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions(lanes map[string]uint32) (cmttypes.LaneInfo, []uint32) { // (map[string]uint32, []uint32) {
+func LaneDefinitions(lanes map[string]uint32) (cmttypes.LaneInfo, []payload.Lane) { // (map[string]uint32, []uint32) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
 	if len(lanes) == 0 {
@@ -174,10 +175,13 @@ func LaneDefinitions(lanes map[string]uint32) (cmttypes.LaneInfo, []uint32) { //
 	// return lanes
 
 	// List of lane priorities
-	priorities := make([]uint32, 0, len(lanes))
-	for _, p := range lanes {
-		priorities = append(priorities, p)
+	priorities := make([]payload.Lane, 0, len(lanes))
+	for id, p := range lanes {
+		priorities = append(priorities, payload.Lane{Id: id, Priority: p})
 	}
+	sort.Slice(priorities, func(i, j int) bool {
+		return priorities[i].GetPriority() > priorities[j].GetPriority()
+	})
 
 	return lanes, priorities
 }
@@ -203,14 +207,14 @@ func NewApplication(cfg *Config) (*Application, error) {
 		}, nil
 	}
 
-	lanes, lanePriorities := LaneDefinitions(cfg.Lanes)
+	lanes, _ := LaneDefinitions(cfg.Lanes)
 	return &Application{
-		logger:         logger,
-		state:          state,
-		snapshots:      snapshots,
-		cfg:            cfg,
-		lanesInfo:      lanes,
-		lanePriorities: lanePriorities,
+		logger:    logger,
+		state:     state,
+		snapshots: snapshots,
+		cfg:       cfg,
+		lanesInfo: lanes,
+		// lanePriorities: lanePriorities,
 	}, nil
 }
 
@@ -363,13 +367,13 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 	}
 	lane := extractLane(value)
 	l := new(abci.Lane)
-	l.Id = strconv.Itoa(int(lane))
-	l.Prio = lane
+	l.Id = lane.GetId()
+	l.Prio = lane.GetPriority()
 	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: l}, nil
 }
 
 // extractLane returns the lane field if value is a Payload, otherwise returns 0.
-func extractLane(value string) uint32 {
+func extractLane(value string) payload.Lane {
 	valueBytes, err := hex.DecodeString(value)
 	if err != nil {
 		panic("could not hex-decode tx value for extracting lane")
@@ -377,9 +381,9 @@ func extractLane(value string) uint32 {
 	p := &payload.Payload{}
 	err = proto.Unmarshal(valueBytes, p)
 	if err != nil {
-		return 0
+		return payload.Lane{}
 	}
-	return p.GetLane()
+	return *p.GetLane()
 }
 
 // FinalizeBlock implements ABCI.

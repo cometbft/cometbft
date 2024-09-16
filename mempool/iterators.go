@@ -145,7 +145,6 @@ func (iter *BlockingIterator) PickLane() abci.Lane {
 	numEmptyLanes := 0
 	for {
 		laneID := types.LaneID(lane.Id)
-		fmt.Println("Picking lane ", laneID)
 		// Skip empty lanes or lanes with their cursor pointing at their last entry.
 		if iter.mp.lanes[laneID].Len() == 0 ||
 			(iter.cursors[laneID] != nil &&

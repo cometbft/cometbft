@@ -116,7 +116,7 @@ func NewCListMempool(
 		i++
 	}
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
-		return mp.sortedLanes[i].Id > mp.sortedLanes[j].Id
+		return mp.sortedLanes[i].Prio > mp.sortedLanes[j].Prio
 	})
 	mp.recheck = newRecheck(mp)
 

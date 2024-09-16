@@ -7,37 +7,46 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-// WRRIterator is the base struct for implementing iterators that traverse lanes with
-// the classical Weighted Round Robin (WRR) algorithm.
-type WRRIterator struct {
+// IWRRIterator is the base struct for implementing iterators that traverse lanes with
+// the Interleaved Weighted Round Robin (WRR) algorithm.
+// https://en.wikipedia.org/wiki/Weighted_round_robin
+type IWRRIterator struct {
 	sortedLanes []types.Lane
 	laneIndex   int                            // current lane being iterated; index on sortedLanes
-	counters    map[types.Lane]uint            // counters of consumed entries, for WRR algorithm
 	cursors     map[types.Lane]*clist.CElement // last accessed entries on each lane
+	round       int                            // counts the rounds for IWRR
 }
 
-func (iter *WRRIterator) nextLane() types.Lane {
+// This function picks the next lane to fetch an item from.
+// If it was the last lane, it advances the round counter as well.
+func (iter *IWRRIterator) advanceIndexes() types.Lane {
+	if iter.laneIndex == len(iter.sortedLanes)-1 {
+		iter.round = (iter.round + 1) % (int(iter.sortedLanes[0]) + 1)
+		if iter.round == 0 {
+			iter.round++
+		}
+	}
 	iter.laneIndex = (iter.laneIndex + 1) % len(iter.sortedLanes)
 	return iter.sortedLanes[iter.laneIndex]
 }
 
-// Non-blocking version of the WRR iterator to be used for reaping and
+// Non-blocking version of the IWRR iterator to be used for reaping and
 // rechecking transactions.
 //
 // This iterator does not support changes on the underlying mempool once initialized (or `Reset`),
 // therefore the lock must be held on the mempool when iterating.
 type NonBlockingIterator struct {
-	WRRIterator
+	IWRRIterator
 }
 
 func NewNonBlockingIterator(mem *CListMempool) *NonBlockingIterator {
-	baseIter := WRRIterator{
+	baseIter := IWRRIterator{
 		sortedLanes: mem.sortedLanes,
-		counters:    make(map[types.Lane]uint, len(mem.lanes)),
 		cursors:     make(map[types.Lane]*clist.CElement, len(mem.lanes)),
+		round:       1,
 	}
 	iter := &NonBlockingIterator{
-		WRRIterator: baseIter,
+		IWRRIterator: baseIter,
 	}
 	iter.reset(mem.lanes)
 	return iter
@@ -46,9 +55,7 @@ func NewNonBlockingIterator(mem *CListMempool) *NonBlockingIterator {
 // Reset must be called before every use of the iterator.
 func (iter *NonBlockingIterator) reset(lanes map[types.Lane]*clist.CList) {
 	iter.laneIndex = 0
-	for i := range iter.counters {
-		iter.counters[i] = 0
-	}
+	iter.round = 1
 	// Set cursors at the beginning of each lane.
 	for lane := range lanes {
 		iter.cursors[lane] = lanes[lane].Front()
@@ -57,8 +64,9 @@ func (iter *NonBlockingIterator) reset(lanes map[types.Lane]*clist.CList) {
 
 // Next returns the next element according to the WRR algorithm.
 func (iter *NonBlockingIterator) Next() Entry {
-	lane := iter.sortedLanes[iter.laneIndex]
 	numEmptyLanes := 0
+
+	lane := iter.sortedLanes[iter.laneIndex]
 	for {
 		// Skip empty lane or if cursor is at end of lane.
 		if iter.cursors[lane] == nil {
@@ -66,14 +74,13 @@ func (iter *NonBlockingIterator) Next() Entry {
 			if numEmptyLanes >= len(iter.sortedLanes) {
 				return nil
 			}
-			lane = iter.nextLane()
+			lane = iter.advanceIndexes()
 			continue
 		}
-		// Skip over-consumed lane.
-		if iter.counters[lane] >= uint(lane) {
-			iter.counters[lane] = 0
+		// Skip over-consumed lane on current round.
+		if int(lane) < iter.round {
 			numEmptyLanes = 0
-			lane = iter.nextLane()
+			lane = iter.advanceIndexes()
 			continue
 		}
 		break
@@ -83,28 +90,28 @@ func (iter *NonBlockingIterator) Next() Entry {
 		panic(fmt.Errorf("Iterator picked a nil entry on lane %d", lane))
 	}
 	iter.cursors[lane] = iter.cursors[lane].Next()
-	iter.counters[lane]++
+	_ = iter.advanceIndexes()
 	return elem.Value.(*mempoolTx)
 }
 
 // BlockingIterator implements a blocking version of the WRR iterator,
 // meaning that when no transaction is available, it will wait until a new one
 // is added to the mempool.
-// Unlike `NonBlockingWRRIterator`, this iterator is expected to work with an evolving mempool.
+// Unlike `NonBlockingIterator`, this iterator is expected to work with an evolving mempool.
 type BlockingIterator struct {
-	WRRIterator
+	IWRRIterator
 	mp *CListMempool
 }
 
 func NewBlockingIterator(mem *CListMempool) Iterator {
-	iter := WRRIterator{
+	iter := IWRRIterator{
 		sortedLanes: mem.sortedLanes,
-		counters:    make(map[types.Lane]uint, len(mem.sortedLanes)),
 		cursors:     make(map[types.Lane]*clist.CElement, len(mem.sortedLanes)),
+		round:       1,
 	}
 	return &BlockingIterator{
-		WRRIterator: iter,
-		mp:          mem,
+		IWRRIterator: iter,
+		mp:           mem,
 	}
 }
 
@@ -156,23 +163,23 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 				iter.mp.addTxChMtx.RLock()
 				numEmptyLanes = 0
 			}
-			lane = iter.nextLane()
+			lane = iter.advanceIndexes()
 			continue
 		}
 
 		// Skip over-consumed lanes.
-		if iter.counters[lane] >= uint(lane) {
-			iter.counters[lane] = 0
+		if int(lane) < iter.round {
 			numEmptyLanes = 0
-			lane = iter.nextLane()
+			lane = iter.advanceIndexes()
 			continue
 		}
 
+		_ = iter.advanceIndexes()
 		return lane
 	}
 }
 
-// Next returns the next element according to the WRR algorithm.
+// Next returns the next element according to the IWRR algorithm.
 //
 // In classical WRR, the iterator cycles over the lanes. When a lane is selected, Next returns an
 // entry from the selected lane. On subsequent calls, Next will return the next entries from the
@@ -193,9 +200,8 @@ func (iter *BlockingIterator) Next(lane types.Lane) *clist.CElement {
 
 	// Update auxiliary variables.
 	if next != nil {
-		// Save entry and increase the number of accessed transactions for this lane.
+		// Save entry.
 		iter.cursors[lane] = next
-		iter.counters[lane]++
 	} else {
 		// The entry got removed or it was the last one in the lane.
 		// At the moment this should not happen - the loop in PickLane will loop forever until there

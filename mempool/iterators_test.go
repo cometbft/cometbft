@@ -37,20 +37,37 @@ func TestIteratorNonBlocking(t *testing.T) {
 
 	iter := NewNonBlockingIterator(mp)
 	expectedOrder := []int{
-		0, 11, 22, 33, 44, 55, 66, // lane 7
-		1, 2, 4, // lane 3
+		// round counter 1:
+		0, // lane 7
+		1, // lane 3
 		3, // lane 1
-		77, 88, 99,
-		5, 7, 8,
-		6,
-		10, 13, 14,
-		9,
-		16, 17, 19,
-		12,
-		20, 23, 25,
-		15,
+		// round counter 2:
+		11, // lane 7
+		2,  // lane 3
+		// round counter 3:
+		22, // lane 7
+		4,  // lane 3
+		// round counter 4 - 7:
+		33, 44, 55, 66, // lane 7
+		// round counter 1:
+		77, // lane 7
+		5,  // lane 3
+		6,  // lane 1
+		// round counter 2:
+		88, // lane 7
+		7,  // lane 3
+		// round counter 3:
+		99, // lane 7
+		8,  // lane 3
+		// round counter 4- 7 have nothing
+		// round counter 1:
+		10, // lane 3
+		9,  // lane 1
+		// round counter 2:
+		13, // lane 3
+		// round counter 3:
+		14, // lane 3
 	}
-
 	var next Entry
 	counter := 0
 
@@ -296,7 +313,7 @@ func TestIteratorExactOrder(t *testing.T) {
 	const numTxs = 11
 	// Transactions are ordered into lanes by their IDs. This is the order in
 	// which they should appear following WRR
-	expectedTxIDs := []int{2, 5, 8, 1, 4, 3, 11, 7, 10, 6, 9}
+	expectedTxIDs := []int{2, 1, 3, 5, 4, 8, 11, 7, 6, 10, 9}
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -379,7 +396,7 @@ func TestIteratorCountOnly(t *testing.T) {
 }
 
 func TestReapMatchesGossipOrder(t *testing.T) {
-	const n = 10
+	const n = 100
 
 	tests := map[string]struct {
 		app *kvstore.Application
@@ -420,7 +437,6 @@ func TestReapMatchesGossipOrder(t *testing.T) {
 
 			reapTx := reapIter.Next().Tx()
 			txs[i] = reapTx
-
 			require.EqualValues(t, reapTx, gossipTx)
 			require.EqualValues(t, reapTx, reapedTx)
 			if test == "test_no_lanes" {

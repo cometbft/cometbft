@@ -172,6 +172,8 @@ func TestPubKey_MarshalJSON(t *testing.T) {
 }
 
 func TestPubKey_NewPublicKeyFromBytes(t *testing.T) {
+	unmarshalErr := errors.New("could not unmarshal bytes into pubkey")
+
 	unmarshal := func(s string) ([]byte, error) {
 		type blstPublicKey = blst.P1Affine
 
@@ -181,7 +183,7 @@ func TestPubKey_NewPublicKeyFromBytes(t *testing.T) {
 		}
 		pk := new(blstPublicKey).Uncompress(bz)
 		if pk == nil {
-			return nil, errors.New("could not unmarshal bytes into pubkey")
+			return nil, unmarshalErr
 		}
 		pkc := pk.Serialize()
 		if pkc == nil {
@@ -199,8 +201,13 @@ func TestPubKey_NewPublicKeyFromBytes(t *testing.T) {
 	for name, pkStr := range invalidPubKeys {
 		t.Run(name, func(t *testing.T) {
 			bz, err := unmarshal(pkStr)
-			_, err = bls12381.NewPublicKeyFromBytes(bz)
-			assert.Error(t, err)
+			if err == nil {
+				_, err = bls12381.NewPublicKeyFromBytes(bz)
+				assert.Error(t, err)
+				assert.Equal(t, err, bls12381.ErrInfinitePubKey)
+			} else {
+				assert.Equal(t, err, unmarshalErr)
+			}
 		})
 	}
 }

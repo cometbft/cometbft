@@ -123,12 +123,21 @@ func NewBlockingIterator(mem *CListMempool) Iterator {
 func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 	ch := make(chan Entry)
 	go func() {
-		// Add the next entry to the channel if not nil.
-		lane := iter.pickLane()
-		if entry := iter.next(lane); entry != nil {
-			ch <- entry.Value.(Entry)
+		var lane types.Lane
+		for {
+			l, addTxCh := iter.pickLane()
+			if addTxCh == nil {
+				lane = l
+				break
+			}
+			// There are no transactions to take from any lane. Wait until at
+			// least one is added to the mempool and try again.
+			<-addTxCh
 		}
-		// Unblock the receiver (it may receive nil).
+		if elem := iter.next(lane); elem != nil {
+			ch <- elem.Value.(Entry)
+		}
+		// Unblock receiver in case no entry was sent (it will receive nil).
 		close(ch)
 	}()
 	return ch
@@ -137,14 +146,15 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 // pickLane returns a _valid_ lane on which to iterate, according to the WRR
 // algorithm. A lane is valid if it is not empty or it is not over-consumed,
 // meaning that the number of accessed entries in the lane has not yet reached
-// its priority value in the current WRR iteration. It will block until a
-// transaction is available in any lane.
-func (iter *BlockingIterator) pickLane() types.Lane {
-	// Start from the last accessed lane.
-	lane := iter.sortedLanes[iter.laneIndex]
-
+// its priority value in the current WRR iteration. It returns a channel to wait
+// for new transactions if all lanes are empty or don't have transactions that
+// have not yet been accessed.
+func (iter *BlockingIterator) pickLane() (types.Lane, chan struct{}) {
 	iter.mp.addTxChMtx.RLock()
 	defer iter.mp.addTxChMtx.RUnlock()
+
+	// Start from the last accessed lane.
+	lane := iter.sortedLanes[iter.laneIndex]
 
 	// Loop until finding a valid lane. If the current lane is not valid,
 	// continue with the next lower-priority lane, in a round robin fashion.
@@ -156,12 +166,9 @@ func (iter *BlockingIterator) pickLane() types.Lane {
 				iter.cursors[lane].Value.(*mempoolTx).seq == iter.mp.addTxLaneSeqs[lane]) {
 			numEmptyLanes++
 			if numEmptyLanes >= len(iter.sortedLanes) {
-				// There are no lanes with non-accessed entries. Wait until a new tx is added.
-				ch := iter.mp.addTxCh
-				iter.mp.addTxChMtx.RUnlock()
-				<-ch
-				iter.mp.addTxChMtx.RLock()
-				numEmptyLanes = 0
+				// There are no lanes with non-accessed entries. Wait until a
+				// new tx is added.
+				return 0, iter.mp.addTxCh
 			}
 			lane = iter.advanceIndexes()
 			continue
@@ -175,16 +182,11 @@ func (iter *BlockingIterator) pickLane() types.Lane {
 		}
 
 		_ = iter.advanceIndexes()
-		return lane
+		return lane, nil
 	}
 }
 
-// next returns the next element according to the IWRR algorithm.
-//
-// In classical WRR, the iterator cycles over the lanes. When a lane is selected, next returns an
-// entry from the selected lane. On subsequent calls, next will return the next entries from the
-// same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
-// The next time, next will select the successive lane with lower priority.
+// next returns the next entry from the given lane and updates to WRR variables.
 func (iter *BlockingIterator) next(lane types.Lane) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -245,9 +246,11 @@ func TestBlockingIteratorsConsumeAllTxs(t *testing.T) {
 				// Iterate until all txs added to the mempool are accessed.
 				iter := NewBlockingIterator(mp)
 				counter := 0
+				nilCounter := 0
 				for counter < numTxs {
 					entry := <-iter.WaitNextCh()
 					if entry == nil {
+						nilCounter++
 						continue
 					}
 					if test == "no_lanes" {
@@ -258,7 +261,8 @@ func TestBlockingIteratorsConsumeAllTxs(t *testing.T) {
 					counter++
 				}
 				require.Equal(t, numTxs, counter)
-				t.Logf("%s: iterator %d finished\n", test, j)
+				assert.Zero(t, nilCounter, "got nil entries")
+				t.Logf("%s: iterator %d finished (nils=%d)\n", test, j, nilCounter)
 			}(i)
 		}
 

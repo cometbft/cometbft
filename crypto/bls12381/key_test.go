@@ -171,7 +171,7 @@ func TestPubKey_MarshalJSON(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestPubKey_NewPublicKeyFromBytes(t *testing.T) {
+func TestPubKey_NewPublicKeyFromInvalidBytes(t *testing.T) {
 	unmarshalErr := errors.New("could not unmarshal bytes into pubkey")
 
 	unmarshal := func(s string) ([]byte, error) {

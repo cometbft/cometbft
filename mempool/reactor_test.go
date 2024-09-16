@@ -159,11 +159,7 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	config := cfg.TestConfig()
 	const n = 2
-<<<<<<< HEAD
 	reactors, _ := makeAndConnectReactors(config, n, nil)
-=======
-	reactors, _ := makeAndConnectReactors(config, n)
->>>>>>> 1ac883258 (fix(mempool): tx is skipped when sending to a lagging peer or sending fails (#3647))
 	defer func() {
 		for _, r := range reactors {
 			if err := r.Stop(); err != nil {
@@ -178,11 +174,7 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-<<<<<<< HEAD
 	txs1 := addRandomTxs(t, reactors[0].mempool, numTxs)
-=======
-	txs1 := checkTxs(t, reactors[0].mempool, numTxs)
->>>>>>> 1ac883258 (fix(mempool): tx is skipped when sending to a lagging peer or sending fails (#3647))
 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
@@ -190,19 +182,11 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	waitForReactors(t, txs1, reactors, checkTxsInOrder)
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
-<<<<<<< HEAD
 	txs2 := addRandomTxs(t, reactors[0].mempool, numTxs)
 	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
 }
 
 func TestMempoolReactorMaxTxBytes(t *testing.T) {
-=======
-	txs2 := checkTxs(t, reactors[0].mempool, numTxs)
-	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInOrder)
-}
-
-func TestReactor_MaxTxBytes(t *testing.T) {
->>>>>>> 1ac883258 (fix(mempool): tx is skipped when sending to a lagging peer or sending fails (#3647))
 	config := cfg.TestConfig()
 
 	const n = 2

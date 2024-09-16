@@ -163,6 +163,8 @@ func addRandomTxs(t *testing.T, mp Mempool, count int) []types.Tx {
 	return txs
 }
 
+// addTxs adds to the mempool num transactions with sequential ids starting from
+// first.
 func addTxs(tb testing.TB, mp Mempool, first, num int) []types.Tx {
 	tb.Helper()
 	txs := make([]types.Tx, 0, num)
@@ -172,7 +174,22 @@ func addTxs(tb testing.TB, mp Mempool, first, num int) []types.Tx {
 		require.NoError(tb, err)
 		txs = append(txs, tx)
 	}
+	require.Equal(tb, num, len(txs))
 	return txs
+}
+
+func waitTimeout(wg *sync.WaitGroup, timeout time.Duration, doneFunc func(), timeoutFunc func()) {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		doneFunc()
+	case <-time.After(timeout):
+		timeoutFunc()
+	}
 }
 
 func TestReapMaxBytesMaxGas(t *testing.T) {

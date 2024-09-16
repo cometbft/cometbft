@@ -196,13 +196,10 @@ func ComputeProtoSizeForTxs(txs []Tx) int64 {
 	return int64(pdData.Size())
 }
 
-// A lane is defined by its priority.
+// A lane is defined by its ID and priority.
+// A laneID is a string uinquely identifying a lane.
+// Multiple lanes can have the same priority.
 type LaneID string
-
-type Lane struct {
-	ID       string
-	Priority uint32
-}
 
 // Mapping between LaneID and its priority.
 type LaneInfo map[string]uint32

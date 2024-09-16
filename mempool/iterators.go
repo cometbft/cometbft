@@ -7,11 +7,16 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
+type Lane struct {
+	ID       string
+	Priority uint32
+}
+
 // IWRRIterator is the base struct for implementing iterators that traverse lanes with
 // the Interleaved Weighted Round Robin (WRR) algorithm.
 // https://en.wikipedia.org/wiki/Weighted_round_robin
 type IWRRIterator struct {
-	sortedLanes []types.Lane
+	sortedLanes []Lane
 	laneIndex   int                              // current lane being iterated; index on sortedLanes
 	cursors     map[types.LaneID]*clist.CElement // last accessed entries on each lane
 	round       int                              // counts the rounds for IWRR
@@ -19,7 +24,7 @@ type IWRRIterator struct {
 
 // This function picks the next lane to fetch an item from.
 // If it was the last lane, it advances the round counter as well.
-func (iter *IWRRIterator) advanceIndexes() types.Lane {
+func (iter *IWRRIterator) advanceIndexes() Lane {
 	if iter.laneIndex == len(iter.sortedLanes)-1 {
 		iter.round = (iter.round + 1) % (int(iter.sortedLanes[0].Priority) + 1)
 		if iter.round == 0 {
@@ -139,7 +144,7 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 // meaning that the number of accessed entries in the lane has not yet reached
 // its priority value in the current WRR iteration. It will block until a
 // transaction is available in any lane.
-func (iter *BlockingIterator) PickLane() types.Lane {
+func (iter *BlockingIterator) PickLane() Lane {
 	// Start from the last accessed lane.
 	lane := iter.sortedLanes[iter.laneIndex]
 
@@ -186,7 +191,7 @@ func (iter *BlockingIterator) PickLane() types.Lane {
 // entry from the selected lane. On subsequent calls, Next will return the next entries from the
 // same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
 // The next time, Next will select the successive lane with lower priority.
-func (iter *BlockingIterator) Next(lane types.Lane) *clist.CElement {
+func (iter *BlockingIterator) Next(lane Lane) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
 	laneID := types.LaneID(lane.ID)

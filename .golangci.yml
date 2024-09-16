@@ -114,19 +114,20 @@ linters-settings:
           - "$test"
         allow:
           - $gostd
-          - github.com/cosmos
-          - github.com/cometbft
           - github.com/adlio/schema
           - github.com/btcsuite/btcd
+          - github.com/cometbft
+          - github.com/cosmos
           - github.com/dgraph-io/badger/v4
           - github.com/fortytw2/leaktest
-          - github.com/go-kit
+          - github.com/go-kit/log
           - github.com/google/uuid
           - github.com/gorilla/websocket
           - github.com/lib/pq
           - github.com/oasisprotocol/curve25519-voi/primitives/merlin
           - github.com/ory/dockertest
           - github.com/pkg/errors
+          - github.com/prometheus/client_golang/prometheus
           - github.com/prometheus/client_golang/prometheus/promhttp
           - github.com/spf13
           - github.com/stretchr/testify

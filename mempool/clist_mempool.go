@@ -60,7 +60,6 @@ type CListMempool struct {
 	numTxs    int64                           // total number of txs in the mempool
 	addTxCh   chan struct{}                   // blocks until the next tx is added
 	addTxSeq  int64                           // helps detect if new txs have been added to a given lane
-	addTxLane types.Lane                      // lane where the most recent transaction was added
 
 	addTxLaneSeqs sync.Map // sequence of the last tx added to a given lane (types.Lane -> int64)
 
@@ -471,7 +470,6 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.laneBytes[lane] += int64(len(tx))
 
 	// Notify iterators there's a new transaction.
-	mem.addTxLane = lane
 	close(mem.addTxCh)
 	mem.addTxCh = make(chan struct{})
 

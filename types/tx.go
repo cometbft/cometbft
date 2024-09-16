@@ -199,5 +199,10 @@ func ComputeProtoSizeForTxs(txs []Tx) int64 {
 // A lane is defined by its priority.
 type LaneID string
 
+type Lane struct {
+	ID       string
+	Priority uint32
+}
+
 // Mapping between LaneID and its priority.
 type LaneInfo map[string]uint32

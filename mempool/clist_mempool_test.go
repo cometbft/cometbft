@@ -790,7 +790,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	// tx0 should appear only once in mp.lanes
 	found := 0
 	for _, lane := range mp.sortedLanes {
-		for e := mp.lanes[types.LaneID(lane.Id)].Front(); e != nil; e = e.Next() {
+		for e := mp.lanes[types.LaneID(lane.ID)].Front(); e != nil; e = e.Next() {
 			if types.Tx.Key(e.Value.(*mempoolTx).Tx()) == types.Tx.Key(tx0) {
 				found++
 			}

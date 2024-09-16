@@ -64,7 +64,7 @@ type CListMempool struct {
 
 	// Immutable fields, only set during initialization.
 	defaultLane string
-	sortedLanes []abci.Lane // lanes sorted by priority, in descending order
+	sortedLanes []types.Lane // lanes sorted by priority, in descending order
 
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
@@ -108,15 +108,15 @@ func NewCListMempool(
 	numLanes := len(laneData.lanes)
 	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
 	mp.defaultLane = laneData.defaultLane
-	mp.sortedLanes = make([]abci.Lane, numLanes)
+	mp.sortedLanes = make([]types.Lane, numLanes)
 	i := 0
 	for laneID, lanePrio := range laneData.lanes {
 		mp.lanes[types.LaneID(laneID)] = clist.New()
-		mp.sortedLanes[i] = abci.Lane{Id: laneID, Prio: lanePrio}
+		mp.sortedLanes[i] = types.Lane{ID: laneID, Priority: lanePrio}
 		i++
 	}
 	sort.Slice(mp.sortedLanes, func(i, j int) bool {
-		return mp.sortedLanes[i].Prio > mp.sortedLanes[j].Prio
+		return mp.sortedLanes[i].Priority > mp.sortedLanes[j].Priority
 	})
 	mp.recheck = newRecheck(mp)
 

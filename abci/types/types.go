@@ -27,7 +27,6 @@ type (
 	ExtendVoteRequest          = v1.ExtendVoteRequest
 	VerifyVoteExtensionRequest = v1.VerifyVoteExtensionRequest
 	FinalizeBlockRequest       = v1.FinalizeBlockRequest
-	Lane                       = v1.Lane
 )
 
 // Discriminated Request variants are defined in the latest proto package.

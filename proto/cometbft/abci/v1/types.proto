@@ -251,14 +251,6 @@ message EchoResponse {
 // FlushResponse indicates that the write buffer was flushed.
 message FlushResponse {}
 
-
-
-// Lane identifies a lane for each transaction with a lane ID and its priority
-// Multiple lane IDs can have the same priority
-message Lane {
-  string id = 1;
-  uint32 prio = 2;
-}
 // InfoResponse contains the ABCI application version information.
 message InfoResponse {
   string data = 1;

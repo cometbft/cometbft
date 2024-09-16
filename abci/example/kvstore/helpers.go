@@ -22,7 +22,7 @@ func RandVal() types.ValidatorUpdate {
 // RandVals returns a list of cnt validators for initializing
 // the application. Note that the keys are deterministically
 // derived from the index in the array, while the power is
-// random (Change this if not desired).
+// random (change this if not desired).
 func RandVals(cnt int) []types.ValidatorUpdate {
 	res := make([]types.ValidatorUpdate, cnt)
 	for i := 0; i < cnt; i++ {

@@ -1,10 +1,20 @@
 name: Test
 on:
   pull_request:
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - Makefile
+      - "!test/**"
   merge_group:
   push:
     paths:
       - "**.go"
+      - go.mod
+      - go.sum
+      - Makefile
+      - "!test/**"
     branches:
       - main
 
@@ -26,15 +36,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - uses: technote-space/get-diff-action@v6
-        with:
-          PATTERNS: |
-            **/**.go
-            "!test/"
-            go.mod
-            go.sum
-            Makefile
+
       - name: Run Go Tests
         run: |
           make test-group-${{ matrix.part }} NUM_SPLIT=20
-        if: env.GIT_DIFF

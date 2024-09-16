@@ -316,7 +316,7 @@ message CheckTxResponse {
   reserved 9 to 11;
   reserved "sender", "priority", "mempool_error";
 
-  Lane lane = 12;
+  string lane_id = 12;
 }
 
 // CommitResponse indicates how much blocks should CometBFT retain.

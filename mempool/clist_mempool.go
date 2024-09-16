@@ -63,7 +63,7 @@ type CListMempool struct {
 	addTxLaneSeqs map[types.LaneID]int64 // Sequence of the last TX added to a given lane
 
 	// Immutable fields, only set during initialization.
-	defaultLane abci.Lane
+	defaultLane string
 	sortedLanes []abci.Lane // lanes sorted by priority, in descending order
 
 	// Keep a cache of already-seen txs.
@@ -107,7 +107,7 @@ func NewCListMempool(
 	}
 	numLanes := len(lanesInfo.lanes)
 	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
-	mp.defaultLane = abci.Lane{Id: lanesInfo.defaultLane, Prio: lanesInfo.lanes[lanesInfo.defaultLane]}
+	mp.defaultLane = lanesInfo.defaultLane
 	mp.sortedLanes = make([]abci.Lane, numLanes)
 	i := 0
 	for laneID, lanePrio := range lanesInfo.lanes {
@@ -402,8 +402,8 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 		// If the app returned a (non-zero) lane, use it; otherwise use the default lane.
 		lane := mem.defaultLane
-		if res.Lane != nil && res.Lane.Id != "" {
-			lane = *res.Lane
+		if res.LaneId != "" {
+			lane = res.LaneId
 		}
 
 		// Check that tx is not already in the mempool. This can happen when the
@@ -416,8 +416,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			mem.logger.Debug(
 				"Transaction already in mempool, not adding it again",
 				"tx", tx.Hash(),
-				"lane", lane.Id,
-				"lane priority", lane.Prio,
+				"lane", lane,
 				"height", mem.height.Load(),
 				"total", mem.Size(),
 			)
@@ -426,14 +425,14 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		}
 
 		// Add tx to mempool and notify that new txs are available.
-		if mem.addTx(tx, res.GasWanted, sender, lane.Id) {
+		if mem.addTx(tx, res.GasWanted, sender, lane) {
 			mem.notifyTxsAvailable()
 
 			if mem.onNewTx != nil {
 				mem.onNewTx(tx)
 			}
 
-			mem.updateSizeMetrics(types.LaneID(lane.Id))
+			mem.updateSizeMetrics(types.LaneID(lane))
 		}
 	}
 }

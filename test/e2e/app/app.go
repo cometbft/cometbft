@@ -366,10 +366,7 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)
-	l := new(abci.Lane)
-	l.Id = lane.GetId()
-	l.Prio = lane.GetPriority()
-	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, Lane: l}, nil
+	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, LaneId: lane.GetId()}, nil
 }
 
 // extractLane returns the lane field if value is a Payload, otherwise returns 0.

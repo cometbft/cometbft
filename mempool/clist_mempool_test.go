@@ -1108,11 +1108,7 @@ func newReqRes(tx types.Tx, code uint32, requestType abci.CheckTxType) *abciclie
 
 func newReqResWithLanes(tx types.Tx, code uint32, requestType abci.CheckTxType, lane uint32) *abciclient.ReqRes {
 	reqRes := abciclient.NewReqRes(abci.ToCheckTxRequest(&abci.CheckTxRequest{Tx: tx, Type: requestType}))
-	l := new(abci.Lane)
-	l.Id = strconv.FormatUint(uint64(lane), 10)
-	l.Prio = lane
-
-	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code, Lane: l})
+	reqRes.Response = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: code, LaneId: strconv.FormatUint(uint64(lane), 10)})
 	return reqRes
 }
 

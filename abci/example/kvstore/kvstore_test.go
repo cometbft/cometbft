@@ -239,31 +239,30 @@ func TestCheckTx(t *testing.T) {
 }
 
 func TestClientAssignLane(t *testing.T) {
-	kvstore := NewInMemoryApplication()
 	val := RandVal()
 
 	testCases := []struct {
-		lane uint32
+		lane string
 		tx   []byte
 	}{
-		{kvstore.lanes["foo"], NewTx("0", "0")},
-		{kvstore.lanes[defaultLane], NewTx("1", "1")},
-		{kvstore.lanes[defaultLane], NewTx("2", "2")},
-		{kvstore.lanes["bar"], NewTx("3", "3")},
-		{kvstore.lanes[defaultLane], NewTx("4", "4")},
-		{kvstore.lanes[defaultLane], NewTx("5", "5")},
-		{kvstore.lanes["bar"], NewTx("6", "6")},
-		{kvstore.lanes[defaultLane], NewTx("7", "7")},
-		{kvstore.lanes[defaultLane], NewTx("8", "8")},
-		{kvstore.lanes["bar"], NewTx("9", "9")},
-		{kvstore.lanes[defaultLane], NewTx("10", "10")},
-		{kvstore.lanes["foo"], NewTx("11", "11")},
-		{kvstore.lanes["bar"], NewTx("12", "12")},
-		{kvstore.lanes["val"], MakeValSetChangeTx(val)},
+		{"foo", NewTx("0", "0")},
+		{"default", NewTx("1", "1")},
+		{"default", NewTx("2", "2")},
+		{"bar", NewTx("3", "3")},
+		{"default", NewTx("4", "4")},
+		{"default", NewTx("5", "5")},
+		{"bar", NewTx("6", "6")},
+		{"default", NewTx("7", "7")},
+		{"default", NewTx("8", "8")},
+		{"bar", NewTx("9", "9")},
+		{"default", NewTx("10", "10")},
+		{"foo", NewTx("11", "11")},
+		{"bar", NewTx("12", "12")},
+		{"val", MakeValSetChangeTx(val)},
 	}
 
 	for idx, tc := range testCases {
-		require.Equal(t, tc.lane, kvstore.assignLane(tc.tx).Prio, idx)
+		require.Equal(t, tc.lane, assignLane(tc.tx), idx)
 	}
 }
 

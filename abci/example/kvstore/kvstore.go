@@ -187,21 +187,16 @@ func (app *Application) CheckTx(_ context.Context, req *types.CheckTxRequest) (*
 	if len(app.lanes) == 0 {
 		return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1}, nil
 	}
-	lane := app.assignLane(req.Tx)
-	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, Lane: lane}, nil
+	lane := assignLane(req.Tx)
+	return &types.CheckTxResponse{Code: CodeTypeOK, GasWanted: 1, LaneId: lane}, nil
 }
 
 // assignLane deterministically computes a lane for the given tx.
-func (app *Application) assignLane(tx []byte) *types.Lane {
-	lane := new(types.Lane)
+func assignLane(tx []byte) string {
+	lane := defaultLane
 	if isValidatorTx(tx) {
-		lane.Id = "val"
-		lane.Prio = app.lanes["val"]
-		return lane // priority 9
+		return "val" // priority 9
 	}
-	lane.Id = "default"
-	lane.Prio = app.lanes["default"]
-
 	key, _, err := parseTx(tx)
 	if err != nil {
 		return lane
@@ -217,13 +212,9 @@ func (app *Application) assignLane(tx []byte) *types.Lane {
 
 	switch {
 	case keyInt%11 == 0:
-		lane.Id = "foo"
-		lane.Prio = app.lanes["foo"] // priority 7
-		return lane
+		return "foo" // priority 7
 	case keyInt%3 == 0:
-		lane.Id = "bar"
-		lane.Prio = app.lanes["bar"]
-		return lane // priority 1
+		return "bar" // priority 1
 	default:
 		return lane // priority 3
 	}

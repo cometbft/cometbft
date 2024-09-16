@@ -61,8 +61,7 @@ type Application struct {
 	// It's OK not to persist this, as it is not part of the state machine
 	seenTxs sync.Map // cmttypes.TxKey -> uint64
 
-	lanesInfo map[string]uint32 // types.LaneInfo
-	// lanePriorities []uint32
+	lanesInfo map[string]uint32
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application

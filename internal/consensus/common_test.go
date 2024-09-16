@@ -454,10 +454,10 @@ func newStateWithConfig(
 	state sm.State,
 	pv types.PrivValidator,
 	app abci.Application,
-	lanesInfo *mempl.LaneData,
+	laneData *mempl.LaneData,
 ) *State {
 	blockDB := dbm.NewMemDB()
-	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, lanesInfo)
+	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, laneData)
 }
 
 func newStateWithConfigAndBlockStore(
@@ -466,7 +466,7 @@ func newStateWithConfigAndBlockStore(
 	pv types.PrivValidator,
 	app abci.Application,
 	blockDB dbm.DB,
-	lanesInfo *mempl.LaneData,
+	laneData *mempl.LaneData,
 ) *State {
 	// Get BlockStore
 	blockStore := store.NewBlockStore(blockDB)
@@ -482,7 +482,7 @@ func newStateWithConfigAndBlockStore(
 	// Make Mempool
 	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyAppConnMem,
-		lanesInfo,
+		laneData,
 		state.LastBlockHeight,
 		mempl.WithMetrics(memplMetrics),
 		mempl.WithPreCheck(sm.TxPreCheck(state)),

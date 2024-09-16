@@ -84,7 +84,7 @@ type CListMempoolOption func(*CListMempool)
 func NewCListMempool(
 	cfg *config.MempoolConfig,
 	proxyAppConn proxy.AppConnMempool,
-	laneData *LaneData,
+	laneInfo *LanesInfo,
 	height int64,
 	options ...CListMempoolOption,
 ) *CListMempool {
@@ -101,16 +101,16 @@ func NewCListMempool(
 	mp.height.Store(height)
 
 	// Initialize lanes
-	if laneData == nil || len(laneData.lanes) == 0 {
+	if laneInfo == nil || len(laneInfo.lanes) == 0 {
 		// Lane 1 will be the only lane.
-		laneData = &LaneData{lanes: map[string]uint32{"default": 1}, defaultLane: "default"}
+		laneInfo = &LanesInfo{lanes: map[string]uint32{"default": 1}, defaultLane: "default"}
 	}
-	numLanes := len(laneData.lanes)
+	numLanes := len(laneInfo.lanes)
 	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
-	mp.defaultLane = laneData.defaultLane
+	mp.defaultLane = laneInfo.defaultLane
 	mp.sortedLanes = make([]types.Lane, numLanes)
 	i := 0
-	for laneID, lanePrio := range laneData.lanes {
+	for laneID, lanePrio := range laneInfo.lanes {
 		mp.lanes[types.LaneID(laneID)] = clist.New()
 		mp.sortedLanes[i] = types.Lane{ID: laneID, Priority: lanePrio}
 		i++

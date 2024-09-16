@@ -93,7 +93,7 @@ func (e ErrFlushAppConn) Unwrap() error {
 }
 
 type ErrEmptyLanesDefaultLaneSet struct {
-	Info LaneData
+	Info LanesInfo
 }
 
 func (e ErrEmptyLanesDefaultLaneSet) Error() string {
@@ -101,7 +101,7 @@ func (e ErrEmptyLanesDefaultLaneSet) Error() string {
 }
 
 type ErrBadDefaultLaneNonEmptyLaneList struct {
-	Info LaneData
+	Info LanesInfo
 }
 
 func (e ErrBadDefaultLaneNonEmptyLaneList) Error() string {
@@ -109,7 +109,7 @@ func (e ErrBadDefaultLaneNonEmptyLaneList) Error() string {
 }
 
 type ErrDefaultLaneNotInList struct {
-	Info LaneData
+	Info LanesInfo
 }
 
 func (e ErrDefaultLaneNotInList) Error() string {
@@ -117,7 +117,7 @@ func (e ErrDefaultLaneNotInList) Error() string {
 }
 
 type ErrRepeatedLanes struct {
-	Info LaneData
+	Info LanesInfo
 }
 
 func (e ErrRepeatedLanes) Error() string {

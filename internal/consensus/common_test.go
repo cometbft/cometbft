@@ -432,7 +432,7 @@ func subscribeToVoterBuffered(cs *State, addr []byte) <-chan cmtpubsub.Message {
 // -------------------------------------------------------------------------------
 // application
 
-func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *mempl.LaneData) {
+func fetchAppInfo(t *testing.T, app abci.Application) (*abci.InfoResponse, *mempl.LanesInfo) {
 	t.Helper()
 	resp, err := app.Info(context.Background(), proxy.InfoRequest)
 	require.NoError(t, err)
@@ -454,10 +454,10 @@ func newStateWithConfig(
 	state sm.State,
 	pv types.PrivValidator,
 	app abci.Application,
-	laneData *mempl.LaneData,
+	laneInfo *mempl.LanesInfo,
 ) *State {
 	blockDB := dbm.NewMemDB()
-	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, laneData)
+	return newStateWithConfigAndBlockStore(thisConfig, state, pv, app, blockDB, laneInfo)
 }
 
 func newStateWithConfigAndBlockStore(
@@ -466,7 +466,7 @@ func newStateWithConfigAndBlockStore(
 	pv types.PrivValidator,
 	app abci.Application,
 	blockDB dbm.DB,
-	laneData *mempl.LaneData,
+	laneInfo *mempl.LanesInfo,
 ) *State {
 	// Get BlockStore
 	blockStore := store.NewBlockStore(blockDB)
@@ -482,7 +482,7 @@ func newStateWithConfigAndBlockStore(
 	// Make Mempool
 	mempool := mempl.NewCListMempool(config.Mempool,
 		proxyAppConnMem,
-		laneData,
+		laneInfo,
 		state.LastBlockHeight,
 		mempl.WithMetrics(memplMetrics),
 		mempl.WithPreCheck(sm.TxPreCheck(state)),

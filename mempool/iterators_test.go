@@ -296,6 +296,12 @@ func TestBlockingIteratorsConsumeAllTxs(t *testing.T) {
 	}
 }
 
+// Confirms that the transactions are returned in the same order
+// Note that for the cases with equal priorities the actual order
+// will depend on the way we iterate over the map of lanes
+// With only two lanes of the same priority the order was predictable
+// and matches the given order. In case these tests start to fail
+// first thing to confirm is the order of lanes in mp.SortedLanes.
 func TestIteratorExactOrder(t *testing.T) {
 	tests := map[string]struct {
 		lanePriorities map[string]uint32
@@ -312,6 +318,10 @@ func TestIteratorExactOrder(t *testing.T) {
 		"one_lanes": {
 			lanePriorities: map[string]uint32{"1": 1},
 			expectedTxIDs:  []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+		},
+		"two_lanes_same_prio": {
+			lanePriorities: map[string]uint32{"1": 1, "2": 1},
+			expectedTxIDs:  []int{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 11},
 		},
 	}
 

@@ -163,16 +163,33 @@ func addRandomTxs(t *testing.T, mp Mempool, count int) []types.Tx {
 	return txs
 }
 
+// addTxs adds to the mempool num transactions with sequential ids starting from
+// first.
 func addTxs(tb testing.TB, mp Mempool, first, num int) []types.Tx {
 	tb.Helper()
 	txs := make([]types.Tx, 0, num)
-	for i := first; i < num; i++ {
+	for i := first; i < first+num; i++ {
 		tx := kvstore.NewTxFromID(i)
 		_, err := mp.CheckTx(tx, "")
 		require.NoError(tb, err)
 		txs = append(txs, tx)
 	}
+	require.Equal(tb, num, len(txs))
 	return txs
+}
+
+func waitTimeout(wg *sync.WaitGroup, timeout time.Duration, doneFunc func(), timeoutFunc func()) {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		doneFunc()
+	case <-time.After(timeout):
+		timeoutFunc()
+	}
 }
 
 func TestReapMaxBytesMaxGas(t *testing.T) {
@@ -183,7 +200,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	addRandomTxs(t, mp, 1)
-	iter := NewBlockingIterator(context.Background(), mp)
+	iter := NewBlockingIterator(context.Background(), mp, t.Name())
 	tx0 := <-iter.WaitNextCh()
 	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")

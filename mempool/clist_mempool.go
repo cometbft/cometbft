@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"sync/atomic"
 	"time"
 
@@ -115,9 +115,16 @@ func NewCListMempool(
 		mp.sortedLanes[i] = Lane{ID: laneID, Priority: lanePrio}
 		i++
 	}
-	sort.Slice(mp.sortedLanes, func(i, j int) bool {
-		return mp.sortedLanes[i].Priority > mp.sortedLanes[j].Priority
+	slices.SortStableFunc(mp.sortedLanes, func(i, j Lane) int {
+		if i.Priority > j.Priority {
+			return -1
+		}
+		if i.Priority < j.Priority {
+			return 1
+		}
+		return 0
 	})
+
 	mp.recheck = newRecheck(mp)
 
 	if cfg.CacheSize > 0 {

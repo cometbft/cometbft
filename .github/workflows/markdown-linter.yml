@@ -8,10 +8,12 @@ on:
       - "**.yml"
       - "**.yaml"
   pull_request:
-    branches: [main]
+    branches:
+      - main
     paths:
       - "**.md"
       - "**.yml"
+      - "**.yaml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -49,28 +49,28 @@ type snapshotPool struct {
 	heightIndex map[uint64]map[snapshotKey]bool
 	peerIndex   map[p2p.ID]map[snapshotKey]bool
 
-	// blacklists for rejected items
-	formatBlacklist   map[uint32]bool
-	peerBlacklist     map[p2p.ID]bool
-	snapshotBlacklist map[snapshotKey]bool
+	// denylists for rejected items
+	formatRejectlist   map[uint32]bool
+	peerRejectlist     map[p2p.ID]bool
+	snapshotRejectlist map[snapshotKey]bool
 }
 
 // newSnapshotPool creates a new snapshot pool. The state source is used for.
 func newSnapshotPool() *snapshotPool {
 	return &snapshotPool{
-		snapshots:         make(map[snapshotKey]*snapshot),
-		snapshotPeers:     make(map[snapshotKey]map[p2p.ID]p2p.Peer),
-		formatIndex:       make(map[uint32]map[snapshotKey]bool),
-		heightIndex:       make(map[uint64]map[snapshotKey]bool),
-		peerIndex:         make(map[p2p.ID]map[snapshotKey]bool),
-		formatBlacklist:   make(map[uint32]bool),
-		peerBlacklist:     make(map[p2p.ID]bool),
-		snapshotBlacklist: make(map[snapshotKey]bool),
+		snapshots:          make(map[snapshotKey]*snapshot),
+		snapshotPeers:      make(map[snapshotKey]map[p2p.ID]p2p.Peer),
+		formatIndex:        make(map[uint32]map[snapshotKey]bool),
+		heightIndex:        make(map[uint64]map[snapshotKey]bool),
+		peerIndex:          make(map[p2p.ID]map[snapshotKey]bool),
+		formatRejectlist:   make(map[uint32]bool),
+		peerRejectlist:     make(map[p2p.ID]bool),
+		snapshotRejectlist: make(map[snapshotKey]bool),
 	}
 }
 
 // Add adds a snapshot to the pool, unless the peer has already sent recentSnapshots snapshots. It
-// returns true if this was a new, non-blacklisted snapshot. The snapshot height is verified using
+// returns true if this was a new, non-rejected snapshot. The snapshot height is verified using
 // the light client, and the expected app hash is set for the snapshot.
 func (p *snapshotPool) Add(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 	key := snapshot.Key()
@@ -79,11 +79,11 @@ func (p *snapshotPool) Add(peer p2p.Peer, snapshot *snapshot) (bool, error) {
 	defer p.Unlock()
 
 	switch {
-	case p.formatBlacklist[snapshot.Format]:
+	case p.formatRejectlist[snapshot.Format]:
 		return false, nil
-	case p.peerBlacklist[peer.ID()]:
+	case p.peerRejectlist[peer.ID()]:
 		return false, nil
-	case p.snapshotBlacklist[key]:
+	case p.snapshotRejectlist[key]:
 		return false, nil
 	case len(p.peerIndex[peer.ID()]) >= recentSnapshots:
 		return false, nil
@@ -193,7 +193,7 @@ func (p *snapshotPool) Reject(snapshot *snapshot) {
 	p.Lock()
 	defer p.Unlock()
 
-	p.snapshotBlacklist[key] = true
+	p.snapshotRejectlist[key] = true
 	p.removeSnapshot(key)
 }
 
@@ -202,7 +202,7 @@ func (p *snapshotPool) RejectFormat(format uint32) {
 	p.Lock()
 	defer p.Unlock()
 
-	p.formatBlacklist[format] = true
+	p.formatRejectlist[format] = true
 	for key := range p.formatIndex[format] {
 		p.removeSnapshot(key)
 	}
@@ -217,7 +217,7 @@ func (p *snapshotPool) RejectPeer(peerID p2p.ID) {
 	defer p.Unlock()
 
 	p.removePeer(peerID)
-	p.peerBlacklist[peerID] = true
+	p.peerRejectlist[peerID] = true
 }
 
 // RemovePeer removes a peer from the pool, and any snapshots that no longer have peers.

@@ -1,4 +1,4 @@
-# ADR 118: Mempool Lanes
+# ADR 118: Mempool QoS
 
 ## Changelog
 
@@ -11,10 +11,11 @@
 - 2024-06-13: Technical design (@hvanz)
 - 2024-07-02: Updates based on reviewer's comments (@hvanz, @sergio-mena)
 - 2024-07-09: Updates based on reviewer's comments (@hvanz)
+- 2024-09-13: Added pre-confirmations section (@sergio-mena)
 
 ## Status
 
-In writing (we're not sure yet whether this will be an ADR or a spec)
+Accepted. Tracking issue: [#2803][tracking-issue].
 
 ## Context
 
@@ -276,9 +277,35 @@ and a lack a provisions of evolving priority classification in a consistent mann
 The latter may appear less important as transactions are directly sent to the current leader,
 but it is not clear how retried transactions in periods of high load can be receive a consistent priority treatment.
 
-### Ethereum pre-confirmations
+### Ethereum Pre-confirmations
 
-TODO
+#### Brief Explanation
+
+Ethereum pre-confirmations are a mechanism designed to reduce transaction latency. Justin Drake's [proposal][based-preconfs]
+for _based pre-confirmations_ has gained attention in recent months in the Ethereum research community,
+though similar ideas date back to Bitcoin's [Oconfs][Oconfs].
+
+Pre-confirmations occur in the context of _fast games_, techniques applied between consecutive Layer-1 blocks
+to improve certain performance guarantees and help manage _MEV_ (Maximal Extractable Value).
+
+The process is straightforward. A user submits a transaction and requests a _preconfer_ (a validator) to guarantee specific handling
+of that transaction, typically for a fee, called _tip_.
+In exchange, the preconfer signs a _promise_ &mdash; most often guaranteeing transaction inclusion in the next block.
+The preconfer can only claim the tip if the promise is fulfilled, and validators opting in to become preconfers
+accept new slashing conditions related to _liveness_ (failure to propose a block) and _safety_ (failure to meet the promise).
+
+This design enables various implementations of pre-confirmations, and it's still early to determine which form will dominate in Ethereum.
+
+#### Comparison to Mempool QoS
+
+Unlike Mempool QoS &mdash; the design described [below](#detailed-design) &mdash; which prioritizes transactions based
+on network resource availability,
+pre-confirmations focus on individual user guarantees about transaction treatment and certainty of inclusion.
+While the connection to MEV is not fully understood yet, pre-confirmations may provide some mitigation against MEV-related risks.
+
+Pre-confirmations can also coexist with Mempool QoS in CometBFT-based blockchains.
+For instance, particular Mempool QoS configurations, such as a starving, FIFO, high-priority lane,
+could be part of an implementation of pre-confirmations in a CometBFT-based chain.
 
 ### Skip's Block-SDK Lanes
 
@@ -308,7 +335,7 @@ depending on the lane/class a transaction belongs to.
 
 ## Decision
 
-TODO
+Implement an MVP following the design in the next section.
 
 ## Detailed Design
 
@@ -668,3 +695,6 @@ late, possibly having lane definitions that do not match with those of nodes at 
 [cosmovisor]: https://docs.cosmos.network/v0.50/build/tooling/cosmovisor
 [selectChannelToGossipOn]: https://github.com/cometbft/cometbft/blob/6d3ff343c2d5a06e7522344d1a4e17d24ce982ad/p2p/conn/connection.go#L542-L563
 [wrr]: https://en.wikipedia.org/wiki/Weighted_round_robin
+[based-preconfs]: https://ethresear.ch/t/based-preconfirmations/17353
+[Oconfs]: https://www.reddit.com/r/btc/comments/vxr3qf/explaining_0_conf_transactions/
+[tracking-issue]: https://github.com/cometbft/cometbft/issues/2803

@@ -309,6 +309,10 @@ func TestIteratorExactOrder(t *testing.T) {
 			lanePriorities: map[string]uint32{"1": 1, "2": 2, "3": 2},
 			expectedTxIDs:  []int{1, 2, 3, 4, 5, 7, 8, 6, 10, 11, 9},
 		},
+		"one_lanes": {
+			lanePriorities: map[string]uint32{"1": 1},
+			expectedTxIDs:  []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
+		},
 	}
 
 	for _, l := range tests {
@@ -323,7 +327,7 @@ func TestIteratorExactOrder(t *testing.T) {
 		// Disable rechecking to make sure the recheck logic is not interfering.
 		mp.config.Recheck = false
 
-		const numLanes = 3
+		numLanes := len(l.lanePriorities)
 		const numTxs = 11
 
 		// Transactions are ordered into lanes by their IDs. This is the order in

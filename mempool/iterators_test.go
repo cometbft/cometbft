@@ -1,6 +1,8 @@
 package mempool
 
 import (
+	"context"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -156,7 +158,7 @@ func TestIteratorRace(t *testing.T) {
 			defer wg.Done()
 
 			for counter.Load() < int64(numTxs) {
-				iter := NewBlockingIterator(mp)
+				iter := NewBlockingIterator(context.Background(), mp, t.Name())
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
@@ -172,7 +174,7 @@ func TestIteratorRace(t *testing.T) {
 			defer wg.Done()
 
 			for counter.Load() < int64(numTxs) {
-				iter := NewBlockingIterator(mp)
+				iter := NewBlockingIterator(context.Background(), mp, t.Name())
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
@@ -218,7 +220,7 @@ func TestIteratorEmptyLanes(t *testing.T) {
 	defer cleanup()
 
 	go func() {
-		iter := NewBlockingIterator(mp)
+		iter := NewBlockingIterator(context.Background(), mp, t.Name())
 		require.Zero(t, mp.Size())
 		entry := <-iter.WaitNextCh()
 		require.NotNil(t, entry)
@@ -261,7 +263,7 @@ func TestBlockingIteratorsConsumeAllTxs(t *testing.T) {
 				defer wg.Done()
 
 				// Iterate until all txs added to the mempool are accessed.
-				iter := NewBlockingIterator(mp)
+				iter := NewBlockingIterator(context.Background(), mp, strconv.Itoa(j))
 				counter := 0
 				nilCounter := 0
 				for counter < numTxs {
@@ -322,7 +324,7 @@ func TestIteratorExactOrder(t *testing.T) {
 		waitForNumTxsInMempool(numTxs, mp)
 		t.Log("Mempool full, starting to pick up transactions", mp.Size())
 
-		iter := NewBlockingIterator(mp)
+		iter := NewBlockingIterator(context.Background(), mp, t.Name())
 		for i := 0; i < numTxs; i++ {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -373,7 +375,7 @@ func TestIteratorCountOnly(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		iter := NewBlockingIterator(mp)
+		iter := NewBlockingIterator(context.Background(), mp, t.Name())
 		for counter < n {
 			entry := <-iter.WaitNextCh()
 			if entry == nil {
@@ -423,7 +425,7 @@ func TestReapMatchesGossipOrder(t *testing.T) {
 
 		require.Equal(t, n, mp.Size())
 
-		gossipIter := NewBlockingIterator(mp)
+		gossipIter := NewBlockingIterator(context.Background(), mp, t.Name())
 		reapIter := NewNonBlockingIterator(mp)
 
 		// Check that both iterators return the same entry as in the reaped txs.

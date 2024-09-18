@@ -160,6 +160,7 @@ func addRandomTxs(t *testing.T, mp Mempool, count int) []types.Tx {
 	t.Helper()
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
+	require.Equal(t, count, len(txs))
 	return txs
 }
 
@@ -704,16 +705,17 @@ func TestMempoolTxsBytes(t *testing.T) {
 	mp.Flush()
 	assert.EqualValues(t, 0, mp.SizeBytes())
 
-	// 5. ErrMempoolIsFull is returned when/if MaxTxsBytes limit is reached.
-	tx3 := kvstore.NewRandomTx(100)
-	_, err = mp.CheckTx(tx3, "")
+	// 5. ErrLaneIsFull is returned when/if the limit on the lane bytes capacity is reached.
+	laneMaxBytes := int(cfg.Mempool.MaxTxsBytes) / len(mp.sortedLanes)
+	tx3 := kvstore.NewRandomTx(laneMaxBytes)
+	rr, err := mp.CheckTx(tx3, "")
 	require.NoError(t, err)
+	require.NoError(t, rr.Error())
 
 	tx4 := kvstore.NewRandomTx(10)
-	_, err = mp.CheckTx(tx4, "")
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
-		assert.IsType(t, ErrMempoolIsFull{}, err)
-	}
+	rr, err = mp.CheckTx(tx4, "")
+	require.NoError(t, err)
+	require.ErrorAs(t, rr.Error(), &ErrLaneIsFull{})
 
 	// 6. zero after tx is rechecked and removed due to not being valid anymore
 	app2 := kvstore.NewInMemoryApplication()

@@ -63,7 +63,7 @@ type CListMempool struct {
 	addTxLaneSeqs map[types.LaneID]int64 // Sequence of the last TX added to a given lane
 
 	// Immutable fields, only set during initialization.
-	defaultLane string
+	defaultLane types.LaneID
 	sortedLanes []Lane // lanes sorted by priority, in descending order
 
 	// Keep a cache of already-seen txs.
@@ -79,12 +79,21 @@ var _ Mempool = &CListMempool{}
 // CListMempoolOption sets an optional parameter on the mempool.
 type CListMempoolOption func(*CListMempool)
 
+// Lane degines the lanes into which transactions are
+// classified. They are identified with a string id
+// and the corresponding priority. Lanes can have
+// same priorities.
+type Lane struct {
+	id       types.LaneID
+	priority types.LanePriority
+}
+
 // NewCListMempool returns a new mempool with the given configuration and
 // connection to an application.
 func NewCListMempool(
 	cfg *config.MempoolConfig,
 	proxyAppConn proxy.AppConnMempool,
-	laneInfo *LanesInfo,
+	lanesInfo *LanesInfo,
 	height int64,
 	options ...CListMempoolOption,
 ) *CListMempool {
@@ -101,25 +110,25 @@ func NewCListMempool(
 	mp.height.Store(height)
 
 	// Initialize lanes
-	if laneInfo == nil || len(laneInfo.lanes) == 0 {
-		// Lane 1 will be the only lane.
-		laneInfo = &LanesInfo{lanes: map[string]uint32{"default": 1}, defaultLane: "default"}
+	if lanesInfo == nil || len(lanesInfo.lanes) == 0 {
+		// The only lane will be "default" with priority 1.
+		lanesInfo = &LanesInfo{lanes: map[types.LaneID]types.LanePriority{"default": 1}, defaultLane: "default"}
 	}
-	numLanes := len(laneInfo.lanes)
+	numLanes := len(lanesInfo.lanes)
 	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
-	mp.defaultLane = laneInfo.defaultLane
+	mp.defaultLane = lanesInfo.defaultLane
 	mp.sortedLanes = make([]Lane, numLanes)
 	i := 0
-	for laneID, lanePrio := range laneInfo.lanes {
-		mp.lanes[types.LaneID(laneID)] = clist.New()
-		mp.sortedLanes[i] = Lane{ID: laneID, Priority: lanePrio}
+	for laneID, lanePrio := range lanesInfo.lanes {
+		mp.lanes[laneID] = clist.New()
+		mp.sortedLanes[i] = Lane{id: laneID, priority: lanePrio}
 		i++
 	}
 	slices.SortStableFunc(mp.sortedLanes, func(i, j Lane) int {
-		if i.Priority > j.Priority {
+		if i.priority > j.priority {
 			return -1
 		}
-		if i.Priority < j.Priority {
+		if i.priority < j.priority {
 			return 1
 		}
 		return 0
@@ -410,7 +419,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		// If the app returned a (non-zero) lane, use it; otherwise use the default lane.
 		lane := mem.defaultLane
 		if res.LaneId != "" {
-			lane = res.LaneId
+			lane = types.LaneID(res.LaneId)
 		}
 
 		// Check that tx is not already in the mempool. This can happen when the
@@ -439,19 +448,19 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 				mem.onNewTx(tx)
 			}
 
-			mem.updateSizeMetrics(types.LaneID(lane))
+			mem.updateSizeMetrics(lane)
 		}
 	}
 }
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane string) bool {
+func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane types.LaneID) bool {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
 
 	// Get lane's clist.
-	txs, ok := mem.lanes[types.LaneID(lane)]
+	txs, ok := mem.lanes[lane]
 	if !ok {
 		mem.logger.Error("Lane does not exist, not adding TX", "tx", log.NewLazySprintf("%X", tx.Hash()), "lane", lane)
 		return false
@@ -461,7 +470,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.addTxChMtx.Lock()
 	defer mem.addTxChMtx.Unlock()
 	mem.addTxSeq++
-	mem.addTxLaneSeqs[types.LaneID(lane)] = mem.addTxSeq
+	mem.addTxLaneSeqs[lane] = mem.addTxSeq
 
 	// Add new transaction.
 	memTx := &mempoolTx{
@@ -478,7 +487,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 	mem.txsMap[tx.Key()] = e
 	mem.txsBytes += int64(len(tx))
 	mem.numTxs++
-	mem.laneBytes[types.LaneID(lane)] += int64(len(tx))
+	mem.laneBytes[lane] += int64(len(tx))
 
 	// Notify iterators there's a new transaction.
 	close(mem.addTxCh)
@@ -491,7 +500,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 		"Added transaction",
 		"tx", tx.Hash(),
 		"lane", lane,
-		"lane size", mem.lanes[types.LaneID(lane)].Len(),
+		"lane size", mem.lanes[lane].Len(),
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)
@@ -513,24 +522,24 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 
 	memTx := elem.Value.(*mempoolTx)
 
-	label := memTx.lane
+	label := string(memTx.lane)
 	mem.metrics.TxLifeSpan.With("lane", label).Observe(float64(memTx.timestamp.Sub(time.Now().UTC())))
 
 	// Remove tx from lane.
-	mem.lanes[types.LaneID(memTx.lane)].Remove(elem)
+	mem.lanes[memTx.lane].Remove(elem)
 	elem.DetachPrev()
 
 	// Update auxiliary variables.
 	delete(mem.txsMap, txKey)
 	mem.txsBytes -= int64(len(memTx.tx))
 	mem.numTxs--
-	mem.laneBytes[types.LaneID(memTx.lane)] -= int64(len(memTx.tx))
+	mem.laneBytes[memTx.lane] -= int64(len(memTx.tx))
 
 	mem.logger.Debug(
 		"Removed transaction",
 		"tx", memTx.tx.Hash(),
 		"lane", memTx.lane,
-		"lane size", mem.lanes[types.LaneID(memTx.lane)].Len(),
+		"lane size", mem.lanes[memTx.lane].Len(),
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
 	)
@@ -594,7 +603,7 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 				// update metrics
 				mem.metrics.EvictedTxs.Add(1)
 				if elem, ok := mem.txsMap[tx.Key()]; ok {
-					mem.updateSizeMetrics(types.LaneID(elem.Value.(*mempoolTx).lane))
+					mem.updateSizeMetrics(elem.Value.(*mempoolTx).lane)
 				} else {
 					mem.logger.Error("Cannot update metrics", "err", err)
 				}

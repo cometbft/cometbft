@@ -161,7 +161,7 @@ func DefaultConfig(dir string) *Config {
 }
 
 // LaneDefinitions returns the (constant) list of lanes and their priorities.
-func LaneDefinitions(lanes map[string]uint32) (cmttypes.LaneInfo, []payload.Lane) {
+func LaneDefinitions(lanes map[string]uint32) (map[string]uint32, []payload.Lane) {
 	// Map from lane name to its priority. Priority 0 is reserved. The higher
 	// the value, the higher the priority.
 	if len(lanes) == 0 {

@@ -201,5 +201,5 @@ func ComputeProtoSizeForTxs(txs []Tx) int64 {
 // Multiple lanes can have the same priority.
 type LaneID string
 
-// Mapping between LaneID and its priority.
-type LaneInfo map[string]uint32
+// The priority of a lane.
+type LanePriority uint32

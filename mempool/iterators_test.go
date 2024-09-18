@@ -304,28 +304,26 @@ func TestBlockingIteratorsConsumeAllTxs(t *testing.T) {
 // first thing to confirm is the order of lanes in mp.SortedLanes.
 func TestIteratorExactOrder(t *testing.T) {
 	tests := map[string]struct {
-		lanePriorities map[string]uint32
-		expectedTxIDs  []int
+		lanePriorities         map[string]uint32
+		expectedTxIDs          []int
+		expectedTxIDsAlternate []int
 	}{
 		"unique_priority_lanes": {
 			lanePriorities: map[string]uint32{"1": 1, "2": 2, "3": 3},
 			expectedTxIDs:  []int{2, 1, 3, 5, 4, 8, 11, 7, 6, 10, 9},
 		},
 		"same_priority_lanes": {
-			lanePriorities: map[string]uint32{"1": 1, "2": 2, "3": 2},
-			expectedTxIDs:  []int{1, 2, 3, 4, 5, 7, 8, 6, 10, 11, 9},
+			lanePriorities:         map[string]uint32{"1": 1, "2": 2, "3": 2},
+			expectedTxIDs:          []int{1, 2, 3, 4, 5, 7, 8, 6, 10, 11, 9},
+			expectedTxIDsAlternate: []int{2, 1, 3, 5, 4, 8, 7, 6, 11, 10, 9},
 		},
-		"one_lanes": {
+		"one_lane": {
 			lanePriorities: map[string]uint32{"1": 1},
 			expectedTxIDs:  []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11},
 		},
-		"two_lanes_same_prio": {
-			lanePriorities: map[string]uint32{"1": 1, "2": 1},
-			expectedTxIDs:  []int{2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 11},
-		},
 	}
 
-	for _, l := range tests {
+	for n, l := range tests {
 		mockClient := new(abciclimocks.Client)
 		mockClient.On("Start").Return(nil)
 		mockClient.On("SetLogger", mock.Anything)
@@ -342,21 +340,31 @@ func TestIteratorExactOrder(t *testing.T) {
 
 		// Transactions are ordered into lanes by their IDs. This is the order in
 		// which they should appear following WRR
-
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			waitForNumTxsInMempool(numTxs, mp)
 			t.Log("Mempool full, starting to pick up transactions", mp.Size())
-
+			alternate := false
 			iter := NewBlockingIterator(mp)
 			for i := 0; i < numTxs; i++ {
 				entry := <-iter.WaitNextCh()
 				if entry == nil {
 					continue
 				}
-				require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(l.expectedTxIDs[i]))
+				// When lanes have same priorities their order in the map of lanes
+				// is arbitrary so we needv to check
+				if n == "same_priority_lanes" {
+					if mp.sortedLanes[1].id != "3" {
+						alternate = true
+					}
+				}
+				if alternate {
+					require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(l.expectedTxIDsAlternate[i]), n)
+				} else {
+					require.EqualValues(t, entry.Tx(), kvstore.NewTxFromID(l.expectedTxIDs[i]), n)
+				}
 			}
 		}()
 
@@ -384,11 +392,21 @@ func TestIteratorExactOrder(t *testing.T) {
 		// Confirm also that the non blocking iterator works with lanes of same priorities
 		iterNonBlocking := NewNonBlockingIterator(mp)
 		reapedTx := mp.ReapMaxTxs(numTxs)
+		alternate := false
 		for i := 0; i < numTxs; i++ {
-			tx := iterNonBlocking.Next()
-
-			require.Equal(t, []byte(tx.Tx()), kvstore.NewTxFromID(l.expectedTxIDs[i]))
-			require.Equal(t, []byte(reapedTx[i]), kvstore.NewTxFromID(l.expectedTxIDs[i]))
+			tx := iterNonBlocking.Next().Tx()
+			if n == "same_priority_lanes" {
+				if mp.sortedLanes[1].id != "3" {
+					alternate = true
+				}
+			}
+			if !alternate {
+				require.Equal(t, []byte(tx), kvstore.NewTxFromID(l.expectedTxIDs[i]), n)
+				require.Equal(t, []byte(reapedTx[i]), kvstore.NewTxFromID(l.expectedTxIDs[i]), n)
+			} else {
+				require.Equal(t, []byte(tx), kvstore.NewTxFromID(l.expectedTxIDsAlternate[i]), n)
+				require.Equal(t, []byte(reapedTx[i]), kvstore.NewTxFromID(l.expectedTxIDsAlternate[i]), n)
+			}
 		}
 	}
 }

@@ -63,7 +63,7 @@ func newMempoolWithAppAndConfigMock(
 		panic(err)
 	}
 
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, appInfoRes.DefaultLane)
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.LaneID(appInfoRes.DefaultLane))
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +96,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	if err != nil {
 		panic(err)
 	}
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, appInfoRes.DefaultLane)
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.LaneID(appInfoRes.DefaultLane))
 	if err != nil {
 		panic(err)
 	}
@@ -297,7 +297,7 @@ func TestMempoolAddTxLane(t *testing.T) {
 		// Check that the lane stored in the mempool entry is the same as the
 		// one assigned by the application.
 		entry := mp.txsMap[types.Tx(tx).Key()].Value.(*mempoolTx)
-		require.Equal(t, kvstoreAssignLane(i), types.LaneID(entry.lane), "id %x", tx)
+		require.Equal(t, kvstoreAssignLane(i), entry.lane, "id %x", tx)
 	}
 }
 
@@ -790,7 +790,7 @@ func TestMempoolNoCacheOverflow(t *testing.T) {
 	// tx0 should appear only once in mp.lanes
 	found := 0
 	for _, lane := range mp.sortedLanes {
-		for e := mp.lanes[types.LaneID(lane.ID)].Front(); e != nil; e = e.Next() {
+		for e := mp.lanes[lane.id].Front(); e != nil; e = e.Next() {
 			if types.Tx.Key(e.Value.(*mempoolTx).Tx()) == types.Tx.Key(tx0) {
 				found++
 			}

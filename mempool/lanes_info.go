@@ -5,14 +5,20 @@ import (
 )
 
 type LanesInfo struct {
-	lanes       map[string]uint32
-	defaultLane string
+	lanes       map[types.LaneID]types.LanePriority
+	defaultLane types.LaneID
 }
 
 // BuildLanesInfo builds the information required to initialize
 // lanes given the data queried from the app.
-func BuildLanesInfo(laneMap map[string]uint32, defLane string) (*LanesInfo, error) {
-	info := LanesInfo{lanes: laneMap, defaultLane: defLane}
+func BuildLanesInfo(laneMap map[string]uint32, defLane types.LaneID) (*LanesInfo, error) {
+	info := LanesInfo{}
+	info.lanes = make(map[types.LaneID]types.LanePriority, len(laneMap))
+	for l, p := range laneMap {
+		info.lanes[types.LaneID(l)] = types.LanePriority(p)
+	}
+	info.defaultLane = defLane
+
 	if err := validate(info); err != nil {
 		return nil, err
 	}
@@ -48,7 +54,7 @@ func validate(info LanesInfo) error {
 
 	lanesSet := make(map[types.LaneID]struct{})
 	for laneID := range info.lanes {
-		lanesSet[types.LaneID(laneID)] = struct{}{}
+		lanesSet[laneID] = struct{}{}
 	}
 	if len(info.lanes) != len(lanesSet) {
 		return ErrRepeatedLanes{

@@ -7,11 +7,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 )
 
-type Lane struct {
-	ID       string
-	Priority uint32
-}
-
 // IWRRIterator is the base struct for implementing iterators that traverse lanes with
 // the Interleaved Weighted Round Robin (WRR) algorithm.
 // https://en.wikipedia.org/wiki/Weighted_round_robin
@@ -26,7 +21,7 @@ type IWRRIterator struct {
 // If it was the last lane, it advances the round counter as well.
 func (iter *IWRRIterator) advanceIndexes() Lane {
 	if iter.laneIndex == len(iter.sortedLanes)-1 {
-		iter.round = (iter.round + 1) % (int(iter.sortedLanes[0].Priority) + 1)
+		iter.round = (iter.round + 1) % (int(iter.sortedLanes[0].priority) + 1)
 		if iter.round == 0 {
 			iter.round++
 		}
@@ -74,7 +69,7 @@ func (iter *NonBlockingIterator) Next() Entry {
 	lane := iter.sortedLanes[iter.laneIndex]
 	for {
 		// Skip empty lane or if cursor is at end of lane.
-		if iter.cursors[types.LaneID(lane.ID)] == nil {
+		if iter.cursors[lane.id] == nil {
 			numEmptyLanes++
 			if numEmptyLanes >= len(iter.sortedLanes) {
 				return nil
@@ -83,18 +78,18 @@ func (iter *NonBlockingIterator) Next() Entry {
 			continue
 		}
 		// Skip over-consumed lane on current round.
-		if int(lane.Priority) < iter.round {
+		if int(lane.priority) < iter.round {
 			numEmptyLanes = 0
 			lane = iter.advanceIndexes()
 			continue
 		}
 		break
 	}
-	elem := iter.cursors[types.LaneID(lane.ID)]
+	elem := iter.cursors[lane.id]
 	if elem == nil {
-		panic(fmt.Errorf("Iterator picked a nil entry on lane %s", lane.ID))
+		panic(fmt.Errorf("Iterator picked a nil entry on lane %s", lane.id))
 	}
-	iter.cursors[types.LaneID(lane.ID)] = iter.cursors[types.LaneID(lane.ID)].Next()
+	iter.cursors[lane.id] = iter.cursors[lane.id].Next()
 	_ = iter.advanceIndexes()
 	return elem.Value.(*mempoolTx)
 }
@@ -139,7 +134,7 @@ func (iter *BlockingIterator) WaitNextCh() <-chan Entry {
 			// least one is added to the mempool and try again.
 			<-addTxCh
 		}
-		if elem := iter.next(lane); elem != nil {
+		if elem := iter.next(lane.id); elem != nil {
 			ch <- elem.Value.(Entry)
 		}
 		// Unblock receiver in case no entry was sent (it will receive nil).
@@ -165,7 +160,7 @@ func (iter *BlockingIterator) pickLane() (Lane, chan struct{}) {
 	// continue with the next lower-priority lane, in a round robin fashion.
 	numEmptyLanes := 0
 	for {
-		laneID := types.LaneID(lane.ID)
+		laneID := lane.id
 		// Skip empty lanes or lanes with their cursor pointing at their last entry.
 		if iter.mp.lanes[laneID].Len() == 0 ||
 			(iter.cursors[laneID] != nil &&
@@ -181,7 +176,7 @@ func (iter *BlockingIterator) pickLane() (Lane, chan struct{}) {
 		}
 
 		// Skip over-consumed lanes.
-		if int(lane.Priority) < iter.round {
+		if int(lane.priority) < iter.round {
 			numEmptyLanes = 0
 			lane = iter.advanceIndexes()
 			continue
@@ -197,10 +192,10 @@ func (iter *BlockingIterator) pickLane() (Lane, chan struct{}) {
 // same lane until `lane` entries are accessed or the lane is empty, where `lane` is the priority.
 // The next time, Next will select the successive lane with lower priority.
 // next returns the next entry from the given lane and updates WRR variables.
-func (iter *BlockingIterator) next(lane Lane) *clist.CElement {
+func (iter *BlockingIterator) next(laneID types.LaneID) *clist.CElement {
 	// Load the last accessed entry in the lane and set the next one.
 	var next *clist.CElement
-	laneID := types.LaneID(lane.ID)
+
 	if cursor := iter.cursors[laneID]; cursor != nil {
 		// If the current entry is the last one or was removed, Next will return nil.
 		// Note we don't need to wait until the next entry is available (with <-cursor.NextWaitChan()).
@@ -214,7 +209,7 @@ func (iter *BlockingIterator) next(lane Lane) *clist.CElement {
 	// Update auxiliary variables.
 	if next != nil {
 		// Save entry.
-		iter.cursors[types.LaneID(lane.ID)] = next
+		iter.cursors[laneID] = next
 	} else {
 		// The entry got removed or it was the last one in the lane.
 		// At the moment this should not happen - the loop in PickLane will loop forever until there

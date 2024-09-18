@@ -342,7 +342,7 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 		// (eg. after committing a block, txs are removed from mempool but not cache),
 		// so we only record the sender for txs still in the mempool.
 		if err := mem.addSender(tx.Key(), sender); err != nil {
-			mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
+			mem.logger.Error("Could not add sender to tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "sender", sender, "err", err)
 		}
 		// TODO: consider punishing peer for dups,
 		// its non-trivial since invalid txs can become valid,
@@ -365,8 +365,8 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 // handleCheckTxResponse handles CheckTx responses for transactions validated for the first time.
 //
 //   - sender optionally holds the ID of the peer that sent the transaction, if any.
-func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(res *abci.Response) {
-	return func(r *abci.Response) {
+func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(res *abci.Response) error {
+	return func(r *abci.Response) error {
 		res := r.GetCheckTx()
 		if res == nil {
 			panic(fmt.Sprintf("unexpected response value %v not of type CheckTx", r))
@@ -387,12 +387,16 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			mem.tryRemoveFromCache(tx)
 			mem.logger.Debug(
 				"Rejected invalid transaction",
-				"tx", tx.Hash(),
+				"tx", log.NewLazySprintf("%X", tx.Hash()),
 				"res", res,
 				"err", postCheckErr,
 			)
 			mem.metrics.FailedTxs.Add(1)
-			return
+
+			if postCheckErr != nil {
+				return postCheckErr
+			}
+			return ErrInvalidTx
 		}
 
 		// If the app returned a (non-zero) lane, use it; otherwise use the default lane.
@@ -405,25 +409,19 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			mem.forceRemoveFromCache(tx) // lane might have space later
 			mem.logger.Error(err.Error())
 			mem.metrics.RejectedTxs.Add(1)
-			return
+			return err
 		}
 
 		// Check that tx is not already in the mempool. This can happen when the
 		// cache overflows. See https://github.com/cometbft/cometbft/pull/890.
 		txKey := tx.Key()
 		if mem.Contains(txKey) {
+			mem.metrics.RejectedTxs.Add(1)
 			if err := mem.addSender(txKey, sender); err != nil {
 				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
 			}
-			mem.logger.Debug(
-				"Transaction already in mempool, not adding it again",
-				"tx", tx.Hash(),
-				"lane", lane,
-				"height", mem.height.Load(),
-				"total", mem.Size(),
-			)
-			mem.metrics.RejectedTxs.Add(1)
-			return
+			mem.logger.Debug("Reject tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "err", ErrTxInMempool)
+			return ErrTxInMempool
 		}
 
 		// Add tx to mempool and notify that new txs are available.
@@ -436,6 +434,8 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 			mem.updateSizeMetrics(lane)
 		}
+
+		return nil
 	}
 }
 
@@ -484,7 +484,7 @@ func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane
 
 	mem.logger.Debug(
 		"Added transaction",
-		"tx", tx.Hash(),
+		"tx", log.NewLazySprintf("%X", tx.Hash()),
 		"lane", lane,
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
@@ -522,7 +522,7 @@ func (mem *CListMempool) RemoveTxByKey(txKey types.TxKey) error {
 
 	mem.logger.Debug(
 		"Removed transaction",
-		"tx", memTx.tx.Hash(),
+		"tx", log.NewLazySprintf("%X", memTx.tx.Hash()),
 		"lane", memTx.lane,
 		"height", mem.height.Load(),
 		"total", mem.numTxs,
@@ -575,8 +575,8 @@ func (mem *CListMempool) isLaneFull(txSize int, lane types.Lane) error {
 
 // handleRecheckTxResponse handles CheckTx responses for transactions in the mempool that need to be
 // revalidated after a mempool update.
-func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Response) {
-	return func(r *abci.Response) {
+func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Response) error {
+	return func(r *abci.Response) error {
 		res := r.GetCheckTx()
 		if res == nil {
 			panic(fmt.Sprintf("unexpected response value %v not of type CheckTx", r))
@@ -584,16 +584,15 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 
 		// Check whether the rechecking process has finished.
 		if mem.recheck.done() {
-			mem.logger.Error("Rechecking has finished; discard late recheck response",
-				"tx", log.NewLazySprintf("%X", tx.Hash()))
-			return
+			mem.logger.Error("Failed to recheck tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "err", ErrLateRecheckResponse)
+			return ErrLateRecheckResponse
 		}
 		mem.metrics.RecheckTimes.Add(1)
 
 		// Check whether tx is still in the list of transactions that can be rechecked.
 		if !mem.recheck.findNextEntryMatching(&tx) {
 			// Reached the end of the list and didn't find a matching tx; rechecking has finished.
-			return
+			return nil
 		}
 
 		var postCheckErr error
@@ -604,20 +603,28 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 		// If tx is invalid, remove it from the mempool and the cache.
 		if (res.Code != abci.CodeTypeOK) || postCheckErr != nil {
 			// Tx became invalidated due to newly committed block.
-			mem.logger.Debug("Tx is no longer valid", "tx", tx.Hash(), "res", res, "postCheckErr", postCheckErr)
+			mem.logger.Debug("Tx is no longer valid", "tx", log.NewLazySprintf("%X", tx.Hash()), "res", res, "postCheckErr", postCheckErr)
 			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
-			} else {
-				// update metrics
-				mem.metrics.EvictedTxs.Add(1)
-				if elem, ok := mem.txsMap[tx.Key()]; ok {
-					mem.updateSizeMetrics(elem.Value.(*mempoolTx).lane)
-				} else {
-					mem.logger.Error("Cannot update metrics", "err", err)
-				}
+				return err
 			}
+
+			// update metrics
+			mem.metrics.EvictedTxs.Add(1)
+			if elem, ok := mem.txsMap[tx.Key()]; ok {
+				mem.updateSizeMetrics(elem.Value.(*mempoolTx).lane)
+			} else {
+				mem.logger.Error("Cannot update metrics", "err", ErrTxNotFound)
+			}
+
 			mem.tryRemoveFromCache(tx)
+			if postCheckErr != nil {
+				return postCheckErr
+			}
+			return ErrInvalidTx
 		}
+
+		return nil
 	}
 }
 
@@ -757,7 +764,7 @@ func (mem *CListMempool) Update(
 		// https://github.com/tendermint/tendermint/issues/3322.
 		if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 			mem.logger.Debug("Committed transaction not in local mempool (not an error)",
-				"tx", tx.Hash(),
+				"tx", log.NewLazySprintf("%X", tx.Hash()),
 				"error", err.Error())
 		}
 	}

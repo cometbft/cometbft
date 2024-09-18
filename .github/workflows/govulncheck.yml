@@ -10,6 +10,12 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "**.go"
+      - go.mod
+      - go.sum
+      - Makefile
+      - "!test/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,14 +31,5 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-          check-latest: true
-      - uses: technote-space/get-diff-action@v6
-        with:
-          PATTERNS: |
-            **/*.go
-            go.mod
-            go.sum
-            Makefile
       - name: govulncheck
         run: make vulncheck
-        if: "env.GIT_DIFF != ''"

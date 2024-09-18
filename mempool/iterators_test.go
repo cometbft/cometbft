@@ -230,7 +230,8 @@ func TestIteratorEmptyLanes(t *testing.T) {
 
 	tx := kvstore.NewTxFromID(1)
 	res := abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
-	mp.handleCheckTxResponse(tx, "")(res)
+	err := mp.handleCheckTxResponse(tx, "")(res)
+	require.NoError(t, err)
 	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 }
 

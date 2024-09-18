@@ -707,14 +707,14 @@ func TestMempoolTxsBytes(t *testing.T) {
 	// 5. ErrLaneIsFull is returned when/if MaxTxsBytes limit is reached.
 	laneMaxBytes := int(cfg.Mempool.MaxTxsBytes) / len(mp.sortedLanes)
 	tx3 := kvstore.NewRandomTx(laneMaxBytes)
-	_, err = mp.CheckTx(tx3, "")
+	rr, err := mp.CheckTx(tx3, "")
 	require.NoError(t, err)
-	// TODO: check that reqRes' error is nil when #4040 is merged.
+	require.NoError(t, rr.Error())
 
 	tx4 := kvstore.NewRandomTx(10)
-	_, err = mp.CheckTx(tx4, "")
+	rr, err = mp.CheckTx(tx4, "")
 	require.NoError(t, err)
-	// TODO: check that reqRes' error equals ErrLaneIsFull when #4040 is merged.
+	require.ErrorAs(t, rr.Error(), &ErrLaneIsFull{})
 
 	// 6. zero after tx is rechecked and removed due to not being valid anymore
 	app2 := kvstore.NewInMemoryApplication()

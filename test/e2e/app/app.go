@@ -363,11 +363,11 @@ func (app *Application) CheckTx(_ context.Context, req *abci.CheckTxRequest) (*a
 		return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1}, nil
 	}
 	lane := extractLane(value)
-	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, LaneId: lane.GetId()}, nil
+	return &abci.CheckTxResponse{Code: kvstore.CodeTypeOK, GasWanted: 1, LaneId: lane}, nil
 }
 
-// extractLane returns the lane field if value is a Payload, otherwise returns 0.
-func extractLane(value string) payload.Lane {
+// extractLane returns the lane ID as string if value is a Payload, otherwise returns empty string.
+func extractLane(value string) string {
 	valueBytes, err := hex.DecodeString(value)
 	if err != nil {
 		panic("could not hex-decode tx value for extracting lane")
@@ -375,9 +375,9 @@ func extractLane(value string) payload.Lane {
 	p := &payload.Payload{}
 	err = proto.Unmarshal(valueBytes, p)
 	if err != nil {
-		return payload.Lane{}
+		return ""
 	}
-	return *p.GetLane()
+	return p.GetLane().GetId()
 }
 
 // FinalizeBlock implements ABCI.

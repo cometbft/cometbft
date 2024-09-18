@@ -172,8 +172,6 @@ func TestPubKey_MarshalJSON(t *testing.T) {
 }
 
 func TestPubKey_NewPublicKeyFromInvalidBytes(t *testing.T) {
-	unmarshalErr := errors.New("could not unmarshal bytes into pubkey")
-
 	unmarshal := func(s string) ([]byte, error) {
 		type blstPublicKey = blst.P1Affine
 
@@ -183,7 +181,7 @@ func TestPubKey_NewPublicKeyFromInvalidBytes(t *testing.T) {
 		}
 		pk := new(blstPublicKey).Uncompress(bz)
 		if pk == nil {
-			return nil, unmarshalErr
+			return nil, bls12381.ErrDeserialization
 		}
 		pkc := pk.Serialize()
 		if pkc == nil {
@@ -192,22 +190,25 @@ func TestPubKey_NewPublicKeyFromInvalidBytes(t *testing.T) {
 		return pkc, nil
 	}
 
-	invalidPubKeys := map[string]string{
-		"NotInG1":   "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-		"InfFalseB": "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-		"InfTrueB":  "c01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+	testCases := []struct {
+		desc        string
+		pkStr       string
+		expectedErr error
+	}{
+		{"NotInG1", "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", bls12381.ErrInfinitePubKey},
+		{"InfFalseB", "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", bls12381.ErrDeserialization},
+		{"InfTrueB", "c01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", bls12381.ErrDeserialization},
 	}
 
-	for name, pkStr := range invalidPubKeys {
-		t.Run(name, func(t *testing.T) {
-			bz, err := unmarshal(pkStr)
-			if err == nil {
-				_, err = bls12381.NewPublicKeyFromBytes(bz)
-				assert.Error(t, err)
-				assert.Equal(t, err, bls12381.ErrInfinitePubKey)
-			} else {
-				assert.Equal(t, err, unmarshalErr)
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			bz, err := unmarshal(tc.pkStr)
+			if err != nil {
+				require.Equal(t, tc.expectedErr, err)
 			}
+
+			_, err = bls12381.NewPublicKeyFromBytes(bz)
+			require.Equal(t, tc.expectedErr, err)
 		})
 	}
 }

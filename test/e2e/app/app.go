@@ -61,7 +61,7 @@ type Application struct {
 	// It's OK not to persist this, as it is not part of the state machine
 	seenTxs sync.Map // cmttypes.TxKey -> uint64
 
-	lanesInfo map[string]uint32
+	lanePriorities map[string]uint32
 }
 
 // Config allows for the setting of high level parameters for running the e2e Application
@@ -207,11 +207,11 @@ func NewApplication(cfg *Config) (*Application, error) {
 
 	lanes, _ := LaneDefinitions(cfg.Lanes)
 	return &Application{
-		logger:    logger,
-		state:     state,
-		snapshots: snapshots,
-		cfg:       cfg,
-		lanesInfo: lanes,
+		logger:         logger,
+		state:          state,
+		snapshots:      snapshots,
+		cfg:            cfg,
+		lanePriorities: lanes,
 	}, nil
 }
 
@@ -233,7 +233,7 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 	}
 
 	defaultAppLane := ""
-	if len(app.lanesInfo) > 0 {
+	if len(app.lanePriorities) > 0 {
 		defaultAppLane = "default"
 	}
 	return &abci.InfoResponse{
@@ -241,7 +241,7 @@ func (app *Application) Info(context.Context, *abci.InfoRequest) (*abci.InfoResp
 		AppVersion:       appVersion,
 		LastBlockHeight:  int64(height),
 		LastBlockAppHash: hash,
-		LanePriorities:   app.lanesInfo,
+		LanePriorities:   app.lanePriorities,
 		DefaultLane:      defaultAppLane,
 	}, nil
 }

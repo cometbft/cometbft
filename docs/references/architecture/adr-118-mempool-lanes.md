@@ -462,6 +462,20 @@ configurations are:
 - `MaxTxsBytes`, the maximum total number of bytes of the mempool, and
 - `MaxTxBytes`, the maximum size in bytes of a single transaction accepted into the mempool.
 
+However, we still need to enforce limits on each lane's capacity. Without such limits, a
+low-priority lane could end up occupying all the mempool space. Since we want to avoid introducing
+new configuration options unless absolutely necessary, we propose two simple approaches for
+partitioning the mempool space.
+
+1. Proportionally to lane priorities: This approach could lead to underutilization of the mempool if
+   there are significant discrepancies between priority values, as it would allocate space unevenly.
+2. Evenly across all lanes: Assuming high-priority transactions are smaller in size than
+   low-priority transactions, this approach would still allow for more high-priority transactions to
+   fit in the mempool compared to lower-priority ones.
+
+For the MVP we have chosen the second approach. Note that the maximum lane capacities apply both to
+the number of transactions and the size in bytes. 
+
 Additionally, the `Recheck` and `Broadcast` flags will apply to all lanes or to none. Remember that,
 if `PrepareProposal`'s app logic can ever add a new transaction, it becomes _always_ mandatory to
 recheck remaining transactions in the mempool, so there is no point in disabling `Recheck` per lane.

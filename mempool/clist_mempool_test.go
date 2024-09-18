@@ -160,6 +160,7 @@ func addRandomTxs(t *testing.T, mp Mempool, count int) []types.Tx {
 	t.Helper()
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
+	require.Equal(t, count, len(txs))
 	return txs
 }
 

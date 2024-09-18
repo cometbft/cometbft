@@ -175,7 +175,7 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	reactors[0].Switch.Peers().Get(peerID).Set(types.PeerStateKey, peerState{1})
 
 	// Add a bunch of txs to the first reactor. The second reactor should not receive any tx.
-	txs1 := addRandomTxs(t, reactors[0].mempool, numTxs)
+	txs1 := addTxs(t, reactors[0].mempool, 0, numTxs)
 	ensureNoTxs(t, reactors[1], 5*PeerCatchupSleepIntervalMS*time.Millisecond)
 
 	// Now we know that the second reactor has advanced to height 9, so it should receive all txs.
@@ -183,7 +183,7 @@ func TestMempoolReactorSendLaggingPeer(t *testing.T) {
 	waitForReactors(t, txs1, reactors, checkTxsInMempool)
 
 	// Add a bunch of txs to first reactor. The second reactor should receive them all.
-	txs2 := addRandomTxs(t, reactors[0].mempool, numTxs)
+	txs2 := addTxs(t, reactors[0].mempool, numTxs, numTxs)
 	waitForReactors(t, append(txs1, txs2...), reactors, checkTxsInMempool)
 }
 
@@ -511,7 +511,7 @@ func mempoolLogger(level string) *log.Logger {
 // makeReactors creates n mempool reactors.
 func makeReactors(config *cfg.Config, n int, logger *log.Logger) []*Reactor {
 	if logger == nil {
-		logger = mempoolLogger("debug")
+		logger = mempoolLogger("info")
 	}
 	reactors := make([]*Reactor, n)
 	for i := 0; i < n; i++ {

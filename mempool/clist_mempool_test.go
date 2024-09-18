@@ -704,7 +704,7 @@ func TestMempoolTxsBytes(t *testing.T) {
 	mp.Flush()
 	assert.EqualValues(t, 0, mp.SizeBytes())
 
-	// 5. ErrLaneIsFull is returned when/if MaxTxsBytes limit is reached.
+	// 5. ErrLaneIsFull is returned when/if the limit on the lane bytes capacity is reached.
 	laneMaxBytes := int(cfg.Mempool.MaxTxsBytes) / len(mp.sortedLanes)
 	tx3 := kvstore.NewRandomTx(laneMaxBytes)
 	rr, err := mp.CheckTx(tx3, "")

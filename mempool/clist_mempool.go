@@ -552,7 +552,7 @@ func (mem *CListMempool) isFull(txSize int) error {
 func (mem *CListMempool) isLaneFull(txSize int, lane types.Lane) error {
 	laneTxs, laneBytes := mem.LaneSizes(lane)
 
-	// The mempool capacity is split evenly for all lanes.
+	// The mempool is partitioned evenly across all lanes.
 	laneTxsCapacity := mem.config.Size / len(mem.sortedLanes)
 	laneBytesCapacity := mem.config.MaxTxsBytes / int64(len(mem.sortedLanes))
 

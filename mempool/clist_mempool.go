@@ -304,8 +304,8 @@ func (mem *CListMempool) CheckTx(tx types.Tx, sender p2p.ID) (*abcicli.ReqRes, e
 // handleCheckTxResponse handles CheckTx responses for transactions validated for the first time.
 //
 //   - sender optionally holds the ID of the peer that sent the transaction, if any.
-func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(res *abci.Response) {
-	return func(r *abci.Response) {
+func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(res *abci.Response) error {
+	return func(r *abci.Response) error {
 		res := r.GetCheckTx()
 		if res == nil {
 			panic(fmt.Sprintf("unexpected response value %v not of type CheckTx", r))
@@ -331,7 +331,11 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 				"err", postCheckErr,
 			)
 			mem.metrics.FailedTxs.Add(1)
-			return
+
+			if postCheckErr != nil {
+				return postCheckErr
+			}
+			return ErrInvalidTx
 		}
 
 		// Check again that mempool isn't full, to reduce the chance of exceeding the limits.
@@ -339,7 +343,21 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			mem.forceRemoveFromCache(tx) // mempool might have space later
 			mem.logger.Error(err.Error())
 			mem.metrics.RejectedTxs.Add(1)
-			return
+			return err
+		}
+
+		// Check that tx is not already in the mempool. This can happen when the
+		// cache overflows. See https://github.com/cometbft/cometbft/pull/890.
+		if elem, ok := mem.getCElement(tx.Key()); ok {
+			mem.metrics.RejectedTxs.Add(1)
+			// Update senders on existing entry.
+			memTx := elem.Value.(*mempoolTx)
+			if found := memTx.addSender(sender); found {
+				// It should not be possible to receive twice a tx from the same sender.
+				mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
+			}
+			mem.logger.Debug("Reject tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "err", ErrTxInMempool)
+			return ErrTxInMempool
 		}
 
 		// Add tx to mempool and notify that new txs are available.
@@ -348,42 +366,22 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			gasWanted: res.GasWanted,
 			tx:        tx,
 		}
-		if mem.addTx(&memTx, sender) {
-			mem.notifyTxsAvailable()
+		mem.addTx(&memTx, sender)
+		mem.notifyTxsAvailable()
 
-			// update metrics
-			mem.metrics.Size.Set(float64(mem.Size()))
-			mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
-		}
+		// update metrics
+		mem.metrics.Size.Set(float64(mem.Size()))
+		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+
+		return nil
 	}
 }
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
+func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) {
 	tx := memTx.tx
 	txKey := tx.Key()
-
-	// Check if the transaction is already in the mempool.
-	if elem, ok := mem.getCElement(txKey); ok {
-		if sender != "" {
-			// Update senders on existing entry.
-			memTx := elem.Value.(*mempoolTx)
-			if found := memTx.addSender(sender); found {
-				// It should not be possible to receive twice a tx from the same sender.
-				mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
-			}
-		}
-
-		mem.logger.Debug(
-			"Transaction already in mempool, not adding it again",
-			"tx", tx.Hash(),
-			"height", mem.height.Load(),
-			"total", mem.Size(),
-		)
-		mem.metrics.RejectedTxs.Add(1)
-		return false
-	}
 
 	// Add new transaction.
 	_ = memTx.addSender(sender)
@@ -398,7 +396,6 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 		"height", mem.height.Load(),
 		"total", mem.Size(),
 	)
-	return true
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.
@@ -441,8 +438,8 @@ func (mem *CListMempool) isFull(txSize int) error {
 
 // handleRecheckTxResponse handles CheckTx responses for transactions in the mempool that need to be
 // revalidated after a mempool update.
-func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Response) {
-	return func(r *abci.Response) {
+func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Response) error {
+	return func(r *abci.Response) error {
 		res := r.GetCheckTx()
 		if res == nil {
 			panic(fmt.Sprintf("unexpected response value %v not of type CheckTx", r))
@@ -450,16 +447,15 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 
 		// Check whether the rechecking process has finished.
 		if mem.recheck.done() {
-			mem.logger.Error("Rechecking has finished; discard late recheck response",
-				"tx", log.NewLazySprintf("%X", tx.Hash()))
-			return
+			mem.logger.Error("Failed to recheck tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "err", ErrLateRecheckResponse)
+			return ErrLateRecheckResponse
 		}
 		mem.metrics.RecheckTimes.Add(1)
 
 		// Check whether tx is still in the list of transactions that can be rechecked.
 		if !mem.recheck.findNextEntryMatching(&tx) {
 			// Reached the end of the list and didn't find a matching tx; rechecking has finished.
-			return
+			return nil
 		}
 
 		var postCheckErr error
@@ -473,14 +469,22 @@ func (mem *CListMempool) handleRecheckTxResponse(tx types.Tx) func(res *abci.Res
 			mem.logger.Debug("Tx is no longer valid", "tx", log.NewLazySprintf("%X", tx.Hash()), "res", res, "postCheckErr", postCheckErr)
 			if err := mem.RemoveTxByKey(tx.Key()); err != nil {
 				mem.logger.Debug("Transaction could not be removed from mempool", "err", err)
-			} else {
-				// update metrics
-				mem.metrics.Size.Set(float64(mem.Size()))
-				mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
-				mem.metrics.EvictedTxs.Add(1)
+				return err
 			}
+
+			// update metrics
+			mem.metrics.Size.Set(float64(mem.Size()))
+			mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+			mem.metrics.EvictedTxs.Add(1)
+
 			mem.tryRemoveFromCache(tx)
+			if postCheckErr != nil {
+				return postCheckErr
+			}
+			return ErrInvalidTx
 		}
+
+		return nil
 	}
 }
 

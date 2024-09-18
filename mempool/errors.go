@@ -11,6 +11,22 @@ var ErrTxNotFound = errors.New("transaction not found in mempool")
 // ErrTxInCache is returned to the client if we saw tx earlier.
 var ErrTxInCache = errors.New("tx already exists in cache")
 
+// ErrInvalidTx is returned when a transaction that is trying to be added to the
+// mempool is invalid.
+var ErrInvalidTx = errors.New("tx is invalid")
+
+// ErrTxInMempool is returned when a transaction that is trying to be added to
+// the mempool is already there.
+var ErrTxInMempool = errors.New("transaction already in mempool, not adding it again")
+
+// ErrTxAlreadyReceivedFromSender is returned if when processing a tx already
+// received from the same sender.
+var ErrTxAlreadyReceivedFromSender = errors.New("tx already received from the same sender")
+
+// ErrLateRecheckResponse is returned when a CheckTx response arrives after the
+// rechecking process has finished.
+var ErrLateRecheckResponse = errors.New("rechecking has finished; discard late recheck response")
+
 // ErrRecheckFull is returned when checking if the mempool is full and
 // rechecking is still in progress after a new block was committed.
 var ErrRecheckFull = errors.New("mempool is still rechecking after a new committed block, so it is considered as full")
@@ -33,7 +49,6 @@ type ErrMempoolIsFull struct {
 	MaxTxs      int
 	TxsBytes    int64
 	MaxTxsBytes int64
-	RecheckFull bool
 }
 
 func (e ErrMempoolIsFull) Error() string {

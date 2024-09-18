@@ -359,9 +359,9 @@ mempool. The following is a summary of the key design decisions:
 
 ### Lanes definition
 
-The list of lanes and their corresponding priorities will be hardcoded in the application logic. A
-priority is a value of type `uint32`, with 0 being a reserved value (see below). The application
-also needs to define which of the lanes in the list it defines is the **default lane**. 
+The list of lanes and their associated priorities will be hardcoded in the application logic. A lane
+is identified by a name of type `string` and assigned a priority of type `uint32`. The application
+also needs to define which of the lanes is the **default lane**. 
 
 To obtain the lane information from the application, we need to extend the ABCI `Info` response to
 include the following fields. These fields need to be filled by the application only in case it
@@ -369,17 +369,17 @@ wants to implement lanes.
 ```protobuf
 message InfoResponse {
   ...
-  repeated uint32 lane_priorities = 6;
-  uint32 default_lane_priority = 7;
+  map<string, uint32> lane_priorities = 6;
+  uint32 default_lane = 7;
 }
 ```
-Internally, the application may use `string`s to name lanes, and then map those names to priorities.
-The mempool does not care about the names, only about the priorities. That is why the lane
-information returned by the application only contains priorities, which are used to identify lanes.
+The field `lane_priorities` is a map from lane identifiers to priorities. Different lanes may have
+the same priority. On the mempool side, lane identifiers will mainly be used for user interfacing
+(logging, metric labels).
 
-The lowest priority a lane may have is 1. The value 0 is reserved for two cases: when the
-application does not classify the transaction (i.e. no priority returned) and for `CheckTx`
-responses of invalid transactions.
+The lowest priority a lane may have is 1. Higher values correspond to higher priorities. The value 0
+is reserved for two cases: when the application does not classify the transaction (i.e. no priority
+returned) and for `CheckTx` responses of invalid transactions.
 
 On receiving the information from the app, CometBFT will validate that:
 - `lane_priorities` has no duplicates (values in `lane_priorities` don't need to be sorted),
@@ -469,17 +469,17 @@ recheck remaining transactions in the mempool, so there is no point in disabling
 ### Adding transactions to the mempool
 
 When validating a transaction received for the first time with `CheckTx`, the application will
-optionally return its lane in the response.
+optionally return its lane identifier in the response.
 ```protobuf
 message CheckTxResponse {
   ...
-  uint32 lane = 12;
+  string lane_id = 12;
 }
 ```
 The callback that handles the first-time CheckTx response will append the new mempool entry to the
-corresponding `CList`, namely `lanes[lane]`, and update the other auxiliary variables accordingly.
-If `lane` is 0, it means that the application did not set any lane in the response message, so the
-transaction will be assigned to the default lane.
+corresponding `CList`, namely `lanes[lane_id]`, and update the other auxiliary variables accordingly.
+If `lane_id` is an empty string, it means that the application did not set any lane in the response
+message, so the transaction will be assigned to the default lane.
 
 ### Removing transactions from the mempool
 
@@ -571,6 +571,13 @@ single P2P channel. For the moment, we leave out of the MVP any mechanism for de
 penalizing nodes for this kind of behaviour.
 
 ## Alternative designs
+
+### Identify lanes by their priorities
+
+In the initial prototype we identified lanes by their priorities, meaning each priority could only
+be assigned to a single lane. This simplified approach proved too restrictive for applications. To
+address this, now we identify lanes by `string` names, decoupling lane identifiers from their
+priorities.
 
 ### One CList for all lanes
 

@@ -308,7 +308,7 @@ func kvstoreAssignLane(key int) types.LaneID {
 	} else if key%3 == 0 {
 		lane = "bar" // 1
 	}
-	return types.LaneID(lane) // fmt.Sprint(lane))
+	return types.LaneID(lane)
 }
 
 func TestMempoolUpdate(t *testing.T) {

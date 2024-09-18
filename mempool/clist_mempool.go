@@ -79,10 +79,9 @@ var _ Mempool = &CListMempool{}
 // CListMempoolOption sets an optional parameter on the mempool.
 type CListMempoolOption func(*CListMempool)
 
-// Lane degines the lanes into which transactions are
-// classified. They are identified with a string id
-// and the corresponding priority. Lanes can have
-// same priorities.
+// Lane corresponds to a transaction class as defined by the application. 
+// A lane is identified by a string name and has priority level.
+// Different lanes can have the same priority.
 type Lane struct {
 	id       types.LaneID
 	priority types.LanePriority
@@ -117,12 +116,10 @@ func NewCListMempool(
 	numLanes := len(lanesInfo.lanes)
 	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
 	mp.defaultLane = lanesInfo.defaultLane
-	mp.sortedLanes = make([]Lane, numLanes)
-	i := 0
-	for laneID, lanePrio := range lanesInfo.lanes {
-		mp.lanes[laneID] = clist.New()
-		mp.sortedLanes[i] = Lane{id: laneID, priority: lanePrio}
-		i++
+	mp.sortedLanes = make([]Lane, 0, numLanes)
+	for id, priority := range lanesInfo.lanes {
+		mp.lanes[id] = clist.New()
+		mp.sortedLanes = append(mp.sortedLanes, Lane{id: id, priority: priority})
 	}
 	slices.SortStableFunc(mp.sortedLanes, func(i, j Lane) int {
 		if i.priority > j.priority {

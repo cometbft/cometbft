@@ -262,7 +262,6 @@ message InfoResponse {
   bytes last_block_app_hash = 5;
 
   map<string, uint32> lane_priorities = 6;
-
   string default_lane = 7;
 }
 

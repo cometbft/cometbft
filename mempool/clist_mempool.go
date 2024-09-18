@@ -79,7 +79,7 @@ var _ Mempool = &CListMempool{}
 // CListMempoolOption sets an optional parameter on the mempool.
 type CListMempoolOption func(*CListMempool)
 
-// Lane corresponds to a transaction class as defined by the application. 
+// Lane corresponds to a transaction class as defined by the application.
 // A lane is identified by a string name and has priority level.
 // Different lanes can have the same priority.
 type Lane struct {

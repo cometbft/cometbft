@@ -115,11 +115,3 @@ type ErrDefaultLaneNotInList struct {
 func (e ErrDefaultLaneNotInList) Error() string {
 	return fmt.Sprintf("invalid lane info: list of lanes does not contain default lane; info %v", e.Info)
 }
-
-type ErrRepeatedLanes struct {
-	Info LanesInfo
-}
-
-func (e ErrRepeatedLanes) Error() string {
-	return fmt.Sprintf("list of lanes cannot have repeated values; info %v", e.Info)
-}

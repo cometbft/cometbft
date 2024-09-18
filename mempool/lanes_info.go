@@ -52,14 +52,5 @@ func validate(info LanesInfo) error {
 		}
 	}
 
-	lanesSet := make(map[types.LaneID]struct{})
-	for laneID := range info.lanes {
-		lanesSet[laneID] = struct{}{}
-	}
-	if len(info.lanes) != len(lanesSet) {
-		return ErrRepeatedLanes{
-			Info: info,
-		}
-	}
 	return nil
 }

@@ -296,9 +296,9 @@ func TestBlockingIteratorsConsumeAllTxs(t *testing.T) {
 	}
 }
 
-// Confirms that the transactions are returned in the same order
+// Confirms that the transactions are returned in the same order.
 // Note that for the cases with equal priorities the actual order
-// will depend on the way we iterate over the map of lanes
+// will depend on the way we iterate over the map of lanes.
 // With only two lanes of the same priority the order was predictable
 // and matches the given order. In case these tests start to fail
 // first thing to confirm is the order of lanes in mp.SortedLanes.

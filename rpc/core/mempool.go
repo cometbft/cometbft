@@ -24,11 +24,7 @@ func (env *Environment) BroadcastTxAsync(_ *rpctypes.Context, tx types.Tx) (*cty
 	if env.MempoolReactor.WaitSync() {
 		return nil, ErrEndpointClosedCatchingUp
 	}
-<<<<<<< HEAD
-	_, err := env.Mempool.CheckTx(tx, "")
-=======
-	reqRes, err := env.MempoolReactor.TryAddTx(tx, nil)
->>>>>>> c3de79161 (fix(mempool): Propagate `CheckTx` errors to caller (#4040))
+	reqRes, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -47,12 +43,8 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 	}
 
 	resCh := make(chan *abci.CheckTxResponse, 1)
-<<<<<<< HEAD
-	reqRes, err := env.Mempool.CheckTx(tx, "")
-=======
 	resErrCh := make(chan error, 1)
-	reqRes, err := env.MempoolReactor.TryAddTx(tx, nil)
->>>>>>> c3de79161 (fix(mempool): Propagate `CheckTx` errors to caller (#4040))
+	reqRes, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		return nil, err
 	}
@@ -73,13 +65,9 @@ func (env *Environment) BroadcastTxSync(ctx *rpctypes.Context, tx types.Tx) (*ct
 
 	select {
 	case <-ctx.Context().Done():
-<<<<<<< HEAD
 		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
-=======
-		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
 	case err := <-resErrCh:
-		return nil, ErrTxBroadcast{Source: ErrCheckTxFailed, ErrReason: err}
->>>>>>> c3de79161 (fix(mempool): Propagate `CheckTx` errors to caller (#4040))
+		return nil, fmt.Errorf("broadcast error on transaction validation: %w", err)
 	case res := <-resCh:
 		return &ctypes.ResultBroadcastTx{
 			Code:      res.Code,
@@ -124,12 +112,8 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	// Broadcast tx and wait for CheckTx result
 	checkTxResCh := make(chan *abci.CheckTxResponse, 1)
-<<<<<<< HEAD
-	reqRes, err := env.Mempool.CheckTx(tx, "")
-=======
 	resErrCh := make(chan error, 1)
-	reqRes, err := env.MempoolReactor.TryAddTx(tx, nil)
->>>>>>> c3de79161 (fix(mempool): Propagate `CheckTx` errors to caller (#4040))
+	reqRes, err := env.Mempool.CheckTx(tx, "")
 	if err != nil {
 		env.Logger.Error("Error on broadcastTxCommit", "err", err)
 		return nil, fmt.Errorf("error on broadcastTxCommit: %v", err)
@@ -151,13 +135,9 @@ func (env *Environment) BroadcastTxCommit(ctx *rpctypes.Context, tx types.Tx) (*
 
 	select {
 	case <-ctx.Context().Done():
-<<<<<<< HEAD
 		return nil, fmt.Errorf("broadcast confirmation not received: %w", ctx.Context().Err())
-=======
-		return nil, ErrTxBroadcast{Source: ctx.Context().Err(), ErrReason: ErrConfirmationNotReceived}
 	case err := <-resErrCh:
-		return nil, ErrTxBroadcast{Source: ErrCheckTxFailed, ErrReason: err}
->>>>>>> c3de79161 (fix(mempool): Propagate `CheckTx` errors to caller (#4040))
+		return nil, fmt.Errorf("broadcast error on transaction validation: %w", err)
 	case checkTxRes := <-checkTxResCh:
 		if checkTxRes.Code != abci.CodeTypeOK {
 			return &ctypes.ResultBroadcastTxCommit{

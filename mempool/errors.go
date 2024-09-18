@@ -11,8 +11,6 @@ var ErrTxNotFound = errors.New("transaction not found in mempool")
 // ErrTxInCache is returned to the client if we saw tx earlier.
 var ErrTxInCache = errors.New("tx already exists in cache")
 
-<<<<<<< HEAD
-=======
 // ErrInvalidTx is returned when a transaction that is trying to be added to the
 // mempool is invalid.
 var ErrInvalidTx = errors.New("tx is invalid")
@@ -29,7 +27,6 @@ var ErrTxAlreadyReceivedFromSender = errors.New("tx already received from the sa
 // rechecking process has finished.
 var ErrLateRecheckResponse = errors.New("rechecking has finished; discard late recheck response")
 
->>>>>>> c3de79161 (fix(mempool): Propagate `CheckTx` errors to caller (#4040))
 // ErrRecheckFull is returned when checking if the mempool is full and
 // rechecking is still in progress after a new block was committed.
 var ErrRecheckFull = errors.New("mempool is still rechecking after a new committed block, so it is considered as full")

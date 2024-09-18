@@ -346,72 +346,42 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 			return err
 		}
 
-<<<<<<< HEAD
-=======
 		// Check that tx is not already in the mempool. This can happen when the
 		// cache overflows. See https://github.com/cometbft/cometbft/pull/890.
-		txKey := tx.Key()
-		if mem.Contains(txKey) {
+		if elem, ok := mem.getCElement(tx.Key()); ok {
 			mem.metrics.RejectedTxs.Add(1)
-			if err := mem.addSender(txKey, sender); err != nil {
-				mem.logger.Error("Could not add sender to tx", "tx", tx.Hash(), "sender", sender, "err", err)
-			}
-			mem.logger.Debug("Reject tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "err", ErrTxInMempool)
-			return ErrTxInMempool
-		}
-
->>>>>>> c3de79161 (fix(mempool): Propagate `CheckTx` errors to caller (#4040))
-		// Add tx to mempool and notify that new txs are available.
-		memTx := mempoolTx{
-			height:    mem.height.Load(),
-			gasWanted: res.GasWanted,
-			tx:        tx,
-		}
-		if mem.addTx(&memTx, sender) {
-			mem.notifyTxsAvailable()
-
-			// update metrics
-			mem.metrics.Size.Set(float64(mem.Size()))
-			mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
-		}
-<<<<<<< HEAD
-=======
-
-		// update metrics
-		mem.metrics.Size.Set(float64(mem.Size()))
-		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
-
-		return nil
->>>>>>> c3de79161 (fix(mempool): Propagate `CheckTx` errors to caller (#4040))
-	}
-}
-
-// Called from:
-//   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
-	tx := memTx.tx
-	txKey := tx.Key()
-
-	// Check if the transaction is already in the mempool.
-	if elem, ok := mem.getCElement(txKey); ok {
-		if sender != "" {
 			// Update senders on existing entry.
 			memTx := elem.Value.(*mempoolTx)
 			if found := memTx.addSender(sender); found {
 				// It should not be possible to receive twice a tx from the same sender.
 				mem.logger.Error("Tx already received from peer", "tx", tx.Hash(), "sender", sender)
 			}
+			mem.logger.Debug("Reject tx", "tx", log.NewLazySprintf("%X", tx.Hash()), "height", mem.height.Load(), "err", ErrTxInMempool)
+			return ErrTxInMempool
 		}
 
-		mem.logger.Debug(
-			"Transaction already in mempool, not adding it again",
-			"tx", tx.Hash(),
-			"height", mem.height.Load(),
-			"total", mem.Size(),
-		)
-		mem.metrics.RejectedTxs.Add(1)
-		return false
+		// Add tx to mempool and notify that new txs are available.
+		memTx := mempoolTx{
+			height:    mem.height.Load(),
+			gasWanted: res.GasWanted,
+			tx:        tx,
+		}
+		mem.addTx(&memTx, sender)
+		mem.notifyTxsAvailable()
+
+		// update metrics
+		mem.metrics.Size.Set(float64(mem.Size()))
+		mem.metrics.SizeBytes.Set(float64(mem.SizeBytes()))
+
+		return nil
 	}
+}
+
+// Called from:
+//   - handleCheckTxResponse (lock not held) if tx is valid
+func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) {
+	tx := memTx.tx
+	txKey := tx.Key()
 
 	// Add new transaction.
 	_ = memTx.addSender(sender)
@@ -426,7 +396,6 @@ func (mem *CListMempool) addTx(memTx *mempoolTx, sender p2p.ID) bool {
 		"height", mem.height.Load(),
 		"total", mem.Size(),
 	)
-	return true
 }
 
 // RemoveTxByKey removes a transaction from the mempool by its TxKey index.

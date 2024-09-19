@@ -16,17 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            code:
-              - '**/*.go'
-              - 'Makefile'
-              - 'tests.mk'
-              - 'test/test_cover.sh'
-              - 'go.*'
-
       - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
         if: steps.filter.outputs.code == 'true'
 
@@ -46,6 +35,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
 
-      - name: Upload code coverage to Coveralls
+      - name: Upload coverage to Coveralls
         if: steps.filter.outputs.code == 'true'
         uses: coverallsapp/github-action@v2

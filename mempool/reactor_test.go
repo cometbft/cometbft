@@ -147,12 +147,18 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 
 	// This subset should be broadcast
 	var txsToBroadcast types.Txs
+	const minToBroadcast = numTxs / 10
 
 	// The second peer sends some transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
 	secondNode := reactors[0].Switch.Peers().Get(secondNodeID)
 	for i, tx := range txs {
-		shouldBroadcast := cmtrand.Bool()
+		shouldBroadcast := cmtrand.Bool() || // random choice
+			// Force shouldBroadcast == true to ensure that
+			// len(txsToBroadcast) >= minToBroadcast
+			(len(txsToBroadcast) < minToBroadcast &&
+				len(txs)-i <= minToBroadcast)
+
 		t.Log(i, "adding", tx, "shouldBroadcast", shouldBroadcast)
 
 		if !shouldBroadcast {

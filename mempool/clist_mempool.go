@@ -21,7 +21,10 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 )
 
-const noSender = p2p.ID("")
+const (
+	noSender    = p2p.ID("")
+	defaultLane = "default"
+)
 
 // CListMempool is an ordered in-memory pool for transactions before they are
 // proposed in a consensus round. Transaction validity is checked using the
@@ -51,20 +54,20 @@ type CListMempool struct {
 
 	// Data in the following variables must to be kept in sync and updated atomically.
 	txsMtx    cmtsync.RWMutex
-	lanes     map[types.LaneID]*clist.CList   // each lane is a linked-list of (valid) txs
+	lanes     map[LaneID]*clist.CList         // each lane is a linked-list of (valid) txs
 	txsMap    map[types.TxKey]*clist.CElement // for quick access to the mempool entry of a given tx
-	laneBytes map[types.LaneID]int64          // number of bytes per lane (for metrics)
+	laneBytes map[LaneID]int64                // number of bytes per lane (for metrics)
 	txsBytes  int64                           // total size of mempool, in bytes
 	numTxs    int64                           // total number of txs in the mempool
 
-	addTxChMtx    cmtsync.RWMutex        // Protects the fields below
-	addTxCh       chan struct{}          // Blocks until the next TX is added
-	addTxSeq      int64                  // Helps detect is new TXs have been added to a given lane
-	addTxLaneSeqs map[types.LaneID]int64 // Sequence of the last TX added to a given lane
+	addTxChMtx    cmtsync.RWMutex  // Protects the fields below
+	addTxCh       chan struct{}    // Blocks until the next TX is added
+	addTxSeq      int64            // Helps detect is new TXs have been added to a given lane
+	addTxLaneSeqs map[LaneID]int64 // Sequence of the last TX added to a given lane
 
 	// Immutable fields, only set during initialization.
-	defaultLane types.LaneID
-	sortedLanes []Lane // lanes sorted by priority, in descending order
+	defaultLane LaneID
+	sortedLanes []lane // lanes sorted by priority, in descending order
 
 	// Keep a cache of already-seen txs.
 	// This reduces the pressure on the proxyApp.
@@ -79,12 +82,20 @@ var _ Mempool = &CListMempool{}
 // CListMempoolOption sets an optional parameter on the mempool.
 type CListMempoolOption func(*CListMempool)
 
+// A lane is defined by its ID and priority.
+// A laneID is a string uinquely identifying a lane.
+// Multiple lanes can have the same priority.
+type LaneID string
+
+// The priority of a lane.
+type LanePriority uint32
+
 // Lane corresponds to a transaction class as defined by the application.
 // A lane is identified by a string name and has priority level.
 // Different lanes can have the same priority.
-type Lane struct {
-	id       types.LaneID
-	priority types.LanePriority
+type lane struct {
+	id       LaneID
+	priority LanePriority
 }
 
 // NewCListMempool returns a new mempool with the given configuration and
@@ -100,28 +111,28 @@ func NewCListMempool(
 		config:        cfg,
 		proxyAppConn:  proxyAppConn,
 		txsMap:        make(map[types.TxKey]*clist.CElement),
-		laneBytes:     make(map[types.LaneID]int64),
+		laneBytes:     make(map[LaneID]int64),
 		logger:        log.NewNopLogger(),
 		metrics:       NopMetrics(),
 		addTxCh:       make(chan struct{}),
-		addTxLaneSeqs: make(map[types.LaneID]int64),
+		addTxLaneSeqs: make(map[LaneID]int64),
 	}
 	mp.height.Store(height)
 
 	// Initialize lanes
 	if lanesInfo == nil || len(lanesInfo.lanes) == 0 {
 		// The only lane will be "default" with priority 1.
-		lanesInfo = &LanesInfo{lanes: map[types.LaneID]types.LanePriority{"default": 1}, defaultLane: "default"}
+		lanesInfo = &LanesInfo{lanes: map[LaneID]LanePriority{defaultLane: 1}, defaultLane: defaultLane}
 	}
 	numLanes := len(lanesInfo.lanes)
-	mp.lanes = make(map[types.LaneID]*clist.CList, numLanes)
+	mp.lanes = make(map[LaneID]*clist.CList, numLanes)
 	mp.defaultLane = lanesInfo.defaultLane
-	mp.sortedLanes = make([]Lane, 0, numLanes)
+	mp.sortedLanes = make([]lane, 0, numLanes)
 	for id, priority := range lanesInfo.lanes {
 		mp.lanes[id] = clist.New()
-		mp.sortedLanes = append(mp.sortedLanes, Lane{id: id, priority: priority})
+		mp.sortedLanes = append(mp.sortedLanes, lane{id: id, priority: priority})
 	}
-	slices.SortStableFunc(mp.sortedLanes, func(i, j Lane) int {
+	slices.SortStableFunc(mp.sortedLanes, func(i, j lane) int {
 		if i.priority > j.priority {
 			return -1
 		}
@@ -163,7 +174,7 @@ func (mem *CListMempool) tryRemoveFromCache(tx types.Tx) {
 	}
 }
 
-func (mem *CListMempool) removeAllTxs(lane types.LaneID) {
+func (mem *CListMempool) removeAllTxs(lane LaneID) {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
 
@@ -272,7 +283,7 @@ func (mem *CListMempool) SizeBytes() int64 {
 // number of bytes used by all transactions in the lane.
 //
 // Safe for concurrent use by multiple goroutines.
-func (mem *CListMempool) LaneSizes(lane types.LaneID) (numTxs int, bytes int64) {
+func (mem *CListMempool) LaneSizes(lane LaneID) (numTxs int, bytes int64) {
 	mem.txsMtx.RLock()
 	defer mem.txsMtx.RUnlock()
 
@@ -416,7 +427,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 		// If the app returned a (non-zero) lane, use it; otherwise use the default lane.
 		lane := mem.defaultLane
 		if res.LaneId != "" {
-			lane = types.LaneID(res.LaneId)
+			lane = LaneID(res.LaneId)
 		}
 
 		if err := mem.isLaneFull(len(tx), lane); err != nil {
@@ -455,7 +466,7 @@ func (mem *CListMempool) handleCheckTxResponse(tx types.Tx, sender p2p.ID) func(
 
 // Called from:
 //   - handleCheckTxResponse (lock not held) if tx is valid
-func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane types.LaneID) bool {
+func (mem *CListMempool) addTx(tx types.Tx, gasWanted int64, sender p2p.ID, lane LaneID) bool {
 	mem.txsMtx.Lock()
 	defer mem.txsMtx.Unlock()
 
@@ -563,7 +574,7 @@ func (mem *CListMempool) isFull(txSize int) error {
 	return nil
 }
 
-func (mem *CListMempool) isLaneFull(txSize int, lane types.LaneID) error {
+func (mem *CListMempool) isLaneFull(txSize int, lane LaneID) error {
 	laneTxs, laneBytes := mem.LaneSizes(lane)
 
 	// The mempool is partitioned evenly across all lanes.
@@ -802,7 +813,7 @@ func (mem *CListMempool) Update(
 }
 
 // updateSizeMetrics updates the size-related metrics of a given lane.
-func (mem *CListMempool) updateSizeMetrics(laneID types.LaneID) {
+func (mem *CListMempool) updateSizeMetrics(laneID LaneID) {
 	laneTxs, laneBytes := mem.LaneSizes(laneID)
 	label := string(laneID)
 	mem.metrics.LaneSize.With("lane", label).Set(float64(laneTxs))

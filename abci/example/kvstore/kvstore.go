@@ -140,7 +140,7 @@ func (app *Application) Info(context.Context, *types.InfoRequest) (*types.InfoRe
 
 	defLane := ""
 	if len(app.lanes) != 0 {
-		defLane = "default"
+		defLane = defaultLane
 	}
 	return &types.InfoResponse{
 		Data:             fmt.Sprintf("{\"size\":%v}", app.state.Size),

@@ -63,7 +63,7 @@ func newMempoolWithAppAndConfigMock(
 		panic(err)
 	}
 
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.LaneID(appInfoRes.DefaultLane))
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, LaneID(appInfoRes.DefaultLane))
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +96,7 @@ func newMempoolWithAppAndConfig(cc proxy.ClientCreator, cfg *config.Config) (*CL
 	if err != nil {
 		panic(err)
 	}
-	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, types.LaneID(appInfoRes.DefaultLane))
+	lanesInfo, err := BuildLanesInfo(appInfoRes.LanePriorities, LaneID(appInfoRes.DefaultLane))
 	if err != nil {
 		panic(err)
 	}
@@ -302,14 +302,14 @@ func TestMempoolAddTxLane(t *testing.T) {
 	}
 }
 
-func kvstoreAssignLane(key int) types.LaneID {
-	lane := "default" // 3
+func kvstoreAssignLane(key int) LaneID {
+	lane := defaultLane // 3
 	if key%11 == 0 {
 		lane = "foo" // 7
 	} else if key%3 == 0 {
 		lane = "bar" // 1
 	}
-	return types.LaneID(lane)
+	return LaneID(lane)
 }
 
 func TestMempoolUpdate(t *testing.T) {

@@ -280,7 +280,7 @@ func createMempoolAndMempoolReactor(
 	switch config.Mempool.Type {
 	// allow empty string for backward compatibility
 	case cfg.MempoolTypeFlood, "":
-		lanesInfo, err := mempl.BuildLanesInfo(appInfoResponse.LanePriorities, types.LaneID(appInfoResponse.DefaultLane))
+		lanesInfo, err := mempl.BuildLanesInfo(appInfoResponse.LanePriorities, mempl.LaneID(appInfoResponse.DefaultLane))
 		if err != nil {
 			panic(fmt.Sprintf("could not get lanes info from app: %s", err))
 		}

@@ -1,21 +1,17 @@
 package mempool
 
-import (
-	"github.com/cometbft/cometbft/types"
-)
-
 type LanesInfo struct {
-	lanes       map[types.LaneID]types.LanePriority
-	defaultLane types.LaneID
+	lanes       map[LaneID]LanePriority
+	defaultLane LaneID
 }
 
 // BuildLanesInfo builds the information required to initialize
 // lanes given the data queried from the app.
-func BuildLanesInfo(laneMap map[string]uint32, defLane types.LaneID) (*LanesInfo, error) {
+func BuildLanesInfo(laneMap map[string]uint32, defLane LaneID) (*LanesInfo, error) {
 	info := LanesInfo{}
-	info.lanes = make(map[types.LaneID]types.LanePriority, len(laneMap))
+	info.lanes = make(map[LaneID]LanePriority, len(laneMap))
 	for l, p := range laneMap {
-		info.lanes[types.LaneID(l)] = types.LanePriority(p)
+		info.lanes[LaneID(l)] = LanePriority(p)
 	}
 	info.defaultLane = defLane
 

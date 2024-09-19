@@ -3,8 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-
-	"github.com/cometbft/cometbft/types"
 )
 
 // ErrTxNotFound is returned to the client if tx is not found in mempool.
@@ -66,7 +64,7 @@ func (e ErrMempoolIsFull) Error() string {
 // ErrLaneIsFull is returned when a lane has reached its full capacity (either
 // in number of txs or bytes).
 type ErrLaneIsFull struct {
-	Lane     types.LaneID
+	Lane     LaneID
 	NumTxs   int
 	MaxTxs   int
 	Bytes    int64

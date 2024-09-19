@@ -107,7 +107,7 @@ func TestBlockPoolBasic(t *testing.T) {
 	var (
 		start      = int64(42)
 		peers      = makePeers(10, start, 1000)
-		errorsCh   = make(chan peerError)
+		errorsCh   = make(chan peerError, 10)
 		requestsCh = make(chan BlockRequest)
 	)
 
@@ -169,7 +169,7 @@ func TestBlockPoolTimeout(t *testing.T) {
 	var (
 		start      = int64(42)
 		peers      = makePeers(10, start, 1000)
-		errorsCh   = make(chan peerError)
+		errorsCh   = make(chan peerError, 10)
 		requestsCh = make(chan BlockRequest)
 	)
 
@@ -237,7 +237,7 @@ func TestBlockPoolRemovePeer(t *testing.T) {
 		peers[peerID] = &testPeer{peerID, 0, height, make(chan inputData), false}
 	}
 	requestsCh := make(chan BlockRequest)
-	errorsCh := make(chan peerError)
+	errorsCh := make(chan peerError, 10)
 
 	pool := NewBlockPool(1, requestsCh, errorsCh)
 	pool.SetLogger(log.TestingLogger())
@@ -293,7 +293,7 @@ func TestBlockPoolMaliciousNode(t *testing.T) {
 		p2p.ID("bad"):   &testPeer{p2p.ID("bad"), 1, initialHeight + MaliciousLie, make(chan inputData), true},
 		p2p.ID("good1"): &testPeer{p2p.ID("good1"), 1, initialHeight, make(chan inputData), false},
 	}
-	errorsCh := make(chan peerError)
+	errorsCh := make(chan peerError, 3)
 	requestsCh := make(chan BlockRequest)
 
 	pool := NewBlockPool(1, requestsCh, errorsCh)

@@ -6,12 +6,6 @@ name: Check for Go vulnerabilities
 # Run `make vulncheck` from the root of the repo to run this workflow locally.
 on:
   pull_request:
-    paths:
-      - "**.go"
-      - go.mod
-      - go.sum
-      - Makefile
-      - "!test/**"
   merge_group:
   push:
     branches:

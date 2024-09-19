@@ -11,13 +11,13 @@
 
 [![Discord chat][discord-badge]][discord-url]
 
-| Branch  | Tests                                          | Linting                                     |
-|---------|------------------------------------------------|---------------------------------------------|
-| main    | [![Tests][tests-badge]][tests-url]             | [![Lint][lint-badge]][lint-url]             |
-| v1.x    | [![Tests][tests-badge-v1x]][tests-url-v1x]     | [![Lint][lint-badge-v1x]][lint-url-v1x]     |
-| v0.38.x | [![Tests][tests-badge-v038x]][tests-url-v038x] | [![Lint][lint-badge-v038x]][lint-url-v038x] |
-| v0.37.x | [![Tests][tests-badge-v037x]][tests-url-v037x] | [![Lint][lint-badge-v037x]][lint-url-v037x] |
-| v0.34.x | [![Tests][tests-badge-v034x]][tests-url-v034x] | [![Lint][lint-badge-v034x]][lint-url-v034x] |
+| Branch  | Tests                                          | Linting                                     | CodeCov                                  |
+|---------|------------------------------------------------|---------------------------------------------|------------------------------------------|
+| main    | [![Tests][tests-badge]][tests-url]             | [![Lint][lint-badge]][lint-url]             | [![CodeCov][codecov-badge]][codecov-url] |
+| v1.x    | [![Tests][tests-badge-v1x]][tests-url-v1x]     | [![Lint][lint-badge-v1x]][lint-url-v1x]     |                                          |
+| v0.38.x | [![Tests][tests-badge-v038x]][tests-url-v038x] | [![Lint][lint-badge-v038x]][lint-url-v038x] |                                          |
+| v0.37.x | [![Tests][tests-badge-v037x]][tests-url-v037x] | [![Lint][lint-badge-v037x]][lint-url-v037x] |                                          |
+| v0.34.x | [![Tests][tests-badge-v034x]][tests-url-v034x] | [![Lint][lint-badge-v034x]][lint-url-v034x] |                                          |
 
 CometBFT is a Byzantine Fault Tolerant (BFT) middleware that takes a
 state transition machine - written in any programming language - and securely
@@ -210,6 +210,8 @@ maintains [cometbft.com](https://cometbft.com).
 [lint-url-v037x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.37.x
 [lint-url-v038x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av0.38.x
 [lint-url-v1x]: https://github.com/cometbft/cometbft/actions/workflows/lint.yml?query=branch%3Av1.x
+[codecov-badge]: https://codecov.io/github/cometbft/cometbft/graph/badge.svg?token=NIGFVI36AD
+[cpdecov-url]: https://codecov.io/github/cometbft/cometbft
 [tm-core]: https://github.com/tendermint/tendermint
 [pbts]: https://docs.cometbft.com/v1.0/explanation/core/proposer-based-timestamps
 [abci-v2]: https://docs.cometbft.com/v1.0/spec/abci/

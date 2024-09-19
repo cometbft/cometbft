@@ -1,8 +1,6 @@
 name: Integration Tests
 on:
   pull_request:
-    paths:
-      - "**.go"
   merge_group:
   push:
     paths:

@@ -16,6 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            code:
+              - '**/*.go'
+              - 'Makefile'
+              - 'tests.mk'
+              - 'test/test_cover.sh'
+              - 'go.*'
+              - '.github/workflows/codecov.yml' # test execution
+
       - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
         if: steps.filter.outputs.code == 'true'
 

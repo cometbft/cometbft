@@ -272,6 +272,8 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 		// Do not send this transaction if we receive it from peer.
 		if entry.IsSender(peer.ID()) {
+			memR.Logger.Debug("Skipping transaction, peer is sender",
+				"tx", entry.Tx(), "peer", peer.ID())
 			continue
 		}
 
@@ -282,6 +284,9 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 				break
 			}
 
+			memR.Logger.Debug("Sending transaction to peer",
+				"tx", entry.Tx(), "peer", peer.ID())
+
 			success := peer.Send(p2p.Envelope{
 				ChannelID: MempoolChannel,
 				Message:   &protomem.Txs{Txs: [][]byte{entry.Tx()}},
@@ -289,6 +294,10 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 			if success {
 				break
 			}
+
+			memR.Logger.Debug("Failed sending transaction to peer",
+				"tx", entry.Tx(), "peer", peer.ID())
+
 			select {
 			case <-time.After(PeerCatchupSleepIntervalMS * time.Millisecond):
 			case <-peer.Quit():

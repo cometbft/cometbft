@@ -217,24 +217,27 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 		}
 	}
 
-	iter := NewBlockingIterator(memR.mempool)
-	var entry Entry
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		select {
+		case <-peer.Quit():
+			cancel()
+		case <-memR.Quit():
+			cancel()
+		}
+	}()
+
+	iter := NewBlockingIterator(ctx, memR.mempool, string(peer.ID()))
 	for {
 		// In case of both next.NextWaitChan() and peer.Quit() are variable at the same time
 		if !memR.IsRunning() || !peer.IsRunning() {
 			return
 		}
 
-		select {
-		case entry = <-iter.WaitNextCh():
-			// If the entry we were looking at got garbage collected (removed), try again.
-			if entry == nil {
-				continue
-			}
-		case <-peer.Quit():
-			return
-		case <-memR.Quit():
-			return
+		entry := <-iter.WaitNextCh()
+		// If the entry we were looking at got garbage collected (removed), try again.
+		if entry == nil {
+			continue
 		}
 
 		// If we suspect that the peer is lagging behind, at least by more than

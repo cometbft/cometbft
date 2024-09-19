@@ -160,6 +160,7 @@ func addRandomTxs(t *testing.T, mp Mempool, count int) []types.Tx {
 	t.Helper()
 	txs := NewRandomTxs(count, 20)
 	callCheckTx(t, mp, txs)
+	require.Equal(t, count, len(txs))
 	return txs
 }
 
@@ -200,7 +201,7 @@ func TestReapMaxBytesMaxGas(t *testing.T) {
 
 	// Ensure gas calculation behaves as expected
 	addRandomTxs(t, mp, 1)
-	iter := NewBlockingIterator(mp)
+	iter := NewBlockingIterator(context.Background(), mp, t.Name())
 	tx0 := <-iter.WaitNextCh()
 	require.NotNil(t, tx0)
 	require.Equal(t, tx0.GasWanted(), int64(1), "transactions gas was set incorrectly")
@@ -704,16 +705,17 @@ func TestMempoolTxsBytes(t *testing.T) {
 	mp.Flush()
 	assert.EqualValues(t, 0, mp.SizeBytes())
 
-	// 5. ErrMempoolIsFull is returned when/if MaxTxsBytes limit is reached.
-	tx3 := kvstore.NewRandomTx(100)
-	_, err = mp.CheckTx(tx3, "")
+	// 5. ErrLaneIsFull is returned when/if the limit on the lane bytes capacity is reached.
+	laneMaxBytes := int(cfg.Mempool.MaxTxsBytes) / len(mp.sortedLanes)
+	tx3 := kvstore.NewRandomTx(laneMaxBytes)
+	rr, err := mp.CheckTx(tx3, "")
 	require.NoError(t, err)
+	require.NoError(t, rr.Error())
 
 	tx4 := kvstore.NewRandomTx(10)
-	_, err = mp.CheckTx(tx4, "")
-	if assert.Error(t, err) { //nolint:testifylint // require.Error doesn't work with the conditional here
-		assert.IsType(t, ErrMempoolIsFull{}, err)
-	}
+	rr, err = mp.CheckTx(tx4, "")
+	require.NoError(t, err)
+	require.ErrorAs(t, rr.Error(), &ErrLaneIsFull{})
 
 	// 6. zero after tx is rechecked and removed due to not being valid anymore
 	app2 := kvstore.NewInMemoryApplication()
@@ -874,7 +876,8 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 	// Adding a new valid tx to the pool will notify a tx is available
 	tx := kvstore.NewTxFromID(1)
 	res := abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
-	mp.handleCheckTxResponse(tx, "")(res)
+	err := mp.handleCheckTxResponse(tx, "")(res)
+	require.NoError(t, err)
 	require.Equal(t, 1, mp.Size(), "pool size mismatch")
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Len(t, mp.TxsAvailable(), 1)
@@ -882,13 +885,14 @@ func TestMempoolNotifyTxsAvailable(t *testing.T) {
 
 	// Receiving CheckTx response for a tx already in the pool should not notify of available txs
 	res = abci.ToCheckTxResponse(&abci.CheckTxResponse{Code: abci.CodeTypeOK})
-	mp.handleCheckTxResponse(tx, "")(res)
+	err = mp.handleCheckTxResponse(tx, "")(res)
+	require.ErrorIs(t, ErrTxInMempool, err)
 	require.Equal(t, 1, mp.Size())
 	require.True(t, mp.notifiedTxsAvailable.Load())
 	require.Empty(t, mp.TxsAvailable())
 
 	// Updating the pool will remove the tx and set the variable to false
-	err := mp.Update(1, []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
+	err = mp.Update(1, []types.Tx{tx}, abciResponses(1, abci.CodeTypeOK), nil, nil)
 	require.NoError(t, err)
 	require.Zero(t, mp.Size())
 	require.False(t, mp.notifiedTxsAvailable.Load())

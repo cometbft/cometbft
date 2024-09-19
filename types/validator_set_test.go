@@ -1677,3 +1677,99 @@ func TestValidatorSet_AllKeysHaveSameType(t *testing.T) {
 		}
 	}
 }
+
+func TestValidatorSet_BlockingChain(t *testing.T) {
+	testCases := []struct {
+		tcName       string
+		vals         []testVal
+		blockingVals []string
+	}{
+		{
+			"1 validator",
+			[]testVal{{"v1", 1}},
+			[]string{"v1"},
+		},
+		{
+			"2 validators",
+			[]testVal{{"v1", 1}, {"v2", 1}},
+			[]string{"v1", "v2"},
+		},
+		{
+			"3 validators",
+			[]testVal{{"v1", 1}, {"v2", 1}, {"v3", 1}},
+			[]string{"v1", "v2", "v3"},
+		},
+		{
+			"4 validators",
+			[]testVal{{"v1", 1}, {"v2", 1}, {"v3", 1}, {"v4", 1}},
+			nil,
+		},
+		{
+			"many validators",
+			[]testVal{
+				{"v01", 1},
+				{"v02", 1},
+				{"v03", 1},
+				{"v04", 1},
+				{"v05", 1},
+				{"v06", 1},
+				{"v07", 1},
+				{"v08", 1},
+				{"v09", 1},
+				{"v10", 1},
+				{"v11", 1},
+				{"v12", 1},
+				{"v13", 1},
+				{"v14", 1},
+				{"v15", 1},
+			},
+			nil,
+		},
+		{
+			"2 validators, only 1 blocking",
+			[]testVal{{"v1", 1}, {"v2", 3}},
+			[]string{"v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 1 - v1 blocking",
+			[]testVal{{"v1", 3333}, {"v2", 6666}},
+			[]string{"v1", "v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 2  - v1 non-blocking",
+			[]testVal{{"v1", 3332}, {"v2", 6666}},
+			[]string{"v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 3  - v1 non-blocking",
+			[]testVal{{"v1", 3332}, {"v2", 6665}},
+			[]string{"v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 3  - v1 blocking",
+			[]testVal{{"v1", 3332}, {"v2", 6664}},
+			[]string{"v1", "v2"},
+		},
+		{
+			"2 validators, only 1 blocking, high power, borderline 4  - v1 blocking",
+			[]testVal{{"v1", 3332}, {"v2", 6663}},
+			[]string{"v1", "v2"},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.tcName, func(t *testing.T) {
+			valSet := createNewValidatorSet(tt.vals)
+			valsMap := make(map[string]struct{}, len(tt.blockingVals))
+			for _, addr := range tt.blockingVals {
+				_, ok := valsMap[addr]
+				require.False(t, ok)
+				valsMap[addr] = struct{}{}
+			}
+			for _, val := range tt.vals {
+				_, blocking := valsMap[val.name]
+				require.Equal(t, blocking, valSet.ValidatorBlocksTheChain([]byte(val.name)), "validator %s", val.name)
+			}
+		})
+	}
+}

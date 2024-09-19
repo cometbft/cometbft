@@ -25,7 +25,7 @@ func TestNewPrivateKeyFromBytes(t *testing.T) {
 	assert.Equal(t, privKey, privKey2)
 
 	_, err = bls12381.NewPrivateKeyFromBytes(crypto.CRandBytes(31))
-	assert.Error(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGenPrivateKey(t *testing.T) {

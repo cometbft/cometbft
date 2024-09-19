@@ -16,6 +16,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	memproto "github.com/cometbft/cometbft/api/cometbft/mempool/v1"
 	cfg "github.com/cometbft/cometbft/config"
+	cmtrand "github.com/cometbft/cometbft/internal/rand"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/proxy"
@@ -144,15 +145,29 @@ func TestReactorNoBroadcastToSender(t *testing.T) {
 	// create random transactions
 	txs := NewRandomTxs(numTxs, 20)
 
-	// the second peer sends all the transactions to the first peer
+	// This subset should be broadcast
+	var txsToBroadcast types.Txs
+
+	// The second peer sends some transactions to the first peer
 	secondNodeID := reactors[1].Switch.NodeInfo().ID()
-	for _, tx := range txs {
-		_, err := reactors[0].mempool.CheckTx(tx, secondNodeID)
-		require.NoError(t, err)
+	for i, tx := range txs {
+		shouldBroadcast := cmtrand.Bool()
+		t.Log(i, "added", tx, "should broadcast", shouldBroadcast)
+
+		if !shouldBroadcast {
+			// From the second peer => should not be broadcast
+			_, err := reactors[0].mempool.CheckTx(tx, secondNodeID)
+			require.NoError(t, err)
+		} else {
+			// Emulate a tx received via RPC => should broadcast
+			_, err := reactors[0].mempool.CheckTx(tx, "")
+			require.NoError(t, err)
+			txsToBroadcast = append(txsToBroadcast, tx)
+		}
 	}
 
-	// the second peer should not receive any transaction
-	ensureNoTxs(t, reactors[1], 100*time.Millisecond)
+	// The second peer should receive only txsToBroadcast transactions
+	waitForReactors(t, txsToBroadcast, reactors[1:], checkTxsInOrder)
 }
 
 // Test that a lagging peer does not receive txs.

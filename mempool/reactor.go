@@ -254,6 +254,7 @@ func (memR *Reactor) broadcastTxRoutine(peer p2p.Peer) {
 
 		// Do not send this transaction if we receive it from peer.
 		if memTx.isSender(peer.ID()) {
+			memR.Logger.Debug("Skipping tx", "tx", memTx.tx)
 			continue
 		}
 

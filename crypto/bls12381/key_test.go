@@ -204,11 +204,13 @@ func TestPubKey_NewPublicKeyFromInvalidBytes(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			bz, err := unmarshal(tc.pkStr)
 			if err != nil {
+				t.Log(tc.desc, "unmarshal error", err)
 				require.Equal(t, tc.expectedErr, err)
 			}
 
 			_, err = bls12381.NewPublicKeyFromBytes(bz)
 			require.Equal(t, tc.expectedErr, err)
+			t.Log(tc.desc, "NewPrivateKeyFromBytes error", err)
 		})
 	}
 }

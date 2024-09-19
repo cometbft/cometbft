@@ -23,7 +23,9 @@ test_apps:
 .PHONY: test_apps
 
 test_abci_apps:
-	bash abci/tests/test_app/test.sh
+	# run the app tests using bash
+	# requires `abci-cli` binary installed
+	bash abci/tests/test_cli/test.sh
 .PHONY: test_abci_apps
 
 test_abci_cli:

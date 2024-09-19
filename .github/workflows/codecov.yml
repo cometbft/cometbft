@@ -13,7 +13,7 @@ jobs:
 
   test_cover:
     runs-on: ubuntu-latest
-    #timeout-minutes: 1015 # 203 packages with 5-minute timeout each is ~16.9h. Let's keep it at the 360 default.
+    # timeout-minutes: 1015 # 203 packages with 5-minute timeout each is ~16.9h. Let's keep it at the 360 default.
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +24,7 @@ jobs:
             code:
               - '**/*.go'
               - 'Makefile'
+              - 'tests.mk'
               - 'go.*'
 
       - run: echo "GO_VERSION=$(cat .github/workflows/go-version.env | grep GO_VERSION | cut -d '=' -f2)" >> $GITHUB_ENV
@@ -43,5 +44,4 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true
-          #flags: unittests
-
+          # flags: unittests
